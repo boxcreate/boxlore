@@ -60,8 +60,8 @@ class PodcastRepository(
     /**
      * The v2 build's rollout switches (feed-first show pages, v2 discovery, address check, upgrade
      * repair), from the app's PostHog flags. Added in P4 (plan section 11, Rollback). Discovery
-     * reads [RolloutSwitches.v2Discovery] per request ([usesV2Discovery]); the other code paths
-     * that read them land later.
+     * reads [RolloutSwitches.v2Discovery] per request ([usesV2Discovery]) and
+     * [RolloutSwitches.feedFirst] for the show-page source ([showPageSource], P4 PR 16).
      */
     val rolloutSwitches: RolloutSwitches = RolloutSwitches(),
     /** Trusted alias reads for links, pushes, shares and Android Auto (P4 PR 13); none in older tests. */
@@ -74,6 +74,11 @@ class PodcastRepository(
      * Added in P4 PR 12 (own-IDs plan section 9, v2 discovery routes).
      */
     internal val discoveryEpisodeIds: DiscoveryEpisodeIds = DiscoveryEpisodeIds.Unmapped,
+    /**
+     * The feed-first show page's stored copies, connectivity, report limits and telemetry. The
+     * default stores nothing, so show pages read the server's list (P4 PR 16, plan section 11).
+     */
+    feedFirstWiring: FeedFirstWiring = FeedFirstWiring(),
 ) : cx.aswin.boxlore.core.domain.ports.PodcastCatalogPort {
     internal val episodeFeedReader: EpisodeFeedReader by lazy { feedReader ?: RssEpisodeFeedReader(cx.aswin.boxlore.core.rss.RssFeedClient()) { apiV2 } }
 
@@ -87,6 +92,29 @@ class PodcastRepository(
      * Built on first use. Added in P4 of the own-episode-IDs plan (plan section 9).
      */
     val apiV2: BoxLoreApiV2 by lazy { boxLoreApiV2 ?: NetworkModule.createBoxLoreApiV2(baseUrl, cachedClient) }
+
+    /**
+     * The feed-first show page: reads a show's own feed into the phone's stored copy, with its
+     * failure ladder (P4 PR 16, own-IDs plan section 11).
+     */
+    val feedFirst: FeedFirstShowPages by lazy {
+        FeedFirstShowPages(
+            copies = feedFirstWiring.copies,
+            registry = { showId -> v2ShowAddress(showId) },
+            transport = { showId, etag -> v2Transport(showId, etag) },
+            reporter =
+            FeedReporter(
+                send = { request -> FeedReporter.sendWith(apiV2, request) },
+                limiter = feedFirstWiring.reportLimiter,
+                isOnline = feedFirstWiring.isOnline,
+                enabled = rolloutSwitches.addressCheck,
+                keepFree = FeedReportLimiter.FOLLOWED_SHOWS_RESERVE,
+            ),
+            isOnline = feedFirstWiring.isOnline,
+            telemetry = feedFirstWiring.telemetry,
+            isFollowed = feedFirstWiring.isFollowed,
+        )
+    }
 
     /** Last good `/v2` discovery answers of this process (P4 PR 12, plan section 9). */
     internal val v2LastGood = V2DiscoveryLastGood()
@@ -279,6 +307,12 @@ class PodcastRepository(
         }
     }
 
+    /**
+     * In-show search, always on the phone: the RSS table, a followed show's catalog, the feed-first
+     * stored copy (the show page completes its archive first), or else the server's list of the
+     * show (`/v2/episodes`). Never v1 `episodes/search`, whose answers carry served IDs that would
+     * mix with recipe IDs (P4 PR 16, decision D16).
+     */
     suspend fun searchEpisodes(feedId: String, query: String,): List<Episode> = withContext(Dispatchers.IO) {
         if (feedId.startsWith("rss:")) {
             return@withContext searchRssEpisodes(feedId, query)
@@ -286,7 +320,55 @@ class PodcastRepository(
         if (isLocalCatalogReady(feedId)) {
             return@withContext searchLocalCatalog(feedId, query)
         }
-        searchNetworkEpisodes(feedId, query)
+        if (showPageSource(feedId) == ShowPageSource.FEED) {
+            searchFeedCopy(feedId, query)?.let { return@withContext it }
+        }
+        searchServerList(feedId, query)
+    }
+
+    /**
+     * Where [feedId]'s show page reads its episodes: the RSS table, a followed show's complete
+     * catalog, the show's own feed (`feed_first` on, a Podcast Index show whose feed was not found
+     * unreadable on this page), or the server's list.
+     *
+     * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, feed-first show page; decision D1).
+     */
+    suspend fun showPageSource(feedId: String): ShowPageSource = withContext(Dispatchers.IO) {
+        when {
+            feedId.startsWith("rss:") -> ShowPageSource.RSS
+            isLocalCatalogReady(feedId) -> ShowPageSource.FOLLOWED_CATALOG
+            isFeedFirstShow(feedId) && !feedFirst.isInFallback(feedId) -> ShowPageSource.FEED
+            else -> ShowPageSource.SERVER_LIST
+        }
+    }
+
+    /**
+     * What the feed-first show page of [feedId] holds as it opens ([FeedFirstShowPages.open]), or
+     * null when the page reads another source (`rss:` shows, a followed show's ready catalog,
+     * `feed_first` off). A page that opens tries the feed again after an earlier fallback.
+     *
+     * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, feed-first show page).
+     */
+    suspend fun openFeedShowPage(feedId: String, meta: cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.PodcastMeta,): ShowPageFeedState? =
+        withContext(Dispatchers.IO) {
+            if (feedId.startsWith("rss:") || !isFeedFirstShow(feedId) || isLocalCatalogReady(feedId)) return@withContext null
+            feedFirst.open(feedId, meta)
+        }
+
+    /**
+     * Reads [feedId]'s feed into its stored copy, [scope] deep, down the failure ladder
+     * ([FeedFirstShowPages.read]), then drops cached pages of the show so the next page reads the
+     * new copy, or the server's list after a fallback.
+     *
+     * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, feed-first show page).
+     */
+    suspend fun readShowPageFeed(
+        feedId: String,
+        meta: cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.PodcastMeta,
+        scope: cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort.Scope,
+        savedFeedUrl: String?,
+    ): ShowPageFeedRead = withContext(Dispatchers.IO) {
+        feedFirst.read(feedId, meta, scope, savedFeedUrl).also { invalidateEpisodesCache(feedId) }
     }
 
     // Opened on first use: the migration reads the prefs file from disk, and this repository is
@@ -337,13 +419,46 @@ class PodcastRepository(
         if (isLocalCatalogReady(feedId)) {
             return@withContext getLocalCatalogPage(feedId, safeLimit, offset, sort)
         }
-        getNetworkEpisodesPaginated(feedId, safeLimit, offset, sort, mergeSupplements)
+        getServerListPage(feedId, safeLimit, offset, sort, mergeSupplements)
     }
 
-    /** Drop cached PI episode pages for [feedId] so the next read hits the network. */
+    /**
+     * [getEpisodesPaginated] for the show page itself: the feed-first stored copy when the page
+     * reads the feed ([ShowPageSource.FEED]), else the same sources. Only the show page reads the
+     * copy, because only it reads the feed again (on open, pull to refresh and archive actions);
+     * Smart Queue, Android Auto, Home and downloads keep reading the server's list
+     * ([getEpisodesPaginated]), so a copy that stops being read never goes stale under them.
+     *
+     * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, feed-first show page; decision D1).
+     */
+    suspend fun getShowPageEpisodes(
+        feedId: String,
+        limit: Int = 20,
+        offset: Int = 0,
+        sort: String = "newest",
+    ): EpisodePage = withContext(Dispatchers.IO) {
+        if (showPageSource(feedId) == ShowPageSource.FEED) {
+            feedCopyPage(feedId, clampPageLimit(limit), offset, sort)?.let { return@withContext it }
+        }
+        getEpisodesPaginated(feedId, limit, offset, sort)
+    }
+
+    /**
+     * True when [feedId]'s show page reads its feed first (`feed_first` on, a Podcast Index show),
+     * whether or not this page has fallen back: such a page never offers "Missing episodes?".
+     *
+     * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, refresh replaces the chip).
+     */
+    fun isFeedFirstShowPage(feedId: String): Boolean = !feedId.startsWith("rss:") && isFeedFirstShow(feedId)
+
+    /**
+     * Drop cached episode pages for [feedId] so the next read hits the network. Pages are cached
+     * under the Podcast Index ID a `url:`, `guid:` or `itunes:` ID resolved to, so that ID's pages
+     * go too (before P4 PR 16 only pages under [feedId] itself were dropped).
+     */
     fun invalidateEpisodesCache(feedId: String) {
-        val prefix = "$feedId|"
-        episodesCache.invalidateIf { it.startsWith(prefix) }
+        val prefixes = setOfNotNull(feedId, resolvedFeedIds[feedId]).map { "$it|" }
+        episodesCache.invalidateIf { key -> prefixes.any(key::startsWith) }
     }
 
     /**
@@ -389,7 +504,13 @@ class PodcastRepository(
         EpisodePage(emptyList(), false)
     }
 
-    private suspend fun getNetworkEpisodesPaginated(
+    /**
+     * v1 `/episodes` pages of a Podcast Index show, merged with its cached feed extras.
+     *
+     * LEGACY(own-ids): the last rung of the show page's list, used only when `/v2/episodes` fails.
+     * Remove at sunset step S7 (MIGRATION.md §6) once `feed_first` has been at 100% for 30 days.
+     */
+    internal suspend fun getNetworkEpisodesPaginated(
         feedId: String,
         limit: Int,
         offset: Int,
@@ -397,6 +518,7 @@ class PodcastRepository(
         mergeSupplements: Boolean,
     ): EpisodePage {
         val resolvedId = resolvePodcastIndexFeedId(feedId)
+        rememberResolvedFeedId(feedId, resolvedId)
         val cacheKey = "$resolvedId|$limit|$offset|$sort"
         val cached = episodesCache[cacheKey]
         if (cached != null) {
@@ -438,7 +560,7 @@ class PodcastRepository(
         }
     }
 
-    private suspend fun maybeMergeSupplements(
+    internal suspend fun maybeMergeSupplements(
         podcastId: String,
         page: EpisodePage,
         offset: Int,
@@ -927,7 +1049,8 @@ class PodcastRepository(
         if (isLocalCatalogReady(feedId)) {
             return@withContext getLocalCatalogWindow(feedId, sort, aroundEpisodeId)
         }
-        getNetworkEpisodeWindow(feedId)
+        // The show page's IDs (P4 PR 16): the feed-first copy around its episode, else /v2/episodes.
+        getShowEpisodeWindow(feedId, aroundEpisodeId, sort)
     }
 
     override suspend fun getEpisode(episodeId: String): Episode? = getEpisodeImpl(episodeId, showId = null)
@@ -948,7 +1071,14 @@ class PodcastRepository(
         // Catalog caches are endpoint-versioned so an otherwise-valid v1/v2 response cannot
         // suppress the v3 fetch and then invalidate grouped v3 section responses.
 
-        private val episodesCache = TimedLruCache<String, EpisodePage>(maxEntries = 30, ttlMillis = DEFAULT_EPISODE_CACHE_TTL_MS)
+        internal val episodesCache = TimedLruCache<String, EpisodePage>(maxEntries = 30, ttlMillis = DEFAULT_EPISODE_CACHE_TTL_MS)
+
+        /** The Podcast Index ID each `url:`, `guid:` or `itunes:` show ID resolved to, for [invalidateEpisodesCache]. */
+        internal val resolvedFeedIds = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+        internal fun rememberResolvedFeedId(feedId: String, resolvedId: String) {
+            if (feedId != resolvedId) resolvedFeedIds[feedId] = resolvedId
+        }
         internal val recommendationsCache = TimedLruCache<String, List<Episode>>(maxEntries = 20, ttlMillis = DEFAULT_RECOMMENDATIONS_CACHE_TTL_MS)
         internal val becauseYouLikeCache = TimedLruCache<String, BecauseYouLikeData>(maxEntries = 20, ttlMillis = DEFAULT_RECOMMENDATIONS_CACHE_TTL_MS)
     }

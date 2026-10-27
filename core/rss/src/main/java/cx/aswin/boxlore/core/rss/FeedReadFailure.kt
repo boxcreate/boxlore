@@ -12,6 +12,12 @@ import javax.net.ssl.SSLPeerUnverifiedException
 class FeedHttpException(val code: Int) : IllegalArgumentException("Feed returned HTTP $code")
 
 /**
+ * A feed document over the size cap ([RssFeedClient.readFeedBody]). An [IllegalArgumentException],
+ * as the cap's `require` threw before P4 PR 16, so callers that caught that still do.
+ */
+class FeedTooLargeException(maxBytes: Long) : IllegalArgumentException("Feed is larger than ${maxBytes / (1024 * 1024)} MB")
+
+/**
  * Whether a failed publisher-feed read says the saved address no longer works, so it's worth asking
  * the server for a newer one: gone or refused (401, 403, 404, 410, 451), no such host, a certificate
  * that fails, or a body that isn't a feed. Timeouts, server errors, 429 and dropped connections are

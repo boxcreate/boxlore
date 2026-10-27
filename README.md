@@ -69,6 +69,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 </ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
+<li>Show pages can now list episodes straight from a show’s own feed, keep them for offline viewing, and tell you when boxlore is showing its own episode list instead. Rolling out gradually. <a href="https://github.com/boxcreate/boxlore/pull/1184"><img src="https://img.shields.io/badge/PR-1184-6750A4?style=flat-square" alt="PR #1184" height="18"/></a></li>
 <li>Shared episode links open the right episode, even ones only in a show's own feed, and keep your plays, progress and downloads on the episode you already have. <a href="https://github.com/boxcreate/boxlore/pull/1181"><img src="https://img.shields.io/badge/PR-1181-6750A4?style=flat-square" alt="PR #1181" height="18"/></a></li>
 <li>Episodes you share now open for friends on any version of boxlore. <a href="https://github.com/boxcreate/boxlore/pull/1181"><img src="https://img.shields.io/badge/PR-1181-6750A4?style=flat-square" alt="PR #1181" height="18"/></a></li>
 <li>Cloud sync keeps your progress, likes, finished episodes and queue in step across all your devices, including ones on older versions of boxlore, and episodes you remove from the queue stay removed everywhere. <a href="https://github.com/boxcreate/boxlore/pull/1179"><img src="https://img.shields.io/badge/PR-1179-6750A4?style=flat-square" alt="PR #1179" height="18"/></a></li>

@@ -1,0 +1,46 @@
+{
+  "status": "true",
+  "source": "pidump",
+  "feed": {
+    "id": 1031614,
+    "podcastGuid": "10b7a29a-ea04-5551-a38f-0ecb55f1b47e",
+    "title": "Times Square Church - Sermons",
+    "url": "http://feeds1.tscnyc.org/sermonmp3g",
+    "originalUrl": "http://feeds1.tscnyc.org/sermonmp3g",
+    "link": "https://tsc.nyc/",
+    "description": "Each week we update this podcast with messages from Pastor Tim Dilena, senior pastor of Times Square Church. Our visi…",
+    "author": "TSC.NYC",
+    "ownerName": "TSC.NYC",
+    "image": "http://feeds3.tscnyc.ws/sermon/img/podcast_cover_2026_1500.png",
+    "artwork": "http://feeds3.tscnyc.ws/sermon/img/podcast_cover_2026_1500.png",
+    "lastUpdateTime": 1792879454,
+    "itunesId": 388344203,
+    "type": "episodic",
+    "language": "en-us",
+    "explicit": false,
+    "dead": 0,
+    "episodeCount": 635,
+    "categories": {
+      "1": "religion",
+      "2": "spirituality",
+      "3": "christianity",
+      "4": "judaism",
+      "5": "society",
+      "6": "culture",
+      "7": "philosophy"
+    }
+  },
+  "fetchUrl": "http://feeds1.tscnyc.org/sermonmp3g",
+  "fetchVia": "proxy",
+  "transportUrl": "https://api.aswin.cx/v2/feed/1031614",
+  "feedSource": "pidump",
+  "epNs": 1031614,
+  "flags": {
+    "addressRepair": false,
+    "episodeStale": false
+  },
+  "verifiedAt": null,
+  "episodeCount": 635,
+  "appleLatestAt": 1792407600,
+  "appleEpisodeCount": 1567
+}

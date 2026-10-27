@@ -57,6 +57,14 @@ data class RssFetchResult(
     val movedTo: String? = null,
 )
 
+/**
+ * A read of the start of a feed ([RssFeedClient.fetchNewest]). [complete]: the whole document was
+ * read, so [result] holds every item.
+ *
+ * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, feed-first show page).
+ */
+class RssPrefixFetch(val result: RssFetchResult, val complete: Boolean)
+
 sealed interface RssFreshnessResult {
     data class Unchanged(val etag: String?, val lastModified: String?,) : RssFreshnessResult
 
@@ -113,6 +121,33 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
                 lastModified = response.header(LAST_MODIFIED_HEADER),
                 body = readBounded(body.byteStream()),
                 movedTo = permanentMoveTarget(response),
+            )
+        }
+
+    /**
+     * Reads the first [maxItems] items of a feed and stops, instead of downloading the whole
+     * document ([FeedPrefixReader]). Sends [etag] and [lastModified] when given; null means a 304,
+     * so the stored copy is current. [RssPrefixFetch.complete] says whether the whole document was
+     * read. The validators in the answer describe the whole document, not the part read.
+     *
+     * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, feed-first show page).
+     */
+    open suspend fun fetchNewest(url: String, maxItems: Int, etag: String? = null, lastModified: String? = null,): RssPrefixFetch? =
+        execute(conditionalGetRequest(url, etag, lastModified)) { response ->
+            if (response.code == HTTP_NOT_MODIFIED) return@execute null
+            if (!response.isSuccessful) throw FeedHttpException(response.code)
+            validateContentType(response)
+            val prefix = FeedPrefixReader.read(response.body.byteStream(), maxItems, MAX_FEED_BYTES)
+            RssPrefixFetch(
+                result =
+                RssFetchResult(
+                    finalUrl = response.request.url.toString(),
+                    etag = response.header("ETag"),
+                    lastModified = response.header(LAST_MODIFIED_HEADER),
+                    body = prefix.bytes,
+                    movedTo = permanentMoveTarget(response),
+                ),
+                complete = prefix.complete,
             )
         }
 
@@ -650,21 +685,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
         }.getOrDefault("")
     }
 
-    private fun readBounded(input: java.io.InputStream): ByteArray {
-        val output = ByteArrayOutputStream()
-        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-        var total = 0L
-        while (true) {
-            val read = input.read(buffer)
-            if (read < 0) break
-            total += read
-            require(total <= MAX_FEED_BYTES) {
-                "Feed is larger than ${MAX_FEED_BYTES / (1024 * 1024)} MB"
-            }
-            output.write(buffer, 0, read)
-        }
-        return output.toByteArray()
-    }
+    private fun readBounded(input: java.io.InputStream): ByteArray = readFeedBody(input)
 
     private fun validateContentType(response: Response) {
         val contentType =
@@ -767,6 +788,27 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
     }
 
     companion object {
+        /**
+         * Reads a feed document from [input], at most [MAX_FEED_BYTES]: the cap every feed read
+         * keeps, also for documents boxlore's transport (`/v2/feed/<id>`) serves. A larger
+         * document throws [FeedTooLargeException] before it fills memory.
+         *
+         * Public since P4 PR 16 of the own-episode-IDs plan (plan section 11, feed-first show page).
+         */
+        fun readFeedBody(input: java.io.InputStream): ByteArray {
+            val output = ByteArrayOutputStream()
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            var total = 0L
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                total += read
+                if (total > MAX_FEED_BYTES) throw FeedTooLargeException(MAX_FEED_BYTES)
+                output.write(buffer, 0, read)
+            }
+            return output.toByteArray()
+        }
+
         private const val MAX_FEED_BYTES = 25L * 1024L * 1024L
         private const val MAX_DESCRIPTION_LENGTH = 20_000
         private const val HTTP_NOT_MODIFIED = 304

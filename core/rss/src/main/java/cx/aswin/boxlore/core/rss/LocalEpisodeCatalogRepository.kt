@@ -9,6 +9,7 @@ import cx.aswin.boxlore.core.database.LocalFeedOrder
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshRequest
+import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort
 import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Dispatchers
@@ -91,6 +92,17 @@ class LocalEpisodeCatalogRepository private constructor(
     )
 
     private val refreshLocks = ConcurrentHashMap<String, Mutex>()
+
+    /**
+     * The show page's stored feed copies, followed or not, written under the same per-show lock as
+     * [refresh] ([ShowPageFeedCatalog]).
+     *
+     * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, feed-first show page).
+     * COMPAT(own-ids): show pages read the show's own feed. Permanent: never remove (MIGRATION.md §5).
+     */
+    val showPages: ShowPageFeedPort by lazy {
+        ShowPageFeedCatalog(refreshDeps) { podcastId -> refreshLocks.getOrPut(podcastId) { Mutex() } }
+    }
 
     override suspend fun refresh(request: RefreshRequest): RefreshOutcome = withContext(Dispatchers.IO) {
         val lock = refreshLocks.getOrPut(request.podcastIndexId) { Mutex() }

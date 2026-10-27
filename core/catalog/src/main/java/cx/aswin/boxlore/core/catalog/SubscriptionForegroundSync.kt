@@ -306,7 +306,7 @@ class SubscriptionForegroundSync(
                 reporter =
                 FeedReporter(
                     send = { request -> FeedReporter.sendWith(podcastRepository.apiV2, request) },
-                    limiter = FeedReportLimiter(upkeep.reportStamps),
+                    limiter = upkeep.reportLimiter,
                     isOnline = upkeep.isOnline,
                     enabled = enabled,
                 ),
@@ -931,10 +931,13 @@ internal data class DirectFeedSyncSeams(
 /**
  * What the daily address check and broken-feed reports need from the app (P4 PR 14): where report
  * times are kept across launches, and whether the phone is online (reports are never sent offline).
+ * [reportLimiter] is the app's one limiter, shared with the show page (P4 PR 16) so both stay inside
+ * one daily limit; the default builds one on [reportStamps].
  */
 data class FeedAddressUpkeep(
     val reportStamps: FeedReportStamps = MemoryFeedReportStamps(),
     val isOnline: () -> Boolean = { true },
+    val reportLimiter: FeedReportLimiter = FeedReportLimiter(reportStamps),
 )
 
 /** The daily address check and the broken-feed reporter of one [SubscriptionForegroundSync] (P4 PR 14). */

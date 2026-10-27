@@ -26,3 +26,13 @@ Worker answers with (the same fields, types and nesting as `shows-feeds.json`):
 | `feed-report.json` | `POST /v2/feed-report` for show 3391039: the registry's address. A live report would queue a real re-check |
 | `shows-feeds-upgrade-cases.json` | `POST /v2/shows/feeds` written from the route's contract (not recorded) for the upgrade repair: a confirmed move (`registry:` source, `flags.addressRepair`), an http-only show (`fetchVia: proxy` with its `transportUrl`), a show the lookup doesn't know (`fetchUrl: null`) and one with another `epNs` |
 | `shows-feeds-registry-down.json` | the same route while the address registry is unavailable (`registryAvailable: false`, dump addresses only), with the upgrade-case show ID |
+
+Show page routes, recorded the same way on 2026-10-27 (episode lists cut to two items, long text
+shortened, nested lists cut to their first entry):
+
+| File | Request |
+|---|---|
+| `episodes.json` | `GET /v2/episodes?id=920666&limit=3&offset=0&sort=newest` (`source: pi`, items with `servedId` and `catalogKey`) |
+| `podcast-direct.json` | `GET /v2/podcast?id=920666` (`fetchVia: direct`) |
+| `podcast-proxy.json` | `GET /v2/podcast?id=1031614` (`fetchVia: proxy` with `transportUrl`) |
+| `feed-not-proxied.json` | `GET /v2/feed/920666`, a show that isn't http-only: 404 `not_proxied` with `fetchUrl` |

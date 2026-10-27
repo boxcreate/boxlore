@@ -71,6 +71,7 @@ class PodcastRepositoryEpisodeSupplementTest {
                 episodeSupplementRepository = fakePort,
                 ioDispatcher = testDispatcher,
                 boxLoreApi = api,
+                boxLoreApiV2 = NetworkModule.createBoxLoreApiV2(server.url("/").toString(), client),
             )
     }
 
@@ -240,7 +241,7 @@ class PodcastRepositoryEpisodeSupplementTest {
     }
 
     @Test
-    fun `searchEpisodes unions PI hits with supplement matches`() = runTest(testDispatcher) {
+    fun `searchEpisodes matches the server's list on the phone and unions supplement matches`() = runTest(testDispatcher) {
         val podcastId = "900003"
         fakePort.searchByPodcast[podcastId] =
             listOf(
@@ -275,6 +276,8 @@ class PodcastRepositoryEpisodeSupplementTest {
         val results = repository.searchEpisodes(podcastId, "match")
 
         assertEquals(listOf("-9", "44"), results.map { it.id })
+        // Search runs on the phone over `/v2/episodes`; v1 `episodes/search` is never called (P4 PR 16).
+        assertEquals("/v2/episodes?id=900003&limit=1000&offset=0&sort=newest", server.takeRequest().path)
     }
 
     @Test

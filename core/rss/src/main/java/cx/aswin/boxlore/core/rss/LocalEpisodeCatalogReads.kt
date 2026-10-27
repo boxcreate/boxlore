@@ -119,9 +119,13 @@ internal class LocalEpisodeCatalogReads(
         dao.getFeed(podcastId)?.feedUrlLookupAt ?: 0L
     }
 
+    /**
+     * Follow clears the TTL and unfollow sets it; since P4 PR 16 the same write keeps
+     * `local_episode_feeds.followed` in step, which the cleanup of unfollowed copies reads.
+     */
     override suspend fun setUnsubscribedTtl(podcastId: String, ttlExpiresAt: Long?,) = withContext(Dispatchers.IO) {
         if (dao.getFeed(podcastId) == null) return@withContext
-        dao.setTtl(podcastId, ttlExpiresAt)
+        dao.setTtlAndFollowed(podcastId, ttlExpiresAt, followed = ttlExpiresAt == null)
     }
 
     override suspend fun sweepExpired(nowMillis: Long) = withContext(Dispatchers.IO) {

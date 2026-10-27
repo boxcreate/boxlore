@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.catalog
 
+import cx.aswin.boxlore.core.network.model.V2FeedReadTarget
 import cx.aswin.boxlore.core.network.model.V2FeedReportRequest
 import cx.aswin.boxlore.core.network.model.V2FeedReportResponse
 import kotlinx.coroutines.test.runTest
@@ -44,10 +45,10 @@ class FeedReportsTest {
     }
 
     @Test
-    fun `at most fifteen reports a day in all, leaving the show page room under the API's twenty`() = runTest {
+    fun `at most twenty reports a day in all, the API's own limit`() = runTest {
         repeat(25) { reporter.report((it + 1).toString(), "dns", OLD) }
 
-        assertEquals(15, FeedReportLimiter.DAILY_CAP)
+        assertEquals(20, FeedReportLimiter.DAILY_CAP)
         assertEquals(FeedReportLimiter.DAILY_CAP, sent.size)
         now += DAY
         reporter.report("25", "dns", OLD)
@@ -92,6 +93,25 @@ class FeedReportsTest {
         assertNull(reporter.report("3", "http_404", OLD))
         val failing = FeedReporter(send = { error("offline after all") }, limiter = FeedReportLimiter(stamps), isOnline = { true }, enabled = { true }, nowMillis = { now })
         assertNull(failing.report("4", "http_404", OLD))
+    }
+
+    @Test
+    fun `the show page reads an http-only answer through the transport`() = runTest {
+        answer = V2FeedReportResponse(queued = true, fetchUrl = "http://new.example/feed.xml", fetchVia = "proxy", transportUrl = "https://api.example/v2/feed/2")
+        assertEquals(V2FeedReadTarget.ViaApi(2), reporter.reportTarget("2", "http_404", OLD))
+        answer = V2FeedReportResponse(queued = true, fetchUrl = NEW, fetchVia = "direct")
+        assertEquals(V2FeedReadTarget.Direct(NEW), reporter.reportTarget("3", "http_404", OLD))
+    }
+
+    @Test
+    fun `limiters sharing one store count each other's reports`() {
+        val first = FeedReportLimiter(stamps)
+        val second = FeedReportLimiter(stamps)
+        repeat(FeedReportLimiter.DAILY_CAP - 1) { first.record("${100 + it}", now) }
+
+        assertTrue(second.allows("1", now))
+        second.record("1", now)
+        assertFalse(first.allows("2", now))
     }
 
     @Test
