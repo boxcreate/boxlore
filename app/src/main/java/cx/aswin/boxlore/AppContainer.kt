@@ -7,10 +7,12 @@ import cx.aswin.boxlore.core.catalog.DiscoveryRouting
 import cx.aswin.boxlore.core.catalog.EpisodeAliasReads
 import cx.aswin.boxlore.core.catalog.EpisodeSharePreparer
 import cx.aswin.boxlore.core.catalog.EpisodeShareRegistrar
+import cx.aswin.boxlore.core.catalog.FeedAddressDailyCheck
 import cx.aswin.boxlore.core.catalog.FeedAddressUpkeep
 import cx.aswin.boxlore.core.catalog.FeedAddressWiring
 import cx.aswin.boxlore.core.catalog.FeedFixToggles
 import cx.aswin.boxlore.core.catalog.FeedMoveFollower
+import cx.aswin.boxlore.core.catalog.FileUpgradeNotificationMarker
 import cx.aswin.boxlore.core.catalog.FolderRepository
 import cx.aswin.boxlore.core.catalog.InstallReferrerManager
 import cx.aswin.boxlore.core.catalog.LegacyRssRepair
@@ -28,6 +30,8 @@ import cx.aswin.boxlore.core.catalog.SharedAppDependencies
 import cx.aswin.boxlore.core.catalog.SharedPreferencesFeedReportStamps
 import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
+import cx.aswin.boxlore.core.catalog.UpgradeAddressRepair
+import cx.aswin.boxlore.core.catalog.UpgradeRepairPorts
 import cx.aswin.boxlore.core.catalog.ports.SmartDownloadSyncPort
 import cx.aswin.boxlore.core.catalog.privacy.ConsentManager
 import cx.aswin.boxlore.core.catalog.sync.HistorySyncResolver
@@ -430,6 +434,31 @@ class AppContainer(
                 ),
                 isOnline = connectivityStatus::isOnline,
             ),
+        )
+    }
+
+    /**
+     * The one-time repair of saved feed addresses after the update, run by
+     * [cx.aswin.boxlore.sync.UpgradeRepairWorker] behind `upgrade-repair-off`. Step 4's record lives
+     * in `noBackupFilesDir/upgrade_repair_notifications`, so a restored phone registers again.
+     * Added in P4 PR 15 of the own-episode-IDs plan (plan section 11, upgrade repair).
+     * COMPAT(own-ids): someone can upgrade from an old build at any time. Permanent: never remove (MIGRATION.md §5).
+     */
+    override val upgradeAddressRepair: UpgradeAddressRepair by lazy {
+        UpgradeAddressRepair(
+            repairDao = database.upgradeRepairDao(),
+            podcastDao = database.podcastDao(),
+            ports =
+            UpgradeRepairPorts(
+                fetchAddresses = { ids -> FeedAddressDailyCheck.fetchWith(podcastRepository.apiV2, ids) },
+                replaceAddress = subscriptionRepository::updateFeedAddress,
+                reread = UpgradeAddressRepair.rereadWith(subscribedEpisodeCatalog),
+                requestNotificationRegistration = { id -> PodcastNotificationRegistrationWorker.enqueue(appContext, id) },
+                isOnline = connectivityStatus::isOnline,
+                telemetry = feedTelemetry,
+            ),
+            marker = FileUpgradeNotificationMarker(java.io.File(appContext.noBackupFilesDir, FileUpgradeNotificationMarker.FILE_NAME)),
+            enabled = rolloutSwitches.upgradeRepair,
         )
     }
 

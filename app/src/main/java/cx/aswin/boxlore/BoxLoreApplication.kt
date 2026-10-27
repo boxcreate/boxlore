@@ -294,6 +294,24 @@ class BoxLoreApplication :
                 container.smartDownloadManager.reconcileScheduleWithPreferences()
             }
         }
+        applicationScope.launch {
+            startupWorkGate.runWhenReady { scheduleUpgradeRepair() }
+        }
+    }
+
+    /**
+     * Enqueues the one-time repair of saved feed addresses on every launch while it has work left,
+     * headless launches included; it reads stored state, so a restore starts it again.
+     * Added in P4 PR 15 of the own-episode-IDs plan (plan section 11, upgrade repair).
+     * COMPAT(own-ids): someone can upgrade from an old build at any time. Permanent: never remove (MIGRATION.md §5).
+     */
+    private suspend fun scheduleUpgradeRepair() {
+        runCatching {
+            cx.aswin.boxlore.sync.UpgradeRepairWorker.scheduleIfNeeded(this, container.upgradeAddressRepair)
+        }.onFailure { error ->
+            if (error is kotlinx.coroutines.CancellationException) throw error
+            android.util.Log.w("BoxLoreApplication", "Feed address repair scheduling failed", error)
+        }
     }
 
     /**
