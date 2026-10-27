@@ -13,6 +13,8 @@ import cx.aswin.boxlore.core.ranking.FeedbackTarget
 import cx.aswin.boxlore.core.ranking.RankingAction
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
+import cx.aswin.boxlore.core.rss.MemoryRenumberedShows
+import cx.aswin.boxlore.core.rss.RenumberedShows
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -29,6 +31,22 @@ data class FeedAddressWiring(
     val pendingRegistrations: PendingNotificationRegistrations = MemoryPendingNotificationRegistrations(),
 )
 
+/**
+ * Where renumbered shows are recorded and how their listener rows are linked to the show they now
+ * answer as ([RenumberedShowFollows]). The defaults keep the record for one process and link nothing.
+ */
+data class RenumberingWiring(
+    val shows: RenumberedShows = MemoryRenumberedShows(),
+    val linkEpisodes: suspend (oldId: String, newId: String) -> Unit = { _, _ -> },
+) {
+    internal fun follows(
+        podcastDao: PodcastDao,
+        feedAddresses: FeedAddressUpdater,
+        library: RenumberedFollowWrites.Library,
+        unregister: suspend (PodcastEntity) -> Unit,
+    ): RenumberedShowFollows = RenumberedShowFollows(podcastDao, shows, RenumberedFollowWrites(podcastDao, feedAddresses, unregister, library, linkEpisodes))
+}
+
 @Suppress("TooManyFunctions", "LongParameterList", "kotlin:S107") // Constructor injection from AppContainer; no DI framework.
 class SubscriptionRepository(
     private val podcastDao: PodcastDao,
@@ -41,10 +59,14 @@ class SubscriptionRepository(
     private val rssNotificationRegistrations: RssNotificationRegistrationStore = MemoryRssNotificationRegistrations(),
     private val requestRssNotificationSync: () -> Unit = {},
     feedAddressWiring: FeedAddressWiring = FeedAddressWiring(),
+    renumbering: RenumberingWiring = RenumberingWiring(),
 ) : PodcastNotificationSyncPort {
     /** The one writer of saved feed addresses (P4 PR 14). */
     val feedAddresses: FeedAddressUpdater =
         feedAddressWiring.run { FeedAddressUpdater(podcastDao, requestNotificationRegistration, telemetry, pendingRegistrations) }
+
+    /** One follow for a show Podcast Index renumbered (docs/EPISODE_IDS.md §5, renumbered shows). */
+    val renumberedFollows: RenumberedShowFollows = renumbering.follows(podcastDao, feedAddresses, RenumberedFollowWrites.Library(folderRepository, userPreferencesRepository, autoDownloadDao, localEpisodeCatalog)) { updateFirebaseSubscription(it.podcastId, it.title, it.imageUrl, false) }
 
     private val notificationRegistrar by lazy { PodcastNotificationRegistrar(podcastDao) }
 
@@ -65,6 +87,8 @@ class SubscriptionRepository(
 
     @Suppress("kotlin:S6619")
     suspend fun toggleSubscription(podcast: Podcast) {
+        // A follow of a show renumbered into this one is this show's: it moves first, or the toggle ends it, never adding a second follow.
+        if (renumberedFollows.endedFormerFollows(podcast) { unsubscribeInternal(it.toPodcast(), it, it) }) return
         val existing = podcastDao.getPodcast(podcast.id)
         val linkedRss =
             if (!podcast.isRss) {

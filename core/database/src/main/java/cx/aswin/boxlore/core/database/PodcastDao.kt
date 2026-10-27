@@ -90,6 +90,20 @@ interface PodcastDao {
     @Query("SELECT * FROM podcasts WHERE podcastId = :id")
     suspend fun getPodcast(id: String): PodcastEntity?
 
+    /**
+     * Moves a follow from a show Podcast Index renumbered to the show it now answers as, in one
+     * transaction: [kept] (the new show's row, followed) and [retired] (the old show's row,
+     * unfollowed) are written through [upsert], so each keeps its stored namespace. Both rows are
+     * written dirty by the caller, so the next sync push carries the follow and the unfollow.
+     *
+     * Added for renumbered shows (`RenumberedShowFollows` in `:core:catalog`).
+     */
+    @Transaction
+    suspend fun moveRenumberedFollow(kept: PodcastEntity, retired: PodcastEntity) {
+        upsert(kept)
+        upsert(retired)
+    }
+
     @Query("SELECT * FROM podcasts WHERE podcastId IN (:ids)")
     suspend fun getPodcastsByIds(ids: List<String>): List<PodcastEntity>
 

@@ -105,6 +105,7 @@ class PodcastInfoAdaptiveTransitionTest {
     }
     private val firstPage = episodes.take(20)
     private val uiState = MutableStateFlow<PodcastInfoUiState>(PodcastInfoUiState.Success(podcast, firstPage, isSubscribed = true))
+    private val pageShow = MutableStateFlow(cx.aswin.boxlore.feature.info.logic.PodcastInfoPageShow())
     private val hideCompleted = MutableStateFlow(false)
     private val completed = MutableStateFlow(emptySet<String>())
     private val model = mock(PodcastInfoViewModel::class.java)
@@ -165,6 +166,26 @@ class PodcastInfoAdaptiveTransitionTest {
         // One load for the first composition and one for the recreated page; window changes never
         // reload. The ViewModel skips the second call for the same route (PodcastInfoLoadGuardTest).
         verify(model, times(2)).loadPodcast("1")
+    }
+
+    @Test
+    fun `a renumbered show's page stays followed under its old route across window changes and recreation`() {
+        // Route "1" (the old number) shows the show Podcast Index renumbered it to, which the follow moved to.
+        pageShow.value = cx.aswin.boxlore.feature.info.logic.PodcastInfoPageShow(routePodcastId = "1", shownPodcastId = RENUMBERED_ID)
+        uiState.value = PodcastInfoUiState.Success(podcast.copy(id = RENUMBERED_ID), firstPage, isSubscribed = true)
+        render()
+        fixture.compose.onNodeWithContentDescription("Unsubscribe").assertExists()
+
+        // Subscribe is never offered in any layout, whether or not the layout shows the follow button.
+        acrossWindowChanges {
+            fixture.compose.onNodeWithContentDescription("Subscribe").assertDoesNotExist()
+            assertEquals(RENUMBERED_ID, (uiState.value as PodcastInfoUiState.Success).podcast.id)
+        }
+        recreate(FOLD_TABLETOP)
+        fixture.compose.onNodeWithContentDescription("Subscribe").assertDoesNotExist()
+        recreate(COMPACT)
+        fixture.compose.onNodeWithContentDescription("Unsubscribe").assertExists()
+        fixture.compose.onNodeWithContentDescription("Subscribe").assertDoesNotExist()
     }
 
     @Test
@@ -820,6 +841,7 @@ class PodcastInfoAdaptiveTransitionTest {
         `when`(model.episodePendingDownloadRemoval).thenReturn(MutableStateFlow(null))
         `when`(model.hideCompletedInShowDetails).thenReturn(hideCompleted)
         `when`(model.isPinnedToHome).thenReturn(MutableStateFlow(false))
+        `when`(model.pageShow).thenReturn(pageShow)
         `when`(model.globalSkipBeginningMs).thenReturn(MutableStateFlow(0L))
         `when`(model.globalSkipEndingMs).thenReturn(MutableStateFlow(0L))
         `when`(model.autoDownloadBackgroundChecksEnabled).thenReturn(MutableStateFlow(true))
@@ -863,6 +885,7 @@ class PodcastInfoAdaptiveTransitionTest {
     private enum class Exit { CONFIRM, CANCEL, BACK, OUTSIDE }
 
     private companion object {
+        const val RENUMBERED_ID = "7976624"
         const val LIST_TAG = "podcast_info_episode_list"
         const val LOADING_TAG = "podcast_info_loading"
         const val REFRESH_TAG = "podcast_info_refresh_indicator"

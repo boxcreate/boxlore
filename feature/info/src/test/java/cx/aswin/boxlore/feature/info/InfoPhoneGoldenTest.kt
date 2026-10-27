@@ -45,6 +45,7 @@ class InfoPhoneGoldenTest(configuration: PhoneGoldenConfiguration) {
         `when`(model.episodePendingDownloadRemoval).thenReturn(MutableStateFlow(null))
         `when`(model.hideCompletedInShowDetails).thenReturn(MutableStateFlow(false))
         `when`(model.isPinnedToHome).thenReturn(MutableStateFlow(false))
+        `when`(model.pageShow).thenReturn(MutableStateFlow(cx.aswin.boxlore.feature.info.logic.PodcastInfoPageShow()))
         `when`(model.globalSkipBeginningMs).thenReturn(MutableStateFlow(0L))
         `when`(model.globalSkipEndingMs).thenReturn(MutableStateFlow(0L))
         `when`(model.autoDownloadBackgroundChecksEnabled).thenReturn(MutableStateFlow(false))

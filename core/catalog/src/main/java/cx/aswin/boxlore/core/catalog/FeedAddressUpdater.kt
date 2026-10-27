@@ -184,6 +184,17 @@ class FeedAddressUpdater(
         pendingRegistrations.all().filterNot { it.startsWith("rss:") }.forEach(::requestRegistration)
     }
 
+    /**
+     * Records a pending registration for [podcastId], whose notifications are about to be turned on
+     * by another writer (a follow moved from a show Podcast Index renumbered), before that writer
+     * saves the row; false when it couldn't be saved, so the caller writes nothing. Ask for it with
+     * [requestPendingRegistration] once the row is saved.
+     */
+    fun markRegistrationPending(podcastId: String): Boolean = !podcastId.startsWith("rss:") && pendingRegistrations.add(podcastId)
+
+    /** Asks for [podcastId]'s registration recorded by [markRegistrationPending]. */
+    fun requestPendingRegistration(podcastId: String) = requestRegistration(podcastId)
+
     /** [podcastId]'s pending registration, read by the background job before it registers; null when none is pending. */
     fun pendingMark(podcastId: String): Long? = pendingRegistrations.mark(podcastId)
 

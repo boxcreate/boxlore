@@ -330,6 +330,8 @@ class SubscriptionForegroundSync(
             return {
             SubscriptionForegroundSyncIngest.sweepExpiredLocalCatalogs(localEpisodeCatalog)
             runDailyAddressCheck(addressJobs.dailyCheck, subscriptionRepository)
+            // One follow per renumbered show before feeds are read (RenumberedShowFollows.collapseFollowsQuietly).
+            subscriptionRepository.renumberedFollows.collapseFollowsQuietly(podcastRepository::getPodcastDetails)
             val ids = subscriptionRepository.subscribedPodcastIds.first()
             val recoveryNow = System.currentTimeMillis()
             recoverMissingFeedUrls(

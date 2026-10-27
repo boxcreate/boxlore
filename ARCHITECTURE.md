@@ -32,6 +32,7 @@ These values are part of the shipping product. Renames or recreations break upgr
 | Feed address repair after the update | Unique work name `feed-address-upgrade-repair` (`UpgradeRepairWorker`); step 4 and sync catch-up record `noBackupFilesDir/upgrade_repair_notifications`; per-show progress in Room `upgrade_repair_shows`; never renamed |
 | BuildConfig | Prefer `BOXLORE_*`; Gradle still dual-reads `BOXCAST_*` fallbacks |
 | Episode / media IDs | `rss:` prefixes, negative RSS IDs, mediaId prefixes, and `customCacheKey` schemes stay as implemented. PI **episode supplements** also use negative episode IDs (generated under an `rss:` feed namespace) but keep `Episode.podcastId` as the Podcast Index show id — they are not `rss:` library rows. Episode identity (show ID, catalog key), recipe IDs, collisions and aliases follow [`docs/EPISODE_IDS.md`](docs/EPISODE_IDS.md) |
+| Renumbered shows | A Podcast Index show ID whose details answer as another show ID is recorded in `boxlore_renumbered_shows`; its follow moves to the new show ID, and no stored episode ID, show namespace or listener row changes ([renumbered shows](docs/EPISODE_IDS.md#renumbered-shows)). `rss:` shows are never renumbered |
 | Playback instance | One UI-scoped `PlaybackRepository`; routes and workers must not construct a second one |
 | Object graph order | DB → `PodcastRepository` → `QueueRepository` → `PlaybackRepository` → `QueueManager` → `SmartDownloadManager` |
 | Smart Queue refill | Owned by `BoxLorePlaybackService` only |
@@ -255,6 +256,7 @@ Historical FQCNs and preference file names remain reachable so upgrades from old
 | — | `boxlore_discovery_last_good` | `PodcastRepository` (`:core:catalog` `RecommendationsLastGood`; last good `/v2` picks per surface and country; do not rename) |
 | — | `boxlore_feed_reports` | `AppContainer` (`:core:catalog` `SharedPreferencesFeedReportStamps`; last broken-feed report time per show; do not rename) |
 | — | `boxlore_notification_reregistrations` | `AppContainer` (`:core:catalog` `SharedPreferencesPendingNotificationRegistrations`; shows whose notifications wait to be registered again after an address change; do not rename) |
+| — | `boxlore_renumbered_shows` | `AppContainer` (`:core:rss` `SharedPreferencesRenumberedShows`; Podcast Index show IDs that now answer as another show ID, old ID → new ID; follows move to the new show and its catalog reads link the old show's listener rows, see [renumbered shows](docs/EPISODE_IDS.md#renumbered-shows); do not rename) |
 | `boxcast_api_config` | `boxlore_api_config` | `BoxLoreAppRoot` |
 | `boxcast_referrer_prefs` | `boxlore_referrer_prefs` | `InstallReferrerManager` |
 

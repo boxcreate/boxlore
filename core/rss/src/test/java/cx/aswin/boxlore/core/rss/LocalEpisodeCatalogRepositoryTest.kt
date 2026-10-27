@@ -752,6 +752,8 @@ class LocalEpisodeCatalogRepositoryTest {
             LocalEpisodeIdentity(it.episodeId, it.guid, it.audioUrl)
         }
 
+        override suspend fun listForShow(podcastId: String): List<LocalEpisodeEntity> = episodes.filter { it.podcastId == podcastId }
+
         override suspend fun findOwners(episodeIds: List<String>): List<LocalEpisodeOwner> = episodes
             .filter { it.episodeId in episodeIds }
             .map { LocalEpisodeOwner(it.episodeId, it.podcastId, it.guid) }

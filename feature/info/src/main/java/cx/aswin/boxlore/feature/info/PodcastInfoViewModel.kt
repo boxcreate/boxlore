@@ -23,12 +23,15 @@ import cx.aswin.boxlore.core.playback.withEpisodeAliases
 import cx.aswin.boxlore.core.prefs.HomePinnedShows
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoAsyncResultLogic
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoFolderSyncLogic
+import cx.aswin.boxlore.feature.info.logic.PodcastInfoPageShow
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPullRefreshLogic
+import cx.aswin.boxlore.feature.info.logic.RenumberedShowPageLogic
 import cx.aswin.boxlore.feature.info.logic.ShowFeedLogic
 import cx.aswin.boxlore.feature.info.logic.enablePodcastNotifications
 import cx.aswin.boxlore.feature.info.logic.podcastSearchResponseIsCurrent
 import cx.aswin.boxlore.feature.info.logic.togglePodcastAutoDownload
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -116,6 +119,15 @@ class PodcastInfoViewModel(
     /** Id passed to the latest [loadPodcast] call, for [retryLoad]. */
     private var requestedPodcastId: String? = null
     private val _currentPodcastIdFlow = MutableStateFlow("")
+
+    private val _pageShow = MutableStateFlow(PodcastInfoPageShow())
+
+    /**
+     * The route this page was opened for and the show it resolved to (a followed `rss:` feed linked
+     * to it, or the show Podcast Index renumbered it to), so the screen themes the page with that
+     * show's artwork and never with a previous page's ([RenumberedShowPageLogic.artworkPodcast]).
+     */
+    val pageShow: StateFlow<PodcastInfoPageShow> = _pageShow.asStateFlow()
     private var currentOffset: Int = 0
     private var searchJob: Job? = null
 
@@ -612,16 +624,36 @@ class PodcastInfoViewModel(
         requestedPodcastId = podcastId
         currentPodcastId = podcastId
         _currentPodcastIdFlow.value = podcastId
+        _pageShow.value = PodcastInfoPageShow(routePodcastId = podcastId, shownPodcastId = podcastId)
         currentOffset = 0
         viewModelScope.launch {
-            val linkedRss = localCatalog.getSubscribedRssLinkedTo(podcastId)
-            val effectivePodcastId = linkedRss?.id ?: podcastId
-            if (effectivePodcastId != podcastId) {
+            // A show Podcast Index renumbered opens as the show it now answers as, where its follow moved.
+            val renumberedTo = subscriptionRepository.renumberedFollows.currentId(podcastId)
+            if (renumberedTo != null) subscriptionRepository.renumberedFollows.adoptKnown(podcastId)
+            loadShow(podcastId, renumberedTo ?: podcastId, followsRenumbering = true)
+        }
+    }
+
+    /**
+     * Loads the page of [routePodcastId] as [showId]: the route's show, or the show Podcast Index
+     * renumbered it to. When the show's details answer as another numeric show ID, the follow moves
+     * there ([cx.aswin.boxlore.core.catalog.RenumberedShowFollows.adoptAnswer]) and the page
+     * loads again as that show, once ([followsRenumbering]).
+     */
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth", "ReturnCount")
+    private suspend fun CoroutineScope.loadShow(routePodcastId: String, showId: String, followsRenumbering: Boolean) {
+        run {
+            val linkedRss =
+                localCatalog.getSubscribedRssLinkedTo(showId)
+                    ?: if (showId != routePodcastId) localCatalog.getSubscribedRssLinkedTo(routePodcastId) else null
+            val effectivePodcastId = linkedRss?.id ?: showId
+            if (effectivePodcastId != currentPodcastId) {
                 currentPodcastId = effectivePodcastId
                 _currentPodcastIdFlow.value = effectivePodcastId
             }
+            setShownPodcastId(routePodcastId, effectivePodcastId)
             val localPodcast = linkedRss ?: localCatalog.getLocalPodcast(effectivePodcastId)
-            val isSubscribed = subscriptionRepository.isSubscribed(effectivePodcastId)
+            val isSubscribed = isPageFollowed(routePodcastId, effectivePodcastId)
             var currentPodcast = localPodcast
 
             if (currentPodcast != null) {
@@ -688,6 +720,16 @@ class PodcastInfoViewModel(
                 val (apiPodcast, page) =
                     fetchPodcastAndEpisodes(effectivePodcastId, limit, sortParam)
 
+                if (apiPodcast != null &&
+                    followsRenumbering &&
+                    RenumberedShowPageLogic.isRenumbered(effectivePodcastId, apiPodcast.id)
+                ) {
+                    // Podcast Index renumbered the show: one follow, under the show it now answers as
+                    // (the repository moved it as the answer arrived; this makes sure before the page reads it).
+                    subscriptionRepository.renumberedFollows.adoptAnswer(effectivePodcastId, apiPodcast)
+                    if (requestedPodcastId == routePodcastId) loadShow(routePodcastId, apiPodcast.id, followsRenumbering = false)
+                    return
+                }
                 if (apiPodcast != null) {
                     val apiPodcastWithFallback =
                         cx.aswin.boxlore.feature.info.logic.PodcastInfoEnrichLogic.enrichPodcastWithFallback(
@@ -700,10 +742,10 @@ class PodcastInfoViewModel(
                     currentPodcast = apiPodcastWithFallback
                     currentPodcastId = apiPodcastWithFallback.id
                     _currentPodcastIdFlow.value = apiPodcastWithFallback.id
+                    setShownPodcastId(routePodcastId, apiPodcastWithFallback.id)
 
                     trackScreenViewed(apiPodcastWithFallback.id, apiPodcastWithFallback.title)
-                    val latestIsSubscribed =
-                        subscriptionRepository.isSubscribed(apiPodcastWithFallback.id)
+                    val latestIsSubscribed = isPageFollowed(routePodcastId, apiPodcastWithFallback.id)
 
                     if (wasSubscribedAtStart == null) {
                         wasSubscribedAtStart = isSubscribed
@@ -851,6 +893,18 @@ class PodcastInfoViewModel(
             }
         }
     }
+
+    /** Records the show [routePodcastId]'s page resolved to, while that route is still the one requested. */
+    private fun setShownPodcastId(routePodcastId: String, shownPodcastId: String) {
+        if (requestedPodcastId == routePodcastId) _pageShow.value = PodcastInfoPageShow(routePodcastId, shownPodcastId)
+    }
+
+    /** The page's follow: the show it shows, or the route's show that show replaced ([RenumberedShowPageLogic.isFollowed]). */
+    private suspend fun isPageFollowed(routePodcastId: String, shownPodcastId: String): Boolean =
+        RenumberedShowPageLogic.isFollowed(
+            shownFollowed = subscriptionRepository.isSubscribed(shownPodcastId),
+            routeFollowed = routePodcastId != shownPodcastId && subscriptionRepository.isSubscribed(routePodcastId),
+        )
 
     private suspend fun fetchPodcastAndEpisodes(
         podcastId: String,
@@ -1464,7 +1518,7 @@ class PodcastInfoViewModel(
                 didSubscribe = true
             }
             subscriptionRepository.toggleSubscription(currentState.podcast)
-            val isSubscribed = subscriptionRepository.isSubscribed(currentState.podcast.id)
+            val isSubscribed = isPageFollowed(requestedPodcastId ?: currentState.podcast.id, currentState.podcast.id)
             applyToggledSubscriptionUi(currentState, isSubscribed)
             if (isSubscribed && !wasSubscribed) {
                 launch { refreshTipAfterSubscribe() }
