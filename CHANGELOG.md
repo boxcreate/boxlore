@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Episode share links carry the recipe ID plus `&show=` and register the episode first (`EpisodeSharePreparer`); `EpisodeShareRegistrationWorker` (unique work `episode-share-registration-<hash>`) retries in the background. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Episode page "Finding this episode" and "Episode not found" states. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `EpisodeListenerStore` keeps one listener state per episode across its stored IDs: progress lives on one owner ID, likes and played state are absolute writes across aliases and `episode_group_state`, and reads are projected, so lists count each episode once. ([#1178](https://github.com/boxcreate/boxlore/pull/1178)) <!-- impact:user-impact-low --> <!-- copy:locked -->
+- `FeedAddressDailyCheck` checks followed shows' feed addresses once a day through `/v2/shows/feeds`. `FeedReporter` reports unreadable feeds through `/v2/feed-report`. An address is swapped only for a confirmed move and only after the new address reads. ([#1182](https://github.com/boxcreate/boxlore/pull/1182)) <!-- impact:user-impact-low --> <!-- copy:locked -->
+- `PodcastNotificationRegistrationWorker` re-registers a show's notifications after its address changes and retries until Firebase acknowledges. ([#1182](https://github.com/boxcreate/boxlore/pull/1182)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `EpisodeRecipeId` in `:core:rss` and `scripts/sync/lib/episode-recipe-id.js` compute boxlore episode IDs from (show ID, catalog key), checked against a shared fixture. ([#1139](https://github.com/boxcreate/boxlore/pull/1139)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync logs why each vector point is stored or deleted; `scripts/sync/attribution-report.js` summarizes the log. ([#1139](https://github.com/boxcreate/boxlore/pull/1139)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - `turso.text()` in the sync's Turso client binds catalog keys as text. ([#1141](https://github.com/boxcreate/boxlore/pull/1141)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
@@ -46,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Download state, starting and removing a download, and queue indicators work across an episode's IDs. Queue removals cover every ID of an episode except the playing one and record the episode's identity. ([#1178](https://github.com/boxcreate/boxlore/pull/1178)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - The orphan rematch after a feed read no longer moves trusted or ambiguous episode IDs. ([#1178](https://github.com/boxcreate/boxlore/pull/1178)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - Discovery (recommendations, Home bootstrap, trending, semantic search, curated vibes, curiosity, because-you-like, similar episodes, briefing metadata and chapters) uses the `/v2` routes. Recipe IDs in answers are translated to the phone's stored IDs (`DiscoveryEpisodeIds`, `RoomDiscoveryEpisodeIds`). Seeds and exclusions are sent as alias recipe IDs. Show search and typeahead stay on v1 `/search`. The `v2-discovery-off` switch restores the v1 routes. ([#1180](https://github.com/boxcreate/boxlore/pull/1180)) <!-- impact:user-impact-low --> <!-- copy:locked -->
+- `FeedAddressUpdater` is now the only writer of a show's saved feed address. Every path, including restore, cloud pulls, auto-download and feed moves, resets feed validators, keeps the previous address and re-registers notifications. ([#1182](https://github.com/boxcreate/boxlore/pull/1182)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `StickyEpisodeIdentity.catalogKey` trims with an explicit character set equal to Kotlin's `trim()` on Android, so catalog keys no longer depend on the runtime's Unicode tables. ([#1139](https://github.com/boxcreate/boxlore/pull/1139)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - New chart shows get their newest 5 episodes embedded first and the rest of their window after 7 days on the charts (`NEW_ENTRANT_EPISODES`, `NEW_ENTRANT_DEPTH_DAYS`). ([#1141](https://github.com/boxcreate/boxlore/pull/1141)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync records new episodes in the episode book, names their vectors by served ID, and no longer re-embeds an episode when Podcast Index changes its ID. ([#1147](https://github.com/boxcreate/boxlore/pull/1147)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
@@ -145,6 +148,11 @@ readme-copy:end pr=1180 -->
 - Shared episode links open the right episode, even ones only in a show's own feed, and keep your plays, progress and downloads on the episode you already have.
 - Episodes you share now open for friends on any version of boxlore.
 readme-copy:end pr=1181 -->
+
+<!-- readme-copy:start pr=1182
+### Fixes
+- Shows whose feed moved to a new address keep getting new episodes and notifications.
+readme-copy:end pr=1182 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added
