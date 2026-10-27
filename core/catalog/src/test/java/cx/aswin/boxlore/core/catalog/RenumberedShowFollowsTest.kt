@@ -124,6 +124,20 @@ class RenumberedShowFollowsTest {
     }
 
     @Test
+    fun aMergeTheServerConfirmedMovesTheFollowWithoutAnyDetailsLookup() = runTest {
+        podcastDao.upsert(row(OLD, notifications = true, subscribedAt = FOLLOWED_AT, epNs = null))
+
+        assertTrue(repository.renumberedFollows.adoptKnown(OLD, confirmedNewId = NEW))
+
+        assertTrue(podcastDao.getPodcast(NEW)!!.isSubscribed)
+        assertFalse(podcastDao.getPodcast(OLD)!!.isSubscribed)
+        assertEquals(NEW, repository.renumberedFollows.currentId(OLD))
+        assertFalse("the same merge again moves nothing", repository.renumberedFollows.adoptKnown(OLD, confirmedNewId = NEW))
+        assertFalse("not a renumbering", repository.renumberedFollows.adoptKnown(NEW, confirmedNewId = NEW))
+        assertFalse("rss: shows are never merged", repository.renumberedFollows.adoptKnown("rss:abc", confirmedNewId = NEW))
+    }
+
+    @Test
     fun aMoveIsIdempotentAndAPullOfTheOldFollowDoesNotUndoIt() = runTest {
         podcastDao.upsert(row(OLD, notifications = true, subscribedAt = FOLLOWED_AT, epNs = null))
         podcastDao.upsert(row(NEW, notifications = false, subscribedAt = FOLLOWED_AT, epNs = NEW.toLong()))

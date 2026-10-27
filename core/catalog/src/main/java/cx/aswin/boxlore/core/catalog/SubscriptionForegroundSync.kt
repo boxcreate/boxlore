@@ -302,6 +302,7 @@ class SubscriptionForegroundSync(
                     replaceAddress = subscriptionRepository::updateFeedAddress,
                     markChecked = subscriptionRepository::markFeedAddressChecked,
                     enabled = enabled,
+                    onMerged = { oldId, newId -> subscriptionRepository.renumberedFollows.adoptKnown(oldId, confirmedNewId = newId) },
                 ),
                 reporter =
                 FeedReporter(

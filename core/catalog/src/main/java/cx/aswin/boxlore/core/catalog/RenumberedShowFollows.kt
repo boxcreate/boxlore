@@ -155,8 +155,16 @@ class RenumberedShowFollows internal constructor(
         return moveFollow(oldId, answer.id, answer)
     }
 
-    /** Moves a follow of [oldId] to the show it was recorded as renumbered to, if any. */
-    suspend fun adoptKnown(oldId: String): Boolean {
+    /**
+     * Moves a follow of [oldId] to the show it was recorded as renumbered to, if any. With
+     * [confirmedNewId] (a merge the server confirmed with Podcast Index, from the daily address
+     * check) that renumbering is recorded first. Returns true when a follow moved.
+     */
+    suspend fun adoptKnown(oldId: String, confirmedNewId: String? = null): Boolean {
+        if (confirmedNewId != null) {
+            if (!RenumberedShowIds.isRenumbering(oldId, confirmedNewId)) return false
+            if (!shows.record(oldId, confirmedNewId)) Log.w(TAG, "Renumbering $oldId → $confirmedNewId not saved")
+        }
         val newId = shows.currentId(oldId) ?: return false
         return moveFollow(oldId, newId, answer = null)
     }

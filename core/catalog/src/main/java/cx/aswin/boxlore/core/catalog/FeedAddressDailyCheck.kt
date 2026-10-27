@@ -41,6 +41,11 @@ class FeedAddressDailyCheck(
     private val markChecked: suspend (podcastId: String, atMillis: Long) -> Unit,
     private val enabled: () -> Boolean,
     private val nowMillis: () -> Long = System::currentTimeMillis,
+    /**
+     * A show the server says Podcast Index merged into another ([V2ShowAddress.mergedInto]): the
+     * follow moves there (`RenumberedShowFollows.adoptKnown`). Its own address isn't swapped.
+     */
+    private val onMerged: suspend (oldId: String, newId: String) -> Unit = { _, _ -> },
 ) {
     /** What one [run] did. */
     data class Outcome(val checked: Int, val swapped: Int, val unchecked: Int) {
@@ -87,6 +92,11 @@ class FeedAddressDailyCheck(
 
     /** Swaps or stamps one show the registry answered for; true when its address was swapped. */
     private suspend fun applyOne(row: PodcastEntity, result: V2ShowAddress, now: Long): Boolean {
+        result.validMergedInto?.let { newId ->
+            merged(row.podcastId, newId.toString())
+            markChecked(row.podcastId, now)
+            return false
+        }
         noteNamespace(row, result)
         val target = confirmedMove(row, result)
         val update = if (target != null && readable(row.podcastId, target)) replaceAddress(change(row, result, target, now)) else null
@@ -95,6 +105,16 @@ class FeedAddressDailyCheck(
         // next pass; anything else is stamped here, after the swap had its chance.
         if (!swapped && update != FeedAddressUpdate.NOT_SAVED) markChecked(row.podcastId, now)
         return swapped
+    }
+
+    private suspend fun merged(oldId: String, newId: String) {
+        try {
+            onMerged(oldId, newId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "Moving the follow of merged show $oldId to $newId failed", e)
+        }
     }
 
     private fun change(row: PodcastEntity, result: V2ShowAddress, target: String, now: Long) = FeedAddressChange(
