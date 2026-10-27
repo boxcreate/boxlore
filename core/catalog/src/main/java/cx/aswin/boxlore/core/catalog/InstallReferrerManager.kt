@@ -80,7 +80,13 @@ class InstallReferrerManager(private val context: Context,) {
                                 Log.d(TAG, "Retrieved referrer: $referrerUrl")
 
                                 if (!referrerUrl.isNullOrEmpty()) {
-                                    handleReferrer(referrerUrl)
+                                    // Clear data resets the processed mark but Play keeps the referrer:
+                                    // only a fresh install opens the shared page.
+                                    if (isFreshInstall(response.installBeginTimestampSeconds, System.currentTimeMillis())) {
+                                        handleReferrer(referrerUrl)
+                                    } else {
+                                        Log.d(TAG, "Install referrer is from an older install; not opening it again.")
+                                    }
                                     notifyAttribution(referrerUrl)
                                 } else {
                                     notifyAttribution(null)
@@ -133,6 +139,19 @@ class InstallReferrerManager(private val context: Context,) {
     internal fun emitAttributionForTest(referrerUrl: String?) = notifyAttribution(referrerUrl)
 
     companion object {
+        /** How long after Play began the install its shared link still opens on first launch. */
+        const val FRESH_INSTALL_WINDOW_MS = 24L * 60L * 60L * 1000L
+
+        /**
+         * Whether the install Play began at [installBeginSeconds] (0 when Play doesn't say) is the
+         * one this first launch belongs to. After Clear data the app starts as if new, but Play still
+         * returns the original install's referrer, so a later launch would open that page again.
+         */
+        fun isFreshInstall(installBeginSeconds: Long, nowMillis: Long): Boolean {
+            if (installBeginSeconds <= 0L) return true
+            return nowMillis - installBeginSeconds * 1000L <= FRESH_INSTALL_WINDOW_MS
+        }
+
         fun deriveInstallChannel(referrerUrl: String?): String {
             if (referrerUrl.isNullOrBlank()) return "unknown"
             val decoded =

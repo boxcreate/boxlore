@@ -6,7 +6,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -156,5 +158,17 @@ class InstallReferrerManagerTest {
         mgr.emitAttributionForTest("utm_source=google-play")
         assertEquals("organic", seenChannel)
         assertEquals("utm_source=google-play", seenRaw)
+    }
+
+    @Test
+    fun onlyAFreshInstallOpensItsSharedPage() {
+        val now = 10L * 24 * 60 * 60 * 1000
+        val begunSeconds = now / 1000 - 60
+        assertTrue(InstallReferrerManager.isFreshInstall(begunSeconds, now))
+        assertTrue("Play didn't say when the install began", InstallReferrerManager.isFreshInstall(0L, now))
+        assertFalse(
+            "Clear data days later never replays the install's link",
+            InstallReferrerManager.isFreshInstall(begunSeconds - 2 * 24 * 60 * 60, now),
+        )
     }
 }
