@@ -6,6 +6,8 @@ import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort
 import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort.ReadOutcome
 import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort.ReadRequest
 import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort.Scope
+import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort.Transported
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.FeedFetchCompleteness
 import cx.aswin.boxlore.core.model.FeedFetchOutcome
 import cx.aswin.boxlore.core.model.FeedFetchReport
@@ -16,6 +18,10 @@ import cx.aswin.boxlore.core.network.model.V2PodcastResponse
 import cx.aswin.boxlore.core.rss.ShowPageFeedRules
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /** Where a show page's episodes come from. */
 enum class ShowPageSource {
@@ -59,8 +65,11 @@ enum class ShowPageFeedResult {
     FALLBACK,
 }
 
-/** [result] of a read, and whether the stored copy now holds the whole archive. */
-data class ShowPageFeedRead(val result: ShowPageFeedResult, val archiveComplete: Boolean)
+/**
+ * [result] of a read, whether the stored copy now holds the whole archive, and whether the phone
+ * has a copy at all ([hasCopy]): an offline page without one has nothing saved to show.
+ */
+data class ShowPageFeedRead(val result: ShowPageFeedResult, val archiveComplete: Boolean, val hasCopy: Boolean = false,)
 
 /**
  * The feed-first show page of a Podcast Index show: it reads the show's own feed into the phone's
@@ -69,15 +78,17 @@ data class ShowPageFeedRead(val result: ShowPageFeedResult, val archiveComplete:
  * The failure ladder of one read ([read]):
  * 1. Offline: nothing is read and nothing is reported; the stored copy is shown as it is.
  * 2. The address comes from `/v2/podcast` (the registry), else the saved one. An http-only address
- *    is read through boxlore's transport (`/v2/feed/<id>`).
+ *    is read through boxlore's transport (`/v2/feed/<id>`), with the copy's ETag.
  * 3. A failed read is tried once more, except after a 404 or 410.
- * 4. Then the failure is reported (`/v2/feed-report`, rate-limited, never offline); when the answer
- *    names a different HTTPS address, that one is read.
- * 5. Then the page uses `/v2/episodes` with a notice ([ShowPageFeedResult.FALLBACK]) until a later
- *    read of the feed works.
+ * 4. Then the failure is reported (`/v2/feed-report`, rate-limited, never offline, and not for a
+ *    followed show, whose own refresh reports and saves addresses); when the answer names a
+ *    different address, that one is read, through the transport when it is http-only.
+ * 5. Then the page uses `/v2/episodes` with a notice ([ShowPageFeedResult.FALLBACK]) until the page
+ *    is opened again ([open]).
  *
- * Each read sends one `feed_fetch_result` (decision D11). Once a day it also removes the stored
- * copies of unfollowed shows not opened for 30 days, under a size cap (decision D10).
+ * Each read sends one `feed_fetch_result` (decision D11). Once a day, away from the page's first
+ * paint ([background]), it also removes the stored copies of unfollowed shows not opened for 30
+ * days, under a size cap (decision D10).
  *
  * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, feed-first show page).
  * COMPAT(own-ids): show pages read the show's own feed. Permanent: never remove (MIGRATION.md §5).
@@ -86,11 +97,13 @@ data class ShowPageFeedRead(val result: ShowPageFeedResult, val archiveComplete:
 class FeedFirstShowPages(
     private val copies: ShowPageFeedPort?,
     private val registry: suspend (Long) -> V2PodcastResponse?,
-    private val transport: suspend (Long) -> ShowPageFeedPort.Document?,
+    private val transport: suspend (showId: Long, ifNoneMatch: String?) -> Transported,
     private val reporter: FeedReporter?,
     private val isOnline: () -> Boolean,
     private val telemetry: FeedTelemetryPort = FeedTelemetryPort.NONE,
     private val nowMillis: () -> Long = System::currentTimeMillis,
+    private val background: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    private val isFollowed: suspend (String) -> Boolean = { false },
 ) {
     private val fallbackShows = ConcurrentHashMap.newKeySet<String>()
     private val metas = ConcurrentHashMap<String, PodcastMeta>()
@@ -101,14 +114,25 @@ class FeedFirstShowPages(
     /** True while [podcastId]'s page uses the server's list because its feed couldn't be read. */
     fun isInFallback(podcastId: String): Boolean = podcastId in fallbackShows
 
+    /** Whether the phone is online now, as the ladder sees it. */
+    fun online(): Boolean = isOnline()
+
     /** The show details last given to [open] or [read], for episodes listed from the stored copy. */
     fun metaFor(podcastId: String): PodcastMeta? = metas[podcastId]
 
     suspend fun cached(podcastId: String): ShowPageFeedPort.CachedShow? = safely(null) { copies?.cached(podcastId) }
 
+    /** Bounded in-show search over [podcastId]'s stored copy; null when the phone has none. */
+    suspend fun search(podcastId: String, query: String, meta: PodcastMeta, limit: Int): List<Episode>? {
+        val port = copies ?: return null
+        cached(podcastId) ?: return null
+        return safely(null) { port.search(podcastId, query, limit, meta) }
+    }
+
     /**
-     * What the page holds as it opens; notes the opening and runs the daily cleanup. A page that
-     * opens tries the feed again, even after an earlier page fell back to the server's list.
+     * What the page holds as it opens; notes the opening and starts the daily cleanup in the
+     * background. A page that opens tries the feed again, even after an earlier page fell back to
+     * the server's list.
      */
     suspend fun open(podcastId: String, meta: PodcastMeta): ShowPageFeedState {
         remember(podcastId, meta)
@@ -116,7 +140,7 @@ class FeedFirstShowPages(
         val cached = cached(podcastId)
         val now = nowMillis()
         if (cached != null) safely(Unit) { copies?.markOpened(podcastId, now) }
-        cleanUpDaily(now, podcastId)
+        scheduleCleanUp(now, podcastId)
         return ShowPageFeedState(
             cached = cached != null,
             archiveComplete = cached?.archiveComplete == true,
@@ -132,12 +156,15 @@ class FeedFirstShowPages(
         if (copies == null || showId == null) return finish(podcastId, ShowPageFeedResult.FALLBACK)
         if (!isOnline()) return finish(podcastId, ShowPageFeedResult.OFFLINE)
         val answer = safely(null) { registry(showId) }
+        val saved = savedFeedUrl?.takeIf(String::isNotBlank)
         val target =
             answer?.readTarget(showId)
-                ?: savedFeedUrl?.takeIf(String::isNotBlank)?.let(V2FeedReadTarget::Direct)
+                ?: saved?.let(V2FeedReadTarget::Direct)
                 ?: return finish(podcastId, ShowPageFeedResult.FALLBACK)
-        val request = ReadRequest(podcastId, "", scope, meta, answer?.validEpNs)
-        val attempt = afterReport(podcastId, request, withRetry(request, target), savedFeedUrl) ?: return finish(podcastId, ShowPageFeedResult.OFFLINE)
+        // The publisher's own address, for the read's request; a transport read never records it.
+        val publisher = answer?.fetchUrl?.takeIf(String::isNotBlank) ?: saved.orEmpty()
+        val request = ReadRequest(podcastId, publisher, scope, meta, answer?.validEpNs)
+        val attempt = afterReport(podcastId, request, withRetry(request, target), saved) ?: return finish(podcastId, ShowPageFeedResult.OFFLINE)
         report(podcastId, attempt)
         return when (attempt.outcome) {
             is ReadOutcome.Failed -> finish(podcastId, ShowPageFeedResult.FALLBACK)
@@ -154,14 +181,17 @@ class FeedFirstShowPages(
 
     /**
      * After a failed read, the report and a read of the address it names, when it names a
-     * different one. Null when the phone went offline meanwhile: nothing is reported then.
+     * different one. Null when the phone went offline meanwhile: nothing is reported then. A
+     * followed show isn't reported here: its own refresh reports it and saves a working address
+     * (P4 PR 14), and the one report a day it may send stays for that.
      */
     private suspend fun afterReport(podcastId: String, request: ReadRequest, attempt: Attempt, savedFeedUrl: String?): Attempt? {
         val failed = attempt.outcome as? ReadOutcome.Failed ?: return attempt
         if (!isOnline()) return null
+        if (safely(false) { isFollowed(podcastId) }) return attempt
         val used = (attempt.target as? V2FeedReadTarget.Direct)?.url ?: savedFeedUrl
-        val reported = safely(null) { reporter?.report(podcastId, failed.reportStatus, used) } ?: return attempt
-        val next = V2FeedReadTarget.Direct(reported)
+        val next = safely(null) { reporter?.reportTarget(podcastId, failed.reportStatus, used) } ?: return attempt
+        if (next == attempt.target) return attempt
         return Attempt(next, readOnce(request, next))
     }
 
@@ -175,10 +205,7 @@ class FeedFirstShowPages(
         return safely(ReadOutcome.Failed(OTHER)) {
             when (target) {
                 is V2FeedReadTarget.Direct -> port.read(request.copy(feedUrl = target.url))
-                is V2FeedReadTarget.ViaApi -> {
-                    val document = transport(target.showId) ?: return@safely ReadOutcome.Failed(OTHER)
-                    port.store(request.copy(feedUrl = document.finalUrl), document)
-                }
+                is V2FeedReadTarget.ViaApi -> port.readTransport(request) { etag -> transport(target.showId, etag) }
             }
         }
     }
@@ -193,20 +220,20 @@ class FeedFirstShowPages(
             ShowPageFeedResult.UPDATED, ShowPageFeedResult.UNCHANGED -> fallbackShows.remove(podcastId)
             ShowPageFeedResult.OFFLINE -> Unit
         }
-        return ShowPageFeedRead(result, archiveComplete(podcastId))
+        val cached = cached(podcastId)
+        return ShowPageFeedRead(result, archiveComplete = cached?.archiveComplete == true, hasCopy = cached != null)
     }
-
-    private suspend fun archiveComplete(podcastId: String): Boolean = cached(podcastId)?.archiveComplete == true
 
     private fun remember(podcastId: String, meta: PodcastMeta) {
         if (meta.title != null || meta.imageUrl != null) metas[podcastId] = meta
     }
 
-    private suspend fun cleanUpDaily(now: Long, keep: String) {
+    /** Starts the daily cleanup in [background], at most once a day, keeping the show [keep] being opened. */
+    private fun scheduleCleanUp(now: Long, keep: String) {
         val last = lastCleanUpAt
         if (last != null && now - last in 0 until CLEANUP_INTERVAL_MS) return
         lastCleanUpAt = now
-        safely(0) { copies?.cleanUp(now, keep) ?: 0 }
+        background.launch { safely(0) { copies?.cleanUp(now, keep) ?: 0 } }
     }
 
     /** The one `feed_fetch_result` of this read (decision D11). Never carries an address. */

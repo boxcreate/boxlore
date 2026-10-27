@@ -211,6 +211,40 @@ interface LocalEpisodeCatalogDao {
     suspend fun setTtlAndFollowed(podcastId: String, ttlExpiresAt: Long?, followed: Boolean,)
 
     /**
+     * Sets a new feed row's [LocalEpisodeFeedEntity.followed] from `podcasts.isSubscribed`, for a
+     * show followed before its first catalog read: follow found no row to mark then.
+     *
+     * Added in P4 PR 16 of the own-episode-IDs plan (plan section 8, Room v39 feed columns).
+     * COMPAT(own-ids): feed-first catalog state. Permanent: never remove (MIGRATION.md §5).
+     */
+    @Query(
+        """
+        UPDATE local_episode_feeds
+        SET followed = EXISTS(SELECT 1 FROM podcasts p WHERE p.podcastId = :podcastId AND p.isSubscribed = 1)
+        WHERE podcastId = :podcastId
+        """,
+    )
+    suspend fun seedFollowed(podcastId: String)
+
+    /**
+     * [search] with at most [limit] rows, for the show page's bounded in-show search.
+     *
+     * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, in-show search on the phone).
+     * COMPAT(own-ids): show pages read the show's own feed. Permanent: never remove (MIGRATION.md §5).
+     */
+    @Query(
+        """
+        SELECT * FROM local_episodes
+        WHERE podcastId = :podcastId
+          AND (title LIKE '%' || :query || '%' ESCAPE '\'
+            OR description LIKE '%' || :query || '%' ESCAPE '\')
+        ORDER BY publishedDate DESC, episodeId ASC
+        LIMIT :limit
+        """,
+    )
+    suspend fun searchLimited(podcastId: String, query: String, limit: Int,): List<LocalEpisodeEntity>
+
+    /**
      * Stored copies the automatic cleanup may remove: not followed by either record (the feed row's
      * [LocalEpisodeFeedEntity.followed] and the `podcasts` row), and without an unsubscribe TTL,
      * which [listExpiredFeedIds] handles. With each show's stored episode count.

@@ -44,6 +44,9 @@ enum class ShowFeedStatus {
 
     /** No connection: the list is the stored copy, as it is. */
     OFFLINE,
+
+    /** No connection and no stored copy: nothing saved to show yet. */
+    OFFLINE_NO_COPY,
 }
 
 @Immutable

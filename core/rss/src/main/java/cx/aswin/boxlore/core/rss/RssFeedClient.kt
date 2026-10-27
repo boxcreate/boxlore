@@ -685,21 +685,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
         }.getOrDefault("")
     }
 
-    private fun readBounded(input: java.io.InputStream): ByteArray {
-        val output = ByteArrayOutputStream()
-        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-        var total = 0L
-        while (true) {
-            val read = input.read(buffer)
-            if (read < 0) break
-            total += read
-            require(total <= MAX_FEED_BYTES) {
-                "Feed is larger than ${MAX_FEED_BYTES / (1024 * 1024)} MB"
-            }
-            output.write(buffer, 0, read)
-        }
-        return output.toByteArray()
-    }
+    private fun readBounded(input: java.io.InputStream): ByteArray = readFeedBody(input)
 
     private fun validateContentType(response: Response) {
         val contentType =
@@ -802,6 +788,27 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
     }
 
     companion object {
+        /**
+         * Reads a feed document from [input], at most [MAX_FEED_BYTES]: the cap every feed read
+         * keeps, also for documents boxlore's transport (`/v2/feed/<id>`) serves. A larger
+         * document throws [FeedTooLargeException] before it fills memory.
+         *
+         * Public since P4 PR 16 of the own-episode-IDs plan (plan section 11, feed-first show page).
+         */
+        fun readFeedBody(input: java.io.InputStream): ByteArray {
+            val output = ByteArrayOutputStream()
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            var total = 0L
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                total += read
+                if (total > MAX_FEED_BYTES) throw FeedTooLargeException(MAX_FEED_BYTES)
+                output.write(buffer, 0, read)
+            }
+            return output.toByteArray()
+        }
+
         private const val MAX_FEED_BYTES = 25L * 1024L * 1024L
         private const val MAX_DESCRIPTION_LENGTH = 20_000
         private const val HTTP_NOT_MODIFIED = 304

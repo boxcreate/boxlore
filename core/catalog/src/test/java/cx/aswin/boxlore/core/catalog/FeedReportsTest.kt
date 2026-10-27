@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.catalog
 
+import cx.aswin.boxlore.core.network.model.V2FeedReadTarget
 import cx.aswin.boxlore.core.network.model.V2FeedReportRequest
 import cx.aswin.boxlore.core.network.model.V2FeedReportResponse
 import kotlinx.coroutines.test.runTest
@@ -78,6 +79,31 @@ class FeedReportsTest {
         assertNull(reporter.report("3", "http_404", OLD))
         val failing = FeedReporter(send = { error("offline after all") }, limiter = FeedReportLimiter(stamps), isOnline = { true }, enabled = { true }, nowMillis = { now })
         assertNull(failing.report("4", "http_404", OLD))
+    }
+
+    @Test
+    fun `the show page reads an http-only answer through the transport`() = runTest {
+        answer = V2FeedReportResponse(queued = true, fetchUrl = "http://new.example/feed.xml", fetchVia = "proxy", transportUrl = "https://api.example/v2/feed/2")
+        assertEquals(V2FeedReadTarget.ViaApi(2), reporter.reportTarget("2", "http_404", OLD))
+        answer = V2FeedReportResponse(queued = true, fetchUrl = NEW, fetchVia = "direct")
+        assertEquals(V2FeedReadTarget.Direct(NEW), reporter.reportTarget("3", "http_404", OLD))
+    }
+
+    @Test
+    fun `limiters sharing one store never pass the caps together`() {
+        val first = FeedReportLimiter(stamps)
+        val second = FeedReportLimiter(stamps)
+        val claims = java.util.concurrent.atomic.AtomicInteger()
+        val threads =
+            (0 until 8).map { worker ->
+                Thread {
+                    repeat(10) { index -> if ((if (worker % 2 == 0) first else second).tryClaim("${worker * 10 + index}", now)) claims.incrementAndGet() }
+                }
+            }
+        threads.forEach(Thread::start)
+        threads.forEach(Thread::join)
+
+        assertEquals(FeedReportLimiter.DAILY_CAP, claims.get())
     }
 
     @Test

@@ -13,22 +13,27 @@ import retrofit2.awaitResponse
 
 /**
  * What [PodcastRepository]'s feed-first show page needs from the app: the stored copies
- * ([ShowPageFeedPort]; null stores nothing), whether the phone is online, the broken-feed report
- * limits shared with the daily address check, and `feed_fetch_result` reporting.
+ * ([ShowPageFeedPort]; null stores nothing), whether the phone is online, the app's one broken-feed
+ * report limiter (shared with the daily address check, [FeedAddressUpkeep.reportLimiter]),
+ * `feed_fetch_result` reporting, and whether the listener follows a show ([isFollowed]: followed
+ * shows are reported by their own refresh, not by the show page).
  *
  * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, feed-first show page).
  */
 data class FeedFirstWiring(
     val copies: ShowPageFeedPort? = null,
     val isOnline: () -> Boolean = { true },
-    val reportStamps: FeedReportStamps = MemoryFeedReportStamps(),
+    val reportLimiter: FeedReportLimiter = FeedReportLimiter(MemoryFeedReportStamps()),
     val telemetry: FeedTelemetryPort = FeedTelemetryPort.NONE,
+    val isFollowed: suspend (String) -> Boolean = { false },
 )
 
 /** In-show search answers at most this many episodes. */
 internal const val MAX_SHOW_SEARCH_RESULTS = 200
 
 private const val SHOW_PAGES_TAG = "PodcastRepository"
+private const val OLDEST_SORT = "oldest"
+private const val NEWEST_SORT = "newest"
 
 /**
  * True when [feedId]'s show page reads its feed first: `feed_first` is on and [feedId] is a Podcast
@@ -40,14 +45,16 @@ private const val SHOW_PAGES_TAG = "PodcastRepository"
 internal fun PodcastRepository.isFeedFirstShow(feedId: String): Boolean = V2EpisodeIds.parseShowId(feedId) != null && rolloutSwitches.feedFirst()
 
 /**
- * A page of [feedId]'s stored feed copy, or null when the phone has none yet. More pages follow
- * while the copy has more rows, and while it is not the whole archive: the show page then reads
- * the rest of the feed before it pages on.
+ * A page of [feedId]'s stored feed copy, or null when the phone has none yet, or when an oldest-first
+ * page is asked of a copy that holds only the newest items (its oldest rows aren't the show's first
+ * episodes). More pages follow while the copy has more rows, and while it is not the whole archive:
+ * the show page then reads the rest of the feed before it pages on.
  *
  * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, feed-first show page).
  */
 internal suspend fun PodcastRepository.feedCopyPage(feedId: String, limit: Int, offset: Int, sort: String,): PodcastRepository.EpisodePage? {
     val cached = feedFirst.cached(feedId) ?: return null
+    if (sort == OLDEST_SORT && !cached.archiveComplete) return null
     val catalog = localEpisodeCatalog ?: return null
     val episodes = catalog.getPage(feedId, limit, offset, sort, feedFirst.metaFor(feedId) ?: localCatalogMeta(feedId))
     return PodcastRepository.EpisodePage(
@@ -58,14 +65,48 @@ internal suspend fun PodcastRepository.feedCopyPage(feedId: String, limit: Int, 
 }
 
 /**
- * Bounded search over [feedId]'s stored feed copy; null when the phone has none.
+ * Bounded search over [feedId]'s stored feed copy ([MAX_SHOW_SEARCH_RESULTS] rows, limited in the
+ * query); null when the phone has none.
  *
  * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, in-show search on the phone).
  */
-internal suspend fun PodcastRepository.searchFeedCopy(feedId: String, query: String,): List<Episode>? {
-    feedFirst.cached(feedId) ?: return null
-    val catalog = localEpisodeCatalog ?: return null
-    return catalog.search(feedId, query, feedFirst.metaFor(feedId) ?: localCatalogMeta(feedId)).take(MAX_SHOW_SEARCH_RESULTS)
+internal suspend fun PodcastRepository.searchFeedCopy(feedId: String, query: String,): List<Episode>? =
+    feedFirst.search(feedId, query, feedFirst.metaFor(feedId) ?: localCatalogMeta(feedId), MAX_SHOW_SEARCH_RESULTS)
+
+/**
+ * The bounded episode window (Smart Queue, same-show continuation, Android Auto) of a Podcast Index
+ * show whose catalog isn't ready, under the same IDs its show page lists:
+ * - around an episode the feed-first copy holds ([aroundEpisodeId]), the copy's window, so playback
+ *   that started on a feed-first page continues under the copy's IDs;
+ * - else the newest [LOCAL_CATALOG_WINDOW_BOUND] of `/v2/episodes`, mapped to the IDs this phone
+ *   stores, as the show page's server list is;
+ * - v1 `/episodes` only when `/v2/episodes` fails.
+ *
+ * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, feed-first show page; decision D1).
+ */
+internal suspend fun PodcastRepository.getShowEpisodeWindow(feedId: String, aroundEpisodeId: String?, sort: String,): List<Episode> {
+    if (aroundEpisodeId != null && isFeedFirstShow(feedId) && feedFirst.cached(feedId) != null) {
+        val catalog = localEpisodeCatalog
+        val window = catalog?.getWindow(feedId, sort, LOCAL_CATALOG_WINDOW_BOUND, aroundEpisodeId, feedFirst.metaFor(feedId) ?: localCatalogMeta(feedId))
+        if (window != null && window.any { it.id == aroundEpisodeId }) return window
+    }
+    return serverListWindow(feedId) ?: getNetworkEpisodeWindow(feedId)
+}
+
+/**
+ * The newest [LOCAL_CATALOG_WINDOW_BOUND] episodes of the show for callers that list a whole show
+ * ([PodcastRepository.getEpisodes]): `/v2/episodes` mapped to the IDs this phone stores, then v1.
+ *
+ * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11; decision D1).
+ */
+internal suspend fun PodcastRepository.getShowEpisodesNewest(feedId: String): List<Episode> = serverListWindow(feedId) ?: getAllNetworkEpisodes(feedId)
+
+/** The newest [LOCAL_CATALOG_WINDOW_BOUND] of `/v2/episodes` under local owners, with cached feed extras; null when `/v2` can't answer. */
+private suspend fun PodcastRepository.serverListWindow(feedId: String): List<Episode>? {
+    val resolvedId = resolvePodcastIndexFeedId(feedId)
+    PodcastRepository.rememberResolvedFeedId(feedId, resolvedId)
+    val page = v2EpisodesPage(resolvedId, LOCAL_CATALOG_WINDOW_BOUND, 0, NEWEST_SORT) ?: return null
+    return mergeCachedSupplementsNewest(resolvedId, page.episodes).take(LOCAL_CATALOG_WINDOW_BOUND)
 }
 
 /**
@@ -140,17 +181,6 @@ private fun Episode.matches(query: String): Boolean {
 
 /** The show's registry entry (`/v2/podcast`): its address, transport and namespace. Null when it can't be read. */
 internal suspend fun PodcastRepository.v2ShowAddress(showId: Long): V2PodcastResponse? = v2Answer("podcast") { apiV2.getPodcast(showId).awaitResponse() }
-
-/**
- * An http-only show's feed document through boxlore's transport (`/v2/feed/<id>`), read whole.
- * Null when the route doesn't answer with a document.
- */
-internal suspend fun PodcastRepository.v2TransportDocument(showId: Long): ShowPageFeedPort.Document? {
-    val response = apiV2.getFeed(showId).awaitResponse()
-    val body = response.body()?.takeIf { response.isSuccessful } ?: return null
-    val bytes = body.use { it.bytes() }
-    return ShowPageFeedPort.Document(bytes, response.raw().request.url.toString(), response.headers()["ETag"], complete = true)
-}
 
 /** The body of a successful `/v2` answer, or null; cancellation propagates. */
 private inline fun <T> v2Answer(route: String, call: () -> Response<T>): T? = try {

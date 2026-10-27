@@ -1,9 +1,11 @@
 package cx.aswin.boxlore.core.domain.ports
 
+import cx.aswin.boxlore.core.model.Episode
+
 /**
  * The phone's stored copy of a Podcast Index show's feed for its show page, followed or not, and
- * the reads that fill it. Pages and search read the copy through [LocalEpisodeCatalogPort.getPage]
- * and [LocalEpisodeCatalogPort.search]; this port says what the copy holds and adds to it.
+ * the reads that fill it. Pages read the copy through [LocalEpisodeCatalogPort.getPage]; this port
+ * says what the copy holds, adds to it and searches it ([search], bounded).
  *
  * A read never makes an unfollowed show's copy the followed live list ([LocalEpisodeCatalogPort.isReady]
  * stays false), and it never runs the post-write work of followed shows (auto-download, new-episode
@@ -34,7 +36,7 @@ interface ShowPageFeedPort {
     enum class Scope { NEWEST, ARCHIVE }
 
     /**
-     * One read of [feedUrl] (HTTPS) for show [podcastId]. [serverEpNs] is only compared with the
+     * One read of [feedUrl] (HTTPS; for [readTransport] the publisher's http address, if known) for show [podcastId]. [serverEpNs] is only compared with the
      * stored namespace (decision D12).
      */
     data class ReadRequest(
@@ -46,10 +48,22 @@ interface ShowPageFeedPort {
     )
 
     /**
-     * A feed document read some other way (boxlore's transport address for an http-only feed).
-     * [complete] is false when it holds only the start of the feed.
+     * One answer of boxlore's transport (`/v2/feed/<id>`), the only way to read an http-only feed.
+     * Transport documents are always the whole feed.
      */
-    class Document(val bytes: ByteArray, val finalUrl: String, val etag: String?, val complete: Boolean,)
+    sealed interface Transported {
+        /** The feed document; [etag] answers the next read's `If-None-Match`. */
+        class Document(val bytes: ByteArray, val etag: String?) : Transported
+
+        /** The stored copy is current (304 to the ETag the read sent). */
+        data object NotModified : Transported
+
+        /** The show's address is HTTPS after all (`404 not_proxied`): read [url] directly. */
+        data class ReadDirect(val url: String) : Transported
+
+        /** The transport couldn't answer; [reportStatus] as in [ReadOutcome.Failed]. */
+        data class Failed(val reportStatus: String) : Transported
+    }
 
     sealed interface ReadOutcome {
         /** The read was stored; [complete] when it held the whole feed. */
@@ -70,8 +84,25 @@ interface ShowPageFeedPort {
     /** Reads [ReadRequest.feedUrl] and stores what it holds. Never throws for a failed read. */
     suspend fun read(request: ReadRequest): ReadOutcome
 
-    /** Stores [document] as a read of [request]'s show; a document that isn't a feed is [ReadOutcome.Failed]. */
-    suspend fun store(request: ReadRequest, document: Document): ReadOutcome
+    /**
+     * Reads [request]'s show through boxlore's transport: [fetch] is given the stored ETag (only
+     * when the copy is the whole archive) and answers. It runs under the same per-show lock and
+     * download gate as [read]. Neither the transport address nor [ReadRequest.feedUrl] (the
+     * publisher's own http address) is recorded as the copy's address. A [Transported.ReadDirect]
+     * answer is read directly ([read]).
+     */
+    suspend fun readTransport(request: ReadRequest, fetch: suspend (ifNoneMatch: String?) -> Transported): ReadOutcome
+
+    /**
+     * In-show search over [podcastId]'s copy: titles and descriptions containing [query], newest
+     * first, at most [limit] episodes.
+     */
+    suspend fun search(
+        podcastId: String,
+        query: String,
+        limit: Int,
+        meta: LocalEpisodeCatalogPort.PodcastMeta = LocalEpisodeCatalogPort.PodcastMeta(),
+    ): List<Episode>
 
     /** Notes that the show page opened this show now, which keeps its copy from the automatic cleanup. */
     suspend fun markOpened(podcastId: String, atMillis: Long)

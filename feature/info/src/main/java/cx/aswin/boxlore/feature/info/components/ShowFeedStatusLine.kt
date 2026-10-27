@@ -37,6 +37,7 @@ internal fun showFeedStatusText(status: ShowFeedStatus): Int? = when (status) {
     ShowFeedStatus.COMPLETING_ARCHIVE -> R.string.podcast_info_feed_completing
     ShowFeedStatus.FALLBACK -> R.string.podcast_info_feed_fallback
     ShowFeedStatus.OFFLINE -> R.string.podcast_info_feed_offline
+    ShowFeedStatus.OFFLINE_NO_COPY -> R.string.podcast_info_feed_offline_empty
 }
 
 /**
@@ -71,7 +72,7 @@ internal fun ShowFeedStatusLine(status: ShowFeedStatus, modifier: Modifier = Mod
                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
             } else {
                 Icon(
-                    imageVector = if (status == ShowFeedStatus.OFFLINE) Icons.Rounded.CloudOff else Icons.Rounded.Info,
+                    imageVector = if (status == ShowFeedStatus.OFFLINE || status == ShowFeedStatus.OFFLINE_NO_COPY) Icons.Rounded.CloudOff else Icons.Rounded.Info,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
                 )

@@ -5,7 +5,9 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.LocalEpisodeEntity
+import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.PodcastMeta
+import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort
 import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort.Scope
 import cx.aswin.boxlore.core.model.EpisodeRecipeId
 import cx.aswin.boxlore.core.network.NetworkModule
@@ -51,6 +53,7 @@ class PodcastRepositoryShowPagesTest {
     private lateinit var context: Context
     private lateinit var database: BoxLoreDatabase
     private val seen = CopyOnWriteArrayList<String>()
+    private val ifNoneMatch = CopyOnWriteArrayList<String>()
     private val answers = mutableMapOf<String, () -> MockResponse>()
     private var feedFirst = true
     private var feedItems = 150
@@ -65,6 +68,7 @@ class PodcastRepositoryShowPagesTest {
             object : Dispatcher() {
                 override fun dispatch(request: RecordedRequest): MockResponse {
                     seen += request.path.orEmpty()
+                    request.getHeader("If-None-Match")?.let { ifNoneMatch += it }
                     return answers[request.path.orEmpty().substringBefore('?')]?.invoke() ?: MockResponse().setResponseCode(404)
                 }
             }
@@ -107,22 +111,22 @@ class PodcastRepositoryShowPagesTest {
         assertFalse(requireNotNull(repository.openFeedShowPage(SHOW, META)).cached)
 
         val newest = repository.readShowPageFeed(SHOW, META, Scope.NEWEST, savedFeedUrl = null)
-        assertEquals(ShowPageFeedRead(ShowPageFeedResult.UPDATED, archiveComplete = false), newest)
+        assertEquals(ShowPageFeedRead(ShowPageFeedResult.UPDATED, archiveComplete = false, hasCopy = true), newest)
 
         val shown = mutableListOf<String>()
         var offset = 0
         repeat(5) {
-            val page = repository.getEpisodesPaginated(SHOW, 20, offset, "newest")
+            val page = repository.getShowPageEpisodes(SHOW, 20, offset, "newest")
             assertTrue(page.hasMore)
             shown += page.episodes.map { it.title }
             offset += page.sourceCount
         }
-        val pastCopy = repository.getEpisodesPaginated(SHOW, 20, offset, "newest")
+        val pastCopy = repository.getShowPageEpisodes(SHOW, 20, offset, "newest")
         assertTrue("the copy ran out, but the archive isn't read yet", pastCopy.episodes.isEmpty() && pastCopy.hasMore)
 
         assertEquals(ShowPageFeedResult.UPDATED, repository.readShowPageFeed(SHOW, META, Scope.ARCHIVE, null).result)
         while (true) {
-            val page = repository.getEpisodesPaginated(SHOW, 20, offset, "newest")
+            val page = repository.getShowPageEpisodes(SHOW, 20, offset, "newest")
             shown += page.episodes.map { it.title }
             offset += page.sourceCount
             if (!page.hasMore) break
@@ -157,7 +161,8 @@ class PodcastRepositoryShowPagesTest {
 
         assertEquals(ShowPageFeedResult.FALLBACK, read.result)
         assertEquals(ShowPageSource.SERVER_LIST, repository.showPageSource(SHOW))
-        assertEquals(3, repository.getEpisodesPaginated(SHOW, 20, 0, "newest").episodes.size)
+        assertTrue("still a feed-first page: no Missing episodes? chip", repository.isFeedFirstShowPage(SHOW))
+        assertEquals(3, repository.getShowPageEpisodes(SHOW, 20, 0, "newest").episodes.size)
         assertTrue(seen.any { it.startsWith("/v2/feed-report") })
 
         // Opening the page again tries the feed again.
@@ -171,6 +176,9 @@ class PodcastRepositoryShowPagesTest {
     fun rollingTheFlagBackChangesNoStoredIdAndTheServersListMapsToTheSameOwners() = runBlocking {
         // An episode an older build stored under its Podcast Index ID while the show was followed.
         database.localEpisodeCatalogDao().upsertEpisodes(listOf(row("5001", "g1")))
+        // The show's saved row, which notification registration and the tracked-shows sync read.
+        database.podcastDao().upsert(PodcastEntity(podcastId = SHOW, title = "Show", author = "", imageUrl = "", description = null, isSubscribed = false, feedUrl = SAVED_URL))
+        val savedRow = database.podcastDao().getPodcast(SHOW)
         val repository = repository(RoomDiscoveryEpisodeIds { database })
         repository.readShowPageFeed(SHOW, META, Scope.ARCHIVE, null)
         val storedIds = database.localEpisodeCatalogDao().listIdentities(SHOW).associate { it.guid to it.episodeId }
@@ -185,6 +193,82 @@ class PodcastRepositoryShowPagesTest {
         assertEquals(listOf(storedIds["g0"], "5001", storedIds["Moon g2"] ?: recipe("Moon g2").toString()), serverList)
         assertEquals(storedIds, database.localEpisodeCatalogDao().listIdentities(SHOW).associate { it.guid to it.episodeId })
         assertEquals(aliases, database.episodeIdentityDao().aliasesForShow(SHOW).sortedBy { it.aliasId })
+        val after = requireNotNull(database.podcastDao().getPodcast(SHOW))
+        // The namespace the read kept (decision D12) is the one column it may fill.
+        assertEquals("no address, transport or sync state of the show changed", savedRow?.copy(epNs = after.epNs), after)
+        assertTrue("no registration or address route was called", seen.none { it.startsWith("/v2/episodes/register") || it.startsWith("/v2/shows/feeds") })
+    }
+
+    @Test
+    fun onlyTheShowPageReadsTheCopyAndAFollowedHttpOnlyShowKeepsReadingTheServersList() = runBlocking {
+        answers["/v2/podcast"] = { fixture("fixtures/v2/podcast-proxy.json") }
+        answers["/v2/feed/$PROXIED"] = { MockResponse().setHeader("ETag", "\"t1\"").setBody(feedXml(30)) }
+        val repository = repository()
+        // Followed, but its catalog can never be ready: the address is http-only.
+        database.podcastDao().upsert(PodcastEntity(podcastId = PROXIED, title = "Proxied", author = "", imageUrl = "", description = null, isSubscribed = true))
+
+        assertEquals(ShowPageFeedResult.UPDATED, repository.readShowPageFeed(PROXIED, META, Scope.NEWEST, null).result)
+        assertEquals(ShowPageSource.FEED, repository.showPageSource(PROXIED))
+        seen.clear()
+
+        assertEquals(20, repository.getShowPageEpisodes(PROXIED, 20, 0, "newest").episodes.size)
+        assertTrue("the show page reads the copy", seen.isEmpty())
+        repository.getEpisodesPaginated(PROXIED, 20, 0, "newest")
+        assertEquals("Smart Queue, Auto, Home and downloads read the server's list", "/v2/episodes?id=$PROXIED&limit=20&offset=0&sort=newest", seen.single())
+
+        // The next read sends the copy's ETag; the 304 keeps it.
+        answers["/v2/feed/$PROXIED"] = { MockResponse().setResponseCode(304) }
+        assertEquals(ShowPageFeedResult.UNCHANGED, repository.readShowPageFeed(PROXIED, META, Scope.ARCHIVE, null).result)
+        assertEquals(listOf("\"t1\""), ifNoneMatch.toList())
+    }
+
+    @Test
+    fun anOldestFirstPageOfAPartialCopyComesFromTheServersList() = runBlocking {
+        val repository = repository()
+        repository.readShowPageFeed(SHOW, META, Scope.NEWEST, null)
+        seen.clear()
+
+        repository.getShowPageEpisodes(SHOW, 50, 0, "oldest")
+
+        assertEquals("/v2/episodes?id=$SHOW&limit=50&offset=0&sort=oldest", seen.single())
+    }
+
+    @Test
+    fun playbackWindowsListTheEpisodesUnderTheIdsTheShowPageShowed() = runBlocking {
+        val repository = repository()
+        repository.readShowPageFeed(SHOW, META, Scope.ARCHIVE, null)
+        val playing = recipe("g1").toString()
+        val next = recipe("g0").toString()
+
+        val fromCopy = repository.getEpisodeWindow(SHOW, aroundEpisodeId = playing).map { it.id }
+        assertTrue(playing in fromCopy && next in fromCopy)
+        assertTrue("no v1 window", seen.none { it.startsWith("/episodes") })
+
+        feedFirst = false
+        val fromServerList = repository.getEpisodeWindow(SHOW, aroundEpisodeId = playing).map { it.id }
+        assertTrue(playing in fromServerList && next in fromServerList)
+        assertEquals(listOf(next, playing, recipe("Moon g2").toString()), repository.getEpisodes(SHOW).map { it.id })
+        assertTrue("v1 /episodes only when /v2/episodes fails", seen.none { it.startsWith("/episodes") })
+    }
+
+    @Test
+    fun recordedAnswersOfTheV2RoutesReadAsTheRoutesSendThem() = runBlocking {
+        feedFirst = false
+        answers["/v2/episodes"] = { fixture("fixtures/v2/episodes.json") }
+        val page = repository().getEpisodesPaginated(SHOW, 20, 0, "newest")
+
+        assertEquals(listOf("5626175219222083", "7579913942623881"), page.episodes.map { it.id })
+        assertEquals(5626175219222083L, page.episodes.first().recipeId)
+
+        feedFirst = true
+        answers["/v2/podcast"] = { fixture("fixtures/v2/podcast-direct.json") }
+        assertEquals(ShowPageFeedResult.UPDATED, repository().readShowPageFeed(SHOW, META, Scope.NEWEST, null).result)
+
+        assertEquals(
+            ShowPageFeedPort.Transported.ReadDirect(RECORDED_FEED_URL),
+            transportFailure(404, fixtureText("fixtures/v2/feed-not-proxied.json")),
+        )
+        assertEquals(ShowPageFeedPort.Transported.Failed("http_503"), transportFailure(503, "{\"error\":\"feed_unavailable\"}"))
     }
 
     @Test
@@ -224,7 +308,7 @@ class PodcastRepositoryShowPagesTest {
     private fun feedClient() = RssFeedClient(
         OkHttpClient.Builder().addInterceptor { chain ->
             val url = chain.request().url.toString()
-            val code = if (url == FEED_URL) 200 else 404
+            val code = if (url == FEED_URL || url == RECORDED_FEED_URL) 200 else 404
             Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(code).message("test")
                 .body(feedXml(feedItems).toResponseBody("application/rss+xml".toMediaType())).build()
         }.build(),
@@ -260,6 +344,17 @@ class PodcastRepositoryShowPagesTest {
     private companion object {
         const val SHOW = "920666"
         const val FEED_URL = "https://feeds.example/920666.xml"
+        const val SAVED_URL = "https://saved.example/920666.xml"
+
+        /** The address `fixtures/v2/podcast-direct.json` names. */
+        const val RECORDED_FEED_URL = "https://feeds.podcastindex.org/pc20.xml"
+
+        /** The http-only show of `fixtures/v2/podcast-proxy.json`. */
+        const val PROXIED = "1031614"
+
+        fun fixtureText(path: String): String = requireNotNull(PodcastRepositoryShowPagesTest::class.java.classLoader?.getResource(path)) { path }.readText()
+
+        fun fixture(path: String) = json(fixtureText(path))
         val META = PodcastMeta(title = "Show")
 
         fun recipe(key: String): Long = EpisodeRecipeId.forNamespace(SHOW.toLong(), key)

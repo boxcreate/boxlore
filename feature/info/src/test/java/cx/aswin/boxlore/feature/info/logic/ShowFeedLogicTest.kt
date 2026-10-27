@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.info.logic
 
+import cx.aswin.boxlore.core.catalog.ShowPageFeedRead
 import cx.aswin.boxlore.core.catalog.ShowPageFeedResult
 import cx.aswin.boxlore.core.catalog.ShowPageFeedState
 import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort.Scope
@@ -19,11 +20,21 @@ import org.junit.jupiter.api.Test
 class ShowFeedLogicTest {
     private val fresh = ShowPageFeedState(cached = true, archiveComplete = false, recheckDue = false, oldestFirst = false)
 
+    private fun read(result: ShowPageFeedResult, hasCopy: Boolean = true) = ShowPageFeedRead(result, archiveComplete = false, hasCopy = hasCopy)
+
     @Test
     fun `a page opens on the newest items unless it lists oldest first`() {
         assertEquals(Scope.NEWEST, ShowFeedLogic.openingScope(EpisodeSort.NEWEST, fresh))
         assertEquals(Scope.ARCHIVE, ShowFeedLogic.openingScope(EpisodeSort.OLDEST, fresh), "serial shows open oldest first")
         assertEquals(Scope.ARCHIVE, ShowFeedLogic.openingScope(EpisodeSort.NEWEST, fresh.copy(oldestFirst = true)))
+    }
+
+    @Test
+    fun `a serial show reads its whole archive even when its page opens newest first`() {
+        // An unfollowed show has no saved sort, so its page opens newest first.
+        assertEquals(Scope.ARCHIVE, ShowFeedLogic.openingScope(EpisodeSort.NEWEST, fresh, podcastType = "serial"))
+        assertEquals(Scope.ARCHIVE, ShowFeedLogic.openingScope(EpisodeSort.NEWEST, fresh, podcastType = "Serial"))
+        assertEquals(Scope.NEWEST, ShowFeedLogic.openingScope(EpisodeSort.NEWEST, fresh, podcastType = "episodic"))
     }
 
     @Test
@@ -40,10 +51,16 @@ class ShowFeedLogicTest {
     fun `the status line follows the read`() {
         assertEquals(ShowFeedStatus.READING_NEWEST, ShowFeedLogic.readingStatus(Scope.NEWEST))
         assertEquals(ShowFeedStatus.COMPLETING_ARCHIVE, ShowFeedLogic.readingStatus(Scope.ARCHIVE))
-        assertEquals(ShowFeedStatus.NONE, ShowFeedLogic.statusAfter(ShowPageFeedResult.UPDATED))
-        assertEquals(ShowFeedStatus.NONE, ShowFeedLogic.statusAfter(ShowPageFeedResult.UNCHANGED))
-        assertEquals(ShowFeedStatus.OFFLINE, ShowFeedLogic.statusAfter(ShowPageFeedResult.OFFLINE))
-        assertEquals(ShowFeedStatus.FALLBACK, ShowFeedLogic.statusAfter(ShowPageFeedResult.FALLBACK))
+        assertEquals(ShowFeedStatus.NONE, ShowFeedLogic.statusAfter(read(ShowPageFeedResult.UPDATED)))
+        assertEquals(ShowFeedStatus.NONE, ShowFeedLogic.statusAfter(read(ShowPageFeedResult.UNCHANGED)))
+        assertEquals(ShowFeedStatus.OFFLINE, ShowFeedLogic.statusAfter(read(ShowPageFeedResult.OFFLINE)))
+        assertEquals(ShowFeedStatus.FALLBACK, ShowFeedLogic.statusAfter(read(ShowPageFeedResult.FALLBACK)))
+    }
+
+    @Test
+    fun `offline without a stored copy never says saved episodes show`() {
+        assertEquals(ShowFeedStatus.OFFLINE_NO_COPY, ShowFeedLogic.statusAfter(read(ShowPageFeedResult.OFFLINE, hasCopy = false)))
+        assertEquals(R.string.podcast_info_feed_offline_empty, showFeedStatusText(ShowFeedStatus.OFFLINE_NO_COPY))
     }
 
     @Test
@@ -70,6 +87,25 @@ class ShowFeedLogicTest {
         assertEquals(20, ShowFeedLogic.reloadCount(showing = 0, pageSize = 20))
         assertEquals(60, ShowFeedLogic.reloadCount(showing = 60, pageSize = 20))
         assertEquals(120, ShowFeedLogic.reloadCount(showing = 100, pageSize = 20, extra = 20))
+    }
+
+    @Test
+    fun `a reload pages on until the episode that was last is back, at most one newest read further`() {
+        val loaded = (0 until 40).map { TestFixtures.episode(id = "e$it") }
+        assertTrue(ShowFeedLogic.keepsLoading(loaded.take(10), wanted = 40, anchorId = "e39"))
+        assertFalse(ShowFeedLogic.keepsLoading(loaded, wanted = 40, anchorId = "e39"))
+        // Five newer episodes arrived above: the old last row is now 45th.
+        assertTrue(ShowFeedLogic.keepsLoading(loaded, wanted = 40, anchorId = "e44"))
+        assertFalse(ShowFeedLogic.keepsLoading(loaded, wanted = 40, anchorId = "gone", maxNewAbove = 0), "at most one newest read past the rows that showed")
+        assertFalse(ShowFeedLogic.keepsLoading(loaded, wanted = 40, anchorId = null))
+    }
+
+    @Test
+    fun `a copy that ran out keeps the list open while its archive is unread`() {
+        assertTrue(ShowFeedLogic.hasMoreAfterPage(pageHasMore = true, pageCount = 0, archivePending = true))
+        assertFalse(ShowFeedLogic.hasMoreAfterPage(pageHasMore = true, pageCount = 0, archivePending = false))
+        assertTrue(ShowFeedLogic.hasMoreAfterPage(pageHasMore = true, pageCount = 20, archivePending = false))
+        assertFalse(ShowFeedLogic.hasMoreAfterPage(pageHasMore = false, pageCount = 20, archivePending = true))
     }
 
     @Test

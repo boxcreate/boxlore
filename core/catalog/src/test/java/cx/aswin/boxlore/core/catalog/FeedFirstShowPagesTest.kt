@@ -5,6 +5,7 @@ import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.PodcastMeta
 import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort
 import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort.ReadOutcome
 import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort.Scope
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.FeedFetchCompleteness
 import cx.aswin.boxlore.core.model.FeedFetchOutcome
 import cx.aswin.boxlore.core.model.FeedFetchReport
@@ -13,6 +14,9 @@ import cx.aswin.boxlore.core.model.FeedUrlCorrection
 import cx.aswin.boxlore.core.network.model.V2FeedReportRequest
 import cx.aswin.boxlore.core.network.model.V2FeedReportResponse
 import cx.aswin.boxlore.core.network.model.V2PodcastResponse
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -43,7 +47,7 @@ class FeedFirstShowPagesTest {
         FeedFirstShowPages(
             copies = copies,
             registry = { registry },
-            transport = { ShowPageFeedPort.Document("<rss/>".encodeToByteArray(), "https://api.example/v2/feed/$it", null, complete = true) },
+            transport = { _, _ -> ShowPageFeedPort.Transported.Document("<rss/>".encodeToByteArray(), null) },
             reporter =
             FeedReporter(
                 send = { request ->
@@ -57,8 +61,11 @@ class FeedFirstShowPagesTest {
             isOnline = { online },
             telemetry = telemetry,
             nowMillis = { now },
+            background = CoroutineScope(Dispatchers.Unconfined),
+            isFollowed = { it in followed },
         )
     }
+    private val followed = mutableSetOf<String>()
 
     @Test
     fun offlineShowsTheStoredCopyWithoutReadingOrReporting() = runBlocking {
@@ -155,6 +162,52 @@ class FeedFirstShowPagesTest {
     }
 
     @Test
+    fun aReportNamingAnHttpOnlyAddressIsReadThroughTheTransport() = runBlocking {
+        copies.answers[PUBLISHER] = mutableListOf(ReadOutcome.Failed("http_404"))
+        reportAnswer = V2FeedReportResponse(queued = true, fetchUrl = "http://plain.example/feed", fetchVia = "proxy", transportUrl = "https://api.example/v2/feed/$SHOW")
+
+        val read = pages.read(SHOW, META, Scope.NEWEST, SAVED)
+
+        assertEquals(ShowPageFeedResult.UPDATED, read.result)
+        assertEquals(1, copies.stores)
+        assertEquals(FeedFetchSource.TRANSPORT, (telemetry.reports.single() as FeedFetchReport.ShowPage).source)
+    }
+
+    @Test
+    fun aFollowedShowIsLeftToItsOwnRefreshToReport() = runBlocking {
+        followed += SHOW
+        copies.answers[PUBLISHER] = mutableListOf(ReadOutcome.Failed("http_404"))
+        reportAnswer = V2FeedReportResponse(queued = true, fetchUrl = REPORTED, fetchVia = "direct")
+
+        assertEquals(ShowPageFeedResult.FALLBACK, pages.read(SHOW, META, Scope.NEWEST, SAVED).result)
+        assertTrue("the followed show's one report a day stays for its refresh", reports.isEmpty())
+    }
+
+    @Test
+    fun theShowPageLeavesPartOfTheDailyReportsToFollowedShows() = runBlocking {
+        val limiter = FeedReportLimiter(MemoryFeedReportStamps())
+        val reporter = FeedReporter({ reportAnswer }, limiter, { true }, { true }, { now }, keepFree = FeedReportLimiter.FOLLOWED_SHOWS_RESERVE)
+        val showPageCap = FeedReportLimiter.DAILY_CAP - FeedReportLimiter.FOLLOWED_SHOWS_RESERVE
+        repeat(showPageCap) { assertTrue(limiter.tryClaim("${100 + it}", now, keepFree = FeedReportLimiter.FOLLOWED_SHOWS_RESERVE)) }
+
+        assertEquals(null, reporter.reportTarget("920700", "timeout", SAVED))
+        assertTrue("followed shows still have theirs", limiter.tryClaim("920701", now))
+    }
+
+    @Test
+    fun theOpeningShowsCopyNeverWaitsForTheDailyCleanup() = runBlocking {
+        val held = CompletableDeferred<Unit>()
+        copies.cleanupGate = held
+
+        val opened = pages.open(SHOW, META)
+
+        assertTrue("the page opened while the cleanup still runs", opened.recheckDue)
+        assertEquals(listOf(SHOW), copies.cleanups)
+        held.complete(Unit)
+        Unit
+    }
+
+    @Test
     fun readFailuresMapToTheEventOutcomes() {
         assertEquals(FeedFetchOutcome.GONE, FeedFirstShowPages.failureOutcome("http_410"))
         assertEquals(FeedFetchOutcome.HTTP_ERROR, FeedFirstShowPages.failureOutcome("http_503"))
@@ -168,9 +221,12 @@ class FeedFirstShowPagesTest {
         val reads = mutableListOf<Pair<String, Scope>>()
         var lastRequest: ShowPageFeedPort.ReadRequest? = null
         var stores = 0
+        val transportRequests = mutableListOf<ShowPageFeedPort.ReadRequest>()
+        var transportAnswer: ShowPageFeedPort.Transported? = null
         var cachedShow: ShowPageFeedPort.CachedShow? = null
         val opened = mutableListOf<String>()
         val cleanups = mutableListOf<String?>()
+        var cleanupGate: CompletableDeferred<Unit>? = null
 
         override suspend fun cached(podcastId: String): ShowPageFeedPort.CachedShow? = cachedShow
 
@@ -181,10 +237,21 @@ class FeedFirstShowPagesTest {
             return if (queue.size > 1) queue.removeAt(0) else queue.first()
         }
 
-        override suspend fun store(request: ShowPageFeedPort.ReadRequest, document: ShowPageFeedPort.Document): ReadOutcome {
+        override suspend fun readTransport(
+            request: ShowPageFeedPort.ReadRequest,
+            fetch: suspend (ifNoneMatch: String?) -> ShowPageFeedPort.Transported,
+        ): ReadOutcome {
             stores++
-            return ReadOutcome.Stored(5, document.complete)
+            transportRequests += request
+            return when (val answer = transportAnswer ?: fetch(null)) {
+                is ShowPageFeedPort.Transported.Document -> ReadOutcome.Stored(5, complete = true)
+                ShowPageFeedPort.Transported.NotModified -> ReadOutcome.NotModified
+                is ShowPageFeedPort.Transported.ReadDirect -> read(request.copy(feedUrl = answer.url))
+                is ShowPageFeedPort.Transported.Failed -> ReadOutcome.Failed(answer.reportStatus)
+            }
         }
+
+        override suspend fun search(podcastId: String, query: String, limit: Int, meta: PodcastMeta): List<Episode> = emptyList()
 
         override suspend fun markOpened(podcastId: String, atMillis: Long) {
             opened += podcastId
@@ -192,6 +259,7 @@ class FeedFirstShowPagesTest {
 
         override suspend fun cleanUp(nowMillis: Long, keepPodcastId: String?): Int {
             cleanups += keepPodcastId
+            cleanupGate?.await()
             return 0
         }
     }

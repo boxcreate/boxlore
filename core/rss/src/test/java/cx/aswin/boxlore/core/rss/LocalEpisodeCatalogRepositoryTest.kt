@@ -821,6 +821,10 @@ class LocalEpisodeCatalogRepositoryTest {
             feeds[podcastId]?.let { feeds[podcastId] = it.copy(ttlExpiresAt = ttlExpiresAt, followed = followed) }
         }
 
+        override suspend fun seedFollowed(podcastId: String) = Unit
+
+        override suspend fun searchLimited(podcastId: String, query: String, limit: Int,): List<LocalEpisodeEntity> = emptyList()
+
         override suspend fun listUnfollowedCopies(): List<cx.aswin.boxlore.core.database.UnfollowedCatalogCopy> = feeds.values
             .filter { !it.followed && it.ttlExpiresAt == null }
             .map { feed -> cx.aswin.boxlore.core.database.UnfollowedCatalogCopy(feed.podcastId, feed.lastOpenedAt, feed.fetchedAt, episodes.count { it.podcastId == feed.podcastId }) }

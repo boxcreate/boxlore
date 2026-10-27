@@ -125,7 +125,9 @@ private suspend fun fetchAndPersist(
  * - [complete]: the read held the whole feed, so the copy is the complete archive
  *   ([LocalEpisodeFeedEntity.archiveComplete]); a read of the newest items only leaves it as it was.
  * - [showPage]: a show-page read ([ShowPageFeedCatalog]). It never makes a copy the followed live
- *   list: `ready` stays what the stored row already allowed.
+ *   list, and it keeps what follow and unfollow wrote: the stored row's `ready` and unsubscribe TTL
+ *   are read again inside the write's transaction and kept, so a recently unfollowed show keeps its
+ *   cheap resubscribe and its TTL sweep, and an unfollow that lands during the read stays.
  * - [documentOrder]: the feed's order classified in document order, for a row that has none yet.
  * - [openedAt]: when the show page opened the show (epoch ms), kept from the automatic cleanup.
  * - [recordedAddress]: the address the row records instead of the one read; boxlore's transport
@@ -151,20 +153,40 @@ internal data class FeedRowPolicy(
         ?: documentOrder
         ?: FeedOrderLogic.classify(parsed.episodes.map { it.publishedDate })
 
-    /** A show-page read keeps what the stored row allowed; a followed show's refresh flips once the count is complete. */
-    fun ready(existing: LocalEpisodeFeedEntity?, storedCount: Int, copied: Int): Boolean = if (showPage) {
-        LocalCatalogReadyLogic.isReady(existing)
+    /**
+     * A show-page read keeps the stored row's `ready` ([current], read in the write's transaction);
+     * a followed show's refresh flips once the count is complete.
+     */
+    fun ready(current: LocalEpisodeFeedEntity?, storedCount: Int, copied: Int): Boolean = if (showPage) {
+        current?.ready == true
     } else {
         LocalCatalogReadyLogic.isReadyToFlip(feedReady = storedCount >= copied)
     }
 
+    /** A show-page read keeps the stored unsubscribe TTL ([current]); a followed show's refresh clears it. */
+    fun ttlExpiresAt(current: LocalEpisodeFeedEntity?): Long? = if (showPage) current?.ttlExpiresAt else null
+
+    /**
+     * Whether a read of the newest items left a gap: the copy had rows, yet none of the items read
+     * was one of them, so more items than the read holds came out since the last read. The copy is
+     * then no longer the whole archive.
+     */
+    fun leavesGap(existingRows: Int, planned: List<PlannedEpisodeRow>): Boolean =
+        !complete && existingRows > 0 && planned.none { it.source == PlannedIdSource.STORED }
+
     /** A read of the newest items leaves a pending backfill pending. */
     fun needsFullBackfill(existing: LocalEpisodeFeedEntity?): Boolean = !complete && (existing?.needsFullBackfill ?: true)
 
-    /** The v39 columns [LocalEpisodeCatalogDao.upsertFeed] keeps, written on their own. */
-    suspend fun writeFeedFirstColumns(dao: LocalEpisodeCatalogDao, podcastId: String) {
+    /**
+     * The v39 columns [LocalEpisodeCatalogDao.upsertFeed] keeps, written on their own: the archive
+     * state ([gap]: see [leavesGap]), the opening time, and `followed` for a row this write created
+     * ([created]), from `podcasts.isSubscribed`.
+     */
+    suspend fun writeFeedFirstColumns(dao: LocalEpisodeCatalogDao, podcastId: String, created: Boolean, gap: Boolean) {
         if (complete) dao.setArchiveComplete(podcastId, true)
+        if (gap) dao.setArchiveComplete(podcastId, false)
         openedAt?.let { dao.setLastOpenedAt(podcastId, it) }
+        if (created) dao.seedFollowed(podcastId)
     }
 }
 
@@ -224,8 +246,9 @@ internal suspend fun persistParsed(
         deps.dao.upsertEpisodes(written)
         recordAliases(deps, request.podcastIndexId, planned, resolved, newIds)
         deps.reconcileListenerState(request.podcastIndexId, written)
+        val current = deps.dao.getFeed(request.podcastIndexId)
         storedCount = maxOf(deps.dao.count(request.podcastIndexId), written.size)
-        ready = policy.ready(existing, storedCount, copied)
+        ready = policy.ready(current, storedCount, copied)
         deps.dao.upsertFeed(
             LocalEpisodeFeedEntity(
                 podcastId = request.podcastIndexId,
@@ -235,8 +258,8 @@ internal suspend fun persistParsed(
                 fetchedAt = System.currentTimeMillis(),
                 itemCount = storedCount,
                 feedOrder = feedOrder,
-                ttlExpiresAt = null,
-                needsFullBackfill = policy.needsFullBackfill(existing),
+                ttlExpiresAt = policy.ttlExpiresAt(current),
+                needsFullBackfill = policy.needsFullBackfill(current ?: existing),
                 copiedExtrasCount = copied,
                 ready = ready,
                 feedUrlLookupAt = existing?.feedUrlLookupAt ?: 0L,
@@ -248,7 +271,12 @@ internal suspend fun persistParsed(
             deps.dao.setEpNsIfUnset(request.podcastIndexId, epNs)
             deps.identity.keepShowNamespace(request.podcastIndexId, epNs)
         }
-        policy.writeFeedFirstColumns(deps.dao, request.podcastIndexId)
+        policy.writeFeedFirstColumns(
+            deps.dao,
+            request.podcastIndexId,
+            created = current == null,
+            gap = policy.leavesGap(identities.size, planned),
+        )
     }
     resolution?.let { logResolution(request.podcastIndexId, it, written = !incomplete) }
     if (incomplete) return RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE)

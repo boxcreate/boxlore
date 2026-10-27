@@ -122,6 +122,7 @@
     <string name="podcast_info_feed_completing">Loading all episodes from the feed…</string>
     <string name="podcast_info_feed_fallback">Can’t reach this show’s feed. Showing boxlore’s episode list instead.</string>
     <string name="podcast_info_feed_offline">You’re offline. Showing saved episodes.</string>
+    <string name="podcast_info_feed_offline_empty">You’re offline. Connect to load this show’s episodes.</string>
     <string name="podcast_info_play_trailer">Play trailer</string>
     <string name="podcast_info_support">Support</string>
     <string name="podcast_episode_select">Select episode</string>

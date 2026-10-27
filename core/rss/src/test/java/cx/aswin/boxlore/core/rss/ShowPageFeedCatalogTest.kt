@@ -41,15 +41,16 @@ class ShowPageFeedCatalogTest : RoomCatalogTestBase() {
     private val requests = CopyOnWriteArrayList<Request>()
     private var document: String = feedXml(150)
     private var status = 200
+    private var etag = ETAG
     private val persisted = mutableListOf<String>()
 
     private val client =
         RssFeedClient(
             OkHttpClient.Builder().addInterceptor { chain ->
                 requests += chain.request()
-                val answer = if (chain.request().header("If-None-Match") == ETAG && status == 200) 304 else status
+                val answer = if (chain.request().header("If-None-Match") == etag && status == 200) 304 else status
                 Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(answer).message("test")
-                    .header("ETag", ETAG).body(document.toResponseBody("application/rss+xml".toMediaType())).build()
+                    .header("ETag", etag).body(document.toResponseBody("application/rss+xml".toMediaType())).build()
             }.build(),
         )
 
@@ -117,11 +118,105 @@ class ShowPageFeedCatalogTest : RoomCatalogTestBase() {
     }
 
     @Test
-    fun aTransportDocumentIsStoredWithoutRecordingTheTransportAddress() = runBlocking {
-        val transport = ShowPageFeedPort.Document(feedXml(20).encodeToByteArray(), "https://api.example/v2/feed/$SHOW", "t-etag", complete = true)
+    fun aTransportDocumentIsStoredWithItsEtagAndNeverRecordsAnAddress() = runBlocking {
+        val etags = mutableListOf<String?>()
 
-        assertEquals(ReadOutcome.Stored(20, complete = true), pages.store(request(Scope.NEWEST), transport))
-        assertEquals("", database.localEpisodeCatalogDao().getFeed(SHOW)!!.feedUrl)
+        val stored =
+            pages.readTransport(request(Scope.NEWEST).copy(feedUrl = PLAIN_URL)) { etag ->
+                etags += etag
+                ShowPageFeedPort.Transported.Document(feedXml(20).encodeToByteArray(), "t-etag")
+            }
+
+        assertEquals(ReadOutcome.Stored(20, complete = true), stored)
+        assertEquals(EpisodeRecipeId.forNamespace(SHOW.toLong(), "g1").toString(), rows(SHOW)["g1"])
+        assertEquals("neither the transport nor the http address is recorded", "", database.localEpisodeCatalogDao().getFeed(SHOW)!!.feedUrl)
+        assertEquals(listOf<String?>(null), etags)
+
+        // The whole copy's ETag goes with the next read, and a 304 to it keeps the copy.
+        val again =
+            pages.readTransport(request(Scope.ARCHIVE).copy(feedUrl = PLAIN_URL)) { etag ->
+                etags += etag
+                ShowPageFeedPort.Transported.NotModified
+            }
+        assertEquals(ReadOutcome.NotModified, again)
+        assertEquals("t-etag", etags.last())
+    }
+
+    @Test
+    fun aTransportThatSaysTheAddressIsHttpsReadsItDirectly() = runBlocking {
+        val outcome = pages.readTransport(request(Scope.NEWEST).copy(feedUrl = PLAIN_URL)) { ShowPageFeedPort.Transported.ReadDirect(feedUrl(SHOW)) }
+
+        assertEquals(ReadOutcome.Stored(100, complete = false), outcome)
+        assertEquals(feedUrl(SHOW), requests.single().url.toString())
+        assertEquals(
+            ReadOutcome.Failed("http_503"),
+            pages.readTransport(request(Scope.NEWEST)) { ShowPageFeedPort.Transported.Failed("http_503") },
+        )
+    }
+
+    @Test
+    fun aShowPageReadKeepsTheUnsubscribeTtlSoAResubscribeStaysCheap() = runBlocking {
+        // A followed show's complete catalog, then unfollowed: TTL set, ready kept for a resubscribe.
+        follow(SHOW)
+        assertTrue(catalog.refresh(LocalEpisodeCatalogPort.RefreshRequest(SHOW, feedUrl(SHOW))) is LocalEpisodeCatalogPort.RefreshOutcome.Success)
+        assertTrue(catalog.isReady(SHOW))
+        val ttl = System.currentTimeMillis() + 14L * DAY
+        catalog.setUnsubscribedTtl(SHOW, ttl)
+        assertFalse(catalog.isReady(SHOW))
+
+        pages.read(request(Scope.NEWEST))
+
+        val feed = database.localEpisodeCatalogDao().getFeed(SHOW)!!
+        assertEquals("the TTL sweep still owns the copy", ttl, feed.ttlExpiresAt)
+        assertTrue("ready is kept for the resubscribe", feed.ready)
+        assertFalse("still not the live list while unfollowed", catalog.isReady(SHOW))
+        catalog.setUnsubscribedTtl(SHOW, null)
+        assertTrue("resubscribing uses the stored catalog at once", catalog.isReady(SHOW))
+    }
+
+    @Test
+    fun aNewestReadWithNoStoredItemLeavesTheArchiveIncomplete() = runBlocking {
+        document = feedXml(150)
+        pages.read(request(Scope.ARCHIVE))
+        assertTrue(requireNotNull(pages.cached(SHOW)).archiveComplete)
+
+        // More than a newest read holds came out since: none of the 100 items read is stored.
+        document = feedXml(150, firstIndex = -120)
+        etag = "\"v2\""
+        assertEquals(ReadOutcome.Stored(250, complete = false), pages.read(request(Scope.NEWEST)))
+
+        assertFalse("a gap below the new items", requireNotNull(pages.cached(SHOW)).archiveComplete)
+        pages.read(request(Scope.ARCHIVE))
+        assertNull("the archive read goes out without validators", requests.last().header("If-None-Match"))
+
+        // A newest read that meets a stored item leaves a whole archive whole.
+        document = feedXml(150, firstIndex = -125)
+        etag = "\"v3\""
+        pages.read(request(Scope.NEWEST))
+        assertTrue(requireNotNull(pages.cached(SHOW)).archiveComplete)
+    }
+
+    @Test
+    fun aShowFollowedBeforeItsFirstReadGetsItsFollowedColumnFromTheFollow() = runBlocking {
+        follow(SHOW)
+        assertNull(database.localEpisodeCatalogDao().getFeed(SHOW))
+
+        pages.read(request(Scope.NEWEST))
+
+        assertTrue(database.localEpisodeCatalogDao().getFeed(SHOW)!!.followed)
+        pages.read(request(Scope.NEWEST, show = OTHER_SHOW))
+        assertFalse(database.localEpisodeCatalogDao().getFeed(OTHER_SHOW)!!.followed)
+    }
+
+    @Test
+    fun inShowSearchIsLimitedInTheQuery() = runBlocking {
+        pages.read(request(Scope.ARCHIVE))
+
+        val found = pages.search(SHOW, "Episode", limit = 7)
+
+        assertEquals(7, found.size)
+        assertEquals("Episode 0", found.first().title)
+        assertTrue(pages.search(SHOW, "  ", limit = 7).isEmpty())
     }
 
     @Test
@@ -166,9 +261,12 @@ class ShowPageFeedCatalogTest : RoomCatalogTestBase() {
         const val ETAG = "\"whole-doc\""
         const val DAY = 24L * 60L * 60L * 1000L
 
-        /** [count] items dated a day apart, newest first unless [oldestFirst]. */
-        fun feedXml(count: Int, oldestFirst: Boolean = false): String {
-            val order = if (oldestFirst) (count - 1 downTo 0) else (0 until count)
+        const val PLAIN_URL = "http://plain.example/920666.xml"
+
+        /** [count] items dated a day apart from [firstIndex] (negative: newer), newest first unless [oldestFirst]. */
+        fun feedXml(count: Int, oldestFirst: Boolean = false, firstIndex: Int = 0): String {
+            val last = firstIndex + count - 1
+            val order = if (oldestFirst) (last downTo firstIndex) else (firstIndex..last)
             val items =
                 order.joinToString("") { index ->
                     val date = DateTimeFormatter.RFC_1123_DATE_TIME.format(Instant.ofEpochSecond(1_790_000_000L - index * 86_400L).atZone(ZoneOffset.UTC))

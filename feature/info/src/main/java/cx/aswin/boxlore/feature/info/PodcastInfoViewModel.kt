@@ -82,7 +82,7 @@ class PodcastInfoViewModel(
     /** The feed-first show page (P4 PR 16): reads, the status line and reloads as the list grows. */
     private val feedFirst =
         PodcastInfoFeedFirst(
-            repository,
+            PodcastInfoFeedFirst.sourceOf(repository),
             object : PodcastInfoFeedFirst.Ui {
                 override fun state(): PodcastInfoUiState.Success? = _uiState.value as? PodcastInfoUiState.Success
 
@@ -490,7 +490,7 @@ class PodcastInfoViewModel(
         }
         val sortParam = if (newestFirst) "newest" else "oldest"
         val page =
-            repository.getEpisodesPaginated(
+            repository.getShowPageEpisodes(
                 feedId = currentPodcastId,
                 limit = MAX_SELECTION_EPISODES,
                 offset = 0,
@@ -662,7 +662,7 @@ class PodcastInfoViewModel(
 
                 if (currentPodcast?.isRss == true) {
                     val cachedPage =
-                        repository.getEpisodesPaginated(effectivePodcastId, limit, 0, sortParam)
+                        repository.getShowPageEpisodes(effectivePodcastId, limit, 0, sortParam)
                     currentOffset = cachedPage.sourceCount
                     val successState =
                         PodcastInfoUiState.Success(
@@ -682,10 +682,11 @@ class PodcastInfoViewModel(
                     rssRepository.refreshCatalogIfNeeded(effectivePodcastId)
                 }
 
-                // Feed-first show pages (P4 PR 16): without a stored copy the first page waits for the feed.
+                // Feed-first show pages (P4 PR 16): without a stored copy, boxlore's list shows while the
+                // feed is read; its rows carry the same IDs, so the list then grows without moving.
                 val feedOpened = if (currentPodcast?.isRss == true) null else feedFirst.open(effectivePodcastId, currentPodcast)
                 val (apiPodcast, page) =
-                    fetchPodcastAndEpisodes(effectivePodcastId, limit, sortParam, skipEpisodes = feedOpened?.cached == false)
+                    fetchPodcastAndEpisodes(effectivePodcastId, limit, sortParam)
 
                 if (apiPodcast != null) {
                     val apiPodcastWithFallback =
@@ -725,7 +726,7 @@ class PodcastInfoViewModel(
                             state = baseSuccess,
                             piEpisodes = pageEpisodes,
                             hasMoreEpisodes = page.hasMore,
-                            isLoadingMore = feedOpened?.cached == false,
+                            isLoadingMore = false,
                         )
                     feedOpened?.let { opened -> launch { beginFeedFirst(apiPodcastWithFallback, initialSort, opened) } }
 
@@ -851,20 +852,11 @@ class PodcastInfoViewModel(
         }
     }
 
-    /**
-     * Show details and the first page together. [skipEpisodes]: a feed-first page with no stored
-     * copy yet, whose first page comes from the feed read that follows (P4 PR 16).
-     */
     private suspend fun fetchPodcastAndEpisodes(
         podcastId: String,
         limit: Int,
         sortParam: String,
-        skipEpisodes: Boolean = false,
     ): Pair<Podcast?, cx.aswin.boxlore.core.catalog.PodcastRepository.EpisodePage> = kotlinx.coroutines.coroutineScope {
-        if (skipEpisodes) {
-            return@coroutineScope repository.getPodcastDetails(podcastId) to
-                cx.aswin.boxlore.core.catalog.PodcastRepository.EpisodePage(emptyList(), hasMore = true)
-        }
         val apiPodcast: Podcast?
         val page: cx.aswin.boxlore.core.catalog.PodcastRepository.EpisodePage
 
@@ -872,7 +864,7 @@ class PodcastInfoViewModel(
             apiPodcast = repository.getPodcastDetails(podcastId)
             if (apiPodcast != null) {
                 val realId = apiPodcast.id
-                val episodesDeferred = async { repository.getEpisodesPaginated(realId, limit, 0, sortParam) }
+                val episodesDeferred = async { repository.getShowPageEpisodes(realId, limit, 0, sortParam) }
                 page = episodesDeferred.await()
             } else {
                 page =
@@ -881,7 +873,7 @@ class PodcastInfoViewModel(
             }
         } else {
             val podcastDeferred = async { repository.getPodcastDetails(podcastId) }
-            val episodesDeferred = async { repository.getEpisodesPaginated(podcastId, limit, 0, sortParam) }
+            val episodesDeferred = async { repository.getShowPageEpisodes(podcastId, limit, 0, sortParam) }
             apiPodcast = podcastDeferred.await()
             page = episodesDeferred.await()
         }
@@ -889,15 +881,16 @@ class PodcastInfoViewModel(
     }
 
     /**
-     * True when [feedId]'s page reads its feed (P4 PR 16). Search then runs on the phone over every
-     * episode, so a copy that holds only the newest is completed first.
+     * True when [feedId]'s search runs over the feed's own copy (P4 PR 16): the page reads its feed,
+     * so a copy that holds only the newest is completed first. False once the page fell back: search
+     * then runs over the server's list, with cached feed extras, and reads no feed.
      */
     private suspend fun prepareFeedFirstSearch(feedId: String, podcast: Podcast): Boolean {
-        if (!feedFirst.isActive(feedId)) return false
+        if (!feedFirst.readsFeed(feedId)) return false
         if (ShowFeedLogic.needsArchive(feedFirst.archiveComplete, ShowFeedLogic.ArchiveAction.SEARCH)) {
             feedFirst.completeArchive(viewModelScope, podcast)
         }
-        return true
+        return feedFirst.readsFeed(feedId) && repository.showPageSource(feedId) == cx.aswin.boxlore.core.catalog.ShowPageSource.FEED
     }
 
     /** Clears the loading row when a feed-first read ended without reloading the page (it moved on, or the archive was already whole). */
@@ -988,6 +981,8 @@ class PodcastInfoViewModel(
         if (currentState !is PodcastInfoUiState.Success) return
         if (currentState.isLoadingMore || !currentState.hasMoreEpisodes) return
         if (currentState.searchResults != null) return // Don't load more when searching
+        // Feed-first (P4 PR 16): past the copy while offline, wait for a connection instead of retrying.
+        if (feedFirst.readsFeed(currentPodcastId) && feedFirst.holdsAtCopyEnd()) return
 
         _uiState.value = currentState.copy(isLoadingMore = true)
 
@@ -995,12 +990,12 @@ class PodcastInfoViewModel(
             try {
                 val limit = if (currentState.currentSort == EpisodeSort.OLDEST) OLDEST_PAGE_SIZE else PAGE_SIZE
                 val sortParam = if (currentState.currentSort == EpisodeSort.OLDEST) "oldest" else "newest"
-                val page = repository.getEpisodesPaginated(currentPodcastId, limit, currentOffset, sortParam)
-                if (feedFirst.isActive(currentPodcastId) &&
+                val page = repository.getShowPageEpisodes(currentPodcastId, limit, currentOffset, sortParam)
+                if (feedFirst.readsFeed(currentPodcastId) &&
                     ShowFeedLogic.needsArchive(feedFirst.archiveComplete, ShowFeedLogic.ArchiveAction.LOAD_MORE, limit, page.episodes.size)
                 ) {
                     // Past the stored newest episodes: read the whole feed, then show one more page.
-                    feedFirst.completeArchive(viewModelScope, currentState.podcast, extra = limit)
+                    feedFirst.completeArchive(viewModelScope, currentState.podcast, extra = limit, atCopyEnd = true)
                     stopLoadingMore()
                     return@launch
                 }
@@ -1197,7 +1192,7 @@ class PodcastInfoViewModel(
         val sortParam =
             if (activeInitialState.currentSort == EpisodeSort.OLDEST) "oldest" else "newest"
         val podcast = repository.getPodcastDetails(targetPodcastId) ?: activeInitialState.podcast
-        val page = repository.getEpisodesPaginated(targetPodcastId, limit, 0, sortParam)
+        val page = repository.getShowPageEpisodes(targetPodcastId, limit, 0, sortParam)
         if (!PodcastInfoPullRefreshLogic.shouldApply(currentPodcastId, targetPodcastId)) {
             return
         }
@@ -1344,7 +1339,7 @@ class PodcastInfoViewModel(
 
             try {
                 if (newSort == EpisodeSort.OLDEST &&
-                    feedFirst.isActive(currentPodcastId) &&
+                    feedFirst.readsFeed(currentPodcastId) &&
                     ShowFeedLogic.needsArchive(feedFirst.archiveComplete, ShowFeedLogic.ArchiveAction.SORT_OLDEST)
                 ) {
                     // The oldest episodes are only known once the whole feed is read.
@@ -1354,7 +1349,7 @@ class PodcastInfoViewModel(
                 }
                 val limit = if (newSort == EpisodeSort.OLDEST) OLDEST_PAGE_SIZE else PAGE_SIZE
                 val sortParam = if (newSort == EpisodeSort.OLDEST) "oldest" else "newest"
-                val page = repository.getEpisodesPaginated(currentPodcastId, limit, 0, sortParam)
+                val page = repository.getShowPageEpisodes(currentPodcastId, limit, 0, sortParam)
                 currentOffset = page.sourceCount
                 val latestState = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
                 _uiState.value =
@@ -1421,6 +1416,7 @@ class PodcastInfoViewModel(
                                 artist = podcast.artist,
                             ),
                             // The feed's own copy holds every episode the feed has: no extras to add.
+                            // After a fallback the server's list gets them, as without the flag.
                             isRss = podcast.isRss || readsFeed,
                         )
 
@@ -1487,6 +1483,9 @@ class PodcastInfoViewModel(
                 podcast = updatedPodcast,
                 isSubscribed = isSubscribed,
             )
+        // Feed-first (P4 PR 16): once followed, the show's own catalog refresh (with auto-download)
+        // reads the feed; this page's reads would store its validators first.
+        if (isSubscribed && feedFirst.isActive(latestState.podcast.id)) feedFirst.stop()
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackPodcastSubscriptionToggled(
             podcastId = latestState.podcast.id,
             podcastName = latestState.podcast.title,
@@ -1616,7 +1615,7 @@ class PodcastInfoViewModel(
         }
         val oldest = pageState.currentSort == EpisodeSort.OLDEST
         val page =
-            repository.getEpisodesPaginated(
+            repository.getShowPageEpisodes(
                 feedId = targetPodcastId,
                 limit = if (oldest) OLDEST_PAGE_SIZE else PAGE_SIZE,
                 offset = 0,

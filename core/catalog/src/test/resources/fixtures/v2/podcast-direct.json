@@ -1,0 +1,42 @@
+{
+  "status": "true",
+  "source": "pidump",
+  "feed": {
+    "id": 920666,
+    "podcastGuid": "917393e3-1b1e-5cef-ace4-edaa54e1f810",
+    "title": "Podcasting 2.0",
+    "url": "https://feeds.podcastindex.org/pc20.xml",
+    "originalUrl": "http://mp3s.nashownotes.com/pc20rss.xml",
+    "link": "http://podcastindex.org",
+    "description": "The Podcast Index presents Podcasting 2.0 - Upgrading Podcasting",
+    "author": "Podcast Index LLC",
+    "ownerName": "Adam Curry & Dave Jones",
+    "image": "https://noagendaassets.com/enc/1684513486.722_pcifeedimage.png",
+    "artwork": "https://noagendaassets.com/enc/1684513486.722_pcifeedimage.png",
+    "lastUpdateTime": 1792878729,
+    "itunesId": 1584274529,
+    "type": "episodic",
+    "language": "en",
+    "explicit": false,
+    "dead": 0,
+    "episodeCount": 209,
+    "categories": {
+      "1": "news",
+      "2": "politics",
+      "3": "technology"
+    }
+  },
+  "fetchUrl": "https://feeds.podcastindex.org/pc20.xml",
+  "fetchVia": "direct",
+  "transportUrl": null,
+  "feedSource": "pidump",
+  "epNs": 920666,
+  "flags": {
+    "addressRepair": false,
+    "episodeStale": false
+  },
+  "verifiedAt": null,
+  "episodeCount": 209,
+  "appleLatestAt": 1792783020,
+  "appleEpisodeCount": 214
+}

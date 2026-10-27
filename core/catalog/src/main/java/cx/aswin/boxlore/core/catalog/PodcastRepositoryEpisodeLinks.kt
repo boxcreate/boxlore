@@ -201,7 +201,8 @@ internal class RssEpisodeFeedReader(
         is V2FeedReadTarget.ViaApi -> {
             val response = api().getFeed(target.showId).awaitResponse()
             val body = response.body()?.takeIf { response.isSuccessful } ?: error("feed proxy answered ${response.code()}")
-            val bytes = body.use { it.bytes() }
+            // The same size cap as a direct read (P4 PR 16): a huge document never fills memory.
+            val bytes = body.use { RssFeedClient.readFeedBody(it.byteStream()) }
             feedClient.parse(requireNotNull(address.transportUrl), bytes)
         }
         null -> null

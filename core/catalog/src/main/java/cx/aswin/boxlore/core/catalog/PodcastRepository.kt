@@ -101,16 +101,18 @@ class PodcastRepository(
         FeedFirstShowPages(
             copies = feedFirstWiring.copies,
             registry = { showId -> v2ShowAddress(showId) },
-            transport = { showId -> v2TransportDocument(showId) },
+            transport = { showId, etag -> v2Transport(showId, etag) },
             reporter =
             FeedReporter(
                 send = { request -> FeedReporter.sendWith(apiV2, request) },
-                limiter = FeedReportLimiter(feedFirstWiring.reportStamps),
+                limiter = feedFirstWiring.reportLimiter,
                 isOnline = feedFirstWiring.isOnline,
                 enabled = rolloutSwitches.addressCheck,
+                keepFree = FeedReportLimiter.FOLLOWED_SHOWS_RESERVE,
             ),
             isOnline = feedFirstWiring.isOnline,
             telemetry = feedFirstWiring.telemetry,
+            isFollowed = feedFirstWiring.isFollowed,
         )
     }
 
@@ -417,11 +419,37 @@ class PodcastRepository(
         if (isLocalCatalogReady(feedId)) {
             return@withContext getLocalCatalogPage(feedId, safeLimit, offset, sort)
         }
-        if (showPageSource(feedId) == ShowPageSource.FEED) {
-            feedCopyPage(feedId, safeLimit, offset, sort)?.let { return@withContext it }
-        }
         getServerListPage(feedId, safeLimit, offset, sort, mergeSupplements)
     }
+
+    /**
+     * [getEpisodesPaginated] for the show page itself: the feed-first stored copy when the page
+     * reads the feed ([ShowPageSource.FEED]), else the same sources. Only the show page reads the
+     * copy, because only it reads the feed again (on open, pull to refresh and archive actions);
+     * Smart Queue, Android Auto, Home and downloads keep reading the server's list
+     * ([getEpisodesPaginated]), so a copy that stops being read never goes stale under them.
+     *
+     * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, feed-first show page; decision D1).
+     */
+    suspend fun getShowPageEpisodes(
+        feedId: String,
+        limit: Int = 20,
+        offset: Int = 0,
+        sort: String = "newest",
+    ): EpisodePage = withContext(Dispatchers.IO) {
+        if (showPageSource(feedId) == ShowPageSource.FEED) {
+            feedCopyPage(feedId, clampPageLimit(limit), offset, sort)?.let { return@withContext it }
+        }
+        getEpisodesPaginated(feedId, limit, offset, sort)
+    }
+
+    /**
+     * True when [feedId]'s show page reads its feed first (`feed_first` on, a Podcast Index show),
+     * whether or not this page has fallen back: such a page never offers "Missing episodes?".
+     *
+     * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, refresh replaces the chip).
+     */
+    fun isFeedFirstShowPage(feedId: String): Boolean = !feedId.startsWith("rss:") && isFeedFirstShow(feedId)
 
     /**
      * Drop cached episode pages for [feedId] so the next read hits the network. Pages are cached
@@ -1021,7 +1049,8 @@ class PodcastRepository(
         if (isLocalCatalogReady(feedId)) {
             return@withContext getLocalCatalogWindow(feedId, sort, aroundEpisodeId)
         }
-        getNetworkEpisodeWindow(feedId)
+        // The show page's IDs (P4 PR 16): the feed-first copy around its episode, else /v2/episodes.
+        getShowEpisodeWindow(feedId, aroundEpisodeId, sort)
     }
 
     override suspend fun getEpisode(episodeId: String): Episode? = getEpisodeImpl(episodeId, showId = null)

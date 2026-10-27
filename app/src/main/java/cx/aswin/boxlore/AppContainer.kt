@@ -12,6 +12,7 @@ import cx.aswin.boxlore.core.catalog.FeedAddressWiring
 import cx.aswin.boxlore.core.catalog.FeedFirstWiring
 import cx.aswin.boxlore.core.catalog.FeedFixToggles
 import cx.aswin.boxlore.core.catalog.FeedMoveFollower
+import cx.aswin.boxlore.core.catalog.FeedReportLimiter
 import cx.aswin.boxlore.core.catalog.FolderRepository
 import cx.aswin.boxlore.core.catalog.InstallReferrerManager
 import cx.aswin.boxlore.core.catalog.LegacyRssRepair
@@ -227,13 +228,14 @@ class AppContainer(
             rolloutSwitches = rolloutSwitches,
             episodeAliases = episodeAliasReads,
             discoveryEpisodeIds = discoveryEpisodeIds,
-            // Feed-first show pages (P4 PR 16): stored copies, the report limits and feed_fetch_result.
+            // Feed-first show pages (P4 PR 16): stored copies, the shared report limiter and feed_fetch_result.
             feedFirstWiring =
             FeedFirstWiring(
                 copies = localEpisodeCatalogRepository.showPages,
                 isOnline = { connectivityStatus.isOnline() },
-                reportStamps = feedReportStamps,
+                reportLimiter = feedReportLimiter,
                 telemetry = feedTelemetry,
+                isFollowed = { id -> database.podcastDao().getPodcast(id)?.isSubscribed == true },
             ),
         )
     }
@@ -435,6 +437,7 @@ class AppContainer(
             FeedAddressUpkeep(
                 reportStamps = feedReportStamps,
                 isOnline = connectivityStatus::isOnline,
+                reportLimiter = feedReportLimiter,
             ),
         )
     }
@@ -448,6 +451,12 @@ class AppContainer(
             appContext.getSharedPreferences(SharedPreferencesFeedReportStamps.FILE_NAME, Context.MODE_PRIVATE),
         )
     }
+
+    /**
+     * The app's one broken-feed report limiter over [feedReportStamps]: the daily address check and
+     * the show page claim through the same instance, so they never pass the caps together (P4 PR 16).
+     */
+    private val feedReportLimiter: FeedReportLimiter by lazy { FeedReportLimiter(feedReportStamps) }
 
     override val folderRepository: FolderRepository by lazy {
         RoomFolderRepository(

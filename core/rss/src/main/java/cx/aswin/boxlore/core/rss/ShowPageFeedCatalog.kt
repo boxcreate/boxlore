@@ -2,11 +2,13 @@ package cx.aswin.boxlore.core.rss
 
 import cx.aswin.boxlore.core.database.LocalEpisodeFeedEntity
 import cx.aswin.boxlore.core.database.LocalFeedOrder
+import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.PodcastMeta
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshRequest
 import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort
 import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort.ReadOutcome
 import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort.ReadRequest
+import cx.aswin.boxlore.core.model.Episode
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -56,16 +58,54 @@ internal class ShowPageFeedCatalog(
         }
     }
 
-    override suspend fun store(request: ReadRequest, document: ShowPageFeedPort.Document): ReadOutcome = withContext(Dispatchers.IO) {
+    override suspend fun readTransport(
+        request: ReadRequest,
+        fetch: suspend (ifNoneMatch: String?) -> ShowPageFeedPort.Transported,
+    ): ReadOutcome = withContext(Dispatchers.IO) {
         if (!isFeedShow(request.podcastId)) return@withContext ReadOutcome.Failed(OTHER)
-        lockFor(request.podcastId).withLock {
-            failSafe {
-                val existing = deps.dao.getFeed(request.podcastId)
-                val result = RssFetchResult(document.finalUrl, document.etag, null, document.bytes)
-                // The transport address needs the API session: the row keeps the address it had, if any.
-                persist(request, existing, Fetched(result, document.complete), url = null, recordedAddress = existing?.feedUrl.orEmpty())
+        var direct: String? = null
+        val outcome =
+            lockFor(request.podcastId).withLock {
+                failSafe {
+                    val existing = deps.dao.getFeed(request.podcastId)
+                    // Transport documents are the whole feed: the ETag goes out only for a whole copy.
+                    val etag = ShowPageFeedRules.validators(wholeFeed = true, existing)?.first
+                    when (val answer = deps.megaGetGate.withPermit { fetch(etag) }) {
+                        is ShowPageFeedPort.Transported.Document -> storeTransported(request, existing, answer)
+                        ShowPageFeedPort.Transported.NotModified ->
+                            if (etag != null) notModified(request.podcastId, existing) else ReadOutcome.Failed(OTHER)
+                        is ShowPageFeedPort.Transported.ReadDirect -> {
+                            direct = answer.url
+                            ReadOutcome.Failed(OTHER)
+                        }
+                        is ShowPageFeedPort.Transported.Failed -> ReadOutcome.Failed(answer.reportStatus)
+                    }
+                }
             }
-        }
+        // Read outside the lock: [read] takes it again.
+        direct?.let { url -> read(request.copy(feedUrl = url)) } ?: outcome
+    }
+
+    override suspend fun search(podcastId: String, query: String, limit: Int, meta: PodcastMeta,): List<Episode> = withContext(Dispatchers.IO) {
+        val trimmed = query.trim()
+        if (trimmed.isEmpty() || limit <= 0) return@withContext emptyList()
+        deps.dao.searchLimited(podcastId, trimmed.escapeForSqlLike(), limit).map { it.toCatalogEpisode(meta) }
+    }
+
+    /**
+     * A transport document. The phone never mints IDs from an http address ([RssIdGenerator]
+     * refuses them), so no older ID of the show can be under its publisher address; its namespace
+     * is one fixed address per show ([transportNamespace]), which never changes with the API's
+     * host. The row keeps the address it had, if any: the transport address needs the API session
+     * and is never recorded.
+     */
+    private suspend fun storeTransported(
+        request: ReadRequest,
+        existing: LocalEpisodeFeedEntity?,
+        document: ShowPageFeedPort.Transported.Document,
+    ): ReadOutcome {
+        val result = RssFetchResult(transportNamespace(request.podcastId), document.etag, null, document.bytes)
+        return persist(request, existing, Fetched(result, complete = true), url = null, recordedAddress = existing?.feedUrl.orEmpty())
     }
 
     override suspend fun markOpened(podcastId: String, atMillis: Long) = withContext(Dispatchers.IO) {
@@ -163,6 +203,9 @@ internal class ShowPageFeedCatalog(
 
     private companion object {
         const val OTHER = "other"
+
+        /** The parse and namespace address of [podcastId]'s transport documents. */
+        fun transportNamespace(podcastId: String): String = "https://transport.boxlore.invalid/feed/$podcastId"
 
         /** Show pages store copies for Podcast Index shows; `rss:` shows have their own table. */
         fun isFeedShow(podcastId: String): Boolean = podcastId.isNotBlank() && !podcastId.startsWith("rss:")
