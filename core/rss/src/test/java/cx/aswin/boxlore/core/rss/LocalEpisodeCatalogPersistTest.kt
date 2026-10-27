@@ -162,6 +162,20 @@ class LocalEpisodeCatalogPersistTest {
     }
 
     @Test
+    fun aHistoryOnlyIdMintedUnderTheShowsOlderAddressIsKeptAfterTheAddressChanged() {
+        // No stored row holds it: only listening history does, minted when the show had another address.
+        val older = RssIdGenerator.podcastId("https://old.example/feed.xml")
+        val item = rssEpisode(guid = "g1")
+        val olderMint = StickyEpisodeIdentity.ownMintedId(older, "g1")
+        val ids = withListeners(heldIds = setOf(olderMint))
+
+        assertEquals(PlannedIdSource.RECIPE, plan(listOf(item), newIds = ids).single().source, "without the older address nothing proves it")
+        val row = plan(listOf(item), newIds = ids, olderNamespaces = listOf(older)).single()
+        assertEquals(olderMint, row.entity.episodeId)
+        assertEquals(PlannedIdSource.OWN_MINT, row.source)
+    }
+
+    @Test
     fun aPodcastIndexIdOnlyHistoryHoldsIsKeptWhenItsAudioMatchesOneItem() {
         val audio = "https://cdn.example/played.mp3"
         val ids = withListeners(heldIds = setOf("5001"), references = listOf(reference("5001", audio = audio)))
@@ -284,6 +298,7 @@ class LocalEpisodeCatalogPersistTest {
         existing: List<LocalEpisodeIdentity> = emptyList(),
         newIds: NewEpisodeIds = show100,
         parsedItems: Boolean = false,
+        olderNamespaces: List<String> = emptyList(),
     ): List<PlannedEpisodeRow> = LocalEpisodeCatalogPersist.plan(
         podcastIndexId = "100",
         rssNamespaceId = namespace,
@@ -292,6 +307,7 @@ class LocalEpisodeCatalogPersistTest {
         newIds = newIds,
         channelImageUrl = null,
         showImageUrl = null,
+        olderNamespaces = olderNamespaces,
     )
 
     private fun withListeners(heldIds: Set<String>, references: List<LocalCatalogListenerReference> = emptyList()) =

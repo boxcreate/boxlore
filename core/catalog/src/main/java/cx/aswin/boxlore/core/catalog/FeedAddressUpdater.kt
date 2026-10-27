@@ -168,9 +168,16 @@ class FeedAddressUpdater(
         pendingRegistrations.all().filterNot { it.startsWith("rss:") }.forEach(::requestRegistration)
     }
 
-    /** Records what an acknowledged registration achieved: only a retry stays pending. */
-    fun registrationSettled(podcastId: String, outcome: NotificationRegistrationOutcome) {
-        if (outcome != NotificationRegistrationOutcome.RETRY) pendingRegistrations.remove(podcastId)
+    /** [podcastId]'s pending registration, read by the background job before it registers; null when none is pending. */
+    fun pendingMark(podcastId: String): Long? = pendingRegistrations.mark(podcastId)
+
+    /**
+     * Records what an acknowledged registration achieved: only a retry stays pending. Only the
+     * request the job read before registering ([mark], see [pendingMark]) is cleared, so an address
+     * change made while it ran stays pending for the job that replaced it.
+     */
+    fun registrationSettled(podcastId: String, outcome: NotificationRegistrationOutcome, mark: Long? = pendingMark(podcastId)) {
+        if (outcome != NotificationRegistrationOutcome.RETRY && mark != null) pendingRegistrations.remove(podcastId, mark)
     }
 
     private fun requestRegistration(podcastId: String) {

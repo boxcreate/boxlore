@@ -4,6 +4,7 @@ import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.database.EpisodeAliasEntity
 import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
 import cx.aswin.boxlore.core.database.EpisodeAliasState
+import cx.aswin.boxlore.core.database.FeedAddressWrite
 import cx.aswin.boxlore.core.database.LocalEpisodeFeedEntity
 import cx.aswin.boxlore.core.database.LocalFeedOrder
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
@@ -113,6 +114,47 @@ class LegacyIdentityRoomTest : RoomCatalogTestBase() {
         assertTrue(refresh(SHOW, url = "https://moved.example/$SHOW.xml") is RefreshOutcome.Success)
 
         assertEquals("one row, under its own ID: never a second copy of the episode", mapOf("g1" to minted), rows(SHOW))
+        assertNotNull(database.listeningHistoryDao().getHistoryItem(minted))
+    }
+
+    @Test
+    fun aLegacyRowMissingFromTheFirstReadAtTheNewAddressStillHealsWhenItsEpisodeComesBack() = runBlocking {
+        // The saved address moved; the first read there lacks the episode, and records the new
+        // address as the one the catalog was read from. The address it replaced is still tried.
+        follow(SHOW)
+        val old = feedUrl(SHOW)
+        val moved = "https://moved.example/$SHOW.xml"
+        val minted = StickyEpisodeIdentity.ownMintedId(namespace(old), "g2")
+        database.localEpisodeCatalogDao().upsertEpisodes(listOf(row(minted, SHOW, "id:$minted")))
+        database.localEpisodeCatalogDao().upsertFeed(
+            LocalEpisodeFeedEntity(
+                podcastId = SHOW,
+                feedUrl = old,
+                feedEtag = null,
+                feedLastModified = null,
+                fetchedAt = 1L,
+                itemCount = 1,
+                feedOrder = LocalFeedOrder.NEWEST_FIRST,
+                ttlExpiresAt = null,
+                needsFullBackfill = false,
+                copiedExtrasCount = 0,
+                ready = true,
+                feedUrlLookupAt = 0L,
+            ),
+        )
+        history(minted, SHOW)
+        val podcasts = database.podcastDao()
+        assertTrue(podcasts.replaceFeedAddress(FeedAddressWrite(SHOW, null, old, null, null, 0L, markDirty = false)))
+        assertTrue(podcasts.replaceFeedAddress(FeedAddressWrite(SHOW, old, moved, null, "registry", 1L, markDirty = false)))
+
+        feed.items = listOf(Item("g1"))
+        assertTrue(refresh(SHOW, url = moved) is RefreshOutcome.Success)
+        feed.items = listOf(Item("g1"), Item("g2"))
+        assertTrue(refresh(SHOW, url = moved) is RefreshOutcome.Success)
+
+        val stored = rows(SHOW)
+        assertEquals("the returning episode heals its own row: never a second copy", minted, stored["g2"])
+        assertEquals(setOf("g1", "g2"), stored.keys)
         assertNotNull(database.listeningHistoryDao().getHistoryItem(minted))
     }
 
