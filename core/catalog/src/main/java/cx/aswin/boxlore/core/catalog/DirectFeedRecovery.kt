@@ -1,22 +1,40 @@
 package cx.aswin.boxlore.core.catalog
 
 import android.util.Log
-import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
-import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
+import cx.aswin.boxlore.core.model.FeedUrlCorrectionReason
+import cx.aswin.boxlore.core.model.FeedUrlCorrectionStep
 import kotlinx.coroutines.CancellationException
 
 /**
- * Shows whose own feed failed in a [SubscriptionForegroundSync] pass (P4a).
+ * Another address to try for a show whose saved one failed, and the path that offered it
+ * ([FeedUrlCorrectionStep.FEED_REPORT] or the daily check's `/podcast` fallback,
+ * [FeedUrlCorrectionStep.DAILY_CHECK]).
+ */
+internal data class AddressCandidate(val feedUrl: String, val step: FeedUrlCorrectionStep) {
+    /** The address change saved once [feedUrl] read successfully. */
+    fun change(podcastId: String, nowMillis: Long): FeedAddressChange = FeedAddressChange(
+        podcastId = podcastId,
+        feedUrl = feedUrl,
+        source = if (step == FeedUrlCorrectionStep.FEED_REPORT) FeedUrlSources.FEED_REPORT else FeedUrlSources.PODCAST_LOOKUP,
+        checkedAt = nowMillis,
+        reason = FeedUrlCorrectionReason.DEAD,
+        step = step,
+    )
+}
+
+/**
+ * Shows whose own feed failed in a [SubscriptionForegroundSync] pass (P4a; reports since P4 PR 14).
  *
- * Before, a saved HTTPS address was never re-checked, and a show with one never went to `/sync`,
- * so a dead feed got no new episodes at all. Now a saved address that looks dead
- * ([DirectFeedResolveResult.addressGone]) is re-checked against the server's confirmed address, at
- * most once a day per show. The new address is read at once and saved only when that read works,
- * so a server that offers another dead address (say, Podcast Index's own) never replaces the
- * saved one. Shows still failing take their
- * latest episode from `/sync` (which serves stale shows from their live feed), through the ordinary
- * save that never replaces a newer tip. Never for `rss:` shows: their address is their identity and
- * notification consent.
+ * Every failed read of a Podcast Index show is reported to the API ([DirectFeedSyncSeams.reportFeed],
+ * `/v2/feed-report`, limited per show and never while offline), which queues a re-check there. When
+ * the saved address looks dead ([DirectFeedResolveResult.addressGone]) another address is tried:
+ * the one the report answered with, else the server's confirmed address from `/podcast`
+ * ([DirectFeedSyncSeams.recheckAddress]), which runs only when the daily address check hasn't
+ * reached the show today (they share one daily stamp per show). The new address is read at once and
+ * saved only when that read works, so a server that offers another dead address (say, Podcast
+ * Index's own) never replaces the saved one. Shows still failing take their latest episode from
+ * `/sync` (which serves stale shows from their live feed), through the ordinary save that never
+ * replaces a newer tip. Never for `rss:` shows: their address is their identity and notification consent.
  */
 internal object DirectFeedRecovery {
     private const val TAG = "DirectFeedRecovery"
@@ -35,8 +53,8 @@ internal object DirectFeedRecovery {
         val stillFailing = mutableListOf<String>()
         for ((id, result) in failed) {
             if (id.startsWith("rss:")) continue
-            val candidate = if (result.addressGone) recheck(directFeed, id) else null
-            val retried = candidate?.let { readAgain(id, it) }
+            val candidate = candidate(directFeed, id, result)
+            val retried = candidate?.let { readAgain(id, it.feedUrl) }
             if (candidate != null && retried != null && !retried.failed) {
                 directFeed.saveAddress(id, candidate)
             } else {
@@ -48,31 +66,43 @@ internal object DirectFeedRecovery {
         syncFromServer(stillFailing)
     }
 
-    private suspend fun recheck(directFeed: DirectFeedSyncSeams, id: String): String? = try {
-        directFeed.recheckAddress(id)
+    /** Reports the failed read, then picks another address only when the saved one looks dead. */
+    private suspend fun candidate(directFeed: DirectFeedSyncSeams, id: String, result: DirectFeedResolveResult): AddressCandidate? {
+        val reported = guarded("Feed report", id) { directFeed.reportFeed(id, result.reportStatus) }
+        if (!result.addressGone) return null
+        reported?.let { return AddressCandidate(it, FeedUrlCorrectionStep.FEED_REPORT) }
+        return guarded("Feed address re-check", id) { directFeed.recheckAddress(id) }
+            ?.let { AddressCandidate(it, FeedUrlCorrectionStep.DAILY_CHECK) }
+    }
+
+    private suspend fun guarded(what: String, id: String, block: suspend () -> String?): String? = try {
+        block()
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
-        Log.e(TAG, "Feed address re-check failed for $id", e)
+        Log.e(TAG, "$what failed for $id", e)
         null
     }
 
-    /** The production [DirectFeedSyncSeams.recheckAddress]: [recheckGoneFeedAddress] behind its switch. */
+    /**
+     * The production [DirectFeedSyncSeams.recheckAddress]: [recheckGoneFeedAddress] behind its
+     * switch, stamped with the daily address check's per-show stamp (`podcasts.feedUrlCheckedAt`).
+     */
     fun addressRecheck(
         feedFixes: FeedFixToggles,
         subscriptionRepository: SubscriptionRepository,
         podcastRepository: PodcastRepository,
-        localEpisodeCatalog: LocalEpisodeCatalogPort?,
     ): suspend (String) -> String? = { id ->
         if (!feedFixes.addressRecheck()) {
             null
         } else {
+            val row = subscriptionRepository.getPodcastEntity(id)
             recheckGoneFeedAddress(
                 id = id,
                 now = System.currentTimeMillis(),
-                savedFeedUrl = subscriptionRepository.getPodcastEntity(id)?.feedUrl,
-                lastLookupAt = { localEpisodeCatalog?.lastFeedUrlLookupAt(id) ?: 0L },
-                markLookup = { at -> localEpisodeCatalog?.markFeedUrlLookup(id, at) },
+                savedFeedUrl = row?.feedUrl,
+                lastLookupAt = { row?.feedUrlCheckedAt ?: 0L },
+                markLookup = { at -> subscriptionRepository.markFeedAddressChecked(id, at) },
                 lookupFeedUrl = { podcastRepository.getPodcastDetails(id)?.feedUrl },
             )
         }
@@ -80,9 +110,11 @@ internal object DirectFeedRecovery {
 
     /**
      * Re-checks a dead saved HTTPS address against the server's confirmed one (`/podcast`, which
-     * returns the registry's address), at most once per [LocalEpisodeCatalogRepository.FEED_URL_LOOKUP_INTERVAL_MS]
-     * per show. The lookup counts only once the server answers, so an offline pass tries again.
-     * Nothing is saved here: [recover] saves the address only after it reads.
+     * returns the registry's address), at most once per [FeedAddressDailyCheck.CHECK_INTERVAL_MS]
+     * per show, sharing the daily check's stamp. The lookup counts only once the server answers, so
+     * an offline pass tries again. Nothing is saved here: [recover] saves the address only after it reads.
+     * This is the P4a per-show check, kept as the fallback of [FeedAddressDailyCheck] for shows
+     * it couldn't reach (`/v2/shows/feeds` failed, or the registry was unavailable).
      * @return a different HTTPS address to try, or null
      */
     suspend fun recheckGoneFeedAddress(
@@ -96,7 +128,7 @@ internal object DirectFeedRecovery {
         if (id.startsWith("rss:")) return null
         val current = TrackedPodcastRtdbLogic.httpsFeedUrl(savedFeedUrl) ?: return null
         val last = lastLookupAt()
-        if (last > 0L && now - last < LocalEpisodeCatalogRepository.FEED_URL_LOOKUP_INTERVAL_MS) return null
+        if (last in 1..now && now - last < FeedAddressDailyCheck.CHECK_INTERVAL_MS) return null
         val confirmed = lookupFeedUrl() ?: return null
         markLookup(now)
         val https = TrackedPodcastRtdbLogic.httpsFeedUrl(confirmed) ?: return null

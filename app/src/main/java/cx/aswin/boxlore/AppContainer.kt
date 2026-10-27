@@ -2,12 +2,15 @@ package cx.aswin.boxlore
 
 import android.content.Context
 import cx.aswin.boxlore.connectivity.AndroidConnectivityObserver
+import cx.aswin.boxlore.core.catalog.DiscoveryEpisodeIds
+import cx.aswin.boxlore.core.catalog.DiscoveryRouting
 import cx.aswin.boxlore.core.catalog.EpisodeAliasReads
 import cx.aswin.boxlore.core.catalog.EpisodeSharePreparer
 import cx.aswin.boxlore.core.catalog.EpisodeShareRegistrar
-import cx.aswin.boxlore.core.catalog.DiscoveryEpisodeIds
-import cx.aswin.boxlore.core.catalog.DiscoveryRouting
+import cx.aswin.boxlore.core.catalog.FeedAddressUpkeep
+import cx.aswin.boxlore.core.catalog.FeedAddressWiring
 import cx.aswin.boxlore.core.catalog.FeedFixToggles
+import cx.aswin.boxlore.core.catalog.FeedMoveFollower
 import cx.aswin.boxlore.core.catalog.FolderRepository
 import cx.aswin.boxlore.core.catalog.InstallReferrerManager
 import cx.aswin.boxlore.core.catalog.LegacyRssRepair
@@ -16,12 +19,13 @@ import cx.aswin.boxlore.core.catalog.LegacyRssRepairCatalog
 import cx.aswin.boxlore.core.catalog.LegacyRssRepairRuntime
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.RolloutSwitches
-import cx.aswin.boxlore.core.catalog.RoomEpisodeAliasReads
 import cx.aswin.boxlore.core.catalog.RoomDiscoveryEpisodeIds
+import cx.aswin.boxlore.core.catalog.RoomEpisodeAliasReads
 import cx.aswin.boxlore.core.catalog.RoomEpisodeOfflineLookup
 import cx.aswin.boxlore.core.catalog.RoomFolderRepository
 import cx.aswin.boxlore.core.catalog.RoomLocalCatalog
 import cx.aswin.boxlore.core.catalog.SharedAppDependencies
+import cx.aswin.boxlore.core.catalog.SharedPreferencesFeedReportStamps
 import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.catalog.ports.SmartDownloadSyncPort
@@ -59,6 +63,7 @@ import cx.aswin.boxlore.core.rss.EpisodeSupplementRepository
 import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
+import cx.aswin.boxlore.fcm.PodcastNotificationRegistrationWorker
 import cx.aswin.boxlore.share.EpisodeShareRegistrationWorker
 import cx.aswin.boxlore.sync.AnalyticsFeedTelemetry
 import cx.aswin.boxlore.sync.CloudSyncTriggerCoordinator
@@ -162,12 +167,21 @@ class AppContainer(
         )
     }
 
-    /** Shared source-aware catalog for automation, foreground sync and push hydration. */
+    /**
+     * Shared source-aware catalog for automation, foreground sync and push hydration. Every refresh
+     * through it follows a feed that moved for good (P4 PR 14), behind `feed-fix-moved-feed-off`.
+     */
     val subscribedEpisodeCatalog: cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort by lazy {
         cx.aswin.boxlore.core.catalog.SubscribedEpisodeCatalog(
             localEpisodeCatalogRepository,
             rssPodcastRepository.episodeCatalog,
-            isSubscribed = { id -> database.podcastDao().getPodcast(id)?.isSubscribed == true }
+            isSubscribed = { id -> database.podcastDao().getPodcast(id)?.isSubscribed == true },
+            feedMoves =
+            FeedMoveFollower(
+                enabled = { FeedFixSwitches.isOn(FeedFixSwitches.MOVED_FEED_OFF) },
+                showTitle = { id -> database.podcastDao().getPodcast(id)?.title },
+                adopt = { id, movedTo -> subscriptionRepository.adoptMovedFeed(id, movedTo) },
+            ),
         )
     }
 
@@ -362,6 +376,7 @@ class AppContainer(
             subscribedEpisodeCatalog,
             userPreferencesRepository,
             recoverFeedUrl = { id -> cx.aswin.boxlore.core.catalog.TrackedPodcastRtdbLogic.httpsFeedUrl(podcastRepository.getPodcastDetails(id)?.feedUrl) },
+            saveFeedUrl = { id, url -> subscriptionRepository.ensureHttpsFeedUrl(id, url) },
         )
     }
 
@@ -384,6 +399,12 @@ class AppContainer(
                 java.io.File(appContext.noBackupFilesDir, "rss_notification_registrations"),
             ),
             requestRssNotificationSync = { cx.aswin.boxlore.fcm.RssNotificationSyncWorker.enqueue(appContext) },
+            // One feed address writer: acknowledged re-registration and feed_url_corrected (P4 PR 14).
+            feedAddressWiring =
+            FeedAddressWiring(
+                requestNotificationRegistration = { id -> PodcastNotificationRegistrationWorker.enqueue(appContext, id) },
+                telemetry = feedTelemetry,
+            ),
         )
     }
 
@@ -399,6 +420,15 @@ class AppContainer(
                 addressRecheck = { FeedFixSwitches.isOn(FeedFixSwitches.ADDRESS_RECHECK_OFF) },
                 syncFallback = { FeedFixSwitches.isOn(FeedFixSwitches.SYNC_FALLBACK_OFF) },
                 movedFeed = { FeedFixSwitches.isOn(FeedFixSwitches.MOVED_FEED_OFF) },
+            ),
+            // Daily address check and broken-feed reports (P4 PR 14), behind address-check-off.
+            addressUpkeep =
+            FeedAddressUpkeep(
+                reportStamps =
+                SharedPreferencesFeedReportStamps(
+                    appContext.getSharedPreferences(SharedPreferencesFeedReportStamps.FILE_NAME, Context.MODE_PRIVATE),
+                ),
+                isOnline = connectivityStatus::isOnline,
             ),
         )
     }
@@ -556,6 +586,7 @@ class AppContainer(
             podcastRepository = podcastRepository,
             rssPodcastRepository = rssPodcastRepository,
             notificationSyncPort = subscriptionRepository,
+            feedAddresses = subscriptionRepository.feedAddresses,
         )
         val historyResolver = HistorySyncResolver(
             listeningHistoryDao = database.listeningHistoryDao(),

@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.core.catalog
 
-import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.advanceTimeBy
@@ -548,7 +547,7 @@ class SubscriptionForegroundSyncTest {
                         else -> null
                     }
                 },
-                saveAddress = { id, url -> savedAddresses[id] = url },
+                saveAddress = { id, candidate -> savedAddresses[id] = candidate.feedUrl },
             ),
         )
         assertEquals(setOf("moved", "badnew", "dead"), rechecked.toSet(), "only dead addresses, never rss: shows")
@@ -584,34 +583,6 @@ class SubscriptionForegroundSyncTest {
     }
 
     @Test
-    fun `a dead address is re-checked once a day, and only once the server answers`() = runTest {
-        val day = LocalEpisodeCatalogRepository.FEED_URL_LOOKUP_INTERVAL_MS
-        var stamped: Long? = null
-        suspend fun check(now: Long, last: Long, confirmed: String?, saved: String? = "https://old.example/f.xml", id: String = "123") =
-            DirectFeedRecovery.recheckGoneFeedAddress(
-                id = id,
-                now = now,
-                savedFeedUrl = saved,
-                lastLookupAt = { last },
-                markLookup = { stamped = it },
-                lookupFeedUrl = { confirmed },
-            )
-
-        assertEquals("https://new.example/f.xml", check(now = 2 * day, last = 0L, confirmed = "https://new.example/f.xml"))
-        assertEquals(2 * day, stamped)
-
-        stamped = null
-        assertEquals(null, check(now = 2 * day, last = 2 * day - 1_000L, confirmed = "https://new.example/f.xml"), "within a day")
-        assertEquals(null, check(now = 3 * day, last = 0L, confirmed = null), "no answer")
-        assertEquals(null, stamped, "an offline pass doesn't use up the day")
-        assertEquals(null, check(now = 3 * day, last = 0L, confirmed = "https://old.example/f.xml"), "same address")
-        assertEquals(3 * day, stamped)
-        assertEquals(null, check(now = 3 * day, last = 0L, confirmed = "http://new.example/f.xml"), "http only")
-        assertEquals(null, check(now = 3 * day, last = 0L, confirmed = "https://new.example/f.xml", id = "rss:abc"), "rss: shows keep theirs")
-        assertEquals(null, check(now = 3 * day, last = 0L, confirmed = "https://new.example/f.xml", saved = null), "no saved address: recovery owns it")
-    }
-
-    @Test
     fun `a feed that moved for good gets its new address saved, only with the switch on and never for rss shows`() = runTest {
         val meta = DirectFeedTipMeta("https://old.example/feed.xml", "Moving Show", null, null, null, null)
         suspend fun resolve(id: String, followMoves: Boolean): Pair<List<String>, Boolean?> {
@@ -620,7 +591,10 @@ class SubscriptionForegroundSyncTest {
                     publisherFeedUnchanged = false
                     refreshOutcome =
                         cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Success(
-                            newest = null, itemCount = 1, ready = true, movedTo = "https://new.example/feed.xml",
+                            newest = null,
+                            itemCount = 1,
+                            ready = true,
+                            movedTo = "https://new.example/feed.xml",
                         )
                 }
             val adopted = mutableListOf<String>()

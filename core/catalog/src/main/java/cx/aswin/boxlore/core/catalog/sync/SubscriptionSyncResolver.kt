@@ -1,5 +1,10 @@
 package cx.aswin.boxlore.core.catalog.sync
 
+import android.util.Log
+import cx.aswin.boxlore.core.catalog.FeedAddressChange
+import cx.aswin.boxlore.core.catalog.FeedAddressUpdate
+import cx.aswin.boxlore.core.catalog.FeedAddressUpdater
+import cx.aswin.boxlore.core.catalog.FeedUrlSources
 import cx.aswin.boxlore.core.catalog.FolderRepository
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.ports.PodcastNotificationSyncPort
@@ -12,6 +17,11 @@ import cx.aswin.boxlore.core.rss.RssPodcastRepository
  * LWW (Last-Write-Wins) conflict resolver for podcast subscriptions.
  * Handles tombstones vs active subscriptions, settings merges, RSS feed ingestion,
  * and folder cleanups.
+ *
+ * A pulled address for a Podcast Index show goes through [feedAddresses], the one address writer
+ * (P4 PR 14): validators reset, notifications registered again with acknowledgement, the row left
+ * clean. Without it (older tests) the address is written with the row as before. `rss:` shows keep
+ * their own path: their address is their identity.
  */
 class SubscriptionSyncResolver(
     private val podcastDao: PodcastDao,
@@ -19,6 +29,7 @@ class SubscriptionSyncResolver(
     private val podcastRepository: PodcastRepository? = null,
     private val rssPodcastRepository: RssPodcastRepository? = null,
     private val notificationSyncPort: PodcastNotificationSyncPort? = null,
+    private val feedAddresses: FeedAddressUpdater? = null,
 ) {
     suspend fun resolveSubscription(remote: UserSubscriptionSyncDto, syncedAt: Long) {
         val local = podcastDao.getPodcast(remote.podcastId)
@@ -201,9 +212,10 @@ class SubscriptionSyncResolver(
             notificationsEnabled = acceptedNotificationSetting(remote),
             customGenre = remote.customGenre,
             customGenreIcon = if (remote.customGenre == null) null else local.customGenreIcon,
-            feedUrl = remote.feedUrl ?: local.feedUrl,
+            feedUrl = rowFeedUrl(local, remote),
         )
         podcastDao.upsert(updated)
+        applyPulledAddress(local, remote)
         if (!local.isRss) {
             if (remote.notificationsEnabled) {
                 notificationSyncPort?.setNotificationTopicSubscribed(local.podcastId, true)
@@ -229,14 +241,33 @@ class SubscriptionSyncResolver(
             customGenreIcon = genreIcon,
             autoDownloadEnabled = remote.autoDownloadEnabled,
             notificationsEnabled = acceptedNotificationSetting(remote),
-            feedUrl = remote.feedUrl ?: local.feedUrl,
+            feedUrl = rowFeedUrl(local, remote),
             subscribedAt = if (remoteSubTime > local.subscribedAt) remoteSubTime else local.subscribedAt,
             isDirty = false,
             syncedAt = syncedAt,
         )
         podcastDao.upsert(updated)
+        applyPulledAddress(local, remote)
         if (updated.notificationsEnabled != local.notificationsEnabled) {
             notificationSyncPort?.setNotificationTopicSubscribed(local.podcastId, updated.notificationsEnabled)
         }
+    }
+
+    /** The address the merged row is written with: the stored one when [feedAddresses] applies the pulled one. */
+    private fun rowFeedUrl(local: PodcastEntity, remote: UserSubscriptionSyncDto): String? =
+        if (routesAddress(local)) local.feedUrl else remote.feedUrl ?: local.feedUrl
+
+    private fun routesAddress(local: PodcastEntity): Boolean = feedAddresses != null && !local.isRss && !local.podcastId.startsWith("rss:")
+
+    /** A pulled address that differs from the stored one, saved through the one address writer (P4 PR 14). */
+    private suspend fun applyPulledAddress(local: PodcastEntity, remote: UserSubscriptionSyncDto) {
+        val writer = feedAddresses?.takeIf { routesAddress(local) } ?: return
+        val pulled = remote.feedUrl?.takeIf { it.isNotBlank() && it != local.feedUrl } ?: return
+        val result = writer.update(FeedAddressChange(podcastId = local.podcastId, feedUrl = pulled, source = FeedUrlSources.CLOUD_SYNC, fromCloud = true))
+        if (result != FeedAddressUpdate.UPDATED) Log.d(TAG, "Pulled address for ${local.podcastId} not saved: $result")
+    }
+
+    private companion object {
+        const val TAG = "SubscriptionSyncResolver"
     }
 }

@@ -182,6 +182,87 @@ interface PodcastDao {
     suspend fun setFeedUrl(id: String, feedUrl: String,)
 
     /**
+     * Replaces a show's saved feed address in one transaction: the publisher and transport
+     * addresses, where the address came from and when the registry last confirmed it, the old
+     * address kept for undo, every stored ETag and Last-Modified for the show (so the next read
+     * fetches the new address in full), and the dirty flag when [FeedAddressWrite.markDirty].
+     * Compare-and-set: nothing is written unless the row still holds [FeedAddressWrite.expectedFeedUrl].
+     * Never for `rss:` shows, whose address is their identity.
+     *
+     * @return true when the address was replaced
+     *
+     * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows: one durable address update).
+     * COMPAT(own-ids): the one address writer. Permanent: never remove (MIGRATION.md §5).
+     */
+    @Transaction
+    suspend fun replaceFeedAddress(write: FeedAddressWrite): Boolean {
+        val replaced =
+            replaceFeedAddressRow(
+                id = write.podcastId,
+                expectedFeedUrl = write.expectedFeedUrl,
+                feedUrl = write.feedUrl,
+                transportUrl = write.transportUrl,
+                previousFeedUrl = write.expectedFeedUrl,
+                source = write.source,
+                checkedAt = write.checkedAt,
+                markDirty = write.markDirty,
+            ) == 1
+        if (replaced) {
+            clearCatalogFeedValidators(write.podcastId)
+            clearSupplementFeedValidators(write.podcastId)
+        }
+        return replaced
+    }
+
+    /** The row update of [replaceFeedAddress]; use that, which also clears the show's other validators. */
+    @Query(
+        """
+        UPDATE podcasts
+        SET feedUrl = :feedUrl,
+            transportUrl = :transportUrl,
+            previousFeedUrl = :previousFeedUrl,
+            feedUrlSource = :source,
+            feedUrlCheckedAt = :checkedAt,
+            feedEtag = NULL,
+            feedLastModified = NULL,
+            isDirty = CASE WHEN :markDirty THEN 1 ELSE isDirty END
+        WHERE podcastId = :id
+          AND sourceType != 'rss'
+          AND podcastId NOT LIKE 'rss:%'
+          AND feedUrl IS :expectedFeedUrl
+        """,
+    )
+    @Suppress("LongParameterList", "kotlin:S107") // Room binds each column as its own parameter.
+    suspend fun replaceFeedAddressRow(
+        id: String,
+        expectedFeedUrl: String?,
+        feedUrl: String,
+        transportUrl: String?,
+        previousFeedUrl: String?,
+        source: String?,
+        checkedAt: Long,
+        markDirty: Boolean,
+    ): Int
+
+    /** Clears the catalog read's validators so the next read of a new address is a full fetch. */
+    @Query("UPDATE local_episode_feeds SET feedEtag = NULL, feedLastModified = NULL WHERE podcastId = :podcastId")
+    suspend fun clearCatalogFeedValidators(podcastId: String)
+
+    /** Clears the feed-only extras' validators so the next read of a new address is a full fetch. */
+    @Query("UPDATE episode_supplements SET feedEtag = NULL, feedLastModified = NULL WHERE podcastId = :podcastId")
+    suspend fun clearSupplementFeedValidators(podcastId: String)
+
+    /**
+     * Records that the show's saved address was checked against the address registry at [atMillis]
+     * (the daily check, or its `/podcast` fallback). Leaves `isDirty` alone: nothing user-visible changed.
+     *
+     * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows: daily check).
+     * COMPAT(own-ids): one daily stamp shared by the check and its fallback. Permanent: never remove (MIGRATION.md §5).
+     */
+    @Query("UPDATE podcasts SET feedUrlCheckedAt = :atMillis WHERE podcastId = :id")
+    suspend fun markFeedUrlChecked(id: String, atMillis: Long,)
+
+    /**
      * The show's stored episode namespace (`epNs`), or null when the show has no row or none was set.
      *
      * Added in P4 PR 9 of the own-episode-IDs plan (plan section 4, recipe IDs; decision D12).

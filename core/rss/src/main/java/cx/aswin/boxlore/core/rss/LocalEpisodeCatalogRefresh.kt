@@ -112,7 +112,11 @@ private suspend fun fetchAndPersist(
 } catch (error: CancellationException) {
     throw error
 } catch (error: Exception) {
-    RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE, addressGone = FeedReadFailure.isAddressGone(error))
+    RefreshOutcome.Failure(
+        LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE,
+        addressGone = FeedReadFailure.isAddressGone(error),
+        reportStatus = FeedReadFailure.reportStatus(error),
+    )
 }
 
 private suspend fun persistParsed(
@@ -138,7 +142,7 @@ private suspend fun persistParsed(
     val rows = planned.map { it.entity }
     if (rows.isEmpty()) {
         // The address answered, but with nothing we can read as episodes.
-        return RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE, addressGone = true)
+        return RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE, addressGone = true, reportStatus = FeedReadFailure.PARSE)
     }
     val copied = existing?.copiedExtrasCount ?: 0
     val feedOrder =

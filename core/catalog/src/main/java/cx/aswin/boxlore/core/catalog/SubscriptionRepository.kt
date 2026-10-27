@@ -3,7 +3,10 @@ package cx.aswin.boxlore.core.catalog
 import cx.aswin.boxlore.core.catalog.ports.PodcastNotificationSyncPort
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.PodcastEntity
+import cx.aswin.boxlore.core.domain.ports.FeedTelemetryPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
+import cx.aswin.boxlore.core.model.FeedUrlCorrectionReason
+import cx.aswin.boxlore.core.model.FeedUrlCorrectionStep
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.FeedbackTarget
@@ -14,7 +17,17 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
-@Suppress("TooManyFunctions")
+/**
+ * What the one feed address writer needs from the app: how to ask for a show's notifications to be
+ * registered again in the background, and where `feed_url_corrected` goes.
+ * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows).
+ */
+data class FeedAddressWiring(
+    val requestNotificationRegistration: (podcastId: String) -> Unit = {},
+    val telemetry: FeedTelemetryPort = FeedTelemetryPort.NONE,
+)
+
+@Suppress("TooManyFunctions", "LongParameterList", "kotlin:S107") // Constructor injection from AppContainer; no DI framework.
 class SubscriptionRepository(
     private val podcastDao: PodcastDao,
     private val localEpisodeCatalog: LocalEpisodeCatalogPort? = null,
@@ -25,7 +38,14 @@ class SubscriptionRepository(
     private val rssNotificationConsent: RssNotificationConsent = RssNotificationConsent.NONE,
     private val rssNotificationRegistrations: RssNotificationRegistrationStore = MemoryRssNotificationRegistrations(),
     private val requestRssNotificationSync: () -> Unit = {},
+    feedAddressWiring: FeedAddressWiring = FeedAddressWiring(),
 ) : PodcastNotificationSyncPort {
+    /** The one writer of saved feed addresses (P4 PR 14). */
+    val feedAddresses: FeedAddressUpdater =
+        FeedAddressUpdater(podcastDao, feedAddressWiring.requestNotificationRegistration, feedAddressWiring.telemetry)
+
+    private val notificationRegistrar by lazy { PodcastNotificationRegistrar(podcastDao) }
+
     val subscribedPodcastIds: Flow<Set<String>> =
         podcastDao
             .getSubscribedPodcasts()
@@ -645,13 +665,48 @@ class SubscriptionRepository(
 
     /**
      * Writes an HTTPS publisher [feedUrl] onto the Room row so launch sync and
-     * notification RTDB can poll the same feed after library restore.
+     * notification RTDB can poll the same feed after library restore. Goes through the one address
+     * writer ([feedAddresses]); [source] records where the address came from.
      */
-    suspend fun ensureHttpsFeedUrl(podcastId: String, feedUrl: String,) {
-        val https = TrackedPodcastRtdbLogic.httpsFeedUrl(feedUrl) ?: return
-        if (podcastDao.getPodcast(podcastId) == null) return
-        podcastDao.setFeedUrl(podcastId, https)
+    suspend fun ensureHttpsFeedUrl(podcastId: String, feedUrl: String, source: String = FeedUrlSources.PODCAST_LOOKUP,) {
+        feedAddresses.update(FeedAddressChange(podcastId = podcastId, feedUrl = feedUrl, source = source))
     }
+
+    /**
+     * Replaces a show's saved feed address through the one address writer ([FeedAddressUpdater]).
+     * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows).
+     */
+    suspend fun updateFeedAddress(change: FeedAddressChange): FeedAddressUpdate = feedAddresses.update(change)
+
+    /**
+     * Saves the new address of a feed that moved for good (permanent redirects or
+     * `itunes:new-feed-url`, same show) and reports the correction.
+     * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows: redirects).
+     */
+    suspend fun adoptMovedFeed(podcastId: String, movedTo: String) {
+        feedAddresses.update(
+            FeedAddressChange(
+                podcastId = podcastId,
+                feedUrl = movedTo,
+                source = FeedUrlSources.FEED_MOVE,
+                reason = FeedUrlCorrectionReason.MOVED,
+                step = FeedUrlCorrectionStep.FEED_REFRESH,
+            ),
+        )
+    }
+
+    /** Followed shows' rows, for the daily address check (P4 PR 14). */
+    suspend fun followedShowRows(): List<PodcastEntity> = podcastDao.getSubscribedPodcastsList()
+
+    /** Stamps the daily address check of one show (P4 PR 14); the `/podcast` fallback reads the same stamp. */
+    suspend fun markFeedAddressChecked(podcastId: String, atMillis: Long) = podcastDao.markFeedUrlChecked(podcastId, atMillis)
+
+    /**
+     * Registers a Podcast Index show's notifications again and waits for Firebase to acknowledge it;
+     * run by the app's capped background job after an address change ([PodcastNotificationRegistrar]).
+     * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows).
+     */
+    suspend fun registerPodcastNotifications(podcastId: String): NotificationRegistrationOutcome = notificationRegistrar.register(podcastId)
 
     private suspend fun recoverFeedUrlIfMissing(podcast: Podcast) {
         if (podcast.isRss) return

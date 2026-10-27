@@ -30,6 +30,19 @@ class FeedReadFailureTest {
     }
 
     @Test
+    fun `a failed read is reported in the words the feed-report route takes`() {
+        assertEquals("http_404", FeedReadFailure.reportStatus(FeedHttpException(404)))
+        assertEquals("http_503", FeedReadFailure.reportStatus(IllegalStateException("wrapped", FeedHttpException(503))))
+        assertEquals("other", FeedReadFailure.reportStatus(FeedHttpException(700)), "never an out-of-range status")
+        assertEquals("dns", FeedReadFailure.reportStatus(UnknownHostException("feeds.example")))
+        assertEquals("timeout", FeedReadFailure.reportStatus(SocketTimeoutException("slow")))
+        assertEquals("tls", FeedReadFailure.reportStatus(SSLPeerUnverifiedException("hostname not verified")))
+        assertEquals("parse", FeedReadFailure.reportStatus(NotAFeedException("not a feed")))
+        assertEquals("network", FeedReadFailure.reportStatus(ConnectException("refused")))
+        assertEquals("other", FeedReadFailure.reportStatus(IllegalArgumentException("Feed is larger than 50 MB")))
+    }
+
+    @Test
     fun `typed feed errors keep their messages and IllegalArgumentException type`() {
         assertEquals("Feed returned HTTP 404", FeedHttpException(404).message)
         assertTrue(FeedHttpException(404) is IllegalArgumentException)

@@ -7,6 +7,7 @@ import cx.aswin.boxlore.core.catalog.BuildConfig
 import cx.aswin.boxlore.core.catalog.ExactPodcastLookupKey
 import cx.aswin.boxlore.core.catalog.ExactPodcastLookupResult
 import cx.aswin.boxlore.core.catalog.ExactPodcastLookupType
+import cx.aswin.boxlore.core.catalog.FeedUrlSources
 import cx.aswin.boxlore.core.catalog.FolderRepository
 import cx.aswin.boxlore.core.catalog.LOCAL_CATALOG_WINDOW_BOUND
 import cx.aswin.boxlore.core.catalog.PodcastIndexSearchResult
@@ -776,7 +777,7 @@ class LibraryBackupManager(
             actions =
             DirectFeedRestoreActions(
                 restoreStub = { _, _ -> },
-                ensureFeedUrl = { id, url -> subscriptionRepository.ensureHttpsFeedUrl(id, url) },
+                ensureFeedUrl = { id, url -> subscriptionRepository.ensureHttpsFeedUrl(id, url, FeedUrlSources.BACKUP_RESTORE) },
                 invalidateCache = { id -> podcastRepository.invalidateEpisodesCache(id) },
                 refreshFeed = { id, url ->
                     val entity = subscriptionRepository.getPodcastEntity(id)
@@ -856,7 +857,7 @@ class LibraryBackupManager(
             actions =
             DirectFeedRestoreActions(
                 restoreStub = { _, _ -> },
-                ensureFeedUrl = { id, url -> subscriptionRepository.ensureHttpsFeedUrl(id, url) },
+                ensureFeedUrl = { id, url -> subscriptionRepository.ensureHttpsFeedUrl(id, url, FeedUrlSources.BACKUP_RESTORE) },
                 invalidateCache = { id -> podcastRepository.invalidateEpisodesCache(id) },
                 refreshFeed = { id, url ->
                     val entity = subscriptionRepository.getPodcastEntity(id)

@@ -158,6 +158,7 @@ class LocalEpisodeCatalogRepositoryTest {
             )
         assertTrue(outcome is RefreshOutcome.Failure)
         assertTrue((outcome as RefreshOutcome.Failure).addressGone, "an address with no episodes is worth re-checking")
+        assertEquals("parse", outcome.reportStatus)
     }
 
     @Test
@@ -199,6 +200,7 @@ class LocalEpisodeCatalogRepositoryTest {
                 ).refresh(LocalEpisodeCatalogPort.RefreshRequest(podcastIndexId = "100", feedUrl = "https://feeds.example/show.xml"))
             }
         assertEquals(listOf(true, false, false), outcomes.map { (it as RefreshOutcome.Failure).addressGone })
+        assertEquals(listOf("http_410", "http_503", "timeout"), outcomes.map { (it as RefreshOutcome.Failure).reportStatus })
     }
 
     @Test

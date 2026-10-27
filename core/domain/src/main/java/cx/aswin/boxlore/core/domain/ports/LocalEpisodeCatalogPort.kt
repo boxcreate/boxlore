@@ -53,8 +53,13 @@ interface LocalEpisodeCatalogPort {
          * [addressGone]: the publisher answered in a way that says the saved address no longer
          * works (gone or refused, no such host, a failing certificate, or not a feed), so it is
          * worth asking the server for a newer one. False for timeouts, server errors and offline.
+         *
+         * [reportStatus]: what the read saw, in the words `/v2/feed-report` takes (`http_404`,
+         * `timeout`, `dns`, `tls`, `parse`, `network`, `other`); null when no read was made (a gate
+         * said no, or there was no address to read), so there is nothing to report.
+         * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows: reports).
          */
-        data class Failure(val message: String, val addressGone: Boolean = false,) : RefreshOutcome
+        data class Failure(val message: String, val addressGone: Boolean = false, val reportStatus: String? = null,) : RefreshOutcome
     }
 
     /** True when this show must be served from Room only (no PI ∪ extras merge). */
