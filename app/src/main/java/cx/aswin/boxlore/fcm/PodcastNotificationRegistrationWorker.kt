@@ -9,8 +9,10 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.Operation
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import androidx.work.await
 import cx.aswin.boxlore.core.catalog.NotificationRegistrationOutcome
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import java.util.concurrent.TimeUnit
@@ -70,8 +72,21 @@ class PodcastNotificationRegistrationWorker(context: Context, params: WorkerPara
 
         /** Asks for [podcastId]'s notifications to be registered again; `rss:` shows have their own journal. */
         fun enqueue(context: Context, podcastId: String) {
-            if (podcastId.isBlank() || podcastId.startsWith("rss:")) return
-            WorkManager.getInstance(context).enqueueUniqueWork(workName(podcastId), ExistingWorkPolicy.REPLACE, workRequest(podcastId))
+            enqueueWork(context, podcastId)
+        }
+
+        /**
+         * [enqueue], returning once WorkManager has saved the request, so a caller that records it
+         * (the upgrade repair's step 4) never records one lost to process death. Throws when the
+         * request couldn't be saved. Added in P4 PR 15 of the own-episode-IDs plan (plan section 11).
+         */
+        suspend fun request(context: Context, podcastId: String) {
+            enqueueWork(context, podcastId)?.await()
+        }
+
+        private fun enqueueWork(context: Context, podcastId: String): Operation? {
+            if (podcastId.isBlank() || podcastId.startsWith("rss:")) return null
+            return WorkManager.getInstance(context).enqueueUniqueWork(workName(podcastId), ExistingWorkPolicy.REPLACE, workRequest(podcastId))
         }
     }
 }

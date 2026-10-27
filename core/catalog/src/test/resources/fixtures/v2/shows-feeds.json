@@ -1,0 +1,45 @@
+{
+  "registryAvailable": true,
+  "results": [
+    {
+      "id": 920666,
+      "fetchUrl": "https://new.example.com/feed.xml",
+      "fetchVia": "direct",
+      "transportUrl": null,
+      "feedSource": "registry:apple",
+      "epNs": 920666,
+      "flags": { "addressRepair": true, "episodeStale": false },
+      "verifiedAt": 1792700000
+    },
+    {
+      "id": 920667,
+      "fetchUrl": "http://plain.example.com/feed.xml",
+      "fetchVia": "proxy",
+      "transportUrl": "https://api.example.test/v2/feed/920667",
+      "feedSource": "registry:apple",
+      "epNs": 920667,
+      "flags": { "addressRepair": true, "episodeStale": false },
+      "verifiedAt": 1792700000
+    },
+    {
+      "id": 920668,
+      "fetchUrl": null,
+      "fetchVia": null,
+      "transportUrl": null,
+      "feedSource": null,
+      "epNs": 920668,
+      "flags": { "addressRepair": false, "episodeStale": false },
+      "verifiedAt": null
+    },
+    {
+      "id": 920669,
+      "fetchUrl": "https://other.example.com/feed.xml",
+      "fetchVia": "direct",
+      "transportUrl": null,
+      "feedSource": "pidump",
+      "epNs": 4242,
+      "flags": { "addressRepair": false, "episodeStale": false },
+      "verifiedAt": null
+    }
+  ]
+}

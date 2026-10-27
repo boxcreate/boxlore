@@ -2,12 +2,12 @@ package cx.aswin.boxlore
 
 import android.content.Context
 import cx.aswin.boxlore.connectivity.AndroidConnectivityObserver
+import cx.aswin.boxlore.core.catalog.AddressCheckAnswer
 import cx.aswin.boxlore.core.catalog.DiscoveryEpisodeIds
 import cx.aswin.boxlore.core.catalog.DiscoveryRouting
 import cx.aswin.boxlore.core.catalog.EpisodeAliasReads
 import cx.aswin.boxlore.core.catalog.EpisodeSharePreparer
 import cx.aswin.boxlore.core.catalog.EpisodeShareRegistrar
-import cx.aswin.boxlore.core.catalog.FeedAddressDailyCheck
 import cx.aswin.boxlore.core.catalog.FeedAddressUpkeep
 import cx.aswin.boxlore.core.catalog.FeedAddressWiring
 import cx.aswin.boxlore.core.catalog.FeedFixToggles
@@ -441,6 +441,7 @@ class AppContainer(
      * The one-time repair of saved feed addresses after the update, run by
      * [cx.aswin.boxlore.sync.UpgradeRepairWorker] behind `upgrade-repair-off`. Step 4's record lives
      * in `noBackupFilesDir/upgrade_repair_notifications`, so a restored phone registers again.
+     * Once every show was read again, the sync's identity catch-up runs once more.
      * Added in P4 PR 15 of the own-episode-IDs plan (plan section 11, upgrade repair).
      * COMPAT(own-ids): someone can upgrade from an old build at any time. Permanent: never remove (MIGRATION.md §5).
      */
@@ -450,10 +451,11 @@ class AppContainer(
             podcastDao = database.podcastDao(),
             ports =
             UpgradeRepairPorts(
-                fetchAddresses = { ids -> FeedAddressDailyCheck.fetchWith(podcastRepository.apiV2, ids) },
+                fetchAddresses = AddressCheckAnswer.fetchWith(podcastRepository.apiV2),
                 replaceAddress = subscriptionRepository::updateFeedAddress,
                 reread = UpgradeAddressRepair.rereadWith(subscribedEpisodeCatalog),
-                requestNotificationRegistration = { id -> PodcastNotificationRegistrationWorker.enqueue(appContext, id) },
+                requestNotificationRegistration = { id -> PodcastNotificationRegistrationWorker.request(appContext, id) },
+                onAddressStepsFinished = { userSyncCoordinator.requestIdentityCatchUp() },
                 isOnline = connectivityStatus::isOnline,
                 telemetry = feedTelemetry,
             ),

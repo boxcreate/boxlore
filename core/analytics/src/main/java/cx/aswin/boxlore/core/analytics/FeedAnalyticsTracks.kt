@@ -55,15 +55,17 @@ internal object FeedAnalyticsTracks {
         }
     }
 
-    private fun backgroundPassProperties(report: FeedFetchReport.BackgroundPass): Map<String, Any> = mapOf(
-        "context" to CONTEXT_BACKGROUND_PASS,
-        "source" to report.source.wireName,
-        "result" to report.passResult.wireName,
-        "shows_count" to report.showsCount,
-        "ok_count" to report.okCount.coerceAtLeast(0),
-        "not_modified_count" to report.notModifiedCount.coerceAtLeast(0),
-        "failed_count" to report.failedCount.coerceAtLeast(0),
-    )
+    private fun backgroundPassProperties(report: FeedFetchReport.BackgroundPass): Map<String, Any> = buildMap {
+        put("context", CONTEXT_BACKGROUND_PASS)
+        put("source", report.source.wireName)
+        put("result", report.passResult.wireName)
+        put("shows_count", report.showsCount)
+        put("ok_count", report.okCount.coerceAtLeast(0))
+        put("not_modified_count", report.notModifiedCount.coerceAtLeast(0))
+        put("failed_count", report.failedCount.coerceAtLeast(0))
+        // Sent only when a show's namespace differs (decision D12), so ordinary passes stay as they were.
+        if (report.namespaceMismatchCount > 0) put("namespace_mismatch_count", report.namespaceMismatchCount)
+    }
 
     /** Show IDs are Podcast Index numbers or hashed `rss:` IDs; anything with a scheme or host is dropped. */
     private fun safeShowId(showId: String): String? = showId.trim().takeIf { it.isNotEmpty() && "/" !in it && "." !in it }

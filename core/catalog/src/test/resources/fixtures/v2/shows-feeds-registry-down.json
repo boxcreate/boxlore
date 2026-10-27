@@ -1,0 +1,15 @@
+{
+  "registryAvailable": false,
+  "results": [
+    {
+      "id": 920666,
+      "fetchUrl": "https://old.example.com/feed.xml",
+      "fetchVia": "direct",
+      "transportUrl": null,
+      "feedSource": "pidump",
+      "epNs": 920666,
+      "flags": { "addressRepair": false, "episodeStale": false },
+      "verifiedAt": null
+    }
+  ]
+}

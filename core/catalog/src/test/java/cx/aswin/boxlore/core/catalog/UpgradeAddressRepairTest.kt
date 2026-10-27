@@ -10,6 +10,7 @@ import cx.aswin.boxlore.core.database.UpgradeRepairDao
 import cx.aswin.boxlore.core.database.UpgradeRepairShowEntity
 import cx.aswin.boxlore.core.database.UpgradeRepairState
 import cx.aswin.boxlore.core.domain.ports.FeedTelemetryPort
+import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome
 import cx.aswin.boxlore.core.model.FeedFetchReport
 import cx.aswin.boxlore.core.model.FeedFetchSource
@@ -19,6 +20,7 @@ import cx.aswin.boxlore.core.model.FeedUrlCorrectionStep
 import cx.aswin.boxlore.core.network.model.V2ShowAddress
 import cx.aswin.boxlore.core.network.model.V2ShowFlags
 import cx.aswin.boxlore.core.network.model.V2ShowsFeedsResponse
+import cx.aswin.boxlore.core.testing.fakes.FakeLocalEpisodeCatalogPort
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
@@ -61,7 +63,10 @@ class UpgradeAddressRepairTest {
     private var marker: UpgradeNotificationMarker = MemoryUpgradeNotificationMarker()
     private var online = true
     private var enabled = true
-    private var fetch: suspend (List<Long>) -> V2ShowsFeedsResponse? = { ids -> answer(ids) }
+    private var now = NOW
+    private var catchUps = 0
+    private var fetch: suspend (List<Long>) -> AddressCheckAnswer = { ids -> answer(ids) }
+    private var register: suspend (String) -> Unit = { registrations += it }
     private var reread: suspend (PodcastEntity, Long?) -> RefreshOutcome = { _, _ -> RefreshOutcome.Success(null, 1, true) }
 
     private val telemetry =
@@ -104,6 +109,7 @@ class UpgradeAddressRepairTest {
         assertTrue(calls.isEmpty())
         assertTrue(rereads.isEmpty())
         assertTrue(registrations.isEmpty())
+        assertEquals("nothing was repaired, so the sync is left alone", 0, catchUps)
     }
 
     @Test
@@ -132,6 +138,7 @@ class UpgradeAddressRepairTest {
         }
         assertEquals("the writer and step 4 both ask; shows with notifications off never", listOf("920666", "920666"), registrations)
         assertTrue(marker.isComplete)
+        assertEquals(1, catchUps)
         assertEquals(listOf(FeedFetchReport.BackgroundPass(FeedFetchSource.FEED, okCount = 2, notModifiedCount = 0, failedCount = 0)), reports)
         assertFalse(repair.needsWork())
     }
@@ -149,7 +156,7 @@ class UpgradeAddressRepairTest {
     @Test
     fun `a partial batch keeps the failed chunk at step 0 without counting a try`() = runTest {
         repeat(501) { seed(show((1_000 + it).toString(), OLD)) }
-        fetch = { ids -> if (calls.isEmpty()) answer(ids) else null.also { calls += ids } }
+        fetch = { ids -> if (calls.isEmpty()) answer(ids) else AddressCheckAnswer.Unavailable.also { calls += ids } }
 
         assertEquals(UpgradeRepairRun.RETRY, repair().run())
 
@@ -241,6 +248,7 @@ class UpgradeAddressRepairTest {
         assertEquals(UpgradeRepairRun.DONE, repair.run())
 
         assertEquals(listOf("920666", "920667"), registrations.sorted())
+        assertEquals("the restored phone's next sync catches up again", 1, catchUps)
         assertTrue(calls.isEmpty())
         assertTrue(rereads.isEmpty())
         assertTrue(marker.isComplete)
@@ -303,16 +311,41 @@ class UpgradeAddressRepairTest {
     }
 
     @Test
-    fun `a different server namespace is recorded and never applied to the phone's IDs`() = runTest {
+    fun `a different server namespace is recorded, reported and handed to the read only to compare`() = runTest {
         seed(show("920666", OLD).copy(epNs = 920666L))
+        seed(show("920667", OTHER))
         answers[920666] = V2ShowAddress(id = 920666, fetchUrl = OLD, fetchVia = "direct", feedSource = "registry:apple", epNs = 4242)
+        answers[920667] = V2ShowAddress(id = 920667, epNs = 920667)
 
         assertEquals(UpgradeRepairRun.DONE, repair().run())
 
         assertEquals(4242L, repairs.getShow("920666")!!.checkedEpNs)
-        assertEquals(920666L, podcasts.getPodcast("920666")!!.epNs)
-        assertEquals("the read only compares it", listOf("920666" to 4242L), rereads)
+        assertEquals("the phone's own namespace is kept", 920666L, podcasts.getPodcast("920666")!!.epNs)
+        assertEquals("the read gets it only to compare", listOf("920666" to 4242L, "920667" to 920667L), rereads)
         assertTrue(corrections.isEmpty())
+        assertEquals(listOf(FeedFetchReport.BackgroundPass(FeedFetchSource.FEED, 2, 0, 0, namespaceMismatchCount = 1)), reports)
+    }
+
+    @Test
+    fun `the production read keeps the saved address, passes the namespace and starts no auto-download`() = runTest {
+        val requests = mutableListOf<LocalEpisodeCatalogPort.RefreshRequest>()
+        val catalog =
+            object : LocalEpisodeCatalogPort by FakeLocalEpisodeCatalogPort() {
+                override suspend fun refresh(request: LocalEpisodeCatalogPort.RefreshRequest): RefreshOutcome {
+                    requests += request
+                    return RefreshOutcome.Unchanged(null)
+                }
+            }
+
+        val outcome = UpgradeAddressRepair.rereadWith(catalog)(show("920666", OLD).copy(epNs = 920666L), 4242L)
+
+        assertEquals(RefreshOutcome.Unchanged(null), outcome)
+        val request = requests.single()
+        assertEquals("920666", request.podcastIndexId)
+        assertEquals(OLD, request.feedUrl)
+        assertEquals(4242L, request.serverEpNs)
+        assertEquals(LocalEpisodeCatalogPort.RefreshReason.NORMAL, request.reason)
+        assertFalse("the background repair never starts the foreground auto-download pass", request.runPostPersistCallback)
     }
 
     @Test
@@ -355,10 +388,13 @@ class UpgradeAddressRepairTest {
 
         assertTrue(first.addRegistered(listOf("920666", "920667")))
         assertTrue(first.markComplete())
+        assertFalse(first.syncCatchUpRequested)
+        assertTrue(first.markSyncCatchUpRequested())
 
         val next = FileUpgradeNotificationMarker(file)
-        assertEquals(setOf("920666", "920667"), next.registered())
+        assertEquals("its own records are no shows", setOf("920666", "920667"), next.registered())
         assertTrue(next.isComplete)
+        assertTrue(next.syncCatchUpRequested)
 
         val restored = FileUpgradeNotificationMarker(File(folder.root, "restored"))
         assertFalse(restored.isComplete)
@@ -366,39 +402,223 @@ class UpgradeAddressRepairTest {
 
     @Test
     fun `the swap target is checked again against the row as it is now`() {
-        val entry = UpgradeRepairShowEntity("920666", completedStep = 1, checkedFetchUrl = NEW, checkedFeedSource = "registry:apple")
-        assertEquals(NEW, UpgradeAddressRepair.swapTarget(show("920666", OLD), entry))
-        assertNull("already there", UpgradeAddressRepair.swapTarget(show("920666", NEW), entry))
+        val entry = UpgradeRepairShowEntity("920666", completedStep = 1, checkedFetchUrl = NEW, checkedFeedSource = "registry:apple", lastAttemptAt = NOW)
+        assertEquals(NEW, UpgradeAddressRepair.swapTarget(show("920666", OLD), entry, NOW))
+        assertNull("already there", UpgradeAddressRepair.swapTarget(show("920666", NEW), entry, NOW))
         assertNull(
             "a confirmed feed move left that address",
-            UpgradeAddressRepair.swapTarget(show("920666", OLD).copy(feedUrlSource = FeedUrlSources.FEED_MOVE, previousFeedUrl = NEW), entry),
+            UpgradeAddressRepair.swapTarget(show("920666", OLD).copy(feedUrlSource = FeedUrlSources.FEED_MOVE, previousFeedUrl = NEW), entry, NOW),
         )
-        assertNull("no confirmed move", UpgradeAddressRepair.swapTarget(show("920666", OLD), entry.copy(checkedFetchUrl = null)))
+        assertNull("no confirmed move", UpgradeAddressRepair.swapTarget(show("920666", OLD), entry.copy(checkedFetchUrl = null), NOW))
+        assertNull("a day old", UpgradeAddressRepair.swapTarget(show("920666", OLD), entry, NOW + FeedAddressDailyCheck.CHECK_INTERVAL_MS))
+        assertNull("the daily check has a newer answer", UpgradeAddressRepair.swapTarget(show("920666", OLD).copy(feedUrlCheckedAt = NOW + 1), entry, NOW + 1))
     }
 
-    private fun repair() = UpgradeAddressRepair(
+    @Test
+    fun `an answer left waiting by a pause is asked again later and never applied`() = runTest {
+        seed(show("920666", OLD, notifications = true))
+        answers[920666] = moved(920666)
+        fetch = { ids -> answer(ids).also { enabled = false } }
+
+        assertEquals("switched off after step 1", UpgradeRepairRun.PAUSED, repair().run())
+        assertEquals(1, repairs.getShow("920666")!!.completedStep)
+        assertEquals(NEW, repairs.getShow("920666")!!.checkedFetchUrl)
+
+        now = NOW + 2 * FeedAddressDailyCheck.CHECK_INTERVAL_MS
+        enabled = true
+        answers.remove(920666)
+        calls.clear()
+        fetch = { ids -> answer(ids) }
+        assertEquals(UpgradeRepairRun.DONE, repair().run())
+
+        assertEquals("asked again", listOf(listOf(920666L)), calls)
+        assertEquals("the old answer is never applied", OLD, podcasts.getPodcast("920666")!!.feedUrl)
+        assertTrue(corrections.isEmpty())
+        assertEquals(UpgradeRepairState.DONE, repairs.getShow("920666")!!.state)
+    }
+
+    @Test
+    fun `a failed swap keeps the time of its answer, so the answer still expires`() = runTest {
+        seed(show("920666", OLD))
+        answers[920666] = moved(920666)
+        var swaps = 0
+        val failingSwap: suspend (FeedAddressChange) -> FeedAddressUpdate = {
+            swaps++
+            error("database busy")
+        }
+
+        assertEquals(UpgradeRepairRun.RETRY, repair(replace = failingSwap).run())
+        val waiting = repairs.getShow("920666")!!
+        assertEquals(1, waiting.completedStep)
+        assertEquals(1, waiting.attempts)
+        assertEquals(NOW, waiting.lastAttemptAt)
+
+        now = NOW + FeedAddressDailyCheck.CHECK_INTERVAL_MS
+        answers.remove(920666)
+        assertEquals(UpgradeRepairRun.DONE, repair().run())
+        assertEquals(OLD, podcasts.getPodcast("920666")!!.feedUrl)
+        assertEquals(1, swaps)
+    }
+
+    @Test
+    fun `a refused address check counts a try and the show goes on without an answer at the cap`() = runTest {
+        seed(show("920666", OLD, notifications = true))
+        fetch = { ids -> AddressCheckAnswer.Rejected.also { calls += ids } }
+        val repair = repair()
+
+        repeat(UpgradeAddressRepair.MAX_ATTEMPTS - 1) { assertEquals(UpgradeRepairRun.RETRY, repair.run()) }
+        val waiting = repairs.getShow("920666")!!
+        assertEquals(0, waiting.completedStep)
+        assertEquals(UpgradeAddressRepair.MAX_ATTEMPTS - 1, waiting.attempts)
+        assertTrue(rereads.isEmpty())
+
+        assertEquals(UpgradeRepairRun.DONE, repair.run())
+        val row = repairs.getShow("920666")!!
+        assertEquals(UpgradeRepairState.DONE, row.state)
+        assertNull("no answer, so no swap", row.checkedFetchUrl)
+        assertEquals(OLD, podcasts.getPodcast("920666")!!.feedUrl)
+        assertEquals("the read and step 4 still run", listOf("920666" to null), rereads)
+        assertEquals(listOf("920666"), registrations)
+        assertEquals(UpgradeAddressRepair.MAX_ATTEMPTS, calls.size)
+    }
+
+    @Test
+    fun `an address check the server can't answer counts no try and goes on without an answer after a week`() = runTest {
+        seed(show("920666", OLD))
+        seed(show("920667", OTHER))
+        var registryDown = false
+        fetch = { ids ->
+            calls += ids
+            if (registryDown) {
+                AddressCheckAnswer.Answered(V2ShowsFeedsResponse(registryAvailable = false, results = ids.map { V2ShowAddress(id = it, fetchUrl = OLD) }))
+            } else {
+                AddressCheckAnswer.Unavailable
+            }
+        }
+        val repair = repair()
+
+        assertEquals(UpgradeRepairRun.RETRY, repair.run())
+        now = NOW + 6 * FeedAddressDailyCheck.CHECK_INTERVAL_MS
+        registryDown = true
+        assertEquals(UpgradeRepairRun.RETRY, repair.run())
+        for (id in listOf("920666", "920667")) {
+            val row = repairs.getShow(id)!!
+            assertEquals(0, row.completedStep)
+            assertEquals("never counted as a try", 0, row.attempts)
+            assertEquals("the first failed check", NOW, row.lastAttemptAt)
+        }
+        assertTrue(rereads.isEmpty())
+
+        now = NOW + UpgradeAddressRepair.MAX_UNANSWERED_MS
+        assertEquals(UpgradeRepairRun.DONE, repair.run())
+        assertEquals(listOf("920666" to null, "920667" to null), rereads)
+        assertEquals(OTHER, podcasts.getPodcast("920667")!!.feedUrl)
+        assertTrue(corrections.isEmpty())
+        assertEquals(0, repairs.pendingCount())
+    }
+
+    @Test
+    fun `the sync catch-up is asked for once, after the last show, never while shows wait or the run is paused`() = runTest {
+        repeat(501) { seed(show((1_000 + it).toString(), OLD)) }
+        fetch = { ids -> if (calls.isEmpty()) answer(ids) else AddressCheckAnswer.Unavailable.also { calls += ids } }
+        val repair = repair()
+
+        assertEquals(UpgradeRepairRun.RETRY, repair.run())
+        assertEquals("one show still waits", 0, catchUps)
+
+        enabled = false
+        assertEquals(UpgradeRepairRun.PAUSED, repair.run())
+        assertEquals(0, catchUps)
+
+        enabled = true
+        fetch = { ids -> answer(ids) }
+        assertEquals(UpgradeRepairRun.DONE, repair.run())
+        assertEquals(1, catchUps)
+        assertTrue(marker.syncCatchUpRequested)
+
+        assertEquals(UpgradeRepairRun.DONE, repair.run())
+        assertFalse(repair.needsWork())
+        assertEquals("never again on this install", 1, catchUps)
+    }
+
+    @Test
+    fun `a sync catch-up that couldn't be asked for keeps the repair going until it is`() = runTest {
+        seed(show("920666", OLD))
+        var failing = true
+        val repair =
+            UpgradeAddressRepair(
+                repairDao = repairs,
+                podcastDao = podcasts,
+                ports =
+                UpgradeRepairPorts(
+                    fetchAddresses = { ids -> answer(ids) },
+                    replaceAddress = updater::update,
+                    reread = { _, _ -> RefreshOutcome.Unchanged(null) },
+                    requestNotificationRegistration = { registrations += it },
+                    onAddressStepsFinished = {
+                        check(!failing) { "prefs unavailable" }
+                        catchUps++
+                    },
+                ),
+                marker = marker,
+                enabled = { true },
+                nowMillis = { now },
+            )
+
+        assertEquals(UpgradeRepairRun.RETRY, repair.run())
+        assertFalse(marker.syncCatchUpRequested)
+        assertTrue(repair.needsWork())
+
+        failing = false
+        assertEquals(UpgradeRepairRun.DONE, repair.run())
+        assertEquals(1, catchUps)
+        assertFalse(repair.needsWork())
+    }
+
+    @Test
+    fun `a registration request that couldn't be saved is not recorded and is asked again`() = runTest {
+        seed(show("920666", OLD, notifications = true))
+        var saved = false
+        register = { id ->
+            check(saved) { "the request wasn't saved" }
+            registrations += id
+        }
+
+        assertEquals(UpgradeRepairRun.RETRY, repair().run())
+        assertFalse("920666" in marker.registered())
+        assertFalse(marker.isComplete)
+
+        saved = true
+        assertEquals(UpgradeRepairRun.DONE, repair().run())
+        assertEquals(listOf("920666"), registrations)
+        assertTrue("920666" in marker.registered())
+        assertTrue(marker.isComplete)
+    }
+
+    private fun repair(replace: suspend (FeedAddressChange) -> FeedAddressUpdate = updater::update) = UpgradeAddressRepair(
         repairDao = repairs,
         podcastDao = podcasts,
         ports =
         UpgradeRepairPorts(
             fetchAddresses = { ids -> fetch(ids) },
-            replaceAddress = updater::update,
+            replaceAddress = replace,
             reread = { row, epNs ->
                 rereads += row.podcastId to epNs
                 reread(row, epNs)
             },
-            requestNotificationRegistration = { registrations += it },
+            requestNotificationRegistration = { register(it) },
+            onAddressStepsFinished = { catchUps++ },
             isOnline = { online },
             telemetry = telemetry,
         ),
         marker = marker,
         enabled = { enabled },
-        nowMillis = { NOW },
+        nowMillis = { now },
     )
 
-    private fun answer(ids: List<Long>): V2ShowsFeedsResponse {
+    private fun answer(ids: List<Long>): AddressCheckAnswer {
         calls += ids
-        return V2ShowsFeedsResponse(registryAvailable = true, results = ids.map { answers[it] ?: V2ShowAddress(id = it) })
+        return AddressCheckAnswer.Answered(V2ShowsFeedsResponse(registryAvailable = true, results = ids.map { answers[it] ?: V2ShowAddress(id = it) }))
     }
 
     private suspend fun seed(row: PodcastEntity, completedStep: Int = 0) {

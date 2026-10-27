@@ -50,6 +50,17 @@ class PodcastNotificationRegistrationWorkerTest {
     }
 
     @Test
+    fun `a request returns once the work is saved, and never saves one for rss shows`() = runBlocking {
+        PodcastNotificationRegistrationWorker.request(context, "920666")
+        PodcastNotificationRegistrationWorker.request(context, "rss:abc")
+
+        val manager = WorkManager.getInstance(context)
+        val work = manager.getWorkInfosForUniqueWork(PodcastNotificationRegistrationWorker.workName("920666")).get()
+        assertEquals(1, work.count { it.state == WorkInfo.State.ENQUEUED })
+        assertTrue(manager.getWorkInfosForUniqueWork(PodcastNotificationRegistrationWorker.workName("rss:abc")).get().isEmpty())
+    }
+
+    @Test
     fun `the work waits for a network and backs off exponentially`() {
         val work = PodcastNotificationRegistrationWorker.workRequest("920666").workSpec
         assertEquals(NetworkType.CONNECTED, work.constraints.requiredNetworkType)

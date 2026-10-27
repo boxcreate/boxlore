@@ -296,6 +296,40 @@ class CloudSyncIdentityTest {
     }
 
     @Test
+    fun aCatchUpAskedForAfterTheAddressRepairSendsTheIdentityOfEpisodesItsReadsSettled() = runTest(dispatcher) {
+        // Own-episode-IDs P4 PR 15: the repair's reads settle aliases after the first catch-up ran.
+        upgradedDevice(history(PI_ID, dirty = false, syncedAt = 100L))
+        server.push(SyncPushRequest(history = listOf(oldBuildRow(PI_ID))))
+        server.pushes.clear()
+        assertTrue(coordinator.syncNow() is SyncResult.Success)
+        assertEquals(UserSyncCoordinator.IDENTITY_SYNC_METADATA_VERSION, prefs.getSyncMetadataVersion())
+        assertNull("nothing known yet", server.history.getValue(PI_ID).recipeId)
+
+        // The repair's read of the feed settles the episode: its alias becomes trusted with a key.
+        database.episodeIdentityDao().upsertAlias(alias(PI_ID, owner = true, provenance = EpisodeAliasProvenance.FEED_CONFIRMED_KEY))
+        assertTrue(coordinator.syncNow() is SyncResult.Success)
+        assertNull("a delta sync doesn't send it", server.history.getValue(PI_ID).recipeId)
+
+        coordinator.requestIdentityCatchUp()
+        assertEquals(UserSyncCoordinator.IDENTITY_SYNC_METADATA_VERSION - 1, prefs.getSyncMetadataVersion())
+        assertTrue(coordinator.syncNow() is SyncResult.Success)
+
+        assertEquals(0L, server.pulls.last().since)
+        assertEquals(RECIPE to KEY, server.history.getValue(PI_ID).let { it.recipeId to it.catalogKey })
+        assertEquals(UserSyncCoordinator.IDENTITY_SYNC_METADATA_VERSION, prefs.getSyncMetadataVersion())
+    }
+
+    @Test
+    fun aCatchUpRequestLeavesAPhoneThatHasntCaughtUpYetAsItIs() = runTest(dispatcher) {
+        coordinator.requestIdentityCatchUp()
+        assertEquals("never synced", 0, prefs.getSyncMetadataVersion())
+
+        prefs.setSyncMetadataVersion(2)
+        coordinator.requestIdentityCatchUp()
+        assertEquals(2, prefs.getSyncMetadataVersion())
+    }
+
+    @Test
     fun theCatchUpKeepsEachCloudRowsTimeSoOtherDevicesPullNothingNew() = runTest(dispatcher) {
         aliases(alias(PI_ID, owner = true))
         upgradedDevice(history(PI_ID, progress = 9_000L, playedAt = 6_000L, dirty = false, syncedAt = 100L))

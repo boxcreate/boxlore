@@ -13,6 +13,7 @@ import androidx.work.WorkManager
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.testing.WorkManagerTestInitHelper
+import cx.aswin.boxlore.core.catalog.AddressCheckAnswer
 import cx.aswin.boxlore.core.catalog.MemoryUpgradeNotificationMarker
 import cx.aswin.boxlore.core.catalog.UpgradeAddressRepair
 import cx.aswin.boxlore.core.catalog.UpgradeRepairPorts
@@ -125,7 +126,7 @@ class UpgradeRepairWorkerTest {
         podcastDao = database.podcastDao(),
         ports =
         UpgradeRepairPorts(
-            fetchAddresses = { ids -> V2ShowsFeedsResponse(registryAvailable = true, results = ids.map { V2ShowAddress(id = it) }) },
+            fetchAddresses = { ids -> AddressCheckAnswer.Answered(V2ShowsFeedsResponse(registryAvailable = true, results = ids.map { V2ShowAddress(id = it) })) },
             replaceAddress = { error("no swap expected") },
             reread = { _, _ -> LocalEpisodeCatalogPort.RefreshOutcome.Unchanged(null) },
             requestNotificationRegistration = {},

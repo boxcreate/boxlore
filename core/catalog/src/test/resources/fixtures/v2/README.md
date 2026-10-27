@@ -15,3 +15,11 @@ recorded.
 | `curiosity.json` | `GET /v2/curated/curiosity-v3?page=1` |
 | `briefing-metadata.json` | `GET /v2/briefings/metadata/us` |
 | `briefing-chapters.json` | the `chaptersUrl` of that briefing (`/v2/briefings/chapters/us`) |
+
+The `/v2/shows/feeds` answers are not live recordings: they were written on 2026-10-27 from the
+route's documented contract and its own tests, field for field, with example addresses.
+
+| File | Request |
+|---|---|
+| `shows-feeds.json` | `POST /v2/shows/feeds` with four IDs: a confirmed move (`registry:` source, `flags.addressRepair`), an http-only show (`fetchVia: proxy` with its `transportUrl`), a show the lookup doesn't know (`fetchUrl: null`) and one with another `epNs` |
+| `shows-feeds-registry-down.json` | the same route while the address registry is unavailable (`registryAvailable: false`, dump addresses only) |

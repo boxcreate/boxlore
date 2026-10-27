@@ -116,6 +116,24 @@ open class UserSyncCoordinator(
         }
     }
 
+    /**
+     * Runs the one-time identity catch-up again on the next sync (a pull from the start, then the
+     * pushes of cloud copies that gain an identity) when it already ran: sets the sync metadata
+     * version back below [IDENTITY_SYNC_METADATA_VERSION]. A phone that never synced, or one still
+     * waiting for the catch-up, is left as it is. Waits for a running sync, so that sync can't
+     * record the catch-up done over this request.
+     *
+     * Called once the one-time feed address repair has read every followed show again, so history
+     * and queue rows whose episodes those reads settled reach the cloud with their identity. Added
+     * in P4 PR 15 of the own-episode-IDs plan (plan sections 8 and 11).
+     * COMPAT(own-ids): someone can upgrade from an old build at any time. Permanent: never remove (MIGRATION.md §5).
+     */
+    suspend fun requestIdentityCatchUp() = syncMutex.withLock {
+        if (requireBoxcastPrefs.getSyncMetadataVersion() >= IDENTITY_SYNC_METADATA_VERSION) {
+            requireBoxcastPrefs.setSyncMetadataVersion(IDENTITY_SYNC_METADATA_VERSION - 1)
+        }
+    }
+
     private suspend fun handleAccountSwitch(userId: String, token: String?): SyncResult {
         purgeLocalDataForAccountSwitch()
         requireBoxcastPrefs.setLastSyncTimestamp(0L)

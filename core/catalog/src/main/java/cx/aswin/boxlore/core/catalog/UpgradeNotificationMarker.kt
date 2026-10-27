@@ -8,11 +8,13 @@ import java.util.Properties
 /**
  * Step 4 of the one-time feed address repair ([UpgradeAddressRepair]): which followed shows had
  * their new-episode notifications registered again on this install, and whether the step finished.
+ * It also records that the sync's identity catch-up was asked for once steps 1–3 were over.
  *
  * Steps 1–3 are kept in Room (`upgrade_repair_shows`), which an Android restore brings back; this
  * marker lives in `noBackupFilesDir`, which a restore never brings, so a restored phone (a new
  * messaging token, no topic subscriptions) registers every followed show again even when Room says
- * the repair is done.
+ * the repair is done. The catch-up is then asked for again too, which only makes the next sync
+ * pull from the start once more.
  *
  * Added in P4 PR 15 of the own-episode-IDs plan (plan section 11, upgrade repair; "Android backup").
  * COMPAT(own-ids): someone can upgrade from an old build at any time. Permanent: never remove (MIGRATION.md §5).
@@ -29,6 +31,12 @@ interface UpgradeNotificationMarker {
 
     /** Records that step 4 finished; false when the record couldn't be saved. */
     fun markComplete(): Boolean
+
+    /** True once the sync's identity catch-up was asked for after steps 1–3. */
+    val syncCatchUpRequested: Boolean
+
+    /** Records that the sync's identity catch-up was asked for; false when the record couldn't be saved. */
+    fun markSyncCatchUpRequested(): Boolean
 }
 
 /** In-memory [UpgradeNotificationMarker] for tests and previews. */
@@ -50,6 +58,15 @@ class MemoryUpgradeNotificationMarker : UpgradeNotificationMarker {
         isComplete = true
         return true
     }
+
+    @Volatile
+    override var syncCatchUpRequested: Boolean = false
+        private set
+
+    @Synchronized override fun markSyncCatchUpRequested(): Boolean {
+        syncCatchUpRequested = true
+        return true
+    }
 }
 
 /**
@@ -63,12 +80,17 @@ class FileUpgradeNotificationMarker internal constructor(private val storage: At
     override val isComplete: Boolean
         @Synchronized get() = read().getProperty(COMPLETE_KEY) == "true"
 
-    @Synchronized override fun registered(): Set<String> = read().stringPropertyNames().filter { it != COMPLETE_KEY }.toSet()
+    override val syncCatchUpRequested: Boolean
+        @Synchronized get() = read().getProperty(SYNC_CATCH_UP_KEY) == "true"
+
+    @Synchronized override fun registered(): Set<String> = read().stringPropertyNames().filterNot { it.startsWith(RECORD_KEY_PREFIX) }.toSet()
 
     @Synchronized override fun addRegistered(podcastIds: Collection<String>): Boolean =
         podcastIds.isEmpty() || change { values -> podcastIds.forEach { values.setProperty(it, "1") } }
 
     @Synchronized override fun markComplete(): Boolean = change { it.setProperty(COMPLETE_KEY, "true") }
+
+    @Synchronized override fun markSyncCatchUpRequested(): Boolean = change { it.setProperty(SYNC_CATCH_UP_KEY, "true") }
 
     private fun read(): Properties = Properties().apply {
         try {
@@ -102,6 +124,9 @@ class FileUpgradeNotificationMarker internal constructor(private val storage: At
         /** File name under `noBackupFilesDir`. Stable storage name: never rename. */
         const val FILE_NAME = "upgrade_repair_notifications"
 
+        /** Keys of the file's own records start with this; show IDs never do. */
+        private const val RECORD_KEY_PREFIX = "__"
         private const val COMPLETE_KEY = "__complete"
+        private const val SYNC_CATCH_UP_KEY = "__sync_catch_up"
     }
 }
