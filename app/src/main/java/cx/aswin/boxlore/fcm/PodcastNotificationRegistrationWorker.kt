@@ -38,13 +38,22 @@ class PodcastNotificationRegistrationWorker(context: Context, params: WorkerPara
         SharedAppDependenciesHolder.require().subscriptionRepository.registerPodcastNotifications(podcastId)
     }
 
-    /** Records each run's outcome: only an acknowledgement (or a refusal) clears the show's pending mark. */
-    internal var settle: (podcastId: String, outcome: NotificationRegistrationOutcome) -> Unit = { podcastId, outcome ->
-        SharedAppDependenciesHolder.require().subscriptionRepository.feedAddresses.registrationSettled(podcastId, outcome)
+    /** The show's pending request, read before registering so [settle] clears only that one. */
+    internal var pendingMark: (podcastId: String) -> Long? = { podcastId ->
+        SharedAppDependenciesHolder.require().subscriptionRepository.feedAddresses.pendingMark(podcastId)
+    }
+
+    /**
+     * Records each run's outcome: only an acknowledgement (or a refusal) clears the show's pending
+     * request, and only the one this run read ([pendingMark]); a newer address change stays pending.
+     */
+    internal var settle: (podcastId: String, outcome: NotificationRegistrationOutcome, mark: Long?) -> Unit = { podcastId, outcome, mark ->
+        SharedAppDependenciesHolder.require().subscriptionRepository.feedAddresses.registrationSettled(podcastId, outcome, mark)
     }
 
     override suspend fun doWork(): Result {
         val podcastId = inputData.getString(KEY_PODCAST_ID)?.takeIf { it.isNotBlank() && !it.startsWith("rss:") } ?: return Result.failure()
+        val mark = pendingMark(podcastId)
         val outcome =
             try {
                 register(podcastId)
@@ -53,7 +62,7 @@ class PodcastNotificationRegistrationWorker(context: Context, params: WorkerPara
             } catch (_: Exception) {
                 NotificationRegistrationOutcome.RETRY
             }
-        settle(podcastId, outcome)
+        settle(podcastId, outcome, mark)
         return when (outcome) {
             NotificationRegistrationOutcome.DONE, NotificationRegistrationOutcome.DROPPED -> Result.success()
             NotificationRegistrationOutcome.RETRY -> if (runAttemptCount + 1 < MAX_ATTEMPTS) Result.retry() else Result.failure()

@@ -100,6 +100,7 @@ class PodcastNotificationRegistrationWorkerTest {
                     pendingRegistrations = pending,
                 )
             val last = worker(NotificationRegistrationOutcome.RETRY, attempt = PodcastNotificationRegistrationWorker.MAX_ATTEMPTS - 1)
+            last.pendingMark = updater::pendingMark
             last.settle = updater::registrationSettled
 
             assertEquals(ListenableWorker.Result.failure(), last.doWork())
@@ -109,8 +110,43 @@ class PodcastNotificationRegistrationWorkerTest {
             val queued = WorkManager.getInstance(context).getWorkInfosForUniqueWork(PodcastNotificationRegistrationWorker.workName("920666")).get()
             assertEquals(1, queued.count { it.state == WorkInfo.State.ENQUEUED })
 
-            val acknowledged = worker(NotificationRegistrationOutcome.DONE).apply { settle = updater::registrationSettled }
+            val acknowledged =
+                worker(NotificationRegistrationOutcome.DONE).apply {
+                    pendingMark = updater::pendingMark
+                    settle = updater::registrationSettled
+                }
             assertEquals(ListenableWorker.Result.success(), acknowledged.doWork())
+            assertTrue(pending.all().isEmpty())
+        } finally {
+            database.close()
+        }
+    }
+
+    @Test
+    fun `a job that read an older change never clears the newer one made while it ran`() = runBlocking {
+        val database = Room.inMemoryDatabaseBuilder(context, BoxLoreDatabase::class.java).allowMainThreadQueries().build()
+        try {
+            val pending = MemoryPendingNotificationRegistrations().apply { add("920666") }
+            val updater = FeedAddressUpdater(database.podcastDao(), pendingRegistrations = pending)
+            val older =
+                worker(NotificationRegistrationOutcome.DONE).apply {
+                    pendingMark = updater::pendingMark
+                    register = {
+                        pending.add("920666") // a newer address change lands while this run registers the old one
+                        NotificationRegistrationOutcome.DONE
+                    }
+                    settle = updater::registrationSettled
+                }
+
+            assertEquals(ListenableWorker.Result.success(), older.doWork())
+            assertEquals("the newer change waits for its own job", setOf("920666"), pending.all())
+
+            val newer =
+                worker(NotificationRegistrationOutcome.DONE).apply {
+                    pendingMark = updater::pendingMark
+                    settle = updater::registrationSettled
+                }
+            assertEquals(ListenableWorker.Result.success(), newer.doWork())
             assertTrue(pending.all().isEmpty())
         } finally {
             database.close()
@@ -123,7 +159,7 @@ class PodcastNotificationRegistrationWorkerTest {
         val failing =
             worker(NotificationRegistrationOutcome.DONE).apply {
                 register = { error("Firebase not ready") }
-                settle = { _, outcome -> settled += outcome }
+                settle = { _, outcome, _ -> settled += outcome }
             }
         assertEquals(ListenableWorker.Result.retry(), failing.doWork())
         assertEquals(listOf(NotificationRegistrationOutcome.RETRY), settled)
@@ -134,7 +170,8 @@ class PodcastNotificationRegistrationWorkerTest {
                 calls++
                 NotificationRegistrationOutcome.DONE
             }
-            settle = { _, _ -> calls++ }
+            pendingMark = { null }
+            settle = { _, _, _ -> calls++ }
         }
         assertEquals(ListenableWorker.Result.failure(), empty.doWork())
         assertEquals(0, calls)
@@ -150,6 +187,7 @@ class PodcastNotificationRegistrationWorkerTest {
                     assertEquals("920666", id)
                     outcome
                 }
-                settle = { _, _ -> }
+                pendingMark = { null }
+                settle = { _, _, _ -> }
             }
 }
