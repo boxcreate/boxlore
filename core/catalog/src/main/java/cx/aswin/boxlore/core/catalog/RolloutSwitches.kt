@@ -5,8 +5,9 @@ package cx.aswin.boxlore.core.catalog
  * module never reads PostHog itself (`ARCHITECTURE.md`: catalog does not depend on analytics).
  *
  * Added in P4 (own episode IDs, plan section 11 "P4: App v2 build", Rollback). [PodcastRepository]
- * reads [v2Discovery] for every discovery request (P4 PR 12); the show-page source, the daily
- * address check and the one-time upgrade repair each read their switch when they land. The
+ * reads [v2Discovery] for every discovery request (P4 PR 12) and [feedFirst] for the show-page
+ * source (P4 PR 16, [PodcastRepository.showPageSource]); the daily address check and the one-time
+ * upgrade repair read theirs. The
  * defaults are what a build gets without the app's wiring (tests, previews): the feed-first show
  * page off, every job on.
  */

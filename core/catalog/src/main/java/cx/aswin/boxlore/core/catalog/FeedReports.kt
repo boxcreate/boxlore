@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import android.util.Log
 import cx.aswin.boxlore.core.network.BoxLoreApiV2
 import cx.aswin.boxlore.core.network.model.V2EpisodeIds
+import cx.aswin.boxlore.core.network.model.V2FeedReadTarget
 import cx.aswin.boxlore.core.network.model.V2FeedReportRequest
 import cx.aswin.boxlore.core.network.model.V2FeedReportResponse
 import cx.aswin.boxlore.core.network.model.V2FeedReportStatus
@@ -61,23 +62,27 @@ class SharedPreferencesFeedReportStamps(private val prefs: SharedPreferences) : 
 
 /**
  * Limits broken-feed reports: one per show per [PER_SHOW_INTERVAL_MS], and at most [DAILY_CAP] a
- * day in all. The API takes 20 a day from one phone; the background pass keeps 5 of them for the
- * show page. Only a report the API answered counts ([record]): a failed or refused send uses up
- * nothing.
+ * day in all, the API's own limit. Followed shows may use the whole day; the show page stops
+ * [FOLLOWED_SHOWS_RESERVE] short, so followed shows always have room. Only a report the API
+ * answered counts ([record]): a failed or refused send uses up nothing. Two sends at the same moment
+ * can pass [allows] together; the API then answers the extra one with a 429, which counts nothing.
  *
  * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows: reports).
  */
 class FeedReportLimiter(private val stamps: FeedReportStamps) {
-    /** True when a report of [podcastId] may be sent at [nowMillis]. */
-    @Synchronized
-    fun allows(podcastId: String, nowMillis: Long): Boolean {
+    /**
+     * True when a report of [podcastId] may be sent at [nowMillis]: the show wasn't reported in the
+     * last day, and the day's reports leave [keepFree] of [DAILY_CAP] for other callers (the show
+     * page keeps [FOLLOWED_SHOWS_RESERVE] free for followed shows, P4 PR 16). Limiters sharing one
+     * store lock on it, so each one counts the reports the others recorded.
+     */
+    fun allows(podcastId: String, nowMillis: Long, keepFree: Int = 0): Boolean = synchronized(stamps) {
         val recent = recent(nowMillis)
-        return podcastId !in recent && recent.size < DAILY_CAP
+        podcastId !in recent && recent.size < DAILY_CAP - keepFree.coerceIn(0, DAILY_CAP)
     }
 
     /** Counts a report of [podcastId] the API answered at [nowMillis]. */
-    @Synchronized
-    fun record(podcastId: String, nowMillis: Long) {
+    fun record(podcastId: String, nowMillis: Long) = synchronized(stamps) {
         stamps.mark(podcastId, nowMillis, keepSince = nowMillis - PER_SHOW_INTERVAL_MS)
     }
 
@@ -89,8 +94,11 @@ class FeedReportLimiter(private val stamps: FeedReportStamps) {
     companion object {
         const val PER_SHOW_INTERVAL_MS = 24L * 60L * 60L * 1000L
 
-        /** Below the API's 20 a day per phone, so the show page's own reports still go through. */
-        const val DAILY_CAP = 15
+        /** The API's limit: 20 reports a day from one phone. */
+        const val DAILY_CAP = 20
+
+        /** Reports of the day the show page leaves to followed shows (P4 PR 16). */
+        const val FOLLOWED_SHOWS_RESERVE = 5
     }
 }
 
@@ -110,15 +118,36 @@ class FeedReporter(
     private val isOnline: () -> Boolean,
     private val enabled: () -> Boolean,
     private val nowMillis: () -> Long = System::currentTimeMillis,
+    private val keepFree: Int = 0,
 ) {
     /**
      * @param status what the failed read saw, as the route takes it; null when no read happened
      * @return the API's HTTPS address when it differs from [savedFeedUrl], else null
      */
-    suspend fun report(podcastId: String, status: String?, savedFeedUrl: String?): String? {
-        if (status == null || !V2FeedReportStatus.isValid(status) || !enabled()) return null
+    suspend fun report(podcastId: String, status: String?, savedFeedUrl: String?): String? =
+        (reportTarget(podcastId, status, savedFeedUrl) as? V2FeedReadTarget.Direct)?.url
+
+    /**
+     * [report] for a caller that can also read through boxlore's transport: the answer's address
+     * as a read target, [V2FeedReadTarget.ViaApi] when it is http-only (`fetchVia: proxy`,
+     * `V2-ROUTES.md` `/v2/feed-report`), or a different HTTPS address. Null when nothing was sent or
+     * the answer names the address already read.
+     *
+     * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, the show page's failure ladder).
+     */
+    suspend fun reportTarget(podcastId: String, status: String?, savedFeedUrl: String?): V2FeedReadTarget? {
         val showId = V2EpisodeIds.parseShowId(podcastId) ?: return null
-        if (!isOnline() || !limiter.allows(podcastId, nowMillis())) return null
+        val answer = sendReport(podcastId, showId, status) ?: return null
+        if (answer.fetchVia == V2FetchVia.PROXY) return answer.readTarget(showId)
+        if (answer.fetchVia != null && answer.fetchVia != V2FetchVia.DIRECT) return null
+        val https = TrackedPodcastRtdbLogic.httpsFeedUrl(answer.fetchUrl) ?: return null
+        return https.takeIf { it != savedFeedUrl?.trim() }?.let(V2FeedReadTarget::Direct)
+    }
+
+    /** One report within the limits; null when none was sent or it got no answer. */
+    private suspend fun sendReport(podcastId: String, showId: Long, status: String?): V2FeedReportResponse? {
+        if (status == null || !V2FeedReportStatus.isValid(status) || !enabled()) return null
+        if (!isOnline() || !limiter.allows(podcastId, nowMillis(), keepFree)) return null
         val answer =
             try {
                 send(V2FeedReportRequest(id = showId, status = status))
@@ -129,9 +158,7 @@ class FeedReporter(
                 null
             } ?: return null
         limiter.record(podcastId, nowMillis())
-        if (answer.fetchVia != null && answer.fetchVia != V2FetchVia.DIRECT) return null
-        val https = TrackedPodcastRtdbLogic.httpsFeedUrl(answer.fetchUrl) ?: return null
-        return https.takeIf { it != savedFeedUrl?.trim() }
+        return answer
     }
 
     companion object {

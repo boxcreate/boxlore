@@ -1,0 +1,155 @@
+{
+  "status": "true",
+  "fallback": true,
+  "source": "pi",
+  "feedId": 920666,
+  "items": [
+    {
+      "id": 5626175219222083,
+      "title": "Episode 276: \"Jackleg leechers\"",
+      "link": "https://www.podpage.com/podcasting-20/jackleg-leechers/",
+      "description": "<p><span style=\"font-size: 18pt;\"><strong>Podcasting 2.0 October 23d 2026 Episode 276 - \"Jackleg Leechers\"</strong></…",
+      "guid": "PC20-276",
+      "datePublished": 1792783066,
+      "datePublishedPretty": "October 23, 2026 2:17pm",
+      "dateCrawled": 1793116329,
+      "enclosureUrl": "https://op3.dev/e/mp3s.nashownotes.com/PC20-276-2026-10-23-Final.mp3",
+      "enclosureType": "audio/mpeg",
+      "enclosureLength": 64037934,
+      "duration": 5335,
+      "explicit": 0,
+      "episode": null,
+      "episodeType": "full",
+      "season": 0,
+      "image": "https://noagendaassets.com/enc/1684513486.722_pcifeedimage.png",
+      "feedItunesId": 1584274529,
+      "feedItunesType": "episodic",
+      "feedUrl": "https://feeds.podcastindex.org/pc20.xml",
+      "feedImage": "https://noagendaassets.com/enc/1684513486.722_pcifeedimage.png",
+      "feedId": 920666,
+      "podcastGuid": "917393e3-1b1e-5cef-ace4-edaa54e1f810",
+      "feedLanguage": "en",
+      "feedDead": 0,
+      "feedDuplicateOf": null,
+      "chaptersUrl": "https://reflex.livewire.io/chapters/podcast/917393e3-1b1e-5cef-ace4-edaa54e1f810/item/PC20-276/chapters/https://mp3s.nashownotes.com/PC20-276-Chapters.json",
+      "transcriptUrl": "https://mp3s.nashownotes.com/PC20-276-Captions.srt",
+      "persons": [
+        {
+          "id": 173750943,
+          "name": "Adam Curry",
+          "role": "host",
+          "group": "cast",
+          "href": "http://curry.com",
+          "img": "https://feeds.podcastindex.org/adam_avatar.jpg"
+        }
+      ],
+      "socialInteract": [
+        {
+          "uri": "https://podcastindex.social/@PodcastsLive/117491366129316912",
+          "protocol": "activitypub",
+          "accountId": "@adam",
+          "accountUrl": "https://podcastindex.social/users/adam",
+          "priority": 0
+        }
+      ],
+      "transcripts": [
+        {
+          "url": "https://mp3s.nashownotes.com/PC20-276-Captions.srt",
+          "type": "application/srt"
+        }
+      ],
+      "value": {
+        "model": {
+          "type": "lightning",
+          "method": "keysend",
+          "suggested": "0.00000005000"
+        },
+        "destinations": [
+          {
+            "name": "Dreb Scott (Chapters)",
+            "type": "lnaddress",
+            "address": "drebscott@getalby.com",
+            "split": 5
+          }
+        ]
+      },
+      "servedId": 62178446363,
+      "catalogKey": "PC20-276"
+    },
+    {
+      "id": 7579913942623881,
+      "title": "Episode 275: \"Off The Rails\"",
+      "link": "https://www.podpage.com/podcasting-20/off-the-rails/",
+      "description": "<p><span style=\"font-size: 18pt;\"><strong>Podcasting 2.0 October 16th 2026 Episode 275 - \"Off The Rails\"</strong></sp…",
+      "guid": "PC20-275",
+      "datePublished": 1792179089,
+      "datePublishedPretty": "October 16, 2026 2:31pm",
+      "dateCrawled": 1793116329,
+      "enclosureUrl": "https://op3.dev/e/mp3s.nashownotes.com/PC20-275-2026-10-16-Final.mp3",
+      "enclosureType": "audio/mpeg",
+      "enclosureLength": 71957106,
+      "duration": 5995,
+      "explicit": 0,
+      "episode": null,
+      "episodeType": "full",
+      "season": 0,
+      "image": "https://noagendaassets.com/enc/1684513486.722_pcifeedimage.png",
+      "feedItunesId": 1584274529,
+      "feedItunesType": "episodic",
+      "feedUrl": "https://feeds.podcastindex.org/pc20.xml",
+      "feedImage": "https://noagendaassets.com/enc/1684513486.722_pcifeedimage.png",
+      "feedId": 920666,
+      "podcastGuid": "917393e3-1b1e-5cef-ace4-edaa54e1f810",
+      "feedLanguage": "en",
+      "feedDead": 0,
+      "feedDuplicateOf": null,
+      "chaptersUrl": "https://reflex.livewire.io/chapters/podcast/917393e3-1b1e-5cef-ace4-edaa54e1f810/item/PC20-275/chapters/https://mp3s.nashownotes.com/PC20-275-Chapters.json",
+      "transcriptUrl": "https://mp3s.nashownotes.com/PC20-275-Captions.srt",
+      "persons": [
+        {
+          "id": 171515677,
+          "name": "Adam Curry",
+          "role": "host",
+          "group": "cast",
+          "href": "http://curry.com",
+          "img": "https://feeds.podcastindex.org/adam_avatar.jpg"
+        }
+      ],
+      "socialInteract": [
+        {
+          "uri": "https://podcastindex.social/@adam/117452268966202772",
+          "protocol": "activitypub",
+          "accountId": "@adam",
+          "accountUrl": "https://podcastindex.social/users/adam",
+          "priority": 0
+        }
+      ],
+      "transcripts": [
+        {
+          "url": "https://mp3s.nashownotes.com/PC20-275-Captions.srt",
+          "type": "application/srt"
+        }
+      ],
+      "value": {
+        "model": {
+          "type": "lightning",
+          "method": "keysend",
+          "suggested": "0.00000005000"
+        },
+        "destinations": [
+          {
+            "name": "Dreb Scott (Chapters)",
+            "type": "lnaddress",
+            "address": "drebscott@getalby.com",
+            "split": 5
+          }
+        ]
+      },
+      "servedId": 61842097688,
+      "catalogKey": "PC20-275"
+    }
+  ],
+  "hasMore": true,
+  "offset": 0,
+  "limit": 3
+}

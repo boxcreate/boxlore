@@ -188,6 +188,114 @@ interface LocalEpisodeCatalogDao {
     @Query("UPDATE local_episode_feeds SET epNs = :epNs WHERE podcastId = :podcastId AND epNs IS NULL")
     suspend fun setEpNsIfUnset(podcastId: String, epNs: Long,)
 
+    /**
+     * Sets [LocalEpisodeFeedEntity.archiveComplete]: whether every item of the feed has been read.
+     *
+     * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, feed-first show page).
+     * COMPAT(own-ids): feed-first catalog state. Permanent: never remove (MIGRATION.md §5).
+     */
+    @Query("UPDATE local_episode_feeds SET archiveComplete = :archiveComplete WHERE podcastId = :podcastId")
+    suspend fun setArchiveComplete(podcastId: String, archiveComplete: Boolean,)
+
+    /**
+     * Sets [LocalEpisodeFeedEntity.lastOpenedAt], which keeps an unfollowed show's copy from cleanup.
+     *
+     * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, feed-first show page; decision D10).
+     * COMPAT(own-ids): feed-first catalog state. Permanent: never remove (MIGRATION.md §5).
+     */
+    @Query("UPDATE local_episode_feeds SET lastOpenedAt = :atMillis WHERE podcastId = :podcastId")
+    suspend fun setLastOpenedAt(podcastId: String, atMillis: Long,)
+
+    /**
+     * The unsubscribe TTL and [LocalEpisodeFeedEntity.followed] in one write: a show is followed
+     * while it has no TTL. Follow clears the TTL, unfollow sets it.
+     *
+     * Added in P4 PR 16 of the own-episode-IDs plan (plan section 8, Room v39 feed columns: follow
+     * and unfollow write `followed`).
+     * COMPAT(own-ids): feed-first catalog state. Permanent: never remove (MIGRATION.md §5).
+     */
+    @Query("UPDATE local_episode_feeds SET ttlExpiresAt = :ttlExpiresAt, followed = :followed WHERE podcastId = :podcastId")
+    suspend fun setTtlAndFollowed(podcastId: String, ttlExpiresAt: Long?, followed: Boolean,)
+
+    /**
+     * Sets a new feed row's [LocalEpisodeFeedEntity.followed] from `podcasts.isSubscribed`, for a
+     * show followed before its first catalog read: follow found no row to mark then.
+     *
+     * Added in P4 PR 16 of the own-episode-IDs plan (plan section 8, Room v39 feed columns).
+     * COMPAT(own-ids): feed-first catalog state. Permanent: never remove (MIGRATION.md §5).
+     */
+    @Query(
+        """
+        UPDATE local_episode_feeds
+        SET followed = EXISTS(SELECT 1 FROM podcasts p WHERE p.podcastId = :podcastId AND p.isSubscribed = 1)
+        WHERE podcastId = :podcastId
+        """,
+    )
+    suspend fun seedFollowed(podcastId: String)
+
+    /**
+     * [search] with at most [limit] rows, for the show page's bounded in-show search.
+     *
+     * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, in-show search on the phone).
+     * COMPAT(own-ids): show pages read the show's own feed. Permanent: never remove (MIGRATION.md §5).
+     */
+    @Query(
+        """
+        SELECT * FROM local_episodes
+        WHERE podcastId = :podcastId
+          AND (title LIKE '%' || :query || '%' ESCAPE '\'
+            OR description LIKE '%' || :query || '%' ESCAPE '\')
+        ORDER BY publishedDate DESC, episodeId ASC
+        LIMIT :limit
+        """,
+    )
+    suspend fun searchLimited(podcastId: String, query: String, limit: Int,): List<LocalEpisodeEntity>
+
+    /**
+     * Stored copies the automatic cleanup may remove: not followed by either record (the feed row's
+     * [LocalEpisodeFeedEntity.followed] and the `podcasts` row), and without an unsubscribe TTL,
+     * which [listExpiredFeedIds] handles. With each show's stored episode count.
+     *
+     * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, cleanup of unfollowed cached shows; decision D10).
+     * COMPAT(own-ids): bounded storage for show pages. Permanent: never remove (MIGRATION.md §5).
+     */
+    @Query(
+        """
+        SELECT f.podcastId AS podcastId, f.lastOpenedAt AS lastOpenedAt, f.fetchedAt AS fetchedAt,
+          (SELECT COUNT(*) FROM local_episodes e WHERE e.podcastId = f.podcastId) AS episodeCount
+        FROM local_episode_feeds f
+        WHERE f.followed = 0 AND f.ttlExpiresAt IS NULL
+          AND NOT EXISTS (SELECT 1 FROM podcasts p WHERE p.podcastId = f.podcastId AND p.isSubscribed = 1)
+        """,
+    )
+    suspend fun listUnfollowedCopies(): List<UnfollowedCatalogCopy>
+
+    /**
+     * Deletes [podcastId]'s stored copy when it is still unfollowed, checked again inside the
+     * transaction so a follow that lands meanwhile keeps it. Only `local_episodes` and
+     * `local_episode_feeds` rows go.
+     *
+     * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, cleanup of unfollowed cached shows; decision D10).
+     */
+    @Transaction
+    suspend fun deleteCatalogIfUnfollowed(podcastId: String): Boolean {
+        if (!isUnfollowedCopy(podcastId)) return false
+        deleteCatalog(podcastId)
+        return true
+    }
+
+    /** True when [podcastId]'s stored copy is one [listUnfollowedCopies] lists. */
+    @Query(
+        """
+        SELECT EXISTS(
+          SELECT 1 FROM local_episode_feeds f
+          WHERE f.podcastId = :podcastId AND f.followed = 0 AND f.ttlExpiresAt IS NULL
+            AND NOT EXISTS (SELECT 1 FROM podcasts p WHERE p.podcastId = f.podcastId AND p.isSubscribed = 1)
+        )
+        """,
+    )
+    suspend fun isUnfollowedCopy(podcastId: String): Boolean
+
     @Query("DELETE FROM local_episodes WHERE podcastId = :podcastId")
     suspend fun deleteEpisodes(podcastId: String)
 

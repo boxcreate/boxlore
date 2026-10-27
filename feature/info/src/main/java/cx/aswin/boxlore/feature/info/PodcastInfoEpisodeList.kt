@@ -36,7 +36,9 @@ import cx.aswin.boxlore.feature.info.components.EpisodeListIndicators
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionUi
 import cx.aswin.boxlore.feature.info.components.EpisodeToolbar
 import cx.aswin.boxlore.feature.info.components.PodcastInfoEpisodeSearch
+import cx.aswin.boxlore.feature.info.components.ShowFeedStatusLine
 import cx.aswin.boxlore.feature.info.components.ToolbarWarningBanner
+import cx.aswin.boxlore.feature.info.components.showFeedStatusText
 import cx.aswin.boxlore.feature.info.logic.FeedItem
 import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
 import cx.aswin.boxlore.feature.info.logic.podcastSearchHasNoResults
@@ -156,6 +158,8 @@ internal fun PodcastInfoEpisodeList(
             onAction = callbacks.onWarningAction,
         )
 
+        feedStatusItem(contentState.state.feedStatus)
+
         episodesSection(
             contentState = contentState,
             callbacks = callbacks,
@@ -186,6 +190,15 @@ internal fun PodcastInfoEpisodeList(
                     )
                 }
             }
+        }
+    }
+}
+
+/** Feed-first show pages (P4 PR 16): reading the feed, the server's list instead, or offline. */
+private fun LazyListScope.feedStatusItem(status: ShowFeedStatus) {
+    if (showFeedStatusText(status) != null) {
+        item(key = "feed_status") {
+            ShowFeedStatusLine(status = status, modifier = Modifier.animateItem())
         }
     }
 }

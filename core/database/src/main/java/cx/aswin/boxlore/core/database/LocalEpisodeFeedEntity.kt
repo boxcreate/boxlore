@@ -13,9 +13,9 @@ import androidx.room.PrimaryKey
  * A non-null TTL means the catalog is not ready for live lists: unsubscribed
  * reads use Podcast Index until resubscribe clears the TTL.
  *
- * Room v39 adds the feed-first columns ([followed] through [showMetadataAt]). Nothing reads them
- * yet. [LocalEpisodeCatalogDao.upsertFeed] keeps them when it replaces a stored row, so they change
- * only through their own updates.
+ * Room v39 adds the feed-first columns ([followed] through [showMetadataAt]); the feed-first show
+ * page (P4 PR 16) reads and writes them. [LocalEpisodeCatalogDao.upsertFeed] keeps them when it
+ * replaces a stored row, so they change only through their own updates.
  */
 @Entity(tableName = "local_episode_feeds")
 data class LocalEpisodeFeedEntity(
@@ -33,8 +33,8 @@ data class LocalEpisodeFeedEntity(
     val ready: Boolean,
     val feedUrlLookupAt: Long,
     /**
-     * The show is followed. Seeded from `podcasts.isSubscribed` at the v39 upgrade; follow and
-     * unfollow don't update it yet, so whatever reads it first must also write it.
+     * The show is followed. Seeded from `podcasts.isSubscribed` at the v39 upgrade; since P4 PR 16
+     * follow and unfollow write it with the unsubscribe TTL ([LocalEpisodeCatalogDao.setTtlAndFollowed]).
      *
      * Added in P4 of the own-episode-IDs plan (plan section 8, Room v39 feed columns).
      * COMPAT(own-ids): feed-first catalog state. Permanent: never remove (MIGRATION.md §5).
@@ -103,3 +103,16 @@ object LocalFeedOrder {
     const val OLDEST_FIRST = "oldest_first"
     const val MIXED = "mixed"
 }
+
+/**
+ * A stored copy of an unfollowed show's feed ([LocalEpisodeCatalogDao.listUnfollowedCopies]), with
+ * when the show page last opened it and how many episodes it holds.
+ *
+ * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, cleanup of unfollowed cached shows; decision D10).
+ */
+data class UnfollowedCatalogCopy(
+    val podcastId: String,
+    val lastOpenedAt: Long,
+    val fetchedAt: Long,
+    val episodeCount: Int,
+)

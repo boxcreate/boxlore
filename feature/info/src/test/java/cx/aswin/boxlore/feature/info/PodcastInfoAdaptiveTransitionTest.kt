@@ -86,6 +86,7 @@ import org.robolectric.shadows.ShadowDialog
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], application = Application::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Suppress("LargeClass") // One live page fixture drives every window gate; splitting it would copy the fixture.
 class PodcastInfoAdaptiveTransitionTest {
     @get:Rule val fixture = PhoneGoldenRule(PhoneGoldenConfiguration(1_280, 800, false))
 
@@ -525,6 +526,79 @@ class PodcastInfoAdaptiveTransitionTest {
     }
 
     @Test
+    fun `the feed status line shows each state across window changes and recreation`() {
+        uiState.value = success().copy(feedStatus = ShowFeedStatus.READING_NEWEST)
+        render()
+        val statuses =
+            listOf(
+                ShowFeedStatus.READING_NEWEST to "Checking the feed for new episodes…",
+                ShowFeedStatus.COMPLETING_ARCHIVE to "Loading all episodes from the feed…",
+                ShowFeedStatus.FALLBACK to "Can’t reach this show’s feed. Showing boxlore’s episode list instead.",
+                ShowFeedStatus.OFFLINE to "You’re offline. Showing saved episodes.",
+            )
+        for ((status, text) in statuses) {
+            uiState.update { (it as PodcastInfoUiState.Success).copy(feedStatus = status) }
+            acrossWindowChanges {
+                // On a short window the hero fills the screen: the line sits right below it.
+                fixture.compose.onNodeWithTag(LIST_TAG).performScrollToIndex(RESULT_ROW)
+                fixture.compose.onNodeWithText(text).assertIsDisplayed()
+            }
+        }
+        recreate(FOLD_TABLETOP)
+        fixture.compose.onNodeWithTag(LIST_TAG).performScrollToIndex(RESULT_ROW)
+        fixture.compose.onNodeWithText("You’re offline. Showing saved episodes.").assertIsDisplayed()
+        fixture.compose.onNodeWithTag(FEED_STATUS_TAG).assertIsDisplayed()
+
+        // A current list and a recent stored copy show no line.
+        for (quiet in listOf(ShowFeedStatus.NONE, ShowFeedStatus.CACHED)) {
+            uiState.update { (it as PodcastInfoUiState.Success).copy(feedStatus = quiet) }
+            acrossWindowChanges { fixture.compose.onNodeWithTag(FEED_STATUS_TAG).assertDoesNotExist() }
+        }
+        verify(model, never()).refreshRssFeed()
+    }
+
+    @Test
+    fun `scroll and selection hold while the list grows and switches source during window changes`() {
+        uiState.value = success().copy(feedStatus = ShowFeedStatus.READING_NEWEST)
+        render()
+        // Rows: hero, toolbar, the status line, then the episodes.
+        fixture.compose.onNodeWithTag(LIST_TAG).performScrollToIndex(RESULT_ROW + 1 + 5)
+        fixture.compose.onNodeWithText("Episode 5").performTouchInput { longClick() }
+        selectionCount("1")
+        fixture.compose.onNodeWithTag(LIST_TAG).performScrollToIndex(RESULT_ROW + 1 + 12)
+        val anchor = "Episode 12"
+        fixture.compose.onNodeWithText(anchor).assertIsDisplayed()
+
+        val newer = List(3) { index ->
+            TestFixtures.episode(id = "n$index", title = "New $index", podcastId = "1", podcastTitle = podcast.title, publishedDate = 1_700_000_000L + (index + 1) * 86_400L)
+        }
+        // Each window step lands one stage of a feed-first page: the stored copy grows with older
+        // episodes, newer ones arrive above, the archive is read, and the source switches to the
+        // server's list and back, every row keeping its ID.
+        val stages: List<(PodcastInfoUiState.Success) -> PodcastInfoUiState.Success> =
+            listOf(
+                { it.copy(episodes = episodes.take(40), piEpisodes = episodes.take(40), feedStatus = ShowFeedStatus.NONE) },
+                { it.copy(feedStatus = ShowFeedStatus.COMPLETING_ARCHIVE, isLoadingMore = true) },
+                { it.copy(episodes = newer + episodes, piEpisodes = newer + episodes, feedStatus = ShowFeedStatus.NONE, isLoadingMore = false) },
+                { it.copy(feedStatus = ShowFeedStatus.FALLBACK) },
+                { it.copy(episodes = episodes, piEpisodes = episodes, feedStatus = ShowFeedStatus.READING_NEWEST) },
+                { it.copy(feedStatus = ShowFeedStatus.OFFLINE) },
+            )
+        acrossWindowChanges(onStep = { step -> uiState.update { stages[step % stages.size](it as PodcastInfoUiState.Success) } }) {
+            fixture.compose.onNodeWithText(anchor).assertIsDisplayed()
+            selectionCount("1")
+        }
+        recreate(FOLD_TABLETOP)
+        fixture.compose.onNodeWithText(anchor).assertIsDisplayed()
+        selectionCount("1")
+
+        fixture.compose.onNodeWithContentDescription("Play selected episodes").performClick()
+        assertEquals(listOf(listOf("e5")), playedIds())
+        verify(model, times(2)).loadPodcast("1")
+        verify(model, never()).refreshRssFeed()
+    }
+
+    @Test
     fun `loading, error, retry and empty states hold across window changes and recreation`() {
         uiState.value = PodcastInfoUiState.Loading
         render()
@@ -682,10 +756,19 @@ class PodcastInfoAdaptiveTransitionTest {
     private fun playedIds(): List<List<String>> = played.toList()
 
     /** Moves the same live page across every gate and back, asserting after each step. */
-    private fun acrossWindowChanges(assertion: () -> Unit) {
+    private fun acrossWindowChanges(assertion: () -> Unit) = acrossWindowChanges(onStep = {}, assertion = assertion)
+
+    /**
+     * [acrossWindowChanges], with [onStep] changing the page's state in the same frame as each
+     * window change, as a feed read that lands mid-resize does.
+     */
+    private fun acrossWindowChanges(onStep: (Int) -> Unit, assertion: () -> Unit) {
         val start = window.value
         (TRANSITIONS + start).forEachIndexed { step, size ->
-            fixture.compose.runOnIdle { window.value = size }
+            fixture.compose.runOnIdle {
+                window.value = size
+                onStep(step)
+            }
             fixture.compose.runOnUiThread { Snapshot.sendApplyNotifications() }
             fixture.compose.waitForIdle()
             try {
@@ -783,6 +866,7 @@ class PodcastInfoAdaptiveTransitionTest {
         const val LIST_TAG = "podcast_info_episode_list"
         const val LOADING_TAG = "podcast_info_loading"
         const val REFRESH_TAG = "podcast_info_refresh_indicator"
+        const val FEED_STATUS_TAG = "podcast_info_feed_status"
         const val RESULT_ROW = 2
         val ALERT_EXITS = listOf(Exit.CONFIRM, Exit.CANCEL, Exit.BACK, Exit.OUTSIDE)
         val SELECTION_ACTIONS = listOf(

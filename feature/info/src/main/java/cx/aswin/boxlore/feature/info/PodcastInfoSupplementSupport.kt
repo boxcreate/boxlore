@@ -52,10 +52,14 @@ internal class PodcastInfoSupplementSupport(
     ) : this(
         episodeSupplementPort,
         { id, limit, offset, sort ->
-            repository.getEpisodesPaginated(id, limit, offset, sort)
+            repository.getShowPageEpisodes(id, limit, offset, sort)
         },
         { id -> repository.loadPiEpisodesForSupplement(id) },
-        { id -> repository.localEpisodeCatalog?.isReady(id) == true },
+        // A feed-first page reads the feed itself (pull to refresh), so it never offers "Missing
+        // episodes?", also after it fell back to the server's list (P4 PR 16).
+        { id ->
+            repository.localEpisodeCatalog?.isReady(id) == true || repository.isFeedFirstShowPage(id)
+        },
     )
 
     data class MissingEpisodesRefresh(

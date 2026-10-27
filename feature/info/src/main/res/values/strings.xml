@@ -118,6 +118,11 @@
     <string name="podcast_info_missing_message">Subscribed shows automatically get the latest episodes from the publisher’s feed. This check is only needed if you prefer to stay unsubscribed.\n\nAllow boxlore to look for missing episodes and refresh the list whenever you open this show. Large feeds may use more data.</string>
     <string name="podcast_info_missing_allow">Allow feed checks</string>
     <string name="podcast_info_missing_cancel">Not now</string>
+    <string name="podcast_info_feed_reading">Checking the feed for new episodes…</string>
+    <string name="podcast_info_feed_completing">Loading all episodes from the feed…</string>
+    <string name="podcast_info_feed_fallback">Can’t reach this show’s feed. Showing boxlore’s episode list instead.</string>
+    <string name="podcast_info_feed_offline">You’re offline. Showing saved episodes.</string>
+    <string name="podcast_info_feed_offline_empty">You’re offline. Connect to load this show’s episodes.</string>
     <string name="podcast_info_play_trailer">Play trailer</string>
     <string name="podcast_info_support">Support</string>
     <string name="podcast_episode_select">Select episode</string>

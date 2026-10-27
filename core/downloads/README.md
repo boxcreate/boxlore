@@ -84,6 +84,7 @@ Files under `core/data` are compatibility stubs for previously scheduled WorkMan
 ./gradlew :core:downloads:testDebugUnitTest
 ```
 - `DownloadAudioUriTest` covers episodes whose audio URL is null or blank.
+- `AutoDownloadCoordinatorTest.anUnfollowedCachedShowNeverAutoDownloads`: a show page's stored copy of an unfollowed show (P4 PR 16) schedules no post-write work, claims no release and enqueues nothing, even with auto-download left on from when it was followed.
 
 ## CI relevance
 

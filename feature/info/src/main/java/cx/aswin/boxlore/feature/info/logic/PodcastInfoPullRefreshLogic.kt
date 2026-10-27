@@ -7,18 +7,24 @@ import cx.aswin.boxlore.feature.info.PodcastInfoUiState
 internal object PodcastInfoPullRefreshLogic {
     enum class Target {
         RSS_CATALOG,
+
+        /** A feed-first show page: read the newest episodes into its stored copy (P4 PR 16). */
+        FEED_FIRST,
         SUBSCRIBED_DIRECT_FEED,
         DIRECT_FEED,
         PI_CATALOG,
         NONE,
     }
 
+    /** [feedFirst]: the page reads the show's own feed (P4 PR 16); it replaces the Missing episodes? path. */
     fun target(
         isRss: Boolean,
         isSubscribed: Boolean = false,
         chip: DirectFeedChipState,
+        feedFirst: Boolean = false,
     ): Target = when {
         isRss -> Target.RSS_CATALOG
+        feedFirst -> Target.FEED_FIRST
         chip == DirectFeedChipState.Fetching -> Target.NONE
         isSubscribed -> Target.SUBSCRIBED_DIRECT_FEED
         chip == DirectFeedChipState.Updated -> Target.DIRECT_FEED

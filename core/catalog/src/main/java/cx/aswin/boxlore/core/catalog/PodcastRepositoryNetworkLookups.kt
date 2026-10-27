@@ -14,22 +14,6 @@ internal suspend fun PodcastRepository.searchRssEpisodes(feedId: String, query: 
     emptyList()
 }
 
-internal suspend fun PodcastRepository.searchNetworkEpisodes(feedId: String, query: String,): List<Episode> = try {
-    val resolvedId = resolvePodcastIndexFeedId(feedId)
-    val response = api.searchEpisodes(publicKey, resolvedId, query).execute()
-    val network =
-        if (response.isSuccessful && response.body() != null) {
-            response.body()!!.items.mapNotNull { mapToEpisode(it) }
-        } else {
-            emptyList()
-        }
-    unionCachedSupplementSearch(resolvedId, query, network)
-} catch (e: kotlinx.coroutines.CancellationException) {
-    throw e
-} catch (e: Exception) {
-    emptyList()
-}
-
 internal suspend fun PodcastRepository.getEpisodesImpl(feedId: String): List<Episode> = withContext(Dispatchers.IO) {
     if (feedId.startsWith("rss:")) {
         return@withContext getRssEpisodeWindow(feedId)
@@ -37,7 +21,8 @@ internal suspend fun PodcastRepository.getEpisodesImpl(feedId: String): List<Epi
     if (isLocalCatalogReady(feedId)) {
         return@withContext getLocalCatalogWindow(feedId, sort = "newest", aroundEpisodeId = null)
     }
-    getAllNetworkEpisodes(feedId)
+    // The show page's IDs (P4 PR 16): /v2/episodes under local owners, v1 only when it fails.
+    getShowEpisodesNewest(feedId)
 }
 
 internal suspend fun PodcastRepository.getRssEpisodeWindow(feedId: String, aroundEpisodeId: String? = null,): List<Episode> = try {
@@ -49,6 +34,10 @@ internal suspend fun PodcastRepository.getRssEpisodeWindow(feedId: String, aroun
     emptyList()
 }
 
+/**
+ * LEGACY(own-ids): v1 `/episodes` window, served IDs. Since P4 PR 16 only when `/v2/episodes` fails
+ * ([getShowEpisodeWindow]). Remove at sunset step S7 (MIGRATION.md §6).
+ */
 internal suspend fun PodcastRepository.getNetworkEpisodeWindow(feedId: String): List<Episode> = try {
     val resolvedId = resolvePodcastIndexFeedId(feedId)
     val response =
@@ -75,6 +64,10 @@ internal suspend fun PodcastRepository.getAllRssEpisodes(feedId: String): List<E
     emptyList()
 }
 
+/**
+ * LEGACY(own-ids): v1 `/episodes` list, served IDs. Since P4 PR 16 only when `/v2/episodes` fails
+ * ([getShowEpisodesNewest]). Remove at sunset step S7 (MIGRATION.md §6).
+ */
 internal suspend fun PodcastRepository.getAllNetworkEpisodes(feedId: String): List<Episode> = try {
     val resolvedId = resolvePodcastIndexFeedId(feedId)
     val page1Response =
