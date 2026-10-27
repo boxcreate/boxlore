@@ -61,7 +61,7 @@ class SharedPreferencesPendingNotificationRegistrations(
 ) : PendingNotificationRegistrations {
     override fun all(): Set<String> = prefs.all.keys.toSet()
 
-    override fun mark(podcastId: String): Long? = (prefs.all[podcastId] as? Long)
+    override fun mark(podcastId: String): Long? = if (prefs.contains(podcastId)) prefs.getLong(podcastId, 0L) else null
 
     @Synchronized
     @SuppressLint("ApplySharedPref")
