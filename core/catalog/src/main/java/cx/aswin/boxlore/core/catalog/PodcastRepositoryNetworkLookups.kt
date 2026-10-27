@@ -14,22 +14,6 @@ internal suspend fun PodcastRepository.searchRssEpisodes(feedId: String, query: 
     emptyList()
 }
 
-internal suspend fun PodcastRepository.searchNetworkEpisodes(feedId: String, query: String,): List<Episode> = try {
-    val resolvedId = resolvePodcastIndexFeedId(feedId)
-    val response = api.searchEpisodes(publicKey, resolvedId, query).execute()
-    val network =
-        if (response.isSuccessful && response.body() != null) {
-            response.body()!!.items.mapNotNull { mapToEpisode(it) }
-        } else {
-            emptyList()
-        }
-    unionCachedSupplementSearch(resolvedId, query, network)
-} catch (e: kotlinx.coroutines.CancellationException) {
-    throw e
-} catch (e: Exception) {
-    emptyList()
-}
-
 internal suspend fun PodcastRepository.getEpisodesImpl(feedId: String): List<Episode> = withContext(Dispatchers.IO) {
     if (feedId.startsWith("rss:")) {
         return@withContext getRssEpisodeWindow(feedId)

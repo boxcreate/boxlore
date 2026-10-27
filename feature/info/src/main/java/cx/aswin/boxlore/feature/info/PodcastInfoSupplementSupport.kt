@@ -55,7 +55,11 @@ internal class PodcastInfoSupplementSupport(
             repository.getEpisodesPaginated(id, limit, offset, sort)
         },
         { id -> repository.loadPiEpisodesForSupplement(id) },
-        { id -> repository.localEpisodeCatalog?.isReady(id) == true },
+        // A feed-first page reads the feed itself, so it never offers "Missing episodes?" (P4 PR 16).
+        { id ->
+            repository.localEpisodeCatalog?.isReady(id) == true ||
+                repository.showPageSource(id) == cx.aswin.boxlore.core.catalog.ShowPageSource.FEED
+        },
     )
 
     data class MissingEpisodesRefresh(

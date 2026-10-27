@@ -809,6 +809,24 @@ class LocalEpisodeCatalogRepositoryTest {
             feeds[podcastId] = feeds.getValue(podcastId).copy(feedUrlLookupAt = atMillis)
         }
 
+        override suspend fun setArchiveComplete(podcastId: String, archiveComplete: Boolean,) {
+            feeds[podcastId]?.let { feeds[podcastId] = it.copy(archiveComplete = archiveComplete) }
+        }
+
+        override suspend fun setLastOpenedAt(podcastId: String, atMillis: Long,) {
+            feeds[podcastId]?.let { feeds[podcastId] = it.copy(lastOpenedAt = atMillis) }
+        }
+
+        override suspend fun setTtlAndFollowed(podcastId: String, ttlExpiresAt: Long?, followed: Boolean,) {
+            feeds[podcastId]?.let { feeds[podcastId] = it.copy(ttlExpiresAt = ttlExpiresAt, followed = followed) }
+        }
+
+        override suspend fun listUnfollowedCopies(): List<cx.aswin.boxlore.core.database.UnfollowedCatalogCopy> = feeds.values
+            .filter { !it.followed && it.ttlExpiresAt == null }
+            .map { feed -> cx.aswin.boxlore.core.database.UnfollowedCatalogCopy(feed.podcastId, feed.lastOpenedAt, feed.fetchedAt, episodes.count { it.podcastId == feed.podcastId }) }
+
+        override suspend fun isUnfollowedCopy(podcastId: String): Boolean = feeds[podcastId]?.let { !it.followed && it.ttlExpiresAt == null } == true
+
         override suspend fun setEpNsIfUnset(podcastId: String, epNs: Long,) {
             feeds[podcastId]?.takeIf { it.epNs == null }?.let { feeds[podcastId] = it.copy(epNs = epNs) }
         }

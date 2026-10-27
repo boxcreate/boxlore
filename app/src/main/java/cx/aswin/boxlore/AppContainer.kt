@@ -9,6 +9,7 @@ import cx.aswin.boxlore.core.catalog.EpisodeSharePreparer
 import cx.aswin.boxlore.core.catalog.EpisodeShareRegistrar
 import cx.aswin.boxlore.core.catalog.FeedAddressUpkeep
 import cx.aswin.boxlore.core.catalog.FeedAddressWiring
+import cx.aswin.boxlore.core.catalog.FeedFirstWiring
 import cx.aswin.boxlore.core.catalog.FeedFixToggles
 import cx.aswin.boxlore.core.catalog.FeedMoveFollower
 import cx.aswin.boxlore.core.catalog.FolderRepository
@@ -226,6 +227,14 @@ class AppContainer(
             rolloutSwitches = rolloutSwitches,
             episodeAliases = episodeAliasReads,
             discoveryEpisodeIds = discoveryEpisodeIds,
+            // Feed-first show pages (P4 PR 16): stored copies, the report limits and feed_fetch_result.
+            feedFirstWiring =
+            FeedFirstWiring(
+                copies = localEpisodeCatalogRepository.showPages,
+                isOnline = { connectivityStatus.isOnline() },
+                reportStamps = feedReportStamps,
+                telemetry = feedTelemetry,
+            ),
         )
     }
 
@@ -424,12 +433,19 @@ class AppContainer(
             // Daily address check and broken-feed reports (P4 PR 14), behind address-check-off.
             addressUpkeep =
             FeedAddressUpkeep(
-                reportStamps =
-                SharedPreferencesFeedReportStamps(
-                    appContext.getSharedPreferences(SharedPreferencesFeedReportStamps.FILE_NAME, Context.MODE_PRIVATE),
-                ),
+                reportStamps = feedReportStamps,
                 isOnline = connectivityStatus::isOnline,
             ),
+        )
+    }
+
+    /**
+     * Broken-feed report times, shared by the daily address check and the show page so both stay
+     * inside one daily limit (P4 PR 14 and PR 16).
+     */
+    private val feedReportStamps: SharedPreferencesFeedReportStamps by lazy {
+        SharedPreferencesFeedReportStamps(
+            appContext.getSharedPreferences(SharedPreferencesFeedReportStamps.FILE_NAME, Context.MODE_PRIVATE),
         )
     }
 

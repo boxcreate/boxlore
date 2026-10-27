@@ -7,10 +7,12 @@ import cx.aswin.boxlore.core.database.AutoDownloadReleaseEntity
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
+import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import cx.aswin.boxlore.core.rss.RssFeedClient
 import cx.aswin.boxlore.core.rss.RssFetchResult
+import cx.aswin.boxlore.core.rss.RssPrefixFetch
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -144,6 +146,31 @@ class AutoDownloadCoordinatorTest {
         assertNull(database.autoDownloadDao().getShow("100"))
     }
 
+    /**
+     * A show page's stored copy of an unfollowed show (P4 PR 16) never reaches auto-download: the
+     * read runs no post-write work, and the show is not eligible however its old settings read.
+     */
+    @Test fun anUnfollowedCachedShowNeverAutoDownloads() = runBlocking {
+        val persisted = mutableListOf<String>()
+        val showPages = LocalEpisodeCatalogRepository.create(database, feed, onCatalogPersisted = { persisted += it })
+        database.podcastDao().upsert(
+            PodcastEntity("200", "Cached", "Author", "", null, isSubscribed = false, autoDownloadEnabled = true, feedUrl = URL),
+        )
+        val coordinator = coordinator()
+        coordinator.synchronizeSubscriptions()
+        feed.items = listOf("cached-new" to now + 60, "archive" to now - 86_400)
+
+        val read = showPages.showPages.read(ShowPageFeedPort.ReadRequest("200", URL, ShowPageFeedPort.Scope.NEWEST))
+        coordinator.scanCached("200")
+        coordinator.acceptRelease("200", catalog.findByCatalogKey("200", "cached-new", null)!!)
+
+        assertTrue(read is ShowPageFeedPort.ReadOutcome.Stored)
+        assertTrue("a show page read schedules nothing", persisted.isEmpty())
+        assertTrue(enqueued.isEmpty())
+        assertNull(database.autoDownloadDao().getShow("200"))
+        assertFalse("the copy is never the followed live list", catalog.isReady("200"))
+    }
+
     @Test fun publisherFailureKeepsPendingForRetry() = runBlocking {
         val coordinator = coordinator()
         coordinator.synchronizeSubscriptions()
@@ -266,6 +293,7 @@ class AutoDownloadCoordinatorTest {
         var fail = false
         var afterFetch: () -> Unit = {}
         override suspend fun fetchConditional(url: String, etag: String?, lastModified: String?) = fetch(url)
+        override suspend fun fetchNewest(url: String, maxItems: Int, etag: String?, lastModified: String?) = RssPrefixFetch(fetch(url), complete = true)
         override suspend fun fetch(url: String): RssFetchResult {
             fetches++
             if (fail) throw java.io.IOException("offline")
