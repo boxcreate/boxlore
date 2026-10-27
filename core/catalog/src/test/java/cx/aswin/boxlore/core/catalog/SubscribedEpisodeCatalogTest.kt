@@ -61,14 +61,14 @@ class SubscribedEpisodeCatalogTest {
             SubscribedEpisodeCatalog(
                 pi,
                 rss,
-                feedMoves = FeedMoveFollower(enabled = { enabled }, showTitle = { "Stored title" }, adopt = { id, url -> adopted += id to url }),
+                feedMoves = FeedMoveFollower(enabled = { enabled }, showTitle = { "Stored title" }, adopt = { id, readFrom, url -> adopted += id to "$readFrom>$url" }),
             )
 
         // A push, the show page or auto-download: no move check of its own, no title.
         shared.refresh(RefreshRequest("123", "https://old.example/feed.xml", reason = LocalEpisodeCatalogPort.RefreshReason.NEW_RELEASE))
         assertEquals(true, pi.lastRefreshRequest?.detectMove)
         assertEquals("Stored title", pi.lastRefreshRequest?.meta?.title)
-        assertEquals(listOf("123" to "https://new.example/feed.xml"), adopted)
+        assertEquals("the move is adopted only from the address that was read", listOf("123" to "https://old.example/feed.xml>https://new.example/feed.xml"), adopted)
 
         // A caller that asks for move detection itself saves the move itself.
         adopted.clear()
@@ -92,7 +92,7 @@ class SubscribedEpisodeCatalogTest {
             SubscribedEpisodeCatalog(
                 pi,
                 FakeLocalEpisodeCatalogPort(),
-                feedMoves = FeedMoveFollower(enabled = { true }, showTitle = { null }, adopt = { _, _ -> error("database closed") }),
+                feedMoves = FeedMoveFollower(enabled = { true }, showTitle = { null }, adopt = { _, _, _ -> error("database closed") }),
             )
 
         assertEquals(outcome, shared.refresh(RefreshRequest("123", "https://old.example/feed.xml")))

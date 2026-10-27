@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.catalog
 
 import android.util.Log
+import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.model.FeedUrlCorrectionReason
 import cx.aswin.boxlore.core.model.FeedUrlCorrectionStep
 import kotlinx.coroutines.CancellationException
@@ -8,15 +9,17 @@ import kotlinx.coroutines.CancellationException
 /**
  * Another address to try for a show whose saved one failed, and the path that offered it
  * ([FeedUrlCorrectionStep.FEED_REPORT] or the daily check's `/podcast` fallback,
- * [FeedUrlCorrectionStep.DAILY_CHECK]).
+ * [FeedUrlCorrectionStep.DAILY_CHECK]). [replacing] is the saved address that failed: the candidate
+ * replaces only that one, so a newer address saved meanwhile (a cloud pull, the daily check) stays.
  */
-internal data class AddressCandidate(val feedUrl: String, val step: FeedUrlCorrectionStep) {
+internal data class AddressCandidate(val feedUrl: String, val step: FeedUrlCorrectionStep, val replacing: String? = null) {
     /** The address change saved once [feedUrl] read successfully. */
     fun change(podcastId: String, nowMillis: Long): FeedAddressChange = FeedAddressChange(
         podcastId = podcastId,
         feedUrl = feedUrl,
         source = if (step == FeedUrlCorrectionStep.FEED_REPORT) FeedUrlSources.FEED_REPORT else FeedUrlSources.PODCAST_LOOKUP,
         checkedAt = nowMillis,
+        onlyReplacing = replacing,
         reason = FeedUrlCorrectionReason.DEAD,
         step = step,
     )
@@ -70,9 +73,9 @@ internal object DirectFeedRecovery {
     private suspend fun candidate(directFeed: DirectFeedSyncSeams, id: String, result: DirectFeedResolveResult): AddressCandidate? {
         val reported = guarded("Feed report", id) { directFeed.reportFeed(id, result.reportStatus) }
         if (!result.addressGone) return null
-        reported?.let { return AddressCandidate(it, FeedUrlCorrectionStep.FEED_REPORT) }
+        reported?.let { return AddressCandidate(it, FeedUrlCorrectionStep.FEED_REPORT, result.readFeedUrl) }
         return guarded("Feed address re-check", id) { directFeed.recheckAddress(id) }
-            ?.let { AddressCandidate(it, FeedUrlCorrectionStep.DAILY_CHECK) }
+            ?.let { AddressCandidate(it, FeedUrlCorrectionStep.DAILY_CHECK, result.readFeedUrl) }
     }
 
     private suspend fun guarded(what: String, id: String, block: suspend () -> String?): String? = try {
@@ -82,6 +85,25 @@ internal object DirectFeedRecovery {
     } catch (e: Exception) {
         Log.e(TAG, "$what failed for $id", e)
         null
+    }
+
+    /** A failed read remembers the saved address it used, so a recovered one replaces only that address. */
+    fun withReadAddress(result: DirectFeedResolveResult, feedUrl: String?): DirectFeedResolveResult =
+        if (result.failed) result.copy(readFeedUrl = feedUrl?.trim()?.takeIf(String::isNotEmpty)) else result
+
+    /**
+     * The production read of [FeedAddressDailyCheck] (P4 PR 14): the show's catalog is refreshed
+     * from the registry's address before that address is saved, and the address counts as readable
+     * when the read worked. Without a local catalog nothing is read, so nothing is swapped.
+     */
+    fun addressRead(subscriptionRepository: SubscriptionRepository, catalog: LocalEpisodeCatalogPort?): suspend (String, String) -> Boolean = { id, url ->
+        val row = subscriptionRepository.getPodcastEntity(id)
+        if (catalog == null || row == null) {
+            false
+        } else {
+            val meta = DirectFeedTipMeta(feedUrl = url, title = row.title, imageUrl = row.imageUrl, genre = row.genre, artist = row.author, knownTip = row.latestEpisode)
+            !SubscriptionForegroundSync.resolveCatalogRefresh(id, meta, catalog).failed
+        }
     }
 
     /**

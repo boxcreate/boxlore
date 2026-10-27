@@ -253,6 +253,7 @@ Historical FQCNs and preference file names remain reachable so upgrades from old
 | — | `boxlore_library_widget` | `LibraryWidgetSnapshotStore` (`:feature:widgets`; last rendered Subscriptions / New Episodes snapshot JSON; do not rename) |
 | — | `boxlore_discovery_last_good` | `PodcastRepository` (`:core:catalog` `RecommendationsLastGood`; last good `/v2` picks per surface and country; do not rename) |
 | — | `boxlore_feed_reports` | `AppContainer` (`:core:catalog` `SharedPreferencesFeedReportStamps`; last broken-feed report time per show; do not rename) |
+| — | `boxlore_notification_reregistrations` | `AppContainer` (`:core:catalog` `SharedPreferencesPendingNotificationRegistrations`; shows whose notifications wait to be registered again after an address change; do not rename) |
 | `boxcast_api_config` | `boxlore_api_config` | `BoxLoreAppRoot` |
 | `boxcast_referrer_prefs` | `boxlore_referrer_prefs` | `InstallReferrerManager` |
 

@@ -98,9 +98,12 @@ object LocalEpisodeCatalogPersist {
      * when one belongs to another episode.
      *
      * Document order and the two-key lookup were added in P4 PR 8; aliases and recipe IDs replaced
-     * the Podcast Index match in P4 PR 9 (own-IDs plan section 4).
+     * the Podcast Index match in P4 PR 9 (own-IDs plan section 4). [olderNamespaces] (the URL
+     * namespaces of addresses the show was read from before) were added in P4 PR 14: an item's own
+     * mint in them also proves listener state its own after the saved address changed.
      * COMPAT(own-ids): keeps every stored episode ID and decides new ones. Permanent: never remove (MIGRATION.md §5).
      */
+    @Suppress("LongParameterList", "kotlin:S107") // Each input is its own part of the identity contract.
     fun plan(
         podcastIndexId: String,
         rssNamespaceId: String,
@@ -109,12 +112,13 @@ object LocalEpisodeCatalogPersist {
         newIds: NewEpisodeIds,
         channelImageUrl: String?,
         showImageUrl: String?,
+        olderNamespaces: List<String> = emptyList(),
     ): List<PlannedEpisodeRow> {
         val occupiedIds = existing.map { it.episodeId }.toSet()
         val stored = StoredRowMatch.StoredRows.of(existing.map { Triple(it.episodeId, it.guid, it.audioUrl) })
         val matches = StoredRowMatch.resolve(parsed, stored)
         val aliasMatches = aliasMatches(parsed, matches, newIds, occupiedIds)
-        val adopted = listenerMatches(parsed, matches, aliasMatches, newIds, rssNamespaceId, occupiedIds)
+        val adopted = listenerMatches(parsed, matches, aliasMatches, newIds, listOf(rssNamespaceId) + olderNamespaces, occupiedIds)
         val ctx =
             PersistContext(
                 podcastIndexId = podcastIndexId,
@@ -195,7 +199,7 @@ object LocalEpisodeCatalogPersist {
         matches: Array<StoredRowMatch?>,
         aliasMatches: Array<StoredRowMatch?>,
         newIds: NewEpisodeIds,
-        rssNamespaceId: String,
+        namespaces: List<String>,
         occupiedIds: Set<String>,
     ): Map<Int, ListenerIdAdoption.Adopted> {
         if (newIds.epNs == null || newIds.listeners.isEmpty) return emptyMap()
@@ -215,7 +219,7 @@ object LocalEpisodeCatalogPersist {
                     ListenerIdAdoption.Candidate(
                         position = position,
                         open = open,
-                        mints = if (open) ownMints(item, match.key, rssNamespaceId) else emptyList(),
+                        mints = if (open) ownMints(item, match.key, namespaces) else emptyList(),
                         audioKeys =
                         (listOf(item.episode.audioUrl) + item.enclosureUrls + item.audioUrls)
                             .mapNotNullTo(HashSet()) { url -> url.trim().takeIf(String::isNotEmpty) },
@@ -226,10 +230,15 @@ object LocalEpisodeCatalogPersist {
         return ListenerIdAdoption.adopt(candidates, newIds.listeners, claimed)
     }
 
-    /** The IDs older builds could have minted for [item]: the parser's, then the mint of its key and of each older key. */
-    private fun ownMints(item: ParsedFeedItem, key: String, rssNamespaceId: String,): List<String> {
-        if (!rssNamespaceId.startsWith(RSS_NAMESPACE_PREFIX)) return listOf(item.episode.episodeId)
-        val mints = (listOf(key) + item.legacyKeys).map { StickyEpisodeIdentity.ownMintedId(rssNamespaceId, it) }
+    /**
+     * The IDs older builds could have minted for [item]: the parser's, then the mint of its key and
+     * of each older key in each of [namespaces] (this read's first, then addresses read before).
+     */
+    private fun ownMints(item: ParsedFeedItem, key: String, namespaces: List<String>,): List<String> {
+        val urlNamespaces = namespaces.filter { it.startsWith(RSS_NAMESPACE_PREFIX) }
+        if (urlNamespaces.isEmpty()) return listOf(item.episode.episodeId)
+        val keys = listOf(key) + item.legacyKeys
+        val mints = urlNamespaces.flatMap { namespace -> keys.map { StickyEpisodeIdentity.ownMintedId(namespace, it) } }
         return (listOf(item.episode.episodeId) + mints).distinct()
     }
 

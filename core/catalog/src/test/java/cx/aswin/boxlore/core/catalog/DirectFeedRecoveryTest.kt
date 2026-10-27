@@ -62,6 +62,9 @@ class DirectFeedRecoveryTest {
         assertEquals(FeedUrlCorrectionStep.FEED_REPORT, saved["reported"]?.step)
         assertEquals(FeedUrlCorrectionStep.DAILY_CHECK, saved["fallback"]?.step)
         assertFalse(saved.containsKey("slow"), "a passing failure keeps its address, whatever the report answered")
+        val change = saved.getValue("reported").change("reported", nowMillis = 5L)
+        assertEquals("https://old.example/reported.xml", change.onlyReplacing, "only the address that failed is replaced")
+        assertEquals("https://old.example/fallback.xml", saved.getValue("fallback").change("fallback", 5L).onlyReplacing)
     }
 
     @Test

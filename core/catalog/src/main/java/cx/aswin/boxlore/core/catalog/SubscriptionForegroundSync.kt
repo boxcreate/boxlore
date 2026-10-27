@@ -279,7 +279,8 @@ class SubscriptionForegroundSync(
                     feedNetworkDelayMs = feedNetworkDelayMs,
                     chunkSize = chunkSize,
                     feedFixes = feedFixes,
-                    addressJobs = addressJobs(podcastRepository, subscriptionRepository, addressUpkeep),
+                    addressJobs =
+                    addressJobs(podcastRepository, subscriptionRepository, addressUpkeep, DirectFeedRecovery.addressRead(subscriptionRepository, localEpisodeCatalog)),
                 ),
             )
         }
@@ -289,6 +290,7 @@ class SubscriptionForegroundSync(
             podcastRepository: PodcastRepository,
             subscriptionRepository: SubscriptionRepository,
             upkeep: FeedAddressUpkeep,
+            readsAt: suspend (podcastId: String, feedUrl: String) -> Boolean,
         ): FeedAddressJobs {
             val enabled = podcastRepository.rolloutSwitches.addressCheck
             return FeedAddressJobs(
@@ -296,6 +298,7 @@ class SubscriptionForegroundSync(
                 FeedAddressDailyCheck(
                     followedShows = subscriptionRepository::followedShowRows,
                     fetchAddresses = { ids -> FeedAddressDailyCheck.fetchWith(podcastRepository.apiV2, ids) },
+                    readsAt = readsAt,
                     replaceAddress = subscriptionRepository::updateFeedAddress,
                     markChecked = subscriptionRepository::markFeedAddressChecked,
                     enabled = enabled,
@@ -326,7 +329,7 @@ class SubscriptionForegroundSync(
             val refreshBatch = DirectFeedRefreshBatch()
             return {
             SubscriptionForegroundSyncIngest.sweepExpiredLocalCatalogs(localEpisodeCatalog)
-            runDailyAddressCheck(addressJobs.dailyCheck)
+            runDailyAddressCheck(addressJobs.dailyCheck, subscriptionRepository)
             val ids = subscriptionRepository.subscribedPodcastIds.first()
             val recoveryNow = System.currentTimeMillis()
             recoverMissingFeedUrls(
@@ -374,7 +377,7 @@ class SubscriptionForegroundSync(
                             episodeSupplementPort = episodeSupplementPort,
                             podcastRepository = podcastRepository,
                             followMoves = feedFixes.movedFeed(),
-                            adoptMovedFeed = { url -> subscriptionRepository.adoptMovedFeed(id, url) },
+                            adoptMovedFeed = { readFrom, url -> subscriptionRepository.adoptMovedFeed(id, readFrom, url) },
                         )
                     },
                     saveDirectFeedLatest = { id, episode ->
@@ -424,9 +427,13 @@ class SubscriptionForegroundSync(
                 )
             }
 
-        /** Runs the daily address check before the pass reads feeds, so a swapped address is read at once. */
-        private suspend fun runDailyAddressCheck(dailyCheck: FeedAddressDailyCheck) {
+        /**
+         * Runs the daily address check before the pass reads feeds, so a swapped address is read at
+         * once, after asking again for notification registrations still waiting for Firebase.
+         */
+        private suspend fun runDailyAddressCheck(dailyCheck: FeedAddressDailyCheck, subscriptionRepository: SubscriptionRepository) {
             try {
+                subscriptionRepository.feedAddresses.resumePendingRegistrations()
                 dailyCheck.run()
             } catch (e: CancellationException) {
                 throw e
@@ -443,7 +450,7 @@ class SubscriptionForegroundSync(
             episodeSupplementPort: EpisodeSupplementPort,
             podcastRepository: PodcastRepository,
             followMoves: Boolean,
-            adoptMovedFeed: suspend (String) -> Unit,
+            adoptMovedFeed: suspend (readFrom: String, movedTo: String) -> Unit,
         ): DirectFeedResolveResult {
             val catalog = localEpisodeCatalog
             if (catalog != null) {
@@ -462,7 +469,7 @@ class SubscriptionForegroundSync(
             meta: DirectFeedTipMeta,
             catalog: LocalEpisodeCatalogPort,
             followMoves: Boolean = false,
-            adoptMovedFeed: suspend (String) -> Unit = {},
+            adoptMovedFeed: suspend (readFrom: String, movedTo: String) -> Unit = { _, _ -> },
         ): DirectFeedResolveResult {
             val podcastMeta = catalogMeta(meta)
             if (catalog.isPublisherFeedUnchanged(podcastId, meta.feedUrl.orEmpty())) {
@@ -485,7 +492,7 @@ class SubscriptionForegroundSync(
                 is LocalEpisodeCatalogPort.RefreshOutcome.Success -> {
                     outcome.movedTo?.takeIf { followMoves && !podcastId.startsWith("rss:") }?.let { moved ->
                         Log.i(TAG, "Feed for $podcastId moved; saving its new address")
-                        adoptMovedFeed(moved)
+                        adoptMovedFeed(meta.feedUrl.orEmpty().trim(), moved)
                     }
                     DirectFeedResolveResult(tip = outcome.newest, persisted = true)
                 }
@@ -812,7 +819,7 @@ class SubscriptionForegroundSync(
                         "No Room feedUrl for opted-in $podcastId; port may still use the stored supplement URL",
                     )
                 }
-                val resolved = resolveFeedTip(podcastId, meta)
+                val resolved = DirectFeedRecovery.withReadAddress(resolveFeedTip(podcastId, meta), meta.feedUrl)
                 if (resolved.persisted) {
                     onFeedRefreshed(podcastId)
                 }
@@ -871,7 +878,8 @@ internal data class DirectFeedTipMeta(
  * Result of an opted-in publisher-feed resolve (tip plus whether extras were persisted).
  * [failed]: the feed couldn't be read this pass; [addressGone]: and its saved address looks dead
  * ([LocalEpisodeCatalogPort.RefreshOutcome.Failure.addressGone]); [reportStatus]: what the read saw,
- * for `/v2/feed-report` ([LocalEpisodeCatalogPort.RefreshOutcome.Failure.reportStatus]).
+ * for `/v2/feed-report` ([LocalEpisodeCatalogPort.RefreshOutcome.Failure.reportStatus]);
+ * [readFeedUrl]: the saved address the failed read used, the only one a recovered address may replace.
  */
 internal data class DirectFeedResolveResult(
     val tip: Episode?,
@@ -879,6 +887,7 @@ internal data class DirectFeedResolveResult(
     val failed: Boolean = false,
     val addressGone: Boolean = false,
     val reportStatus: String? = null,
+    val readFeedUrl: String? = null,
 )
 
 /**

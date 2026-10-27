@@ -44,13 +44,27 @@ class FeedReportsTest {
     }
 
     @Test
-    fun `at most twenty reports a day in all`() = runTest {
+    fun `at most fifteen reports a day in all, leaving the show page room under the API's twenty`() = runTest {
         repeat(25) { reporter.report((it + 1).toString(), "dns", OLD) }
 
+        assertEquals(15, FeedReportLimiter.DAILY_CAP)
         assertEquals(FeedReportLimiter.DAILY_CAP, sent.size)
         now += DAY
         reporter.report("25", "dns", OLD)
         assertEquals(FeedReportLimiter.DAILY_CAP + 1, sent.size, "a new day")
+    }
+
+    @Test
+    fun `a failed or refused send uses up neither the show's day nor the daily cap`() = runTest {
+        answer = null // a 429, a 503 or any answer but 2xx
+        repeat(FeedReportLimiter.DAILY_CAP + 5) { reporter.report("920666", "http_404", OLD) }
+        val failing = FeedReporter(send = { error("offline after all") }, limiter = FeedReportLimiter(stamps), isOnline = { true }, enabled = { true }, nowMillis = { now })
+        failing.report("920666", "http_404", OLD)
+
+        assertTrue(stamps.all().isEmpty())
+        answer = V2FeedReportResponse(queued = true, fetchUrl = NEW, fetchVia = "direct", feedSource = "registry:apple")
+        assertEquals(NEW, reporter.report("920666", "http_404", OLD), "the show is reported once the API answers")
+        assertNull(reporter.report("920666", "http_404", OLD))
     }
 
     @Test
@@ -83,12 +97,13 @@ class FeedReportsTest {
     @Test
     fun `old report times are dropped as new ones are written`() {
         val limiter = FeedReportLimiter(stamps)
-        assertTrue(limiter.tryClaim("1", now))
+        limiter.record("1", now)
         now += 2 * DAY
-        assertTrue(limiter.tryClaim("2", now))
+        assertTrue(limiter.allows("1", now))
+        limiter.record("2", now)
 
         assertEquals(setOf("2"), stamps.all().keys)
-        assertFalse(limiter.tryClaim("2", now + 1))
+        assertFalse(limiter.allows("2", now + 1))
     }
 
     private companion object {

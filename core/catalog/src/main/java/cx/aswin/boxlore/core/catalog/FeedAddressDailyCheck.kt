@@ -16,9 +16,13 @@ import retrofit2.awaitResponse
 /**
  * The daily address check of followed shows: asks `/v2/shows/feeds` for every followed Podcast
  * Index show not checked in the last day, in chunks of at most [V2ShowsFeedsRequest.MAX_IDS], and
- * swaps a saved address only for a confirmed move ([confirmedMove]) through [FeedAddressUpdater].
+ * swaps a saved address only for a confirmed move ([confirmedMove]) through [FeedAddressUpdater],
+ * and only once the phone has read the new address ([readsAt]), the rule every dead-address path
+ * follows: an address the phone can't read (blocked, an old TLS stack, a wrong registry row) never
+ * replaces one it can, and the next day's check tries again.
  *
- * Each show checked is stamped (`podcasts.feedUrlCheckedAt`) once the registry answers for it. The
+ * Each show checked is stamped (`podcasts.feedUrlCheckedAt`) once the registry answers for it (a
+ * swap writes the stamp with the address, so a show is never stamped and left unswapped). The
  * per-show `/podcast` re-check of a dead address (`DirectFeedRecovery`) reads the same stamp, so it
  * runs only for shows this check couldn't reach (the call failed, or `registryAvailable` was false)
  * and a show is never checked twice a day. Rows the phone changed and hasn't pushed yet
@@ -32,6 +36,7 @@ import retrofit2.awaitResponse
 class FeedAddressDailyCheck(
     private val followedShows: suspend () -> List<PodcastEntity>,
     private val fetchAddresses: suspend (List<Long>) -> V2ShowsFeedsResponse?,
+    private val readsAt: suspend (podcastId: String, feedUrl: String) -> Boolean,
     private val replaceAddress: suspend (FeedAddressChange) -> FeedAddressUpdate,
     private val markChecked: suspend (podcastId: String, atMillis: Long) -> Unit,
     private val enabled: () -> Boolean,
@@ -80,22 +85,41 @@ class FeedAddressDailyCheck(
     private suspend fun apply(results: List<V2ShowAddress>, due: Map<Long, PodcastEntity>, now: Long): Int =
         results.count { result -> due[result.id]?.let { row -> applyOne(row, result, now) } == true }
 
-    /** Stamps one show the registry answered for; true when its address was swapped. */
+    /** Swaps or stamps one show the registry answered for; true when its address was swapped. */
     private suspend fun applyOne(row: PodcastEntity, result: V2ShowAddress, now: Long): Boolean {
-        markChecked(row.podcastId, now)
         noteNamespace(row, result)
-        val target = confirmedMove(row, result) ?: return false
-        val change =
-            FeedAddressChange(
-                podcastId = row.podcastId,
-                feedUrl = target,
-                source = result.feedSource ?: FeedUrlSources.REGISTRY,
-                checkedAt = now,
-                onlyReplacing = row.feedUrl,
-                reason = FeedUrlCorrectionReason.REGISTRY,
-                step = FeedUrlCorrectionStep.DAILY_CHECK,
-            )
-        return replaceAddress(change) == FeedAddressUpdate.UPDATED
+        val target = confirmedMove(row, result)
+        val swapped =
+            target != null &&
+                readable(row.podcastId, target) &&
+                replaceAddress(change(row, result, target, now)) == FeedAddressUpdate.UPDATED
+        // A swap stamps the show with its address; anything else is stamped here, after the swap had its chance.
+        if (!swapped) markChecked(row.podcastId, now)
+        return swapped
+    }
+
+    private fun change(row: PodcastEntity, result: V2ShowAddress, target: String, now: Long) = FeedAddressChange(
+        podcastId = row.podcastId,
+        feedUrl = target,
+        source = result.feedSource ?: FeedUrlSources.REGISTRY,
+        checkedAt = now,
+        onlyReplacing = row.feedUrl,
+        reason = FeedUrlCorrectionReason.REGISTRY,
+        step = FeedUrlCorrectionStep.DAILY_CHECK,
+    )
+
+    private suspend fun readable(podcastId: String, feedUrl: String): Boolean {
+        val read =
+            try {
+                readsAt(podcastId, feedUrl)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "Reading the registry address of $podcastId failed", e)
+                false
+            }
+        if (!read) Log.i(TAG, "Show $podcastId keeps its address: the registry's can't be read from this phone")
+        return read
     }
 
     /** The phone keeps its own namespace (decision D12); a different one is only logged. */
@@ -130,8 +154,9 @@ class FeedAddressDailyCheck(
          * The registry's address when it is a confirmed move away from the saved one: the registry
          * flags the show for address repair, the address is the registry's own (`registry:` source),
          * the phone can read it directly (HTTPS), it differs from the saved one, and it isn't the
-         * address a confirmed feed move left behind (which would swap back and forth). `fetchUrl:
-         * null` keeps the saved address.
+         * address the saved one replaced, whatever replaced it (a feed move, dead-address recovery
+         * or a cloud pull): going back would swap back and forth. `fetchUrl: null` keeps the saved
+         * address. The caller still reads the address before it is saved.
          */
         internal fun confirmedMove(row: PodcastEntity, result: V2ShowAddress): String? {
             if (result.flags?.addressRepair != true) return null
@@ -139,8 +164,7 @@ class FeedAddressDailyCheck(
             if (result.fetchVia != null && result.fetchVia != V2FetchVia.DIRECT) return null
             val https = TrackedPodcastRtdbLogic.httpsFeedUrl(result.fetchUrl) ?: return null
             if (https == row.feedUrl?.trim()) return null
-            val leftByMove = row.feedUrlSource == FeedUrlSources.FEED_MOVE && row.previousFeedUrl?.trim() == https
-            return https.takeUnless { leftByMove }
+            return https.takeUnless { it == row.previousFeedUrl?.trim() }
         }
 
         /** The production fetch: one `POST /v2/shows/feeds`; null for any answer but 200. */

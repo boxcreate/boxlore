@@ -118,6 +118,47 @@ class PodcastFeedAddressDaoTest {
         assertEquals(OLD, row.feedUrl)
     }
 
+    @Test
+    fun `a write the registry didn't confirm keeps the daily check stamp`() = runTest {
+        dao.upsertRow(show("920666", feedUrl = OLD).copy(feedUrlCheckedAt = 50L))
+
+        assertTrue(dao.replaceFeedAddress(write("920666", OLD, checkedAt = 0L)))
+        assertEquals("a cloud pull, a feed move or a fill never re-opens today's check", 50L, dao.getPodcast("920666")!!.feedUrlCheckedAt)
+
+        assertTrue(dao.replaceFeedAddress(write("920666", NEW, feedUrl = OLD, checkedAt = 70L)))
+        assertEquals(70L, dao.getPodcast("920666")!!.feedUrlCheckedAt)
+    }
+
+    @Test
+    fun `only a followed show is marked for a push to keep its address`() = runTest {
+        dao.upsertRow(show("1", feedUrl = OLD).copy(isDirty = false))
+        dao.upsertRow(show("2", feedUrl = OLD).copy(isDirty = false, isSubscribed = false))
+
+        dao.markFollowedDirty("1")
+        dao.markFollowedDirty("2")
+
+        assertTrue(dao.getPodcast("1")!!.isDirty)
+        assertFalse(dao.getPodcast("2")!!.isDirty)
+    }
+
+    @Test
+    fun `a merged row built from an older copy keeps an address saved meanwhile`() = runTest {
+        dao.upsertRow(show("920666", feedUrl = OLD).copy(isDirty = false))
+        val older = dao.getPodcast("920666")!!
+        dao.replaceFeedAddress(write("920666", OLD, source = "registry:apple", checkedAt = 9L))
+
+        dao.upsertKeepingFeedAddress(older.copy(title = "Renamed", isDirty = false))
+        val kept = dao.getPodcast("920666")!!
+        assertEquals(NEW, kept.feedUrl)
+        assertEquals(OLD, kept.previousFeedUrl)
+        assertEquals("registry:apple", kept.feedUrlSource)
+        assertEquals("Renamed", kept.title)
+        assertTrue(kept.isDirty)
+
+        dao.upsertKeepingFeedAddress(kept.copy(title = "Again", isDirty = false))
+        assertFalse("an unchanged address writes the row as given", dao.getPodcast("920666")!!.isDirty)
+    }
+
     private fun write(
         id: String,
         expected: String?,

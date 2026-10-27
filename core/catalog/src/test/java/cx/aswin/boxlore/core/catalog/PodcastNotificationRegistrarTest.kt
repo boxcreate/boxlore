@@ -57,6 +57,19 @@ class PodcastNotificationRegistrarTest {
     }
 
     @Test
+    fun `a show with no latest episode never writes the shared node without its address`() = runTest {
+        dao.upsertRow(show("920666", notifications = true).copy(latestEpisode = null))
+        dao.upsertRow(show("75075", notifications = true).copy(feedUrl = "http://plain.example/rss"))
+
+        val registrar = PodcastNotificationRegistrar(dao, firebase)
+        assertEquals(NotificationRegistrationOutcome.DONE, registrar.register("920666"))
+        assertEquals(NotificationRegistrationOutcome.DONE, registrar.register("75075"))
+
+        assertTrue("the node is one per show for every follower: never replaced without feedUrl", firebase.nodes.isEmpty())
+        assertEquals(listOf("new_ep_920666", "new_ep_75075"), firebase.topics)
+    }
+
+    @Test
     fun `nothing is registered for a show without notifications, and rss shows are dropped`() = runTest {
         dao.upsertRow(show("1", notifications = false))
         dao.upsertRow(show("2", notifications = true).copy(isSubscribed = false))
@@ -104,6 +117,45 @@ class PodcastNotificationRegistrarTest {
         assertEquals(listOf("920666"), queued)
         assertEquals(NEW, firebase.nodes.getValue("920666")["feedUrl"])
         assertEquals(listOf("new_ep_920666"), firebase.topics)
+    }
+
+    @Test
+    fun `a pulled previous address never undoes a registry correction, which goes back to the account`() = runTest {
+        dao.upsertRow(show("920666", notifications = true).copy(feedUrl = OLD, isDirty = false, syncedAt = 1L, subscribedAt = 1L))
+        val queued = mutableListOf<String>()
+        val updater = FeedAddressUpdater(dao, requestNotificationRegistration = { queued += it })
+        updater.update(FeedAddressChange("920666", NEW, source = "registry:apple", checkedAt = 5L, onlyReplacing = OLD))
+        dao.markPodcastsSynced(listOf("920666"), 6L)
+        queued.clear()
+
+        // Another device, still on the old address, pushed later.
+        SubscriptionSyncResolver(podcastDao = dao, feedAddresses = updater).resolveSubscription(
+            UserSubscriptionSyncDto(podcastId = "920666", isSubscribed = true, subscribedAt = 1L, notificationsEnabled = true, feedUrl = OLD, updatedAt = 9L),
+            syncedAt = 10L,
+        )
+
+        val row = dao.getPodcast("920666")!!
+        assertEquals(NEW, row.feedUrl)
+        assertEquals("registry:apple", row.feedUrlSource)
+        assertEquals(OLD, row.previousFeedUrl)
+        assertTrue("the corrected address is pushed back", row.isDirty)
+        assertTrue("notifications stay on the corrected address", queued.isEmpty())
+    }
+
+    @Test
+    fun `a merge never writes its older copy's address over one saved meanwhile`() = runTest {
+        dao.upsertRow(show("920666", notifications = false).copy(feedUrl = OLD, isDirty = false, syncedAt = 1L, subscribedAt = 1L))
+        val stale = dao.getPodcast("920666")!!
+        FeedAddressUpdater(dao).update(FeedAddressChange("920666", NEW, source = "registry:apple", checkedAt = 5L))
+
+        dao.upsertKeepingFeedAddress(stale.copy(customGenre = "Comedy", isDirty = false, syncedAt = 10L))
+
+        val row = dao.getPodcast("920666")!!
+        assertEquals(NEW, row.feedUrl)
+        assertEquals("registry:apple", row.feedUrlSource)
+        assertEquals(5L, row.feedUrlCheckedAt)
+        assertEquals("Comedy", row.customGenre)
+        assertTrue("the swap's pending push survives", row.isDirty)
     }
 
     @Test

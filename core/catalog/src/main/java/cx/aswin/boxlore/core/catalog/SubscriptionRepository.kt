@@ -19,12 +19,14 @@ import kotlinx.coroutines.flow.map
 
 /**
  * What the one feed address writer needs from the app: how to ask for a show's notifications to be
- * registered again in the background, and where `feed_url_corrected` goes.
+ * registered again in the background, where `feed_url_corrected` goes, and where registrations
+ * not yet acknowledged are kept across launches.
  * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows).
  */
 data class FeedAddressWiring(
     val requestNotificationRegistration: (podcastId: String) -> Unit = {},
     val telemetry: FeedTelemetryPort = FeedTelemetryPort.NONE,
+    val pendingRegistrations: PendingNotificationRegistrations = MemoryPendingNotificationRegistrations(),
 )
 
 @Suppress("TooManyFunctions", "LongParameterList", "kotlin:S107") // Constructor injection from AppContainer; no DI framework.
@@ -42,7 +44,7 @@ class SubscriptionRepository(
 ) : PodcastNotificationSyncPort {
     /** The one writer of saved feed addresses (P4 PR 14). */
     val feedAddresses: FeedAddressUpdater =
-        FeedAddressUpdater(podcastDao, feedAddressWiring.requestNotificationRegistration, feedAddressWiring.telemetry)
+        feedAddressWiring.run { FeedAddressUpdater(podcastDao, requestNotificationRegistration, telemetry, pendingRegistrations) }
 
     private val notificationRegistrar by lazy { PodcastNotificationRegistrar(podcastDao) }
 
@@ -116,7 +118,7 @@ class SubscriptionRepository(
                     existing?.skipEndingOverrideMs
                         ?: podcast.skipEndingOverrideMs,
                     sourceType = podcast.sourceType,
-                    feedUrl = podcast.feedUrl,
+                    feedUrl = FeedUrlSources.followedFeedUrl(podcast.isRss, existing?.feedUrl, podcast.feedUrl),
                     rssRefreshCapability = podcast.rssRefreshCapability,
                     rssCatalogStale = podcast.rssCatalogStale,
                     rssHasNewEpisodes = podcast.rssHasNewEpisodes,
@@ -680,15 +682,18 @@ class SubscriptionRepository(
 
     /**
      * Saves the new address of a feed that moved for good (permanent redirects or
-     * `itunes:new-feed-url`, same show) and reports the correction.
+     * `itunes:new-feed-url`, same show) and reports the correction. Only a move of the saved
+     * address counts: nothing is written unless the show still holds [readFrom], the address that
+     * was read (a push or a restore may read another one).
      * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows: redirects).
      */
-    suspend fun adoptMovedFeed(podcastId: String, movedTo: String) {
+    suspend fun adoptMovedFeed(podcastId: String, readFrom: String, movedTo: String) {
         feedAddresses.update(
             FeedAddressChange(
                 podcastId = podcastId,
                 feedUrl = movedTo,
                 source = FeedUrlSources.FEED_MOVE,
+                onlyReplacing = readFrom,
                 reason = FeedUrlCorrectionReason.MOVED,
                 step = FeedUrlCorrectionStep.FEED_REFRESH,
             ),
@@ -703,7 +708,8 @@ class SubscriptionRepository(
 
     /**
      * Registers a Podcast Index show's notifications again and waits for Firebase to acknowledge it;
-     * run by the app's capped background job after an address change ([PodcastNotificationRegistrar]).
+     * run by the app's capped background job after an address change ([PodcastNotificationRegistrar]),
+     * which records the outcome with [FeedAddressUpdater.registrationSettled].
      * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows).
      */
     suspend fun registerPodcastNotifications(podcastId: String): NotificationRegistrationOutcome = notificationRegistrar.register(podcastId)
