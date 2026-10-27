@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.rss
 
 import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
 import cx.aswin.boxlore.core.database.EpisodeAliasState
+import cx.aswin.boxlore.core.database.EpisodeGroupStateEntity
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome
@@ -9,6 +10,7 @@ import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -114,6 +116,71 @@ class RenumberedShowRoomTest : RoomCatalogTestBase() {
         assertEquals("a trusted alias keeps its show and key", OLD, alias("41000000013")?.podcastId)
         assertEquals("guid-old-key", alias("41000000013")?.catalogKey)
         assertEquals("another show is never linked, whatever its title", null, alias("41000000014"))
+    }
+
+    /**
+     * The shape of any show followed since episodes are keyed: the old show's catalog was read under
+     * its recipe IDs and the listening is under them, trusted under the old show. Once its follow
+     * ended and the new show's catalog was read, linking joins each old episode to the new episode
+     * with its key: completion and likes read on the new show and no stored ID changes.
+     */
+    @Test
+    fun episodesOfTheOldShowsCatalogJoinTheNewShowsEpisodesWithoutAnyIdChange() = runBlocking {
+        val keys = OLD_IDS.indices.map { "guid-$it" }
+        feed.items = keys.mapIndexed { index, key -> Item(key, title = "Episode $index", audio = audioOf(index)) }
+        follow(OLD)
+        assertTrue(refresh(OLD) is RefreshOutcome.Success)
+        val oldIds = keys.map { recipe(OLD, it) }
+        assertEquals(oldIds, keys.map { rows(OLD)[it] })
+        for ((index, id) in oldIds.withIndex()) listened(id, OLD, audio = audioOf(index), completed = index < COMPLETED)
+        val liked = EpisodeGroupStateEntity(podcastId = OLD, catalogKey = keys[0], likedAt = 7_000L, version = 1L)
+        database.episodeIdentityDao().upsertGroupState(liked)
+        // The follow moved to the new show, whose catalog was then read under its own recipe IDs.
+        database.podcastDao().upsert(database.podcastDao().getPodcast(OLD)!!.copy(isSubscribed = false))
+        follow(NEW)
+        assertTrue(refresh(NEW) is RefreshOutcome.Success)
+        val catalogBefore = rows(NEW)
+        val historyBefore = oldIds.mapNotNull { database.listeningHistoryDao().getHistoryItem(it) }
+        shows.record(OLD, NEW)
+
+        assertEquals(oldIds.size, renumberedRepo().linkRenumberedShow(OLD, NEW))
+
+        assertEquals("the new show's rows keep their recipe IDs", catalogBefore, rows(NEW))
+        assertEquals("history keeps its IDs, show and state", historyBefore, oldIds.mapNotNull { database.listeningHistoryDao().getHistoryItem(it) })
+        assertTrue("the ended show's copy is dropped, as its countdown would", rows(OLD).isEmpty())
+        for ((index, id) in oldIds.withIndex()) {
+            val alias = requireNotNull(alias(id))
+            assertEquals(NEW, alias.podcastId)
+            assertEquals(keys[index], alias.catalogKey)
+            assertEquals(recipe(NEW, keys[index]).toLong(), alias.recipeId)
+            assertEquals(EpisodeAliasState.TRUSTED, alias.state)
+            assertEquals(EpisodeAliasProvenance.RENUMBERED_SHOW_MATCH, alias.provenance)
+            assertFalse(alias.owner)
+            assertTrue(id in database.episodeListenerStore().memberIds(recipe(NEW, keys[index])))
+        }
+        val completed = database.episodeListenerStore().projectCompletedIds(oldIds.take(COMPLETED))
+        for (index in 0 until COMPLETED) assertTrue("episode $index reads completed on the new show", recipe(NEW, keys[index]) in completed)
+        assertFalse(recipe(NEW, keys.last()) in completed)
+        assertEquals("the like decision moves with the episode", 7_000L, database.episodeIdentityDao().getGroupState(NEW, keys[0])?.likedAt)
+        assertNull(database.episodeIdentityDao().getGroupState(OLD, keys[0]))
+        assertEquals("linking again changes nothing", 0, renumberedRepo().linkRenumberedShow(OLD, NEW))
+    }
+
+    @Test
+    fun aStillFollowedOldShowKeepsItsCatalogAndItsEpisodes() = runBlocking {
+        feed.items = listOf(Item("guid-0", audio = audioOf(0)))
+        follow(OLD)
+        assertTrue(refresh(OLD) is RefreshOutcome.Success)
+        val oldId = recipe(OLD, "guid-0")
+        listened(oldId, OLD, audio = audioOf(0), completed = true)
+        follow(NEW)
+        assertTrue(refresh(NEW) is RefreshOutcome.Success)
+        shows.record(OLD, NEW)
+
+        assertEquals(0, renumberedRepo().linkRenumberedShow(OLD, NEW))
+
+        assertEquals(OLD, alias(oldId)?.podcastId)
+        assertEquals(mapOf("guid-0" to oldId), rows(OLD))
     }
 
     @Test

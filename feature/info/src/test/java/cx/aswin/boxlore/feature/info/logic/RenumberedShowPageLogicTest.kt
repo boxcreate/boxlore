@@ -30,6 +30,23 @@ class RenumberedShowPageLogicTest {
     }
 
     @Test
+    fun aPageOpenedOnTheNewNumberCountsAFollowStillUnderTheOldOne() {
+        // Opened from search or a notification on the new number while the old number is still followed.
+        assertTrue(RenumberedShowPageLogic.isFollowed(shownFollowed = false, routeFollowed = false, formerFollowed = true))
+    }
+
+    @Test
+    fun theAnswerThatNamedTheNewShowShowsUntilItsOwnDetailsArrive() {
+        val stored = Podcast(id = NEW, title = "Stored", artist = "", imageUrl = "")
+        val answered = Podcast(id = NEW, title = "Answered", artist = "", imageUrl = "")
+
+        assertEquals("a stored row wins", "Stored", RenumberedShowPageLogic.shownBeforeDetails(stored, answered, NEW)?.title)
+        assertEquals("no stored row: the first answer, never a loading or error page", "Answered", RenumberedShowPageLogic.shownBeforeDetails(null, answered, NEW)?.title)
+        assertNull("an answer about another show is never shown", RenumberedShowPageLogic.shownBeforeDetails(null, answered, OTHER))
+        assertNull(RenumberedShowPageLogic.shownBeforeDetails(null, null, NEW))
+    }
+
+    @Test
     fun theRenumberedShowColoursThePageOfItsOldRoute() {
         val state = success(NEW)
 

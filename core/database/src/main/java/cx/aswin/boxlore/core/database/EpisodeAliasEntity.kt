@@ -127,6 +127,8 @@ object EpisodeAliasProvenance {
      * the ID's rows (else, for queue and download rows, the title and a date within two days), no
      * other old ID points at it, and that row's ID is a trusted, keyed alias of the new show. The ID
      * joins that episode as a non-owner; its history, queue and download rows keep their ID and show.
+     * Also marks a trusted alias of an old-show episode (show, key) moved to the new show's episode
+     * with the same key, with that episode's recipe ID, as a non-owner, once no catalog row holds it.
      * Added for renumbered shows (docs/EPISODE_IDS.md §5, renumbered shows).
      */
     const val RENUMBERED_SHOW_MATCH = "renumbered_show_match"

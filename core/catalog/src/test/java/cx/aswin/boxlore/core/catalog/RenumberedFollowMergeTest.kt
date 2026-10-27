@@ -9,13 +9,13 @@ import org.junit.Test
 /** The pure rules a renumbered show's follow moves by ([RenumberedFollowMerge]). */
 class RenumberedFollowMergeTest {
     @Test
-    fun aFollowedNewShowKeepsItsOwnChoicesAndTakesTheEarliestFollowAndAnyOnSwitch() {
+    fun aFollowedNewShowKeepsItsOwnChoicesAndFollowTimeAndTakesAnyOnSwitch() {
         val old = row("1", subscribedAt = 100L).copy(notificationsEnabled = true, customGenre = "Old genre", preferredSort = "oldest", skipEndingOverrideMs = 5_000L)
         val current = row("2", subscribedAt = 200L).copy(autoDownloadEnabled = true, customGenre = "New genre", customGenreIcon = "icon")
 
         val move = RenumberedFollowMerge.move(old, "2", current, answer = null, nowMs = 1_000L)
 
-        assertEquals(100L, move.kept.subscribedAt)
+        assertEquals("the follow time is never moved earlier", 200L, move.kept.subscribedAt)
         assertTrue(move.kept.notificationsEnabled)
         assertTrue(move.kept.autoDownloadEnabled)
         assertEquals("New genre", move.kept.customGenre)
@@ -37,11 +37,22 @@ class RenumberedFollowMergeTest {
         val move = RenumberedFollowMerge.move(old, "2", stored, answer = null, nowMs = 1_000L)
 
         assertTrue(move.kept.isSubscribed)
-        assertEquals(100L, move.kept.subscribedAt)
+        assertEquals("followed at the move, never at the old show's earlier time", 1_000L, move.kept.subscribedAt)
         assertEquals(0L, move.kept.unsubscribedAt)
         assertEquals("Crime", move.kept.customGenre)
         assertEquals("Stored title", move.kept.title)
         assertEquals("a stored row keeps its own namespace, never the old show's", 2L, move.kept.epNs)
+    }
+
+    @Test
+    fun aMovedFollowIsNeverOlderThanTheNewShowsLastUnfollow() {
+        val old = row("1", subscribedAt = 100L)
+        // A clock behind the stored unfollow (another device's, pulled earlier) still follows after it.
+        val stored = row("2", subscribedAt = 0L).copy(isSubscribed = false, unsubscribedAt = 5_000L)
+
+        val move = RenumberedFollowMerge.move(old, "2", stored, answer = null, nowMs = 1_000L)
+
+        assertEquals(5_001L, move.kept.subscribedAt)
     }
 
     @Test

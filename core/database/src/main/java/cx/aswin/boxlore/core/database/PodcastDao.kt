@@ -91,17 +91,17 @@ interface PodcastDao {
     suspend fun getPodcast(id: String): PodcastEntity?
 
     /**
-     * Moves a follow from a show Podcast Index renumbered to the show it now answers as, in one
-     * transaction: [kept] (the new show's row, followed) and [retired] (the old show's row,
-     * unfollowed) are written through [upsert], so each keeps its stored namespace. Both rows are
-     * written dirty by the caller, so the next sync push carries the follow and the unfollow.
+     * Runs [move] in one transaction: it reads the old and new show rows of a follow moving from a
+     * show Podcast Index renumbered, merges them and writes both through [upsert] (so each keeps its
+     * stored namespace), with no other writer (a cloud pull, a toggle, the foreground pass) landing
+     * between the read and the write. The caller writes both rows dirty, so the next sync push
+     * carries the follow and the unfollow.
      *
      * Added for renumbered shows (`RenumberedShowFollows` in `:core:catalog`).
      */
     @Transaction
-    suspend fun moveRenumberedFollow(kept: PodcastEntity, retired: PodcastEntity) {
-        upsert(kept)
-        upsert(retired)
+    suspend fun moveRenumberedFollow(move: suspend () -> Unit) {
+        move()
     }
 
     @Query("SELECT * FROM podcasts WHERE podcastId IN (:ids)")

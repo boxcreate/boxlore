@@ -10,12 +10,18 @@ import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
+import cx.aswin.boxlore.core.network.NetworkModule
 import cx.aswin.boxlore.core.network.model.UserSubscriptionSyncDto
 import cx.aswin.boxlore.core.rss.MemoryRenumberedShows
+import cx.aswin.boxlore.core.rss.RssPodcastRepository
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import okhttp3.OkHttpClient
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -62,6 +68,7 @@ class RenumberedShowFollowsTest {
     @After
     fun tearDown() {
         database.close()
+        RssPodcastRepository.clearInstanceForTests()
     }
 
     @Test
@@ -103,7 +110,7 @@ class RenumberedShowFollowsTest {
 
         val kept = podcastDao.getPodcast(NEW)!!
         assertTrue(kept.isSubscribed)
-        assertEquals(FOLLOWED_AT, kept.subscribedAt)
+        assertTrue("followed at the move, never at the old show's earlier time", kept.subscribedAt > FOLLOWED_AT)
         assertTrue(kept.notificationsEnabled)
         assertTrue(kept.autoDownloadEnabled)
         assertEquals("Crime", kept.customGenre)
@@ -180,15 +187,113 @@ class RenumberedShowFollowsTest {
     }
 
     @Test
-    fun theShowPageToggleNeverAddsASecondFollow() = runTest {
+    fun aMovedFollowSurvivesAPullOfANewerUnfollowOfTheNewShow() = runTest {
+        podcastDao.upsert(row(OLD, notifications = true, subscribedAt = FOLLOWED_AT, epNs = null))
+        // The new show was followed by mistake and unfollowed since, here and on another device.
+        podcastDao.upsert(row(NEW, notifications = false, subscribedAt = 0L, epNs = NEW.toLong()).copy(isSubscribed = false, unsubscribedAt = UNFOLLOWED_AT))
+        assertTrue(repository.renumberedFollows.adoptAnswer(OLD, answer()))
+
+        val resolver = SubscriptionSyncResolver(podcastDao = podcastDao)
+        resolver.resolveSubscription(tombstone(NEW, UNFOLLOWED_AT), syncedAt = UNFOLLOWED_AT + 10)
+
+        val kept = podcastDao.getPodcast(NEW)!!
+        assertTrue("the older unfollow never beats the moved follow", kept.isSubscribed)
+        assertTrue("and the follow is pushed again", kept.isDirty)
+        assertTrue(kept.notificationsEnabled)
+        assertFalse(podcastDao.getPodcast(OLD)!!.isSubscribed)
+    }
+
+    @Test
+    fun aPullFromTheStartMovesTheOldFollowAndKeepsItAgainstTheNewShowsUnfollow() = runTest {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody(DETAILS_OF_NEW))
+            val resolver = SubscriptionSyncResolver(podcastDao = podcastDao, podcastRepository = podcastRepository(server))
+
+            // A new device pulls the old follow, whose details name the new show, then the new show's unfollow.
+            resolver.resolveSubscription(remote(OLD, notifications = true), syncedAt = UNFOLLOWED_AT + 10)
+            resolver.resolveSubscription(tombstone(NEW, UNFOLLOWED_AT), syncedAt = UNFOLLOWED_AT + 10)
+
+            assertFalse(podcastDao.getPodcast(OLD)!!.isSubscribed)
+            val kept = podcastDao.getPodcast(NEW)!!
+            assertTrue("the show stays followed", kept.isSubscribed)
+            assertTrue(kept.notificationsEnabled)
+            assertEquals(NEW, shows.currentId(OLD))
+        } finally {
+            server.shutdown()
+        }
+    }
+
+    @Test
+    fun theShowPageToggleOfferingUnfollowEndsEveryFollow() = runTest {
         podcastDao.upsert(row(OLD, notifications = false, subscribedAt = FOLLOWED_AT, epNs = null))
         shows.record(OLD, NEW)
 
         // The page for the new show read the old follow as its own and offered Unfollow.
-        repository.toggleSubscription(answer())
+        repository.toggleSubscription(answer(), shownFollowed = true)
 
         assertFalse(repository.isSubscribed(OLD))
         assertFalse(repository.isSubscribed(NEW))
+    }
+
+    @Test
+    fun aSubscribeOfferedWhileTheOldShowIsFollowedFollowsTheNewShowWithItsSettings() = runTest {
+        podcastDao.upsert(row(OLD, notifications = true, subscribedAt = FOLLOWED_AT, epNs = null, genre = "Crime"))
+        shows.record(OLD, NEW)
+
+        // A search card or a page opened on the new number shows Subscribe from the new show's own row.
+        repository.toggleSubscription(answer())
+
+        val kept = podcastDao.getPodcast(NEW)!!
+        assertTrue(kept.isSubscribed)
+        assertTrue("the old follow's settings come along", kept.notificationsEnabled)
+        assertEquals("Crime", kept.customGenre)
+        assertFalse(repository.isSubscribed(OLD))
+
+        // The same from the show page, which says what it showed.
+        podcastDao.upsert(kept.copy(isSubscribed = false, unsubscribedAt = kept.subscribedAt + 1))
+        podcastDao.upsert(podcastDao.getPodcast(OLD)!!.copy(isSubscribed = true, subscribedAt = kept.subscribedAt + 2, unsubscribedAt = 0L))
+        repository.toggleSubscription(answer(), shownFollowed = false)
+        assertTrue(repository.isSubscribed(NEW))
+        assertFalse(repository.isSubscribed(OLD))
+    }
+
+    @Test
+    fun theForegroundPassAsksBeyondTheFirstLookupsAndRetriesFailedOnes() = runTest {
+        // Four shows each followed twice under one feed: eight candidates, the renumbered pair among them.
+        val pairs = listOf("1001" to "1002", "1003" to "1004", "1005" to "1006")
+        for ((index, pair) in pairs.withIndex()) {
+            for (id in pair.toList()) {
+                podcastDao.upsert(row(id, notifications = false, subscribedAt = FOLLOWED_AT, epNs = null).copy(title = "A$index", feedUrl = "https://feeds.example/$index"))
+            }
+        }
+        podcastDao.upsert(row(OLD, notifications = false, subscribedAt = FOLLOWED_AT, epNs = null).copy(title = "Z"))
+        podcastDao.upsert(row(NEW, notifications = false, subscribedAt = FOLLOWED_AT, epNs = null).copy(title = "Z"))
+        val asked = mutableListOf<String>()
+        var offline = true
+        val lookup: suspend (String) -> Podcast? = { id ->
+            asked += id
+            when {
+                offline -> error("offline")
+                id == OLD -> answer()
+                else -> answer().copy(id = id)
+            }
+        }
+
+        repository.renumberedFollows.collapseFollows(lookupDetails = lookup)
+        assertEquals("at most six per pass", 6, asked.size)
+        assertTrue("nothing settled offline", podcastDao.getPodcast(OLD)!!.isSubscribed)
+
+        offline = false
+        asked.clear()
+        repository.renumberedFollows.collapseFollows(lookupDetails = lookup)
+        repository.renumberedFollows.collapseFollows(lookupDetails = lookup)
+
+        assertEquals("every candidate is asked, failed ones again, answered ones once", 8, asked.size)
+        assertEquals(8, asked.toSet().size)
+        assertFalse(podcastDao.getPodcast(OLD)!!.isSubscribed)
+        assertTrue(podcastDao.getPodcast(NEW)!!.isSubscribed)
     }
 
     @Test
@@ -204,10 +309,29 @@ class RenumberedShowFollowsTest {
         assertTrue(podcastDao.getPodcast(OLD)!!.isSubscribed)
 
         // The new show is followed through its own feed: that follow stays, the old one ends.
+        folders.add(OLD, "folder-1")
         assertTrue(repository.renumberedFollows.adoptAnswer(OLD, answer()))
         assertEquals(feedShow.copy(isDirty = feedShow.isDirty), podcastDao.getPodcast("rss:abc"))
         assertFalse(podcastDao.getPodcast(OLD)!!.isSubscribed)
-        assertNull(podcastDao.getPodcast(NEW))
+        assertNull("no follow is added under the Podcast Index number", podcastDao.getPodcast(NEW))
+        assertEquals("the folder place goes to the feed's show", setOf("rss:abc"), folders.membersOf("folder-1"))
+    }
+
+    @Test
+    fun aFollowWithNotificationsStaysWhenTheNewShowIsFollowedThroughItsFeedWithout() = runTest {
+        podcastDao.upsert(row(OLD, notifications = true, subscribedAt = FOLLOWED_AT, epNs = null))
+        podcastDao.upsert(
+            row("rss:abc", notifications = false, subscribedAt = FOLLOWED_AT, epNs = null)
+                .copy(sourceType = PodcastEntity.SOURCE_RSS, linkedPodcastIndexId = NEW),
+        )
+        folders.add(OLD, "folder-1")
+
+        assertFalse(repository.renumberedFollows.adoptAnswer(OLD, answer()))
+
+        val old = podcastDao.getPodcast(OLD)!!
+        assertTrue("notifications are never dropped", old.isSubscribed && old.notificationsEnabled)
+        assertEquals(setOf(OLD), folders.membersOf("folder-1"))
+        assertFalse(podcastDao.getPodcast("rss:abc")!!.notificationsEnabled)
     }
 
     private fun row(id: String, notifications: Boolean, subscribedAt: Long, epNs: Long?, genre: String? = null) = PodcastEntity(
@@ -224,6 +348,29 @@ class RenumberedShowFollowsTest {
         epNs = epNs,
         customGenre = genre,
     )
+
+    private fun tombstone(id: String, at: Long) = UserSubscriptionSyncDto(
+        podcastId = id,
+        isSubscribed = false,
+        subscribedAt = 0L,
+        unsubscribedAt = at,
+        updatedAt = at,
+    )
+
+    private fun podcastRepository(server: MockWebServer): PodcastRepository {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val client = OkHttpClient.Builder().readTimeout(5, TimeUnit.SECONDS).build()
+        val base = server.url("/").toString()
+        return PodcastRepository(
+            baseUrl = base,
+            publicKey = "unused",
+            context = context,
+            rssRepository = RssPodcastRepository.createForTests(context, database),
+            boxLoreApi = NetworkModule.createBoxLoreApi(base, client),
+            boxLoreApiV2 = NetworkModule.createBoxLoreApiV2(base, client),
+            onShowRenumbered = { old, answer -> repository.renumberedFollows.adoptAnswer(old, answer) },
+        )
+    }
 
     private fun answer() = Podcast(id = NEW, title = "The Desi Crime Podcast", artist = "Host", imageUrl = "https://img.example/new.jpg", feedUrl = FEED)
 
@@ -294,6 +441,10 @@ class RenumberedShowFollowsTest {
         const val NEW = "7976624"
         const val LOOKALIKE = "5200907"
         const val FOLLOWED_AT = 1_700_000_000_000L
+
+        /** After [FOLLOWED_AT], before the test runs. */
+        const val UNFOLLOWED_AT = FOLLOWED_AT + 60_000L
+        const val DETAILS_OF_NEW = """{"status":"true","feed":{"id":7976624,"title":"The Desi Crime Podcast","url":"https://feeds.acast.example/public/shows/desi-crime"}}"""
         const val FEED = "https://feeds.acast.example/public/shows/desi-crime"
     }
 }

@@ -10,9 +10,9 @@ import cx.aswin.boxlore.core.model.Podcast
  * [RenumberedShowFollows] writes the result.
  *
  * - **The new show already followed:** its row is kept, with the two follows' settings merged:
- *   the earliest follow time, notifications and auto-download on when either was, and the new
+ *   its own follow time, notifications and auto-download on when either was, and the new
  *   show's own genre, icon, sort and playback trims, else the old show's.
- * - **The new show not followed:** it is followed with the old show's settings and follow time. Its
+ * - **The new show not followed:** it is followed now with the old show's settings. Its
  *   details come from the new show's answer, else its stored row, else the old show's row. It never
  *   takes the old show's namespace or address bookkeeping: a stored row keeps its own
  *   ([cx.aswin.boxlore.core.database.PodcastDao.upsert]), a new one has none until its catalog is read.
@@ -20,6 +20,11 @@ import cx.aswin.boxlore.core.model.Podcast
  *   custom genre cleared, its unfollow time now.
  * Both rows are dirty, so the next sync push carries the follow and the unfollow; a pull of the old
  * show's older follow loses to the newer unfollow ([cx.aswin.boxlore.core.catalog.sync.SubscriptionSyncResolver]).
+ *
+ * A follow time is never moved earlier: sync compares a follow with an unfollow by their times
+ * ([cx.aswin.boxlore.core.catalog.sync.SubscriptionSyncResolver]), so a follow written with the old
+ * show's earlier time would lose to any unfollow of the new show made since, on any device. The
+ * new show keeps its own follow time, or takes the time of the move, like any new follow.
  *
  * Added for renumbered shows.
  */
@@ -60,7 +65,7 @@ object RenumberedFollowMerge {
         val keepsOwnGenre = !current.customGenre.isNullOrBlank()
         val keepsOwnSort = current.preferredSort != null
         return current.copy(
-            subscribedAt = earliest(current.subscribedAt, old.subscribedAt),
+            subscribedAt = current.subscribedAt,
             unsubscribedAt = 0L,
             isDirty = true,
             notificationsEnabled = current.notificationsEnabled || old.notificationsEnabled,
@@ -80,7 +85,7 @@ object RenumberedFollowMerge {
         val shown = (stored ?: unstoredRowOf(newId, old, nowMs)).withAnswer(answer)
         return shown.copy(
             isSubscribed = true,
-            subscribedAt = old.subscribedAt.takeIf { it in 1..nowMs } ?: nowMs,
+            subscribedAt = maxOf(nowMs, (stored?.unsubscribedAt ?: 0L) + 1L),
             unsubscribedAt = 0L,
             isDirty = true,
             type = if (old.preferredSort != null) old.type else shown.type,
@@ -141,8 +146,6 @@ object RenumberedFollowMerge {
         latestEpisode = latestEpisode ?: answer.latestEpisode,
     )
 
-    private fun earliest(a: Long, b: Long): Long = listOf(a, b).filter { it > 0L }.minOrNull() ?: maxOf(a, b)
-
     /** [ids] with [oldId] replaced by [newId] in its place, once (a pin list, a manual order). */
     fun replacedId(ids: List<String>, oldId: String, newId: String): List<String> {
         if (oldId !in ids) return ids
@@ -165,6 +168,18 @@ object RenumberedFollowMerge {
             .flatten()
             .distinct()
     }
+
+    /**
+     * The [candidates] the foreground pass asks for, at most [maxLookups]: never one [answered]
+     * already in this process, shows not asked yet before ones whose lookup [failed] (asked again,
+     * so an offline first pass doesn't skip a show until the process ends), each group in
+     * [candidates]' order.
+     */
+    fun lookupOrder(candidates: List<String>, answered: Set<String>, failed: Set<String>, maxLookups: Int): List<String> =
+        candidates
+            .filterNot { it in answered }
+            .sortedBy { it in failed }
+            .take(maxLookups)
 
     /** A feed address compared without its scheme, case, `www.` or trailing slash. */
     internal fun normalizedAddress(url: String?): String? {

@@ -36,8 +36,8 @@ internal interface RenumberedFollowEffects {
     /** Moves folder memberships, Home pins and the manual order from [oldId] to [newId]. */
     suspend fun moveLibraryPlacement(oldId: String, newId: String)
 
-    /** Starts the old show's unfollowed catalog countdown and clears the new show's. */
-    suspend fun catalogFollowChanged(oldId: String, newId: String)
+    /** Starts the old show's unfollowed catalog countdown and, when [newId] is given, clears the new show's. */
+    suspend fun catalogFollowChanged(oldId: String, newId: String?)
 
     /** Saves a missing feed address of the followed [podcastId] through the one address writer. */
     suspend fun fillMissingAddress(podcastId: String, feedUrl: String?)
@@ -90,10 +90,10 @@ internal class RenumberedFollowWrites(
         }
     }
 
-    override suspend fun catalogFollowChanged(oldId: String, newId: String) {
+    override suspend fun catalogFollowChanged(oldId: String, newId: String?) {
         val catalog = library.catalog ?: return
         catalog.setUnsubscribedTtl(oldId, System.currentTimeMillis() + LocalEpisodeCatalogRepository.UNSUBSCRIBE_TTL_MS)
-        catalog.setUnsubscribedTtl(newId, null)
+        if (newId != null) catalog.setUnsubscribedTtl(newId, null)
     }
 
     override suspend fun fillMissingAddress(podcastId: String, feedUrl: String?) {
@@ -113,12 +113,14 @@ internal class RenumberedFollowWrites(
  * Keeps one follow for a show Podcast Index renumbered (docs/EPISODE_IDS.md §5, renumbered shows).
  * When show details asked for an old show ID answer with another one ([adoptAnswer]), the renumbering
  * is recorded ([RenumberedShows]) and a follow of the old show moves to the show it now answers as
- * ([RenumberedFollowMerge]): written in one transaction, both rows marked for the next sync push,
- * notifications registered for the new show through the pending-registration journal before the
- * row turns them on (never dropped), the old show's notifications turned off, folder memberships,
- * Home pins and the manual order moved, and the old show's listener rows linked to the new show's
- * episodes. `rss:` shows are never touched; a new show followed through its RSS feed keeps that
- * follow and only the old follow ends.
+ * ([RenumberedFollowMerge]): both rows read, merged and written in one transaction and marked for
+ * the next sync push, notifications registered for the new show through the pending-registration
+ * journal before the row turns them on (never dropped), the old show's notifications turned off,
+ * folder memberships, Home pins and the manual order moved, and the old show's listener rows
+ * linked to the new show's episodes. `rss:` shows are never touched. A new show followed through
+ * its RSS feed keeps that follow and only the old follow ends, its library places moving to the
+ * feed's show; when the old follow has notifications and the feed's doesn't (which needs the
+ * listener's consent), both follows stay, so notifications are never dropped.
  *
  * Every step is idempotent, so the same answer arriving from several callers (the show page, a
  * cloud pull, the foreground pass) moves the follow once. Moves are serialized.
@@ -133,8 +135,11 @@ class RenumberedShowFollows internal constructor(
 ) {
     private val moves = Mutex()
 
-    /** Shows whose details the foreground pass asked for in this process, so each is asked once. */
+    /** Shows whose details the foreground pass got an answer for in this process, so each is asked once. */
     private val checkedThisProcess: MutableSet<String> = Collections.synchronizedSet(HashSet())
+
+    /** Shows whose details lookup failed in this process: asked again, after shows not asked yet. */
+    private val failedThisProcess: MutableSet<String> = Collections.synchronizedSet(HashSet())
 
     /** The show [podcastId] now answers as, when it was renumbered; null otherwise. */
     fun currentId(podcastId: String): String? = shows.currentId(podcastId)
@@ -164,20 +169,37 @@ class RenumberedShowFollows internal constructor(
     }
 
     /**
-     * Before a toggle of [podcast]'s follow: moves follows of shows renumbered into it
-     * ([adoptFormerFollows]). When [podcast] still isn't followed but such a follow is (a move that
-     * couldn't be saved), the page showed it as [podcast]'s follow, so each one is ended with
-     * [unfollow] instead of adding a second follow, and true is returned: the toggle is done.
-     * False when the toggle goes ahead as usual (always for an `rss:` show).
+     * Before a toggle of [podcast]'s follow: settles follows of shows renumbered into it, by what the
+     * caller showed ([shownFollowed]; null means [podcast]'s own follow or a followed `rss:` feed linked
+     * to it, as follow buttons other than the show page show it). The direction is decided before
+     * anything moves:
+     * - **Shown as not followed** (the listener asked to follow): such follows move to [podcast]
+     *   with their settings ([adoptFormerFollows]). True when [podcast] is now followed: the toggle
+     *   is done. Otherwise false, and the toggle follows [podcast] as usual.
+     * - **Shown as followed** (the listener asked to unfollow): the follows move first, then any
+     *   that couldn't move end with [unfollow]. False while [podcast] (or its linked feed) is
+     *   followed, so the toggle ends that follow too; true when only former follows were ended.
+     * No former follows, or an `rss:` show: false, and the toggle goes ahead as usual.
      */
-    suspend fun endedFormerFollows(podcast: Podcast, unfollow: suspend (PodcastEntity) -> Unit): Boolean {
-        if (podcast.isRss) return false
+    suspend fun endedFormerFollows(podcast: Podcast, shownFollowed: Boolean? = null, unfollow: suspend (PodcastEntity) -> Unit): Boolean {
+        if (podcast.isRss || shows.formerIds(podcast.id).isEmpty()) return false
+        val askedToUnfollow = shownFollowed ?: isFollowed(podcast.id)
         adoptFormerFollows(podcast.id)
-        if (podcastDao.getPodcast(podcast.id)?.isSubscribed == true) return false
+        val followed = isFollowed(podcast.id)
+        if (!askedToUnfollow) return followed
         val left = shows.formerIds(podcast.id).mapNotNull { id -> podcastDao.getPodcast(id)?.takeIf { it.isSubscribed && !it.isRss } }
         left.forEach { unfollow(it) }
-        return left.isNotEmpty()
+        return !followed && left.isNotEmpty()
     }
+
+    /** [podcastId] followed itself or through a followed `rss:` feed linked to it, as follow buttons show it. */
+    private suspend fun isFollowed(podcastId: String): Boolean =
+        podcastDao.getPodcast(podcastId)?.isSubscribed == true ||
+            podcastDao.getRssPodcastLinkedTo(podcastId)?.let { it.isRss && it.isSubscribed } == true
+
+    /** True when a show recorded as renumbered into [podcastId] is still followed under its old number. */
+    suspend fun isFollowedUnderFormerId(podcastId: String): Boolean =
+        shows.formerIds(podcastId).any { id -> podcastDao.getPodcast(id)?.let { it.isSubscribed && !it.isRss } == true }
 
     /**
      * The foreground pass's step: follows of shows recorded as renumbered move, then followed shows
@@ -190,10 +212,12 @@ class RenumberedShowFollows internal constructor(
             if (shows.currentId(row.podcastId) != null) adoptKnown(row.podcastId)
         }
         val candidates =
-            RenumberedFollowMerge
-                .sharedFeedCandidates(podcastDao.getSubscribedPodcastIndexPodcasts())
-                .filter { checkedThisProcess.add(it) }
-                .take(maxLookups)
+            RenumberedFollowMerge.lookupOrder(
+                candidates = RenumberedFollowMerge.sharedFeedCandidates(podcastDao.getSubscribedPodcastIndexPodcasts()),
+                answered = checkedThisProcess.toSet(),
+                failed = failedThisProcess.toSet(),
+                maxLookups = maxLookups,
+            )
         for (id in candidates) {
             val answer =
                 try {
@@ -203,7 +227,13 @@ class RenumberedShowFollows internal constructor(
                 } catch (e: Exception) {
                     Log.w(TAG, "Details lookup for $id failed", e)
                     null
-                } ?: continue
+                }
+            if (answer == null) {
+                failedThisProcess += id
+                continue
+            }
+            checkedThisProcess += id
+            failedThisProcess -= id
             if (podcastDao.getPodcast(id)?.isSubscribed == true) adoptAnswer(id, answer)
         }
     }
@@ -219,39 +249,77 @@ class RenumberedShowFollows internal constructor(
         return moved
     }
 
+    /** What one move wrote, read and decided in its transaction. */
+    private sealed interface MoveOutcome {
+        /** Nothing written. */
+        data object None : MoveOutcome
+
+        /** The follow moved to the new show. */
+        data class Moved(val old: PodcastEntity, val move: RenumberedFollowMerge.Move) : MoveOutcome
+
+        /** The new show is followed through its own feed ([feedShow]): only the old follow ended. */
+        data class EndedForFeed(val old: PodcastEntity, val feedShow: PodcastEntity) : MoveOutcome
+    }
+
     private suspend fun moveFollowLocked(oldId: String, newId: String, answer: Podcast?): Boolean {
-        val old = podcastDao.getPodcast(oldId)?.takeIf { it.isSubscribed && !it.isRss } ?: return false
-        val linkedFeed = podcastDao.getRssPodcastLinkedTo(newId)?.takeIf { it.isRss && it.isSubscribed }
+        var outcome: MoveOutcome = MoveOutcome.None
+        // Read, merge and write in one transaction, so no other writer's change to either row is overwritten.
+        podcastDao.moveRenumberedFollow { outcome = movedRows(oldId, newId, answer) }
+        when (val done = outcome) {
+            MoveOutcome.None -> return false
+            is MoveOutcome.EndedForFeed -> {
+                Log.i(TAG, "Follow of renumbered show $oldId ended: $newId is followed through ${done.feedShow.podcastId}")
+                finishOldShow(done.old, placementId = done.feedShow.podcastId, followedCatalogId = null)
+            }
+            is MoveOutcome.Moved -> {
+                Log.i(TAG, "Follow of renumbered show $oldId moved to $newId")
+                if (done.move.notificationsMoved) effects.requestRegistration(newId)
+                if (done.move.autoDownloadMoved) runStep("auto-download of $newId") { effects.autoDownloadChanged(newId, true) }
+                runStep("address of $newId") { effects.fillMissingAddress(newId, answer?.feedUrl ?: done.old.feedUrl) }
+                finishOldShow(done.old, placementId = newId, followedCatalogId = newId)
+            }
+        }
+        return true
+    }
+
+    /** The rows of one move, read and written inside [PodcastDao.moveRenumberedFollow]'s transaction. */
+    private suspend fun movedRows(oldId: String, newId: String, answer: Podcast?): MoveOutcome {
+        val old = podcastDao.getPodcast(oldId)?.takeIf { it.isSubscribed && !it.isRss } ?: return MoveOutcome.None
         val current = podcastDao.getPodcast(newId)
-        if (current?.isRss == true) return false
-        val now = nowMillis()
-        val move = RenumberedFollowMerge.move(old, newId, current, answer, now)
-        if (linkedFeed != null) {
-            // The new show is followed through its own feed: that follow stays as it is, the old one ends.
+        if (current?.isRss == true) return MoveOutcome.None
+        val move = RenumberedFollowMerge.move(old, newId, current, answer, nowMillis())
+        val feedShow = podcastDao.getRssPodcastLinkedTo(newId)?.takeIf { it.isRss && it.isSubscribed }
+        if (feedShow != null) {
+            // The new show is followed through its own feed: that follow stays as it is and the old one
+            // ends, unless that would drop notifications the feed's follow can't take without the
+            // listener's consent: then both stay until the listener turns one of them off or on.
+            if (old.notificationsEnabled && !feedShow.notificationsEnabled) {
+                Log.w(TAG, "Follow of $oldId kept: $newId is followed through ${feedShow.podcastId}, whose notifications are off")
+                return MoveOutcome.None
+            }
             podcastDao.upsert(move.retired)
-            finishOldShow(old, newId)
-            return true
+            return MoveOutcome.EndedForFeed(old, feedShow)
         }
         // The registration is saved before the row turns notifications on, so it is never dropped.
         if (move.notificationsMoved && !effects.markRegistrationPending(newId)) {
             Log.w(TAG, "Follow of $oldId not moved to $newId: its notification registration couldn't be saved")
-            return false
+            return MoveOutcome.None
         }
-        podcastDao.moveRenumberedFollow(kept = move.kept, retired = move.retired)
-        Log.i(TAG, "Follow of renumbered show $oldId moved to $newId")
-        if (move.notificationsMoved) effects.requestRegistration(newId)
-        if (move.autoDownloadMoved) runStep("auto-download of $newId") { effects.autoDownloadChanged(newId, true) }
-        runStep("address of $newId") { effects.fillMissingAddress(newId, answer?.feedUrl ?: old.feedUrl) }
-        finishOldShow(old, newId)
-        return true
+        podcastDao.upsert(move.kept)
+        podcastDao.upsert(move.retired)
+        return MoveOutcome.Moved(old, move)
     }
 
-    /** The old show's leftovers once its follow ended: notifications, auto-download, placement, catalog countdown. */
-    private suspend fun finishOldShow(old: PodcastEntity, newId: String) {
+    /**
+     * The old show's leftovers once its follow ended: notifications, auto-download, its folder,
+     * Home pin and manual-order places (moved to [placementId], the follow that remains), and its
+     * catalog countdown (and [followedCatalogId]'s cleared, when that follow is a Podcast Index show).
+     */
+    private suspend fun finishOldShow(old: PodcastEntity, placementId: String, followedCatalogId: String?) {
         if (old.notificationsEnabled) runStep("notifications of ${old.podcastId}") { effects.unregisterNotifications(old) }
         if (old.autoDownloadEnabled) runStep("auto-download of ${old.podcastId}") { effects.autoDownloadChanged(old.podcastId, false) }
-        runStep("library placement of ${old.podcastId}") { effects.moveLibraryPlacement(old.podcastId, newId) }
-        runStep("catalog of ${old.podcastId}") { effects.catalogFollowChanged(old.podcastId, newId) }
+        runStep("library placement of ${old.podcastId}") { effects.moveLibraryPlacement(old.podcastId, placementId) }
+        runStep("catalog of ${old.podcastId}") { effects.catalogFollowChanged(old.podcastId, followedCatalogId) }
     }
 
     /** One follow-up step; a failure is logged and leaves the moved follow in place. */

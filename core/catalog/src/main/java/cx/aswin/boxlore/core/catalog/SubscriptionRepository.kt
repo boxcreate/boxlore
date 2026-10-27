@@ -85,10 +85,17 @@ class SubscriptionRepository(
             .getSubscribedPodcasts()
             .map { list -> list.map { it.toPodcast() } }
 
+    /**
+     * Follows [podcast], or unfollows it when followed. [shownFollowed] is the follow state the
+     * caller showed, when it counts more than [podcast]'s own row (the show page counts a follow
+     * under a number Podcast Index retired): a follow of a show renumbered into [podcast] is
+     * [podcast]'s, so it moves here when the listener asked to follow, and ends with [podcast]'s
+     * when they asked to unfollow; a toggle never adds a second follow
+     * ([RenumberedShowFollows.endedFormerFollows]).
+     */
     @Suppress("kotlin:S6619")
-    suspend fun toggleSubscription(podcast: Podcast) {
-        // A follow of a show renumbered into this one is this show's: it moves first, or the toggle ends it, never adding a second follow.
-        if (renumberedFollows.endedFormerFollows(podcast) { unsubscribeInternal(it.toPodcast(), it, it) }) return
+    suspend fun toggleSubscription(podcast: Podcast, shownFollowed: Boolean? = null) {
+        if (renumberedFollows.endedFormerFollows(podcast, shownFollowed) { unsubscribeInternal(it.toPodcast(), it, it) }) return
         val existing = podcastDao.getPodcast(podcast.id)
         val linkedRss =
             if (!podcast.isRss) {

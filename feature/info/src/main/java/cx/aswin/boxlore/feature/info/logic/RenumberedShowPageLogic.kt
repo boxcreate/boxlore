@@ -19,11 +19,21 @@ internal object RenumberedShowPageLogic {
     fun isRenumbered(requestedId: String, answeredId: String): Boolean = RenumberedShowIds.isRenumbering(requestedId, answeredId)
 
     /**
-     * The page is followed when the show it shows is, or the route's show it replaced still is (a
-     * follow not moved yet): Subscribe is never offered for a show the listener follows under its
+     * The page is followed when the show it shows is, the route's show it replaced still is, or a
+     * show recorded as renumbered into it still is (a follow not moved yet, whichever number the
+     * page was opened with): Subscribe is never offered for a show the listener follows under its
      * old number, and the page takes the followed paths (no "Missing episodes?" offer).
      */
-    fun isFollowed(shownFollowed: Boolean, routeFollowed: Boolean): Boolean = shownFollowed || routeFollowed
+    fun isFollowed(shownFollowed: Boolean, routeFollowed: Boolean, formerFollowed: Boolean = false): Boolean =
+        shownFollowed || routeFollowed || formerFollowed
+
+    /**
+     * What the page shows before the show's details arrive: its stored row, else the details
+     * answer that named this show for a renumbered route ([answered], when it is [shownPodcastId]),
+     * so a renumbered page never drops back to loading, or to an error when the next request fails.
+     */
+    fun shownBeforeDetails(stored: Podcast?, answered: Podcast?, shownPodcastId: String): Podcast? =
+        stored ?: answered?.takeIf { it.id == shownPodcastId }
 
     /**
      * The podcast whose artwork themes the page for [routePodcastId]: the loaded podcast when it is
