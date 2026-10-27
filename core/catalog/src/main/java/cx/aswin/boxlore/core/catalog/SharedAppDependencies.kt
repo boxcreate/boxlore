@@ -35,6 +35,13 @@ interface SharedAppDependencies {
     val folderRepository: FolderRepository
     val deviceIdentityPort: cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort? get() = null
     val userSyncCoordinator: cx.aswin.boxlore.core.catalog.sync.UserSyncCoordinator? get() = null
+
+    /**
+     * The one-time repair of saved feed addresses after the update, run by the app's
+     * `UpgradeRepairWorker`; null when the composition root doesn't provide it (tests).
+     * Added in P4 PR 15 of the own-episode-IDs plan (plan section 11, upgrade repair).
+     */
+    val upgradeAddressRepair: UpgradeAddressRepair? get() = null
 }
 
 /**

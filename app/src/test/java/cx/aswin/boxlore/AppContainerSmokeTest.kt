@@ -138,4 +138,21 @@ class AppContainerSmokeTest {
         assertTrue(next.addressCheck())
         assertTrue(next.v2Discovery())
     }
+
+    @Test
+    fun upgradeRepairIsOneInstanceReachableByWorkersAndSettlesAFreshInstall() = kotlinx.coroutines.runBlocking {
+        val container =
+            AppContainer(
+                context = context,
+                apiBaseUrl = "https://example.test",
+                publicKey = "test-key",
+                sharedUserPreferences = UserPreferencesRepository(context),
+            )
+        val repair = container.upgradeAddressRepair
+        assertSame(repair, container.upgradeAddressRepair)
+        assertSame(repair, (container as cx.aswin.boxlore.core.catalog.SharedAppDependencies).upgradeAddressRepair)
+
+        assertFalse("nothing followed: settled without network", repair.needsWork())
+        assertTrue(java.io.File(context.noBackupFilesDir, cx.aswin.boxlore.core.catalog.FileUpgradeNotificationMarker.FILE_NAME).exists())
+    }
 }

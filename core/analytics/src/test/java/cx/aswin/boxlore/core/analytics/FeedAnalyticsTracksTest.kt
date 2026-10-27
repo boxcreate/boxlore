@@ -135,6 +135,15 @@ class FeedAnalyticsTracksTest {
     }
 
     @Test
+    fun `a background pass counts shows whose namespace differs only when there are some`() {
+        AnalyticsHelper.trackFeedFetchResult(FeedFetchReport.BackgroundPass(FeedFetchSource.FEED, 2, 0, 0, namespaceMismatchCount = 1))
+        AnalyticsHelper.trackFeedFetchResult(FeedFetchReport.BackgroundPass(FeedFetchSource.FEED, 2, 0, 0))
+
+        assertEquals(1, recorder[0].second["namespace_mismatch_count"])
+        assertFalse("namespace_mismatch_count" in recorder[1].second)
+    }
+
+    @Test
     fun `a background pass result is ok without failures and failed when every read failed`() {
         AnalyticsHelper.trackFeedFetchResult(FeedFetchReport.BackgroundPass(FeedFetchSource.FEED, 3, 4, 0))
         AnalyticsHelper.trackFeedFetchResult(FeedFetchReport.BackgroundPass(FeedFetchSource.CACHE, 0, 0, 5))

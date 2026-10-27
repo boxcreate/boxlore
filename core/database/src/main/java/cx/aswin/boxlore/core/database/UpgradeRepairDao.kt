@@ -20,6 +20,13 @@ interface UpgradeRepairDao {
     @Query("SELECT COUNT(*) FROM upgrade_repair_shows WHERE state = 'pending'")
     suspend fun pendingCount(): Int
 
+    /**
+     * Whether the upgrade seeded any show to repair; false on a fresh install. Added in P4 PR 15 of
+     * the own-episode-IDs plan (plan section 11, upgrade repair).
+     */
+    @Query("SELECT EXISTS(SELECT 1 FROM upgrade_repair_shows)")
+    suspend fun hasShows(): Boolean
+
     /** One show's repair progress, or null when the show was never part of the repair. */
     @Query("SELECT * FROM upgrade_repair_shows WHERE podcastId = :podcastId LIMIT 1")
     suspend fun getShow(podcastId: String): UpgradeRepairShowEntity?

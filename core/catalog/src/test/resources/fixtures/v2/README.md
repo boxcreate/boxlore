@@ -24,6 +24,8 @@ Worker answers with (the same fields, types and nesting as `shows-feeds.json`):
 |---|---|
 | `shows-feeds-registry-unavailable.json` | `POST /v2/shows/feeds` while the address registry is down: `registryAvailable: false`, addresses from the dump |
 | `feed-report.json` | `POST /v2/feed-report` for show 3391039: the registry's address. A live report would queue a real re-check |
+| `shows-feeds-upgrade-cases.json` | `POST /v2/shows/feeds` written from the route's contract (not recorded) for the upgrade repair: a confirmed move (`registry:` source, `flags.addressRepair`), an http-only show (`fetchVia: proxy` with its `transportUrl`), a show the lookup doesn't know (`fetchUrl: null`) and one with another `epNs` |
+| `shows-feeds-registry-down.json` | the same route while the address registry is unavailable (`registryAvailable: false`, dump addresses only), with the upgrade-case show ID |
 
 Show page routes, recorded the same way on 2026-10-27 (episode lists cut to two items, long text
 shortened, nested lists cut to their first entry):

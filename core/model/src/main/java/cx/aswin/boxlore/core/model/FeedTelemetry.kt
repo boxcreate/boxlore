@@ -87,12 +87,17 @@ sealed interface FeedFetchReport {
         val httpStatus: Int? = null,
     ) : FeedFetchReport
 
-    /** A background pass over many shows (daily check, refresh pass, upgrade repair). */
+    /**
+     * A background pass over many shows (daily check, refresh pass, upgrade repair).
+     * [namespaceMismatchCount]: reads in the pass of shows whose episode namespace on the server
+     * differs from the one the phone keeps (decision D12; added in P4 PR 15).
+     */
     data class BackgroundPass(
         override val source: FeedFetchSource,
         val okCount: Int,
         val notModifiedCount: Int,
         val failedCount: Int,
+        val namespaceMismatchCount: Int = 0,
     ) : FeedFetchReport {
         /** Shows read in the pass; negative counts are treated as zero. */
         val showsCount: Int
