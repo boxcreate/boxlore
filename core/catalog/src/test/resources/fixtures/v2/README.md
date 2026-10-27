@@ -15,6 +15,15 @@ recorded.
 | `curiosity.json` | `GET /v2/curated/curiosity-v3?page=1` |
 | `briefing-metadata.json` | `GET /v2/briefings/metadata/us` |
 | `briefing-chapters.json` | the `chaptersUrl` of that briefing (`/v2/briefings/chapters/us`) |
+| `shows-feeds.json` | `POST /v2/shows/feeds` with `{"ids":[3391039,920666,9999999999,7]}`, recorded 2026-10-27: a registry move flagged for repair, a dump address, a show the API doesn't know (`fetchUrl: null`) and an http-only show read through the API (`fetchVia: proxy`) |
+
+Two answers can't be recorded on demand, so they are written field for field in the shape the
+Worker answers with (the same fields, types and nesting as `shows-feeds.json`):
+
+| File | Answer |
+|---|---|
+| `shows-feeds-registry-unavailable.json` | `POST /v2/shows/feeds` while the address registry is down: `registryAvailable: false`, addresses from the dump |
+| `feed-report.json` | `POST /v2/feed-report` for show 3391039: the registry's address. A live report would queue a real re-check |
 
 Show page routes, recorded the same way on 2026-10-27 (episode lists cut to two items, long text
 shortened, nested lists cut to their first entry):
@@ -25,6 +34,3 @@ shortened, nested lists cut to their first entry):
 | `podcast-direct.json` | `GET /v2/podcast?id=920666` (`fetchVia: direct`) |
 | `podcast-proxy.json` | `GET /v2/podcast?id=1031614` (`fetchVia: proxy` with `transportUrl`) |
 | `feed-not-proxied.json` | `GET /v2/feed/920666`, a show that isn't http-only: 404 `not_proxied` with `fetchUrl` |
-
-`POST /v2/feed-report` isn't recorded: each report queues a re-check on the live service and counts
-against the phone's daily quota. Its tests use the answer shape in `V2-ROUTES.md`.

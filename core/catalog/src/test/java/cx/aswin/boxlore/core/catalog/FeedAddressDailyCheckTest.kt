@@ -22,6 +22,8 @@ class FeedAddressDailyCheckTest {
     private val rows = mutableMapOf<String, PodcastEntity>()
     private val calls = mutableListOf<List<Long>>()
     private val changes = mutableListOf<FeedAddressChange>()
+    private val events = mutableListOf<String>()
+    private val unreadable = mutableSetOf<String>()
     private var enabled = true
     private var answer: (List<Long>) -> V2ShowsFeedsResponse? = { ids -> V2ShowsFeedsResponse(true, ids.map { address(it) }) }
 
@@ -32,11 +34,22 @@ class FeedAddressDailyCheckTest {
                 calls += ids
                 answer(ids)
             },
+            readsAt = { id, url ->
+                events += "read $id $url"
+                url !in unreadable
+            },
             replaceAddress = { change ->
                 changes += change
+                events += "swap ${change.podcastId}"
+                val row = rows.getValue(change.podcastId)
+                rows[change.podcastId] =
+                    row.copy(feedUrl = change.feedUrl, previousFeedUrl = row.feedUrl, feedUrlSource = change.source, feedUrlCheckedAt = change.checkedAt)
                 FeedAddressUpdate.UPDATED
             },
-            markChecked = { id, at -> rows[id] = rows.getValue(id).copy(feedUrlCheckedAt = at) },
+            markChecked = { id, at ->
+                events += "stamp $id"
+                rows[id] = rows.getValue(id).copy(feedUrlCheckedAt = at)
+            },
             enabled = { enabled },
             nowMillis = { now },
         )
@@ -85,6 +98,7 @@ class FeedAddressDailyCheckTest {
         val outcome = check.run()
 
         assertEquals(listOf("1"), changes.map { it.podcastId }, "no flag, a dump address, http only, no address, the same address, or back to where a move left: kept")
+        assertEquals(listOf("read 1 $NEW", "swap 1"), events.filterNot { it.startsWith("stamp") }, "read before it is saved")
         val change = changes.single()
         assertEquals(NEW, change.feedUrl)
         assertEquals(OLD, change.onlyReplacing)
@@ -94,6 +108,66 @@ class FeedAddressDailyCheckTest {
         assertEquals(FeedUrlCorrectionStep.DAILY_CHECK, change.step)
         assertEquals(1, outcome.swapped)
         assertTrue(rows.values.all { it.feedUrlCheckedAt == now }, "every show the registry answered for is checked")
+    }
+
+    @Test
+    fun `a registry address the phone can't read is never saved, and the next day's check tries again`() = runTest {
+        add(show("1"))
+        unreadable += NEW
+
+        val outcome = check.run()
+
+        assertTrue(changes.isEmpty(), "the working address stays")
+        assertEquals(0, outcome.swapped)
+        assertEquals(OLD, rows.getValue("1").feedUrl)
+        assertEquals(now, rows.getValue("1").feedUrlCheckedAt, "checked today, so the show isn't asked about twice a day")
+        events.clear()
+        check.run()
+        assertTrue(events.isEmpty(), "never twice a day")
+
+        unreadable.clear()
+        val tomorrow =
+            FeedAddressDailyCheck(
+                followedShows = { rows.values.toList() },
+                fetchAddresses = { ids -> answer(ids) },
+                readsAt = { _, _ -> true },
+                replaceAddress = { change ->
+                    changes += change
+                    FeedAddressUpdate.UPDATED
+                },
+                markChecked = { _, _ -> },
+                enabled = { true },
+                nowMillis = { now + DAY },
+            )
+        tomorrow.run()
+        assertEquals(listOf(NEW), changes.map { it.feedUrl })
+    }
+
+    @Test
+    fun `a swapped show is stamped by the swap itself, never stamped first and left unswapped`() = runTest {
+        add(show("1"))
+        add(show("2"))
+        answer = { ids -> V2ShowsFeedsResponse(true, ids.map { address(it, repair = it == 1L) }) }
+
+        check.run()
+
+        assertEquals(listOf("read 1 $NEW", "swap 1", "stamp 2"), events)
+        assertEquals(now, rows.getValue("1").feedUrlCheckedAt)
+    }
+
+    @Test
+    fun `the address the saved one replaced is never swapped back, whatever replaced it`() = runTest {
+        // Dead-address recovery left a dead registry address X for a readable Z; the registry still flags X.
+        add(show("1").copy(feedUrl = MOVED, previousFeedUrl = NEW, feedUrlSource = FeedUrlSources.FEED_REPORT))
+        add(show("2").copy(feedUrl = MOVED, previousFeedUrl = NEW, feedUrlSource = FeedUrlSources.PODCAST_LOOKUP))
+        // A move reached this phone by a cloud pull; its previous address is this phone's old one.
+        add(show("3").copy(feedUrl = MOVED, previousFeedUrl = NEW, feedUrlSource = FeedUrlSources.CLOUD_SYNC))
+
+        check.run()
+
+        assertTrue(changes.isEmpty())
+        assertTrue(events.none { it.startsWith("read") }, "nothing is even read")
+        assertTrue(rows.values.all { it.feedUrl == MOVED && it.feedUrlCheckedAt == now })
     }
 
     @Test

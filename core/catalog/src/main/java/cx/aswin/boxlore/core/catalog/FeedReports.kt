@@ -62,27 +62,39 @@ class SharedPreferencesFeedReportStamps(private val prefs: SharedPreferences) : 
 
 /**
  * Limits broken-feed reports: one per show per [PER_SHOW_INTERVAL_MS], and at most [DAILY_CAP] a
- * day in all (the API takes 20 a day from one phone).
+ * day in all, the API's own limit. Followed shows may use the whole day; the show page stops
+ * [FOLLOWED_SHOWS_RESERVE] short, so followed shows always have room. Only a report the API
+ * answered counts ([record]): a failed or refused send uses up nothing. Two sends at the same moment
+ * can pass [allows] together; the API then answers the extra one with a 429, which counts nothing.
  *
  * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows: reports).
  */
 class FeedReportLimiter(private val stamps: FeedReportStamps) {
     /**
-     * Claims a report of [podcastId] at [nowMillis]; false when the show or the day is used up.
-     * [keepFree] reports of the day stay for other callers: the show page keeps
-     * [FOLLOWED_SHOWS_RESERVE] free for followed shows (P4 PR 16). Claims lock on the stamps, so
-     * limiters sharing one store never claim past the caps together.
+     * True when a report of [podcastId] may be sent at [nowMillis]: the show wasn't reported in the
+     * last day, and the day's reports leave [keepFree] of [DAILY_CAP] for other callers (the show
+     * page keeps [FOLLOWED_SHOWS_RESERVE] free for followed shows, P4 PR 16). Limiters sharing one
+     * store lock on it, so each one counts the reports the others recorded.
      */
-    fun tryClaim(podcastId: String, nowMillis: Long, keepFree: Int = 0): Boolean = synchronized(stamps) {
+    fun allows(podcastId: String, nowMillis: Long, keepFree: Int = 0): Boolean = synchronized(stamps) {
+        val recent = recent(nowMillis)
+        podcastId !in recent && recent.size < DAILY_CAP - keepFree.coerceIn(0, DAILY_CAP)
+    }
+
+    /** Counts a report of [podcastId] the API answered at [nowMillis]. */
+    fun record(podcastId: String, nowMillis: Long) = synchronized(stamps) {
+        stamps.mark(podcastId, nowMillis, keepSince = nowMillis - PER_SHOW_INTERVAL_MS)
+    }
+
+    private fun recent(nowMillis: Long): Map<String, Long> {
         val since = nowMillis - PER_SHOW_INTERVAL_MS
-        val recent = stamps.all().filterValues { it > since && it <= nowMillis }
-        if (podcastId in recent || recent.size >= DAILY_CAP - keepFree.coerceIn(0, DAILY_CAP)) return false
-        stamps.mark(podcastId, nowMillis, keepSince = since)
-        return true
+        return stamps.all().filterValues { it > since && it <= nowMillis }
     }
 
     companion object {
         const val PER_SHOW_INTERVAL_MS = 24L * 60L * 60L * 1000L
+
+        /** The API's limit: 20 reports a day from one phone. */
         const val DAILY_CAP = 20
 
         /** Reports of the day the show page leaves to followed shows (P4 PR 16). */
@@ -135,21 +147,24 @@ class FeedReporter(
     /** One report within the limits; null when none was sent or it got no answer. */
     private suspend fun sendReport(podcastId: String, showId: Long, status: String?): V2FeedReportResponse? {
         if (status == null || !V2FeedReportStatus.isValid(status) || !enabled()) return null
-        if (!isOnline() || !limiter.tryClaim(podcastId, nowMillis(), keepFree)) return null
-        return try {
-            send(V2FeedReportRequest(id = showId, status = status))
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Log.w(TAG, "Feed report for $podcastId failed", e)
-            null
-        }
+        if (!isOnline() || !limiter.allows(podcastId, nowMillis(), keepFree)) return null
+        val answer =
+            try {
+                send(V2FeedReportRequest(id = showId, status = status))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "Feed report for $podcastId failed", e)
+                null
+            } ?: return null
+        limiter.record(podcastId, nowMillis())
+        return answer
     }
 
     companion object {
         private const val TAG = "FeedReporter"
 
-        /** The production [send]: one `POST /v2/feed-report`; null for any answer but 200. */
+        /** The production [send]: one `POST /v2/feed-report`; null for any answer but 2xx (a 429 included), which counts nothing. */
         suspend fun sendWith(api: BoxLoreApiV2, request: V2FeedReportRequest): V2FeedReportResponse? {
             val response = api.reportFeed(request).awaitResponse()
             return if (response.isSuccessful) response.body() else null

@@ -28,6 +28,7 @@ import cx.aswin.boxlore.core.catalog.RoomFolderRepository
 import cx.aswin.boxlore.core.catalog.RoomLocalCatalog
 import cx.aswin.boxlore.core.catalog.SharedAppDependencies
 import cx.aswin.boxlore.core.catalog.SharedPreferencesFeedReportStamps
+import cx.aswin.boxlore.core.catalog.SharedPreferencesPendingNotificationRegistrations
 import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.catalog.ports.SmartDownloadSyncPort
@@ -182,7 +183,7 @@ class AppContainer(
             FeedMoveFollower(
                 enabled = { FeedFixSwitches.isOn(FeedFixSwitches.MOVED_FEED_OFF) },
                 showTitle = { id -> database.podcastDao().getPodcast(id)?.title },
-                adopt = { id, movedTo -> subscriptionRepository.adoptMovedFeed(id, movedTo) },
+                adopt = { id, readFrom, movedTo -> subscriptionRepository.adoptMovedFeed(id, readFrom, movedTo) },
             ),
         )
     }
@@ -415,6 +416,10 @@ class AppContainer(
             FeedAddressWiring(
                 requestNotificationRegistration = { id -> PodcastNotificationRegistrationWorker.enqueue(appContext, id) },
                 telemetry = feedTelemetry,
+                pendingRegistrations =
+                SharedPreferencesPendingNotificationRegistrations(
+                    appContext.getSharedPreferences(SharedPreferencesPendingNotificationRegistrations.FILE_NAME, Context.MODE_PRIVATE),
+                ),
             ),
         )
     }

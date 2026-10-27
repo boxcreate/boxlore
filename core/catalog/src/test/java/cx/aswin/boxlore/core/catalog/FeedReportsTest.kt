@@ -45,13 +45,27 @@ class FeedReportsTest {
     }
 
     @Test
-    fun `at most twenty reports a day in all`() = runTest {
+    fun `at most twenty reports a day in all, the API's own limit`() = runTest {
         repeat(25) { reporter.report((it + 1).toString(), "dns", OLD) }
 
+        assertEquals(20, FeedReportLimiter.DAILY_CAP)
         assertEquals(FeedReportLimiter.DAILY_CAP, sent.size)
         now += DAY
         reporter.report("25", "dns", OLD)
         assertEquals(FeedReportLimiter.DAILY_CAP + 1, sent.size, "a new day")
+    }
+
+    @Test
+    fun `a failed or refused send uses up neither the show's day nor the daily cap`() = runTest {
+        answer = null // a 429, a 503 or any answer but 2xx
+        repeat(FeedReportLimiter.DAILY_CAP + 5) { reporter.report("920666", "http_404", OLD) }
+        val failing = FeedReporter(send = { error("offline after all") }, limiter = FeedReportLimiter(stamps), isOnline = { true }, enabled = { true }, nowMillis = { now })
+        failing.report("920666", "http_404", OLD)
+
+        assertTrue(stamps.all().isEmpty())
+        answer = V2FeedReportResponse(queued = true, fetchUrl = NEW, fetchVia = "direct", feedSource = "registry:apple")
+        assertEquals(NEW, reporter.report("920666", "http_404", OLD), "the show is reported once the API answers")
+        assertNull(reporter.report("920666", "http_404", OLD))
     }
 
     @Test
@@ -90,31 +104,26 @@ class FeedReportsTest {
     }
 
     @Test
-    fun `limiters sharing one store never pass the caps together`() {
+    fun `limiters sharing one store count each other's reports`() {
         val first = FeedReportLimiter(stamps)
         val second = FeedReportLimiter(stamps)
-        val claims = java.util.concurrent.atomic.AtomicInteger()
-        val threads =
-            (0 until 8).map { worker ->
-                Thread {
-                    repeat(10) { index -> if ((if (worker % 2 == 0) first else second).tryClaim("${worker * 10 + index}", now)) claims.incrementAndGet() }
-                }
-            }
-        threads.forEach(Thread::start)
-        threads.forEach(Thread::join)
+        repeat(FeedReportLimiter.DAILY_CAP - 1) { first.record("${100 + it}", now) }
 
-        assertEquals(FeedReportLimiter.DAILY_CAP, claims.get())
+        assertTrue(second.allows("1", now))
+        second.record("1", now)
+        assertFalse(first.allows("2", now))
     }
 
     @Test
     fun `old report times are dropped as new ones are written`() {
         val limiter = FeedReportLimiter(stamps)
-        assertTrue(limiter.tryClaim("1", now))
+        limiter.record("1", now)
         now += 2 * DAY
-        assertTrue(limiter.tryClaim("2", now))
+        assertTrue(limiter.allows("1", now))
+        limiter.record("2", now)
 
         assertEquals(setOf("2"), stamps.all().keys)
-        assertFalse(limiter.tryClaim("2", now + 1))
+        assertFalse(limiter.allows("2", now + 1))
     }
 
     private companion object {

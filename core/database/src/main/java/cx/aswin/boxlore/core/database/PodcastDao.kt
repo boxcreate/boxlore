@@ -183,8 +183,8 @@ interface PodcastDao {
 
     /**
      * Replaces a show's saved feed address in one transaction: the publisher and transport
-     * addresses, where the address came from and when the registry last confirmed it, the old
-     * address kept for undo, every stored ETag and Last-Modified for the show (so the next read
+     * addresses, where the address came from and when the registry last confirmed it (a write the
+     * registry didn't confirm keeps the stored daily-check stamp), the old address kept for undo, every stored ETag and Last-Modified for the show (so the next read
      * fetches the new address in full), and the dirty flag when [FeedAddressWrite.markDirty].
      * Compare-and-set: nothing is written unless the row still holds [FeedAddressWrite.expectedFeedUrl].
      * Never for `rss:` shows, whose address is their identity.
@@ -222,7 +222,7 @@ interface PodcastDao {
             transportUrl = :transportUrl,
             previousFeedUrl = :previousFeedUrl,
             feedUrlSource = :source,
-            feedUrlCheckedAt = :checkedAt,
+            feedUrlCheckedAt = CASE WHEN :checkedAt > 0 THEN :checkedAt ELSE feedUrlCheckedAt END,
             feedEtag = NULL,
             feedLastModified = NULL,
             isDirty = CASE WHEN :markDirty THEN 1 ELSE isDirty END
@@ -261,6 +261,39 @@ interface PodcastDao {
      */
     @Query("UPDATE podcasts SET feedUrlCheckedAt = :atMillis WHERE podcastId = :id")
     suspend fun markFeedUrlChecked(id: String, atMillis: Long,)
+
+    /**
+     * Marks a followed show for the next sync push, for a saved address this phone keeps over an
+     * older one a pull brought, so the account gets the corrected address back.
+     *
+     * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows: one durable address update).
+     */
+    @Query("UPDATE podcasts SET isDirty = 1 WHERE podcastId = :id AND isSubscribed = 1")
+    suspend fun markFollowedDirty(id: String)
+
+    /**
+     * [upsert] for a whole-row write built from a row read earlier (sync merges): when another writer
+     * replaced the saved address since, that address, its bookkeeping and its pending push are kept
+     * instead of being written back over.
+     *
+     * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows: one durable address update).
+     * COMPAT(own-ids): the one address writer stays the only one. Permanent: never remove (MIGRATION.md §5).
+     */
+    @Transaction
+    suspend fun upsertKeepingFeedAddress(podcast: PodcastEntity) {
+        val stored = getPodcast(podcast.podcastId)
+        if (stored == null) {
+            upsertRow(podcast)
+            return
+        }
+        val row =
+            if (stored.feedUrl == podcast.feedUrl) {
+                podcast
+            } else {
+                podcast.copy(feedUrl = stored.feedUrl, isDirty = podcast.isDirty || stored.isDirty)
+            }
+        upsertRow(row.keepingFeedIdentityColumnsOf(stored))
+    }
 
     /**
      * The show's stored episode namespace (`epNs`), or null when the show has no row or none was set.

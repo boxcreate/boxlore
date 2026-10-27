@@ -11,7 +11,9 @@ import kotlinx.coroutines.CancellationException
  * Follows feeds that moved for good on every catalog refresh path (the show page, pushes,
  * auto-download, restores, the ingest after a follow), not only the background pass: a refresh of
  * a Podcast Index show checks for a confirmed move ([RefreshRequest.detectMove]), and a move it
- * finds is saved through [adopt] (the one address writer). [enabled] is the
+ * finds is saved through [adopt] (the one address writer) only while the show still holds the
+ * address that was read ([RefreshRequest.feedUrl]): a push or a restore may read another address,
+ * and a redirect from it is no move of the saved one. [enabled] is the
  * `feed-fix-moved-feed-off` switch; [showTitle] gives the stored title a move is compared with
  * when the caller sent none. Requests that already ask for move detection are left to their caller.
  *
@@ -21,11 +23,11 @@ import kotlinx.coroutines.CancellationException
 class FeedMoveFollower(
     val enabled: () -> Boolean,
     val showTitle: suspend (podcastId: String) -> String?,
-    val adopt: suspend (podcastId: String, movedTo: String) -> Unit,
+    val adopt: suspend (podcastId: String, readFrom: String, movedTo: String) -> Unit,
 ) {
     companion object {
         /** Follows no moves (tests, and callers built without the app's wiring). */
-        val NONE = FeedMoveFollower(enabled = { false }, showTitle = { null }, adopt = { _, _ -> })
+        val NONE = FeedMoveFollower(enabled = { false }, showTitle = { null }, adopt = { _, _, _ -> })
     }
 }
 
@@ -60,7 +62,7 @@ class SubscribedEpisodeCatalog(
         val outcome = catalog.refresh(request.copy(detectMove = true, meta = request.meta.copy(title = title)))
         val movedTo = (outcome as? RefreshOutcome.Success)?.movedTo ?: return outcome
         try {
-            feedMoves.adopt(id, movedTo)
+            feedMoves.adopt(id, request.feedUrl.trim(), movedTo)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

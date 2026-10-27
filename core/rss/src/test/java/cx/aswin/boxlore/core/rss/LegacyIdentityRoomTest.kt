@@ -4,6 +4,9 @@ import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.database.EpisodeAliasEntity
 import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
 import cx.aswin.boxlore.core.database.EpisodeAliasState
+import cx.aswin.boxlore.core.database.LocalEpisodeFeedEntity
+import cx.aswin.boxlore.core.database.LocalFeedOrder
+import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome
 import cx.aswin.boxlore.core.model.EpisodeRecipeId
 import kotlinx.coroutines.runBlocking
@@ -78,6 +81,52 @@ class LegacyIdentityRoomTest : RoomCatalogTestBase() {
         assertEquals(EpisodeRecipeId.forNamespace(SHOW.toLong(), "g1"), alias.recipeId)
         assertTrue(alias.owner)
         assertEquals(1L, alias.createdAt)
+    }
+
+    @Test
+    fun aSyntheticLegacyRowMintedUnderTheOldAddressHealsWhenTheShowIsReadAtItsNewAddress() = runBlocking {
+        // The saved address changed (a registry correction or a feed move): the catalog was last
+        // read at the old address, and its legacy rows were minted in that address's namespace.
+        follow(SHOW)
+        val old = feedUrl(SHOW)
+        val minted = StickyEpisodeIdentity.ownMintedId(namespace(old), "g1")
+        database.localEpisodeCatalogDao().upsertEpisodes(listOf(row(minted, SHOW, "id:$minted")))
+        database.localEpisodeCatalogDao().upsertFeed(
+            LocalEpisodeFeedEntity(
+                podcastId = SHOW,
+                feedUrl = old,
+                feedEtag = null,
+                feedLastModified = null,
+                fetchedAt = 1L,
+                itemCount = 1,
+                feedOrder = LocalFeedOrder.NEWEST_FIRST,
+                ttlExpiresAt = null,
+                needsFullBackfill = false,
+                copiedExtrasCount = 0,
+                ready = true,
+                feedUrlLookupAt = 0L,
+            ),
+        )
+        history(minted, SHOW)
+        feed.items = listOf(Item("g1"))
+
+        assertTrue(refresh(SHOW, url = "https://moved.example/$SHOW.xml") is RefreshOutcome.Success)
+
+        assertEquals("one row, under its own ID: never a second copy of the episode", mapOf("g1" to minted), rows(SHOW))
+        assertNotNull(database.listeningHistoryDao().getHistoryItem(minted))
+    }
+
+    @Test
+    fun theNamespacesOfTheAddressesReadBeforeAreTriedAfterThisReadsOwn() {
+        val request = LocalEpisodeCatalogPort.RefreshRequest(podcastIndexId = SHOW, feedUrl = " https://requested.example/a.xml ")
+        val current = namespace("https://final.example/a.xml")
+
+        assertEquals(
+            "a redirected read also tries the address it was asked for",
+            listOf(namespace("https://requested.example/a.xml")),
+            olderNamespaces(current, request, existing = null),
+        )
+        assertEquals(emptyList<String>(), olderNamespaces(namespace("https://requested.example/a.xml"), request, existing = null))
     }
 
     @Test

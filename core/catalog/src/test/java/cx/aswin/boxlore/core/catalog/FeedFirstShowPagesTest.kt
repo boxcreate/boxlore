@@ -188,10 +188,10 @@ class FeedFirstShowPagesTest {
         val limiter = FeedReportLimiter(MemoryFeedReportStamps())
         val reporter = FeedReporter({ reportAnswer }, limiter, { true }, { true }, { now }, keepFree = FeedReportLimiter.FOLLOWED_SHOWS_RESERVE)
         val showPageCap = FeedReportLimiter.DAILY_CAP - FeedReportLimiter.FOLLOWED_SHOWS_RESERVE
-        repeat(showPageCap) { assertTrue(limiter.tryClaim("${100 + it}", now, keepFree = FeedReportLimiter.FOLLOWED_SHOWS_RESERVE)) }
+        repeat(showPageCap) { limiter.record("${100 + it}", now) }
 
         assertEquals(null, reporter.reportTarget("920700", "timeout", SAVED))
-        assertTrue("followed shows still have theirs", limiter.tryClaim("920701", now))
+        assertTrue("followed shows still have theirs", limiter.allows("920701", now))
     }
 
     @Test

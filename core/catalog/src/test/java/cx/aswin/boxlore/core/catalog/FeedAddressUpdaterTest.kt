@@ -13,6 +13,7 @@ import cx.aswin.boxlore.core.model.FeedFetchReport
 import cx.aswin.boxlore.core.model.FeedUrlCorrection
 import cx.aswin.boxlore.core.model.FeedUrlCorrectionReason
 import cx.aswin.boxlore.core.model.FeedUrlCorrectionStep
+import cx.aswin.boxlore.core.model.Podcast
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -124,7 +125,7 @@ class FeedAddressUpdaterTest {
     fun `a filled missing address, a cloud address and an unfollowed show are not corrections`() = runTest {
         dao.upsertRow(show("1", null, notifications = true))
         dao.upsertRow(show("2", OLD, notifications = true).copy(isDirty = false))
-        dao.upsertRow(show("3", OLD).copy(isSubscribed = false))
+        dao.upsertRow(show("3", OLD).copy(isSubscribed = false, isDirty = false))
 
         updater.update(correction("1"))
         updater.update(correction("2").copy(fromCloud = true, reason = null, step = null))
@@ -134,15 +135,84 @@ class FeedAddressUpdaterTest {
         assertEquals(listOf("1", "2"), registrations)
         assertFalse("an address from the cloud is not pushed back", dao.getPodcast("2")!!.isDirty)
         assertEquals(NEW, dao.getPodcast("3")!!.feedUrl)
+        assertFalse("an unfollowed show is never pushed: its push could end a follow on another device", dao.getPodcast("3")!!.isDirty)
+    }
+
+    @Test
+    fun `a registration stays pending until Firebase acknowledges it, and is asked for again`() = runTest {
+        val pending = MemoryPendingNotificationRegistrations()
+        val tracking = FeedAddressUpdater(dao, requestNotificationRegistration = { registrations += it }, pendingRegistrations = pending)
+        dao.upsertRow(show("1", OLD, notifications = true))
+        dao.upsertRow(show("2", OLD, notifications = true))
+        dao.upsertRow(show("3", OLD))
+
+        listOf("1", "2", "3").forEach { tracking.update(correction(it)) }
+        assertEquals(setOf("1", "2"), pending.all())
+        tracking.registrationSettled("1", NotificationRegistrationOutcome.DONE)
+        tracking.registrationSettled("2", NotificationRegistrationOutcome.RETRY) // the job gave up after its last run
+        registrations.clear()
+
+        tracking.resumePendingRegistrations()
+
+        assertEquals(listOf("2"), registrations)
+        tracking.registrationSettled("2", NotificationRegistrationOutcome.DROPPED)
+        assertTrue(pending.all().isEmpty())
+    }
+
+    @Test
+    fun `a registration lost with the process is asked for again on the next launch`() = runTest {
+        val pending = MemoryPendingNotificationRegistrations()
+        dao.upsertRow(show("920666", OLD, notifications = true))
+        // The process dies before the background job is queued.
+        FeedAddressUpdater(dao, requestNotificationRegistration = { throw RuntimeException("process gone") }, pendingRegistrations = pending)
+            .update(correction("920666"))
+
+        FeedAddressUpdater(dao, requestNotificationRegistration = { registrations += it }, pendingRegistrations = pending).resumePendingRegistrations()
+
+        assertEquals(NEW, dao.getPodcast("920666")!!.feedUrl)
+        assertEquals(listOf("920666"), registrations)
+    }
+
+    @Test
+    fun `a push or restore address that redirects never replaces a different saved address`() = runTest {
+        dao.upsertRow(show("920666", NEW))
+        val repository = SubscriptionRepository(dao)
+
+        // A push read the shared node's stale address, which redirects somewhere else.
+        repository.adoptMovedFeed("920666", readFrom = OLD, movedTo = "https://elsewhere.example/feed.xml")
+        assertEquals(NEW, dao.getPodcast("920666")!!.feedUrl)
+
+        repository.adoptMovedFeed("920666", readFrom = NEW, movedTo = "https://moved.example/feed.xml")
+        val row = dao.getPodcast("920666")!!
+        assertEquals("https://moved.example/feed.xml", row.feedUrl)
+        assertEquals(NEW, row.previousFeedUrl)
+        assertEquals(FeedUrlSources.FEED_MOVE, row.feedUrlSource)
+    }
+
+    @Test
+    fun `following a show again keeps its corrected address`() = runTest {
+        dao.upsertRow(show("920666", OLD).copy(isSubscribed = false))
+        FeedAddressUpdater(dao).update(correction("920666"))
+        val repository = SubscriptionRepository(dao)
+
+        repository.toggleSubscription(Podcast(id = "920666", title = "Show", artist = "Author", imageUrl = "", feedUrl = OLD))
+
+        val row = dao.getPodcast("920666")!!
+        assertTrue(row.isSubscribed)
+        assertEquals(NEW, row.feedUrl)
+        assertEquals("registry:apple", row.feedUrlSource)
     }
 
     @Test
     fun `a failed request for registration never undoes the saved address`() = runTest {
         val failing = FeedAddressUpdater(dao, requestNotificationRegistration = { throw IllegalStateException("WorkManager not ready") })
+        val broken = FeedAddressUpdater(dao, requestNotificationRegistration = { throw IllegalArgumentException("bad request") })
         dao.upsertRow(show("920666", OLD, notifications = true))
+        dao.upsertRow(show("1", OLD, notifications = true))
 
         assertEquals(FeedAddressUpdate.UPDATED, failing.update(correction("920666")))
         assertEquals(NEW, dao.getPodcast("920666")!!.feedUrl)
+        assertEquals("any failure, not only WorkManager's", FeedAddressUpdate.UPDATED, broken.update(correction("1")))
     }
 
     private fun correction(id: String) = FeedAddressChange(
