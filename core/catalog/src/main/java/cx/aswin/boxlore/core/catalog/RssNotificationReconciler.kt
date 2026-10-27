@@ -53,7 +53,7 @@ internal interface TrackedPodcastFirebase {
 
 internal class TrackedPodcastWriteRefused : Exception("Tracked podcast rules refused the write")
 
-private object LiveTrackedPodcastFirebase : TrackedPodcastFirebase {
+internal object LiveTrackedPodcastFirebase : TrackedPodcastFirebase {
     override suspend fun set(key: String, payload: Map<String, String>) = acknowledged { node(key).setValue(payload, it) }
 
     override suspend fun delete(path: String) = acknowledged { node(path).removeValue(it) }

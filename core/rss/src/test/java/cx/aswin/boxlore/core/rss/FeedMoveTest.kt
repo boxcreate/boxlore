@@ -60,6 +60,16 @@ class FeedMoveTest {
     }
 
     @Test
+    fun `a declared new feed address is never read when the caller's gate refuses another fetch`() = runTest {
+        val fetched = RssFetchResult(finalUrl = old, etag = null, lastModified = null, body = ByteArray(0))
+        val client = FakeClient(mapOf(new to "Moving Show"))
+        val gated = request("Moving Show").copy(canProceed = { false })
+
+        assertNull(confirmedMove(client, gated, fetched, parsed("Moving Show", newFeedUrl = new)))
+        assertTrue(client.fetched.isEmpty())
+    }
+
+    @Test
     fun `titles match ignoring case, spacing and punctuation`() {
         assertTrue(sameShow("The Daily", "the daily"))
         assertTrue(sameShow("Teen Taal – Aaj Tak", "Teen Taal - Aaj Tak"))

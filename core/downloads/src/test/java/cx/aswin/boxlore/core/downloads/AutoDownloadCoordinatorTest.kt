@@ -205,6 +205,26 @@ class AutoDownloadCoordinatorTest {
         assertEquals(1, callbacks)
     }
 
+    @Test fun aRecoveredAddressIsSavedThroughTheAppsAddressWriter() = runBlocking {
+        val row = database.podcastDao().getPodcast("100")!!
+        database.podcastDao().upsertRow(row.copy(feedUrl = null))
+        val saved = mutableListOf<Pair<String, String>>()
+        val coordinator = AutoDownloadCoordinator(
+            database,
+            catalog,
+            prefs,
+            enqueue = { _, episodeId, _, _ -> enqueued += episodeId },
+            recoverFeedUrl = { URL },
+            nowSeconds = { now },
+            saveFeedUrl = { id, url -> saved += id to url },
+        )
+
+        coordinator.discover { true }
+
+        assertEquals(listOf("100" to URL), saved)
+        assertNull("the coordinator never writes the row itself", database.podcastDao().getPodcast("100")!!.feedUrl)
+    }
+
     @Test fun pureRssUsesSameReleaseLedgerRetentionBoundAndNeverLoadsCatalogBaseline() = runBlocking {
         val id = "rss:private-show"
         val context = ApplicationProvider.getApplicationContext<Context>()

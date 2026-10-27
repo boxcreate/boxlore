@@ -28,6 +28,7 @@ These values are part of the shipping product. Renames or recreations break upgr
 | WorkManager | `LegacyWorkerFactory` plus permanent `core.data.*` stubs resolve historical FQCNs |
 | Deep links | `boxlore://` and `boxcast://`, plus both HTTPS share-path prefixes. Patterns are only added: episode links may also carry `show=<show ID>`, which fills the route's `podcastId` |
 | Episode share registration | Unique work names `episode-share-registration-<hash of show and catalog key>` (`EpisodeShareRegistrationWorker`); never renamed |
+| Notification re-registration | Unique work names `podcast-notification-registration-<show ID>` (`PodcastNotificationRegistrationWorker`, after a saved feed address changes); never renamed |
 | BuildConfig | Prefer `BOXLORE_*`; Gradle still dual-reads `BOXCAST_*` fallbacks |
 | Episode / media IDs | `rss:` prefixes, negative RSS IDs, mediaId prefixes, and `customCacheKey` schemes stay as implemented. PI **episode supplements** also use negative episode IDs (generated under an `rss:` feed namespace) but keep `Episode.podcastId` as the Podcast Index show id — they are not `rss:` library rows. Episode identity (show ID, catalog key), recipe IDs, collisions and aliases follow [`docs/EPISODE_IDS.md`](docs/EPISODE_IDS.md) |
 | Playback instance | One UI-scoped `PlaybackRepository`; routes and workers must not construct a second one |
@@ -251,6 +252,8 @@ Historical FQCNs and preference file names remain reachable so upgrades from old
 | — | `boxlore_now_playing_widget` | `NowPlayingWidgetSnapshotStore` (`:feature:widgets`; last rendered Now Playing snapshot JSON; do not rename) |
 | — | `boxlore_library_widget` | `LibraryWidgetSnapshotStore` (`:feature:widgets`; last rendered Subscriptions / New Episodes snapshot JSON; do not rename) |
 | — | `boxlore_discovery_last_good` | `PodcastRepository` (`:core:catalog` `RecommendationsLastGood`; last good `/v2` picks per surface and country; do not rename) |
+| — | `boxlore_feed_reports` | `AppContainer` (`:core:catalog` `SharedPreferencesFeedReportStamps`; last broken-feed report time per show; do not rename) |
+| — | `boxlore_notification_reregistrations` | `AppContainer` (`:core:catalog` `SharedPreferencesPendingNotificationRegistrations`; shows whose notifications wait to be registered again after an address change; do not rename) |
 | `boxcast_api_config` | `boxlore_api_config` | `BoxLoreAppRoot` |
 | `boxcast_referrer_prefs` | `boxlore_referrer_prefs` | `InstallReferrerManager` |
 

@@ -15,3 +15,12 @@ recorded.
 | `curiosity.json` | `GET /v2/curated/curiosity-v3?page=1` |
 | `briefing-metadata.json` | `GET /v2/briefings/metadata/us` |
 | `briefing-chapters.json` | the `chaptersUrl` of that briefing (`/v2/briefings/chapters/us`) |
+| `shows-feeds.json` | `POST /v2/shows/feeds` with `{"ids":[3391039,920666,9999999999,7]}`, recorded 2026-10-27: a registry move flagged for repair, a dump address, a show the API doesn't know (`fetchUrl: null`) and an http-only show read through the API (`fetchVia: proxy`) |
+
+Two answers can't be recorded on demand, so they are written field for field in the shape the
+Worker answers with (the same fields, types and nesting as `shows-feeds.json`):
+
+| File | Answer |
+|---|---|
+| `shows-feeds-registry-unavailable.json` | `POST /v2/shows/feeds` while the address registry is down: `registryAvailable: false`, addresses from the dump |
+| `feed-report.json` | `POST /v2/feed-report` for show 3391039: the registry's address. A live report would queue a real re-check |

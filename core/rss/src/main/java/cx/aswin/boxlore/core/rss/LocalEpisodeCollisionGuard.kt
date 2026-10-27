@@ -147,8 +147,10 @@ internal object LocalEpisodeCollisionGuard {
      * @param findAliases alias rows of up to 500 episode IDs across every show
      * @param fallbackIds per row of [rows] (same index), the IDs to try in order when the row's own
      *   ID is taken, before a reserved one
+     * @param olderNamespaces URL namespaces of addresses the show was read from before (P4 PR 14):
+     *   a legacy row minted under one of them heals too, after the saved address changed
      */
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "kotlin:S107")
     suspend fun resolve(
         rows: List<LocalEpisodeEntity>,
         rssNamespaceId: String,
@@ -156,12 +158,14 @@ internal object LocalEpisodeCollisionGuard {
         listShowRows: suspend (String) -> List<LocalEpisodeIdentity>,
         findAliases: suspend (List<String>) -> List<EpisodeAliasEntity> = { emptyList() },
         fallbackIds: List<List<String>> = emptyList(),
+        olderNamespaces: List<String> = emptyList(),
     ): Resolution {
         if (rows.isEmpty()) return Resolution(rows, emptyList(), emptyList())
         val shows = rows.map { it.podcastId }.distinct().associateWith { ShowRows(listShowRows(it)) }
         val holders = Holders(findOwners, findAliases)
         holders.load(rows.map { it.episodeId })
         val state = BatchState()
+        val namespaces = (listOf(rssNamespaceId) + olderNamespaces).distinct()
         val resolved = arrayOfNulls<LocalEpisodeEntity>(rows.size)
         // Rows whose key the show already stores go first, so no other row can take their IDs.
         rows.forEachIndexed { index, row ->
@@ -172,7 +176,7 @@ internal object LocalEpisodeCollisionGuard {
             val mine = ownerOf(row)
             if (mine in state.claimedKeys) return@forEachIndexed // A repeated key: the first row wins.
             val fallbacks = fallbackIds.getOrNull(index).orEmpty()
-            val id = placeNewRow(row, mine, rssNamespaceId, shows.getValue(row.podcastId), holders, state, fallbacks)
+            val id = placeNewRow(row, mine, namespaces, shows.getValue(row.podcastId), holders, state, fallbacks)
             if (id == null) {
                 state.unplaced += row
             } else {
@@ -244,13 +248,13 @@ internal object LocalEpisodeCollisionGuard {
     private suspend fun placeNewRow(
         row: LocalEpisodeEntity,
         mine: Owner,
-        rssNamespaceId: String,
+        namespaces: List<String>,
         show: ShowRows,
         holders: Holders,
         state: BatchState,
         fallbacks: List<String>,
     ): String? {
-        healLegacyRow(row, mine, rssNamespaceId, show, state)?.let { healed ->
+        namespaces.firstNotNullOfOrNull { namespace -> healLegacyRow(row, mine, namespace, show, state) }?.let { healed ->
             state.repaired += healed
             return healed.episodeId
         }
@@ -274,7 +278,8 @@ internal object LocalEpisodeCollisionGuard {
      * a recipe ID or a listener-held ID (before P4 PR 9, on a catalog's first read, a Podcast Index match), and writing
      * that would leave the legacy row beside a second row of the same episode. A row with any other
      * key, or whose ID an earlier row of the batch took (for example a GUID-less item still keyed by
-     * that audio address), stays a different episode.
+     * that audio address), stays a different episode. The caller tries this read's namespace first,
+     * then those of addresses the show was read from before (P4 PR 14).
      */
     private fun healLegacyRow(
         row: LocalEpisodeEntity,

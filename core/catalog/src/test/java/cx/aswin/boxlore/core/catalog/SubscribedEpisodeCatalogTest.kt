@@ -50,4 +50,51 @@ class SubscribedEpisodeCatalogTest {
         SubscribedEpisodeCatalog(pi, rss).sweepExpired(123)
         assertEquals(listOf("pi:123", "rss:123"), visits)
     }
+
+    @Test fun everyRefreshPathFollowsAFeedThatMovedForGood() = runTest {
+        val moved = LocalEpisodeCatalogPort.RefreshOutcome.Success(newest = null, itemCount = 1, ready = true, movedTo = "https://new.example/feed.xml")
+        val pi = FakeLocalEpisodeCatalogPort().apply { refreshOutcome = moved }
+        val rss = FakeLocalEpisodeCatalogPort().apply { refreshOutcome = moved }
+        var enabled = true
+        val adopted = mutableListOf<Pair<String, String>>()
+        val shared =
+            SubscribedEpisodeCatalog(
+                pi,
+                rss,
+                feedMoves = FeedMoveFollower(enabled = { enabled }, showTitle = { "Stored title" }, adopt = { id, readFrom, url -> adopted += id to "$readFrom>$url" }),
+            )
+
+        // A push, the show page or auto-download: no move check of its own, no title.
+        shared.refresh(RefreshRequest("123", "https://old.example/feed.xml", reason = LocalEpisodeCatalogPort.RefreshReason.NEW_RELEASE))
+        assertEquals(true, pi.lastRefreshRequest?.detectMove)
+        assertEquals("Stored title", pi.lastRefreshRequest?.meta?.title)
+        assertEquals("the move is adopted only from the address that was read", listOf("123" to "https://old.example/feed.xml>https://new.example/feed.xml"), adopted)
+
+        // A caller that asks for move detection itself saves the move itself.
+        adopted.clear()
+        shared.refresh(RefreshRequest("123", "https://old.example/feed.xml", meta = LocalEpisodeCatalogPort.PodcastMeta(title = "Own"), detectMove = true))
+        assertEquals("Own", pi.lastRefreshRequest?.meta?.title)
+        assertEquals(emptyList<Pair<String, String>>(), adopted)
+
+        // rss: shows keep their address; the switch turns it all off.
+        shared.refresh(RefreshRequest("rss:abc", "https://old.example/feed.xml"))
+        assertEquals(false, rss.lastRefreshRequest?.detectMove)
+        enabled = false
+        shared.refresh(RefreshRequest("123", "https://old.example/feed.xml"))
+        assertEquals(false, pi.lastRefreshRequest?.detectMove)
+        assertEquals(emptyList<Pair<String, String>>(), adopted)
+    }
+
+    @Test fun aFailedAdoptionStillReturnsTheRefresh() = runTest {
+        val outcome = LocalEpisodeCatalogPort.RefreshOutcome.Success(newest = null, itemCount = 1, ready = true, movedTo = "https://new.example/feed.xml")
+        val pi = FakeLocalEpisodeCatalogPort().apply { refreshOutcome = outcome }
+        val shared =
+            SubscribedEpisodeCatalog(
+                pi,
+                FakeLocalEpisodeCatalogPort(),
+                feedMoves = FeedMoveFollower(enabled = { true }, showTitle = { null }, adopt = { _, _, _ -> error("database closed") }),
+            )
+
+        assertEquals(outcome, shared.refresh(RefreshRequest("123", "https://old.example/feed.xml")))
+    }
 }

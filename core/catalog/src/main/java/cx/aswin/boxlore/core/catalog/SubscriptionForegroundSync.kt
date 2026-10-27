@@ -248,6 +248,7 @@ class SubscriptionForegroundSync(
             feedNetworkDelayMs: Long = DEFAULT_FEED_NETWORK_DELAY_MS,
             chunkSize: Int = DEFAULT_CHUNK_SIZE,
             feedFixes: FeedFixToggles = FeedFixToggles(),
+            addressUpkeep: FeedAddressUpkeep = FeedAddressUpkeep(),
         ): SubscriptionForegroundSync {
             val preferred = AtomicReference<String?>(null)
             val refreshed =
@@ -278,6 +279,36 @@ class SubscriptionForegroundSync(
                     feedNetworkDelayMs = feedNetworkDelayMs,
                     chunkSize = chunkSize,
                     feedFixes = feedFixes,
+                    addressJobs =
+                    addressJobs(podcastRepository, subscriptionRepository, addressUpkeep, DirectFeedRecovery.addressRead(subscriptionRepository, localEpisodeCatalog)),
+                ),
+            )
+        }
+
+        /** The daily address check and broken-feed reports of followed shows (P4 PR 14), behind `address-check-off`. */
+        private fun addressJobs(
+            podcastRepository: PodcastRepository,
+            subscriptionRepository: SubscriptionRepository,
+            upkeep: FeedAddressUpkeep,
+            readsAt: suspend (podcastId: String, feedUrl: String) -> Boolean,
+        ): FeedAddressJobs {
+            val enabled = podcastRepository.rolloutSwitches.addressCheck
+            return FeedAddressJobs(
+                dailyCheck =
+                FeedAddressDailyCheck(
+                    followedShows = subscriptionRepository::followedShowRows,
+                    fetchAddresses = { ids -> FeedAddressDailyCheck.fetchWith(podcastRepository.apiV2, ids) },
+                    readsAt = readsAt,
+                    replaceAddress = subscriptionRepository::updateFeedAddress,
+                    markChecked = subscriptionRepository::markFeedAddressChecked,
+                    enabled = enabled,
+                ),
+                reporter =
+                FeedReporter(
+                    send = { request -> FeedReporter.sendWith(podcastRepository.apiV2, request) },
+                    limiter = FeedReportLimiter(upkeep.reportStamps),
+                    isOnline = upkeep.isOnline,
+                    enabled = enabled,
                 ),
             )
         }
@@ -293,10 +324,12 @@ class SubscriptionForegroundSync(
             feedNetworkDelayMs: Long,
             chunkSize: Int,
             feedFixes: FeedFixToggles,
+            addressJobs: FeedAddressJobs,
         ): suspend () -> Unit {
             val refreshBatch = DirectFeedRefreshBatch()
             return {
             SubscriptionForegroundSyncIngest.sweepExpiredLocalCatalogs(localEpisodeCatalog)
+            runDailyAddressCheck(addressJobs.dailyCheck, subscriptionRepository)
             val ids = subscriptionRepository.subscribedPodcastIds.first()
             val recoveryNow = System.currentTimeMillis()
             recoverMissingFeedUrls(
@@ -313,18 +346,7 @@ class SubscriptionForegroundSync(
             )
             syncSubscribedLatestEpisodes(
                 loadIds = { ids },
-                loadPodcastMeta = { id ->
-                    subscriptionRepository.getPodcastEntity(id)?.let { entity ->
-                        DirectFeedTipMeta(
-                            feedUrl = entity.feedUrl,
-                            title = entity.title,
-                            imageUrl = entity.imageUrl,
-                            genre = entity.genre,
-                            artist = entity.author,
-                            knownTip = entity.latestEpisode,
-                        )
-                    }
-                },
+                loadPodcastMeta = { id -> tipMeta(subscriptionRepository, id) },
                 syncChunk = { chunk -> podcastRepository.syncSubscriptions(chunk) },
                 saveLatest = { id, episode ->
                     subscriptionRepository.updateLatestEpisode(id, episode)
@@ -355,7 +377,7 @@ class SubscriptionForegroundSync(
                             episodeSupplementPort = episodeSupplementPort,
                             podcastRepository = podcastRepository,
                             followMoves = feedFixes.movedFeed(),
-                            adoptMovedFeed = { url -> subscriptionRepository.ensureHttpsFeedUrl(id, url) },
+                            adoptMovedFeed = { readFrom, url -> subscriptionRepository.adoptMovedFeed(id, readFrom, url) },
                         )
                     },
                     saveDirectFeedLatest = { id, episode ->
@@ -376,8 +398,13 @@ class SubscriptionForegroundSync(
                         }
                     },
                     onFeedRefreshed = { refreshed.tryEmit(it) },
-                    recheckAddress = DirectFeedRecovery.addressRecheck(feedFixes, subscriptionRepository, podcastRepository, localEpisodeCatalog),
-                    saveAddress = { id, url -> subscriptionRepository.ensureHttpsFeedUrl(id, url) },
+                    recheckAddress = DirectFeedRecovery.addressRecheck(feedFixes, subscriptionRepository, podcastRepository),
+                    reportFeed = { id, status ->
+                        addressJobs.reporter.report(id, status, subscriptionRepository.getPodcastEntity(id)?.feedUrl)
+                    },
+                    saveAddress = { id, candidate ->
+                        subscriptionRepository.updateFeedAddress(candidate.change(id, System.currentTimeMillis()))
+                    },
                     syncFallbackEnabled = feedFixes.syncFallback,
                 ),
             )
@@ -385,6 +412,33 @@ class SubscriptionForegroundSync(
                 ids = ids,
                 subscriptionRepository = subscriptionRepository,
             )
+            }
+        }
+
+        private suspend fun tipMeta(subscriptionRepository: SubscriptionRepository, id: String): DirectFeedTipMeta? =
+            subscriptionRepository.getPodcastEntity(id)?.let { entity ->
+                DirectFeedTipMeta(
+                    feedUrl = entity.feedUrl,
+                    title = entity.title,
+                    imageUrl = entity.imageUrl,
+                    genre = entity.genre,
+                    artist = entity.author,
+                    knownTip = entity.latestEpisode,
+                )
+            }
+
+        /**
+         * Runs the daily address check before the pass reads feeds, so a swapped address is read at
+         * once, after asking again for notification registrations still waiting for Firebase.
+         */
+        private suspend fun runDailyAddressCheck(dailyCheck: FeedAddressDailyCheck, subscriptionRepository: SubscriptionRepository) {
+            try {
+                subscriptionRepository.feedAddresses.resumePendingRegistrations()
+                dailyCheck.run()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Daily address check failed", e)
             }
         }
 
@@ -396,7 +450,7 @@ class SubscriptionForegroundSync(
             episodeSupplementPort: EpisodeSupplementPort,
             podcastRepository: PodcastRepository,
             followMoves: Boolean,
-            adoptMovedFeed: suspend (String) -> Unit,
+            adoptMovedFeed: suspend (readFrom: String, movedTo: String) -> Unit,
         ): DirectFeedResolveResult {
             val catalog = localEpisodeCatalog
             if (catalog != null) {
@@ -415,7 +469,7 @@ class SubscriptionForegroundSync(
             meta: DirectFeedTipMeta,
             catalog: LocalEpisodeCatalogPort,
             followMoves: Boolean = false,
-            adoptMovedFeed: suspend (String) -> Unit = {},
+            adoptMovedFeed: suspend (readFrom: String, movedTo: String) -> Unit = { _, _ -> },
         ): DirectFeedResolveResult {
             val podcastMeta = catalogMeta(meta)
             if (catalog.isPublisherFeedUnchanged(podcastId, meta.feedUrl.orEmpty())) {
@@ -438,7 +492,7 @@ class SubscriptionForegroundSync(
                 is LocalEpisodeCatalogPort.RefreshOutcome.Success -> {
                     outcome.movedTo?.takeIf { followMoves && !podcastId.startsWith("rss:") }?.let { moved ->
                         Log.i(TAG, "Feed for $podcastId moved; saving its new address")
-                        adoptMovedFeed(moved)
+                        adoptMovedFeed(meta.feedUrl.orEmpty().trim(), moved)
                     }
                     DirectFeedResolveResult(tip = outcome.newest, persisted = true)
                 }
@@ -446,7 +500,13 @@ class SubscriptionForegroundSync(
                     DirectFeedResolveResult(tip = outcome.newest, persisted = false)
                 is LocalEpisodeCatalogPort.RefreshOutcome.Failure -> {
                     Log.w(TAG, "Local catalog refresh failed for $podcastId: ${outcome.message} (gone=${outcome.addressGone})")
-                    DirectFeedResolveResult(tip = null, persisted = false, failed = true, addressGone = outcome.addressGone)
+                    DirectFeedResolveResult(
+                        tip = null,
+                        persisted = false,
+                        failed = true,
+                        addressGone = outcome.addressGone,
+                        reportStatus = outcome.reportStatus,
+                    )
                 }
             }
         }
@@ -759,7 +819,7 @@ class SubscriptionForegroundSync(
                         "No Room feedUrl for opted-in $podcastId; port may still use the stored supplement URL",
                     )
                 }
-                val resolved = resolveFeedTip(podcastId, meta)
+                val resolved = DirectFeedRecovery.withReadAddress(resolveFeedTip(podcastId, meta), meta.feedUrl)
                 if (resolved.persisted) {
                     onFeedRefreshed(podcastId)
                 }
@@ -817,13 +877,17 @@ internal data class DirectFeedTipMeta(
 /**
  * Result of an opted-in publisher-feed resolve (tip plus whether extras were persisted).
  * [failed]: the feed couldn't be read this pass; [addressGone]: and its saved address looks dead
- * ([LocalEpisodeCatalogPort.RefreshOutcome.Failure.addressGone]).
+ * ([LocalEpisodeCatalogPort.RefreshOutcome.Failure.addressGone]); [reportStatus]: what the read saw,
+ * for `/v2/feed-report` ([LocalEpisodeCatalogPort.RefreshOutcome.Failure.reportStatus]);
+ * [readFeedUrl]: the saved address the failed read used, the only one a recovered address may replace.
  */
 internal data class DirectFeedResolveResult(
     val tip: Episode?,
     val persisted: Boolean,
     val failed: Boolean = false,
     val addressGone: Boolean = false,
+    val reportStatus: String? = null,
+    val readFeedUrl: String? = null,
 )
 
 /**
@@ -853,8 +917,28 @@ internal data class DirectFeedSyncSeams(
     val selectRefreshBatch: suspend (List<String>) -> List<String> = { it },
     /** Re-checks a show's dead saved address: a different address to try, or null. */
     val recheckAddress: suspend (String) -> String? = { null },
-    /** Saves an address that [recheckAddress] offered and that then read successfully. */
-    val saveAddress: suspend (id: String, feedUrl: String) -> Unit = { _, _ -> },
+    /**
+     * Reports a failed read to the API (`/v2/feed-report`); returns the API's HTTPS address when it
+     * differs from the saved one. Null status: no read happened (P4 PR 14).
+     */
+    val reportFeed: suspend (id: String, status: String?) -> String? = { _, _ -> null },
+    /** Saves an address that [reportFeed] or [recheckAddress] offered and that then read successfully. */
+    val saveAddress: suspend (id: String, candidate: AddressCandidate) -> Unit = { _, _ -> },
     /** Whether shows whose own feed failed this pass get their latest episode from `/sync`. */
     val syncFallbackEnabled: () -> Boolean = { true },
+)
+
+/**
+ * What the daily address check and broken-feed reports need from the app (P4 PR 14): where report
+ * times are kept across launches, and whether the phone is online (reports are never sent offline).
+ */
+data class FeedAddressUpkeep(
+    val reportStamps: FeedReportStamps = MemoryFeedReportStamps(),
+    val isOnline: () -> Boolean = { true },
+)
+
+/** The daily address check and the broken-feed reporter of one [SubscriptionForegroundSync] (P4 PR 14). */
+internal data class FeedAddressJobs(
+    val dailyCheck: FeedAddressDailyCheck,
+    val reporter: FeedReporter,
 )

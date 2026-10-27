@@ -1,7 +1,10 @@
 package cx.aswin.boxlore.core.rss
 
+import java.io.IOException
+import java.io.InterruptedIOException
 import java.net.UnknownHostException
 import java.security.cert.CertificateException
+import javax.net.ssl.SSLException
 import javax.net.ssl.SSLHandshakeException
 import javax.net.ssl.SSLPeerUnverifiedException
 
@@ -32,6 +35,39 @@ internal object FeedReadFailure {
         return false
     }
 
+    /**
+     * What a failed read saw, as `/v2/feed-report` takes it: `http_<status>`, `timeout`, `dns`,
+     * `tls`, `parse`, `network` (the connection failed or dropped) or `other`. The first cause that
+     * says something wins.
+     *
+     * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows: reports).
+     */
+    fun reportStatus(error: Throwable): String {
+        var cause: Throwable? = error
+        var depth = 0
+        while (cause != null && depth < MAX_CAUSE_DEPTH) {
+            statusOf(cause)?.let { return it }
+            cause = cause.cause
+            depth++
+        }
+        return OTHER
+    }
+
+    private fun statusOf(cause: Throwable): String? = when (cause) {
+        is FeedHttpException -> if (cause.code in HTTP_CODES) "http_${cause.code}" else OTHER
+        is UnknownHostException -> "dns"
+        is InterruptedIOException -> "timeout"
+        is SSLException, is CertificateException -> "tls"
+        is NotAFeedException -> PARSE
+        is IOException -> "network"
+        else -> null
+    }
+
+    /** The `/v2/feed-report` status of a read whose answer held nothing readable as episodes. */
+    const val PARSE = "parse"
+
+    private const val OTHER = "other"
+    private val HTTP_CODES = 100..599
     private const val MAX_CAUSE_DEPTH = 6
 }
 

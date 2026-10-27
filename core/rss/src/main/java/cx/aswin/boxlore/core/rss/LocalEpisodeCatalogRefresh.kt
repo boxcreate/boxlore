@@ -112,8 +112,39 @@ private suspend fun fetchAndPersist(
 } catch (error: CancellationException) {
     throw error
 } catch (error: Exception) {
-    RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE, addressGone = FeedReadFailure.isAddressGone(error))
+    RefreshOutcome.Failure(
+        LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE,
+        addressGone = FeedReadFailure.isAddressGone(error),
+        reportStatus = FeedReadFailure.reportStatus(error),
+    )
 }
+
+/**
+ * The URL namespaces this show's stored rows may have been minted under besides [rssNamespaceId]
+ * (the address this read ended at): the address the catalog was last read from, the address this
+ * read was asked for, and the address the saved one replaced ([previousFeedUrl],
+ * `podcasts.previousFeedUrl`). They differ after a saved address changed (a registry correction, a
+ * feed move) or when the read was redirected; legacy rows minted under the old address still heal
+ * to their own IDs ([LocalEpisodeCollisionGuard], [LocalEpisodeCatalogPersist.plan]), also an
+ * episode missing from the first read at the new address. Only one earlier address is kept: a
+ * show moved twice before such an episode came back keeps that legacy row.
+ *
+ * Added in P4 PR 14 of the own-episode-IDs plan (plan section 4, legacy keys resolve when the feed
+ * is read again; section 11, followed shows).
+ * COMPAT(own-ids): legacy rows keep their IDs across an address change. Permanent: never remove (MIGRATION.md §5).
+ */
+internal fun olderNamespaces(
+    rssNamespaceId: String,
+    request: RefreshRequest,
+    existing: LocalEpisodeFeedEntity?,
+    previousFeedUrl: String? = null,
+): List<String> =
+    listOfNotNull(existing?.feedUrl, request.feedUrl, previousFeedUrl)
+        .map(String::trim)
+        .filter(String::isNotEmpty)
+        .mapNotNull { url -> runCatching { RssIdGenerator.podcastId(url) }.getOrNull() } // An address that can't be one mints nothing.
+        .filter { it != rssNamespaceId }
+        .distinct()
 
 private suspend fun persistParsed(
     deps: LocalCatalogRefreshDeps,
@@ -125,6 +156,7 @@ private suspend fun persistParsed(
 ): RefreshOutcome {
     val identities = deps.dao.listIdentities(request.podcastIndexId)
     val newIds = newEpisodeIds(deps, request, existing)
+    val olderNamespaces = olderNamespaces(rssNamespaceId, request, existing, deps.dao.previousFeedUrl(request.podcastIndexId))
     val planned =
         LocalEpisodeCatalogPersist.plan(
             podcastIndexId = request.podcastIndexId,
@@ -134,11 +166,12 @@ private suspend fun persistParsed(
             newIds = newIds,
             channelImageUrl = parsed.imageUrl,
             showImageUrl = request.meta.imageUrl,
+            olderNamespaces = olderNamespaces,
         )
     val rows = planned.map { it.entity }
     if (rows.isEmpty()) {
         // The address answered, but with nothing we can read as episodes.
-        return RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE, addressGone = true)
+        return RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE, addressGone = true, reportStatus = FeedReadFailure.PARSE)
     }
     val copied = existing?.copiedExtrasCount ?: 0
     val feedOrder =
@@ -158,6 +191,7 @@ private suspend fun persistParsed(
             LocalEpisodeCollisionGuard.resolve(
                 rows = rows,
                 rssNamespaceId = rssNamespaceId,
+                olderNamespaces = olderNamespaces,
                 findOwners = { ids -> deps.dao.findOwners(ids) },
                 listShowRows = { podcastId -> deps.dao.listIdentities(podcastId) },
                 findAliases = { ids -> deps.identity.aliases(ids) },
@@ -338,7 +372,8 @@ private fun logResolution(podcastId: String, resolution: LocalEpisodeCollisionGu
  * Adopted only when the new address is HTTPS, differs from the saved one and serves the same show
  * (same title as [RefreshRequest.meta]), as the server's address checks do: from redirects that
  * were all permanent ([RssFetchResult.movedTo]), or from `itunes:new-feed-url`, read once to
- * confirm. Temporary redirects (302, 307) never move a feed.
+ * confirm, and only while [RefreshRequest.canProceed] still allows a fetch. Temporary redirects
+ * (302, 307) never move a feed.
  */
 internal suspend fun confirmedMove(feedClient: RssFeedClient, request: RefreshRequest, fetched: RssFetchResult, parsed: ParsedRssFeed,): String? {
     val showTitle = request.meta.title?.takeIf(String::isNotBlank) ?: return null
@@ -351,6 +386,8 @@ internal suspend fun confirmedMove(feedClient: RssFeedClient, request: RefreshRe
             ?.trim()
             ?.takeIf { isNewHttpsAddress(it, saved) && isNewHttpsAddress(it, fetched.finalUrl) }
             ?: return null
+    // The confirming read is a second fetch: a gated caller (auto-download's background or transfer gate) may refuse it.
+    if (!request.canProceed()) return null
     return try {
         val next = feedClient.fetch(declared)
         val nextParsed = feedClient.parse(next.finalUrl, next.body, RssIdGenerator.podcastId(next.finalUrl))

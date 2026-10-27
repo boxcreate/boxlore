@@ -13,7 +13,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-/** Publisher RSS + Room own release discovery. Push is only an early wake-up hint. */
+/**
+ * Publisher RSS + Room own release discovery. Push is only an early wake-up hint.
+ *
+ * A recovered address is saved through [saveFeedUrl], the app's one feed address writer (P4 PR 14
+ * of the own-episode-IDs plan, plan section 11); the default writes the row directly (tests).
+ */
 class AutoDownloadCoordinator(
     private val database: BoxLoreDatabase,
     private val catalog: LocalEpisodeCatalogPort,
@@ -21,6 +26,7 @@ class AutoDownloadCoordinator(
     private val enqueue: suspend (podcastId: String, episodeId: String, wifiOnly: Boolean, background: Boolean) -> Unit,
     private val recoverFeedUrl: suspend (String) -> String? = { null },
     private val nowSeconds: () -> Long = { System.currentTimeMillis() / 1000L },
+    private val saveFeedUrl: suspend (podcastId: String, feedUrl: String) -> Unit = { id, url -> database.podcastDao().setFeedUrl(id, url) },
 ) {
     private val gate = Mutex()
     private val ledger = database.autoDownloadDao()
@@ -58,7 +64,7 @@ class AutoDownloadCoordinator(
         val feed = show.feedUrl?.takeIf { it.startsWith("https://") } ?: if (show.isRss) null else recoverMissingFeed(show.podcastId)
         var succeeded = feed != null
         if (feed != null) {
-            if (feed != show.feedUrl) database.podcastDao().setFeedUrl(show.podcastId, feed)
+            if (feed != show.feedUrl) saveFeedUrl(show.podcastId, feed)
             val outcome = catalog.refresh(
                 LocalEpisodeCatalogPort.RefreshRequest(
                 podcastIndexId = show.podcastId,
@@ -131,6 +137,7 @@ class AutoDownloadCoordinator(
             catalog: LocalEpisodeCatalogPort,
             preferences: UserPreferencesRepository,
             recoverFeedUrl: suspend (String) -> String?,
+            saveFeedUrl: suspend (podcastId: String, feedUrl: String) -> Unit,
         ): AutoDownloadCoordinator = AutoDownloadCoordinator(
                 database,
             catalog,
@@ -142,6 +149,7 @@ class AutoDownloadCoordinator(
                     }
                 },
                 recoverFeedUrl = recoverFeedUrl,
+                saveFeedUrl = saveFeedUrl,
             )
     }
 }

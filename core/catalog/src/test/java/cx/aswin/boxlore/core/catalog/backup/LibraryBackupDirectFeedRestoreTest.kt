@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.core.catalog.backup
 
+import cx.aswin.boxlore.core.catalog.FeedAddressNotSavedException
+import cx.aswin.boxlore.core.catalog.FeedAddressUpdate
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
 import cx.aswin.boxlore.core.testing.TestFixtures
 import kotlinx.coroutines.test.runTest
@@ -21,7 +23,10 @@ class LibraryBackupDirectFeedRestoreTest {
             actions =
             DirectFeedRestoreActions(
                 restoreStub = { id, _ -> order.add("stub:$id") },
-                ensureFeedUrl = { id, _ -> order.add("ensure:$id") },
+                ensureFeedUrl = { id, _ ->
+                    order.add("ensure:$id")
+                    FeedAddressUpdate.UPDATED
+                },
                 invalidateCache = { order.add("invalidate:$it") },
                 refreshFeed = { id, _ ->
                     order.add("refresh:$id")
@@ -63,7 +68,7 @@ class LibraryBackupDirectFeedRestoreTest {
             actions =
             DirectFeedRestoreActions(
                 restoreStub = { id, _ -> stubs.add(id) },
-                ensureFeedUrl = { _, _ -> },
+                ensureFeedUrl = { _, _ -> FeedAddressUpdate.UPDATED },
                 invalidateCache = {},
                 refreshFeed = { id, _ ->
                     if (id == "100") {
@@ -91,7 +96,10 @@ class LibraryBackupDirectFeedRestoreTest {
             actions =
             DirectFeedRestoreActions(
                 restoreStub = { _, _ -> called = true },
-                ensureFeedUrl = { _, _ -> called = true },
+                ensureFeedUrl = { _, _ ->
+                    called = true
+                    FeedAddressUpdate.UPDATED
+                },
                 invalidateCache = { called = true },
                 refreshFeed = { _, _ ->
                     called = true
@@ -115,7 +123,7 @@ class LibraryBackupDirectFeedRestoreTest {
             ),
             actions = DirectFeedRestoreActions(
                 restoreStub = { _, _ -> },
-                ensureFeedUrl = { _, _ -> },
+                ensureFeedUrl = { _, _ -> FeedAddressUpdate.UPDATED },
                 invalidateCache = {},
                 refreshFeed = { _, _ -> EpisodeSupplementOutcome.NoDisconnect },
                 saveTip = { _, _ -> },
@@ -126,5 +134,30 @@ class LibraryBackupDirectFeedRestoreTest {
         )
         assertEquals(listOf("201", "202"), started.sorted())
         assertEquals(listOf("201", "202"), completed.sorted())
+    }
+
+    @Test
+    fun `a show whose address couldn't be saved is reported, never refreshed as restored`() = runTest {
+        val errors = mutableListOf<Exception>()
+        var refreshed = false
+        LibraryBackupDirectFeedRestore.restoreAndRefresh(
+            targets = listOf(DirectFeedOptInBackup("100", "https://feeds.example/a.xml")),
+            actions =
+            DirectFeedRestoreActions(
+                restoreStub = { _, _ -> },
+                ensureFeedUrl = { _, _ -> FeedAddressUpdate.NOT_SAVED },
+                invalidateCache = {},
+                refreshFeed = { _, _ ->
+                    refreshed = true
+                    EpisodeSupplementOutcome.NoDisconnect
+                },
+                saveTip = { _, _ -> },
+                syncTrackedUrl = {},
+                onError = { _, error -> errors += error },
+            ),
+        )
+
+        assertTrue(errors.single() is FeedAddressNotSavedException)
+        assertFalse(refreshed)
     }
 }
