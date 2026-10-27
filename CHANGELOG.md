@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `boxlore://episode/{id}?show=` and `&show=` share deep-link patterns, mapped onto the route's `podcastId`; Play install referrers keep `show`. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Episode share links carry the recipe ID plus `&show=` and register the episode first (`EpisodeSharePreparer`); `EpisodeShareRegistrationWorker` (unique work `episode-share-registration-<hash>`) retries in the background. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Episode page "Finding this episode" and "Episode not found" states. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- One-time feed address repair after the update (`UpgradeAddressRepair`, `UpgradeRepairWorker` with work name `feed-address-upgrade-repair`): checks saved addresses through `/v2/shows/feeds`, swaps confirmed moves through `FeedAddressUpdater`, re-reads each followed show and re-registers notifications, then reruns the cloud sync identity catch-up once. ([#1183](https://github.com/boxcreate/boxlore/pull/1183)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- `namespace_mismatch_count` on background `feed_fetch_result` events. ([#1183](https://github.com/boxcreate/boxlore/pull/1183)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Feed-first show pages behind `feed_first`: shows you don't follow read their own feed into a stored copy (`FeedFirstShowPages`, `ShowPageFeedCatalog`, `PodcastInfoFeedFirst`), with a failure ladder to `/v2/episodes`, a status line, and a daily cleanup of unfollowed copies after 30 days. ([#1184](https://github.com/boxcreate/boxlore/pull/1184)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `EpisodeListenerStore` keeps one listener state per episode across its stored IDs: progress lives on one owner ID, likes and played state are absolute writes across aliases and `episode_group_state`, and reads are projected, so lists count each episode once. ([#1178](https://github.com/boxcreate/boxlore/pull/1178)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `FeedAddressDailyCheck` checks followed shows' feed addresses once a day through `/v2/shows/feeds`. `FeedReporter` reports unreadable feeds through `/v2/feed-report`. An address is swapped only for a confirmed move and only after the new address reads. ([#1182](https://github.com/boxcreate/boxlore/pull/1182)) <!-- impact:user-impact-low --> <!-- copy:locked -->
@@ -155,6 +157,11 @@ readme-copy:end pr=1181 -->
 ### Fixes
 - Shows whose feed moved to a new address keep getting new episodes and notifications.
 readme-copy:end pr=1182 -->
+
+<!-- readme-copy:start pr=1183
+### Fixes
+- After updating, boxlore checks the shows you follow and switches any whose feed has moved, so new episodes and notifications keep arriving.
+readme-copy:end pr=1183 -->
 
 <!-- readme-copy:start pr=1184
 ### Improvements
