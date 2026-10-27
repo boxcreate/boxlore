@@ -8,6 +8,7 @@ import cx.aswin.boxlore.core.network.model.V2ShowFlags
 import cx.aswin.boxlore.core.network.model.V2ShowsFeedsResponse
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -141,6 +142,31 @@ class FeedAddressDailyCheckTest {
             )
         tomorrow.run()
         assertEquals(listOf(NEW), changes.map { it.feedUrl })
+    }
+
+    @Test
+    fun `a swap whose notification request couldn't be saved stays due for the next pass`() = runTest {
+        add(show("1"))
+        val notSaved =
+            FeedAddressDailyCheck(
+                followedShows = { rows.values.toList() },
+                fetchAddresses = { ids -> answer(ids) },
+                readsAt = { _, _ -> true },
+                replaceAddress = { change ->
+                    changes += change
+                    FeedAddressUpdate.NOT_SAVED
+                },
+                markChecked = { id, at -> rows[id] = rows.getValue(id).copy(feedUrlCheckedAt = at) },
+                enabled = { true },
+                nowMillis = { now },
+            )
+
+        notSaved.run()
+        assertNotEquals(now, rows.getValue("1").feedUrlCheckedAt, "not stamped: the swap is still owed")
+        notSaved.run()
+
+        assertEquals(2, changes.size, "tried again on the next pass")
+        assertEquals(OLD, rows.getValue("1").feedUrl)
     }
 
     @Test

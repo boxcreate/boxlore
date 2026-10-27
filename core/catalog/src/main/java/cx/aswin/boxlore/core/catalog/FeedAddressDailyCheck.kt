@@ -89,12 +89,11 @@ class FeedAddressDailyCheck(
     private suspend fun applyOne(row: PodcastEntity, result: V2ShowAddress, now: Long): Boolean {
         noteNamespace(row, result)
         val target = confirmedMove(row, result)
-        val swapped =
-            target != null &&
-                readable(row.podcastId, target) &&
-                replaceAddress(change(row, result, target, now)) == FeedAddressUpdate.UPDATED
-        // A swap stamps the show with its address; anything else is stamped here, after the swap had its chance.
-        if (!swapped) markChecked(row.podcastId, now)
+        val update = if (target != null && readable(row.podcastId, target)) replaceAddress(change(row, result, target, now)) else null
+        val swapped = update == FeedAddressUpdate.UPDATED
+        // A swap stamps the show with its address; a swap that couldn't be saved stays due for the
+        // next pass; anything else is stamped here, after the swap had its chance.
+        if (!swapped && update != FeedAddressUpdate.NOT_SAVED) markChecked(row.podcastId, now)
         return swapped
     }
 

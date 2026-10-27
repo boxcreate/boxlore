@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.catalog.sync
 
 import android.util.Log
 import cx.aswin.boxlore.core.catalog.FeedAddressChange
+import cx.aswin.boxlore.core.catalog.FeedAddressNotSavedException
 import cx.aswin.boxlore.core.catalog.FeedAddressUpdate
 import cx.aswin.boxlore.core.catalog.FeedAddressUpdater
 import cx.aswin.boxlore.core.catalog.FeedUrlSources
@@ -292,6 +293,8 @@ class SubscriptionSyncResolver(
             )
         // KEPT_CORRECTION: the pull would undo a confirmed correction; it stays and is pushed back.
         val result = writer.update(change)
+        // The pull fails before its time is saved, so the next sync pulls this address again.
+        if (result == FeedAddressUpdate.NOT_SAVED) throw FeedAddressNotSavedException(local.podcastId)
         if (result != FeedAddressUpdate.UPDATED) Log.d(TAG, "Pulled address for ${local.podcastId} not saved: $result")
     }
 

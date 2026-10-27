@@ -670,9 +670,8 @@ class SubscriptionRepository(
      * notification RTDB can poll the same feed after library restore. Goes through the one address
      * writer ([feedAddresses]); [source] records where the address came from.
      */
-    suspend fun ensureHttpsFeedUrl(podcastId: String, feedUrl: String, source: String = FeedUrlSources.PODCAST_LOOKUP,) {
+    suspend fun ensureHttpsFeedUrl(podcastId: String, feedUrl: String, source: String = FeedUrlSources.PODCAST_LOOKUP,): FeedAddressUpdate =
         feedAddresses.update(FeedAddressChange(podcastId = podcastId, feedUrl = feedUrl, source = source))
-    }
 
     /**
      * Replaces a show's saved feed address through the one address writer ([FeedAddressUpdater]).

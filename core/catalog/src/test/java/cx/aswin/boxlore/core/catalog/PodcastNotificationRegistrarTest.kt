@@ -143,6 +143,28 @@ class PodcastNotificationRegistrarTest {
     }
 
     @Test
+    fun `a pulled address whose notification request couldn't be saved fails the pull, so the next sync pulls it again`() = runTest {
+        dao.upsertRow(show("920666", notifications = true).copy(feedUrl = OLD, isDirty = false, syncedAt = 1L, subscribedAt = 1L))
+        val unsaved =
+            object : PendingNotificationRegistrations {
+                override fun all(): Set<String> = emptySet()
+
+                override fun mark(podcastId: String): Long? = null
+
+                override fun add(podcastId: String): Boolean = false
+
+                override fun remove(podcastId: String, mark: Long) = Unit
+            }
+        val resolver = SubscriptionSyncResolver(podcastDao = dao, feedAddresses = FeedAddressUpdater(dao, pendingRegistrations = unsaved))
+        val pulled = UserSubscriptionSyncDto(podcastId = "920666", isSubscribed = true, subscribedAt = 1L, notificationsEnabled = true, feedUrl = NEW, updatedAt = 9L)
+
+        val failure = runCatching { resolver.resolveSubscription(pulled, syncedAt = 10L) }.exceptionOrNull()
+
+        assertTrue(failure is FeedAddressNotSavedException)
+        assertEquals(OLD, dao.getPodcast("920666")!!.feedUrl)
+    }
+
+    @Test
     fun `a merge never writes its older copy's address over one saved meanwhile`() = runTest {
         dao.upsertRow(show("920666", notifications = false).copy(feedUrl = OLD, isDirty = false, syncedAt = 1L, subscribedAt = 1L))
         val stale = dao.getPodcast("920666")!!
