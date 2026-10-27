@@ -39,6 +39,13 @@ interface LocalEpisodeCatalogDao {
     @Query("SELECT * FROM local_episode_feeds WHERE podcastId = :podcastId LIMIT 1")
     suspend fun getFeed(podcastId: String): LocalEpisodeFeedEntity?
 
+    /**
+     * The address the show's saved one replaced (`podcasts.previousFeedUrl`): legacy rows minted
+     * under it still heal after the catalog was read at the new address (P4 PR 14).
+     */
+    @Query("SELECT previousFeedUrl FROM podcasts WHERE podcastId = :podcastId LIMIT 1")
+    suspend fun previousFeedUrl(podcastId: String): String?
+
     @Query("SELECT * FROM local_episodes WHERE episodeId = :episodeId LIMIT 1")
     suspend fun getEpisode(episodeId: String): LocalEpisodeEntity?
 

@@ -15,33 +15,42 @@ import android.content.SharedPreferences
 interface PendingNotificationRegistrations {
     fun all(): Set<String>
 
+    /** [podcastId]'s pending request, or null when none is pending; each [add] gives a new mark. */
+    fun mark(podcastId: String): Long?
+
     fun add(podcastId: String)
 
-    fun remove(podcastId: String)
+    /** Clears [podcastId] only while its request is still [mark], so a newer address change stays pending. */
+    fun remove(podcastId: String, mark: Long)
 }
 
 /** [PendingNotificationRegistrations] for one process only (tests, and callers built without the app's wiring). */
 class MemoryPendingNotificationRegistrations : PendingNotificationRegistrations {
-    private val ids = LinkedHashSet<String>()
+    private val marks = LinkedHashMap<String, Long>()
+    private var lastMark = 0L
 
     @Synchronized
-    override fun all(): Set<String> = ids.toSet()
+    override fun all(): Set<String> = marks.keys.toSet()
+
+    @Synchronized
+    override fun mark(podcastId: String): Long? = marks[podcastId]
 
     @Synchronized
     override fun add(podcastId: String) {
-        ids += podcastId
+        marks[podcastId] = ++lastMark
     }
 
     @Synchronized
-    override fun remove(podcastId: String) {
-        ids -= podcastId
+    override fun remove(podcastId: String, mark: Long) {
+        if (marks[podcastId] == mark) marks -= podcastId
     }
 }
 
 /**
  * [PendingNotificationRegistrations] in SharedPreferences file [FILE_NAME]: one key per show ID,
- * the time it was asked for (epoch ms) as its value. A restored copy only registers those shows
- * again, which is harmless. Stable storage name: never rename.
+ * the time it was asked for (epoch ms) as its value and mark, always later than the mark it
+ * replaces. A restored copy only registers those shows again, which is harmless. Stable storage
+ * name: never rename.
  *
  * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows: one durable address update).
  * COMPAT(own-ids): notifications follow a corrected address. Permanent: never remove (MIGRATION.md §5).
@@ -52,14 +61,19 @@ class SharedPreferencesPendingNotificationRegistrations(
 ) : PendingNotificationRegistrations {
     override fun all(): Set<String> = prefs.all.keys.toSet()
 
+    override fun mark(podcastId: String): Long? = (prefs.all[podcastId] as? Long)
+
+    @Synchronized
     @SuppressLint("ApplySharedPref")
     override fun add(podcastId: String) {
+        val mark = maxOf(nowMillis(), (mark(podcastId) ?: 0L) + 1)
         // Written to disk at once: the address change that needs it follows in the same call.
-        prefs.edit().putLong(podcastId, nowMillis()).commit()
+        prefs.edit().putLong(podcastId, mark).commit()
     }
 
-    override fun remove(podcastId: String) {
-        prefs.edit().remove(podcastId).apply()
+    @Synchronized
+    override fun remove(podcastId: String, mark: Long) {
+        if (mark(podcastId) == mark) prefs.edit().remove(podcastId).apply()
     }
 
     companion object {

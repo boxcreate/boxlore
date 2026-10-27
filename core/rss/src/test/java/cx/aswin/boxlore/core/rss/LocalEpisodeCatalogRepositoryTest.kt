@@ -738,6 +738,8 @@ class LocalEpisodeCatalogRepositoryTest {
 
         override suspend fun getFeed(podcastId: String): LocalEpisodeFeedEntity? = feeds[podcastId]
 
+        override suspend fun previousFeedUrl(podcastId: String): String? = null
+
         override suspend fun getEpisode(episodeId: String): LocalEpisodeEntity? = findEpisode(episodeId)
 
         private fun findEpisode(id: String) = episodes.find { it.episodeId == id }

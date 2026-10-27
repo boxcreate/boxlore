@@ -121,17 +121,25 @@ private suspend fun fetchAndPersist(
 
 /**
  * The URL namespaces this show's stored rows may have been minted under besides [rssNamespaceId]
- * (the address this read ended at): the address the catalog was last read from, and the address
- * this read was asked for. They differ after a saved address changed (a registry correction, a
+ * (the address this read ended at): the address the catalog was last read from, the address this
+ * read was asked for, and the address the saved one replaced ([previousFeedUrl],
+ * `podcasts.previousFeedUrl`). They differ after a saved address changed (a registry correction, a
  * feed move) or when the read was redirected; legacy rows minted under the old address still heal
- * to their own IDs ([LocalEpisodeCollisionGuard], [LocalEpisodeCatalogPersist.plan]).
+ * to their own IDs ([LocalEpisodeCollisionGuard], [LocalEpisodeCatalogPersist.plan]), also an
+ * episode missing from the first read at the new address. Only one earlier address is kept: a
+ * show moved twice before such an episode came back keeps that legacy row.
  *
  * Added in P4 PR 14 of the own-episode-IDs plan (plan section 4, legacy keys resolve when the feed
  * is read again; section 11, followed shows).
  * COMPAT(own-ids): legacy rows keep their IDs across an address change. Permanent: never remove (MIGRATION.md §5).
  */
-internal fun olderNamespaces(rssNamespaceId: String, request: RefreshRequest, existing: LocalEpisodeFeedEntity?): List<String> =
-    listOfNotNull(existing?.feedUrl, request.feedUrl)
+internal fun olderNamespaces(
+    rssNamespaceId: String,
+    request: RefreshRequest,
+    existing: LocalEpisodeFeedEntity?,
+    previousFeedUrl: String? = null,
+): List<String> =
+    listOfNotNull(existing?.feedUrl, request.feedUrl, previousFeedUrl)
         .map(String::trim)
         .filter(String::isNotEmpty)
         .mapNotNull { url -> runCatching { RssIdGenerator.podcastId(url) }.getOrNull() } // An address that can't be one mints nothing.
@@ -221,7 +229,7 @@ internal suspend fun persistParsed(
 ): RefreshOutcome {
     val identities = deps.dao.listIdentities(request.podcastIndexId)
     val newIds = newEpisodeIds(deps, request, existing)
-    val olderNamespaces = olderNamespaces(rssNamespaceId, request, existing)
+    val olderNamespaces = olderNamespaces(rssNamespaceId, request, existing, deps.dao.previousFeedUrl(request.podcastIndexId))
     val planned =
         LocalEpisodeCatalogPersist.plan(
             podcastIndexId = request.podcastIndexId,
