@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.core.catalog.backup
 
+import cx.aswin.boxlore.core.catalog.FeedAddressNotSavedException
+import cx.aswin.boxlore.core.catalog.FeedAddressUpdate
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
 import cx.aswin.boxlore.core.model.Episode
 import kotlinx.coroutines.CancellationException
@@ -12,7 +14,8 @@ import kotlinx.coroutines.sync.withPermit
 /** Callbacks for [LibraryBackupDirectFeedRestore.restoreAndRefresh]. */
 internal data class DirectFeedRestoreActions(
     val restoreStub: suspend (podcastId: String, feedUrl: String) -> Unit,
-    val ensureFeedUrl: suspend (podcastId: String, feedUrl: String) -> Unit,
+    /** Saves the backup's address through the one address writer; [FeedAddressUpdate.NOT_SAVED] fails the show. */
+    val ensureFeedUrl: suspend (podcastId: String, feedUrl: String) -> FeedAddressUpdate,
     val invalidateCache: (podcastId: String) -> Unit,
     val refreshFeed: suspend (podcastId: String, feedUrl: String) -> EpisodeSupplementOutcome,
     val saveTip: suspend (podcastId: String, episode: Episode) -> Unit,
@@ -60,7 +63,8 @@ internal object LibraryBackupDirectFeedRestore {
         if (id.isEmpty() || url.isNullOrBlank()) return
         try {
             actions.restoreStub(id, url)
-            actions.ensureFeedUrl(id, url)
+            // An address dropped with its notification request is reported, never treated as restored.
+            if (actions.ensureFeedUrl(id, url) == FeedAddressUpdate.NOT_SAVED) throw FeedAddressNotSavedException(id)
             actions.syncTrackedUrl(id)
             actions.invalidateCache(id)
             when (val outcome = actions.refreshFeed(id, url)) {

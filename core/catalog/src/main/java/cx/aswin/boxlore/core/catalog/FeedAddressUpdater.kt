@@ -115,6 +115,15 @@ enum class FeedAddressUpdate {
 }
 
 /**
+ * A saved address change that was dropped because its notification request couldn't be saved
+ * ([FeedAddressUpdate.NOT_SAVED]). A caller that can't retry on its own throws it, so its run
+ * fails and is tried again: a cloud pull keeps its pull time, a restore reports the show.
+ *
+ * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows: one durable address update).
+ */
+class FeedAddressNotSavedException(podcastId: String) : java.io.IOException("The address change of $podcastId wasn't saved: its notification request couldn't be saved")
+
+/**
  * The one writer of a show's saved feed address. In one transaction ([PodcastDao.replaceFeedAddress])
  * it writes the publisher and transport addresses and keeps the old one for undo, resets every
  * stored ETag and Last-Modified of the show, and marks a followed show for the next sync push (not
