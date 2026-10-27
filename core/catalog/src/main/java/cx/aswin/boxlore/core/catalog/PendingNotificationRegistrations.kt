@@ -18,7 +18,8 @@ interface PendingNotificationRegistrations {
     /** [podcastId]'s pending request, or null when none is pending; each [add] gives a new mark. */
     fun mark(podcastId: String): Long?
 
-    fun add(podcastId: String)
+    /** Records a new request for [podcastId]; false when it couldn't be saved, so the caller writes nothing. */
+    fun add(podcastId: String): Boolean
 
     /** Clears [podcastId] only while its request is still [mark], so a newer address change stays pending. */
     fun remove(podcastId: String, mark: Long)
@@ -36,8 +37,9 @@ class MemoryPendingNotificationRegistrations : PendingNotificationRegistrations 
     override fun mark(podcastId: String): Long? = marks[podcastId]
 
     @Synchronized
-    override fun add(podcastId: String) {
+    override fun add(podcastId: String): Boolean {
         marks[podcastId] = ++lastMark
+        return true
     }
 
     @Synchronized
@@ -65,10 +67,10 @@ class SharedPreferencesPendingNotificationRegistrations(
 
     @Synchronized
     @SuppressLint("ApplySharedPref")
-    override fun add(podcastId: String) {
+    override fun add(podcastId: String): Boolean {
         val mark = maxOf(nowMillis(), (mark(podcastId) ?: 0L) + 1)
         // Written to disk at once: the address change that needs it follows in the same call.
-        prefs.edit().putLong(podcastId, mark).commit()
+        return prefs.edit().putLong(podcastId, mark).commit()
     }
 
     @Synchronized

@@ -160,6 +160,27 @@ class FeedAddressUpdaterTest {
     }
 
     @Test
+    fun `an address is never written when its notification request couldn't be saved`() = runTest {
+        val unsaved =
+            object : PendingNotificationRegistrations {
+                override fun all(): Set<String> = emptySet()
+
+                override fun mark(podcastId: String): Long? = null
+
+                override fun add(podcastId: String): Boolean = false
+
+                override fun remove(podcastId: String, mark: Long) = Unit
+            }
+        dao.upsertRow(show("920666", OLD, notifications = true))
+
+        val result = FeedAddressUpdater(dao, requestNotificationRegistration = { registrations += it }, pendingRegistrations = unsaved).update(correction("920666"))
+
+        assertEquals(FeedAddressUpdate.NOT_SAVED, result)
+        assertEquals(OLD, dao.getPodcast("920666")!!.feedUrl)
+        assertTrue(registrations.isEmpty())
+    }
+
+    @Test
     fun `a registration lost with the process is asked for again on the next launch`() = runTest {
         val pending = MemoryPendingNotificationRegistrations()
         dao.upsertRow(show("920666", OLD, notifications = true))
