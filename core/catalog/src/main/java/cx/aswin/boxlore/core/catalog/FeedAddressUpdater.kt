@@ -106,6 +106,12 @@ enum class FeedAddressUpdate {
      * kept and the follow is marked for the next push, so the account gets it back.
      */
     KEPT_CORRECTION,
+
+    /**
+     * The show's notifications need registering again, but that request couldn't be saved, so the
+     * address wasn't written either: a later check, move or pull tries again.
+     */
+    NOT_SAVED,
 }
 
 /**
@@ -141,7 +147,8 @@ class FeedAddressUpdater(
         val row = podcastDao.getPodcast(change.podcastId) ?: return FeedAddressUpdate.NO_SHOW
         notWritten(row, change, https)?.let { return it }
         val notificationsOn = row.isSubscribed && row.notificationsEnabled
-        if (notificationsOn) pendingRegistrations.add(row.podcastId)
+        // The request is saved before the address, so a written address always has its registration.
+        if (notificationsOn && !pendingRegistrations.add(row.podcastId)) return FeedAddressUpdate.NOT_SAVED
         val written =
             podcastDao.replaceFeedAddress(
                 FeedAddressWrite(
