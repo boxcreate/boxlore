@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `boxlore://episode/{id}?show=` and `&show=` share deep-link patterns, mapped onto the route's `podcastId`; Play install referrers keep `show`. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Episode share links carry the recipe ID plus `&show=` and register the episode first (`EpisodeSharePreparer`); `EpisodeShareRegistrationWorker` (unique work `episode-share-registration-<hash>`) retries in the background. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Episode page "Finding this episode" and "Episode not found" states. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Feed-first show pages behind `feed_first`: shows you don't follow read their own feed into a stored copy (`FeedFirstShowPages`, `ShowPageFeedCatalog`, `PodcastInfoFeedFirst`), with a failure ladder to `/v2/episodes`, a status line, and a daily cleanup of unfollowed copies after 30 days. ([#1184](https://github.com/boxcreate/boxlore/pull/1184)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `EpisodeListenerStore` keeps one listener state per episode across its stored IDs: progress lives on one owner ID, likes and played state are absolute writes across aliases and `episode_group_state`, and reads are projected, so lists count each episode once. ([#1178](https://github.com/boxcreate/boxlore/pull/1178)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `FeedAddressDailyCheck` checks followed shows' feed addresses once a day through `/v2/shows/feeds`. `FeedReporter` reports unreadable feeds through `/v2/feed-report`. An address is swapped only for a confirmed move and only after the new address reads. ([#1182](https://github.com/boxcreate/boxlore/pull/1182)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `PodcastNotificationRegistrationWorker` re-registers a show's notifications after its address changes and retries until Firebase acknowledges. ([#1182](https://github.com/boxcreate/boxlore/pull/1182)) <!-- impact:user-impact-low --> <!-- copy:locked -->
@@ -40,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cloud sync carries each history and queue row's recipe ID and catalog key, records pulled rows as episode aliases (`SyncEpisodeIdentity`, `cloud_sync` provenance), merges and removes queue entries per episode with rich removals, and runs a one-time identity catch-up (sync metadata version 3) that adds identity to older builds' cloud rows without changing their values. ([#1179](https://github.com/boxcreate/boxlore/pull/1179)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - New-episode pushes match by catalog key and (show, recipe ID) after GUID and enclosure, and open the recipe ID when no local row exists yet. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Android Auto reads queue, history and downloads across an episode's trusted IDs. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Show pages of shows you don't follow list `/v2/episodes` under locally stored IDs when `feed_first` is off; in-show search filters that list on the phone instead of calling v1 `episodes/search`. Broken-feed reports share one limiter between the show page and the daily address check. ([#1184](https://github.com/boxcreate/boxlore/pull/1184)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - New-episode notifications are checked hourly on our own server instead of GitHub Actions, whose schedule ran every few hours. ([#1151](https://github.com/boxcreate/boxlore/pull/1151)) <!-- impact:user-impact-low+backend-change --> <!-- copy:locked -->
 - Feed parsing records each item's position in the feed document (`ParsedFeedItem`, `ParsedRssFeed.items`). When items share a catalog key, the first in the document wins in the parser merge, `LocalEpisodeCatalogPersist`, `StickyRssEpisodeRemap` and the legacy RSS upgrade. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - Items without a GUID are keyed on their first playable `<enclosure url>`. Items that share a first enclosure keep their audio address as the key. Stored rows are also found by their own minted ID and by the audio address older builds used, so no stored episode ID changes. Minting is unchanged. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
@@ -153,6 +155,11 @@ readme-copy:end pr=1181 -->
 ### Fixes
 - Shows whose feed moved to a new address keep getting new episodes and notifications.
 readme-copy:end pr=1182 -->
+
+<!-- readme-copy:start pr=1184
+### Improvements
+- Show pages can now list episodes straight from a show’s own feed, keep them for offline viewing, and tell you when boxlore is showing its own episode list instead. Rolling out gradually.
+readme-copy:end pr=1184 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added
