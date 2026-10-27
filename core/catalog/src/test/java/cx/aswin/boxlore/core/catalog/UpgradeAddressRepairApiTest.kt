@@ -80,7 +80,7 @@ class UpgradeAddressRepairApiTest {
         seed("920667", "http://plain.example.com/feed.xml")
         seed("920668", OTHER)
         seed("920669", OTHER)
-        responses += fixture("fixtures/v2/shows-feeds.json")
+        responses += fixture("fixtures/v2/shows-feeds-upgrade-cases.json")
 
         assertEquals(UpgradeRepairRun.DONE, repair().run())
 

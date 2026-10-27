@@ -2,6 +2,7 @@ package cx.aswin.boxlore.fcm
 
 import android.app.Application
 import android.content.Context
+import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.BackoffPolicy
 import androidx.work.Configuration
@@ -12,7 +13,10 @@ import androidx.work.WorkManager
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.testing.WorkManagerTestInitHelper
+import cx.aswin.boxlore.core.catalog.FeedAddressUpdater
+import cx.aswin.boxlore.core.catalog.MemoryPendingNotificationRegistrations
 import cx.aswin.boxlore.core.catalog.NotificationRegistrationOutcome
+import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -24,7 +28,8 @@ import org.robolectric.annotation.Config
 
 /**
  * Acknowledged notification registration after a Podcast Index show's address changed (own-episode-IDs
- * P4 PR 14, plan section 11): one permanent unique work item per show, network-gated, capped retries.
+ * P4 PR 14, plan section 11): one permanent unique work item per show, network-gated, capped retries,
+ * and a show the job gave up on queued again by the next pass.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
@@ -84,9 +89,44 @@ class PodcastNotificationRegistrationWorkerTest {
     }
 
     @Test
+    fun `a show the job gave up on stays pending and is queued again by the next pass`() = runBlocking {
+        val database = Room.inMemoryDatabaseBuilder(context, BoxLoreDatabase::class.java).allowMainThreadQueries().build()
+        try {
+            val pending = MemoryPendingNotificationRegistrations().apply { add("920666") }
+            val updater =
+                FeedAddressUpdater(
+                    database.podcastDao(),
+                    requestNotificationRegistration = { id -> PodcastNotificationRegistrationWorker.enqueue(context, id) },
+                    pendingRegistrations = pending,
+                )
+            val last = worker(NotificationRegistrationOutcome.RETRY, attempt = PodcastNotificationRegistrationWorker.MAX_ATTEMPTS - 1)
+            last.settle = updater::registrationSettled
+
+            assertEquals(ListenableWorker.Result.failure(), last.doWork())
+            assertEquals("given up, not forgotten", setOf("920666"), pending.all())
+
+            updater.resumePendingRegistrations()
+            val queued = WorkManager.getInstance(context).getWorkInfosForUniqueWork(PodcastNotificationRegistrationWorker.workName("920666")).get()
+            assertEquals(1, queued.count { it.state == WorkInfo.State.ENQUEUED })
+
+            val acknowledged = worker(NotificationRegistrationOutcome.DONE).apply { settle = updater::registrationSettled }
+            assertEquals(ListenableWorker.Result.success(), acknowledged.doWork())
+            assertTrue(pending.all().isEmpty())
+        } finally {
+            database.close()
+        }
+    }
+
+    @Test
     fun `an error counts as a retry, and work without a show fails without registering`() = runBlocking {
-        val failing = worker(NotificationRegistrationOutcome.DONE).apply { register = { error("Firebase not ready") } }
+        val settled = mutableListOf<NotificationRegistrationOutcome>()
+        val failing =
+            worker(NotificationRegistrationOutcome.DONE).apply {
+                register = { error("Firebase not ready") }
+                settle = { _, outcome -> settled += outcome }
+            }
         assertEquals(ListenableWorker.Result.retry(), failing.doWork())
+        assertEquals(listOf(NotificationRegistrationOutcome.RETRY), settled)
 
         var calls = 0
         val empty = TestListenableWorkerBuilder<PodcastNotificationRegistrationWorker>(context).build().apply {
@@ -94,6 +134,7 @@ class PodcastNotificationRegistrationWorkerTest {
                 calls++
                 NotificationRegistrationOutcome.DONE
             }
+            settle = { _, _ -> calls++ }
         }
         assertEquals(ListenableWorker.Result.failure(), empty.doWork())
         assertEquals(0, calls)
@@ -109,5 +150,6 @@ class PodcastNotificationRegistrationWorkerTest {
                     assertEquals("920666", id)
                     outcome
                 }
+                settle = { _, _ -> }
             }
 }

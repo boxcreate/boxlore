@@ -598,7 +598,7 @@ class SubscriptionForegroundSyncTest {
                         )
                 }
             val adopted = mutableListOf<String>()
-            SubscriptionForegroundSync.resolveCatalogRefresh(id, meta, catalog, followMoves) { adopted += it }
+            SubscriptionForegroundSync.resolveCatalogRefresh(id, meta, catalog, followMoves) { _, movedTo -> adopted += movedTo }
             return adopted to catalog.lastRefreshRequest?.detectMove
         }
 

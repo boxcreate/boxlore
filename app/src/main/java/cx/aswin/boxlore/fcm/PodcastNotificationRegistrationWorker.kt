@@ -23,7 +23,9 @@ import kotlinx.coroutines.CancellationException
  * changed, and retries until Firebase acknowledges it: the same `tracked_podcasts/<id>` node and
  * topic as turning notifications on ([cx.aswin.boxlore.core.catalog.PodcastNotificationRegistrar]).
  * Network-gated, exponential backoff from 30 s, at most [MAX_ATTEMPTS] runs, so it never retries
- * forever like the `rss:` journal worker ([RssNotificationSyncWorker]).
+ * forever like the `rss:` journal worker ([RssNotificationSyncWorker]). A show it gives up on stays
+ * pending ([cx.aswin.boxlore.core.catalog.PendingNotificationRegistrations]) and is queued again
+ * by the next foreground sync pass, so a registration is never silently dropped.
  *
  * The unique work name ([workName], prefix [WORK_NAME_PREFIX]) is a stable identity. REPLACE: the
  * worker reads the show's row when it runs, so a newer address change restarts it with fresh attempts.
@@ -36,6 +38,11 @@ class PodcastNotificationRegistrationWorker(context: Context, params: WorkerPara
         SharedAppDependenciesHolder.require().subscriptionRepository.registerPodcastNotifications(podcastId)
     }
 
+    /** Records each run's outcome: only an acknowledgement (or a refusal) clears the show's pending mark. */
+    internal var settle: (podcastId: String, outcome: NotificationRegistrationOutcome) -> Unit = { podcastId, outcome ->
+        SharedAppDependenciesHolder.require().subscriptionRepository.feedAddresses.registrationSettled(podcastId, outcome)
+    }
+
     override suspend fun doWork(): Result {
         val podcastId = inputData.getString(KEY_PODCAST_ID)?.takeIf { it.isNotBlank() && !it.startsWith("rss:") } ?: return Result.failure()
         val outcome =
@@ -46,6 +53,7 @@ class PodcastNotificationRegistrationWorker(context: Context, params: WorkerPara
             } catch (_: Exception) {
                 NotificationRegistrationOutcome.RETRY
             }
+        settle(podcastId, outcome)
         return when (outcome) {
             NotificationRegistrationOutcome.DONE, NotificationRegistrationOutcome.DROPPED -> Result.success()
             NotificationRegistrationOutcome.RETRY -> if (runAttemptCount + 1 < MAX_ATTEMPTS) Result.retry() else Result.failure()

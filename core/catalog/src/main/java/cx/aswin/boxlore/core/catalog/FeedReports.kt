@@ -61,24 +61,36 @@ class SharedPreferencesFeedReportStamps(private val prefs: SharedPreferences) : 
 
 /**
  * Limits broken-feed reports: one per show per [PER_SHOW_INTERVAL_MS], and at most [DAILY_CAP] a
- * day in all (the API takes 20 a day from one phone).
+ * day in all. The API takes 20 a day from one phone; the background pass keeps 5 of them for the
+ * show page. Only a report the API answered counts ([record]): a failed or refused send uses up
+ * nothing.
  *
  * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows: reports).
  */
 class FeedReportLimiter(private val stamps: FeedReportStamps) {
-    /** Claims a report of [podcastId] at [nowMillis]; false when the show or the day is used up. */
+    /** True when a report of [podcastId] may be sent at [nowMillis]. */
     @Synchronized
-    fun tryClaim(podcastId: String, nowMillis: Long): Boolean {
+    fun allows(podcastId: String, nowMillis: Long): Boolean {
+        val recent = recent(nowMillis)
+        return podcastId !in recent && recent.size < DAILY_CAP
+    }
+
+    /** Counts a report of [podcastId] the API answered at [nowMillis]. */
+    @Synchronized
+    fun record(podcastId: String, nowMillis: Long) {
+        stamps.mark(podcastId, nowMillis, keepSince = nowMillis - PER_SHOW_INTERVAL_MS)
+    }
+
+    private fun recent(nowMillis: Long): Map<String, Long> {
         val since = nowMillis - PER_SHOW_INTERVAL_MS
-        val recent = stamps.all().filterValues { it > since && it <= nowMillis }
-        if (podcastId in recent || recent.size >= DAILY_CAP) return false
-        stamps.mark(podcastId, nowMillis, keepSince = since)
-        return true
+        return stamps.all().filterValues { it > since && it <= nowMillis }
     }
 
     companion object {
         const val PER_SHOW_INTERVAL_MS = 24L * 60L * 60L * 1000L
-        const val DAILY_CAP = 20
+
+        /** Below the API's 20 a day per phone, so the show page's own reports still go through. */
+        const val DAILY_CAP = 15
     }
 }
 
@@ -106,7 +118,7 @@ class FeedReporter(
     suspend fun report(podcastId: String, status: String?, savedFeedUrl: String?): String? {
         if (status == null || !V2FeedReportStatus.isValid(status) || !enabled()) return null
         val showId = V2EpisodeIds.parseShowId(podcastId) ?: return null
-        if (!isOnline() || !limiter.tryClaim(podcastId, nowMillis())) return null
+        if (!isOnline() || !limiter.allows(podcastId, nowMillis())) return null
         val answer =
             try {
                 send(V2FeedReportRequest(id = showId, status = status))
@@ -116,6 +128,7 @@ class FeedReporter(
                 Log.w(TAG, "Feed report for $podcastId failed", e)
                 null
             } ?: return null
+        limiter.record(podcastId, nowMillis())
         if (answer.fetchVia != null && answer.fetchVia != V2FetchVia.DIRECT) return null
         val https = TrackedPodcastRtdbLogic.httpsFeedUrl(answer.fetchUrl) ?: return null
         return https.takeIf { it != savedFeedUrl?.trim() }
@@ -124,7 +137,7 @@ class FeedReporter(
     companion object {
         private const val TAG = "FeedReporter"
 
-        /** The production [send]: one `POST /v2/feed-report`; null for any answer but 200. */
+        /** The production [send]: one `POST /v2/feed-report`; null for any answer but 2xx (a 429 included), which counts nothing. */
         suspend fun sendWith(api: BoxLoreApiV2, request: V2FeedReportRequest): V2FeedReportResponse? {
             val response = api.reportFeed(request).awaitResponse()
             return if (response.isSuccessful) response.body() else null

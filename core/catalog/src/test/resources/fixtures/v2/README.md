@@ -15,11 +15,14 @@ recorded.
 | `curiosity.json` | `GET /v2/curated/curiosity-v3?page=1` |
 | `briefing-metadata.json` | `GET /v2/briefings/metadata/us` |
 | `briefing-chapters.json` | the `chaptersUrl` of that briefing (`/v2/briefings/chapters/us`) |
+| `shows-feeds.json` | `POST /v2/shows/feeds` with `{"ids":[3391039,920666,9999999999,7]}`, recorded 2026-10-27: a registry move flagged for repair, a dump address, a show the API doesn't know (`fetchUrl: null`) and an http-only show read through the API (`fetchVia: proxy`) |
 
-The `/v2/shows/feeds` answers are not live recordings: they were written on 2026-10-27 from the
-route's documented contract and its own tests, field for field, with example addresses.
+Two answers can't be recorded on demand, so they are written field for field in the shape the
+Worker answers with (the same fields, types and nesting as `shows-feeds.json`):
 
-| File | Request |
+| File | Answer |
 |---|---|
-| `shows-feeds.json` | `POST /v2/shows/feeds` with four IDs: a confirmed move (`registry:` source, `flags.addressRepair`), an http-only show (`fetchVia: proxy` with its `transportUrl`), a show the lookup doesn't know (`fetchUrl: null`) and one with another `epNs` |
-| `shows-feeds-registry-down.json` | the same route while the address registry is unavailable (`registryAvailable: false`, dump addresses only) |
+| `shows-feeds-registry-unavailable.json` | `POST /v2/shows/feeds` while the address registry is down: `registryAvailable: false`, addresses from the dump |
+| `feed-report.json` | `POST /v2/feed-report` for show 3391039: the registry's address. A live report would queue a real re-check |
+| `shows-feeds-upgrade-cases.json` | `POST /v2/shows/feeds` written from the route's contract (not recorded) for the upgrade repair: a confirmed move (`registry:` source, `flags.addressRepair`), an http-only show (`fetchVia: proxy` with its `transportUrl`), a show the lookup doesn't know (`fetchUrl: null`) and one with another `epNs` |
+| `shows-feeds-registry-down.json` | the same route while the address registry is unavailable (`registryAvailable: false`, dump addresses only), with the upgrade-case show ID |

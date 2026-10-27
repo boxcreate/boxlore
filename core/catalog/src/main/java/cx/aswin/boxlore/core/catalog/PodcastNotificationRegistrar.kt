@@ -21,7 +21,8 @@ enum class NotificationRegistrationOutcome {
 /**
  * Registers a Podcast Index show's new-episode notifications again after its saved address
  * changed, and waits for Firebase to acknowledge both writes: the `tracked_podcasts/<id>` node
- * (title, artwork, and the HTTPS address once the show has a latest episode) and the
+ * (title, artwork and the HTTPS address; written only once the show has a latest episode, so the
+ * shared node never loses its address) and the
  * [TrackedPodcastRtdbLogic.topic] subscription. Same node and topic as turning notifications on,
  * so nothing old builds or the checker read changes. The app retries [NotificationRegistrationOutcome.RETRY]
  * with a capped background job. `rss:` shows have their own journal ([RssNotificationReconciler]).
@@ -56,9 +57,12 @@ class PodcastNotificationRegistrar internal constructor(
     }
 
     private suspend fun publish(row: PodcastEntity) {
-        // A stub row from a cloud pull has no details yet: subscribe the topic only, as turning notifications on does.
-        if (row.title.isNotBlank() && row.title != STUB_TITLE) {
-            val feedUrl = TrackedPodcastRtdbLogic.attachableFeedUrl(row.feedUrl, row.latestEpisode?.id)
+        // The node is one per show for every follower and its write replaces it whole: it is written
+        // only with an address. A stub row from a cloud pull, or a row with no latest episode yet,
+        // subscribes the topic only, as turning notifications on does; the latest-episode save
+        // attaches the address later.
+        val feedUrl = TrackedPodcastRtdbLogic.attachableFeedUrl(row.feedUrl, row.latestEpisode?.id)
+        if (row.title.isNotBlank() && row.title != STUB_TITLE && feedUrl != null) {
             firebase.set(row.podcastId, TrackedPodcastRtdbLogic.payload(row.title, row.imageUrl, feedUrl))
         }
         firebase.subscribe(TrackedPodcastRtdbLogic.topic(row.podcastId))
