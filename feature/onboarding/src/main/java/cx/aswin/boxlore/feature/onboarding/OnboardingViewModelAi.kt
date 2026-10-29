@@ -578,11 +578,13 @@ internal fun OnboardingViewModel.navigateBackFromSuggestions() {
         }
     val clearSuggestionPayload =
         OnboardingSuggestionsPresentation.shouldClearSuggestionPayloadOnBack(nextStep)
+    similarShowsJob?.cancel()
+    similarShowsJob = null
     _uiState.update {
         if (clearSuggestionPayload) {
-            OnboardingSuggestionsPresentation.withClearedSuggestionPayload(it, nextStep)
+            OnboardingSuggestionsPresentation.withClearedSuggestionPayload(it, nextStep).copy(similarChoicePending = false)
         } else {
-            it.copy(currentStep = nextStep)
+            it.copy(currentStep = nextStep, similarChoicePending = false)
         }
     }
     if (nextStep == OnboardingStep.AI_ONBOARDING) {

@@ -288,70 +288,53 @@ internal fun OnboardingViewModel.generateRecommendationsFromSearch() {
     val selectedShows = currentState.selectedPodcasts.values.toList()
     if (selectedShows.isEmpty()) return
 
-    val seedIds = selectedShows.map { it.id }.toSet()
-    val seedCount = seedIds.size
-
     _uiState.update {
         it.copy(
             currentStep = OnboardingStep.AI_SUGGESTIONS,
-            isAiLoading = true,
-            isSynthesizing = true,
-            aiLoadingStage = AiLoadingStage.SYNTHESIZING_PREFERENCES,
+            isAiLoading = false,
+            isSynthesizing = false,
+            aiLoadingStage = AiLoadingStage.IDLE,
             onboardingError = null,
             aiCurriculumRows = emptyList(),
             genreChartsPodcasts = emptyList(),
-            suggestionSeedCount = seedCount,
+            suggestionSeedCount = selectedShows.size,
             reachedSuggestionsViaSearchFlow = true,
             reachedSuggestionsViaAiFlow = false,
             reachedSuggestionsViaOpmlFlow = false,
+            similarChoicePending = true,
         )
     }
-
-    launchSimilarShowsFetch(
-        seedShows = selectedShows,
-        seedIds = seedIds,
-        seedCount = seedCount,
-        region = currentState.currentRegion,
-        errorContext = "generateRecommendationsFromSearch",
-        beforeApi = {
-            for (podcast in selectedShows) {
-                subscribeAndIngest(podcast)
-            }
-        },
-    )
+    // The choice says the picks are in the library, so follow them now, before either choice.
+    viewModelScope.launch {
+        for (podcast in selectedShows) {
+            subscribeAndIngest(podcast)
+        }
+    }
 }
 
 fun OnboardingViewModel.generateRecommendationsFromOpml(importedPodcasts: List<Podcast>) {
     if (importedPodcasts.isEmpty()) return
 
     val seedIds = importedPodcasts.map { it.id }.toSet()
-    val seedCount = seedIds.size
 
     _uiState.update {
         it.copy(
             currentStep = OnboardingStep.AI_SUGGESTIONS,
-            isAiLoading = true,
-            isSynthesizing = true,
-            aiLoadingStage = AiLoadingStage.SYNTHESIZING_PREFERENCES,
+            isAiLoading = false,
+            isSynthesizing = false,
+            aiLoadingStage = AiLoadingStage.IDLE,
             onboardingError = null,
             aiCurriculumRows = emptyList(),
             genreChartsPodcasts = emptyList(),
-            suggestionSeedCount = seedCount,
+            suggestionSeedCount = seedIds.size,
             reachedSuggestionsViaSearchFlow = false,
             reachedSuggestionsViaAiFlow = false,
             reachedSuggestionsViaOpmlFlow = true,
             selectedPodcasts = importedPodcasts.associateBy { p -> p.id },
             subscribedPodcastIds = seedIds,
+            similarChoicePending = true,
         )
     }
-
-    launchSimilarShowsFetch(
-        seedShows = importedPodcasts,
-        seedIds = seedIds,
-        seedCount = seedCount,
-        region = _uiState.value.currentRegion,
-        errorContext = "generateRecommendationsFromOpml",
-    )
 }
 
 internal fun OnboardingViewModel.skipOnboarding(onDone: () -> Unit) {

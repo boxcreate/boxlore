@@ -294,6 +294,8 @@ object AnalyticsHelper : Analytics {
 
     fun trackOnboardingSkipped(screen: String, totalOnboardingTimeSeconds: Float,) = OnboardingAnalyticsTracks.trackOnboardingSkipped(screen, totalOnboardingTimeSeconds)
 
+    fun trackOnboardingSimilarChoice(path: String, choice: String, seedCount: Int,) = OnboardingAnalyticsTracks.trackOnboardingSimilarChoice(path, choice, seedCount)
+
     fun trackOnboardingAiTurnSubmitted(turnNumber: Int, selectedOptions: Set<String>, customInputText: String, timeSpentSeconds: Float,) = OnboardingAnalyticsTracks.trackOnboardingAiTurnSubmitted(turnNumber, selectedOptions, customInputText, timeSpentSeconds)
 
     fun trackOnboardingAiResponseReceived(

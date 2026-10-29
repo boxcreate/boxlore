@@ -90,6 +90,9 @@ internal sealed interface SuggestionsFooterState {
     data object Adding : SuggestionsFooterState
 
     data class Finish(val count: Int) : SuggestionsFooterState
+
+    /** Search and import, before any request: see similar shows or go to Home. */
+    data class Choice(val homeFirst: Boolean) : SuggestionsFooterState
 }
 
 /** The suggestions screen's actions, grouped so the route wiring stays readable. */
@@ -101,6 +104,9 @@ internal data class SuggestionsCallbacks(
     val onRetry: () -> Unit,
     val onFinish: () -> Unit,
     val onScrolled: () -> Unit = {},
+    /** Search and import only: ask for similar shows, or go to Home (also while they load). */
+    val onSeeSimilar: () -> Unit = {},
+    val onGoHome: () -> Unit = {},
 )
 
 /**
@@ -125,7 +131,9 @@ internal fun AiSuggestionsScreen(uiState: OnboardingUiState, callbacks: Suggesti
         snapshotFlow { list.firstVisibleItemIndex > 0 }.first { it }
         callbacks.onScrolled()
     }
+    val choosing = SimilarShowsChoice.showing(uiState)
     val footer = when {
+        choosing -> SuggestionsFooterState.Choice(homeFirst = SimilarShowsChoice.homeIsPrimary(uiState))
         loading -> SuggestionsFooterState.Loading
         error || lanes.isEmpty() -> SuggestionsFooterState.Retry
         uiState.isCompleting -> SuggestionsFooterState.Adding
@@ -136,10 +144,22 @@ internal fun AiSuggestionsScreen(uiState: OnboardingUiState, callbacks: Suggesti
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = { SuggestionsTopBar(callbacks.onBack) },
-        bottomBar = { SuggestionsFooter(footer, onFinish = callbacks.onFinish, onRetry = callbacks.onRetry) },
+        bottomBar = {
+            SuggestionsFooter(
+                footer,
+                SuggestionsFooterActions(
+                    onFinish = callbacks.onFinish,
+                    onRetry = callbacks.onRetry,
+                    onSeeSimilar = callbacks.onSeeSimilar,
+                    onGoHome = callbacks.onGoHome,
+                    canSkipToHome = SimilarShowsChoice.canSkipLoading(uiState, loading),
+                ),
+            )
+        },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             when {
+                choosing -> SimilarShowsChoiceContent(uiState)
                 loading -> SuggestionsLoading(uiState, origin)
                 error || lanes.isEmpty() -> SuggestionsProblem(error)
                 else -> LazyColumn(
@@ -205,7 +225,7 @@ private val SuggestionsEchoWidth = 96.dp
 /** The search picks or imported shows, already in the library: a few covers and a count. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun SuggestionsSeedSummary(uiState: OnboardingUiState, origin: SuggestionsOrigin) {
+internal fun SuggestionsSeedSummary(uiState: OnboardingUiState, origin: SuggestionsOrigin) {
     val seeds = OnboardingSuggestionsPresentation.seedShows(uiState)
     val count = uiState.suggestionSeedCount.takeIf { it > 0 } ?: seeds.size
     val colors = MaterialTheme.colorScheme
@@ -402,19 +422,21 @@ private fun SuggestionsProblem(error: Boolean) {
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun SuggestionsFooter(state: SuggestionsFooterState, onFinish: () -> Unit, onRetry: () -> Unit) {
+private fun SuggestionsFooter(state: SuggestionsFooterState, actions: SuggestionsFooterActions) {
     val (container, content) = suggestionsButtonColors(state)
     Column(
         Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).navigationBarsPadding().padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 12.dp).testTag("suggestions_footer"),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (state is SuggestionsFooterState.Retry) {
-            TextButton(onClick = onFinish, modifier = Modifier.heightIn(min = 48.dp).padding(bottom = 4.dp)) {
-                Text(stringResource(R.string.suggestions_start_without))
-            }
-        }
+        SuggestionsSecondaryAction(state, actions)
         Button(
-            onClick = { if (state is SuggestionsFooterState.Retry) onRetry() else onFinish() },
+            onClick = {
+                when (state) {
+                    SuggestionsFooterState.Retry -> actions.onRetry()
+                    is SuggestionsFooterState.Choice -> if (state.homeFirst) actions.onGoHome() else actions.onSeeSimilar()
+                    else -> actions.onFinish()
+                }
+            },
             enabled = state !is SuggestionsFooterState.Loading && state !is SuggestionsFooterState.Adding,
             modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("suggestions_finish"),
             shapes = ButtonDefaults.shapes(shape = RoundedCornerShape(28.dp), pressedShape = RoundedCornerShape(18.dp)),
@@ -428,12 +450,36 @@ private fun SuggestionsFooter(state: SuggestionsFooterState, onFinish: () -> Uni
     }
 }
 
+/** What the footer's buttons do; [canSkipToHome] adds "Skip to Home" while search or import suggestions load. */
+internal data class SuggestionsFooterActions(
+    val onFinish: () -> Unit,
+    val onRetry: () -> Unit,
+    val onSeeSimilar: () -> Unit,
+    val onGoHome: () -> Unit,
+    val canSkipToHome: Boolean,
+)
+
+/** The quieter way on, above the main button: start without, the other choice, or skip a load. */
+@Composable
+private fun SuggestionsSecondaryAction(state: SuggestionsFooterState, actions: SuggestionsFooterActions) {
+    val (label, onClick, tag) = when {
+        state is SuggestionsFooterState.Retry -> Triple(R.string.suggestions_start_without, actions.onFinish, "suggestions_start_without")
+        state is SuggestionsFooterState.Choice && state.homeFirst -> Triple(R.string.similar_choice_see, actions.onSeeSimilar, "similar_choice_similar")
+        state is SuggestionsFooterState.Choice -> Triple(R.string.similar_choice_home, actions.onGoHome, "similar_choice_home")
+        state is SuggestionsFooterState.Loading && actions.canSkipToHome -> Triple(R.string.similar_skip_home, actions.onGoHome, "suggestions_skip_home")
+        else -> return
+    }
+    TextButton(onClick = onClick, modifier = Modifier.heightIn(min = 48.dp).padding(bottom = 4.dp).testTag(tag)) {
+        Text(stringResource(label))
+    }
+}
+
 /** Busy reads tonal and alive; nothing selected is a quieter tonal; something to add is filled. */
 @Composable
 private fun suggestionsButtonColors(state: SuggestionsFooterState): Pair<Color, Color> {
     val colors = MaterialTheme.colorScheme
     val busy = state is SuggestionsFooterState.Loading || state is SuggestionsFooterState.Adding
-    val filled = state is SuggestionsFooterState.Retry || (state is SuggestionsFooterState.Finish && state.count > 0)
+    val filled = state is SuggestionsFooterState.Retry || state is SuggestionsFooterState.Choice || (state is SuggestionsFooterState.Finish && state.count > 0)
     val container by animateColorAsState(
         when {
             busy -> colors.primaryContainer
@@ -459,6 +505,11 @@ private fun SuggestionsFooterLabel(state: SuggestionsFooterState) {
         SuggestionsFooterState.Loading -> EchoThinkingLabel(stringArrayResource(R.array.suggestions_finding_words))
         SuggestionsFooterState.Adding -> EchoThinkingLabel(arrayOf(stringResource(R.string.suggestions_adding)))
         SuggestionsFooterState.Retry -> Text(stringResource(R.string.suggestions_try_again), style = MaterialTheme.typography.titleMedium)
+        is SuggestionsFooterState.Choice -> Text(
+            stringResource(if (state.homeFirst) R.string.similar_choice_home else R.string.similar_choice_see),
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 1,
+        )
         is SuggestionsFooterState.Finish -> Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 if (state.count > 0) pluralStringResource(R.plurals.suggestions_add_shows, state.count, state.count) else stringResource(R.string.suggestions_start_without),

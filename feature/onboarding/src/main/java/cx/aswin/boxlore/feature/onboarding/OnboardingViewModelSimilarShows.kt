@@ -2,9 +2,11 @@ package cx.aswin.boxlore.feature.onboarding
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.OnboardingSelectedShowDto
 import cx.aswin.boxlore.core.network.model.OnboardingSimilarShowsRequest
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -19,7 +21,6 @@ internal fun OnboardingViewModel.launchSimilarShowsFetch(
     seedCount: Int,
     region: String,
     errorContext: String,
-    beforeApi: suspend () -> Unit = {},
 ) {
     val finalAction: () -> Unit = {
         _uiState.update {
@@ -33,9 +34,8 @@ internal fun OnboardingViewModel.launchSimilarShowsFetch(
                 suggestionSeedCount = seedCount,
             )
         }
-        viewModelScope.launch {
+        similarShowsJob = viewModelScope.launch {
             try {
-                beforeApi()
                 val locale = discoveryLocaleForRegion(region)
                 val request =
                     OnboardingSimilarShowsRequest(
@@ -60,6 +60,8 @@ internal fun OnboardingViewModel.launchSimilarShowsFetch(
                             ).execute()
                     }
 
+                // Skipped to Home meanwhile: the answer arrived too late to show.
+                if (!SimilarShowsChoice.acceptsResult(_uiState.value)) return@launch
                 if (response.isSuccessful && response.body() != null) {
                     val rows =
                         OnboardingSuggestionsPresentation.filterCurriculumRowsExcluding(
@@ -81,7 +83,10 @@ internal fun OnboardingViewModel.launchSimilarShowsFetch(
                 } else {
                     throw Exception("Failed to load similar shows from backend: ${response.code()}")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
+                if (!SimilarShowsChoice.acceptsResult(_uiState.value)) return@launch
                 Log.e("OnboardingViewModel", "Error in $errorContext", e)
                 _uiState.update { state ->
                     state.copy(
@@ -97,4 +102,40 @@ internal fun OnboardingViewModel.launchSimilarShowsFetch(
     }
     lastFailedAction = finalAction
     finalAction()
+}
+
+/** "See similar shows" after search or import: the one AI request these paths make, once asked for. */
+internal fun OnboardingViewModel.chooseSimilarShows() {
+    val state = _uiState.value
+    if (!state.similarChoicePending || state.isCompleting) return
+    val seeds = state.selectedPodcasts.values.toList()
+    _uiState.update { it.copy(similarChoicePending = false) }
+    AnalyticsHelper.trackOnboardingSimilarChoice(SimilarShowsChoice.path(state), "similar", seeds.size)
+    launchSimilarShowsFetch(
+        seedShows = seeds,
+        seedIds = seeds.map { it.id }.toSet(),
+        seedCount = seeds.size,
+        region = state.currentRegion,
+        errorContext = "chooseSimilarShows",
+    )
+}
+
+/**
+ * "Go to Home" on the choice, or leaving while suggestions load: cancels any request in flight and
+ * finishes like "Start without adding", so the picked or imported shows stay followed.
+ */
+internal fun OnboardingViewModel.goHomeFromSimilar(onDone: () -> Unit) {
+    val state = _uiState.value
+    if (state.isCompleting) return
+    similarShowsJob?.cancel()
+    similarShowsJob = null
+    AnalyticsHelper.trackOnboardingSimilarChoice(
+        SimilarShowsChoice.path(state),
+        if (state.similarChoicePending) "home" else "skip_loading",
+        state.selectedPodcasts.size,
+    )
+    _uiState.update {
+        it.copy(similarChoicePending = false, isAiLoading = false, isSynthesizing = false, aiLoadingStage = AiLoadingStage.IDLE)
+    }
+    finishAiOnboarding(onDone)
 }

@@ -56,6 +56,11 @@ data class OnboardingUiState(
     val reachedSuggestionsViaAiFlow: Boolean = false,
     val reachedSuggestionsViaSearchFlow: Boolean = false,
     val reachedSuggestionsViaOpmlFlow: Boolean = false,
+    /**
+     * Search and import stop on a choice before any AI request: see similar shows, or go to Home
+     * with the picked or imported shows followed. Cleared by either choice and by Back.
+     */
+    val similarChoicePending: Boolean = false,
     /** Count of search/OPML seed shows used for the suggestions loader copy (stable during fetch). */
     val suggestionSeedCount: Int = 0,
     val hasSentCustomInput: Boolean = false,
