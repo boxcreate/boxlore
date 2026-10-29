@@ -350,6 +350,25 @@ class RenumberedShowFollowsTest {
     }
 
     @Test
+    fun theFollowedFeedCountsWhenAnUnfollowedOneIsLinkedToo() = runTest {
+        podcastDao.upsert(row(OLD, notifications = false, subscribedAt = FOLLOWED_AT, epNs = null))
+        podcastDao.upsert(
+            row("rss:earlier", notifications = false, subscribedAt = 0L, epNs = null)
+                .copy(sourceType = PodcastEntity.SOURCE_RSS, linkedPodcastIndexId = NEW, isSubscribed = false),
+        )
+        podcastDao.upsert(
+            row("rss:abc", notifications = false, subscribedAt = FOLLOWED_AT, epNs = null)
+                .copy(sourceType = PodcastEntity.SOURCE_RSS, linkedPodcastIndexId = NEW),
+        )
+
+        assertTrue(repository.renumberedFollows.adoptAnswer(OLD, answer()))
+
+        assertNull("the feed's follow is the show's: none is added under the new number", podcastDao.getPodcast(NEW))
+        assertTrue(podcastDao.getPodcast("rss:abc")!!.isSubscribed)
+        assertFalse(podcastDao.getPodcast(OLD)!!.isSubscribed)
+    }
+
+    @Test
     fun unfollowingTheFeedAlsoEndsTheFollowKeptUnderTheOldNumber() = runTest {
         podcastDao.upsert(row(OLD, notifications = true, subscribedAt = FOLLOWED_AT, epNs = null))
         podcastDao.upsert(

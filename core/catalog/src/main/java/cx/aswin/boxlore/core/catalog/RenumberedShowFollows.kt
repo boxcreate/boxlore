@@ -303,7 +303,7 @@ class RenumberedShowFollows internal constructor(
         val current = podcastDao.getPodcast(newId)
         if (current?.isRss == true) return MoveOutcome.None
         val move = RenumberedFollowMerge.move(old, newId, current, answer, nowMillis())
-        val feedShow = podcastDao.getRssPodcastLinkedTo(newId)?.takeIf { it.isRss && it.isSubscribed }
+        val feedShow = podcastDao.getSubscribedRssPodcastLinkedTo(newId)
         if (feedShow != null) {
             // The new show is followed through its own feed: that follow stays as it is and the old one
             // ends, unless that would drop notifications the feed's follow can't take without the
@@ -364,4 +364,4 @@ private fun RenumberedShows.recordOrWarn(oldId: String, newId: String): Boolean 
 /** [podcastId] followed itself or through a followed `rss:` feed linked to it, as follow buttons show it. */
 private suspend fun PodcastDao.isFollowedAsShown(podcastId: String): Boolean =
     getPodcast(podcastId)?.isSubscribed == true ||
-        getRssPodcastLinkedTo(podcastId)?.let { it.isRss && it.isSubscribed } == true
+        getSubscribedRssPodcastLinkedTo(podcastId) != null

@@ -87,6 +87,21 @@ interface PodcastDao {
     @Query("SELECT * FROM podcasts WHERE linkedPodcastIndexId = :podcastIndexId LIMIT 1")
     suspend fun getRssPodcastLinkedTo(podcastIndexId: String): PodcastEntity?
 
+    /**
+     * The followed `rss:` feed linked to [podcastIndexId], when several feed rows (one unfollowed)
+     * are linked to it.
+     *
+     * Added for renumbered shows (docs/EPISODE_IDS.md §5, renumbered shows).
+     */
+    @Query(
+        """
+        SELECT * FROM podcasts
+        WHERE linkedPodcastIndexId = :podcastIndexId AND sourceType = 'rss' AND isSubscribed = 1
+        ORDER BY subscribedAt DESC LIMIT 1
+        """,
+    )
+    suspend fun getSubscribedRssPodcastLinkedTo(podcastIndexId: String): PodcastEntity?
+
     @Query("SELECT * FROM podcasts WHERE podcastId = :id")
     suspend fun getPodcast(id: String): PodcastEntity?
 
