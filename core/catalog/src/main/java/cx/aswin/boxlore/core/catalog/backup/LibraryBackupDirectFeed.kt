@@ -15,7 +15,11 @@ internal data class LibraryBackupRefreshPlan(
 
 /** Pure helpers for exporting and targeting direct-feed opt-ins in library JSON. */
 internal object LibraryBackupDirectFeedLogic {
-    const val VERSION = 6
+    /**
+     * The JSON library backup version written by this build. 6 added `directFeedOptIns`; 7 adds
+     * the episode identity block ([BoxLoreBackup.episodeIdentity], P4 PR 17 of the own-episode-IDs plan).
+     */
+    const val VERSION = 7
 
     fun mergeExport(
         portOptIns: List<EpisodeSupplementPort.DirectFeedOptIn>,

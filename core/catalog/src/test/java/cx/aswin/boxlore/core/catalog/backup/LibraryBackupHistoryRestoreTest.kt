@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.catalog.backup
 
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -17,6 +18,14 @@ class LibraryBackupHistoryRestoreTest {
 
         assertTrue(restored.isManualCompletion)
         assertTrue(restored.isBulkCompletion)
+    }
+
+    @Test
+    fun sanitizeKeepsTheLikeTime() {
+        val restored = LibraryBackupHistoryRestore.sanitize(history().copy(isLiked = true, likedAt = 42L))
+
+        assertTrue(restored.isLiked)
+        assertEquals(42L, restored.likedAt)
     }
 
     private fun history() = ListeningHistoryEntity(

@@ -3,7 +3,6 @@ package cx.aswin.boxlore.core.catalog.backup
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import cx.aswin.boxlore.core.catalog.BuildConfig
 import cx.aswin.boxlore.core.catalog.ExactPodcastLookupKey
 import cx.aswin.boxlore.core.catalog.ExactPodcastLookupResult
 import cx.aswin.boxlore.core.catalog.ExactPodcastLookupType
@@ -16,6 +15,7 @@ import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.catalog.ports.ListeningHistoryBackupPort
 import cx.aswin.boxlore.core.catalog.toPodcast
+import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
@@ -23,6 +23,7 @@ import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.ranking.AdaptiveRankingBackup
 import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
+import cx.aswin.boxlore.core.rss.RenumberedShows
 import cx.aswin.boxlore.core.rss.RssFeedClient
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import java.io.InputStream
@@ -86,11 +87,14 @@ data class BoxLoreBackup(
     val adaptiveRanking: AdaptiveRankingBackup? = null,
     val directFeedOptIns: List<DirectFeedOptInBackup>? = null,
     val folders: List<SubscriptionFolderBackup>? = null,
+    /** Version 7+: episode aliases, group settings and renumbered shows ([EpisodeIdentityBackup]). */
+    val episodeIdentity: EpisodeIdentityBackup? = null,
 )
 
 data class OpmlFeed(val title: String, val xmlUrl: String,)
 
-@Suppress("TooManyFunctions", "LargeClass")
+// The last parameters are test seams that default to the app's shared dependencies.
+@Suppress("TooManyFunctions", "LargeClass", "LongParameterList", "kotlin:S107")
 class LibraryBackupManager(
     private val subscriptionRepository: SubscriptionRepository,
     private val listeningHistory: ListeningHistoryBackupPort,
@@ -103,6 +107,8 @@ class LibraryBackupManager(
         SharedAppDependenciesHolder.require().rssPodcastRepository,
     private val episodeSupplementPort: EpisodeSupplementPort? = null,
     private val folderRepository: FolderRepository? = null,
+    private val database: BoxLoreDatabase? = null,
+    private val renumberedShows: RenumberedShows? = null,
 ) {
     private val context = context.applicationContext
     private val rssFeedClient = RssFeedClient()
@@ -170,6 +176,7 @@ class LibraryBackupManager(
         val rankingBackup = adaptiveRankingRepository.exportBackup()
         val folderRepo = folderRepository ?: SharedAppDependenciesHolder.instance?.folderRepository
         val exportedFolders = folderRepo?.getFolders()?.map(LibraryBackupFolderLogic::toBackup).orEmpty()
+        val episodeIdentity = identity()?.export()
         val backup =
             BoxLoreBackup(
                 version = LibraryBackupDirectFeedLogic.VERSION,
@@ -179,6 +186,7 @@ class LibraryBackupManager(
                 adaptiveRanking = rankingBackup,
                 directFeedOptIns = null,
                 folders = exportedFolders,
+                episodeIdentity = episodeIdentity,
             )
         return gson.toJson(backup)
     }
@@ -195,16 +203,19 @@ class LibraryBackupManager(
         sb.append("    <outline text=\"Subscriptions\" title=\"Subscriptions\">\n")
         for (entity in subscriptions) {
             val title = escapeXml(entity.title)
-            val feedUrl =
-                escapeXml(
-                    entity.feedUrl ?: "${BuildConfig.BOXLORE_API_BASE_URL}/episodes?id=${entity.podcastId}",
-                )
+            val feedUrl = escapeXml(LibraryBackupOpml.publisherFeedUrl(entity) ?: continue)
             sb.append("      <outline type=\"rss\" text=\"$title\" title=\"$title\" xmlUrl=\"$feedUrl\" />\n")
         }
         sb.append("    </outline>\n")
         sb.append("  </body>\n")
         sb.append("</opml>")
         return sb.toString()
+    }
+
+    private fun identity(): LibraryBackupIdentity? {
+        val shared = SharedAppDependenciesHolder.instance
+        val db = database ?: shared?.database ?: return null
+        return LibraryBackupIdentity(db, renumberedShows ?: shared?.renumberedShows ?: RenumberedShows.NONE)
     }
 
     private fun escapeXml(input: String?): String {
@@ -224,6 +235,8 @@ class LibraryBackupManager(
         onProgress(JsonBackupProgress(phase = JsonBackupPhase.PREPARING))
         val backup = gson.fromJson(jsonString, BoxLoreBackup::class.java)
         restoreImportedGlobalPreferences(backup.globalPreferences)
+        val identity = identity()
+        identity?.restoreRenumberedShows(backup.episodeIdentity)
         val titleMap = backup.subscriptions.associate { it.podcastId to it.title }
         val importedIds = mutableListOf<String>()
         for (entity in backup.subscriptions) {
@@ -234,7 +247,9 @@ class LibraryBackupManager(
             LibraryBackupFolderLogic.restoreFolders(backup.folders, folderRepo)
             folderRepo.syncLinkedGenres()
         }
-        restoreImportedHistory(backup.history, importedIds)
+        // Identity first, so the history restore skips IDs this phone holds for another episode.
+        val refusedIds = identity?.restore(backup.episodeIdentity).orEmpty()
+        restoreImportedHistory(backup.history, importedIds, refusedIds)
         relinkImportedSwitchedShows(importedIds)
         backup.adaptiveRanking?.let { rankingBackup ->
             adaptiveRankingRepository.restoreBackup(rankingBackup)
@@ -450,20 +465,23 @@ class LibraryBackupManager(
         }
     }
 
-    private suspend fun restoreImportedHistory(history: List<ListeningHistoryEntity>, importedIds: List<String>,) {
-        for (entity in history) {
-            if (entity.podcastId.startsWith("rss:") && entity.podcastId !in importedIds) {
-                continue
+    private suspend fun restoreImportedHistory(history: List<ListeningHistoryEntity>, importedIds: List<String>, refusedIds: Set<String>,) {
+        val restorable =
+            history.filter { entity ->
+                val unimportedRss = entity.podcastId.startsWith("rss:") && entity.podcastId !in importedIds
+                // Gson can write JSON null into the non-null ID; such a row is sanitized below.
+                !unimportedRss && (entity.episodeId as String?) !in refusedIds
             }
-            val safeEntity = LibraryBackupHistoryRestore.sanitize(entity)
-            listeningHistory.upsertHistoryEntity(safeEntity)
+        for (entity in restorable) {
+            listeningHistory.upsertHistoryEntity(LibraryBackupHistoryRestore.sanitize(entity))
         }
     }
 
     /**
      * Links each imported RSS show that replaced a Podcast Index show with the episodes the restored
-     * history holds under that show (`RssPodcastRepository.relinkSwitchedShow`). The backup carries
-     * the show's link but not the aliases, so they are written again here, once the history is in.
+     * history holds under that show (`RssPodcastRepository.relinkSwitchedShow`), once the history is
+     * in. A version 7 backup also brings the `rss_source_link` aliases and the old IDs' keys; older
+     * backups carry only the show's link, so the aliases are written again here.
      *
      * Added in P4 of the own-episode-IDs plan (plan section 8, re-key paths narrowed; decision D8).
      */

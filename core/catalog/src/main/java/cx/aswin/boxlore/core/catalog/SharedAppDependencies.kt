@@ -7,6 +7,7 @@ import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import cx.aswin.boxlore.core.ranking.RankingRuntimeControls
+import cx.aswin.boxlore.core.rss.RenumberedShows
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 
 /**
@@ -42,6 +43,13 @@ interface SharedAppDependencies {
      * Added in P4 PR 15 of the own-episode-IDs plan (plan section 11, upgrade repair).
      */
     val upgradeAddressRepair: UpgradeAddressRepair? get() = null
+
+    /**
+     * Shows Podcast Index renumbered (`boxlore_renumbered_shows`), which the JSON library backup
+     * exports and restores; [RenumberedShows.NONE] when the composition root doesn't provide it (tests).
+     * Added in P4 PR 17 of the own-episode-IDs plan (plan section 8, JSON backup v7).
+     */
+    val renumberedShows: RenumberedShows get() = RenumberedShows.NONE
 }
 
 /**
