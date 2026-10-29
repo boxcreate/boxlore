@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,13 +19,13 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 /**
  * Search and import, before any request: the shows already in the library, then the question.
- * The footer holds both answers (See similar shows, Go to Home).
+ * The footer holds both answers (See similar shows, Go to Home); the content scrolls in short windows.
  */
 @Composable
 internal fun SimilarShowsChoiceContent(uiState: OnboardingUiState) {
     val origin = OnboardingSuggestionsPresentation.origin(uiState)
     Column(
-        Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 8.dp).testTag("similar_choice"),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp).testTag("similar_choice"),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         SuggestionsSeedSummary(uiState, origin)

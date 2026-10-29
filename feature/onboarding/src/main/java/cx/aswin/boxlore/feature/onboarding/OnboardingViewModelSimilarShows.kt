@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.network.model.OnboardingCurriculumRowDto
 import cx.aswin.boxlore.core.network.model.OnboardingSelectedShowDto
 import cx.aswin.boxlore.core.network.model.OnboardingSimilarShowsRequest
 import kotlinx.coroutines.CancellationException
@@ -36,72 +37,81 @@ internal fun OnboardingViewModel.launchSimilarShowsFetch(
         }
         similarShowsJob = viewModelScope.launch {
             try {
-                val locale = discoveryLocaleForRegion(region)
-                val request =
-                    OnboardingSimilarShowsRequest(
-                        shows =
-                        seedShows.distinctBy { it.title.lowercase().trim() }.take(20).map {
-                            OnboardingSelectedShowDto(
-                                title = it.title,
-                                description = it.description ?: "",
-                            )
-                        },
-                        country = locale.country,
-                        languages = locale.languages,
-                        recommendationFormat = "discovery_v2",
-                    )
-
-                val response =
-                    withContext(Dispatchers.IO) {
-                        podcastRepository.api
-                            .getSimilarShows(
-                                publicKey = podcastRepository.publicKey,
-                                request = request,
-                            ).execute()
-                    }
-
+                val rows = requestSimilarRows(seedShows, seedIds, region)
                 // Skipped to Home meanwhile: the answer arrived too late to show.
-                if (!SimilarShowsChoice.acceptsResult(_uiState.value)) return@launch
-                if (response.isSuccessful && response.body() != null) {
-                    val rows =
-                        OnboardingSuggestionsPresentation.filterCurriculumRowsExcluding(
-                            rows =
-                            response.body()!!.map {
-                                it.copy(episodes = emptyList())
-                            },
-                            excludeIds = seedIds,
-                        )
-                    _uiState.update { state ->
-                        state.copy(
-                            aiCurriculumRows = rows,
-                            isAiLoading = false,
-                            isSynthesizing = false,
-                            aiLoadingStage = AiLoadingStage.IDLE,
-                            onboardingError = null,
-                        )
-                    }
-                } else {
-                    throw Exception("Failed to load similar shows from backend: ${response.code()}")
-                }
+                if (SimilarShowsChoice.acceptsResult(_uiState.value)) showSimilarRows(rows)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                if (!SimilarShowsChoice.acceptsResult(_uiState.value)) return@launch
-                Log.e("OnboardingViewModel", "Error in $errorContext", e)
-                _uiState.update { state ->
-                    state.copy(
-                        isAiLoading = false,
-                        isSynthesizing = false,
-                        aiLoadingStage = AiLoadingStage.IDLE,
-                        onboardingError =
-                        "We encountered a temporary issue generating recommendations. Let's try again.",
-                    )
+                if (SimilarShowsChoice.acceptsResult(_uiState.value)) {
+                    Log.e("OnboardingViewModel", "Error in $errorContext", e)
+                    showSimilarError()
                 }
             }
         }
     }
     lastFailedAction = finalAction
     finalAction()
+}
+
+/** The similar-shows rows for [seedShows], without the seeds themselves; throws when the request fails. */
+private suspend fun OnboardingViewModel.requestSimilarRows(
+    seedShows: List<Podcast>,
+    seedIds: Set<String>,
+    region: String,
+): List<OnboardingCurriculumRowDto> {
+    val locale = discoveryLocaleForRegion(region)
+    val request =
+        OnboardingSimilarShowsRequest(
+            shows =
+            seedShows.distinctBy { it.title.lowercase().trim() }.take(20).map {
+                OnboardingSelectedShowDto(
+                    title = it.title,
+                    description = it.description ?: "",
+                )
+            },
+            country = locale.country,
+            languages = locale.languages,
+            recommendationFormat = "discovery_v2",
+        )
+    val response =
+        withContext(Dispatchers.IO) {
+            podcastRepository.api
+                .getSimilarShows(
+                    publicKey = podcastRepository.publicKey,
+                    request = request,
+                ).execute()
+        }
+    val body = response.body()
+    check(response.isSuccessful && body != null) { "Failed to load similar shows from backend: ${response.code()}" }
+    return OnboardingSuggestionsPresentation.filterCurriculumRowsExcluding(
+        rows = body.map { it.copy(episodes = emptyList()) },
+        excludeIds = seedIds,
+    )
+}
+
+private fun OnboardingViewModel.showSimilarRows(rows: List<OnboardingCurriculumRowDto>) {
+    _uiState.update { state ->
+        state.copy(
+            aiCurriculumRows = rows,
+            isAiLoading = false,
+            isSynthesizing = false,
+            aiLoadingStage = AiLoadingStage.IDLE,
+            onboardingError = null,
+        )
+    }
+}
+
+private fun OnboardingViewModel.showSimilarError() {
+    _uiState.update { state ->
+        state.copy(
+            isAiLoading = false,
+            isSynthesizing = false,
+            aiLoadingStage = AiLoadingStage.IDLE,
+            onboardingError =
+            "We encountered a temporary issue generating recommendations. Let's try again.",
+        )
+    }
 }
 
 /** "See similar shows" after search or import: the one AI request these paths make, once asked for. */

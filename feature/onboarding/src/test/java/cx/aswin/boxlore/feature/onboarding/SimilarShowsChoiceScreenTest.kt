@@ -1,15 +1,20 @@
 package cx.aswin.boxlore.feature.onboarding
 
 import android.app.Application
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
@@ -40,7 +45,9 @@ class SimilarShowsChoiceScreenTest {
     @Composable
     private fun screen() {
         BoxLoreTheme(dynamicColor = false) {
+            // The screen gets exactly the injected window's size, so short windows really are short.
             CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) {
+                Box(Modifier.size(window.value.widthDp.dp, window.value.heightDp.dp)) {
                 AiSuggestionsScreen(
                     uiState = state.value,
                     callbacks = SuggestionsCallbacks(
@@ -54,6 +61,7 @@ class SimilarShowsChoiceScreenTest {
                         onGoHome = { actions += "home" },
                     ),
                 )
+                }
             }
         }
     }
@@ -119,10 +127,31 @@ class SimilarShowsChoiceScreenTest {
         ).forEach { next ->
             compose.runOnIdle { window.value = next }
             compose.waitForIdle()
-            compose.onNodeWithTag("similar_choice").assertIsDisplayed()
             compose.onNodeWithTag("suggestions_finish").assertIsDisplayed()
+            compose.onNodeWithTag("similar_choice_similar").assertIsDisplayed()
+            compose.onNodeWithText("Want shows like these?").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithText("boxlore can find similar shows in a few seconds, or you can start listening now.").performScrollTo().assertIsDisplayed()
         }
         compose.onNodeWithTag("suggestions_finish").performClick()
+        assertEquals(listOf("home"), actions)
+    }
+
+    @Test
+    fun `Skip to Home stays reachable while loading through window changes`() {
+        state.value = choosing(importPath = false).copy(similarChoicePending = false, isAiLoading = true, isSynthesizing = true)
+        compose.mainClock.autoAdvance = false
+        compose.setContent { screen() }
+        listOf(
+            BoxloreWindowLayout(600f, 900f),
+            BoxloreWindowLayout(1280f, 800f),
+            BoxloreWindowLayout(1280f, 479f),
+            BoxloreWindowLayout(360f, 740f),
+        ).forEach { next ->
+            window.value = next
+            compose.mainClock.advanceTimeBy(1_500)
+            compose.onNodeWithTag("suggestions_skip_home").assertIsDisplayed()
+        }
+        compose.onNodeWithTag("suggestions_skip_home").performClick()
         assertEquals(listOf("home"), actions)
     }
 

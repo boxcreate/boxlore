@@ -87,6 +87,7 @@ class GlossaryAllEventsEmissionTest {
                 },
                 "onboarding_started" to { AnalyticsHelper.trackOnboardingStarted() },
                 "onboarding_flow_selected" to { AnalyticsHelper.trackOnboardingFlowSelected("ai") },
+                "onboarding_similar_choice" to { AnalyticsHelper.trackOnboardingSimilarChoice("import", "home", 12) },
                 "onboarding_step_viewed" to {
                     AnalyticsHelper.trackOnboardingStepViewed("genres", "manual_genre", stepIndex = 1)
                 },

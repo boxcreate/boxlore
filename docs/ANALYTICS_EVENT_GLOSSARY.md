@@ -79,6 +79,7 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 | `onboarding_step_viewed` | A discrete onboarding step became visible | step_name:string; flow_type:string | step_index:int | none |
 | `onboarding_abandoned` | User left before complete | last_step:string; flow_type:string | time_spent_seconds:int; subscribed_count:int | none |
 | `onboarding_completed` | User finished an onboarding path | method:string; total_subscribed_count:int | screen:string; subscribed_podcasts_list:list; total_onboarding_time_seconds:float; entry_point:string; favorite_genres:list; did_scroll_suggestions:bool; did_switch_from_ai:bool; import_type:string; searches_performed:int | none |
+| `onboarding_similar_choice` | After search or import, the listener chose See similar shows (`similar`), Go to Home (`home`) or Skip to Home while suggestions loaded (`skip_loading`) | path:string; choice:string; seed_count:int | — | none |
 | `onboarding_ai_turn_submitted` | User sent a message in onboarding AI chat | turn_number:int; user_input_text:string; has_custom_input:bool | selected_options:list; time_spent_seconds:float | logged_by_policy |
 | `onboarding_ai_response_received` | Assistant reply returned in onboarding AI | turn_number:int; options_count:int | options_list:list; duration_seconds:float; detected_intent:string; assistant_message:string | none |
 | `onboarding_ai_search_redirect` | AI suggested leaving chat for search | turn_number:int | suggested_query:string | logged_by_policy |
