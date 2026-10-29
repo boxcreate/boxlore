@@ -10,7 +10,10 @@ import com.materialkolor.hct.Hct
 /**
  * Two tones a cover is redrawn in: its darkest parts become [shadow] and its brightest [highlight],
  * by brightness alone ([colorFilter]). [highlight] stays at tone 38 or below, so [ArtworkShade]'s
- * light words read on any part of a duotone cover (content 6:1, soft content 4.5:1 at worst).
+ * light words read on any part of a duotone cover (content 6:1, soft content 4.5:1 at worst). A
+ * vivid pair ([fromColor] with `vivid`) is for art whose words sit on their own scrim: a deep shadow
+ * and a light highlight in the colour's own hue, so the cover keeps the contrast and brightness of
+ * its full-colour self.
  */
 @Immutable
 data class ArtworkDuotone(val shadow: Color, val highlight: Color) {
@@ -38,14 +41,17 @@ data class ArtworkDuotone(val shadow: Color, val highlight: Color) {
         /** Black and white: a near-black shadow and a mid grey highlight. */
         val Neutral: ArtworkDuotone = duotone(chroma = 0.0, darkHue = 0.0)
 
-        /** The cover's seed, the same colour its pages, the player and its other hero cards use. */
-        fun fromPalette(palette: ArtworkPalette): ArtworkDuotone = fromColor(Color(palette.seed))
+        /** [Neutral] at full strength: a near-black shadow and a light grey highlight. */
+        val NeutralVivid: ArtworkDuotone = vividDuotone(chroma = 0.0, hue = 0.0)
 
-        /** One colour, such as a cover's seed or the app's primary. */
-        fun fromColor(color: Color): ArtworkDuotone {
+        /** The cover's seed, the same colour its pages, the player and its other hero cards use. */
+        fun fromPalette(palette: ArtworkPalette, vivid: Boolean = false): ArtworkDuotone = fromColor(Color(palette.seed), vivid)
+
+        /** One colour, such as a cover's seed or the app's primary; [vivid] gives the light-highlight pair. */
+        fun fromColor(color: Color, vivid: Boolean = false): ArtworkDuotone {
             val hct = Hct.fromInt(color.toArgb())
             val chroma = if (hct.chroma < ArtworkNeutralChroma) 0.0 else hct.chroma
-            return duotone(chroma = chroma, darkHue = artworkHueForDarkTone(hct.hue))
+            return if (vivid) vividDuotone(chroma, hct.hue) else duotone(chroma = chroma, darkHue = artworkHueForDarkTone(hct.hue))
         }
     }
 }
@@ -59,4 +65,14 @@ private const val MaxHighlightChroma = 56.0
 private fun duotone(chroma: Double, darkHue: Double) = ArtworkDuotone(
     shadow = Color(Hct.from(darkHue, chroma.coerceAtMost(MaxShadowChroma), ShadowTone).toInt()),
     highlight = Color(Hct.from(darkHue, chroma.coerceAtMost(MaxHighlightChroma), HighlightTone).toInt()),
+)
+
+private const val VividShadowTone = 10.0
+private const val VividHighlightTone = 80.0
+private const val MaxVividHighlightChroma = 72.0
+
+/** The shadow keeps the dark pair's gold for yellows; the highlight is light enough to keep the colour's own hue. */
+private fun vividDuotone(chroma: Double, hue: Double) = ArtworkDuotone(
+    shadow = Color(Hct.from(artworkHueForDarkTone(hue), chroma.coerceAtMost(MaxShadowChroma), VividShadowTone).toInt()),
+    highlight = Color(Hct.from(hue, chroma.coerceAtMost(MaxVividHighlightChroma), VividHighlightTone).toInt()),
 )

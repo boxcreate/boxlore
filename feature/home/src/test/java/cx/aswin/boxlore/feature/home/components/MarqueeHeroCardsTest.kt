@@ -1,11 +1,17 @@
 package cx.aswin.boxlore.feature.home.components
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.drawable.BitmapDrawable
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -17,6 +23,14 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.test.core.app.ApplicationProvider
+import coil.Coil
+import coil.ImageLoader
+import coil.decode.DataSource
+import coil.request.SuccessResult
+import com.github.takahirom.roborazzi.RoborazziOptions
+import com.github.takahirom.roborazzi.RoborazziTaskType
+import com.github.takahirom.roborazzi.captureRoboImage
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
@@ -25,6 +39,8 @@ import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.SmartHeroItem
 import cx.aswin.boxlore.feature.home.StableHeroList
+import java.io.File
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -48,6 +64,12 @@ class MarqueeHeroCardsTest {
     private val details = mutableListOf<String>()
     private var arrows = 0
     private var toggles = 0
+
+    private var originalImageLoader: ImageLoader? = null
+
+    @After fun restoreImageLoader() {
+        originalImageLoader?.let(Coil::setImageLoader)
+    }
 
     private fun episode(id: String) = TestFixtures.episode(id = id, title = "Episode $id", podcastId = "show-$id").copy(duration = 3600)
     private fun show(id: String) = TestFixtures.podcast(id = "show-$id", title = "Show $id", imageUrl = "")
@@ -115,6 +137,45 @@ class MarqueeHeroCardsTest {
         composeRule.waitForIdle()
         assertNull(fullColor?.filter)
         assertNotNull(artwork?.filter)
+    }
+
+    @Test fun `artwork and app theme keep a light cover about as bright as full color, with dark top bar words`() {
+        // A light cream cover with a coral band at its foot, so the shared picker finds its colour.
+        val cover = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888).apply {
+            eraseColor(android.graphics.Color.rgb(252, 246, 232))
+            Canvas(this).drawRect(0f, 48f, 64f, 64f, Paint().apply { color = android.graphics.Color.rgb(232, 96, 72) })
+        }
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        originalImageLoader = Coil.imageLoader(context)
+        Coil.setImageLoader(
+            ImageLoader.Builder(context).components {
+                add(coil.intercept.Interceptor { chain -> SuccessResult(BitmapDrawable(context.resources, cover), chain.request, DataSource.MEMORY_CACHE) })
+            }.build(),
+        )
+        val show = TestFixtures.podcast(id = "show-light", title = "Light show", imageUrl = "https://covers.test/marquee-light.jpg")
+            .copy(latestEpisode = episode("light"), episodeStatus = EpisodeStatus.IN_PROGRESS, resumeProgress = 0.4f)
+        items.value = listOf(SmartHeroItem(HeroType.RESUME, show, "Resume", description = "Episode light"))
+        val tone = MarqueeTopTone()
+        render(tone = tone)
+        val brightness = listOf(HeroCoverShade.DARK, HeroCoverShade.ARTWORK, HeroCoverShade.THEME).associateWith { option ->
+            shade.value = option
+            // The words over the cover's top turn dark in every choice, once the picker has read the cover.
+            composeRule.waitUntil(5_000) { tone.content == MarqueeDarkContent }
+            composeRule.waitForIdle()
+            val file = File.createTempFile("marquee-$option", ".png")
+            try {
+                composeRule.onNodeWithTag("home_hero_artwork", useUnmergedTree = true)
+                    .captureRoboImage(file.absolutePath, roborazziOptions = RoborazziOptions(taskType = RoborazziTaskType.Record))
+                val image = requireNotNull(BitmapFactory.decodeFile(file.absolutePath))
+                Color(image.getPixel(image.width / 2, image.height / 20)).luminance()
+            } finally {
+                file.delete()
+            }
+        }
+        val fullColor = brightness.getValue(HeroCoverShade.DARK)
+        // The old two tones stopped at tone 38, a tenth of the cover's brightness; the vivid ones keep most of it.
+        assertTrue("artwork $brightness", brightness.getValue(HeroCoverShade.ARTWORK) >= fullColor * 0.5f)
+        assertTrue("app theme $brightness", brightness.getValue(HeroCoverShade.THEME) >= fullColor * 0.5f)
     }
 
     @Test fun `the cover stays still while Home scrolls the hero away`() {
