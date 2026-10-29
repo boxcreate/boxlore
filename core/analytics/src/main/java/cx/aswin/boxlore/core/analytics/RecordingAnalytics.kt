@@ -106,8 +106,14 @@ class RecordingAnalytics : Analytics {
         )
     }
 
-    override fun trackFirstEpisodePlayed() {
-        capture("first_episode_played")
+    override fun trackFirstEpisodePlayed(episodeId: String?, podcastId: String?) {
+        capture(
+            "first_episode_played",
+            buildMap {
+                episodeId?.let { put("episode_id", it) }
+                podcastId?.let { put("podcast_id", it) }
+            },
+        )
     }
 
     override fun trackAppCheckStatus(tokenObtained: Boolean, provider: String, reason: String?,) {

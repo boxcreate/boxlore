@@ -46,6 +46,14 @@ data class UpgradeRepairShowEntity(
 )
 
 /**
+ * Row counts of `upgrade_repair_shows` ([UpgradeRepairDao.showCounts]): every show the upgrade
+ * seeded, and those that reached [UpgradeRepairState.GAVE_UP]. A query result, not a table.
+ *
+ * Added in P4 PR 18 of the own-episode-IDs plan (plan section 11, upgrade repair; analytics).
+ */
+data class UpgradeRepairShowCounts(val shows: Int, val gaveUp: Int)
+
+/**
  * States of an [UpgradeRepairShowEntity].
  *
  * Added in P4 of the own-episode-IDs plan (plan section 11, upgrade repair).

@@ -31,7 +31,8 @@ interface Analytics {
 
     fun trackPromoterReviewHandoff(npsScore: Int?)
 
-    fun trackFirstEpisodePlayed()
+    /** The first play on this install, with the episode playing when known. */
+    fun trackFirstEpisodePlayed(episodeId: String? = null, podcastId: String? = null,)
 
     /** One App Check attempt; [reason] is a short failure category (null when a token was obtained). */
     fun trackAppCheckStatus(tokenObtained: Boolean, provider: String, reason: String? = null,)

@@ -21,12 +21,19 @@ internal class UpgradeNotificationStep(
     private val marker: UpgradeNotificationMarker,
     private val requestRegistration: suspend (podcastId: String) -> Unit,
 ) {
-    suspend fun register() {
-        if (marker.isComplete) return
+    /** Asks for every target's registration; returns how many requests were saved. */
+    suspend fun register(): Int {
+        if (marker.isComplete) return 0
         val requested = mutableListOf<String>()
+        var saved = 0
         var allRequested = true
         for (podcastId in targets()) {
-            if (request(podcastId)) requested += podcastId else allRequested = false
+            if (request(podcastId)) {
+                requested += podcastId
+                saved++
+            } else {
+                allRequested = false
+            }
             if (requested.size >= MARKER_BATCH) {
                 marker.addRegistered(requested)
                 requested.clear()
@@ -34,6 +41,7 @@ internal class UpgradeNotificationStep(
         }
         marker.addRegistered(requested)
         if (allRequested && repairDao.pendingCount() == 0) marker.markComplete()
+        return saved
     }
 
     /** Followed Podcast Index shows with notifications on, not yet registered here, whose repair steps are over. */
