@@ -111,6 +111,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `LocalEpisodeCollisionGuard` compares stored catalog keys after the recipe trim and keeps a stored row's ID when the show already holds the key. A legacy key ending in a newline, tab or no-break space no longer gets a second row, and a refresh never deletes a row through the unique (show, key) index. ([#1171](https://github.com/boxcreate/boxlore/pull/1171)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - Legacy local catalog rows keyed `id:<own ID>` or by audio address take the feed's key when the item's own minted ID equals theirs, including on a first read that matched a Podcast Index episode. Rows that find no free ID are logged instead of dropped silently. ([#1171](https://github.com/boxcreate/boxlore/pull/1171)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 
+<!-- readme-copy:start pr=0
+covers: 1140, 1150, 1151, 1159, 1160, 1174, 1176, 1178, 1179, 1180, 1181, 1182, 1183, 1184, 1185, 1186, 1187, 1188, 1190, 1191, 1192, 1193, 1194, 1195, 1196
+### Improvements
+- Show pages are starting to load episodes straight from each show’s own feed, and keep them for offline use.
+- Pick your listening languages, and turn English off if you listen in German, French, Spanish, Portuguese, Russian or Dutch.
+- After importing your library or searching, choose to see similar shows or go straight to Home.
+- Your progress, likes and queue stay in sync on all your devices, and shared episode links open the right episode.
+### Fixes
+- Shows that moved to a new feed keep getting new episodes and notifications.
+- Fewer duplicate episodes, a tablet crash and a blank show page fixed, plus many smaller fixes.
+readme-copy:end pr=0 -->
+
 <!-- readme-copy:start pr=1140
 ### Fixes
 - Turning off episode notifications for an RSS feed now stops sharing its feed link from your device. Links already shared stay in earlier public backups.
