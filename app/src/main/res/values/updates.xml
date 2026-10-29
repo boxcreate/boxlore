@@ -11,6 +11,9 @@
     <string name="updates_play_available">An update is available on Google Play</string>
     <string name="updates_play">Update with Google Play</string>
     <string name="updates_play_failed">Couldn’t open the update. Try again.</string>
+    <string name="updates_play_check_failed">Couldn’t check Google Play for updates</string>
+    <string name="updates_open_play">Open Google Play</string>
+    <string name="updates_try_again">Try again</string>
     <string name="updates_play_unavailable">This update is no longer available. Check for updates again.</string>
     <string name="updates_download">Download update</string>
     <string name="updates_install">Install update</string>

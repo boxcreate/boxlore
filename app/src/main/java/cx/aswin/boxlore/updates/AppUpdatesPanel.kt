@@ -22,6 +22,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.OpenInNew
@@ -58,7 +59,7 @@ import cx.aswin.boxlore.core.designsystem.components.BoxloreDialog as Dialog
 import cx.aswin.boxlore.ui.NativeDialogSystemBars
 
 @Composable
-fun AppUpdatesPanel(updates: AppUpdates, onInstall: () -> Unit, onPlayUpdate: () -> Unit) {
+fun AppUpdatesPanel(updates: AppUpdates, onInstall: () -> Unit, onPlayUpdate: () -> Unit, onOpenPlay: () -> Unit = {}) {
     val visible by updates.visible.collectAsStateWithLifecycle()
     if (!visible) return
     val check by updates.checker.state.collectAsStateWithLifecycle()
@@ -90,7 +91,11 @@ fun AppUpdatesPanel(updates: AppUpdates, onInstall: () -> Unit, onPlayUpdate: ()
                         }
                         offer.manifest?.let { ReleaseNotes(it) }
                     } else {
-                        UpdateStatusContent(check.status, onCheck = { updates.open(checkNow = true) })
+                        UpdateStatusContent(
+                            check.status,
+                            onCheck = { updates.open(checkNow = true) },
+                            onOpenPlay = onOpenPlay.takeIf { updates.usesPlay },
+                        )
                         UpcomingChanges(check.upcoming)
                     }
                     CachedUpdateCheckFailure(check, updates)
@@ -135,9 +140,15 @@ private fun UpcomingChanges(notes: String) {
     }
 }
 
+/**
+ * The check's result with its next step. A Play build whose check failed (Play won't answer for an
+ * install it didn't make, or Play itself is unavailable) leads with opening boxlore's Play page,
+ * and keeps Try again under it.
+ */
 @Composable
-private fun UpdateStatusContent(status: UpdateCheckStatus, onCheck: () -> Unit) {
+private fun UpdateStatusContent(status: UpdateCheckStatus, onCheck: () -> Unit, onOpenPlay: (() -> Unit)? = null) {
     val checking = status == UpdateCheckStatus.CHECKING || status == UpdateCheckStatus.IDLE
+    val openPlay = onOpenPlay?.takeIf { status == UpdateCheckStatus.FAILED }
     Column(
         modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -146,7 +157,7 @@ private fun UpdateStatusContent(status: UpdateCheckStatus, onCheck: () -> Unit) 
         Icon(painterResource(R.drawable.ic_boxlore_wordmark_mic), contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.height(32.dp).aspectRatio(6213f / 820f))
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
-                stringResource(checkStatusText(status)),
+                stringResource(if (openPlay != null) R.string.updates_play_check_failed else checkStatusText(status)),
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
@@ -156,6 +167,10 @@ private fun UpdateStatusContent(status: UpdateCheckStatus, onCheck: () -> Unit) 
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+        if (openPlay != null) {
+            PlayFallbackActions(onOpenPlay = openPlay, onCheck = onCheck)
+            return@Column
         }
         FilledTonalButton(onClick = onCheck, enabled = !checking, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -167,6 +182,19 @@ private fun UpdateStatusContent(status: UpdateCheckStatus, onCheck: () -> Unit) 
                 Text(stringResource(if (checking) R.string.updates_checking else R.string.updates_check))
             }
         }
+    }
+}
+
+@Composable
+private fun PlayFallbackActions(onOpenPlay: () -> Unit, onCheck: () -> Unit) {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Button(onClick = onOpenPlay, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.AutoMirrored.Rounded.OpenInNew, contentDescription = null, modifier = Modifier.size(20.dp))
+                Text(stringResource(R.string.updates_open_play))
+            }
+        }
+        TextButton(onClick = onCheck, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.updates_try_again)) }
     }
 }
 

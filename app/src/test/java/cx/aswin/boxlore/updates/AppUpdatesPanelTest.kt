@@ -3,13 +3,19 @@ package cx.aswin.boxlore.updates
 import android.app.Activity
 import android.app.Application
 import android.os.Looper
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -100,6 +106,70 @@ class AppUpdatesPanelTest {
             composeRule.onNodeWithText("Couldn’t check for updates. Try again later.").assertIsDisplayed()
             composeRule.onNodeWithText("Check for updates").assertIsDisplayed()
             composeRule.onNodeWithText("You’re up to date").assertDoesNotExist()
+        } finally {
+            scope.cancel()
+        }
+    }
+
+    @Test fun `a failed Play check leads to Google Play and can still try again, across window sizes`() {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        try {
+            var lookups = 0
+            // Play refuses to answer for a Play build it didn't install (or is unavailable).
+            val checker = UpdateChecker(
+                UpdateSource {
+                lookups++
+                error("app not owned")
+            },
+                MemoryUpdateStore(),
+                28,
+                34
+            )
+            runBlocking { checker.check() }
+            val installer = object : ApkInstaller {
+                override suspend fun prepare(manifest: UpdateManifest, onState: (ApkInstallState) -> Unit): File = error("Play builds never download")
+                override suspend fun launch(activity: Activity, manifest: UpdateManifest, file: File): Boolean = error("Play builds never install")
+            }
+            val updates = AppUpdates(checker, true, installer, scope)
+            updates.open()
+            var opens = 0
+            val window = mutableStateOf(DpSize(360.dp, 740.dp))
+            composeRule.setContent {
+                MaterialTheme {
+                    Box(Modifier.size(window.value)) { AppUpdatesPanel(updates, {}, {}, onOpenPlay = { opens++ }) }
+                }
+            }
+            for (size in listOf(DpSize(600.dp, 900.dp), DpSize(1280.dp, 800.dp), DpSize(840.dp, 479.dp), DpSize(360.dp, 740.dp))) {
+                composeRule.runOnIdle { window.value = size }
+                composeRule.onNodeWithText("Couldn’t check Google Play for updates").assertIsDisplayed()
+                composeRule.onNodeWithText("Open Google Play").performScrollTo().assertIsDisplayed()
+                composeRule.onNodeWithText("Couldn’t check for updates. Try again later.").assertDoesNotExist()
+            }
+            composeRule.onNodeWithText("Open Google Play").performClick()
+            assertEquals(1, opens)
+            val before = lookups
+            composeRule.onNodeWithText("Try again").performScrollTo().performClick()
+            composeRule.waitForIdle()
+            assertEquals(before + 1, lookups)
+        } finally {
+            scope.cancel()
+        }
+    }
+
+    @Test fun `a failed direct check keeps its own message and no Google Play button`() {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        try {
+            val checker = UpdateChecker(UpdateSource { error("offline fixture") }, MemoryUpdateStore(), 28, 34)
+            runBlocking { checker.check() }
+            val installer = object : ApkInstaller {
+                override suspend fun prepare(manifest: UpdateManifest, onState: (ApkInstallState) -> Unit): File = error("No download during check")
+                override suspend fun launch(activity: Activity, manifest: UpdateManifest, file: File): Boolean = error("No install during check")
+            }
+            val updates = AppUpdates(checker, false, installer, scope)
+            updates.open()
+            composeRule.setContent { MaterialTheme { AppUpdatesPanel(updates, {}, {}, onOpenPlay = { error("direct builds never open Play") }) } }
+            composeRule.onNodeWithText("Couldn’t check for updates. Try again later.").assertIsDisplayed()
+            composeRule.onNodeWithText("Open Google Play").assertDoesNotExist()
         } finally {
             scope.cancel()
         }
