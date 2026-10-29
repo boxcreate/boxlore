@@ -73,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Feed-episode baselines read up to 1,000 newest episodes from `GET episodes/match` (match fields only) instead of the oldest 100, with the old page as fallback and a PostHog kill switch (`feed-fix-match-baseline-off`); a matched newest tip fills empty fields from the feed. ([#1159](https://github.com/boxcreate/boxlore/pull/1159)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
 - `LocalEpisodeCollisionGuard` keeps a local catalog row from replacing another show's episode: a clashing row gets a reserved negative ID, and the legacy RSS upgrade stays on RSS instead. ([#1159](https://github.com/boxcreate/boxlore/pull/1159)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
 - `PodcastDao.setFeedUrl` marks the row dirty, so a corrected feed address syncs. ([#1159](https://github.com/boxcreate/boxlore/pull/1159)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
+- A Podcast Index show that answers under a new show ID is recorded in `boxlore_renumbered_shows` and treated as one show: its follow moves to the new ID with merged settings (synced as a follow plus an unfollow, notifications through the pending registration journal), existing duplicate follows collapse on the next foreground pass, the old show's history, queue and download rows link to the new show's episodes without re-keying any ID, and `PodcastInfoScreen` counts either follow and takes the resolved show's artwork colours. ([#1186](https://github.com/boxcreate/boxlore/pull/1186)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - RSS notification cleanup removes only the RTDB `feedUrl` child instead of the whole `tracked_podcasts` row, which the rules refuse. A refused delete for a row that does not exist still unsubscribes the FCM topic and clears the journal entry, so `RssNotificationSyncWorker` no longer retries indefinitely. ([#1140](https://github.com/boxcreate/boxlore/pull/1140)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - New-episode notifications carry a working feed address for shows that moved, use stable episode IDs, and are never sent twice after a partly failed check. ([#1150](https://github.com/boxcreate/boxlore/pull/1150)) <!-- impact:user-impact-medium+backend-change --> <!-- copy:locked -->
 - A pull from the start no longer restores history rows removed on the device, and push batches read at most 100 dirty rows without descriptions. ([#1179](https://github.com/boxcreate/boxlore/pull/1179)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -173,6 +174,11 @@ readme-copy:end pr=1184 -->
 ### Fixes
 - Clearing boxlore's data no longer opens a random episode on the next launch.
 readme-copy:end pr=1185 -->
+
+<!-- readme-copy:start pr=1186
+### Fixes
+- Shows that changed their catalog number stay followed once: no more Subscribe button or duplicate follow for a show you already follow, and the episodes you played before the change stay marked as played.
+readme-copy:end pr=1186 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added

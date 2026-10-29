@@ -79,6 +79,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <b>🐛 Fixes:</b>
 <ul align="left">
 <li>Shows that moved to a new feed address now follow it. <a href="https://github.com/boxcreate/boxlore/pull/1160"><img src="https://img.shields.io/badge/PR-1160-6750A4?style=flat-square" alt="PR #1160" height="18"/></a></li>
+<li>Shows that changed their catalog number stay followed once: no more Subscribe button or duplicate follow for a show you already follow, and the episodes you played before the change stay marked as played. <a href="https://github.com/boxcreate/boxlore/pull/1186"><img src="https://img.shields.io/badge/PR-1186-6750A4?style=flat-square" alt="PR #1186" height="18"/></a></li>
 <li>Shows with more than 100 episodes keep progress, history and downloads on their newer episodes, and stop listing some twice. <a href="https://github.com/boxcreate/boxlore/pull/1159"><img src="https://img.shields.io/badge/PR-1159-6750A4?style=flat-square" alt="PR #1159" height="18"/></a></li>
 <li>An episode of one show no longer replaces an episode of another show that uses the same feed. <a href="https://github.com/boxcreate/boxlore/pull/1159"><img src="https://img.shields.io/badge/PR-1159-6750A4?style=flat-square" alt="PR #1159" height="18"/></a></li>
 <li>A feed address boxlore fixes on one device now reaches your other devices through sync. <a href="https://github.com/boxcreate/boxlore/pull/1159"><img src="https://img.shields.io/badge/PR-1159-6750A4?style=flat-square" alt="PR #1159" height="18"/></a></li>
