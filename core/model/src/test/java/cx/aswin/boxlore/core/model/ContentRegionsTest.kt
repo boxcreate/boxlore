@@ -50,4 +50,26 @@ class ContentRegionsTest {
         assertEquals("global", ContentRegions.briefingMarket(" GLOBAL "))
         assertEquals("gb", ContentRegions.briefingMarket("uk"))
     }
+
+    @Test
+    fun englishCanBeSwitchedOffOnlyForDeepPoolLanguages() {
+        assertEquals(setOf("fr", "de", "es", "pt", "ru", "nl"), ContentRegions.ENGLISH_OFF_LANGUAGES)
+        assertTrue(ContentRegions.canSwitchEnglishOff(listOf("en", "de")))
+        assertTrue(ContentRegions.canSwitchEnglishOff(listOf("de-DE", "fr")))
+        assertFalse(ContentRegions.canSwitchEnglishOff(listOf("en", "hi")))
+        assertFalse(ContentRegions.canSwitchEnglishOff(listOf("de", "zh")))
+        assertFalse(ContentRegions.canSwitchEnglishOff(listOf("en")))
+        assertFalse(ContentRegions.canSwitchEnglishOff(emptyList()))
+    }
+
+    @Test
+    fun normalizeDropsEnglishOnlyWhenSwitchedOffAndAllowed() {
+        assertEquals(listOf("de"), ContentRegions.normalizeLanguages(listOf("en", "de"), "de", englishOff = true))
+        assertEquals(listOf("en", "hi"), ContentRegions.normalizeLanguages(listOf("hi"), "in", englishOff = true))
+        assertEquals(listOf("en", "de"), ContentRegions.normalizeLanguages(listOf("de"), "de"))
+        // English's slot goes to a fourth pick, and comes back when English is on again.
+        val four = listOf("de", "fr", "es", "nl")
+        assertEquals(four, ContentRegions.normalizeLanguages(four, "de", englishOff = true))
+        assertEquals(listOf("en", "de", "fr", "es"), ContentRegions.normalizeLanguages(four, "de"))
+    }
 }

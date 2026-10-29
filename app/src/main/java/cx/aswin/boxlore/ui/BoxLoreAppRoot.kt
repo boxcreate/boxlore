@@ -382,6 +382,7 @@ fun BoxLoreAppRoot(
     val crashlyticsConsent by consentManager.isCrashReportingConsented.collectAsState(initial = false)
     val currentRegion by userPrefs.regionStream.collectAsState(initial = "us")
     val contentLanguages by userPrefs.contentLanguagesStream.collectAsState(initial = listOf("en"))
+    val contentEnglishOff by userPrefs.contentEnglishOffStream.collectAsState(initial = false)
 
     val themeConfig by userPrefs.themeConfigStream.collectAsState(
         initial = remember { userPrefs.cachedThemeConfig },
@@ -687,6 +688,7 @@ fun BoxLoreAppRoot(
                 NavSettingsState(
                     currentRegion = currentRegion,
                     contentLanguages = contentLanguages,
+                    contentEnglishOff = contentEnglishOff,
                     themeConfig = themeConfig,
                     useDynamicColor = useDynamicColor,
                     themeBrand = themeBrand,

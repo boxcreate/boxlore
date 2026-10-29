@@ -34,6 +34,8 @@ import org.xmlpull.v1.XmlPullParserFactory
 data class GlobalPreferencesBackup(
     val region: String? = null,
     val contentLanguages: List<String>? = null,
+    /** English switched off (D9, 29 Oct); absent in older backups, which keep English on. */
+    val contentEnglishOff: Boolean? = null,
     val themeConfig: String? = null,
     val themeBrand: String? = null,
     val surfaceStyle: String? = null,
@@ -119,6 +121,7 @@ class LibraryBackupManager(
                 GlobalPreferencesBackup(
                     region = userPrefs.regionStream.first(),
                     contentLanguages = userPrefs.contentLanguagesStream.first(),
+                    contentEnglishOff = userPrefs.contentEnglishOffStream.first(),
                     themeConfig = userPrefs.themeConfigStream.first(),
                     themeBrand = userPrefs.themeBrandStream.first(),
                     surfaceStyle = userPrefs.surfaceStyleStream.first(),
@@ -265,7 +268,8 @@ class LibraryBackupManager(
         if (prefs == null) return
         prefs.region.writePref { up.setRegion(it) }
         // Restore languages after region so setRegion's recommended reset does not wipe them.
-        prefs.contentLanguages.writePref { up.setContentLanguages(it) }
+        // One write with the English choice, so a fourth pick saved while English was off isn't cut.
+        prefs.contentLanguages.writePref { up.setContentLanguages(it, englishOff = prefs.contentEnglishOff == true) }
         prefs.themeConfig.writePref { up.setThemeConfig(it) }
         prefs.themeBrand.writePref { up.setThemeBrand(it) }
         prefs.surfaceStyle.writePref { up.setSurfaceStyle(it) }
