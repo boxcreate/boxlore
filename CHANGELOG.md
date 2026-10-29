@@ -79,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `LocalEpisodeCollisionGuard` keeps a local catalog row from replacing another show's episode: a clashing row gets a reserved negative ID, and the legacy RSS upgrade stays on RSS instead. ([#1159](https://github.com/boxcreate/boxlore/pull/1159)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
 - `PodcastDao.setFeedUrl` marks the row dirty, so a corrected feed address syncs. ([#1159](https://github.com/boxcreate/boxlore/pull/1159)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
 - A Podcast Index show that answers under a new show ID is recorded in `boxlore_renumbered_shows` and treated as one show: its follow moves to the new ID with merged settings (synced as a follow plus an unfollow, notifications through the pending registration journal), existing duplicate follows collapse on the next foreground pass, the old show's history, queue and download rows link to the new show's episodes without re-keying any ID, and `PodcastInfoScreen` counts either follow and takes the resolved show's artwork colours. ([#1186](https://github.com/boxcreate/boxlore/pull/1186)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Fixed a crash in the tablet Home hero carousel at the end of the row: `ResponsiveHeroCarousel` now keeps 1dp of end padding so material3's uncontained carousel never gets an empty end shift range. `HeroCarouselEndTest` covers tablet, foldable, right-to-left and live resize cases. ([#1193](https://github.com/boxcreate/boxlore/pull/1193)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - RSS notification cleanup removes only the RTDB `feedUrl` child instead of the whole `tracked_podcasts` row, which the rules refuse. A refused delete for a row that does not exist still unsubscribes the FCM topic and clears the journal entry, so `RssNotificationSyncWorker` no longer retries indefinitely. ([#1140](https://github.com/boxcreate/boxlore/pull/1140)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - New-episode notifications carry a working feed address for shows that moved, use stable episode IDs, and are never sent twice after a partly failed check. ([#1150](https://github.com/boxcreate/boxlore/pull/1150)) <!-- impact:user-impact-medium+backend-change --> <!-- copy:locked -->
 - A pull from the start no longer restores history rows removed on the device, and push batches read at most 100 dirty rows without descriptions. ([#1179](https://github.com/boxcreate/boxlore/pull/1179)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -207,6 +208,11 @@ readme-copy:end pr=1190 -->
 ### Fixes
 - Turning English off now keeps English shows out of your recommendations, search and suggestions, unless there aren't enough in your languages.
 readme-copy:end pr=1191 -->
+
+<!-- readme-copy:start pr=1193
+### Fixes
+- boxlore no longer crashes on some tablets and foldables when you scroll to the end of the top row on Home.
+readme-copy:end pr=1193 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added
