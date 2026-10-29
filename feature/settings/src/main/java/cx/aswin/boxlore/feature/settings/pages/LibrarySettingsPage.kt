@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Public
@@ -23,7 +24,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -36,10 +41,14 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.ContentRegions
 import cx.aswin.boxlore.feature.settings.R
+import cx.aswin.boxlore.feature.settings.components.SettingsActionRow
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsNavigationRow
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
+import cx.aswin.boxlore.feature.settings.dialogs.ClearSavedShowsDialog
+import cx.aswin.boxlore.feature.settings.dialogs.savedShowsLabel
+import kotlinx.coroutines.launch
 
 /**
  * Discovery region and language preferences for [LibrarySettingsPage].
@@ -53,7 +62,12 @@ data class LibraryDiscoveryPreferences(
     /** The listener's "Include English" choice, inverted (D9). */
     val englishOff: Boolean = false,
     val onSetEnglishOff: (Boolean) -> Unit = {},
+    /** Saved episode lists of shows the listener opened but doesn't follow (P4 PR 20). */
+    val savedShows: SavedShowsControl = SavedShowsControl(),
 )
+
+/** Counts and clears the saved copies of unfollowed shows (`ShowPageFeedPort.unfollowedCount` / `clearUnfollowed`). */
+data class SavedShowsControl(val count: suspend () -> Int = { 0 }, val clear: suspend () -> Int = { 0 },)
 
 @Composable
 internal fun LibrarySettingsPage(
@@ -128,6 +142,7 @@ internal fun LibrarySettingsPage(
                 },
             )
         }
+        SavedShowsGroup(discoveryPreferences.savedShows, onOpen = collapseCountryFaq)
     }
 
     if (showCountrySheet) {
@@ -256,3 +271,49 @@ private fun FaqParagraph(text: String) {
 
 /** The Languages row's summary: the languages in effect, as the listener reads them ("English, Hindi"). */
 internal fun languagesSummary(languages: List<String>): String = languages.mapNotNull { ContentRegions.LANGUAGE_LABELS[it] }.joinToString(", ")
+
+/** The Clear saved shows row's summary: counting, nothing saved, or how many shows have saved lists. */
+internal fun savedShowsSupportingText(count: Int?): String = when (count) {
+    null -> "Counting…"
+    0 -> "Nothing saved for shows you don’t follow"
+    else -> "${savedShowsLabel(count)} you don’t follow"
+}
+
+/**
+ * Library settings › Storage › Clear saved shows (P4 PR 20): the count of unfollowed shows with
+ * saved episode lists, and a confirmation before they are cleared. The open confirmation is
+ * saveable, so it stays through window changes and recreation.
+ */
+@Composable
+private fun SavedShowsGroup(control: SavedShowsControl, onOpen: () -> Unit) {
+    // The count the open confirmation shows, saved so it survives recreation; null while closed.
+    var confirming by rememberSaveable { mutableStateOf<Int?>(null) }
+    // Counted again after each clear; null while counting.
+    var reads by remember { mutableIntStateOf(0) }
+    val count by produceState<Int?>(initialValue = null, reads) { value = control.count() }
+    val scope = rememberCoroutineScope()
+    SettingsGroup(title = "Storage") {
+        SettingsActionRow(
+            title = "Clear saved shows",
+            supportingText = savedShowsSupportingText(count),
+            icon = Icons.Rounded.DeleteSweep,
+            onClick = {
+                onOpen()
+                count?.takeIf { it > 0 }?.let { confirming = it }
+            },
+        )
+    }
+    confirming?.let { shown ->
+        ClearSavedShowsDialog(
+            count = shown,
+            onConfirm = {
+                confirming = null
+                scope.launch {
+                    control.clear()
+                    reads++
+                }
+            },
+            onDismiss = { confirming = null },
+        )
+    }
+}

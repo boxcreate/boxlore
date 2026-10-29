@@ -58,9 +58,7 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
     ) { backStackEntry ->
         val settingsPage = backStackEntry.arguments?.getString("page")
         val fromOnboardingArg = backStackEntry.arguments?.getBoolean("fromOnboarding") ?: false
-        val isFromOnboarding = rememberSaveable {
-            fromOnboardingArg || !w.session.onboardingCompleted
-        }
+        val isFromOnboarding = rememberSaveable { fromOnboardingArg || !w.session.onboardingCompleted }
 
         SettingsScreen(
             repositories = SettingsRepositories(
@@ -121,6 +119,7 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
                 onSetContentLanguages = { languages -> scope.launch { w.userPrefs.setContentLanguages(languages) } },
                 englishOff = settingsState.contentEnglishOff,
                 onSetEnglishOff = { off -> scope.launch { w.userPrefs.setContentEnglishOff(off) } },
+                savedShows = savedShowsControl(container),
                 discoverySections = settingsState.discoverySections,
                 onSetDiscoverySection = { section, on ->
                     scope.launch {
@@ -470,3 +469,9 @@ internal fun handleSettingsOnBack(
         popBackStack()
     }
 }
+
+/** Library settings › Storage › Clear saved shows, backed by the show-page copies (P4 PR 20). */
+private fun savedShowsControl(container: cx.aswin.boxlore.AppContainer) = cx.aswin.boxlore.feature.settings.pages.SavedShowsControl(
+    count = { container.localEpisodeCatalogRepository.showPages.unfollowedCount() },
+    clear = { container.localEpisodeCatalogRepository.showPages.clearUnfollowed() },
+)

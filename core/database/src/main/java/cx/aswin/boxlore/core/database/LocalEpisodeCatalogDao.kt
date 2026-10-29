@@ -306,6 +306,44 @@ interface LocalEpisodeCatalogDao {
     )
     suspend fun isUnfollowedCopy(podcastId: String): Boolean
 
+    /**
+     * Stored copies the listener's manual clear removes (Settings › Clear saved shows): followed by
+     * neither record, with or without an unsubscribe TTL, so a show unfollowed recently goes too.
+     *
+     * Added in P4 PR 20 of the own-episode-IDs plan (plan section 11, decision D10).
+     */
+    @Query(
+        """
+        SELECT f.podcastId FROM local_episode_feeds f
+        WHERE f.followed = 0
+          AND NOT EXISTS (SELECT 1 FROM podcasts p WHERE p.podcastId = f.podcastId AND p.isSubscribed = 1)
+        """,
+    )
+    suspend fun listClearableCopyIds(): List<String>
+
+    /**
+     * Deletes [podcastId]'s stored copy when it is still one [listClearableCopyIds] lists, checked
+     * again inside the transaction so a follow that lands meanwhile keeps it. P4 PR 20.
+     */
+    @Transaction
+    suspend fun deleteCatalogIfClearable(podcastId: String): Boolean {
+        if (!isClearableCopy(podcastId)) return false
+        deleteCatalog(podcastId)
+        return true
+    }
+
+    /** True when [podcastId]'s stored copy is one [listClearableCopyIds] lists. */
+    @Query(
+        """
+        SELECT EXISTS(
+          SELECT 1 FROM local_episode_feeds f
+          WHERE f.podcastId = :podcastId AND f.followed = 0
+            AND NOT EXISTS (SELECT 1 FROM podcasts p WHERE p.podcastId = f.podcastId AND p.isSubscribed = 1)
+        )
+        """,
+    )
+    suspend fun isClearableCopy(podcastId: String): Boolean
+
     @Query("DELETE FROM local_episodes WHERE podcastId = :podcastId")
     suspend fun deleteEpisodes(podcastId: String)
 
