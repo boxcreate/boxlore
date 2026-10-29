@@ -51,6 +51,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Show pages of shows you don't follow list `/v2/episodes` under locally stored IDs when `feed_first` is off; in-show search filters that list on the phone instead of calling v1 `episodes/search`. Broken-feed reports share one limiter between the show page and the daily address check. ([#1184](https://github.com/boxcreate/boxlore/pull/1184)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Library settings › Discovery is split into Charts › Country and Recommendations › Languages rows, and changing the country keeps the listener's languages. ([#1187](https://github.com/boxcreate/boxlore/pull/1187)) <!-- impact:user-impact-medium+backend-change --> <!-- copy:locked -->
 - Onboarding after search or a library import asks before suggesting shows: **See similar shows** or **Go to Home** (`SimilarShowsChoice`), with **Skip to Home** while suggestions load; the similar-shows request runs only when asked for. ([#1194](https://github.com/boxcreate/boxlore/pull/1194)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Show page loading states: ([#1196](https://github.com/boxcreate/boxlore/pull/1196)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- an opening skeleton in the page's shape (`ShowPageSkeleton`); ([#1196](https://github.com/boxcreate/boxlore/pull/1196)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- loading episode cards in place of spinners (`EpisodeCardSkeleton`); ([#1196](https://github.com/boxcreate/boxlore/pull/1196)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- a plain status line with wavy progress in place of the status card (`ShowListStatusLine`). ([#1196](https://github.com/boxcreate/boxlore/pull/1196)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - New-episode notifications are checked hourly on our own server instead of GitHub Actions, whose schedule ran every few hours. ([#1151](https://github.com/boxcreate/boxlore/pull/1151)) <!-- impact:user-impact-low+backend-change --> <!-- copy:locked -->
 - Feed parsing records each item's position in the feed document (`ParsedFeedItem`, `ParsedRssFeed.items`). When items share a catalog key, the first in the document wins in the parser merge, `LocalEpisodeCatalogPersist`, `StickyRssEpisodeRemap` and the legacy RSS upgrade. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - Items without a GUID are keyed on their first playable `<enclosure url>`. Items that share a first enclosure keep their audio address as the key. Stored rows are also found by their own minted ID and by the audio address older builds used, so no stored episode ID changes. Minting is unchanged. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
@@ -87,6 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A pull from the start no longer restores history rows removed on the device, and push batches read at most 100 dirty rows without descriptions. ([#1179](https://github.com/boxcreate/boxlore/pull/1179)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - English off now reaches every discovery request: request builders keep a list without English as it is (`normalizeKeepingEnglishChoice`), and Because you like sends the listener's languages; the languages sheet notes that a smaller pool narrows recommendations. ([#1191](https://github.com/boxcreate/boxlore/pull/1191)) <!-- impact:user-impact-medium+backend-change --> <!-- copy:locked -->
 - Marquee's Artwork and App theme looks redraw covers in vivid `ArtworkDuotone` pairs (tone-10 shadow, tone-80 highlight) instead of Duotone's dark tones, drop the accent glow, and pick the top bar's words from the cover in every colour choice. Duotone cards are unchanged. ([#1195](https://github.com/boxcreate/boxlore/pull/1195)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Show pages with **Hide completed episodes** on keep loading until unfinished episodes appear (`HideCompletedFill`), and say "You’ve finished every episode" with **Show completed episodes** when none are left, instead of going blank. ([#1196](https://github.com/boxcreate/boxlore/pull/1196)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `PodcastInfoScreen` now saves open search and its query, the five dialog and sheet flags, the tag/genre draft, and selected episode IDs with their sort, so they survive activity recreation (fold density changes, process death) and back-stack returns. A recreated page waits for its first page, then looks its selected episodes up again in the saved sort; it drops IDs it cannot find and keeps them all when the lookup fails. Toolbar actions wait until the selection is complete. `PodcastInfoViewModel.loadPodcast` no longer reloads shows whose page ID differs from the route ID (`rss:`-linked feeds). Added `PodcastInfoAdaptiveTransitionTest`, which covers the 600dp width, 480dp height and 840dp landscape gates, orientation and fold transitions, and every dialog exit on compact and tablet hosts. ([#1174](https://github.com/boxcreate/boxlore/pull/1174)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - An item without a GUID whose enclosure and `media:content` point at different files is no longer parsed as two episodes. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - A feed crossing 4 MB no longer changes or deletes the IDs of feed-only extras. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
@@ -231,6 +236,13 @@ readme-copy:end pr=1194 -->
 ### Fixes
 - Marquee hero cards with Artwork or App theme cover colors now show the cover clearly, about as bright as Full color, instead of a dark blur.
 readme-copy:end pr=1195 -->
+
+<!-- readme-copy:start pr=1196
+### Improvements
+- Smoother loading on show pages, with the page's shape appearing right away and clearer messages while episodes load.
+### Fixes
+- Hiding completed episodes no longer empties a show's page: boxlore keeps loading until it finds episodes you haven't finished, and tells you when you've finished them all.
+readme-copy:end pr=1196 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added
