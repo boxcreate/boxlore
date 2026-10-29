@@ -20,7 +20,6 @@ import cx.aswin.boxlore.core.playback.playQueue
 import cx.aswin.boxlore.core.playback.togglePlayPause
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.HomePinnedShows
-import cx.aswin.boxlore.core.prefs.collectDiscoverySection
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.feature.home.logic.FilterSelectionAction
 import cx.aswin.boxlore.feature.home.logic.HomeBecauseYouLikeLogic
@@ -325,33 +324,7 @@ class HomeViewModel(
         // Start oldest-sort serial episode resolution after a delay
         startOldestSortResolution()
 
-        // Observe overridden podcast ID and region, resolve favorite podcast, and fetch recommendations
-        viewModelScope.launch {
-            homeCacheRestoreGate.awaitRestore()
-            collectDiscoverySection(
-                keys = combine(
-                    userPrefs.overriddenRecPodcastIdStream,
-                    userPrefs.regionStream,
-                ) { overriddenId, region ->
-                    overriddenId to region
-                },
-                on = sectionOn { it.becauseYouLike },
-                clear = { clearBecauseYouLike() },
-            ) { (overriddenId, region) ->
-                val activeSubs = subscriptionRepository.subscribedPodcasts.first()
-                val activeHistory = allHomeHistory.first()
-
-                val resolvedPodcast = resolveFavoritePodcast(overriddenId, activeSubs, activeHistory)
-                _seemsToLikePodcast.value = resolvedPodcast
-
-                if (resolvedPodcast != null) {
-                    fetchBecauseYouLikeRecommendations(resolvedPodcast, region)
-                } else {
-                    _becauseYouLikeRecommendations.value = emptyList()
-                    _becauseYouLikePodcasts.value = emptyList()
-                }
-            }
-        }
+        observeBecauseYouLike()
     }
 
     // Playback state to UI

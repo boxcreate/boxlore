@@ -168,8 +168,13 @@ private fun IncludeEnglishRow(state: ContentLanguageSelection.EnglishSwitch, pic
 internal fun includeEnglishSupportingText(state: ContentLanguageSelection.EnglishSwitch, picks: List<String>): String {
     val deep = joinLabels(ENGLISH_OFF_LABELS, conjunction = "or")
     return when {
-        !state.checked && picks.size == 1 -> "If there aren’t enough ${label(picks.single())} shows, boxlore adds a few in English."
-        !state.checked -> "If there aren’t enough shows in your languages, boxlore adds a few in English."
+        // English off: the pool is far smaller, so say what that costs before how it is softened.
+        !state.checked && picks.size == 1 ->
+            "There are far fewer ${label(picks.single())} shows, so recommendations won’t match your taste as closely. " +
+                "If there aren’t enough, boxlore adds a few in English."
+        !state.checked ->
+            "There are far fewer shows in your languages, so recommendations won’t match your taste as closely. " +
+                "If there aren’t enough, boxlore adds a few in English."
         state.enabled -> "Turn it off to get only shows in ${joinLabels(picks, conjunction = "and")}."
         state.keptOnBy.isNotEmpty() -> "Stays on with ${joinLabels(state.keptOnBy, conjunction = "and")}. You can turn it off when you pick only $deep."
         else -> "You can turn it off when you pick only $deep."

@@ -1,8 +1,12 @@
 package cx.aswin.boxlore.feature.home.logic
 
+import app.cash.turbine.test
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.home.HomeListeningHistoryItem
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -197,4 +201,26 @@ class HomeBecauseYouLikeLogicTest {
         isLiked = false,
         lastPlayedAt = 0L,
     )
+
+    @Test
+    fun `changing languages alone asks for the row again with the new languages`() = runTest {
+        val overridden = MutableStateFlow<String?>(null)
+        val region = MutableStateFlow("fr")
+        val languages = MutableStateFlow(listOf("en", "fr"))
+
+        HomeBecauseYouLikeLogic.requests(overridden, region, languages).test {
+            assertEquals(HomeBecauseYouLikeLogic.Request(null, "fr", listOf("en", "fr")), awaitItem())
+            languages.value = listOf("fr")
+            assertEquals(HomeBecauseYouLikeLogic.Request(null, "fr", listOf("fr")), awaitItem())
+            languages.value = listOf("fr")
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun `saved rows are reused at first load but skipped once the languages change`() {
+        assertFalse(HomeBecauseYouLikeLogic.skipsSavedRows(fetched = null, current = listOf("fr")))
+        assertFalse(HomeBecauseYouLikeLogic.skipsSavedRows(fetched = listOf("fr"), current = listOf("fr")))
+        assertTrue(HomeBecauseYouLikeLogic.skipsSavedRows(fetched = listOf("en", "fr"), current = listOf("fr")))
+    }
 }

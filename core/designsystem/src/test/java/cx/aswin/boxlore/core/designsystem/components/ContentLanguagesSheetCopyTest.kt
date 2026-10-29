@@ -35,7 +35,13 @@ class ContentLanguagesSheetCopyTest {
 
     @Test
     fun offItSaysEnglishFillsThinResults() {
-        assertEquals("If there aren’t enough German shows, boxlore adds a few in English.", text(listOf("de"), englishOff = true))
-        assertEquals("If there aren’t enough shows in your languages, boxlore adds a few in English.", text(listOf("de", "fr"), englishOff = true))
+        assertEquals(
+            "There are far fewer German shows, so recommendations won’t match your taste as closely. If there aren’t enough, boxlore adds a few in English.",
+            text(listOf("de"), englishOff = true),
+        )
+        assertEquals(
+            "There are far fewer shows in your languages, so recommendations won’t match your taste as closely. If there aren’t enough, boxlore adds a few in English.",
+            text(listOf("de", "fr"), englishOff = true),
+        )
     }
 }

@@ -12,8 +12,9 @@ fun mapRegionForBriefing(region: String): String = cx.aswin.boxlore.core.model.C
 
 /** Normalize + expand prefs languages for discovery query params / recs bodies. */
 internal fun resolveContentLanguagesForQuery(languages: List<String>?, country: String,): List<String> {
+    // The listener's English choice holds: a list without English stays without it (D9).
     val normalized =
-        cx.aswin.boxlore.core.model.ContentRegions.normalizeLanguages(
+        cx.aswin.boxlore.core.model.ContentLanguageSelection.normalizeKeepingEnglishChoice(
             languages.orEmpty(),
             country,
         )
@@ -49,7 +50,7 @@ internal fun List<String>.toBoundedPositiveIds(maximum: Int = 250,): List<Long> 
     .take(maximum)
     .toList()
 
-internal fun List<String>.toBoundedLanguageCodes(): List<String> = cx.aswin.boxlore.core.model.ContentRegions.normalizeLanguages(this, "us")
+internal fun List<String>.toBoundedLanguageCodes(): List<String> = cx.aswin.boxlore.core.model.ContentLanguageSelection.normalizeKeepingEnglishChoice(this, "us")
 
 internal fun cx.aswin.boxlore.core.network.model.ContentCatalogResponse.toContentCatalogSnapshot(
     fetchedAt: Long,
