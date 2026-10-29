@@ -744,7 +744,7 @@ class PodcastRepository(
         if (usesV2Discovery()) {
             val resolvedCountry = country?.let(cx.aswin.boxlore.core.model.ContentRegions::canonicalize) ?: "us"
             // The `/v2` body takes at most four languages and expands `id` itself.
-            val bodyLanguages = cx.aswin.boxlore.core.model.ContentRegions.normalizeLanguages(languages.orEmpty(), resolvedCountry)
+            val bodyLanguages = cx.aswin.boxlore.core.model.ContentLanguageSelection.normalizeKeepingEnglishChoice(languages.orEmpty(), resolvedCountry)
             return@withContext v2PersonalizedRecommendations(history, interests, resolvedCountry, subscribedPodcastIds, bodyLanguages)
         }
         v1PersonalizedRecommendations(history, interests, country, subscribedPodcastIds, subscribedGenres, languages)
@@ -755,11 +755,12 @@ class PodcastRepository(
         podcastDescription: String,
         excludePodcastId: String? = null,
         country: String? = null,
+        languages: List<String>? = null,
     ): BecauseYouLikeData = withContext(Dispatchers.IO) {
         // `/v2` answers carry recipe IDs, so they never share a cached answer with v1. The switch is
         // read once, so the key and the route always agree.
         val v2 = usesV2Discovery()
-        val cacheKey = (if (v2) "v2|" else "") + "byl|$podcastTitle|$excludePodcastId|$country"
+        val cacheKey = (if (v2) "v2|" else "") + "byl|$podcastTitle|$excludePodcastId|$country|${languages.orEmpty().joinToString(",")}"
         val cached = becauseYouLikeCache[cacheKey]
         if (cached != null) {
             android.util.Log.d("PodcastRepository", "Cache HIT for getBecauseYouLikeRecommendations: key=$cacheKey")
@@ -773,6 +774,7 @@ class PodcastRepository(
                     podcastDescription = podcastDescription,
                     excludePodcastId = excludePodcastId,
                     country = country,
+                    languages = languages?.toBoundedLanguageCodes()?.takeIf { it.isNotEmpty() },
                 )
             if (v2) return@withContext v2BecauseYouLike(request, cacheKey)
             val response = api.getBecauseYouLikeRecommendations(publicKey, request).execute()
@@ -962,7 +964,7 @@ class PodcastRepository(
                     .canonicalize(country)
             if (usesV2Discovery()) {
                 // The `/v2` recommendation body takes at most four languages and expands `id` itself.
-                val bodyLanguages = cx.aswin.boxlore.core.model.ContentRegions.normalizeLanguages(languages.orEmpty(), resolvedCountry)
+                val bodyLanguages = cx.aswin.boxlore.core.model.ContentLanguageSelection.normalizeKeepingEnglishChoice(languages.orEmpty(), resolvedCountry)
                 return@withContext v2HomeRecommendations(resolvedCountry, history, interests, subscribedPodcastIds, bodyLanguages)
             }
             val queryLanguages = resolveContentLanguagesForQuery(languages, resolvedCountry)

@@ -1,8 +1,10 @@
 package cx.aswin.boxlore.feature.home
 
+import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.getRecentHistoryList
+import cx.aswin.boxlore.core.prefs.collectDiscoverySection
 import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.EpisodeRankingInput
 import cx.aswin.boxlore.core.ranking.RankingObjective
@@ -16,6 +18,7 @@ import java.time.ZonedDateTime
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -96,11 +99,48 @@ internal fun HomeViewModel.clearBecauseYouLike() {
     _isBecauseYouLikeLoading.value = false
 }
 
+/** Loads Because you like for the picked (or favourite) show whenever the show, region or languages change. */
+internal fun HomeViewModel.observeBecauseYouLike() {
+    viewModelScope.launch {
+        homeCacheRestoreGate.awaitRestore()
+        var fetchedLanguages: List<String>? = null
+        collectDiscoverySection(
+            keys = HomeBecauseYouLikeLogic.requests(
+                userPrefs.overriddenRecPodcastIdStream,
+                userPrefs.regionStream,
+                userPrefs.contentLanguagesStream,
+            ),
+            on = sectionOn { it.becauseYouLike },
+            clear = { clearBecauseYouLike() },
+        ) { (overriddenId, region, languages) ->
+            val activeSubs = subscriptionRepository.subscribedPodcasts.first()
+            val activeHistory = allHomeHistory.first()
+
+            val resolvedPodcast = resolveFavoritePodcast(overriddenId, activeSubs, activeHistory)
+            _seemsToLikePodcast.value = resolvedPodcast
+
+            if (resolvedPodcast != null) {
+                fetchBecauseYouLikeRecommendations(
+                    resolvedPodcast,
+                    region,
+                    languages,
+                    forceRefresh = HomeBecauseYouLikeLogic.skipsSavedRows(fetchedLanguages, languages),
+                )
+                fetchedLanguages = languages
+            } else {
+                _becauseYouLikeRecommendations.value = emptyList()
+                _becauseYouLikePodcasts.value = emptyList()
+            }
+        }
+    }
+}
+
 // from private fun fetchBecauseYouLikeRecommendations
 /** Suspends until the section has loaded, so switching it off cancels a request in flight. */
 internal suspend fun HomeViewModel.fetchBecauseYouLikeRecommendations(
     podcast: Podcast,
     region: String,
+    languages: List<String>,
     forceRefresh: Boolean = false,
     clock: Clock = Clock.systemDefaultZone(),
 ) {
@@ -124,6 +164,7 @@ internal suspend fun HomeViewModel.fetchBecauseYouLikeRecommendations(
                     podcastDescription = desc,
                     excludePodcastId = id,
                     country = region,
+                    languages = languages,
                 )
 
             val distinctPodcasts =
