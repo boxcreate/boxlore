@@ -20,6 +20,8 @@ internal object LibraryBackupHistoryRestore {
         durationMs = entity.durationMs,
         isCompleted = entity.isCompleted,
         isLiked = entity.isLiked,
+        // The like's time is its decision time against an episode's restored group settings.
+        likedAt = entity.likedAt,
         lastPlayedAt = entity.lastPlayedAt,
         isDirty = entity.isDirty,
         syncedAt = entity.syncedAt,

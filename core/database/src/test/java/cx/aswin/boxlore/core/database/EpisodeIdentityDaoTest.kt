@@ -68,6 +68,21 @@ class EpisodeIdentityDaoTest {
     }
 
     @Test
+    fun theBackupReadsListEveryAliasAndGroupStateByShowThenId() = runTest {
+        dao.insertAliasesIfAbsent(listOf(alias("-12"), alias("77").copy(podcastId = "050"), alias("-11", key = null)))
+        dao.upsertGroupStates(
+            listOf(
+                EpisodeGroupStateEntity(podcastId = SHOW, catalogKey = "guid-b", likedAt = 3L),
+                EpisodeGroupStateEntity(podcastId = SHOW, catalogKey = "guid-a", completedAt = 4L),
+            ),
+        )
+
+        assertEquals(listOf("77", "-11", "-12"), dao.allAliases().map { it.aliasId })
+        assertEquals(EpisodeAliasState.UNRESOLVED, dao.allAliases()[1].state)
+        assertEquals(listOf("guid-a", "guid-b"), dao.allGroupStates().map { it.catalogKey })
+    }
+
+    @Test
     fun anEpisodesIdsListTheOwnerFirstThenTheOldest() = runTest {
         dao.insertAliasesIfAbsent(
             listOf(alias("-13", createdAt = 5L), alias("-11", createdAt = 9L, owner = true), alias("-12", createdAt = 5L), alias("-20", key = "guid-b")),

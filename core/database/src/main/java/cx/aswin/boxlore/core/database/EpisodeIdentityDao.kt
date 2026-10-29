@@ -78,6 +78,23 @@ interface EpisodeIdentityDao {
     )
     suspend fun unresolvedAliases(podcastId: String): List<EpisodeAliasEntity>
 
+    /**
+     * Every alias row, by show and then stored ID, for the JSON library backup's identity block.
+     *
+     * Added in P4 PR 17 of the own-episode-IDs plan (plan section 8, JSON backup v7).
+     */
+    @Query("SELECT * FROM episode_aliases ORDER BY podcastId ASC, aliasId ASC")
+    suspend fun allAliases(): List<EpisodeAliasEntity>
+
+    /**
+     * Every episode's shared like and completion settings, by show and then key, for the JSON
+     * library backup's identity block.
+     *
+     * Added in P4 PR 17 of the own-episode-IDs plan (plan section 8, JSON backup v7).
+     */
+    @Query("SELECT * FROM episode_group_state ORDER BY podcastId ASC, catalogKey ASC")
+    suspend fun allGroupStates(): List<EpisodeGroupStateEntity>
+
     /** Shared like and completion settings of one episode, or null when none were written. */
     @Query("SELECT * FROM episode_group_state WHERE podcastId = :podcastId AND catalogKey = :catalogKey LIMIT 1")
     suspend fun getGroupState(podcastId: String, catalogKey: String,): EpisodeGroupStateEntity?

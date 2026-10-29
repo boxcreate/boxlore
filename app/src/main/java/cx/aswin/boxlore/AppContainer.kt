@@ -183,7 +183,7 @@ class AppContainer(
      * `boxlore_renumbered_shows`: follows move to the new show and catalog reads link the old
      * show's listener rows to its episodes.
      */
-    val renumberedShows: RenumberedShows by lazy {
+    override val renumberedShows: RenumberedShows by lazy {
         SharedPreferencesRenumberedShows(appContext.getSharedPreferences(SharedPreferencesRenumberedShows.FILE_NAME, Context.MODE_PRIVATE))
     }
 
