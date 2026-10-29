@@ -81,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A feed crossing 4 MB no longer changes or deletes the IDs of feed-only extras. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - Downloaded Smart Queue picks now play from the downloaded file. ([#1178](https://github.com/boxcreate/boxlore/pull/1178)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - Home picks, trending and Explore's For you keep what they show when a discovery request fails. The last good `/v2` picks are kept across restarts (`boxlore_discovery_last_good`). ([#1180](https://github.com/boxcreate/boxlore/pull/1180)) <!-- impact:user-impact-low --> <!-- copy:locked -->
+- `InstallReferrerManager` opens an install link only on a fresh install, so clearing app data no longer reopens the shared page. ([#1185](https://github.com/boxcreate/boxlore/pull/1185)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - The catalog sync no longer deletes vectors it later re-embeds: the nightly trim fails closed, shows keep the highest cap they earned, partial episode lists never cause pruning, and vectors from a failed upload are spooled and uploaded by the next run. ([#1141](https://github.com/boxcreate/boxlore/pull/1141)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync refuses to store objects as `[object Object]` text: its Turso client rejects them, and the show import and latest-episode update scrub Podcast Index values first. ([#1144](https://github.com/boxcreate/boxlore/pull/1144)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - `EpisodeRecipeId` rejects show IDs above 2^53 − 1, matching the scripts implementation. ([#1145](https://github.com/boxcreate/boxlore/pull/1145)) <!-- impact:no-user-impact --> <!-- copy:locked -->
@@ -167,6 +168,11 @@ readme-copy:end pr=1183 -->
 ### Improvements
 - Show pages can now list episodes straight from a show’s own feed, keep them for offline viewing, and tell you when boxlore is showing its own episode list instead. Rolling out gradually.
 readme-copy:end pr=1184 -->
+
+<!-- readme-copy:start pr=1185
+### Fixes
+- Clearing boxlore's data no longer opens a random episode on the next launch.
+readme-copy:end pr=1185 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added
