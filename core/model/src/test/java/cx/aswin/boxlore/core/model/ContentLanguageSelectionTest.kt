@@ -97,4 +97,31 @@ class ContentLanguageSelectionTest {
             ),
         )
     }
+
+    @Test
+    fun withEnglishOffTheFreeSlotTakesAPick() {
+        val picked = listOf("de", "fr", "es")
+        assertEquals(listOf("de", "fr", "es", "nl"), ContentLanguageSelection.applyToggle(picked, "nl", "de", englishOff = true))
+        assertNull(ContentLanguageSelection.applyToggle(listOf("en") + picked, "nl", "de"))
+    }
+
+    @Test
+    fun theEnglishSwitchFollowsThePicks() {
+        assertEquals(
+            ContentLanguageSelection.EnglishSwitch(checked = true, enabled = false, keptOnBy = listOf("hi")),
+            ContentLanguageSelection.englishSwitch(listOf("en", "hi"), englishOff = true),
+        )
+        assertEquals(
+            ContentLanguageSelection.EnglishSwitch(checked = true, enabled = true, keptOnBy = emptyList()),
+            ContentLanguageSelection.englishSwitch(listOf("en", "de"), englishOff = false),
+        )
+        assertEquals(
+            ContentLanguageSelection.EnglishSwitch(checked = false, enabled = true, keptOnBy = emptyList()),
+            ContentLanguageSelection.englishSwitch(listOf("de", "fr"), englishOff = true),
+        )
+        assertEquals(
+            ContentLanguageSelection.EnglishSwitch(checked = true, enabled = false, keptOnBy = emptyList()),
+            ContentLanguageSelection.englishSwitch(listOf("en"), englishOff = false),
+        )
+    }
 }

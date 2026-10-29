@@ -4,9 +4,11 @@ package cx.aswin.boxlore.core.analytics
 
 import android.content.Context
 import com.posthog.PostHog
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.FeedFetchReport
 import cx.aswin.boxlore.core.model.FeedUrlCorrection
 import cx.aswin.boxlore.core.model.RankingAggregateTelemetry
+import cx.aswin.boxlore.core.model.UpgradeRepairReport
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import java.time.Instant
 
@@ -133,18 +135,37 @@ object AnalyticsHelper : Analytics {
     /** See [ApiSessionAnalyticsTracks]: session exchanges, renewals and step-ups. */
     fun trackApiSessionStatus(status: ApiSessionStatus) = ApiSessionAnalyticsTracks.trackApiSessionStatus(status)
 
-    override fun trackFirstEpisodePlayed() {
+    override fun trackFirstEpisodePlayed(episodeId: String?, podcastId: String?) {
         AnalyticsEmit.event(
             "first_episode_played",
-            mapOf(
-                "\$set_once" to
+            buildMap {
+                put(
+                    "\$set_once",
                     mapOf(
                         "first_episode_played_logged" to true,
                         "first_play_at" to Instant.now().toString(),
                     ),
-            ),
+                )
+                episodeId?.takeIf(String::isNotBlank)?.let { put("episode_id", it) }
+                podcastId?.takeIf(String::isNotBlank)?.let { put("podcast_id", it) }
+            },
         )
     }
+
+    // ── Episode identity (recipe_id beside episode_id) ─────────────
+
+    /**
+     * Installs the background lookup of trusted alias recipe IDs ([EpisodeRecipeIdLookup]); `:app`
+     * calls it once at startup. Without one, events still carry recipe IDs that are the episode ID
+     * itself or that callers [rememberEpisodeRecipeIds]. Phase P4 PR 18.
+     */
+    fun installEpisodeRecipeIdLookup(lookup: EpisodeRecipeIdLookup?) = EpisodeRecipeIds.install(lookup)
+
+    /** Records recipe IDs a caller already knows (stored episode ID to recipe ID), for later events. Phase P4 PR 18. */
+    fun rememberEpisodeRecipeIds(recipeIds: Map<String, Long?>) = EpisodeRecipeIds.remember(recipeIds)
+
+    /** Records the [Episode.recipeId] of each of [episodes] that has one, for later events. Phase P4 PR 18. */
+    fun rememberEpisodeRecipeIds(episodes: Iterable<Episode>) = EpisodeRecipeIds.remember(episodes.filter { it.recipeId != null }.associate { it.id to it.recipeId })
 
     // ── Feedback / NPS (glossary: feedback_submitted) ───────────────
     // PostHog survey display conditions should key off feedback_submitted
@@ -245,6 +266,9 @@ object AnalyticsHelper : Analytics {
 
     /** `feed_url_corrected`: one saved address swap (P4, plan "Upgrade repair"). */
     fun trackFeedUrlCorrected(correction: FeedUrlCorrection) = FeedAnalyticsTracks.trackFeedUrlCorrected(correction)
+
+    /** `own_ids_upgrade_completed`: the one-time upgrade repair finished, once per install (P4 PR 18, plan "Upgrade repair"). */
+    fun trackOwnIdsUpgradeCompleted(report: UpgradeRepairReport) = FeedAnalyticsTracks.trackOwnIdsUpgradeCompleted(report)
 
     data class SmartQueueRefillEvent(
         val triggeringEpisodeId: String,

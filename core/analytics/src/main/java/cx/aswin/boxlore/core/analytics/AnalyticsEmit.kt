@@ -6,6 +6,7 @@ import com.posthog.PostHog
 /**
  * Single egress for PostHog captures. Drops names outside glossary Phase A∪B
  * (except `$set` person properties). Tests may replace [eventSink] / [personSetSink].
+ * Episode events get `recipe_id` / `recipe_ids` here when known ([EpisodeRecipeIds]).
  */
 internal object AnalyticsEmit {
     private const val TAG = "AnalyticsEmit"
@@ -39,7 +40,7 @@ internal object AnalyticsEmit {
             Log.w(TAG, "Dropped non-glossary event: $name")
             return
         }
-        eventSink(name, properties)
+        eventSink(name, EpisodeRecipeIds.withRecipeIds(name, properties))
     }
 
     fun personSet(properties: Map<String, Any>) {

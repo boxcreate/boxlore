@@ -79,6 +79,12 @@ internal class UpgradeRepairPass {
     /** Reads of shows whose namespace on the server differs from the one the phone keeps (D12). */
     var namespaceMismatches = 0
 
+    /** Saved addresses step 2 replaced (P4 PR 18, for `own_ids_upgrade_completed`). */
+    var swapped = 0
+
+    /** Shows step 4 asked to register again (P4 PR 18, for `own_ids_upgrade_completed`). */
+    var reregistered = 0
+
     val stopped: Boolean get() = offline || paused
 }
 

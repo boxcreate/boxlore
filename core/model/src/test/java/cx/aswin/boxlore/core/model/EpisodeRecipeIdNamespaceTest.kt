@@ -62,4 +62,16 @@ class EpisodeRecipeIdNamespaceTest {
         assertThrows<IllegalArgumentException> { EpisodeRecipeId.forNamespace(75_075, " a") }
         assertThrows<IllegalArgumentException> { EpisodeRecipeId.forNamespace(75_075, "") }
     }
+
+    @Test
+    fun aKeyComparesAsTheDatabaseStoresIt() {
+        assertEquals("x", EpisodeRecipeId.storedForm("\uFEFFx"))
+        assertEquals("\u200Bx", EpisodeRecipeId.storedForm("\u200Bx"))
+        assertEquals("x\uFEFF", EpisodeRecipeId.storedForm("x\uFEFF"))
+        assertEquals(EpisodeRecipeId.comparableKey("bom-only"), EpisodeRecipeId.comparableKey("\uFEFFbom-only"))
+        assertEquals("x", EpisodeRecipeId.comparableKey("\uFEFF x\n"))
+        assertEquals("\u200Bx", EpisodeRecipeId.comparableKey(" \u200Bx "))
+        // The recipe still hashes the key itself, mark included.
+        assertEquals(false, EpisodeRecipeId.forNamespace(1L, "\uFEFFx") == EpisodeRecipeId.forNamespace(1L, "x"))
+    }
 }

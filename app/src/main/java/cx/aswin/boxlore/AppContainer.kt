@@ -2,6 +2,7 @@ package cx.aswin.boxlore
 
 import android.content.Context
 import cx.aswin.boxlore.connectivity.AndroidConnectivityObserver
+import cx.aswin.boxlore.core.analytics.EpisodeRecipeIdLookup
 import cx.aswin.boxlore.core.catalog.AddressCheckAnswer
 import cx.aswin.boxlore.core.catalog.DiscoveryEpisodeIds
 import cx.aswin.boxlore.core.catalog.DiscoveryRouting
@@ -32,6 +33,7 @@ import cx.aswin.boxlore.core.catalog.RoomLocalCatalog
 import cx.aswin.boxlore.core.catalog.SharedAppDependencies
 import cx.aswin.boxlore.core.catalog.SharedPreferencesFeedReportStamps
 import cx.aswin.boxlore.core.catalog.SharedPreferencesPendingNotificationRegistrations
+import cx.aswin.boxlore.core.catalog.SharedPreferencesUpgradeRepairTally
 import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.catalog.UpgradeAddressRepair
@@ -45,6 +47,7 @@ import cx.aswin.boxlore.core.catalog.sync.SyncEpisodeIdentity
 import cx.aswin.boxlore.core.catalog.sync.UserSyncCoordinator
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.episodeListenerStore
+import cx.aswin.boxlore.core.database.knownRecipeIds
 import cx.aswin.boxlore.core.domain.ports.ConnectivityStatusPort
 import cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort
 import cx.aswin.boxlore.core.domain.ports.EpisodeOfflineLookupPort
@@ -84,6 +87,7 @@ import cx.aswin.boxlore.sync.SavedKillSwitch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /**
  * Application-scoped composition root for shared DB / repositories / managers.
@@ -495,8 +499,26 @@ class AppContainer(
             ),
             marker = FileUpgradeNotificationMarker(java.io.File(appContext.noBackupFilesDir, FileUpgradeNotificationMarker.FILE_NAME)),
             enabled = rolloutSwitches.upgradeRepair,
+            // Backed up with Room, so a restored phone never reports the upgrade twice (P4 PR 18).
+            tally =
+            SharedPreferencesUpgradeRepairTally(
+                appContext.getSharedPreferences(SharedPreferencesUpgradeRepairTally.FILE_NAME, Context.MODE_PRIVATE),
+            ),
         )
     }
+
+    /**
+     * `recipe_id` beside `episode_id` on analytics events (P4 PR 18): IDs the analytics façade
+     * can't resolve itself are looked up here, off the main thread, from trusted aliases.
+     * COMPAT(own-ids): analytics joins on recipe IDs. Permanent: never remove (MIGRATION.md §5).
+     */
+    val episodeRecipeIdLookup: EpisodeRecipeIdLookup =
+        EpisodeRecipeIdLookup { ids, deliver ->
+            syncScope.launch {
+                val found = runCatching { database.episodeIdentityDao().knownRecipeIds(ids) }.getOrDefault(emptyMap())
+                deliver(found)
+            }
+        }
 
     /**
      * Broken-feed report times, shared by the daily address check and the show page so both stay

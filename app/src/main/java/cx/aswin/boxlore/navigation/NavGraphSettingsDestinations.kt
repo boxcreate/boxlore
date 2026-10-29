@@ -118,9 +118,9 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
                 currentRegion = settingsState.currentRegion,
                 contentLanguages = settingsState.contentLanguages,
                 onSetRegion = { region -> scope.launch { w.userPrefs.setRegion(region) } },
-                onSetContentLanguages = { languages ->
-                    scope.launch { w.userPrefs.setContentLanguages(languages) }
-                },
+                onSetContentLanguages = { languages -> scope.launch { w.userPrefs.setContentLanguages(languages) } },
+                englishOff = settingsState.contentEnglishOff,
+                onSetEnglishOff = { off -> scope.launch { w.userPrefs.setContentEnglishOff(off) } },
                 discoverySections = settingsState.discoverySections,
                 onSetDiscoverySection = { section, on ->
                     scope.launch {

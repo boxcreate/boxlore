@@ -39,7 +39,7 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 
 ### Episode identity
 
-`episode_id` is always the episode's ID on this phone. Events that carry it may also carry `recipe_id`, boxlore's own ID for the same episode (a decimal string), when the app knows it. `home_surface_impression` may carry `recipe_ids` for episode surfaces. Join impressions, taps and plays across devices on `recipe_id`; it is absent for episodes without one (shows added by feed address, and episodes not yet matched).
+`episode_id` is always the episode's ID on this phone. Events that carry it may also carry `recipe_id`, boxlore's own ID for the same episode (a decimal string), when the app knows it. `home_surface_impression` may carry `recipe_ids` for episode surfaces (the known recipe IDs of `episode_ids`, in surface order). Join impressions, taps and plays across devices on `recipe_id`; it is absent for episodes without one (shows added by feed address, and episodes not yet matched). The recipe ID is the episode ID itself when that is a recipe-range ID, else the episode's own `recipeId` or the recipe ID of its trusted alias; it is never guessed. Events are never held back for it: an episode whose recipe ID is not in memory yet is looked up in the background, so the first event of a stored older ID can lack it while the tap and play after the impression carry it.
 
 ### Feed reads and addresses
 
@@ -48,6 +48,8 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 `feed_url_corrected` fires once per saved-address swap of a followed show. `reason`: `dead` (the saved address stopped answering), `moved` (a permanent redirect or `itunes:new-feed-url`) or `registry` (the server's show registry holds a different confirmed address). `step`: `upgrade_repair`, `daily_check`, `feed_refresh` or `feed_report`.
 
 Neither event carries an address. `show_id` is the Podcast Index ID or the hashed `rss:` ID; a value that looks like an address is left out (and `feed_url_corrected` is then not sent).
+
+`own_ids_upgrade_completed` fires once per install, when the one-time repair after updating from an older build finishes: every followed Podcast Index show the update queued has been checked, swapped where its address moved, read again and registered for notifications again. It never fires on a fresh install, and a restored phone that brings back the record does not send it again. `outcome`: `done`, or `gave_up` when at least one show reached its retry cap. `shows_count` (shows the update queued), `shows_gave_up_count`, `addresses_swapped_count`, `notifications_reregistered_count`, `runs_count` (repair runs, the last included) and `elapsed_hours` (from the first run to the last, rounded down to a tenth). Counts only: no show IDs, titles or addresses.
 
 ### content_type
 
@@ -149,6 +151,7 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 | `proxy_fallback_triggered` | Image load fell back to proxy | — | reason:string | none |
 | `feed_fetch_result` | A show page read its episodes, or a background pass read followed feeds | context:enum; source:enum; result:enum | show_id:string; completeness:enum; http_status:int; shows_count:int; ok_count:int; not_modified_count:int; failed_count:int | none |
 | `feed_url_corrected` | A followed show's saved feed address was replaced (one event per swap) | show_id:string; reason:enum; step:enum | — | none |
+| `own_ids_upgrade_completed` | The one-time repair after updating from an older build finished (once per install) | outcome:enum; shows_count:int; shows_gave_up_count:int; addresses_swapped_count:int; notifications_reregistered_count:int; runs_count:int; elapsed_hours:float | — | none |
 | `support_page_viewed` | Support boxlore development screen opened (one per visit; the `support-world` experiment exposure) | — | support_world:enum; assignment_source:enum; entry_point:string; local_hour:int; weekday:int | none |
 | `support_tier_toggled` | Support tier artifact swiped, picked or lore inspected | tier_title:string; codename:string; amount:string | is_lore_inspect:bool; support_world:enum; assignment_source:enum; tier_index:int | none |
 | `support_donate_clicked` | User tapped donate CTA button for a support tier | tier_title:string; codename:string; amount:string | support_world:enum; assignment_source:enum; tier_index:int; amount_usd:float; payments_live:bool | none |

@@ -15,7 +15,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.RssFeed
+import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,11 +30,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.designsystem.components.ContentRegionLanguagePicker
+import cx.aswin.boxlore.core.designsystem.components.ContentLanguagesSheet
+import cx.aswin.boxlore.core.designsystem.components.ContentRegionPickerSheet
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.model.ContentRegions
 import cx.aswin.boxlore.feature.settings.R
-import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsNavigationRow
@@ -43,9 +46,13 @@ import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
  */
 data class LibraryDiscoveryPreferences(
     val currentRegion: String,
+    /** The languages in effect: without English when the listener switched it off. */
     val contentLanguages: List<String>,
     val onSetRegion: (String) -> Unit,
     val onSetContentLanguages: (List<String>) -> Unit,
+    /** The listener's "Include English" choice, inverted (D9). */
+    val englishOff: Boolean = false,
+    val onSetEnglishOff: (Boolean) -> Unit = {},
 )
 
 @Composable
@@ -57,32 +64,43 @@ internal fun LibrarySettingsPage(
 ) {
     var isCountryFaqExpanded by rememberSaveable { mutableStateOf(false) }
     val collapseCountryFaq = { isCountryFaqExpanded = false }
+    // Saveable, so an open sheet survives rotation, folding and window resizes.
+    var showCountrySheet by rememberSaveable { mutableStateOf(false) }
+    var showLanguagesSheet by rememberSaveable { mutableStateOf(false) }
 
     SettingsScaffold(
         title = "Library",
         onBack = onBack,
         onUnconsumedTap = if (isCountryFaqExpanded) collapseCountryFaq else null,
     ) {
-        SettingsGroup(title = "Discovery") {
-            SettingsContent {
-                ContentRegionLanguagePicker(
-                    activeRegion = discoveryPreferences.currentRegion,
-                    selectedLanguages = discoveryPreferences.contentLanguages,
-                    onSwitchRegion = {
-                        collapseCountryFaq()
-                        discoveryPreferences.onSetRegion(it)
-                    },
-                    onLanguagesChange = {
-                        collapseCountryFaq()
-                        discoveryPreferences.onSetContentLanguages(it)
-                    },
-                )
-            }
+        // One thing per row: the chart country, then the languages recommendations use.
+        SettingsGroup(title = "Charts", footer = "Sets the top charts in Explore.") {
+            SettingsNavigationRow(
+                title = "Country",
+                supportingText = ContentRegions.displayLabel(discoveryPreferences.currentRegion),
+                icon = Icons.Rounded.Public,
+                onClick = {
+                    collapseCountryFaq()
+                    showCountrySheet = true
+                },
+            )
             SettingsDivider()
             CountryNotListedFaq(
                 expanded = isCountryFaqExpanded,
                 onExpand = { isCountryFaqExpanded = true },
                 onCollapse = collapseCountryFaq,
+            )
+        }
+
+        SettingsGroup(title = "Recommendations", footer = "For You, search and vibes use these languages.") {
+            SettingsNavigationRow(
+                title = "Languages",
+                supportingText = languagesSummary(discoveryPreferences.contentLanguages),
+                icon = Icons.Rounded.Translate,
+                onClick = {
+                    collapseCountryFaq()
+                    showLanguagesSheet = true
+                },
             )
         }
 
@@ -110,6 +128,24 @@ internal fun LibrarySettingsPage(
                 },
             )
         }
+    }
+
+    if (showCountrySheet) {
+        ContentRegionPickerSheet(
+            activeRegion = discoveryPreferences.currentRegion,
+            onSwitchRegion = discoveryPreferences.onSetRegion,
+            onDismiss = { showCountrySheet = false },
+        )
+    }
+    if (showLanguagesSheet) {
+        ContentLanguagesSheet(
+            country = discoveryPreferences.currentRegion,
+            selectedLanguages = discoveryPreferences.contentLanguages,
+            englishOff = discoveryPreferences.englishOff,
+            onLanguagesChange = discoveryPreferences.onSetContentLanguages,
+            onEnglishOffChange = discoveryPreferences.onSetEnglishOff,
+            onDismiss = { showLanguagesSheet = false },
+        )
     }
 }
 
@@ -190,10 +226,10 @@ private fun CountryNotListedFaq(
                     "Smart recommendations still work: The recommendation engine will still suggest the closest matches based on your listening habits, irrespective of your country selection.",
                 )
                 FaqParagraph(
-                    "What country changes: Charts and regional ranking. Changing country also resets your language picks to a recommended set for that market.",
+                    "What country changes: The top charts in Explore. Your languages stay as they are.",
                 )
                 FaqParagraph(
-                    "Languages are separate: Use the language chips in this section to fine-tune For You and vibes (English stays on; pick up to three more). Charts stay country-based and are not hard-filtered by language.",
+                    "Languages are separate: Pick them under Recommendations › Languages for For You, search and vibes. Charts stay country-based and aren't filtered by language.",
                 )
                 Text(
                     text = "Want another country or language?",
@@ -217,3 +253,6 @@ private fun FaqParagraph(text: String) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
+
+/** The Languages row's summary: the languages in effect, as the listener reads them ("English, Hindi"). */
+internal fun languagesSummary(languages: List<String>): String = languages.mapNotNull { ContentRegions.LANGUAGE_LABELS[it] }.joinToString(", ")

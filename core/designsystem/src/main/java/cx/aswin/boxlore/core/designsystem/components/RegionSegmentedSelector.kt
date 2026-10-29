@@ -1,11 +1,8 @@
 package cx.aswin.boxlore.core.designsystem.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,20 +11,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ExpandMore
-import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Public
-import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -49,7 +41,6 @@ import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as 
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
-import cx.aswin.boxlore.core.model.ContentLanguageSelection
 import cx.aswin.boxlore.core.model.ContentRegion
 import cx.aswin.boxlore.core.model.ContentRegions
 
@@ -89,34 +80,20 @@ fun RegionSegmentedSelector(
 }
 
 /**
- * Country + languages as one discovery preferences block (settings).
- * Languages sit under the country control so the recommended set reads as related.
+ * The country list on its own, opened from a settings row (Library settings › Charts › Country).
+ * [onSwitchRegion] runs only for a different country.
  */
 @Composable
-fun ContentRegionLanguagePicker(
-    activeRegion: String,
-    selectedLanguages: List<String>,
-    onSwitchRegion: (String) -> Unit,
-    onLanguagesChange: (List<String>) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val country = ContentRegions.canonicalize(activeRegion)
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        RegionSegmentedSelector(
-            activeRegion = country,
-            onSwitchRegion = onSwitchRegion,
-            supportingText = "Charts and regional ranking",
-        )
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
-        ContentLanguageChipRow(
-            selectedLanguages = selectedLanguages,
-            country = country,
-            onLanguagesChange = onLanguagesChange,
-        )
-    }
+fun ContentRegionPickerSheet(activeRegion: String, onSwitchRegion: (String) -> Unit, onDismiss: () -> Unit,) {
+    val selected = ContentRegions.canonicalize(activeRegion)
+    RegionPickerBottomSheet(
+        selectedCode = selected,
+        onSelect = { code ->
+            onDismiss()
+            if (code != selected) onSwitchRegion(code)
+        },
+        onDismiss = onDismiss,
+    )
 }
 
 /** Canonicalizes any known alias, or `null` if unknown. */
@@ -124,89 +101,6 @@ fun canonicalRegionCode(code: String): String? = ContentRegions.canonicalizeOrNu
 
 /** Display label for a stored region code (e.g. charts header chip). */
 fun regionDisplayLabel(code: String): String = ContentRegions.displayLabel(code)
-
-/**
- * Multi-select language chips. English is always selected and cannot be turned off.
- * Recommended-for-country languages are grouped above the full allowlist.
- */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun ContentLanguageChipRow(
-    selectedLanguages: List<String>,
-    country: String,
-    onLanguagesChange: (List<String>) -> Unit,
-    modifier: Modifier = Modifier,
-    showOffMarketHint: Boolean = true,
-) {
-    val resolvedCountry = ContentRegions.canonicalize(country)
-    val normalized = ContentRegions.normalizeLanguages(selectedLanguages, resolvedCountry)
-    val groups = ContentRegions.languageGroupsForCountry(resolvedCountry)
-    val offMarket =
-        normalized.filter { ContentRegions.isOffMarketLanguage(it, resolvedCountry) && it != "en" }
-    val countryLabel = ContentRegions.displayLabel(resolvedCountry)
-    val remainingSlots = (ContentRegions.MAX_LANGUAGES - normalized.size).coerceAtLeast(0)
-
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                PreferenceGlyph(icon = Icons.Rounded.Translate)
-                Text(
-                    text = "Languages",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = GoogleSansWeight.semiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-            Text(
-                text =
-                "Languages selected will influence your recommendations. " +
-                    "Charts are bound to the selected country only.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-
-        LanguageChipSection(
-            title = "Suggested for $countryLabel",
-            codes = groups.recommended,
-            selected = normalized,
-            country = resolvedCountry,
-            remainingSlots = remainingSlots,
-            onLanguagesChange = onLanguagesChange,
-        )
-
-        if (groups.more.isNotEmpty()) {
-            LanguageChipSection(
-                title = "More languages",
-                codes = groups.more,
-                selected = normalized,
-                country = resolvedCountry,
-                remainingSlots = remainingSlots,
-                onLanguagesChange = onLanguagesChange,
-            )
-        }
-
-        if (showOffMarketHint && offMarket.isNotEmpty()) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            ) {
-                Text(
-                    text =
-                    "Some picks aren’t typical for $countryLabel — that’s fine if you want them.",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                )
-            }
-        }
-    }
-}
 
 @Composable
 private fun RegionPickerTrigger(label: String, supportingText: String, onClick: () -> Unit, modifier: Modifier = Modifier,) {
@@ -286,7 +180,7 @@ private fun RegionPickerBottomSheet(selectedCode: String, onSelect: (String) -> 
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                text = "Used for charts and regional ranking. Changing region resets languages to a recommended set.",
+                text = "Sets the top charts in Explore. Your languages stay as they are.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
@@ -375,101 +269,6 @@ private fun RegionPickerOptionCopy(label: String, recommended: String, selected:
                 text = "Suggested: $recommended",
                 style = MaterialTheme.typography.bodySmall,
                 color = suggestedColor,
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun LanguageChipSection(
-    title: String,
-    codes: List<String>,
-    selected: List<String>,
-    country: String,
-    remainingSlots: Int,
-    onLanguagesChange: (List<String>) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = GoogleSansWeight.semiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            codes.forEach { code ->
-                val isSelected = code in selected
-                val isEnglish = code == "en"
-                val canSelectMore = remainingSlots > 0 || isSelected
-                LanguagePreferenceChip(
-                    label = ContentRegions.LANGUAGE_LABELS[code] ?: code,
-                    selected = isSelected,
-                    locked = isEnglish,
-                    enabled = isEnglish || canSelectMore,
-                    onClick = {
-                        ContentLanguageSelection.applyToggle(
-                            selectedLanguages = selected,
-                            languageCode = code,
-                            country = country,
-                        )?.let(onLanguagesChange)
-                    },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun LanguagePreferenceChip(label: String, selected: Boolean, locked: Boolean, enabled: Boolean, onClick: () -> Unit,) {
-    val containerColor =
-        when {
-            selected -> MaterialTheme.colorScheme.primaryContainer
-            else -> MaterialTheme.colorScheme.surfaceContainerHighest
-        }
-    val contentColor =
-        when {
-            !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-            selected -> MaterialTheme.colorScheme.onPrimaryContainer
-            else -> MaterialTheme.colorScheme.onSurfaceVariant
-        }
-    Surface(
-        onClick = onClick,
-        enabled = enabled,
-        shape = RoundedCornerShape(percent = 50),
-        color = containerColor,
-        contentColor = contentColor,
-        border =
-        if (selected) {
-            null
-        } else {
-            BorderStroke(
-                1.dp,
-                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f),
-            )
-        },
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-        ) {
-            if (selected) {
-                Icon(
-                    imageVector = if (locked) Icons.Rounded.Lock else Icons.Rounded.Check,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-            }
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = if (selected) GoogleSansWeight.semiBold else GoogleSansWeight.medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
         }
     }

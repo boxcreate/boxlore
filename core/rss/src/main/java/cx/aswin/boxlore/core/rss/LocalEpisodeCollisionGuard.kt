@@ -110,7 +110,9 @@ internal object LocalEpisodeCollisionGuard {
         /** Recipe-trimmed stored key → IDs, in stored order. */
         val byTrimmedKey: Map<String, List<String>> =
             rows
-                .mapNotNull { row -> StickyEpisodeIdentity.catalogKey(row.guid, row.audioUrl)?.let { it to row.episodeId } }
+                .mapNotNull { row ->
+                    StickyEpisodeIdentity.catalogKey(row.guid, row.audioUrl)?.let { EpisodeRecipeId.comparableKey(it) to row.episodeId }
+                }
                 .groupBy({ it.first }, { it.second })
 
         val byId: Map<String, LocalEpisodeIdentity> = rows.associateBy { it.episodeId }
@@ -232,7 +234,7 @@ internal object LocalEpisodeCollisionGuard {
         val mine = ownerOf(row)
         if (mine in state.claimedKeys) return null
         val storedId =
-            show.byExactKey[row.guid]
+            show.byExactKey[EpisodeRecipeId.storedForm(row.guid)]
                 ?: show.byTrimmedKey[mine.key]?.let { ids -> if (row.episodeId in ids) row.episodeId else ids.first() }
                 ?: return null
         if (storedId in state.byId) return null
@@ -306,7 +308,7 @@ internal object LocalEpisodeCollisionGuard {
     private fun ownerOf(owner: LocalEpisodeOwner): Owner = Owner(owner.podcastId, comparableKey(owner.guid))
 
     /** Stored keys compare after the recipe trim, so a legacy key with a trailing newline is the same key. */
-    private fun comparableKey(key: String): String = EpisodeRecipeId.trimKey(key) ?: key
+    private fun comparableKey(key: String): String = EpisodeRecipeId.comparableKey(key)
 
     /**
      * True when [mine] may take [id]:

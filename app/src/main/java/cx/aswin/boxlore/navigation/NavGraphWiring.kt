@@ -132,6 +132,7 @@ internal fun resolveIsFromOnboarding(
 data class NavSettingsState(
     val currentRegion: String,
     val contentLanguages: List<String>,
+    val contentEnglishOff: Boolean = false,
     val themeConfig: String,
     val useDynamicColor: Boolean,
     val themeBrand: String,

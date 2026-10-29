@@ -40,6 +40,15 @@ class LibraryBackupManualOrderPinsTest {
     }
 
     @Test
+    fun `gson round trips English off with its languages, and older backups leave it unset`() {
+        val prefs = GlobalPreferencesBackup(contentLanguages = listOf("de", "fr", "es", "nl"), contentEnglishOff = true)
+        val parsed = gson.fromJson(gson.toJson(prefs), GlobalPreferencesBackup::class.java)
+        assertEquals(true, parsed.contentEnglishOff)
+        assertEquals(listOf("de", "fr", "es", "nl"), parsed.contentLanguages)
+        assertNull(gson.fromJson("""{"contentLanguages":["en","de"]}""", GlobalPreferencesBackup::class.java).contentEnglishOff)
+    }
+
+    @Test
     fun `gson round trips same-show queue only`() {
         val prefs = GlobalPreferencesBackup(sameShowQueueOnly = true)
         val parsed = gson.fromJson(gson.toJson(prefs), GlobalPreferencesBackup::class.java)

@@ -67,6 +67,7 @@ object NetworkModule {
     }
 
     private val okHttpClient = OkHttpClient.Builder().apply {
+        addInterceptor(EnglishOffInterceptor())
         addInterceptor(clientHeadersInterceptor)
         addInterceptor(sessionInterceptor)
         addInterceptor(loggingInterceptor)

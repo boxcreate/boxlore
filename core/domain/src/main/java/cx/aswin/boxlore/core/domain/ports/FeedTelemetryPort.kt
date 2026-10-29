@@ -2,9 +2,10 @@ package cx.aswin.boxlore.core.domain.ports
 
 import cx.aswin.boxlore.core.model.FeedFetchReport
 import cx.aswin.boxlore.core.model.FeedUrlCorrection
+import cx.aswin.boxlore.core.model.UpgradeRepairReport
 
 /**
- * Reports feed reads and saved-address swaps without depending on `:core:analytics`, so catalog
+ * Reports feed reads, saved-address swaps and the end of the upgrade repair without depending on `:core:analytics`, so catalog
  * code can report them. `AppContainer` wires the analytics-backed implementation; [NONE] is the
  * default for tests and callers built without it. Implementations must not throw.
  *
@@ -16,6 +17,14 @@ interface FeedTelemetryPort {
 
     /** One saved address replaced for a followed show. */
     fun feedUrlCorrected(correction: FeedUrlCorrection)
+
+    /**
+     * The one-time upgrade repair of an upgraded install finished; called at most once per
+     * install (`own_ids_upgrade_completed`). Reports nothing by default.
+     *
+     * Phase P4, plan section "Upgrade repair".
+     */
+    fun upgradeRepairCompleted(report: UpgradeRepairReport) = Unit
 
     companion object {
         /** Reports nothing. */

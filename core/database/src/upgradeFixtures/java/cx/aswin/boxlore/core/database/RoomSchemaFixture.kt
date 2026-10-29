@@ -2,7 +2,6 @@ package cx.aswin.boxlore.core.database
 
 import android.content.Context
 import android.database.Cursor
-import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
@@ -13,6 +12,9 @@ import java.io.File
 /**
  * Builds on-disk databases exactly as an installed build left them, for upgrade tests that then
  * open the file through [BoxLoreDatabase.builder] (the production migrations and checks).
+ *
+ * Shared with `:core:catalog`'s end-to-end upgrade gate (`src/upgradeFixtures`), so it uses only
+ * the database module's public API; `runMigrations` stays in `:core:database`'s own tests.
  */
 internal object RoomSchemaFixture {
     private const val SCHEMA_DIR = "schemas/cx.aswin.boxlore.core.database.BoxLoreDatabase"
@@ -49,19 +51,6 @@ internal object RoomSchemaFixture {
                     },
                 ).build(),
         )
-
-    /** Runs the production migrations from [from] to [to] on [db] directly, the way Room chains them. */
-    fun runMigrations(db: SupportSQLiteDatabase, from: Int, to: Int,) {
-        var version = from
-        while (version < to) {
-            val step: Migration = BoxLoreDatabase.ALL_MIGRATIONS
-                .filter { it.startVersion == version && it.endVersion <= to }
-                .maxBy { it.endVersion }
-            step.migrate(db)
-            version = step.endVersion
-        }
-        db.version = to
-    }
 
     /** Inserts one row, keeping only the [values] whose column exists in [table]; false when the table doesn't exist. */
     fun insert(db: SupportSQLiteDatabase, table: String, values: Map<String, Any?>,): Boolean {
@@ -121,7 +110,7 @@ internal object RoomSchemaFixture {
 
     private fun schemaFile(version: Int): File {
         val relative = "$SCHEMA_DIR/$version.json"
-        return listOf(File(relative), File("core/database/$relative")).first { it.exists() }
+        return listOf(File(relative), File("../database/$relative"), File("core/database/$relative")).first { it.exists() }
     }
 
     data class TableRows(val columns: List<String>, val rows: List<List<Any?>>)

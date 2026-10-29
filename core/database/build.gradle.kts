@@ -34,6 +34,11 @@ android {
         }
     }
 
+    sourceSets {
+        // Shipped-schema upgrade fixtures, shared with :core:catalog's end-to-end upgrade gate.
+        getByName("test").kotlin.srcDir("src/upgradeFixtures/java")
+    }
+
     testOptions {
         // Attempted for in-memory Room DAO tests (B4). See README Testing notes —
         // AAR metadata / schema packaging can still block hermetic Robolectric Room.
