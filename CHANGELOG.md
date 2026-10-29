@@ -99,6 +99,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Home picks, trending and Explore's For you keep what they show when a discovery request fails. The last good `/v2` picks are kept across restarts (`boxlore_discovery_last_good`). ([#1180](https://github.com/boxcreate/boxlore/pull/1180)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `InstallReferrerManager` opens an install link only on a fresh install, so clearing app data no longer reopens the shared page. ([#1185](https://github.com/boxcreate/boxlore/pull/1185)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - A feed episode whose GUID starts with U+FEFF is no longer added again on every read: feed keys are compared with stored ones as SQLite stores them (`EpisodeRecipeId.comparableKey`). ([#1190](https://github.com/boxcreate/boxlore/pull/1190)) <!-- impact:user-impact-low --> <!-- copy:locked -->
+- Play builds whose update check fails offer **Open Google Play** (`openPlayListing`) with **Try again** instead of a dead-end error. ([#1197](https://github.com/boxcreate/boxlore/pull/1197)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - The catalog sync no longer deletes vectors it later re-embeds: the nightly trim fails closed, shows keep the highest cap they earned, partial episode lists never cause pruning, and vectors from a failed upload are spooled and uploaded by the next run. ([#1141](https://github.com/boxcreate/boxlore/pull/1141)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync refuses to store objects as `[object Object]` text: its Turso client rejects them, and the show import and latest-episode update scrub Podcast Index values first. ([#1144](https://github.com/boxcreate/boxlore/pull/1144)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - `EpisodeRecipeId` rejects show IDs above 2^53 − 1, matching the scripts implementation. ([#1145](https://github.com/boxcreate/boxlore/pull/1145)) <!-- impact:no-user-impact --> <!-- copy:locked -->
@@ -243,6 +244,11 @@ readme-copy:end pr=1195 -->
 ### Fixes
 - Hiding completed episodes no longer empties a show's page: boxlore keeps loading until it finds episodes you haven't finished, and tells you when you've finished them all.
 readme-copy:end pr=1196 -->
+
+<!-- readme-copy:start pr=1197
+### Fixes
+- If boxlore can't check Google Play for updates, it now offers to open its Play Store page so you can update there.
+readme-copy:end pr=1197 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added
