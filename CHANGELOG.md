@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `EpisodeListenerStore` keeps one listener state per episode across its stored IDs: progress lives on one owner ID, likes and played state are absolute writes across aliases and `episode_group_state`, and reads are projected, so lists count each episode once. ([#1178](https://github.com/boxcreate/boxlore/pull/1178)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `FeedAddressDailyCheck` checks followed shows' feed addresses once a day through `/v2/shows/feeds`. `FeedReporter` reports unreadable feeds through `/v2/feed-report`. An address is swapped only for a confirmed move and only after the new address reads. ([#1182](https://github.com/boxcreate/boxlore/pull/1182)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `PodcastNotificationRegistrationWorker` re-registers a show's notifications after its address changes and retries until Firebase acknowledges. ([#1182](https://github.com/boxcreate/boxlore/pull/1182)) <!-- impact:user-impact-low --> <!-- copy:locked -->
+- JSON library backup version 7 carries episode identity (`episodeIdentity`: aliases, group settings, renumbered shows) and restores it without overwriting another episode; OPML exports use each show's publisher feed address only. ([#1188](https://github.com/boxcreate/boxlore/pull/1188)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `UpgradeGateTest`: end-to-end upgrade gate from schemas 36, 37 and 38 through the catalog's first reads. ([#1190](https://github.com/boxcreate/boxlore/pull/1190)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `EpisodeRecipeId` in `:core:rss` and `scripts/sync/lib/episode-recipe-id.js` compute boxlore episode IDs from (show ID, catalog key), checked against a shared fixture. ([#1139](https://github.com/boxcreate/boxlore/pull/1139)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync logs why each vector point is stored or deleted; `scripts/sync/attribution-report.js` summarizes the log. ([#1139](https://github.com/boxcreate/boxlore/pull/1139)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
@@ -190,6 +191,11 @@ readme-copy:end pr=1186 -->
 - Listening in German, French, Spanish, Portuguese, Russian or Dutch? You can now turn English off in Library settings › Languages, and boxlore adds English shows only when there aren't enough in your languages.
 - Library settings now has separate rows for your chart country and your languages, and changing your country keeps your languages.
 readme-copy:end pr=1187 -->
+
+<!-- readme-copy:start pr=1188
+### Improvements
+- Restoring a library backup now keeps your played and liked episodes attached to the right episodes, and exported OPML files point other apps to each show's own feed.
+readme-copy:end pr=1188 -->
 
 <!-- readme-copy:start pr=1190
 ### Fixes
