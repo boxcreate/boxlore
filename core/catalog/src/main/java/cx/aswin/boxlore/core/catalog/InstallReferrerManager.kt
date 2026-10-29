@@ -76,18 +76,12 @@ class InstallReferrerManager(private val context: Context,) {
                         InstallReferrerClient.InstallReferrerResponse.OK -> {
                             try {
                                 val response = referrerClient.installReferrer
-                                val referrerUrl = response.installReferrer
-                                Log.d(TAG, "Retrieved referrer: $referrerUrl")
-
-                                if (!referrerUrl.isNullOrEmpty()) {
-                                    handleReferrer(referrerUrl)
-                                    notifyAttribution(referrerUrl)
-                                } else {
-                                    notifyAttribution(null)
-                                }
-
-                                // Mark as processed so we don't handle it on subsequent launches
-                                prefs.edit().putBoolean(KEY_REFERRER_PROCESSED, true).apply()
+                                Log.d(TAG, "Retrieved referrer: ${response.installReferrer}")
+                                processReferrer(
+                                    response.installReferrer,
+                                    response.installBeginTimestampSeconds,
+                                    System.currentTimeMillis(),
+                                )
                             } catch (e: Exception) {
                                 // Transient fetch failure: do not $set_once unknown — leave
                                 // referrer unprocessed so a later launch can resolve the channel.
@@ -116,6 +110,26 @@ class InstallReferrerManager(private val context: Context,) {
         )
     }
 
+    /**
+     * Handles the referrer Play returned: opens its shared page only for a fresh install, reports
+     * attribution either way and marks the referrer processed so later launches skip it.
+     */
+    internal fun processReferrer(referrerUrl: String?, installBeginSeconds: Long, nowMillis: Long) {
+        if (!referrerUrl.isNullOrEmpty()) {
+            // Clear data resets the processed mark but Play keeps the referrer:
+            // only a fresh install opens the shared page.
+            if (isFreshInstall(installBeginSeconds, nowMillis)) {
+                handleReferrer(referrerUrl)
+            } else {
+                Log.d(TAG, "Install referrer is from an older install; not opening it again.")
+            }
+            notifyAttribution(referrerUrl)
+        } else {
+            notifyAttribution(null)
+        }
+        prefs.edit().putBoolean(KEY_REFERRER_PROCESSED, true).apply()
+    }
+
     private fun endReferrerConnection(referrerClient: InstallReferrerClient) {
         try {
             referrerClient.endConnection()
@@ -133,6 +147,21 @@ class InstallReferrerManager(private val context: Context,) {
     internal fun emitAttributionForTest(referrerUrl: String?) = notifyAttribution(referrerUrl)
 
     companion object {
+        /** How long after Play began the install its shared link still opens on first launch. */
+        const val FRESH_INSTALL_WINDOW_MS = 24L * 60L * 60L * 1000L
+
+        /**
+         * Whether the install Play began at [installBeginSeconds] (0 when Play doesn't say) is the
+         * one this first launch belongs to. After Clear data the app starts as if new, but Play still
+         * returns the original install's referrer, so a later launch would open that page again. Play
+         * records the time on the device, so a time after [nowMillis] means the clock went back and
+         * the install isn't treated as fresh.
+         */
+        fun isFreshInstall(installBeginSeconds: Long, nowMillis: Long): Boolean {
+            if (installBeginSeconds <= 0L) return true
+            return nowMillis - installBeginSeconds * 1000L in 0L..FRESH_INSTALL_WINDOW_MS
+        }
+
         fun deriveInstallChannel(referrerUrl: String?): String {
             if (referrerUrl.isNullOrBlank()) return "unknown"
             val decoded =
