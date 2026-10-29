@@ -63,6 +63,23 @@ object EpisodeRecipeId {
     fun catalogKey(guid: String?, enclosureUrl: String?): String? = trimKey(guid) ?: trimKey(enclosureUrl)
 
     /**
+     * [value] as the phone's SQLite stores and returns it: Android binds strings as UTF-16, and
+     * SQLite reads one leading U+FEFF as a byte-order mark and drops it, in writes and in query
+     * parameters alike. Only comparisons between a feed's key and a stored one use this form;
+     * recipe IDs are still computed from the key itself (docs/EPISODE_IDS.md section 2).
+     */
+    fun storedForm(value: String): String = if (value.startsWith('\uFEFF')) value.substring(1) else value
+
+    /**
+     * [key] in the form a stored key compares equal to: trimmed, as stored ([storedForm]), trimmed
+     * again. A key read from the database and the same key read from the feed give the same value.
+     */
+    fun comparableKey(key: String): String {
+        val trimmed = trimKey(key) ?: return key
+        return trimKey(storedForm(trimmed)) ?: trimmed
+    }
+
+    /**
      * Recipe ID for an already-trimmed [catalogKey] on a numeric show.
      *
      * @throws IllegalArgumentException when [showId] is outside 1..[SHOW_ID_MAX] or the key isn't canonical

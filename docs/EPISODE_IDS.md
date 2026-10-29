@@ -42,6 +42,7 @@ range     = 4,503,599,627,370,496 .. 9,007,199,254,740,991   (all safe JS intege
 - **Synthetic keys are never hashed.** Migration 31→32 gave rows it couldn't key the key `id:<episodeId>`. A row that exists when the alias tables are added is marked `legacy`; for legacy rows only, a key equal to `"id:"` plus the row's own ID is synthetic, and the row stays unresolved until its feed is read again. New rows record where their key came from.
 - **Duplicate key in one feed:** the first occurrence in the raw feed document wins, so the parser must know each item's document position before it sorts.
 - **SQL binding:** catalog keys are always bound as text (`turso.text()` in the catalog sync), never as integers.
+- **A leading U+FEFF on the phone (29 Oct).** Android binds strings to SQLite as UTF-16, and SQLite reads one leading U+FEFF as a byte-order mark and drops it, in stored rows and query parameters alike. The recipe ID is still computed from the key itself (section 2), but the phone compares a feed's key with a stored one in the stored form (`EpisodeRecipeId.storedForm`, `comparableKey`); otherwise each read of such a feed added the episode again under a new ID.
 
 ## 4. Collisions
 
