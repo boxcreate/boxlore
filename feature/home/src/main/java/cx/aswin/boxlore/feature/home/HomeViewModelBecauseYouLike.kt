@@ -124,6 +124,7 @@ internal suspend fun HomeViewModel.fetchBecauseYouLikeRecommendations(
                     podcastDescription = desc,
                     excludePodcastId = id,
                     country = region,
+                    languages = userPrefs.contentLanguagesStream.first(),
                 )
 
             val distinctPodcasts =

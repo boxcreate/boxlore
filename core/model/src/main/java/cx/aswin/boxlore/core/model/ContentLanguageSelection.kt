@@ -3,6 +3,16 @@ package cx.aswin.boxlore.core.model
 /** Pure language-chip toggle rules for discovery preferences UI. */
 object ContentLanguageSelection {
     /**
+     * [ContentRegions.normalizeLanguages] for a list that is already the listener's choice (from
+     * `contentLanguagesStream`): a list that leaves English out does so because the listener switched
+     * it off, so English stays out when the picks allow it, instead of being added back.
+     */
+    fun normalizeKeepingEnglishChoice(input: List<String>, country: String,): List<String> {
+        val codes = input.map { it.trim().lowercase().substringBefore('-') }.filter { it.isNotEmpty() }
+        return ContentRegions.normalizeLanguages(input, country, englishOff = codes.isNotEmpty() && "en" !in codes)
+    }
+
+    /**
      * Returns the updated language list after toggling [languageCode], or `null` when the toggle
      * is a no-op (English, which has its own switch; at capacity without deselect; invalid code).
      * With English switched off ([englishOff], when the picks allow it) its slot is free for a pick.

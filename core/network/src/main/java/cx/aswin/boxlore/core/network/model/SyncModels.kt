@@ -193,7 +193,9 @@ data class BecauseYouLikeRequest(
     val podcastTitle: String,
     val podcastDescription: String,
     val excludePodcastId: String? = null,
-    val country: String? = null
+    val country: String? = null,
+    /** The listener's languages (D9); `EnglishOffInterceptor` adds `englishOff` when they leave English out. */
+    val languages: List<String>? = null,
 )
 
 @Serializable
