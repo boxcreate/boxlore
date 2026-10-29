@@ -29,11 +29,15 @@ import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
@@ -553,7 +557,7 @@ class PodcastInfoAdaptiveTransitionTest {
         val statuses =
             listOf(
                 ShowFeedStatus.READING_NEWEST to "Checking the feed for new episodes…",
-                ShowFeedStatus.COMPLETING_ARCHIVE to "Loading all episodes from the feed…",
+                ShowFeedStatus.COMPLETING_ARCHIVE to "Loading every episode from the feed. Long-running shows can take a moment.",
                 ShowFeedStatus.FALLBACK to "Can’t reach this show’s feed. Showing boxlore’s episode list instead.",
                 ShowFeedStatus.OFFLINE to "You’re offline. Showing saved episodes.",
             )
@@ -576,6 +580,61 @@ class PodcastInfoAdaptiveTransitionTest {
             acrossWindowChanges { fixture.compose.onNodeWithTag(FEED_STATUS_TAG).assertDoesNotExist() }
         }
         verify(model, never()).refreshRssFeed()
+    }
+
+    @Test
+    fun `hide completed loads pages until the show runs out, then says caught up across window changes and recreation`() {
+        // The 0.0.29 report: every loaded episode finished left a blank page and never loaded more.
+        hideCompleted.value = true
+        completed.value = episodes.map { it.id }.toSet()
+        doAnswer {
+            uiState.update { state ->
+                val shown = (state as PodcastInfoUiState.Success).episodes
+                val next = episodes.take(shown.size + 20)
+                state.copy(episodes = next, hasMoreEpisodes = next.size < episodes.size)
+            }
+            null
+        }.`when`(model).loadMoreEpisodes()
+        render()
+        fixture.compose.waitForIdle()
+
+        // Two more pages were asked for on their own, the third had nothing after it.
+        verify(model, times(2)).loadMoreEpisodes()
+        acrossWindowChanges {
+            fixture.compose.onNodeWithText("You’ve finished every episode").performScrollTo().assertIsDisplayed()
+            assertEquals(0, fixture.compose.onAllNodesWithTextCount("Episode 0"))
+        }
+        recreate(FOLD_TABLETOP)
+        fixture.compose.onNodeWithText("Show completed episodes").performScrollTo().performClick()
+        verify(model, times(1)).toggleHideCompleted()
+        verify(model, times(2)).loadMoreEpisodes()
+    }
+
+    @Test
+    fun `while hidden episodes are being skipped, the list says so with loading cards across window changes`() {
+        hideCompleted.value = true
+        completed.value = firstPage.map { it.id }.toSet()
+        uiState.value = success().copy(isLoadingMore = true)
+        render()
+        acrossWindowChanges {
+            fixture.compose.onNodeWithText("Completed episodes are hidden. Finding the ones you haven’t finished…").performScrollTo().assertIsDisplayed()
+            fixture.compose.onNodeWithTag(LIST_TAG).performScrollToNode(hasTestTag(EPISODE_SKELETON_TAG))
+            fixture.compose.onAllNodesWithTag(EPISODE_SKELETON_TAG).onFirst().assertIsDisplayed()
+            fixture.compose.onNodeWithText("You’ve finished every episode").assertDoesNotExist()
+        }
+        verify(model, never()).loadMoreEpisodes()
+    }
+
+    @Test
+    fun `opening a show shows the page's skeleton in every window`() {
+        uiState.value = PodcastInfoUiState.Loading
+        render()
+        acrossWindowChanges {
+            fixture.compose.onNodeWithTag(SKELETON_TAG).assertIsDisplayed()
+            fixture.compose.onNodeWithTag(LOADING_TAG).assertExists()
+        }
+        recreate(TABLET)
+        fixture.compose.onNodeWithTag(SKELETON_TAG).assertIsDisplayed()
     }
 
     @Test
@@ -888,6 +947,8 @@ class PodcastInfoAdaptiveTransitionTest {
         const val RENUMBERED_ID = "7976624"
         const val LIST_TAG = "podcast_info_episode_list"
         const val LOADING_TAG = "podcast_info_loading"
+        const val SKELETON_TAG = "podcast_info_skeleton"
+        const val EPISODE_SKELETON_TAG = "podcast_info_episode_skeleton"
         const val REFRESH_TAG = "podcast_info_refresh_indicator"
         const val FEED_STATUS_TAG = "podcast_info_feed_status"
         const val RESULT_ROW = 2

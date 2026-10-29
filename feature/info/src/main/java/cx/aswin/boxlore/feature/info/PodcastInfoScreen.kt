@@ -71,7 +71,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
-import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 import cx.aswin.boxlore.core.model.Episode
@@ -90,6 +89,7 @@ import cx.aswin.boxlore.feature.info.components.PodcastInfoLoadError
 import cx.aswin.boxlore.feature.info.components.PodcastInfoMarkDialogs
 import cx.aswin.boxlore.feature.info.components.PodcastInfoTopOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoTopOverlayActions
+import cx.aswin.boxlore.feature.info.components.ShowPageSkeleton
 import cx.aswin.boxlore.feature.info.components.areAppNotificationsEnabled
 import cx.aswin.boxlore.feature.info.components.handleAutoDownloadToggle
 import cx.aswin.boxlore.feature.info.components.handleNotificationsToggle
@@ -387,11 +387,8 @@ fun PodcastInfoScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         when (val state = uiState) {
             is PodcastInfoUiState.Loading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().testTag(PODCAST_INFO_LOADING_TAG),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    BoxLoreLoader.Expressive(size = 80.dp)
+                Box(modifier = Modifier.fillMaxSize().testTag(PODCAST_INFO_LOADING_TAG)) {
+                    ShowPageSkeleton()
                 }
             }
 
@@ -419,6 +416,13 @@ fun PodcastInfoScreen(
                             rawList
                         }
                     }
+                val hideCompletedFill = rememberHideCompletedFill(
+                    hideCompleted = hideCompleted,
+                    searching = isSearchActive && state.searchQuery.isNotBlank(),
+                    visibleCount = displayEpisodes.size,
+                    state = state,
+                    onLoadMore = viewModel::loadMoreEpisodes,
+                )
                 val feedItems = remember(displayEpisodes, isSearchActive, state.searchQuery) {
                     if (isSearchActive && state.searchQuery.isNotBlank()) {
                         displayEpisodes.mapIndexed { index, episode -> FeedItem.NormalEpisode(episode, index) }
@@ -652,6 +656,7 @@ fun PodcastInfoScreen(
                     selectionActive = selectionActive,
                     isSearchActive = isSearchActive,
                     searchFocusRequester = searchFocusRequester,
+                    hideCompletedFill = hideCompletedFill,
                 )
 
                 val contentCallbacks = EpisodeListContentCallbacks(
@@ -743,6 +748,7 @@ fun PodcastInfoScreen(
                         selectionAnchorEpisodeId = episode.id
                     },
                     onLoadMore = { viewModel.loadMoreEpisodes() },
+                    onShowCompleted = viewModel::toggleHideCompleted,
                 )
 
                 PullToRefreshBox(
