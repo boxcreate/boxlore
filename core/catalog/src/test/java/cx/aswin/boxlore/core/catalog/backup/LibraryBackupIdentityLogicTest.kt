@@ -66,6 +66,13 @@ class LibraryBackupIdentityLogicTest {
     }
 
     @Test
+    fun `a history row of another show holds its ID`() {
+        val restored = alias("-1")
+        assertEquals(AliasRestoreDecision.REFUSE, LibraryBackupIdentityLogic.decide(restored, null, null, historyShow = "200"))
+        assertEquals(AliasRestoreDecision.INSERT, LibraryBackupIdentityLogic.decide(restored, null, null, historyShow = restored.podcastId))
+    }
+
+    @Test
     fun `a catalog row holding the ID refuses only another episode's alias`() {
         val restored = alias("-1")
 
@@ -94,6 +101,14 @@ class LibraryBackupIdentityLogicTest {
 
         assertEquals(listOf("500" to "600"), LibraryBackupIdentityLogic.renumberingsToRecord(phone, restored))
         assertTrue(LibraryBackupIdentityLogic.renumberingsToRecord(phone, null).isEmpty())
+    }
+
+    @Test
+    fun `a renumbering that would close a longer cycle is never recorded`() {
+        val phone = mapOf("100" to "200", "200" to "300")
+        assertTrue(LibraryBackupIdentityLogic.renumberingsToRecord(phone, mapOf("300" to "100")).isEmpty())
+        // Nor one the backup's own earlier entries would close.
+        assertEquals(listOf("700" to "800"), LibraryBackupIdentityLogic.renumberingsToRecord(emptyMap(), linkedMapOf("700" to "800", "800" to "700")))
     }
 
     @Test

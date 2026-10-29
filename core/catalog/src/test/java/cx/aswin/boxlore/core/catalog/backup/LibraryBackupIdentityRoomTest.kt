@@ -158,6 +158,35 @@ class LibraryBackupIdentityRoomTest {
     }
 
     @Test
+    fun anIdOnlyAnotherShowsHistoryHoldsIsRefused() = runTest {
+        seedSource()
+        stubRssRestore()
+        // A version 6 import left this ID's history under another show, with no alias or catalog row.
+        target.listeningHistoryDao().upsert(history(PI_ID, progressMs = 7_777L).copy(podcastId = "999"))
+
+        manager(target, targetShows).importLibraryFromJson(manager(source, sourceShows).exportLibraryAsJson())
+
+        assertEquals(null, target.episodeIdentityDao().getAlias(PI_ID))
+        val kept = target.listeningHistoryDao().getHistoryItem(PI_ID)!!
+        assertEquals("999" to 7_777L, kept.podcastId to kept.progressMs)
+    }
+
+    @Test
+    fun nullRowsInTheIdentityBlockAreSkipped() = runTest {
+        seedSource()
+        stubRssRestore()
+        val json = com.google.gson.JsonParser.parseString(manager(source, sourceShows).exportLibraryAsJson()).asJsonObject
+        val identity = json.getAsJsonObject("episodeIdentity")
+        identity.getAsJsonArray("episodeAliases").add(com.google.gson.JsonNull.INSTANCE)
+        identity.getAsJsonArray("episodeGroupStates").add(com.google.gson.JsonNull.INSTANCE)
+
+        val (imported, _) = manager(target, targetShows).importLibraryFromJson(json.toString())
+
+        assertTrue("the import doesn't fail", imported >= 0)
+        assertTrue(target.episodeIdentityDao().aliasesForKey(SHOW, "guid-a").isNotEmpty())
+    }
+
+    @Test
     fun aRestoredOwnerNeverBecomesASecondOwner() = runTest {
         seedSource()
         stubRssRestore()

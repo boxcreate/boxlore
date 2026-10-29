@@ -61,6 +61,7 @@ internal enum class AliasRestoreDecision { INSERT, KEEP_PHONE, REFUSE }
  *
  * - An alias the phone already has is never replaced. When the phone's row names another show, or
  *   both name a key and the keys differ, the backup's alias is refused.
+ * - An ID only a listening-history row holds is refused when the row is another show's.
  * - An ID only a catalog row holds is refused when the row is another show's or another key's
  *   (a legacy row's synthetic `id:<its own ID>` key is unknown, so it never differs).
  * - Unresolved and ambiguous aliases keep their state; only a trusted alias with a key may own.
@@ -134,14 +135,14 @@ internal object LibraryBackupIdentityLogic {
      * refuses it when it names another episode; else a catalog row holding the ID ([catalogRow])
      * refuses it when it is another episode's.
      */
-    fun decide(restored: EpisodeAliasEntity, phoneAlias: EpisodeAliasEntity?, catalogRow: LocalEpisodeOwner?,): AliasRestoreDecision {
+    fun decide(restored: EpisodeAliasEntity, phoneAlias: EpisodeAliasEntity?, catalogRow: LocalEpisodeOwner?, historyShow: String? = null,): AliasRestoreDecision {
         if (phoneAlias != null) {
             return if (namesAnotherEpisode(restored, phoneAlias.podcastId, phoneAlias.catalogKey)) AliasRestoreDecision.REFUSE else AliasRestoreDecision.KEEP_PHONE
         }
-        if (catalogRow != null && namesAnotherEpisode(restored, catalogRow.podcastId, catalogKeyOf(catalogRow))) {
-            return AliasRestoreDecision.REFUSE
-        }
-        return AliasRestoreDecision.INSERT
+        val catalogClash = catalogRow != null && namesAnotherEpisode(restored, catalogRow.podcastId, catalogKeyOf(catalogRow))
+        // A history row with no alias or catalog row still holds its ID for its show.
+        val historyClash = historyShow != null && historyShow != restored.podcastId
+        return if (catalogClash || historyClash) AliasRestoreDecision.REFUSE else AliasRestoreDecision.INSERT
     }
 
     /** The phone's group settings ([phone]) and the backup's ([restored]) merged: each decision keeps its latest time. */
@@ -160,10 +161,28 @@ internal object LibraryBackupIdentityLogic {
      * The backup's renumbered shows the phone can take: valid renumberings for old IDs the phone
      * records nothing for, and never one that reverses an entry the phone has.
      */
-    fun renumberingsToRecord(phone: Map<String, String>, restored: Map<String, String>?): List<Pair<String, String>> =
-        restored.orEmpty().entries
-            .filter { (oldId, newId) -> RenumberedShowIds.isRenumbering(oldId, newId) && oldId !in phone && phone[newId] != oldId }
-            .map { it.key to it.value }
+    fun renumberingsToRecord(phone: Map<String, String>, restored: Map<String, String>?): List<Pair<String, String>> {
+        val merged = LinkedHashMap(phone)
+        val accepted = ArrayList<Pair<String, String>>()
+        for ((oldId, newId) in restored.orEmpty()) {
+            if (recordable(merged, oldId, newId as String?)) {
+                merged[oldId] = newId
+                accepted += oldId to newId
+            }
+        }
+        return accepted
+    }
+
+    /**
+     * True when [oldId] → [newId] (null when Gson kept a JSON null) is a renumbering for an old ID
+     * [merged] doesn't record, and never one that leads back to [oldId]: a reverse entry or a longer cycle.
+     */
+    private fun recordable(merged: Map<String, String>, oldId: String, newId: String?): Boolean =
+        newId != null &&
+            RenumberedShowIds.isRenumbering(oldId, newId) &&
+            oldId !in merged &&
+            merged[newId] != oldId &&
+            RenumberedShowIds.currentId(merged, newId) != oldId
 
     private fun namesAnotherEpisode(restored: EpisodeAliasEntity, podcastId: String, catalogKey: String?): Boolean =
         podcastId != restored.podcastId || (catalogKey != null && restored.catalogKey != null && catalogKey != restored.catalogKey)
@@ -204,8 +223,9 @@ internal class LibraryBackupIdentity(private val database: BoxLoreDatabase, priv
 
     /** Restores the backup's aliases and group settings; returns the alias IDs it refused. */
     suspend fun restore(backup: EpisodeIdentityBackup?): Set<String> {
-        val restored = backup?.episodeAliases.orEmpty().mapNotNull(LibraryBackupIdentityLogic::toEntity).distinctBy { it.aliasId }
-        val groupStates = backup?.episodeGroupStates.orEmpty().mapNotNull(LibraryBackupIdentityLogic::toEntity)
+        // Gson keeps JSON null elements in the lists; they are skipped.
+        val restored = backup?.episodeAliases.orEmpty().filterNotNull().mapNotNull(LibraryBackupIdentityLogic::toEntity).distinctBy { it.aliasId }
+        val groupStates = backup?.episodeGroupStates.orEmpty().filterNotNull().mapNotNull(LibraryBackupIdentityLogic::toEntity)
             .distinctBy { it.podcastId to it.catalogKey }
         if (restored.isEmpty() && groupStates.isEmpty()) return emptySet()
         return database.withTransaction {
@@ -223,7 +243,10 @@ internal class LibraryBackupIdentity(private val database: BoxLoreDatabase, priv
         val phoneAliases = ids.chunked(MAX_IDS_PER_QUERY).flatMap { aliases.getAliases(it) }.associateBy { it.aliasId }
         val unaliased = ids.filter { it !in phoneAliases }
         val catalogRows = unaliased.chunked(MAX_IDS_PER_QUERY).flatMap { database.localEpisodeCatalogDao().findOwners(it) }.associateBy { it.episodeId }
-        val decisions = restored.associateWith { LibraryBackupIdentityLogic.decide(it, phoneAliases[it.aliasId], catalogRows[it.aliasId]) }
+        val historyShows =
+            unaliased.chunked(MAX_IDS_PER_QUERY).flatMap { database.listeningHistoryDao().getHistoryItems(it) }.associate { it.episodeId to it.podcastId }
+        val decisions =
+            restored.associateWith { LibraryBackupIdentityLogic.decide(it, phoneAliases[it.aliasId], catalogRows[it.aliasId], historyShows[it.aliasId]) }
         val inserted = decisions.filterValues { it == AliasRestoreDecision.INSERT }.keys.toList()
         inserted.chunked(MAX_IDS_PER_QUERY).forEach { chunk -> aliases.insertAliasesIfAbsent(chunk.map { it.copy(owner = false) }) }
         restoreOwners(inserted)
