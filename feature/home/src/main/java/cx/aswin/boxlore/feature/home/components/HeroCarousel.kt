@@ -3,6 +3,8 @@ package cx.aswin.boxlore.feature.home.components
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -311,9 +313,15 @@ private fun FullArtworkHeroCard(
     }
 }
 
+/**
+ * Tablets show fixed-width cards on an uncontained carousel; phones keep multi-browse. With no end
+ * padding, material3 crashes at the end of the row when the space after the last whole card is
+ * almost a card wide (its end shift distance is zero while it has two end steps), so tablets always
+ * keep at least [UncontainedEndPadding] after the last card. `HeroCarouselEndTest` covers it.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ResponsiveHeroCarousel(
+internal fun ResponsiveHeroCarousel(
     state: CarouselState,
     preferredItemWidth: androidx.compose.ui.unit.Dp,
     itemSpacing: androidx.compose.ui.unit.Dp,
@@ -322,8 +330,18 @@ private fun ResponsiveHeroCarousel(
     content: @Composable CarouselItemScope.(Int) -> Unit,
 ) {
     if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
-        HorizontalUncontainedCarousel(state = state, itemWidth = preferredItemWidth, itemSpacing = itemSpacing, contentPadding = contentPadding, modifier = modifier, content = content)
+        val direction = androidx.compose.ui.platform.LocalLayoutDirection.current
+        val padding = PaddingValues(
+            start = contentPadding.calculateStartPadding(direction),
+            top = contentPadding.calculateTopPadding(),
+            end = maxOf(contentPadding.calculateEndPadding(direction), UncontainedEndPadding),
+            bottom = contentPadding.calculateBottomPadding(),
+        )
+        HorizontalUncontainedCarousel(state = state, itemWidth = preferredItemWidth, itemSpacing = itemSpacing, contentPadding = padding, modifier = modifier, content = content)
     } else {
         HorizontalMultiBrowseCarousel(state = state, preferredItemWidth = preferredItemWidth, itemSpacing = itemSpacing, contentPadding = contentPadding, modifier = modifier, content = content)
     }
 }
+
+/** The least end padding that keeps material3's uncontained carousel from crashing at the end of the row. */
+private val UncontainedEndPadding = 1.dp
