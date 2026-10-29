@@ -184,7 +184,7 @@ internal object RenumberedShowLinks {
     ): List<EpisodeAliasEntity> {
         val group = formerGroup.filter { it.state == EpisodeAliasState.TRUSTED && it.catalogKey == key }
         if (group.isEmpty() || group.any { it.aliasId in catalogHeldIds }) return emptyList()
-        val row = catalogRows.filter { keyOf(it) == key }.singleOrNull() ?: return emptyList()
+        val row = catalogRows.singleOrNull { keyOf(it) == key } ?: return emptyList()
         val rowAlias =
             rowAliasesById[row.episodeId]
                 ?.takeIf { it.state == EpisodeAliasState.TRUSTED && it.podcastId == currentId && it.catalogKey == key }
