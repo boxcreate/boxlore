@@ -61,6 +61,11 @@ android {
         checkReleaseBuilds = true
     }
 
+    sourceSets {
+        // :core:database's shipped-schema fixtures (RoomSchemaFixture, LegacyRows) for the upgrade gate.
+        getByName("test").kotlin.srcDir("../database/src/upgradeFixtures/java")
+    }
+
     testOptions {
         // Catalog MockWebServer tests use Mockito Context/DB doubles (no Robolectric Room).
         // Keep false: ?attr theme refs in dependency resources historically break unit-test AAPT;

@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.rss
 
 import cx.aswin.boxlore.core.database.LocalEpisodeEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeIdentity
+import cx.aswin.boxlore.core.model.EpisodeRecipeId
 
 /**
  * Where a planned catalog row's ID came from, before [LocalEpisodeCollisionGuard] checks it.
@@ -322,7 +323,8 @@ internal data class StoredRowMatch(val key: String, val storedId: String?,) {
                 val idsByKey = LinkedHashMap<String, String>()
                 val keysById = LinkedHashMap<String, StoredKey>()
                 for ((id, guid, audioUrl) in rows) {
-                    val key = StickyEpisodeIdentity.catalogKey(guid, audioUrl) ?: continue
+                    // Compared as stored: SQLite drops a leading U+FEFF (EpisodeRecipeId.storedForm).
+                    val key = StickyEpisodeIdentity.catalogKey(guid, audioUrl)?.let(EpisodeRecipeId::comparableKey) ?: continue
                     idsByKey.putIfAbsent(key, id)
                     keysById.putIfAbsent(id, StoredKey(key, StickyEpisodeIdentity.catalogKey(null, audioUrl)))
                 }
@@ -355,11 +357,14 @@ internal data class StoredRowMatch(val key: String, val storedId: String?,) {
             val winners =
                 items.indices
                     .sortedBy { items[it].documentIndex }
-                    .mapNotNull { position -> items[position].catalogKey?.takeIf(seenKeys::add)?.let { position to it } }
+                    .mapNotNull { position ->
+                        items[position].catalogKey?.takeIf { seenKeys.add(EpisodeRecipeId.comparableKey(it)) }?.let { position to it }
+                    }
             val claimed = HashSet<String>()
             for ((position, key) in winners) {
                 val ownId = items[position].episode.episodeId
-                val storedId = ownId.takeIf { stored.keysById[it]?.key == key } ?: stored.idsByKey[key]
+                val comparable = EpisodeRecipeId.comparableKey(key)
+                val storedId = ownId.takeIf { stored.keysById[it]?.key == comparable } ?: stored.idsByKey[comparable]
                 if (storedId != null) claimed += storedId
                 matches[position] = StoredRowMatch(key, storedId)
             }
@@ -373,7 +378,7 @@ internal data class StoredRowMatch(val key: String, val storedId: String?,) {
             for ((position, _) in winners.filter { (position, _) -> matches[position]?.storedId == null }) {
                 val legacy =
                     items[position].legacyKeys.firstNotNullOfOrNull { legacyKey ->
-                        stored.idsByKey[legacyKey]?.takeIf { it !in claimed }?.let { legacyKey to it }
+                        stored.idsByKey[EpisodeRecipeId.comparableKey(legacyKey)]?.takeIf { it !in claimed }?.let { legacyKey to it }
                     } ?: continue
                 claimed += legacy.second
                 matches[position] = StoredRowMatch(key = legacy.first, storedId = legacy.second)

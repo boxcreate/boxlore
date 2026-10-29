@@ -151,6 +151,7 @@ val detektSourceDirs =
                 "src/main/kotlin",
                 "src/test/java",
                 "src/test/kotlin",
+                "src/upgradeFixtures/java",
                 "src/androidTest/java",
                 "src/androidTest/kotlin",
             ).map { subproject.file(it) }
