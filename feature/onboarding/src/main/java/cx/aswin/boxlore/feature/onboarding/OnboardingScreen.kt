@@ -276,6 +276,8 @@ fun OnboardingScreen(
                         onRetry = viewModel::retryLastAction,
                         onFinish = { viewModel.finishAiOnboarding(onComplete) },
                         onScrolled = viewModel::onPodcastScreenScrolled,
+                        onSeeSimilar = viewModel::chooseSimilarShows,
+                        onGoHome = { viewModel.goHomeFromSimilar(onComplete) },
                     ),
                 )
             }

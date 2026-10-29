@@ -36,6 +36,9 @@ class OnboardingViewModel(
 
     internal var searchJob: Job? = null
     internal var recommendationJob: Job? = null
+
+    /** The similar-shows request in flight, cancelled when the listener skips to Home. */
+    internal var similarShowsJob: Job? = null
     internal val echoRequests = EchoRequestLifecycle()
 
     /** The show deck's clips, buffered before the deck opens; freed when it is answered or dropped. */
