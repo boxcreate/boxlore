@@ -7,6 +7,7 @@ import cx.aswin.boxlore.core.model.FeedUrlCorrection
 import cx.aswin.boxlore.core.model.FeedUrlCorrectionReason
 import cx.aswin.boxlore.core.model.FeedUrlCorrectionStep
 import cx.aswin.boxlore.core.model.RankingAggregateTelemetry
+import cx.aswin.boxlore.core.model.UpgradeRepairReport
 import java.io.File
 import java.util.stream.Stream
 import org.junit.jupiter.api.AfterEach
@@ -341,6 +342,9 @@ class GlossaryAllEventsEmissionTest {
                     AnalyticsHelper.trackFeedUrlCorrected(
                         FeedUrlCorrection("920666", FeedUrlCorrectionReason.DEAD, FeedUrlCorrectionStep.DAILY_CHECK),
                     )
+                },
+                "own_ids_upgrade_completed" to {
+                    AnalyticsHelper.trackOwnIdsUpgradeCompleted(UpgradeRepairReport(12, 1, 3, 11, 2, 7_200_000L))
                 },
                 "support_page_viewed" to {
                     AnalyticsHelper.trackSupportPageViewed()

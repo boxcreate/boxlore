@@ -164,6 +164,8 @@ class BoxLoreApplication :
         setupCastSessionTracking()
         SharedAppDependenciesHolder.instance = container
         DownloadsDependenciesHolder.instance = container
+        // recipe_id beside episode_id on analytics events, looked up off the main thread (own-IDs P4 PR 18).
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper.installEpisodeRecipeIdLookup(container.episodeRecipeIdLookup)
         // Episode share links name an ID every build can open, registered first (own-IDs P4 PR 13).
         cx.aswin.boxlore.core.designsystem.share.ShareManager.episodeShareTargets =
             cx.aswin.boxlore.core.model.EpisodeShareTargetSource { container.episodeSharePreparer.targetFor(it) }

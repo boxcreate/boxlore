@@ -1,5 +1,9 @@
 package cx.aswin.boxlore
 
+import kotlinx.coroutines.launch
+import cx.aswin.boxlore.core.database.knownRecipeIds
+import cx.aswin.boxlore.core.analytics.EpisodeRecipeIdLookup
+import cx.aswin.boxlore.core.catalog.SharedPreferencesUpgradeRepairTally
 import android.content.Context
 import cx.aswin.boxlore.connectivity.AndroidConnectivityObserver
 import cx.aswin.boxlore.core.catalog.AddressCheckAnswer
@@ -495,8 +499,26 @@ class AppContainer(
             ),
             marker = FileUpgradeNotificationMarker(java.io.File(appContext.noBackupFilesDir, FileUpgradeNotificationMarker.FILE_NAME)),
             enabled = rolloutSwitches.upgradeRepair,
+            // Backed up with Room, so a restored phone never reports the upgrade twice (P4 PR 18).
+            tally =
+            SharedPreferencesUpgradeRepairTally(
+                appContext.getSharedPreferences(SharedPreferencesUpgradeRepairTally.FILE_NAME, Context.MODE_PRIVATE),
+            ),
         )
     }
+
+    /**
+     * `recipe_id` beside `episode_id` on analytics events (P4 PR 18): IDs the analytics façade
+     * can't resolve itself are looked up here, off the main thread, from trusted aliases.
+     * COMPAT(own-ids): analytics joins on recipe IDs. Permanent: never remove (MIGRATION.md §5).
+     */
+    val episodeRecipeIdLookup: EpisodeRecipeIdLookup =
+        EpisodeRecipeIdLookup { ids, deliver ->
+            syncScope.launch {
+                val found = runCatching { database.episodeIdentityDao().knownRecipeIds(ids) }.getOrDefault(emptyMap())
+                deliver(found)
+            }
+        }
 
     /**
      * Broken-feed report times, shared by the daily address check and the show page so both stay

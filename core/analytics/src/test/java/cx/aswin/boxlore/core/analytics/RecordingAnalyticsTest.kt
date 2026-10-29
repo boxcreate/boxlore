@@ -181,10 +181,11 @@ class AnalyticsGlossaryAllowlistTest {
         assertTrue(AnalyticsGlossary.isAllowedEvent("adaptive_ranking_status"))
         assertTrue(AnalyticsGlossary.isAllowedEvent("android_auto_connected"))
         assertTrue(AnalyticsGlossary.isAllowedEvent("android_auto_browse"))
-        // 10 shipped in PR9 + feed_fetch_result and feed_url_corrected.
+        // 10 shipped in PR9 + feed_fetch_result, feed_url_corrected and own_ids_upgrade_completed.
         assertTrue(AnalyticsGlossary.isAllowedEvent("feed_fetch_result"))
         assertTrue(AnalyticsGlossary.isAllowedEvent("feed_url_corrected"))
-        assertEquals(12, AnalyticsGlossary.PHASE_C.size)
+        assertTrue(AnalyticsGlossary.isAllowedEvent("own_ids_upgrade_completed"))
+        assertEquals(13, AnalyticsGlossary.PHASE_C.size)
     }
 
     @Test

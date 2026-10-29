@@ -257,6 +257,7 @@ Historical FQCNs and preference file names remain reachable so upgrades from old
 | — | `boxlore_feed_reports` | `AppContainer` (`:core:catalog` `SharedPreferencesFeedReportStamps`; last broken-feed report time per show; do not rename) |
 | — | `boxlore_notification_reregistrations` | `AppContainer` (`:core:catalog` `SharedPreferencesPendingNotificationRegistrations`; shows whose notifications wait to be registered again after an address change; do not rename) |
 | — | `boxlore_renumbered_shows` | `AppContainer` (`:core:rss` `SharedPreferencesRenumberedShows`; Podcast Index show IDs that now answer as another show ID, old ID → new ID; follows move to the new show and its catalog reads link the old show's listener rows, see [renumbered shows](docs/EPISODE_IDS.md#renumbered-shows); do not rename) |
+| — | `boxlore_upgrade_repair_report` | `AppContainer` (`:core:catalog` `SharedPreferencesUpgradeRepairTally`; runs and counts of the one-time upgrade repair and whether `own_ids_upgrade_completed` was sent, backed up with Room so a restored phone never sends it twice; do not rename) |
 | `boxcast_api_config` | `boxlore_api_config` | `BoxLoreAppRoot` |
 | `boxcast_referrer_prefs` | `boxlore_referrer_prefs` | `InstallReferrerManager` |
 

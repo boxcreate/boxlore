@@ -107,6 +107,8 @@ object AnalyticsGlossary {
             // Feed reliability (own episode IDs, P4)
             "feed_fetch_result",
             "feed_url_corrected",
+            // Once per upgraded install, when the one-time upgrade repair finishes (P4 PR 18)
+            "own_ids_upgrade_completed",
         )
 
     val PHASE_A_UNION_B_UNION_C: Set<String> = PHASE_A_UNION_B + PHASE_C

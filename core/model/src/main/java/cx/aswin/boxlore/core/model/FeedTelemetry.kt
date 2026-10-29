@@ -158,3 +158,41 @@ data class FeedUrlCorrection(
     val reason: FeedUrlCorrectionReason,
     val step: FeedUrlCorrectionStep,
 )
+
+/**
+ * How the one-time upgrade repair ended (`outcome` on `own_ids_upgrade_completed`).
+ *
+ * Phase P4, plan section "Upgrade repair".
+ */
+enum class UpgradeRepairOutcome(val wireName: String) {
+    /** Every show finished its steps. */
+    DONE("done"),
+
+    /** At least one show reached its retry cap; the others finished. */
+    GAVE_UP("gave_up"),
+}
+
+/**
+ * One `own_ids_upgrade_completed` event, sent once per install when the one-time repair of an
+ * upgraded install finishes. Counts only: no show IDs, titles or addresses.
+ *
+ * - [showsCount]: followed Podcast Index shows the upgrade queued for repair.
+ * - [showsGaveUp]: shows that reached their retry cap.
+ * - [addressesSwapped]: saved addresses the repair replaced.
+ * - [notificationsReregistered]: shows whose notifications the repair registered again.
+ * - [runs]: repair runs it took, the last included.
+ * - [elapsedMillis]: time from the start of the first run to the end of the last.
+ *
+ * Phase P4, plan section "Upgrade repair".
+ */
+data class UpgradeRepairReport(
+    val showsCount: Int,
+    val showsGaveUp: Int,
+    val addressesSwapped: Int,
+    val notificationsReregistered: Int,
+    val runs: Int,
+    val elapsedMillis: Long,
+) {
+    val outcome: UpgradeRepairOutcome
+        get() = if (showsGaveUp > 0) UpgradeRepairOutcome.GAVE_UP else UpgradeRepairOutcome.DONE
+}

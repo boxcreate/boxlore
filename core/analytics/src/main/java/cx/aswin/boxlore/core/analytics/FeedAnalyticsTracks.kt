@@ -3,9 +3,11 @@ package cx.aswin.boxlore.core.analytics
 import cx.aswin.boxlore.core.model.FeedFetchOutcome
 import cx.aswin.boxlore.core.model.FeedFetchReport
 import cx.aswin.boxlore.core.model.FeedUrlCorrection
+import cx.aswin.boxlore.core.model.UpgradeRepairReport
 
 /**
- * Feed reliability events: `feed_fetch_result` and `feed_url_corrected`. Properties are IDs,
+ * Feed reliability events: `feed_fetch_result`, `feed_url_corrected` and the one
+ * `own_ids_upgrade_completed` per upgraded install. Properties are IDs,
  * categories and counts only; a show ID that looks like an address is left out rather than sent.
  *
  * Phase P4, plan section "PostHog".
@@ -13,6 +15,7 @@ import cx.aswin.boxlore.core.model.FeedUrlCorrection
 internal object FeedAnalyticsTracks {
     const val FEED_FETCH_RESULT = "feed_fetch_result"
     const val FEED_URL_CORRECTED = "feed_url_corrected"
+    const val OWN_IDS_UPGRADE_COMPLETED = "own_ids_upgrade_completed"
 
     const val CONTEXT_SHOW_PAGE = "show_page"
     const val CONTEXT_BACKGROUND_PASS = "background_pass"
@@ -38,6 +41,27 @@ internal object FeedAnalyticsTracks {
                 "show_id" to showId,
                 "reason" to correction.reason.wireName,
                 "step" to correction.step.wireName,
+            ),
+        )
+    }
+
+    /**
+     * `own_ids_upgrade_completed`: what the one-time upgrade repair did, in counts. The catalog
+     * sends it at most once per install; nothing here identifies a show or an address.
+     *
+     * Phase P4 PR 18, plan section "Upgrade repair".
+     */
+    fun trackOwnIdsUpgradeCompleted(report: UpgradeRepairReport) {
+        AnalyticsEmit.event(
+            OWN_IDS_UPGRADE_COMPLETED,
+            mapOf(
+                "outcome" to report.outcome.wireName,
+                "shows_count" to report.showsCount.coerceAtLeast(0),
+                "shows_gave_up_count" to report.showsGaveUp.coerceAtLeast(0),
+                "addresses_swapped_count" to report.addressesSwapped.coerceAtLeast(0),
+                "notifications_reregistered_count" to report.notificationsReregistered.coerceAtLeast(0),
+                "runs_count" to report.runs.coerceAtLeast(0),
+                "elapsed_hours" to (report.elapsedMillis.coerceAtLeast(0L) / MILLIS_PER_TENTH_HOUR) / TENTHS_PER_HOUR,
             ),
         )
     }
@@ -71,6 +95,10 @@ internal object FeedAnalyticsTracks {
     private fun safeShowId(showId: String): String? = showId.trim().takeIf { it.isNotEmpty() && "/" !in it && "." !in it }
 
     private val HTTP_STATUS_RANGE = 100..599
+
+    /** `elapsed_hours` is rounded down to a tenth of an hour. */
+    private const val MILLIS_PER_TENTH_HOUR = 360_000L
+    private const val TENTHS_PER_HOUR = 10.0
 
     /** `http_status` is sent only with these results, so ok and not_modified rows never carry 200 or 304. */
     private val HTTP_STATUS_OUTCOMES = setOf(FeedFetchOutcome.HTTP_ERROR, FeedFetchOutcome.GONE)

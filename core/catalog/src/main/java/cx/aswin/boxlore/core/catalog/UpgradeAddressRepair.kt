@@ -14,6 +14,7 @@ import cx.aswin.boxlore.core.model.FeedFetchReport
 import cx.aswin.boxlore.core.model.FeedFetchSource
 import cx.aswin.boxlore.core.model.FeedUrlCorrectionReason
 import cx.aswin.boxlore.core.model.FeedUrlCorrectionStep
+import cx.aswin.boxlore.core.model.UpgradeRepairReport
 import cx.aswin.boxlore.core.network.model.V2EpisodeIds
 import cx.aswin.boxlore.core.network.model.V2FetchVia
 import cx.aswin.boxlore.core.network.model.V2ShowAddress
@@ -49,7 +50,8 @@ enum class UpgradeRepairRun {
  * - [onAddressStepsFinished]: called once, after every show's steps 1–3 are over, so the cloud
  *   sync's identity catch-up runs again for the episodes the reads settled.
  * - [isOnline]: failures while offline never count against a show's cap.
- * - [telemetry]: one `feed_fetch_result` summary per run that read feeds.
+ * - [telemetry]: one `feed_fetch_result` summary per run that read feeds, and the one
+ *   `own_ids_upgrade_completed` when the repair of an upgraded install finishes.
  *
  * Added in P4 PR 15 of the own-episode-IDs plan (plan section 11, upgrade repair).
  */
@@ -95,6 +97,10 @@ data class UpgradeRepairPorts(
  * install (recorded in the same marker), so the sync's one-time identity catch-up runs again for
  * the episodes the reads settled. A fresh install never calls it.
  *
+ * Each run is counted in [tally] (runs, addresses swapped, notifications registered again), and
+ * the run that finishes the repair of an upgraded install sends `own_ids_upgrade_completed` once
+ * through [UpgradeRepairPorts.telemetry] (P4 PR 18). A fresh install never sends it.
+ *
  * Each finished step is written at once, so process death resumes at the next step. Before each
  * step the show's row is read again: a show no longer followed ends [UpgradeRepairState.DONE]
  * without further steps. Shows followed after the upgrade have no repair row and are left to the
@@ -110,6 +116,7 @@ class UpgradeAddressRepair(
     private val ports: UpgradeRepairPorts,
     private val marker: UpgradeNotificationMarker,
     private val enabled: () -> Boolean,
+    private val tally: UpgradeRepairTally = MemoryUpgradeRepairTally(),
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) {
     private val runLock = Mutex()
@@ -132,20 +139,52 @@ class UpgradeAddressRepair(
     /** Runs every step that is due; see the class description. */
     suspend fun run(): UpgradeRepairRun = runLock.withLock {
         if (!enabled()) return@withLock UpgradeRepairRun.PAUSED
+        val startedAt = nowMillis()
         val pass = UpgradeRepairPass()
         addresses.expireStaleAnswers()
         addresses.check(pass)
         repairShows(pass)
         if (!pass.stopped) {
             askForSyncCatchUp()
-            notifications.register()
+            pass.reregistered = notifications.register()
         }
         report(pass)
-        when {
-            pass.paused -> UpgradeRepairRun.PAUSED
-            repairDao.pendingCount() == 0 && marker.isComplete && !catchUpDue() -> UpgradeRepairRun.DONE
-            else -> UpgradeRepairRun.RETRY
-        }
+        val result =
+            when {
+                pass.paused -> UpgradeRepairRun.PAUSED
+                repairDao.pendingCount() == 0 && marker.isComplete && !catchUpDue() -> UpgradeRepairRun.DONE
+                else -> UpgradeRepairRun.RETRY
+            }
+        tallyRun(startedAt, pass, finished = result == UpgradeRepairRun.DONE)
+        result
+    }
+
+    /**
+     * Adds this run to [tally] on an install the update queued shows for, and, once a run of this
+     * build finishes the repair, sends `own_ids_upgrade_completed` once
+     * ([FeedTelemetryPort.upgradeRepairCompleted]). The sent record is saved first, so a crash
+     * can lose the report but never send it twice. A fresh install, or one that finished before
+     * this build counted runs, reports nothing.
+     *
+     * Added in P4 PR 18 of the own-episode-IDs plan (plan section 11, upgrade repair; analytics).
+     */
+    private suspend fun tallyRun(startedAt: Long, pass: UpgradeRepairPass, finished: Boolean) {
+        if (!repairDao.hasShows()) return
+        tally.recordRun(startedAt, nowMillis(), pass.swapped, pass.reregistered)
+        if (!finished || tally.reported) return
+        val counts = tally.read().takeIf { it.runs > 0 } ?: return
+        val shows = repairDao.showCounts()
+        if (!tally.markReported()) return
+        ports.telemetry.upgradeRepairCompleted(
+            UpgradeRepairReport(
+                showsCount = shows.shows,
+                showsGaveUp = shows.gaveUp,
+                addressesSwapped = counts.addressesSwapped,
+                notificationsReregistered = counts.notificationsReregistered,
+                runs = counts.runs,
+                elapsedMillis = counts.lastRunAt - counts.firstRunAt,
+            ),
+        )
     }
 
     /** Steps 1–3 are over for an install that had shows to repair, and the sync catch-up wasn't asked for yet. */
@@ -176,7 +215,7 @@ class UpgradeAddressRepair(
         for (entry in repairDao.pendingShows().filter { it.completedStep != 0 }) {
             if (stopsHere(pass)) return
             try {
-                val current = if (entry.completedStep == 1) swapAddress(entry) else entry
+                val current = if (entry.completedStep == 1) swapAddress(entry, pass) else entry
                 if (current?.completedStep == 2) readAgain(current, pass)
             } catch (e: CancellationException) {
                 throw e
@@ -188,7 +227,7 @@ class UpgradeAddressRepair(
     }
 
     /** Step 2; null when the show is no longer followed. */
-    private suspend fun swapAddress(entry: UpgradeRepairShowEntity): UpgradeRepairShowEntity? {
+    private suspend fun swapAddress(entry: UpgradeRepairShowEntity, pass: UpgradeRepairPass): UpgradeRepairShowEntity? {
         val row = followedRow(entry) ?: return null
         val target = swapTarget(row, entry, nowMillis())?.takeUnless { FeedAddressDailyCheck.changedOnPhone(row) }
         if (target != null) {
@@ -202,7 +241,9 @@ class UpgradeAddressRepair(
                     reason = FeedUrlCorrectionReason.REGISTRY,
                     step = FeedUrlCorrectionStep.UPGRADE_REPAIR,
                 )
-            Log.i(TAG, "Address swap for ${row.podcastId}: ${ports.replaceAddress(change)}")
+            val update = ports.replaceAddress(change)
+            if (update == FeedAddressUpdate.UPDATED) pass.swapped++
+            Log.i(TAG, "Address swap for ${row.podcastId}: $update")
         }
         return entry.copy(completedStep = 2, attempts = 0, lastAttemptAt = nowMillis(), lastError = null).also { repairDao.upsert(it) }
     }
