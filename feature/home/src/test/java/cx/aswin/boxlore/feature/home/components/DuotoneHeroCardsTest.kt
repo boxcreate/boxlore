@@ -96,5 +96,10 @@ class DuotoneHeroCardsTest {
         assertEquals(ArtworkDuotone.fromColor(primary), duotoneTones(HeroCoverShade.THEME, palette, primary))
         assertEquals(ArtworkDuotone.fromPalette(palette), duotoneTones(HeroCoverShade.ARTWORK, palette, primary))
         assertEquals(ArtworkDuotone.Neutral, duotoneTones(HeroCoverShade.ARTWORK, null, primary))
+        // Marquee's vivid pairs follow the same choice.
+        assertEquals(ArtworkDuotone.NeutralVivid, duotoneTones(HeroCoverShade.DARK, palette, primary, vivid = true))
+        assertEquals(ArtworkDuotone.fromColor(primary, vivid = true), duotoneTones(HeroCoverShade.THEME, palette, primary, vivid = true))
+        assertEquals(ArtworkDuotone.fromPalette(palette, vivid = true), duotoneTones(HeroCoverShade.ARTWORK, palette, primary, vivid = true))
+        assertEquals(ArtworkDuotone.NeutralVivid, duotoneTones(HeroCoverShade.ARTWORK, null, primary, vivid = true))
     }
 }

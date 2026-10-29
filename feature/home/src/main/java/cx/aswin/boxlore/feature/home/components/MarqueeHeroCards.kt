@@ -90,17 +90,18 @@ internal data class MarqueeLook(val filter: ColorFilter?, val shade: ArtworkShad
 
 /**
  * Marquee's colours for the cover at [imageUrl]: Dark (shown as Full color) keeps the cover as it is
- * under a plain shade, and the top bar's words turn dark over light covers; Artwork and App theme
- * redraw it in two dark-leaning tones, as Duotone does, under the matching shade.
+ * under a plain shade; Artwork and App theme redraw it in two tones under the matching shade. Those
+ * are the vivid pairs (a deep shadow and a light highlight), so the cover keeps its full-colour
+ * contrast and brightness; the words have their own scrim. As the two tones keep the cover's light
+ * and dark parts, the top bar's words turn dark over light covers in every choice ([marqueeTopContent]).
  */
 @Composable
 internal fun rememberMarqueeLook(imageUrl: String?): MarqueeLook {
     val fullColor = HeroCoverShade.sanitize(LocalHeroCoverShade.current) == HeroCoverShade.DARK
-    val look = rememberDuotoneLook(imageUrl)
+    val look = rememberDuotoneLook(imageUrl, vivid = true)
     val filter = remember(fullColor, look.duotone) { if (fullColor) null else look.duotone.colorFilter() }
-    val average = if (fullColor) rememberCoverAverage(imageUrl) else null
-    val topContent = if (fullColor) marqueeTopContent(average) else MarqueeLightContent
-    return MarqueeLook(filter, look.shade, topContent, marqueeVeilAlpha(toneKnown = !fullColor || average != null))
+    val average = rememberCoverAverage(imageUrl)
+    return MarqueeLook(filter, look.shade, marqueeTopContent(average), marqueeVeilAlpha(toneKnown = average != null))
 }
 
 /** The cover's mean colour from the shared picker (cached ones at once, others once read); null for covers with no palette. */

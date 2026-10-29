@@ -14,9 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -37,12 +35,10 @@ import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
  *   toward the shade from the middle down, so the whole card takes the cover's colours;
  * - the cover, whole and sharp across the full width from the top, its lower part melting into the
  *   wash ([MarqueeCoverMelt]), so nothing of the cover is cropped away;
- * - for two-tone covers, a soft glow in the card's accent behind the cover, so the dark-leaning tones
- *   still light the card;
  * - frosted glass under Home's floating top bar ([MarqueeTopFrost]), fading out with no edge.
  *
- * Both images take the chosen colours ([MarqueeLook.filter]): as they are in Full color, two tones in
- * Artwork and App theme. The words' own scrim sits on top, in the card.
+ * Both images take the chosen colours ([MarqueeLook.filter]): as they are in Full color, two vivid
+ * tones in Artwork and App theme, as bright as the cover itself. The words' own scrim sits on top, in the card.
  */
 @Composable
 internal fun BoxScope.MarqueeBackdrop(url: String?, fallbackUrls: List<String?>, look: MarqueeLook, coverTag: String? = "home_hero_artwork") {
@@ -72,15 +68,6 @@ internal fun BoxScope.MarqueeBackdrop(url: String?, fallbackUrls: List<String?>,
             ),
         ),
     )
-    // Two-tone covers lean dark, so a soft glow in the card's accent lights the card behind the cover.
-    if (look.filter != null) {
-        Box(
-            Modifier.fillMaxSize().drawBehind {
-                val centre = Offset(size.width * 0.5f, size.width * MarqueeGlowHeight)
-                drawRect(Brush.radialGradient(listOf(look.shade.accent.copy(alpha = MarqueeGlowAlpha), look.shade.accent.copy(alpha = 0f)), centre, size.width * MarqueeGlowReach))
-            },
-        )
-    }
     OptimizedImage(
         url = url,
         fallbackUrls = fallbackUrls,
@@ -146,9 +133,6 @@ internal const val MarqueeAmbientWidth = 96
 
 /** The sharp cover's request width; the warm-up fetches the same. */
 internal const val MarqueeCoverWidth = 1080
-private const val MarqueeGlowAlpha = 0.34f
-private const val MarqueeGlowHeight = 0.62f
-private const val MarqueeGlowReach = 0.95f
 private const val MarqueeAmbientScale = 1.35f
 private val MarqueeAmbientBlur = 56.dp
 private val MarqueeFrostReach = 40.dp
