@@ -697,23 +697,6 @@ def _sort_section_bullets(sections: dict[str, list[str]]) -> dict[str, list[str]
     }
 
 
-# A copy block numbered 0 is a hand-written summary of several merged PRs:
-# `<!-- readme-copy:start pr=0` / `covers: 1160, 1187` / headings and bullets /
-# `readme-copy:end pr=0 -->`. It replaces the covered PRs' README lines (they
-# still count as having copy), leads its groups, and carries no PR link. PRs
-# merged later are not covered and keep their own lines. Block 0 is kept,
-# stripped and promoted like any other copy block.
-README_SUMMARY_PR = 0
-README_SUMMARY_COVERS_RE = re.compile(r"^\s*covers:\s*([\d,\s#]+)$", re.MULTILINE)
-
-
-def _summary_covers(inner: str) -> set[int]:
-    match = README_SUMMARY_COVERS_RE.search(inner)
-    if not match:
-        return set()
-    return {int(number) for number in re.findall(r"\d+", match.group(1)) if int(number) != README_SUMMARY_PR}
-
-
 def _locked_readme_groups_from_changelog(
     content: str,
 ) -> tuple[list[dict[str, list[str]]], set[int]]:
@@ -730,20 +713,8 @@ def _locked_readme_groups_from_changelog(
 
     grouped: dict[str, list[tuple[int, int, str]]] = defaultdict(list)
     locked_prs: set[int] = set()
-    covered: set[int] = set()
-    for match in README_COPY_BLOCK_RE.finditer(_unreleased_raw(content)):
-        if int(match.group(1)) != README_SUMMARY_PR:
-            continue
-        covered |= _summary_covers(match.group(2))
-        # Above every PR line, in the order written.
-        for index, group in enumerate(_parse_readme_copy_inner(match.group(2))):
-            for position, bullet in enumerate(group["bullets"]):
-                grouped[group["heading"]].append((1_000_000, -(index * 1_000 + position), _format_readme_bullet(bullet, None, preserve_copy=True)))
-    locked_prs |= covered
     for match in README_COPY_BLOCK_RE.finditer(_unreleased_raw(content)):
         pr_number = int(match.group(1))
-        if pr_number == README_SUMMARY_PR or pr_number in covered:
-            continue
         if impact_scores.get(pr_number) == USER_IMPACT_SCORE["no-user-impact"]:
             continue
         parsed_groups = _parse_readme_copy_inner(match.group(2))

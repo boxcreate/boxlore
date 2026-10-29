@@ -63,17 +63,45 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 ### Upcoming
 
 <!-- release-upcoming:start -->
+<b>🚨 Critical:</b>
+<ul align="left">
+<li>Shows whose feed stopped working get new episodes again. <a href="https://github.com/boxcreate/boxlore/pull/1160"><img src="https://img.shields.io/badge/PR-1160-6750A4?style=flat-square" alt="PR #1160" height="18"/></a></li>
+</ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
-<li>Show pages are starting to load episodes straight from each show’s own feed, and keep them for offline use.</li>
-<li>Pick your listening languages, and turn English off if you listen in German, French, Spanish, Portuguese, Russian or Dutch.</li>
-<li>After importing your library or searching, choose to see similar shows or go straight to Home.</li>
-<li>Your progress, likes and queue stay in sync on all your devices, and shared episode links open the right episode.</li>
+<li>Smoother loading on show pages, with the page's shape appearing right away and clearer messages while episodes load. <a href="https://github.com/boxcreate/boxlore/pull/1196"><img src="https://img.shields.io/badge/PR-1196-6750A4?style=flat-square" alt="PR #1196" height="18"/></a></li>
+<li>After importing your library or picking shows in search, choose whether to see similar shows or go straight to Home, and skip to Home anytime while suggestions load. <a href="https://github.com/boxcreate/boxlore/pull/1194"><img src="https://img.shields.io/badge/PR-1194-6750A4?style=flat-square" alt="PR #1194" height="18"/></a></li>
+<li>Listening in German, French, Spanish, Portuguese, Russian or Dutch? You can now turn English off in Library settings › Languages, and boxlore adds English shows only when there aren't enough in your languages. <a href="https://github.com/boxcreate/boxlore/pull/1187"><img src="https://img.shields.io/badge/PR-1187-6750A4?style=flat-square" alt="PR #1187" height="18"/></a></li>
+<li>Library settings now has separate rows for your chart country and your languages, and changing your country keeps your languages. <a href="https://github.com/boxcreate/boxlore/pull/1187"><img src="https://img.shields.io/badge/PR-1187-6750A4?style=flat-square" alt="PR #1187" height="18"/></a></li>
+<li>Show pages can now list episodes straight from a show’s own feed, keep them for offline viewing, and tell you when boxlore is showing its own episode list instead. Rolling out gradually. <a href="https://github.com/boxcreate/boxlore/pull/1184"><img src="https://img.shields.io/badge/PR-1184-6750A4?style=flat-square" alt="PR #1184" height="18"/></a></li>
+<li>Shared episode links open the right episode, even ones only in a show's own feed, and keep your plays, progress and downloads on the episode you already have. <a href="https://github.com/boxcreate/boxlore/pull/1181"><img src="https://img.shields.io/badge/PR-1181-6750A4?style=flat-square" alt="PR #1181" height="18"/></a></li>
+<li>Episodes you share now open for friends on any version of boxlore. <a href="https://github.com/boxcreate/boxlore/pull/1181"><img src="https://img.shields.io/badge/PR-1181-6750A4?style=flat-square" alt="PR #1181" height="18"/></a></li>
+<li>Cloud sync keeps your progress, likes, finished episodes and queue in step across all your devices, including ones on older versions of boxlore, and episodes you remove from the queue stay removed everywhere. <a href="https://github.com/boxcreate/boxlore/pull/1179"><img src="https://img.shields.io/badge/PR-1179-6750A4?style=flat-square" alt="PR #1179" height="18"/></a></li>
+<li>New-episode notifications keep working for shows that moved to a new feed address. <a href="https://github.com/boxcreate/boxlore/pull/1150"><img src="https://img.shields.io/badge/PR-1150-6750A4?style=flat-square" alt="PR #1150" height="18"/></a></li>
+<li>Free up space with Clear saved shows in Library settings: it removes the episode lists saved for shows you opened but don't follow. <a href="https://github.com/boxcreate/boxlore/pull/1192"><img src="https://img.shields.io/badge/PR-1192-6750A4?style=flat-square" alt="PR #1192" height="18"/></a></li>
+<li>Restoring a library backup now keeps your played and liked episodes attached to the right episodes, and exported OPML files point other apps to each show's own feed. <a href="https://github.com/boxcreate/boxlore/pull/1188"><img src="https://img.shields.io/badge/PR-1188-6750A4?style=flat-square" alt="PR #1188" height="18"/></a></li>
+<li>New-episode notifications arrive sooner after a release. <a href="https://github.com/boxcreate/boxlore/pull/1151"><img src="https://img.shields.io/badge/PR-1151-6750A4?style=flat-square" alt="PR #1151" height="18"/></a></li>
 </ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
-<li>Shows that moved to a new feed keep getting new episodes and notifications.</li>
-<li>Fewer duplicate episodes, a tablet crash and a blank show page fixed, plus many smaller fixes.</li>
+<li>Shows that moved to a new feed address now follow it. <a href="https://github.com/boxcreate/boxlore/pull/1160"><img src="https://img.shields.io/badge/PR-1160-6750A4?style=flat-square" alt="PR #1160" height="18"/></a></li>
+<li>boxlore no longer crashes on some tablets and foldables when you scroll to the end of the top row on Home. <a href="https://github.com/boxcreate/boxlore/pull/1193"><img src="https://img.shields.io/badge/PR-1193-6750A4?style=flat-square" alt="PR #1193" height="18"/></a></li>
+<li>Shows that changed their catalog number stay followed once: no more Subscribe button or duplicate follow for a show you already follow, and the episodes you played before the change stay marked as played. <a href="https://github.com/boxcreate/boxlore/pull/1186"><img src="https://img.shields.io/badge/PR-1186-6750A4?style=flat-square" alt="PR #1186" height="18"/></a></li>
+<li>Shows with more than 100 episodes keep progress, history and downloads on their newer episodes, and stop listing some twice. <a href="https://github.com/boxcreate/boxlore/pull/1159"><img src="https://img.shields.io/badge/PR-1159-6750A4?style=flat-square" alt="PR #1159" height="18"/></a></li>
+<li>An episode of one show no longer replaces an episode of another show that uses the same feed. <a href="https://github.com/boxcreate/boxlore/pull/1159"><img src="https://img.shields.io/badge/PR-1159-6750A4?style=flat-square" alt="PR #1159" height="18"/></a></li>
+<li>A feed address boxlore fixes on one device now reaches your other devices through sync. <a href="https://github.com/boxcreate/boxlore/pull/1159"><img src="https://img.shields.io/badge/PR-1159-6750A4?style=flat-square" alt="PR #1159" height="18"/></a></li>
+<li>Hiding completed episodes no longer empties a show's page: boxlore keeps loading until it finds episodes you haven't finished, and tells you when you've finished them all. <a href="https://github.com/boxcreate/boxlore/pull/1196"><img src="https://img.shields.io/badge/PR-1196-6750A4?style=flat-square" alt="PR #1196" height="18"/></a></li>
+<li>Marquee hero cards with Artwork or App theme cover colors now show the cover clearly, about as bright as Full color, instead of a dark blur. <a href="https://github.com/boxcreate/boxlore/pull/1195"><img src="https://img.shields.io/badge/PR-1195-6750A4?style=flat-square" alt="PR #1195" height="18"/></a></li>
+<li>Turning English off now keeps English shows out of your recommendations, search and suggestions, unless there aren't enough in your languages. <a href="https://github.com/boxcreate/boxlore/pull/1191"><img src="https://img.shields.io/badge/PR-1191-6750A4?style=flat-square" alt="PR #1191" height="18"/></a></li>
+<li>After updating, boxlore checks the shows you follow and switches any whose feed has moved, so new episodes and notifications keep arriving. <a href="https://github.com/boxcreate/boxlore/pull/1183"><img src="https://img.shields.io/badge/PR-1183-6750A4?style=flat-square" alt="PR #1183" height="18"/></a></li>
+<li>Turning off episode notifications for an RSS feed now stops sharing its feed link from your device. Links already shared stay in earlier public backups. <a href="https://github.com/boxcreate/boxlore/pull/1140"><img src="https://img.shields.io/badge/PR-1140-6750A4?style=flat-square" alt="PR #1140" height="18"/></a></li>
+<li>Some shows no longer list the same episode over and over after refreshing. <a href="https://github.com/boxcreate/boxlore/pull/1190"><img src="https://img.shields.io/badge/PR-1190-6750A4?style=flat-square" alt="PR #1190" height="18"/></a></li>
+<li>Clearing boxlore's data no longer opens a random episode on the next launch. <a href="https://github.com/boxcreate/boxlore/pull/1185"><img src="https://img.shields.io/badge/PR-1185-6750A4?style=flat-square" alt="PR #1185" height="18"/></a></li>
+<li>Shows whose feed moved to a new address keep getting new episodes and notifications. <a href="https://github.com/boxcreate/boxlore/pull/1182"><img src="https://img.shields.io/badge/PR-1182-6750A4?style=flat-square" alt="PR #1182" height="18"/></a></li>
+<li>Home and Explore keep the picks and trending shows you already see when boxlore can't reach the server. <a href="https://github.com/boxcreate/boxlore/pull/1180"><img src="https://img.shields.io/badge/PR-1180-6750A4?style=flat-square" alt="PR #1180" height="18"/></a></li>
+<li>Downloaded episodes that the Smart Queue adds now play from your download. <a href="https://github.com/boxcreate/boxlore/pull/1178"><img src="https://img.shields.io/badge/PR-1178-6750A4?style=flat-square" alt="PR #1178" height="18"/></a></li>
+<li>Some shows no longer list one new episode twice. <a href="https://github.com/boxcreate/boxlore/pull/1176"><img src="https://img.shields.io/badge/PR-1176-6750A4?style=flat-square" alt="PR #1176" height="18"/></a></li>
+<li>On foldables and tablets, and when Android closes boxlore in the background, a show's search, open dialogs and selected episodes now stay where you left them. <a href="https://github.com/boxcreate/boxlore/pull/1174"><img src="https://img.shields.io/badge/PR-1174-6750A4?style=flat-square" alt="PR #1174" height="18"/></a></li>
 </ul>
 <!-- release-upcoming:end -->
 
