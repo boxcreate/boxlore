@@ -15,7 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,19 +30,22 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
+import cx.aswin.boxlore.feature.info.components.EpisodeCardSkeleton
 import cx.aswin.boxlore.feature.info.components.EpisodeFeedItemRow
 import cx.aswin.boxlore.feature.info.components.EpisodeFeedRowUi
 import cx.aswin.boxlore.feature.info.components.EpisodeListIndicators
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionUi
 import cx.aswin.boxlore.feature.info.components.EpisodeToolbar
 import cx.aswin.boxlore.feature.info.components.PodcastInfoEpisodeSearch
+import cx.aswin.boxlore.feature.info.components.ShowCaughtUpCard
 import cx.aswin.boxlore.feature.info.components.ShowFeedStatusLine
+import cx.aswin.boxlore.feature.info.components.ShowListStatusLine
 import cx.aswin.boxlore.feature.info.components.ToolbarWarningBanner
 import cx.aswin.boxlore.feature.info.components.showFeedStatusText
 import cx.aswin.boxlore.feature.info.logic.FeedItem
+import cx.aswin.boxlore.feature.info.logic.HideCompletedFill
 import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
 import cx.aswin.boxlore.feature.info.logic.podcastSearchHasNoResults
 import cx.aswin.boxlore.feature.info.sections.PodcastInfoHeroSection
@@ -61,6 +67,7 @@ internal data class EpisodeListContentState(
     val selectionActive: Boolean,
     val isSearchActive: Boolean,
     val searchFocusRequester: FocusRequester,
+    val hideCompletedFill: HideCompletedFill.State = HideCompletedFill.State.NONE,
 )
 
 internal data class EpisodeListContentCallbacks(
@@ -81,6 +88,7 @@ internal data class EpisodeListContentCallbacks(
     val onToggleSelection: (Episode) -> Unit,
     val onLongPressSelection: (Episode) -> Unit,
     val onLoadMore: () -> Unit,
+    val onShowCompleted: () -> Unit = {},
 )
 
 @Composable
@@ -158,7 +166,13 @@ internal fun PodcastInfoEpisodeList(
             onAction = callbacks.onWarningAction,
         )
 
-        feedStatusItem(contentState.state.feedStatus)
+        feedStatusItem(contentState.state.feedStatus, contentState.hideCompletedFill, contentState.isSearchActive)
+
+        if (!contentState.isSearchActive && contentState.hideCompletedFill == HideCompletedFill.State.CAUGHT_UP) {
+            item(key = "caught_up") {
+                ShowCaughtUpCard(onShowCompleted = callbacks.onShowCompleted, modifier = Modifier.animateItem())
+            }
+        }
 
         episodesSection(
             contentState = contentState,
@@ -166,14 +180,10 @@ internal fun PodcastInfoEpisodeList(
             viewModel = viewModel,
         )
 
-        if (!contentState.isSearchActive && contentState.state.isLoadingMore && !contentState.state.isRssRefreshing) {
-            item {
-                Box(
-                    modifier = Modifier.fillMaxWidth().padding(24.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    BoxLoreLoader.CircularWavy(size = 32.dp)
-                }
+        if (showsLoadingCards(contentState)) {
+            // Loading more, or every episode for oldest first: cards in the list's own shape.
+            items(count = LOADING_CARDS, key = { "loading_card_$it" }) {
+                EpisodeCardSkeleton(Modifier.padding(horizontal = 16.dp).animateItem())
             }
         }
 
@@ -194,11 +204,30 @@ internal fun PodcastInfoEpisodeList(
     }
 }
 
-/** Feed-first show pages (P4 PR 16): reading the feed, the server's list instead, or offline. */
-private fun LazyListScope.feedStatusItem(status: ShowFeedStatus) {
+private const val LOADING_CARDS = 2
+
+private fun showsLoadingCards(contentState: EpisodeListContentState): Boolean = !contentState.isSearchActive &&
+    !contentState.state.isRssRefreshing &&
+    (contentState.state.isLoadingMore || contentState.hideCompletedFill == HideCompletedFill.State.FINDING)
+
+/**
+ * Feed-first show pages (P4 PR 16): reading the feed, the server's list instead, or offline. With
+ * completed episodes hidden and more pages loading to find unfinished ones, the line says that
+ * unless a feed read is already saying something busier.
+ */
+private fun LazyListScope.feedStatusItem(status: ShowFeedStatus, fill: HideCompletedFill.State, searching: Boolean) {
     if (showFeedStatusText(status) != null) {
         item(key = "feed_status") {
             ShowFeedStatusLine(status = status, modifier = Modifier.animateItem())
+        }
+    } else if (fill == HideCompletedFill.State.FINDING && !searching) {
+        item(key = "feed_status") {
+            ShowListStatusLine(
+                text = stringResource(R.string.podcast_info_hide_finding),
+                busy = true,
+                icon = Icons.Rounded.Info,
+                modifier = Modifier.animateItem(),
+            )
         }
     }
 }
