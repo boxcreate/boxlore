@@ -102,9 +102,10 @@ class MemoryRenumberedShows : RenumberedShows {
  * Added for renumbered shows (docs/EPISODE_IDS.md §5, renumbered shows).
  */
 class SharedPreferencesRenumberedShows(private val prefs: SharedPreferences) : RenumberedShows {
-    @Volatile
     private var cached: Map<String, String>? = null
 
+    // Synchronized with [record], so a load that started before a save never replaces the saved map.
+    @Synchronized
     override fun all(): Map<String, String> = cached ?: load().also { cached = it }
 
     @Synchronized

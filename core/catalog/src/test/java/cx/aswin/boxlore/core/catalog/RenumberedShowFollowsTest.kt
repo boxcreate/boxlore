@@ -13,6 +13,7 @@ import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.network.NetworkModule
 import cx.aswin.boxlore.core.network.model.UserSubscriptionSyncDto
 import cx.aswin.boxlore.core.rss.MemoryRenumberedShows
+import cx.aswin.boxlore.core.rss.RenumberedShows
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.Flow
@@ -346,6 +347,45 @@ class RenumberedShowFollowsTest {
         assertTrue("notifications are never dropped", old.isSubscribed && old.notificationsEnabled)
         assertEquals(setOf(OLD), folders.membersOf("folder-1"))
         assertFalse(podcastDao.getPodcast("rss:abc")!!.notificationsEnabled)
+    }
+
+    @Test
+    fun unfollowingTheFeedAlsoEndsTheFollowKeptUnderTheOldNumber() = runTest {
+        podcastDao.upsert(row(OLD, notifications = true, subscribedAt = FOLLOWED_AT, epNs = null))
+        podcastDao.upsert(
+            row("rss:abc", notifications = false, subscribedAt = FOLLOWED_AT, epNs = null)
+                .copy(sourceType = PodcastEntity.SOURCE_RSS, linkedPodcastIndexId = NEW),
+        )
+        assertFalse(repository.renumberedFollows.adoptAnswer(OLD, answer()))
+
+        repository.toggleSubscription(podcastDao.getPodcast("rss:abc")!!.toPodcast(), shownFollowed = true)
+
+        assertFalse(podcastDao.getPodcast("rss:abc")!!.isSubscribed)
+        assertFalse("the page no longer counts a follow", podcastDao.getPodcast(OLD)!!.isSubscribed)
+    }
+
+    @Test
+    fun aRenumberingThatCouldNotBeSavedMovesNoFollow() = runTest {
+        val unsaved =
+            object : RenumberedShows {
+                override fun all(): Map<String, String> = emptyMap()
+
+                override fun record(oldId: String, newId: String): Boolean = false
+            }
+        val repo =
+            SubscriptionRepository(
+                podcastDao = podcastDao,
+                folderRepository = folders,
+                feedAddressWiring = FeedAddressWiring(requestNotificationRegistration = { registrationRequests += it }, pendingRegistrations = pending),
+                renumbering = RenumberingWiring(shows = unsaved, linkEpisodes = { old, new -> links += old to new }),
+            )
+        podcastDao.upsert(row(OLD, notifications = false, subscribedAt = FOLLOWED_AT, epNs = null))
+
+        assertFalse(repo.renumberedFollows.adoptAnswer(OLD, answer()))
+        assertFalse(repo.renumberedFollows.adoptKnown(OLD, confirmedNewId = NEW))
+
+        assertTrue("the follow stays where the phone can still find it", podcastDao.getPodcast(OLD)!!.isSubscribed)
+        assertNull(podcastDao.getPodcast(NEW))
     }
 
     private fun row(id: String, notifications: Boolean, subscribedAt: Long, epNs: Long?, genre: String? = null) = PodcastEntity(

@@ -6,7 +6,7 @@ import cx.aswin.boxlore.core.database.EpisodeAliasEntity
 import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
 import cx.aswin.boxlore.core.database.EpisodeAliasState
 import cx.aswin.boxlore.core.database.EpisodeGroupStateEntity
-import cx.aswin.boxlore.core.database.LocalEpisodeEntity
+import cx.aswin.boxlore.core.database.LocalEpisodeLinkRow
 import cx.aswin.boxlore.core.model.EpisodeRecipeId
 import kotlin.math.abs
 
@@ -92,7 +92,7 @@ internal class RenumberedShowLinker(private val database: BoxLoreDatabase, priva
         formerId: String,
         currentId: String,
         key: String,
-        rows: List<LocalEpisodeEntity>,
+        rows: List<LocalEpisodeLinkRow>,
         rowAliasesById: Map<String, EpisodeAliasEntity>,
         epNs: Long?,
     ): Int {
@@ -177,7 +177,7 @@ internal object RenumberedShowLinks {
         formerGroup: List<EpisodeAliasEntity>,
         key: String,
         currentId: String,
-        catalogRows: List<LocalEpisodeEntity>,
+        catalogRows: List<LocalEpisodeLinkRow>,
         rowAliasesById: Map<String, EpisodeAliasEntity>,
         catalogHeldIds: Set<String>,
         epNs: Long?,
@@ -213,28 +213,29 @@ internal object RenumberedShowLinks {
     }
 
     /** [row]'s recipe-trimmed catalog key; null for a legacy row's synthetic `id:<its own ID>` key. */
-    private fun keyOf(row: LocalEpisodeEntity): String? {
+    private fun keyOf(row: LocalEpisodeLinkRow): String? {
         if (row.legacy && row.guid == "id:${row.episodeId}") return null
         return EpisodeRecipeId.trimKey(row.guid)
     }
 
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "kotlin:S107") // One input per store the plan reads.
     fun plan(
         formerId: String,
         currentId: String,
         references: List<LocalCatalogListenerReference>,
         aliasesById: Map<String, EpisodeAliasEntity>,
-        catalogRows: List<LocalEpisodeEntity>,
+        catalogRows: List<LocalEpisodeLinkRow>,
         rowAliasesById: Map<String, EpisodeAliasEntity>,
         catalogHeldIds: Set<String>,
         epNs: Long?,
         nowMs: Long,
     ): List<EpisodeAliasEntity> {
+        val index = CatalogIndex(catalogRows)
         val targets =
             references
                 .groupBy { it.episodeId }
                 .filterKeys { id -> id !in catalogHeldIds && isSettleable(aliasesById[id], formerId) }
-                .mapNotNull { (oldId, rows) -> targetOf(rows, catalogRows)?.let { oldId to it } }
+                .mapNotNull { (oldId, rows) -> targetOf(rows, index)?.let { oldId to it } }
         val claimants = targets.groupingBy { it.second.episodeId }.eachCount()
         return targets
             .filter { (_, row) -> claimants[row.episodeId] == 1 }
@@ -242,30 +243,36 @@ internal object RenumberedShowLinks {
     }
 
     /** The one catalog row [rows] name: by audio address, else by title and date; null when none or several. */
-    private fun targetOf(rows: List<LocalCatalogListenerReference>, catalogRows: List<LocalEpisodeEntity>,): LocalEpisodeEntity? {
+    private fun targetOf(rows: List<LocalCatalogListenerReference>, index: CatalogIndex): LocalEpisodeLinkRow? {
         val byAudio =
             rows
                 .mapNotNull { row -> row.enclosureUrl?.trim()?.takeIf(String::isNotEmpty) }
-                .mapNotNull { audio -> catalogRows.singleOrNull { it.audioUrl.trim() == audio } }
+                .mapNotNull { audio -> index.byAudio[audio]?.singleOrNull() }
                 .distinctBy { it.episodeId }
         if (byAudio.isNotEmpty()) return byAudio.singleOrNull()
         return rows
-            .mapNotNull { row -> byTitleAndDate(row, catalogRows) }
+            .mapNotNull { row -> byTitleAndDate(row, index) }
             .distinctBy { it.episodeId }
             .singleOrNull()
     }
 
-    private fun byTitleAndDate(row: LocalCatalogListenerReference, catalogRows: List<LocalEpisodeEntity>,): LocalEpisodeEntity? {
+    private fun byTitleAndDate(row: LocalCatalogListenerReference, index: CatalogIndex): LocalEpisodeLinkRow? {
         val title = row.title?.trim().orEmpty()
         val date = row.publishedDate ?: return null
         if (title.isEmpty()) return null
-        return catalogRows.singleOrNull { it.title.trim() == title && abs(it.publishedDate - date) <= LocalCatalogOrphanRematch.DATE_WINDOW_SECONDS }
+        return index.byTitle[title]?.singleOrNull { abs(it.publishedDate - date) <= LocalCatalogOrphanRematch.DATE_WINDOW_SECONDS }
+    }
+
+    /** The new show's stored episodes by trimmed audio address and by trimmed title, built once per pass. */
+    private class CatalogIndex(rows: List<LocalEpisodeLinkRow>) {
+        val byAudio: Map<String, List<LocalEpisodeLinkRow>> = rows.groupBy { it.audioUrl.trim() }
+        val byTitle: Map<String, List<LocalEpisodeLinkRow>> = rows.groupBy { it.title.trim() }
     }
 
     @Suppress("LongParameterList")
     private fun linkOf(
         oldId: String,
-        row: LocalEpisodeEntity,
+        row: LocalEpisodeLinkRow,
         currentId: String,
         rowAliasesById: Map<String, EpisodeAliasEntity>,
         existing: EpisodeAliasEntity?,

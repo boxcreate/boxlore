@@ -76,13 +76,14 @@ interface LocalEpisodeCatalogDao {
     suspend fun listIdentities(podcastId: String): List<LocalEpisodeIdentity>
 
     /**
-     * Every stored row of one show, for linking the listener rows of a show Podcast Index renumbered
-     * to this show's episodes (`RenumberedShowLinker` in `:core:rss`).
+     * The identity, title and date of every stored episode of one show, for linking the listener
+     * rows of a show Podcast Index renumbered to this show's episodes (`RenumberedShowLinker` in
+     * `:core:rss`). Descriptions and other large columns aren't read.
      *
      * Added for renumbered shows (docs/EPISODE_IDS.md §5, renumbered shows).
      */
-    @Query("SELECT * FROM local_episodes WHERE podcastId = :podcastId")
-    suspend fun listForShow(podcastId: String): List<LocalEpisodeEntity>
+    @Query("SELECT episodeId, guid, audioUrl, title, publishedDate, legacy FROM local_episodes WHERE podcastId = :podcastId")
+    suspend fun listForShow(podcastId: String): List<LocalEpisodeLinkRow>
 
     /**
      * Owners of these episode IDs across every show, so a write can check before [upsertEpisodes]

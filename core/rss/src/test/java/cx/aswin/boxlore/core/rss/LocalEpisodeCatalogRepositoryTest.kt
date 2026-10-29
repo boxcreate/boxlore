@@ -7,6 +7,7 @@ import cx.aswin.boxlore.core.database.LocalEpisodeCatalogDao
 import cx.aswin.boxlore.core.database.LocalEpisodeEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeFeedEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeIdentity
+import cx.aswin.boxlore.core.database.LocalEpisodeLinkRow
 import cx.aswin.boxlore.core.database.LocalEpisodeOwner
 import cx.aswin.boxlore.core.database.RssEpisodeEntity
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
@@ -752,7 +753,9 @@ class LocalEpisodeCatalogRepositoryTest {
             LocalEpisodeIdentity(it.episodeId, it.guid, it.audioUrl)
         }
 
-        override suspend fun listForShow(podcastId: String): List<LocalEpisodeEntity> = episodes.filter { it.podcastId == podcastId }
+        override suspend fun listForShow(podcastId: String): List<LocalEpisodeLinkRow> = episodes
+            .filter { it.podcastId == podcastId }
+            .map { LocalEpisodeLinkRow(it.episodeId, it.guid, it.audioUrl, it.title, it.publishedDate, it.legacy) }
 
         override suspend fun findOwners(episodeIds: List<String>): List<LocalEpisodeOwner> = episodes
             .filter { it.episodeId in episodeIds }

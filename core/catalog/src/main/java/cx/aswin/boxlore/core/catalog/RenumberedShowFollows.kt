@@ -146,24 +146,26 @@ class RenumberedShowFollows internal constructor(
 
     /**
      * Records an answer for [oldId] that named another show ([answer]) and moves a follow of [oldId]
-     * to it. Returns true when a follow moved; false when [answer] isn't a renumbering of [oldId] or
-     * nothing was followed.
+     * to it. Returns true when a follow moved; false when [answer] isn't a renumbering of [oldId],
+     * nothing was followed, or the renumbering couldn't be saved (the follow then stays, so it is
+     * never under a number the phone no longer links to the old one).
      */
     suspend fun adoptAnswer(oldId: String, answer: Podcast): Boolean {
         if (!RenumberedShowIds.isRenumbering(oldId, answer.id)) return false
-        if (!shows.record(oldId, answer.id)) Log.w(TAG, "Renumbering $oldId → ${answer.id} not saved")
+        if (!shows.recordOrWarn(oldId, answer.id)) return false
         return moveFollow(oldId, answer.id, answer)
     }
 
     /**
      * Moves a follow of [oldId] to the show it was recorded as renumbered to, if any. With
      * [confirmedNewId] (a merge the server confirmed with Podcast Index, from the daily address
-     * check) that renumbering is recorded first. Returns true when a follow moved.
+     * check) that renumbering is recorded first, and nothing moves unless it was saved. Returns true
+     * when a follow moved.
      */
     suspend fun adoptKnown(oldId: String, confirmedNewId: String? = null): Boolean {
         if (confirmedNewId != null) {
             if (!RenumberedShowIds.isRenumbering(oldId, confirmedNewId)) return false
-            if (!shows.record(oldId, confirmedNewId)) Log.w(TAG, "Renumbering $oldId → $confirmedNewId not saved")
+            if (!shows.recordOrWarn(oldId, confirmedNewId)) return false
         }
         val newId = shows.currentId(oldId) ?: return false
         return moveFollow(oldId, newId, answer = null)
@@ -191,19 +193,24 @@ class RenumberedShowFollows internal constructor(
      */
     suspend fun endedFormerFollows(podcast: Podcast, shownFollowed: Boolean? = null, unfollow: suspend (PodcastEntity) -> Unit): Boolean {
         if (podcast.isRss || shows.formerIds(podcast.id).isEmpty()) return false
-        val askedToUnfollow = shownFollowed ?: isFollowed(podcast.id)
+        val askedToUnfollow = shownFollowed ?: podcastDao.isFollowedAsShown(podcast.id)
         adoptFormerFollows(podcast.id)
-        val followed = isFollowed(podcast.id)
+        val followed = podcastDao.isFollowedAsShown(podcast.id)
         if (!askedToUnfollow) return followed
-        val left = shows.formerIds(podcast.id).mapNotNull { id -> podcastDao.getPodcast(id)?.takeIf { it.isSubscribed && !it.isRss } }
-        left.forEach { unfollow(it) }
-        return !followed && left.isNotEmpty()
+        val ended = endFormerFollowsOf(podcast.id, unfollow)
+        return !followed && ended
     }
 
-    /** [podcastId] followed itself or through a followed `rss:` feed linked to it, as follow buttons show it. */
-    private suspend fun isFollowed(podcastId: String): Boolean =
-        podcastDao.getPodcast(podcastId)?.isSubscribed == true ||
-            podcastDao.getRssPodcastLinkedTo(podcastId)?.let { it.isRss && it.isSubscribed } == true
+    /**
+     * Ends follows still under a show renumbered into [podcastId] (one kept beside a follow of
+     * [podcastId]'s `rss:` feed for its notifications), when the listener unfollowed that show or
+     * its feed. True when one ended.
+     */
+    suspend fun endFormerFollowsOf(podcastId: String, unfollow: suspend (PodcastEntity) -> Unit): Boolean {
+        val left = shows.formerIds(podcastId).mapNotNull { id -> podcastDao.getPodcast(id)?.takeIf { it.isSubscribed && !it.isRss } }
+        left.forEach { unfollow(it) }
+        return left.isNotEmpty()
+    }
 
     /** True when a show recorded as renumbered into [podcastId] is still followed under its old number. */
     suspend fun isFollowedUnderFormerId(podcastId: String): Boolean =
@@ -348,3 +355,13 @@ class RenumberedShowFollows internal constructor(
         const val MAX_LOOKUPS_PER_PASS = 6
     }
 }
+
+/** Records [oldId] → [newId]; false (and logged) when it couldn't be saved, so no follow moves. */
+private fun RenumberedShows.recordOrWarn(oldId: String, newId: String): Boolean = record(oldId, newId).also { saved ->
+    if (!saved) Log.w("RenumberedShows", "Renumbering $oldId → $newId not saved; the follow stays")
+}
+
+/** [podcastId] followed itself or through a followed `rss:` feed linked to it, as follow buttons show it. */
+private suspend fun PodcastDao.isFollowedAsShown(podcastId: String): Boolean =
+    getPodcast(podcastId)?.isSubscribed == true ||
+        getRssPodcastLinkedTo(podcastId)?.let { it.isRss && it.isSubscribed } == true

@@ -532,6 +532,9 @@ class PodcastInfoViewModel(
         private const val TAG = "PodcastInfoViewModel"
         private const val PAGE_SIZE = 20
         private const val OLDEST_PAGE_SIZE = 50
+
+        /** Renumberings a page follows in one load (a show renumbered again); a longer chain stops there instead of looping. */
+        private const val MAX_RENUMBERINGS_PER_LOAD = 4
         private const val MAX_SELECTION_EPISODES = 100
         private const val SEARCH_DEBOUNCE_MS = 500L
     }
@@ -633,7 +636,7 @@ class PodcastInfoViewModel(
             if (renumberedTo != null) renumberedFollows.adoptKnown(podcastId)
             // Follows still under a number Podcast Index retired for this show become this show's.
             renumberedFollows.adoptFormerFollows(renumberedTo ?: podcastId)
-            loadShow(podcastId, renumberedTo ?: podcastId, followsRenumbering = true)
+            loadShow(podcastId, renumberedTo ?: podcastId, renumberingsLeft = MAX_RENUMBERINGS_PER_LOAD)
         }
     }
 
@@ -641,11 +644,14 @@ class PodcastInfoViewModel(
      * Loads the page of [routePodcastId] as [showId]: the route's show, or the show Podcast Index
      * renumbered it to. When the show's details answer as another numeric show ID, the follow moves
      * there ([cx.aswin.boxlore.core.catalog.RenumberedShowFollows.adoptAnswer]) and the page
-     * loads again as that show, once ([followsRenumbering]), with that answer as [answered]: it
-     * shows while the page loads when the show has no stored row, and stays when the second load fails.
+     * loads again as that show, following a chain of renumberings up to [renumberingsLeft] times,
+     * with that answer as [answered]: it shows while the page loads when the show has no stored row,
+     * and stays when the next load fails.
      */
-    @Suppress("LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth", "ReturnCount")
-    private suspend fun CoroutineScope.loadShow(routePodcastId: String, showId: String, followsRenumbering: Boolean, answered: Podcast? = null) {
+    // The show-page load moved here from loadPodcast unchanged, apart from renumbering (kotlin:S3776);
+    // Sonar's S6619 misreads the nullable stored row.
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth", "ReturnCount", "kotlin:S3776", "kotlin:S6619")
+    private suspend fun CoroutineScope.loadShow(routePodcastId: String, showId: String, renumberingsLeft: Int, answered: Podcast? = null) {
         run {
             val linkedRss =
                 localCatalog.getSubscribedRssLinkedTo(showId)
@@ -725,13 +731,15 @@ class PodcastInfoViewModel(
                     fetchPodcastAndEpisodes(effectivePodcastId, limit, sortParam)
 
                 if (apiPodcast != null &&
-                    followsRenumbering &&
+                    renumberingsLeft > 0 &&
                     RenumberedShowPageLogic.isRenumbered(effectivePodcastId, apiPodcast.id)
                 ) {
                     // Podcast Index renumbered the show: one follow, under the show it now answers as
                     // (the repository moved it as the answer arrived; this makes sure before the page reads it).
                     subscriptionRepository.renumberedFollows.adoptAnswer(effectivePodcastId, apiPodcast)
-                    if (requestedPodcastId == routePodcastId) loadShow(routePodcastId, apiPodcast.id, followsRenumbering = false, answered = apiPodcast)
+                    if (requestedPodcastId == routePodcastId) {
+                        loadShow(routePodcastId, apiPodcast.id, renumberingsLeft - 1, answered = apiPodcast)
+                    }
                     return
                 }
                 if (apiPodcast != null) {

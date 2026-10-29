@@ -107,6 +107,10 @@ class SubscriptionRepository(
 
         if (activeEntity?.isSubscribed == true) {
             unsubscribeInternal(podcast, activeEntity, existing)
+            // A feed's follow ends with any follow kept under a number its show replaced.
+            activeEntity.linkedPodcastIndexId?.takeIf { activeEntity.isRss }?.let { showId ->
+                renumberedFollows.endFormerFollowsOf(showId) { unsubscribeInternal(it.toPodcast(), it, it) }
+            }
         } else {
             // Subscribe (Upsert to ensure we have data for offline/Jump Back In)
             val entity =
