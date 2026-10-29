@@ -100,7 +100,7 @@ class LibraryLanguagesAdaptiveTest {
         compose.onNode(includeEnglish).assertIsOff()
         compose.onNodeWithText("Dutch").assertIsEnabled().performClick()
         assertEquals(listOf("de", "fr", "es", "nl"), languageChanges.last())
-        compose.onNodeWithText("If there aren’t enough shows in your languages", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("recommendations won’t match your taste as closely", substring = true).assertIsDisplayed()
     }
 
     @Test

@@ -245,6 +245,54 @@ class ShowPageFeedCatalogTest : RoomCatalogTestBase() {
     }
 
     @Test
+    fun clearingSavedShowsRemovesEveryUnfollowedCopyWhateverItsAgeAndKeepsListenerState() = runBlocking {
+        document = feedXml(5)
+        pages.read(request(Scope.ARCHIVE))
+        pages.read(request(Scope.ARCHIVE, show = OTHER_SHOW))
+        pages.read(request(Scope.ARCHIVE, show = THIRD_SHOW))
+        follow(THIRD_SHOW)
+        val played = rows(SHOW).getValue("g1")
+        history(played, SHOW)
+        completedDownload(played, SHOW, "Ep 1")
+        queue(played, SHOW, "https://cdn.example/g1.mp3", "Ep 1")
+        assertEquals(2, pages.unfollowedCount())
+
+        assertEquals("both unfollowed copies go, though opened just now", 2, pages.clearUnfollowed())
+
+        assertNull(pages.cached(SHOW))
+        assertNull(pages.cached(OTHER_SHOW))
+        assertNotNull("a followed show's catalog stays", pages.cached(THIRD_SHOW))
+        assertNotNull(database.listeningHistoryDao().getHistoryItem(played))
+        assertNotNull(database.downloadedEpisodeDao().getDownload(played))
+        assertNotNull(database.queueDao().getQueueItemByEpisodeId(played))
+        assertEquals(0, pages.unfollowedCount())
+        assertEquals(0, pages.clearUnfollowed())
+    }
+
+    @Test
+    fun clearingSavedShowsAlsoRemovesARecentlyUnfollowedShowStillUnderItsTtl() = runBlocking {
+        pages.read(request(Scope.NEWEST))
+        catalog.setUnsubscribedTtl(SHOW, Long.MAX_VALUE / 2)
+        database.podcastDao().upsert(PodcastEntity(podcastId = SHOW, title = "Show", author = "", imageUrl = "", description = null, isSubscribed = false))
+        assertEquals("the automatic cleanup leaves it to the TTL sweep", 0, pages.cleanUp(Long.MAX_VALUE / 4))
+
+        assertEquals(1, pages.unfollowedCount())
+        assertEquals(1, pages.clearUnfollowed())
+        assertNull(pages.cached(SHOW))
+    }
+
+    @Test
+    fun clearingSavedShowsKeepsAShowFollowedAgain() = runBlocking {
+        pages.read(request(Scope.NEWEST))
+        catalog.setUnsubscribedTtl(SHOW, 5L)
+        catalog.setUnsubscribedTtl(SHOW, null)
+
+        assertEquals(0, pages.unfollowedCount())
+        assertEquals(0, pages.clearUnfollowed())
+        assertNotNull(pages.cached(SHOW))
+    }
+
+    @Test
     fun followAndUnfollowWriteTheFollowedColumn() = runBlocking {
         pages.read(request(Scope.NEWEST))
         catalog.setUnsubscribedTtl(SHOW, null)

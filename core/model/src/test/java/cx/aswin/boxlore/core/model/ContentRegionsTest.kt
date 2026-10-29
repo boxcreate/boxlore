@@ -72,4 +72,13 @@ class ContentRegionsTest {
         assertEquals(four, ContentRegions.normalizeLanguages(four, "de", englishOff = true))
         assertEquals(listOf("en", "de", "fr", "es"), ContentRegions.normalizeLanguages(four, "de"))
     }
+
+    @Test
+    fun aListThatLeftEnglishOutKeepsItOut() {
+        assertEquals(listOf("fr"), ContentLanguageSelection.normalizeKeepingEnglishChoice(listOf("fr"), "in"))
+        assertEquals(listOf("en", "fr"), ContentLanguageSelection.normalizeKeepingEnglishChoice(listOf("en", "fr"), "in"))
+        // Hindi can't stand alone, so English comes back; an empty list takes the country's set.
+        assertEquals(listOf("en", "hi"), ContentLanguageSelection.normalizeKeepingEnglishChoice(listOf("hi"), "in"))
+        assertEquals(listOf("en", "hi"), ContentLanguageSelection.normalizeKeepingEnglishChoice(emptyList(), "in"))
+    }
 }

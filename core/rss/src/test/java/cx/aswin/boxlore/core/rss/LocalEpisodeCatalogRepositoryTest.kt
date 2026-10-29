@@ -838,6 +838,10 @@ class LocalEpisodeCatalogRepositoryTest {
 
         override suspend fun isUnfollowedCopy(podcastId: String): Boolean = feeds[podcastId]?.let { !it.followed && it.ttlExpiresAt == null } == true
 
+        override suspend fun listClearableCopyIds(): List<String> = feeds.values.filter { !it.followed }.map { it.podcastId }
+
+        override suspend fun isClearableCopy(podcastId: String): Boolean = feeds[podcastId]?.followed == false
+
         override suspend fun setEpNsIfUnset(podcastId: String, epNs: Long,) {
             feeds[podcastId]?.takeIf { it.epNs == null }?.let { feeds[podcastId] = it.copy(epNs = epNs) }
         }

@@ -314,6 +314,17 @@ class PodcastRepositoryV2DiscoveryTest {
     }
 
     @Test
+    fun aListenerWhoSwitchedEnglishOffNeverHasItAddedBack() = runTest {
+        val first = fixtureItems("fixtures/v2/recommendations.json")[0].asJsonObject
+        answers["/v2/episodes/similar"] = { json("""{"status":"true","items":[$first]}""") }
+
+        repository().getSimilarEpisodes(SimilarEpisodesQuery("7777", REC_SHOW, "T", "D", "P", country = "in", languages = listOf("fr")))
+
+        val languages = parse(seen.single().body).getAsJsonArray("languages").map { it.asString }
+        assertEquals("French only, as the listener chose (D9)", listOf("fr"), languages)
+    }
+
+    @Test
     fun showSearchStaysOnV1BesideTypeahead() = runTest {
         answers["/search/typeahead"] = { json("""{"status":"true","feeds":[{"id":743229,"title":"The Daily"}]}""") }
         answers["/search"] = { json("""{"status":"true","feeds":[{"id":75075,"title":"Reply All"},{"id":0,"itunesId":1234,"title":"Only on Apple"}]}""") }
