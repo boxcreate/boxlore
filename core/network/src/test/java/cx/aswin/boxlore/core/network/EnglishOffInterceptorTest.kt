@@ -72,4 +72,12 @@ class EnglishOffInterceptorTest {
         assertSame(original, EnglishOffInterceptor.withEnglishOff(original))
         assertNull(original.body)
     }
+
+    @Test
+    fun aBodyOutsideTheDiscoveryRoutesIsNeverRead() {
+        val sync = Request.Builder().url("https://api.example/sync/push").post("""{"languages":["de"],"history":[]}""".toRequestBody(jsonType)).build()
+        assertSame(sync, EnglishOffInterceptor.withEnglishOff(sync))
+        val similar = Request.Builder().url("https://api.example/v2/episodes/similar").post("""{"languages":["de"]}""".toRequestBody(jsonType)).build()
+        assertTrue(bodyOf(EnglishOffInterceptor.withEnglishOff(similar)).contains("\"englishOff\":true"))
+    }
 }

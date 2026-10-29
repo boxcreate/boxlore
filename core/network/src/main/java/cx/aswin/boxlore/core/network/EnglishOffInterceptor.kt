@@ -18,13 +18,18 @@ import okio.Buffer
  * a list without `en` is exactly that choice. One place covers every route that sends languages:
  * a `languages` query parameter gains `englishOff=1`; a JSON body with a `languages` array gains
  * `"englishOff": true`. Anything else, an empty list and a request that already says, pass
- * through unchanged, so requests from a listener with English on stay byte-identical.
+ * through unchanged, so requests from a listener with English on stay byte-identical. Only the
+ * discovery routes' JSON bodies are read ([LANGUAGE_BODY_PATHS]); sync pushes and other bodies are
+ * never copied.
  */
 class EnglishOffInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response = chain.proceed(withEnglishOff(chain.request()))
 
     companion object {
         private val json = Json { ignoreUnknownKeys = true }
+
+        /** Paths whose JSON bodies carry `languages`: recommendations, Home bootstrap, similar episodes, onboarding. */
+        private val LANGUAGE_BODY_PATHS = listOf("/recommendations", "/bootstrap", "/episodes/similar", "/onboarding")
 
         /** True when [languages] names at least one language and none of them is English. */
         fun leavesEnglishOut(languages: List<String>): Boolean {
@@ -41,6 +46,7 @@ class EnglishOffInterceptor : Interceptor {
             }
             val body = request.body ?: return request
             if (body.contentType()?.subtype != "json") return request
+            if (LANGUAGE_BODY_PATHS.none { request.url.encodedPath.contains(it) }) return request
             val text = Buffer().also { body.writeTo(it) }.readUtf8()
             val obj = runCatching { json.parseToJsonElement(text) }.getOrNull() as? JsonObject ?: return request
             val languages = (obj["languages"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull } ?: return request

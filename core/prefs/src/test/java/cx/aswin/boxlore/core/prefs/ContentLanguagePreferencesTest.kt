@@ -85,4 +85,12 @@ class ContentLanguagePreferencesTest {
         assertEquals(listOf("de", "fr", "es", "nl"), repository.contentLanguagesStream.first())
         assertTrue(repository.contentEnglishOffStream.first())
     }
+
+    @Test
+    fun englishCanBeSwitchedOffBeforeTheListenerEverPickedLanguages() = runTest {
+        context.userPreferencesDataStore.edit { it[Keys.REGION] = "de" }
+        repository.setContentEnglishOff(true)
+        assertTrue(repository.contentEnglishOffStream.first())
+        assertEquals(listOf("de"), repository.contentLanguagesStream.first())
+    }
 }

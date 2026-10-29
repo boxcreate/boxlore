@@ -178,14 +178,7 @@ class UserPreferencesRepository(context: Context,) {
                     throw exception
                 }
             }.map { preferences ->
-                val region =
-                    preferences[Keys.REGION]?.let { normalizeRegionCode(it) }
-                        ?: ContentRegions.localeDefaultRegion(
-                            java.util.Locale
-                                .getDefault()
-                                .country
-                                .lowercase(),
-                        )
+                val region = regionOf(preferences)
                 val stored = ContentRegions.decodeLanguages(preferences[Keys.CONTENT_LANGUAGES])
                 // Without English when the listener switched it off and the picks allow it; every
                 // request then carries englishOff (EnglishOffInterceptor in :core:network).
@@ -207,10 +200,17 @@ class UserPreferencesRepository(context: Context,) {
     /** Switches English off or on. Off is kept only while the picked languages allow it ([ContentRegions.canSwitchEnglishOff]). */
     suspend fun setContentEnglishOff(englishOff: Boolean) {
         dataStore.edit { preferences ->
-            val picks = ContentRegions.decodeLanguages(preferences[Keys.CONTENT_LANGUAGES])
+            // The picks as the sheet shows them: a listener who never picked has the country's set,
+            // which is saved here so the choice holds.
+            val picks = ContentRegions.normalizeLanguages(ContentRegions.decodeLanguages(preferences[Keys.CONTENT_LANGUAGES]), regionOf(preferences))
+            if (preferences[Keys.CONTENT_LANGUAGES].isNullOrBlank()) preferences[Keys.CONTENT_LANGUAGES] = ContentRegions.encodeLanguages(picks)
             preferences[Keys.CONTENT_ENGLISH_OFF] = englishOff && ContentRegions.canSwitchEnglishOff(picks)
         }
     }
+
+    /** The stored chart country, else the device locale's. */
+    private fun regionOf(preferences: Preferences): String = preferences[Keys.REGION]?.let { normalizeRegionCode(it) }
+        ?: ContentRegions.localeDefaultRegion(java.util.Locale.getDefault().country.lowercase())
 
     /**
      * Changes the chart country. The listener's languages and English choice stay as they are; a
