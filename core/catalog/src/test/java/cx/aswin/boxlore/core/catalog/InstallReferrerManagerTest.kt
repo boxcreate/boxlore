@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.catalog
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -170,5 +171,41 @@ class InstallReferrerManagerTest {
             "Clear data days later never replays the install's link",
             InstallReferrerManager.isFreshInstall(begunSeconds - 2 * 24 * 60 * 60, now),
         )
+        assertFalse(
+            "A clock moved back before the install isn't a fresh install",
+            InstallReferrerManager.isFreshInstall(now / 1000 + 60, now),
+        )
     }
+
+    @Test
+    fun aReplayedReferrerIsReportedButNeverOpened() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val mgr = InstallReferrerManager(context)
+        var seenChannel: String? = null
+        mgr.onInstallReferrerResolved = { channel, _ -> seenChannel = channel }
+        val now = 10L * 24 * 60 * 60 * 1000
+
+        mgr.processReferrer("type=episode&id=67890", installBeginSeconds = now / 1000 - 3 * 24 * 60 * 60, nowMillis = now)
+
+        assertEquals("share", seenChannel)
+        assertTrue(mgr.referralFlow.replayCache.isEmpty())
+        assertTrue(referrerProcessed(context))
+    }
+
+    @Test
+    fun aFreshInstallOpensItsReferrer() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val mgr = InstallReferrerManager(context)
+
+        mgr.processReferrer("type=episode&id=67890", installBeginSeconds = 0L, nowMillis = 1_000L)
+
+        val intent = withTimeout(2_000) { mgr.referralFlow.first() }
+        assertEquals("67890", intent.id)
+        assertTrue(referrerProcessed(context))
+    }
+
+    private fun referrerProcessed(context: Context): Boolean =
+        context
+            .getSharedPreferences(PrefsFileMigrator.Files.REFERRER, Context.MODE_PRIVATE)
+            .getBoolean("referrer_processed", false)
 }
