@@ -117,6 +117,13 @@ internal class ShowPageFeedCatalog(
         victims.count { podcastId -> lockFor(podcastId).withLock { deps.dao.deleteCatalogIfUnfollowed(podcastId) } }
     }
 
+    override suspend fun unfollowedCount(): Int = withContext(Dispatchers.IO) { deps.dao.listUnfollowedCopies().size }
+
+    override suspend fun clearUnfollowed(): Int = withContext(Dispatchers.IO) {
+        // Each delete checks again that the show is unfollowed, so a show followed meanwhile keeps its copy.
+        deps.dao.listUnfollowedCopies().count { copy -> lockFor(copy.podcastId).withLock { deps.dao.deleteCatalogIfUnfollowed(copy.podcastId) } }
+    }
+
     private class Fetched(val result: RssFetchResult, val complete: Boolean)
 
     /** The read, or null for a 304 that answers it. */

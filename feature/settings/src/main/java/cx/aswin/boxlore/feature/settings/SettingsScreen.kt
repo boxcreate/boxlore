@@ -98,6 +98,8 @@ data class RegionSettings(
     /** The listener switched English off (D9); [contentLanguages] already leaves it out when that holds. */
     val englishOff: Boolean = false,
     val onSetEnglishOff: (Boolean) -> Unit = {},
+    /** Saved episode lists of unfollowed shows (Library › Storage, P4 PR 20). */
+    val savedShows: cx.aswin.boxlore.feature.settings.pages.SavedShowsControl = cx.aswin.boxlore.feature.settings.pages.SavedShowsControl(),
     val discoverySections: DiscoverySections = DiscoverySections(),
     val onSetDiscoverySection: (DiscoverySection, Boolean) -> Unit = { _, _ -> },
 )
@@ -551,6 +553,14 @@ private fun createLibraryDiscoveryPreferences(
             regionSettings.onSetContentLanguages(it)
         },
         englishOff = regionSettings.englishOff,
+        savedShows =
+        regionSettings.savedShows.copy(
+            clear = {
+                regionSettings.savedShows.clear().also { cleared ->
+                    AnalyticsHelper.trackSettingsInteraction("saved_shows_cleared", cleared.toString())
+                }
+            },
+        ),
         onSetEnglishOff = {
             AnalyticsHelper.trackSettingsInteraction("content_english_off_changed", it.toString())
             regionSettings.onSetEnglishOff(it)
