@@ -270,6 +270,29 @@ class ShowPageFeedCatalogTest : RoomCatalogTestBase() {
     }
 
     @Test
+    fun clearingSavedShowsAlsoRemovesARecentlyUnfollowedShowStillUnderItsTtl() = runBlocking {
+        pages.read(request(Scope.NEWEST))
+        catalog.setUnsubscribedTtl(SHOW, Long.MAX_VALUE / 2)
+        database.podcastDao().upsert(PodcastEntity(podcastId = SHOW, title = "Show", author = "", imageUrl = "", description = null, isSubscribed = false))
+        assertEquals("the automatic cleanup leaves it to the TTL sweep", 0, pages.cleanUp(Long.MAX_VALUE / 4))
+
+        assertEquals(1, pages.unfollowedCount())
+        assertEquals(1, pages.clearUnfollowed())
+        assertNull(pages.cached(SHOW))
+    }
+
+    @Test
+    fun clearingSavedShowsKeepsAShowFollowedAgain() = runBlocking {
+        pages.read(request(Scope.NEWEST))
+        catalog.setUnsubscribedTtl(SHOW, 5L)
+        catalog.setUnsubscribedTtl(SHOW, null)
+
+        assertEquals(0, pages.unfollowedCount())
+        assertEquals(0, pages.clearUnfollowed())
+        assertNotNull(pages.cached(SHOW))
+    }
+
+    @Test
     fun followAndUnfollowWriteTheFollowedColumn() = runBlocking {
         pages.read(request(Scope.NEWEST))
         catalog.setUnsubscribedTtl(SHOW, null)

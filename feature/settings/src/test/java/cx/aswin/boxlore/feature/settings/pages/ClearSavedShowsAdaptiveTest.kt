@@ -105,11 +105,15 @@ class ClearSavedShowsAdaptiveTest {
     }
 
     @Test
-    fun `an open confirmation survives recreation`() {
+    fun `an open confirmation keeps the count it opened with through recreation`() {
         val restoration = StateRestorationTester(compose)
         restoration.setContent { page() }
         compose.onNodeWithText("Episode lists of 12 shows you don’t follow").performScrollTo().performClick()
+        saved = 0
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithText("Clear saved shows?").assertIsDisplayed()
+        compose
+            .onNodeWithText("Episode lists of 12 shows you don’t follow", substring = true)
+            .assertIsDisplayed()
     }
 }

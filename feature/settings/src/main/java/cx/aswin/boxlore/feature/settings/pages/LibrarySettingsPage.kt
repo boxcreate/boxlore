@@ -286,7 +286,8 @@ internal fun savedShowsSupportingText(count: Int?): String = when (count) {
  */
 @Composable
 private fun SavedShowsGroup(control: SavedShowsControl, onOpen: () -> Unit) {
-    var confirming by rememberSaveable { mutableStateOf(false) }
+    // The count the open confirmation shows, saved so it survives recreation; null while closed.
+    var confirming by rememberSaveable { mutableStateOf<Int?>(null) }
     // Counted again after each clear; null while counting.
     var reads by remember { mutableIntStateOf(0) }
     val count by produceState<Int?>(initialValue = null, reads) { value = control.count() }
@@ -298,21 +299,21 @@ private fun SavedShowsGroup(control: SavedShowsControl, onOpen: () -> Unit) {
             icon = Icons.Rounded.DeleteSweep,
             onClick = {
                 onOpen()
-                if ((count ?: 0) > 0) confirming = true
+                count?.takeIf { it > 0 }?.let { confirming = it }
             },
         )
     }
-    if (confirming) {
+    confirming?.let { shown ->
         ClearSavedShowsDialog(
-            count = count ?: 0,
+            count = shown,
             onConfirm = {
-                confirming = false
+                confirming = null
                 scope.launch {
                     control.clear()
                     reads++
                 }
             },
-            onDismiss = { confirming = false },
+            onDismiss = { confirming = null },
         )
     }
 }

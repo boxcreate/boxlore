@@ -115,11 +115,15 @@ interface ShowPageFeedPort {
      */
     suspend fun cleanUp(nowMillis: Long, keepPodcastId: String? = null): Int
 
-    /** How many unfollowed shows have a saved copy (Settings › Clear saved shows). P4 PR 20. */
+    /**
+     * How many unfollowed shows have a saved copy (Settings › Clear saved shows), including shows
+     * unfollowed recently whose copy still waits for its unsubscribe TTL. P4 PR 20.
+     */
     suspend fun unfollowedCount(): Int = 0
 
     /**
-     * Removes every unfollowed show's saved copy, whatever its age (Settings › Clear saved shows).
+     * Removes every unfollowed show's saved copy, whatever its age or unsubscribe TTL (Settings ›
+     * Clear saved shows). A show followed meanwhile keeps its copy.
      * The same rows as [cleanUp]: listening history, downloads, the queue and episode aliases stay.
      * Returns how many shows were removed. P4 PR 20 (decision D10).
      */
