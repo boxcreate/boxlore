@@ -170,6 +170,38 @@ class FeedAddressDailyCheckTest {
     }
 
     @Test
+    fun `a show the server says Podcast Index merged moves its follow, keeps its address and is stamped`() = runTest {
+        add(show("1258562"))
+        add(show("2"))
+        val merges = mutableListOf<Pair<String, String>>()
+        val merging =
+            FeedAddressDailyCheck(
+                followedShows = { rows.values.toList() },
+                fetchAddresses = { ids ->
+                    V2ShowsFeedsResponse(
+                        true,
+                        ids.map { id -> if (id == 1258562L) address(id, url = null).copy(mergedInto = 7976624L) else address(id).copy(mergedInto = id) },
+                    )
+                },
+                readsAt = { _, _ -> true },
+                replaceAddress = { change ->
+                    changes += change
+                    FeedAddressUpdate.UPDATED
+                },
+                markChecked = { id, at -> rows[id] = rows.getValue(id).copy(feedUrlCheckedAt = at) },
+                enabled = { true },
+                nowMillis = { now },
+                onMerged = { old, new -> merges += old to new },
+            )
+
+        merging.run()
+
+        assertEquals(listOf("1258562" to "7976624"), merges, "a mergedInto naming the show itself is ignored")
+        assertEquals(listOf("2"), changes.map { it.podcastId }, "the merged show's address is never swapped")
+        assertEquals(now, rows.getValue("1258562").feedUrlCheckedAt)
+    }
+
+    @Test
     fun `a swapped show is stamped by the swap itself, never stamped first and left unswapped`() = runTest {
         add(show("1"))
         add(show("2"))

@@ -79,6 +79,13 @@ class PodcastRepository(
      * default stores nothing, so show pages read the server's list (P4 PR 16, plan section 11).
      */
     feedFirstWiring: FeedFirstWiring = FeedFirstWiring(),
+    /**
+     * Called, before [getPodcastDetails] returns, with each answer for a numeric show ID that names
+     * another show ID: Podcast Index renumbered the show. The app records it and moves a follow of
+     * the old show to the new one (`RenumberedShowFollows.adoptAnswer`); the default does
+     * nothing. A failure is logged and the answer still returned.
+     */
+    private val onShowRenumbered: suspend (oldId: String, answer: Podcast) -> Unit = { _, _ -> },
 ) : cx.aswin.boxlore.core.domain.ports.PodcastCatalogPort {
     internal val episodeFeedReader: EpisodeFeedReader by lazy { feedReader ?: RssEpisodeFeedReader(cx.aswin.boxlore.core.rss.RssFeedClient()) { apiV2 } }
 
@@ -575,7 +582,19 @@ class PodcastRepository(
         if (feedId.startsWith("rss:")) {
             return@withContext getRssPodcastDetails(feedId)
         }
-        getNetworkPodcastDetails(feedId)
+        getNetworkPodcastDetails(feedId)?.also { answer -> reportRenumbering(feedId, answer) }
+    }
+
+    /** Hands an answer for [feedId] that names another numeric show ID to [onShowRenumbered]. */
+    private suspend fun reportRenumbering(feedId: String, answer: Podcast) {
+        if (!cx.aswin.boxlore.core.rss.RenumberedShowIds.isRenumbering(feedId, answer.id)) return
+        try {
+            onShowRenumbered(feedId, answer)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            android.util.Log.w("PodcastRepository", "Renumbered show $feedId → ${answer.id} not recorded", e)
+        }
     }
 
     private suspend fun getRssPodcastDetails(feedId: String): Podcast? = try {

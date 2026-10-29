@@ -222,9 +222,18 @@ data class V2ShowAddress(
     val flags: V2ShowFlags? = null,
     @SerialName("verifiedAt")
     val verifiedAt: Long? = null,
+    /**
+     * The show Podcast Index merged [id] into (it removed a duplicate listing or renumbered the
+     * show), as the server confirmed with Podcast Index; null otherwise.
+     */
+    @SerialName("mergedInto")
+    val mergedInto: Long? = null,
 ) : V2FeedAddress {
     /** [epNs] when it is a valid namespace, else null. */
     val validEpNs: Long? get() = epNs?.takeIf(V2EpisodeIds::isShowId)
+
+    /** [mergedInto] when it is another valid show ID, else null. */
+    val validMergedInto: Long? get() = mergedInto?.takeIf { V2EpisodeIds.isShowId(it) && it != id }
 }
 
 /**

@@ -302,6 +302,7 @@ class SubscriptionForegroundSync(
                     replaceAddress = subscriptionRepository::updateFeedAddress,
                     markChecked = subscriptionRepository::markFeedAddressChecked,
                     enabled = enabled,
+                    onMerged = { oldId, newId -> subscriptionRepository.renumberedFollows.adoptKnown(oldId, confirmedNewId = newId) },
                 ),
                 reporter =
                 FeedReporter(
@@ -330,6 +331,8 @@ class SubscriptionForegroundSync(
             return {
             SubscriptionForegroundSyncIngest.sweepExpiredLocalCatalogs(localEpisodeCatalog)
             runDailyAddressCheck(addressJobs.dailyCheck, subscriptionRepository)
+            // One follow per renumbered show before feeds are read (RenumberedShowFollows.collapseFollowsQuietly).
+            subscriptionRepository.renumberedFollows.collapseFollowsQuietly(podcastRepository::getPodcastDetails)
             val ids = subscriptionRepository.subscribedPodcastIds.first()
             val recoveryNow = System.currentTimeMillis()
             recoverMissingFeedUrls(

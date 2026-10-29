@@ -120,7 +120,10 @@ fun PodcastInfoScreen(
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    cx.aswin.boxlore.feature.info.components.ArtworkInfoTheme(listOf((uiState as? PodcastInfoUiState.Success)?.podcast?.takeIf { it.id == podcastId }?.let { it.imageUrl.takeIf(String::isNotBlank) ?: it.fallbackImageUrl }), isLoading = uiState is PodcastInfoUiState.Loading) {
+    val pageShow by viewModel.pageShow.collectAsState()
+    // The route's show, or the show this route resolved to (a linked feed, a renumbered show); never a previous page's.
+    val artworkPodcast = cx.aswin.boxlore.feature.info.logic.RenumberedShowPageLogic.artworkPodcast(uiState, podcastId, pageShow)
+    cx.aswin.boxlore.feature.info.components.ArtworkInfoTheme(listOf(artworkPodcast?.let { it.imageUrl.takeIf(String::isNotBlank) ?: it.fallbackImageUrl }), isLoading = uiState is PodcastInfoUiState.Loading) {
     val queuedEpisodeIds by viewModel.queuedEpisodeIds.collectAsState()
     val downloadedEpisodeIds by viewModel.downloadedEpisodeIds.collectAsState()
     val downloadingEpisodeIds by viewModel.downloadingEpisodeIds.collectAsState()

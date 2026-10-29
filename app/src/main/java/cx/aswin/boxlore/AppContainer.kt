@@ -22,6 +22,7 @@ import cx.aswin.boxlore.core.catalog.LegacyRssRepairActivation
 import cx.aswin.boxlore.core.catalog.LegacyRssRepairCatalog
 import cx.aswin.boxlore.core.catalog.LegacyRssRepairRuntime
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.RenumberingWiring
 import cx.aswin.boxlore.core.catalog.RolloutSwitches
 import cx.aswin.boxlore.core.catalog.RoomDiscoveryEpisodeIds
 import cx.aswin.boxlore.core.catalog.RoomEpisodeAliasReads
@@ -68,7 +69,9 @@ import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import cx.aswin.boxlore.core.ranking.RankingRuntimeControls
 import cx.aswin.boxlore.core.rss.EpisodeSupplementRepository
 import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
+import cx.aswin.boxlore.core.rss.RenumberedShows
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
+import cx.aswin.boxlore.core.rss.SharedPreferencesRenumberedShows
 import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
 import cx.aswin.boxlore.fcm.PodcastNotificationRegistrationWorker
 import cx.aswin.boxlore.share.EpisodeShareRegistrationWorker
@@ -171,7 +174,17 @@ class AppContainer(
                 DownloadRepository.relinkDownloadCache(appContext, oldId, newId)
             },
             onCatalogPersisted = { id -> autoDownloadCoordinator.scanCached(id) },
+            renumberedShows = renumberedShows,
         )
+    }
+
+    /**
+     * Shows Podcast Index renumbered (an old show ID that now answers as another), kept in
+     * `boxlore_renumbered_shows`: follows move to the new show and catalog reads link the old
+     * show's listener rows to its episodes.
+     */
+    val renumberedShows: RenumberedShows by lazy {
+        SharedPreferencesRenumberedShows(appContext.getSharedPreferences(SharedPreferencesRenumberedShows.FILE_NAME, Context.MODE_PRIVATE))
     }
 
     /**
@@ -242,6 +255,8 @@ class AppContainer(
                 telemetry = feedTelemetry,
                 isFollowed = { id -> database.podcastDao().getPodcast(id)?.isSubscribed == true },
             ),
+            // A show Podcast Index renumbered keeps one follow, under the show it now answers as.
+            onShowRenumbered = { oldId, answer -> subscriptionRepository.renumberedFollows.adoptAnswer(oldId, answer) },
         )
     }
 
@@ -424,6 +439,11 @@ class AppContainer(
                 SharedPreferencesPendingNotificationRegistrations(
                     appContext.getSharedPreferences(SharedPreferencesPendingNotificationRegistrations.FILE_NAME, Context.MODE_PRIVATE),
                 ),
+            ),
+            renumbering =
+            RenumberingWiring(
+                shows = renumberedShows,
+                linkEpisodes = { oldId, newId -> localEpisodeCatalogRepository.linkRenumberedShow(oldId, newId) },
             ),
         )
     }

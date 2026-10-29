@@ -87,8 +87,37 @@ interface PodcastDao {
     @Query("SELECT * FROM podcasts WHERE linkedPodcastIndexId = :podcastIndexId LIMIT 1")
     suspend fun getRssPodcastLinkedTo(podcastIndexId: String): PodcastEntity?
 
+    /**
+     * The followed `rss:` feed linked to [podcastIndexId], when several feed rows (one unfollowed)
+     * are linked to it.
+     *
+     * Added for renumbered shows (docs/EPISODE_IDS.md §5, renumbered shows).
+     */
+    @Query(
+        """
+        SELECT * FROM podcasts
+        WHERE linkedPodcastIndexId = :podcastIndexId AND sourceType = 'rss' AND isSubscribed = 1
+        ORDER BY subscribedAt DESC LIMIT 1
+        """,
+    )
+    suspend fun getSubscribedRssPodcastLinkedTo(podcastIndexId: String): PodcastEntity?
+
     @Query("SELECT * FROM podcasts WHERE podcastId = :id")
     suspend fun getPodcast(id: String): PodcastEntity?
+
+    /**
+     * Runs [move] in one transaction: it reads the old and new show rows of a follow moving from a
+     * show Podcast Index renumbered, merges them and writes both through [upsert] (so each keeps its
+     * stored namespace), with no other writer (a cloud pull, a toggle, the foreground pass) landing
+     * between the read and the write. The caller writes both rows dirty, so the next sync push
+     * carries the follow and the unfollow.
+     *
+     * Added for renumbered shows (`RenumberedShowFollows` in `:core:catalog`).
+     */
+    @Transaction
+    suspend fun moveRenumberedFollow(move: suspend () -> Unit) {
+        move()
+    }
 
     @Query("SELECT * FROM podcasts WHERE podcastId IN (:ids)")
     suspend fun getPodcastsByIds(ids: List<String>): List<PodcastEntity>
