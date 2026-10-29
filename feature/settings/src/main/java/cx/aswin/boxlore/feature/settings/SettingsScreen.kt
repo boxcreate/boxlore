@@ -95,6 +95,9 @@ data class RegionSettings(
     val contentLanguages: List<String> = listOf("en"),
     val onSetRegion: (String) -> Unit = {},
     val onSetContentLanguages: (List<String>) -> Unit = {},
+    /** The listener switched English off (D9); [contentLanguages] already leaves it out when that holds. */
+    val englishOff: Boolean = false,
+    val onSetEnglishOff: (Boolean) -> Unit = {},
     val discoverySections: DiscoverySections = DiscoverySections(),
     val onSetDiscoverySection: (DiscoverySection, Boolean) -> Unit = { _, _ -> },
 )
@@ -546,6 +549,11 @@ private fun createLibraryDiscoveryPreferences(
                 it.joinToString(","),
             )
             regionSettings.onSetContentLanguages(it)
+        },
+        englishOff = regionSettings.englishOff,
+        onSetEnglishOff = {
+            AnalyticsHelper.trackSettingsInteraction("content_english_off_changed", it.toString())
+            regionSettings.onSetEnglishOff(it)
         },
     )
 

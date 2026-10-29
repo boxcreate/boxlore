@@ -7,6 +7,9 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 internal object Keys {
     val REGION = stringPreferencesKey("region")
     val CONTENT_LANGUAGES = stringPreferencesKey("content_languages")
+
+    /** The listener switched English off (D9); applied only when every picked language allows it. Stable name. */
+    val CONTENT_ENGLISH_OFF = booleanPreferencesKey("content_english_off")
     val THEME_CONFIG = stringPreferencesKey("theme_config")
     val USE_DYNAMIC_COLOR = androidx.datastore.preferences.core.booleanPreferencesKey("use_dynamic_color")
     val THEME_BRAND = stringPreferencesKey("theme_brand")

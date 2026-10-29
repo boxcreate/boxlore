@@ -187,24 +187,60 @@ class UserPreferencesRepository(context: Context,) {
                                 .lowercase(),
                         )
                 val stored = ContentRegions.decodeLanguages(preferences[Keys.CONTENT_LANGUAGES])
-                ContentRegions.normalizeLanguages(stored, region)
+                // Without English when the listener switched it off and the picks allow it; every
+                // request then carries englishOff (EnglishOffInterceptor in :core:network).
+                ContentRegions.normalizeLanguages(stored, region, preferences[Keys.CONTENT_ENGLISH_OFF] == true)
             }.distinctUntilChanged()
 
+    /** The listener's "Include English" choice, inverted: true when they switched English off (the picks may still keep it on). */
+    val contentEnglishOffStream: Flow<Boolean> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) {
+                    emit(emptyPreferences())
+                } else {
+                    throw exception
+                }
+            }.map { preferences -> preferences[Keys.CONTENT_ENGLISH_OFF] == true }
+            .distinctUntilChanged()
+
+    /** Switches English off or on. Off is kept only while the picked languages allow it ([ContentRegions.canSwitchEnglishOff]). */
+    suspend fun setContentEnglishOff(englishOff: Boolean) {
+        dataStore.edit { preferences ->
+            val picks = ContentRegions.decodeLanguages(preferences[Keys.CONTENT_LANGUAGES])
+            preferences[Keys.CONTENT_ENGLISH_OFF] = englishOff && ContentRegions.canSwitchEnglishOff(picks)
+        }
+    }
+
+    /**
+     * Changes the chart country. The listener's languages and English choice stay as they are; a
+     * listener who never picked languages gets the new country's recommended set.
+     */
     suspend fun setRegion(region: String) {
         val normalized = normalizeRegionCode(region)
         val recommended = ContentRegions.recommendedLanguages(normalized)
         dataStore.edit { preferences ->
             preferences[Keys.REGION] = normalized
-            preferences[Keys.CONTENT_LANGUAGES] = ContentRegions.encodeLanguages(recommended)
+            if (ContentRegions.decodeLanguages(preferences[Keys.CONTENT_LANGUAGES]).isEmpty()) {
+                preferences[Keys.CONTENT_LANGUAGES] = ContentRegions.encodeLanguages(recommended)
+            }
             preferences[Keys.HAS_DISMISSED_REGION_NUDGE] = true
         }
     }
 
-    suspend fun setContentLanguages(languages: List<String>) {
+    /**
+     * Saves the picked languages. With English switched off they are saved without it (its slot
+     * free for a pick); picks that no longer allow English off switch it back on. [englishOff]
+     * sets the English choice in the same write (a restore); null keeps the stored one.
+     */
+    suspend fun setContentLanguages(languages: List<String>, englishOff: Boolean? = null) {
         val region = regionStream.first()
-        val normalized = ContentRegions.normalizeLanguages(languages, region)
         dataStore.edit { preferences ->
+            val wantsEnglishOff = englishOff ?: (preferences[Keys.CONTENT_ENGLISH_OFF] == true)
+            val englishOff = wantsEnglishOff && ContentRegions.canSwitchEnglishOff(languages)
+            val normalized = ContentRegions.normalizeLanguages(languages, region, englishOff)
             preferences[Keys.CONTENT_LANGUAGES] = ContentRegions.encodeLanguages(normalized)
+            preferences[Keys.CONTENT_ENGLISH_OFF] = englishOff
         }
     }
 

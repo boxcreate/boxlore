@@ -78,10 +78,25 @@ object ContentRegions {
     data class LanguageGroups(val recommended: List<String>, val more: List<String>,)
 
     /**
-     * Force `en`, allowlist, max [MAX_LANGUAGES].
-     * Empty / all-invalid → country recommended set.
+     * Languages whose catalog pool is deep enough to stand without English: English can be
+     * switched off only when every picked language is one of these. Measured on the live catalog
+     * on 29 Oct 2026 (at least 3,600 shows and 39,000 episodes each); Chinese, Indonesian and
+     * Hindi are too small. Keep aligned with proxy `ENGLISH_OFF_LANGUAGES`.
      */
-    fun normalizeLanguages(input: List<String>, country: String,): List<String> {
+    val ENGLISH_OFF_LANGUAGES: Set<String> = setOf("fr", "de", "es", "pt", "ru", "nl")
+
+    /** True when [languages] (codes, with or without `en`) allow English to be switched off. */
+    fun canSwitchEnglishOff(languages: List<String>): Boolean {
+        val picks = languages.map { it.trim().lowercase().substringBefore('-') }.filter { it.isNotEmpty() && it != "en" }
+        return picks.isNotEmpty() && picks.all { it in ENGLISH_OFF_LANGUAGES }
+    }
+
+    /**
+     * Allowlist, max [MAX_LANGUAGES], English first, unless [englishOff] is set and
+     * [canSwitchEnglishOff] allows it: then the picks alone (the server then adds English only
+     * where they run thin). Empty / all-invalid → country recommended set.
+     */
+    fun normalizeLanguages(input: List<String>, country: String, englishOff: Boolean = false,): List<String> {
         val recommended = recommendedLanguages(country)
         val cleaned =
             input
@@ -92,6 +107,7 @@ object ContentRegions {
                 .toList()
 
         if (cleaned.isEmpty()) return recommended.take(MAX_LANGUAGES)
+        if (englishOff && canSwitchEnglishOff(cleaned)) return cleaned.filter { it != "en" }.take(MAX_LANGUAGES)
 
         val ordered = LinkedHashSet<String>()
         ordered.add("en")
