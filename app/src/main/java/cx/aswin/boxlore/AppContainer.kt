@@ -1,11 +1,8 @@
 package cx.aswin.boxlore
 
-import kotlinx.coroutines.launch
-import cx.aswin.boxlore.core.database.knownRecipeIds
-import cx.aswin.boxlore.core.analytics.EpisodeRecipeIdLookup
-import cx.aswin.boxlore.core.catalog.SharedPreferencesUpgradeRepairTally
 import android.content.Context
 import cx.aswin.boxlore.connectivity.AndroidConnectivityObserver
+import cx.aswin.boxlore.core.analytics.EpisodeRecipeIdLookup
 import cx.aswin.boxlore.core.catalog.AddressCheckAnswer
 import cx.aswin.boxlore.core.catalog.DiscoveryEpisodeIds
 import cx.aswin.boxlore.core.catalog.DiscoveryRouting
@@ -36,6 +33,7 @@ import cx.aswin.boxlore.core.catalog.RoomLocalCatalog
 import cx.aswin.boxlore.core.catalog.SharedAppDependencies
 import cx.aswin.boxlore.core.catalog.SharedPreferencesFeedReportStamps
 import cx.aswin.boxlore.core.catalog.SharedPreferencesPendingNotificationRegistrations
+import cx.aswin.boxlore.core.catalog.SharedPreferencesUpgradeRepairTally
 import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.catalog.UpgradeAddressRepair
@@ -49,6 +47,7 @@ import cx.aswin.boxlore.core.catalog.sync.SyncEpisodeIdentity
 import cx.aswin.boxlore.core.catalog.sync.UserSyncCoordinator
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.episodeListenerStore
+import cx.aswin.boxlore.core.database.knownRecipeIds
 import cx.aswin.boxlore.core.domain.ports.ConnectivityStatusPort
 import cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort
 import cx.aswin.boxlore.core.domain.ports.EpisodeOfflineLookupPort
@@ -88,6 +87,7 @@ import cx.aswin.boxlore.sync.SavedKillSwitch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /**
  * Application-scoped composition root for shared DB / repositories / managers.
