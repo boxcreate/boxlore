@@ -22,6 +22,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.OpenInNew
@@ -147,7 +148,7 @@ private fun UpcomingChanges(notes: String) {
 @Composable
 private fun UpdateStatusContent(status: UpdateCheckStatus, onCheck: () -> Unit, onOpenPlay: (() -> Unit)? = null) {
     val checking = status == UpdateCheckStatus.CHECKING || status == UpdateCheckStatus.IDLE
-    val playFallback = status == UpdateCheckStatus.FAILED && onOpenPlay != null
+    val openPlay = onOpenPlay?.takeIf { status == UpdateCheckStatus.FAILED }
     Column(
         modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -156,7 +157,7 @@ private fun UpdateStatusContent(status: UpdateCheckStatus, onCheck: () -> Unit, 
         Icon(painterResource(R.drawable.ic_boxlore_wordmark_mic), contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.height(32.dp).aspectRatio(6213f / 820f))
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
-                stringResource(if (playFallback) R.string.updates_play_check_failed else checkStatusText(status)),
+                stringResource(if (openPlay != null) R.string.updates_play_check_failed else checkStatusText(status)),
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
@@ -167,8 +168,8 @@ private fun UpdateStatusContent(status: UpdateCheckStatus, onCheck: () -> Unit, 
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        if (playFallback && onOpenPlay != null) {
-            PlayFallbackActions(onOpenPlay = onOpenPlay, onCheck = onCheck)
+        if (openPlay != null) {
+            PlayFallbackActions(onOpenPlay = openPlay, onCheck = onCheck)
             return@Column
         }
         FilledTonalButton(onClick = onCheck, enabled = !checking, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
@@ -189,7 +190,7 @@ private fun PlayFallbackActions(onOpenPlay: () -> Unit, onCheck: () -> Unit) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Button(onClick = onOpenPlay, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Rounded.OpenInNew, contentDescription = null, modifier = Modifier.size(20.dp))
+                Icon(Icons.AutoMirrored.Rounded.OpenInNew, contentDescription = null, modifier = Modifier.size(20.dp))
                 Text(stringResource(R.string.updates_open_play))
             }
         }
