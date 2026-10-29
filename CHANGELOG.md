@@ -50,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Android Auto reads queue, history and downloads across an episode's trusted IDs. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Show pages of shows you don't follow list `/v2/episodes` under locally stored IDs when `feed_first` is off; in-show search filters that list on the phone instead of calling v1 `episodes/search`. Broken-feed reports share one limiter between the show page and the daily address check. ([#1184](https://github.com/boxcreate/boxlore/pull/1184)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Library settings › Discovery is split into Charts › Country and Recommendations › Languages rows, and changing the country keeps the listener's languages. ([#1187](https://github.com/boxcreate/boxlore/pull/1187)) <!-- impact:user-impact-medium+backend-change --> <!-- copy:locked -->
+- Onboarding after search or a library import asks before suggesting shows: **See similar shows** or **Go to Home** (`SimilarShowsChoice`), with **Skip to Home** while suggestions load; the similar-shows request runs only when asked for. ([#1194](https://github.com/boxcreate/boxlore/pull/1194)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - New-episode notifications are checked hourly on our own server instead of GitHub Actions, whose schedule ran every few hours. ([#1151](https://github.com/boxcreate/boxlore/pull/1151)) <!-- impact:user-impact-low+backend-change --> <!-- copy:locked -->
 - Feed parsing records each item's position in the feed document (`ParsedFeedItem`, `ParsedRssFeed.items`). When items share a catalog key, the first in the document wins in the parser merge, `LocalEpisodeCatalogPersist`, `StickyRssEpisodeRemap` and the legacy RSS upgrade. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - Items without a GUID are keyed on their first playable `<enclosure url>`. Items that share a first enclosure keep their audio address as the key. Stored rows are also found by their own minted ID and by the audio address older builds used, so no stored episode ID changes. Minting is unchanged. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
@@ -220,6 +221,11 @@ readme-copy:end pr=1192 -->
 ### Fixes
 - boxlore no longer crashes on some tablets and foldables when you scroll to the end of the top row on Home.
 readme-copy:end pr=1193 -->
+
+<!-- readme-copy:start pr=1194
+### Improvements
+- After importing your library or picking shows in search, choose whether to see similar shows or go straight to Home, and skip to Home anytime while suggestions load.
+readme-copy:end pr=1194 -->
 
 <!-- readme-copy:start pr=1195
 ### Fixes

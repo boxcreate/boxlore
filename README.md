@@ -69,6 +69,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 </ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
+<li>After importing your library or picking shows in search, choose whether to see similar shows or go straight to Home, and skip to Home anytime while suggestions load. <a href="https://github.com/boxcreate/boxlore/pull/1194"><img src="https://img.shields.io/badge/PR-1194-6750A4?style=flat-square" alt="PR #1194" height="18"/></a></li>
 <li>Listening in German, French, Spanish, Portuguese, Russian or Dutch? You can now turn English off in Library settings › Languages, and boxlore adds English shows only when there aren't enough in your languages. <a href="https://github.com/boxcreate/boxlore/pull/1187"><img src="https://img.shields.io/badge/PR-1187-6750A4?style=flat-square" alt="PR #1187" height="18"/></a></li>
 <li>Library settings now has separate rows for your chart country and your languages, and changing your country keeps your languages. <a href="https://github.com/boxcreate/boxlore/pull/1187"><img src="https://img.shields.io/badge/PR-1187-6750A4?style=flat-square" alt="PR #1187" height="18"/></a></li>
 <li>Show pages can now list episodes straight from a show’s own feed, keep them for offline viewing, and tell you when boxlore is showing its own episode list instead. Rolling out gradually. <a href="https://github.com/boxcreate/boxlore/pull/1184"><img src="https://img.shields.io/badge/PR-1184-6750A4?style=flat-square" alt="PR #1184" height="18"/></a></li>
