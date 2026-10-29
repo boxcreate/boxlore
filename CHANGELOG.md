@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PodcastNotificationRegistrationWorker` re-registers a show's notifications after its address changes and retries until Firebase acknowledges. ([#1182](https://github.com/boxcreate/boxlore/pull/1182)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - JSON library backup version 7 carries episode identity (`episodeIdentity`: aliases, group settings, renumbered shows) and restores it without overwriting another episode; OPML exports use each show's publisher feed address only. ([#1188](https://github.com/boxcreate/boxlore/pull/1188)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `UpgradeGateTest`: end-to-end upgrade gate from schemas 36, 37 and 38 through the catalog's first reads. ([#1190](https://github.com/boxcreate/boxlore/pull/1190)) <!-- impact:user-impact-low --> <!-- copy:locked -->
+- Library settings › Storage › Clear saved shows removes every unfollowed show's saved episode list after a confirmation (`ShowPageFeedPort.clearUnfollowed`); history, downloads, the queue and followed shows stay. ([#1192](https://github.com/boxcreate/boxlore/pull/1192)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `EpisodeRecipeId` in `:core:rss` and `scripts/sync/lib/episode-recipe-id.js` compute boxlore episode IDs from (show ID, catalog key), checked against a shared fixture. ([#1139](https://github.com/boxcreate/boxlore/pull/1139)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync logs why each vector point is stored or deleted; `scripts/sync/attribution-report.js` summarizes the log. ([#1139](https://github.com/boxcreate/boxlore/pull/1139)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - `turso.text()` in the sync's Turso client binds catalog keys as text. ([#1141](https://github.com/boxcreate/boxlore/pull/1141)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
@@ -208,6 +209,11 @@ readme-copy:end pr=1190 -->
 ### Fixes
 - Turning English off now keeps English shows out of your recommendations, search and suggestions, unless there aren't enough in your languages.
 readme-copy:end pr=1191 -->
+
+<!-- readme-copy:start pr=1192
+### Improvements
+- Free up space with Clear saved shows in Library settings: it removes the episode lists saved for shows you opened but don't follow.
+readme-copy:end pr=1192 -->
 
 <!-- readme-copy:start pr=1193
 ### Fixes
