@@ -39,7 +39,8 @@ object EpisodeListenerProjection {
         val liked = likeDecision(members, state)
         val completed = completionDecision(members, state)
         val completedBy = if (completed.value && !base.isCompleted) {
-            members.filter { it.isCompleted }.maxByOrNull { it.lastPlayedAt } ?: base
+            // Ties on play time go to the higher ID, as for the base row, so any row order gives the same flags.
+            members.filter { it.isCompleted }.maxWithOrNull(compareBy<ListeningHistoryEntity>({ it.lastPlayedAt }, { it.episodeId })) ?: base
         } else {
             base
         }
