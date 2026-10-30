@@ -118,20 +118,23 @@ class ListeningInsightsMaintenance(
         database.withTransaction {
             val heldSessions = sessions.getAllSessions().groupBy { Triple(it.rollupDeviceId, it.localDay, it.episodeId) }
             val known = pushes.getPushedDays(origins.own).mapTo(HashSet()) { Triple(it.deviceId, it.localDay, it.episodeId) }
-            for (day in incoming) {
-                val stored = rollups.getRollup(day.deviceId, day.localDay, day.episodeId)
-                val daySessions = heldSessions[day.key].orEmpty()
-                if (day.deviceId == origins.own) {
-                    val holdsNothing = stored == null && daySessions.isEmpty()
-                    if (holdsNothing && day.key !in known && !day.isZero()) rollups.upsertRollup(day)
-                } else if (day.covers(stored, daySessions)) {
-                    // A zero day: that origin no longer holds the day (it moved to another episode ID, or was removed).
-                    if (day.isZero()) rollups.deleteRollup(day.deviceId, day.localDay, day.episodeId) else rollups.upsertRollup(day)
-                    sessions.deleteSessionsOfDailySummary(day.deviceId, day.localDay, day.episodeId, day.lastListenedAt)
-                }
-            }
+            for (day in incoming) applyCloudDay(day, heldSessions[day.key].orEmpty(), isOwn = day.deviceId == origins.own, known = day.key in known)
             recordPushedDays(incoming.filter { it.deviceId in origins.pushed })
         }
+    }
+
+    /** One day of [applyCloudDailyListening]; [known]: this phone knew the cloud held it. */
+    private suspend fun applyCloudDay(day: ListeningRollupEntity, daySessions: List<ListeningSessionEntity>, isOwn: Boolean, known: Boolean,) {
+        val stored = rollups.getRollup(day.deviceId, day.localDay, day.episodeId)
+        if (isOwn) {
+            val holdsNothing = stored == null && daySessions.isEmpty()
+            if (holdsNothing && !known && !day.isZero()) rollups.upsertRollup(day)
+            return
+        }
+        if (!day.covers(stored, daySessions)) return
+        // A zero day: that origin no longer holds the day (it moved to another episode ID, or was removed).
+        if (day.isZero()) rollups.deleteRollup(day.deviceId, day.localDay, day.episodeId) else rollups.upsertRollup(day)
+        sessions.deleteSessionsOfDailySummary(day.deviceId, day.localDay, day.episodeId, day.lastListenedAt)
     }
 
     /**
