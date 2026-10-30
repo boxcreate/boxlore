@@ -42,6 +42,10 @@ object ListeningHistoryUpsertLogic {
         isManualCompletion = false,
         isBulkCompletion = false,
         episodeDescription = input.episodeDescription,
+        // A save from playback is a play (and, completed, a finish by listening); the DAO keeps a
+        // stored row's earlier dates.
+        firstPlayedAt = input.lastPlayedAt.takeIf { input.positionMs > 0L || input.isCompleted },
+        finishedAt = input.lastPlayedAt.takeIf { input.isCompleted },
     )
 
     fun buildBulkCompleteEntity(

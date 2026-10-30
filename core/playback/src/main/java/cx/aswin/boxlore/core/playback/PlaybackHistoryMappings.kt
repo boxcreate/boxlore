@@ -26,6 +26,8 @@ internal fun ListeningHistoryEntity.toListeningHistoryItem(): ListeningHistoryIt
     lastPlayedAt = lastPlayedAt,
     enclosureType = enclosureType,
     episodeDescription = episodeDescription,
+    firstPlayedAt = firstPlayedAt,
+    finishedAt = finishedAt,
 )
 
 internal fun ListeningHistoryItem.toListeningHistoryEntity(): ListeningHistoryEntity = ListeningHistoryEntity(
@@ -44,6 +46,8 @@ internal fun ListeningHistoryItem.toListeningHistoryEntity(): ListeningHistoryEn
     isDirty = true,
     enclosureType = enclosureType,
     episodeDescription = episodeDescription,
+    firstPlayedAt = firstPlayedAt,
+    finishedAt = finishedAt,
 )
 
 /** [this] row exactly as stored (raw completion flag, like time, sync state), for an Undo that restores it unchanged. */
@@ -64,6 +68,8 @@ internal fun ListeningHistoryEntity.toRowSnapshot(): ListeningHistoryRowSnapshot
         lastPlayedAt = lastPlayedAt,
         enclosureType = enclosureType,
         episodeDescription = episodeDescription,
+        firstPlayedAt = firstPlayedAt,
+        finishedAt = finishedAt,
     ),
     likedAt = likedAt,
     isDirty = isDirty,
@@ -93,6 +99,8 @@ internal fun ListeningHistoryRowSnapshot.toListeningHistoryEntity(): ListeningHi
     isManualCompletion = isManualCompletion,
     isBulkCompletion = isBulkCompletion,
     episodeDescription = item.episodeDescription,
+    firstPlayedAt = item.firstPlayedAt,
+    finishedAt = item.finishedAt,
 )
 
 internal fun EpisodeGroupStateEntity.toSnapshot(): ListeningGroupStateSnapshot = ListeningGroupStateSnapshot(
@@ -125,6 +133,11 @@ internal fun ListeningSessionEntity.toListeningSessionSnapshot(): ListeningSessi
     completed = completed,
     localDay = localDay,
     timeBucket = timeBucket,
+    deviceId = deviceId,
+    wallMs = wallMs,
+    source = source,
+    output = output,
+    episodePublishedAt = episodePublishedAt,
 )
 
 internal fun ListeningSessionSnapshot.toListeningSessionEntity(): ListeningSessionEntity = ListeningSessionEntity(
@@ -137,6 +150,11 @@ internal fun ListeningSessionSnapshot.toListeningSessionEntity(): ListeningSessi
     completed = completed,
     localDay = localDay,
     timeBucket = timeBucket,
+    deviceId = deviceId,
+    wallMs = wallMs,
+    source = source,
+    output = output,
+    episodePublishedAt = episodePublishedAt,
 )
 
 internal fun ListeningRollupEntity.toListeningRollupSnapshot(): ListeningRollupSnapshot = ListeningRollupSnapshot(
@@ -151,6 +169,8 @@ internal fun ListeningRollupEntity.toListeningRollupSnapshot(): ListeningRollupS
     afternoonMs = afternoonMs,
     eveningMs = eveningMs,
     nightMs = nightMs,
+    deviceId = deviceId,
+    wallMs = wallMs,
 )
 
 internal fun ListeningRollupSnapshot.toListeningRollupEntity(): ListeningRollupEntity = ListeningRollupEntity(
@@ -165,4 +185,6 @@ internal fun ListeningRollupSnapshot.toListeningRollupEntity(): ListeningRollupE
     afternoonMs = afternoonMs,
     eveningMs = eveningMs,
     nightMs = nightMs,
+    deviceId = deviceId,
+    wallMs = wallMs,
 )

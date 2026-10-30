@@ -26,8 +26,8 @@ interface ListeningRollupDao {
     @Query("SELECT * FROM listening_rollups ORDER BY localDay DESC")
     suspend fun getAllRollups(): List<ListeningRollupEntity>
 
-    @Query("SELECT * FROM listening_rollups WHERE localDay = :localDay AND episodeId = :episodeId LIMIT 1")
-    suspend fun getRollup(localDay: Long, episodeId: String,): ListeningRollupEntity?
+    @Query("SELECT * FROM listening_rollups WHERE deviceId = :deviceId AND localDay = :localDay AND episodeId = :episodeId LIMIT 1")
+    suspend fun getRollup(deviceId: String, localDay: Long, episodeId: String,): ListeningRollupEntity?
 
     @Query("SELECT * FROM listening_rollups WHERE episodeId = :episodeId")
     suspend fun getRollupsForEpisode(episodeId: String): List<ListeningRollupEntity>
@@ -43,4 +43,10 @@ interface ListeningRollupDao {
 
     @Query("DELETE FROM listening_rollups")
     suspend fun deleteAllRollups()
+
+    @Query("SELECT * FROM listening_rollups WHERE deviceId = :deviceId")
+    suspend fun getRollupsOfDevice(deviceId: String): List<ListeningRollupEntity>
+
+    @Query("DELETE FROM listening_rollups WHERE deviceId = :deviceId AND localDay = :localDay AND episodeId = :episodeId")
+    suspend fun deleteRollup(deviceId: String, localDay: Long, episodeId: String,)
 }

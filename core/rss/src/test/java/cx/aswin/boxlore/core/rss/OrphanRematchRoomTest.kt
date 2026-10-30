@@ -4,8 +4,11 @@ import cx.aswin.boxlore.core.database.EpisodeAliasEntity
 import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
 import cx.aswin.boxlore.core.database.EpisodeAliasState
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.ListeningRollupEntity
+import cx.aswin.boxlore.core.database.ListeningSessionEntity
 import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome
+import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -99,6 +102,34 @@ class OrphanRematchRoomTest : RoomCatalogTestBase() {
         assertEquals(listOf(owner, "-55"), store.memberIds("-55"))
         assertEquals(owner, store.historyId("-55"))
         assertEquals(500L, store.projectedHistory("-55")!!.progressMs)
+    }
+
+    @Test
+    fun aMovedOrphanTakesOnlyThisInstallationsTimedListening() = runBlocking {
+        follow(SHOW)
+        feed.items = listOf(Item("g1"))
+        assertTrue(refresh(SHOW) is RefreshOutcome.Success)
+        val owner = recipe(SHOW, "g1")
+        history.upsert(listening("-55", progress = 500L, playedAt = 60L, audio = "https://cdn.example/g1.mp3"))
+        seedUnresolved("-55", SHOW, EpisodeAliasProvenance.UPGRADE_LISTENER_ROW)
+        // This installation's own and not yet claimed listening, and another phone's (a cloud pull or a backup).
+        for (device in listOf("me", null, "phone-b")) {
+            database.listeningSessionDao().upsertSession(ListeningSessionEntity("s-$device", "-55", SHOW, 1L, 2L, 1_000L, false, 20_000L, 0, deviceId = device))
+            database.listeningRollupDao().upsertRollup(ListeningRollupEntity(19_000L, "-55", SHOW, 1_000L, 1, 0, 2L, deviceId = device ?: ""))
+        }
+        val repo = LocalEpisodeCatalogRepository(database, feed, DownloadCacheRelinker { _, _ -> false }, {}, RecipeIdHash.RECIPE, listeningOrigins = { listOf("me") })
+
+        assertTrue(refresh(SHOW, repo = repo) is RefreshOutcome.Success)
+
+        // Another phone's listening keeps that phone's ID: its next cloud day replaces it instead of adding a copy.
+        assertEquals(
+            setOf("me" to owner, null to owner, "phone-b" to "-55"),
+            database.listeningSessionDao().getAllSessions().map { it.deviceId to it.episodeId }.toSet(),
+        )
+        assertEquals(
+            setOf("me" to owner, "" to owner, "phone-b" to "-55"),
+            database.listeningRollupDao().getAllRollups().map { it.deviceId to it.episodeId }.toSet(),
+        )
     }
 
     @Test

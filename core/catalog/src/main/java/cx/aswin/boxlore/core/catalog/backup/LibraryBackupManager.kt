@@ -17,6 +17,7 @@ import cx.aswin.boxlore.core.catalog.ports.ListeningHistoryBackupPort
 import cx.aswin.boxlore.core.catalog.toPodcast
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
@@ -89,6 +90,8 @@ data class BoxLoreBackup(
     val folders: List<SubscriptionFolderBackup>? = null,
     /** Version 7+: episode aliases, group settings and renumbered shows ([EpisodeIdentityBackup]). */
     val episodeIdentity: EpisodeIdentityBackup? = null,
+    /** Version 8+: listening sessions, daily summaries and played shows ([ListeningBackup]). */
+    val listening: ListeningBackup? = null,
 )
 
 data class OpmlFeed(val title: String, val xmlUrl: String,)
@@ -109,6 +112,8 @@ class LibraryBackupManager(
     private val folderRepository: FolderRepository? = null,
     private val database: BoxLoreDatabase? = null,
     private val renumberedShows: RenumberedShows? = null,
+    private val deviceIdentity: DeviceIdentityPort? = null,
+    private val legacyListeningOrigin: DeviceIdentityPort? = null,
 ) {
     private val context = context.applicationContext
     private val rssFeedClient = RssFeedClient()
@@ -177,6 +182,7 @@ class LibraryBackupManager(
         val folderRepo = folderRepository ?: SharedAppDependenciesHolder.instance?.folderRepository
         val exportedFolders = folderRepo?.getFolders()?.map(LibraryBackupFolderLogic::toBackup).orEmpty()
         val episodeIdentity = identity()?.export()
+        val listening = listening()?.export()
         val backup =
             BoxLoreBackup(
                 version = LibraryBackupDirectFeedLogic.VERSION,
@@ -187,6 +193,7 @@ class LibraryBackupManager(
                 directFeedOptIns = null,
                 folders = exportedFolders,
                 episodeIdentity = episodeIdentity,
+                listening = listening,
             )
         return gson.toJson(backup)
     }
@@ -216,6 +223,14 @@ class LibraryBackupManager(
         val shared = SharedAppDependenciesHolder.instance
         val db = database ?: shared?.database ?: return null
         return LibraryBackupIdentity(db, renumberedShows ?: shared?.renumberedShows ?: RenumberedShows.NONE)
+    }
+
+    private fun listening(): LibraryBackupListening? {
+        val shared = SharedAppDependenciesHolder.instance
+        val db = database ?: shared?.database ?: return null
+        val deviceId = runCatching { (deviceIdentity ?: shared?.listeningDeviceIdentityPort)?.getDeviceId() }.getOrNull()
+        val legacyOrigin = runCatching { (legacyListeningOrigin ?: shared?.listeningLegacyOriginPort)?.getDeviceId() }.getOrNull()
+        return LibraryBackupListening(db, deviceId, legacyOrigin)
     }
 
     private fun escapeXml(input: String?): String {
@@ -250,6 +265,7 @@ class LibraryBackupManager(
         // Identity first, so the history restore skips IDs this phone holds for another episode.
         val refusedIds = identity?.restore(backup.episodeIdentity).orEmpty()
         restoreImportedHistory(backup.history, importedIds, refusedIds)
+        listening()?.restore(backup.listening, refusedIds, importedIds)
         relinkImportedSwitchedShows(importedIds)
         backup.adaptiveRanking?.let { rankingBackup ->
             adaptiveRankingRepository.restoreBackup(rankingBackup)

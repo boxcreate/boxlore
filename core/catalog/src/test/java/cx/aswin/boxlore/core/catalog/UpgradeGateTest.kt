@@ -158,7 +158,7 @@ class UpgradeGateTest(private val version: Int) {
     private suspend fun upgrade() {
         RoomSchemaFixture.createFromSchema(context, DATABASE_NAME, version) { fill(it) }
         database = BoxLoreDatabase.getDatabase(context)
-        assertEquals(39, database.openHelper.writableDatabase.version)
+        assertEquals(40, database.openHelper.writableDatabase.version)
     }
 
     private suspend fun readAll(): LocalEpisodeCatalogRepository {
@@ -273,10 +273,12 @@ class UpgradeGateTest(private val version: Int) {
                 Function2::class.java,
                 RecipeIdHash::class.java,
                 RenumberedShows::class.java,
+                Function0::class.java,
             )
         }
         val persisted: suspend (String) -> Unit = {}
-        return constructor.newInstance(database, feedClient(), DownloadCacheRelinker { _, _ -> false }, persisted, hash, shows) as LocalEpisodeCatalogRepository
+        val listeningOrigins: () -> Collection<String> = { emptyList() }
+        return constructor.newInstance(database, feedClient(), DownloadCacheRelinker { _, _ -> false }, persisted, hash, shows, listeningOrigins) as LocalEpisodeCatalogRepository
     }
 
     private fun resetDatabaseInstance() {

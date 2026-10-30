@@ -87,7 +87,7 @@ class ListeningInsightsDaoInMemoryTest {
         assertEquals(1, sessions.getAllSessions().size)
         assertEquals("today", sessions.getAllSessions().single().sessionId)
 
-        val rollup = rollups.getRollup(10L, "ep-1")!!
+        val rollup = rollups.getRollup(ListeningRollupEntity.THIS_DEVICE, 10L, "ep-1")!!
         assertEquals(300L, rollup.consumedMs)
         assertEquals(2, rollup.sessionCount)
         assertEquals(1, rollup.completionCount)
@@ -96,16 +96,34 @@ class ListeningInsightsDaoInMemoryTest {
     }
 
     @Test
+    fun anotherPhonesSessionsRollUpIntoItsOwnDailySummary() = runTest {
+        sessions.upsertSessions(
+            listOf(
+                session("mine").copy(wallMs = 800L),
+                session("theirs").copy(deviceId = "phone-b", consumedMs = 3_000L, wallMs = 2_000L),
+            ),
+        )
+
+        maintenance.rollUpEligibleSessions(cutoffEndedAtExclusive = 10_000L, todayLocalDay = 100L)
+
+        val mine = rollups.getRollup(ListeningRollupEntity.THIS_DEVICE, 10L, "ep-1")!!
+        val theirs = rollups.getRollup("phone-b", 10L, "ep-1")!!
+        assertEquals(1_000L to 800L, mine.consumedMs to mine.wallMs)
+        assertEquals(3_000L to 2_000L, theirs.consumedMs to theirs.wallMs)
+        assertTrue(sessions.getAllSessions().isEmpty())
+    }
+
+    @Test
     fun rollupIsIdempotentAndMergesIntoExisting() = runTest {
         val today = 200L
         sessions.upsertSession(session("old-1").copy(localDay = 5, endedAt = 5_000, consumedMs = 50))
         maintenance.rollUpEligibleSessions(cutoffEndedAtExclusive = 10_000L, todayLocalDay = today)
-        assertEquals(50L, rollups.getRollup(5L, "ep-1")!!.consumedMs)
+        assertEquals(50L, rollups.getRollup(ListeningRollupEntity.THIS_DEVICE, 5L, "ep-1")!!.consumedMs)
 
         sessions.upsertSession(session("old-2").copy(localDay = 5, endedAt = 6_000, consumedMs = 25))
         maintenance.rollUpEligibleSessions(cutoffEndedAtExclusive = 10_000L, todayLocalDay = today)
 
-        val rollup = rollups.getRollup(5L, "ep-1")!!
+        val rollup = rollups.getRollup(ListeningRollupEntity.THIS_DEVICE, 5L, "ep-1")!!
         assertEquals(75L, rollup.consumedMs)
         assertEquals(2, rollup.sessionCount)
         assertTrue(sessions.getAllSessions().isEmpty())
@@ -144,6 +162,91 @@ class ListeningInsightsDaoInMemoryTest {
     }
 
     @Test
+    fun thisInstallationClaimsListeningStoredWithoutAPhoneOnce() = runTest {
+        sessions.upsertSessions(listOf(session("legacy"), session("blank").copy(deviceId = ""), session("other").copy(deviceId = "phone-b")))
+        rollups.upsertRollup(ListeningRollupEntity(9L, "ep-1", "pod-1", 1_000L, 1, 0, lastListenedAt = 9L))
+        rollups.upsertRollup(ListeningRollupEntity(9L, "ep-1", "pod-1", 2_000L, 1, 1, lastListenedAt = 8L, deviceId = "me"))
+
+        maintenance.claimLegacyListening("me")
+        maintenance.claimLegacyListening("me")
+
+        assertEquals(
+            mapOf("legacy" to "me", "blank" to "me", "other" to "phone-b"),
+            sessions.getAllSessions().associate { it.sessionId to it.deviceId },
+        )
+        val claimed = rollups.getAllRollups().single()
+        assertEquals(listOf("me", 3_000L, 2, 1, 9L), listOf(claimed.deviceId, claimed.consumedMs, claimed.sessionCount, claimed.completionCount, claimed.lastListenedAt))
+    }
+
+    @Test
+    fun aPushSendsChangedDaysAndAZeroDayForADayNoLongerHeld() = runTest {
+        sessions.upsertSessions(listOf(session("a").copy(deviceId = "me"), session("b").copy(deviceId = "me", episodeId = "ep-2")))
+        val first = maintenance.listeningDaysToPush(listOf("me"), limit = 10)
+        assertEquals(listOf("ep-1" to 1_000L, "ep-2" to 1_000L), first.map { it.episodeId to it.consumedMs })
+        maintenance.recordPushedDays(first)
+        assertTrue(maintenance.listeningDaysToPush(listOf("me"), limit = 10).isEmpty())
+
+        sessions.deleteSessionsForEpisode("ep-2")
+        val zero = maintenance.listeningDaysToPush(listOf("me"), limit = 10).single()
+        assertEquals("ep-2" to true, zero.episodeId to zero.isZero())
+        maintenance.recordPushedDays(listOf(zero))
+        assertEquals(listOf("ep-1"), database.listeningPushDao().getPushedDays("me").map { it.episodeId })
+        assertTrue(maintenance.listeningDaysToPush(listOf("me"), limit = 10).isEmpty())
+
+        maintenance.forgetPushedDays()
+        assertEquals(1, maintenance.listeningDaysToPush(listOf("me"), limit = 10).size)
+    }
+
+    @Test
+    fun aCloudDayAsLateAsWhatIsHeldReplacesItOnlyWhenItSumsAtLeastAsMuch() = runTest {
+        val origins = ListeningOrigins(own = "me", legacy = "legacy-me")
+        rollups.upsertRollup(ListeningRollupEntity(5L, "ep-1", "pod-1", 120_000L, 2, 0, lastListenedAt = 200L, deviceId = "phone-b"))
+        rollups.upsertRollup(ListeningRollupEntity(6L, "ep-1", "pod-1", 50_000L, 1, 0, lastListenedAt = 300L, deviceId = "phone-b"))
+
+        maintenance.applyCloudDailyListening(
+            listOf(
+                // A less complete copy of day 5 ending at the same time: the fuller one stays.
+                ListeningRollupEntity(5L, "ep-1", "pod-1", 60_000L, 1, 0, lastListenedAt = 200L, deviceId = "phone-b"),
+                // A zero day as late as day 6: that phone no longer holds it.
+                ListeningRollupEntity(6L, "ep-1", "pod-1", 0L, 0, 0, lastListenedAt = 300L, deviceId = "phone-b"),
+            ),
+            origins,
+        )
+
+        assertEquals(listOf(5L to 120_000L), rollups.getAllRollups().map { it.localDay to it.consumedMs })
+    }
+
+    @Test
+    fun anOwnDayThisPhoneKnewTheCloudHeldIsNotBroughtBackOnceRemovedHere() = runTest {
+        val origins = ListeningOrigins(own = "me", legacy = "legacy-me")
+        val sent = ListeningRollupEntity(7L, "ep-1", "pod-1", 60_000L, 1, 0, lastListenedAt = 400L, deviceId = "me")
+        val unknown = sent.copy(localDay = 8L)
+        // Pushed, then removed (or moved to another episode ID) here while the push was answered.
+        maintenance.recordPushedDays(listOf(sent))
+
+        maintenance.applyCloudDailyListening(listOf(sent, unknown), origins)
+
+        // Only the day it never knew of comes back (an account switch cleared it); the removed one is zeroed next.
+        assertEquals(listOf(8L), rollups.getAllRollups().map { it.localDay })
+        assertEquals(listOf(0L), maintenance.listeningDaysToPush(origins.pushed, limit = 10).filter { it.localDay == 7L }.map { it.consumedMs })
+        assertTrue(maintenance.listeningDaysToPush(origins.pushed, limit = 10).none { it.localDay == 8L })
+    }
+
+    @Test
+    fun aCopyOfThisPhonesOldListeningPushedFromAnotherInstallationIsHeldOnceAndNotSentAgain() = runTest {
+        val origins = ListeningOrigins(own = "me", legacy = "legacy-old")
+        sessions.upsertSession(session("legacy"))
+        maintenance.claimLegacyListening(origins.legacy)
+        val twinsDay = ListeningRollupEntity(10L, "ep-1", "pod-1", 1_000L, 1, 0, lastListenedAt = 2_000L, deviceId = "legacy-old")
+
+        maintenance.applyCloudDailyListening(listOf(twinsDay), origins)
+
+        assertTrue(sessions.getAllSessions().isEmpty())
+        assertEquals(listOf(twinsDay), rollups.getAllRollups())
+        assertTrue(maintenance.listeningDaysToPush(origins.pushed, limit = 10).isEmpty())
+    }
+
+    @Test
     fun deleteEpisodeAndClearAll() = runTest {
         sessions.upsertSession(session("s1").copy(episodeId = "ep-a"))
         sessions.upsertSession(session("s2").copy(episodeId = "ep-b"))
@@ -160,7 +263,7 @@ class ListeningInsightsDaoInMemoryTest {
         )
 
         maintenance.deleteEpisodeAnalytics("ep-a")
-        assertNull(rollups.getRollup(1, "ep-a"))
+        assertNull(rollups.getRollup(ListeningRollupEntity.THIS_DEVICE, 1, "ep-a"))
         assertEquals(listOf("ep-b"), sessions.getAllSessions().map { it.episodeId })
 
         maintenance.clearAllAnalytics()

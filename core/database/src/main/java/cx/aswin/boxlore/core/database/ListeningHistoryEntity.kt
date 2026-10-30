@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.database
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -37,5 +38,14 @@ data class ListeningHistoryEntity(
     val enclosureType: String? = null,
     val isManualCompletion: Boolean = false,
     val isBulkCompletion: Boolean = false,
-    val episodeDescription: String? = null
+    val episodeDescription: String? = null,
+
+    // Listening dates (Room v40; [ListeningDates]). null: not yet. 0: before boxlore recorded them
+    // (every row stored before v40). Else epoch ms. The DAO's whole-row writers keep the earliest.
+    /** When the episode was first played. */
+    @ColumnInfo(defaultValue = "0")
+    val firstPlayedAt: Long? = null,
+    /** When the episode was first finished by listening (marking it played doesn't count). */
+    @ColumnInfo(defaultValue = "0")
+    val finishedAt: Long? = null,
 )

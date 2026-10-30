@@ -29,5 +29,8 @@ internal object LibraryBackupHistoryRestore {
         isManualCompletion = entity.isManualCompletion,
         isBulkCompletion = entity.isBulkCompletion,
         episodeDescription = entity.episodeDescription,
+        // Version 8+; older backups have none, and the restore keeps a stored row's earlier dates.
+        firstPlayedAt = entity.firstPlayedAt?.takeIf { it >= 0L },
+        finishedAt = entity.finishedAt?.takeIf { it >= 0L },
     )
 }

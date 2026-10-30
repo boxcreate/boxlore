@@ -8,6 +8,8 @@ import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningRollupDao
 import cx.aswin.boxlore.core.database.ListeningSessionDao
+import cx.aswin.boxlore.core.database.ListeningInsightsMaintenance
+import cx.aswin.boxlore.core.database.PlayedShowDao
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.dao.QueueDao
@@ -23,6 +25,7 @@ import cx.aswin.boxlore.core.network.model.QueueSyncDto
 import cx.aswin.boxlore.core.network.model.SyncPullRequest
 import cx.aswin.boxlore.core.network.model.SyncPullResponse
 import cx.aswin.boxlore.core.network.model.SyncPushRequest
+import cx.aswin.boxlore.core.network.model.SyncPushResponse
 import cx.aswin.boxlore.core.network.model.UserSubscriptionSyncDto
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
@@ -72,8 +75,26 @@ open class UserSyncCoordinator(
      * P4 PR 11 of the own-episode-IDs plan (plan section 8, cloud sync identity).
      */
     private val episodeIdentity: SyncEpisodeIdentity? = null,
+    /** Shows played; cleared on an account switch and synced with [listeningInsightsMaintenance] (Room v40). */
+    private val playedShowDao: PlayedShowDao? = null,
+    /** Daily listening per phone for the cloud sync (Room v40); null syncs no listening, as older builds. */
+    private val listeningInsightsMaintenance: ListeningInsightsMaintenance? = null,
 ) {
     private val syncMutex = Mutex()
+
+    /**
+     * One push at a time, and no listening pull or reset during one: a push records what it sent as the
+     * cloud's once it is answered, so two pushes answered out of order (a background push beside a sync)
+     * could record totals the cloud no longer holds. Taken after [syncMutex], never before it.
+     */
+    private val pushMutex = Mutex()
+
+    private val listeningSync: ListeningSync? by lazy {
+        val maintenance = listeningInsightsMaintenance ?: return@lazy null
+        val shows = playedShowDao ?: return@lazy null
+        val prefs = boxcastPrefs ?: return@lazy null
+        ListeningSync(maintenance, shows, listeningHistoryDao ?: return@lazy null, prefs)
+    }
 
     private val requireBoxLoreApi get() = checkNotNull(boxLoreApi) { "boxLoreApi required" }
     private val requirePodcastDao get() = checkNotNull(podcastDao) { "podcastDao required" }
@@ -137,6 +158,7 @@ open class UserSyncCoordinator(
     private suspend fun handleAccountSwitch(userId: String, token: String?): SyncResult {
         purgeLocalDataForAccountSwitch()
         requireBoxcastPrefs.setLastSyncTimestamp(0L)
+        resetListeningSync()
         requireBoxcastPrefs.setLastSyncedUserId(userId)
         // The new account's cloud rows get the identity catch-up too; until it completes, every sync pulls from the start.
         val needsIdentityCatchUp = episodeIdentity != null
@@ -253,7 +275,7 @@ open class UserSyncCoordinator(
     private suspend fun sendCatchUpPush(token: String?, request: SyncPushRequest): Long? = withContext(ioDispatcher) {
         runCatching {
             val resolvedToken = token ?: tokenProvider() ?: error("No auth token available")
-            sendPushPayload(resolvedToken, request)
+            sendPushPayload(resolvedToken, request).syncedAt
         }.onFailure { if (it is CancellationException) throw it }.getOrNull()
     }
 
@@ -274,6 +296,7 @@ open class UserSyncCoordinator(
         requireListeningHistoryDao.deleteAll()
         listeningSessionDao?.deleteAllSessions()
         listeningRollupDao?.deleteAllRollups()
+        playedShowDao?.deleteAllPlayedShows()
         // The previous account's like and completion settings must not decide the new account's episodes.
         episodeIdentityDao?.deleteAllGroupStates()
     }
@@ -302,6 +325,16 @@ open class UserSyncCoordinator(
     }
 
     open suspend fun executePush(token: String? = null): Result<PushBatchSummary> = withContext(ioDispatcher) {
+        pushMutex.withLock { pushOnce(token) }
+    }
+
+    /** Starts listening sync over for another cloud copy ([ListeningSync.reset]), never during a push. */
+    private suspend fun resetListeningSync() {
+        val sync = listeningSync ?: return
+        pushMutex.withLock { sync.reset() }
+    }
+
+    private suspend fun pushOnce(token: String?): Result<PushBatchSummary> = withContext(ioDispatcher) {
         runCatching {
             val resolvedToken = token ?: tokenProvider()
                 ?: error("No auth token available")
@@ -321,13 +354,18 @@ open class UserSyncCoordinator(
 
             val pushReq = SyncPushRequest(
                 subscriptions = subDtos,
-                history = histDtos,
+                // Listening dates go along once (the backfill), except for rows this push sends anyway.
+                history = histDtos + batch.listening?.dateDtos.orEmpty().filter { dates -> histDtos.none { it.episodeId == dates.episodeId } },
                 queue = queueDto,
+                listeningDays = batch.listening?.dayDtos.orEmpty(),
+                playedShows = batch.listening?.showDtos.orEmpty(),
                 clientTimestamp = now,
             )
 
-            val syncedAt = sendPushPayload(resolvedToken, pushReq)
+            val answer = sendPushPayload(resolvedToken, pushReq)
+            val syncedAt = answer.syncedAt
             clearOptimisticConcurrencyFlags(batch.dirtyPodcasts, batch.dirtyHistory, batch.queueMeta, syncedAt)
+            batch.listening?.let { listeningSync?.onPushed(it, answer.listeningAccepted) }
 
             PushBatchSummary(
                 pushedSubscriptions = subDtos.size,
@@ -352,8 +390,10 @@ open class UserSyncCoordinator(
         val queueMeta = requireQueueSyncPort.getQueueMetadata()
         val queueDirty = queueMeta?.isDirty == true
         val queueItems = if (queueDirty) requireQueueSyncPort.getQueueSnapshot() else emptyList()
+        val listening = listeningSync?.outgoing()?.takeUnless { it.isEmpty }
 
-        if (dirtyPodcasts.isEmpty() && dirtyHistory.isEmpty() && !queueDirty) {
+        val libraryChanged = dirtyPodcasts.isNotEmpty() || dirtyHistory.isNotEmpty() || queueDirty
+        if (!libraryChanged && listening == null) {
             return null
         }
 
@@ -363,10 +403,11 @@ open class UserSyncCoordinator(
             queueMeta = queueMeta,
             queueDirty = queueDirty,
             queueItems = queueItems,
+            listening = listening,
         )
     }
 
-    private fun sendPushPayload(token: String, request: SyncPushRequest): Long {
+    private fun sendPushPayload(token: String, request: SyncPushRequest): SyncPushResponse {
         val call = requireBoxLoreApi.syncPush(
             publicKey = publicKey,
             authorization = "Bearer $token",
@@ -377,7 +418,7 @@ open class UserSyncCoordinator(
         if (!response.isSuccessful || body == null) {
             error("Sync push failed with HTTP ${response.code()}: ${response.errorBody()?.string()}")
         }
-        return body.syncedAt
+        return body
     }
 
     private suspend fun ensureDirtyFlagsForSyncState() {
@@ -453,6 +494,8 @@ open class UserSyncCoordinator(
             updatedAt = maxOf(h.lastPlayedAt, h.likedAt, now),
             recipeId = identity?.recipeId,
             catalogKey = identity?.catalogKey,
+            firstPlayedAt = h.firstPlayedAt,
+            finishedAt = h.finishedAt,
         )
 
     private suspend fun buildQueueDto(
@@ -562,7 +605,13 @@ open class UserSyncCoordinator(
                 publicKey = publicKey,
                 authorization = "Bearer $resolvedToken",
                 // Rich removals carry the episode's identity, so a removal reaches it under any of its IDs.
-                request = SyncPullRequest(since = since, richRemovals = true),
+                request =
+                SyncPullRequest(
+                    since = since,
+                    richRemovals = true,
+                    listening = listeningSync != null,
+                    listeningSince = listeningSync?.pulledUntil(),
+                ),
             )
             val response = call.execute()
             if (!response.isSuccessful || response.body() == null) {
@@ -588,6 +637,7 @@ open class UserSyncCoordinator(
             requireQueueSyncResolver.resolveQueue(q, syncedAt)
         }
         handoffIdleMiniplayerIfNewer(body.history)
+        listeningSync?.let { sync -> pushMutex.withLock { sync.applyPull(body) } }
         requireBoxcastPrefs.setLastSyncTimestamp(syncedAt)
     }
 
@@ -610,6 +660,8 @@ open class UserSyncCoordinator(
                 }
                 requireBoxcastPrefs.setLastSyncTimestamp(0L)
                 requireBoxcastPrefs.setLastSyncedUserId(null)
+                // The listening this phone holds goes up again to whichever account it syncs with next.
+                resetListeningSync()
             }
         }
     }
@@ -647,6 +699,7 @@ open class UserSyncCoordinator(
         val queueMeta: QueueMetadataEntity?,
         val queueDirty: Boolean,
         val queueItems: List<QueueItem>,
+        val listening: ListeningSync.Outgoing? = null,
     )
 
     data class PushBatchSummary(

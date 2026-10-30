@@ -35,6 +35,10 @@
 -keep,allowoptimization class cx.aswin.boxlore.core.catalog.backup.EpisodeIdentityBackup { <fields>; <init>(...); }
 -keep,allowoptimization class cx.aswin.boxlore.core.catalog.backup.EpisodeAliasBackup { <fields>; <init>(...); }
 -keep,allowoptimization class cx.aswin.boxlore.core.catalog.backup.EpisodeGroupStateBackup { <fields>; <init>(...); }
+-keep,allowoptimization class cx.aswin.boxlore.core.catalog.backup.ListeningBackup { <fields>; <init>(...); }
+-keep,allowoptimization class cx.aswin.boxlore.core.catalog.backup.ListeningSessionBackup { <fields>; <init>(...); }
+-keep,allowoptimization class cx.aswin.boxlore.core.catalog.backup.ListeningRollupBackup { <fields>; <init>(...); }
+-keep,allowoptimization class cx.aswin.boxlore.core.catalog.backup.PlayedShowBackup { <fields>; <init>(...); }
 -keep,allowoptimization class cx.aswin.boxlore.core.catalog.content.RecentSectionIntentRecord { <fields>; <init>(...); }
 -keep,allowoptimization class cx.aswin.boxlore.core.database.PodcastEntity { <fields>; <init>(...); }
 -keep,allowoptimization class cx.aswin.boxlore.core.database.ListeningHistoryEntity { <fields>; <init>(...); }

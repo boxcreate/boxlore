@@ -10,6 +10,7 @@ import cx.aswin.boxlore.core.analytics.PendingEntryPoint
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.ListeningSessionEntity
 import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.playback.QueueMath
 import cx.aswin.boxlore.core.playback.QueueSkipMemory
@@ -42,6 +43,12 @@ internal class PlaybackTelemetrySession(
     private val playerProvider: () -> Player?,
     private val removeCompletedDownload: (String) -> Unit,
 ) {
+    /** Where the play is heard ([cx.aswin.boxlore.core.database.ListeningSessionValues] `OUTPUT_*`), read on the main thread; set by the service. */
+    var listeningOutput: () -> String? = { null }
+
+    /** This installation's listening device ID (`BoxcastPrefs.getOrCreateListeningDeviceId`); set by the service. */
+    var listeningDeviceId: () -> String? = { null }
+
     private val firedHeartbeats = java.util.Collections.synchronizedSet(mutableSetOf<String>())
 
     var startTimeMs: Long = 0L
@@ -71,6 +78,7 @@ internal class PlaybackTelemetrySession(
     private var bufferingStartTimeMs: Long = 0L
     private var totalBufferedTimeMs: Long = 0L
     private var consumedAudioMs: Long = 0L
+    private var listenedWallMs: Long = 0L
     private var lastPositionMs: Long? = null
     private var lastPositionSampleMs: Long = 0L
 
@@ -117,6 +125,7 @@ internal class PlaybackTelemetrySession(
         bufferingStartTimeMs = 0L
         totalBufferedTimeMs = 0L
         consumedAudioMs = 0L
+        listenedWallMs = 0L
         lastPositionMs = playerProvider()?.currentPosition
         lastPositionSampleMs = SystemClock.elapsedRealtime()
         this.episodeId = episodeId
@@ -438,9 +447,15 @@ internal class PlaybackTelemetrySession(
 
         val sessionStartedAt = startTimeMs
         val sessionConsumedMs = consumedAudioMs
+        val sessionWallMs = listenedWallMs
         val sessionPodcastIdForRecord = currentPodcastId
+        val sessionSource = ListeningSessionRecordLogic.playSource(contextType, sessionEntryPoint)
+        val sessionOutput = runCatching(listeningOutput).getOrNull()
         scope.launch {
             try {
+                val deviceId = runCatching(listeningDeviceId).getOrNull()
+                // Older untagged listening belongs to this installation; claim it before adding to it.
+                deviceId?.let { database.listeningInsightsMaintenance().claimLegacyListening(it) }
                 val entity =
                     ListeningSessionRecordLogic.buildSession(
                         ListeningSessionRecordLogic.BuildSessionInput(
@@ -454,6 +469,11 @@ internal class PlaybackTelemetrySession(
                             endedAt = System.currentTimeMillis(),
                             consumedMs = sessionConsumedMs,
                             completed = isCompleted,
+                            wallMs = sessionWallMs,
+                            source = sessionSource,
+                            output = sessionOutput,
+                            episodePublishedAt = episodeReleaseDateMs(currentEpisodeId),
+                            deviceId = deviceId,
                         ),
                     ) ?: return@launch
                 ListeningSessionRecordLogic.persistSessionAndRollUp(
@@ -461,6 +481,7 @@ internal class PlaybackTelemetrySession(
                     maintenance = database.listeningInsightsMaintenance(),
                     session = entity,
                 )
+                recordPlayedShow(entity, currentPodcastName, currentPodcastGenre)
             } catch (e: Exception) {
                 Log.e("BoxLorePlaybackService", "Failed to persist listening session", e)
             }
@@ -470,11 +491,34 @@ internal class PlaybackTelemetrySession(
         reset()
     }
 
+    /** The playing episode's release date from the queue, else the stored catalog (epoch ms). */
+    private suspend fun episodeReleaseDateMs(episodeId: String): Long? = runCatching {
+        val stored =
+            database.queueDao().getQueueItemByEpisodeId(episodeId)?.pubDate?.takeIf { it > 0L }
+                ?: database.localEpisodeCatalogDao().getEpisode(episodeId)?.publishedDate?.takeIf { it > 0L }
+                ?: database.rssEpisodeDao().getEpisode(episodeId)?.publishedDate
+        ListeningSessionRecordLogic.releaseDateMs(stored)
+    }.getOrNull()
+
+    /** Adds the show of a recorded play to the played shows, with the art its history row holds. */
+    private suspend fun recordPlayedShow(session: ListeningSessionEntity, podcastName: String?, genre: String?,) {
+        if (session.podcastId.isBlank()) return
+        val history = database.listeningHistoryDao().getHistoryItem(database.episodeListenerStore().historyId(session.episodeId))
+        database.playedShowDao().recordPlay(
+            podcastId = session.podcastId,
+            podcastName = podcastName ?: history?.podcastName.orEmpty(),
+            imageUrl = history?.podcastImageUrl ?: history?.episodeImageUrl,
+            genre = genre,
+            playedAt = session.startedAt,
+        )
+    }
+
     private fun reset() {
         startTimeMs = 0L
         bufferingStartTimeMs = 0L
         totalBufferedTimeMs = 0L
         consumedAudioMs = 0L
+        listenedWallMs = 0L
         lastPositionMs = null
         lastPositionSampleMs = 0L
         episodeId = null
@@ -499,6 +543,7 @@ internal class PlaybackTelemetrySession(
                 (elapsed * player.playbackParameters.speed * 1.5f).toLong() + 1_000L
             if (positionAdvance in 0..maximumNaturalAdvance) {
                 consumedAudioMs += positionAdvance
+                listenedWallMs += ListeningSessionRecordLogic.listenedWallMs(positionAdvance, player.playbackParameters.speed)
             }
         }
         lastPositionMs = currentPosition

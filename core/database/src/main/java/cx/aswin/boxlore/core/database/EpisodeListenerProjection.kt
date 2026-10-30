@@ -53,6 +53,9 @@ object EpisodeListenerProjection {
             isCompleted = completed.value,
             isManualCompletion = completed.value && completedBy.isManualCompletion,
             isBulkCompletion = completed.value && completedBy.isBulkCompletion,
+            // The episode was first played and first finished under whichever ID did it first.
+            firstPlayedAt = members.map { it.firstPlayedAt }.reduce(ListeningDates::earliest),
+            finishedAt = members.map { it.finishedAt }.reduce(ListeningDates::earliest),
         )
     }
 

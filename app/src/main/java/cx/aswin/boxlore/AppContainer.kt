@@ -46,6 +46,7 @@ import cx.aswin.boxlore.core.catalog.sync.SubscriptionSyncResolver
 import cx.aswin.boxlore.core.catalog.sync.SyncEpisodeIdentity
 import cx.aswin.boxlore.core.catalog.sync.UserSyncCoordinator
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.ListeningOrigins
 import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.database.knownRecipeIds
 import cx.aswin.boxlore.core.domain.ports.ConnectivityStatusPort
@@ -179,6 +180,7 @@ class AppContainer(
             },
             onCatalogPersisted = { id -> autoDownloadCoordinator.scanCached(id) },
             renumberedShows = renumberedShows,
+            listeningOrigins = { listeningOrigins().pushed },
         )
     }
 
@@ -368,6 +370,17 @@ class AppContainer(
     override val deviceIdentityPort: DeviceIdentityPort by lazy {
         DeviceIdentityPort { boxcastPrefs.getOrCreateSyncDeviceId() }
     }
+
+    override val listeningDeviceIdentityPort: DeviceIdentityPort by lazy {
+        DeviceIdentityPort { boxcastPrefs.getOrCreateListeningDeviceId() }
+    }
+
+    override val listeningLegacyOriginPort: DeviceIdentityPort by lazy {
+        DeviceIdentityPort { boxcastPrefs.getListeningLegacyOrigin() }
+    }
+
+    /** This installation's listening origins (Room v40): its own listening device ID and its legacy origin. */
+    fun listeningOrigins(): ListeningOrigins = ListeningOrigins(boxcastPrefs.getOrCreateListeningDeviceId(), boxcastPrefs.getListeningLegacyOrigin())
 
     val queueRepository: QueueRepository by lazy {
         QueueRepository(database, podcastRepository, deviceIdentityPort)
@@ -726,6 +739,8 @@ class AppContainer(
             userPreferencesRepository = userPreferencesRepository,
             episodeIdentityDao = database.episodeIdentityDao(),
             episodeIdentity = episodeIdentity,
+            playedShowDao = database.playedShowDao(),
+            listeningInsightsMaintenance = database.listeningInsightsMaintenance(),
         )
     }
 

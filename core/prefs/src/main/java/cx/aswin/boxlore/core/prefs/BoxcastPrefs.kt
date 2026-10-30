@@ -11,6 +11,8 @@ import android.content.SharedPreferences
  * the file name migrates from `boxcast_prefs` via [PrefsFileMigrator].
  */
 class BoxcastPrefs(context: Context) {
+    // Read only when the listening device ID is first needed, so constructing the facade touches no files.
+    private val appContext: Context = context.applicationContext
 
     private val prefs: SharedPreferences =
         PrefsFileMigrator.open(
@@ -183,6 +185,17 @@ class BoxcastPrefs(context: Context) {
         const val KEY_LAST_SYNC_TIMESTAMP = "sync_last_timestamp"
         const val KEY_LAST_SYNCED_USER_ID = "sync_last_user_id"
         const val KEY_SYNC_METADATA_VERSION = "sync_metadata_version"
+        const val KEY_LISTENING_PULLED_UNTIL = "sync_listening_pulled_until"
+        const val KEY_LISTENING_DATES_SENT_AFTER = "sync_listening_dates_sent_after"
+        const val KEY_LISTENING_DATES_SENT = "sync_listening_dates_sent"
+
+        /** In `noBackupFilesDir`: never in an Android backup or device transfer. */
+        const val LISTENING_DEVICE_ID_FILE = "boxlore_listening_device_id"
+        const val LISTENING_LEGACY_ORIGIN_PREFIX = "legacy-"
+        private val listeningDeviceIdLock = Any()
+
+        @Volatile
+        private var unsavedListeningDeviceId: String? = null
         const val KEY_HAS_REQUESTED_NOTIFICATION_PERMISSION = "has_requested_notification_permission"
         const val KEY_FEEDBACK_DRAFT_CATEGORY = "feedback_draft_category"
         const val KEY_FEEDBACK_DRAFT_MESSAGE = "feedback_draft_message"
@@ -239,6 +252,56 @@ class BoxcastPrefs(context: Context) {
 
     fun setSyncMetadataVersion(version: Int) {
         prefs.edit().putInt(KEY_SYNC_METADATA_VERSION, version).apply()
+    }
+
+    /**
+     * This installation's listening device ID (Room v40 timed listening is stored and synced under it).
+     * It lives in `noBackupFilesDir`, so Android backup and device transfer never copy it and two phones
+     * never share it; [getOrCreateSyncDeviceId] lives in these backed-up preferences and can be copied.
+     * A reinstall gets a new one, so listening restored from before counts as another phone's.
+     */
+    fun getOrCreateListeningDeviceId(): String = synchronized(listeningDeviceIdLock) {
+        val file = java.io.File(appContext.noBackupFilesDir, LISTENING_DEVICE_ID_FILE)
+        runCatching { file.readText().trim() }.getOrNull()?.takeIf { it.isNotBlank() }?.let { return@synchronized it }
+        // An ID that couldn't be saved stays this process's ID, and saving it is tried again.
+        val id = unsavedListeningDeviceId ?: java.util.UUID.randomUUID().toString()
+        unsavedListeningDeviceId = if (saveListeningDeviceId(file, id)) null else id
+        id
+    }
+
+    /** Writes [id] to a temporary file renamed over [file], so a cut-short write never leaves part of an ID. */
+    private fun saveListeningDeviceId(file: java.io.File, id: String): Boolean = runCatching {
+        val temporary = java.io.File(file.parentFile, "$LISTENING_DEVICE_ID_FILE.tmp")
+        temporary.writeText(id)
+        temporary.renameTo(file)
+    }.getOrDefault(false)
+
+    /**
+     * The listening origin of timed listening stored before Room v40: its sync device ID, which a
+     * device transfer copies along with the database, so two installations holding copies of the
+     * same old listening claim it under one origin and the cloud counts it once.
+     */
+    fun getListeningLegacyOrigin(): String = LISTENING_LEGACY_ORIGIN_PREFIX + getOrCreateSyncDeviceId()
+
+    /** The last episode ID whose listening dates went to a server that stores them (the date backfill's place). */
+    fun getListeningDatesSentAfter(): String = prefs.getString(KEY_LISTENING_DATES_SENT_AFTER, null).orEmpty()
+
+    fun setListeningDatesSentAfter(episodeId: String) {
+        prefs.edit().putString(KEY_LISTENING_DATES_SENT_AFTER, episodeId).apply()
+    }
+
+    /** Whether every episode's listening dates reached a server that stores them once (the backfill is over). */
+    fun areListeningDatesSent(): Boolean = prefs.getBoolean(KEY_LISTENING_DATES_SENT, false)
+
+    fun setListeningDatesSent(sent: Boolean) {
+        prefs.edit().putBoolean(KEY_LISTENING_DATES_SENT, sent).apply()
+    }
+
+    /** Server time of the last listening pull (0: none yet, pull every phone's listening). */
+    fun getListeningPulledUntil(): Long = prefs.getLong(KEY_LISTENING_PULLED_UNTIL, 0L)
+
+    fun setListeningPulledUntil(syncedAt: Long) {
+        prefs.edit().putLong(KEY_LISTENING_PULLED_UNTIL, syncedAt).apply()
     }
 
     // ── Notifications ───────────────────────────────────────────────────────

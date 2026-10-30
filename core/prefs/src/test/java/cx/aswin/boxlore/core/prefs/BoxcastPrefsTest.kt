@@ -30,6 +30,46 @@ class BoxcastPrefsTest {
     }
 
     @Test
+    fun theListeningDeviceIdBelongsToThisInstallationAndIsNeverBackedUp() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        java.io.File(context.noBackupFilesDir, BoxcastPrefs.LISTENING_DEVICE_ID_FILE).delete()
+        val id = prefs.getOrCreateListeningDeviceId()
+
+        assertEquals(id, BoxcastPrefs(context).getOrCreateListeningDeviceId())
+        assertTrue(id != prefs.getOrCreateSyncDeviceId())
+        // Restored or transferred preferences don't carry it.
+        context.getSharedPreferences(BoxcastPrefs.PREFS_NAME, Context.MODE_PRIVATE).all.values.forEach { assertTrue(it != id) }
+        assertEquals(id, java.io.File(context.noBackupFilesDir, BoxcastPrefs.LISTENING_DEVICE_ID_FILE).readText())
+
+        // A new installation (its no-backup files gone) gets another.
+        java.io.File(context.noBackupFilesDir, BoxcastPrefs.LISTENING_DEVICE_ID_FILE).delete()
+        assertTrue(BoxcastPrefs(context).getOrCreateListeningDeviceId() != id)
+    }
+
+    @Test
+    fun aListeningDeviceIdThatCannotBeSavedStaysTheSameForThisProcess() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val file = java.io.File(context.noBackupFilesDir, BoxcastPrefs.LISTENING_DEVICE_ID_FILE)
+        file.delete()
+        // A directory where the file belongs: it can be neither read nor replaced.
+        file.mkdirs()
+        try {
+            val id = prefs.getOrCreateListeningDeviceId()
+            assertEquals(id, BoxcastPrefs(context).getOrCreateListeningDeviceId())
+        } finally {
+            file.deleteRecursively()
+        }
+        // Saved at the next chance: the same ID.
+        val saved = prefs.getOrCreateListeningDeviceId()
+        assertEquals(saved, file.readText())
+    }
+
+    @Test
+    fun listeningFromBeforeV40BelongsToTheBackedUpSyncDeviceId() {
+        assertEquals("legacy-" + prefs.getOrCreateSyncDeviceId(), prefs.getListeningLegacyOrigin())
+    }
+
+    @Test
     fun onboardingDefaultsToIncomplete() {
         assertFalse(prefs.isOnboardingCompleted())
         prefs.setOnboardingCompleted(true)
