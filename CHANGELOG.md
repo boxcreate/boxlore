@@ -103,6 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Show pages with **Hide completed episodes** on keep loading until unfinished episodes appear (`HideCompletedFill`), and say "You’ve finished every episode" with **Show completed episodes** when none are left, instead of going blank. ([#1196](https://github.com/boxcreate/boxlore/pull/1196)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Library JSON export reads every stored listening-history row through `ListeningHistoryBackupPort.exportStoredHistory` (paged `ListeningHistoryDao.getAllStoredHistory`) instead of the screens' latest 300, so backups keep older listening. ([#1200](https://github.com/boxcreate/boxlore/pull/1200)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Listening insights count finished, in-progress and liked episodes across the whole history (`ListeningHistoryDao.observeAllStoredHistory`) instead of the latest 300. ([#1200](https://github.com/boxcreate/boxlore/pull/1200)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- The new-episode checker skips a show whose feed hangs (`withDeadline`, `checkEachShow`), saves each show's state as it changes (`writeStateFile`) and requests feeds uncompressed, so a hung run can't make later runs resend the same pushes. ([#1202](https://github.com/boxcreate/boxlore/pull/1202)) <!-- impact:user-impact-medium+backend-change --> <!-- copy:locked -->
 - `PodcastInfoScreen` now saves open search and its query, the five dialog and sheet flags, the tag/genre draft, and selected episode IDs with their sort, so they survive activity recreation (fold density changes, process death) and back-stack returns. A recreated page waits for its first page, then looks its selected episodes up again in the saved sort; it drops IDs it cannot find and keeps them all when the lookup fails. Toolbar actions wait until the selection is complete. `PodcastInfoViewModel.loadPodcast` no longer reloads shows whose page ID differs from the route ID (`rss:`-linked feeds). Added `PodcastInfoAdaptiveTransitionTest`, which covers the 600dp width, 480dp height and 840dp landscape gates, orientation and fold transitions, and every dialog exit on compact and tablet hosts. ([#1174](https://github.com/boxcreate/boxlore/pull/1174)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - An item without a GUID whose enclosure and `media:content` point at different files is no longer parsed as two episodes. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - A feed crossing 4 MB no longer changes or deletes the IDs of feed-only extras. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
@@ -286,6 +287,11 @@ readme-copy:end pr=1200 -->
 ### Improvements
 - Time listened in your Listening History now comes back when you restore a backup or sign in on a new phone, and listening on each of your phones counts once.
 readme-copy:end pr=1201 -->
+
+<!-- readme-copy:start pr=1202
+### Fixes
+- New-episode notifications no longer repeat for the same episode when one show's feed misbehaves.
+readme-copy:end pr=1202 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added
