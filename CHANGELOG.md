@@ -60,6 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - an opening skeleton in the page's shape (`ShowPageSkeleton`); ([#1196](https://github.com/boxcreate/boxlore/pull/1196)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - loading episode cards in place of spinners (`EpisodeCardSkeleton`); ([#1196](https://github.com/boxcreate/boxlore/pull/1196)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - a plain status line with wavy progress in place of the status card (`ShowListStatusLine`). ([#1196](https://github.com/boxcreate/boxlore/pull/1196)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Full player tile tray uses outlined Material icons for speed, sleep, queue, chapters and transcript; Up next's View queue icon matches and the top bar reads "Now playing". ([#1199](https://github.com/boxcreate/boxlore/pull/1199)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- `artworkPlayerColorScheme` in light mode deepens a bright cover's primary (same hue) until its light Play icon reaches 4.5:1 instead of switching the icon to black, and softens near-black text to a deep tone of the cover's hue where it keeps 7:1. ([#1199](https://github.com/boxcreate/boxlore/pull/1199)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - New-episode notifications are checked hourly on our own server instead of GitHub Actions, whose schedule ran every few hours. ([#1151](https://github.com/boxcreate/boxlore/pull/1151)) <!-- impact:user-impact-low+backend-change --> <!-- copy:locked -->
 - Feed parsing records each item's position in the feed document (`ParsedFeedItem`, `ParsedRssFeed.items`). When items share a catalog key, the first in the document wins in the parser merge, `LocalEpisodeCatalogPersist`, `StickyRssEpisodeRemap` and the legacy RSS upgrade. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - Items without a GUID are keyed on their first playable `<enclosure url>`. Items that share a first enclosure keep their audio address as the key. Stored rows are also found by their own minted ID and by the audio address older builds used, so no stored episode ID changes. Minting is unchanged. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
@@ -97,6 +99,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - English off now reaches every discovery request: request builders keep a list without English as it is (`normalizeKeepingEnglishChoice`), and Because you like sends the listener's languages; the languages sheet notes that a smaller pool narrows recommendations. ([#1191](https://github.com/boxcreate/boxlore/pull/1191)) <!-- impact:user-impact-medium+backend-change --> <!-- copy:locked -->
 - Marquee's Artwork and App theme looks redraw covers in vivid `ArtworkDuotone` pairs (tone-10 shadow, tone-80 highlight) instead of Duotone's dark tones, drop the accent glow, and pick the top bar's words from the cover in every colour choice. Duotone cards are unchanged. ([#1195](https://github.com/boxcreate/boxlore/pull/1195)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Show pages with **Hide completed episodes** on keep loading until unfinished episodes appear (`HideCompletedFill`), and say "You’ve finished every episode" with **Show completed episodes** when none are left, instead of going blank. ([#1196](https://github.com/boxcreate/boxlore/pull/1196)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Library JSON export reads every stored listening-history row through `ListeningHistoryBackupPort.exportStoredHistory` (paged `ListeningHistoryDao.getAllStoredHistory`) instead of the screens' latest 300, so backups keep older listening. ([#1200](https://github.com/boxcreate/boxlore/pull/1200)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Listening insights count finished, in-progress and liked episodes across the whole history (`ListeningHistoryDao.observeAllStoredHistory`) instead of the latest 300. ([#1200](https://github.com/boxcreate/boxlore/pull/1200)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `PodcastInfoScreen` now saves open search and its query, the five dialog and sheet flags, the tag/genre draft, and selected episode IDs with their sort, so they survive activity recreation (fold density changes, process death) and back-stack returns. A recreated page waits for its first page, then looks its selected episodes up again in the saved sort; it drops IDs it cannot find and keeps them all when the lookup fails. Toolbar actions wait until the selection is complete. `PodcastInfoViewModel.loadPodcast` no longer reloads shows whose page ID differs from the route ID (`rss:`-linked feeds). Added `PodcastInfoAdaptiveTransitionTest`, which covers the 600dp width, 480dp height and 840dp landscape gates, orientation and fold transitions, and every dialog exit on compact and tablet hosts. ([#1174](https://github.com/boxcreate/boxlore/pull/1174)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - An item without a GUID whose enclosure and `media:content` point at different files is no longer parsed as two episodes. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - A feed crossing 4 MB no longer changes or deletes the IDs of feed-only extras. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
@@ -263,6 +267,18 @@ readme-copy:end pr=1197 -->
 - On New Episodes, swipe right to add an episode to your queue or left to mark it played, and pull down to check for new episodes.
 - Subscriptions remembers whether you chose grid or list.
 readme-copy:end pr=1198 -->
+
+<!-- readme-copy:start pr=1199
+### Improvements
+- In light mode, the player keeps a light Play icon on a deeper cover colour, and its text uses a soft dark shade of the cover instead of black.
+- The player's quick-action buttons use cleaner, matching icons.
+readme-copy:end pr=1199 -->
+
+<!-- readme-copy:start pr=1200
+### Fixes
+- Backups now include your whole listening history, not just your 300 most recent episodes.
+- Listening insights now count every episode you've finished, started or liked, not just recent ones.
+readme-copy:end pr=1200 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added

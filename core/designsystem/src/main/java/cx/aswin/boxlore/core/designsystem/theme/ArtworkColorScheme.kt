@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.luminance as relativeLuminance
 import androidx.compose.ui.graphics.toArgb
+import androidx.core.graphics.ColorUtils
 import com.materialkolor.hct.Hct
 
 /**
@@ -15,12 +16,14 @@ fun artworkColorScheme(palette: ArtworkPalette, isDark: Boolean, surfaceStyle: S
     generatePersonalColorScheme(CustomThemeSeeds(Color(palette.seed)), isDark, surfaceStyle)
 
 /**
- * The full player's colours: the brand scheme generator seeded from the cover's seed. Bright covers
- * in light mode can leave its Play icon faint on the button, so that one colour switches to black
- * or white, whichever reads; every other colour stays as generated.
+ * The full player's colours: the brand scheme generator seeded from the cover's seed. In light mode
+ * a bright cover's primary is deepened (same hue) until its light Play icon reads, rather than
+ * turning the icon black, and near-black text becomes a deep shade of the cover's hue. If the Play
+ * icon still cannot read, that one colour switches to black or white, whichever reads.
  */
 fun artworkPlayerColorScheme(palette: ArtworkPalette, isDark: Boolean, surfaceStyle: String = SurfaceStyles.STANDARD): ColorScheme {
-    val scheme = generateBrandColorScheme(Color(palette.seed), isDark, surfaceStyle)
+    val generated = generateBrandColorScheme(Color(palette.seed), isDark, surfaceStyle)
+    val scheme = if (isDark) generated else lightPlayerTones(generated)
     if (artworkContrast(scheme.onPrimary, scheme.primary) >= ReadableContrast) return scheme
     val onPrimary = if (artworkContrast(Color.Black, scheme.primary) >= artworkContrast(Color.White, scheme.primary)) Color.Black else Color.White
     return scheme.copy(onPrimary = onPrimary)
@@ -28,6 +31,44 @@ fun artworkPlayerColorScheme(palette: ArtworkPalette, isDark: Boolean, surfaceSt
 
 /** WCAG AA for text; either black or white always reaches it against any colour. */
 private const val ReadableContrast = 4.5f
+
+/** Body text is softened only where it still reads this clearly against the page. */
+private const val SoftInkContrast = 7f
+
+private const val DeepenStep = 0.02f
+private const val DeepestPrimary = 0.18f
+private const val NearBlack = 0.15f
+private const val SoftInkLightness = 0.18f
+private const val SoftInkSaturation = 0.35f
+
+/** Light mode: a primary deep enough for its own light foreground, and warm instead of black text. */
+private fun lightPlayerTones(scheme: ColorScheme): ColorScheme {
+    val primary = deepenUntilReadable(scheme.primary, scheme.onPrimary)
+    val ink = softInk(scheme.onSurface, primary, scheme.surface)
+    return scheme.copy(primary = primary, onSurface = ink, onBackground = ink)
+}
+
+private fun deepenUntilReadable(primary: Color, onPrimary: Color): Color {
+    if (onPrimary.relativeLuminance() < 0.5f) return primary
+    val hsl = FloatArray(3)
+    ColorUtils.colorToHSL(primary.toArgb(), hsl)
+    var candidate = primary
+    while (artworkContrast(onPrimary, candidate) < ReadableContrast && hsl[2] > DeepestPrimary) {
+        hsl[2] = (hsl[2] - DeepenStep).coerceAtLeast(DeepestPrimary)
+        candidate = Color(ColorUtils.HSLToColor(hsl))
+    }
+    return candidate
+}
+
+private fun softInk(onSurface: Color, primary: Color, surface: Color): Color {
+    val text = FloatArray(3)
+    ColorUtils.colorToHSL(onSurface.toArgb(), text)
+    if (text[2] >= NearBlack) return onSurface
+    val hue = FloatArray(3)
+    ColorUtils.colorToHSL(primary.toArgb(), hue)
+    val ink = Color(ColorUtils.HSLToColor(floatArrayOf(hue[0], minOf(hue[1], SoftInkSaturation), SoftInkLightness)))
+    return if (artworkContrast(ink, surface) >= SoftInkContrast) ink else onSurface
+}
 
 /** The mini player's colours: [bar] behind the title, [play] for its Play end, [progress] for the sweep. */
 data class ArtworkMiniPlayerColors(
