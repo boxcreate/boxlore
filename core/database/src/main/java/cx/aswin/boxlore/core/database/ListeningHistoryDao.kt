@@ -248,8 +248,44 @@ interface ListeningHistoryDao {
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getCompletedEpisodeIdsFlow(): Flow<List<String>> = completedEpisodeCountFlow().mapLatest { getCompletedEpisodeIds() }
 
+    // One page of every stored row, newest first and without descriptions. Screens keep getAllHistory's
+    // latest 300; the library backup and insights need all of it.
+    @Query(
+        """
+        SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl,
+               episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted,
+               isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription
+        FROM listening_history
+        ORDER BY lastPlayedAt DESC, episodeId
+        LIMIT :limit OFFSET :offset
+    """,
+    )
+    suspend fun getStoredHistoryPage(limit: Int, offset: Int): List<ListeningHistoryEntity>
+
+    /** Every stored row, read in pages in one transaction (see [getCompletedEpisodeIds]). */
+    @Transaction
+    suspend fun getAllStoredHistory(): List<ListeningHistoryEntity> {
+        val rows = ArrayList<ListeningHistoryEntity>()
+        var offset = 0
+        while (true) {
+            val page = getStoredHistoryPage(STORED_HISTORY_PAGE_SIZE, offset)
+            rows.addAll(page)
+            if (page.size < STORED_HISTORY_PAGE_SIZE) return rows
+            offset += STORED_HISTORY_PAGE_SIZE
+        }
+    }
+
+    /** Emits whenever listening_history changes; the value is only a change signal. */
+    @Query("SELECT COUNT(*) FROM listening_history")
+    fun historyChangeSignal(): Flow<Int>
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observeAllStoredHistory(): Flow<List<ListeningHistoryEntity>> = historyChangeSignal().mapLatest { getAllStoredHistory() }
+
     companion object {
         const val COMPLETED_IDS_PAGE_SIZE = 1_000
+        const val STORED_HISTORY_PAGE_SIZE = 500
     }
 
     // Get unique podcast IDs played after the given timestamp

@@ -180,7 +180,7 @@ class EpisodeAliasPlaybackTest {
         assertEquals(listOf("A"), historyStore.likedEpisodes.first().map { it.episodeId })
         assertEquals(listOf("A"), historyStore.getAllHistory().first().map { it.episodeId })
         // Library export still gets every stored row.
-        assertEquals(setOf("A", "B"), historyStore.getStoredHistory().first().map { it.episodeId }.toSet())
+        assertEquals(setOf("A", "B"), historyStore.exportStoredHistory().map { it.episodeId }.toSet())
     }
 
     @Test
