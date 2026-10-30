@@ -374,7 +374,8 @@ open class UserSyncCoordinator(
         val queueItems = if (queueDirty) requireQueueSyncPort.getQueueSnapshot() else emptyList()
         val listening = listeningSync?.outgoing()?.takeUnless { it.isEmpty }
 
-        if (dirtyPodcasts.isEmpty() && dirtyHistory.isEmpty() && !queueDirty && listening == null) {
+        val libraryChanged = dirtyPodcasts.isNotEmpty() || dirtyHistory.isNotEmpty() || queueDirty
+        if (!libraryChanged && listening == null) {
             return null
         }
 
