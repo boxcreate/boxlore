@@ -60,6 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - an opening skeleton in the page's shape (`ShowPageSkeleton`); ([#1196](https://github.com/boxcreate/boxlore/pull/1196)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - loading episode cards in place of spinners (`EpisodeCardSkeleton`); ([#1196](https://github.com/boxcreate/boxlore/pull/1196)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - a plain status line with wavy progress in place of the status card (`ShowListStatusLine`). ([#1196](https://github.com/boxcreate/boxlore/pull/1196)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Full player tile tray uses outlined Material icons for speed, sleep, queue, chapters and transcript; Up next's View queue icon matches and the top bar reads "Now playing". ([#1199](https://github.com/boxcreate/boxlore/pull/1199)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- `artworkPlayerColorScheme` in light mode deepens a bright cover's primary (same hue) until its light Play icon reaches 4.5:1 instead of switching the icon to black, and softens near-black text to a deep tone of the cover's hue where it keeps 7:1. ([#1199](https://github.com/boxcreate/boxlore/pull/1199)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - New-episode notifications are checked hourly on our own server instead of GitHub Actions, whose schedule ran every few hours. ([#1151](https://github.com/boxcreate/boxlore/pull/1151)) <!-- impact:user-impact-low+backend-change --> <!-- copy:locked -->
 - Feed parsing records each item's position in the feed document (`ParsedFeedItem`, `ParsedRssFeed.items`). When items share a catalog key, the first in the document wins in the parser merge, `LocalEpisodeCatalogPersist`, `StickyRssEpisodeRemap` and the legacy RSS upgrade. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - Items without a GUID are keyed on their first playable `<enclosure url>`. Items that share a first enclosure keep their audio address as the key. Stored rows are also found by their own minted ID and by the audio address older builds used, so no stored episode ID changes. Minting is unchanged. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
@@ -263,6 +265,12 @@ readme-copy:end pr=1197 -->
 - On New Episodes, swipe right to add an episode to your queue or left to mark it played, and pull down to check for new episodes.
 - Subscriptions remembers whether you chose grid or list.
 readme-copy:end pr=1198 -->
+
+<!-- readme-copy:start pr=1199
+### Improvements
+- In light mode, the player keeps a light Play icon on a deeper cover colour, and its text uses a soft dark shade of the cover instead of black.
+- The player's quick-action buttons use cleaner, matching icons.
+readme-copy:end pr=1199 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added
