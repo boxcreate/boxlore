@@ -246,12 +246,14 @@ internal fun LatestEpisodeRow(
     podcast: Podcast,
     onClick: () -> Unit,
     onPlay: (() -> Unit)?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** A swipe to played whose Undo still shows: drawn as played before it is saved. */
+    showAsPlayed: Boolean = false,
 ) {
     val status = podcast.episodeStatus
     val progress = podcast.resumeProgress ?: 0f
-    val isCompleted = status == EpisodeStatus.COMPLETED
-    val isInProgress = status == EpisodeStatus.IN_PROGRESS
+    val isCompleted = showAsPlayed || status == EpisodeStatus.COMPLETED
+    val isInProgress = !showAsPlayed && status == EpisodeStatus.IN_PROGRESS
     val relativePublished = remember(episode.publishedDate) {
         formatRelativeUpdateLabel(episode.publishedDate)
     }

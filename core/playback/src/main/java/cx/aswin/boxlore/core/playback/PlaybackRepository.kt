@@ -295,8 +295,13 @@ class PlaybackRepository internal constructor(
 
     private var progressJob: Job? = null
 
+    companion object {
+        /** Most episodes the queue holds; [addToQueue] refuses more. */
+        const val QUEUE_LIMIT = 50
+    }
+
     @Suppress("PropertyName")
-    private val QUEUE_MAX_SIZE = 50
+    private val QUEUE_MAX_SIZE = QUEUE_LIMIT
 
     // Local memory of rejected auto-fill suggestions (feeds the SmartQueueEngine).
     private val queueSkipMemory = QueueSkipMemory.fromContext(context)

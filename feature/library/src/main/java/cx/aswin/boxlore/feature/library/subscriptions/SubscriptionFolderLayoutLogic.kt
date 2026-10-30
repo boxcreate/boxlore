@@ -10,11 +10,11 @@ import cx.aswin.boxlore.feature.library.SubscriptionSort
  * Inter-folder sorting options (how folders are arranged relative to each other at the top).
  */
 enum class FolderInterSort(val label: String) {
-    Inherit("Follow Shows"),
-    SmartRank("Smart Sort"),
-    RecentlyUpdated("Recently Updated"),
+    Inherit("Same as shows"),
+    SmartRank("Smart"),
+    RecentlyUpdated("Recently updated"),
     Alphabetical("A–Z"),
-    MostShows("Most Shows"),
+    MostShows("Most shows"),
     Manual("Manual"),
 }
 
@@ -22,12 +22,12 @@ enum class FolderInterSort(val label: String) {
  * Intra-folder sorting options (how shows inside a folder are ordered for preview slots and sheet).
  */
 enum class FolderIntraSort(val label: String) {
-    Inherit("Follow Shows"),
-    SmartRank("Smart Sort"),
-    RecentlyUpdated("Recently Updated"),
+    Inherit("Same as shows"),
+    SmartRank("Smart"),
+    RecentlyUpdated("Recently updated"),
     Alphabetical("A–Z"),
-    MostListened("Most Listened"),
-    Manual("Folder Order"),
+    MostListened("Most listened"),
+    Manual("Your order"),
 }
 
 /**
@@ -158,15 +158,7 @@ internal fun calculateFolderSlots(
     shows: List<Podcast>,
     displaySize: FolderDisplaySize,
 ): FolderSlots {
-    val maxSlots = when (displaySize) {
-        FolderDisplaySize.COMPACT -> 4
-        FolderDisplaySize.WIDE -> 2
-        FolderDisplaySize.FEATURED -> 4
-        FolderDisplaySize.LARGE -> 6
-        FolderDisplaySize.SHELF -> 3
-        FolderDisplaySize.PANEL -> 6
-        FolderDisplaySize.SHOWCASE -> 9
-    }
+    val maxSlots = folderSlotCount(displaySize)
 
     if (shows.size <= maxSlots) {
         return FolderSlots(

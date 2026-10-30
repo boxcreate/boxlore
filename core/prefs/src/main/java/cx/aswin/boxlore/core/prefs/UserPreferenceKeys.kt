@@ -56,6 +56,7 @@ internal object Keys {
     val HIDE_COMPLETED_IN_SHOW_DETAILS = androidx.datastore.preferences.core.booleanPreferencesKey("hide_completed_in_show_details")
     val HIDE_COMPLETED_IN_HOME = androidx.datastore.preferences.core.booleanPreferencesKey("hide_completed_in_home")
     val HIDE_COMPLETED_IN_SUBS = androidx.datastore.preferences.core.booleanPreferencesKey("hide_completed_in_subs")
+    val SUBSCRIPTIONS_GRID_VIEW = androidx.datastore.preferences.core.booleanPreferencesKey("subscriptions_grid_view")
     val RESTART_FORGOTTEN_EPISODES =
         androidx.datastore.preferences.core.booleanPreferencesKey("restart_forgotten_episodes")
     val HAS_DISMISSED_HOME_IMPORT_BANNER = androidx.datastore.preferences.core.booleanPreferencesKey("has_dismissed_home_import_banner")
@@ -84,4 +85,8 @@ internal object Keys {
     val AUTO_ORGANIZE_FOLDERS_ENABLED =
         androidx.datastore.preferences.core
             .booleanPreferencesKey("auto_organize_folders_enabled")
+
+    /** Look auto-organize gives new genre folders: a FolderDisplaySize name, or absent to choose by size. */
+    val AUTO_ORGANIZE_FOLDER_SIZE = stringPreferencesKey("auto_organize_folder_size")
+    val AUTO_ORGANIZE_TILE_COVERS = androidx.datastore.preferences.core.booleanPreferencesKey("auto_organize_tile_covers")
 }

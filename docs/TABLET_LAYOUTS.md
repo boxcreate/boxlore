@@ -82,10 +82,6 @@ The index includes named card containers, their loading forms, and named interna
 | `feature/settings` | `AnalyticsControlCard` | Utility | `feature/settings/src/main/java/cx/aswin/boxlore/feature/settings/pages/PrivacySettingsPage.kt:555` | Bounded parent or family modifier |
 | `feature/settings` | `SupportMissionCard` | Utility | `feature/settings/src/main/java/cx/aswin/boxlore/feature/settings/pages/SupportDevelopmentPage.kt:808` | Bounded parent or family modifier |
 | `feature/settings` | `CloudSyncCard` | Utility | `feature/settings/src/main/java/cx/aswin/boxlore/feature/settings/pages/SyncAndBackupsPage.kt:167` | Bounded parent or family modifier |
-| `feature/library` | `FolderTechnologyWarningCard` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/FolderEditComponents.kt:232` | Bounded parent or family modifier |
-| `feature/library` | `FolderSizeCard` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/FolderEditComponents.kt:532` | Bounded parent or family modifier |
-| `feature/library` | `FolderCompactCoverStyleCard` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/FolderEditComponents.kt:583` | Bounded parent or family modifier |
-| `feature/library` | `FolderOrganizationCard` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/FolderEditComponents.kt:705` | Bounded parent or family modifier |
 | `feature/library` | `LibraryMenuCard` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/LibraryScreen.kt:328` | Bounded parent or family modifier |
 | `feature/library` | `LibraryCardCollage` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/LibraryScreen.kt:395` | Bounded parent or family modifier |
 | `feature/library` | `LibraryPodcastCard` | Poster | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/LibraryScreen.kt:511` | Bounded parent or family modifier |
@@ -95,11 +91,15 @@ The index includes named card containers, their loading forms, and named interna
 | `feature/library` | `PinnedEnlargedFolderCard` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/subscriptions/SubscriptionFolderCards.kt:74` | Bounded parent or family modifier |
 | `feature/library` | `FolderOverflowSlotCard` | Poster | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/subscriptions/SubscriptionFolderCards.kt:367` | Bounded parent or family modifier |
 | `feature/library` | `SubscriptionGridCard` | Poster | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/subscriptions/SubscriptionRows.kt:405` | Bounded parent or family modifier |
-| `feature/library` | `AutoOrganizeCard` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/subscriptions/SubscriptionSortSheet.kt:197` | Bounded parent or family modifier |
-| `feature/library` | `ShowsSortCard` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/subscriptions/SubscriptionSortSheet.kt:256` | Bounded parent or family modifier |
-| `feature/library` | `FolderSortCard` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/subscriptions/SubscriptionSortSheet.kt:300` | Bounded parent or family modifier |
-| `feature/library` | `IntraFolderSortCard` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/subscriptions/SubscriptionSortSheet.kt:326` | Bounded parent or family modifier |
-| `feature/library` | `SortSectionCard` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/subscriptions/SubscriptionSortSheet.kt:351` | Bounded parent or family modifier |
+| `feature/library` | `AutoOrganizeRow` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/subscriptions/SubscriptionSortSheet.kt:194` | Bounded parent or family modifier |
+| `feature/library` | `ShowsSortCard` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/subscriptions/SubscriptionSortSheet.kt:250` | Bounded parent or family modifier |
+| `feature/library` | `FolderSortCard` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/subscriptions/SubscriptionSortSheet.kt:294` | Bounded parent or family modifier |
+| `feature/library` | `IntraFolderSortCard` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/subscriptions/SubscriptionSortSheet.kt:320` | Bounded parent or family modifier |
+| `feature/library` | `SortSectionCard` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/subscriptions/SubscriptionSortSheet.kt:345` | Bounded parent or family modifier |
+| `feature/library` | `FolderLookCard` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/subscriptions/FolderLookPicker.kt:202` | Bounded parent (folder editor dialog, 640dp panel on tablets) |
+| `feature/library` | `LookChoiceCard` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/subscriptions/AutoOrganizeParts.kt:148` | Bounded parent (folder editor dialog, 640dp panel on tablets) |
+| `feature/library` | `AutoOrganizeStatusCard` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/subscriptions/AutoOrganizePage.kt:116` | Bounded parent (folder editor dialog, 640dp panel on tablets) |
+| `feature/library` | `GenreJoinsCard` | Utility | `feature/library/src/main/java/cx/aswin/boxlore/feature/library/subscriptions/NewFolderPickSteps.kt:193` | Bounded parent (folder editor dialog, 640dp panel on tablets) |
 | `feature/info` | `CrossPromotionCard` | Episode | `feature/info/src/main/java/cx/aswin/boxlore/feature/info/CrossPromotionCard.kt:49` | Bounded parent or family modifier |
 | `feature/info` | `EpisodeDescriptionCard` | Reading | `feature/info/src/main/java/cx/aswin/boxlore/feature/info/EpisodeDescriptionCard.kt:47` | Bounded parent or family modifier |
 | `feature/info` | `SingleTrailerCard` | Episode | `feature/info/src/main/java/cx/aswin/boxlore/feature/info/components/PodcastTrailerCards.kt:70` | Bounded parent or family modifier |

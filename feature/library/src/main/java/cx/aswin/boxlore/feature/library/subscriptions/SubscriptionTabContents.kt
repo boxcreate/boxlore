@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -36,8 +35,6 @@ import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
 import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.EpisodeStatus
-import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
@@ -46,7 +43,6 @@ import cx.aswin.boxlore.feature.library.LocalLastSeenEpisodes
 import cx.aswin.boxlore.feature.library.PlayAllFab
 import cx.aswin.boxlore.feature.library.SubscriptionSort
 import sh.calvin.reorderable.ReorderableItem
-import sh.calvin.reorderable.ReorderableLazyGridState
 import sh.calvin.reorderable.ReorderableLazyListState
 import sh.calvin.reorderable.rememberReorderableLazyGridState
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -83,7 +79,7 @@ internal data class ShowsTabConfig(
     val smartOrderIds: List<String> = emptyList(),
 )
 
-private data class ShowsGridConfig(
+internal data class ShowsGridConfig(
     val reorderMode: ReorderMode,
     val pinnedPodcastIds: Set<String>,
 ) {
@@ -244,57 +240,6 @@ internal fun ShowsTabContent(
     }
 }
 
-private fun LazyGridScope.folderGridItems(
-    folderItems: ShowsFolderItems,
-    gridConfig: ShowsGridConfig,
-    reorderableGridState: ReorderableLazyGridState,
-    folderActions: FolderCardActions,
-) {
-    items(
-        items = folderItems.folders,
-        key = { "folder_${it.id}" },
-        span = { folder ->
-            if (folder.displaySize == FolderDisplaySize.COMPACT) {
-                GridItemSpan(1)
-            } else {
-                GridItemSpan(maxLineSpan)
-            }
-        },
-    ) { folder ->
-        val folderShows = folderItems.podcastsByFolderId[folder.id].orEmpty()
-        ReorderableItem(
-            reorderableGridState,
-            key = "folder_${folder.id}",
-            enabled = gridConfig.isFoldersReordering,
-        ) { isDragging ->
-            val dragModifier = if (gridConfig.isFoldersReordering) {
-                Modifier.longPressDraggableHandle()
-            } else {
-                Modifier
-            }
-            if (folder.displaySize == FolderDisplaySize.COMPACT) {
-                Compact1x1FolderCard(
-                    folder = folder,
-                    podcasts = folderShows,
-                    actions = folderActions,
-                    isDragging = isDragging,
-                    dragModifier = dragModifier,
-                    isReordering = gridConfig.isFoldersReordering,
-                )
-            } else {
-                PinnedEnlargedFolderCard(
-                    folder = folder,
-                    podcasts = folderShows,
-                    actions = folderActions,
-                    isDragging = isDragging,
-                    dragModifier = dragModifier,
-                    isReordering = gridConfig.isFoldersReordering,
-                )
-            }
-        }
-    }
-}
-
 @Composable
 private fun ShowsReorderableGrid(
     folderItems: ShowsFolderItems,
@@ -312,6 +257,10 @@ private fun ShowsReorderableGrid(
             onMove(fromId, toId)
         }
     val folderActions = remember(actions) { actions.toFolderCardActions() }
+    val hasGridItemsAfterPinned = orderedPodcasts.isNotEmpty() || folderItems.compactFolders.isNotEmpty()
+    val sectionLabels = remember(folderItems.folders, gridConfig.isFoldersReordering, hasGridItemsAfterPinned) {
+        showsSectionLabels(folderItems.folders, gridConfig.isFoldersReordering)?.takeIf { hasGridItemsAfterPinned }
+    }
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(boxlorePosterColumns(LocalBoxloreWindowLayout.current, boxloreContentWidthDp(), compactColumns = 3, gapDp = 12f)),
@@ -337,6 +286,7 @@ private fun ShowsReorderableGrid(
             gridConfig = gridConfig,
             reorderableGridState = reorderableGridState,
             folderActions = folderActions,
+            labels = sectionLabels,
         )
 
         // Shows outside folders (unfiled podcasts)
@@ -510,6 +460,9 @@ internal data class LatestTabConfig(
     val hideCompleted: Boolean,
     val isPlayerActive: Boolean = false,
     val playAllBottomPadding: androidx.compose.ui.unit.Dp? = null,
+    val isRefreshing: Boolean = false,
+    /** Rows swiped to played whose Undo still shows: drawn as played, hidden with Hide played. */
+    val pendingPlayedEpisodeIds: Set<String> = emptySet(),
 )
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -525,37 +478,39 @@ internal fun LatestTabContent(
     actions: LatestTabActions,
 ) {
     val allWithLatest = remember(podcasts) { podcasts.filter { it.latestEpisode != null } }
-    val episodePodcasts = remember(allWithLatest, config.hideCompleted) {
-        if (config.hideCompleted) {
-            allWithLatest.filter { it.episodeStatus != EpisodeStatus.COMPLETED }
-        } else {
-            allWithLatest
-        }
+    val episodePodcasts = remember(allWithLatest, config.hideCompleted, config.pendingPlayedEpisodeIds) {
+        visibleLatestPodcasts(allWithLatest, config.hideCompleted, config.pendingPlayedEpisodeIds)
     }
 
-    when {
-        allWithLatest.isEmpty() ->
-            ExpressiveSolarSystemEmptyState(
-                title = "No New Episodes",
-                description = "You're all caught up! Explore for more content.",
-                actionText = "Discover Shows",
-                onExploreClick = actions.onExploreClick,
-            )
-        episodePodcasts.isEmpty() ->
-            ExpressiveSolarSystemEmptyState(
-                title = "You're all caught up",
-                description = "Hidden played episodes are out of the way. Turn off Hide played in Sort to see them again.",
-                actionText = "Discover Shows",
-                onExploreClick = actions.onExploreClick,
-            )
-        else ->
-            LatestEpisodesList(
-                episodePodcasts = episodePodcasts,
-                allHistory = allHistory,
-                config = config,
-                scoreEpisodes = scoreEpisodes,
-                actions = actions,
-            )
+    LatestPullToRefresh(isRefreshing = config.isRefreshing, onRefresh = actions.onRefresh) {
+        when {
+            allWithLatest.isEmpty() ->
+                PullableEmptyState {
+                    ExpressiveSolarSystemEmptyState(
+                        title = "No New Episodes",
+                        description = "You're all caught up! Explore for more content.",
+                        actionText = "Discover Shows",
+                        onExploreClick = actions.onExploreClick,
+                    )
+                }
+            episodePodcasts.isEmpty() ->
+                PullableEmptyState {
+                    ExpressiveSolarSystemEmptyState(
+                        title = "You're all caught up",
+                        description = "Hidden played episodes are out of the way. Turn off Hide played in Sort to see them again.",
+                        actionText = "Discover Shows",
+                        onExploreClick = actions.onExploreClick,
+                    )
+                }
+            else ->
+                LatestEpisodesList(
+                    episodePodcasts = episodePodcasts,
+                    allHistory = allHistory,
+                    config = config,
+                    scoreEpisodes = scoreEpisodes,
+                    actions = actions,
+                )
+        }
     }
 }
 
@@ -565,6 +520,9 @@ internal data class LatestTabActions(
     val onPlayEpisode: ((Episode, Podcast) -> Unit)?,
     val onEpisodeClick: ((Episode, Podcast, String?) -> Unit)?,
     val onPlayEpisodes: ((List<Episode>, Podcast) -> Unit)? = null,
+    val onRefresh: (() -> Unit)? = null,
+    /** Swipe or TalkBack action on a row; rows don't swipe when null. */
+    val onSwipeAction: ((LatestSwipeAction, Episode, Podcast) -> Unit)? = null,
 )
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -629,6 +587,7 @@ private fun LatestEpisodesList(
                 useSmartRank = config.useSmartRank,
                 displayPodcasts = displayPodcasts,
                 groupedEpisodes = groupedEpisodes,
+                pendingPlayedEpisodeIds = config.pendingPlayedEpisodeIds,
                 actions = actions,
             )
         }
@@ -647,18 +606,19 @@ private fun androidx.compose.foundation.lazy.LazyListScope.latestEpisodeItems(
     useSmartRank: Boolean,
     displayPodcasts: List<Podcast>,
     groupedEpisodes: Map<String, List<Podcast>>,
+    pendingPlayedEpisodeIds: Set<String>,
     actions: LatestTabActions,
 ) {
     if (useSmartRank) {
         items(items = displayPodcasts, key = { "${it.id}_latest_smart" }) { podcast ->
-            LatestEpisodeListRow(podcast = podcast, displayPodcasts = displayPodcasts, actions = actions)
+            LatestEpisodeListRow(podcast, displayPodcasts, pendingPlayedEpisodeIds, actions)
         }
         return
     }
     groupedEpisodes.forEach { (header, podcastsInGroup) ->
         stickyHeader { DateHeader(text = header) }
         items(items = podcastsInGroup, key = { "${it.id}_latest_chrono" }) { podcast ->
-            LatestEpisodeListRow(podcast = podcast, displayPodcasts = displayPodcasts, actions = actions)
+            LatestEpisodeListRow(podcast, displayPodcasts, pendingPlayedEpisodeIds, actions)
         }
     }
 }
@@ -688,20 +648,30 @@ private fun BoxScope.LatestPlayAllFab(
 private fun LatestEpisodeListRow(
     podcast: Podcast,
     displayPodcasts: List<Podcast>,
+    pendingPlayedEpisodeIds: Set<String>,
     actions: LatestTabActions,
 ) {
     val episode = podcast.latestEpisode!!
-    LatestEpisodeRow(
-        episode = episode,
-        podcast = podcast,
-        onClick = { actions.onEpisodeClick?.invoke(episode, podcast, "library_latest_episodes") },
-        onPlay =
-        if (actions.onPlayEpisodes != null) {
-            { actions.onPlayEpisodes.invoke(latestPlaybackEpisodes(displayPodcasts, episode.id), podcast) }
-        } else if (actions.onPlayEpisode != null) {
-            { actions.onPlayEpisode.invoke(episode, podcast) }
-        } else {
-            null
-        },
-    )
+    val row: @Composable () -> Unit = {
+        LatestEpisodeRow(
+            episode = episode,
+            podcast = podcast,
+            onClick = { actions.onEpisodeClick?.invoke(episode, podcast, "library_latest_episodes") },
+            onPlay =
+            if (actions.onPlayEpisodes != null) {
+                { actions.onPlayEpisodes.invoke(latestPlaybackEpisodes(displayPodcasts, episode.id), podcast) }
+            } else if (actions.onPlayEpisode != null) {
+                { actions.onPlayEpisode.invoke(episode, podcast) }
+            } else {
+                null
+            },
+            showAsPlayed = episode.id in pendingPlayedEpisodeIds,
+        )
+    }
+    val onSwipeAction = actions.onSwipeAction
+    if (onSwipeAction == null) {
+        row()
+    } else {
+        LatestEpisodeSwipeRow(onAction = { action -> onSwipeAction(action, episode, podcast) }, content = row)
+    }
 }

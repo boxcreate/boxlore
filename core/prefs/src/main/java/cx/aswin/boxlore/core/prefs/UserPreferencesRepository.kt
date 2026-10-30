@@ -711,6 +711,21 @@ class UserPreferencesRepository(context: Context,) {
         }
     }
 
+    /** Subscriptions Shows tab layout: grid (default) or list, kept after the app is closed. */
+    val subscriptionsGridViewStream: Flow<Boolean> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) emit(emptyPreferences()) else throw exception
+            }.map { preferences ->
+                preferences[Keys.SUBSCRIPTIONS_GRID_VIEW] ?: true
+            }.distinctUntilChanged()
+
+    suspend fun setSubscriptionsGridView(gridView: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.SUBSCRIPTIONS_GRID_VIEW] = gridView
+        }
+    }
+
     val autoOrganizeFoldersStream: Flow<Boolean> =
         dataStore.data
             .catch { exception ->
@@ -722,6 +737,35 @@ class UserPreferencesRepository(context: Context,) {
     suspend fun setAutoOrganizeFolders(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[Keys.AUTO_ORGANIZE_FOLDERS_ENABLED] = enabled
+        }
+    }
+
+    /** Look auto-organize gives genre folders: a `FolderDisplaySize` name, or null to choose by size. */
+    val autoOrganizeFolderSizeStream: Flow<String?> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) emit(emptyPreferences()) else throw exception
+            }.map { preferences ->
+                preferences[Keys.AUTO_ORGANIZE_FOLDER_SIZE]
+            }.distinctUntilChanged()
+
+    /** Whether auto-organize tile folders show four covers (default) or their icon. */
+    val autoOrganizeTileCoversStream: Flow<Boolean> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) emit(emptyPreferences()) else throw exception
+            }.map { preferences ->
+                preferences[Keys.AUTO_ORGANIZE_TILE_COVERS] ?: true
+            }.distinctUntilChanged()
+
+    suspend fun setAutoOrganizeLook(folderSizeName: String?, tileCovers: Boolean) {
+        dataStore.edit { preferences ->
+            if (folderSizeName == null) {
+                preferences.remove(Keys.AUTO_ORGANIZE_FOLDER_SIZE)
+            } else {
+                preferences[Keys.AUTO_ORGANIZE_FOLDER_SIZE] = folderSizeName
+            }
+            preferences[Keys.AUTO_ORGANIZE_TILE_COVERS] = tileCovers
         }
     }
 
