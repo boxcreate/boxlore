@@ -6,6 +6,7 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 
 private const val UNKNOWN_SHOW = "Unknown Podcast"
+private const val UNKNOWN_SHOW_ID = "unknown"
 
 /**
  * Every queue entry plays under its own show. An episode can reach the queue without its show (a
@@ -19,16 +20,15 @@ internal object QueueShowPolicy {
     /**
      * [episode] with [podcast]'s ID, title, host, genre and artwork where it carries none of its own.
      * An episode that names another show (another ID, or another title without an ID) is returned as
-     * it is, so two shows' fields never mix.
+     * it is, so two shows' fields never mix, and so is every episode when [podcast] has no real ID
+     * (an episode page that doesn't know its show passes the "unknown" placeholder).
      */
     fun withShow(episode: Episode, podcast: Podcast): Episode {
-        val ownId = episode.podcastId.nonBlank()
-        val ownTitle = episode.podcastTitle.knownTitle()
-        val namesAnotherShow = if (ownId != null) ownId != podcast.id else ownTitle != null && ownTitle != podcast.title
-        if (namesAnotherShow) return episode
+        val podcastId = podcast.id.knownId() ?: return episode
+        if (namesAnotherShow(episode, podcast)) return episode
         return episode.copy(
-            podcastId = ownId ?: podcast.id.nonBlank(),
-            podcastTitle = ownTitle ?: podcast.title.knownTitle(),
+            podcastId = episode.podcastId.knownId() ?: podcastId,
+            podcastTitle = episode.podcastTitle.knownTitle() ?: podcast.title.knownTitle(),
             podcastArtist = episode.podcastArtist.nonBlank() ?: podcast.artist.nonBlank(),
             podcastGenre = episode.podcastGenre.nonBlank() ?: podcast.genre.nonBlank(),
             podcastImageUrl = episode.podcastImageUrl.nonBlank() ?: podcast.imageUrl.nonBlank(),
@@ -42,7 +42,10 @@ internal object QueueShowPolicy {
     }
 
     /** The show ID a media item carries, if any. */
-    fun showId(metadata: MediaMetadata?): String? = metadata?.extras?.getString(SHOW_ID).nonBlank()
+    fun showId(metadata: MediaMetadata?): String? = metadata?.extras?.getString(SHOW_ID).knownId()
+
+    /** The show ID of a queue entry: its own, else the one its media item carries. */
+    fun entryShowId(episode: Episode, metadata: MediaMetadata?): String? = episode.podcastId.knownId() ?: showId(metadata)
 
     /**
      * The show title a media item carries: its album title (Android Auto items), else its subtitle
@@ -62,7 +65,7 @@ internal object QueueShowPolicy {
      * from another show's.
      */
     fun currentShow(episode: Episode, previous: Podcast?, stored: Podcast?, queueShow: Podcast? = null): Podcast? {
-        val showId = episode.podcastId.nonBlank()
+        val showId = episode.podcastId.knownId()
         val ownTitle = episode.podcastTitle.knownTitle()
         if (showId == null) {
             if (ownTitle == null) return queueShow ?: previous
@@ -70,6 +73,22 @@ internal object QueueShowPolicy {
         }
         return listOfNotNull(stored, previous, queueShow).firstOrNull { it.id == showId && it.title.knownTitle() != null }
             ?: showFrom(episode, showId, ownTitle ?: UNKNOWN_SHOW)
+    }
+
+    /**
+     * The show a queue starts with for its first [episode]: [podcast], unless the episode names
+     * another show (a mixed list started under a placeholder such as All Downloads), which it then
+     * plays under, built from its own fields.
+     */
+    fun startShow(episode: Episode, podcast: Podcast): Podcast =
+        if (namesAnotherShow(episode, podcast)) currentShow(episode, previous = null, stored = null) ?: podcast else podcast
+
+    /** True when [episode] carries a show other than [podcast]: another ID, or another title without an ID. */
+    private fun namesAnotherShow(episode: Episode, podcast: Podcast): Boolean {
+        val ownId = episode.podcastId.knownId()
+        if (ownId != null) return ownId != podcast.id
+        val ownTitle = episode.podcastTitle.knownTitle()
+        return ownTitle != null && ownTitle != podcast.title
     }
 
     private fun showFrom(episode: Episode, id: String, title: String) = Podcast(
@@ -82,6 +101,9 @@ internal object QueueShowPolicy {
     )
 
     private fun String?.nonBlank(): String? = this?.takeIf(String::isNotBlank)
+
+    /** A show ID, never blank or the "unknown" placeholder older code stored for an episode with no show. */
+    private fun String?.knownId(): String? = nonBlank()?.takeIf { it != UNKNOWN_SHOW_ID }
 
     private fun String?.knownTitle(): String? = nonBlank()?.takeIf { it != UNKNOWN_SHOW }
 }

@@ -349,7 +349,8 @@ internal class PlaybackQueueCoordinator(
                 val baseState =
                     playerStateFlow.value.copy(
                         currentEpisode = currentEp,
-                        currentPodcast = podcast,
+                        // A mixed list started under a placeholder (All Downloads) starts under its first episode's show.
+                        currentPodcast = QueueShowPolicy.startShow(currentEp, podcast),
                         isPlaying = true,
                         position = startPosMs,
                         duration = currentEp.duration.toLong() * 1000,
@@ -987,35 +988,5 @@ internal class PlaybackQueueCoordinator(
 
         // Reload into Media3 with the sliced queue
         replayQueue(slicedQueue, podcast, 0)
-    }
-}
-
-internal class CastQueueSnapshotPolicy {
-    private var candidateIds: List<String>? = null
-    private var candidateFirstSeenAtMs: Long = 0L
-
-    fun shouldPreserveLocalQueue(
-        remoteIds: List<String>,
-        localIds: List<String>,
-        nowMs: Long,
-    ): Boolean {
-        val isStrictSubset =
-            remoteIds.isNotEmpty() &&
-                remoteIds.size < localIds.size &&
-                remoteIds.all(localIds::contains)
-        if (!isStrictSubset) {
-            candidateIds = null
-            return false
-        }
-        if (remoteIds != candidateIds) {
-            candidateIds = remoteIds
-            candidateFirstSeenAtMs = nowMs
-            return true
-        }
-        return nowMs - candidateFirstSeenAtMs < STABILITY_WINDOW_MS
-    }
-
-    companion object {
-        const val STABILITY_WINDOW_MS = 1_000L
     }
 }

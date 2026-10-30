@@ -40,6 +40,9 @@ fun DownloadedEpisodeEntity.toEpisode() = Episode(
     audioUrl = localFilePath,
     imageUrl = episodeImageUrl,
     podcastImageUrl = podcastImageUrl,
+    // The episode keeps its show, so queueing or playing it never takes another show's name.
+    podcastTitle = podcastName.takeIf(String::isNotBlank),
+    podcastId = podcastId.takeIf(String::isNotBlank),
     duration = (durationMs / 1000).toInt(),
     publishedDate = publishedDate,
     chaptersUrl = chaptersUrl,

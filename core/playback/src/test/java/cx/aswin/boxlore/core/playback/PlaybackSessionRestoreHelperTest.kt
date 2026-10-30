@@ -49,6 +49,23 @@ class PlaybackSessionRestoreHelperTest {
     }
 
     @Test
+    fun aRestoredSessionDropsTheOlderQueuesStartShow() {
+        // App start and the idle cloud handoff both show a restored session this way.
+        val episode = EpisodeAliasFixtures.episode("1")
+        val podcast = cx.aswin.boxlore.core.model.Podcast(EpisodeAliasFixtures.SHOW, "Show", "", "")
+        val restored = RestoredSessionData(EpisodeAliasFixtures.history("1", liked = true), episode, podcast)
+        val olderShow = cx.aswin.boxlore.core.model.Podcast("other", "Other show", "", "")
+
+        val state = PlayerState(queueShow = olderShow).showingRestoredSession(restored, listOf(episode))
+
+        assertNull(state.queueShow)
+        assertEquals(episode, state.currentEpisode)
+        assertEquals(podcast, state.currentPodcast)
+        assertEquals(listOf(episode), state.queue)
+        assertEquals(true, state.isLiked)
+    }
+
+    @Test
     fun targetEpisodePresentWithBlankPodcastNameHealsFromCurrentItemAndEnrichesRoom() = testScope.runTest {
         val dao = database.listeningHistoryDao()
         dao.upsert(

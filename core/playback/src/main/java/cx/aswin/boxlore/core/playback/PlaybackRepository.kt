@@ -207,14 +207,9 @@ class PlaybackRepository internal constructor(
                 val refreshedQueue = queueRepository.getQueueEpisodeSnapshot()
                 val restoredQueue = if (refreshedQueue.isEmpty()) listOf(restored.episode) else refreshedQueue
 
-                playerStateFlow.value = playerStateFlow.value.copy(
-                    currentEpisode = restored.episode,
-                    currentPodcast = restored.podcast,
+                playerStateFlow.value = playerStateFlow.value.showingRestoredSession(restored, restoredQueue).copy(
                     position = positionMs.takeIf { it > 0L } ?: restored.lastSession.progressMs,
                     duration = if (restored.lastSession.durationMs > 0) restored.lastSession.durationMs else playerStateFlow.value.duration,
-                    isLiked = restored.lastSession.isLiked,
-                    queue = restoredQueue,
-                    queueShow = null,
                 )
                 mediaHandle.controller?.clearMediaItems()
             }
@@ -703,15 +698,10 @@ class PlaybackRepository internal constructor(
 
             playerStateFlow.value =
                 PlaybackControlSync.withSyncedPlaybackSpeed(
-                    playerStateFlow.value.copy(
-                        currentEpisode = restored.episode,
-                        currentPodcast = restored.podcast,
+                    playerStateFlow.value.showingRestoredSession(restored, restoredQueue).copy(
                         isPlaying = controllerPlaying,
                         position = controllerPosition ?: restored.lastSession.progressMs,
                         duration = controllerDuration ?: restored.lastSession.durationMs,
-                        isLiked = restored.lastSession.isLiked,
-                        queue = restoredQueue,
-                        queueShow = null,
                     ),
                     controllerSpeed = controller?.playbackParameters?.speed,
                 )

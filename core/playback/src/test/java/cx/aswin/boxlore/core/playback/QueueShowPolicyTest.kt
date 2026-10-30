@@ -77,6 +77,25 @@ class QueueShowPolicyTest {
     }
 
     @Test
+    fun theUnknownPlaceholderIsNoShow() {
+        // An episode page that doesn't know its show passes "unknown" and "Podcast".
+        val unknownPage = Podcast("unknown", "Podcast", "", "")
+        assertEquals(episode(), QueueShowPolicy.withShow(episode(), unknownPage))
+        assertSame(previous, QueueShowPolicy.currentShow(episode(podcastId = "unknown"), previous, stored = null))
+    }
+
+    @Test
+    fun aQueueStartsUnderItsFirstEpisodesShowWhenThatNamesAnotherShow() {
+        val allDownloads = Podcast("downloads_all", "All Downloads", "", "")
+        val started = QueueShowPolicy.startShow(episode("2002", "The Vergecast"), allDownloads)
+        assertEquals("2002", started.id)
+        assertEquals("The Vergecast", started.title)
+        // An episode with no show of its own, or of the same show, starts under the given show.
+        assertSame(allDownloads, QueueShowPolicy.startShow(episode(), allDownloads))
+        assertSame(vergecast, QueueShowPolicy.startShow(episode("2002"), vergecast))
+    }
+
+    @Test
     fun anEntryWithNoShowPlaysUnderTheShowTheQueueStartedFrom() {
         // Play All from Conspiracy Theories, with a Vergecast episode played next in between.
         assertSame(previous, QueueShowPolicy.currentShow(episode(), previous = vergecast, stored = null, queueShow = previous))

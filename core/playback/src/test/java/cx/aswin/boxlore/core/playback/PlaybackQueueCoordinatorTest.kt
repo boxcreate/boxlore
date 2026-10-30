@@ -180,6 +180,36 @@ class PlaybackQueueCoordinatorTest {
     }
 
     @Test
+    fun startingAQueueRecordsItsShowAndReloadingItKeepsThatShow() = runTest(testDispatcher) {
+        val first = cx.aswin.boxlore.core.model.Podcast("pod-1", "First show", "Host", "")
+        val other = cx.aswin.boxlore.core.model.Podcast("pod-2", "Second show", "Host", "")
+        val episodes = listOf(testEpisode("1", "pod-1"), testEpisode("2", "pod-2"))
+
+        queueCoordinator.playQueue(episodes, first)
+        assertEquals(first, playerStateFlow.value.queueShow)
+
+        // Reloading the current queue from another show's entry keeps the show it started from.
+        queueCoordinator.replayQueue(episodes, other, 1)
+        assertEquals(first, playerStateFlow.value.queueShow)
+        queueCoordinator.playFromQueueIndex("2", episodes, other)
+        assertEquals(first, playerStateFlow.value.queueShow)
+
+        // A new queue replaces it.
+        queueCoordinator.playQueue(episodes, other)
+        assertEquals(other, playerStateFlow.value.queueShow)
+    }
+
+    @Test
+    fun reloadingAQueueWithNoStartShowUsesTheGivenShow() = runTest(testDispatcher) {
+        val show = cx.aswin.boxlore.core.model.Podcast("pod-1", "First show", "Host", "")
+        playerStateFlow.value = PlayerState()
+
+        queueCoordinator.replayQueue(listOf(testEpisode("1", "pod-1")), show)
+
+        assertEquals(show, playerStateFlow.value.queueShow)
+    }
+
+    @Test
     fun everyListenerStartedQueueResetsStreamFailureCounting() = runTest(testDispatcher) {
         // Regression: only PlaybackRepository.playQueue reset the skip guard, so a fresh episode tapped
         // after two failures could stop on its first failure.

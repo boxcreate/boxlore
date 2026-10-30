@@ -38,6 +38,18 @@ class DownloadModelsTest {
     }
 
     @Test
+    fun toEpisodeKeepsItsShow() {
+        // Regression: a downloaded episode queued while another show played took that show's name.
+        val episode = entity().toEpisode()
+        assertEquals("pod-1", episode.podcastId)
+        assertEquals("Podcast Name", episode.podcastTitle)
+
+        val showless = entity(podcastId = "").copy(podcastName = "").toEpisode()
+        assertEquals(null, showless.podcastId)
+        assertEquals(null, showless.podcastTitle)
+    }
+
+    @Test
     fun toEpisodeDefaultsMissingDescriptionToEmpty() {
         val episode = entity().copy(episodeDescription = null).toEpisode()
         assertEquals("", episode.description)

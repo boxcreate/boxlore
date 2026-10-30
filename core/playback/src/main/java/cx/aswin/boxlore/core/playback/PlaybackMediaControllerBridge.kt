@@ -416,7 +416,7 @@ internal class PlaybackMediaControllerBridge(
 
             // 2. The episode's own show (its ID, else the one its media item carries), never a
             // different previous show; Room supplies the full show when it has it.
-            val showId = newEpisode.podcastId?.takeIf(String::isNotBlank) ?: QueueShowPolicy.showId(mediaItem.mediaMetadata)
+            val showId = QueueShowPolicy.entryShowId(newEpisode, mediaItem.mediaMetadata)
             val newPodcast =
                 QueueShowPolicy.currentShow(
                     episode = newEpisode.copy(podcastId = showId),

@@ -192,6 +192,27 @@ class QueueEntryShowTest {
     }
 
     @Test
+    fun aMixedDownloadsQueuePlaysEachEpisodeUnderItsOwnShow() = runTest(dispatcher) {
+        // Downloads > Play all starts every download under one "All Downloads" placeholder.
+        val allDownloads = Podcast("downloads_all", "All Downloads", "", "")
+        val first = playing.copy(id = "41")
+        val second = vergeLatest.copy(podcastId = vergecast.id, podcastTitle = vergecast.title)
+        coordinator.playQueue(listOf(first, second), allDownloads, 0)
+        advanceUntilIdle()
+
+        assertEquals(conspiracy.title, playerStateFlow.value.currentPodcast?.title)
+        // The session saved for the first episode names its own show, never the placeholder.
+        val saved = database.listeningHistoryDao().getHistoryItem(first.id)!!
+        assertEquals(conspiracy.id, saved.podcastId)
+        assertEquals(conspiracy.title, saved.podcastName)
+
+        advanceTo(1)
+
+        assertEquals(vergecast.title, playerStateFlow.value.currentPodcast?.title)
+        assertEquals(vergecast.id, playerStateFlow.value.currentPodcast?.id)
+    }
+
+    @Test
     fun aTransitionTheQueueMovedPastNeverOverwritesTheNewerOne() = runTest(dispatcher) {
         val next = showless("31", "Area 51")
         coordinator.playQueue(listOf(playing, next), conspiracy, 0)
