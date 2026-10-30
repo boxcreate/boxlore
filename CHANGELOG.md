@@ -104,6 +104,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Library JSON export reads every stored listening-history row through `ListeningHistoryBackupPort.exportStoredHistory` (paged `ListeningHistoryDao.getAllStoredHistory`) instead of the screens' latest 300, so backups keep older listening. ([#1200](https://github.com/boxcreate/boxlore/pull/1200)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Listening insights count finished, in-progress and liked episodes across the whole history (`ListeningHistoryDao.observeAllStoredHistory`) instead of the latest 300. ([#1200](https://github.com/boxcreate/boxlore/pull/1200)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - The new-episode checker skips a show whose feed hangs (`withDeadline`, `checkEachShow`), saves each show's state as it changes (`writeStateFile`) and requests feeds uncompressed, so a hung run can't make later runs resend the same pushes. ([#1202](https://github.com/boxcreate/boxlore/pull/1202)) <!-- impact:user-impact-medium+backend-change --> <!-- copy:locked -->
+- Queue entries keep their own show: `addToQueue`, `addToQueueNext` and same-show continuation fill a missing show from the show the episode was queued from (`QueueShowPolicy.withShow`), and `PlaybackMediaControllerBridge` no longer reuses the previous show for an entry of another show. A new queue gives its show-less episodes the show it was started from, and an entry with no show at all plays under "Unknown Podcast" instead of the previous episode's show. ([#1203](https://github.com/boxcreate/boxlore/pull/1203)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Smart Queue refill items carry their show ID (`boxlore_podcast_id` media item extra), and entries rebuilt from a media item take the show title from the album title, then subtitle, then artist, so Android Auto durations and Smart Queue hosts are no longer read as show names. ([#1203](https://github.com/boxcreate/boxlore/pull/1203)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- A media item transition that the player moved past during its show lookup no longer overwrites the newer transition's state. ([#1203](https://github.com/boxcreate/boxlore/pull/1203)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Downloaded episodes keep their show (`DownloadedEpisodeEntity.toEpisode`), and a queue started under a placeholder show (All Downloads, Home mixes) starts under its first episode's own show (`QueueShowPolicy.startShow`), so the first session saved for it never takes the placeholder's name. ([#1203](https://github.com/boxcreate/boxlore/pull/1203)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `PodcastInfoScreen` now saves open search and its query, the five dialog and sheet flags, the tag/genre draft, and selected episode IDs with their sort, so they survive activity recreation (fold density changes, process death) and back-stack returns. A recreated page waits for its first page, then looks its selected episodes up again in the saved sort; it drops IDs it cannot find and keeps them all when the lookup fails. Toolbar actions wait until the selection is complete. `PodcastInfoViewModel.loadPodcast` no longer reloads shows whose page ID differs from the route ID (`rss:`-linked feeds). Added `PodcastInfoAdaptiveTransitionTest`, which covers the 600dp width, 480dp height and 840dp landscape gates, orientation and fold transitions, and every dialog exit on compact and tablet hosts. ([#1174](https://github.com/boxcreate/boxlore/pull/1174)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - An item without a GUID whose enclosure and `media:content` point at different files is no longer parsed as two episodes. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - A feed crossing 4 MB no longer changes or deletes the IDs of feed-only extras. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
@@ -292,6 +296,11 @@ readme-copy:end pr=1201 -->
 ### Fixes
 - New-episode notifications no longer repeat for the same episode when one show's feed misbehaves.
 readme-copy:end pr=1202 -->
+
+<!-- readme-copy:start pr=1203
+### Fixes
+- Episodes you add to your queue from another show, or play from Downloads, now appear under the right show in the player, including after you restart boxlore.
+readme-copy:end pr=1203 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added
