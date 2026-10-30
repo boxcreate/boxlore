@@ -180,6 +180,32 @@ class PlaybackQueueCoordinatorTest {
     }
 
     @Test
+    fun aNewQueueGivesShowlessEpisodesItsShowInTheSavedQueueToo() = runTest(testDispatcher) {
+        val show = cx.aswin.boxlore.core.model.Podcast("pod-1", "First show", "Host", "https://example.com/first.jpg")
+        val showless = testEpisode("1", "pod-1").copy(podcastId = null, podcastTitle = null)
+        val otherShow = testEpisode("2", "pod-3")
+
+        queueCoordinator.playQueue(listOf(showless, otherShow), show)
+
+        assertEquals(listOf("pod-1", "pod-3"), playerStateFlow.value.queue.map { it.podcastId })
+        assertEquals(listOf("First show", "Show pod-3"), playerStateFlow.value.queue.map { it.podcastTitle })
+        assertEquals(listOf("pod-1", "pod-3"), queueRepository.getQueueEpisodeSnapshot().map { it.podcastId })
+    }
+
+    @Test
+    fun reloadingTheQueueNeverRelabelsItsEntries() = runTest(testDispatcher) {
+        // The queue sheet and an emptied player reload the queue under the tapped entry's show.
+        val tapped = cx.aswin.boxlore.core.model.Podcast("pod-2", "Second show", "Host", "")
+        val showless = testEpisode("3", "pod-1").copy(podcastId = null, podcastTitle = null)
+        val queue = listOf(testEpisode("2", "pod-2"), showless)
+
+        queueCoordinator.replayQueue(queue, tapped)
+        assertEquals(listOf("pod-2", null), playerStateFlow.value.queue.map { it.podcastId })
+        queueCoordinator.playFromQueueIndex("2", queue, tapped)
+        assertEquals(listOf("pod-2", null), playerStateFlow.value.queue.map { it.podcastId })
+    }
+
+    @Test
     fun everyListenerStartedQueueResetsStreamFailureCounting() = runTest(testDispatcher) {
         // Regression: only PlaybackRepository.playQueue reset the skip guard, so a fresh episode tapped
         // after two failures could stop on its first failure.

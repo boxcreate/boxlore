@@ -173,47 +173,67 @@ async function run() {
     state.podcasts = lib.activeEpisodeState(state.podcasts, activePodcasts);
     const registry = await fetchRegistry(Object.keys(activePodcasts).filter((id) => /^[1-9][0-9]{0,15}$/.test(id)));
 
-    // 4. Poll each tracked podcast for new episodes. Every show's state is saved as soon as it is
-    // decided, and the file is written even if the run stops early, so a retry never resends.
+    // 4. Poll each tracked podcast for new episodes. Each show's state is written as soon as it is
+    // decided, so a run that stops early (or is killed) never resends what it already sent. A show
+    // that hangs is skipped after a few minutes, and no new show starts past the run budget, so the
+    // run always ends well inside the service's 45-minute limit.
+    const runStartedAt = Date.now();
+    const runBudgetMs = (Number(process.env.NOTIFIER_RUN_BUDGET_MIN) || 40) * 60 * 1000;
+    const showLimitMs = (Number(process.env.NOTIFIER_SHOW_LIMIT_SEC) || 180) * 1000;
+    const saveState = () => {
+        if (!DRY_RUN) lib.writeStateFile(statePath, state);
+    };
+    const label = (id) => (String(id).startsWith('rss:') ? 'an rss show' : id);
     try {
-        for (const [stateId, podcastData] of Object.entries(activePodcasts)) {
-            const podcastId = lib.canonicalPodcastId(stateId);
-            if (!podcastData || typeof podcastData !== 'object') {
-                continue;
-            }
-            const podcastTitle = podcastData.title || "Podcast";
-            const existingState = state.podcasts[stateId];
-            let release = null;
-            try {
-                release = await lib.resolveTrackedRelease({
-                    podcastId, podcastData, existing: existingState, fetchRssNewest, fetchPiLatest,
-                    registryEntry: registry.get(String(podcastId)) || null,
-                });
-                if (!release) continue;
-                const { decision } = release;
-                if (decision.notify) {
-                    const servedId = await servedEpisodeId(podcastId, release.identity);
-                    await sendFcm(podcastId, lib.applyServedId(release.data, podcastId, servedId));
+        const stateIds = Object.keys(activePodcasts);
+        const outcome = await lib.checkEachShow(stateIds, {
+            showLimitMs,
+            deadlineAt: runStartedAt + runBudgetMs,
+            onTimeout: (stateId) => console.warn(`Checking ${label(lib.canonicalPodcastId(stateId))} took too long; skipped, checked again next run.`),
+            check: async (stateId) => {
+                const podcastData = activePodcasts[stateId];
+                const podcastId = lib.canonicalPodcastId(stateId);
+                if (!podcastData || typeof podcastData !== 'object') {
+                    return;
                 }
-                // Save every change, including "unchanged" decisions that moved a key forward.
-                if (lib.stateChanged(existingState, decision.nextState)) {
-                    state.podcasts[stateId] = decision.nextState;
-                    changeCount++;
+                const podcastTitle = podcastData.title || "Podcast";
+                const existingState = state.podcasts[stateId];
+                let release = null;
+                try {
+                    release = await lib.resolveTrackedRelease({
+                        podcastId, podcastData, existing: existingState, fetchRssNewest, fetchPiLatest,
+                        registryEntry: registry.get(String(podcastId)) || null,
+                    });
+                    if (!release) return;
+                    const { decision } = release;
+                    if (decision.notify) {
+                        const servedId = await servedEpisodeId(podcastId, release.identity);
+                        await sendFcm(podcastId, lib.applyServedId(release.data, podcastId, servedId));
+                    }
+                    // Save every change, including "unchanged" decisions that moved a key forward.
+                    if (lib.stateChanged(existingState, decision.nextState)) {
+                        state.podcasts[stateId] = decision.nextState;
+                        changeCount++;
+                        saveState();
+                    }
+                    console.log(`Checked ${podcastId}: ${decision.reason}`);
+                } catch (podcastError) {
+                    if (podcastError && /refusing to send/.test(podcastError.message)) {
+                        // A broadcast topic would be a bug that reaches every install: stop the run.
+                        if (lib.BROADCAST_TOPICS.has(lib.notificationTopic(podcastId, release?.data?.feedUrl))) throw podcastError;
+                        sendFailures++;
+                        console.error(`Refused the topic for ${String(podcastId).startsWith('rss:') ? 'an rss show' : podcastId}; skipping it.`);
+                        return;
+                    }
+                    if (podcastError && podcastError.code && String(podcastError.code).startsWith('messaging/')) sendFailures++;
+                    // Never print private feed URLs or request errors for pure RSS registrations.
+                    if (String(podcastId).startsWith('rss:')) console.warn(`RSS check failed for ${podcastId}; retaining baseline for retry`);
+                    else console.error(`Error checking podcast ${podcastTitle} (${podcastId}):`, podcastError);
                 }
-                console.log(`Checked ${podcastId}: ${decision.reason}`);
-            } catch (podcastError) {
-                if (podcastError && /refusing to send/.test(podcastError.message)) {
-                    // A broadcast topic would be a bug that reaches every install: stop the run.
-                    if (lib.BROADCAST_TOPICS.has(lib.notificationTopic(podcastId, release?.data?.feedUrl))) throw podcastError;
-                    sendFailures++;
-                    console.error(`Refused the topic for ${String(podcastId).startsWith('rss:') ? 'an rss show' : podcastId}; skipping it.`);
-                    continue;
-                }
-                if (podcastError && podcastError.code && String(podcastError.code).startsWith('messaging/')) sendFailures++;
-                // Never print private feed URLs or request errors for pure RSS registrations.
-                if (String(podcastId).startsWith('rss:')) console.warn(`RSS check failed for ${podcastId}; retaining baseline for retry`);
-                else console.error(`Error checking podcast ${podcastTitle} (${podcastId}):`, podcastError);
-            }
+            },
+        });
+        if (outcome.stoppedEarly) {
+            console.warn(`Run budget reached after ${outcome.started} of ${stateIds.length} shows; the rest are checked next run.`);
         }
     } finally {
         // 5. Write updated state file back (never in a dry run).
@@ -221,7 +241,7 @@ async function run() {
             console.log(`[dry run] ${changeCount} state changes not saved.`);
         } else {
             try {
-                fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf8');
+                lib.writeStateFile(statePath, state);
                 console.log(`State file updated successfully. ${changeCount} changes recorded.`);
             } catch (writeError) {
                 console.error("Failed to write state file:", writeError);

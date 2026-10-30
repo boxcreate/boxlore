@@ -22,18 +22,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * Snapshot of a removed queue item, returned so the UI can offer Undo and so the
- * skip signal (analytics + skip memory) can be deferred until the undo window lapses.
- */
-data class RemovedQueueItem(
-    val episode: Episode,
-    val queueIndex: Int,
-    val mediaIndex: Int,
-    val contextType: String?,
-    val contextSourceId: String?,
-)
-
-/**
  * Queue play / mutate / reconcile APIs for [cx.aswin.boxlore.core.playback.PlaybackRepository].
  */
 @Suppress("LongParameterList")
@@ -194,6 +182,10 @@ internal class PlaybackQueueCoordinator(
             fallback
         }
 
+    /**
+     * A queue entry for a player [item] the UI holds no entry for, or null without a title. Its show
+     * comes from the item: the show ID extra and [QueueShowPolicy.showTitle].
+     */
     fun buildEpisodeFromMediaItem(
         item: MediaItem,
         episodeId: String,
@@ -207,7 +199,8 @@ internal class PlaybackQueueCoordinator(
             audioUrl = item.localConfiguration?.uri?.toString() ?: "",
             imageUrl = PlaybackArtworkMetadata.savedArtworkUrl(metadata),
             podcastImageUrl = PlaybackArtworkMetadata.savedArtworkUrl(metadata),
-            podcastTitle = metadata.subtitle?.toString() ?: metadata.artist?.toString(),
+            podcastTitle = QueueShowPolicy.showTitle(metadata),
+            podcastId = QueueShowPolicy.showId(metadata),
             podcastArtist = metadata.artist?.toString(),
             podcastGenre = metadata.genre?.toString(),
             duration = 0,
@@ -260,6 +253,11 @@ internal class PlaybackQueueCoordinator(
         }
     }
 
+    /**
+     * Starts a new queue of [episodes] under [podcast]. Episodes without a show of their own take
+     * [podcast]'s, in the saved queue too ([QueueShowPolicy.withShow]); episodes of another show keep
+     * theirs.
+     */
     suspend fun playQueue(
         episodes: List<Episode>,
         podcast: Podcast,
@@ -267,6 +265,31 @@ internal class PlaybackQueueCoordinator(
         entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
         initialPositionMs: Long? = null,
         sourceContext: android.os.Bundle? = null,
+    ) = startQueue(episodes, podcast, startIndex, entryPoint, initialPositionMs, sourceContext, isNewQueue = true)
+
+    /**
+     * Reloads the current queue's [episodes] from [startIndex]. Their shows stay as queued: [podcast]
+     * is the start episode's show and never relabels the others.
+     */
+    suspend fun replayQueue(
+        episodes: List<Episode>,
+        podcast: Podcast,
+        startIndex: Int = 0,
+        entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
+        initialPositionMs: Long? = null,
+        sourceContext: android.os.Bundle? = null,
+    ) = startQueue(episodes, podcast, startIndex, entryPoint, initialPositionMs, sourceContext, isNewQueue = false)
+
+    /** Loads [episodes] into the player and the queue; a new queue ([isNewQueue]) also gives show-less episodes [podcast]'s show. */
+    @Suppress("LongParameterList")
+    private suspend fun startQueue(
+        episodes: List<Episode>,
+        podcast: Podcast,
+        startIndex: Int,
+        entryPoint: PlaybackEntryPoint,
+        initialPositionMs: Long?,
+        sourceContext: android.os.Bundle?,
+        isNewQueue: Boolean,
     ) {
         Log.d("PlaybackRepo", "playQueue() called: count=${episodes.size}, start=$startIndex, podcastGenre='${podcast.genre}'")
         // Every listener-started queue (play, play episode, play from queue, skip to an episode) lands here.
@@ -302,7 +325,9 @@ internal class PlaybackQueueCoordinator(
                     } else {
                         null
                     }
-            val episodesWithSource = enrichWithContextSourceId(uniqueEpisodes, entryPoint, sourceContext)
+            val episodesWithSource =
+                enrichWithContextSourceId(uniqueEpisodes, entryPoint, sourceContext)
+                    .let { list -> if (isNewQueue) list.map { QueueShowPolicy.withShow(it, podcast) } else list }
             val mediaItems =
                 buildMediaItems(episodesWithSource, podcast, entryPointContext, downloadHolders(episodesWithSource.map { it.id }))
 
@@ -318,7 +343,8 @@ internal class PlaybackQueueCoordinator(
                 val baseState =
                     playerStateFlow.value.copy(
                         currentEpisode = currentEp,
-                        currentPodcast = podcast,
+                        // A mixed list started under a placeholder (All Downloads) starts under its first episode's show.
+                        currentPodcast = QueueShowPolicy.startShow(currentEp, podcast),
                         isPlaying = true,
                         position = startPosMs,
                         duration = currentEp.duration.toLong() * 1000,
@@ -382,6 +408,10 @@ internal class PlaybackQueueCoordinator(
         }
     }
 
+    /**
+     * Appends [episode] to the queue under its own show, else [podcast]'s; false when it is already
+     * queued under any of its IDs, the queue is full or no controller connects.
+     */
     suspend fun addToQueue(
         episode: Episode,
         podcast: Podcast,
@@ -441,9 +471,9 @@ internal class PlaybackQueueCoordinator(
             controller.addMediaItem(mediaItem)
             Log.d("PlaybackRepo", "addToQueue: Added to Media3, new mediaItemCount=${controller.mediaItemCount}")
 
-            // Update local state
+            // Update local state; the entry keeps its own show for when it becomes current
             val currentQueue = playerStateFlow.value.queue
-            playerStateFlow.value = playerStateFlow.value.copy(queue = currentQueue + episode)
+            playerStateFlow.value = playerStateFlow.value.copy(queue = currentQueue + QueueShowPolicy.withShow(episode, podcast))
             Log.d("PlaybackRepo", "addToQueue: Updated local state, queue size=${playerStateFlow.value.queue.size}")
             syncQueueToDb()
             rankingFeedbackRepository.recordAction(
@@ -466,6 +496,10 @@ internal class PlaybackQueueCoordinator(
         return false
     }
 
+    /**
+     * Puts [episode] right after the current item under its own show, else [podcast]'s; an episode
+     * already queued under any of its IDs moves there instead.
+     */
     suspend fun addToQueueNext(
         episode: Episode,
         podcast: Podcast,
@@ -519,12 +553,18 @@ internal class PlaybackQueueCoordinator(
                 controller.addMediaItem(insertIndex, mediaItem)
             }
 
-            val newQueue = QueueMath.placeNext(playerStateFlow.value.queue, currentId, queued ?: episode) { it.id }
+            // A new entry keeps its own show for when it becomes current.
+            val entry = queued ?: QueueShowPolicy.withShow(episode, podcast)
+            val newQueue = QueueMath.placeNext(playerStateFlow.value.queue, currentId, entry) { it.id }
             playerStateFlow.value = playerStateFlow.value.copy(queue = newQueue)
             syncQueueToDb()
         }
     }
 
+    /**
+     * Inserts same-show continuation [episodes] after the current item, tagged with [podcast]'s show
+     * and as Smart Queue fill; skips episodes queued under any of their IDs and stops at the queue cap.
+     */
     suspend fun addEpisodesAfterCurrent(
         episodes: List<Episode>,
         podcast: Podcast,
@@ -548,11 +588,9 @@ internal class PlaybackQueueCoordinator(
 
         val taggedEpisodes =
             episodesToAdd.map { ep ->
-                ep.copy(
+                QueueShowPolicy.withShow(ep, podcast).copy(
                     contextType = "AUTO_FILL",
                     contextSourceId = SmartQueueEngine.SOURCE_SAME_PODCAST,
-                    podcastTitle = ep.podcastTitle ?: podcast.title,
-                    podcastId = ep.podcastId ?: podcast.id,
                 )
             }
 
@@ -954,36 +992,6 @@ internal class PlaybackQueueCoordinator(
         android.util.Log.d("PlaybackRepo", "playFromQueueIndex: slicing from index $index, newQueueSize=${slicedQueue.size}")
 
         // Reload into Media3 with the sliced queue
-        playQueue(slicedQueue, podcast, 0)
-    }
-}
-
-internal class CastQueueSnapshotPolicy {
-    private var candidateIds: List<String>? = null
-    private var candidateFirstSeenAtMs: Long = 0L
-
-    fun shouldPreserveLocalQueue(
-        remoteIds: List<String>,
-        localIds: List<String>,
-        nowMs: Long,
-    ): Boolean {
-        val isStrictSubset =
-            remoteIds.isNotEmpty() &&
-                remoteIds.size < localIds.size &&
-                remoteIds.all(localIds::contains)
-        if (!isStrictSubset) {
-            candidateIds = null
-            return false
-        }
-        if (remoteIds != candidateIds) {
-            candidateIds = remoteIds
-            candidateFirstSeenAtMs = nowMs
-            return true
-        }
-        return nowMs - candidateFirstSeenAtMs < STABILITY_WINDOW_MS
-    }
-
-    companion object {
-        const val STABILITY_WINDOW_MS = 1_000L
+        replayQueue(slicedQueue, podcast, 0)
     }
 }
