@@ -76,6 +76,11 @@ import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
+import cx.aswin.boxlore.feature.info.branded.LocalBrandedHeaderMotion
+import cx.aswin.boxlore.feature.info.branded.LocalBrandedPage
+import cx.aswin.boxlore.feature.info.branded.brandedShowPageFor
+import cx.aswin.boxlore.feature.info.branded.brandedSpotlightEpisode
+import cx.aswin.boxlore.feature.info.branded.feedItemsWithoutSpotlight
 import cx.aswin.boxlore.feature.info.components.EpisodeListIndicators
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbar
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbarActions
@@ -123,7 +128,19 @@ fun PodcastInfoScreen(
     val pageShow by viewModel.pageShow.collectAsState()
     // The route's show, or the show this route resolved to (a linked feed, a renumbered show); never a previous page's.
     val artworkPodcast = cx.aswin.boxlore.feature.info.logic.RenumberedShowPageLogic.artworkPodcast(uiState, podcastId, pageShow)
-    cx.aswin.boxlore.feature.info.components.ArtworkInfoTheme(listOf(artworkPodcast?.let { it.imageUrl.takeIf(String::isNotBlank) ?: it.fallbackImageUrl }), isLoading = uiState is PodcastInfoUiState.Loading) {
+    val brandedShowPage = remember(artworkPodcast) { brandedShowPageFor(artworkPodcast) }
+    cx.aswin.boxlore.feature.info.components.ArtworkInfoTheme(
+        listOf(artworkPodcast?.let { it.imageUrl.takeIf(String::isNotBlank) ?: it.fallbackImageUrl }),
+        isLoading = uiState is PodcastInfoUiState.Loading,
+        branded = brandedShowPage,
+    ) {
+    val brandedPage = LocalBrandedPage.current?.page
+    val headerMotion = LocalBrandedHeaderMotion.current
+    LaunchedEffect(headerMotion, viewModel) {
+        // Only this show's episodes are ever marked playing here.
+        headerMotion ?: return@LaunchedEffect
+        viewModel.episodePlaybackState.map { states -> states.values.any { it.isPlaying } }.distinctUntilChanged().collect { headerMotion.showPlaying = it }
+    }
     val queuedEpisodeIds by viewModel.queuedEpisodeIds.collectAsState()
     val downloadedEpisodeIds by viewModel.downloadedEpisodeIds.collectAsState()
     val downloadingEpisodeIds by viewModel.downloadingEpisodeIds.collectAsState()
@@ -397,14 +414,16 @@ fun PodcastInfoScreen(
             }
 
             is PodcastInfoUiState.Success -> {
-                // Blurred Background Header
-                InfoArtworkBackground(
-                    imageUrl = state.podcast.imageUrl,
-                    fallbackUrls = listOf(state.podcast.fallbackImageUrl, state.podcast.latestEpisode?.imageUrl),
-                    height = collapsedHeaderHeight + 240.dp,
-                    scrollOffset = scrollOffset,
-                    scrollFraction = scrollFraction,
-                )
+                // Blurred Background Header; a branded page keeps its own flat background.
+                if (brandedPage == null) {
+                    InfoArtworkBackground(
+                        imageUrl = state.podcast.imageUrl,
+                        fallbackUrls = listOf(state.podcast.fallbackImageUrl, state.podcast.latestEpisode?.imageUrl),
+                        height = collapsedHeaderHeight + 240.dp,
+                        scrollOffset = scrollOffset,
+                        scrollFraction = scrollFraction,
+                    )
+                }
 
                 // Content
                 val displayEpisodes =
@@ -582,7 +601,8 @@ fun PodcastInfoScreen(
                     }
                 }
 
-                var isDescExpanded by remember { mutableStateOf(false) }
+                // Saved, so an open description stays open when a fold or resize recreates the page.
+                var isDescExpanded by rememberSaveable { mutableStateOf(false) }
 
                 val podcastPersons =
                     remember(state.episodes) {
@@ -629,11 +649,13 @@ fun PodcastInfoScreen(
                         )
                     }
 
+                val spotlightEpisode = brandedPage?.let { brandedSpotlightEpisode(state.episodes, state.currentSort, isSearchActive) }
+                val listFeedItems = remember(feedItems, spotlightEpisode) { feedItemsWithoutSpotlight(feedItems, spotlightEpisode) }
                 val contentState = EpisodeListContentState(
                     listState = listState,
                     modifier = episodeListModifier,
                     contentPadding = PaddingValues(
-                        top = collapsedHeaderHeight + 16.dp,
+                        top = brandedPage?.let { statusBarHeight + it.headerTop } ?: (collapsedHeaderHeight + 16.dp),
                         bottom = if (isSearchActive && keyboardVisible) {
                             16.dp
                         } else {
@@ -649,7 +671,7 @@ fun PodcastInfoScreen(
                     accentColor = accentColor,
                     isSystemNotificationsBlocked = isSystemNotificationsBlocked,
                     toolbarWarning = toolbarWarning,
-                    feedItems = feedItems,
+                    feedItems = listFeedItems,
                     episodeListIndicators = episodeListIndicators,
                     autoScrolledEpisodeId = autoScrolledEpisodeId,
                     selectedEpisodeIdSet = selectedEpisodeIdSet,
@@ -657,6 +679,7 @@ fun PodcastInfoScreen(
                     isSearchActive = isSearchActive,
                     searchFocusRequester = searchFocusRequester,
                     hideCompletedFill = hideCompletedFill,
+                    spotlightEpisode = spotlightEpisode,
                 )
 
                 val contentCallbacks = EpisodeListContentCallbacks(
@@ -775,13 +798,16 @@ fun PodcastInfoScreen(
                     )
                 }
 
-                // FIXED HEADER
+                // FIXED HEADER. A branded page keeps its tag in the middle of the bar: only the
+                // missing-episodes offer, which asks for a choice, replaces it; passing feed-check
+                // statuses are left to the list's status line.
+                val topBarChip = if (brandedPage != null && state.directFeedChip != DirectFeedChipState.Offer) DirectFeedChipState.Hidden else state.directFeedChip
+                val tagShown by animateFloatAsState(if (topBarChip == DirectFeedChipState.Hidden) 1f else 0f, label = "brandedTagShown")
                 PodcastInfoTopOverlay(
                     podcast = state.podcast,
                     headerColor = headerColor,
                     collapsedHeaderHeight = collapsedHeaderHeight,
                     hideCompleted = hideCompleted,
-                    context = context,
                     actions =
                     PodcastInfoTopOverlayActions(
                         onBack = if (selectionActive) clearEpisodeSelection else onBack,
@@ -794,10 +820,11 @@ fun PodcastInfoScreen(
                         onToggleHomePin = viewModel::toggleHomePin,
                         onEditGenre = handleEditGenreClick,
                     ),
+                    tagAlpha = if (brandedPage == null) 0f else tagShown * (1f - (scrollFraction / 0.5f).coerceIn(0f, 1f)),
                     missingEpisodesChip =
                     MissingEpisodesChip(
                         visible = scrollFraction < 0.5f,
-                        state = state.directFeedChip,
+                        state = topBarChip,
                         onClick = {
                             if (state.directFeedChip == DirectFeedChipState.Offer) {
                                 showMissingEpisodesConfirm = true

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A paperclip holding the cover to the case file (drawn for boxlore). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="18dp"
+    android:height="44dp"
+    android:viewportWidth="18"
+    android:viewportHeight="44">
+    <path
+        android:pathData="M5,10 V34 a5,5 0 0,0 10,0 V6 a4,4 0 0,0 -8,0 V30"
+        android:strokeColor="#A3A5AB"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+</vector>

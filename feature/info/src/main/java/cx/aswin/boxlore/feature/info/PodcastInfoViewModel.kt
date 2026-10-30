@@ -25,6 +25,7 @@ import cx.aswin.boxlore.core.prefs.HomePinnedShows
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoAsyncResultLogic
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoFolderSyncLogic
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPageShow
+import cx.aswin.boxlore.feature.info.logic.PodcastInfoPostSubscribeLogic
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPullRefreshLogic
 import cx.aswin.boxlore.feature.info.logic.RenumberedShowPageLogic
 import cx.aswin.boxlore.feature.info.logic.ShowFeedLogic
@@ -1615,21 +1616,23 @@ class PodcastInfoViewModel(
             val latest = _uiState.value as? PodcastInfoUiState.Success ?: return
             if (latest.podcast.isRss) return
             val targetPodcastId = latest.podcast.id
-            _uiState.value = latest.copy(directFeedChip = DirectFeedChipState.Fetching)
-            val sync = subscriptionForegroundSync
-            if (sync != null) {
-                coroutineScope {
-                    val finished =
-                        async {
-                            sync.catalogIngestFinished.first { it == targetPodcastId }
-                        }
-                    sync.requestCatalogIngest(targetPodcastId)
-                    finished.await()
+            // The body's status line shows the refresh; the top-bar pill no longer spins for it.
+            PodcastInfoPostSubscribeLogic.withStatusLine(_uiState, targetPodcastId, { currentPodcastId }) {
+                val sync = subscriptionForegroundSync
+                if (sync != null) {
+                    coroutineScope {
+                        val finished =
+                            async {
+                                sync.catalogIngestFinished.first { it == targetPodcastId }
+                            }
+                        sync.requestCatalogIngest(targetPodcastId)
+                        finished.await()
+                    }
+                    applyPostSubscribeCatalogUi(targetPodcastId)
+                } else {
+                    refreshLocalCatalogAfterSubscribeFallback(latest, targetPodcastId)
                 }
-                applyPostSubscribeCatalogUi(targetPodcastId)
-                return
             }
-            refreshLocalCatalogAfterSubscribeFallback(latest, targetPodcastId)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

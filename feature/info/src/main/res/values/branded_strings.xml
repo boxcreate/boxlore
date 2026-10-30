@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Branded show pages: a boxlore pick shown in the show's own style. -->
+    <string name="branded_pick_tag">boxlore pick</string>
+    <string name="branded_latest_episode">Latest episode</string>
+    <string name="branded_copyright_button">Copyright information</string>
+    <string name="branded_copyright_title">Artwork and logos</string>
+    <string name="branded_copyright_note">A boxlore pick, shown in the show\'s own style.</string>
+    <string name="vergecast_wordmark_description">The Vergecast</string>
+    <string name="vergecast_publisher_description">The Verge</string>
+    <string name="vergecast_copyright">© Vox Media, LLC. The Vergecast and The Verge are trademarks of Vox Media.</string>
+    <string name="conspiracy_wordmark_description">Conspiracy Theories</string>
+    <string name="conspiracy_case_file">Case file</string>
+    <string name="conspiracy_from">From</string>
+    <string name="conspiracy_latest_filed">Latest · filed %1$s</string>
+    <string name="conspiracy_new">New</string>
+    <string name="conspiracy_filed">Filed.</string>
+    <string name="conspiracy_left">%1$s left</string>
+    <string name="conspiracy_copyright">© Spotify AB. Conspiracy Theories is a Spotify podcast from Spotify Studios.</string>
+    <string name="waveform_subtitle">The MKBHD Podcast</string>
+    <string name="waveform_publisher">MKBHD · Vox Media</string>
+    <string name="waveform_latest">Latest</string>
+    <string name="waveform_copyright">© MKBHD. Waveform is part of the Vox Media Podcast Network.</string>
+</resources>

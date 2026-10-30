@@ -26,6 +26,7 @@ import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
+import cx.aswin.boxlore.core.model.isTrailer
 import cx.aswin.boxlore.feature.info.PodcastInfoUiState
 import cx.aswin.boxlore.feature.info.components.ExpandableInfoTitle
 import cx.aswin.boxlore.feature.info.components.PodcastInfoMetadataChipsRow
@@ -90,45 +91,11 @@ internal fun PodcastInfoHeroSection(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Update Frequency Calculation — filters/sorts episodes and analyzes release intervals,
-        // which can be expensive for large RSS catalogs, so it runs off the composition thread
-        // and is cancelled/restarted automatically as its keys change.
-        var cachedFrequencyData by remember(state.podcast.id) { mutableStateOf<Pair<String, ImageVector>?>(null) }
-
-        val frequencyData by produceState(
-            initialValue = cachedFrequencyData,
-            state.podcast,
-            state.episodes,
-            state.currentSort,
-            state.searchQuery,
-        ) {
-            val computed =
-                withContext(Dispatchers.Default) {
-                    calculateUpdateFrequencyData(
-                        podcast = state.podcast,
-                        episodes = state.episodes,
-                        currentSort = state.currentSort,
-                        searchQuery = state.searchQuery,
-                        cachedFrequencyData = cachedFrequencyData,
-                    )
-                }
-            cachedFrequencyData = computed
-            value = computed
-        }
-
-        // 3. Scrollable Metadata Chips Row — centered
-        val trailerEpisode =
-            remember(state.episodes) {
-                state.episodes.firstOrNull { it.episodeType == "trailer" }
-            }
-
-        PodcastInfoMetadataChipsRow(
-            podcast = state.podcast,
+        PodcastInfoChipsRow(
+            state = state,
             sortedPersons = sortedPersons,
-            trailerEpisode = trailerEpisode,
-            frequencyData = frequencyData,
+            onPlayEpisode = onPlayEpisode,
             onEditGenre = onEditGenre,
-            onPlayTrailer = onPlayEpisode,
         )
 
         Spacer(modifier = Modifier.height(18.dp))
@@ -143,4 +110,54 @@ internal fun PodcastInfoHeroSection(
             onPodcastClick = onPodcastClick,
         )
     }
+}
+
+/** The show's chips: how often it releases, its genre, people, a trailer and more, in that order. */
+@Composable
+internal fun PodcastInfoChipsRow(
+    state: PodcastInfoUiState.Success,
+    sortedPersons: List<Person>,
+    onPlayEpisode: (Episode) -> Unit,
+    onEditGenre: () -> Unit,
+) {
+    // Update Frequency Calculation — filters/sorts episodes and analyzes release intervals,
+    // which can be expensive for large RSS catalogs, so it runs off the composition thread
+    // and is cancelled/restarted automatically as its keys change.
+    var cachedFrequencyData by remember(state.podcast.id) { mutableStateOf<Pair<String, ImageVector>?>(null) }
+
+    val frequencyData by produceState(
+        initialValue = cachedFrequencyData,
+        state.podcast,
+        state.episodes,
+        state.currentSort,
+        state.searchQuery,
+    ) {
+        val computed =
+            withContext(Dispatchers.Default) {
+                calculateUpdateFrequencyData(
+                    podcast = state.podcast,
+                    episodes = state.episodes,
+                    currentSort = state.currentSort,
+                    searchQuery = state.searchQuery,
+                    cachedFrequencyData = cachedFrequencyData,
+                )
+            }
+        cachedFrequencyData = computed
+        value = computed
+    }
+
+    // 3. Scrollable Metadata Chips Row — centered
+    val trailerEpisode =
+        remember(state.episodes) {
+            state.episodes.firstOrNull { it.isTrailer }
+        }
+
+    PodcastInfoMetadataChipsRow(
+        podcast = state.podcast,
+        sortedPersons = sortedPersons,
+        trailerEpisode = trailerEpisode,
+        frequencyData = frequencyData,
+        onEditGenre = onEditGenre,
+        onPlayTrailer = onPlayEpisode,
+    )
 }

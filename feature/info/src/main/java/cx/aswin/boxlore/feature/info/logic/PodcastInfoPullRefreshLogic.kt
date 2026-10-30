@@ -2,6 +2,8 @@ package cx.aswin.boxlore.feature.info.logic
 
 import cx.aswin.boxlore.feature.info.DirectFeedChipState
 import cx.aswin.boxlore.feature.info.PodcastInfoUiState
+import cx.aswin.boxlore.feature.info.ShowFeedStatus
+import kotlinx.coroutines.flow.MutableStateFlow
 
 /** What pull-to-refresh should run on Podcast Info. */
 internal object PodcastInfoPullRefreshLogic {
@@ -84,5 +86,57 @@ internal object PodcastInfoAsyncResultLogic {
                 result.directFeedChip
             },
         )
+    }
+}
+
+/**
+ * The page body's status line while the catalog refresh after subscribing runs, in place of a
+ * spinner in the top-bar pill. The pill's own state comes back when the refreshed page remounts.
+ */
+internal object PodcastInfoPostSubscribeLogic {
+    /**
+     * Shows "Checking the feed for new episodes…" on [targetPodcastId]'s page while [refresh] runs,
+     * then clears it however [refresh] ends: done, failed or cancelled. A line another read already
+     * shows (a feed-first read, a fallback or an offline line) is left as it is.
+     */
+    suspend fun withStatusLine(
+        uiState: MutableStateFlow<PodcastInfoUiState>,
+        targetPodcastId: String,
+        currentPodcastId: () -> String,
+        refresh: suspend () -> Unit,
+    ) {
+        val state = (uiState.value as? PodcastInfoUiState.Success)?.takeIf { it.podcast.id == targetPodcastId }
+        val showsLine = state != null && takesLine(state.feedStatus)
+        if (state != null) uiState.value = started(state)
+        try {
+            refresh()
+        } finally {
+            if (showsLine) uiState.value = finished(uiState.value, currentPodcastId(), targetPodcastId)
+        }
+    }
+
+    /** No line shows: the list is current, or it is the recent stored copy. */
+    fun takesLine(status: ShowFeedStatus): Boolean = status == ShowFeedStatus.NONE || status == ShowFeedStatus.CACHED
+
+    /** A followed show is never offered Missing episodes?, so the offer goes while the refresh runs. */
+    fun started(state: PodcastInfoUiState.Success): PodcastInfoUiState.Success = state.copy(
+        feedStatus = if (takesLine(state.feedStatus)) ShowFeedStatus.READING_NEWEST else state.feedStatus,
+        directFeedChip = if (state.directFeedChip == DirectFeedChipState.Offer) DirectFeedChipState.Hidden else state.directFeedChip,
+    )
+
+    /** Clears the line on the same show only, and only while it still says the feed is being read. */
+    fun finished(
+        state: PodcastInfoUiState,
+        currentPodcastId: String,
+        targetPodcastId: String,
+    ): PodcastInfoUiState {
+        val success = state as? PodcastInfoUiState.Success ?: return state
+        if (!PodcastInfoPullRefreshLogic.shouldApply(currentPodcastId, targetPodcastId) ||
+            success.podcast.id != targetPodcastId ||
+            success.feedStatus != ShowFeedStatus.READING_NEWEST
+        ) {
+            return state
+        }
+        return success.copy(feedStatus = ShowFeedStatus.NONE)
     }
 }

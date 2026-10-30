@@ -1,10 +1,15 @@
 package cx.aswin.boxlore.feature.info.components
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -39,7 +44,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.TonalToggleButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -57,6 +67,12 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.contrastColor
 import cx.aswin.boxlore.feature.info.EpisodeSort
 import cx.aswin.boxlore.feature.info.R
+import cx.aswin.boxlore.feature.info.branded.BrandedSubscribeLabels
+import cx.aswin.boxlore.feature.info.branded.BrandedToolbarStyle
+import cx.aswin.boxlore.feature.info.branded.LocalBrandedHeaderMotion
+import cx.aswin.boxlore.feature.info.branded.LocalBrandedPage
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Episode Toolbar - M3 Expressive
@@ -88,9 +104,32 @@ internal fun EpisodeToolbar(
     val subscribedLabel = stringResource(R.string.podcast_info_subscribed)
     val unsubscribeLabel = stringResource(R.string.podcast_info_unsubscribe)
 
-    val phase = rememberSubscriptionButtonPhase(isSubscribed)
+    val branded = LocalBrandedPage.current?.style?.toolbar
+    val moment = LocalBrandedPage.current?.page?.subscribeMoment?.takeIf { branded != null }
+    val phase = rememberSubscriptionButtonPhase(isSubscribed, moment?.durationMillis?.toLong() ?: SUBSCRIPTION_CONFIRMATION_MILLIS)
+    val momentPlaying = moment != null && phase == SubscriptionButtonPhase.CONFIRMATION
+    // A fresh clock for every run, so a second subscribe never starts on the last run's final frame.
+    val momentClock = remember(momentPlaying) { Animatable(0f) }
+    var revealReleased by remember(phase) { mutableStateOf(false) }
+    LaunchedEffect(momentPlaying) {
+        if (!momentPlaying) return@LaunchedEffect
+        launch {
+            delay(moment.revealDelayMillis.toLong())
+            revealReleased = true
+        }
+        momentClock.animateTo(moment.durationMillis.toFloat(), tween(moment.durationMillis, easing = LinearEasing))
+    }
+    // The header may follow the same clock, as Waveform's logo replays its intro.
+    val headerMotion = LocalBrandedHeaderMotion.current
+    DisposableEffect(headerMotion, momentClock, momentPlaying) {
+        if (momentPlaying) headerMotion?.subscribeMomentMillis = { momentClock.value }
+        onDispose { if (momentPlaying) headerMotion?.subscribeMomentMillis = null }
+    }
+    // A show's own moment keeps alerts and auto-download back until its reveal time, then they slide in as usual.
+    val revealHeld = moment != null &&
+        ((isSubscribed && phase == SubscriptionButtonPhase.SUBSCRIBE) || (momentPlaying && !revealReleased))
     val automationFraction by animateFloatAsState(
-        targetValue = if (isSubscribed && supportsReleaseAutomation) 1f else 0f,
+        targetValue = if (isSubscribed && supportsReleaseAutomation && !revealHeld) 1f else 0f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioNoBouncy,
             stiffness = if (isSubscribed) 420f else 560f,
@@ -104,16 +143,22 @@ internal fun EpisodeToolbar(
         animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
         label = "sortRotation",
     )
-    val containerColor by animateColorAsState(
-        targetValue = if (phase == SubscriptionButtonPhase.SUBSCRIBED) MaterialTheme.colorScheme.surfaceContainerHighest else accentColor,
-        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
-        label = "subscribeContainer",
-    )
-    val contentColor by animateColorAsState(
-        targetValue = if (phase == SubscriptionButtonPhase.SUBSCRIBED) MaterialTheme.colorScheme.onSurface else accentColor.contrastColor(),
-        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
-        label = "subscribeContent",
-    )
+    val containerTarget = if (phase == SubscriptionButtonPhase.SUBSCRIBED) {
+        branded?.subscribedContainer ?: MaterialTheme.colorScheme.surfaceContainerHighest
+    } else {
+        branded?.subscribeContainer ?: accentColor
+    }
+    val contentTarget = if (phase == SubscriptionButtonPhase.SUBSCRIBED) {
+        branded?.subscribedContent ?: MaterialTheme.colorScheme.onSurface
+    } else {
+        branded?.subscribeContent ?: accentColor.contrastColor()
+    }
+    val animatedContainer by animateColorAsState(containerTarget, MaterialTheme.motionScheme.defaultEffectsSpec(), label = "subscribeContainer")
+    val animatedContent by animateColorAsState(contentTarget, MaterialTheme.motionScheme.defaultEffectsSpec(), label = "subscribeContent")
+    // A show's moment ends looking exactly like Subscribed, so the button must take those colours in
+    // the same frame it reappears; an animation, even a snap, lands a frame late and flashes.
+    val containerColor = if (moment != null) containerTarget else animatedContainer
+    val contentColor = if (moment != null) contentTarget else animatedContent
 
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val compact = maxWidth < 360.dp
@@ -122,44 +167,66 @@ internal fun EpisodeToolbar(
             horizontalArrangement = Arrangement.spacedBy(0.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Button(
-                onClick = onSubscribeClick,
-                shapes = ButtonDefaults.shapes(
-                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 8.dp, bottomEnd = 8.dp, bottomStart = 24.dp),
-                    pressedShape = RoundedCornerShape(18.dp),
-                ),
-                colors = ButtonDefaults.buttonColors(containerColor = containerColor, contentColor = contentColor),
-                contentPadding = PaddingValues(horizontal = if (compact) 8.dp else 12.dp),
-                modifier = Modifier.weight(1f).height(48.dp).semantics {
-                    contentDescription = if (isSubscribed) unsubscribeLabel else subscribeLabel
+            Box(
+                Modifier.weight(1f).height(48.dp).graphicsLayer {
+                    val nudge = if (momentPlaying) moment.nudge(momentClock.value) else null
+                    translationY = nudge?.offsetY?.toPx() ?: 0f
+                    scaleX = nudge?.scale ?: 1f
+                    scaleY = scaleX
                 },
             ) {
-                AnimatedContent(
-                    targetState = phase,
-                    transitionSpec = {
-                        val enter = if (targetState == SubscriptionButtonPhase.CONFIRMATION) {
-                            fadeIn(tween(120))
-                        } else {
-                            fadeIn(tween(160, delayMillis = 60)) + scaleIn(tween(200), initialScale = 0.92f)
-                        }
-                        enter
-                            .togetherWith(fadeOut(tween(100)) + scaleOut(tween(100), targetScale = 0.96f))
-                            .using(SizeTransform(clip = false))
+                Button(
+                    onClick = onSubscribeClick,
+                    shapes = ButtonDefaults.shapes(
+                        shape = SubscribeButtonShape,
+                        pressedShape = RoundedCornerShape(18.dp),
+                    ),
+                    colors = ButtonDefaults.buttonColors(containerColor = containerColor, contentColor = contentColor),
+                    contentPadding = PaddingValues(horizontal = if (compact) 8.dp else 12.dp),
+                    // While a show's moment plays it draws the whole button, so the button's own press shape never peeks out.
+                    modifier = Modifier.fillMaxWidth().height(48.dp).graphicsLayer { alpha = if (momentPlaying) 0f else 1f }.semantics {
+                        contentDescription = if (isSubscribed) unsubscribeLabel else subscribeLabel
                     },
-                    contentAlignment = Alignment.Center,
-                    label = "subContent",
-                ) { phase ->
-                    when (phase) {
-                        SubscriptionButtonPhase.CONFIRMATION -> SubscriptionGenreConfirmation(genre)
-                        else -> Text(
-                            text = if (phase == SubscriptionButtonPhase.SUBSCRIBED) subscribedLabel else subscribeLabel,
-                            style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
-                            fontWeight = GoogleSansWeight.bold,
-                            textAlign = TextAlign.Center,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                ) {
+                    AnimatedContent(
+                        targetState = phase,
+                        transitionSpec = {
+                            if (moment != null && initialState == SubscriptionButtonPhase.CONFIRMATION) {
+                                // The moment's last frame is the Subscribed label, so it simply stays, unclipped.
+                            return@AnimatedContent (EnterTransition.None togetherWith ExitTransition.None)
+                                .using(SizeTransform(clip = false) { _, _ -> snap() })
+                            }
+                            val enter = if (targetState == SubscriptionButtonPhase.CONFIRMATION) {
+                                fadeIn(tween(120))
+                            } else {
+                                fadeIn(tween(160, delayMillis = 60)) + scaleIn(tween(200), initialScale = 0.92f)
+                            }
+                            enter
+                                .togetherWith(fadeOut(tween(100)) + scaleOut(tween(100), targetScale = 0.96f))
+                                .using(SizeTransform(clip = false))
+                        },
+                        contentAlignment = Alignment.Center,
+                        label = "subContent",
+                    ) { phase ->
+                        when {
+                            // The show's own moment draws over the whole button instead.
+                            phase == SubscriptionButtonPhase.CONFIRMATION && moment != null -> Unit
+                            phase == SubscriptionButtonPhase.CONFIRMATION -> SubscriptionGenreConfirmation(genre)
+                            else -> SubscriptionLabel(
+                                text = if (phase == SubscriptionButtonPhase.SUBSCRIBED) subscribedLabel else subscribeLabel,
+                                compact = compact,
+                            )
+                        }
                     }
+                }
+                if (momentPlaying && branded != null) {
+                    moment.Overlay(
+                        elapsedMillis = { momentClock.value },
+                        labels = BrandedSubscribeLabels(subscribeLabel, subscribedLabel, compact),
+                        style = branded,
+                        shape = SubscribeButtonShape,
+                        modifier = Modifier.matchParentSize(),
+                    )
                 }
             }
             SubscriptionAutomationSlot(automationReveal, automationEnabled) {
@@ -170,6 +237,7 @@ internal fun EpisodeToolbar(
                     onClick = onNotificationsToggle,
                     blocked = notificationsEnabled && isSystemNotificationsBlocked,
                     enabled = automationEnabled,
+                    style = branded,
                     modifier = Modifier.graphicsLayer {
                         alpha = automationReveal.bellAlpha
                         scaleX = 0.94f + 0.06f * automationReveal.bellAlpha
@@ -182,6 +250,7 @@ internal fun EpisodeToolbar(
                     label = stringResource(R.string.podcast_info_auto_download),
                     onClick = onAutoDownloadToggle,
                     enabled = automationEnabled,
+                    style = branded,
                     modifier = Modifier.graphicsLayer {
                         alpha = automationReveal.downloadAlpha
                         scaleX = 0.94f + 0.06f * automationReveal.downloadAlpha
@@ -194,6 +263,7 @@ internal fun EpisodeToolbar(
                 label = stringResource(R.string.podcast_info_sort),
                 onClick = onSortToggle,
                 modifier = Modifier.padding(start = 3.dp).graphicsLayer { rotationX = sortRotation },
+                style = branded,
             )
             ConnectedToolbarAction(
                 icon = Icons.Rounded.Search,
@@ -201,6 +271,7 @@ internal fun EpisodeToolbar(
                 onClick = onSearchFocused,
                 modifier = Modifier.padding(start = 3.dp),
                 trailing = true,
+                style = branded,
             )
         }
     }
@@ -214,6 +285,7 @@ private fun ConnectedToolbarAction(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     trailing: Boolean = false,
+    style: BrandedToolbarStyle? = null,
 ) {
     Button(
         onClick = onClick,
@@ -226,8 +298,8 @@ private fun ConnectedToolbarAction(
             pressedShape = RoundedCornerShape(18.dp),
         ),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            containerColor = style?.actionContainer ?: MaterialTheme.colorScheme.surfaceContainerHighest,
+            contentColor = style?.actionContent ?: MaterialTheme.colorScheme.onSurfaceVariant,
         ),
         contentPadding = PaddingValues(0.dp),
         modifier = modifier.size(48.dp).semantics { contentDescription = label },
@@ -236,6 +308,7 @@ private fun ConnectedToolbarAction(
     }
 }
 
+@Suppress("LongParameterList")
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SubscriptionToggle(
@@ -246,6 +319,7 @@ private fun SubscriptionToggle(
     modifier: Modifier = Modifier,
     blocked: Boolean = false,
     enabled: Boolean = true,
+    style: BrandedToolbarStyle? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     val blockedLabel = stringResource(R.string.podcast_info_notifications_blocked)
@@ -253,26 +327,22 @@ private fun SubscriptionToggle(
         shape = RoundedCornerShape(8.dp),
         pressedShape = RoundedCornerShape(18.dp),
     )
+    val off = style?.toggleContainer ?: scheme.surfaceContainerHighest
+    val offContent = style?.toggleContent ?: scheme.onSurfaceVariant
+    val on = if (blocked) scheme.errorContainer else style?.toggleCheckedContainer ?: scheme.primaryContainer
+    val onContent = if (blocked) scheme.onErrorContainer else style?.toggleCheckedContent ?: scheme.onPrimaryContainer
     TonalToggleButton(
         checked = checked,
         onCheckedChange = { onClick() },
         enabled = enabled,
         shapes = shapes,
         colors = ToggleButtonDefaults.tonalToggleButtonColors(
-            containerColor = scheme.surfaceContainerHighest,
-            contentColor = scheme.onSurfaceVariant,
-            checkedContainerColor = if (blocked) scheme.errorContainer else scheme.primaryContainer,
-            checkedContentColor = if (blocked) scheme.onErrorContainer else scheme.onPrimaryContainer,
-            disabledContainerColor = if (checked) {
-                if (blocked) scheme.errorContainer else scheme.primaryContainer
-            } else {
-                scheme.surfaceContainerHighest
-            },
-            disabledContentColor = if (checked) {
-                if (blocked) scheme.onErrorContainer else scheme.onPrimaryContainer
-            } else {
-                scheme.onSurfaceVariant
-            },
+            containerColor = off,
+            contentColor = offContent,
+            checkedContainerColor = on,
+            checkedContentColor = onContent,
+            disabledContainerColor = if (checked) on else off,
+            disabledContentColor = if (checked) onContent else offContent,
         ),
         contentPadding = PaddingValues(0.dp),
         modifier = modifier.size(48.dp).semantics {
@@ -290,4 +360,22 @@ private fun SubscriptionToggle(
             }
         }
     }
+}
+
+/** The Subscribe button's shape: rounded on the leading side, joined to the buttons after it. */
+internal val SubscribeButtonShape = RoundedCornerShape(topStart = 24.dp, topEnd = 8.dp, bottomEnd = 8.dp, bottomStart = 24.dp)
+
+/** The Subscribe or Subscribed label, shared with a show's own subscribe moment so its last frame matches. */
+@Composable
+internal fun SubscriptionLabel(text: String, compact: Boolean, modifier: Modifier = Modifier, color: Color = Color.Unspecified) {
+    Text(
+        text = text,
+        style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
+        fontWeight = GoogleSansWeight.bold,
+        color = color,
+        textAlign = TextAlign.Center,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier,
+    )
 }

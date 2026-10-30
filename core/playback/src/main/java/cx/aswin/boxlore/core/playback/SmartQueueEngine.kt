@@ -5,6 +5,7 @@ import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.PodcastGenres
+import cx.aswin.boxlore.core.model.isTrailer
 import cx.aswin.boxlore.core.network.model.EpisodeItem
 import cx.aswin.boxlore.core.network.model.HistoryItem
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
@@ -360,7 +361,7 @@ class DefaultSmartQueueEngine(
             candidates
                 .asSequence()
                 .filter { it.id != currentId && it.id !in exclude }
-                .filter { it.episodeType != "trailer" }
+                .filter { !it.isTrailer }
                 .filter { it.audioUrl.isNotBlank() }
                 .take(SAME_PODCAST_BATCH_LIMIT)
                 .map { it.toQueueEntry(podcast, SmartQueueEngine.SOURCE_SAME_PODCAST) }
@@ -569,7 +570,7 @@ class DefaultSmartQueueEngine(
 
     /** True when [episode] is a well-formed, not-yet-excluded, non-trailer playable candidate. */
     private fun isCandidateEligible(episode: Episode, exclude: Set<String>,): Boolean = episode.id !in exclude &&
-        episode.episodeType != "trailer" &&
+        !episode.isTrailer &&
         episode.audioUrl.isNotBlank() &&
         episode.id.toLongOrNull() != null
 
@@ -710,7 +711,7 @@ class DefaultSmartQueueEngine(
             episodes
                 .asSequence()
                 .filter { it.id !in exclude && it.id.toLongOrNull() != null }
-                .filter { it.episodeType != "trailer" && it.audioUrl.isNotBlank() }
+                .filter { !it.isTrailer && it.audioUrl.isNotBlank() }
                 .filter { it.podcastId != currentPodcast.id }
                 .sortedBy { (it.podcastId ?: "") in downRankedPodcasts }
                 .take(needed)
@@ -750,7 +751,7 @@ class DefaultSmartQueueEngine(
             similar.firstOrNull {
                 it.id !in exclude &&
                     it.id.toLongOrNull() != null &&
-                    it.episodeType != "trailer" &&
+                    !it.isTrailer &&
                     it.audioUrl.isNotBlank()
             } ?: return emptyList()
         exclude.add(pick.id)
@@ -799,7 +800,7 @@ class DefaultSmartQueueEngine(
     }
 
     private fun isTrendingCandidate(episode: Episode, exclude: Set<String>,): Boolean = episode.id !in exclude &&
-        episode.episodeType != "trailer" &&
+        !episode.isTrailer &&
         episode.audioUrl.isNotBlank() &&
         episode.id.toLongOrNull() != null
 

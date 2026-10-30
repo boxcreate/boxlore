@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.playback
 
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.isTrailer
 
 /**
  * Pure helper logic for evaluating same-show continuation availability
@@ -69,7 +70,7 @@ object SameShowContinuationLogic {
             .asSequence()
             .filter { it.id != currentEpisode.id }
             .filter { it.id !in excludeEpisodeIds }
-            .filter { it.episodeType != "trailer" }
+            .filter { !it.isTrailer }
             .filter { it.audioUrl.isNotBlank() }
             .distinctBy { it.id }
             .take(maxCount)

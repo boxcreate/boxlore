@@ -32,17 +32,24 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
+import cx.aswin.boxlore.feature.info.branded.BrandedShowHeader
+import cx.aswin.boxlore.feature.info.branded.BrandedSpotlight
+import cx.aswin.boxlore.feature.info.branded.LocalBrandedPage
 import cx.aswin.boxlore.feature.info.components.EpisodeCardSkeleton
 import cx.aswin.boxlore.feature.info.components.EpisodeFeedItemRow
 import cx.aswin.boxlore.feature.info.components.EpisodeFeedRowUi
 import cx.aswin.boxlore.feature.info.components.EpisodeListIndicators
+import cx.aswin.boxlore.feature.info.components.EpisodePlayStateWrapper
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionUi
 import cx.aswin.boxlore.feature.info.components.EpisodeToolbar
+import cx.aswin.boxlore.feature.info.components.PodcastEpisodeActionsCallbacks
+import cx.aswin.boxlore.feature.info.components.PodcastEpisodeActionsState
 import cx.aswin.boxlore.feature.info.components.PodcastInfoEpisodeSearch
 import cx.aswin.boxlore.feature.info.components.ShowCaughtUpCard
 import cx.aswin.boxlore.feature.info.components.ShowFeedStatusLine
 import cx.aswin.boxlore.feature.info.components.ShowListStatusLine
 import cx.aswin.boxlore.feature.info.components.ToolbarWarningBanner
+import cx.aswin.boxlore.feature.info.components.podcastEpisodeCardProgress
 import cx.aswin.boxlore.feature.info.components.showFeedStatusText
 import cx.aswin.boxlore.feature.info.logic.FeedItem
 import cx.aswin.boxlore.feature.info.logic.HideCompletedFill
@@ -68,6 +75,8 @@ internal data class EpisodeListContentState(
     val isSearchActive: Boolean,
     val searchFocusRequester: FocusRequester,
     val hideCompletedFill: HideCompletedFill.State = HideCompletedFill.State.NONE,
+    /** A branded page's latest episode, shown in its spotlight card instead of the list. */
+    val spotlightEpisode: Episode? = null,
 )
 
 internal data class EpisodeListContentCallbacks(
@@ -103,17 +112,7 @@ internal fun PodcastInfoEpisodeList(
         contentPadding = contentState.contentPadding,
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        item {
-            PodcastInfoHeroSection(
-                state = contentState.state,
-                sortedPersons = contentState.sortedPersons,
-                isDescExpanded = contentState.isDescExpanded,
-                onDescExpandedChange = callbacks.onDescExpandedChange,
-                onPlayEpisode = callbacks.onPlayEpisode,
-                onPodcastClick = callbacks.onPodcastClick,
-                onEditGenre = callbacks.onEditGenre,
-            )
-        }
+        heroItem(contentState, callbacks)
 
         item(key = "toolbar") {
             AnimatedContent(
@@ -165,6 +164,8 @@ internal fun PodcastInfoEpisodeList(
             onDismiss = callbacks.onDismissWarning,
             onAction = callbacks.onWarningAction,
         )
+
+        brandedSpotlightItem(contentState, callbacks, viewModel)
 
         feedStatusItem(contentState.state.feedStatus, contentState.hideCompletedFill, contentState.isSearchActive)
 
@@ -228,6 +229,83 @@ private fun LazyListScope.feedStatusItem(status: ShowFeedStatus, fill: HideCompl
                 icon = Icons.Rounded.Info,
                 modifier = Modifier.animateItem(),
             )
+        }
+    }
+}
+
+/** The show's header: a branded page's own, or the regular hero. */
+private fun LazyListScope.heroItem(contentState: EpisodeListContentState, callbacks: EpisodeListContentCallbacks) {
+    item {
+        val brandedPage = LocalBrandedPage.current?.page
+        if (brandedPage != null) {
+            BrandedShowHeader(
+                page = brandedPage,
+                state = contentState.state,
+                sortedPersons = contentState.sortedPersons,
+                isDescExpanded = contentState.isDescExpanded,
+                onDescExpandedChange = callbacks.onDescExpandedChange,
+                onPlayEpisode = callbacks.onPlayEpisode,
+                onPodcastClick = callbacks.onPodcastClick,
+                onEditGenre = callbacks.onEditGenre,
+            )
+        } else {
+            PodcastInfoHeroSection(
+                state = contentState.state,
+                sortedPersons = contentState.sortedPersons,
+                isDescExpanded = contentState.isDescExpanded,
+                onDescExpandedChange = callbacks.onDescExpandedChange,
+                onPlayEpisode = callbacks.onPlayEpisode,
+                onPodcastClick = callbacks.onPodcastClick,
+                onEditGenre = callbacks.onEditGenre,
+            )
+        }
+    }
+}
+
+/** A branded page's latest episode, with the same states and actions as its card in the list. */
+private fun LazyListScope.brandedSpotlightItem(
+    contentState: EpisodeListContentState,
+    callbacks: EpisodeListContentCallbacks,
+    viewModel: PodcastInfoViewModel,
+) {
+    val episode = contentState.spotlightEpisode ?: return
+    item(key = "branded_spotlight") {
+        val brandedPage = LocalBrandedPage.current?.page ?: return@item
+        val indicators = contentState.episodeListIndicators
+        EpisodePlayStateWrapper(episodeId = episode.id, playbackStateFlow = viewModel.episodePlaybackState) { playState ->
+            val isResume = playState?.isResume == true
+            val isCompleted = episode.id in indicators.completedEpisodeIds
+            val spotlight = BrandedSpotlight(
+                episode = episode,
+                actions = PodcastEpisodeActionsState(
+                    isPlaying = playState?.isPlaying == true,
+                    isResume = isResume,
+                    isLiked = episode.id in indicators.likedEpisodeIds,
+                    isDownloaded = episode.id in indicators.downloadedEpisodeIds,
+                    isDownloading = episode.id in indicators.downloadingEpisodeIds,
+                    isQueued = episode.id in indicators.queuedEpisodeIds,
+                ),
+                callbacks = PodcastEpisodeActionsCallbacks(
+                    onPlay = { viewModel.onPlayClick(episode) },
+                    onLike = { viewModel.onToggleLike(episode) },
+                    onDownload = { viewModel.toggleDownload(episode) },
+                    onQueue = { viewModel.toggleQueue(episode) },
+                ),
+                isCompleted = isCompleted,
+                progress = podcastEpisodeCardProgress(isResume, isCompleted, playState?.progress ?: 0f),
+                timeLeft = playState?.timeLeft,
+                isSelected = episode.id in contentState.selectedEpisodeIdSet,
+                onOpen = {
+                    if (contentState.selectionActive) {
+                        callbacks.onToggleSelection(episode)
+                    } else {
+                        viewModel.recordEpisodeClick(episode.id)
+                        callbacks.onEpisodeClick(episode, "podcast_info_episodes_list", 0)
+                    }
+                },
+                onLongPress = { callbacks.onLongPressSelection(episode) },
+            )
+            brandedPage.Spotlight(spotlight, Modifier.animateItem())
         }
     }
 }

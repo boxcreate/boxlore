@@ -2,10 +2,12 @@ package cx.aswin.boxlore.feature.info.components
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,16 +31,23 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.designsystem.theme.rememberGoogleSansFamily
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.isTrailer
 import cx.aswin.boxlore.feature.info.EpisodeSort
 import cx.aswin.boxlore.feature.info.R
+import cx.aswin.boxlore.feature.info.branded.BrandedChipRowHeight
+import cx.aswin.boxlore.feature.info.branded.BrandedChipStyle
+import cx.aswin.boxlore.feature.info.branded.LocalBrandedPage
 
 internal fun calculateUpdateFrequencyData(
     podcast: Podcast,
@@ -72,7 +81,7 @@ internal fun calculateUpdateFrequencyData(
 }
 
 internal fun filterValidFrequencyEpisodes(episodes: List<Episode>): List<Episode> = episodes
-    .filter { it.episodeType != "trailer" && it.episodeType != "bonus" && it.publishedDate > 0 }
+    .filter { !it.isTrailer && it.episodeType != "bonus" && it.publishedDate > 0 }
     .sortedByDescending { it.publishedDate }
     .take(15)
 
@@ -312,6 +321,11 @@ private fun PodcastMetadataChip(
     genre: Boolean = false,
     leadingIcon: (@Composable () -> Unit)? = null,
 ) {
+    val branded = LocalBrandedPage.current?.style?.chips
+    if (branded != null) {
+        BrandedMetadataChip(branded, label, icon, onClick, genre, leadingIcon)
+        return
+    }
     val container = if (genre) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh
     val foreground = if (genre) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
     val content: @Composable () -> Unit = {
@@ -335,6 +349,48 @@ private fun PodcastMetadataChip(
     }
 }
 
+/** The same chip in a branded page's shape and colours. */
+@Composable
+@Suppress("LongParameterList")
+private fun BrandedMetadataChip(
+    style: BrandedChipStyle,
+    label: String,
+    icon: ImageVector?,
+    onClick: (() -> Unit)?,
+    genre: Boolean,
+    leadingIcon: (@Composable () -> Unit)?,
+) {
+    val container = if (genre) style.genreContainer else style.container
+    val foreground = if (genre) style.genreContent else style.content
+    val textStyle = MaterialTheme.typography.labelLarge.copy(
+        fontFamily = rememberGoogleSansFamily(weight = style.fontWeight, opticalSize = style.fontSize.value),
+        fontWeight = FontWeight.Normal,
+        fontSize = style.fontSize,
+        letterSpacing = 0.sp,
+    )
+    val border = style.outline?.takeUnless { genre }?.let { BorderStroke(1.dp, it) }
+    val content: @Composable () -> Unit = {
+        Row(
+            // A ring sits outside the chip's padding, as in the designs.
+            Modifier.height(style.height).padding(horizontal = if (border != null) 1.dp else 0.dp).padding(style.padding),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(style.gap),
+        ) {
+            if (leadingIcon != null) {
+                leadingIcon()
+            } else if (icon != null) {
+                Icon(icon, null, Modifier.size(style.iconSize), tint = if (genre) style.genreIcon else style.icon)
+            }
+            Text(label, style = textStyle, maxLines = 1)
+        }
+    }
+    if (onClick != null) {
+        Surface(onClick = onClick, shape = style.shape, color = container, contentColor = foreground, border = border, content = content)
+    } else {
+        Surface(shape = style.shape, color = container, contentColor = foreground, border = border, content = content)
+    }
+}
+
 @Composable
 internal fun PodcastInfoMetadataChipsRow(
     podcast: Podcast,
@@ -346,12 +402,14 @@ internal fun PodcastInfoMetadataChipsRow(
 ) {
     val context = LocalContext.current
     val medium = resolveDisplayMedium(podcast)
+    // A branded header starts its chips at the page margin and lets them scroll to the screen edge.
+    val branded = LocalBrandedPage.current != null
 
     LazyRow(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-        contentPadding = PaddingValues(horizontal = 0.dp),
-        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, if (branded) Alignment.Start else Alignment.CenterHorizontally),
+        contentPadding = PaddingValues(horizontal = if (branded) 16.dp else 0.dp),
+        modifier = if (branded) Modifier.fillMaxWidth().height(BrandedChipRowHeight) else Modifier.fillMaxWidth(),
     ) {
         podcastIdentityChips(podcast, frequencyData, onEditGenre)
 

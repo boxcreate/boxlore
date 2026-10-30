@@ -56,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -72,6 +73,7 @@ import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.feature.info.DirectFeedChipState
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
 import cx.aswin.boxlore.feature.info.R
+import cx.aswin.boxlore.feature.info.branded.LocalBrandedPage
 import cx.aswin.boxlore.feature.info.logic.FeedItem
 import cx.aswin.boxlore.feature.info.logic.NotificationToggleAction
 import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
@@ -320,10 +322,11 @@ internal fun PodcastInfoTopOverlay(
     headerColor: Color,
     collapsedHeaderHeight: Dp,
     hideCompleted: Boolean,
-    context: android.content.Context,
     actions: PodcastInfoTopOverlayActions,
     missingEpisodesChip: MissingEpisodesChip = MissingEpisodesChip(),
+    tagAlpha: Float = 0f,
 ) {
+    val context = LocalContext.current
     Box(
         modifier =
         Modifier
@@ -332,6 +335,10 @@ internal fun PodcastInfoTopOverlay(
             .background(headerColor)
             .statusBarsPadding(),
     ) {
+        val brandedPage = LocalBrandedPage.current?.page
+        if (brandedPage != null && tagAlpha > 0f) {
+            brandedPage.Tag(Modifier.align(Alignment.Center).graphicsLayer { alpha = tagAlpha })
+        }
         IconButton(
             onClick = actions.onBack,
             modifier = Modifier.align(Alignment.CenterStart).padding(start = 4.dp),
