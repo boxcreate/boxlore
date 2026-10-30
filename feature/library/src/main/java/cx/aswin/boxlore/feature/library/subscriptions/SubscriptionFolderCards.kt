@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material3.Icon
@@ -39,6 +40,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.NewEpisodeBadge
@@ -81,7 +83,7 @@ internal fun PinnedEnlargedFolderCard(
     isReordering: Boolean = false,
 ) {
     val lastSeenEpisodes = LocalLastSeenEpisodes.current
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(24.dp)
     val folderIcon = GenreIcons.folderIconOrFallback(folder.icon)
     val slots = calculateFolderSlots(podcasts, folder.displaySize)
 
@@ -97,7 +99,6 @@ internal fun PinnedEnlargedFolderCard(
     Surface(
         shape = shape,
         color = MaterialTheme.colorScheme.surfaceContainer,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
         shadowElevation = dragElevation,
         modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Utility)
             .then(dragModifier)
@@ -122,12 +123,12 @@ internal fun PinnedEnlargedFolderCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 10.dp, end = 10.dp, top = 8.dp, bottom = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+                .padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             PinnedFolderHeader(
                 folder = folder,
-                podcastsCount = podcasts.size,
+                podcasts = podcasts,
                 folderIcon = folderIcon,
                 onFolderClick = actions.onFolderClick,
                 onFolderLongClick = actions.onFolderLongClick,
@@ -153,18 +154,23 @@ internal fun PinnedEnlargedFolderCard(
 }
 
 /**
- * Header row for pinned enlarged folders with title, icon, and show count.
+ * Header row for pinned enlarged folders: icon tile, name, show count (with the auto icon on a
+ * folder that fills itself from a genre), how many shows have a new episode, and a chevron.
  */
 @Composable
 private fun PinnedFolderHeader(
     folder: SubscriptionFolder,
-    podcastsCount: Int,
+    podcasts: List<Podcast>,
     folderIcon: ImageVector,
     onFolderClick: (String) -> Unit,
     onFolderLongClick: (SubscriptionFolder) -> Unit,
     modifier: Modifier = Modifier,
     isReordering: Boolean = false,
 ) {
+    val lastSeenEpisodes = LocalLastSeenEpisodes.current
+    val newCount = remember(podcasts, lastSeenEpisodes) {
+        podcasts.count { it.isLatestEpisodeNew(lastSeenEpisodes[it.id]) }
+    }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -178,42 +184,73 @@ private fun PinnedFolderHeader(
                     )
                 }
             )
-            .padding(horizontal = 6.dp, vertical = 4.dp),
+            .padding(start = 2.dp, top = 2.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            imageVector = folderIcon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(18.dp),
-        )
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = folderIcon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(22.dp),
+            )
+        }
 
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(12.dp))
 
-        Text(
-            text = folder.name,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = GoogleSansWeight.bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = folder.name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = GoogleSansWeight.bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (folder.isGenreLinked) {
+                    AutoFolderMark(size = 14.dp)
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
+                Text(
+                    text = showCountLabel(podcasts.size),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
 
-        Text(
-            text = if (podcastsCount == 1) "1 show" else "$podcastsCount shows",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-        )
+        if (newCount > 0) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Surface(
+                shape = RoundedCornerShape(percent = 50),
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            ) {
+                Text(
+                    text = "$newCount new",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = GoogleSansWeight.semiBold,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                )
+            }
+        }
 
-        Spacer(modifier = Modifier.width(6.dp))
+        Spacer(modifier = Modifier.width(4.dp))
 
         Icon(
             imageVector = Icons.Rounded.ChevronRight,
             contentDescription = "Open folder",
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-            modifier = Modifier.size(16.dp),
+            modifier = Modifier.size(18.dp),
         )
     }
 }
@@ -534,4 +571,15 @@ private fun EmptyFolderPlaceholder(
             )
         }
     }
+}
+
+/** Marks a folder that fills itself from a genre (auto-organize or One genre). */
+@Composable
+internal fun AutoFolderMark(size: Dp, modifier: Modifier = Modifier) {
+    Icon(
+        imageVector = Icons.Rounded.AutoAwesome,
+        contentDescription = "Auto",
+        tint = MaterialTheme.colorScheme.primary,
+        modifier = modifier.size(size),
+    )
 }

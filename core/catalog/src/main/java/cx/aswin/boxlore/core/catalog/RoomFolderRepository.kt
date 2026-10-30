@@ -344,11 +344,12 @@ private val GENRE_DEFAULT_ICON_MAP = mapOf(
     "money" to "finance",
 )
 
+/** Shows with only the placeholder genre ("Podcast", no category) get no folder and stay in the main grid. */
 private fun groupSubscribedPodcastsByGenre(subscribed: List<PodcastEntity>): Map<String, List<String>> {
     val result = mutableMapOf<String, MutableList<String>>()
     for (pod in subscribed) {
         val genreName = pod.customGenre?.trim()?.takeIf { it.isNotEmpty() }
-            ?: pod.genre?.split(",")?.firstOrNull()?.trim()?.takeIf { it.isNotEmpty() }
+            ?: pod.genre?.split(",")?.firstOrNull()?.trim()?.takeIf { it.isNotEmpty() && !PodcastGenres.isPlaceholder(it) }
         if (!genreName.isNullOrBlank()) {
             val rawCanonical = PodcastGenres.canonicalize(genreName) ?: genreName.replaceFirstChar { it.uppercase() }
             val canonical = if (rawCanonical.equals("Technology", ignoreCase = true) || rawCanonical.equals("Tech", ignoreCase = true)) {
@@ -371,26 +372,7 @@ private fun matchesGenre(pod: PodcastEntity, targetGenre: String): Boolean {
     }
 }
 
-private fun isGenreTokenMatch(candidate: String, target: String): Boolean {
-    val trimmedCandidate = candidate.trim()
-    val trimmedTarget = target.trim()
-    if (trimmedCandidate.equals(trimmedTarget, ignoreCase = true)) return true
-
-    val isTechSynonym = (trimmedTarget.equals("Tech", ignoreCase = true) && trimmedCandidate.equals("Technology", ignoreCase = true)) ||
-        (trimmedTarget.equals("Technology", ignoreCase = true) && trimmedCandidate.equals("Tech", ignoreCase = true))
-    if (isTechSynonym) return true
-
-    val canonicalTarget = PodcastGenres.canonicalize(trimmedTarget)
-    val canonicalCandidate = PodcastGenres.canonicalize(trimmedCandidate)
-
-    if (canonicalTarget != null && (canonicalTarget.equals(canonicalCandidate, ignoreCase = true) || canonicalTarget.equals(trimmedCandidate, ignoreCase = true))) {
-        return true
-    }
-    if (canonicalCandidate != null && canonicalCandidate.equals(trimmedTarget, ignoreCase = true)) {
-        return true
-    }
-    return false
-}
+private fun isGenreTokenMatch(candidate: String, target: String): Boolean = PodcastGenres.tokenMatches(candidate, target)
 
 private fun findMatchingGenreFolder(existingFolders: List<FolderEntity>, genre: String): FolderEntity? =
     existingFolders.firstOrNull { folder ->

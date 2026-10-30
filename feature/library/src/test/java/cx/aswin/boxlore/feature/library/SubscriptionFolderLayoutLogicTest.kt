@@ -706,7 +706,9 @@ class SubscriptionFolderLayoutLogicTest {
 
     @Test
     fun `smart sort label is unified across folder inter and intra sort enums`() {
-        assertEquals("Smart Sort", FolderInterSort.SmartRank.label)
-        assertEquals("Smart Sort", FolderIntraSort.SmartRank.label)
+        assertEquals("Smart", FolderInterSort.SmartRank.label)
+        assertEquals("Smart", FolderIntraSort.SmartRank.label)
+        assertEquals("Same as shows", FolderInterSort.Inherit.label)
+        assertEquals("Your order", FolderIntraSort.Manual.label)
     }
 }

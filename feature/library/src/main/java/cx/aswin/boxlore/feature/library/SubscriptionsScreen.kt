@@ -34,6 +34,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -44,6 +48,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -53,6 +58,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -66,33 +72,41 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.prefs.SubscriptionsTabStyle
+import cx.aswin.boxlore.feature.library.subscriptions.AddToFoldersHost
 import cx.aswin.boxlore.feature.library.subscriptions.AutoOrganizeDisableDialog
-import cx.aswin.boxlore.feature.library.subscriptions.AutoOrganizeEnableDialog
+import cx.aswin.boxlore.feature.library.subscriptions.AutoOrganizeLook
 import cx.aswin.boxlore.feature.library.subscriptions.ContextMenuTarget
 import cx.aswin.boxlore.feature.library.subscriptions.ExpressiveTabSwitcher
-import cx.aswin.boxlore.feature.library.subscriptions.FolderDialogActions
+import cx.aswin.boxlore.feature.library.subscriptions.FolderEditorPage
 import cx.aswin.boxlore.feature.library.subscriptions.FolderInterSort
 import cx.aswin.boxlore.feature.library.subscriptions.FolderIntraSort
+import cx.aswin.boxlore.feature.library.subscriptions.FolderMembershipChange
+import cx.aswin.boxlore.feature.library.subscriptions.FolderPagesActions
+import cx.aswin.boxlore.feature.library.subscriptions.FolderPagesData
+import cx.aswin.boxlore.feature.library.subscriptions.FolderShowMove
 import cx.aswin.boxlore.feature.library.subscriptions.FolderShowsSelectionSheet
+import cx.aswin.boxlore.feature.library.subscriptions.LatestQueueOutcome
 import cx.aswin.boxlore.feature.library.subscriptions.LatestSortMenuItems
+import cx.aswin.boxlore.feature.library.subscriptions.LatestSwipeAction
 import cx.aswin.boxlore.feature.library.subscriptions.LatestTabActions
 import cx.aswin.boxlore.feature.library.subscriptions.LatestTabConfig
 import cx.aswin.boxlore.feature.library.subscriptions.LatestTabContent
 import cx.aswin.boxlore.feature.library.subscriptions.MoveToFolderSheet
+import cx.aswin.boxlore.feature.library.subscriptions.OpenFolderPage
 import cx.aswin.boxlore.feature.library.subscriptions.ReorderMode
 import cx.aswin.boxlore.feature.library.subscriptions.ShowsTabActions
 import cx.aswin.boxlore.feature.library.subscriptions.ShowsTabConfig
 import cx.aswin.boxlore.feature.library.subscriptions.ShowsTabContent
 import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionContextMenuActions
 import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionContextMenuSheet
-import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionFolderDialog
 import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionReorderBar
 import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionSortActions
 import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionSortConfig
 import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionSortSheet
 import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionsTabSelectorFab
-import cx.aswin.boxlore.feature.library.subscriptions.extractDistinctGenres
-import cx.aswin.boxlore.feature.library.subscriptions.resolveSortedFolderShows
+import cx.aswin.boxlore.feature.library.subscriptions.genreFolders
+import cx.aswin.boxlore.feature.library.subscriptions.latestQueueMessage
+import cx.aswin.boxlore.feature.library.subscriptions.rememberFolderPagesState
 import kotlinx.coroutines.launch
 
 val LocalLastSeenEpisodes = compositionLocalOf<Map<String, String>> { emptyMap() }
@@ -122,11 +136,15 @@ fun SubscriptionsScreen(
 
         var searchQuery by remember { mutableStateOf("") }
         var isSearchActive by remember { mutableStateOf(false) }
-        var isGridView by rememberSaveable { mutableStateOf(true) }
+        val isGridView by viewModel.subscriptionsGridView.collectAsStateWithLifecycle()
+        val isRefreshingNewEpisodes by viewModel.isRefreshingNewEpisodes.collectAsStateWithLifecycle()
+        val pendingPlayedEpisodeIds by viewModel.pendingPlayedEpisodeIds.collectAsStateWithLifecycle()
+        val snackbarHostState = remember { SnackbarHostState() }
         val useSmartRank by viewModel.useSmartRank.collectAsStateWithLifecycle()
         val hideCompletedInSubs by viewModel.hideCompletedInSubs.collectAsStateWithLifecycle()
         val pinnedPodcastIds by viewModel.pinnedPodcastIds.collectAsStateWithLifecycle()
         val autoOrganizeFolders by viewModel.autoOrganizeFolders.collectAsStateWithLifecycle()
+        val autoOrganizeLook by viewModel.autoOrganizeLook.collectAsStateWithLifecycle()
         val folderSort by viewModel.folderSort.collectAsStateWithLifecycle()
         val folderManualOrder by viewModel.folderManualOrder.collectAsStateWithLifecycle()
         val intraFolderSort by viewModel.intraFolderSort.collectAsStateWithLifecycle()
@@ -134,9 +152,7 @@ fun SubscriptionsScreen(
         val subscriptionsTabStyle by viewModel.subscriptionsTabStyle.collectAsStateWithLifecycle()
         var showSortMenu by remember { mutableStateOf(false) }
         var showSortSheet by rememberSaveable { mutableStateOf(false) }
-        var showFolderEditSheet by remember { mutableStateOf(false) }
-        var editingFolder by remember { mutableStateOf<cx.aswin.boxlore.core.model.SubscriptionFolder?>(null) }
-        var activeFolderId by rememberSaveable { mutableStateOf<String?>(null) }
+        val folderPages = rememberFolderPagesState()
         var contextMenuTarget by remember { mutableStateOf<ContextMenuTarget?>(null) }
         var reorderMode by remember { mutableStateOf<ReorderMode>(ReorderMode.Inactive) }
         var selectedFolderForShowSelection by remember { mutableStateOf<SubscriptionFolder?>(null) }
@@ -145,7 +161,7 @@ fun SubscriptionsScreen(
         var confirmUnsubscribePodcast by remember { mutableStateOf<Podcast?>(null) }
         var tempFolderOrder by remember { mutableStateOf<List<String>>(emptyList()) }
         var tempRootOrder by remember { mutableStateOf<List<String>>(emptyList()) }
-        var pendingAutoOrganizeTarget by remember { mutableStateOf<Boolean?>(null) }
+        var confirmAutoOrganizeOff by remember { mutableStateOf(false) }
 
         val isFloatingTabs = subscriptionsTabStyle == SubscriptionsTabStyle.FLOATING
 
@@ -178,10 +194,6 @@ fun SubscriptionsScreen(
             reorderMode = ReorderMode.Inactive
             tempFolderOrder = emptyList()
             tempRootOrder = emptyList()
-        }
-
-        BackHandler(enabled = activeFolderId != null) {
-            activeFolderId = null
         }
 
         LaunchedEffect(isSearchActive) {
@@ -236,13 +248,21 @@ fun SubscriptionsScreen(
 
         val successState = uiState as? LibraryUiState.Success
         val hasSubscribedPodcasts = successState != null && successState.subscribedPodcasts.isNotEmpty()
-        val suggestedGenres = remember(successState?.subscribedPodcasts) {
-            extractDistinctGenres(successState?.subscribedPodcasts.orEmpty())
-        }
+        val isFolderOpen = folders.any { it.id == folderPages.openFolderId }
 
         Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
-                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                // The open folder covers the tabs, so screen readers skip what's under it.
+                modifier = Modifier
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .then(if (isFolderOpen) Modifier.clearAndSetSemantics {} else Modifier),
+                snackbarHost = {
+                    // Above Play All and the floating tabs, which sit above the mini player and nav.
+                    SnackbarHost(
+                        hostState = snackbarHostState,
+                        modifier = Modifier.padding(bottom = (playAllBottomPadding ?: bottomChromeHeight) + SNACKBAR_ABOVE_PLAY_ALL),
+                    )
+                },
                 topBar = {
                     Column(
                         modifier = Modifier
@@ -303,8 +323,9 @@ fun SubscriptionsScreen(
                                 } else {
                                     if (hasSubscribedPodcasts) {
                                         IconButton(onClick = {
-                                            isGridView = !isGridView
-                                            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsLayoutToggled(isGridView)
+                                            val showGrid = !isGridView
+                                            viewModel.setSubscriptionsGridView(showGrid)
+                                            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsLayoutToggled(showGrid)
                                         }) {
                                             Icon(
                                                 imageVector = if (isGridView) Icons.AutoMirrored.Rounded.ViewList else Icons.Rounded.GridView,
@@ -442,13 +463,8 @@ fun SubscriptionsScreen(
                                             onReorderFolders = { newOrder ->
                                                 tempFolderOrder = newOrder
                                             },
-                                            onNewFolderClick = {
-                                                editingFolder = null
-                                                showFolderEditSheet = true
-                                            },
-                                            onFolderClick = { folderId ->
-                                                activeFolderId = folderId
-                                            },
+                                            onNewFolderClick = { folderPages.openNewFolder() },
+                                            onFolderClick = folderPages::openFolder,
                                             onFolderLongClick = { folder ->
                                                 contextMenuTarget = ContextMenuTarget.Folder(folder)
                                             },
@@ -463,6 +479,8 @@ fun SubscriptionsScreen(
                                                 hideCompleted = hideCompletedInSubs,
                                                 isPlayerActive = isPlayerActive,
                                                 playAllBottomPadding = playAllBottomPadding,
+                                                isRefreshing = isRefreshingNewEpisodes,
+                                                pendingPlayedEpisodeIds = pendingPlayedEpisodeIds,
                                             ),
                                             scoreEpisodes = viewModel::scoreLatestEpisodes,
                                             actions =
@@ -474,6 +492,12 @@ fun SubscriptionsScreen(
                                                 },
                                                 onPlayEpisode = onPlayEpisode,
                                                 onPlayEpisodes = onPlayEpisodes,
+                                                onRefresh = viewModel::refreshNewEpisodes,
+                                                onSwipeAction = { action, episode, podcast ->
+                                                    coroutineScope.launch {
+                                                        handleLatestSwipe(viewModel, snackbarHostState, action, episode, podcast)
+                                                    }
+                                                },
                                             ),
                                         )
                                     }
@@ -484,7 +508,8 @@ fun SubscriptionsScreen(
                 }
             }
 
-            if (isFloatingTabs && !isSearchActive && reorderMode == ReorderMode.Inactive) {
+            val floatingTabsCovered = isSearchActive || reorderMode != ReorderMode.Inactive || isFolderOpen
+            if (isFloatingTabs && !floatingTabsCovered) {
                 val animatedBottomOffset by animateDpAsState(
                     targetValue = tabFabBottomPadding,
                     animationSpec = spring(
@@ -544,130 +569,110 @@ fun SubscriptionsScreen(
                 )
             }
 
-            if (showFolderEditSheet || editingFolder != null) {
-                FolderEditSheet(
-                    initialFolder = editingFolder,
-                    suggestedGenres = suggestedGenres,
-                    isAutoOrganizeEnabled = autoOrganizeFolders,
-                    onAutoOrganizeChange = { target ->
-                        showFolderEditSheet = false
-                        editingFolder = null
-                        pendingAutoOrganizeTarget = target
-                    },
-                    onDismissRequest = {
-                        showFolderEditSheet = false
-                        editingFolder = null
-                        moveShowTarget = null
-                    },
-                    onSave = { name, icon, displaySize, linkedGenre, showPodcastGrid ->
-                        val target = editingFolder
-                        if (target != null) {
-                            viewModel.updateFolder(
-                                target.copy(
-                                    name = name,
-                                    icon = icon,
-                                    displaySize = displaySize,
-                                    linkedGenre = linkedGenre,
-                                    showPodcastGrid = showPodcastGrid,
-                                ),
-                            )
-                        } else {
-                            val targetMove = moveShowTarget
-                            if (targetMove != null) {
-                                viewModel.createFolderAndMovePodcast(
-                                    name = name,
-                                    icon = icon,
-                                    displaySize = displaySize,
-                                    linkedGenre = linkedGenre,
-                                    showPodcastGrid = showPodcastGrid,
-                                    podcastId = targetMove.second.id,
-                                    fromFolderId = targetMove.first?.id,
-                                )
-                                moveShowTarget = null
-                            } else {
-                                viewModel.createFolder(
-                                    name = name,
-                                    icon = icon,
-                                    displaySize = displaySize,
-                                    linkedGenre = linkedGenre,
-                                    showPodcastGrid = showPodcastGrid,
-                                )
-                            }
-                        }
-                        showFolderEditSheet = false
-                        editingFolder = null
-                    },
-                    onDelete = editingFolder?.let { folder ->
-                        {
-                            viewModel.deleteFolder(folder.id)
-                            showFolderEditSheet = false
-                            editingFolder = null
-                        }
-                    },
+            // Remembered so the folder pages skip recomposing when nothing they show has changed.
+            val folderPagesData = remember(
+                successState?.subscribedPodcasts,
+                folders,
+                successState?.currentSort,
+                successState?.smartOrderIds,
+                intraFolderSort,
+                autoOrganizeFolders,
+                autoOrganizeLook,
+                reorderMode,
+            ) {
+                FolderPagesData(
+                    podcasts = successState?.subscribedPodcasts.orEmpty(),
+                    folders = folders,
+                    sort = successState?.currentSort,
+                    smartOrderIds = successState?.smartOrderIds.orEmpty(),
+                    intraFolderSort = intraFolderSort,
+                    autoOrganizeOn = autoOrganizeFolders,
+                    autoOrganizeLook = autoOrganizeLook,
+                    reorderMode = reorderMode,
                 )
             }
+            val currentOnPodcastClick by rememberUpdatedState(onPodcastClick)
+            val folderPagesActions = remember(viewModel) {
+                object : FolderPagesActions {
+                    override fun openShow(podcastId: String) = currentOnPodcastClick(podcastId)
 
-            val activeFolder = folders.find { it.id == activeFolderId }
-            if (activeFolder != null) {
-                val allPodcasts = successState?.subscribedPodcasts.orEmpty()
-                val activeFolderShows = remember(
-                    activeFolder,
-                    allPodcasts,
-                    intraFolderSort,
-                    successState?.currentSort,
-                    successState?.smartOrderIds,
-                ) {
-                    resolveSortedFolderShows(
-                        folder = activeFolder,
-                        podcasts = allPodcasts,
-                        intraFolderSort = intraFolderSort,
-                        sort = successState?.currentSort,
-                        smartOrderIds = successState?.smartOrderIds.orEmpty(),
+                    override fun showMenu(target: ContextMenuTarget) {
+                        contextMenuTarget = target
+                    }
+
+                    override fun addShows(folder: SubscriptionFolder) {
+                        selectedFolderForShowSelection = folder
+                    }
+
+                    override fun openSort() {
+                        showSortSheet = true
+                    }
+
+                    override fun setReorderMode(mode: ReorderMode) {
+                        reorderMode = mode
+                    }
+
+                    override fun saveFolderOrder(folderId: String, orderedIds: List<String>) {
+                        viewModel.reorderFolderShows(folderId, orderedIds)
+                        viewModel.setIntraFolderSort(FolderIntraSort.Manual)
+                        reorderMode = ReorderMode.Inactive
+                    }
+
+                    override fun deleteFolder(folder: SubscriptionFolder) {
+                        confirmDeleteFolder = folder
+                    }
+
+                    override fun createFolder(params: FolderSaveParams, podcastIds: List<String>, move: FolderShowMove?) {
+                        viewModel.createFolder(
+                            name = params.name,
+                            icon = params.icon,
+                            displaySize = params.displaySize,
+                            linkedGenre = params.linkedGenre,
+                            showPodcastGrid = params.showPodcastGrid,
+                            podcastIds = podcastIds,
+                        )
+                        if (move != null && move.podcastId in podcastIds) {
+                            viewModel.removePodcastFromFolder(move.podcastId, move.fromFolderId)
+                        }
+                    }
+
+                    override fun updateFolder(folder: SubscriptionFolder) = viewModel.updateFolder(folder)
+
+                    override fun changeMembership(podcastId: String, change: FolderMembershipChange) {
+                        change.addTo.forEach { folderId -> viewModel.addPodcastToFolder(podcastId, folderId) }
+                        change.removeFrom.forEach { folderId -> viewModel.removePodcastFromFolder(podcastId, folderId) }
+                    }
+
+                    override fun turnOnAutoOrganize(look: AutoOrganizeLook) = viewModel.setAutoOrganizeFolders(
+                        enabled = true,
+                        displaySize = look.fixedSize,
+                        showPodcastGrid = look.tileShowsCovers,
                     )
+
+                    override fun turnOffAutoOrganize() {
+                        confirmAutoOrganizeOff = true
+                    }
+
+                    override fun setAutoOrganizeLook(look: AutoOrganizeLook) = viewModel.setAutoOrganizeLook(look)
+
+                    override fun applyLookToGenreFolders(look: AutoOrganizeLook) = viewModel.applyAutoOrganizeLookToGenreFolders(look)
                 }
-                SubscriptionFolderDialog(
-                    folder = activeFolder,
-                    podcasts = activeFolderShows,
-                    actions = FolderDialogActions(
-                        onDismissRequest = { activeFolderId = null },
-                        onPodcastClick = { podcastId ->
-                            activeFolderId = null
-                            onPodcastClick(podcastId)
-                        },
-                        onEditFolder = {
-                            editingFolder = activeFolder
-                            activeFolderId = null
-                        },
-                        onPodcastLongClick = { podcast ->
-                            contextMenuTarget = ContextMenuTarget.FolderPodcast(activeFolder, podcast)
-                        },
-                        onSaveReorder = { orderedIds ->
-                            viewModel.reorderFolderShows(activeFolder.id, orderedIds)
-                            viewModel.setIntraFolderSort(FolderIntraSort.Manual)
-                            reorderMode = ReorderMode.Inactive
-                        },
-                        onCancelReorder = {
-                            reorderMode = ReorderMode.Inactive
-                        },
-                    ),
-                    isReorderMode = reorderMode is ReorderMode.FolderShows &&
-                        (reorderMode as ReorderMode.FolderShows).folderId == activeFolder.id,
-                )
             }
+            OpenFolderPage(folderPages, folderPagesData, folderPagesActions, bottomPadding = bottomChromeHeight)
+            FolderEditorPage(folderPages, folderPagesData, folderPagesActions)
+            AddToFoldersHost(folderPages, folderPagesData, folderPagesActions)
 
             val currentContextMenu = contextMenuTarget
             if (currentContextMenu != null) {
                 SubscriptionContextMenuSheet(
                     target = currentContextMenu,
                     actions = SubscriptionContextMenuActions(
-                        onEditFolder = { folder ->
-                            editingFolder = folder
-                            showFolderEditSheet = true
-                        },
+                        onEditFolder = folderPages::openEdit,
                         onAddShowsToFolder = { folder ->
                             selectedFolderForShowSelection = folder
                         },
                         onReorderFolders = {
+                            folderPages.closeAll()
                             tempFolderOrder = if (folderSort == FolderInterSort.Manual && folderManualOrder.isNotEmpty()) {
                                 folderManualOrder
                             } else {
@@ -682,7 +687,8 @@ fun SubscriptionsScreen(
                             viewModel.removePodcastFromFolder(podcast.id, folder.id)
                         },
                         onMoveToAnotherFolder = { folder, podcast ->
-                            moveShowTarget = folder to podcast
+                            // A show outside folders can join several; one in a folder moves.
+                            if (folder == null) folderPages.addToFoldersPodcastId = podcast.id else moveShowTarget = folder to podcast
                         },
                         onReorderFolderShows = { folder ->
                             reorderMode = ReorderMode.FolderShows(folder.id, folder.name)
@@ -737,9 +743,9 @@ fun SubscriptionsScreen(
                         )
                         moveShowTarget = null
                     },
-                    onCreateNewFolder = {
-                        editingFolder = null
-                        showFolderEditSheet = true
+                    onCreateNewFolder = { podcast ->
+                        folderPages.openNewFolder(withShowId = podcast.id, movesFrom = moveTarget.first?.id)
+                        moveShowTarget = null
                     },
                     onDismissRequest = { moveShowTarget = null },
                 )
@@ -759,9 +765,7 @@ fun SubscriptionsScreen(
                         androidx.compose.material3.TextButton(
                             onClick = {
                                 viewModel.deleteFolder(folderToDelete.id)
-                                if (activeFolderId == folderToDelete.id) {
-                                    activeFolderId = null
-                                }
+                                folderPages.onFolderDeleted(folderToDelete.id)
                                 confirmDeleteFolder = null
                             },
                         ) {
@@ -808,29 +812,13 @@ fun SubscriptionsScreen(
                 )
             }
 
-            if (pendingAutoOrganizeTarget == true) {
-                AutoOrganizeEnableDialog(
-                    onProceed = { displaySize, showPodcastGrid ->
-                        viewModel.setAutoOrganizeFolders(
-                            enabled = true,
-                            displaySize = displaySize,
-                            showPodcastGrid = showPodcastGrid,
-                        )
-                        pendingAutoOrganizeTarget = null
-                    },
-                    onCancel = {
-                        pendingAutoOrganizeTarget = null
-                    },
-                )
-            } else if (pendingAutoOrganizeTarget == false) {
+            if (confirmAutoOrganizeOff) {
                 AutoOrganizeDisableDialog(
                     onProceed = {
                         viewModel.setAutoOrganizeFolders(enabled = false)
-                        pendingAutoOrganizeTarget = null
+                        confirmAutoOrganizeOff = false
                     },
-                    onCancel = {
-                        pendingAutoOrganizeTarget = null
-                    },
+                    onCancel = { confirmAutoOrganizeOff = false },
                 )
             }
 
@@ -841,6 +829,7 @@ fun SubscriptionsScreen(
                         folderSort = folderSort,
                         intraFolderSort = intraFolderSort,
                         autoOrganizeFolders = autoOrganizeFolders,
+                        genreFolderCount = genreFolders(folders).size,
                     ),
                     actions = SubscriptionSortActions(
                         onSortChange = { sort ->
@@ -859,12 +848,56 @@ fun SubscriptionsScreen(
                         },
                         onFolderSortChange = viewModel::setFolderSort,
                         onIntraFolderSortChange = viewModel::setIntraFolderSort,
-                        onAutoOrganizeFoldersChange = { target ->
-                            pendingAutoOrganizeTarget = target
+                        onOpenAutoOrganize = {
+                            showSortSheet = false
+                            folderPages.openAutoOrganize()
                         },
                         onDismiss = { showSortSheet = false },
                     ),
                 )
+            }
+        }
+    }
+}
+
+/** Room between the Undo message and the Play All button below it. */
+private val SNACKBAR_ABOVE_PLAY_ALL = 72.dp
+
+/**
+ * Runs a New Episodes swipe and shows its message. Queueing is saved at once and Undo takes it
+ * back out. Played is held while the message shows, because saving it clears the listening
+ * position; it is saved however the message closes (timeout, a newer message, leaving the
+ * screen) unless the listener taps Undo.
+ */
+private suspend fun handleLatestSwipe(
+    viewModel: LibraryViewModel,
+    snackbarHostState: SnackbarHostState,
+    action: LatestSwipeAction,
+    episode: Episode,
+    podcast: Podcast,
+) {
+    snackbarHostState.currentSnackbarData?.dismiss()
+    when (action) {
+        LatestSwipeAction.AddToQueue -> {
+            val outcome = viewModel.addLatestToQueue(episode, podcast)
+            val result = snackbarHostState.showSnackbar(
+                message = latestQueueMessage(outcome),
+                actionLabel = if (outcome == LatestQueueOutcome.Added) "Undo" else null,
+                duration = SnackbarDuration.Short,
+            )
+            if (result == SnackbarResult.ActionPerformed) viewModel.undoAddLatestToQueue(episode.id)
+        }
+        LatestSwipeAction.MarkPlayed -> {
+            viewModel.holdLatestAsPlayed(episode.id)
+            var undone = false
+            try {
+                undone = snackbarHostState.showSnackbar(
+                    message = "Marked as played",
+                    actionLabel = "Undo",
+                    duration = SnackbarDuration.Short,
+                ) == SnackbarResult.ActionPerformed
+            } finally {
+                if (undone) viewModel.undoLatestPlayed(episode.id) else viewModel.commitLatestPlayed(episode, podcast)
             }
         }
     }

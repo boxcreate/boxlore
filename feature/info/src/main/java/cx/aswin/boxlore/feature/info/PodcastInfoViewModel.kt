@@ -4,6 +4,7 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import cx.aswin.boxlore.core.catalog.autoOrganizeFolderLook
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
@@ -1604,7 +1605,7 @@ class PodcastInfoViewModel(
             }
             PodcastInfoFolderSyncLogic.syncFoldersAfterGenreUpdate(
                 folderRepository = folderRepository,
-                autoOrganizeEnabled = userPrefs.autoOrganizeFoldersStream.first(),
+                autoOrganizeLook = if (userPrefs.autoOrganizeFoldersStream.first()) userPrefs.autoOrganizeFolderLook() else null,
             )
         }
     }

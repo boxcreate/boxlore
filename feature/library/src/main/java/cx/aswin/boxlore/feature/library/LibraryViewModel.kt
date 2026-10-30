@@ -20,6 +20,7 @@ import cx.aswin.boxlore.core.playback.historyForEpisodeLookup
 import cx.aswin.boxlore.core.playback.likedEpisodes
 import cx.aswin.boxlore.core.playback.playEpisode
 import cx.aswin.boxlore.core.playback.playQueue
+import cx.aswin.boxlore.core.playback.removeFromQueue
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.EpisodeRankingInput
@@ -27,8 +28,15 @@ import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
 import cx.aswin.boxlore.feature.library.logic.SubscriptionManualOrderLogic
 import cx.aswin.boxlore.feature.library.logic.SubscriptionSmartOrderLogic
+import cx.aswin.boxlore.feature.library.subscriptions.AutoOrganizeLook
 import cx.aswin.boxlore.feature.library.subscriptions.FolderInterSort
 import cx.aswin.boxlore.feature.library.subscriptions.FolderIntraSort
+import cx.aswin.boxlore.feature.library.subscriptions.LatestEpisodeActions
+import cx.aswin.boxlore.feature.library.subscriptions.LatestQueue
+import cx.aswin.boxlore.feature.library.subscriptions.LatestQueueOutcome
+import cx.aswin.boxlore.feature.library.subscriptions.autoOrganizeLookFor
+import cx.aswin.boxlore.feature.library.subscriptions.autoOrganizeLookFromSaved
+import cx.aswin.boxlore.feature.library.subscriptions.isLatestShownPlayed
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -115,7 +123,11 @@ class LibraryViewModel(
     init {
         viewModelScope.launch {
             if (userPreferencesRepository.autoOrganizeFoldersStream.first()) {
-                folderRepository?.autoOrganizeSubscribedShows()
+                val look = readAutoOrganizeLook()
+                folderRepository?.autoOrganizeSubscribedShows(
+                    defaultDisplaySize = look.fixedSize,
+                    showPodcastGrid = look.tileShowsCovers,
+                )
             } else {
                 folderRepository?.syncLinkedGenres()
             }
@@ -139,30 +151,6 @@ class LibraryViewModel(
                 showPodcastGrid = showPodcastGrid,
                 podcastIds = podcastIds,
             )
-        }
-    }
-
-    fun createFolderAndMovePodcast(
-        name: String,
-        icon: String?,
-        displaySize: FolderDisplaySize,
-        linkedGenre: String?,
-        showPodcastGrid: Boolean = false,
-        podcastId: String,
-        fromFolderId: String? = null,
-    ) {
-        viewModelScope.launch {
-            val created = folderRepository?.createFolder(
-                name = name,
-                icon = icon,
-                displaySize = displaySize,
-                linkedGenre = linkedGenre,
-                showPodcastGrid = showPodcastGrid,
-                podcastIds = listOf(podcastId),
-            )
-            if (created != null && fromFolderId != null) {
-                folderRepository.removePodcastFromFolder(podcastId, fromFolderId)
-            }
         }
     }
 
@@ -332,12 +320,106 @@ class LibraryViewModel(
         }
     }
 
+    /** Shows tab grid (true) or list, saved so it survives the app being closed. */
+    val subscriptionsGridView: StateFlow<Boolean> = userPreferencesRepository.subscriptionsGridViewStream
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = true
+        )
+
+    fun setSubscriptionsGridView(gridView: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setSubscriptionsGridView(gridView)
+        }
+    }
+
+    private val latest = LatestEpisodeActions(
+        scope = viewModelScope,
+        refreshNow = { SharedAppDependenciesHolder.instance?.subscriptionForegroundSync?.refreshNow() },
+        queue = LatestQueue(
+            queuedIds = { playbackRepository.playerState.value.queue.map { it.id } },
+            add = { episode, podcast -> playbackRepository.addToQueue(episode, podcast) },
+            removeUndone = { episodeId -> playbackRepository.removeFromQueue(episodeId, deferSkipSignal = true) },
+            limit = PlaybackRepository.QUEUE_LIMIT,
+        ),
+        markPlayed = { episode, podcast ->
+            playbackRepository.markAllEpisodesCompleted(
+                episodes = listOf(episode),
+                podcastId = podcast.id,
+                podcastTitle = podcast.title,
+                podcastImageUrl = podcast.imageUrl,
+            )
+        },
+        awaitShownPlayed = { episodeId ->
+            uiState.first { state -> state !is LibraryUiState.Success || isLatestShownPlayed(state.subscribedPodcasts, episodeId) }
+        },
+    )
+
+    /** True while a pull to refresh on New Episodes runs. */
+    val isRefreshingNewEpisodes: StateFlow<Boolean> = latest.isRefreshing
+
+    /** Pull to refresh: checks for new episodes now, skipping the usual wait between checks. */
+    fun refreshNewEpisodes() = latest.refresh()
+
+    /** New Episodes rows swiped to played whose Undo is still showing; nothing is saved yet. */
+    val pendingPlayedEpisodeIds: StateFlow<Set<String>> = latest.pendingPlayedIds
+
+    /** Swipe right on a New Episodes row. */
+    internal suspend fun addLatestToQueue(episode: Episode, podcast: Podcast): LatestQueueOutcome = latest.addToQueue(episode, podcast)
+
+    /** Undo for [addLatestToQueue]; an undone add never counts as turning the episode down. */
+    fun undoAddLatestToQueue(episodeId: String) = latest.undoAddToQueue(episodeId)
+
+    /** Swipe left on a New Episodes row: held as played until [commitLatestPlayed]. */
+    fun holdLatestAsPlayed(episodeId: String) = latest.holdPlayed(episodeId)
+
+    fun undoLatestPlayed(episodeId: String) = latest.undoPlayed(episodeId)
+
+    /** Saves a held swipe once its Undo has closed. */
+    fun commitLatestPlayed(episode: Episode, podcast: Podcast) = latest.commitPlayed(episode, podcast)
+
     val autoOrganizeFolders: StateFlow<Boolean> = userPreferencesRepository.autoOrganizeFoldersStream
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = false
         )
+
+    /** Look auto-organize gives genre folders, saved so every later run uses it too. */
+    internal val autoOrganizeLook: StateFlow<AutoOrganizeLook> = combine(
+        userPreferencesRepository.autoOrganizeFolderSizeStream,
+        userPreferencesRepository.autoOrganizeTileCoversStream,
+    ) { sizeName, covers -> autoOrganizeLookFromSaved(sizeName, covers) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = AutoOrganizeLook(),
+        )
+
+    private suspend fun readAutoOrganizeLook(): AutoOrganizeLook = autoOrganizeLookFromSaved(
+        userPreferencesRepository.autoOrganizeFolderSizeStream.first(),
+        userPreferencesRepository.autoOrganizeTileCoversStream.first(),
+    )
+
+    internal fun setAutoOrganizeLook(look: AutoOrganizeLook) {
+        viewModelScope.launch {
+            userPreferencesRepository.setAutoOrganizeLook(look.fixedSize?.name, look.tileShowsCovers)
+        }
+    }
+
+    /** "Apply to all genre folders": gives the folders auto-organize keeps filled [look], as shown. */
+    internal fun applyAutoOrganizeLookToGenreFolders(look: AutoOrganizeLook) {
+        val repository = folderRepository ?: return
+        viewModelScope.launch {
+            repository.getFolders().filter { it.isGenreLinked }.forEach { folder ->
+                val (size, covers) = autoOrganizeLookFor(folder.podcastCount, look)
+                if (folder.displaySize != size || folder.showPodcastGrid != covers) {
+                    repository.updateFolder(folder.copy(displaySize = size, showPodcastGrid = covers))
+                }
+            }
+        }
+    }
 
     fun setAutoOrganizeFolders(
         enabled: Boolean,
@@ -347,6 +429,7 @@ class LibraryViewModel(
         viewModelScope.launch {
             userPreferencesRepository.setAutoOrganizeFolders(enabled)
             if (enabled) {
+                userPreferencesRepository.setAutoOrganizeLook(displaySize?.name, showPodcastGrid)
                 folderRepository?.autoOrganizeSubscribedShows(
                     defaultDisplaySize = displaySize,
                     showPodcastGrid = showPodcastGrid,

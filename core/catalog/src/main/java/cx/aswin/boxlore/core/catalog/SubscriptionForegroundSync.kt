@@ -11,6 +11,7 @@ import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -48,7 +49,8 @@ import kotlinx.coroutines.sync.withPermit
  * sweeps local catalogs whose unsubscribe TTL has elapsed.
  *
  * Call [ensureStarted] from the composition root after onboarding; Home may also
- * call it. Library Subscriptions must call [requestRefresh] on appear.
+ * call it. Library Subscriptions must call [requestRefresh] on appear; its pull to
+ * refresh calls [refreshNow], which skips the cooldown.
  */
 class SubscriptionForegroundSync(
     private val scope: CoroutineScope,
@@ -73,6 +75,10 @@ class SubscriptionForegroundSync(
         foreground.value = active
     }
     private val syncInFlight = AtomicBoolean(false)
+
+    /** Mirrors [syncInFlight] so [refreshNow] can wait for a pass it did not start. */
+    private val passRunning = MutableStateFlow(false)
+    private val manualPassRunning = AtomicBoolean(false)
     private val lastCompletedAtMs = AtomicLong(SubscriptionForegroundSyncLogic.NEVER_COMPLETED_MS)
     private val catalogIngestFinishedMutable: MutableSharedFlow<String> =
         MutableSharedFlow(
@@ -110,6 +116,22 @@ class SubscriptionForegroundSync(
             return
         }
         startSyncLoop(initialDelayMs = 0L)
+    }
+
+    /**
+     * Pull to refresh on New Episodes: runs a pass now even inside the cooldown and returns when
+     * it is done. The pass reads feeds still inside their six-hour wait ([ManualRefreshPass]).
+     * An automatic pass already running is let finish first; another pull's pass is joined
+     * instead of starting a second. The pass runs on [scope], so leaving the screen does not
+     * cancel it. Does nothing while the app is in the background.
+     */
+    suspend fun refreshNow() {
+        if (!foreground.value) return
+        scope.launch {
+            if (passRunning.value && !manualPassRunning.get()) passRunning.first { running -> !running }
+            runSync(manual = true)
+        }.join()
+        passRunning.first { running -> !running }
     }
 
     /**
@@ -166,32 +188,35 @@ class SubscriptionForegroundSync(
         }
     }
 
-    private suspend fun runSync() {
+    private suspend fun runSync(manual: Boolean = false) {
         if (!foreground.value) return
+        val passCooldownMs = if (manual) 0L else cooldownMs
         if (
             SubscriptionForegroundSyncLogic.shouldSkipRefresh(
                 inFlight = syncInFlight.get(),
                 lastCompletedAtMs = lastCompletedAtMs.get(),
                 nowMs = nowMs(),
-                cooldownMs = cooldownMs,
+                cooldownMs = passCooldownMs,
             )
         ) {
             return
         }
         if (!syncInFlight.compareAndSet(false, true)) return
+        manualPassRunning.set(manual)
+        passRunning.value = true
         try {
             if (
                 SubscriptionForegroundSyncLogic.shouldSkipRefresh(
                     inFlight = false,
                     lastCompletedAtMs = lastCompletedAtMs.get(),
                     nowMs = nowMs(),
-                    cooldownMs = cooldownMs,
+                    cooldownMs = passCooldownMs,
                 )
             ) {
                 return
             }
             coroutineScope {
-                val action = async { if (foreground.value) syncAction() }
+                val action = async(if (manual) ManualRefreshPass() else EmptyCoroutineContext) { if (foreground.value) syncAction() }
                 val watcher = launch {
                     foreground.first { !it }
                     action.cancel()
@@ -209,6 +234,8 @@ class SubscriptionForegroundSync(
             Log.e(TAG, "Foreground subscription sync failed", e)
         } finally {
             syncInFlight.set(false)
+            manualPassRunning.set(false)
+            passRunning.value = false
         }
     }
 
@@ -396,8 +423,9 @@ class SubscriptionForegroundSync(
                     preferredPodcastId = { preferred.get() },
                     selectRefreshBatch = { candidates ->
                         refreshBatch.select(candidates, preferred.get()) { id ->
-                            val feed = subscriptionRepository.getPodcastEntity(id)?.feedUrl
-                            feed != null && (localEpisodeCatalog?.isRefreshDue(id, feed, System.currentTimeMillis()) != false)
+                            isFeedDueThisPass(subscriptionRepository.getPodcastEntity(id)?.feedUrl) { feed ->
+                                localEpisodeCatalog?.isRefreshDue(id, feed, System.currentTimeMillis()) != false
+                            }
                         }
                     },
                     onFeedRefreshed = { refreshed.tryEmit(it) },

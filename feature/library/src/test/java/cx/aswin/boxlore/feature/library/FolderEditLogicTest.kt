@@ -490,7 +490,7 @@ class FolderEditLogicTest {
         )
         assertEquals(listOf("pod-1", "pod-2"), fakeRepo.getFolder(oldFolder.id)?.podcastIds)
 
-        // Simulate createFolderAndMovePodcast:
+        // Simulate New folder from Move to another folder:
         val newFolder = fakeRepo.createFolder(
             name = "New Folder",
             icon = "tech",
@@ -529,8 +529,9 @@ class FolderEditLogicTest {
     }
 
     @Test
-    fun defaultFolderDisplaySize_isShelf3x1() {
-        assertEquals(FolderDisplaySize.SHELF, DefaultFolderDisplaySize)
-        assertEquals("3×1", DefaultFolderDisplaySize.dimensionsLabel)
+    fun newFolderStartsAsShelf3x1() {
+        val size = cx.aswin.boxlore.feature.library.subscriptions.NewFolderDraft().size
+        assertEquals(FolderDisplaySize.SHELF, size)
+        assertEquals("3×1", size.dimensionsLabel)
     }
 }

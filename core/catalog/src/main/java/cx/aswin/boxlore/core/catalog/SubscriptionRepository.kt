@@ -330,9 +330,9 @@ class SubscriptionRepository(
 
     private suspend fun onSubscribed() {
         val repo = folderRepository ?: return
-        val isAutoOrganize = userPreferencesRepository?.autoOrganizeFoldersStream?.first() == true
-        if (isAutoOrganize) {
-            repo.autoOrganizeSubscribedShows()
+        val prefs = userPreferencesRepository
+        if (prefs != null && prefs.autoOrganizeFoldersStream.first()) {
+            repo.autoOrganizeWithLook(prefs.autoOrganizeFolderLook())
         } else {
             repo.syncLinkedGenres()
         }

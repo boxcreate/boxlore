@@ -51,6 +51,7 @@ class UserPreferencesRepository(context: Context,) {
         ),
     )
     private val library = LibraryPreferences(dataStore)
+    private val subscriptionsLayout = SubscriptionsLayoutPreferences(dataStore)
     private val engagement = EngagementPreferences(dataStore)
     private val tips = TooltipPreferences(dataStore)
     private val reviews = ReviewPromptPreferences(dataStore)
@@ -711,19 +712,23 @@ class UserPreferencesRepository(context: Context,) {
         }
     }
 
-    val autoOrganizeFoldersStream: Flow<Boolean> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                preferences[Keys.AUTO_ORGANIZE_FOLDERS_ENABLED] ?: false
-            }.distinctUntilChanged()
+    /** Subscriptions Shows tab layout: grid (default) or list, kept after the app is closed. */
+    val subscriptionsGridViewStream: Flow<Boolean> = subscriptionsLayout.gridViewStream
 
-    suspend fun setAutoOrganizeFolders(enabled: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.AUTO_ORGANIZE_FOLDERS_ENABLED] = enabled
-        }
-    }
+    suspend fun setSubscriptionsGridView(gridView: Boolean) = subscriptionsLayout.setGridView(gridView)
+
+    val autoOrganizeFoldersStream: Flow<Boolean> = subscriptionsLayout.autoOrganizeStream
+
+    suspend fun setAutoOrganizeFolders(enabled: Boolean) = subscriptionsLayout.setAutoOrganize(enabled)
+
+    /** Look auto-organize gives genre folders: a `FolderDisplaySize` name, or null to choose by size. */
+    val autoOrganizeFolderSizeStream: Flow<String?> = subscriptionsLayout.autoOrganizeFolderSizeStream
+
+    /** Whether auto-organize tile folders show four covers (default) or their icon. */
+    val autoOrganizeTileCoversStream: Flow<Boolean> = subscriptionsLayout.autoOrganizeTileCoversStream
+
+    suspend fun setAutoOrganizeLook(folderSizeName: String?, tileCovers: Boolean) =
+        subscriptionsLayout.setAutoOrganizeLook(folderSizeName, tileCovers)
 
     /**
      * When true (default), implicit plays (queue / mixtape / Smart Queue / casual play) soft-expire

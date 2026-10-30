@@ -1,7 +1,9 @@
 package cx.aswin.boxlore.core.model
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /** Coverage for [PodcastGenres.canonicalize] — canonical names, aliases, and normalization. */
@@ -155,5 +157,21 @@ class PodcastGenresTest {
         assertEquals("Government", PodcastGenres.canonicalize("law"))
         assertEquals("Health", PodcastGenres.canonicalize("mental health"))
         assertEquals("Sports", PodcastGenres.canonicalize("soccer"))
+    }
+
+    @Test
+    fun tokensMatchByNameTechAndSharedGenre() {
+        assertTrue(PodcastGenres.tokenMatches(" news ", "News"))
+        assertTrue(PodcastGenres.tokenMatches("Technology", "Tech"))
+        assertTrue(PodcastGenres.tokenMatches("Society & Culture", "Culture"))
+        assertFalse(PodcastGenres.tokenMatches("Comedy", "News"))
+    }
+
+    @Test
+    fun placeholderGenreIsNotARealGenre() {
+        assertTrue(PodcastGenres.isPlaceholder("Podcast"))
+        assertTrue(PodcastGenres.isPlaceholder(" podcasts "))
+        assertFalse(PodcastGenres.isPlaceholder("News"))
+        assertFalse(PodcastGenres.isPlaceholder(null))
     }
 }

@@ -623,27 +623,33 @@ class PodcastInfoViewModelLogicTest {
     fun `syncFoldersAfterGenreUpdate with null repository completes safely`() = kotlinx.coroutines.test.runTest {
         PodcastInfoFolderSyncLogic.syncFoldersAfterGenreUpdate(
             folderRepository = null,
-            autoOrganizeEnabled = true,
+            autoOrganizeLook = cx.aswin.boxlore.core.catalog.AutoOrganizeFolderLook(fixedSize = null, tileCovers = true),
         )
         PodcastInfoFolderSyncLogic.syncFoldersAfterGenreUpdate(
             folderRepository = null,
-            autoOrganizeEnabled = false,
+            autoOrganizeLook = null,
         )
     }
 
     @Test
-    fun `syncFoldersAfterGenreUpdate calls autoOrganize when enabled and syncLinkedGenres when disabled`() = kotlinx.coroutines.test.runTest {
+    fun `syncFoldersAfterGenreUpdate auto-organizes with the saved look when on and syncs linked genres when off`() = kotlinx.coroutines.test.runTest {
         val repo = TestSyncFolderRepository()
         PodcastInfoFolderSyncLogic.syncFoldersAfterGenreUpdate(
             folderRepository = repo,
-            autoOrganizeEnabled = true,
+            autoOrganizeLook = cx.aswin.boxlore.core.catalog.AutoOrganizeFolderLook(
+                fixedSize = cx.aswin.boxlore.core.model.FolderDisplaySize.PANEL,
+                tileCovers = false,
+            ),
         )
         assertEquals(1, repo.autoOrganizeCalls)
         assertEquals(0, repo.syncLinkedGenresCalls)
+        // A genre folder made here gets the look chosen on Auto-organize, not the size-based default.
+        assertEquals(cx.aswin.boxlore.core.model.FolderDisplaySize.PANEL, repo.lastDisplaySize)
+        assertEquals(false, repo.lastShowPodcastGrid)
 
         PodcastInfoFolderSyncLogic.syncFoldersAfterGenreUpdate(
             folderRepository = repo,
-            autoOrganizeEnabled = false,
+            autoOrganizeLook = null,
         )
         assertEquals(1, repo.autoOrganizeCalls)
         assertEquals(1, repo.syncLinkedGenresCalls)
@@ -652,6 +658,8 @@ class PodcastInfoViewModelLogicTest {
     private class TestSyncFolderRepository : cx.aswin.boxlore.core.catalog.FolderRepository {
         var autoOrganizeCalls = 0
         var syncLinkedGenresCalls = 0
+        var lastDisplaySize: cx.aswin.boxlore.core.model.FolderDisplaySize? = null
+        var lastShowPodcastGrid: Boolean? = null
 
         override val folders: kotlinx.coroutines.flow.Flow<List<cx.aswin.boxlore.core.model.SubscriptionFolder>> =
             kotlinx.coroutines.flow.emptyFlow()
@@ -686,6 +694,8 @@ class PodcastInfoViewModelLogicTest {
             showPodcastGrid: Boolean,
         ) {
             autoOrganizeCalls++
+            lastDisplaySize = defaultDisplaySize
+            lastShowPodcastGrid = showPodcastGrid
         }
     }
 }

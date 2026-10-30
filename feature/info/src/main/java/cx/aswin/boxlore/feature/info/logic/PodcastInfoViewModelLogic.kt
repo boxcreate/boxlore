@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.info.logic
 
+import cx.aswin.boxlore.core.catalog.autoOrganizeWithLook
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.EpisodeSort
@@ -226,13 +227,14 @@ object PodcastInfoEnrichLogic {
 }
 
 object PodcastInfoFolderSyncLogic {
+    /** [autoOrganizeLook] is the saved Auto-organize look, or null when auto-organize is off. */
     suspend fun syncFoldersAfterGenreUpdate(
         folderRepository: cx.aswin.boxlore.core.catalog.FolderRepository?,
-        autoOrganizeEnabled: Boolean,
+        autoOrganizeLook: cx.aswin.boxlore.core.catalog.AutoOrganizeFolderLook?,
     ) {
         if (folderRepository == null) return
-        if (autoOrganizeEnabled) {
-            folderRepository.autoOrganizeSubscribedShows()
+        if (autoOrganizeLook != null) {
+            folderRepository.autoOrganizeWithLook(autoOrganizeLook)
         } else {
             folderRepository.syncLinkedGenres()
         }

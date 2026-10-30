@@ -226,6 +226,17 @@ class RoomFolderRepositoryTest {
     }
 
     @Test
+    fun autoOrganizeGivesShowsWithOnlyThePlaceholderGenreNoFolder() = runTest {
+        insertSubscribedPodcast(id = "p1", title = "No category", genre = "Podcast")
+        insertSubscribedPodcast(id = "p2", title = "Daily", genre = "News")
+
+        repository.autoOrganizeSubscribedShows()
+
+        val names = repository.getFolders().map { it.name }
+        assertEquals(listOf("News"), names)
+    }
+
+    @Test
     fun folderNamesFlowEmitsDistinctSortedNames() = runTest {
         repository.createFolder(name = "Zeta")
         repository.createFolder(name = "Alpha")
