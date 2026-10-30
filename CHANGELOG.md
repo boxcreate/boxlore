@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- New folder flow on Subscriptions (`NewFolderFlow`) with Shows, Genre and Auto, and full-page Edit folder and Auto-organize (`BoxloreDialog`; framed panel on tablets). Folder pages and drafts are kept in saved state (`FolderPagesState`). ([#1198](https://github.com/boxcreate/boxlore/pull/1198)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- `AutoOrganizeFolderLook`: genre folders made when a show is followed or its genre changes use the look saved on Auto-organize. ([#1198](https://github.com/boxcreate/boxlore/pull/1198)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- New Episodes swipe actions (add to queue, mark played) and pull to refresh through `SubscriptionForegroundSync.refreshNow()`, which skips the cooldown. ([#1198](https://github.com/boxcreate/boxlore/pull/1198)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- `subscriptions_grid_view`, `auto_organize_folder_size` and `auto_organize_tile_covers` preferences. ([#1198](https://github.com/boxcreate/boxlore/pull/1198)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Episode links, pushes and Android Auto items resolve by show: stored row, then trusted alias, then `/v2/episode` (old Podcast Index IDs included; v1 only when the v2 route can't answer), then one read of the show's feed for `needsFeed` episodes (`EpisodeLinkResolver`). ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `boxlore://episode/{id}?show=` and `&show=` share deep-link patterns, mapped onto the route's `podcastId`; Play install referrers keep `show`. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Episode share links carry the recipe ID plus `&show=` and register the episode first (`EpisodeSharePreparer`); `EpisodeShareRegistrationWorker` (unique work `episode-share-registration-<hash>`) retries in the background. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -45,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Room v39: `episode_aliases`, `episode_group_state` and `upgrade_repair_shows`, new columns on `podcasts`, `local_episode_feeds`, `local_episodes` and `queue_metadata`, and `MIGRATION_38_39`, which records an alias and one owner for every stored episode ID of a Podcast Index show without changing any stored value. ([#1175](https://github.com/boxcreate/boxlore/pull/1175)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - Episode analytics events carry `recipe_id` (and `recipe_ids` on episode impressions) beside the local `episode_id`, and `own_ids_upgrade_completed` reports the one-time upgrade repair once per upgraded install. ([#1189](https://github.com/boxcreate/boxlore/pull/1189)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Changed
+- Subscriptions chips use the Explore Top tab chip style (`SubscriptionChip`); the sort sheet is rebuilt as Material 3 sections; genre folders show an auto icon instead of "Fills from" text. ([#1198](https://github.com/boxcreate/boxlore/pull/1198)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Cloud sync carries each history and queue row's recipe ID and catalog key, records pulled rows as episode aliases (`SyncEpisodeIdentity`, `cloud_sync` provenance), merges and removes queue entries per episode with rich removals, and runs a one-time identity catch-up (sync metadata version 3) that adds identity to older builds' cloud rows without changing their values. ([#1179](https://github.com/boxcreate/boxlore/pull/1179)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - New-episode pushes match by catalog key and (show, recipe ID) after GUID and enclosure, and open the recipe ID when no local row exists yet. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Android Auto reads queue, history and downloads across an episode's trusted IDs. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -111,6 +116,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Catalog sync: the check-cadence report counts only new episodes as found later, not old episodes Podcast Index re-indexed under a new ID. ([#1165](https://github.com/boxcreate/boxlore/pull/1165)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - `LocalEpisodeCollisionGuard` compares stored catalog keys after the recipe trim and keeps a stored row's ID when the show already holds the key. A legacy key ending in a newline, tab or no-break space no longer gets a second row, and a refresh never deletes a row through the unique (show, key) index. ([#1171](https://github.com/boxcreate/boxlore/pull/1171)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - Legacy local catalog rows keyed `id:<own ID>` or by audio address take the feed's key when the item's own minted ID equals theirs, including on a first read that matched a Podcast Index episode. Rows that find no free ID are logged instead of dropped silently. ([#1171](https://github.com/boxcreate/boxlore/pull/1171)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+### Removed
+- `SubscriptionFolderDialog`, `FolderEditSheet` and `FolderEditComponents`. ([#1198](https://github.com/boxcreate/boxlore/pull/1198)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1140
 ### Fixes
@@ -249,6 +256,13 @@ readme-copy:end pr=1196 -->
 ### Fixes
 - If boxlore can't check Google Play for updates, it now offers to open its Play Store page so you can update there.
 readme-copy:end pr=1197 -->
+
+<!-- readme-copy:start pr=1198
+### Improvements
+- Subscriptions has a cleaner look, and making a folder takes a few short steps: pick shows yourself, follow one genre, or let Auto make a folder for every genre. Shows you follow later are added to their genre folder automatically.
+- On New Episodes, swipe right to add an episode to your queue or left to mark it played, and pull down to check for new episodes.
+- Subscriptions remembers whether you chose grid or list.
+readme-copy:end pr=1198 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added
