@@ -11,6 +11,7 @@ import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -77,6 +78,7 @@ class SubscriptionForegroundSync(
 
     /** Mirrors [syncInFlight] so [refreshNow] can wait for a pass it did not start. */
     private val passRunning = MutableStateFlow(false)
+    private val manualPassRunning = AtomicBoolean(false)
     private val lastCompletedAtMs = AtomicLong(SubscriptionForegroundSyncLogic.NEVER_COMPLETED_MS)
     private val catalogIngestFinishedMutable: MutableSharedFlow<String> =
         MutableSharedFlow(
@@ -118,13 +120,17 @@ class SubscriptionForegroundSync(
 
     /**
      * Pull to refresh on New Episodes: runs a pass now even inside the cooldown and returns when
-     * it is done. A pass that is already running is waited for instead of starting a second one.
-     * The pass runs on [scope], so leaving the screen does not cancel it. Does nothing while the
-     * app is in the background.
+     * it is done. The pass reads feeds still inside their six-hour wait ([ManualRefreshPass]).
+     * An automatic pass already running is let finish first; another pull's pass is joined
+     * instead of starting a second. The pass runs on [scope], so leaving the screen does not
+     * cancel it. Does nothing while the app is in the background.
      */
     suspend fun refreshNow() {
         if (!foreground.value) return
-        scope.launch { runSync(ignoreCooldown = true) }.join()
+        scope.launch {
+            if (passRunning.value && !manualPassRunning.get()) passRunning.first { running -> !running }
+            runSync(manual = true)
+        }.join()
         passRunning.first { running -> !running }
     }
 
@@ -182,9 +188,9 @@ class SubscriptionForegroundSync(
         }
     }
 
-    private suspend fun runSync(ignoreCooldown: Boolean = false) {
+    private suspend fun runSync(manual: Boolean = false) {
         if (!foreground.value) return
-        val passCooldownMs = if (ignoreCooldown) 0L else cooldownMs
+        val passCooldownMs = if (manual) 0L else cooldownMs
         if (
             SubscriptionForegroundSyncLogic.shouldSkipRefresh(
                 inFlight = syncInFlight.get(),
@@ -196,6 +202,7 @@ class SubscriptionForegroundSync(
             return
         }
         if (!syncInFlight.compareAndSet(false, true)) return
+        manualPassRunning.set(manual)
         passRunning.value = true
         try {
             if (
@@ -209,7 +216,7 @@ class SubscriptionForegroundSync(
                 return
             }
             coroutineScope {
-                val action = async { if (foreground.value) syncAction() }
+                val action = async(if (manual) ManualRefreshPass() else EmptyCoroutineContext) { if (foreground.value) syncAction() }
                 val watcher = launch {
                     foreground.first { !it }
                     action.cancel()
@@ -227,6 +234,7 @@ class SubscriptionForegroundSync(
             Log.e(TAG, "Foreground subscription sync failed", e)
         } finally {
             syncInFlight.set(false)
+            manualPassRunning.set(false)
             passRunning.value = false
         }
     }
@@ -415,8 +423,9 @@ class SubscriptionForegroundSync(
                     preferredPodcastId = { preferred.get() },
                     selectRefreshBatch = { candidates ->
                         refreshBatch.select(candidates, preferred.get()) { id ->
-                            val feed = subscriptionRepository.getPodcastEntity(id)?.feedUrl
-                            feed != null && (localEpisodeCatalog?.isRefreshDue(id, feed, System.currentTimeMillis()) != false)
+                            isFeedDueThisPass(subscriptionRepository.getPodcastEntity(id)?.feedUrl) { feed ->
+                                localEpisodeCatalog?.isRefreshDue(id, feed, System.currentTimeMillis()) != false
+                            }
                         }
                     },
                     onFeedRefreshed = { refreshed.tryEmit(it) },

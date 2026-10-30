@@ -18,6 +18,7 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.dp
@@ -39,9 +40,10 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * The open folder and the folder editors keep their drafts and step while the window moves between
- * phone, tablet, split and short layouts, both ways, and when the activity is recreated; their
- * Back, Close, Create and Save still do the current thing afterwards.
+ * The open folder, the folder editors, Auto-organize and Add to folders keep their drafts, step and
+ * ticks while the window moves between phone, tablet, split and short layouts, both ways, and when
+ * the activity is recreated; their Back, Close, Create, Save, Turn on and Done still do the current
+ * thing afterwards.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], qualifiers = "w1300dp-h1300dp-mdpi", application = Application::class)
@@ -54,6 +56,9 @@ class FolderPagesAdaptiveTest {
     private lateinit var state: FolderPagesState
     private val created = mutableListOf<Pair<FolderSaveParams, List<String>>>()
     private val updated = mutableListOf<SubscriptionFolder>()
+    private var autoLook by mutableStateOf(AutoOrganizeLook())
+    private val turnedOn = mutableListOf<AutoOrganizeLook>()
+    private val memberships = mutableListOf<Pair<String, FolderMembershipChange>>()
 
     private val podcasts = listOf(
         TestFixtures.podcast(id = "a", title = "Alpha Radio", genre = "News"),
@@ -66,6 +71,7 @@ class FolderPagesAdaptiveTest {
         podcastCount = 2,
         podcastIds = listOf("a", "b"),
     )
+    private val later = SubscriptionFolder(id = "later", name = "Later")
 
     /** Both sides of the 600dp width and 480dp height gates, the 840dp split, and back to phone. */
     private val windows = listOf(
@@ -94,10 +100,16 @@ class FolderPagesAdaptiveTest {
         override fun updateFolder(folder: SubscriptionFolder) {
             updated += folder
         }
-        override fun changeMembership(podcastId: String, change: FolderMembershipChange) = Unit
-        override fun turnOnAutoOrganize(look: AutoOrganizeLook) = Unit
+        override fun changeMembership(podcastId: String, change: FolderMembershipChange) {
+            memberships += podcastId to change
+        }
+        override fun turnOnAutoOrganize(look: AutoOrganizeLook) {
+            turnedOn += look
+        }
         override fun turnOffAutoOrganize() = Unit
-        override fun setAutoOrganizeLook(look: AutoOrganizeLook) = Unit
+        override fun setAutoOrganizeLook(look: AutoOrganizeLook) {
+            autoLook = look
+        }
         override fun applyLookToGenreFolders(look: AutoOrganizeLook) = Unit
     }
 
@@ -108,16 +120,17 @@ class FolderPagesAdaptiveTest {
                 state = rememberFolderPagesState()
                 val data = FolderPagesData(
                     podcasts = podcasts,
-                    folders = listOf(commute),
+                    folders = listOf(commute, later),
                     sort = SubscriptionSort.Alphabetical,
                     smartOrderIds = emptyList(),
                     intraFolderSort = FolderIntraSort.Inherit,
                     autoOrganizeOn = false,
-                    autoOrganizeLook = AutoOrganizeLook(),
+                    autoOrganizeLook = autoLook,
                     reorderMode = reorderMode,
                 )
                 OpenFolderPage(state, data, actions, bottomPadding = 0.dp)
                 FolderEditorPage(state, data, actions)
+                AddToFoldersHost(state, data, actions)
             }
         }
     }
@@ -212,5 +225,37 @@ class FolderPagesAdaptiveTest {
         }
         compose.onNodeWithContentDescription("Back").performClick()
         compose.runOnIdle { assertNull(state.openFolderId) }
+    }
+
+    @Test
+    fun `auto-organize keeps its look across window changes, then turns on with it and closes`() {
+        compose.setContent { pages() }
+        compose.runOnIdle { state.openAutoOrganize() }
+        compose.onNodeWithText("Use one look for all").performScrollTo().performClick()
+
+        moveThroughWindows {
+            compose.onNodeWithText("Turn on auto-organize").assertIsDisplayed()
+            compose.runOnIdle { assertEquals(FolderEditor.AutoOrganize, state.editor) }
+        }
+
+        compose.onNodeWithText("Turn on auto-organize").performClick()
+        compose.runOnIdle { assertEquals(FolderDisplaySize.SHELF, turnedOn.single().fixedSize) }
+        compose.onNodeWithContentDescription("Back").performClick()
+        compose.runOnIdle { assertNull(state.editor) }
+    }
+
+    @Test
+    fun `add to folders keeps its ticks across window changes, then saves them`() {
+        compose.setContent { pages() }
+        compose.runOnIdle { state.addToFoldersPodcastId = "a" }
+        compose.onNodeWithText("Later").performClick()
+
+        moveThroughWindows { compose.onNodeWithText("Done").assertIsDisplayed() }
+
+        compose.onNodeWithText("Done").performClick()
+        compose.runOnIdle {
+            assertEquals("a" to FolderMembershipChange(addTo = listOf("later"), removeFrom = emptyList()), memberships.single())
+            assertNull(state.addToFoldersPodcastId)
+        }
     }
 }

@@ -344,11 +344,12 @@ private val GENRE_DEFAULT_ICON_MAP = mapOf(
     "money" to "finance",
 )
 
+/** Shows with only the placeholder genre ("Podcast", no category) get no folder and stay in the main grid. */
 private fun groupSubscribedPodcastsByGenre(subscribed: List<PodcastEntity>): Map<String, List<String>> {
     val result = mutableMapOf<String, MutableList<String>>()
     for (pod in subscribed) {
         val genreName = pod.customGenre?.trim()?.takeIf { it.isNotEmpty() }
-            ?: pod.genre?.split(",")?.firstOrNull()?.trim()?.takeIf { it.isNotEmpty() }
+            ?: pod.genre?.split(",")?.firstOrNull()?.trim()?.takeIf { it.isNotEmpty() && !PodcastGenres.isPlaceholder(it) }
         if (!genreName.isNullOrBlank()) {
             val rawCanonical = PodcastGenres.canonicalize(genreName) ?: genreName.replaceFirstChar { it.uppercase() }
             val canonical = if (rawCanonical.equals("Technology", ignoreCase = true) || rawCanonical.equals("Tech", ignoreCase = true)) {

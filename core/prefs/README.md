@@ -53,6 +53,7 @@ src/main/java/cx/aswin/boxlore/core/prefs/
   PlaybackSkipBounds.kt
   PreferenceIdList.kt
   PrefsFileMigrator.kt
+  SubscriptionsLayoutPreferences.kt
   SubscriptionsTabStyle.kt
   UserPreferenceKeys.kt
   UserPreferencesRepository.kt

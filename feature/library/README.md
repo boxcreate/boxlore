@@ -43,6 +43,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
     FolderSummaryLogic.kt         — folder and auto-organize summaries, look names, Shows-grid section labels
     LatestEpisodeSwipeRow.kt      — New Episodes row swipe (queue / mark played) with TalkBack actions
     LatestPullToRefresh.kt        — New Episodes pull to refresh, including on its empty states
+    LatestEpisodeActions.kt       — New Episodes pull to refresh (one at a time), swipe to queue and to played, and their Undo
     LatestSwipeLogic.kt           — swipe mapping, queue outcome messages, held-played row filtering
     FolderShowsSelectionSheet.kt  — Multi-select bottom sheet with search and pre-checked members for adding shows to folders
     MoveToFolderSheet.kt          — Folder picker bottom sheet with show counts and new folder action
@@ -145,11 +146,12 @@ Artwork-only subscription headers try usable fallback candidates even when the p
 ```
 - `SubscriptionReorderControlsTest` covers repeated ids in the saved order and in the subscription rows.
 - `LatestSwipeLogicTest` covers swipe direction mapping, already-queued versus full-queue messages, and held-played rows with Hide played on and off.
+- `LatestEpisodeActionsTest` covers a second pull not starting another refresh, the spinner clearing after success and failure, a swipe to played saving nothing until its Undo closes, Undo winning over a later commit, a committed swipe held until the list shows it (or the wait ends), and queue add, already queued, full queue and Undo without a turned-down signal.
 - `FolderSummaryLogicTest` covers folder and auto-organize summaries, genre folders, Shows-grid section labels (only when pinned folders come first, never while dragging), look names and "Tap up to N directly".
 - `AutoOrganizePreviewLogicTest` covers the preview's grouping (custom genre first, placeholder genre left out, existing folders by link or name, Technology as Tech), the size boxlore picks, Apply to all, and unknown saved looks.
 - `FolderFlowLogicTest` covers New folder steps, picks, genre naming and icons, Back, save params (only One genre links a genre), Edit folder drafts, Add to folders changes (genre folders untouched), saved-state round trips for both drafts and `FolderPagesState`, and closing pages when a folder is deleted or opened from Auto-organize.
 - `SubscriptionsScreensCaptureTest` (local only, runs with `BOXLORE_SUBS_CAPTURES=1`) renders the Shows tab, open folders, every New folder step, Edit folder, both Auto-organize states and Sort and organize at phone size in light and dark into `build/reports/subscriptions-captures/`; it records nothing and compares nothing.
-- `FolderPagesAdaptiveTest` (Robolectric) keeps one live owner while the window crosses 599/600dp wide, 479/480dp tall, the 840dp split and back to phone: the New folder step, picks and name, and an unsaved Edit folder name survive; the open folder stays open; recreation keeps the New folder draft; Back, Close, Create and Save still act afterwards, and Back ends reordering before closing the folder. Device checks on a phone are separate; no tablet or foldable hardware run is part of this.
+- `FolderPagesAdaptiveTest` (Robolectric) keeps one live owner while the window crosses 599/600dp wide, 479/480dp tall, the 840dp split and back to phone: the New folder step, picks and name, an unsaved Edit folder name, the Auto-organize look and Add to folders ticks survive; the open folder stays open; recreation keeps the New folder draft; Back, Close, Create, Save, Turn on auto-organize and Done still act afterwards, and Back ends reordering before closing the folder. Device checks on a phone are separate; no tablet or foldable hardware run is part of this.
 
 ## CI relevance
 

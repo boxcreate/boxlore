@@ -44,11 +44,10 @@ internal fun autoOrganizePreview(podcasts: List<Podcast>, folders: List<Subscrip
     return AutoOrganizePreview(rows = rows, showsWithoutGenre = withoutGenre)
 }
 
-private const val PLACEHOLDER_GENRE = "Podcast"
-
+/** Same rule as `RoomFolderRepository` grouping: the placeholder genre gets no folder. */
 private fun autoOrganizeGenre(podcast: Podcast): String? {
     val raw = podcast.customGenre?.trim()?.takeIf { it.isNotEmpty() }
-        ?: podcast.genre.split(",").firstOrNull()?.trim()?.takeIf { it.isNotEmpty() && !it.equals(PLACEHOLDER_GENRE, ignoreCase = true) }
+        ?: podcast.genre.split(",").firstOrNull()?.trim()?.takeIf { it.isNotEmpty() && !PodcastGenres.isPlaceholder(it) }
         ?: return null
     val canonical = PodcastGenres.canonicalize(raw) ?: raw.replaceFirstChar { it.uppercase() }
     return if (canonical.equals("Technology", ignoreCase = true)) "Tech" else canonical

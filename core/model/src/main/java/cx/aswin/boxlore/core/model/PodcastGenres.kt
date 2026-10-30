@@ -146,6 +146,12 @@ object PodcastGenres {
         put("history", HISTORY)
     }
 
+    /** "Podcast" / "Podcasts": what a show with no category gets as its genre. Not a real genre. */
+    fun isPlaceholder(value: String?): Boolean {
+        val trimmed = value?.trim() ?: return false
+        return trimmed.equals("Podcast", ignoreCase = true) || trimmed.equals("Podcasts", ignoreCase = true)
+    }
+
     fun canonicalize(value: String?): String? {
         val key = value?.normalizedGenreKey()?.takeIf(String::isNotEmpty) ?: return null
         return normalized[key]

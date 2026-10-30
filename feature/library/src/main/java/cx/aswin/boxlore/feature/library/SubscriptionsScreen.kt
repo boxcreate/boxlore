@@ -48,6 +48,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -568,79 +569,94 @@ fun SubscriptionsScreen(
                 )
             }
 
-            val folderPagesData = FolderPagesData(
-                podcasts = successState?.subscribedPodcasts.orEmpty(),
-                folders = folders,
-                sort = successState?.currentSort,
-                smartOrderIds = successState?.smartOrderIds.orEmpty(),
-                intraFolderSort = intraFolderSort,
-                autoOrganizeOn = autoOrganizeFolders,
-                autoOrganizeLook = autoOrganizeLook,
-                reorderMode = reorderMode,
-            )
-            val folderPagesActions = object : FolderPagesActions {
-                override fun openShow(podcastId: String) = onPodcastClick(podcastId)
-
-                override fun showMenu(target: ContextMenuTarget) {
-                    contextMenuTarget = target
-                }
-
-                override fun addShows(folder: SubscriptionFolder) {
-                    selectedFolderForShowSelection = folder
-                }
-
-                override fun openSort() {
-                    showSortSheet = true
-                }
-
-                override fun setReorderMode(mode: ReorderMode) {
-                    reorderMode = mode
-                }
-
-                override fun saveFolderOrder(folderId: String, orderedIds: List<String>) {
-                    viewModel.reorderFolderShows(folderId, orderedIds)
-                    viewModel.setIntraFolderSort(FolderIntraSort.Manual)
-                    reorderMode = ReorderMode.Inactive
-                }
-
-                override fun deleteFolder(folder: SubscriptionFolder) {
-                    confirmDeleteFolder = folder
-                }
-
-                override fun createFolder(params: FolderSaveParams, podcastIds: List<String>, move: FolderShowMove?) {
-                    viewModel.createFolder(
-                        name = params.name,
-                        icon = params.icon,
-                        displaySize = params.displaySize,
-                        linkedGenre = params.linkedGenre,
-                        showPodcastGrid = params.showPodcastGrid,
-                        podcastIds = podcastIds,
-                    )
-                    if (move != null && move.podcastId in podcastIds) {
-                        viewModel.removePodcastFromFolder(move.podcastId, move.fromFolderId)
-                    }
-                }
-
-                override fun updateFolder(folder: SubscriptionFolder) = viewModel.updateFolder(folder)
-
-                override fun changeMembership(podcastId: String, change: FolderMembershipChange) {
-                    change.addTo.forEach { folderId -> viewModel.addPodcastToFolder(podcastId, folderId) }
-                    change.removeFrom.forEach { folderId -> viewModel.removePodcastFromFolder(podcastId, folderId) }
-                }
-
-                override fun turnOnAutoOrganize(look: AutoOrganizeLook) = viewModel.setAutoOrganizeFolders(
-                    enabled = true,
-                    displaySize = look.fixedSize,
-                    showPodcastGrid = look.tileShowsCovers,
+            // Remembered so the folder pages skip recomposing when nothing they show has changed.
+            val folderPagesData = remember(
+                successState?.subscribedPodcasts,
+                folders,
+                successState?.currentSort,
+                successState?.smartOrderIds,
+                intraFolderSort,
+                autoOrganizeFolders,
+                autoOrganizeLook,
+                reorderMode,
+            ) {
+                FolderPagesData(
+                    podcasts = successState?.subscribedPodcasts.orEmpty(),
+                    folders = folders,
+                    sort = successState?.currentSort,
+                    smartOrderIds = successState?.smartOrderIds.orEmpty(),
+                    intraFolderSort = intraFolderSort,
+                    autoOrganizeOn = autoOrganizeFolders,
+                    autoOrganizeLook = autoOrganizeLook,
+                    reorderMode = reorderMode,
                 )
+            }
+            val currentOnPodcastClick by rememberUpdatedState(onPodcastClick)
+            val folderPagesActions = remember(viewModel) {
+                object : FolderPagesActions {
+                    override fun openShow(podcastId: String) = currentOnPodcastClick(podcastId)
 
-                override fun turnOffAutoOrganize() {
-                    confirmAutoOrganizeOff = true
+                    override fun showMenu(target: ContextMenuTarget) {
+                        contextMenuTarget = target
+                    }
+
+                    override fun addShows(folder: SubscriptionFolder) {
+                        selectedFolderForShowSelection = folder
+                    }
+
+                    override fun openSort() {
+                        showSortSheet = true
+                    }
+
+                    override fun setReorderMode(mode: ReorderMode) {
+                        reorderMode = mode
+                    }
+
+                    override fun saveFolderOrder(folderId: String, orderedIds: List<String>) {
+                        viewModel.reorderFolderShows(folderId, orderedIds)
+                        viewModel.setIntraFolderSort(FolderIntraSort.Manual)
+                        reorderMode = ReorderMode.Inactive
+                    }
+
+                    override fun deleteFolder(folder: SubscriptionFolder) {
+                        confirmDeleteFolder = folder
+                    }
+
+                    override fun createFolder(params: FolderSaveParams, podcastIds: List<String>, move: FolderShowMove?) {
+                        viewModel.createFolder(
+                            name = params.name,
+                            icon = params.icon,
+                            displaySize = params.displaySize,
+                            linkedGenre = params.linkedGenre,
+                            showPodcastGrid = params.showPodcastGrid,
+                            podcastIds = podcastIds,
+                        )
+                        if (move != null && move.podcastId in podcastIds) {
+                            viewModel.removePodcastFromFolder(move.podcastId, move.fromFolderId)
+                        }
+                    }
+
+                    override fun updateFolder(folder: SubscriptionFolder) = viewModel.updateFolder(folder)
+
+                    override fun changeMembership(podcastId: String, change: FolderMembershipChange) {
+                        change.addTo.forEach { folderId -> viewModel.addPodcastToFolder(podcastId, folderId) }
+                        change.removeFrom.forEach { folderId -> viewModel.removePodcastFromFolder(podcastId, folderId) }
+                    }
+
+                    override fun turnOnAutoOrganize(look: AutoOrganizeLook) = viewModel.setAutoOrganizeFolders(
+                        enabled = true,
+                        displaySize = look.fixedSize,
+                        showPodcastGrid = look.tileShowsCovers,
+                    )
+
+                    override fun turnOffAutoOrganize() {
+                        confirmAutoOrganizeOff = true
+                    }
+
+                    override fun setAutoOrganizeLook(look: AutoOrganizeLook) = viewModel.setAutoOrganizeLook(look)
+
+                    override fun applyLookToGenreFolders(look: AutoOrganizeLook) = viewModel.applyAutoOrganizeLookToGenreFolders(look)
                 }
-
-                override fun setAutoOrganizeLook(look: AutoOrganizeLook) = viewModel.setAutoOrganizeLook(look)
-
-                override fun applyLookToGenreFolders(look: AutoOrganizeLook) = viewModel.applyAutoOrganizeLookToGenreFolders(look)
             }
             OpenFolderPage(folderPages, folderPagesData, folderPagesActions, bottomPadding = bottomChromeHeight)
             FolderEditorPage(folderPages, folderPagesData, folderPagesActions)

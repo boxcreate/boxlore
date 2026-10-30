@@ -31,13 +31,13 @@ import cx.aswin.boxlore.feature.library.logic.SubscriptionSmartOrderLogic
 import cx.aswin.boxlore.feature.library.subscriptions.AutoOrganizeLook
 import cx.aswin.boxlore.feature.library.subscriptions.FolderInterSort
 import cx.aswin.boxlore.feature.library.subscriptions.FolderIntraSort
+import cx.aswin.boxlore.feature.library.subscriptions.LatestEpisodeActions
+import cx.aswin.boxlore.feature.library.subscriptions.LatestQueue
 import cx.aswin.boxlore.feature.library.subscriptions.LatestQueueOutcome
 import cx.aswin.boxlore.feature.library.subscriptions.autoOrganizeLookFor
 import cx.aswin.boxlore.feature.library.subscriptions.autoOrganizeLookFromSaved
 import cx.aswin.boxlore.feature.library.subscriptions.isLatestShownPlayed
-import cx.aswin.boxlore.feature.library.subscriptions.latestQueueOutcome
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -47,13 +47,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
-
-/** How long a saved swipe-to-played waits for the list to show it before letting go. */
-private const val PLAYED_SETTLE_TIMEOUT_MS = 3_000L
 
 enum class SubscriptionSort { SmartRank, RecentlyUpdated, Alphabetical, MostListened, Manual }
 enum class DownloadsSortOrder { RECENT, NAME, SIZE, COUNT }
@@ -340,83 +334,50 @@ class LibraryViewModel(
         }
     }
 
-    private val _isRefreshingNewEpisodes = MutableStateFlow(false)
+    private val latest = LatestEpisodeActions(
+        scope = viewModelScope,
+        refreshNow = { SharedAppDependenciesHolder.instance?.subscriptionForegroundSync?.refreshNow() },
+        queue = LatestQueue(
+            queuedIds = { playbackRepository.playerState.value.queue.map { it.id } },
+            add = { episode, podcast -> playbackRepository.addToQueue(episode, podcast) },
+            removeUndone = { episodeId -> playbackRepository.removeFromQueue(episodeId, deferSkipSignal = true) },
+            limit = PlaybackRepository.QUEUE_LIMIT,
+        ),
+        markPlayed = { episode, podcast ->
+            playbackRepository.markAllEpisodesCompleted(
+                episodes = listOf(episode),
+                podcastId = podcast.id,
+                podcastTitle = podcast.title,
+                podcastImageUrl = podcast.imageUrl,
+            )
+        },
+        awaitShownPlayed = { episodeId ->
+            uiState.first { state -> state !is LibraryUiState.Success || isLatestShownPlayed(state.subscribedPodcasts, episodeId) }
+        },
+    )
 
     /** True while a pull to refresh on New Episodes runs. */
-    val isRefreshingNewEpisodes: StateFlow<Boolean> = _isRefreshingNewEpisodes.asStateFlow()
+    val isRefreshingNewEpisodes: StateFlow<Boolean> = latest.isRefreshing
 
     /** Pull to refresh: checks for new episodes now, skipping the usual wait between checks. */
-    fun refreshNewEpisodes() {
-        val sync = SharedAppDependenciesHolder.instance?.subscriptionForegroundSync ?: return
-        if (!_isRefreshingNewEpisodes.compareAndSet(expect = false, update = true)) return
-        viewModelScope.launch {
-            try {
-                sync.refreshNow()
-            } finally {
-                _isRefreshingNewEpisodes.value = false
-            }
-        }
-    }
-
-    private val _pendingPlayedEpisodeIds = MutableStateFlow<Set<String>>(emptySet())
+    fun refreshNewEpisodes() = latest.refresh()
 
     /** New Episodes rows swiped to played whose Undo is still showing; nothing is saved yet. */
-    val pendingPlayedEpisodeIds: StateFlow<Set<String>> = _pendingPlayedEpisodeIds.asStateFlow()
+    val pendingPlayedEpisodeIds: StateFlow<Set<String>> = latest.pendingPlayedIds
 
     /** Swipe right on a New Episodes row. */
-    internal suspend fun addLatestToQueue(episode: Episode, podcast: Podcast): LatestQueueOutcome {
-        val wasQueued = playbackRepository.playerState.value.queue.any { it.id == episode.id }
-        val added = !wasQueued && playbackRepository.addToQueue(episode, podcast)
-        return latestQueueOutcome(
-            added = added,
-            wasQueued = wasQueued,
-            queueSize = playbackRepository.playerState.value.queue.size,
-            queueLimit = PlaybackRepository.QUEUE_LIMIT,
-        )
-    }
+    internal suspend fun addLatestToQueue(episode: Episode, podcast: Podcast): LatestQueueOutcome = latest.addToQueue(episode, podcast)
 
     /** Undo for [addLatestToQueue]; an undone add never counts as turning the episode down. */
-    fun undoAddLatestToQueue(episodeId: String) {
-        viewModelScope.launch {
-            playbackRepository.removeFromQueue(episodeId, deferSkipSignal = true)
-        }
-    }
+    fun undoAddLatestToQueue(episodeId: String) = latest.undoAddToQueue(episodeId)
 
-    /**
-     * Swipe left on a New Episodes row: the row reads as played while its Undo shows, but nothing
-     * is saved until [commitLatestPlayed], because marking played clears the listening position.
-     */
-    fun holdLatestAsPlayed(episodeId: String) {
-        _pendingPlayedEpisodeIds.update { it + episodeId }
-    }
+    /** Swipe left on a New Episodes row: held as played until [commitLatestPlayed]. */
+    fun holdLatestAsPlayed(episodeId: String) = latest.holdPlayed(episodeId)
 
-    fun undoLatestPlayed(episodeId: String) {
-        _pendingPlayedEpisodeIds.update { it - episodeId }
-    }
+    fun undoLatestPlayed(episodeId: String) = latest.undoPlayed(episodeId)
 
-    /** Saves a held swipe once its Undo has closed, then lets go once the list shows it played. */
-    fun commitLatestPlayed(episode: Episode, podcast: Podcast) {
-        if (episode.id !in _pendingPlayedEpisodeIds.value) return
-        viewModelScope.launch {
-            try {
-                withContext(NonCancellable) {
-                    playbackRepository.markAllEpisodesCompleted(
-                        episodes = listOf(episode),
-                        podcastId = podcast.id,
-                        podcastTitle = podcast.title,
-                        podcastImageUrl = podcast.imageUrl,
-                    )
-                }
-                withTimeoutOrNull(PLAYED_SETTLE_TIMEOUT_MS) {
-                    uiState.first { state ->
-                        state !is LibraryUiState.Success || isLatestShownPlayed(state.subscribedPodcasts, episode.id)
-                    }
-                }
-            } finally {
-                _pendingPlayedEpisodeIds.update { it - episode.id }
-            }
-        }
-    }
+    /** Saves a held swipe once its Undo has closed. */
+    fun commitLatestPlayed(episode: Episode, podcast: Podcast) = latest.commitPlayed(episode, podcast)
 
     val autoOrganizeFolders: StateFlow<Boolean> = userPreferencesRepository.autoOrganizeFoldersStream
         .stateIn(
