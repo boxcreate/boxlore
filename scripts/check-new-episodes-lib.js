@@ -432,7 +432,8 @@ async function fetchRssText(url, { timeoutMs = 60000, maxBytes = MAX_FEED_BYTES,
         const response = await fetchImpl(url, {
             signal: ac.signal,
             redirect: 'follow',
-            headers: { 'User-Agent': 'BoxLore/1.0', 'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*' },
+            // The uncompressed copy: a broken compressed one is what hung the run on 30 Oct 2026.
+            headers: { 'User-Agent': 'BoxLore/1.0', 'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*', 'Accept-Encoding': 'identity' },
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         if (response.url && !usableFeedUrl(response.url)) throw new Error('Feed redirected to a non-HTTPS URL');
@@ -450,6 +451,57 @@ async function fetchRssText(url, { timeoutMs = 60000, maxBytes = MAX_FEED_BYTES,
         clearTimeout(timer);
         ac.abort();
     }
+}
+
+/** Raised by [withDeadline]; the run treats it as "skip this show for now", unlike real errors. */
+class DeadlineError extends Error {
+    constructor(what, ms) {
+        super(`${what} timed out after ${Math.round(ms / 1000)} s`);
+        this.name = 'DeadlineError';
+    }
+}
+
+/**
+ * Settles with [promise], or rejects with a [DeadlineError] after [ms]. On 30 Oct 2026 a feed
+ * host's broken compressed copy left Node's fetch waiting forever (its own abort never fired), so
+ * every run hung until systemd killed it and nothing was saved: the same pushes went out hourly.
+ */
+function withDeadline(promise, ms, what = 'step') {
+    let timer;
+    const limit = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new DeadlineError(what, ms)), ms);
+    });
+    return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
+}
+
+/**
+ * Checks each show in turn: one stuck show is skipped after [showLimitMs] (reported through
+ * [onTimeout]) and the run moves on; past [deadlineAt] no new show starts, so the run ends and
+ * saves before the service's own time limit. Any error other than a [DeadlineError] stops the
+ * loop, as before. Returns how many shows were started, skipped as stuck, and whether it stopped early.
+ */
+async function checkEachShow(stateIds, { check, showLimitMs, deadlineAt, now = Date.now, onTimeout = () => {} }) {
+    let started = 0;
+    let stuck = 0;
+    for (const stateId of stateIds) {
+        if (now() >= deadlineAt) return { started, stuck, stoppedEarly: true };
+        started++;
+        try {
+            await withDeadline(Promise.resolve().then(() => check(stateId)), showLimitMs, 'show check');
+        } catch (error) {
+            if (!(error instanceof DeadlineError)) throw error;
+            stuck++;
+            onTimeout(stateId, error);
+        }
+    }
+    return { started, stuck, stoppedEarly: false };
+}
+
+/** Writes the state through a temporary file and a rename, so a killed run never leaves half a file. */
+function writeStateFile(statePath, state, fsImpl = require('fs')) {
+    const tmp = `${statePath}.tmp`;
+    fsImpl.writeFileSync(tmp, JSON.stringify(state, null, 2), 'utf8');
+    fsImpl.renameSync(tmp, statePath);
 }
 
 function omitEmpty(data) {
@@ -541,6 +593,10 @@ module.exports = {
     applyServedId,
     assertNewEpisodeTopic,
     BROADCAST_TOPICS,
+    DeadlineError,
+    withDeadline,
+    checkEachShow,
+    writeStateFile,
 };
 
 // These topics are opted-in visible release alerts, qualifying for prompt Android delivery.
