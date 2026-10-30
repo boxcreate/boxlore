@@ -109,7 +109,7 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
         data.listeningSessionDao.observeAllSessions(),
         data.listeningRollupDao.observeAllRollups(),
         // All of history, not the screens' latest 300, so counts stay right for long histories.
-        listenerStore.projectedRows(data.listeningHistoryDao.observeAllStoredHistory()),
+        listenerStore.projectedCompleteRows(data.listeningHistoryDao.observeAllStoredHistory()),
         listenerStore.showReplacementsFlow(),
     ) { storedSessions, storedRollups, storedHistory, replacedBy ->
         val sessions = storedSessions.map { row -> replacedBy[row.podcastId]?.let { row.copy(podcastId = it) } ?: row }

@@ -266,15 +266,16 @@ class ListeningHistoryDaoInMemoryTest {
     @Test
     fun everyStoredRowIsReadAcrossPagesNewestFirstWithoutDescriptions() = runTest {
         // Regression: library backups and insights read the screens' latest 300 rows and lost the rest.
+        // Play times repeat across page boundaries, so ties must order by ID.
         val total = ListeningHistoryDao.STORED_HISTORY_PAGE_SIZE * 2 + 3
-        dao.upsertAll((0 until total).map { history("ep-$it", lastPlayedAt = it.toLong(), isDirty = false) })
+        dao.upsertAll((0 until total).map { history("ep-$it", lastPlayedAt = (it % 7).toLong(), isDirty = false) })
         dao.upsert(history("described", lastPlayedAt = -1L).copy(episodeDescription = "Long notes"))
 
         val rows = dao.getAllStoredHistory()
 
         assertEquals(total + 1, rows.size)
         assertEquals(total + 1, rows.map { it.episodeId }.toSet().size)
-        assertEquals("ep-${total - 1}", rows.first().episodeId)
+        assertEquals(rows.sortedWith(compareByDescending<ListeningHistoryEntity> { it.lastPlayedAt }.thenBy { it.episodeId }), rows)
         assertEquals("described", rows.last().episodeId)
         assertTrue(rows.all { it.episodeDescription == null })
         assertEquals(total + 1, dao.observeAllStoredHistory().first().size)

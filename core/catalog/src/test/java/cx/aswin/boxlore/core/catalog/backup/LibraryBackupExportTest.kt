@@ -15,6 +15,7 @@ import cx.aswin.boxlore.core.ranking.AdaptiveRankingBackup
 import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -50,6 +51,8 @@ class LibraryBackupExportTest {
                     ),
                 ),
             )
+
+            override suspend fun exportStoredHistory(): List<ListeningHistoryEntity> = getAllHistory().first()
 
             override suspend fun upsertHistoryEntity(entity: ListeningHistoryEntity) {}
 

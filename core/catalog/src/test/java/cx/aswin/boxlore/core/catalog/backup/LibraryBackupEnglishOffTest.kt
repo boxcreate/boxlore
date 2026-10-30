@@ -44,6 +44,8 @@ class LibraryBackupEnglishOffTest {
         object : ListeningHistoryBackupPort {
             override fun getAllHistory(): Flow<List<ListeningHistoryEntity>> = flowOf(emptyList())
 
+            override suspend fun exportStoredHistory(): List<ListeningHistoryEntity> = emptyList()
+
             override suspend fun upsertHistoryEntity(entity: ListeningHistoryEntity) = Unit
 
             override suspend fun markAllEpisodesCompleted(episodes: List<Episode>, podcastId: String, podcastTitle: String, podcastImageUrl: String?) = Unit

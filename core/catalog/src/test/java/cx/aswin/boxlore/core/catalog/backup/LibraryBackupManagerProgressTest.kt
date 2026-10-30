@@ -35,6 +35,7 @@ class LibraryBackupManagerProgressTest {
     private lateinit var manager: LibraryBackupManager
     private val fakeListeningHistory = object : ListeningHistoryBackupPort {
         override fun getAllHistory(): Flow<List<ListeningHistoryEntity>> = flowOf(emptyList())
+        override suspend fun exportStoredHistory(): List<ListeningHistoryEntity> = emptyList()
         override suspend fun upsertHistoryEntity(entity: ListeningHistoryEntity) {}
         override suspend fun markAllEpisodesCompleted(
             episodes: List<Episode>,

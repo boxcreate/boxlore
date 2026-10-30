@@ -248,7 +248,8 @@ interface ListeningHistoryDao {
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getCompletedEpisodeIdsFlow(): Flow<List<String>> = completedEpisodeCountFlow().mapLatest { getCompletedEpisodeIds() }
 
-    // One page of every stored row, newest first and without descriptions. Screens keep getAllHistory's
+    // Every stored row without descriptions, one page at a time along the primary key (each page
+    // seeks to its start, so a long history reads in linear time). Screens keep getAllHistory's
     // latest 300; the library backup and insights need all of it.
     @Query(
         """
@@ -257,23 +258,38 @@ interface ListeningHistoryDao {
                isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
                isManualCompletion, isBulkCompletion, NULL as episodeDescription
         FROM listening_history
-        ORDER BY lastPlayedAt DESC, episodeId
-        LIMIT :limit OFFSET :offset
+        ORDER BY episodeId
+        LIMIT :limit
     """,
     )
-    suspend fun getStoredHistoryPage(limit: Int, offset: Int): List<ListeningHistoryEntity>
+    suspend fun getFirstStoredHistoryPage(limit: Int): List<ListeningHistoryEntity>
 
-    /** Every stored row, read in pages in one transaction (see [getCompletedEpisodeIds]). */
+    @Query(
+        """
+        SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl,
+               episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted,
+               isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription
+        FROM listening_history
+        WHERE episodeId > :afterEpisodeId
+        ORDER BY episodeId
+        LIMIT :limit
+    """,
+    )
+    suspend fun getStoredHistoryPageAfter(afterEpisodeId: String, limit: Int): List<ListeningHistoryEntity>
+
+    /** Every stored row, newest first (ties by ID), read in pages in one transaction (see [getCompletedEpisodeIds]). */
     @Transaction
     suspend fun getAllStoredHistory(): List<ListeningHistoryEntity> {
         val rows = ArrayList<ListeningHistoryEntity>()
-        var offset = 0
+        var page = getFirstStoredHistoryPage(STORED_HISTORY_PAGE_SIZE)
         while (true) {
-            val page = getStoredHistoryPage(STORED_HISTORY_PAGE_SIZE, offset)
             rows.addAll(page)
-            if (page.size < STORED_HISTORY_PAGE_SIZE) return rows
-            offset += STORED_HISTORY_PAGE_SIZE
+            if (page.size < STORED_HISTORY_PAGE_SIZE) break
+            page = getStoredHistoryPageAfter(page.last().episodeId, STORED_HISTORY_PAGE_SIZE)
         }
+        rows.sortWith(compareByDescending<ListeningHistoryEntity> { it.lastPlayedAt }.thenBy { it.episodeId })
+        return rows
     }
 
     /** Emits whenever listening_history changes; the value is only a change signal. */
