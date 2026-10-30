@@ -182,8 +182,8 @@ private fun ModeSelector(selected: NewFolderMode, onSelect: (NewFolderMode) -> U
 }
 
 internal fun newFolderModeLabel(mode: NewFolderMode): String = when (mode) {
-    NewFolderMode.PickShows -> "Pick shows"
-    NewFolderMode.OneGenre -> "One genre"
+    NewFolderMode.PickShows -> "Shows"
+    NewFolderMode.OneGenre -> "Genre"
     NewFolderMode.AllGenres -> "Auto"
 }
 

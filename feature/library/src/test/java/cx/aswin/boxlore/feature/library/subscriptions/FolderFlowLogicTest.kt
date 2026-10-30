@@ -68,8 +68,8 @@ class FolderFlowLogicTest {
     }
 
     @Test
-    fun `the third way to fill a folder is called Auto`() {
-        assertEquals(listOf("Pick shows", "One genre", "Auto"), NewFolderMode.entries.map(::newFolderModeLabel))
+    fun `the ways to fill a folder are Shows, Genre and Auto`() {
+        assertEquals(listOf("Shows", "Genre", "Auto"), NewFolderMode.entries.map(::newFolderModeLabel))
     }
 
     @Test
