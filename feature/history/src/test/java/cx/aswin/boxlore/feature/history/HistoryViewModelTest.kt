@@ -11,6 +11,7 @@ import cx.aswin.boxlore.core.model.ListeningPlayedShow
 import cx.aswin.boxlore.feature.history.timeline.TimelineFilter
 import cx.aswin.boxlore.feature.history.timeline.TimelineGrouping
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneOffset
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -128,7 +129,50 @@ class HistoryViewModelTest {
         assertEquals(LocalDate.of(2026, 10, 30), insights.today)
     }
 
+    @Test
+    fun lastMonthsStoryIsNewUntilItIsOpened() = runTest(dispatcher) {
+        val seen = MutableStateFlow<String?>(null)
+        val listening = listOf(day(2026, 9, 12, "show", 30), day(2026, 8, 3, "show", 20))
+        val vm = HistoryViewModel(FakeHistory(history, listening), zoneId = { ZoneOffset.UTC }, now = { LocalDate.of(2026, 10, 30) }, storySeen = seen, markStorySeen = { seen.value = it }).also { created += it }
+
+        val shelf = (vm.insightsState.first { it is InsightsUiState.Ready } as InsightsUiState.Ready).stories
+        assertEquals(YearMonth.of(2026, 9), shelf.latest!!.month)
+        assertTrue(shelf.latestIsNew)
+        assertEquals(listOf(YearMonth.of(2026, 8)), shelf.earlier.map { it.month })
+
+        vm.openStory(YearMonth.of(2026, 9))
+
+        val open = vm.storyState.first { it is StoryUiState.Open } as StoryUiState.Open
+        assertEquals(YearMonth.of(2026, 9), open.story.month)
+        assertEquals(30 * 60_000L, open.story.totalMs)
+        assertEquals("2026-09", seen.value)
+        val after = vm.insightsState.first { it is InsightsUiState.Ready && !it.stories.latestIsNew } as InsightsUiState.Ready
+        assertEquals(YearMonth.of(2026, 9), after.stories.latest!!.month)
+
+        vm.closeStory()
+        assertEquals(StoryUiState.Closed, vm.storyState.first { it == StoryUiState.Closed })
+    }
+
+    @Test
+    fun shareYourListeningOpensTheStoryAtItsShareCard() = runTest(dispatcher) {
+        val vm = HistoryViewModel(FakeHistory(history, listOf(day(2026, 8, 3, "show", 20))), zoneId = { ZoneOffset.UTC }, now = { LocalDate.of(2026, 10, 30) }).also { created += it }
+
+        vm.openStory(YearMonth.of(2026, 8), atShare = true)
+
+        val open = vm.storyState.first { it is StoryUiState.Open } as StoryUiState.Open
+        assertTrue(open.atShare)
+    }
+
     private fun viewModel() = HistoryViewModel(FakeHistory(history), zoneId = { ZoneOffset.UTC }, now = { LocalDate.of(2026, 10, 30) }).also { created += it }
+
+    private fun day(year: Int, month: Int, dayOfMonth: Int, podcastId: String, minutes: Long) = ListeningDayEpisode(
+        localDay = LocalDate.of(year, month, dayOfMonth).toEpochDay(),
+        episodeId = "$podcastId-$month-$dayOfMonth",
+        podcastId = podcastId,
+        consumedMs = minutes * 60_000L,
+        sessionCount = 1,
+        lastListenedAt = 0L,
+    )
 
     private fun item(id: String, completed: Boolean) = ListeningHistoryItem(
         episodeId = id,
@@ -145,14 +189,14 @@ class HistoryViewModelTest {
         lastPlayedAt = 1_793_000_000_000L,
     )
 
-    private class FakeHistory(private val history: Flow<List<ListeningHistoryItem>>) : ListeningHistoryPort {
+    private class FakeHistory(private val history: Flow<List<ListeningHistoryItem>>, private val listening: List<ListeningDayEpisode> = emptyList()) : ListeningHistoryPort {
         override fun observeHistoryTimeline(): Flow<List<ListeningHistoryItem>> = history
 
         override fun observeFullHistoryTimeline(): Flow<List<ListeningHistoryItem>> = history
 
-        override fun observeListeningByDay(): Flow<List<ListeningDayEpisode>> = flowOf(emptyList())
+        override fun observeListeningByDay(): Flow<List<ListeningDayEpisode>> = flowOf(listening)
 
-    override fun observePlayedShows(): Flow<List<ListeningPlayedShow>> = flowOf(emptyList())
+        override fun observePlayedShows(): Flow<List<ListeningPlayedShow>> = flowOf(emptyList())
 
         override fun observeInsights(period: ListeningPeriod): Flow<ListeningInsightSummary> = flowOf()
 

@@ -46,12 +46,13 @@ import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.history.R
+import cx.aswin.boxlore.feature.history.historyTextStyle
 
 /** Type of the Timeline: 14/18 medium titles, 12/16 facts with 0.3 tracking, 16/22 headers, 22/28 month names. */
 internal object TimelineType {
     val title @Composable get() = MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp, lineHeight = 18.sp, fontWeight = GoogleSansWeight.semiBold)
     val meta @Composable get() = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = 0.3.sp)
-    val status @Composable get() = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = GoogleSansWeight.semiBold, letterSpacing = 0.sp)
+    val status @Composable get() = historyTextStyle(12f, 16f, GoogleSansWeight.semiBold)
     val header @Composable get() = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp, lineHeight = 22.sp, fontWeight = GoogleSansWeight.semiBold, letterSpacing = 0.sp)
     val month @Composable get() = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = GoogleSansWeight.regular)
     val label @Composable get() = MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp, fontWeight = GoogleSansWeight.semiBold, letterSpacing = 0.sp)

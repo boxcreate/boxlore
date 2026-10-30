@@ -268,4 +268,89 @@
         <item quantity="other">Listen on %1$d more days to see when you listen most.</item>
     </plurals>
     <string name="history_early_clock_progress">%1$d of %2$d days</string>
+
+    <!-- Monthly story (boards A7–A12) -->
+    <string name="history_story_close">Close</string>
+    <string name="history_story_card_of">Card %1$d of %2$d</string>
+    <string name="history_story_previous">Previous card</string>
+    <string name="history_story_next">Next card</string>
+    <string name="history_story_clock">Listening clock: %1$s</string>
+    <string name="history_story_hello_eyebrow">Your month in listening</string>
+    <string name="history_story_hello_eyebrow_year">Your month in listening · %1$d</string>
+    <string name="history_story_hello_line">%1$s, %2$s and one very busy %3$s.</string>
+    <plurals name="history_story_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <plurals name="history_story_shows">
+        <item quantity="one">%1$d show</item>
+        <item quantity="other">%1$d shows</item>
+    </plurals>
+    <string name="history_story_hello_bubble">Hi, I\'m Echo! Tap through your %1$s with me.</string>
+    <string name="history_story_time_eyebrow">Time listened</string>
+    <string name="history_story_hours">%1$d h</string>
+    <string name="history_story_minutes">%1$d min</string>
+    <string name="history_story_time_more">%1$s, and %2$s more than %3$s.</string>
+    <string name="history_story_time_less">%1$s, and %2$s less than %3$s.</string>
+    <string name="history_story_time_only">%1$s.</string>
+    <string name="history_story_time_bubble">%1$s · %2$s</string>
+    <string name="history_story_time_chart">Listening per day in %1$s, busiest on %2$s</string>
+    <string name="history_story_top_eyebrow">Your top show</string>
+    <string name="history_story_top_line">%1$s, %2$d%% of your %3$s.</string>
+    <plurals name="history_story_top_finished">
+        <item quantity="one">%1$d episode finished.</item>
+        <item quantity="other">%1$d episodes finished.</item>
+    </plurals>
+    <string name="history_story_resume">Resume %1$s · %2$s</string>
+    <string name="history_story_echo_crime">True crime again. Very detective of you.</string>
+    <string name="history_story_echo_tech">So much tech. Very plugged in of you.</string>
+    <string name="history_story_echo_news">Always on top of the news, huh?</string>
+    <string name="history_story_echo_history">History again. Quiz night is yours.</string>
+    <string name="history_story_echo_fiction">You do love a good story.</string>
+    <string name="history_story_echo_comedy">Lots of laughs this month.</string>
+    <string name="history_story_echo_science">Such a curious mind.</string>
+    <string name="history_story_echo_business">Talking shop again, I see.</string>
+    <string name="history_story_echo_health">Looking after yourself. Love it.</string>
+    <string name="history_story_echo_any">Good taste, if you ask me.</string>
+    <string name="history_story_type_morning">in the morning</string>
+    <string name="history_story_type_afternoon">in the afternoon</string>
+    <string name="history_story_type_evening">in the evening</string>
+    <string name="history_story_type_night">at night</string>
+    <string name="history_story_type_finish">%1$d%% of your listening was %2$s, and you finished about %3$d in %4$d episodes you started.</string>
+    <string name="history_story_type_finish_all">%1$d%% of your listening was %2$s, and you finished almost every episode you started.</string>
+    <string name="history_story_type_only">%1$d%% of your listening was %2$s.</string>
+    <string name="history_story_echo_evening">Cosy evenings, huh?</string>
+    <string name="history_story_echo_late_night">Night owl, I see.</string>
+    <string name="history_story_echo_all_day">Morning, noon or night. Nice.</string>
+    <string name="history_story_echo_morning">Up early with a podcast. Nice.</string>
+    <string name="history_story_echo_daytime">Keeping your day company, huh?</string>
+    <string name="history_story_records_eyebrow">Your records</string>
+    <plurals name="history_story_run_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <string name="history_story_run_line">in a row, %1$s to %2$s.</string>
+    <string name="history_story_run_line_best">in a row, %1$s to %2$s. Your best run yet.</string>
+    <string name="history_story_run_pills">%1$d listening days in a row</string>
+    <string name="history_story_biggest_day">Biggest day, %1$s</string>
+    <string name="history_story_biggest_only">on %1$s, your biggest day.</string>
+    <plurals name="history_story_episodes">
+        <item quantity="one">%1$d episode</item>
+        <item quantity="other">%1$d episodes</item>
+    </plurals>
+    <string name="history_story_in_one_day">of %1$s in one day</string>
+    <string name="history_story_share_card_title">My %1$s in listening</string>
+    <string name="history_story_share_card_top">Top show</string>
+    <string name="history_story_share_listen_on">Listen on</string>
+    <string name="history_story_share_brand" translatable="false">boxlore</string>
+    <string name="history_story_share_card_label">Share card: My %1$s in listening, %2$s, top show %3$s, %4$s</string>
+    <string name="history_story_see_you">See you in %1$s!</string>
+    <string name="history_story_share">Share your %1$s</string>
+    <string name="history_story_watch_again">Watch again</string>
+    <string name="history_story_share_text">My %1$s in listening on boxlore: %2$s.</string>
+    <string name="history_story_new">New</string>
+    <string name="history_story_entry_title">Your %1$s story</string>
+    <string name="history_story_entry_meta">6 cards with Echo · 1 min</string>
+    <string name="history_story_watch">Watch your %1$s story</string>
+    <string name="history_story_earlier">Earlier stories</string>
 </resources>

@@ -106,6 +106,45 @@ class EchoCharacterModelTest {
         assertTrue(saturation(pixels[0]) <= 0.6f, "the theme colour is calmed, not vivid")
     }
 
+    @Test fun `the story clips carry face scripts, and the detective's lens shows one big eye on the glass`() {
+        val story = spec.clips.filterKeys { it.startsWith("story-") }
+        assertEquals(15, story.size)
+        story.values.forEach { clip ->
+            assertTrue(clip.script.isNotEmpty() && clip.script.first().at == 0f, "${clip.id} has no face script from its start")
+            assertEquals("${clip.id}-rest", clip.rest)
+            assertTrue(spec.sequences.getValue(clip.id).steps.first().clip == clip.id)
+        }
+        val detective = story.getValue("story-detective")
+        val lensFrames = detective.lens.filterNotNull()
+        assertTrue(lensFrames.size > 30, "the lens is over the screen for a good stretch")
+        assertTrue(lensFrames.all { it.radius in 0.02f..0.2f && it.scale in 0.7f..1f && it.centerX in 0f..1f && it.centerY in 0f..1f })
+        assertTrue(spec.sequences.keys.containsAll(listOf("story-hello", "story-hop")))
+    }
+
+    @Test fun `the vivid recolour takes the target's hue and tone and keeps the shading`() {
+        val light = 0xFF7468C8.toInt()
+        val dark = 0xFF3E3394.toInt()
+        val pixels = intArrayOf(light, dark, 0xFFF5F4EF.toInt())
+        recolorEchoAccents(pixels, 0xFF36B28F.toInt())
+        listOf(pixels[0], pixels[1]).forEach { argb ->
+            val r = argb shr 16 and 0xFF
+            val g = argb shr 8 and 0xFF
+            assertTrue(g > r + 40, "seafoam expected, got ${Integer.toHexString(argb)}")
+        }
+        assertTrue(luma(pixels[0]) > luma(pixels[1]), "lighter parts stay lighter")
+        assertTrue(saturation(pixels[0]) > 0.6f, "vivid, not calmed")
+        assertEquals(0xFFF5F4EF.toInt(), pixels[2])
+    }
+
+    @Test fun `Echo's own colours keep its indigo and light its face lavender`() {
+        val original = EchoAccents.Original.paint(0xFF006A6A.toInt(), dark = true)
+        val pixels = intArrayOf(0xFF7468C8.toInt())
+        original.tint(pixels)
+        assertEquals(0xFF7468C8.toInt(), pixels[0])
+        assertEquals(echoFaceColor(EchoIndigo), original.face)
+        assertEquals(echoFaceColor(0xFF006A6A.toInt()), EchoAccents.Theme.paint(0xFF006A6A.toInt(), dark = true).face)
+    }
+
     @Test fun `the face colour is a light tint of the theme`() {
         val face = echoFaceColor(0xFF5145D8.toInt())
         assertTrue(luma(face) > 170)

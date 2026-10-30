@@ -58,6 +58,7 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.ListeningPeriod
 import cx.aswin.boxlore.feature.history.R
+import cx.aswin.boxlore.feature.history.historyTextStyle
 import cx.aswin.boxlore.feature.history.timeline.TimelineType
 import cx.aswin.boxlore.feature.history.timeline.durationText
 import java.time.DayOfWeek
@@ -366,7 +367,7 @@ internal fun BigDayCard(weekdays: Weekdays, period: ListeningPeriod) {
                     )
                     Text(
                         day.getDisplayName(TextStyle.NARROW_STANDALONE, cx.aswin.boxlore.feature.history.timeline.currentLocale()),
-                        style = TimelineType.meta.copy(fontWeight = if (isBiggest) GoogleSansWeight.semiBold else GoogleSansWeight.regular),
+                        style = if (isBiggest) historyTextStyle(12f, 16f, GoogleSansWeight.semiBold, 0.3f) else TimelineType.meta,
                         color = if (isBiggest) colors.onSurface else colors.onSurfaceVariant,
                     )
                 }

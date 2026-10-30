@@ -7,6 +7,9 @@ import cx.aswin.boxlore.core.model.ListeningHistoryRemoval
 import cx.aswin.boxlore.core.model.ListeningPeriod
 import cx.aswin.boxlore.feature.history.insights.InsightsContent
 import cx.aswin.boxlore.feature.history.insights.InsightsLogic
+import cx.aswin.boxlore.feature.history.story.MonthStory
+import cx.aswin.boxlore.feature.history.story.StoryLogic
+import cx.aswin.boxlore.feature.history.story.StoryMonth
 import cx.aswin.boxlore.feature.history.timeline.HistoryTimelineLogic
 import cx.aswin.boxlore.feature.history.timeline.TimelineContent
 import cx.aswin.boxlore.feature.history.timeline.TimelineEntry
@@ -15,6 +18,7 @@ import cx.aswin.boxlore.feature.history.timeline.TimelineGrouping
 import cx.aswin.boxlore.feature.history.timeline.TimelineTabState
 import cx.aswin.boxlore.feature.history.timeline.timelineEntries
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,7 +31,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -67,7 +74,20 @@ sealed interface TimelineUiState {
 sealed interface InsightsUiState {
     data object Loading : InsightsUiState
 
-    data class Ready(val content: InsightsContent, val period: ListeningPeriod, val today: LocalDate,) : InsightsUiState
+    data class Ready(val content: InsightsContent, val period: ListeningPeriod, val today: LocalDate, val stories: StoryShelf = StoryShelf(),) : InsightsUiState
+}
+
+/**
+ * The monthly stories: last month's ([latest], on the Insights tab's card, New until it is opened)
+ * and every month before it with timed listening ([earlier]).
+ */
+data class StoryShelf(val latest: StoryMonth? = null, val latestIsNew: Boolean = false, val earlier: List<StoryMonth> = emptyList())
+
+/** A month's story on show, opened at its first card or, from Share your listening, at its share card. */
+sealed interface StoryUiState {
+    data object Closed : StoryUiState
+
+    data class Open(val story: MonthStory, val atShare: Boolean) : StoryUiState
 }
 
 /**
@@ -81,6 +101,9 @@ class HistoryViewModel(
     private val listeningHistoryPort: ListeningHistoryPort,
     private val zoneId: () -> ZoneId = { ZoneId.systemDefault() },
     private val now: () -> LocalDate = { LocalDate.now(zoneId()) },
+    /** The last story month opened ("2026-10"), so its card stops saying New. */
+    private val storySeen: Flow<String?> = flowOf(null),
+    private val markStorySeen: suspend (String) -> Unit = {},
 ) : ViewModel() {
     private val tab = MutableStateFlow(HistoryTab.INSIGHTS)
     private val filter = MutableStateFlow(TimelineFilter.ALL)
@@ -130,13 +153,53 @@ class HistoryViewModel(
                 period,
                 today,
             ) { history, listening, played, chosen, day ->
-                InsightsUiState.Ready(InsightsLogic.build(InsightsLogic.Input(history, listening, played, chosen, day, zoneId())), chosen, day) as InsightsUiState
+                val content = InsightsLogic.build(InsightsLogic.Input(history, listening, played, chosen, day, zoneId()))
+                InsightsUiState.Ready(content, chosen, day) to StoryLogic.months(listening, played, day)
+            }.combine(storySeen) { (ready, months), seen ->
+                val lastMonth = YearMonth.from(ready.today).minusMonths(1)
+                val latest = months.firstOrNull { it.month == lastMonth }
+                ready.copy(stories = StoryShelf(latest, latest != null && latest.month.toString() != seen, months - setOfNotNull(latest))) as InsightsUiState
             }
         }.flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), InsightsUiState.Loading)
 
+    private data class StoryRequest(val month: YearMonth, val atShare: Boolean)
+
+    private val storyRequest = MutableStateFlow<StoryRequest?>(null)
+
+    /** The story on show, built once from the whole history when it opens. */
+    val storyState: StateFlow<StoryUiState> =
+        storyRequest.flatMapLatest { request ->
+            if (request == null) {
+                flowOf<StoryUiState>(StoryUiState.Closed)
+            } else {
+                flow {
+                    val story = StoryLogic.build(
+                        request.month,
+                        listeningHistoryPort.observeFullHistoryTimeline().first(),
+                        listeningHistoryPort.observeListeningByDay().first(),
+                        listeningHistoryPort.observePlayedShows().first(),
+                        today.value,
+                        zoneId(),
+                    )
+                    emit(if (story == null) StoryUiState.Closed else StoryUiState.Open(story, request.atShare))
+                }
+            }
+        }.flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), StoryUiState.Closed)
+
     init {
         viewModelScope.launch { listeningHistoryPort.maintainListeningAnalytics() }
+    }
+
+    /** Opens [month]'s story, at its share card when [atShare]; opening last month's story clears its New. */
+    fun openStory(month: YearMonth, atShare: Boolean = false) {
+        storyRequest.value = StoryRequest(month, atShare)
+        if (month == YearMonth.from(today.value).minusMonths(1)) viewModelScope.launch { markStorySeen(month.toString()) }
+    }
+
+    fun closeStory() {
+        storyRequest.value = null
     }
 
     fun selectTab(selected: HistoryTab) {

@@ -89,6 +89,8 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                     @Suppress("UNCHECKED_CAST")
                     override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T = cx.aswin.boxlore.feature.history.HistoryViewModel(
                         playbackRepository,
+                        storySeen = userPrefs.seenListeningStoryStream,
+                        markStorySeen = userPrefs::setSeenListeningStory,
                     ) as T
                 },
             )

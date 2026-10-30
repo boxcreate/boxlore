@@ -249,6 +249,26 @@ object ShareManager {
         }
     }
 
+    /**
+     * Shares a rendered card ([image], a story's share card, say) with [text] through the share sheet.
+     * The PNG is written off the main thread to the cache, beside the other share cards, and cleared
+     * with them a day later; if it can't be written, the text goes alone.
+     */
+    fun shareImage(context: Context, image: android.graphics.Bitmap, text: String, chooserTitle: String) {
+        shareScope.launch {
+            val uri = try {
+                clearExpiredShareCards(context)
+                val file = java.io.File(context.cacheDir, "boxlore_share_card_${System.currentTimeMillis()}.png")
+                java.io.FileOutputStream(file).use { out -> image.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out) }
+                androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            } catch (e: Exception) {
+                android.util.Log.e("ShareManager", "Error writing the share card", e)
+                null
+            }
+            withContext(Dispatchers.Main) { openShareSheet(context, uri, text, chooserTitle) }
+        }
+    }
+
     private fun openShareSheet(context: Context, imageUri: android.net.Uri?, text: String, chooserTitle: String) {
         val intent = Intent(Intent.ACTION_SEND).apply {
             if (imageUri != null) {

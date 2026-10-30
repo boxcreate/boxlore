@@ -80,6 +80,7 @@ src/main/java/cx/aswin/boxlore/core/prefs/
 - Legacy file names beginning with `boxcast_` are migrated through `PrefsFileMigrator`.
 - Preference keys defined in `UserPreferenceKeys` and `BoxcastPrefs` are persisted user identity and must not be renamed casually.
 - `subscription_manual_order` and `home_pinned_podcast_ids` live in the same `user_preferences` DataStore (do not rename the file). Unsubscribe drops that id from both lists.
+- `seen_listening_story` (`seenListeningStoryStream` / `setSeenListeningStory`, added 2026-10-31): the last monthly listening story opened, as `yyyy-MM`, so Listening history stops calling it New. Local to the phone.
 - `legacy_rss_repair_*` keys are a crash-recovery contract; keep them until every shipping build that can begin the repair has aged out.
 
 ## Testing notes

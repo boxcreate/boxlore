@@ -42,7 +42,7 @@ object InsightsLogic {
             early = InsightsParts.early(input, timedDays),
             hasEnoughTiming = timedDays.size >= TIMED_DAYS_FOR_INSIGHTS,
             time = timeListened(input, range, inPeriod),
-            type = listeningType(input, range, inPeriod),
+            type = listeningTypeFor(input, range, inPeriod),
             topShows = InsightsParts.topShows(input, range, inPeriod, showInfo),
             parts = partShares(inPeriod),
             weekdays = InsightsParts.weekdays(inPeriod),
@@ -105,7 +105,8 @@ object InsightsLogic {
         return parts.map { (part, ms) -> PartShare(part, ms.toFloat() / total) }.sortedByDescending { it.share }
     }
 
-    private fun listeningType(input: Input, range: ClosedRange<LocalDate>, inPeriod: List<ListeningDayEpisode>): ListeningType? {
+    /** The listening type of [inPeriod]'s listening, with the finish rate of episodes started in [range]. */
+    internal fun listeningTypeFor(input: Input, range: ClosedRange<LocalDate>, inPeriod: List<ListeningDayEpisode>): ListeningType? {
         val parts = partShares(inPeriod)
         val top = parts.firstOrNull() ?: return null
         val rate = finishRate(input.history, range, input.zoneId)

@@ -23,15 +23,41 @@ data class EchoMotionClip(
     val mask: Boolean = false,
     /** Everything the clip covers, across all its frames. */
     val reach: EchoReach? = null,
+    /** The face and gaze through the clip, each beat from its share of the clip on; empty shows [face] looking out. */
+    val script: List<EchoClipBeat> = emptyList(),
+    /** Per frame, the big eye seen through a magnifier held over the screen, or null; empty when the clip has none. */
+    val lens: List<EchoLensEye?> = emptyList(),
+    /** Frames where the eyes blink, as a prop passes close to the screen. */
+    val blinks: Set<Int> = emptySet(),
 ) {
     init {
         require(fps > 0 && frames > 0 && tracks.size == frames) { "Clip $id has ${tracks.size} tracks for $frames frames" }
+        require(lens.isEmpty() || lens.size == frames) { "Clip $id has ${lens.size} lens frames for $frames frames" }
     }
 
     val millis: Long get() = frames * 1000L / fps
 
     fun frameAt(elapsedMillis: Long): Int = (elapsedMillis * fps / 1000).toInt().coerceIn(0, frames - 1)
+
+    /** The face and gaze at [frame]: the script's beat then (blinking on [blinks] frames), or [face] looking out. */
+    fun lookAt(frame: Int): EchoClipBeat {
+        val share = if (frames > 1) frame / (frames - 1f) else 0f
+        val beat = script.lastOrNull { it.at <= share } ?: EchoClipBeat(0f, face, EchoGaze(0f, 0f))
+        return if (frame in blinks) beat.copy(face = EchoFace.Blink) else beat
+    }
+
+    fun lensAt(frame: Int): EchoLensEye? = lens.getOrNull(frame)
 }
+
+/** From [at] (a share of the clip) on, Echo's screen shows [face] looking toward [gaze]. */
+data class EchoClipBeat(val at: Float, val face: EchoFace, val gaze: EchoGaze)
+
+/**
+ * One big eye seen through a magnifier over Echo's screen: centred on the glass at [centerX], [centerY]
+ * with the glass [radius] (fractions of the square frame), drawn at [scale] of its full size as the glass
+ * arrives or leaves, or as a blink. The clip's glass band holds where it shows (the glass, less its glints).
+ */
+data class EchoLensEye(val centerX: Float, val centerY: Float, val radius: Float, val scale: Float, val blink: Boolean)
 
 /**
  * A sequence plays [steps] once, then repeats [loop] forever. Without a loop, its last step is a still

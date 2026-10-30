@@ -39,6 +39,8 @@ Owns shared domain models, enums, and pure value helpers used across network, da
 - `SubscriptionFolder`: domain model representing a custom folder organizing subscribed podcasts with optional icon, display size, `showPodcastGrid` toggle for 1×1 covers, and linked genre auto-syncing.
 - `BoxLoreUser`: domain model representing an authenticated user account (UID, email, display name, email verification flag, anonymous status, provider ID).
 
+- `ListeningDayEpisode` is one day's timed listening of an episode (local day, show, listening time, sessions, last listened), with that time by part of the day (morning, afternoon, evening, night) and the longest sitting when the day had one session (0 when not known); `ListeningPlayedShow` is a show from the listening history with its name, artwork, genre and first and last plays. Listening history's Insights and monthly story read both.
+
 ## Internal structure
 
 ```text

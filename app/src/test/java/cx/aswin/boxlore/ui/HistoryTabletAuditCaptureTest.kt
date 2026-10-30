@@ -29,11 +29,15 @@ import cx.aswin.boxlore.feature.history.HistoryTab
 import cx.aswin.boxlore.feature.history.HistoryViewModel
 import cx.aswin.boxlore.feature.history.InsightsUiState
 import cx.aswin.boxlore.feature.history.TimelineUiState
+import cx.aswin.boxlore.feature.history.story.StoryCard
+import cx.aswin.boxlore.feature.history.story.StoryLogic
+import cx.aswin.boxlore.feature.history.story.StoryPlayer
 import cx.aswin.boxlore.feature.history.timeline.JumpToDayContent
 import cx.aswin.boxlore.feature.history.timeline.JumpToDayHandle
 import cx.aswin.boxlore.feature.history.timeline.JumpToDayState
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.YearMonth
 import java.time.ZoneId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -47,8 +51,9 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * Listening history captures for side-by-side review with the design boards (run with
- * `-PtabletCaptures=after`): the Timeline by day and by show, Jump to a day, and the empty screen,
- * at the boards' 400dp phone width and at tablet sizes. The data is the boards' own (Oct 30, 2026).
+ * `-PtabletCaptures=after`): the Timeline by day and by show, Jump to a day, the empty screen,
+ * Insights, and each card of October's story, at the boards' 400dp phone width and at tablet sizes.
+ * The data is the boards' own (Oct 30, 2026), with the three months before for the stories.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(sdk = [33], application = Application::class)
@@ -61,6 +66,10 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
         val port = BoardHistory(empty = view == "empty", timedDays = if (view == "insights-early") 2 else Int.MAX_VALUE)
         val vm = HistoryViewModel(port, zoneId = { ZoneId.systemDefault() }, now = { TODAY })
         fixture.prepare()
+        if (view.startsWith("story-")) {
+            captureStory(port, StoryCard.valueOf(view.removePrefix("story-").uppercase()))
+            return
+        }
         if (view == "jump") {
             // The sheet has its own window, which offline captures don't draw: render its content on the sheet's surface.
             fixture.setContent(foldSafeViewport = true) {
@@ -97,8 +106,24 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
         fixture.capture("history-$view")
     }
 
+    /** October's story as it shows on Nov 2, at [card], once the card's entrance has settled (Echo at rest). */
+    private fun captureStory(port: BoardHistory, card: StoryCard) {
+        val story = requireNotNull(port.story(YearMonth.of(2026, 10), LocalDate.of(2026, 11, 2)))
+        fixture.setContent(foldSafeViewport = true) {
+            BoxLoreTheme(darkTheme = fixture.configuration.dark, dynamicColor = false) { StoryPlayer(story, card, {}, {}, {}) }
+        }
+        repeat(40) {
+            fixture.compose.mainClock.advanceTimeBy(100)
+            Thread.sleep(20)
+        }
+        fixture.compose.waitForIdle()
+        fixture.capture("history-story-${card.name.lowercase()}")
+    }
+
     companion object {
         val TODAY: LocalDate = LocalDate.of(2026, 10, 30)
+
+        private val STORY_CARDS = StoryCard.entries.map { "story-" + it.name.lowercase() }
 
         /** Board A2's October: listening minutes per day. */
         val BOARD_CALENDAR: Map<LocalDate, Long> =
@@ -111,7 +136,10 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
             listOf(400 to (if (view == "insights") 3_600 else 1_640), 400 to 890, 1280 to 800, 840 to 1280).flatMap { (width, height) ->
                 listOf(false, true).map { dark -> arrayOf<Any>(view, PhoneGoldenConfiguration(width, height, dark)) }
             }
-        }
+        } + STORY_CARDS.flatMap { view ->
+            // The story is its own full-screen frame: the boards' size, a tablet, and a wide fold-out.
+            listOf(400 to 890, 1280 to 800, 840 to 1280).map { (width, height) -> arrayOf<Any>(view, PhoneGoldenConfiguration(width, height, true)) }
+        } + listOf(arrayOf<Any>("story-type", PhoneGoldenConfiguration(400, 890, false)))
     }
 }
 
@@ -132,6 +160,12 @@ private class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE) : Lis
                 row("molasses", "The Great Molasses Flood", "Stuff You Missed in History Class", "hc", 26, 18, 45, completed = true),
             )
         }
+    /** September (12 h 15 min, 2 h 05 min less than October), August (mostly history) and July (mostly science). */
+    private val earlierMonths: List<ListeningDayEpisode> =
+        (1..29 step 2).flatMap { day -> SHOW_SPLIT.map { (podcastId, share) -> boardDay(LocalDate.of(2026, 9, day), podcastId, (49 * 60_000L * share).toLong()) } } +
+            (3..30 step 3).map { day -> boardDay(LocalDate.of(2026, 8, day), "hc", 62 * 60_000L) } +
+            (5..25 step 4).map { day -> boardDay(LocalDate.of(2026, 7, day), "sci", 70 * 60_000L) }
+
     /** Board A2's calendar, each day split like A4: Darknet Diaries first, then the other shows; evenings lead. */
     private val listening =
         if (empty) {
@@ -139,7 +173,7 @@ private class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE) : Lis
         } else {
             HistoryTabletAuditCaptureTest.BOARD_CALENDAR.entries.sortedByDescending { it.key }.take(timedDays).flatMap { (date, ms) ->
                 SHOW_SPLIT.map { (podcastId, share) -> boardDay(date, podcastId, (ms * share).toLong()) }
-            }
+            } + if (timedDays == Int.MAX_VALUE) earlierMonths else emptyList()
         }
     private val played =
         listOf(
@@ -149,7 +183,11 @@ private class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE) : Lis
             ListeningPlayedShow("ks", "Killer Stories", PhoneGoldenRule.ARTWORK_URL, "True Crime", 0L, 0L),
             ListeningPlayedShow("hc", "Stuff You Missed in History Class", PhoneGoldenRule.ARTWORK_URL, "History", 0L, 0L),
             ListeningPlayedShow("vc", "The Vergecast", PhoneGoldenRule.ARTWORK_URL, "Technology", 0L, 0L),
+            ListeningPlayedShow("sci", "Science Vs", PhoneGoldenRule.ARTWORK_URL, "Science", 0L, 0L),
         )
+
+    /** A month's story from this history, as of [today]. */
+    fun story(month: YearMonth, today: LocalDate) = StoryLogic.build(month, history, listening, played, today, ZoneId.systemDefault())
 
     override fun observeHistoryTimeline(): Flow<List<ListeningHistoryItem>> = flowOf(history)
 
@@ -236,4 +274,5 @@ private class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE) : Lis
     private companion object {
         val SHOW_SPLIT = listOf("dd" to 0.29, "ct" to 0.22, "briefing_us" to 0.16, "ks" to 0.13, "hc" to 0.08, "vc" to 0.12)
     }
+
 }

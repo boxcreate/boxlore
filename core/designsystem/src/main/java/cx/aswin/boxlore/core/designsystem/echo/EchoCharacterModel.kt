@@ -75,6 +75,9 @@ fun parseEchoCharacterManifest(manifest: String): EchoCharacterSpec {
             tracks = tracks,
             mask = clip["mask"]?.jsonPrimitive?.content == "true",
             reach = clip["reach"]?.let(::parseEchoReach),
+            script = clip["script"]?.jsonArray?.map(::parseEchoClipBeat).orEmpty(),
+            lens = clip["lens"]?.jsonArray?.map { it as? JsonArray }?.map { it?.let(::parseEchoLensEye) }.orEmpty(),
+            blinks = clip["blinks"]?.jsonArray?.map { it.jsonPrimitive.int }?.toSet().orEmpty(),
         ).also { require(it.rest in screens) { "Clip $id rests on unknown frame ${it.rest}" } }
     }.orEmpty()
     fun step(element: JsonElement): EchoCharacterStep {
@@ -103,6 +106,16 @@ private fun parseEchoReach(element: JsonElement): EchoReach {
     val r = element.jsonArray.map { it.jsonPrimitive.float }
     require(r.size == 4 && r[0] < r[2] && r[1] < r[3])
     return EchoReach(r[0], r[1], r[2], r[3])
+}
+
+private fun parseEchoClipBeat(element: JsonElement): EchoClipBeat {
+    val beat = element.jsonArray
+    return EchoClipBeat(beat[0].jsonPrimitive.float, parseEchoFace(beat[1].jsonPrimitive.content), EchoGaze(beat[2].jsonPrimitive.float, beat[3].jsonPrimitive.float))
+}
+
+private fun parseEchoLensEye(row: JsonArray): EchoLensEye {
+    val v = row.map { it.jsonPrimitive.float }
+    return EchoLensEye(v[0], v[1], v[2], v[3], v[4] != 0f)
 }
 
 private fun parseEchoFace(name: String): EchoFace = EchoFace.valueOf(name.replaceFirstChar(Char::uppercase))
