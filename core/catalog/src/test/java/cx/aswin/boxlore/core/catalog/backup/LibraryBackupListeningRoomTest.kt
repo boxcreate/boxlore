@@ -80,15 +80,42 @@ class LibraryBackupListeningRoomTest {
     }
 
     @Test
-    fun restoringOntoTheSamePhoneBringsItsOwnListeningBackAsItsOwn() = runTest {
+    fun restoringOntoTheSameInstallationKeepsItsListeningUnderItsOwnId() = runTest {
         seedSource()
 
         manager(target, PHONE_A).importLibraryFromJson(manager(source, PHONE_A).exportLibraryAsJson())
 
+        // Its own listening ID, so its next cloud push sends what the restore brought back.
         val sessions = target.listeningSessionDao().getAllSessions().associate { it.sessionId to it.deviceId }
-        assertNull(sessions["mine"])
+        assertEquals(PHONE_A, sessions["mine"])
         assertEquals(PHONE_C, sessions["theirs"])
-        assertEquals(ListeningRollupEntity.THIS_DEVICE, target.listeningRollupDao().getAllRollups().single().deviceId)
+        assertEquals(PHONE_A, target.listeningRollupDao().getAllRollups().single().deviceId)
+    }
+
+    @Test
+    fun sessionsNewerThanARestoredSummaryStayBesideItAndAnOlderBackupChangesNothing() = runTest {
+        val listening = LibraryBackupListening(target, PHONE_B)
+        // Made mid-day: phone A's day 5 summed up to 65 s, and a later session.
+        listening.restore(
+            ListeningBackup(
+                deviceId = PHONE_A,
+                sessions = listOf(sessionBackup("late", day = 5L, device = null, endedOffset = 120_000L)),
+                dailySummaries = listOf(rollupBackup(day = 5L, device = PHONE_A, consumed = 60_000L)),
+            ),
+            refusedEpisodeIds = emptySet(),
+        )
+        // An older backup of phone A: a larger total that ends earlier, and an earlier session.
+        listening.restore(
+            ListeningBackup(
+                deviceId = PHONE_A,
+                sessions = listOf(sessionBackup("early", day = 5L, device = null, endedOffset = 30_000L)),
+                dailySummaries = listOf(rollupBackup(day = 5L, device = PHONE_A, consumed = 999_000L).copy(lastListenedAt = 5_000L + 30_000L)),
+            ),
+            refusedEpisodeIds = emptySet(),
+        )
+
+        assertEquals(listOf("late"), target.listeningSessionDao().getAllSessions().map { it.sessionId })
+        assertEquals(60_000L, target.listeningRollupDao().getRollup(PHONE_A, 5L, EPISODE)!!.consumedMs)
     }
 
     @Test
@@ -204,16 +231,16 @@ class LibraryBackupListeningRoomTest {
         wallMs = 40_000L,
     )
 
-    private fun sessionBackup(id: String, day: Long, device: String?,) = ListeningSessionBackup(
-        sessionId = id, episodeId = EPISODE, podcastId = SHOW, startedAt = day * 1_000L, endedAt = day * 1_000L + 60_000L,
+    private fun sessionBackup(id: String, day: Long, device: String?, endedOffset: Long = 60_000L,) = ListeningSessionBackup(
+        sessionId = id, episodeId = EPISODE, podcastId = SHOW, startedAt = day * 1_000L + endedOffset - 60_000L, endedAt = day * 1_000L + endedOffset,
         consumedMs = 60_000L, completed = false, localDay = day, timeBucket = 1, deviceId = device,
     )
 
     private fun rollup(day: Long, device: String, consumed: Long,) =
-        ListeningRollupEntity(day, EPISODE, SHOW, consumed, sessionCount = 1, completionCount = 0, lastListenedAt = day, deviceId = device)
+        ListeningRollupEntity(day, EPISODE, SHOW, consumed, sessionCount = 1, completionCount = 0, lastListenedAt = day * 1_000L + 60_000L, deviceId = device)
 
     private fun rollupBackup(day: Long, device: String, consumed: Long,) =
-        ListeningRollupBackup(deviceId = device, localDay = day, episodeId = EPISODE, podcastId = SHOW, consumedMs = consumed, sessionCount = 1)
+        ListeningRollupBackup(deviceId = device, localDay = day, episodeId = EPISODE, podcastId = SHOW, consumedMs = consumed, sessionCount = 1, lastListenedAt = day * 1_000L + 60_000L)
 
     /** History through Room, as the app's playback repository stores it. */
     private class RoomHistory(private val database: BoxLoreDatabase) : ListeningHistoryBackupPort {

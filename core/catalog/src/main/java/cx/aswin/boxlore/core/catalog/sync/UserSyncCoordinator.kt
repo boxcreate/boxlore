@@ -86,7 +86,7 @@ open class UserSyncCoordinator(
         val maintenance = listeningInsightsMaintenance ?: return@lazy null
         val shows = playedShowDao ?: return@lazy null
         val prefs = boxcastPrefs ?: return@lazy null
-        ListeningSync(maintenance, shows, prefs)
+        ListeningSync(maintenance, shows, listeningHistoryDao ?: return@lazy null, prefs)
     }
 
     private val requireBoxLoreApi get() = checkNotNull(boxLoreApi) { "boxLoreApi required" }
@@ -337,9 +337,10 @@ open class UserSyncCoordinator(
 
             val pushReq = SyncPushRequest(
                 subscriptions = subDtos,
-                history = histDtos,
+                // Listening dates go along once (the backfill), except for rows this push sends anyway.
+                history = histDtos + batch.listening?.dateDtos.orEmpty().filter { dates -> histDtos.none { it.episodeId == dates.episodeId } },
                 queue = queueDto,
-                listeningDays = batch.listening?.days.orEmpty(),
+                listeningDays = batch.listening?.dayDtos.orEmpty(),
                 playedShows = batch.listening?.showDtos.orEmpty(),
                 clientTimestamp = now,
             )
@@ -642,6 +643,8 @@ open class UserSyncCoordinator(
                 }
                 requireBoxcastPrefs.setLastSyncTimestamp(0L)
                 requireBoxcastPrefs.setLastSyncedUserId(null)
+                // The listening this phone holds goes up again to whichever account it syncs with next.
+                listeningSync?.reset()
             }
         }
     }

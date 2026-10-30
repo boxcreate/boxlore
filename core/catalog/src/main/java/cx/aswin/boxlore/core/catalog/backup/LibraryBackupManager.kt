@@ -227,7 +227,7 @@ class LibraryBackupManager(
     private fun listening(): LibraryBackupListening? {
         val shared = SharedAppDependenciesHolder.instance
         val db = database ?: shared?.database ?: return null
-        val deviceId = runCatching { (deviceIdentity ?: shared?.deviceIdentityPort)?.getDeviceId() }.getOrNull()
+        val deviceId = runCatching { (deviceIdentity ?: shared?.listeningDeviceIdentityPort)?.getDeviceId() }.getOrNull()
         return LibraryBackupListening(db, deviceId)
     }
 

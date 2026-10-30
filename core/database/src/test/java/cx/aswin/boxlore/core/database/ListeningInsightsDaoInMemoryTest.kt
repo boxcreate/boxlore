@@ -162,6 +162,42 @@ class ListeningInsightsDaoInMemoryTest {
     }
 
     @Test
+    fun thisInstallationClaimsListeningStoredWithoutAPhoneOnce() = runTest {
+        sessions.upsertSessions(listOf(session("legacy"), session("blank").copy(deviceId = ""), session("other").copy(deviceId = "phone-b")))
+        rollups.upsertRollup(ListeningRollupEntity(9L, "ep-1", "pod-1", 1_000L, 1, 0, lastListenedAt = 9L))
+        rollups.upsertRollup(ListeningRollupEntity(9L, "ep-1", "pod-1", 2_000L, 1, 1, lastListenedAt = 8L, deviceId = "me"))
+
+        maintenance.claimLegacyListening("me")
+        maintenance.claimLegacyListening("me")
+
+        assertEquals(
+            mapOf("legacy" to "me", "blank" to "me", "other" to "phone-b"),
+            sessions.getAllSessions().associate { it.sessionId to it.deviceId },
+        )
+        val claimed = rollups.getAllRollups().single()
+        assertEquals(listOf("me", 3_000L, 2, 1, 9L), listOf(claimed.deviceId, claimed.consumedMs, claimed.sessionCount, claimed.completionCount, claimed.lastListenedAt))
+    }
+
+    @Test
+    fun aPushSendsChangedDaysAndAZeroDayForADayNoLongerHeld() = runTest {
+        sessions.upsertSessions(listOf(session("a").copy(deviceId = "me"), session("b").copy(deviceId = "me", episodeId = "ep-2")))
+        val first = maintenance.listeningDaysToPush("me", limit = 10)
+        assertEquals(listOf("ep-1" to 1_000L, "ep-2" to 1_000L), first.map { it.episodeId to it.consumedMs })
+        maintenance.recordPushedDays(first)
+        assertTrue(maintenance.listeningDaysToPush("me", limit = 10).isEmpty())
+
+        sessions.deleteSessionsForEpisode("ep-2")
+        val zero = maintenance.listeningDaysToPush("me", limit = 10).single()
+        assertEquals("ep-2" to true, zero.episodeId to zero.isZero())
+        maintenance.recordPushedDays(listOf(zero))
+        assertEquals(listOf("ep-1"), database.listeningPushDao().getPushedDays("me").map { it.episodeId })
+        assertTrue(maintenance.listeningDaysToPush("me", limit = 10).isEmpty())
+
+        maintenance.forgetPushedDays()
+        assertEquals(1, maintenance.listeningDaysToPush("me", limit = 10).size)
+    }
+
+    @Test
     fun deleteEpisodeAndClearAll() = runTest {
         sessions.upsertSession(session("s1").copy(episodeId = "ep-a"))
         sessions.upsertSession(session("s2").copy(episodeId = "ep-b"))

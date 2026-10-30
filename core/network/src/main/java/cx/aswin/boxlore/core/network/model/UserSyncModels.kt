@@ -120,8 +120,9 @@ data class QueueSyncDto(
 )
 
 /**
- * One phone's listening of one episode on one local day (Room v40 daily summary). Each phone pushes
- * its own days in full; the server keeps the latest push of a (phone, day, episode).
+ * One installation's listening of one episode on one local day (Room v40 daily summary), under its
+ * listening device ID. Each installation pushes its own days in full, and all zero for a day it no
+ * longer holds; the server keeps the latest push of a (device, day, episode).
  */
 @Serializable
 data class ListeningDaySyncDto(

@@ -1,57 +1,72 @@
 package cx.aswin.boxlore.core.catalog.sync
 
+import cx.aswin.boxlore.core.database.ListeningHistoryDao
+import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningInsightsMaintenance
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.PlayedShowDao
 import cx.aswin.boxlore.core.database.PlayedShowEntity
 import cx.aswin.boxlore.core.network.model.ListeningDaySyncDto
+import cx.aswin.boxlore.core.network.model.ListeningHistorySyncDto
 import cx.aswin.boxlore.core.network.model.PlayedShowSyncDto
 import cx.aswin.boxlore.core.network.model.SyncPullResponse
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 
 /**
- * Cloud sync of this phone's daily listening and the played shows (Room v40), so a reinstalled or new
- * phone gets its listening time back and every phone's listening counts once.
+ * Cloud sync of this phone's daily listening, the played shows and the history rows' listening dates
+ * (Room v40), so a reinstalled or new phone gets its listening time back and every phone's listening
+ * counts once.
  *
- * - **Push:** this phone's days whose last listening is after the pushed mark (all of them on the
- *   first push), oldest first, [MAX_DAYS_PER_PUSH] at a time under its sync device ID, and the played
- *   shows waiting for the push. The mark moves, and the shows are marked sent, only when the server
- *   answers that it stored listening (`listeningAccepted`); an older server ignores it all, so nothing
- *   is lost before the server update. The last [OVERLAP_MS] of days go again with the next push, so a
- *   session saved just after a push still goes.
+ * - **Whose listening:** this installation's listening device ID (`BoxcastPrefs.getOrCreateListeningDeviceId`,
+ *   never in an Android backup or device transfer), so two phones never write the same totals. Listening
+ *   stored before v40 without a phone is claimed by it first.
+ * - **Push:** the days whose totals differ from what the cloud last stored, and a zero day for one this
+ *   phone no longer holds (moved to another episode ID, or removed), oldest first and [MAX_DAYS_PER_PUSH]
+ *   at a time; the played shows waiting for the push; and once, the listening dates of history rows that
+ *   have them (sent with `updatedAt` [DATES_ONLY_UPDATED_AT], so the server merges the dates and keeps
+ *   every playback value).
+ *   All of it is recorded as sent only when the server answers that it stores listening
+ *   (`listeningAccepted`); an older server ignores it, and it goes again after the server update.
  * - **Pull:** every phone's days and the played shows since the pulled mark (0 on the first pull, even
- *   when the history mark is recent; then the last pull's syncedAt - 1). Another phone's days are stored under its ID; this phone's own
- *   only where it holds nothing ([ListeningInsightsMaintenance.applyCloudDailyListening]).
- * - **Account switch:** both marks go back to 0.
+ *   when the history mark is recent; then the last pull's syncedAt - 1). Another phone's day replaces
+ *   only listening of it that it covers ([ListeningInsightsMaintenance.applyCloudDailyListening]).
+ * - **Reset** (an account switch or a deleted cloud copy): everything goes up again.
  */
 internal class ListeningSync(
     private val maintenance: ListeningInsightsMaintenance,
     private val playedShows: PlayedShowDao,
+    private val history: ListeningHistoryDao,
     private val prefs: BoxcastPrefs,
 ) {
-    /** What one push sends, and the pushed mark it reaches once stored. */
-    data class Outgoing(val days: List<ListeningDaySyncDto>, val shows: List<PlayedShowEntity>, val pushedUntil: Long?,) {
-        val isEmpty: Boolean get() = days.isEmpty() && shows.isEmpty()
+    /** What one push sends. */
+    data class Outgoing(val days: List<ListeningRollupEntity>, val shows: List<PlayedShowEntity>, val dates: List<ListeningHistoryEntity>,) {
+        val isEmpty: Boolean get() = days.isEmpty() && shows.isEmpty() && dates.isEmpty()
+        val dayDtos: List<ListeningDaySyncDto> get() = days.map { it.toDto() }
         val showDtos: List<PlayedShowSyncDto> get() = shows.map { it.toDto() }
+        val dateDtos: List<ListeningHistorySyncDto> get() = dates.map { it.toDatesDto() }
     }
 
     suspend fun outgoing(): Outgoing {
-        val pushedUntil = prefs.getListeningPushedUntil()
-        val changedAfter = if (pushedUntil <= 0L) -1L else pushedUntil - OVERLAP_MS
-        val days = maintenance.ownDailyListening(changedAfter, MAX_DAYS_PER_PUSH)
-        val deviceId = prefs.getOrCreateSyncDeviceId()
+        val deviceId = prefs.getOrCreateListeningDeviceId()
+        maintenance.claimLegacyListening(deviceId)
+        val dates =
+            if (prefs.areListeningDatesSent()) emptyList() else history.getHistoryWithListeningDatesAfter(prefs.getListeningDatesSentAfter(), MAX_DATES_PER_PUSH)
         return Outgoing(
-            days = days.map { it.toDto(deviceId) },
+            days = maintenance.listeningDaysToPush(deviceId, MAX_DAYS_PER_PUSH),
             shows = playedShows.getDirtyPlayedShows(MAX_SHOWS_PER_PUSH),
-            pushedUntil = days.maxOfOrNull { it.lastListenedAt }?.let { maxOf(it, pushedUntil) },
+            dates = dates,
         )
     }
 
-    /** After a push: marks what the server stored as sent, when it says it stores listening. */
+    /** After a push: records what the server stored, when it says it stores listening. */
     suspend fun onPushed(sent: Outgoing, listeningAccepted: Boolean,) {
         if (!listeningAccepted) return
-        sent.pushedUntil?.let(prefs::setListeningPushedUntil)
-        for (show in sent.shows) playedShows.markPlayedShowSynced(show.podcastId, show.lastPlayedAt)
+        maintenance.recordPushedDays(sent.days)
+        for (show in sent.shows) playedShows.markPlayedShowSynced(show)
+        if (!prefs.areListeningDatesSent()) {
+            sent.dates.lastOrNull()?.let { prefs.setListeningDatesSentAfter(it.episodeId) }
+            if (sent.dates.size < MAX_DATES_PER_PUSH) prefs.setListeningDatesSent(true)
+        }
     }
 
     fun pulledUntil(): Long = prefs.getListeningPulledUntil()
@@ -61,33 +76,21 @@ internal class ListeningSync(
         val days = body.listeningDays
         val shows = body.playedShows
         if (days == null && shows == null) return
-        maintenance.applyCloudDailyListening(days.orEmpty().mapNotNull { it.toEntity() }, prefs.getOrCreateSyncDeviceId())
+        maintenance.applyCloudDailyListening(days.orEmpty().mapNotNull { it.toEntity() }, prefs.getOrCreateListeningDeviceId())
         playedShows.mergePlayedShows(shows.orEmpty().mapNotNull { it.toEntity() }, fromCloud = true)
         // A push stored in the same millisecond after this pull carries syncedAt itself; the next pull
         // reads that millisecond again (merging what it brings is idempotent).
         prefs.setListeningPulledUntil((body.syncedAt - 1L).coerceAtLeast(0L))
     }
 
-    fun reset() {
-        prefs.setListeningPushedUntil(0L)
+    /** Starts over for another cloud copy: every day, played show and listening date goes up again. */
+    suspend fun reset() {
+        maintenance.forgetPushedDays()
+        playedShows.markAllPlayedShowsDirty()
         prefs.setListeningPulledUntil(0L)
+        prefs.setListeningDatesSentAfter("")
+        prefs.setListeningDatesSent(false)
     }
-
-    private fun ListeningRollupEntity.toDto(deviceId: String) = ListeningDaySyncDto(
-        deviceId = deviceId,
-        localDay = localDay,
-        episodeId = episodeId,
-        podcastId = podcastId,
-        consumedMs = consumedMs,
-        wallMs = wallMs,
-        sessionCount = sessionCount,
-        completionCount = completionCount,
-        morningMs = morningMs,
-        afternoonMs = afternoonMs,
-        eveningMs = eveningMs,
-        nightMs = nightMs,
-        lastListenedAt = lastListenedAt,
-    )
 
     private fun ListeningDaySyncDto.toEntity(): ListeningRollupEntity? {
         if (deviceId.isBlank() || episodeId.isBlank() || localDay < 0L) return null
@@ -125,9 +128,30 @@ internal class ListeningSync(
         /** Well under the server's 1,000 per push and its 1 MiB body limit, with history and the queue beside them. */
         const val MAX_DAYS_PER_PUSH = 250
         const val MAX_SHOWS_PER_PUSH = 250
+        const val MAX_DATES_PER_PUSH = 100
 
-        /** Days whose last listening is this close to the pushed mark go again (a late-saved session). */
-        const val OVERLAP_MS = 5 * 60 * 1_000L
+        /**
+         * The playback clock of a row sent only for its listening dates: older than every clock the
+         * server stores, so it never replaces a playback value. Never 0: the app leaves 0 out of the
+         * JSON, and the server (every build) stores a row without one at its own current time.
+         */
+        const val DATES_ONLY_UPDATED_AT = 1L
+
+        private fun ListeningRollupEntity.toDto() = ListeningDaySyncDto(
+            deviceId = deviceId,
+            localDay = localDay,
+            episodeId = episodeId,
+            podcastId = podcastId,
+            consumedMs = consumedMs,
+            wallMs = wallMs,
+            sessionCount = sessionCount,
+            completionCount = completionCount,
+            morningMs = morningMs,
+            afternoonMs = afternoonMs,
+            eveningMs = eveningMs,
+            nightMs = nightMs,
+            lastListenedAt = lastListenedAt,
+        )
 
         private fun PlayedShowEntity.toDto() = PlayedShowSyncDto(
             podcastId = podcastId,
@@ -136,6 +160,26 @@ internal class ListeningSync(
             genre = genre,
             firstPlayedAt = firstPlayedAt,
             lastPlayedAt = lastPlayedAt,
+        )
+
+        /**
+         * A history row carrying only its listening dates in effect: [DATES_ONLY_UPDATED_AT] loses to
+         * every stored row's playback clock, so the server keeps its playback values and merges the dates.
+         */
+        private fun ListeningHistoryEntity.toDatesDto() = ListeningHistorySyncDto(
+            episodeId = episodeId,
+            podcastId = podcastId,
+            episodeTitle = episodeTitle.takeIf { it.isNotBlank() },
+            podcastName = podcastName.takeIf { it.isNotBlank() },
+            progressMs = progressMs,
+            durationMs = durationMs,
+            isCompleted = isCompleted,
+            isLiked = isLiked,
+            likedAt = likedAt,
+            lastPlayedAt = lastPlayedAt,
+            updatedAt = DATES_ONLY_UPDATED_AT,
+            firstPlayedAt = firstPlayedAt,
+            finishedAt = finishedAt,
         )
     }
 }

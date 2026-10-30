@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 40,
-    "identityHash": "cf81bb75ca83b3b0c6f96890eb28d8c7",
+    "identityHash": "1badfbf8ba45b165d1d3ed593aa008b5",
     "entities": [
       {
         "tableName": "listening_history",
@@ -2025,11 +2025,103 @@
             "createSql": "CREATE INDEX IF NOT EXISTS `index_played_shows_isDirty` ON `${TABLE_NAME}` (`isDirty`)"
           }
         ]
+      },
+      {
+        "tableName": "listening_days_pushed",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`deviceId` TEXT NOT NULL, `localDay` INTEGER NOT NULL, `episodeId` TEXT NOT NULL, `podcastId` TEXT NOT NULL, `consumedMs` INTEGER NOT NULL, `wallMs` INTEGER NOT NULL, `sessionCount` INTEGER NOT NULL, `completionCount` INTEGER NOT NULL, `morningMs` INTEGER NOT NULL, `afternoonMs` INTEGER NOT NULL, `eveningMs` INTEGER NOT NULL, `nightMs` INTEGER NOT NULL, `lastListenedAt` INTEGER NOT NULL, PRIMARY KEY(`deviceId`, `localDay`, `episodeId`))",
+        "fields": [
+          {
+            "fieldPath": "deviceId",
+            "columnName": "deviceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localDay",
+            "columnName": "localDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "episodeId",
+            "columnName": "episodeId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "podcastId",
+            "columnName": "podcastId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "consumedMs",
+            "columnName": "consumedMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wallMs",
+            "columnName": "wallMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionCount",
+            "columnName": "sessionCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completionCount",
+            "columnName": "completionCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "morningMs",
+            "columnName": "morningMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "afternoonMs",
+            "columnName": "afternoonMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "eveningMs",
+            "columnName": "eveningMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nightMs",
+            "columnName": "nightMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastListenedAt",
+            "columnName": "lastListenedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "deviceId",
+            "localDay",
+            "episodeId"
+          ]
+        }
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'cf81bb75ca83b3b0c6f96890eb28d8c7')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1badfbf8ba45b165d1d3ed593aa008b5')"
     ]
   }
 }

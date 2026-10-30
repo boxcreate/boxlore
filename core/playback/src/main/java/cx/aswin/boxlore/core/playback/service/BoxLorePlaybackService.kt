@@ -178,6 +178,8 @@ open class BoxLorePlaybackService :
             },
         ).also { session ->
             session.listeningOutput = { ListeningOutputRoute.current(this, mediaSession?.player ?: playbackPlayer) }
+            val prefs = cx.aswin.boxlore.core.prefs.BoxcastPrefs(applicationContext)
+            session.listeningDeviceId = { prefs.getOrCreateListeningDeviceId() }
         }
     }
 

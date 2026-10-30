@@ -369,6 +369,10 @@ class AppContainer(
         DeviceIdentityPort { boxcastPrefs.getOrCreateSyncDeviceId() }
     }
 
+    override val listeningDeviceIdentityPort: DeviceIdentityPort by lazy {
+        DeviceIdentityPort { boxcastPrefs.getOrCreateListeningDeviceId() }
+    }
+
     val queueRepository: QueueRepository by lazy {
         QueueRepository(database, podcastRepository, deviceIdentityPort)
     }

@@ -70,9 +70,24 @@ interface PlayedShowDao {
     @Query("SELECT * FROM played_shows WHERE isDirty = 1 ORDER BY lastPlayedAt DESC LIMIT :limit")
     suspend fun getDirtyPlayedShows(limit: Int): List<PlayedShowEntity>
 
-    /** Clears the push mark of rows the push sent, unless a play changed them since ([lastPlayedAt] differs). */
-    @Query("UPDATE played_shows SET isDirty = 0 WHERE podcastId = :podcastId AND lastPlayedAt = :lastPlayedAt")
-    suspend fun markPlayedShowSynced(podcastId: String, lastPlayedAt: Long,)
+    /** Clears the push mark of [sent] unless the row changed since it was sent (a play, a restore or a pull). */
+    suspend fun markPlayedShowSynced(sent: PlayedShowEntity) {
+        markPlayedShowSyncedIfUnchanged(sent.podcastId, sent.podcastName, sent.imageUrl, sent.genre, sent.firstPlayedAt, sent.lastPlayedAt)
+    }
+
+    @Query(
+        """
+        UPDATE played_shows SET isDirty = 0
+        WHERE podcastId = :podcastId AND podcastName = :podcastName AND imageUrl IS :imageUrl AND genre IS :genre
+          AND firstPlayedAt = :firstPlayedAt AND lastPlayedAt = :lastPlayedAt
+        """,
+    )
+    @Suppress("LongParameterList")
+    suspend fun markPlayedShowSyncedIfUnchanged(podcastId: String, podcastName: String, imageUrl: String?, genre: String?, firstPlayedAt: Long, lastPlayedAt: Long,)
+
+    /** Marks every row for the next push (a new account or a deleted cloud copy). */
+    @Query("UPDATE played_shows SET isDirty = 1")
+    suspend fun markAllPlayedShowsDirty()
 
     @Query("DELETE FROM played_shows")
     suspend fun deleteAllPlayedShows()

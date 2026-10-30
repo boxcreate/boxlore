@@ -24,50 +24,33 @@ class ListeningDatesTest {
 
     @Test
     fun aWholeRowWriteKeepsTheStoredDates() {
-        val written = row(first = null, finished = null).keepingListeningDatesOf(stored(first = 100L, finished = 200L, completed = true))
+        val written = row(first = null, finished = null).keepingListeningDatesOf(stored(first = 100L, finished = 200L))
         assertEquals(100L, written.firstPlayedAt)
         assertEquals(200L, written.finishedAt)
     }
 
     @Test
     fun aRowFromBeforeRecordingStaysBeforeRecording() {
-        val written = row(first = 900L, finished = 900L, completed = true).keepingListeningDatesOf(stored(first = 0L, finished = 0L, completed = true))
+        val written = row(first = 900L, finished = 900L, completed = true).keepingListeningDatesOf(stored(first = 0L, finished = 0L))
         assertEquals(0L, written.firstPlayedAt)
         assertEquals(0L, written.finishedAt)
     }
 
     @Test
     fun anEarlierDateFromAnotherDeviceWins() {
-        val written = row(first = 50L, finished = 60L, completed = true).keepingListeningDatesOf(stored(first = 100L, finished = 200L, completed = true))
+        val written = row(first = 50L, finished = 60L, completed = true).keepingListeningDatesOf(stored(first = 100L, finished = 200L))
         assertEquals(50L, written.firstPlayedAt)
         assertEquals(60L, written.finishedAt)
     }
 
     @Test
-    fun finishingAStoredUnfinishedEpisodeByListeningDatesTheFinish() {
-        val written = row(first = null, finished = null, completed = true, playedAt = 700L).keepingListeningDatesOf(stored(first = 0L, finished = null))
-        assertEquals(700L, written.finishedAt)
-    }
-
-    @Test
-    fun markingPlayedDoesNotDateAFinish() {
+    fun aWriteFromSyncABackupOrAMarkNeverDatesAFinish() {
+        val listened = row(first = null, finished = null, completed = true, playedAt = 700L).keepingListeningDatesOf(stored(first = 0L, finished = null))
         val manual = row(first = null, finished = null, completed = true, manual = true).keepingListeningDatesOf(stored(first = 0L, finished = null))
         val bulk = row(first = null, finished = null, completed = true, bulk = true).keepingListeningDatesOf(stored(first = 0L, finished = null))
+        assertNull(listened.finishedAt)
         assertNull(manual.finishedAt)
         assertNull(bulk.finishedAt)
-    }
-
-    @Test
-    fun aListeningFinishAfterAMarkDatesTheFinish() {
-        val written = row(first = null, finished = null, completed = true, playedAt = 800L)
-            .keepingListeningDatesOf(stored(first = 1L, finished = null, completed = true, manual = true))
-        assertEquals(800L, written.finishedAt)
-    }
-
-    @Test
-    fun aStoredFinishByListeningIsNotRedated() {
-        val written = row(first = null, finished = null, completed = true, playedAt = 900L).keepingListeningDatesOf(stored(first = 1L, finished = null, completed = true))
-        assertNull(written.finishedAt)
     }
 
     @Suppress("LongParameterList")
@@ -89,6 +72,5 @@ class ListeningDatesTest {
         finishedAt = finished,
     )
 
-    private fun stored(first: Long?, finished: Long?, completed: Boolean = false, manual: Boolean = false,) =
-        StoredListeningDates("1", first, finished, completed, isManualCompletion = manual, isBulkCompletion = false)
+    private fun stored(first: Long?, finished: Long?) = StoredListeningDates("1", first, finished)
 }

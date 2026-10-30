@@ -15,13 +15,15 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  *    existing row reads "before boxlore recorded it" ([ListeningDates]) without being rewritten.
  *    Only rows not finished get `finishedAt` NULL (no finish yet), so a later finish is dated.
  * 2. `listening_sessions` gets `deviceId`, `wallMs`, `source`, `output` and `episodePublishedAt`,
- *    NULL on every existing session (this phone's, details not recorded).
- * 3. `listening_rollups` is rebuilt with the phone in its key (`deviceId`, '' for this phone) and
- *    `wallMs` 0; every existing summary is copied unchanged as this phone's.
+ *    NULL on every existing session (no phone yet: the installation claims them, details not recorded).
+ * 3. `listening_rollups` is rebuilt with the phone in its key (`deviceId`, '' until the installation
+ *    claims it) and `wallMs` 0; every existing summary is copied unchanged.
  * 4. `played_shows` is created and filled from listening history: one row per show with a row
  *    played or finished by listening (not one only marked played or liked), with its latest name
  *    and art, the followed show's genre when stored, a first play before recording (0) and the
  *    latest play time, marked for the next cloud sync push.
+ * 5. `listening_days_pushed` (what the cloud last stored of this phone's daily listening) is created
+ *    empty, so the first push after the upgrade sends every day.
  *
  * Never edit this migration once a phone may have run it; later schema changes go to v41.
  */
@@ -31,6 +33,17 @@ internal object ListeningDataMigration {
         addSessionDetails(db)
         rebuildRollupsPerPhone(db)
         createPlayedShows(db)
+        createPushedDays(db)
+    }
+
+    private fun createPushedDays(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `listening_days_pushed` (`deviceId` TEXT NOT NULL, `localDay` INTEGER NOT NULL, " +
+                "`episodeId` TEXT NOT NULL, `podcastId` TEXT NOT NULL, `consumedMs` INTEGER NOT NULL, `wallMs` INTEGER NOT NULL, " +
+                "`sessionCount` INTEGER NOT NULL, `completionCount` INTEGER NOT NULL, `morningMs` INTEGER NOT NULL, " +
+                "`afternoonMs` INTEGER NOT NULL, `eveningMs` INTEGER NOT NULL, `nightMs` INTEGER NOT NULL, " +
+                "`lastListenedAt` INTEGER NOT NULL, PRIMARY KEY(`deviceId`, `localDay`, `episodeId`))",
+        )
     }
 
     private fun addListeningDates(db: SupportSQLiteDatabase) {

@@ -31,6 +31,7 @@ object ListeningSessionRecordLogic {
         val source: String? = null,
         val output: String? = null,
         val episodePublishedAt: Long? = null,
+        val deviceId: String? = null,
     )
 
     fun timeBucketForHour(hour: Int): Int = when (hour) {
@@ -65,8 +66,15 @@ object ListeningSessionRecordLogic {
             source = input.source,
             output = input.output,
             episodePublishedAt = input.episodePublishedAt,
+            deviceId = input.deviceId,
         )
     }
+
+    /**
+     * Listening time an advance of [positionAdvanceMs] of audio took at [speed]: the audio played, at its
+     * speed, so time spent buffering or paused between position samples never counts.
+     */
+    fun listenedWallMs(positionAdvanceMs: Long, speed: Float): Long = if (speed > 0f) (positionAdvanceMs / speed).toLong() else positionAdvanceMs
 
     /**
      * How a play started, as [ListeningSessionEntity.source] stores it: a Lore or Smart Queue play by

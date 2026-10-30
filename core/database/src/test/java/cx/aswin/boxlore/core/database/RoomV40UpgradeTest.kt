@@ -246,7 +246,7 @@ class RoomV40UpgradeTest(private val fromVersion: Int) {
         private const val LIKED_SHOW = "1005"
 
         /** Tables migration 39→40 creates or rebuilds, and the columns it adds to others. */
-        private val V40_TABLES = setOf("listening_rollups", "played_shows")
+        private val V40_TABLES = setOf("listening_rollups", "played_shows", "listening_days_pushed")
         private val V40_COLUMNS =
             setOf(
                 "listening_history.firstPlayedAt",

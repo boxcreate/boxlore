@@ -30,6 +30,23 @@ class BoxcastPrefsTest {
     }
 
     @Test
+    fun theListeningDeviceIdBelongsToThisInstallationAndIsNeverBackedUp() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        java.io.File(context.noBackupFilesDir, BoxcastPrefs.LISTENING_DEVICE_ID_FILE).delete()
+        val id = prefs.getOrCreateListeningDeviceId()
+
+        assertEquals(id, BoxcastPrefs(context).getOrCreateListeningDeviceId())
+        assertTrue(id != prefs.getOrCreateSyncDeviceId())
+        // Restored or transferred preferences don't carry it.
+        context.getSharedPreferences(BoxcastPrefs.PREFS_NAME, Context.MODE_PRIVATE).all.values.forEach { assertTrue(it != id) }
+        assertEquals(id, java.io.File(context.noBackupFilesDir, BoxcastPrefs.LISTENING_DEVICE_ID_FILE).readText())
+
+        // A new installation (its no-backup files gone) gets another.
+        java.io.File(context.noBackupFilesDir, BoxcastPrefs.LISTENING_DEVICE_ID_FILE).delete()
+        assertTrue(BoxcastPrefs(context).getOrCreateListeningDeviceId() != id)
+    }
+
+    @Test
     fun onboardingDefaultsToIncomplete() {
         assertFalse(prefs.isOnboardingCompleted())
         prefs.setOnboardingCompleted(true)

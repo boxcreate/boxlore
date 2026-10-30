@@ -43,4 +43,10 @@ interface ListeningRollupDao {
 
     @Query("DELETE FROM listening_rollups")
     suspend fun deleteAllRollups()
+
+    @Query("SELECT * FROM listening_rollups WHERE deviceId = :deviceId")
+    suspend fun getRollupsOfDevice(deviceId: String): List<ListeningRollupEntity>
+
+    @Query("DELETE FROM listening_rollups WHERE deviceId = :deviceId AND localDay = :localDay AND episodeId = :episodeId")
+    suspend fun deleteRollup(deviceId: String, localDay: Long, episodeId: String,)
 }

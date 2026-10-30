@@ -52,25 +52,42 @@ class PlayedShowDaoTest {
     }
 
     @Test
-    fun aPushClearsTheMarkUnlessAPlayChangedTheRowSince() = runTest {
+    fun aPushClearsTheMarkOnlyOfTheRowAsItWasSent() = runTest {
         dao.recordPlay("1", "Show", null, null, playedAt = 100L)
         val sent = dao.getDirtyPlayedShows(limit = 10).single()
         dao.recordPlay("1", "Show", null, null, playedAt = 200L)
 
-        dao.markPlayedShowSynced(sent.podcastId, sent.lastPlayedAt)
+        // A play after the push left: the mark stays.
+        dao.markPlayedShowSynced(sent)
         assertTrue(dao.getPlayedShow("1")!!.isDirty)
 
-        dao.markPlayedShowSynced("1", 200L)
+        // A restore after the push left brought an earlier first play, with the same last play: the mark stays.
+        val second = dao.getDirtyPlayedShows(limit = 10).single()
+        dao.mergePlayedShows(listOf(PlayedShowEntity("1", "Show", null, null, firstPlayedAt = 10L, lastPlayedAt = 200L)), fromCloud = false)
+        dao.markPlayedShowSynced(second)
+        assertTrue(dao.getPlayedShow("1")!!.isDirty)
+
+        dao.markPlayedShowSynced(dao.getPlayedShow("1")!!)
         assertFalse(dao.getPlayedShow("1")!!.isDirty)
         assertTrue(dao.getDirtyPlayedShows(limit = 10).isEmpty())
     }
 
     @Test
+    fun aResetMarksEveryRowForThePush() = runTest {
+        dao.recordPlay("1", "Show", null, null, playedAt = 100L)
+        dao.markPlayedShowSynced(dao.getPlayedShow("1")!!)
+
+        dao.markAllPlayedShowsDirty()
+
+        assertTrue(dao.getPlayedShow("1")!!.isDirty)
+    }
+
+    @Test
     fun cloudRowsMergeInAndOnlyLocalNewsIsMarkedForThePush() = runTest {
         dao.recordPlay("1", "Show", null, "Comedy", playedAt = 500L)
-        dao.markPlayedShowSynced("1", 500L)
+        dao.markPlayedShowSynced(dao.getPlayedShow("1")!!)
         dao.recordPlay("3", "Local", null, null, playedAt = 50L)
-        dao.markPlayedShowSynced("3", 50L)
+        dao.markPlayedShowSynced(dao.getPlayedShow("3")!!)
 
         dao.mergePlayedShows(
             listOf(
@@ -92,7 +109,7 @@ class PlayedShowDaoTest {
     @Test
     fun restoredRowsAreMarkedForThePushAndUnchangedOnesAreLeftAlone() = runTest {
         dao.recordPlay("1", "Show", null, null, playedAt = 100L)
-        dao.markPlayedShowSynced("1", 100L)
+        dao.markPlayedShowSynced(dao.getPlayedShow("1")!!)
 
         dao.mergePlayedShows(
             listOf(

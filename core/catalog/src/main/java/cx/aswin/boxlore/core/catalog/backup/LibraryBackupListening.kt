@@ -13,7 +13,7 @@ import cx.aswin.boxlore.core.database.rollupDeviceId
  * Field names are restore contracts; never rename them.
  */
 data class ListeningBackup(
-    /** The sync device ID of the phone that made the backup: its own sessions and summaries carry it. */
+    /** The listening device ID of the installation that made the backup (rows without one were its own). */
     val deviceId: String? = null,
     val sessions: List<ListeningSessionBackup>? = null,
     val dailySummaries: List<ListeningRollupBackup>? = null,
@@ -66,13 +66,14 @@ data class PlayedShowBackup(
 )
 
 /**
- * Exports and restores [ListeningBackup]. This phone's own sessions and summaries are stored without
- * a phone (`deviceId` null and [ListeningRollupEntity.THIS_DEVICE]) and exported under [thisDeviceId];
- * a backup's rows of [thisDeviceId] come back as this phone's, and another phone's keep its ID, so
- * a later cloud sync knows whose listening each is and never counts it twice.
+ * Exports and restores [ListeningBackup]. Every session and summary carries the listening device ID
+ * of the installation that recorded it ([thisDeviceId] for this one; listening stored before Room v40
+ * is claimed by it first), so a restore on another phone or after a reinstall keeps the restored
+ * listening that phone's, and a cloud sync never counts it twice.
  */
 internal class LibraryBackupListening(private val database: BoxLoreDatabase, private val thisDeviceId: String?,) {
     suspend fun export(): ListeningBackup {
+        thisDeviceId?.let { database.listeningInsightsMaintenance().claimLegacyListening(it) }
         val sessions = database.listeningSessionDao().getAllSessions()
         val summaries = database.listeningRollupDao().getAllRollups()
         return ListeningBackup(
@@ -86,32 +87,41 @@ internal class LibraryBackupListening(private val database: BoxLoreDatabase, pri
     /**
      * Restores [backup] in one transaction, leaving out what the history restore also skipped: the
      * timing of [refusedEpisodeIds] (IDs this phone holds for another episode) and of `rss:` shows
-     * not among [importedShowIds] (their feeds weren't restored). A daily summary is kept when it
-     * sums more than the one stored and replaces the sessions it sums; a session is added unless a
-     * summary of its phone, day and episode already holds it. Played shows merge. Restoring the same
+     * not among [importedShowIds] (their feeds weren't restored). Per phone, day and episode, the later
+     * summary is kept (the one with the later last listening, then the larger total), and the sessions it
+     * sums go: those that ended by its last listening. A session is added unless such a summary already
+     * sums it, so sessions newer than a summary stay beside it. Played shows merge. Restoring the same
      * backup again changes nothing.
      */
     suspend fun restore(backup: ListeningBackup?, refusedEpisodeIds: Set<String>, importedShowIds: Collection<String> = emptyList(),) {
         if (backup == null) return
         fun kept(episodeId: String, podcastId: String) = episodeId !in refusedEpisodeIds && !(podcastId.startsWith(RSS_PREFIX) && podcastId !in importedShowIds)
-        val summaries = backup.dailySummaries.orEmpty().mapNotNull { it.toEntity() }.filter { kept(it.episodeId, it.podcastId) }
-        val sessions = backup.sessions.orEmpty().mapNotNull { it.toEntity() }.filter { kept(it.episodeId, it.podcastId) }
+        val owner = backup.deviceId?.takeIf { it.isNotBlank() }
+        val summaries = backup.dailySummaries.orEmpty().mapNotNull { it.toEntity(owner) }.filter { kept(it.episodeId, it.podcastId) }
+        val sessions = backup.sessions.orEmpty().mapNotNull { it.toEntity(owner) }.filter { kept(it.episodeId, it.podcastId) }
         val shows = backup.playedShows.orEmpty().mapNotNull { it.toEntity() }.filter { kept("", it.podcastId) }
         database.withTransaction {
             val rollupDao = database.listeningRollupDao()
             val sessionDao = database.listeningSessionDao()
             for (summary in summaries) {
                 val stored = rollupDao.getRollup(summary.deviceId, summary.localDay, summary.episodeId)
-                if (stored == null || summary.consumedMs > stored.consumedMs) rollupDao.upsertRollup(summary)
-                sessionDao.deleteSessionsOfDailySummary(summary.deviceId, summary.localDay, summary.episodeId)
+                if (stored != null && !summary.isLaterThan(stored)) continue
+                rollupDao.upsertRollup(summary)
+                sessionDao.deleteSessionsOfDailySummary(summary.deviceId, summary.localDay, summary.episodeId, summary.lastListenedAt)
             }
-            val summarized = rollupDao.getAllRollups().map { Triple(it.deviceId, it.localDay, it.episodeId) }.toSet()
-            sessionDao.upsertSessions(sessions.filter { Triple(it.rollupDeviceId, it.localDay, it.episodeId) !in summarized })
+            val summarizedUntil = rollupDao.getAllRollups().associate { Triple(it.deviceId, it.localDay, it.episodeId) to it.lastListenedAt }
+            sessionDao.upsertSessions(
+                sessions.filter { session ->
+                    val until = summarizedUntil[Triple(session.rollupDeviceId, session.localDay, session.episodeId)]
+                    until == null || session.endedAt > until
+                },
+            )
             database.playedShowDao().mergePlayedShows(shows, fromCloud = false)
         }
     }
 
-    private fun ownOrNull(deviceId: String?): String? = deviceId?.takeIf { it.isNotBlank() && it != thisDeviceId }
+    private fun ListeningRollupEntity.isLaterThan(other: ListeningRollupEntity): Boolean =
+        lastListenedAt > other.lastListenedAt || (lastListenedAt == other.lastListenedAt && consumedMs > other.consumedMs)
 
     private fun ListeningSessionEntity.toBackup() = ListeningSessionBackup(
         sessionId = sessionId,
@@ -123,14 +133,15 @@ internal class LibraryBackupListening(private val database: BoxLoreDatabase, pri
         completed = completed,
         localDay = localDay,
         timeBucket = timeBucket,
-        deviceId = deviceId ?: thisDeviceId,
+        deviceId = deviceId,
         wallMs = wallMs,
         source = source,
         output = output,
         episodePublishedAt = episodePublishedAt,
     )
 
-    private fun ListeningSessionBackup.toEntity(): ListeningSessionEntity? {
+    /** A session as stored; one with no phone on it was the backing-up phone's own ([owner]). */
+    private fun ListeningSessionBackup.toEntity(owner: String?): ListeningSessionEntity? {
         val id = sessionId?.takeIf { it.isNotBlank() } ?: return null
         val episode = episodeId?.takeIf { it.isNotBlank() } ?: return null
         return ListeningSessionEntity(
@@ -143,7 +154,7 @@ internal class LibraryBackupListening(private val database: BoxLoreDatabase, pri
             completed = completed == true,
             localDay = localDay ?: return null,
             timeBucket = (timeBucket ?: return null).coerceIn(0, 3),
-            deviceId = ownOrNull(deviceId),
+            deviceId = deviceId?.takeIf { it.isNotBlank() } ?: owner,
             wallMs = wallMs?.takeIf { it > 0L },
             source = source,
             output = output,
@@ -152,7 +163,7 @@ internal class LibraryBackupListening(private val database: BoxLoreDatabase, pri
     }
 
     private fun ListeningRollupEntity.toBackup() = ListeningRollupBackup(
-        deviceId = deviceId.takeIf { it != ListeningRollupEntity.THIS_DEVICE } ?: thisDeviceId,
+        deviceId = deviceId,
         localDay = localDay,
         episodeId = episodeId,
         podcastId = podcastId,
@@ -167,7 +178,7 @@ internal class LibraryBackupListening(private val database: BoxLoreDatabase, pri
         wallMs = wallMs,
     )
 
-    private fun ListeningRollupBackup.toEntity(): ListeningRollupEntity? {
+    private fun ListeningRollupBackup.toEntity(owner: String?): ListeningRollupEntity? {
         val episode = episodeId?.takeIf { it.isNotBlank() } ?: return null
         return ListeningRollupEntity(
             localDay = localDay ?: return null,
@@ -181,7 +192,7 @@ internal class LibraryBackupListening(private val database: BoxLoreDatabase, pri
             afternoonMs = afternoonMs ?: 0L,
             eveningMs = eveningMs ?: 0L,
             nightMs = nightMs ?: 0L,
-            deviceId = ownOrNull(deviceId) ?: ListeningRollupEntity.THIS_DEVICE,
+            deviceId = deviceId?.takeIf { it.isNotBlank() } ?: owner ?: ListeningRollupEntity.THIS_DEVICE,
             wallMs = wallMs?.coerceAtLeast(0L) ?: 0L,
         )
     }

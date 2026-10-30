@@ -46,4 +46,17 @@ object ListeningRollupMerge {
     }
 
     private fun bucket(session: ListeningSessionEntity): Int = session.timeBucket.coerceIn(0, 3)
+
+    /** Two summaries of one phone, day and episode added up, keeping [a]'s key and show. */
+    fun sum(a: ListeningRollupEntity, b: ListeningRollupEntity): ListeningRollupEntity = a.copy(
+        consumedMs = a.consumedMs + b.consumedMs,
+        sessionCount = a.sessionCount + b.sessionCount,
+        completionCount = a.completionCount + b.completionCount,
+        lastListenedAt = maxOf(a.lastListenedAt, b.lastListenedAt),
+        morningMs = a.morningMs + b.morningMs,
+        afternoonMs = a.afternoonMs + b.afternoonMs,
+        eveningMs = a.eveningMs + b.eveningMs,
+        nightMs = a.nightMs + b.nightMs,
+        wallMs = a.wallMs + b.wallMs,
+    )
 }

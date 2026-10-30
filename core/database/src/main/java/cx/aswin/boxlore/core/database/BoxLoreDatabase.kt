@@ -31,6 +31,7 @@ import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
         EpisodeGroupStateEntity::class,
         UpgradeRepairShowEntity::class,
         PlayedShowEntity::class,
+        PushedListeningDayEntity::class,
     ],
     version = 40,
     exportSchema = true,
@@ -65,6 +66,8 @@ abstract class BoxLoreDatabase : RoomDatabase() {
     abstract fun upgradeRepairDao(): UpgradeRepairDao
 
     abstract fun playedShowDao(): PlayedShowDao
+
+    abstract fun listeningPushDao(): ListeningPushDao
 
     fun listeningInsightsMaintenance(): ListeningInsightsMaintenance = ListeningInsightsMaintenance(this)
 

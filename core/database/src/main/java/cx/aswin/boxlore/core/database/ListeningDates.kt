@@ -24,27 +24,16 @@ object ListeningDates {
 }
 
 /** The stored values a whole-row history write must keep ([ListeningHistoryDao.upsert]). */
-data class StoredListeningDates(
-    val episodeId: String,
-    val firstPlayedAt: Long?,
-    val finishedAt: Long?,
-    val isCompleted: Boolean,
-    val isManualCompletion: Boolean,
-    val isBulkCompletion: Boolean,
-) {
-    val finishedByListening: Boolean get() = isCompleted && !isManualCompletion && !isBulkCompletion
-}
+data class StoredListeningDates(val episodeId: String, val firstPlayedAt: Long?, val finishedAt: Long?,)
 
 /**
- * This row as it should be written over [stored]: each listening date keeps the earliest of the two,
- * and a write that finishes a stored, not yet finished episode by listening dates the finish with its
- * play time when no finish is known. A new row keeps its own values.
+ * This row as it should be written over [stored]: each listening date keeps the earliest of the two.
+ * A finish is dated only by playback (its own writes date it); a write from sync, a backup or a mark
+ * never infers one from a completion it carries.
  */
 fun ListeningHistoryEntity.keepingListeningDatesOf(stored: StoredListeningDates?): ListeningHistoryEntity {
     if (stored == null) return this
     val first = ListeningDates.earliest(stored.firstPlayedAt, firstPlayedAt)
-    var finished = ListeningDates.earliest(stored.finishedAt, finishedAt)
-    val finishesNow = isCompleted && !isManualCompletion && !isBulkCompletion && !stored.finishedByListening
-    if (finished == null && finishesNow && lastPlayedAt > 0L) finished = lastPlayedAt
+    val finished = ListeningDates.earliest(stored.finishedAt, finishedAt)
     return if (first == firstPlayedAt && finished == finishedAt) this else copy(firstPlayedAt = first, finishedAt = finished)
 }

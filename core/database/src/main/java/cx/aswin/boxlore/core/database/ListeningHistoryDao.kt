@@ -40,8 +40,7 @@ interface ListeningHistoryDao {
 
     @Query(
         """
-        SELECT episodeId, firstPlayedAt, finishedAt, isCompleted, isManualCompletion, isBulkCompletion
-        FROM listening_history WHERE episodeId IN (:episodeIds)
+        SELECT episodeId, firstPlayedAt, finishedAt FROM listening_history WHERE episodeId IN (:episodeIds)
         """,
     )
     suspend fun storedListeningDates(episodeIds: List<String>): List<StoredListeningDates>
@@ -308,7 +307,7 @@ interface ListeningHistoryDao {
         SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl,
                episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted,
                isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
-               isManualCompletion, isBulkCompletion, NULL as episodeDescription
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt
         FROM listening_history
         WHERE episodeId > :afterEpisodeId
         ORDER BY episodeId
@@ -330,6 +329,24 @@ interface ListeningHistoryDao {
         rows.sortWith(compareByDescending<ListeningHistoryEntity> { it.lastPlayedAt }.thenBy { it.episodeId })
         return rows
     }
+
+    /**
+     * One page of rows with a recorded listening date (after [afterEpisodeId], by ID), without
+     * descriptions: the cloud sync's one-time date backfill (Room v40).
+     */
+    @Query(
+        """
+        SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl,
+               episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted,
+               isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt
+        FROM listening_history
+        WHERE episodeId > :afterEpisodeId AND (firstPlayedAt > 0 OR finishedAt > 0)
+        ORDER BY episodeId
+        LIMIT :limit
+    """,
+    )
+    suspend fun getHistoryWithListeningDatesAfter(afterEpisodeId: String, limit: Int,): List<ListeningHistoryEntity>
 
     /** Emits whenever listening_history changes; the value is only a change signal. */
     @Query("SELECT COUNT(*) FROM listening_history")

@@ -15,6 +15,7 @@ import cx.aswin.boxlore.core.network.BoxLoreApi
 import cx.aswin.boxlore.core.network.model.ListeningDaySyncDto
 import cx.aswin.boxlore.core.network.model.ListeningHistorySyncDto
 import cx.aswin.boxlore.core.network.model.PlayedShowSyncDto
+import cx.aswin.boxlore.core.network.model.SyncDeleteAccountResponse
 import cx.aswin.boxlore.core.network.model.SyncPullRequest
 import cx.aswin.boxlore.core.network.model.SyncPullResponse
 import cx.aswin.boxlore.core.network.model.SyncPushRequest
@@ -24,12 +25,13 @@ import java.lang.reflect.Proxy
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import okhttp3.Request
 import okio.Timeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -41,9 +43,10 @@ import retrofit2.Callback
 import retrofit2.Response
 
 /**
- * Cloud sync of listening (Room v40): history dates both ways, this phone's daily listening and the
- * played shows pushed and marked sent only by a server that stores them, every phone's listening pulled
- * from its own mark and counted once, and an older server leaving everything as it was.
+ * Cloud sync of listening (Room v40): history dates both ways, this installation's changed days of
+ * listening and the played shows pushed and marked sent only by a server that stores them, every
+ * phone's listening pulled from its own mark and counted once, older listening never replacing newer,
+ * and an older server leaving everything as it was.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -75,6 +78,7 @@ class ListeningCloudSyncTest {
                         pulls += args[2] as SyncPullRequest
                         FakeCall(Response.success(pullAnswer))
                     }
+                    "deleteSyncAccount" -> FakeCall(Response.success(SyncDeleteAccountResponse()))
                     "hashCode" -> 42
                     "equals" -> false
                     "toString" -> "FakeBoxLoreApi"
@@ -121,22 +125,68 @@ class ListeningCloudSyncTest {
         // An older server: everything was sent but nothing is marked, so it all goes again later.
         val first = pushes.single()
         assertEquals(listOf(10L to 120_000L, 11L to 60_000L), first.listeningDays.map { it.localDay to it.consumedMs })
-        assertEquals(setOf(prefs.getOrCreateSyncDeviceId()), first.listeningDays.map { it.deviceId }.toSet())
+        // Under this installation's listening ID, never the (backed-up) sync device ID; legacy listening was claimed.
+        val me = prefs.getOrCreateListeningDeviceId()
+        assertEquals(setOf(me), first.listeningDays.map { it.deviceId }.toSet())
+        assertTrue(me != prefs.getOrCreateSyncDeviceId())
+        assertEquals(setOf(me), database.listeningSessionDao().getAllSessions().map { it.deviceId }.toSet())
         assertEquals(listOf("100"), first.playedShows.map { it.podcastId })
-        assertEquals(0L, prefs.getListeningPushedUntil())
+        assertTrue(database.listeningPushDao().getPushedDays(me).isEmpty())
         assertTrue(database.playedShowDao().getPlayedShow("100")!!.isDirty)
 
         serverStoresListening = true
         coordinator.syncNow()
 
         assertEquals(2, pushes[1].listeningDays.size)
-        assertEquals(11L * 1_000L + 60_000L, prefs.getListeningPushedUntil())
+        assertEquals(2, database.listeningPushDao().getPushedDays(me).size)
         assertFalse(database.playedShowDao().getPlayedShow("100")!!.isDirty)
 
-        // Nothing new: no listening goes up (the last minutes' days go again only with a newer push).
+        // Nothing new: no listening goes up.
         pushes.clear()
         coordinator.syncNow()
-        assertTrue(pushes.isEmpty() || pushes.single().playedShows.isEmpty())
+        assertTrue(pushes.isEmpty() || pushes.single().listeningDays.isEmpty())
+
+        // New listening on day 11 sends day 11 only, with its whole total.
+        database.listeningSessionDao().upsertSessions(listOf(session("s-3", day = 11L, device = me, endedOffset = 90_000L)))
+        pushes.clear()
+        coordinator.syncNow()
+        assertEquals(listOf(11L to 120_000L), pushes.single().listeningDays.map { it.localDay to it.consumedMs })
+    }
+
+    @Test
+    fun listeningMovedToAnotherEpisodeIdSendsAZeroDayForTheOldOne() = runTest(testDispatcher) {
+        seedOwnListening()
+        coordinator.syncNow()
+        val me = prefs.getOrCreateListeningDeviceId()
+
+        // The episode got another ID: day 11's session now belongs to ep-2.
+        val moved = database.listeningSessionDao().getAllSessions().single { it.sessionId == "s-2" }
+        database.listeningSessionDao().deleteSessionsForEpisode("ep-1")
+        database.listeningSessionDao().upsertSessions(listOf(moved.copy(episodeId = "ep-2"), session("s-1", day = 10L, device = me)))
+        pushes.clear()
+
+        coordinator.syncNow()
+
+        val sent = pushes.single().listeningDays.associate { (it.localDay to it.episodeId) to it.consumedMs }
+        assertEquals(mapOf((11L to "ep-1") to 0L, (11L to "ep-2") to 60_000L), sent)
+        assertEquals(
+            setOf(10L to "ep-1", 11L to "ep-2"),
+            database.listeningPushDao().getPushedDays(me).map { it.localDay to it.episodeId }.toSet(),
+        )
+    }
+
+    @Test
+    fun listeningRestoredOnThisPhoneGoesUpEvenWhenItIsOlderThanWhatWasSent() = runTest(testDispatcher) {
+        seedOwnListening()
+        coordinator.syncNow()
+        val me = prefs.getOrCreateListeningDeviceId()
+        // A backup made earlier on this installation brings back day 5, older than everything pushed.
+        database.listeningRollupDao().upsertRollup(ListeningRollupEntity(5L, "ep-1", "100", 30_000L, sessionCount = 1, completionCount = 0, lastListenedAt = 500L, deviceId = me))
+        pushes.clear()
+
+        coordinator.syncNow()
+
+        assertEquals(listOf(5L to 30_000L), pushes.single().listeningDays.map { it.localDay to it.consumedMs })
     }
 
     @Test
@@ -157,18 +207,54 @@ class ListeningCloudSyncTest {
     }
 
     @Test
-    fun everyPhonesListeningComesDownFromItsOwnMarkAndCountsOnce() = runTest(testDispatcher) {
-        val me = prefs.getOrCreateSyncDeviceId()
-        // A backup of phone B brought two of its sessions; this phone listened on day 30 itself.
-        database.listeningSessionDao().upsertSessions(listOf(session("b-1", day = 20L, device = "phone-b"), session("mine", day = 30L, device = null)))
+    fun datesOfRowsAlreadyInTheCloudGoUpOnceToAServerThatStoresThem() = runTest(testDispatcher) {
+        // Synced before the update (not waiting for a push), dated on this phone since.
+        database.listeningHistoryDao().upsert(history("ep-1").copy(isDirty = false, syncedAt = 1L, firstPlayedAt = 500L))
+        database.listeningHistoryDao().upsert(history("ep-2").copy(isDirty = false, syncedAt = 1L))
+        serverStoresListening = false
+
+        coordinator.syncNow()
+        coordinator.syncNow()
+
+        // Only the dated row, and again after an older server ignored it. Its playback clock is 1, never
+        // 0: the JSON leaves 0 out, and the server stores a row without a clock at its own time, which
+        // would replace another phone's newer progress.
+        assertEquals(listOf("ep-1", "ep-1"), pushes.flatMap { push -> push.history.map { it.episodeId } })
+        assertEquals(ListeningSync.DATES_ONLY_UPDATED_AT, pushes.first().history.single().updatedAt)
+        assertTrue(Json.encodeToString(pushes.first()).contains("\"updatedAt\":1"))
+
+        serverStoresListening = true
+        pushes.clear()
+        coordinator.syncNow()
+        coordinator.syncNow()
+
+        assertEquals(listOf("ep-1"), pushes.flatMap { push -> push.history.map { it.episodeId } })
+        assertTrue(prefs.areListeningDatesSent())
+    }
+
+    @Test
+    fun everyPhonesListeningComesDownFromItsOwnMarkAndOnlyNewerListeningReplacesWhatIsHeld() = runTest(testDispatcher) {
+        val me = prefs.getOrCreateListeningDeviceId()
+        val rollups = database.listeningRollupDao()
+        // A backup of phone B brought its sessions and summaries; this phone listened on day 30 itself.
+        database.listeningSessionDao().upsertSessions(listOf(session("b-1", day = 20L, device = "phone-b"), session("mine", day = 30L, device = me)))
+        rollups.upsertRollup(ListeningRollupEntity(21L, "ep-1", "100", 90_000L, 2, 0, lastListenedAt = 90_000L, deviceId = "phone-b"))
+        rollups.upsertRollup(ListeningRollupEntity(22L, "ep-1", "100", 40_000L, 1, 0, lastListenedAt = 22_000L, deviceId = "phone-b"))
         pullAnswer =
             SyncPullResponse(
                 listeningDays =
                 listOf(
+                    // Covers phone B's restored session: replaces it.
                     day("phone-b", 20L, 300_000L),
-                    // This phone's own days from before a reinstall: kept only where it holds nothing.
+                    // Older than the restored summary (a later backup of phone B came here): ignored.
+                    day("phone-b", 21L, 10_000L, lastListenedAt = 50_000L),
+                    // Phone B no longer holds day 22.
+                    day("phone-b", 22L, 0L, lastListenedAt = 22_000L, sessions = 0),
+                    // This installation's own days: kept only where it holds nothing of the day.
                     day(me, 30L, 999L),
-                    day(me, 31L, 70_000L),
+                    day(me, 32L, 45_000L),
+                    // A reinstall of this phone is another installation: counted as such.
+                    day("old-install", 31L, 70_000L),
                 ),
                 playedShows = listOf(PlayedShowSyncDto(podcastId = "200", podcastName = "Other", genre = "News", firstPlayedAt = 5L, lastPlayedAt = 6L)),
                 syncedAt = 9_000L,
@@ -181,10 +267,11 @@ class ListeningCloudSyncTest {
         assertEquals(0L, request.listeningSince)
         assertEquals(8_999L, prefs.getListeningPulledUntil())
         assertEquals(listOf("mine"), database.listeningSessionDao().getAllSessions().map { it.sessionId })
-        val summaries = database.listeningRollupDao().getAllRollups().associateBy { it.deviceId to it.localDay }
-        assertEquals(300_000L, summaries.getValue("phone-b" to 20L).consumedMs)
-        assertEquals(70_000L, summaries.getValue(ListeningRollupEntity.THIS_DEVICE to 31L).consumedMs)
-        assertNull(summaries[ListeningRollupEntity.THIS_DEVICE to 30L])
+        val summaries = rollups.getAllRollups().associate { (it.deviceId to it.localDay) to it.consumedMs }
+        assertEquals(
+            mapOf(("phone-b" to 20L) to 300_000L, ("phone-b" to 21L) to 90_000L, ("old-install" to 31L) to 70_000L, (me to 32L) to 45_000L),
+            summaries,
+        )
         assertEquals(PlayedShowEntity("200", "Other", null, "News", 5L, 6L, isDirty = false), database.playedShowDao().getPlayedShow("200"))
     }
 
@@ -198,16 +285,42 @@ class ListeningCloudSyncTest {
     }
 
     @Test
-    fun anAccountSwitchStartsTheListeningMarksOver() = runTest(testDispatcher) {
-        prefs.setListeningPushedUntil(100L)
+    fun anAccountSwitchStartsTheListeningMarksOverAndBringsBackThisPhonesListeningInThatAccount() = runTest(testDispatcher) {
+        seedOwnListening()
+        coordinator.syncNow()
+        val me = prefs.getOrCreateListeningDeviceId()
         prefs.setListeningPulledUntil(200L)
-        database.playedShowDao().recordPlay("100", "Show", null, null, playedAt = 1L)
         prefs.setLastSyncedUserId("someone-else")
+        pulls.clear()
+        // The account switched to already holds days this installation pushed to it before.
+        pullAnswer = SyncPullResponse(listeningDays = listOf(day(me, 40L, 30_000L)), syncedAt = 9_000L)
 
         coordinator.syncNow()
 
-        assertEquals(0L, prefs.getListeningPushedUntil())
+        assertTrue(database.listeningPushDao().getPushedDays(me).isEmpty())
         assertTrue(database.playedShowDao().getAllPlayedShows().isEmpty())
+        assertEquals(0L, pulls.single().listeningSince)
+        assertEquals(listOf(40L to 30_000L), database.listeningRollupDao().getAllRollups().map { it.localDay to it.consumedMs })
+        assertTrue(database.listeningSessionDao().getAllSessions().isEmpty())
+    }
+
+    @Test
+    fun deletingTheCloudCopySendsEverythingAgainNextTime() = runTest(testDispatcher) {
+        seedOwnListening()
+        database.listeningHistoryDao().upsert(history("ep-1").copy(isDirty = false, syncedAt = 1L, firstPlayedAt = 500L))
+        coordinator.syncNow()
+        coordinator.syncNow()
+        assertTrue(prefs.areListeningDatesSent())
+
+        assertTrue(coordinator.deleteCloudSyncData().isSuccess)
+        pushes.clear()
+        pulls.clear()
+        coordinator.syncNow()
+
+        val push = pushes.first()
+        assertEquals(2, push.listeningDays.size)
+        assertEquals(listOf("100"), push.playedShows.map { it.podcastId })
+        assertTrue(push.history.any { it.episodeId == "ep-1" && it.firstPlayedAt == 500L })
         assertEquals(0L, pulls.single().listeningSince)
     }
 
@@ -219,12 +332,12 @@ class ListeningCloudSyncTest {
         database.playedShowDao().recordPlay("100", "Show", null, "Comedy", playedAt = 10_000L)
     }
 
-    private fun session(id: String, day: Long, device: String?,) = ListeningSessionEntity(
+    private fun session(id: String, day: Long, device: String?, endedOffset: Long = 60_000L,) = ListeningSessionEntity(
         sessionId = id,
         episodeId = "ep-1",
         podcastId = "100",
-        startedAt = day * 1_000L,
-        endedAt = day * 1_000L + 60_000L,
+        startedAt = day * 1_000L + endedOffset - 60_000L,
+        endedAt = day * 1_000L + endedOffset,
         consumedMs = 60_000L,
         completed = false,
         localDay = day,
@@ -232,8 +345,8 @@ class ListeningCloudSyncTest {
         deviceId = device,
     )
 
-    private fun day(device: String, localDay: Long, consumed: Long,) =
-        ListeningDaySyncDto(deviceId = device, localDay = localDay, episodeId = "ep-1", podcastId = "100", consumedMs = consumed, sessionCount = 1, lastListenedAt = localDay)
+    private fun day(device: String, localDay: Long, consumed: Long, lastListenedAt: Long = localDay * 1_000L + 60_000L, sessions: Int = 1,) =
+        ListeningDaySyncDto(deviceId = device, localDay = localDay, episodeId = "ep-1", podcastId = "100", consumedMs = consumed, sessionCount = sessions, lastListenedAt = lastListenedAt)
 
     private fun history(id: String) = ListeningHistoryEntity(
         episodeId = id,

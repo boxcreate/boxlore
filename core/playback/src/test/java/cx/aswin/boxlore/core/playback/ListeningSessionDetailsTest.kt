@@ -29,6 +29,16 @@ class ListeningSessionDetailsTest {
     }
 
     @Test
+    fun listeningTimeIsTheAudioPlayedAtItsSpeed() {
+        assertEquals(30_000L, ListeningSessionRecordLogic.listenedWallMs(60_000L, 2f))
+        assertEquals(60_000L, ListeningSessionRecordLogic.listenedWallMs(60_000L, 1f))
+        assertEquals(80_000L, ListeningSessionRecordLogic.listenedWallMs(60_000L, 0.75f))
+        // No advance (buffering, paused, a seek back) is no listening time.
+        assertEquals(0L, ListeningSessionRecordLogic.listenedWallMs(0L, 1.5f))
+        assertEquals(60_000L, ListeningSessionRecordLogic.listenedWallMs(60_000L, 0f))
+    }
+
+    @Test
     fun aRecordedPlayCarriesItsDetails() {
         val session =
             ListeningSessionRecordLogic.buildSession(

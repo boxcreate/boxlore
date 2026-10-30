@@ -46,6 +46,9 @@ internal class PlaybackTelemetrySession(
     /** Where the play is heard ([cx.aswin.boxlore.core.database.ListeningSessionValues] `OUTPUT_*`), read on the main thread; set by the service. */
     var listeningOutput: () -> String? = { null }
 
+    /** This installation's listening device ID (`BoxcastPrefs.getOrCreateListeningDeviceId`); set by the service. */
+    var listeningDeviceId: () -> String? = { null }
+
     private val firedHeartbeats = java.util.Collections.synchronizedSet(mutableSetOf<String>())
 
     var startTimeMs: Long = 0L
@@ -450,6 +453,9 @@ internal class PlaybackTelemetrySession(
         val sessionOutput = runCatching(listeningOutput).getOrNull()
         scope.launch {
             try {
+                val deviceId = runCatching(listeningDeviceId).getOrNull()
+                // Older untagged listening belongs to this installation; claim it before adding to it.
+                deviceId?.let { database.listeningInsightsMaintenance().claimLegacyListening(it) }
                 val entity =
                     ListeningSessionRecordLogic.buildSession(
                         ListeningSessionRecordLogic.BuildSessionInput(
@@ -467,6 +473,7 @@ internal class PlaybackTelemetrySession(
                             source = sessionSource,
                             output = sessionOutput,
                             episodePublishedAt = episodeReleaseDateMs(currentEpisodeId),
+                            deviceId = deviceId,
                         ),
                     ) ?: return@launch
                 ListeningSessionRecordLogic.persistSessionAndRollUp(
@@ -536,7 +543,7 @@ internal class PlaybackTelemetrySession(
                 (elapsed * player.playbackParameters.speed * 1.5f).toLong() + 1_000L
             if (positionAdvance in 0..maximumNaturalAdvance) {
                 consumedAudioMs += positionAdvance
-                listenedWallMs += elapsed
+                listenedWallMs += ListeningSessionRecordLogic.listenedWallMs(positionAdvance, player.playbackParameters.speed)
             }
         }
         lastPositionMs = currentPosition

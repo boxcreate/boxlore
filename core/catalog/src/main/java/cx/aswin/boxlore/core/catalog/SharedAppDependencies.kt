@@ -35,6 +35,9 @@ interface SharedAppDependencies {
     val subscriptionForegroundSync: SubscriptionForegroundSync
     val folderRepository: FolderRepository
     val deviceIdentityPort: cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort? get() = null
+
+    /** This installation's listening device ID (Room v40; never backed up), for library backups' timed listening. */
+    val listeningDeviceIdentityPort: cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort? get() = null
     val userSyncCoordinator: cx.aswin.boxlore.core.catalog.sync.UserSyncCoordinator? get() = null
 
     /**

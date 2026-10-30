@@ -17,9 +17,6 @@ interface ListeningSessionDao {
     @Query("SELECT * FROM listening_sessions ORDER BY endedAt DESC")
     fun observeAllSessions(): Flow<List<ListeningSessionEntity>>
 
-    @Query("SELECT * FROM listening_sessions WHERE endedAt >= :sinceMs ORDER BY endedAt DESC")
-    suspend fun getSessionsSince(sinceMs: Long): List<ListeningSessionEntity>
-
     @Query("SELECT * FROM listening_sessions ORDER BY endedAt DESC")
     suspend fun getAllSessions(): List<ListeningSessionEntity>
 
@@ -57,9 +54,21 @@ interface ListeningSessionDao {
     @Query("DELETE FROM listening_sessions")
     suspend fun deleteAllSessions()
 
-    /** Deletes the sessions a daily summary of [deviceId] ([rollupDeviceId]), [localDay] and [episodeId] already sums. */
-    @Query("DELETE FROM listening_sessions WHERE COALESCE(deviceId, '') = :deviceId AND localDay = :localDay AND episodeId = :episodeId")
-    suspend fun deleteSessionsOfDailySummary(deviceId: String, localDay: Long, episodeId: String,)
+    /**
+     * Deletes the sessions of [deviceId] ([rollupDeviceId]), [localDay] and [episodeId] that a daily summary
+     * whose last listening is [upToEndedAt] already sums: those that ended by then.
+     */
+    @Query(
+        """
+        DELETE FROM listening_sessions
+        WHERE COALESCE(deviceId, '') = :deviceId AND localDay = :localDay AND episodeId = :episodeId AND endedAt <= :upToEndedAt
+        """,
+    )
+    suspend fun deleteSessionsOfDailySummary(deviceId: String, localDay: Long, episodeId: String, upToEndedAt: Long,)
+
+    /** Gives sessions recorded before Room v40 (no phone on them) to [deviceId]. */
+    @Query("UPDATE listening_sessions SET deviceId = :deviceId WHERE deviceId IS NULL OR deviceId = ''")
+    suspend fun claimLegacySessions(deviceId: String)
 
     @Query("SELECT MIN(endedAt) FROM listening_sessions")
     suspend fun getEarliestSessionEndedAt(): Long?
