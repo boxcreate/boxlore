@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `namespace_mismatch_count` on background `feed_fetch_result` events. ([#1183](https://github.com/boxcreate/boxlore/pull/1183)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Feed-first show pages behind `feed_first`: shows you don't follow read their own feed into a stored copy (`FeedFirstShowPages`, `ShowPageFeedCatalog`, `PodcastInfoFeedFirst`), with a failure ladder to `/v2/episodes`, a status line, and a daily cleanup of unfollowed copies after 30 days. ([#1184](https://github.com/boxcreate/boxlore/pull/1184)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - English can be switched off for recommendations, search and vibes when every picked language is French, Spanish, German, Portuguese, Russian or Dutch (`ContentRegions.ENGLISH_OFF_LANGUAGES`, `content_english_off`, `EnglishOffInterceptor`, `ContentLanguagesSheet`); the Worker adds English only where a result runs thin. ([#1187](https://github.com/boxcreate/boxlore/pull/1187)) <!-- impact:user-impact-medium+backend-change --> <!-- copy:locked -->
+- Room v40 (`ListeningDataMigration`): listening dates on history rows (`firstPlayedAt`, `finishedAt`), timed-play details (`wallMs`, `source`, `output`, `episodePublishedAt`), daily summaries per listening origin, `played_shows` and `listening_days_pushed`. ([#1201](https://github.com/boxcreate/boxlore/pull/1201)) <!-- impact:user-impact-medium+backend-change --> <!-- copy:locked -->
+- Cloud sync of listening dates, daily listening and played shows (`ListeningSync`), and JSON backup v8 with timed listening and played shows (`LibraryBackupListening`). ([#1201](https://github.com/boxcreate/boxlore/pull/1201)) <!-- impact:user-impact-medium+backend-change --> <!-- copy:locked -->
 - `EpisodeListenerStore` keeps one listener state per episode across its stored IDs: progress lives on one owner ID, likes and played state are absolute writes across aliases and `episode_group_state`, and reads are projected, so lists count each episode once. ([#1178](https://github.com/boxcreate/boxlore/pull/1178)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `FeedAddressDailyCheck` checks followed shows' feed addresses once a day through `/v2/shows/feeds`. `FeedReporter` reports unreadable feeds through `/v2/feed-report`. An address is swapped only for a confirmed move and only after the new address reads. ([#1182](https://github.com/boxcreate/boxlore/pull/1182)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `PodcastNotificationRegistrationWorker` re-registers a show's notifications after its address changes and retries until Firebase acknowledges. ([#1182](https://github.com/boxcreate/boxlore/pull/1182)) <!-- impact:user-impact-low --> <!-- copy:locked -->
@@ -279,6 +281,11 @@ readme-copy:end pr=1199 -->
 - Backups now include your whole listening history, not just your 300 most recent episodes.
 - Listening insights now count every episode you've finished, started or liked, not just recent ones.
 readme-copy:end pr=1200 -->
+
+<!-- readme-copy:start pr=1201
+### Improvements
+- Time listened in your Listening History now comes back when you restore a backup or sign in on a new phone, and listening on each of your phones counts once.
+readme-copy:end pr=1201 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added
