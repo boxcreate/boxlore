@@ -248,8 +248,60 @@ interface ListeningHistoryDao {
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getCompletedEpisodeIdsFlow(): Flow<List<String>> = completedEpisodeCountFlow().mapLatest { getCompletedEpisodeIds() }
 
+    // Every stored row without descriptions, one page at a time along the primary key (each page
+    // seeks to its start, so a long history reads in linear time). Screens keep getAllHistory's
+    // latest 300; the library backup and insights need all of it.
+    @Query(
+        """
+        SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl,
+               episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted,
+               isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription
+        FROM listening_history
+        ORDER BY episodeId
+        LIMIT :limit
+    """,
+    )
+    suspend fun getFirstStoredHistoryPage(limit: Int): List<ListeningHistoryEntity>
+
+    @Query(
+        """
+        SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl,
+               episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted,
+               isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription
+        FROM listening_history
+        WHERE episodeId > :afterEpisodeId
+        ORDER BY episodeId
+        LIMIT :limit
+    """,
+    )
+    suspend fun getStoredHistoryPageAfter(afterEpisodeId: String, limit: Int): List<ListeningHistoryEntity>
+
+    /** Every stored row, newest first (ties by ID), read in pages in one transaction (see [getCompletedEpisodeIds]). */
+    @Transaction
+    suspend fun getAllStoredHistory(): List<ListeningHistoryEntity> {
+        val rows = ArrayList<ListeningHistoryEntity>()
+        var page = getFirstStoredHistoryPage(STORED_HISTORY_PAGE_SIZE)
+        while (true) {
+            rows.addAll(page)
+            if (page.size < STORED_HISTORY_PAGE_SIZE) break
+            page = getStoredHistoryPageAfter(page.last().episodeId, STORED_HISTORY_PAGE_SIZE)
+        }
+        rows.sortWith(compareByDescending<ListeningHistoryEntity> { it.lastPlayedAt }.thenBy { it.episodeId })
+        return rows
+    }
+
+    /** Emits whenever listening_history changes; the value is only a change signal. */
+    @Query("SELECT COUNT(*) FROM listening_history")
+    fun historyChangeSignal(): Flow<Int>
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observeAllStoredHistory(): Flow<List<ListeningHistoryEntity>> = historyChangeSignal().mapLatest { getAllStoredHistory() }
+
     companion object {
         const val COMPLETED_IDS_PAGE_SIZE = 1_000
+        const val STORED_HISTORY_PAGE_SIZE = 500
     }
 
     // Get unique podcast IDs played after the given timestamp

@@ -16,12 +16,13 @@ interface ListeningHistoryBackupPort {
     fun getAllHistory(): Flow<List<ListeningHistoryEntity>>
 
     /**
-     * Recent history rows exactly as stored, one per stored episode ID, for library export: nothing
-     * is merged or dropped. Defaults to [getAllHistory] for ports that store each episode once.
+     * Every history row exactly as stored, one per stored episode ID, for library export: nothing
+     * is merged or dropped, and nothing is left out for age (the screens show only the latest 300).
+     * No default: [getAllHistory] is capped for screens, so every port reads the complete history.
      *
      * Added in P4 of the own-episode-IDs plan (plan section 8, projected listener state).
      */
-    fun getStoredHistory(): Flow<List<ListeningHistoryEntity>> = getAllHistory()
+    suspend fun exportStoredHistory(): List<ListeningHistoryEntity>
 
     suspend fun upsertHistoryEntity(entity: ListeningHistoryEntity)
 

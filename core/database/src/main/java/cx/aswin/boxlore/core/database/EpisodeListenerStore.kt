@@ -446,6 +446,21 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
     fun projectedLikedIds(likedRows: Flow<List<ListeningHistoryEntity>>): Flow<Set<String>> =
         projectedRows(likedRows, { it.isLiked }, everyMember = true).map { rows -> rows.mapTo(HashSet()) { it.episodeId } }
 
+    /**
+     * [projectedRows] for a [source] that holds every stored history row (listening insights): an
+     * episode's rows under its other IDs come from [source] itself instead of the database, so a long
+     * history makes no per-episode history reads and no row with its description enters the projection.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun projectedCompleteRows(source: Flow<List<ListeningHistoryEntity>>): Flow<List<ListeningHistoryEntity>> =
+        combine(source, sharedAliasesFlow()) { rows, shared -> rows to shared }
+            .mapLatest { (rows, shared) ->
+                val byId = rows.associateBy { it.episodeId }
+                projectRows(rows, shared.filter { it.aliasId in byId }, keep = { true }, everyMember = false) { group ->
+                    group.memberIds.mapNotNull(byId::get)
+                }
+            }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun projectedRows(
         source: Flow<List<ListeningHistoryEntity>>,
@@ -505,6 +520,7 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
         shared: List<EpisodeAliasEntity>,
         keep: (ListeningHistoryEntity) -> Boolean,
         everyMember: Boolean,
+        membersOf: suspend (EpisodeGroup) -> List<ListeningHistoryEntity> = this::rows,
     ): List<ListeningHistoryEntity> {
         if (shared.isEmpty()) return rows
         val tokenById = shared.associate { it.aliasId to EpisodeGroup.tokenOf(it.podcastId, it.catalogKey)!! }
@@ -516,16 +532,16 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
                 result += row
             } else if (seenTokens.add(token)) {
                 val group = resolve(row.episodeId, storeOwner = false)
-                val projected = project(group)?.takeIf(keep) ?: continue
+                val projected = project(group, membersOf(group))?.takeIf(keep) ?: continue
                 if (everyMember) group.memberIds.mapTo(result) { projected.copy(episodeId = it) } else result += projected
             }
         }
         return result
     }
 
-    private suspend fun project(group: EpisodeGroup): ListeningHistoryEntity? {
+    private suspend fun project(group: EpisodeGroup, members: List<ListeningHistoryEntity>? = null): ListeningHistoryEntity? {
         val state = if (group.isKeyed) aliases.getGroupState(group.podcastId!!, group.catalogKey!!) else null
-        return EpisodeListenerProjection.project(group, rows(group), state)
+        return EpisodeListenerProjection.project(group, members ?: rows(group), state)
     }
 
     private suspend fun rows(group: EpisodeGroup): List<ListeningHistoryEntity> = history.getHistoryItems(group.memberIds)

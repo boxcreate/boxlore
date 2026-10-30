@@ -91,8 +91,8 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
     /** Every episode once, with its projected state ([EpisodeListenerStore.projectedRows]). */
     override fun getAllHistory(): Flow<List<ListeningHistoryEntity>> = listenerStore.projectedRows(data.listeningHistoryDao.getAllHistory())
 
-    /** The stored rows, one per episode ID, for library export. */
-    override fun getStoredHistory(): Flow<List<ListeningHistoryEntity>> = data.listeningHistoryDao.getAllHistory()
+    /** Every stored row, one per episode ID, for library export. */
+    override suspend fun exportStoredHistory(): List<ListeningHistoryEntity> = data.listeningHistoryDao.getAllStoredHistory()
 
     override fun observeHistoryTimeline(): Flow<List<ListeningHistoryItem>> = getAllHistory().map { entities ->
         entities
@@ -108,7 +108,8 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
     override fun observeInsights(period: ListeningPeriod): Flow<ListeningInsightSummary> = combine(
         data.listeningSessionDao.observeAllSessions(),
         data.listeningRollupDao.observeAllRollups(),
-        getAllHistory(),
+        // All of history, not the screens' latest 300, so counts stay right for long histories.
+        listenerStore.projectedCompleteRows(data.listeningHistoryDao.observeAllStoredHistory()),
         listenerStore.showReplacementsFlow(),
     ) { storedSessions, storedRollups, storedHistory, replacedBy ->
         val sessions = storedSessions.map { row -> replacedBy[row.podcastId]?.let { row.copy(podcastId = it) } ?: row }

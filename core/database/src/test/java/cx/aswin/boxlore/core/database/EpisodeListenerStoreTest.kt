@@ -440,6 +440,19 @@ class EpisodeListenerStoreTest {
         assertTrue(store.showReplacementsFlow().first().isEmpty())
     }
 
+    @Test
+    fun insightsProjectTheCompleteHistoryFromItsOwnRowsWithoutDescriptions() = runTest {
+        twoAliases()
+        val rows = listOf(row("B", progress = 10L, playedAt = 90L), row("C", playedAt = 80L), row("A", progress = 300L, playedAt = 70L))
+        history.upsertAll(rows.map { it.copy(episodeDescription = "Long notes") })
+
+        val complete = store.projectedCompleteRows(history.observeAllStoredHistory()).first()
+
+        // The same episodes and state as the database-backed projection, with no description read back.
+        assertEquals(store.projectRows(rows).map { it.episodeId to it.progressMs }, complete.map { it.episodeId to it.progressMs })
+        assertTrue(complete.all { it.episodeDescription == null })
+    }
+
     private fun alias(
         id: String,
         key: String? = KEY,

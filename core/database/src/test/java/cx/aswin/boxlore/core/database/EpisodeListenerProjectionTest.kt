@@ -116,6 +116,20 @@ class EpisodeListenerProjectionTest {
     }
 
     @Test
+    fun completedRowsPlayedAtTheSameTimeGiveTheSameCompletionFlagsInAnyOrder() {
+        val owner = row("A", playedAt = 50L)
+        val manual = row("B", completed = true, playedAt = 80L, manual = true)
+        val listened = row("C", completed = true, playedAt = 80L)
+        val group = EpisodeGroup("B", SHOW, KEY, listOf("A", "B", "C"), "A")
+
+        val one = EpisodeListenerProjection.project(group, listOf(owner, manual, listened), null)!!
+        val other = EpisodeListenerProjection.project(group, listOf(listened, manual, owner), null)!!
+
+        assertEquals(one, other)
+        assertEquals(false, one.isManualCompletion)
+    }
+
+    @Test
     fun aNewDecisionIsStampedAfterEveryRecordedOneWhenTheClockReadsEarlier() {
         val state = EpisodeGroupStateEntity(SHOW, KEY, likedAt = 500L, completedAt = 900L)
         val rows = listOf(row("A", likedAt = 600L, playedAt = 950L))

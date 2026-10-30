@@ -268,6 +268,19 @@ class LibraryBackupIdentityRoomTest {
         )
     }
 
+    @Test
+    fun aBackupOfMoreThan300PlayedEpisodesRestoresThemAll() = runTest {
+        // Regression: the export read the screens' latest 300 history rows.
+        source.listeningHistoryDao().upsertAll((1..400).map { history("ep-$it", progressMs = it.toLong()).copy(lastPlayedAt = it.toLong()) })
+
+        val json = manager(source, sourceShows).exportLibraryAsJson()
+        manager(target, targetShows).importLibraryFromJson(json)
+
+        assertEquals(400, JsonParser.parseString(json).asJsonObject["history"].asJsonArray.size())
+        assertEquals(400, target.listeningHistoryDao().getAllStoredHistory().size)
+        assertEquals(1L, target.listeningHistoryDao().getHistoryItem("ep-1")?.progressMs)
+    }
+
     private suspend fun stubRssRestore() {
         val podcast = TestFixtures.podcast(id = RSS_SHOW, title = "Switched", sourceType = Podcast.SOURCE_RSS).copy(feedUrl = SWITCHED_FEED)
         `when`(rssPodcastRepository.restoreSubscription(SWITCHED_FEED, RSS_SHOW))
@@ -322,6 +335,8 @@ class LibraryBackupIdentityRoomTest {
     /** History through Room, as the app's playback repository stores it. */
     private class RoomHistory(private val database: BoxLoreDatabase) : ListeningHistoryBackupPort {
         override fun getAllHistory(): Flow<List<ListeningHistoryEntity>> = database.listeningHistoryDao().getAllHistory()
+
+        override suspend fun exportStoredHistory(): List<ListeningHistoryEntity> = database.listeningHistoryDao().getAllStoredHistory()
 
         override suspend fun upsertHistoryEntity(entity: ListeningHistoryEntity) = database.listeningHistoryDao().upsert(entity)
 
