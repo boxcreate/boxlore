@@ -1,9 +1,11 @@
 package cx.aswin.boxlore.core.playback
 
+import cx.aswin.boxlore.core.analytics.AnalyticsGlossary
 import cx.aswin.boxlore.core.database.ListeningInsightsMaintenance
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.ListeningSessionDao
 import cx.aswin.boxlore.core.database.ListeningSessionEntity
+import cx.aswin.boxlore.core.database.ListeningSessionValues
 import cx.aswin.boxlore.core.model.ListeningInsightSummary
 import cx.aswin.boxlore.core.model.ListeningPeriod
 import cx.aswin.boxlore.core.model.ListeningTimeBucket
@@ -25,6 +27,10 @@ object ListeningSessionRecordLogic {
         val consumedMs: Long,
         val completed: Boolean,
         val zoneId: ZoneId = ZoneId.systemDefault(),
+        val wallMs: Long? = null,
+        val source: String? = null,
+        val output: String? = null,
+        val episodePublishedAt: Long? = null,
     )
 
     fun timeBucketForHour(hour: Int): Int = when (hour) {
@@ -55,7 +61,28 @@ object ListeningSessionRecordLogic {
             completed = input.completed,
             localDay = localDay(input.startedAt, input.zoneId),
             timeBucket = timeBucketForHour(hour),
+            wallMs = input.wallMs?.takeIf { it > 0L },
+            source = input.source,
+            output = input.output,
+            episodePublishedAt = input.episodePublishedAt,
         )
+    }
+
+    /**
+     * How a play started, as [ListeningSessionEntity.source] stores it: a Lore or Smart Queue play by
+     * its queue context, else the analytics glossary's canonical entry point; null when unknown.
+     */
+    fun playSource(contextType: String?, entryPoint: String?): String? = when (contextType) {
+        QueueMath.CONTEXT_TYPE_LORE -> ListeningSessionValues.SOURCE_LORE
+        CONTEXT_TYPE_AUTO_FILL -> ListeningSessionValues.SOURCE_SMART_QUEUE
+        else -> AnalyticsGlossary.normalizeEntryPoint(entryPoint).takeIf { it != UNKNOWN_ENTRY_POINT }
+    }
+
+    /** An episode release date as stored (epoch ms) from a catalog or queue date in seconds or ms; null when unknown. */
+    fun releaseDateMs(stored: Long?): Long? = when {
+        stored == null || stored <= 0L -> null
+        stored < SECONDS_BEFORE_MS_RANGE -> stored * 1_000L
+        else -> stored
     }
 
     fun retentionCutoffEndedAtExclusive(nowMs: Long, zoneId: ZoneId = ZoneId.systemDefault(),): Long {
@@ -78,6 +105,12 @@ object ListeningSessionRecordLogic {
             todayLocalDay = today.toEpochDay(),
         )
     }
+
+    private const val CONTEXT_TYPE_AUTO_FILL = "AUTO_FILL"
+    private const val UNKNOWN_ENTRY_POINT = "unknown"
+
+    /** Below this a release date is in seconds (it would be 1973 in milliseconds, 5138 in seconds). */
+    private const val SECONDS_BEFORE_MS_RANGE = 100_000_000_000L
 }
 
 object ListeningInsightsLogic {

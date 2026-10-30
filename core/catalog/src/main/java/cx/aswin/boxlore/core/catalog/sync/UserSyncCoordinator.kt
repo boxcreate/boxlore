@@ -8,6 +8,7 @@ import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningRollupDao
 import cx.aswin.boxlore.core.database.ListeningSessionDao
+import cx.aswin.boxlore.core.database.PlayedShowDao
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.dao.QueueDao
@@ -63,6 +64,7 @@ open class UserSyncCoordinator(
     private val folderDao: FolderDao? = null,
     private val listeningSessionDao: ListeningSessionDao? = null,
     private val listeningRollupDao: ListeningRollupDao? = null,
+    private val playedShowDao: PlayedShowDao? = null,
     private val userPreferencesRepository: UserPreferencesRepository? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     /** Shared like and completion settings of episodes stored under several IDs; cleared with history on an account switch. */
@@ -274,6 +276,7 @@ open class UserSyncCoordinator(
         requireListeningHistoryDao.deleteAll()
         listeningSessionDao?.deleteAllSessions()
         listeningRollupDao?.deleteAllRollups()
+        playedShowDao?.deleteAllPlayedShows()
         // The previous account's like and completion settings must not decide the new account's episodes.
         episodeIdentityDao?.deleteAllGroupStates()
     }

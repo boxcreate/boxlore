@@ -546,7 +546,7 @@ class RoomV39UpgradeTest {
 
         val db = openWithRoom()
 
-        assertEquals(39, db.sql.version)
+        assertEquals(40, db.sql.version)
         assertTrue(db.episodeIdentityDao().getAlias("-14")!!.owner)
         assertTrue(db.localEpisodeCatalogDao().getEpisode("5001")!!.legacy)
     }
@@ -619,13 +619,13 @@ class RoomV39UpgradeTest {
 
     @Test
     fun aNewerFileOpenedByThisBuildIsRecreatedEmpty() = runBlocking<Unit> {
-        RoomSchemaFixture.open(context, NAME, 40) { db -> db.execSQL("CREATE TABLE future_table (id INTEGER PRIMARY KEY)") }
+        RoomSchemaFixture.open(context, NAME, 41) { db -> db.execSQL("CREATE TABLE future_table (id INTEGER PRIMARY KEY)") }
             .use { it.writableDatabase.execSQL("INSERT INTO future_table VALUES (1)") }
 
         val db = openWithRoom()
 
         assertEquals(0, db.upgradeRepairDao().pendingCount())
-        assertEquals(39, db.sql.version)
+        assertEquals(40, db.sql.version)
         assertFalse(RoomSchemaFixture.tables(db.sql).contains("future_table"))
     }
 
@@ -637,7 +637,7 @@ class RoomV39UpgradeTest {
         val db = openWithRoom()
 
         assertNull(db.podcastDao().getPodcast(SHOW))
-        assertEquals(39, db.sql.version)
+        assertEquals(40, db.sql.version)
     }
 
     private companion object {
@@ -658,8 +658,19 @@ class RoomV39UpgradeTest {
         const val BRIEFING = "briefing_us_2026-10-25"
         const val NOW_CHECK = 1L
 
-        /** The tables 38→39 adds columns to; their `CREATE TABLE` text in `sqlite_master` gains those columns. */
-        val ALTERED_TABLES = setOf("podcasts", "local_episodes", "local_episode_feeds", "queue_metadata")
+        /** Tables the next upgrade (39→40) changes on the way; [RoomV40UpgradeTest] checks them. */
+        private val V40_TABLES =
+            setOf(
+                "listening_history",
+                "listening_sessions",
+                "listening_rollups",
+                "index_listening_rollups_podcastId",
+                "index_listening_rollups_localDay",
+                "index_listening_rollups_episodeId",
+            )
+
+        /** The tables 38→39 adds columns to (their `CREATE TABLE` text gains them), and those 39→40 changes. */
+        val ALTERED_TABLES = setOf("podcasts", "local_episodes", "local_episode_feeds", "queue_metadata") + V40_TABLES
 
         /** `rss_episodes` as migration 26→27 created it on phones. */
         const val MIGRATION_26_27_RSS_EPISODES = """

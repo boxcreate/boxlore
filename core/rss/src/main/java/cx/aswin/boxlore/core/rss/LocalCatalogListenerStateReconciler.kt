@@ -284,7 +284,7 @@ internal class LocalCatalogListenerStateReconciler(
         val dao = database.listeningRollupDao()
         val oldRows = dao.getRollupsForEpisode(oldId)
         for (old in oldRows) {
-            val existing = dao.getRollup(old.localDay, newId)
+            val existing = dao.getRollup(old.deviceId, old.localDay, newId)
             dao.upsertRollup(mergeRollup(old, existing, newId))
         }
         dao.deleteRollupsForEpisode(oldId)
@@ -380,4 +380,5 @@ internal fun mergeRollup(old: ListeningRollupEntity, existing: ListeningRollupEn
     afternoonMs = old.afternoonMs + (existing?.afternoonMs ?: 0L),
     eveningMs = old.eveningMs + (existing?.eveningMs ?: 0L),
     nightMs = old.nightMs + (existing?.nightMs ?: 0L),
+    wallMs = old.wallMs + (existing?.wallMs ?: 0L),
 )

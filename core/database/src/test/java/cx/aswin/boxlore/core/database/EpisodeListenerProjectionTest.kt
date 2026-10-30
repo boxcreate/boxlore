@@ -134,6 +134,17 @@ class EpisodeListenerProjectionTest {
         assertEquals(EpisodeGroupStateEntity(SHOW, KEY, likedAt = 10L, likeClearedAt = 20L, completedAt = 30L, version = 3L), completed)
     }
 
+    @Test
+    fun anEpisodeUnderSeveralIdsReadsTheEarliestListeningDates() {
+        val owner = row("A", playedAt = 50L).copy(firstPlayedAt = 40L, finishedAt = null)
+        val other = row("B", completed = true, playedAt = 30L).copy(firstPlayedAt = 10L, finishedAt = 30L)
+
+        val projected = EpisodeListenerProjection.project(shared, listOf(owner, other), state = null)!!
+
+        assertEquals(10L, projected.firstPlayedAt)
+        assertEquals(30L, projected.finishedAt)
+    }
+
     private fun row(
         id: String,
         progress: Long = 0L,

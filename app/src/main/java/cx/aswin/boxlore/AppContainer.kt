@@ -723,6 +723,7 @@ class AppContainer(
             folderDao = database.folderDao(),
             listeningSessionDao = database.listeningSessionDao(),
             listeningRollupDao = database.listeningRollupDao(),
+            playedShowDao = database.playedShowDao(),
             userPreferencesRepository = userPreferencesRepository,
             episodeIdentityDao = database.episodeIdentityDao(),
             episodeIdentity = episodeIdentity,

@@ -18,6 +18,10 @@ data class ListeningHistoryItem(
     val lastPlayedAt: Long,
     val enclosureType: String? = null,
     val episodeDescription: String? = null,
+    /** First play: null when not known yet, 0 when before boxlore recorded it, else epoch ms. */
+    val firstPlayedAt: Long? = null,
+    /** First finish by listening: null when not known, 0 when before boxlore recorded it, else epoch ms. */
+    val finishedAt: Long? = null,
 )
 
 enum class ListeningPeriod {
@@ -87,6 +91,11 @@ data class ListeningSessionSnapshot(
     val completed: Boolean,
     val localDay: Long,
     val timeBucket: Int,
+    val deviceId: String? = null,
+    val wallMs: Long? = null,
+    val source: String? = null,
+    val output: String? = null,
+    val episodePublishedAt: Long? = null,
 )
 
 data class ListeningRollupSnapshot(
@@ -101,6 +110,8 @@ data class ListeningRollupSnapshot(
     val afternoonMs: Long,
     val eveningMs: Long,
     val nightMs: Long,
+    val deviceId: String = "",
+    val wallMs: Long = 0L,
 )
 
 /**

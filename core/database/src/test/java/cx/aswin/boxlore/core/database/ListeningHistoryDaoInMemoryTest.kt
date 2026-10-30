@@ -282,6 +282,24 @@ class ListeningHistoryDaoInMemoryTest {
     }
 
     @Test
+    fun wholeRowWritesKeepTheStoredListeningDatesOfEveryRow() = runTest {
+        // More rows than one dates read holds, so the carried dates come from several reads.
+        val total = ListeningHistoryDao.LISTENING_DATES_CHUNK + 50
+        dao.upsertAll((0 until total).map { history("ep-$it").copy(firstPlayedAt = it.toLong(), finishedAt = if (it == 0) 0L else null) })
+
+        dao.upsertAll((0 until total).map { history("ep-$it", progressMs = 10L) })
+        dao.upsert(history("ep-1", progressMs = 20L).copy(firstPlayedAt = 99_999L))
+
+        val rows = dao.getAllStoredHistory().associateBy { it.episodeId }
+        assertEquals(total, rows.size)
+        assertEquals(0L, rows.getValue("ep-0").firstPlayedAt)
+        assertEquals(0L, rows.getValue("ep-0").finishedAt)
+        assertEquals(1L, rows.getValue("ep-1").firstPlayedAt)
+        assertEquals((total - 1).toLong(), rows.getValue("ep-${total - 1}").firstPlayedAt)
+        assertNull(rows.getValue("ep-5").finishedAt)
+    }
+
+    @Test
     fun dirtyListeningHistoryAndMarkSynced() = runTest {
         dao.upsert(history("clean-1", isDirty = false))
         assertTrue(dao.getDirtyListeningHistory().isEmpty())

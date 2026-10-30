@@ -12,6 +12,7 @@ object ListeningRollupMerge {
         existing: ListeningRollupEntity?,
     ): ListeningRollupEntity {
         require(sessions.isNotEmpty()) { "sessions must not be empty" }
+        require(sessions.all { it.rollupDeviceId == sessions.first().rollupDeviceId }) { "sessions of one phone only" }
         val buckets =
             longArrayOf(
                 existing?.morningMs ?: 0L,
@@ -23,6 +24,7 @@ object ListeningRollupMerge {
         var sessionCount = existing?.sessionCount ?: 0
         var completionCount = existing?.completionCount ?: 0
         var lastListenedAt = existing?.lastListenedAt ?: 0L
+        var wallMs = existing?.wallMs ?: 0L
 
         for (session in sessions) {
             consumedMs += session.consumedMs
@@ -30,6 +32,7 @@ object ListeningRollupMerge {
             if (session.completed) completionCount += 1
             if (session.endedAt > lastListenedAt) lastListenedAt = session.endedAt
             buckets[session.timeBucket.coerceIn(0, 3)] += session.consumedMs
+            wallMs += session.wallMs ?: 0L
         }
 
         return ListeningRollupEntity(
@@ -44,6 +47,8 @@ object ListeningRollupMerge {
             afternoonMs = buckets[1],
             eveningMs = buckets[2],
             nightMs = buckets[3],
+            deviceId = existing?.deviceId ?: sessions.first().rollupDeviceId,
+            wallMs = wallMs,
         )
     }
 }

@@ -87,7 +87,7 @@ class ListeningInsightsDaoInMemoryTest {
         assertEquals(1, sessions.getAllSessions().size)
         assertEquals("today", sessions.getAllSessions().single().sessionId)
 
-        val rollup = rollups.getRollup(10L, "ep-1")!!
+        val rollup = rollups.getRollup(ListeningRollupEntity.THIS_DEVICE, 10L, "ep-1")!!
         assertEquals(300L, rollup.consumedMs)
         assertEquals(2, rollup.sessionCount)
         assertEquals(1, rollup.completionCount)
@@ -96,16 +96,34 @@ class ListeningInsightsDaoInMemoryTest {
     }
 
     @Test
+    fun anotherPhonesSessionsRollUpIntoItsOwnDailySummary() = runTest {
+        sessions.upsertSessions(
+            listOf(
+                session("mine").copy(wallMs = 800L),
+                session("theirs").copy(deviceId = "phone-b", consumedMs = 3_000L, wallMs = 2_000L),
+            ),
+        )
+
+        maintenance.rollUpEligibleSessions(cutoffEndedAtExclusive = 10_000L, todayLocalDay = 100L)
+
+        val mine = rollups.getRollup(ListeningRollupEntity.THIS_DEVICE, 10L, "ep-1")!!
+        val theirs = rollups.getRollup("phone-b", 10L, "ep-1")!!
+        assertEquals(1_000L to 800L, mine.consumedMs to mine.wallMs)
+        assertEquals(3_000L to 2_000L, theirs.consumedMs to theirs.wallMs)
+        assertTrue(sessions.getAllSessions().isEmpty())
+    }
+
+    @Test
     fun rollupIsIdempotentAndMergesIntoExisting() = runTest {
         val today = 200L
         sessions.upsertSession(session("old-1").copy(localDay = 5, endedAt = 5_000, consumedMs = 50))
         maintenance.rollUpEligibleSessions(cutoffEndedAtExclusive = 10_000L, todayLocalDay = today)
-        assertEquals(50L, rollups.getRollup(5L, "ep-1")!!.consumedMs)
+        assertEquals(50L, rollups.getRollup(ListeningRollupEntity.THIS_DEVICE, 5L, "ep-1")!!.consumedMs)
 
         sessions.upsertSession(session("old-2").copy(localDay = 5, endedAt = 6_000, consumedMs = 25))
         maintenance.rollUpEligibleSessions(cutoffEndedAtExclusive = 10_000L, todayLocalDay = today)
 
-        val rollup = rollups.getRollup(5L, "ep-1")!!
+        val rollup = rollups.getRollup(ListeningRollupEntity.THIS_DEVICE, 5L, "ep-1")!!
         assertEquals(75L, rollup.consumedMs)
         assertEquals(2, rollup.sessionCount)
         assertTrue(sessions.getAllSessions().isEmpty())
@@ -160,7 +178,7 @@ class ListeningInsightsDaoInMemoryTest {
         )
 
         maintenance.deleteEpisodeAnalytics("ep-a")
-        assertNull(rollups.getRollup(1, "ep-a"))
+        assertNull(rollups.getRollup(ListeningRollupEntity.THIS_DEVICE, 1, "ep-a"))
         assertEquals(listOf("ep-b"), sessions.getAllSessions().map { it.episodeId })
 
         maintenance.clearAllAnalytics()

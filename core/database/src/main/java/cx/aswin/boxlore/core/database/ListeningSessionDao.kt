@@ -60,6 +60,10 @@ interface ListeningSessionDao {
     @Query("DELETE FROM listening_sessions")
     suspend fun deleteAllSessions()
 
+    /** Deletes the sessions a daily summary of [deviceId] ([rollupDeviceId]), [localDay] and [episodeId] already sums. */
+    @Query("DELETE FROM listening_sessions WHERE COALESCE(deviceId, '') = :deviceId AND localDay = :localDay AND episodeId = :episodeId")
+    suspend fun deleteSessionsOfDailySummary(deviceId: String, localDay: Long, episodeId: String,)
+
     @Query("SELECT MIN(endedAt) FROM listening_sessions")
     suspend fun getEarliestSessionEndedAt(): Long?
 }

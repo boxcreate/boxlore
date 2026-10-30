@@ -18,10 +18,12 @@ class ListeningInsightsMaintenance(
         }
     }
 
+    /** Clears all timed listening and the played shows (clearing the whole history). */
     suspend fun clearAllAnalytics() {
         database.withTransaction {
             sessions.deleteAllSessions()
             rollups.deleteAllRollups()
+            database.playedShowDao().deleteAllPlayedShows()
         }
     }
 
@@ -34,10 +36,10 @@ class ListeningInsightsMaintenance(
             sessions.getSessionsEligibleForRollup(cutoffEndedAtExclusive, todayLocalDay)
         if (eligible.isEmpty()) return@withTransaction 0
 
-        val grouped = eligible.groupBy { it.localDay to it.episodeId }
+        val grouped = eligible.groupBy { Triple(it.rollupDeviceId, it.localDay, it.episodeId) }
         for ((key, groupSessions) in grouped) {
-            val (localDay, episodeId) = key
-            val existing = rollups.getRollup(localDay, episodeId)
+            val (deviceId, localDay, episodeId) = key
+            val existing = rollups.getRollup(deviceId, localDay, episodeId)
             rollups.upsertRollup(
                 ListeningRollupMerge.mergeSessionsIntoRollup(
                     localDay = localDay,

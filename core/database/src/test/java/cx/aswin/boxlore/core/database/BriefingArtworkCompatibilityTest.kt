@@ -89,7 +89,8 @@ class BriefingArtworkCompatibilityTest {
 
         val advanced = item.copy(progressMs = 900_000, isCompleted = true, isDirty = false, syncedAt = 777)
         database.listeningHistoryDao().upsert(advanced)
-        assertEquals(advanced.copy(episodeImageUrl = uri, podcastImageUrl = uri), storedHistory(item))
+        // Finishing the stored, unfinished row dates the finish with its play time (Room v40 listening dates).
+        assertEquals(advanced.copy(episodeImageUrl = uri, podcastImageUrl = uri, finishedAt = advanced.lastPlayedAt), storedHistory(item))
 
         val queued = database.queueDao().getQueueItemByEpisodeId(item.episodeId)!!
         database.queueDao().updateQueueItem(queued.copy(imageUrl = LEGACY_URI, position = 4))

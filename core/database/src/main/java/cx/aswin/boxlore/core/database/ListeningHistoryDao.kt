@@ -11,8 +11,40 @@ import kotlinx.coroutines.flow.mapLatest
 
 @Dao
 interface ListeningHistoryDao {
+    /** Writes [history] whole, keeping the stored row's listening dates ([keepingListeningDatesOf]). */
+    @Transaction
+    suspend fun upsert(history: ListeningHistoryEntity) {
+        replaceRow(history.keepingListeningDatesOf(storedListeningDates(listOf(history.episodeId)).firstOrNull()))
+    }
+
+    /** Writes every row of [historyItems] whole, each keeping its stored listening dates. */
+    @Transaction
+    suspend fun upsertAll(historyItems: List<ListeningHistoryEntity>) {
+        if (historyItems.isEmpty()) return
+        val stored =
+            historyItems
+                .map { it.episodeId }
+                .distinct()
+                .chunked(LISTENING_DATES_CHUNK)
+                .flatMap { storedListeningDates(it) }
+                .associateBy { it.episodeId }
+        replaceRows(historyItems.map { it.keepingListeningDatesOf(stored[it.episodeId]) })
+    }
+
+    // Raw whole-row writes for upsert/upsertAll only: they replace the listening dates as given.
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(history: ListeningHistoryEntity)
+    suspend fun replaceRow(history: ListeningHistoryEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun replaceRows(historyItems: List<ListeningHistoryEntity>)
+
+    @Query(
+        """
+        SELECT episodeId, firstPlayedAt, finishedAt, isCompleted, isManualCompletion, isBulkCompletion
+        FROM listening_history WHERE episodeId IN (:episodeIds)
+        """,
+    )
+    suspend fun storedListeningDates(episodeIds: List<String>): List<StoredListeningDates>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertIfAbsent(history: ListeningHistoryEntity): Long
@@ -46,16 +78,13 @@ interface ListeningHistoryDao {
         episodeDescription: String?,
     )
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertAll(historyItems: List<ListeningHistoryEntity>)
-
     // Fetch Top 7 items for the new Split UI (1st is Hero, 2-7 are Grid)
     @Query(
         """
         SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl, 
                episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted, 
                isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType, 
-               isManualCompletion, isBulkCompletion, NULL as episodeDescription 
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt 
         FROM listening_history 
         WHERE isCompleted = 0 AND progressMs > 0 
         ORDER BY lastPlayedAt DESC 
@@ -73,7 +102,7 @@ interface ListeningHistoryDao {
         SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl, 
                episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted, 
                isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType, 
-               isManualCompletion, isBulkCompletion, NULL as episodeDescription 
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt 
         FROM listening_history 
         ORDER BY lastPlayedAt DESC
         LIMIT 300
@@ -156,7 +185,7 @@ interface ListeningHistoryDao {
         SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl, 
                episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted, 
                isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType, 
-               isManualCompletion, isBulkCompletion, NULL as episodeDescription 
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt 
         FROM listening_history 
         WHERE isLiked = 1 
         ORDER BY lastPlayedAt DESC
@@ -176,6 +205,7 @@ interface ListeningHistoryDao {
         SET progressMs = :progressMs,
             durationMs = :durationMs,
             lastPlayedAt = :lastPlayedAt,
+            firstPlayedAt = COALESCE(firstPlayedAt, :lastPlayedAt),
             isDirty = 1
         WHERE episodeId = :episodeId AND isCompleted = 0
         """,
@@ -191,6 +221,7 @@ interface ListeningHistoryDao {
             isManualCompletion = 0,
             isBulkCompletion = 0,
             lastPlayedAt = :lastPlayedAt,
+            firstPlayedAt = COALESCE(firstPlayedAt, :lastPlayedAt),
             isDirty = 1
         WHERE episodeId = :episodeId
         """,
@@ -202,7 +233,13 @@ interface ListeningHistoryDao {
         lastPlayedAt: Long,
     ): Int
 
-    @Query("UPDATE listening_history SET lastPlayedAt = :lastPlayedAt, isDirty = 1 WHERE episodeId = :episodeId")
+    @Query(
+        """
+        UPDATE listening_history
+        SET lastPlayedAt = :lastPlayedAt, firstPlayedAt = COALESCE(firstPlayedAt, :lastPlayedAt), isDirty = 1
+        WHERE episodeId = :episodeId
+        """,
+    )
     suspend fun updateLastPlayedAt(episodeId: String, lastPlayedAt: Long,)
 
     @Query(
@@ -210,6 +247,8 @@ interface ListeningHistoryDao {
         UPDATE listening_history
         SET progressMs = 0,
             durationMs = :durationMs,
+            finishedAt = CASE WHEN :isManualCompletion = 0 AND finishedAt IS NULL THEN :lastPlayedAt ELSE finishedAt END,
+            firstPlayedAt = CASE WHEN :isManualCompletion = 0 THEN COALESCE(firstPlayedAt, :lastPlayedAt) ELSE firstPlayedAt END,
             isCompleted = 1,
             isManualCompletion = :isManualCompletion,
             isBulkCompletion = 0,
@@ -256,7 +295,7 @@ interface ListeningHistoryDao {
         SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl,
                episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted,
                isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
-               isManualCompletion, isBulkCompletion, NULL as episodeDescription
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt
         FROM listening_history
         ORDER BY episodeId
         LIMIT :limit
@@ -302,6 +341,9 @@ interface ListeningHistoryDao {
     companion object {
         const val COMPLETED_IDS_PAGE_SIZE = 1_000
         const val STORED_HISTORY_PAGE_SIZE = 500
+
+        /** IDs per listening-dates read, under SQLite's 999 bound parameters. */
+        const val LISTENING_DATES_CHUNK = 900
     }
 
     // Get unique podcast IDs played after the given timestamp
@@ -361,7 +403,7 @@ interface ListeningHistoryDao {
         SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl,
                episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted,
                isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
-               isManualCompletion, isBulkCompletion, NULL AS episodeDescription
+               isManualCompletion, isBulkCompletion, NULL AS episodeDescription, firstPlayedAt, finishedAt
         FROM listening_history
         WHERE isDirty = 1
         ORDER BY lastPlayedAt DESC

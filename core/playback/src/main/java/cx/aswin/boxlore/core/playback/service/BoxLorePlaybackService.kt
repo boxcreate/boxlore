@@ -176,6 +176,7 @@ open class BoxLorePlaybackService :
             removeCompletedDownload = { episodeId ->
                 downloadDeps.downloadRepository.removeDownload(episodeId)
             },
+            listeningOutput = { ListeningOutputRoute.current(this, mediaSession?.player ?: playbackPlayer) },
         )
     }
 

@@ -142,6 +142,6 @@ class LibraryBackupDirectFeedLogicTest {
 
     @Test
     fun `backup version is 7`() {
-        assertEquals(7, LibraryBackupDirectFeedLogic.VERSION)
+        assertEquals(8, LibraryBackupDirectFeedLogic.VERSION)
     }
 }

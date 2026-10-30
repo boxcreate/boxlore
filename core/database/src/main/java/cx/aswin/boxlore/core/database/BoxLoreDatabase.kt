@@ -30,8 +30,9 @@ import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
         EpisodeAliasEntity::class,
         EpisodeGroupStateEntity::class,
         UpgradeRepairShowEntity::class,
+        PlayedShowEntity::class,
     ],
-    version = 39,
+    version = 40,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -61,6 +62,8 @@ abstract class BoxLoreDatabase : RoomDatabase() {
     abstract fun episodeIdentityDao(): EpisodeIdentityDao
 
     abstract fun upgradeRepairDao(): UpgradeRepairDao
+
+    abstract fun playedShowDao(): PlayedShowDao
 
     fun listeningInsightsMaintenance(): ListeningInsightsMaintenance = ListeningInsightsMaintenance(this)
 
@@ -318,6 +321,16 @@ abstract class BoxLoreDatabase : RoomDatabase() {
         }
 
         /**
+         * Listening dates, timed-play details, daily summaries per phone and the played shows; see
+         * [ListeningDataMigration]. Never edit it; later changes go to v41.
+         */
+        private val MIGRATION_39_40 = object : Migration(39, 40) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                ListeningDataMigration.migrate(db)
+            }
+        }
+
+        /**
          * Every upgrade path, in order. Production and the upgrade tests open the database through
          * [builder] with this list, so the tests run exactly the migrations a phone runs.
          *
@@ -353,6 +366,7 @@ abstract class BoxLoreDatabase : RoomDatabase() {
             MIGRATION_36_37,
             MIGRATION_37_38,
             MIGRATION_38_39,
+            MIGRATION_39_40,
         )
 
         /** Versions older than the first migration (12→13). Only these may still be wiped on upgrade. */
