@@ -63,12 +63,16 @@ internal fun rememberCoverShade(imageUrl: String?): ArtworkShade {
 /**
  * The two tones a Duotone card redraws a cover in, from the same choice as Cover's shade: Dark is
  * black and white, App theme the theme's [primary], Artwork the cover's seed (black and white for a
- * cover with no meaningful colour).
+ * cover with no meaningful colour). [vivid] gives the light-highlight pairs, for covers whose words
+ * sit on their own scrim (Marquee).
  */
-internal fun duotoneTones(mode: String, palette: ArtworkPalette?, primary: Color): ArtworkDuotone = when (HeroCoverShade.sanitize(mode)) {
-    HeroCoverShade.DARK -> ArtworkDuotone.Neutral
-    HeroCoverShade.THEME -> ArtworkDuotone.fromColor(primary)
-    else -> palette?.let(ArtworkDuotone::fromPalette) ?: ArtworkDuotone.Neutral
+internal fun duotoneTones(mode: String, palette: ArtworkPalette?, primary: Color, vivid: Boolean = false): ArtworkDuotone {
+    val neutral = if (vivid) ArtworkDuotone.NeutralVivid else ArtworkDuotone.Neutral
+    return when (HeroCoverShade.sanitize(mode)) {
+        HeroCoverShade.DARK -> neutral
+        HeroCoverShade.THEME -> ArtworkDuotone.fromColor(primary, vivid)
+        else -> palette?.let { ArtworkDuotone.fromPalette(it, vivid) } ?: neutral
+    }
 }
 
 /** A Duotone card's look: the cover's two tones and the words and buttons drawn over them. */
@@ -76,12 +80,12 @@ internal data class DuotoneLook(val duotone: ArtworkDuotone, val shade: ArtworkS
 
 /** [duotoneTones] and [coverShade] for the cover at [imageUrl], easing in like [rememberCoverShade]. */
 @Composable
-internal fun rememberDuotoneLook(imageUrl: String?): DuotoneLook {
+internal fun rememberDuotoneLook(imageUrl: String?, vivid: Boolean = false): DuotoneLook {
     val mode = HeroCoverShade.sanitize(LocalHeroCoverShade.current)
     val primary = MaterialTheme.colorScheme.primary
     val palette = rememberHeroArtworkPalette(imageUrl, mode)
     val shade = remember(mode, palette, primary) { coverShade(mode, palette, primary) }.animated()
-    val tones = remember(mode, palette, primary) { duotoneTones(mode, palette, primary) }
+    val tones = remember(mode, palette, primary, vivid) { duotoneTones(mode, palette, primary, vivid) }
     val spec = remember { tween<Color>(ArtworkColorTransitionMillis, easing = FastOutSlowInEasing) }
     val shadow by animateColorAsState(tones.shadow, spec, label = "duotoneShadow")
     val highlight by animateColorAsState(tones.highlight, spec, label = "duotoneHighlight")

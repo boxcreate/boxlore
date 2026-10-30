@@ -46,6 +46,18 @@ internal object OnboardingAnalyticsTracks {
         )
     }
 
+    /**
+     * After search or import: [choice] is `similar` (asked for suggestions), `home` (went to Home
+     * from the choice) or `skip_loading` (left while suggestions were loading). [path] is `search` or
+     * `import`.
+     */
+    fun trackOnboardingSimilarChoice(path: String, choice: String, seedCount: Int,) {
+        AnalyticsEmit.event(
+            "onboarding_similar_choice",
+            mapOf("path" to path, "choice" to choice, "seed_count" to seedCount),
+        )
+    }
+
     fun trackOnboardingSkipped(screen: String, totalOnboardingTimeSeconds: Float,) {
         AnalyticsEmit.event(
             "onboarding_completed",

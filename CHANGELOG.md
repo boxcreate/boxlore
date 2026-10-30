@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PodcastNotificationRegistrationWorker` re-registers a show's notifications after its address changes and retries until Firebase acknowledges. ([#1182](https://github.com/boxcreate/boxlore/pull/1182)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - JSON library backup version 7 carries episode identity (`episodeIdentity`: aliases, group settings, renumbered shows) and restores it without overwriting another episode; OPML exports use each show's publisher feed address only. ([#1188](https://github.com/boxcreate/boxlore/pull/1188)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `UpgradeGateTest`: end-to-end upgrade gate from schemas 36, 37 and 38 through the catalog's first reads. ([#1190](https://github.com/boxcreate/boxlore/pull/1190)) <!-- impact:user-impact-low --> <!-- copy:locked -->
+- Library settings › Storage › Clear saved shows removes every unfollowed show's saved episode list after a confirmation (`ShowPageFeedPort.clearUnfollowed`); history, downloads, the queue and followed shows stay. ([#1192](https://github.com/boxcreate/boxlore/pull/1192)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `EpisodeRecipeId` in `:core:rss` and `scripts/sync/lib/episode-recipe-id.js` compute boxlore episode IDs from (show ID, catalog key), checked against a shared fixture. ([#1139](https://github.com/boxcreate/boxlore/pull/1139)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync logs why each vector point is stored or deleted; `scripts/sync/attribution-report.js` summarizes the log. ([#1139](https://github.com/boxcreate/boxlore/pull/1139)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - `turso.text()` in the sync's Turso client binds catalog keys as text. ([#1141](https://github.com/boxcreate/boxlore/pull/1141)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
@@ -49,6 +50,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Android Auto reads queue, history and downloads across an episode's trusted IDs. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Show pages of shows you don't follow list `/v2/episodes` under locally stored IDs when `feed_first` is off; in-show search filters that list on the phone instead of calling v1 `episodes/search`. Broken-feed reports share one limiter between the show page and the daily address check. ([#1184](https://github.com/boxcreate/boxlore/pull/1184)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Library settings › Discovery is split into Charts › Country and Recommendations › Languages rows, and changing the country keeps the listener's languages. ([#1187](https://github.com/boxcreate/boxlore/pull/1187)) <!-- impact:user-impact-medium+backend-change --> <!-- copy:locked -->
+- Onboarding after search or a library import asks before suggesting shows: **See similar shows** or **Go to Home** (`SimilarShowsChoice`), with **Skip to Home** while suggestions load; the similar-shows request runs only when asked for. ([#1194](https://github.com/boxcreate/boxlore/pull/1194)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Show page loading states: ([#1196](https://github.com/boxcreate/boxlore/pull/1196)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- an opening skeleton in the page's shape (`ShowPageSkeleton`); ([#1196](https://github.com/boxcreate/boxlore/pull/1196)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- loading episode cards in place of spinners (`EpisodeCardSkeleton`); ([#1196](https://github.com/boxcreate/boxlore/pull/1196)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- a plain status line with wavy progress in place of the status card (`ShowListStatusLine`). ([#1196](https://github.com/boxcreate/boxlore/pull/1196)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - New-episode notifications are checked hourly on our own server instead of GitHub Actions, whose schedule ran every few hours. ([#1151](https://github.com/boxcreate/boxlore/pull/1151)) <!-- impact:user-impact-low+backend-change --> <!-- copy:locked -->
 - Feed parsing records each item's position in the feed document (`ParsedFeedItem`, `ParsedRssFeed.items`). When items share a catalog key, the first in the document wins in the parser merge, `LocalEpisodeCatalogPersist`, `StickyRssEpisodeRemap` and the legacy RSS upgrade. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - Items without a GUID are keyed on their first playable `<enclosure url>`. Items that share a first enclosure keep their audio address as the key. Stored rows are also found by their own minted ID and by the audio address older builds used, so no stored episode ID changes. Minting is unchanged. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
@@ -84,6 +90,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New-episode notifications carry a working feed address for shows that moved, use stable episode IDs, and are never sent twice after a partly failed check. ([#1150](https://github.com/boxcreate/boxlore/pull/1150)) <!-- impact:user-impact-medium+backend-change --> <!-- copy:locked -->
 - A pull from the start no longer restores history rows removed on the device, and push batches read at most 100 dirty rows without descriptions. ([#1179](https://github.com/boxcreate/boxlore/pull/1179)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - English off now reaches every discovery request: request builders keep a list without English as it is (`normalizeKeepingEnglishChoice`), and Because you like sends the listener's languages; the languages sheet notes that a smaller pool narrows recommendations. ([#1191](https://github.com/boxcreate/boxlore/pull/1191)) <!-- impact:user-impact-medium+backend-change --> <!-- copy:locked -->
+- Marquee's Artwork and App theme looks redraw covers in vivid `ArtworkDuotone` pairs (tone-10 shadow, tone-80 highlight) instead of Duotone's dark tones, drop the accent glow, and pick the top bar's words from the cover in every colour choice. Duotone cards are unchanged. ([#1195](https://github.com/boxcreate/boxlore/pull/1195)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Show pages with **Hide completed episodes** on keep loading until unfinished episodes appear (`HideCompletedFill`), and say "You’ve finished every episode" with **Show completed episodes** when none are left, instead of going blank. ([#1196](https://github.com/boxcreate/boxlore/pull/1196)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `PodcastInfoScreen` now saves open search and its query, the five dialog and sheet flags, the tag/genre draft, and selected episode IDs with their sort, so they survive activity recreation (fold density changes, process death) and back-stack returns. A recreated page waits for its first page, then looks its selected episodes up again in the saved sort; it drops IDs it cannot find and keeps them all when the lookup fails. Toolbar actions wait until the selection is complete. `PodcastInfoViewModel.loadPodcast` no longer reloads shows whose page ID differs from the route ID (`rss:`-linked feeds). Added `PodcastInfoAdaptiveTransitionTest`, which covers the 600dp width, 480dp height and 840dp landscape gates, orientation and fold transitions, and every dialog exit on compact and tablet hosts. ([#1174](https://github.com/boxcreate/boxlore/pull/1174)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - An item without a GUID whose enclosure and `media:content` point at different files is no longer parsed as two episodes. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - A feed crossing 4 MB no longer changes or deletes the IDs of feed-only extras. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
@@ -91,6 +99,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Home picks, trending and Explore's For you keep what they show when a discovery request fails. The last good `/v2` picks are kept across restarts (`boxlore_discovery_last_good`). ([#1180](https://github.com/boxcreate/boxlore/pull/1180)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `InstallReferrerManager` opens an install link only on a fresh install, so clearing app data no longer reopens the shared page. ([#1185](https://github.com/boxcreate/boxlore/pull/1185)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - A feed episode whose GUID starts with U+FEFF is no longer added again on every read: feed keys are compared with stored ones as SQLite stores them (`EpisodeRecipeId.comparableKey`). ([#1190](https://github.com/boxcreate/boxlore/pull/1190)) <!-- impact:user-impact-low --> <!-- copy:locked -->
+- Play builds whose update check fails offer **Open Google Play** (`openPlayListing`) with **Try again** instead of a dead-end error. ([#1197](https://github.com/boxcreate/boxlore/pull/1197)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - The catalog sync no longer deletes vectors it later re-embeds: the nightly trim fails closed, shows keep the highest cap they earned, partial episode lists never cause pruning, and vectors from a failed upload are spooled and uploaded by the next run. ([#1141](https://github.com/boxcreate/boxlore/pull/1141)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync refuses to store objects as `[object Object]` text: its Turso client rejects them, and the show import and latest-episode update scrub Podcast Index values first. ([#1144](https://github.com/boxcreate/boxlore/pull/1144)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - `EpisodeRecipeId` rejects show IDs above 2^53 − 1, matching the scripts implementation. ([#1145](https://github.com/boxcreate/boxlore/pull/1145)) <!-- impact:no-user-impact --> <!-- copy:locked -->
@@ -209,10 +218,37 @@ readme-copy:end pr=1190 -->
 - Turning English off now keeps English shows out of your recommendations, search and suggestions, unless there aren't enough in your languages.
 readme-copy:end pr=1191 -->
 
+<!-- readme-copy:start pr=1192
+### Improvements
+- Free up space with Clear saved shows in Library settings: it removes the episode lists saved for shows you opened but don't follow.
+readme-copy:end pr=1192 -->
+
 <!-- readme-copy:start pr=1193
 ### Fixes
 - boxlore no longer crashes on some tablets and foldables when you scroll to the end of the top row on Home.
 readme-copy:end pr=1193 -->
+
+<!-- readme-copy:start pr=1194
+### Improvements
+- After importing your library or picking shows in search, choose whether to see similar shows or go straight to Home, and skip to Home anytime while suggestions load.
+readme-copy:end pr=1194 -->
+
+<!-- readme-copy:start pr=1195
+### Fixes
+- Marquee hero cards with Artwork or App theme cover colors now show the cover clearly, about as bright as Full color, instead of a dark blur.
+readme-copy:end pr=1195 -->
+
+<!-- readme-copy:start pr=1196
+### Improvements
+- Smoother loading on show pages, with the page's shape appearing right away and clearer messages while episodes load.
+### Fixes
+- Hiding completed episodes no longer empties a show's page: boxlore keeps loading until it finds episodes you haven't finished, and tells you when you've finished them all.
+readme-copy:end pr=1196 -->
+
+<!-- readme-copy:start pr=1197
+### Fixes
+- If boxlore can't check Google Play for updates, it now offers to open its Play Store page so you can update there.
+readme-copy:end pr=1197 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added

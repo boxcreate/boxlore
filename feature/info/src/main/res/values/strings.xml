@@ -119,7 +119,12 @@
     <string name="podcast_info_missing_allow">Allow feed checks</string>
     <string name="podcast_info_missing_cancel">Not now</string>
     <string name="podcast_info_feed_reading">Checking the feed for new episodes…</string>
-    <string name="podcast_info_feed_completing">Loading all episodes from the feed…</string>
+    <string name="podcast_info_feed_completing">Loading every episode from the feed. Long-running shows can take a moment.</string>
+    <string name="podcast_info_hide_finding">Completed episodes are hidden. Finding the ones you haven’t finished…</string>
+    <string name="podcast_info_caught_up_title">You’ve finished every episode</string>
+    <string name="podcast_info_caught_up_body">Completed episodes are hidden. New ones show up here when they’re released.</string>
+    <string name="podcast_info_show_completed">Show completed episodes</string>
+    <string name="podcast_info_loading">Loading show</string>
     <string name="podcast_info_feed_fallback">Can’t reach this show’s feed. Showing boxlore’s episode list instead.</string>
     <string name="podcast_info_feed_offline">You’re offline. Showing saved episodes.</string>
     <string name="podcast_info_feed_offline_empty">You’re offline. Connect to load this show’s episodes.</string>

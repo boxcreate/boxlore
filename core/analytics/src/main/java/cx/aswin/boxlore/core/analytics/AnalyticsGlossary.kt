@@ -22,6 +22,7 @@ object AnalyticsGlossary {
             "onboarding_step_viewed",
             "onboarding_abandoned",
             "onboarding_completed",
+            "onboarding_similar_choice",
             "onboarding_ai_turn_submitted",
             "onboarding_ai_response_received",
             "onboarding_ai_search_redirect",

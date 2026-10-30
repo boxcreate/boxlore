@@ -39,6 +39,13 @@
     <string name="suggestions_empty_title">No suggestions this time</string>
     <string name="suggestions_empty_body">Try again, or start without them.</string>
     <string name="suggestions_try_again">Try again</string>
+    <!-- Search and import stop here before any request: suggestions only when asked for. -->
+    <string name="similar_choice_title">Want shows like these?</string>
+    <string name="similar_choice_body">boxlore can find similar shows in a few seconds, or you can start listening now.</string>
+    <string name="similar_choice_see">See similar shows</string>
+    <string name="similar_choice_home">Go to Home</string>
+    <!-- While search or import suggestions load. The picked shows stay followed. -->
+    <string name="similar_skip_home">Skip to Home</string>
     <string name="suggestions_details">Show details</string>
     <string name="suggestions_back">Back</string>
     <!-- Brief note on the show deck when a positive answer picks the show. %s is the show title. -->

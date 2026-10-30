@@ -50,12 +50,14 @@ class AnalyticsTracksFacadeTest {
         AnalyticsHelper.trackOnboardingStarted()
         AnalyticsHelper.trackOnboardingFlowSelected("ai")
         AnalyticsHelper.trackOnboardingSkipped("welcome", 12.5f)
+        AnalyticsHelper.trackOnboardingSimilarChoice("search", "similar", 2)
 
         assertTrue("home_import_banner_action" in names())
         assertTrue("home_surface_tapped" in names())
         assertTrue("onboarding_started" in names())
         assertTrue("onboarding_flow_selected" in names())
         assertTrue("onboarding_completed" in names())
+        assertTrue("onboarding_similar_choice" in names())
         // skip emits a person set
         assertTrue(AnalyticsGlossary.PERSON_SET_EVENT in names())
     }

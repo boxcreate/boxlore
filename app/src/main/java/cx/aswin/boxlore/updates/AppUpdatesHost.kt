@@ -22,6 +22,7 @@ fun AppUpdatesHost(updates: AppUpdates, activity: Activity, content: @Composable
             updates = updates,
             onInstall = { scope.launch { updates.install(activity) } },
             onPlayUpdate = LocalPlayUpdateAction.current,
+            onOpenPlay = { openPlayListing(activity) },
         )
         content()
     }

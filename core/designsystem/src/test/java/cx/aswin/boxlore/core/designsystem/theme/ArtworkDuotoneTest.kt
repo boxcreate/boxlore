@@ -45,6 +45,25 @@ class ArtworkDuotoneTest {
     }
 
     @Test
+    fun `vivid pairs keep a cover's light parts light and its own hue`() {
+        seeds.forEach { seed ->
+            val vivid = ArtworkDuotone.fromColor(seed, vivid = true)
+            val shadow = Hct.fromInt(vivid.shadow.toArgb())
+            val highlight = Hct.fromInt(vivid.highlight.toArgb())
+            // The dark pair spans tones 8 to 38, which left Marquee's covers murky; the vivid pair spans most of the range.
+            assertTrue(shadow.tone <= 11.0, "vivid shadow for $seed")
+            assertTrue(highlight.tone >= 78.0, "vivid highlight for $seed")
+            assertTrue(highlight.tone - Hct.fromInt(ArtworkDuotone.fromColor(seed).highlight.toArgb()).tone >= 38.0, "vivid lift for $seed")
+        }
+        // A yellow seed stays yellow in the light tone instead of turning gold.
+        val yellow = Hct.fromInt(ArtworkDuotone.fromColor(Color(0xFFFFCC00), vivid = true).highlight.toArgb())
+        assertEquals(Hct.fromInt(Color(0xFFFFCC00).toArgb()).hue, yellow.hue, 6.0)
+        val neutral = Hct.fromInt(ArtworkDuotone.NeutralVivid.highlight.toArgb())
+        assertTrue(neutral.chroma < 4.0 && neutral.tone >= 78.0, "neutral vivid highlight $neutral")
+        assertEquals(ArtworkDuotone.fromColor(Color(0xFF2855BB), vivid = true), ArtworkDuotone.fromPalette(ArtworkPalette(Color(0xFF2855BB).toArgb(), 0), vivid = true))
+    }
+
+    @Test
     fun `greys and the dark option give a black and white duotone`() {
         val grey = Hct.fromInt(ArtworkDuotone.fromColor(Color(0xFF777777)).highlight.toArgb())
         assertTrue(grey.chroma < 4.0, "grey cover highlight $grey")
