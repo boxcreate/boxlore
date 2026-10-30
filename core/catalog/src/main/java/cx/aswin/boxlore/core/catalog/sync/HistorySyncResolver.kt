@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.catalog.sync
 
 import cx.aswin.boxlore.core.catalog.ports.ActivePlaybackSyncPort
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
+import cx.aswin.boxlore.core.database.ListeningDates
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.model.persistableArtworkUrl
 import cx.aswin.boxlore.core.network.model.ListeningHistorySyncDto
@@ -64,7 +65,7 @@ class HistorySyncResolver(
             lastPlayedAt = remote.lastPlayedAt,
             isDirty = false,
             syncedAt = syncedAt,
-        )
+        ).withListeningDatesOf(remote)
         listeningHistoryDao.upsert(newEntity)
     }
 
@@ -92,7 +93,7 @@ class HistorySyncResolver(
                 likedAt = finalLikedAt,
                 syncedAt = syncedAt,
             )
-            listeningHistoryDao.upsert(updated)
+            listeningHistoryDao.upsert(updated.withListeningDatesOf(remote))
             return
         }
 
@@ -124,8 +125,14 @@ class HistorySyncResolver(
                 syncedAt = syncedAt,
             )
         }
-        listeningHistoryDao.upsert(updated)
+        listeningHistoryDao.upsert(updated.withListeningDatesOf(remote))
     }
+
+    /** This row with the earlier listening dates of [remote] (Room v40); values the wire can't carry are ignored. */
+    private fun ListeningHistoryEntity.withListeningDatesOf(remote: ListeningHistorySyncDto): ListeningHistoryEntity = copy(
+        firstPlayedAt = ListeningDates.earliest(firstPlayedAt, remote.firstPlayedAt?.takeIf { it >= 0L }),
+        finishedAt = ListeningDates.earliest(finishedAt, remote.finishedAt?.takeIf { it >= 0L }),
+    )
 
     private fun mergeMetadata(
         local: ListeningHistoryEntity,

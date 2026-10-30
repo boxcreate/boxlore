@@ -183,6 +183,8 @@ class BoxcastPrefs(context: Context) {
         const val KEY_LAST_SYNC_TIMESTAMP = "sync_last_timestamp"
         const val KEY_LAST_SYNCED_USER_ID = "sync_last_user_id"
         const val KEY_SYNC_METADATA_VERSION = "sync_metadata_version"
+        const val KEY_LISTENING_PUSHED_UNTIL = "sync_listening_pushed_until"
+        const val KEY_LISTENING_PULLED_UNTIL = "sync_listening_pulled_until"
         const val KEY_HAS_REQUESTED_NOTIFICATION_PERMISSION = "has_requested_notification_permission"
         const val KEY_FEEDBACK_DRAFT_CATEGORY = "feedback_draft_category"
         const val KEY_FEEDBACK_DRAFT_MESSAGE = "feedback_draft_message"
@@ -239,6 +241,20 @@ class BoxcastPrefs(context: Context) {
 
     fun setSyncMetadataVersion(version: Int) {
         prefs.edit().putInt(KEY_SYNC_METADATA_VERSION, version).apply()
+    }
+
+    /** Last listening time of this phone's daily listening the cloud stored (0: none yet, push it all). */
+    fun getListeningPushedUntil(): Long = prefs.getLong(KEY_LISTENING_PUSHED_UNTIL, 0L)
+
+    fun setListeningPushedUntil(listenedAt: Long) {
+        prefs.edit().putLong(KEY_LISTENING_PUSHED_UNTIL, listenedAt).apply()
+    }
+
+    /** Server time of the last listening pull (0: none yet, pull every phone's listening). */
+    fun getListeningPulledUntil(): Long = prefs.getLong(KEY_LISTENING_PULLED_UNTIL, 0L)
+
+    fun setListeningPulledUntil(syncedAt: Long) {
+        prefs.edit().putLong(KEY_LISTENING_PULLED_UNTIL, syncedAt).apply()
     }
 
     // ── Notifications ───────────────────────────────────────────────────────

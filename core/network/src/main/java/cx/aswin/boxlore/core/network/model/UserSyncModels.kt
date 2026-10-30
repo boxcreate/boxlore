@@ -172,6 +172,8 @@ data class SyncPushRequest(
 data class SyncPushResponse(
     @SerialName("status") val status: String = "ok",
     @SerialName("syncedAt") val syncedAt: Long,
+    /** The server stored the push's listening (Room v40 server); older servers leave it out. */
+    @SerialName("listeningAccepted") val listeningAccepted: Boolean = false,
 )
 
 @Serializable
