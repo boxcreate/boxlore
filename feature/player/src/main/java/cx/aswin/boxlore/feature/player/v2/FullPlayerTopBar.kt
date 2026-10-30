@@ -95,7 +95,7 @@ internal fun PlayerTopBar(
                 label = "topBarLabel",
             ) { isShowingTip ->
                 Text(
-                    text = if (isShowingTip) "Swipe down to minimize" else "Now Playing",
+                    text = if (isShowingTip) "Swipe down to minimize" else "Now playing",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = GoogleSansWeight.semiBold,
                     color = if (isShowingTip) colorScheme.primary.copy(alpha = 0.8f) else colorScheme.onSurface.copy(alpha = 0.7f),

@@ -18,20 +18,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
+import androidx.compose.material.icons.automirrored.outlined.QueueMusic
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.QueueMusic
-import androidx.compose.material.icons.automirrored.rounded.Toc
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.Bedtime
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.DownloadDone
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Speed
+import androidx.compose.material.icons.outlined.Subtitles
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Description
-import androidx.compose.material.icons.rounded.NightsStay
 import androidx.compose.material.icons.rounded.Remove
-import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -104,7 +104,7 @@ internal fun QuickActionsTopRow(
         horizontalArrangement = Arrangement.spacedBy(3.dp)
     ) {
         UtilityAction(
-            icon = Icons.Rounded.Speed,
+            icon = Icons.Outlined.Speed,
             label = formatSpeedLabel(playback.playbackSpeed),
             state = UtilityActionState(
                 active = speedIsCustom,
@@ -136,7 +136,7 @@ internal fun QuickActionsTopRow(
             modifier = Modifier.weight(1f)
         )
         UtilityAction(
-            icon = Icons.AutoMirrored.Rounded.QueueMusic,
+            icon = Icons.AutoMirrored.Outlined.QueueMusic,
             label = "Queue",
             colorScheme = colorScheme,
             shape = shapes.topEnd,
@@ -170,7 +170,7 @@ internal fun QuickActionsBottomRow(
             modifier = Modifier.weight(1f)
         )
         UtilityAction(
-            icon = Icons.AutoMirrored.Rounded.Toc,
+            icon = Icons.AutoMirrored.Outlined.FormatListBulleted,
             label = "Chapters",
             state = UtilityActionState(
                 enabled = !chaptersBusy,
@@ -183,7 +183,7 @@ internal fun QuickActionsBottomRow(
             modifier = Modifier.weight(1f)
         )
         UtilityAction(
-            icon = Icons.Rounded.Description,
+            icon = Icons.Outlined.Subtitles,
             label = "Transcript",
             state = UtilityActionState(
                 active = availability.isTranscriptVisible,
@@ -607,7 +607,7 @@ internal fun SleepAction(
         else -> null
     }
     UtilityAction(
-        icon = Icons.Rounded.NightsStay,
+        icon = Icons.Outlined.Bedtime,
         label = "Sleep",
         state = UtilityActionState(active = active, status = status),
         colorScheme = colorScheme,
