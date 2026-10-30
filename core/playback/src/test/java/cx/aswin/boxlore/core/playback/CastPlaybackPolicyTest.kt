@@ -66,6 +66,31 @@ class CastPlaybackPolicyTest {
     }
 
     @Test
+    fun `a full snapshot resets an established candidate so its window starts over`() {
+        val policy = CastQueueSnapshotPolicy()
+        val subset = listOf("current")
+        val localIds = listOf("current", "next")
+
+        assertTrue(policy.shouldPreserveLocalQueue(subset, localIds, nowMs = 1_000L))
+        assertFalse(policy.shouldPreserveLocalQueue(localIds, localIds, nowMs = 1_500L))
+        // Seen again after the reset, the subset is a new candidate with a fresh window.
+        assertTrue(policy.shouldPreserveLocalQueue(subset, localIds, nowMs = 2_100L))
+        assertTrue(policy.shouldPreserveLocalQueue(subset, localIds, nowMs = 3_099L))
+        assertFalse(policy.shouldPreserveLocalQueue(subset, localIds, nowMs = 3_100L))
+    }
+
+    @Test
+    fun `a different valid subset becomes the candidate with its own window`() {
+        val policy = CastQueueSnapshotPolicy()
+        val localIds = listOf("current", "next", "later")
+
+        assertTrue(policy.shouldPreserveLocalQueue(listOf("current"), localIds, nowMs = 1_000L))
+        assertTrue(policy.shouldPreserveLocalQueue(listOf("current", "next"), localIds, nowMs = 1_800L))
+        assertTrue(policy.shouldPreserveLocalQueue(listOf("current", "next"), localIds, nowMs = 2_799L))
+        assertFalse(policy.shouldPreserveLocalQueue(listOf("current", "next"), localIds, nowMs = 2_800L))
+    }
+
+    @Test
     fun `ended Cast session rejects stale remote device state`() {
         assertFalse(CastSessionSyncPolicy.shouldAcceptRemoteRoute(hasActiveSession = false))
         assertTrue(CastSessionSyncPolicy.shouldAcceptRemoteRoute(hasActiveSession = true))

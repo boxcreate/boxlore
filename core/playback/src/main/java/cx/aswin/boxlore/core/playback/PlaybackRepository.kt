@@ -370,7 +370,8 @@ class PlaybackRepository internal constructor(
                 }
             },
             playQueue = { episodes, podcast, startIndex, entryPoint, initialPositionMs, sourceContext ->
-                queueCoordinator.playQueue(
+                // Reloads the current queue into an emptied player, so its entries keep their shows.
+                queueCoordinator.replayQueue(
                     episodes,
                     podcast,
                     startIndex,
