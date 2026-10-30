@@ -6,6 +6,8 @@ import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.ListeningRollupEntity
+import cx.aswin.boxlore.core.database.ListeningSessionEntity
 import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.model.ListeningPeriod
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
@@ -74,6 +76,35 @@ class HistoryBeyondScreenLimitTest {
         assertEquals(TOTAL - OLD, summary.inProgressCount)
     }
 
+    @Test
+    fun theFullTimelineListsEveryEpisodeNewestFirstButNotOnesOnlyMarkedPlayed() = runTest(testDispatcher) {
+        database.listeningHistoryDao().upsertAll((0 until TOTAL).map { history("ep-$it", playedAt = it + 1L) })
+        database.listeningHistoryDao().upsert(history("marked", playedAt = 9_999L, completed = true).copy(isManualCompletion = true))
+
+        val timeline = historyStore().observeFullHistoryTimeline().first()
+
+        assertEquals(TOTAL, timeline.size)
+        assertEquals("ep-${TOTAL - 1}", timeline.first().episodeId)
+        assertEquals("ep-0", timeline.last().episodeId)
+    }
+
+    @Test
+    fun listeningByDaySumsEveryPhonesSessionsAndSummaries() = runTest(testDispatcher) {
+        database.listeningSessionDao().upsertSessions(
+            listOf(
+                session("mine", day = 20L, minutes = 10L, device = "me"),
+                session("theirs", day = 20L, minutes = 5L, device = "phone-b"),
+            ),
+        )
+        database.listeningRollupDao().upsertRollup(ListeningRollupEntity(20L, "ep-1", SHOW, 30L * 60_000L, 2, 0, lastListenedAt = 99L, deviceId = "phone-c"))
+        database.listeningRollupDao().upsertRollup(ListeningRollupEntity(19L, "ep-1", SHOW, 7L * 60_000L, 1, 0, lastListenedAt = 9L, deviceId = "me"))
+
+        val days = historyStore().observeListeningByDay().first()
+
+        assertEquals(listOf(20L to 45L * 60_000L, 19L to 7L * 60_000L), days.map { it.localDay to it.consumedMs })
+        assertEquals(4, days.first().sessionCount)
+    }
+
     private fun historyStore(): PlaybackHistoryStore {
         val context = ApplicationProvider.getApplicationContext<Context>()
         return PlaybackHistoryStore(
@@ -89,6 +120,19 @@ class HistoryBeyondScreenLimitTest {
             ),
         )
     }
+
+    private fun session(id: String, day: Long, minutes: Long, device: String,) = ListeningSessionEntity(
+        sessionId = id,
+        episodeId = "ep-1",
+        podcastId = SHOW,
+        startedAt = day * 86_400_000L,
+        endedAt = day * 86_400_000L + minutes * 60_000L,
+        consumedMs = minutes * 60_000L,
+        completed = false,
+        localDay = day,
+        timeBucket = 0,
+        deviceId = device,
+    )
 
     private fun history(id: String, playedAt: Long, completed: Boolean = false, liked: Boolean = false, progress: Long = 0L,) = ListeningHistoryEntity(
         episodeId = id,

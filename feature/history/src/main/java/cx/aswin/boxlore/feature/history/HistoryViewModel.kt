@@ -3,195 +3,154 @@ package cx.aswin.boxlore.feature.history
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.domain.ports.ListeningHistoryPort
-import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.core.model.ListeningHistoryRemoval
 import cx.aswin.boxlore.core.model.ListeningInsightSummary
 import cx.aswin.boxlore.core.model.ListeningPeriod
-import java.time.Instant
+import cx.aswin.boxlore.feature.history.timeline.HistoryTimelineLogic
+import cx.aswin.boxlore.feature.history.timeline.TimelineContent
+import cx.aswin.boxlore.feature.history.timeline.TimelineFilter
+import cx.aswin.boxlore.feature.history.timeline.TimelineGrouping
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class HistoryFilter {
-    ALL,
-    IN_PROGRESS,
-    COMPLETED,
+/** Listening history's two tabs. */
+enum class HistoryTab {
+    TIMELINE,
+    INSIGHTS,
 }
 
 sealed interface HistoryUiEvent {
-    data class ShowUndoDelete(
-        val removal: ListeningHistoryRemoval,
-    ) : HistoryUiEvent
+    data class ShowUndoDelete(val removal: ListeningHistoryRemoval) : HistoryUiEvent
 
     data object HistoryCleared : HistoryUiEvent
 }
 
-data class HistorySuccessState(
-    val insights: ListeningInsightSummary,
-    val groupedHistory: Map<LocalDate, List<ListeningHistoryItem>>,
-    val expandedDates: Set<LocalDate>,
-    val selectedFilterDate: LocalDate? = null,
-    val selectedHistoryFilter: HistoryFilter = HistoryFilter.ALL,
-    val selectedPeriod: ListeningPeriod = ListeningPeriod.DAYS_30,
-    val activeDays: Set<LocalDate> = emptySet(),
-    val timelineEmpty: Boolean = false,
-)
+/** The Timeline tab: loading, or its content with the chosen filter, grouping and search text. */
+sealed interface TimelineUiState {
+    data object Loading : TimelineUiState
 
-sealed interface HistoryUiState {
-    data object Loading : HistoryUiState
-
-    data object Empty : HistoryUiState
-
-    data class Success(
-        val state: HistorySuccessState,
-    ) : HistoryUiState
+    data class Ready(
+        val content: TimelineContent,
+        val filter: TimelineFilter,
+        val grouping: TimelineGrouping,
+        val query: String,
+        val today: LocalDate,
+    ) : TimelineUiState
 }
 
+/** The Insights tab: loading, or the summary for the chosen period. */
+sealed interface InsightsUiState {
+    data object Loading : InsightsUiState
+
+    data class Ready(val insights: ListeningInsightSummary, val period: ListeningPeriod,) : InsightsUiState
+}
+
+/**
+ * Listening history (Timeline and Insights tabs). The Timeline reads the whole history and every
+ * phone's timed listening ([ListeningHistoryPort.observeFullHistoryTimeline],
+ * [ListeningHistoryPort.observeListeningByDay]); selections live here so they survive rotation,
+ * resizing and folding.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class HistoryViewModel(
     private val listeningHistoryPort: ListeningHistoryPort,
+    private val zoneId: () -> ZoneId = { ZoneId.systemDefault() },
+    private val now: () -> LocalDate = { LocalDate.now(zoneId()) },
 ) : ViewModel() {
-    private val _expandedDates = MutableStateFlow<Set<LocalDate>>(emptySet())
-    private val _selectedFilterDate = MutableStateFlow<LocalDate?>(null)
-    private val _selectedHistoryFilter = MutableStateFlow(HistoryFilter.ALL)
-    private val _selectedPeriod = MutableStateFlow(ListeningPeriod.DAYS_30)
-    private var hasInitializedExpansions = false
+    private val tab = MutableStateFlow(HistoryTab.TIMELINE)
+    private val filter = MutableStateFlow(TimelineFilter.ALL)
+    private val grouping = MutableStateFlow(TimelineGrouping.DAYS)
+    private val query = MutableStateFlow("")
+    private val period = MutableStateFlow(ListeningPeriod.DAYS_30)
+    private val today = MutableStateFlow(now())
 
     private val eventsChannel = Channel<HistoryUiEvent>(Channel.BUFFERED)
     val events = eventsChannel.receiveAsFlow()
 
-    private val insightsFlow =
-        _selectedPeriod.flatMapLatest { period ->
-            listeningHistoryPort.observeInsights(period)
-        }
+    /** Days the Timeline should scroll to (Jump to a day), once each filter and grouping reset has applied. */
+    private val scrollChannel = Channel<LocalDate>(Channel.CONFLATED)
+    val scrollRequests = scrollChannel.receiveAsFlow()
 
-    private data class SelectionState(
-        val expandedDates: Set<LocalDate>,
-        val selectedFilterDate: LocalDate?,
-        val selectedHistoryFilter: HistoryFilter,
-        val selectedPeriod: ListeningPeriod,
-    )
+    val selectedTab: StateFlow<HistoryTab> = tab.asStateFlow()
 
-    private val selectionFlow =
-        combine(
-            _expandedDates,
-            _selectedFilterDate,
-            _selectedHistoryFilter,
-            _selectedPeriod,
-        ) { expanded, date, filter, period ->
-            SelectionState(expanded, date, filter, period)
-        }
+    private data class Selection(val filter: TimelineFilter, val grouping: TimelineGrouping, val query: String, val today: LocalDate,)
 
-    val uiState: StateFlow<HistoryUiState> =
-        combine(
-            listeningHistoryPort.observeHistoryTimeline(),
-            insightsFlow,
-            selectionFlow,
-        ) { timeline, insights, selection ->
-            if (timeline.isEmpty()) {
-                HistoryUiState.Empty
-            } else {
-                val filtered =
-                    when (selection.selectedHistoryFilter) {
-                        HistoryFilter.ALL -> timeline
-                        HistoryFilter.IN_PROGRESS -> timeline.filter { !it.isCompleted && it.progressMs > 0 }
-                        HistoryFilter.COMPLETED -> timeline.filter { it.isCompleted }
-                    }
-                val groupedByDate =
-                    filtered
-                        .groupBy { item ->
-                            Instant.ofEpochMilli(item.lastPlayedAt).atZone(ZoneId.systemDefault()).toLocalDate()
-                        }.toSortedMap(reverseOrder())
-                val activeDays =
-                    timeline
-                        .map {
-                            Instant.ofEpochMilli(it.lastPlayedAt).atZone(ZoneId.systemDefault()).toLocalDate()
-                        }.toSet()
-                val currentGrouped =
-                    if (selection.selectedFilterDate != null) {
-                        groupedByDate.filterKeys { it == selection.selectedFilterDate }
-                    } else {
-                        groupedByDate
-                    }
-                val timelineEmpty = currentGrouped.isEmpty()
+    private val selection = combine(filter, grouping, query, today) { f, g, q, t -> Selection(f, g, q, t) }
 
-                if (!hasInitializedExpansions) {
-                    hasInitializedExpansions = true
-                    val initialExpand = groupedByDate.keys.take(2).toSet()
-                    _expandedDates.update { initialExpand }
-                    HistoryUiState.Success(
-                        HistorySuccessState(
-                            insights = insights,
-                            groupedHistory = currentGrouped,
-                            expandedDates = initialExpand,
-                            selectedFilterDate = selection.selectedFilterDate,
-                            selectedHistoryFilter = selection.selectedHistoryFilter,
-                            selectedPeriod = selection.selectedPeriod,
-                            activeDays = activeDays,
-                            timelineEmpty = timelineEmpty,
-                        ),
-                    )
-                } else {
-                    val finalExpanded =
-                        if (selection.selectedFilterDate != null) {
-                            selection.expandedDates + selection.selectedFilterDate
-                        } else {
-                            selection.expandedDates
-                        }
-                    HistoryUiState.Success(
-                        HistorySuccessState(
-                            insights = insights,
-                            groupedHistory = currentGrouped,
-                            expandedDates = finalExpanded,
-                            selectedFilterDate = selection.selectedFilterDate,
-                            selectedHistoryFilter = selection.selectedHistoryFilter,
-                            selectedPeriod = selection.selectedPeriod,
-                            activeDays = activeDays,
-                            timelineEmpty = timelineEmpty,
-                        ),
-                    )
-                }
-            }
-        }.flowOn(kotlinx.coroutines.Dispatchers.Default)
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = HistoryUiState.Loading,
-            )
+    val timelineState: StateFlow<TimelineUiState> =
+        combine(listeningHistoryPort.observeFullHistoryTimeline(), listeningHistoryPort.observeListeningByDay(), selection) { history, listening, chosen ->
+            TimelineUiState.Ready(
+                content = HistoryTimelineLogic.build(HistoryTimelineLogic.Input(history, listening, chosen.filter, chosen.query, zoneId())),
+                filter = chosen.filter,
+                grouping = chosen.grouping,
+                query = chosen.query,
+                today = chosen.today,
+            ) as TimelineUiState
+        }.flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), TimelineUiState.Loading)
+
+    val insightsState: StateFlow<InsightsUiState> =
+        period
+            .flatMapLatest { chosen -> listeningHistoryPort.observeInsights(chosen).map { InsightsUiState.Ready(it, chosen) as InsightsUiState } }
+            .flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), InsightsUiState.Loading)
 
     init {
-        viewModelScope.launch {
-            listeningHistoryPort.maintainListeningAnalytics()
-        }
+        viewModelScope.launch { listeningHistoryPort.maintainListeningAnalytics() }
     }
 
-    fun setPeriod(period: ListeningPeriod) {
-        _selectedPeriod.value = period
+    fun selectTab(selected: HistoryTab) {
+        tab.value = selected
     }
 
-    fun setFilterDate(date: LocalDate?) {
-        _selectedFilterDate.value = date
+    fun setFilter(selected: TimelineFilter) {
+        filter.value = selected
     }
 
-    fun setHistoryFilter(filter: HistoryFilter) {
-        _selectedHistoryFilter.value = filter
+    fun setGrouping(selected: TimelineGrouping) {
+        grouping.value = selected
     }
 
-    fun toggleDateExpansion(date: LocalDate) {
-        _expandedDates.update { current ->
-            if (current.contains(date)) current - date else current + date
-        }
+    fun setQuery(text: String) {
+        query.value = text
+    }
+
+    fun setPeriod(selected: ListeningPeriod) {
+        period.value = selected
+    }
+
+    /** "All {n}" of Jump back in: every in-progress episode. */
+    fun showAllInProgress() {
+        tab.value = HistoryTab.TIMELINE
+        grouping.value = TimelineGrouping.DAYS
+        filter.value = TimelineFilter.IN_PROGRESS
+    }
+
+    /** Jump to a day: back to every episode by day, then the screen scrolls to [date]. */
+    fun jumpTo(date: LocalDate) {
+        filter.value = TimelineFilter.ALL
+        grouping.value = TimelineGrouping.DAYS
+        query.value = ""
+        scrollChannel.trySend(date)
+    }
+
+    /** Called when the screen starts, so a screen left open past midnight reads the new day. */
+    fun refreshToday() {
+        today.value = now()
     }
 
     fun removeHistoryItem(episodeId: String) {
@@ -203,9 +162,7 @@ class HistoryViewModel(
     }
 
     fun undoRemoval(removal: ListeningHistoryRemoval) {
-        viewModelScope.launch {
-            listeningHistoryPort.restoreHistoryRemoval(removal)
-        }
+        viewModelScope.launch { listeningHistoryPort.restoreHistoryRemoval(removal) }
     }
 
     fun clearAllHistory() {
@@ -223,6 +180,7 @@ class HistoryViewModel(
     var itemsDeletedCount = 0
 
     fun onScreenResume() {
+        refreshToday()
         if (sessionStartTime == 0L) {
             sessionStartTime = System.currentTimeMillis()
             hasTrackedExit = false
@@ -239,5 +197,9 @@ class HistoryViewModel(
         )
         hasTrackedExit = true
         sessionStartTime = 0L
+    }
+
+    private companion object {
+        const val STOP_TIMEOUT_MS = 5_000L
     }
 }

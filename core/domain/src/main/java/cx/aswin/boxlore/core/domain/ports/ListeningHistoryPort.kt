@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.domain.ports
 
+import cx.aswin.boxlore.core.model.ListeningDayEpisode
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.core.model.ListeningHistoryRemoval
 import cx.aswin.boxlore.core.model.ListeningInsightSummary
@@ -12,6 +13,16 @@ import kotlinx.coroutines.flow.Flow
  */
 interface ListeningHistoryPort {
     fun observeHistoryTimeline(): Flow<List<ListeningHistoryItem>>
+
+    /**
+     * Every episode the listener played, once, most recently played first: the whole history,
+     * without the screens' 300-row limit and without descriptions. Episodes only marked played
+     * are left out, as in [observeHistoryTimeline].
+     */
+    fun observeFullHistoryTimeline(): Flow<List<ListeningHistoryItem>>
+
+    /** Timed listening per local day and episode, from every phone ([ListeningDayEpisode]). */
+    fun observeListeningByDay(): Flow<List<ListeningDayEpisode>>
 
     fun observeInsights(period: ListeningPeriod): Flow<ListeningInsightSummary>
 

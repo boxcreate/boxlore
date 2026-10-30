@@ -49,6 +49,22 @@ data class ListeningTopShow(
 /** One local calendar day's listening total for activity charts. */
 data class ListeningDayActivity(val localDay: Long, val consumedMs: Long,)
 
+/**
+ * Timed listening of one episode on one local day, summed over every phone's sessions and daily
+ * summaries (Room v40): what Listening History shows as a day's, a month's and a show's time.
+ *
+ * @property localDay the local calendar day, as an epoch day
+ * @property lastListenedAt when that day's listening of the episode ended, epoch ms
+ */
+data class ListeningDayEpisode(
+    val localDay: Long,
+    val episodeId: String,
+    val podcastId: String,
+    val consumedMs: Long,
+    val sessionCount: Int,
+    val lastListenedAt: Long,
+)
+
 data class ListeningInsightSummary(
     val period: ListeningPeriod,
     val trackingSinceEpochMs: Long?,

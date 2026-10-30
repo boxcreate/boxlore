@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="history_title">Listening History</string>
+    <string name="history_title">Listening history</string>
     <string name="history_back">Back</string>
     <string name="history_clear_all">Clear all</string>
     <string name="history_clear_confirm_title">Clear listening history?</string>
@@ -57,4 +57,76 @@
     <string name="history_tracking_notice_confirm">Got it</string>
     <string name="history_status_completed">Done</string>
     <string name="history_status_in_progress">In progress</string>
+
+    <!-- Listening history: tabs and Timeline (redesign) -->
+    <string name="history_tab_timeline">Timeline</string>
+    <string name="history_tab_insights">Insights</string>
+    <string name="history_more_options">More options</string>
+    <string name="history_search_hint">Search episodes and shows</string>
+    <string name="history_search_clear">Clear search</string>
+    <string name="history_jump_back_in">Jump back in</string>
+    <!-- Opens every in-progress episode. The argument is how many there are. -->
+    <string name="history_jump_back_in_all">All %1$d</string>
+    <string name="history_filter_finished">Finished</string>
+    <string name="history_filter_liked">Liked</string>
+    <string name="history_group_by">Group by</string>
+    <string name="history_group_days">Days</string>
+    <string name="history_group_shows">Shows</string>
+    <plurals name="history_episode_count">
+        <item quantity="one">%1$d episode</item>
+        <item quantity="other">%1$d episodes</item>
+    </plurals>
+    <plurals name="history_brief_count">
+        <item quantity="one">%1$d brief</item>
+        <item quantity="other">%1$d briefs</item>
+    </plurals>
+    <plurals name="history_show_count">
+        <item quantity="one">%1$d show</item>
+        <item quantity="other">%1$d shows</item>
+    </plurals>
+    <plurals name="history_finished_count">
+        <item quantity="one">%1$d finished</item>
+        <item quantity="other">%1$d finished</item>
+    </plurals>
+    <!-- Parts of a line of facts, joined with a middle dot, e.g. "38 episodes · 14 h 20 min". -->
+    <string name="history_meta_join">%1$s · %2$s</string>
+    <string name="history_shows_last_played_first">last played first</string>
+    <string name="history_day_today">Today</string>
+    <string name="history_day_yesterday">Yesterday</string>
+    <!-- A length of time, e.g. "2 h 05 min". -->
+    <string name="history_duration_hours_minutes">%1$d h %2$02d min</string>
+    <string name="history_duration_minutes">%1$d min</string>
+    <string name="history_duration_under_minute">Under a minute</string>
+    <!-- How much of an episode is left, e.g. "29 min left". -->
+    <string name="history_time_left">%1$s left</string>
+    <string name="history_row_finished">Finished</string>
+    <string name="history_row_liked">Liked</string>
+    <string name="history_resume">Resume %1$s</string>
+    <string name="history_more_options_for">More options for %1$s</string>
+    <string name="history_go_to_show">Go to show</string>
+    <string name="history_remove_from_history">Remove from history</string>
+    <string name="history_open_show">Open %1$s</string>
+    <!-- Segment bar of a show's episodes, e.g. "6 of 9 finished". -->
+    <string name="history_show_finished_of">%1$d of %2$d finished</string>
+    <plurals name="history_show_all_finished">
+        <item quantity="one">Finished</item>
+        <item quantity="other">All %1$d finished</item>
+    </plurals>
+    <string name="history_scroll_to_date">Scroll through your history</string>
+    <string name="history_no_results">No episodes match your search.</string>
+
+    <!-- Jump to a day sheet -->
+    <string name="history_jump_title">Jump to a day</string>
+    <string name="history_jump_body">Days you listened are filled in. Darker means longer.</string>
+    <string name="history_jump_previous_month">Previous month</string>
+    <string name="history_jump_next_month">Next month</string>
+    <string name="history_jump_less">Less</string>
+    <string name="history_jump_more">More</string>
+    <string name="history_jump_week_ago">A week ago</string>
+    <string name="history_jump_month_ago">A month ago</string>
+    <string name="history_jump_first_listen">Your first listen</string>
+    <!-- A day in the calendar, e.g. "Oct 3, 35 minutes". -->
+    <string name="history_jump_day">%1$s, %2$s</string>
+    <string name="history_jump_today">Today, %1$s</string>
+    <string name="history_jump_played">played</string>
 </resources>

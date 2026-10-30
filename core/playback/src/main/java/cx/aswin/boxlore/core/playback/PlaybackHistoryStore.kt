@@ -12,6 +12,7 @@ import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.domain.ports.ListeningHistoryPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.ListeningCompletionLogic
+import cx.aswin.boxlore.core.model.ListeningDayEpisode
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.core.model.ListeningHistoryRemoval
 import cx.aswin.boxlore.core.model.ListeningInsightSummary
@@ -98,6 +99,44 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
         entities
             .filter { !it.isManualCompletion && !it.isBulkCompletion }
             .map { it.toListeningHistoryItem() }
+    }
+
+    override fun observeFullHistoryTimeline(): Flow<List<ListeningHistoryItem>> =
+        listenerStore.projectedCompleteRows(data.listeningHistoryDao.observeAllStoredHistory()).map { entities ->
+            entities
+                .filter { !it.isManualCompletion && !it.isBulkCompletion }
+                .sortedWith(compareByDescending<ListeningHistoryEntity> { it.lastPlayedAt }.thenBy { it.episodeId })
+                .map { it.toListeningHistoryItem() }
+        }
+
+    /**
+     * Sessions and daily summaries of every phone, summed per local day and episode. A Podcast
+     * Index show switched to its RSS feed counts as the RSS show, as in [observeInsights].
+     */
+    override fun observeListeningByDay(): Flow<List<ListeningDayEpisode>> = combine(
+        data.listeningSessionDao.observeAllSessions(),
+        data.listeningRollupDao.observeAllRollups(),
+        listenerStore.showReplacementsFlow(),
+    ) { sessions, rollups, replacedBy ->
+        val days = HashMap<Pair<Long, String>, ListeningDayEpisode>()
+        fun add(localDay: Long, episodeId: String, podcastId: String, consumedMs: Long, sessionCount: Int, lastListenedAt: Long,) {
+            val key = localDay to episodeId
+            val show = replacedBy[podcastId] ?: podcastId
+            val held = days[key]
+            days[key] =
+                if (held == null) {
+                    ListeningDayEpisode(localDay, episodeId, show, consumedMs, sessionCount, lastListenedAt)
+                } else {
+                    held.copy(
+                        consumedMs = held.consumedMs + consumedMs,
+                        sessionCount = held.sessionCount + sessionCount,
+                        lastListenedAt = maxOf(held.lastListenedAt, lastListenedAt),
+                    )
+                }
+        }
+        for (row in sessions) add(row.localDay, row.episodeId, row.podcastId, row.consumedMs, 1, row.endedAt)
+        for (row in rollups) add(row.localDay, row.episodeId, row.podcastId, row.consumedMs, row.sessionCount, row.lastListenedAt)
+        days.values.sortedWith(compareByDescending<ListeningDayEpisode> { it.localDay }.thenBy { it.episodeId })
     }
 
     /**

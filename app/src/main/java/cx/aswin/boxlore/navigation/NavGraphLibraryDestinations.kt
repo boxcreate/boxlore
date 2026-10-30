@@ -7,6 +7,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import cx.aswin.boxlore.core.playback.playEpisode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -80,6 +81,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
     }
 
     composable("library/history") {
+        val historyScope = androidx.compose.runtime.rememberCoroutineScope()
         val viewModel =
             androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.history.HistoryViewModel>(
                 factory =
@@ -105,6 +107,35 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                         "${encode(item.podcastName)}" +
                         "?entryPoint=library_history",
                 )
+            },
+            onPlayEpisode = { item ->
+                val audio = item.episodeAudioUrl
+                if (audio.isNullOrBlank()) return@HistoryScreen
+                val episode =
+                    cx.aswin.boxlore.core.model.Episode(
+                        id = item.episodeId,
+                        title = item.episodeTitle,
+                        description = "",
+                        audioUrl = audio,
+                        imageUrl = item.episodeImageUrl,
+                        podcastImageUrl = item.podcastImageUrl,
+                        podcastTitle = item.podcastName,
+                        podcastId = item.podcastId,
+                        duration = (item.durationMs / 1000L).toInt(),
+                        enclosureType = item.enclosureType,
+                        contextSourceId = "library_history",
+                    )
+                val podcast =
+                    cx.aswin.boxlore.core.model.Podcast(
+                        id = item.podcastId,
+                        title = item.podcastName,
+                        artist = "",
+                        imageUrl = item.podcastImageUrl ?: item.episodeImageUrl.orEmpty(),
+                    )
+                historyScope.launch { playbackRepository.playEpisode(episode, podcast) }
+            },
+            onOpenShow = { podcastId ->
+                w.navigate("podcast/${android.net.Uri.encode(podcastId)}?entryPoint=library_history")
             },
             onExploreClick = {
                 w.navigate("explore?entryPoint=library_history_empty_state") {

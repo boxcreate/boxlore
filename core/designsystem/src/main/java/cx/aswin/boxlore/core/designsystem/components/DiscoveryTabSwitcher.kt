@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
@@ -54,6 +55,17 @@ val DiscoveryTabSwitcherMinimumHeight = 48.dp
 fun discoveryTabSwitcherHeight(): Dp =
     (with(LocalDensity.current) { 20.sp.toDp() } + 20.dp).coerceAtLeast(DiscoveryTabSwitcherMinimumHeight)
 
+/**
+ * A page's look for [DiscoveryTabSwitcher]: the track's [containerColor] (null: surfaceContainerHigh),
+ * a [minHeight] and an [inset] (padding around the tabs and the gap between them). [Default] is the
+ * Explore and Subscriptions switcher.
+ */
+data class DiscoveryTabSwitcherStyle(val containerColor: Color? = null, val minHeight: Dp = DiscoveryTabSwitcherMinimumHeight, val inset: Dp = 0.dp,) {
+    companion object {
+        val Default = DiscoveryTabSwitcherStyle()
+    }
+}
+
 /** Pure presentation: pages own selection, preferences, placement and navigation. */
 @Composable
 fun DiscoveryTabSwitcher(
@@ -62,29 +74,31 @@ fun DiscoveryTabSwitcher(
     onTabSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
     floating: Boolean = true,
+    style: DiscoveryTabSwitcherStyle = DiscoveryTabSwitcherStyle.Default,
 ) {
     require(tabs.isNotEmpty())
     val selected = selectedIndex.coerceIn(tabs.indices)
-    val height = discoveryTabSwitcherHeight()
+    val height = discoveryTabSwitcherHeight().coerceAtLeast(style.minHeight)
+    val inset = style.inset
     DiscoveryExpressiveTheme {
         Surface(
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            color = style.containerColor ?: MaterialTheme.colorScheme.surfaceContainerHigh,
             shadowElevation = if (floating) 6.dp else 0.dp,
             modifier = modifier.then(if (floating) Modifier.width(280.dp) else Modifier.fillMaxWidth()).height(height),
         ) {
-            BoxWithConstraints {
-                val tabWidth = maxWidth / tabs.size
+            BoxWithConstraints(Modifier.padding(inset)) {
+                val tabWidth = (maxWidth - inset * (tabs.size - 1)) / tabs.size
                 val position by animateFloatAsState(
                     targetValue = selected.toFloat(),
                     animationSpec = spring(dampingRatio = 1f, stiffness = 450f),
                     label = "discovery_tab_selection",
                 )
                 Box(
-                    Modifier.offset(x = tabWidth * position).width(tabWidth).fillMaxHeight().testTag("discovery_tab_indicator")
+                    Modifier.offset(x = (tabWidth + inset) * position).width(tabWidth).fillMaxHeight().testTag("discovery_tab_indicator")
                         .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
                 )
-                Row(Modifier.fillMaxSize().selectableGroup()) {
+                Row(Modifier.fillMaxSize().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(inset)) {
                     tabs.forEachIndexed { index, tab ->
                         DiscoveryTabItem(
                             tab = tab,
