@@ -7,6 +7,7 @@ import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningInsightsMaintenance
 import cx.aswin.boxlore.core.database.ListeningRollupDao
 import cx.aswin.boxlore.core.database.ListeningSessionDao
+import cx.aswin.boxlore.core.database.PlayedShowDao
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,4 +31,6 @@ internal data class PlaybackHistoryDataDeps(
     val rankingFeedbackRepository: RankingFeedbackRepository,
     /** Listener state across an episode's IDs; null opens it from the app database ([PlaybackHistoryStore.listenerStore]). */
     val listenerStore: EpisodeListenerStore? = null,
+    /** Shows played (Room v40); null opens it from the app database. */
+    val playedShowDao: PlayedShowDao? = null,
 )

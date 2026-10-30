@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -49,6 +48,8 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
+import cx.aswin.boxlore.feature.history.insights.InsightsCallbacks
+import cx.aswin.boxlore.feature.history.insights.InsightsTab
 import cx.aswin.boxlore.feature.history.timeline.JumpToDaySheet
 import cx.aswin.boxlore.feature.history.timeline.JumpToDayState
 import cx.aswin.boxlore.feature.history.timeline.TimelineEpisodeActions
@@ -56,14 +57,12 @@ import cx.aswin.boxlore.feature.history.timeline.TimelineFilter
 import cx.aswin.boxlore.feature.history.timeline.TimelineGrouping
 import cx.aswin.boxlore.feature.history.timeline.TimelineTab
 import cx.aswin.boxlore.feature.history.timeline.TimelineTabCallbacks
-import cx.aswin.boxlore.feature.history.timeline.TimelineTabState
-import cx.aswin.boxlore.feature.history.timeline.timelineEntries
 import cx.aswin.boxlore.feature.history.timeline.timelineIndexFor
 import kotlinx.coroutines.flow.first
 
 /**
- * Listening history: a Timeline tab (search, Jump back in, filters, each month by day or show) and
- * an Insights tab. Tapping a row opens the episode; its cover's play disc resumes it.
+ * Listening history: an Insights tab, which it opens on, and a Timeline tab (search, Jump back in,
+ * filters, each month by day or show). Tapping a row opens the episode; its cover's play disc resumes it.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,8 +90,7 @@ fun HistoryScreen(
                 viewModel.timelineState.first {
                     it is TimelineUiState.Ready && it.filter == TimelineFilter.ALL && it.grouping == TimelineGrouping.DAYS && it.query.isEmpty()
                 } as TimelineUiState.Ready
-            val state = TimelineTabState(ready.content, ready.filter, ready.grouping, ready.query, ready.today)
-            timelineIndexFor(timelineEntries(state), date)?.let { timelineListState.animateScrollToItem(it) }
+            timelineIndexFor(ready.entries, date)?.let { timelineListState.animateScrollToItem(it) }
         }
     }
 
@@ -103,6 +101,7 @@ fun HistoryScreen(
             HistoryTopBar(
                 tab = tab,
                 canClear = (timeline as? TimelineUiState.Ready)?.content?.isHistoryEmpty == false,
+                insightsHaveTiming = (insights as? InsightsUiState.Ready)?.content?.hasEnoughTiming == true,
                 onBack = onBack,
                 onRequestClearAll = { showClearDialog = true },
             )
@@ -143,10 +142,10 @@ fun HistoryScreen(
     )
 }
 
-/** 64dp bar: back, "Listening history" (22/28), and the tab's action: ⋮ (Clear all) on the Timeline. */
+/** 64dp bar: back, "Listening history" (22/28), and the tab's action: ⋮ (Clear all) on the Timeline and early Insights. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HistoryTopBar(tab: HistoryTab, canClear: Boolean, onBack: () -> Unit, onRequestClearAll: () -> Unit,) {
+private fun HistoryTopBar(tab: HistoryTab, canClear: Boolean, insightsHaveTiming: Boolean, onBack: () -> Unit, onRequestClearAll: () -> Unit,) {
     var menuOpen by remember { mutableStateOf(false) }
     TopAppBar(
         title = {
@@ -161,7 +160,8 @@ private fun HistoryTopBar(tab: HistoryTab, canClear: Boolean, onBack: () -> Unit
             }
         },
         actions = {
-            if (tab == HistoryTab.TIMELINE && canClear) {
+            // Boards A1 and A6: ⋮ on the Timeline and on Insights while timing fills in.
+            if (canClear && (tab == HistoryTab.TIMELINE || !insightsHaveTiming)) {
                 IconButton(onClick = { menuOpen = true }) {
                     Icon(Icons.Rounded.MoreVert, contentDescription = stringResource(R.string.history_more_options))
                 }
@@ -180,15 +180,18 @@ private fun HistoryTopBar(tab: HistoryTab, canClear: Boolean, onBack: () -> Unit
     )
 }
 
-/** Timeline | Insights: the Subscriptions switcher at 56dp with a surfaceContainer track and 4dp inset. */
+/** Insights | Timeline: the Subscriptions switcher at 56dp with a surfaceContainer track and 4dp inset. */
 @Composable
 private fun HistoryTabs(tab: HistoryTab, onSelect: (HistoryTab) -> Unit) {
     DiscoveryTabSwitcher(
+        // In HistoryTab order: Insights first.
         tabs =
-        listOf(
-            DiscoveryTab(stringResource(R.string.history_tab_timeline), Icons.Rounded.History),
-            DiscoveryTab(stringResource(R.string.history_tab_insights), Icons.Rounded.AutoAwesome),
-        ),
+        HistoryTab.entries.map { entry ->
+            when (entry) {
+                HistoryTab.INSIGHTS -> DiscoveryTab(stringResource(R.string.history_tab_insights), Icons.Rounded.AutoAwesome)
+                HistoryTab.TIMELINE -> DiscoveryTab(stringResource(R.string.history_tab_timeline), Icons.Rounded.History)
+            }
+        },
         selectedIndex = tab.ordinal,
         onTabSelected = { onSelect(HistoryTab.entries[it]) },
         floating = false,
@@ -221,7 +224,8 @@ private fun HistoryTimelineContent(
                 HistoryEmptyState(onExploreClick = navigation.onExploreClick)
             } else {
                 TimelineTab(
-                    state = TimelineTabState(state.content, state.filter, state.grouping, state.query, state.today),
+                    state = state.tabState,
+                    entries = state.entries,
                     callbacks =
                     TimelineTabCallbacks(
                         onQueryChange = viewModel::setQuery,
@@ -255,22 +259,26 @@ private fun HistoryLoading() {
     }
 }
 
-/** The Insights tab; until its redesign lands it shows the period, time listened, highlights and patterns. */
+/** The Insights tab: the period's stories, or what history alone can say while timing fills in. */
 @Composable
 private fun HistoryInsightsContent(state: InsightsUiState, viewModel: HistoryViewModel, bottomPadding: androidx.compose.ui.unit.Dp,) {
     when (state) {
         InsightsUiState.Loading -> HistoryLoading()
         is InsightsUiState.Ready ->
-            LazyColumn(
+            InsightsTab(
+                content = state.content,
+                period = state.period,
+                today = state.today,
+                callbacks =
+                InsightsCallbacks(
+                    onPeriodChange = viewModel::setPeriod,
+                    onOpenDay = { date ->
+                        viewModel.selectTab(HistoryTab.TIMELINE)
+                        viewModel.jumpTo(date)
+                    },
+                    onReviewInProgress = viewModel::showAllInProgress,
+                ),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = bottomPadding + 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                item { HistoryPeriodSelector(selected = state.period, onSelect = viewModel::setPeriod) }
-                item { ListeningTimeCard(insights = state.insights) }
-                item { HistoryInsightCarousel(insights = state.insights) }
-                item { HistoryActivityGraph(dailyActivity = state.insights.dailyActivity) }
-                item { HistoryTimeOfDayGraph(insights = state.insights) }
-            }
+            )
     }
 }

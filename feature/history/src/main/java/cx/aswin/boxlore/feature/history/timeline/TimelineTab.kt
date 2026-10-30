@@ -28,7 +28,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,7 +50,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 /** What the Timeline tab shows and how: built content, the chosen filter and grouping, the search text and today. */
-internal data class TimelineTabState(
+data class TimelineTabState(
     val content: TimelineContent,
     val filter: TimelineFilter,
     val grouping: TimelineGrouping,
@@ -71,7 +70,7 @@ internal data class TimelineTabCallbacks(
 )
 
 /** One item of the Timeline list, with the day it belongs to (for the fast scroller and Jump to a day). */
-internal sealed interface TimelineEntry {
+sealed interface TimelineEntry {
     val key: String
     val date: LocalDate?
 
@@ -146,8 +145,7 @@ internal fun timelineIndexFor(entries: List<TimelineEntry>, target: LocalDate): 
 
 /** The Timeline tab (boards A1 and A3): search, Jump back in, filter chips and each month by day or by show. */
 @Composable
-internal fun TimelineTab(state: TimelineTabState, callbacks: TimelineTabCallbacks, listState: LazyListState, contentPadding: PaddingValues,) {
-    val entries = remember(state) { timelineEntries(state) }
+internal fun TimelineTab(state: TimelineTabState, entries: List<TimelineEntry>, callbacks: TimelineTabCallbacks, listState: LazyListState, contentPadding: PaddingValues,) {
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(state = listState, contentPadding = contentPadding, modifier = Modifier.fillMaxSize()) {
             items(entries, key = { it.key }, contentType = { it::class }) { entry ->

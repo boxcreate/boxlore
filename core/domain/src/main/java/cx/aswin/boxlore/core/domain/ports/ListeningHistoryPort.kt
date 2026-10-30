@@ -5,6 +5,7 @@ import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.core.model.ListeningHistoryRemoval
 import cx.aswin.boxlore.core.model.ListeningInsightSummary
 import cx.aswin.boxlore.core.model.ListeningPeriod
+import cx.aswin.boxlore.core.model.ListeningPlayedShow
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -23,6 +24,9 @@ interface ListeningHistoryPort {
 
     /** Timed listening per local day and episode, from every phone ([ListeningDayEpisode]). */
     fun observeListeningByDay(): Flow<List<ListeningDayEpisode>>
+
+    /** Every show the listener played, with its genre when known ([ListeningPlayedShow]). */
+    fun observePlayedShows(): Flow<List<ListeningPlayedShow>>
 
     fun observeInsights(period: ListeningPeriod): Flow<ListeningInsightSummary>
 

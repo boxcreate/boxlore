@@ -8,6 +8,7 @@ import cx.aswin.boxlore.core.database.EpisodeListenerStore
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningInsightsMaintenance
+import cx.aswin.boxlore.core.database.PlayedShowDao
 import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.domain.ports.ListeningHistoryPort
 import cx.aswin.boxlore.core.model.Episode
@@ -17,6 +18,7 @@ import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.core.model.ListeningHistoryRemoval
 import cx.aswin.boxlore.core.model.ListeningInsightSummary
 import cx.aswin.boxlore.core.model.ListeningPeriod
+import cx.aswin.boxlore.core.model.ListeningPlayedShow
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -36,6 +38,8 @@ import kotlinx.coroutines.launch
  *
  * Non-port helpers live in [PlaybackHistoryStoreApi] extensions.
  */
+// Implements the whole ListeningHistoryPort and ListeningHistoryBackupPort, so the repository can delegate both.
+@Suppress("TooManyFunctions")
 internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDeps, internal val data: PlaybackHistoryDataDeps,) :
     ListeningHistoryPort,
     ListeningHistoryBackupPort {
@@ -101,8 +105,15 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
             .map { it.toListeningHistoryItem() }
     }
 
+    /**
+     * The whole history, read again at most once a second ([throttleLatest]): playback saves progress
+     * every few seconds, and each save would otherwise re-read and re-project every row.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeFullHistoryTimeline(): Flow<List<ListeningHistoryItem>> =
-        listenerStore.projectedCompleteRows(data.listeningHistoryDao.observeAllStoredHistory()).map { entities ->
+        listenerStore.projectedCompleteRows(
+            data.listeningHistoryDao.historyChangeSignal().throttleLatest(HISTORY_SETTLE_MS).mapLatest { data.listeningHistoryDao.getAllStoredHistory() },
+        ).map { entities ->
             entities
                 .filter { !it.isManualCompletion && !it.isBulkCompletion }
                 .sortedWith(compareByDescending<ListeningHistoryEntity> { it.lastPlayedAt }.thenBy { it.episodeId })
@@ -119,24 +130,20 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
         listenerStore.showReplacementsFlow(),
     ) { sessions, rollups, replacedBy ->
         val days = HashMap<Pair<Long, String>, ListeningDayEpisode>()
-        fun add(localDay: Long, episodeId: String, podcastId: String, consumedMs: Long, sessionCount: Int, lastListenedAt: Long,) {
-            val key = localDay to episodeId
-            val show = replacedBy[podcastId] ?: podcastId
+        fun add(part: ListeningDayEpisode) {
+            val key = part.localDay to part.episodeId
             val held = days[key]
-            days[key] =
-                if (held == null) {
-                    ListeningDayEpisode(localDay, episodeId, show, consumedMs, sessionCount, lastListenedAt)
-                } else {
-                    held.copy(
-                        consumedMs = held.consumedMs + consumedMs,
-                        sessionCount = held.sessionCount + sessionCount,
-                        lastListenedAt = maxOf(held.lastListenedAt, lastListenedAt),
-                    )
-                }
+            days[key] = held?.let { ListeningDayLogic.sum(it, part) } ?: part
         }
-        for (row in sessions) add(row.localDay, row.episodeId, row.podcastId, row.consumedMs, 1, row.endedAt)
-        for (row in rollups) add(row.localDay, row.episodeId, row.podcastId, row.consumedMs, row.sessionCount, row.lastListenedAt)
+        for (row in sessions) add(ListeningDayLogic.ofSession(row, replacedBy[row.podcastId] ?: row.podcastId))
+        for (row in rollups) add(ListeningDayLogic.ofRollup(row, replacedBy[row.podcastId] ?: row.podcastId))
         days.values.sortedWith(compareByDescending<ListeningDayEpisode> { it.localDay }.thenBy { it.episodeId })
+    }.throttleLatest(HISTORY_SETTLE_MS)
+
+    private val playedShowDao: PlayedShowDao by lazy { data.playedShowDao ?: BoxLoreDatabase.getDatabase(player.context).playedShowDao() }
+
+    override fun observePlayedShows(): Flow<List<ListeningPlayedShow>> = playedShowDao.observeAllPlayedShows().map { rows ->
+        rows.map { ListeningPlayedShow(it.podcastId, it.podcastName, it.imageUrl, it.genre, it.firstPlayedAt, it.lastPlayedAt) }
     }
 
     /**
@@ -322,6 +329,11 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
             data.listeningHistoryDao.upsertAll(entitiesToUpsert)
             listenerStore.recordCompletions(historyIds, completed = true, nowMs = currentTime)
         }
+    }
+
+    private companion object {
+        /** Whole-history reads for Listening history follow changes at most this often. */
+        const val HISTORY_SETTLE_MS = 1_000L
     }
 }
 

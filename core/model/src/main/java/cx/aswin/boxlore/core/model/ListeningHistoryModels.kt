@@ -63,6 +63,22 @@ data class ListeningDayEpisode(
     val consumedMs: Long,
     val sessionCount: Int,
     val lastListenedAt: Long,
+    val morningMs: Long = 0L,
+    val afternoonMs: Long = 0L,
+    val eveningMs: Long = 0L,
+    val nightMs: Long = 0L,
+    /** The longest single sitting known: a session's time, or a summed day of one session; 0 when not known. */
+    val longestSessionMs: Long = 0L,
+)
+
+/** A show the listener played (Room v40 `played_shows`), with its genre when known. */
+data class ListeningPlayedShow(
+    val podcastId: String,
+    val podcastName: String,
+    val imageUrl: String?,
+    val genre: String?,
+    val firstPlayedAt: Long,
+    val lastPlayedAt: Long,
 )
 
 data class ListeningInsightSummary(

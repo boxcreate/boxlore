@@ -21,10 +21,14 @@ import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.core.model.ListeningHistoryRemoval
 import cx.aswin.boxlore.core.model.ListeningInsightSummary
 import cx.aswin.boxlore.core.model.ListeningPeriod
+import cx.aswin.boxlore.core.model.ListeningPlayedShow
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import cx.aswin.boxlore.feature.history.HistoryScreen
+import cx.aswin.boxlore.feature.history.HistoryTab
 import cx.aswin.boxlore.feature.history.HistoryViewModel
+import cx.aswin.boxlore.feature.history.InsightsUiState
+import cx.aswin.boxlore.feature.history.TimelineUiState
 import cx.aswin.boxlore.feature.history.timeline.JumpToDayContent
 import cx.aswin.boxlore.feature.history.timeline.JumpToDayHandle
 import cx.aswin.boxlore.feature.history.timeline.JumpToDayState
@@ -54,7 +58,7 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
 
     @Test fun capture() {
         assumeTrue(System.getProperty("boxlore.tabletCaptures") == "after")
-        val port = BoardHistory(empty = view == "empty")
+        val port = BoardHistory(empty = view == "empty", timedDays = if (view == "insights-early") 2 else Int.MAX_VALUE)
         val vm = HistoryViewModel(port, zoneId = { ZoneId.systemDefault() }, now = { TODAY })
         fixture.prepare()
         if (view == "jump") {
@@ -78,6 +82,14 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
         fixture.setContent(foldSafeViewport = true) {
             BoxLoreTheme(darkTheme = fixture.configuration.dark, dynamicColor = false) { HistoryScreen(vm, {}, {}, {}) }
         }
+        vm.selectTab(if (view.startsWith("insights")) HistoryTab.INSIGHTS else HistoryTab.TIMELINE)
+        // The tabs work off the main thread: let the paused clock run until the open one is ready.
+        repeat(50) {
+            if ((if (view.startsWith("insights")) vm.insightsState.value is InsightsUiState.Ready else vm.timelineState.value is TimelineUiState.Ready)) return@repeat
+            fixture.compose.mainClock.advanceTimeBy(100)
+            Thread.sleep(50)
+            fixture.compose.waitForIdle()
+        }
         if (view == "shows") {
             fixture.compose.mainClock.advanceTimeBy(1_000)
             fixture.compose.onNodeWithText("Shows").performClick()
@@ -95,8 +107,8 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}-{1}")
-        fun configurations(): List<Array<Any>> = listOf("days", "shows", "jump", "empty").flatMap { view ->
-            listOf(400 to 1640, 400 to 890, 1280 to 800, 840 to 1280).flatMap { (width, height) ->
+        fun configurations(): List<Array<Any>> = listOf("days", "shows", "jump", "empty", "insights", "insights-early").flatMap { view ->
+            listOf(400 to (if (view == "insights") 3_600 else 1_640), 400 to 890, 1280 to 800, 840 to 1280).flatMap { (width, height) ->
                 listOf(false, true).map { dark -> arrayOf<Any>(view, PhoneGoldenConfiguration(width, height, dark)) }
             }
         }
@@ -104,7 +116,7 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
 }
 
 /** The boards' history: Oct 26 to Oct 30, 2026, with their shows, times and progress. */
-private class BoardHistory(empty: Boolean) : ListeningHistoryPort {
+private class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE) : ListeningHistoryPort {
     private val history =
         if (empty) {
             emptyList()
@@ -120,18 +132,32 @@ private class BoardHistory(empty: Boolean) : ListeningHistoryPort {
                 row("molasses", "The Great Molasses Flood", "Stuff You Missed in History Class", "hc", 26, 18, 45, completed = true),
             )
         }
+    /** Board A2's calendar, each day split like A4: Darknet Diaries first, then the other shows; evenings lead. */
     private val listening =
         if (empty) {
             emptyList()
         } else {
-            listOf(day(30, "ripper", "ct", 23), day(28, "courthouse", "dd", 168), day(27, "ai", "vc", 55), day(26, "molasses", "hc", 40))
+            HistoryTabletAuditCaptureTest.BOARD_CALENDAR.entries.sortedByDescending { it.key }.take(timedDays).flatMap { (date, ms) ->
+                SHOW_SPLIT.map { (podcastId, share) -> boardDay(date, podcastId, (ms * share).toLong()) }
+            }
         }
+    private val played =
+        listOf(
+            ListeningPlayedShow("dd", "Darknet Diaries", PhoneGoldenRule.ARTWORK_URL, "True Crime", 0L, 0L),
+            ListeningPlayedShow("ct", "Conspiracy Theories", PhoneGoldenRule.ARTWORK_URL, "True Crime", 0L, 0L),
+            ListeningPlayedShow("briefing_us", "The boxlore brief", PhoneGoldenRule.ARTWORK_URL, "News", 0L, 0L),
+            ListeningPlayedShow("ks", "Killer Stories", PhoneGoldenRule.ARTWORK_URL, "True Crime", 0L, 0L),
+            ListeningPlayedShow("hc", "Stuff You Missed in History Class", PhoneGoldenRule.ARTWORK_URL, "History", 0L, 0L),
+            ListeningPlayedShow("vc", "The Vergecast", PhoneGoldenRule.ARTWORK_URL, "Technology", 0L, 0L),
+        )
 
     override fun observeHistoryTimeline(): Flow<List<ListeningHistoryItem>> = flowOf(history)
 
     override fun observeFullHistoryTimeline(): Flow<List<ListeningHistoryItem>> = flowOf(history)
 
     override fun observeListeningByDay(): Flow<List<ListeningDayEpisode>> = flowOf(listening)
+
+    override fun observePlayedShows(): Flow<List<ListeningPlayedShow>> = flowOf(played)
 
     override fun observeInsights(period: ListeningPeriod): Flow<ListeningInsightSummary> = flowOf(
         ListeningInsightSummary(
@@ -193,6 +219,21 @@ private class BoardHistory(empty: Boolean) : ListeningHistoryPort {
         lastPlayedAt = LocalDateTime.of(2026, 10, dayOfMonth, hour, minute).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
     )
 
-    private fun day(dayOfMonth: Int, episodeId: String, podcastId: String, minutes: Long) =
-        ListeningDayEpisode(LocalDate.of(2026, 10, dayOfMonth).toEpochDay(), episodeId, podcastId, minutes * 60_000L, 1, 0L)
+    private fun boardDay(date: LocalDate, podcastId: String, ms: Long) = ListeningDayEpisode(
+        localDay = date.toEpochDay(),
+        episodeId = "$podcastId-$date",
+        podcastId = podcastId,
+        consumedMs = ms,
+        sessionCount = 1,
+        lastListenedAt = 0L,
+        morningMs = (ms * 0.14).toLong(),
+        afternoonMs = (ms * 0.18).toLong(),
+        eveningMs = (ms * 0.46).toLong(),
+        nightMs = (ms * 0.22).toLong(),
+        longestSessionMs = ms,
+    )
+
+    private companion object {
+        val SHOW_SPLIT = listOf("dd" to 0.29, "ct" to 0.22, "briefing_us" to 0.16, "ks" to 0.13, "hc" to 0.08, "vc" to 0.12)
+    }
 }

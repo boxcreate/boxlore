@@ -4,22 +4,29 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.domain.ports.ListeningHistoryPort
 import cx.aswin.boxlore.core.model.ListeningHistoryRemoval
-import cx.aswin.boxlore.core.model.ListeningInsightSummary
 import cx.aswin.boxlore.core.model.ListeningPeriod
+import cx.aswin.boxlore.feature.history.insights.InsightsContent
+import cx.aswin.boxlore.feature.history.insights.InsightsLogic
 import cx.aswin.boxlore.feature.history.timeline.HistoryTimelineLogic
 import cx.aswin.boxlore.feature.history.timeline.TimelineContent
+import cx.aswin.boxlore.feature.history.timeline.TimelineEntry
 import cx.aswin.boxlore.feature.history.timeline.TimelineFilter
 import cx.aswin.boxlore.feature.history.timeline.TimelineGrouping
+import cx.aswin.boxlore.feature.history.timeline.TimelineTabState
+import cx.aswin.boxlore.feature.history.timeline.timelineEntries
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -27,10 +34,10 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** Listening history's two tabs. */
+/** Listening history's two tabs, in their order: Insights first (it opens on it), then the Timeline. */
 enum class HistoryTab {
-    TIMELINE,
     INSIGHTS,
+    TIMELINE,
 }
 
 sealed interface HistoryUiEvent {
@@ -49,14 +56,18 @@ sealed interface TimelineUiState {
         val grouping: TimelineGrouping,
         val query: String,
         val today: LocalDate,
-    ) : TimelineUiState
+        /** The list's rows, built off the main thread. */
+        val entries: List<TimelineEntry> = emptyList(),
+    ) : TimelineUiState {
+        val tabState: TimelineTabState get() = TimelineTabState(content, filter, grouping, query, today)
+    }
 }
 
 /** The Insights tab: loading, or the summary for the chosen period. */
 sealed interface InsightsUiState {
     data object Loading : InsightsUiState
 
-    data class Ready(val insights: ListeningInsightSummary, val period: ListeningPeriod,) : InsightsUiState
+    data class Ready(val content: InsightsContent, val period: ListeningPeriod, val today: LocalDate,) : InsightsUiState
 }
 
 /**
@@ -71,7 +82,7 @@ class HistoryViewModel(
     private val zoneId: () -> ZoneId = { ZoneId.systemDefault() },
     private val now: () -> LocalDate = { LocalDate.now(zoneId()) },
 ) : ViewModel() {
-    private val tab = MutableStateFlow(HistoryTab.TIMELINE)
+    private val tab = MutableStateFlow(HistoryTab.INSIGHTS)
     private val filter = MutableStateFlow(TimelineFilter.ALL)
     private val grouping = MutableStateFlow(TimelineGrouping.DAYS)
     private val query = MutableStateFlow("")
@@ -91,22 +102,37 @@ class HistoryViewModel(
 
     private val selection = combine(filter, grouping, query, today) { f, g, q, t -> Selection(f, g, q, t) }
 
+    /** Each tab works only while it is open; the other keeps its last state until it is opened again. */
+    private fun <T> whileOpen(open: HistoryTab, work: () -> Flow<T>): Flow<T> = tab.map { it == open }.distinctUntilChanged().flatMapLatest { active -> if (active) work() else emptyFlow() }
+
     val timelineState: StateFlow<TimelineUiState> =
-        combine(listeningHistoryPort.observeFullHistoryTimeline(), listeningHistoryPort.observeListeningByDay(), selection) { history, listening, chosen ->
-            TimelineUiState.Ready(
-                content = HistoryTimelineLogic.build(HistoryTimelineLogic.Input(history, listening, chosen.filter, chosen.query, zoneId())),
-                filter = chosen.filter,
-                grouping = chosen.grouping,
-                query = chosen.query,
-                today = chosen.today,
-            ) as TimelineUiState
+        whileOpen(HistoryTab.TIMELINE) {
+            combine(listeningHistoryPort.observeFullHistoryTimeline(), listeningHistoryPort.observeListeningByDay(), selection) { history, listening, chosen ->
+                val ready =
+                    TimelineUiState.Ready(
+                        content = HistoryTimelineLogic.build(HistoryTimelineLogic.Input(history, listening, chosen.filter, chosen.query, zoneId())),
+                        filter = chosen.filter,
+                        grouping = chosen.grouping,
+                        query = chosen.query,
+                        today = chosen.today,
+                    )
+                ready.copy(entries = timelineEntries(ready.tabState)) as TimelineUiState
+            }
         }.flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), TimelineUiState.Loading)
 
     val insightsState: StateFlow<InsightsUiState> =
-        period
-            .flatMapLatest { chosen -> listeningHistoryPort.observeInsights(chosen).map { InsightsUiState.Ready(it, chosen) as InsightsUiState } }
-            .flowOn(Dispatchers.Default)
+        whileOpen(HistoryTab.INSIGHTS) {
+            combine(
+                listeningHistoryPort.observeFullHistoryTimeline(),
+                listeningHistoryPort.observeListeningByDay(),
+                listeningHistoryPort.observePlayedShows(),
+                period,
+                today,
+            ) { history, listening, played, chosen, day ->
+                InsightsUiState.Ready(InsightsLogic.build(InsightsLogic.Input(history, listening, played, chosen, day, zoneId())), chosen, day) as InsightsUiState
+            }
+        }.flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), InsightsUiState.Loading)
 
     init {
