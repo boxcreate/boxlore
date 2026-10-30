@@ -166,6 +166,7 @@ internal fun OneGenreContent(
     data: NewFolderFlowData,
 ) {
     val genres = remember(data.podcasts) { extractDistinctGenres(data.podcasts) }
+    AutoAddNote(text = genreAutoAddNote(draft.genre))
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         genres.forEach { genre ->
             val item = resolveSubscriptionGenreItem(genre, data.podcasts)

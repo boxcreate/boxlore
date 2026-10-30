@@ -68,4 +68,11 @@ class FolderSummaryLogicTest {
         assertEquals("0 shows", showCountLabel(0))
         assertEquals("12 shows", showCountLabel(12))
     }
+
+    @Test
+    fun `genre and auto say that shows followed later are added`() {
+        assertEquals("Shows you follow later in this genre are added automatically.", genreAutoAddNote(null))
+        assertEquals("Shows you follow later in News are added automatically.", genreAutoAddNote(" News "))
+        assertEquals(true, AUTO_ORGANIZE_NOTE.contains("Shows you follow later are added automatically"))
+    }
 }

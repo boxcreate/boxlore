@@ -75,3 +75,11 @@ internal fun folderLookDescription(size: FolderDisplaySize): String {
 /** Mirrors the size auto-organize picks when the listener lets boxlore choose. */
 internal const val AUTO_ORGANIZE_CHOOSE_DESCRIPTION =
     "Each folder gets the look that fits its size. 1–2 shows get a tile, 3–5 get 1 row, 6 or more get 2 rows."
+
+/** Genre step of New folder: shows followed later join on their own. */
+internal fun genreAutoAddNote(genre: String?): String =
+    "Shows you follow later in ${genre?.trim()?.takeIf { it.isNotEmpty() } ?: "this genre"} are added automatically."
+
+/** Auto: what auto-organize does, said once wherever it is set up. */
+internal const val AUTO_ORGANIZE_NOTE =
+    "Every genre gets a folder. Shows you follow later are added automatically, and folders you made stay as they are."

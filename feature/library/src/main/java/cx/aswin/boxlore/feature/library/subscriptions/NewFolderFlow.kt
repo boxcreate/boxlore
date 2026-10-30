@@ -200,11 +200,7 @@ private fun AllGenresContent(
     data: NewFolderFlowData,
 ) {
     if (data.autoOrganizeOn) {
-        Text(
-            text = "Your shows are already sorted into a folder for each genre. Manage changes how they look, or turns it off.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        AutoAddNote(text = "Each genre already has a folder, and shows you follow later are added automatically. Manage changes how they look.")
         return
     }
     AutoOrganizeSetupContent(

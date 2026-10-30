@@ -177,6 +177,16 @@ internal fun FolderNameField(
     }
 }
 
+/** One plain line with the auto icon: how a genre folder keeps itself filled. */
+@Composable
+internal fun AutoAddNote(text: String, modifier: Modifier = Modifier) {
+    Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        AutoFolderMark(size = 18.dp, modifier = Modifier.padding(top = 1.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(text = text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
 /** Every folder icon, six to a row. */
 @Composable
 internal fun FolderIconGrid(

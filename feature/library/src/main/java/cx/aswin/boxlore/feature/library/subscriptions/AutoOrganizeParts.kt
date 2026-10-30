@@ -37,11 +37,7 @@ internal fun AutoOrganizeSetupContent(
     onTileShowsCoversChange: (Boolean) -> Unit,
 ) {
     val preview = remember(podcasts, folders) { autoOrganizePreview(podcasts, folders) }
-    Text(
-        text = "A folder for every genre, kept up to date as you follow shows. Folders you made stay as they are.",
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+    AutoAddNote(text = AUTO_ORGANIZE_NOTE)
     Text(text = "Folders you'll get", style = MaterialTheme.typography.titleSmall)
     Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
         Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
