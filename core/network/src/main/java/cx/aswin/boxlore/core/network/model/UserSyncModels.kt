@@ -48,6 +48,9 @@ data class ListeningHistorySyncDto(
     @SerialName("recipeId") val recipeId: Long? = null,
     /** The episode's recipe-trimmed catalog key, under the same rule as [recipeId]. */
     @SerialName("catalogKey") val catalogKey: String? = null,
+    /** First play and first finish by listening (Room v40): null unknown, 0 before recording, else epoch ms. Older servers ignore them. */
+    @SerialName("firstPlayedAt") val firstPlayedAt: Long? = null,
+    @SerialName("finishedAt") val finishedAt: Long? = null,
 )
 
 @Serializable
@@ -116,11 +119,52 @@ data class QueueSyncDto(
     @SerialName("recentRemovedEpisodes") val recentRemovedEpisodes: List<QueueRemovalSyncDto>? = null,
 )
 
+/**
+ * One phone's listening of one episode on one local day (Room v40 daily summary). Each phone pushes
+ * its own days in full; the server keeps the latest push of a (phone, day, episode).
+ */
+@Serializable
+data class ListeningDaySyncDto(
+    @SerialName("deviceId") val deviceId: String,
+    @SerialName("localDay") val localDay: Long,
+    @SerialName("episodeId") val episodeId: String,
+    @SerialName("podcastId") val podcastId: String,
+    @SerialName("consumedMs") val consumedMs: Long = 0L,
+    @SerialName("wallMs") val wallMs: Long = 0L,
+    @SerialName("sessionCount") val sessionCount: Int = 0,
+    @SerialName("completionCount") val completionCount: Int = 0,
+    @SerialName("morningMs") val morningMs: Long = 0L,
+    @SerialName("afternoonMs") val afternoonMs: Long = 0L,
+    @SerialName("eveningMs") val eveningMs: Long = 0L,
+    @SerialName("nightMs") val nightMs: Long = 0L,
+    @SerialName("lastListenedAt") val lastListenedAt: Long = 0L,
+    /** The server's write time, on pulls. */
+    @SerialName("updatedAt") val updatedAt: Long = 0L,
+)
+
+/** A show the listener played, followed or not (Room v40). The server merges every phone's. */
+@Serializable
+data class PlayedShowSyncDto(
+    @SerialName("podcastId") val podcastId: String,
+    @SerialName("podcastName") val podcastName: String? = null,
+    @SerialName("imageUrl") val imageUrl: String? = null,
+    @SerialName("genre") val genre: String? = null,
+    /** 0 when before boxlore recorded it. */
+    @SerialName("firstPlayedAt") val firstPlayedAt: Long = 0L,
+    @SerialName("lastPlayedAt") val lastPlayedAt: Long = 0L,
+    /** The server's write time, on pulls. */
+    @SerialName("updatedAt") val updatedAt: Long = 0L,
+)
+
 @Serializable
 data class SyncPushRequest(
     @SerialName("subscriptions") val subscriptions: List<UserSubscriptionSyncDto> = emptyList(),
     @SerialName("history") val history: List<ListeningHistorySyncDto> = emptyList(),
     @SerialName("queue") val queue: QueueSyncDto? = null,
+    /** This phone's daily listening (Room v40); not sent when empty. */
+    @SerialName("listeningDays") val listeningDays: List<ListeningDaySyncDto> = emptyList(),
+    /** Shows this phone played (Room v40); not sent when empty. */
+    @SerialName("playedShows") val playedShows: List<PlayedShowSyncDto> = emptyList(),
     @SerialName("clientTimestamp") val clientTimestamp: Long = 0L,
 )
 
@@ -141,6 +185,10 @@ data class SyncPullRequest(
      * Added in P4 of the own-episode-IDs plan (plan section 8, rich queue tombstones).
      */
     @SerialName("richRemovals") val richRemovals: Boolean = false,
+    /** Asks for every phone's daily listening and the played shows (Room v40 builds). */
+    @SerialName("listening") val listening: Boolean = false,
+    /** The listening mark, sent even when 0 (nullable, so `encodeDefaults` off still sends 0); the server falls back to [since]. */
+    @SerialName("listeningSince") val listeningSince: Long? = null,
 )
 
 @Serializable
@@ -148,6 +196,9 @@ data class SyncPullResponse(
     @SerialName("subscriptions") val subscriptions: List<UserSubscriptionSyncDto> = emptyList(),
     @SerialName("history") val history: List<ListeningHistorySyncDto> = emptyList(),
     @SerialName("queue") val queue: QueueSyncDto? = null,
+    /** Only when the pull asked for `listening`. */
+    @SerialName("listeningDays") val listeningDays: List<ListeningDaySyncDto>? = null,
+    @SerialName("playedShows") val playedShows: List<PlayedShowSyncDto>? = null,
     @SerialName("syncedAt") val syncedAt: Long,
 )
 

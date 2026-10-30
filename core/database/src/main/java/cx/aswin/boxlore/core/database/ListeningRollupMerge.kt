@@ -13,42 +13,37 @@ object ListeningRollupMerge {
     ): ListeningRollupEntity {
         require(sessions.isNotEmpty()) { "sessions must not be empty" }
         require(sessions.all { it.rollupDeviceId == sessions.first().rollupDeviceId }) { "sessions of one phone only" }
-        val buckets =
-            longArrayOf(
-                existing?.morningMs ?: 0L,
-                existing?.afternoonMs ?: 0L,
-                existing?.eveningMs ?: 0L,
-                existing?.nightMs ?: 0L,
+        val start =
+            existing ?: ListeningRollupEntity(
+                localDay = localDay,
+                episodeId = episodeId,
+                podcastId = sessions.first().podcastId,
+                consumedMs = 0L,
+                sessionCount = 0,
+                completionCount = 0,
+                lastListenedAt = 0L,
+                deviceId = sessions.first().rollupDeviceId,
             )
-        var consumedMs = existing?.consumedMs ?: 0L
-        var sessionCount = existing?.sessionCount ?: 0
-        var completionCount = existing?.completionCount ?: 0
-        var lastListenedAt = existing?.lastListenedAt ?: 0L
-        var wallMs = existing?.wallMs ?: 0L
+        return sessions
+            .fold(start, ::addSession)
+            .copy(localDay = localDay, episodeId = episodeId, podcastId = sessions.first().podcastId)
+    }
 
-        for (session in sessions) {
-            consumedMs += session.consumedMs
-            sessionCount += 1
-            if (session.completed) completionCount += 1
-            if (session.endedAt > lastListenedAt) lastListenedAt = session.endedAt
-            buckets[session.timeBucket.coerceIn(0, 3)] += session.consumedMs
-            wallMs += session.wallMs ?: 0L
-        }
-
-        return ListeningRollupEntity(
-            localDay = localDay,
-            episodeId = episodeId,
-            podcastId = sessions.first().podcastId,
-            consumedMs = consumedMs,
-            sessionCount = sessionCount,
-            completionCount = completionCount,
-            lastListenedAt = lastListenedAt,
-            morningMs = buckets[0],
-            afternoonMs = buckets[1],
-            eveningMs = buckets[2],
-            nightMs = buckets[3],
-            deviceId = existing?.deviceId ?: sessions.first().rollupDeviceId,
-            wallMs = wallMs,
+    /** [rollup] with one more [session] summed in. */
+    private fun addSession(rollup: ListeningRollupEntity, session: ListeningSessionEntity): ListeningRollupEntity {
+        val ms = session.consumedMs
+        return rollup.copy(
+            consumedMs = rollup.consumedMs + ms,
+            sessionCount = rollup.sessionCount + 1,
+            completionCount = rollup.completionCount + if (session.completed) 1 else 0,
+            lastListenedAt = maxOf(rollup.lastListenedAt, session.endedAt),
+            morningMs = rollup.morningMs + if (bucket(session) == 0) ms else 0L,
+            afternoonMs = rollup.afternoonMs + if (bucket(session) == 1) ms else 0L,
+            eveningMs = rollup.eveningMs + if (bucket(session) == 2) ms else 0L,
+            nightMs = rollup.nightMs + if (bucket(session) == 3) ms else 0L,
+            wallMs = rollup.wallMs + (session.wallMs ?: 0L),
         )
     }
+
+    private fun bucket(session: ListeningSessionEntity): Int = session.timeBucket.coerceIn(0, 3)
 }

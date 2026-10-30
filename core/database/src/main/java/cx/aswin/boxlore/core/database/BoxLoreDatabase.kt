@@ -36,6 +36,7 @@ import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
+@Suppress("TooManyFunctions") // One accessor per DAO, as Room requires.
 abstract class BoxLoreDatabase : RoomDatabase() {
     abstract fun listeningHistoryDao(): ListeningHistoryDao
 

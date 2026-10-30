@@ -42,9 +42,10 @@ internal class PlaybackTelemetrySession(
     private val markCompletionTelemetryDispatched: () -> Boolean,
     private val playerProvider: () -> Player?,
     private val removeCompletedDownload: (String) -> Unit,
-    /** Where the play is heard ([cx.aswin.boxlore.core.database.ListeningSessionValues] `OUTPUT_*`), read on the main thread. */
-    private val listeningOutput: () -> String? = { null },
 ) {
+    /** Where the play is heard ([cx.aswin.boxlore.core.database.ListeningSessionValues] `OUTPUT_*`), read on the main thread; set by the service. */
+    var listeningOutput: () -> String? = { null }
+
     private val firedHeartbeats = java.util.Collections.synchronizedSet(mutableSetOf<String>())
 
     var startTimeMs: Long = 0L

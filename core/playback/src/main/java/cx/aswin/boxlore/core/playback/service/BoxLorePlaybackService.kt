@@ -176,8 +176,9 @@ open class BoxLorePlaybackService :
             removeCompletedDownload = { episodeId ->
                 downloadDeps.downloadRepository.removeDownload(episodeId)
             },
-            listeningOutput = { ListeningOutputRoute.current(this, mediaSession?.player ?: playbackPlayer) },
-        )
+        ).also { session ->
+            session.listeningOutput = { ListeningOutputRoute.current(this, mediaSession?.player ?: playbackPlayer) }
+        }
     }
 
     private val introOutroController: PlaybackIntroOutroController by lazy {

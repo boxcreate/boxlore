@@ -91,9 +91,10 @@ class RoomV40UpgradeTest(private val fromVersion: Int) {
         )
 
         val dates = RoomSchemaFixture.rows(db.sql, "listening_history", listOf("episodeId", "isCompleted", "firstPlayedAt", "finishedAt"))
-        for ((id, completed, first, finished) in dates.rows) {
-            assertEquals("firstPlayedAt of $id", 0L, first)
-            assertEquals("finishedAt of $id", if (completed == 1L) 0L else null, finished)
+        for (row in dates.rows) {
+            val id = row[0]
+            assertEquals("firstPlayedAt of $id", 0L, row[2])
+            assertEquals("finishedAt of $id", if (row[1] == 1L) 0L else null, row[3])
         }
         val sessionDetails = RoomSchemaFixture.rows(db.sql, "listening_sessions", listOf("deviceId", "wallMs", "source", "output", "episodePublishedAt"))
         assertTrue(sessionDetails.rows.isNotEmpty())

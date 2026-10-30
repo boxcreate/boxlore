@@ -14,9 +14,6 @@ interface ListeningSessionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSessions(sessions: List<ListeningSessionEntity>)
 
-    @Query("SELECT * FROM listening_sessions WHERE endedAt >= :sinceMs ORDER BY endedAt DESC")
-    fun observeSessionsSince(sinceMs: Long): Flow<List<ListeningSessionEntity>>
-
     @Query("SELECT * FROM listening_sessions ORDER BY endedAt DESC")
     fun observeAllSessions(): Flow<List<ListeningSessionEntity>>
 
