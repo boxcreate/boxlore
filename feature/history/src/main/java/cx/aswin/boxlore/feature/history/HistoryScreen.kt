@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.history
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -12,6 +13,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.ClearAll
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
@@ -20,13 +22,14 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,9 +39,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.lerp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryTab
@@ -81,6 +86,8 @@ fun HistoryScreen(
     var showCalendar by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val timelineListState = rememberLazyListState()
+    // The large title collapses as either tab scrolls, as before the redesign.
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     HistoryScreenEffects(viewModel, snackbarHostState)
     LaunchedEffect(viewModel) {
@@ -95,7 +102,7 @@ fun HistoryScreen(
     }
 
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             HistoryTopBar(
@@ -104,6 +111,7 @@ fun HistoryScreen(
                 insightsHaveTiming = (insights as? InsightsUiState.Ready)?.content?.hasEnoughTiming == true,
                 onBack = onBack,
                 onRequestClearAll = { showClearDialog = true },
+                scrollBehavior = scrollBehavior,
             )
         },
     ) { padding ->
@@ -142,16 +150,37 @@ fun HistoryScreen(
     )
 }
 
-/** 64dp bar: back, "Listening history" (22/28), and the tab's action: ⋮ (Clear all) on the Timeline and early Insights. */
+/**
+ * The large "Listening history" title that collapses as the page scrolls (headlineMedium bold to
+ * titleLarge semiBold), with back, and the tab's action: ⋮ (Clear all) on the Timeline and while
+ * Insights fills in.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HistoryTopBar(tab: HistoryTab, canClear: Boolean, insightsHaveTiming: Boolean, onBack: () -> Unit, onRequestClearAll: () -> Unit,) {
+private fun HistoryTopBar(
+    tab: HistoryTab,
+    canClear: Boolean,
+    insightsHaveTiming: Boolean,
+    onBack: () -> Unit,
+    onRequestClearAll: () -> Unit,
+    scrollBehavior: TopAppBarScrollBehavior,
+) {
     var menuOpen by remember { mutableStateOf(false) }
-    TopAppBar(
+    val titleStyle =
+        lerp(
+            start = MaterialTheme.typography.headlineMedium.copy(fontWeight = GoogleSansWeight.bold),
+            stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
+            fraction = scrollBehavior.state.collapsedFraction,
+        )
+    LargeTopAppBar(
+        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
         title = {
             Text(
-                stringResource(R.string.history_title),
-                style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = GoogleSansWeight.regular),
+                text = stringResource(R.string.history_title),
+                style = titleStyle,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
             )
         },
         navigationIcon = {
@@ -162,21 +191,24 @@ private fun HistoryTopBar(tab: HistoryTab, canClear: Boolean, insightsHaveTiming
         actions = {
             // Boards A1 and A6: ⋮ on the Timeline and on Insights while timing fills in.
             if (canClear && (tab == HistoryTab.TIMELINE || !insightsHaveTiming)) {
-                IconButton(onClick = { menuOpen = true }) {
-                    Icon(Icons.Rounded.MoreVert, contentDescription = stringResource(R.string.history_more_options))
-                }
-                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.history_clear_all)) },
-                        onClick = {
-                            menuOpen = false
-                            onRequestClearAll()
-                        },
-                    )
+                Box {
+                    IconButton(onClick = { menuOpen = true }) {
+                        Icon(Icons.Rounded.MoreVert, contentDescription = stringResource(R.string.history_more_options))
+                    }
+                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.history_clear_all)) },
+                            onClick = {
+                                menuOpen = false
+                                onRequestClearAll()
+                            },
+                            leadingIcon = { Icon(Icons.Rounded.ClearAll, contentDescription = null) },
+                        )
+                    }
                 }
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
+        scrollBehavior = scrollBehavior,
     )
 }
 
