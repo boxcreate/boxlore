@@ -31,6 +31,7 @@ import cx.aswin.boxlore.core.designsystem.components.DiscoveryTabSwitcher
 import cx.aswin.boxlore.core.designsystem.icon.findExactGenreIconKey
 import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.PodcastGenres
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.feature.library.FolderSaveParams
 
@@ -129,7 +130,9 @@ private fun NewFolderBottomBar(
 
 private fun pickedShowsTitle(count: Int): String = if (count == 1) "1 show picked" else "$count shows picked"
 
-internal fun matchingShows(podcasts: List<Podcast>, genre: String): List<Podcast> = filterPodcastsByGenre(podcasts, genre)
+/** Shows a genre folder for [genre] would hold: the same matching the folder fills by. */
+internal fun matchingShows(podcasts: List<Podcast>, genre: String): List<Podcast> =
+    podcasts.filter { podcast -> podcast.effectiveGenre.split(",").any { token -> PodcastGenres.tokenMatches(token, genre) } }
 
 @Composable
 private fun WhatGoesInStep(

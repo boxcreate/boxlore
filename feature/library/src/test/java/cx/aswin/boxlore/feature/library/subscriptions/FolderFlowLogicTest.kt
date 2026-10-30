@@ -239,9 +239,16 @@ class FolderFlowLogicTest {
     }
 
     @Test
-    fun `matching shows for a genre come from the shared genre filter`() {
+    fun `matching shows for a genre are the shows the folder will hold`() {
         val news = TestFixtures.podcast(id = "n", genre = "News")
         val comedy = TestFixtures.podcast(id = "c", genre = "Comedy")
         assertEquals(listOf("n"), matchingShows(listOf(news, comedy), "News").map { it.id })
+
+        // Culture and Society & Culture are one genre to the folder, so the preview counts both.
+        val culture = TestFixtures.podcast(id = "a").copy(customGenre = "Culture, News")
+        val society = TestFixtures.podcast(id = "b").copy(customGenre = "Society & Culture, News")
+        assertEquals(listOf("a", "b"), matchingShows(listOf(culture, society), "Culture").map { it.id })
+        val tech = TestFixtures.podcast(id = "t", genre = "Technology")
+        assertEquals(listOf("t"), matchingShows(listOf(tech, comedy), "Tech").map { it.id })
     }
 }

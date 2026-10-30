@@ -73,6 +73,18 @@ class AutoOrganizeFolderLookTest {
     }
 
     @Test
+    fun aSavedTileLookWithCoversOffMakesAnIconTile() = runTest {
+        prefs.setAutoOrganizeFolders(true)
+        prefs.setAutoOrganizeLook(folderSizeName = FolderDisplaySize.COMPACT.name, tileCovers = false)
+
+        subscriptions.subscribe(podcast("pod-1", genre = "News"))
+
+        val news = folders.getFolders().single { it.linkedGenre == "News" }
+        assertEquals(FolderDisplaySize.COMPACT, news.displaySize)
+        assertFalse(news.showPodcastGrid)
+    }
+
+    @Test
     fun withoutASavedLookTheFolderIsSizedByItsShows() = runTest {
         prefs.setAutoOrganizeFolders(true)
 

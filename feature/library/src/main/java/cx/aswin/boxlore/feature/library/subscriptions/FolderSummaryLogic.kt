@@ -82,4 +82,4 @@ internal fun genreAutoAddNote(genre: String?): String =
 
 /** Auto: what auto-organize does, said once wherever it is set up. */
 internal const val AUTO_ORGANIZE_NOTE =
-    "Every genre gets a folder. Shows you follow later are added automatically, and folders you made stay as they are."
+    "Every genre gets a folder, and shows you follow later are added automatically. A folder you already have for a genre is filled too."

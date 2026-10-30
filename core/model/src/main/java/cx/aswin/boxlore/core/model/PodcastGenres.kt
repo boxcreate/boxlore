@@ -146,6 +146,26 @@ object PodcastGenres {
         put("history", HISTORY)
     }
 
+    /**
+     * Whether one genre token of a show ([candidate]) belongs to [target]: the same name, Tech and
+     * Technology, or names [canonicalize] treats as one genre (such as Culture and Society & Culture).
+     * Genre folders fill by this rule, and New folder previews them with it.
+     */
+    fun tokenMatches(candidate: String, target: String): Boolean {
+        val trimmedCandidate = candidate.trim()
+        val trimmedTarget = target.trim()
+        if (trimmedCandidate.equals(trimmedTarget, ignoreCase = true)) return true
+        val isTechSynonym = (trimmedTarget.equals("Tech", ignoreCase = true) && trimmedCandidate.equals("Technology", ignoreCase = true)) ||
+            (trimmedTarget.equals("Technology", ignoreCase = true) && trimmedCandidate.equals("Tech", ignoreCase = true))
+        if (isTechSynonym) return true
+        val canonicalTarget = canonicalize(trimmedTarget)
+        val canonicalCandidate = canonicalize(trimmedCandidate)
+        if (canonicalTarget != null && (canonicalTarget.equals(canonicalCandidate, ignoreCase = true) || canonicalTarget.equals(trimmedCandidate, ignoreCase = true))) {
+            return true
+        }
+        return canonicalCandidate != null && canonicalCandidate.equals(trimmedTarget, ignoreCase = true)
+    }
+
     /** "Podcast" / "Podcasts": what a show with no category gets as its genre. Not a real genre. */
     fun isPlaceholder(value: String?): Boolean {
         val trimmed = value?.trim() ?: return false

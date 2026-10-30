@@ -160,6 +160,14 @@ class PodcastGenresTest {
     }
 
     @Test
+    fun tokensMatchByNameTechAndSharedGenre() {
+        assertTrue(PodcastGenres.tokenMatches(" news ", "News"))
+        assertTrue(PodcastGenres.tokenMatches("Technology", "Tech"))
+        assertTrue(PodcastGenres.tokenMatches("Society & Culture", "Culture"))
+        assertFalse(PodcastGenres.tokenMatches("Comedy", "News"))
+    }
+
+    @Test
     fun placeholderGenreIsNotARealGenre() {
         assertTrue(PodcastGenres.isPlaceholder("Podcast"))
         assertTrue(PodcastGenres.isPlaceholder(" podcasts "))
