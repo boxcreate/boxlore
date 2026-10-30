@@ -591,3 +591,84 @@ describe('working addresses, served IDs and safe topics (own-episode-IDs P2)', (
         assert.equal(lib.newEpisodeFcmMessage(rssTopic, {}).topic, rssTopic);
     });
 });
+
+describe('a stuck show never holds the run (30 Oct 2026: same pushes resent hourly)', () => {
+    const never = () => new Promise(() => {});
+
+    it('withDeadline rejects a promise that never settles, and passes other results through', async () => {
+        await assert.rejects(lib.withDeadline(never(), 20, 'feed read'), (e) => e instanceof lib.DeadlineError && /feed read timed out/.test(e.message));
+        assert.equal(await lib.withDeadline(Promise.resolve('ok'), 1000), 'ok');
+        await assert.rejects(lib.withDeadline(Promise.reject(new Error('boom')), 1000), (e) => !(e instanceof lib.DeadlineError) && e.message === 'boom');
+    });
+
+    it('skips a show that never answers and checks the rest', async () => {
+        const checked = [];
+        const skipped = [];
+        const result = await lib.checkEachShow(['a', 'stuck', 'c'], {
+            showLimitMs: 20,
+            deadlineAt: Infinity,
+            check: (id) => (id === 'stuck' ? never() : checked.push(id)),
+            onTimeout: (id) => skipped.push(id),
+        });
+        assert.deepEqual(checked, ['a', 'c']);
+        assert.deepEqual(skipped, ['stuck']);
+        assert.deepEqual(result, { started: 3, stuck: 1, stoppedEarly: false });
+    });
+
+    it('stops starting shows past the run deadline, and lets real errors stop the run as before', async () => {
+        let clock = 0;
+        const started = [];
+        const result = await lib.checkEachShow(['a', 'b', 'c'], {
+            showLimitMs: 1000,
+            deadlineAt: 2,
+            now: () => clock,
+            check: (id) => { started.push(id); clock++; },
+        });
+        assert.deepEqual(started, ['a', 'b']);
+        assert.deepEqual(result, { started: 2, stuck: 0, stoppedEarly: true });
+        await assert.rejects(
+            lib.checkEachShow(['a'], { showLimitMs: 1000, deadlineAt: Infinity, check: () => { throw new Error('refusing to send to a broadcast topic'); } }),
+            /refusing to send/,
+        );
+    });
+
+    it('keeps what was sent before a stuck show even if the run is then killed', async () => {
+        const fs = require('fs');
+        const os = require('os');
+        const path = require('path');
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'notifier-'));
+        const statePath = path.join(dir, 'episode-tracker.json');
+        const state = { lastRun: '', podcasts: { a: { lastRssKey: 'old' } } };
+        lib.writeStateFile(statePath, state);
+        // Show a is sent and saved at once; show b hangs; the run is cut off before it ends.
+        const run = lib.checkEachShow(['a', 'b'], {
+            showLimitMs: 200,
+            deadlineAt: Infinity,
+            check: (id) => {
+                if (id === 'b') return never();
+                state.podcasts.a = { lastRssKey: 'new' };
+                lib.writeStateFile(statePath, state);
+                return undefined;
+            },
+        });
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        assert.equal(JSON.parse(fs.readFileSync(statePath, 'utf8')).podcasts.a.lastRssKey, 'new');
+        assert.deepEqual(fs.readdirSync(dir), ['episode-tracker.json']);
+        // The run itself still ends: b is skipped after its limit.
+        assert.deepEqual(await run, { started: 2, stuck: 1, stoppedEarly: false });
+        fs.rmSync(dir, { recursive: true, force: true });
+    });
+
+    it('asks feeds for the uncompressed copy', async () => {
+        let headers = null;
+        const body = '<rss><channel><item><title>x</title></item></channel></rss>';
+        const xml = await lib.fetchRssText('https://feeds.example.com/show', {
+            fetchImpl: async (_url, init) => {
+                headers = init.headers;
+                return new Response(body, { status: 200, headers: { 'content-type': 'application/rss+xml' } });
+            },
+        });
+        assert.equal(xml, body);
+        assert.equal(headers['Accept-Encoding'], 'identity');
+    });
+});
