@@ -32,7 +32,10 @@ data class ListeningSessionEntity(
     /** 0=morning, 1=afternoon, 2=evening, 3=night */
     val timeBucket: Int,
     // Room v40; null on sessions recorded before it ([ListeningSessionValues]).
-    /** The phone that recorded it: null for this phone, else that phone's sync device ID (a restored backup). */
+    /**
+     * The listening origin that recorded it: an installation's listening device ID, or the legacy origin
+     * of listening stored before v40. Null on sessions from before v40 until this installation claims them.
+     */
     val deviceId: String? = null,
     /** Listening time it took: [consumedMs] at the playback speed, for time saved by speed. */
     val wallMs: Long? = null,
@@ -44,5 +47,5 @@ data class ListeningSessionEntity(
     val episodePublishedAt: Long? = null,
 )
 
-/** [ListeningSessionEntity.deviceId] as a daily summary stores it: this phone's sessions sum into [ListeningRollupEntity.THIS_DEVICE]. */
+/** [ListeningSessionEntity.deviceId] as a daily summary stores it: unclaimed sessions sum into [ListeningRollupEntity.THIS_DEVICE]. */
 val ListeningSessionEntity.rollupDeviceId: String get() = deviceId ?: ListeningRollupEntity.THIS_DEVICE

@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.catalog.sync
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningInsightsMaintenance
+import cx.aswin.boxlore.core.database.ListeningOrigins
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.PlayedShowDao
 import cx.aswin.boxlore.core.database.PlayedShowEntity
@@ -17,19 +18,22 @@ import cx.aswin.boxlore.core.prefs.BoxcastPrefs
  * (Room v40), so a reinstalled or new phone gets its listening time back and every phone's listening
  * counts once.
  *
- * - **Whose listening:** this installation's listening device ID (`BoxcastPrefs.getOrCreateListeningDeviceId`,
- *   never in an Android backup or device transfer), so two phones never write the same totals. Listening
- *   stored before v40 without a phone is claimed by it first.
- * - **Push:** the days whose totals differ from what the cloud last stored, and a zero day for one this
- *   phone no longer holds (moved to another episode ID, or removed), oldest first and [MAX_DAYS_PER_PUSH]
- *   at a time; the played shows waiting for the push; and once, the listening dates of history rows that
+ * - **Whose listening:** this installation's [ListeningOrigins]: new listening under its listening
+ *   device ID (`BoxcastPrefs.getOrCreateListeningDeviceId`, never in an Android backup or device transfer),
+ *   so two phones never write the same totals; listening stored before v40 under its legacy origin
+ *   (`BoxcastPrefs.getListeningLegacyOrigin`), claimed first, which a device transfer copies with the
+ *   database, so both copies of the same old listening count once.
+ * - **Push:** the days of both origins whose totals differ from what this phone knows the cloud holds,
+ *   and a zero day for one it no longer holds (moved to another episode ID, or removed), oldest first
+ *   and [MAX_DAYS_PER_PUSH] at a time; the played shows waiting for the push; and once, the listening dates of history rows that
  *   have them (sent with `updatedAt` [DATES_ONLY_UPDATED_AT], so the server merges the dates and keeps
  *   every playback value).
  *   All of it is recorded as sent only when the server answers that it stores listening
  *   (`listeningAccepted`); an older server ignores it, and it goes again after the server update.
  * - **Pull:** every phone's days and the played shows since the pulled mark (0 on the first pull, even
- *   when the history mark is recent; then the last pull's syncedAt - 1). Another phone's day replaces
- *   only listening of it that it covers ([ListeningInsightsMaintenance.applyCloudDailyListening]).
+ *   when the history mark is recent; then the last pull's syncedAt - 1), stored by
+ *   [ListeningInsightsMaintenance.applyCloudDailyListening]: another origin's day replaces only listening
+ *   of it that it covers, and this installation's own day comes back only where it holds nothing.
  * - **Reset** (an account switch or a deleted cloud copy): everything goes up again.
  */
 internal class ListeningSync(
@@ -47,12 +51,12 @@ internal class ListeningSync(
     }
 
     suspend fun outgoing(): Outgoing {
-        val deviceId = prefs.getOrCreateListeningDeviceId()
-        maintenance.claimLegacyListening(deviceId)
+        val origins = origins()
+        maintenance.claimLegacyListening(origins.legacy)
         val dates =
             if (prefs.areListeningDatesSent()) emptyList() else history.getHistoryWithListeningDatesAfter(prefs.getListeningDatesSentAfter(), MAX_DATES_PER_PUSH)
         return Outgoing(
-            days = maintenance.listeningDaysToPush(deviceId, MAX_DAYS_PER_PUSH),
+            days = maintenance.listeningDaysToPush(origins.pushed, MAX_DAYS_PER_PUSH),
             shows = playedShows.getDirtyPlayedShows(MAX_SHOWS_PER_PUSH),
             dates = dates,
         )
@@ -76,7 +80,7 @@ internal class ListeningSync(
         val days = body.listeningDays
         val shows = body.playedShows
         if (days == null && shows == null) return
-        maintenance.applyCloudDailyListening(days.orEmpty().mapNotNull { it.toEntity() }, prefs.getOrCreateListeningDeviceId())
+        maintenance.applyCloudDailyListening(days.orEmpty().mapNotNull { it.toEntity() }, origins())
         playedShows.mergePlayedShows(shows.orEmpty().mapNotNull { it.toEntity() }, fromCloud = true)
         // A push stored in the same millisecond after this pull carries syncedAt itself; the next pull
         // reads that millisecond again (merging what it brings is idempotent).
@@ -91,6 +95,8 @@ internal class ListeningSync(
         prefs.setListeningDatesSentAfter("")
         prefs.setListeningDatesSent(false)
     }
+
+    private fun origins() = ListeningOrigins(prefs.getOrCreateListeningDeviceId(), prefs.getListeningLegacyOrigin())
 
     private fun ListeningDaySyncDto.toEntity(): ListeningRollupEntity? {
         if (deviceId.isBlank() || episodeId.isBlank() || localDay < 0L) return null

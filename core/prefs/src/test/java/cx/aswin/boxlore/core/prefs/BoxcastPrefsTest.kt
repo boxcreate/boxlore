@@ -47,6 +47,29 @@ class BoxcastPrefsTest {
     }
 
     @Test
+    fun aListeningDeviceIdThatCannotBeSavedStaysTheSameForThisProcess() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val file = java.io.File(context.noBackupFilesDir, BoxcastPrefs.LISTENING_DEVICE_ID_FILE)
+        file.delete()
+        // A directory where the file belongs: it can be neither read nor replaced.
+        file.mkdirs()
+        try {
+            val id = prefs.getOrCreateListeningDeviceId()
+            assertEquals(id, BoxcastPrefs(context).getOrCreateListeningDeviceId())
+        } finally {
+            file.deleteRecursively()
+        }
+        // Saved at the next chance: the same ID.
+        val saved = prefs.getOrCreateListeningDeviceId()
+        assertEquals(saved, file.readText())
+    }
+
+    @Test
+    fun listeningFromBeforeV40BelongsToTheBackedUpSyncDeviceId() {
+        assertEquals("legacy-" + prefs.getOrCreateSyncDeviceId(), prefs.getListeningLegacyOrigin())
+    }
+
+    @Test
     fun onboardingDefaultsToIncomplete() {
         assertFalse(prefs.isOnboardingCompleted())
         prefs.setOnboardingCompleted(true)

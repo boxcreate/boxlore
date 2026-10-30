@@ -82,6 +82,13 @@ open class UserSyncCoordinator(
 ) {
     private val syncMutex = Mutex()
 
+    /**
+     * One push at a time, and no listening pull or reset during one: a push records what it sent as the
+     * cloud's once it is answered, so two pushes answered out of order (a background push beside a sync)
+     * could record totals the cloud no longer holds. Taken after [syncMutex], never before it.
+     */
+    private val pushMutex = Mutex()
+
     private val listeningSync: ListeningSync? by lazy {
         val maintenance = listeningInsightsMaintenance ?: return@lazy null
         val shows = playedShowDao ?: return@lazy null
@@ -151,7 +158,7 @@ open class UserSyncCoordinator(
     private suspend fun handleAccountSwitch(userId: String, token: String?): SyncResult {
         purgeLocalDataForAccountSwitch()
         requireBoxcastPrefs.setLastSyncTimestamp(0L)
-        listeningSync?.reset()
+        resetListeningSync()
         requireBoxcastPrefs.setLastSyncedUserId(userId)
         // The new account's cloud rows get the identity catch-up too; until it completes, every sync pulls from the start.
         val needsIdentityCatchUp = episodeIdentity != null
@@ -318,6 +325,16 @@ open class UserSyncCoordinator(
     }
 
     open suspend fun executePush(token: String? = null): Result<PushBatchSummary> = withContext(ioDispatcher) {
+        pushMutex.withLock { pushOnce(token) }
+    }
+
+    /** Starts listening sync over for another cloud copy ([ListeningSync.reset]), never during a push. */
+    private suspend fun resetListeningSync() {
+        val sync = listeningSync ?: return
+        pushMutex.withLock { sync.reset() }
+    }
+
+    private suspend fun pushOnce(token: String?): Result<PushBatchSummary> = withContext(ioDispatcher) {
         runCatching {
             val resolvedToken = token ?: tokenProvider()
                 ?: error("No auth token available")
@@ -620,7 +637,7 @@ open class UserSyncCoordinator(
             requireQueueSyncResolver.resolveQueue(q, syncedAt)
         }
         handoffIdleMiniplayerIfNewer(body.history)
-        listeningSync?.applyPull(body)
+        listeningSync?.let { sync -> pushMutex.withLock { sync.applyPull(body) } }
         requireBoxcastPrefs.setLastSyncTimestamp(syncedAt)
     }
 
@@ -644,7 +661,7 @@ open class UserSyncCoordinator(
                 requireBoxcastPrefs.setLastSyncTimestamp(0L)
                 requireBoxcastPrefs.setLastSyncedUserId(null)
                 // The listening this phone holds goes up again to whichever account it syncs with next.
-                listeningSync?.reset()
+                resetListeningSync()
             }
         }
     }

@@ -65,17 +65,18 @@ class LibraryBackupListeningRoomTest {
         assertEquals(8, exported["version"].asInt)
         val listening = exported["listening"].asJsonObject
         assertEquals(PHONE_A, listening["deviceId"].asString)
-        assertEquals(PHONE_A, listening["dailySummaries"].asJsonArray[0].asJsonObject["deviceId"].asString)
+        assertEquals("legacy-$PHONE_A", listening["dailySummaries"].asJsonArray[0].asJsonObject["deviceId"].asString)
 
         val history = target.listeningHistoryDao().getHistoryItem(EPISODE)!!
         assertEquals(100L to 200L, history.firstPlayedAt to history.finishedAt)
-        // Restored twice, counted once: this phone's own listening went over as phone A's, phone C's stayed C's.
+        // Restored twice, counted once: phone A's listening from before v40 went over under its legacy
+        // origin (claimed before the export), phone C's stayed C's.
         assertEquals(
-            setOf("mine" to PHONE_A, "theirs" to PHONE_C),
+            setOf("mine" to "legacy-$PHONE_A", "theirs" to PHONE_C),
             target.listeningSessionDao().getAllSessions().map { it.sessionId to it.deviceId }.toSet(),
         )
         val summary = target.listeningRollupDao().getAllRollups().single()
-        assertEquals(PHONE_A to 90_000L, summary.deviceId to summary.consumedMs)
+        assertEquals("legacy-$PHONE_A" to 90_000L, summary.deviceId to summary.consumedMs)
         assertEquals(PlayedShowEntity(SHOW, "Show", null, "History", 0L, 300L, isDirty = true), target.playedShowDao().getPlayedShow(SHOW))
     }
 
@@ -85,11 +86,11 @@ class LibraryBackupListeningRoomTest {
 
         manager(target, PHONE_A).importLibraryFromJson(manager(source, PHONE_A).exportLibraryAsJson())
 
-        // Its own listening ID, so its next cloud push sends what the restore brought back.
+        // Its own origins, so its next cloud push sends what the restore brought back.
         val sessions = target.listeningSessionDao().getAllSessions().associate { it.sessionId to it.deviceId }
-        assertEquals(PHONE_A, sessions["mine"])
+        assertEquals("legacy-$PHONE_A", sessions["mine"])
         assertEquals(PHONE_C, sessions["theirs"])
-        assertEquals(PHONE_A, target.listeningRollupDao().getAllRollups().single().deviceId)
+        assertEquals("legacy-$PHONE_A", target.listeningRollupDao().getAllRollups().single().deviceId)
     }
 
     @Test
@@ -215,6 +216,7 @@ class LibraryBackupListeningRoomTest {
         rssPodcastRepository = mock(RssPodcastRepository::class.java),
         database = database,
         deviceIdentity = DeviceIdentityPort { deviceId },
+        legacyListeningOrigin = DeviceIdentityPort { "legacy-$deviceId" },
     )
 
     private fun session(id: String, day: Long, device: String?,) = ListeningSessionEntity(

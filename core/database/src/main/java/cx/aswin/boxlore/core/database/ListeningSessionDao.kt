@@ -33,8 +33,18 @@ interface ListeningSessionDao {
     @Query("SELECT * FROM listening_sessions WHERE episodeId = :episodeId")
     suspend fun getSessionsForEpisode(episodeId: String): List<ListeningSessionEntity>
 
-    @Query("UPDATE listening_sessions SET episodeId = :newEpisodeId WHERE episodeId = :oldEpisodeId")
-    suspend fun reassignEpisodeId(oldEpisodeId: String, newEpisodeId: String,)
+    /**
+     * Moves the sessions of [origins] (this installation's, [ListeningOrigins.pushed]) and unclaimed ones
+     * to [newEpisodeId]. Another origin's sessions keep the ID it stores them under, so its cloud days
+     * keep replacing them instead of adding a second copy (Room v40).
+     */
+    @Query(
+        """
+        UPDATE listening_sessions SET episodeId = :newEpisodeId
+        WHERE episodeId = :oldEpisodeId AND (deviceId IS NULL OR deviceId = '' OR deviceId IN (:origins))
+        """,
+    )
+    suspend fun reassignEpisodeId(oldEpisodeId: String, newEpisodeId: String, origins: List<String>,)
 
     @Query("UPDATE listening_sessions SET podcastId = :newPodcastId WHERE podcastId = :oldPodcastId")
     suspend fun reassignPodcastId(oldPodcastId: String, newPodcastId: String,)

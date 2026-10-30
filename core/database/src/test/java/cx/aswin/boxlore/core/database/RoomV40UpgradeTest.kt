@@ -94,7 +94,8 @@ class RoomV40UpgradeTest(private val fromVersion: Int) {
         for (row in dates.rows) {
             val id = row[0]
             assertEquals("firstPlayedAt of $id", 0L, row[2])
-            assertEquals("finishedAt of $id", if (row[1] == 1L) 0L else null, row[3])
+            // Finished by listening before recording: 0. Only marked played (40, 41): no finish by listening yet.
+            assertEquals("finishedAt of $id", if (row[1] == 1L && id !in setOf("40", "41")) 0L else null, row[3])
         }
         val sessionDetails = RoomSchemaFixture.rows(db.sql, "listening_sessions", listOf("deviceId", "wallMs", "source", "output", "episodePublishedAt"))
         assertTrue(sessionDetails.rows.isNotEmpty())
@@ -141,6 +142,9 @@ class RoomV40UpgradeTest(private val fromVersion: Int) {
         // Marking played isn't finishing.
         dao.completeFromPlayback("50", durationMs = 60_000L, lastPlayedAt = 14_000L, isManualCompletion = true)
         assertNull(dao.getHistoryItem("50")!!.finishedAt)
+        // An old episode only marked played, then finished by listening, dates that finish.
+        dao.completeFromPlayback("40", durationMs = 60_000L, lastPlayedAt = 14_500L, isManualCompletion = false)
+        assertEquals(14_500L, dao.getHistoryItem("40")!!.finishedAt)
 
         // A new episode starts without dates and gets them from its first play and finish.
         dao.upsert(dao.getHistoryItem("50")!!.copy(episodeId = "60", progressMs = 0L, isCompleted = false, isManualCompletion = false, firstPlayedAt = null, finishedAt = null))

@@ -33,6 +33,8 @@ class LocalEpisodeCatalogRepository private constructor(
     /**
      * @param renumberedShows shows Podcast Index renumbered; each catalog read of the show one now
      *   answers as links its listener rows to the show's episodes ([RenumberedShowLinker])
+     * @param listeningOrigins this installation's listening origins: the orphan rematch moves only their
+     *   timed listening ([LocalCatalogListenerStateReconciler])
      */
     constructor(
         database: BoxLoreDatabase,
@@ -40,7 +42,8 @@ class LocalEpisodeCatalogRepository private constructor(
         downloadCacheRelinker: DownloadCacheRelinker = DownloadCacheRelinker { _, _ -> false },
         onCatalogPersisted: suspend (String) -> Unit = {},
         renumberedShows: RenumberedShows = RenumberedShows.NONE,
-    ) : this(database, feedClient, downloadCacheRelinker, onCatalogPersisted, RecipeIdHash.RECIPE, renumberedShows)
+        listeningOrigins: () -> Collection<String> = { emptyList() },
+    ) : this(database, feedClient, downloadCacheRelinker, onCatalogPersisted, RecipeIdHash.RECIPE, renumberedShows, listeningOrigins)
 
     /** [recipeHash] is a test seam: collision tests force recipe clashes through real Room (P4 PR 9). */
     internal constructor(
@@ -50,6 +53,7 @@ class LocalEpisodeCatalogRepository private constructor(
         onCatalogPersisted: suspend (String) -> Unit,
         recipeHash: RecipeIdHash,
         renumberedShows: RenumberedShows = RenumberedShows.NONE,
+        listeningOrigins: () -> Collection<String> = { emptyList() },
     ) : this(
         database = database,
         feedClient = feedClient,
@@ -57,6 +61,7 @@ class LocalEpisodeCatalogRepository private constructor(
         onCatalogPersisted = onCatalogPersisted,
         recipeHash = recipeHash,
         renumberedLinker = RenumberedShowLinker(database, renumberedShows),
+        listeningOrigins = listeningOrigins,
     )
 
     @Suppress("LongParameterList")
@@ -67,6 +72,7 @@ class LocalEpisodeCatalogRepository private constructor(
         onCatalogPersisted: suspend (String) -> Unit,
         recipeHash: RecipeIdHash,
         renumberedLinker: RenumberedShowLinker,
+        listeningOrigins: () -> Collection<String>,
     ) : this(
         reads = LocalEpisodeCatalogReads(database.localEpisodeCatalogDao()) { url, etag, lastModified ->
             feedClient.confirmUnchanged(url, etag, lastModified)
@@ -79,7 +85,7 @@ class LocalEpisodeCatalogRepository private constructor(
             isFeedUnchanged = { url, etag, lastModified ->
                 feedClient.confirmUnchanged(url, etag, lastModified)
             },
-            reconcileListenerState = listenerStateLinks(LocalCatalogListenerStateReconciler(database, downloadCacheRelinker), renumberedLinker),
+            reconcileListenerState = listenerStateLinks(LocalCatalogListenerStateReconciler(database, downloadCacheRelinker, listeningOrigins = listeningOrigins), renumberedLinker),
             megaGetGate = PublisherFeedRefreshGate.permits,
             identity = RoomCatalogIdentityStore(database),
             recipeHash = recipeHash,
@@ -177,12 +183,14 @@ class LocalEpisodeCatalogRepository private constructor(
             downloadCacheRelinker: DownloadCacheRelinker = DownloadCacheRelinker { _, _ -> false },
             onCatalogPersisted: suspend (String) -> Unit = {},
             renumberedShows: RenumberedShows = RenumberedShows.NONE,
+            listeningOrigins: () -> Collection<String> = { emptyList() },
         ): LocalEpisodeCatalogRepository = LocalEpisodeCatalogRepository(
             database = database,
             feedClient = feedClient,
             downloadCacheRelinker = downloadCacheRelinker,
             onCatalogPersisted = onCatalogPersisted,
             renumberedShows = renumberedShows,
+            listeningOrigins = listeningOrigins,
         )
 
         /**

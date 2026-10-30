@@ -38,6 +38,9 @@ interface SharedAppDependencies {
 
     /** This installation's listening device ID (Room v40; never backed up), for library backups' timed listening. */
     val listeningDeviceIdentityPort: cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort? get() = null
+
+    /** The origin this installation claims timed listening stored before Room v40 under (`BoxcastPrefs.getListeningLegacyOrigin`). */
+    val listeningLegacyOriginPort: cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort? get() = null
     val userSyncCoordinator: cx.aswin.boxlore.core.catalog.sync.UserSyncCoordinator? get() = null
 
     /**

@@ -149,6 +149,8 @@ internal class LocalCatalogListenerStateReconciler(
     private val database: BoxLoreDatabase,
     private val downloadCacheRelinker: DownloadCacheRelinker = DownloadCacheRelinker { _, _ -> false },
     private val nowMs: () -> Long = System::currentTimeMillis,
+    /** This installation's listening origins (`ListeningOrigins.pushed`): only their timed listening moves. */
+    private val listeningOrigins: () -> Collection<String> = { emptyList() },
 ) {
     suspend fun reconcile(podcastId: String, catalogRows: List<LocalEpisodeEntity>,) {
         val allReferences = database.listenerReferences(podcastId)
@@ -169,8 +171,9 @@ internal class LocalCatalogListenerStateReconciler(
             migrateHistory(oldId, target, targetAlias)
             migrateDownload(oldId, target)
             migrateQueue(oldId, target)
-            database.listeningSessionDao().reassignEpisodeId(oldId, target.episodeId)
-            migrateRollups(oldId, target.episodeId)
+            val origins = runCatching(listeningOrigins).getOrDefault(emptyList()).toList()
+            database.listeningSessionDao().reassignEpisodeId(oldId, target.episodeId, origins)
+            migrateRollups(oldId, target.episodeId, origins)
             if (rematch.exact) recordMovedAlias(oldId, targetAlias)
         }
     }
@@ -280,14 +283,19 @@ internal class LocalCatalogListenerStateReconciler(
             }
     }
 
-    private suspend fun migrateRollups(oldId: String, newId: String,) {
+    /**
+     * Moves the daily summaries of [origins] and unclaimed ones to [newId]. Another origin's summaries
+     * (a cloud pull or a restored backup) keep its ID: that origin's next day under the old ID replaces
+     * them, where a moved copy would be counted beside it.
+     */
+    private suspend fun migrateRollups(oldId: String, newId: String, origins: List<String>,) {
         val dao = database.listeningRollupDao()
-        val oldRows = dao.getRollupsForEpisode(oldId)
+        val oldRows = dao.getRollupsForEpisode(oldId).filter { it.deviceId == ListeningRollupEntity.THIS_DEVICE || it.deviceId in origins }
         for (old in oldRows) {
             val existing = dao.getRollup(old.deviceId, old.localDay, newId)
             dao.upsertRollup(mergeRollup(old, existing, newId))
+            dao.deleteRollup(old.deviceId, old.localDay, oldId)
         }
-        dao.deleteRollupsForEpisode(oldId)
     }
 }
 

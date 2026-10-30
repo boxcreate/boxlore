@@ -13,7 +13,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  *
  * 1. `listening_history` gets `firstPlayedAt` and `finishedAt` with the schema default 0, so every
  *    existing row reads "before boxlore recorded it" ([ListeningDates]) without being rewritten.
- *    Only rows not finished get `finishedAt` NULL (no finish yet), so a later finish is dated.
+ *    Rows not finished, and rows only marked played (by hand or in bulk), get `finishedAt` NULL (no
+ *    finish by listening yet), so a later finish by listening is dated.
  * 2. `listening_sessions` gets `deviceId`, `wallMs`, `source`, `output` and `episodePublishedAt`,
  *    NULL on every existing session (no phone yet: the installation claims them, details not recorded).
  * 3. `listening_rollups` is rebuilt with the phone in its key (`deviceId`, '' until the installation
@@ -22,8 +23,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  *    played or finished by listening (not one only marked played or liked), with its latest name
  *    and art, the followed show's genre when stored, a first play before recording (0) and the
  *    latest play time, marked for the next cloud sync push.
- * 5. `listening_days_pushed` (what the cloud last stored of this phone's daily listening) is created
- *    empty, so the first push after the upgrade sends every day.
+ * 5. `listening_days_pushed` (what this phone knows the cloud holds of each phone's daily listening)
+ *    is created empty, so the first push after the upgrade sends every day.
  *
  * Never edit this migration once a phone may have run it; later schema changes go to v41.
  */
@@ -49,7 +50,7 @@ internal object ListeningDataMigration {
     private fun addListeningDates(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE `listening_history` ADD COLUMN `firstPlayedAt` INTEGER DEFAULT 0")
         db.execSQL("ALTER TABLE `listening_history` ADD COLUMN `finishedAt` INTEGER DEFAULT 0")
-        db.execSQL("UPDATE `listening_history` SET `finishedAt` = NULL WHERE `isCompleted` = 0")
+        db.execSQL("UPDATE `listening_history` SET `finishedAt` = NULL WHERE `isCompleted` = 0 OR `isManualCompletion` = 1 OR `isBulkCompletion` = 1")
     }
 
     private fun addSessionDetails(db: SupportSQLiteDatabase) {

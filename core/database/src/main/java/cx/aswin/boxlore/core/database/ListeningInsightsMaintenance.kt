@@ -56,30 +56,31 @@ class ListeningInsightsMaintenance(
     }
 
     /**
-     * Gives this phone's timed listening recorded before Room v40 (stored without a phone) to
-     * [deviceId], this installation's listening ID: sessions, and summaries (merged into a summary of
-     * the same day and episode under [deviceId], if any). Later sessions are stored with the ID.
+     * Gives timed listening stored before Room v40 (stored without an origin) to [legacyOrigin]
+     * ([ListeningOrigins.legacy]): sessions, and summaries (merged into a summary of the same day and
+     * episode under it, if any). Listening recorded since is stored under the installation's own ID.
      */
-    suspend fun claimLegacyListening(deviceId: String) {
+    suspend fun claimLegacyListening(legacyOrigin: String) {
         database.withTransaction {
-            sessions.claimLegacySessions(deviceId)
+            sessions.claimLegacySessions(legacyOrigin)
             for (legacy in rollups.getRollupsOfDevice(ListeningRollupEntity.THIS_DEVICE)) {
-                val mine = rollups.getRollup(deviceId, legacy.localDay, legacy.episodeId)
-                rollups.upsertRollup(mine?.let { ListeningRollupMerge.sum(it, legacy) } ?: legacy.copy(deviceId = deviceId))
+                val claimed = rollups.getRollup(legacyOrigin, legacy.localDay, legacy.episodeId)
+                rollups.upsertRollup(claimed?.let { ListeningRollupMerge.sum(it, legacy) } ?: legacy.copy(deviceId = legacyOrigin))
                 rollups.deleteRollup(ListeningRollupEntity.THIS_DEVICE, legacy.localDay, legacy.episodeId)
             }
         }
     }
 
     /**
-     * The days of [deviceId]'s listening the cloud doesn't hold as they are now, oldest first, at most
-     * [limit]: each day whose total (its sessions summed into its summary) differs from what was last
-     * pushed, and a zero day for each day pushed before that this phone no longer holds (its listening
-     * moved to another episode ID, or was removed). [recordPushedDays] records them once stored.
+     * The days of [origins]' listening ([ListeningOrigins.pushed]) the cloud doesn't hold as they are
+     * now, oldest first, at most [limit]: each day whose total (its sessions summed into its summary)
+     * differs from what this phone knows the cloud holds, and a zero day for each day the cloud holds
+     * that this phone no longer does (its listening moved to another episode ID, or was removed).
+     * [recordPushedDays] records them once stored.
      */
-    suspend fun listeningDaysToPush(deviceId: String, limit: Int,): List<ListeningRollupEntity> = database.withTransaction {
-        val current = dailyListeningOf(deviceId).associateBy { Triple(it.deviceId, it.localDay, it.episodeId) }
-        val pushed = pushes.getPushedDays(deviceId).associateBy { Triple(it.deviceId, it.localDay, it.episodeId) }
+    suspend fun listeningDaysToPush(origins: Collection<String>, limit: Int,): List<ListeningRollupEntity> = database.withTransaction {
+        val current = dailyListeningOf(origins.toSet()).associateBy { it.key }
+        val pushed = origins.distinct().flatMap { pushes.getPushedDays(it) }.associateBy { Triple(it.deviceId, it.localDay, it.episodeId) }
         val changed = current.filter { (key, day) -> pushed[key] != PushedListeningDayEntity.of(day) }.values
         val gone = pushed.filterKeys { it !in current }.values.map { it.toRollup().zeroed() }
         (changed + gone).sortedWith(compareBy({ it.lastListenedAt }, { it.localDay }, { it.episodeId })).take(limit)
@@ -95,51 +96,73 @@ class ListeningInsightsMaintenance(
         }
     }
 
-    /** Forgets what was pushed (a new account or a deleted cloud copy): every day goes up again. */
+    /** Forgets what the cloud holds (a new account or a deleted cloud copy): every day goes up again. */
     suspend fun forgetPushedDays() = pushes.deleteAllPushedDays()
 
     /**
-     * Daily listening from the cloud. This installation's own days ([thisDeviceId]) are stored only
-     * where it holds nothing of that day and episode (an account switch cleared them): it is their only
-     * writer, so what it holds is never older, and its sessions keep their details. Another phone's day
-     * replaces what this phone holds of that phone, day and episode only when it covers all of it (its
-     * last listening is at least as late as the stored summary's and every stored session's); then the
-     * sessions it sums go, and a zero day removes that day. A day older than what this phone holds (a
-     * later backup of that phone was restored here) changes nothing.
+     * Daily listening from the cloud, in one transaction.
+     * - The installation's own days ([ListeningOrigins.own]): it is their only writer, so what it holds
+     *   is never older, and its sessions keep their details. A day comes back only where it holds
+     *   nothing of it and didn't know the cloud held it (an account switch cleared both). A day it
+     *   knew of and no longer holds was removed or moved here, and its next push zeroes it.
+     * - Every other origin's day, its legacy origin's too (a copy of this phone's database may push
+     *   it as well): it replaces what this phone holds of that origin, day and episode only when it
+     *   covers all of it ([covers]); then the sessions it sums go, and a zero day removes the day. An
+     *   older day (a later backup of that phone was restored here) changes nothing.
+     * Days of the origins this phone pushes are recorded as the cloud holds them, so its next push sends
+     * only what differs.
      */
-    suspend fun applyCloudDailyListening(days: List<ListeningRollupEntity>, thisDeviceId: String,) {
+    suspend fun applyCloudDailyListening(days: List<ListeningRollupEntity>, origins: ListeningOrigins,) {
         val incoming = days.filter { it.deviceId != ListeningRollupEntity.THIS_DEVICE }
         if (incoming.isEmpty()) return
         database.withTransaction {
             val heldSessions = sessions.getAllSessions().groupBy { Triple(it.rollupDeviceId, it.localDay, it.episodeId) }
+            val known = pushes.getPushedDays(origins.own).mapTo(HashSet()) { Triple(it.deviceId, it.localDay, it.episodeId) }
             for (day in incoming) {
                 val stored = rollups.getRollup(day.deviceId, day.localDay, day.episodeId)
-                val daySessions = heldSessions[Triple(day.deviceId, day.localDay, day.episodeId)].orEmpty()
-                if (day.deviceId == thisDeviceId) applyOwnCloudDay(day, stored, daySessions) else applyOtherPhonesCloudDay(day, stored, daySessions)
+                val daySessions = heldSessions[day.key].orEmpty()
+                if (day.deviceId == origins.own) {
+                    val holdsNothing = stored == null && daySessions.isEmpty()
+                    if (holdsNothing && day.key !in known && !day.isZero()) rollups.upsertRollup(day)
+                } else if (day.covers(stored, daySessions)) {
+                    // A zero day: that origin no longer holds the day (it moved to another episode ID, or was removed).
+                    if (day.isZero()) rollups.deleteRollup(day.deviceId, day.localDay, day.episodeId) else rollups.upsertRollup(day)
+                    sessions.deleteSessionsOfDailySummary(day.deviceId, day.localDay, day.episodeId, day.lastListenedAt)
+                }
             }
+            recordPushedDays(incoming.filter { it.deviceId in origins.pushed })
         }
     }
 
-    /** Its own day comes back only where it holds nothing of it (after an account switch). */
-    private suspend fun applyOwnCloudDay(day: ListeningRollupEntity, stored: ListeningRollupEntity?, daySessions: List<ListeningSessionEntity>,) {
-        if (stored == null && daySessions.isEmpty() && !day.isZero()) rollups.upsertRollup(day)
-    }
-
-    private suspend fun applyOtherPhonesCloudDay(day: ListeningRollupEntity, stored: ListeningRollupEntity?, daySessions: List<ListeningSessionEntity>,) {
+    /**
+     * Whether this day holds all of what this phone holds of its origin, day and episode: its last
+     * listening is later than the stored summary's and every stored session's, or as late and it sums
+     * at least as much (a zero day as late still removes the day). Equal last listening alone doesn't
+     * show coverage: a more complete copy of the same day can end at the same time.
+     */
+    private fun ListeningRollupEntity.covers(stored: ListeningRollupEntity?, daySessions: List<ListeningSessionEntity>,): Boolean {
         val latestHeld = maxOf(stored?.lastListenedAt ?: Long.MIN_VALUE, daySessions.maxOfOrNull { it.endedAt } ?: Long.MIN_VALUE)
-        if (day.lastListenedAt < latestHeld) return
-        // A zero day: that phone no longer holds the day (it moved to another episode ID, or was removed).
-        if (day.isZero()) rollups.deleteRollup(day.deviceId, day.localDay, day.episodeId) else rollups.upsertRollup(day)
-        sessions.deleteSessionsOfDailySummary(day.deviceId, day.localDay, day.episodeId, day.lastListenedAt)
+        if (lastListenedAt != latestHeld) return lastListenedAt > latestHeld
+        return isZero() || consumedMs >= (stored?.consumedMs ?: 0L) + daySessions.sumOf { it.consumedMs }
     }
 
-    /** [deviceId]'s listening per day and episode: its sessions summed into its daily summaries. */
-    private suspend fun dailyListeningOf(deviceId: String): List<ListeningRollupEntity> {
-        val own = sessions.getAllSessions().filter { it.deviceId == deviceId }.groupBy { it.localDay to it.episodeId }
-        val summaries = rollups.getRollupsOfDevice(deviceId).associateBy { it.localDay to it.episodeId }
-        return (own.keys + summaries.keys).mapNotNull { key ->
-            val daySessions = own[key]
-            if (daySessions.isNullOrEmpty()) summaries[key] else ListeningRollupMerge.mergeSessionsIntoRollup(key.first, key.second, daySessions, summaries[key])
+    /** [origins]' listening per day and episode: their sessions summed into their daily summaries. */
+    private suspend fun dailyListeningOf(origins: Set<String>): List<ListeningRollupEntity> {
+        val held = sessions.getAllSessions().filter { it.deviceId in origins }.groupBy { Triple(it.rollupDeviceId, it.localDay, it.episodeId) }
+        val summaries = origins.flatMap { rollups.getRollupsOfDevice(it) }.associateBy { it.key }
+        return (held.keys + summaries.keys).mapNotNull { key ->
+            val daySessions = held[key]
+            if (daySessions.isNullOrEmpty()) summaries[key] else ListeningRollupMerge.mergeSessionsIntoRollup(key.second, key.third, daySessions, summaries[key])
         }
     }
+
+    private val ListeningRollupEntity.key get() = Triple(deviceId, localDay, episodeId)
+}
+
+/**
+ * The listening origins of this installation (Room v40): [own], the listening device ID it records new
+ * listening under, and [legacy], the origin it claims listening stored before v40 under. It pushes both.
+ */
+data class ListeningOrigins(val own: String, val legacy: String,) {
+    val pushed: Set<String> get() = setOf(own, legacy)
 }

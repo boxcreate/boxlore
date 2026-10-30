@@ -66,14 +66,14 @@ data class PlayedShowBackup(
 )
 
 /**
- * Exports and restores [ListeningBackup]. Every session and summary carries the listening device ID
- * of the installation that recorded it ([thisDeviceId] for this one; listening stored before Room v40
- * is claimed by it first), so a restore on another phone or after a reinstall keeps the restored
- * listening that phone's, and a cloud sync never counts it twice.
+ * Exports and restores [ListeningBackup]. Every session and summary carries the listening origin that
+ * recorded it ([thisDeviceId] for this installation; listening stored before Room v40 is claimed under
+ * [legacyOrigin] first), so a restore on another phone or after a reinstall keeps the restored listening
+ * that origin's, and a cloud sync never counts it twice.
  */
-internal class LibraryBackupListening(private val database: BoxLoreDatabase, private val thisDeviceId: String?,) {
+internal class LibraryBackupListening(private val database: BoxLoreDatabase, private val thisDeviceId: String?, private val legacyOrigin: String? = null,) {
     suspend fun export(): ListeningBackup {
-        thisDeviceId?.let { database.listeningInsightsMaintenance().claimLegacyListening(it) }
+        legacyOrigin?.let { database.listeningInsightsMaintenance().claimLegacyListening(it) }
         val sessions = database.listeningSessionDao().getAllSessions()
         val summaries = database.listeningRollupDao().getAllRollups()
         return ListeningBackup(

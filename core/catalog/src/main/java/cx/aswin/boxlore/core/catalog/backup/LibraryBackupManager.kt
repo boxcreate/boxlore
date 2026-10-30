@@ -113,6 +113,7 @@ class LibraryBackupManager(
     private val database: BoxLoreDatabase? = null,
     private val renumberedShows: RenumberedShows? = null,
     private val deviceIdentity: DeviceIdentityPort? = null,
+    private val legacyListeningOrigin: DeviceIdentityPort? = null,
 ) {
     private val context = context.applicationContext
     private val rssFeedClient = RssFeedClient()
@@ -228,7 +229,8 @@ class LibraryBackupManager(
         val shared = SharedAppDependenciesHolder.instance
         val db = database ?: shared?.database ?: return null
         val deviceId = runCatching { (deviceIdentity ?: shared?.listeningDeviceIdentityPort)?.getDeviceId() }.getOrNull()
-        return LibraryBackupListening(db, deviceId)
+        val legacyOrigin = runCatching { (legacyListeningOrigin ?: shared?.listeningLegacyOriginPort)?.getDeviceId() }.getOrNull()
+        return LibraryBackupListening(db, deviceId, legacyOrigin)
     }
 
     private fun escapeXml(input: String?): String {

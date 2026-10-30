@@ -331,8 +331,9 @@ interface ListeningHistoryDao {
     }
 
     /**
-     * One page of rows with a recorded listening date (after [afterEpisodeId], by ID), without
-     * descriptions: the cloud sync's one-time date backfill (Room v40).
+     * One page of rows with a known listening date (after [afterEpisodeId], by ID), without
+     * descriptions: the cloud sync's one-time date backfill (Room v40). "Before recording" (0) is
+     * known too, and the cloud may hold nothing for it.
      */
     @Query(
         """
@@ -341,7 +342,7 @@ interface ListeningHistoryDao {
                isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
                isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt
         FROM listening_history
-        WHERE episodeId > :afterEpisodeId AND (firstPlayedAt > 0 OR finishedAt > 0)
+        WHERE episodeId > :afterEpisodeId AND (firstPlayedAt IS NOT NULL OR finishedAt IS NOT NULL)
         ORDER BY episodeId
         LIMIT :limit
     """,

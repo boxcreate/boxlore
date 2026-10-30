@@ -191,7 +191,11 @@ class BoxcastPrefs(context: Context) {
 
         /** In `noBackupFilesDir`: never in an Android backup or device transfer. */
         const val LISTENING_DEVICE_ID_FILE = "boxlore_listening_device_id"
+        const val LISTENING_LEGACY_ORIGIN_PREFIX = "legacy-"
         private val listeningDeviceIdLock = Any()
+
+        @Volatile
+        private var unsavedListeningDeviceId: String? = null
         const val KEY_HAS_REQUESTED_NOTIFICATION_PERMISSION = "has_requested_notification_permission"
         const val KEY_FEEDBACK_DRAFT_CATEGORY = "feedback_draft_category"
         const val KEY_FEEDBACK_DRAFT_MESSAGE = "feedback_draft_message"
@@ -259,10 +263,25 @@ class BoxcastPrefs(context: Context) {
     fun getOrCreateListeningDeviceId(): String = synchronized(listeningDeviceIdLock) {
         val file = java.io.File(appContext.noBackupFilesDir, LISTENING_DEVICE_ID_FILE)
         runCatching { file.readText().trim() }.getOrNull()?.takeIf { it.isNotBlank() }?.let { return@synchronized it }
-        val newId = java.util.UUID.randomUUID().toString()
-        runCatching { file.writeText(newId) }
-        newId
+        // An ID that couldn't be saved stays this process's ID, and saving it is tried again.
+        val id = unsavedListeningDeviceId ?: java.util.UUID.randomUUID().toString()
+        unsavedListeningDeviceId = if (saveListeningDeviceId(file, id)) null else id
+        id
     }
+
+    /** Writes [id] to a temporary file renamed over [file], so a cut-short write never leaves part of an ID. */
+    private fun saveListeningDeviceId(file: java.io.File, id: String): Boolean = runCatching {
+        val temporary = java.io.File(file.parentFile, "$LISTENING_DEVICE_ID_FILE.tmp")
+        temporary.writeText(id)
+        temporary.renameTo(file)
+    }.getOrDefault(false)
+
+    /**
+     * The listening origin of timed listening stored before Room v40: its sync device ID, which a
+     * device transfer copies along with the database, so two installations holding copies of the
+     * same old listening claim it under one origin and the cloud counts it once.
+     */
+    fun getListeningLegacyOrigin(): String = LISTENING_LEGACY_ORIGIN_PREFIX + getOrCreateSyncDeviceId()
 
     /** The last episode ID whose listening dates went to a server that stores them (the date backfill's place). */
     fun getListeningDatesSentAfter(): String = prefs.getString(KEY_LISTENING_DATES_SENT_AFTER, null).orEmpty()

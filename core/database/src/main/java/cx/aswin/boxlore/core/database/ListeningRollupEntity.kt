@@ -30,7 +30,7 @@ data class ListeningRollupEntity(
     val afternoonMs: Long = 0L,
     val eveningMs: Long = 0L,
     val nightMs: Long = 0L,
-    /** The phone whose listening it sums: [THIS_DEVICE] for this phone, else that phone's sync device ID (Room v40). */
+    /** The listening origin whose listening it sums (as [ListeningSessionEntity.deviceId]); [THIS_DEVICE] until claimed (Room v40). */
     @ColumnInfo(defaultValue = "''")
     val deviceId: String = THIS_DEVICE,
     /** Listening time at the playback speed; 0 when not known (Room v40). */

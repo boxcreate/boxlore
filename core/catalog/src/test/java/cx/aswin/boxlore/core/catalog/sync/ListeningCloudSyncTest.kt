@@ -23,7 +23,9 @@ import cx.aswin.boxlore.core.network.model.SyncPushResponse
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import java.lang.reflect.Proxy
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -60,6 +62,9 @@ class ListeningCloudSyncTest {
     private val pulls = mutableListOf<SyncPullRequest>()
     private var serverStoresListening = true
     private var pullAnswer = SyncPullResponse(syncedAt = 9_000L)
+    private var onPush: (() -> Unit)? = null
+    private var pushesInFlight = 0
+    private var mostPushesInFlight = 0
 
     @Before
     fun setUp() {
@@ -71,7 +76,11 @@ class ListeningCloudSyncTest {
             Proxy.newProxyInstance(BoxLoreApi::class.java.classLoader, arrayOf(BoxLoreApi::class.java)) { _, method, args ->
                 when (method.name) {
                     "syncPush" -> {
+                        pushesInFlight++
+                        mostPushesInFlight = maxOf(mostPushesInFlight, pushesInFlight)
                         pushes += args[2] as SyncPushRequest
+                        onPush?.invoke()
+                        pushesInFlight--
                         FakeCall(Response.success(SyncPushResponse(syncedAt = 5_000L, listeningAccepted = serverStoresListening)))
                     }
                     "syncPull" -> {
@@ -125,7 +134,7 @@ class ListeningCloudSyncTest {
         // An older server: everything was sent but nothing is marked, so it all goes again later.
         val first = pushes.single()
         assertEquals(listOf(10L to 120_000L, 11L to 60_000L), first.listeningDays.map { it.localDay to it.consumedMs })
-        // Under this installation's listening ID, never the (backed-up) sync device ID; legacy listening was claimed.
+        // Under this installation's listening ID, never the (backed-up) sync device ID.
         val me = prefs.getOrCreateListeningDeviceId()
         assertEquals(setOf(me), first.listeningDays.map { it.deviceId }.toSet())
         assertTrue(me != prefs.getOrCreateSyncDeviceId())
@@ -151,6 +160,36 @@ class ListeningCloudSyncTest {
         pushes.clear()
         coordinator.syncNow()
         assertEquals(listOf(11L to 120_000L), pushes.single().listeningDays.map { it.localDay to it.consumedMs })
+    }
+
+    @Test
+    fun listeningFromBeforeTheUpdateGoesUpUnderTheLegacyOriginACopiedDatabaseShares() = runTest(testDispatcher) {
+        database.listeningSessionDao().upsertSessions(listOf(session("old", day = 3L, device = null)))
+        database.listeningRollupDao().upsertRollup(ListeningRollupEntity(2L, "ep-1", "100", 30_000L, 1, 0, lastListenedAt = 500L))
+
+        coordinator.syncNow()
+
+        val legacy = prefs.getListeningLegacyOrigin()
+        assertEquals(BoxcastPrefs.LISTENING_LEGACY_ORIGIN_PREFIX + prefs.getOrCreateSyncDeviceId(), legacy)
+        assertEquals(listOf(legacy to 2L, legacy to 3L), pushes.single().listeningDays.map { it.deviceId to it.localDay })
+    }
+
+    @Test
+    fun aBackgroundPushWaitsForThePushInFlight() = runTest(testDispatcher) {
+        seedOwnListening()
+        var started = false
+        onPush = {
+            if (!started) {
+                started = true
+                launch { coordinator.executePush() }
+            }
+        }
+
+        coordinator.syncNow()
+        advanceUntilIdle()
+
+        // Answered out of order, two pushes could record totals the cloud no longer holds.
+        assertEquals(1, mostPushesInFlight)
     }
 
     @Test
@@ -211,16 +250,18 @@ class ListeningCloudSyncTest {
         // Synced before the update (not waiting for a push), dated on this phone since.
         database.listeningHistoryDao().upsert(history("ep-1").copy(isDirty = false, syncedAt = 1L, firstPlayedAt = 500L))
         database.listeningHistoryDao().upsert(history("ep-2").copy(isDirty = false, syncedAt = 1L))
+        // Played before boxlore recorded dates: known too, and the cloud may hold nothing for it.
+        database.listeningHistoryDao().upsert(history("ep-3").copy(isDirty = false, syncedAt = 1L, firstPlayedAt = 0L, finishedAt = 0L))
         serverStoresListening = false
 
         coordinator.syncNow()
         coordinator.syncNow()
 
-        // Only the dated row, and again after an older server ignored it. Its playback clock is 1, never
-        // 0: the JSON leaves 0 out, and the server stores a row without a clock at its own time, which
-        // would replace another phone's newer progress.
-        assertEquals(listOf("ep-1", "ep-1"), pushes.flatMap { push -> push.history.map { it.episodeId } })
-        assertEquals(ListeningSync.DATES_ONLY_UPDATED_AT, pushes.first().history.single().updatedAt)
+        // Only the dated rows, and again after an older server ignored them. Their playback clock is 1,
+        // never 0: the JSON leaves 0 out, and the server stores a row without a clock at its own time,
+        // which would replace another phone's newer progress.
+        assertEquals(listOf("ep-1", "ep-3", "ep-1", "ep-3"), pushes.flatMap { push -> push.history.map { it.episodeId } })
+        assertTrue(pushes.first().history.all { it.updatedAt == ListeningSync.DATES_ONLY_UPDATED_AT })
         assertTrue(Json.encodeToString(pushes.first()).contains("\"updatedAt\":1"))
 
         serverStoresListening = true
@@ -228,7 +269,7 @@ class ListeningCloudSyncTest {
         coordinator.syncNow()
         coordinator.syncNow()
 
-        assertEquals(listOf("ep-1"), pushes.flatMap { push -> push.history.map { it.episodeId } })
+        assertEquals(listOf("ep-1", "ep-3"), pushes.flatMap { push -> push.history.map { it.episodeId } })
         assertTrue(prefs.areListeningDatesSent())
     }
 
@@ -297,7 +338,8 @@ class ListeningCloudSyncTest {
 
         coordinator.syncNow()
 
-        assertTrue(database.listeningPushDao().getPushedDays(me).isEmpty())
+        // What this phone knows the cloud holds starts over: only the new account's day is known.
+        assertEquals(listOf(40L), database.listeningPushDao().getPushedDays(me).map { it.localDay })
         assertTrue(database.playedShowDao().getAllPlayedShows().isEmpty())
         assertEquals(0L, pulls.single().listeningSince)
         assertEquals(listOf(40L to 30_000L), database.listeningRollupDao().getAllRollups().map { it.localDay to it.consumedMs })
@@ -325,9 +367,10 @@ class ListeningCloudSyncTest {
     }
 
     private suspend fun seedOwnListening() {
-        database.listeningSessionDao().upsertSessions(listOf(session("s-1", day = 10L, device = null), session("s-2", day = 11L, device = null)))
+        val me = prefs.getOrCreateListeningDeviceId()
+        database.listeningSessionDao().upsertSessions(listOf(session("s-1", day = 10L, device = me), session("s-2", day = 11L, device = me)))
         database.listeningRollupDao().upsertRollup(
-            ListeningRollupEntity(10L, "ep-1", "100", 60_000L, sessionCount = 1, completionCount = 0, lastListenedAt = 1_000L),
+            ListeningRollupEntity(10L, "ep-1", "100", 60_000L, sessionCount = 1, completionCount = 0, lastListenedAt = 1_000L, deviceId = me),
         )
         database.playedShowDao().recordPlay("100", "Show", null, "Comedy", playedAt = 10_000L)
     }
