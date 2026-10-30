@@ -69,6 +69,8 @@ data class PlayerState(
     val autoTranscriptLimitLeft: Int? = null,
     val playbackRoute: PlaybackRouteState = PlaybackRouteState(),
     val sameShowContinuation: SameShowContinuationState = SameShowContinuationState.HIDDEN,
+    /** The show the queue was started from; queue entries without a show of their own play under it ([QueueShowPolicy]). */
+    val queueShow: Podcast? = null,
 )
 
 object SleepTimerHolder {
@@ -212,6 +214,7 @@ class PlaybackRepository internal constructor(
                     duration = if (restored.lastSession.durationMs > 0) restored.lastSession.durationMs else playerStateFlow.value.duration,
                     isLiked = restored.lastSession.isLiked,
                     queue = restoredQueue,
+                    queueShow = null,
                 )
                 mediaHandle.controller?.clearMediaItems()
             }
@@ -370,7 +373,8 @@ class PlaybackRepository internal constructor(
                 }
             },
             playQueue = { episodes, podcast, startIndex, entryPoint, initialPositionMs, sourceContext ->
-                queueCoordinator.playQueue(
+                // Reloads the current queue into an emptied player.
+                queueCoordinator.replayQueue(
                     episodes,
                     podcast,
                     startIndex,
@@ -707,6 +711,7 @@ class PlaybackRepository internal constructor(
                         duration = controllerDuration ?: restored.lastSession.durationMs,
                         isLiked = restored.lastSession.isLiked,
                         queue = restoredQueue,
+                        queueShow = null,
                     ),
                     controllerSpeed = controller?.playbackParameters?.speed,
                 )

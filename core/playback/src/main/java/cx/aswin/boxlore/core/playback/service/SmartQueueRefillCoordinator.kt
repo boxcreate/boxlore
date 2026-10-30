@@ -15,6 +15,7 @@ import cx.aswin.boxlore.core.playback.PlaybackQueueContext
 import cx.aswin.boxlore.core.playback.PlaybackUris
 import cx.aswin.boxlore.core.playback.QueueEntry
 import cx.aswin.boxlore.core.playback.QueueRepository
+import cx.aswin.boxlore.core.playback.QueueShowPolicy
 import cx.aswin.boxlore.core.playback.SmartQueueEngine
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import kotlinx.coroutines.CoroutineDispatcher
@@ -196,6 +197,8 @@ internal fun refillMediaItem(entry: QueueEntry, cacheId: String? = null): MediaI
                 .setIsPlayable(true)
                 .setIsBrowsable(false)
                 .setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST_EPISODE)
+                // The pick's show ID, for a UI that only knows the item from the player.
+                .setExtras(QueueShowPolicy.extras(pod.id))
                 .build(),
         ).build()
 }

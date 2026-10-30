@@ -9,6 +9,8 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import cx.aswin.boxlore.core.catalog.BriefingLinks
 import cx.aswin.boxlore.core.catalog.mapRegionForBriefing
+import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.PlaybackLifecycleSignals
@@ -41,6 +43,10 @@ internal class PlaybackMediaControllerBridge(
     private val markEpisodeAsCompleted: suspend (Episode, Podcast?) -> Unit,
     private val findPodcastIdForEpisode: suspend (String) -> String?,
     private val hasActiveCastSession: () -> Boolean?,
+    /** The show stored under an ID in Room, if any. */
+    private val findStoredPodcast: suspend (String) -> Podcast? = { podcastId ->
+        BoxLoreDatabase.getDatabase(context).podcastDao().getPodcast(podcastId)?.toTransitionPodcast()
+    },
 ) : Player.Listener {
     private var lastReportedRemote: Boolean? = null
     private var pendingCastTransition: PendingCastTransition? = null
@@ -321,12 +327,8 @@ internal class PlaybackMediaControllerBridge(
                             return@launch
                         }
                         pendingCastTransition = null
-                        val resolvedPodcastId = findPodcastIdForEpisode(episodeId) ?: ""
-                        val resolvedPodcastTitle =
-                            metadata.albumTitle?.toString()?.takeIf(String::isNotBlank)
-                                ?: metadata.artist?.toString()?.takeIf(String::isNotBlank)
-                                ?: metadata.subtitle?.toString()?.takeIf(String::isNotBlank)
-                                ?: UNKNOWN_PODCAST
+                        val resolvedPodcastId = QueueShowPolicy.showId(metadata) ?: findPodcastIdForEpisode(episodeId) ?: ""
+                        val resolvedPodcastTitle = QueueShowPolicy.showTitle(metadata) ?: UNKNOWN_PODCAST
                         Episode(
                             id = episodeId,
                             title = title,
@@ -412,69 +414,32 @@ internal class PlaybackMediaControllerBridge(
                 markEpisodeAsCompleted(previousEpisode, previousPodcast)
             }
 
-            // 2. Derive podcast context from episode metadata & local DB
-            val newPodcast: Podcast? =
-                if (newEpisode.podcastId != null) {
-                    val existingPod = oldState.currentPodcast
-                    val database =
-                        cx.aswin.boxlore.core.database.BoxLoreDatabase
-                            .getDatabase(context)
-                    val dbPodEntity = database.podcastDao().getPodcast(newEpisode.podcastId!!)
-                    val dbPodcast =
-                        dbPodEntity?.let { entity ->
-                            cx.aswin.boxlore.core.model.Podcast(
-                                id = entity.podcastId,
-                                title = entity.title,
-                                artist = entity.author,
-                                imageUrl = entity.imageUrl,
-                                fallbackImageUrl = entity.latestEpisode?.imageUrl ?: "",
-                                description = entity.description,
-                                genre = entity.genre ?: "Podcast",
-                                type = entity.type,
-                                latestEpisode = entity.latestEpisode,
-                                subscribedAt = entity.subscribedAt,
-                                podcastGuid = entity.podcastGuid,
-                                fundingUrl = entity.fundingUrl,
-                                fundingMessage = entity.fundingMessage,
-                                medium = entity.medium,
-                                hasValue = entity.hasValue,
-                                updateFrequency = entity.updateFrequency,
-                                location = entity.location,
-                                license = entity.license,
-                                isLocked = entity.isLocked,
-                                preferredSort = entity.preferredSort,
-                            )
-                        }
+            // 2. The episode's own show (its ID, else the one its media item carries), never a
+            // different previous show; Room supplies the full show when it has it.
+            val showId = newEpisode.podcastId?.takeIf(String::isNotBlank) ?: QueueShowPolicy.showId(mediaItem.mediaMetadata)
+            val newPodcast =
+                QueueShowPolicy.currentShow(
+                    episode = newEpisode.copy(podcastId = showId),
+                    previous = oldState.currentPodcast,
+                    stored = showId?.let { findStoredPodcast(it) },
+                    queueShow = oldState.queueShow,
+                )
+            // An entry whose show is known keeps it, in the saved queue too, for a restart.
+            val withOwnShow: (Episode) -> Episode = { episode ->
+                if (showId != null && newPodcast != null) QueueShowPolicy.withShow(episode.copy(podcastId = showId), newPodcast) else episode
+            }
+            newEpisode = withOwnShow(newEpisode)
 
-                    if (dbPodcast != null && dbPodcast.title != UNKNOWN_PODCAST) {
-                        dbPodcast
-                    } else if (existingPod != null &&
-                        existingPod.id == newEpisode.podcastId &&
-                        existingPod.title != UNKNOWN_PODCAST
-                    ) {
-                        // Preserve the fully-populated existing podcast object
-                        existingPod
-                    } else {
-                        cx.aswin.boxlore.core.model.Podcast(
-                            id = newEpisode.podcastId!!,
-                            title =
-                                newEpisode.podcastTitle?.takeIf { !it.isNullOrBlank() && it != UNKNOWN_PODCAST }
-                                    ?: UNKNOWN_PODCAST,
-                            artist = newEpisode.podcastArtist?.takeIf { it.isNotEmpty() } ?: existingPod?.artist ?: "",
-                            imageUrl =
-                                newEpisode.podcastImageUrl?.takeIf {
-                                    it.isNotEmpty()
-                                } ?: existingPod?.imageUrl ?: "",
-                            description = null,
-                            genre = newEpisode.podcastGenre ?: existingPod?.genre ?: "Podcast",
-                        )
-                    }
-                } else {
-                    oldState.currentPodcast
-                }
+            // A later transition owns the state once the player moved on while the lookups above ran.
+            val liveMediaId = mediaHandle.controller?.currentMediaItem?.mediaId
+            if (liveMediaId != null && liveMediaId != mediaItem.mediaId) {
+                Log.d("PlaybackRepo", "onMediaItemTransition: ${mediaItem.mediaId} is no longer current ($liveMediaId); skipping")
+                return@launch
+            }
 
             // 3. QUEUE CONSUMPTION: Drop items before current
-            val newQueue = finalQueue.drop(finalSlotIndex)
+            val consumedQueue = finalQueue.drop(finalSlotIndex)
+            val newQueue = listOf(withOwnShow(consumedQueue.first())) + consumedQueue.drop(1)
             android.util.Log.d("PlaybackRepo", "Consuming queue: Dropped $finalSlotIndex items. New size: ${newQueue.size}")
             playerStateFlow.value =
                 playerStateFlow.value.copy(
@@ -526,6 +491,29 @@ internal class PlaybackMediaControllerBridge(
         }
     }
 }
+
+private fun PodcastEntity.toTransitionPodcast(): Podcast = Podcast(
+    id = podcastId,
+    title = title,
+    artist = author,
+    imageUrl = imageUrl,
+    fallbackImageUrl = latestEpisode?.imageUrl ?: "",
+    description = description,
+    genre = genre ?: "Podcast",
+    type = type,
+    latestEpisode = latestEpisode,
+    subscribedAt = subscribedAt,
+    podcastGuid = podcastGuid,
+    fundingUrl = fundingUrl,
+    fundingMessage = fundingMessage,
+    medium = medium,
+    hasValue = hasValue,
+    updateFrequency = updateFrequency,
+    location = location,
+    license = license,
+    isLocked = isLocked,
+    preferredSort = preferredSort,
+)
 
 private data class PendingCastTransition(
     val mediaId: String,

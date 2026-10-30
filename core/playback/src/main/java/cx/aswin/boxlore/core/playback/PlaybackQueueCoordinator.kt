@@ -207,7 +207,8 @@ internal class PlaybackQueueCoordinator(
             audioUrl = item.localConfiguration?.uri?.toString() ?: "",
             imageUrl = PlaybackArtworkMetadata.savedArtworkUrl(metadata),
             podcastImageUrl = PlaybackArtworkMetadata.savedArtworkUrl(metadata),
-            podcastTitle = metadata.subtitle?.toString() ?: metadata.artist?.toString(),
+            podcastTitle = QueueShowPolicy.showTitle(metadata),
+            podcastId = QueueShowPolicy.showId(metadata),
             podcastArtist = metadata.artist?.toString(),
             podcastGenre = metadata.genre?.toString(),
             duration = 0,
@@ -260,6 +261,7 @@ internal class PlaybackQueueCoordinator(
         }
     }
 
+    /** Starts a new queue; [episodes] without a show of their own play under [podcast] ([PlayerState.queueShow]). */
     suspend fun playQueue(
         episodes: List<Episode>,
         podcast: Podcast,
@@ -267,6 +269,35 @@ internal class PlaybackQueueCoordinator(
         entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
         initialPositionMs: Long? = null,
         sourceContext: android.os.Bundle? = null,
+    ) = startQueue(episodes, podcast, startIndex, entryPoint, initialPositionMs, sourceContext, queueShow = podcast)
+
+    /** Reloads the current queue, which keeps the show it was started from ([PlayerState.queueShow]). */
+    suspend fun replayQueue(
+        episodes: List<Episode>,
+        podcast: Podcast,
+        startIndex: Int = 0,
+        entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
+        initialPositionMs: Long? = null,
+        sourceContext: android.os.Bundle? = null,
+    ) = startQueue(
+        episodes,
+        podcast,
+        startIndex,
+        entryPoint,
+        initialPositionMs,
+        sourceContext,
+        queueShow = playerStateFlow.value.queueShow ?: podcast,
+    )
+
+    @Suppress("LongParameterList")
+    private suspend fun startQueue(
+        episodes: List<Episode>,
+        podcast: Podcast,
+        startIndex: Int,
+        entryPoint: PlaybackEntryPoint,
+        initialPositionMs: Long?,
+        sourceContext: android.os.Bundle?,
+        queueShow: Podcast,
     ) {
         Log.d("PlaybackRepo", "playQueue() called: count=${episodes.size}, start=$startIndex, podcastGenre='${podcast.genre}'")
         // Every listener-started queue (play, play episode, play from queue, skip to an episode) lands here.
@@ -324,6 +355,7 @@ internal class PlaybackQueueCoordinator(
                         duration = currentEp.duration.toLong() * 1000,
                         queue = episodesWithSource,
                         isLiked = initialLikeState,
+                        queueShow = queueShow,
                     )
                 playerStateFlow.value =
                     PlaybackControlSync.withSyncedPlaybackSpeed(
@@ -441,9 +473,9 @@ internal class PlaybackQueueCoordinator(
             controller.addMediaItem(mediaItem)
             Log.d("PlaybackRepo", "addToQueue: Added to Media3, new mediaItemCount=${controller.mediaItemCount}")
 
-            // Update local state
+            // Update local state; the entry keeps its own show for when it becomes current
             val currentQueue = playerStateFlow.value.queue
-            playerStateFlow.value = playerStateFlow.value.copy(queue = currentQueue + episode)
+            playerStateFlow.value = playerStateFlow.value.copy(queue = currentQueue + QueueShowPolicy.withShow(episode, podcast))
             Log.d("PlaybackRepo", "addToQueue: Updated local state, queue size=${playerStateFlow.value.queue.size}")
             syncQueueToDb()
             rankingFeedbackRepository.recordAction(
@@ -519,7 +551,9 @@ internal class PlaybackQueueCoordinator(
                 controller.addMediaItem(insertIndex, mediaItem)
             }
 
-            val newQueue = QueueMath.placeNext(playerStateFlow.value.queue, currentId, queued ?: episode) { it.id }
+            // A new entry keeps its own show for when it becomes current.
+            val entry = queued ?: QueueShowPolicy.withShow(episode, podcast)
+            val newQueue = QueueMath.placeNext(playerStateFlow.value.queue, currentId, entry) { it.id }
             playerStateFlow.value = playerStateFlow.value.copy(queue = newQueue)
             syncQueueToDb()
         }
@@ -548,11 +582,9 @@ internal class PlaybackQueueCoordinator(
 
         val taggedEpisodes =
             episodesToAdd.map { ep ->
-                ep.copy(
+                QueueShowPolicy.withShow(ep, podcast).copy(
                     contextType = "AUTO_FILL",
                     contextSourceId = SmartQueueEngine.SOURCE_SAME_PODCAST,
-                    podcastTitle = ep.podcastTitle ?: podcast.title,
-                    podcastId = ep.podcastId ?: podcast.id,
                 )
             }
 
@@ -954,7 +986,7 @@ internal class PlaybackQueueCoordinator(
         android.util.Log.d("PlaybackRepo", "playFromQueueIndex: slicing from index $index, newQueueSize=${slicedQueue.size}")
 
         // Reload into Media3 with the sliced queue
-        playQueue(slicedQueue, podcast, 0)
+        replayQueue(slicedQueue, podcast, 0)
     }
 }
 
