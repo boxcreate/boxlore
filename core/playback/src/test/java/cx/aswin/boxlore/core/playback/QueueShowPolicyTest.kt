@@ -3,7 +3,6 @@ package cx.aswin.boxlore.core.playback
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Test
 
@@ -22,7 +21,7 @@ class QueueShowPolicyTest {
 
     @Test
     fun anotherShowsIdNeverTakesThePreviousShowOrItsFields() {
-        val show = QueueShowPolicy.currentShow(episode(podcastId = "2002"), previous, stored = null)!!
+        val show = QueueShowPolicy.currentShow(episode(podcastId = "2002"), previous, stored = null)
 
         assertEquals("2002", show.id)
         assertEquals("Unknown Podcast", show.title)
@@ -37,24 +36,26 @@ class QueueShowPolicyTest {
         assertSame(previous, QueueShowPolicy.currentShow(episode(podcastId = "1001"), previous, stored = null))
         // A stored show without a real title gives way to the episode's own title.
         val untitled = vergecast.copy(title = "Unknown Podcast")
-        assertEquals("The Vergecast", QueueShowPolicy.currentShow(episode("2002", "The Vergecast"), previous, untitled)?.title)
+        assertEquals("The Vergecast", QueueShowPolicy.currentShow(episode("2002", "The Vergecast"), previous, untitled).title)
     }
 
     @Test
     fun aBlankIdWithItsOwnTitleKeepsThatTitle() {
         // Room saves a missing show ID as "".
-        val show = QueueShowPolicy.currentShow(episode(podcastId = "", podcastTitle = "The Vergecast"), previous, stored = null)!!
+        val show = QueueShowPolicy.currentShow(episode(podcastId = "", podcastTitle = "The Vergecast"), previous, stored = null)
 
         assertEquals("The Vergecast", show.title)
         assertEquals("", show.id)
     }
 
     @Test
-    fun anEntryWithNoShowAtAllContinuesThePreviousShow() {
-        // A list played from one show's page whose episodes carry no show fields.
-        assertSame(previous, QueueShowPolicy.currentShow(episode(), previous, stored = null))
+    fun anEntryWithNoShowAtAllPlaysUnderUnknownPodcastNeverThePreviousShow() {
+        val show = QueueShowPolicy.currentShow(episode(), previous, stored = null)
+        assertEquals("Unknown Podcast", show.title)
+        assertEquals("", show.id)
+        assertEquals("Unknown Podcast", QueueShowPolicy.currentShow(episode(), previous = null, stored = null).title)
+        // The previous show is kept for an entry that names it by title.
         assertSame(previous, QueueShowPolicy.currentShow(episode(podcastTitle = "Conspiracy Theories"), previous, stored = null))
-        assertNull(QueueShowPolicy.currentShow(episode(), previous = null, stored = null))
     }
 
     @Test
@@ -81,7 +82,7 @@ class QueueShowPolicyTest {
         // An episode page that doesn't know its show passes "unknown" and "Podcast".
         val unknownPage = Podcast("unknown", "Podcast", "", "")
         assertEquals(episode(), QueueShowPolicy.withShow(episode(), unknownPage))
-        assertSame(previous, QueueShowPolicy.currentShow(episode(podcastId = "unknown"), previous, stored = null))
+        assertEquals("Unknown Podcast", QueueShowPolicy.currentShow(episode(podcastId = "unknown"), previous, stored = null).title)
     }
 
     @Test
@@ -93,15 +94,5 @@ class QueueShowPolicyTest {
         // An episode with no show of its own, or of the same show, starts under the given show.
         assertSame(allDownloads, QueueShowPolicy.startShow(episode(), allDownloads))
         assertSame(vergecast, QueueShowPolicy.startShow(episode("2002"), vergecast))
-    }
-
-    @Test
-    fun anEntryWithNoShowPlaysUnderTheShowTheQueueStartedFrom() {
-        // Play All from Conspiracy Theories, with a Vergecast episode played next in between.
-        assertSame(previous, QueueShowPolicy.currentShow(episode(), previous = vergecast, stored = null, queueShow = previous))
-        assertSame(previous, QueueShowPolicy.currentShow(episode(podcastTitle = "Conspiracy Theories"), vergecast, null, queueShow = previous))
-        assertSame(previous, QueueShowPolicy.currentShow(episode(podcastId = "1001"), vergecast, null, queueShow = previous))
-        // An entry of another show is never put under the queue's show.
-        assertEquals("The Vergecast", QueueShowPolicy.currentShow(episode("2002", "The Vergecast"), previous, null, queueShow = previous)?.title)
     }
 }

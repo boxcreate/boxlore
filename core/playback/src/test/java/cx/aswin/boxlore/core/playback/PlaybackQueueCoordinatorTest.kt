@@ -180,33 +180,29 @@ class PlaybackQueueCoordinatorTest {
     }
 
     @Test
-    fun startingAQueueRecordsItsShowAndReloadingItKeepsThatShow() = runTest(testDispatcher) {
-        val first = cx.aswin.boxlore.core.model.Podcast("pod-1", "First show", "Host", "")
-        val other = cx.aswin.boxlore.core.model.Podcast("pod-2", "Second show", "Host", "")
-        val episodes = listOf(testEpisode("1", "pod-1"), testEpisode("2", "pod-2"))
+    fun aNewQueueGivesShowlessEpisodesItsShowInTheSavedQueueToo() = runTest(testDispatcher) {
+        val show = cx.aswin.boxlore.core.model.Podcast("pod-1", "First show", "Host", "https://example.com/first.jpg")
+        val showless = testEpisode("1", "pod-1").copy(podcastId = null, podcastTitle = null)
+        val otherShow = testEpisode("2", "pod-3")
 
-        queueCoordinator.playQueue(episodes, first)
-        assertEquals(first, playerStateFlow.value.queueShow)
+        queueCoordinator.playQueue(listOf(showless, otherShow), show)
 
-        // Reloading the current queue from another show's entry keeps the show it started from.
-        queueCoordinator.replayQueue(episodes, other, 1)
-        assertEquals(first, playerStateFlow.value.queueShow)
-        queueCoordinator.playFromQueueIndex("2", episodes, other)
-        assertEquals(first, playerStateFlow.value.queueShow)
-
-        // A new queue replaces it.
-        queueCoordinator.playQueue(episodes, other)
-        assertEquals(other, playerStateFlow.value.queueShow)
+        assertEquals(listOf("pod-1", "pod-3"), playerStateFlow.value.queue.map { it.podcastId })
+        assertEquals(listOf("First show", "Show pod-3"), playerStateFlow.value.queue.map { it.podcastTitle })
+        assertEquals(listOf("pod-1", "pod-3"), queueRepository.getQueueEpisodeSnapshot().map { it.podcastId })
     }
 
     @Test
-    fun reloadingAQueueWithNoStartShowUsesTheGivenShow() = runTest(testDispatcher) {
-        val show = cx.aswin.boxlore.core.model.Podcast("pod-1", "First show", "Host", "")
-        playerStateFlow.value = PlayerState()
+    fun reloadingTheQueueNeverRelabelsItsEntries() = runTest(testDispatcher) {
+        // The queue sheet and an emptied player reload the queue under the tapped entry's show.
+        val tapped = cx.aswin.boxlore.core.model.Podcast("pod-2", "Second show", "Host", "")
+        val showless = testEpisode("3", "pod-1").copy(podcastId = null, podcastTitle = null)
+        val queue = listOf(testEpisode("2", "pod-2"), showless)
 
-        queueCoordinator.replayQueue(listOf(testEpisode("1", "pod-1")), show)
-
-        assertEquals(show, playerStateFlow.value.queueShow)
+        queueCoordinator.replayQueue(queue, tapped)
+        assertEquals(listOf("pod-2", null), playerStateFlow.value.queue.map { it.podcastId })
+        queueCoordinator.playFromQueueIndex("2", queue, tapped)
+        assertEquals(listOf("pod-2", null), playerStateFlow.value.queue.map { it.podcastId })
     }
 
     @Test

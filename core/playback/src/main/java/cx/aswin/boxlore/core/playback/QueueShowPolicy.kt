@@ -11,7 +11,8 @@ private const val UNKNOWN_SHOW_ID = "unknown"
 /**
  * Every queue entry plays under its own show. An episode can reach the queue without its show (a
  * show-page episode without feed fields, a Smart Queue pick rebuilt from its media item); it then
- * must never take the show of the episode that played before it.
+ * takes the show it was queued or started from, and never the show of the episode that played
+ * before it.
  */
 internal object QueueShowPolicy {
     /** Media item extra with the item's show ID, for items the UI only knows from the player (Smart Queue refill). */
@@ -58,20 +59,17 @@ internal object QueueShowPolicy {
 
     /**
      * The show for [episode] when it becomes the current item. [stored] is the show saved under the
-     * episode's show ID; [queueShow] is the show the queue was started from. An episode with no show
-     * of its own plays under [queueShow] (a list played from one show's page), else under [previous].
-     * [previous] and [queueShow] are kept for an episode with a show only when they have its ID, or
-     * its title when it has no ID. Otherwise the show is built from the episode's own fields, never
-     * from another show's.
+     * episode's show ID. [previous] is kept only when it has that ID, or the episode's title when the
+     * episode has no ID. Otherwise the show is built from the episode's own fields, and an episode with
+     * no show at all plays under "Unknown Podcast": never another show's name.
      */
-    fun currentShow(episode: Episode, previous: Podcast?, stored: Podcast?, queueShow: Podcast? = null): Podcast? {
+    fun currentShow(episode: Episode, previous: Podcast?, stored: Podcast?): Podcast {
         val showId = episode.podcastId.knownId()
         val ownTitle = episode.podcastTitle.knownTitle()
         if (showId == null) {
-            if (ownTitle == null) return queueShow ?: previous
-            return listOfNotNull(queueShow, previous).firstOrNull { it.title == ownTitle } ?: showFrom(episode, "", ownTitle)
+            return previous?.takeIf { ownTitle != null && it.title == ownTitle } ?: showFrom(episode, "", ownTitle ?: UNKNOWN_SHOW)
         }
-        return listOfNotNull(stored, previous, queueShow).firstOrNull { it.id == showId && it.title.knownTitle() != null }
+        return listOfNotNull(stored, previous).firstOrNull { it.id == showId && it.title.knownTitle() != null }
             ?: showFrom(episode, showId, ownTitle ?: UNKNOWN_SHOW)
     }
 
@@ -81,7 +79,7 @@ internal object QueueShowPolicy {
      * plays under, built from its own fields.
      */
     fun startShow(episode: Episode, podcast: Podcast): Podcast =
-        if (namesAnotherShow(episode, podcast)) currentShow(episode, previous = null, stored = null) ?: podcast else podcast
+        if (namesAnotherShow(episode, podcast)) currentShow(episode, previous = null, stored = null) else podcast
 
     /** True when [episode] carries a show other than [podcast]: another ID, or another title without an ID. */
     private fun namesAnotherShow(episode: Episode, podcast: Podcast): Boolean {
@@ -91,6 +89,7 @@ internal object QueueShowPolicy {
         return ownTitle != null && ownTitle != podcast.title
     }
 
+    /** A show for [episode] from its own fields, under [id] and [title]. */
     private fun showFrom(episode: Episode, id: String, title: String) = Podcast(
         id = id,
         title = title,

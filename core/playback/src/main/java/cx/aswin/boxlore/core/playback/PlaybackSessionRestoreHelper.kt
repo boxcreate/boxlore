@@ -14,19 +14,6 @@ internal data class RestoredSessionData(
     val podcast: Podcast,
 )
 
-/**
- * This state showing [restored] with [queue], as app start and the idle cloud handoff put it. The
- * queue comes back without the show it was started from ([PlayerState.queueShow]), so an older
- * queue's show never labels entries of the restored one.
- */
-internal fun PlayerState.showingRestoredSession(restored: RestoredSessionData, queue: List<Episode>,): PlayerState = copy(
-    currentEpisode = restored.episode,
-    currentPodcast = restored.podcast,
-    isLiked = restored.lastSession.isLiked,
-    queue = queue,
-    queueShow = null,
-)
-
 internal object PlaybackSessionRestoreHelper {
     /**
      * The session to show for [targetEpisodeId] (the controller's media ID), or the most recently

@@ -192,6 +192,40 @@ class QueueEntryShowTest {
     }
 
     @Test
+    fun anEpisodeWithNoShowAtAllNeverTakesThePreviousShow() = runTest(dispatcher) {
+        // An episode page that couldn't place its episode passes the "unknown" placeholder show.
+        coordinator.playQueue(listOf(playing), conspiracy, 0)
+        coordinator.addToQueueNext(vergeLatest, Podcast("unknown", "Podcast", "", ""))
+        advanceTo(1)
+
+        val state = playerStateFlow.value
+        assertEquals(vergeLatest.id, state.currentEpisode?.id)
+        assertEquals("Unknown Podcast", state.currentPodcast?.title)
+    }
+
+    @Test
+    fun aShowlessListKeepsItsShowAfterARestart() = runTest(dispatcher) {
+        val first = showless("31", "Area 51")
+        val second = showless("32", "The Bermuda Triangle")
+        coordinator.playQueue(listOf(first, second), conspiracy, 0)
+        coordinator.addToQueueNext(vergeLatest, vergecast)
+        advanceTo(1)
+
+        // A restart keeps nothing in memory: the queue comes back from Room, with each entry's show.
+        val saved = queueRepository.getQueueEpisodeSnapshot()
+        assertEquals(listOf(vergecast.id, conspiracy.id), saved.map { it.podcastId })
+        playerStateFlow.value = PlayerState(currentEpisode = saved.first(), currentPodcast = vergecast, queue = saved)
+        advanceTo(2)
+        assertEquals(second.id, playerStateFlow.value.currentEpisode?.id)
+        assertEquals(conspiracy.title, playerStateFlow.value.currentPodcast?.title)
+
+        // Reloading it from the queue under the current show relabels nothing.
+        coordinator.replayQueue(saved.drop(1), vergecast)
+        assertEquals(conspiracy.title, playerStateFlow.value.currentPodcast?.title)
+        assertEquals(conspiracy.id, playerStateFlow.value.queue.single().podcastId)
+    }
+
+    @Test
     fun aMixedDownloadsQueuePlaysEachEpisodeUnderItsOwnShow() = runTest(dispatcher) {
         // Downloads > Play all starts every download under one "All Downloads" placeholder.
         val allDownloads = Podcast("downloads_all", "All Downloads", "", "")

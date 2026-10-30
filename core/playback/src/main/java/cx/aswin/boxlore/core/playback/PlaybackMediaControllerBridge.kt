@@ -253,6 +253,10 @@ internal class PlaybackMediaControllerBridge(
         }
     }
 
+    /**
+     * Makes [mediaItem] the current episode: finds its queue entry (memory, then Room, then the item
+     * itself), gives it its own show ([QueueShowPolicy.currentShow]) and drops the consumed queue prefix.
+     */
     override fun onMediaItemTransition(
         mediaItem: MediaItem?,
         reason: Int,
@@ -422,11 +426,10 @@ internal class PlaybackMediaControllerBridge(
                     episode = newEpisode.copy(podcastId = showId),
                     previous = oldState.currentPodcast,
                     stored = showId?.let { findStoredPodcast(it) },
-                    queueShow = oldState.queueShow,
                 )
             // An entry whose show is known keeps it, in the saved queue too, for a restart.
             val withOwnShow: (Episode) -> Episode = { episode ->
-                if (showId != null && newPodcast != null) QueueShowPolicy.withShow(episode.copy(podcastId = showId), newPodcast) else episode
+                if (showId != null) QueueShowPolicy.withShow(episode.copy(podcastId = showId), newPodcast) else episode
             }
             newEpisode = withOwnShow(newEpisode)
 
@@ -492,6 +495,7 @@ internal class PlaybackMediaControllerBridge(
     }
 }
 
+/** The stored show as the player shows it. */
 private fun PodcastEntity.toTransitionPodcast(): Podcast = Podcast(
     id = podcastId,
     title = title,

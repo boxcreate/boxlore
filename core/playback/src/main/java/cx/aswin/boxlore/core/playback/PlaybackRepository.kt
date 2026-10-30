@@ -69,8 +69,6 @@ data class PlayerState(
     val autoTranscriptLimitLeft: Int? = null,
     val playbackRoute: PlaybackRouteState = PlaybackRouteState(),
     val sameShowContinuation: SameShowContinuationState = SameShowContinuationState.HIDDEN,
-    /** The show the queue was started from; queue entries without a show of their own play under it ([QueueShowPolicy]). */
-    val queueShow: Podcast? = null,
 )
 
 object SleepTimerHolder {
@@ -207,9 +205,13 @@ class PlaybackRepository internal constructor(
                 val refreshedQueue = queueRepository.getQueueEpisodeSnapshot()
                 val restoredQueue = if (refreshedQueue.isEmpty()) listOf(restored.episode) else refreshedQueue
 
-                playerStateFlow.value = playerStateFlow.value.showingRestoredSession(restored, restoredQueue).copy(
+                playerStateFlow.value = playerStateFlow.value.copy(
+                    currentEpisode = restored.episode,
+                    currentPodcast = restored.podcast,
                     position = positionMs.takeIf { it > 0L } ?: restored.lastSession.progressMs,
                     duration = if (restored.lastSession.durationMs > 0) restored.lastSession.durationMs else playerStateFlow.value.duration,
+                    isLiked = restored.lastSession.isLiked,
+                    queue = restoredQueue,
                 )
                 mediaHandle.controller?.clearMediaItems()
             }
@@ -368,7 +370,7 @@ class PlaybackRepository internal constructor(
                 }
             },
             playQueue = { episodes, podcast, startIndex, entryPoint, initialPositionMs, sourceContext ->
-                // Reloads the current queue into an emptied player.
+                // Reloads the current queue into an emptied player, so its entries keep their shows.
                 queueCoordinator.replayQueue(
                     episodes,
                     podcast,
@@ -698,10 +700,14 @@ class PlaybackRepository internal constructor(
 
             playerStateFlow.value =
                 PlaybackControlSync.withSyncedPlaybackSpeed(
-                    playerStateFlow.value.showingRestoredSession(restored, restoredQueue).copy(
+                    playerStateFlow.value.copy(
+                        currentEpisode = restored.episode,
+                        currentPodcast = restored.podcast,
                         isPlaying = controllerPlaying,
                         position = controllerPosition ?: restored.lastSession.progressMs,
                         duration = controllerDuration ?: restored.lastSession.durationMs,
+                        isLiked = restored.lastSession.isLiked,
+                        queue = restoredQueue,
                     ),
                     controllerSpeed = controller?.playbackParameters?.speed,
                 )
