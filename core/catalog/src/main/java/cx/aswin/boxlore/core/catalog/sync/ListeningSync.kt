@@ -20,7 +20,7 @@ import cx.aswin.boxlore.core.prefs.BoxcastPrefs
  *   is lost before the server update. The last [OVERLAP_MS] of days go again with the next push, so a
  *   session saved just after a push still goes.
  * - **Pull:** every phone's days and the played shows since the pulled mark (0 on the first pull, even
- *   when the history mark is recent). Another phone's days are stored under its ID; this phone's own
+ *   when the history mark is recent; then the last pull's syncedAt - 1). Another phone's days are stored under its ID; this phone's own
  *   only where it holds nothing ([ListeningInsightsMaintenance.applyCloudDailyListening]).
  * - **Account switch:** both marks go back to 0.
  */
@@ -63,7 +63,9 @@ internal class ListeningSync(
         if (days == null && shows == null) return
         maintenance.applyCloudDailyListening(days.orEmpty().mapNotNull { it.toEntity() }, prefs.getOrCreateSyncDeviceId())
         playedShows.mergePlayedShows(shows.orEmpty().mapNotNull { it.toEntity() }, fromCloud = true)
-        prefs.setListeningPulledUntil(body.syncedAt)
+        // A push stored in the same millisecond after this pull carries syncedAt itself; the next pull
+        // reads that millisecond again (merging what it brings is idempotent).
+        prefs.setListeningPulledUntil((body.syncedAt - 1L).coerceAtLeast(0L))
     }
 
     fun reset() {
@@ -120,8 +122,9 @@ internal class ListeningSync(
     }
 
     companion object {
-        const val MAX_DAYS_PER_PUSH = 500
-        const val MAX_SHOWS_PER_PUSH = 500
+        /** Well under the server's 1,000 per push and its 1 MiB body limit, with history and the queue beside them. */
+        const val MAX_DAYS_PER_PUSH = 250
+        const val MAX_SHOWS_PER_PUSH = 250
 
         /** Days whose last listening is this close to the pushed mark go again (a late-saved session). */
         const val OVERLAP_MS = 5 * 60 * 1_000L

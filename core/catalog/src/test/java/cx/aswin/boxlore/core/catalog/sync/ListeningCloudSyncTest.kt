@@ -179,7 +179,7 @@ class ListeningCloudSyncTest {
         val request = pulls.single()
         assertTrue(request.listening)
         assertEquals(0L, request.listeningSince)
-        assertEquals(9_000L, prefs.getListeningPulledUntil())
+        assertEquals(8_999L, prefs.getListeningPulledUntil())
         assertEquals(listOf("mine"), database.listeningSessionDao().getAllSessions().map { it.sessionId })
         val summaries = database.listeningRollupDao().getAllRollups().associateBy { it.deviceId to it.localDay }
         assertEquals(300_000L, summaries.getValue("phone-b" to 20L).consumedMs)
