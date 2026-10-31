@@ -17,18 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
-import androidx.compose.material.icons.automirrored.rounded.PlaylistAddCheck
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.DownloadDone
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.FavoriteBorder
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,26 +28,21 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.info.R
+import cx.aswin.boxlore.feature.info.branded.BrandedEpisodeActions
 import cx.aswin.boxlore.feature.info.branded.BrandedSpotlight
 import cx.aswin.boxlore.feature.info.branded.boxShadow
-import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
 import cx.aswin.boxlore.feature.info.components.formatEpisodeRelativeDate
-import cx.aswin.boxlore.feature.info.components.rememberPodcastEpisodeControlClick
 import cx.aswin.boxlore.feature.info.sections.stripHtml
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -118,7 +102,7 @@ internal fun ConspiracySpotlight(spotlight: BrandedSpotlight, modifier: Modifier
                 }
                 spotlight.progress?.let { TypedProgress(it, spotlight.timeLeft, fonts) }
                 Spacer(Modifier.height(12.dp))
-                Actions(spotlight)
+                BrandedEpisodeActions(spotlight, ConspiracyColors.Actions)
             }
         }
     }
@@ -203,76 +187,6 @@ private fun TypedProgress(progress: Float, timeLeft: String?, fonts: ConspiracyF
                 color = ConspiracyColors.Ink,
                 maxLines = 1,
             )
-        }
-    }
-}
-
-@Composable
-private fun Actions(spotlight: BrandedSpotlight) {
-    val state = spotlight.actions
-    val callbacks = spotlight.callbacks
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        OutlineToggle(
-            active = state.isLiked,
-            icon = if (state.isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-            label = stringResource(if (state.isLiked) R.string.episode_info_unlike else R.string.episode_info_like),
-            onClick = callbacks.onLike,
-        )
-        OutlineToggle(
-            active = state.isDownloaded,
-            icon = if (state.isDownloaded) Icons.Rounded.DownloadDone else Icons.Rounded.Download,
-            label = stringResource(if (state.isDownloaded) R.string.episode_info_remove_download else R.string.episode_info_download),
-            onClick = callbacks.onDownload,
-            loading = state.isDownloading,
-        )
-        OutlineToggle(
-            active = state.isQueued,
-            icon = if (state.isQueued) Icons.AutoMirrored.Rounded.PlaylistAddCheck else Icons.AutoMirrored.Rounded.PlaylistAdd,
-            label = stringResource(if (state.isQueued) R.string.episode_info_remove_queue else R.string.episode_info_add_queue),
-            onClick = callbacks.onQueue,
-        )
-        val playLabel = stringResource(
-            when {
-                state.isPlaying -> R.string.episode_info_pause
-                state.isResume -> R.string.episode_info_resume
-                else -> R.string.episode_info_play
-            },
-        )
-        Surface(
-            onClick = callbacks.onPlay,
-            shape = RoundedCornerShape(22.dp),
-            color = ConspiracyColors.Ink,
-            contentColor = ConspiracyColors.PaperYellow,
-            modifier = Modifier.weight(1f).height(44.dp).semantics { contentDescription = playLabel },
-        ) {
-            Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                Icon(if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, Modifier.size(24.dp))
-                Spacer(Modifier.width(6.dp))
-                Text(playLabel, style = brandedSansStyle(16.sp, 20.sp, weight = 500), maxLines = 1)
-            }
-        }
-    }
-}
-
-/** Ink-outlined on the paper; filled ink once on. */
-@Composable
-private fun OutlineToggle(active: Boolean, icon: ImageVector, label: String, onClick: () -> Unit, loading: Boolean = false) {
-    val debouncedClick = rememberPodcastEpisodeControlClick(onClick)
-    val downloading = stringResource(R.string.episode_info_downloading)
-    Surface(
-        onClick = debouncedClick,
-        enabled = !loading,
-        shape = RoundedCornerShape(22.dp),
-        color = if (active) ConspiracyColors.Ink else Color.Transparent,
-        contentColor = if (active) ConspiracyColors.PaperYellow else ConspiracyColors.Ink,
-        border = BorderStroke(2.dp, ConspiracyColors.Ink),
-        modifier = Modifier.size(width = 46.dp, height = 44.dp).semantics {
-            contentDescription = label
-            if (loading) stateDescription = downloading
-        },
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            if (loading) BoxLoreLoader.CircularWavy(size = 20.dp, color = ConspiracyColors.Ink) else Icon(icon, null, Modifier.size(22.dp))
         }
     }
 }

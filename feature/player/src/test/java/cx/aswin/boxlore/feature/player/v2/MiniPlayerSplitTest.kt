@@ -31,4 +31,22 @@ class MiniPlayerSplitTest {
         assertEquals(0.5f, miniPlayerBackingFill(0.01f), 0.0001f)
         assertEquals(0f, miniPlayerBackingFill(Float.NaN))
     }
+
+    @Test
+    fun `the sheet's shadow moves as far as the swiped bar`() {
+        // Regression: the still sheet cast the shadow, so swiping the bar to Dismiss left the shadow behind.
+        // Casting it from the bar instead clipped it to a flat dark patch in the split's gap.
+        assertEquals(-120f, miniPlayerShadowOffset(swipeOffsetPx = -120f, compactFraction = 0f))
+        assertEquals(-60f, miniPlayerShadowOffset(swipeOffsetPx = -120f, compactFraction = 0.5f))
+        assertEquals(0f, miniPlayerShadowOffset(swipeOffsetPx = 80f, compactFraction = 1f))
+    }
+
+    @Test
+    fun `the shadow covers only the part of the swiped bar still inside the sheet`() {
+        // Regression: past the sheet's edge the bar is cut off, but its shadow ran on as a grey block.
+        assertEquals(MiniPlayerShadowSpan(start = 0, width = 1000), miniPlayerShadowSpan(0f, 1000))
+        assertEquals(MiniPlayerShadowSpan(start = 300, width = 700), miniPlayerShadowSpan(300f, 1000))
+        assertEquals(MiniPlayerShadowSpan(start = 0, width = 700), miniPlayerShadowSpan(-300f, 1000))
+        assertEquals(MiniPlayerShadowSpan(start = 1000, width = 0), miniPlayerShadowSpan(5000f, 1000))
+    }
 }

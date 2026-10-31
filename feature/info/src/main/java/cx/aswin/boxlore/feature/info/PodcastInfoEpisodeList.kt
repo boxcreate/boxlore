@@ -35,6 +35,8 @@ import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.feature.info.branded.BrandedShowHeader
 import cx.aswin.boxlore.feature.info.branded.BrandedSpotlight
 import cx.aswin.boxlore.feature.info.branded.LocalBrandedPage
+import cx.aswin.boxlore.feature.info.branded.brandedEpisodePicture
+import cx.aswin.boxlore.feature.info.branded.brandedShowPicture
 import cx.aswin.boxlore.feature.info.branded.brandedSpotlightKey
 import cx.aswin.boxlore.feature.info.components.EpisodeCardSkeleton
 import cx.aswin.boxlore.feature.info.components.EpisodeFeedItemRow
@@ -276,8 +278,11 @@ private fun LazyListScope.brandedSpotlightItem(
         EpisodePlayStateWrapper(episodeId = episode.id, playbackStateFlow = viewModel.episodePlaybackState) { playState ->
             val isResume = playState?.isResume == true
             val isCompleted = episode.id in indicators.completedEpisodeIds
+            val podcast = contentState.state.podcast
             val spotlight = BrandedSpotlight(
                 episode = episode,
+                episodePicture = brandedEpisodePicture(episode, podcast),
+                showPicture = brandedShowPicture(podcast),
                 actions = PodcastEpisodeActionsState(
                     isPlaying = playState?.isPlaying == true,
                     isResume = isResume,

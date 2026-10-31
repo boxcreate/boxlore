@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -30,7 +29,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,6 +39,9 @@ import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedCopyrightButton
 import cx.aswin.boxlore.feature.info.branded.BrandedDescription
 import cx.aswin.boxlore.feature.info.branded.BrandedDescriptionExtras
+import cx.aswin.boxlore.feature.info.branded.BrandedTag
+import cx.aswin.boxlore.feature.info.branded.BrandedTagShadow
+import cx.aswin.boxlore.feature.info.branded.BrandedTagStyle
 import cx.aswin.boxlore.feature.info.branded.boxShadow
 import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
@@ -182,26 +183,20 @@ private fun CaseNotes(description: BrandedDescription, fonts: ConspiracyFonts, m
 
 private val StripShadow = Color(0x33000000)
 
-/** The "boxlore pick" tag: a mustard label stuck on at a slight angle. */
+/** The tag: a mustard label stuck on at a slight angle, with boxlore's mark in the stamp's red. */
 @Composable
 internal fun ConspiracyTag(modifier: Modifier) {
     val palette = conspiracyPalette()
-    Row(
-        modifier
-            .rotate(-2f)
-            .height(28.dp)
-            .boxShadow(fill = ConspiracyColors.Mustard, color = palette.tagShadow, offsetY = 3.dp, blur = 8.dp, cornerRadius = 2.dp)
-            .padding(start = 9.dp, end = 12.dp)
-            .semantics(mergeDescendants = true) {},
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(painterResource(R.drawable.ic_branded_pick), null, Modifier.size(17.dp), tint = ConspiracyColors.Ink)
-        Spacer(Modifier.width(5.dp))
-        Text(
-            stringResource(R.string.branded_pick_tag),
-            style = brandedSansStyle(14.sp, 16.sp, weight = 600),
-            color = ConspiracyColors.Ink,
-            textAlign = TextAlign.Center,
-        )
-    }
+    BrandedTag(
+        BrandedTagStyle(
+            fill = ConspiracyColors.Mustard,
+            mark = ConspiracyColors.Stamp,
+            text = ConspiracyColors.Ink,
+            textStyle = brandedSansStyle(14.sp, 16.sp, weight = 600),
+            corner = 2.dp,
+            markHeight = 15.dp,
+            shadow = BrandedTagShadow(palette.tagShadow, offsetY = 3.dp, blur = 8.dp),
+        ),
+        modifier.rotate(-2f),
+    )
 }

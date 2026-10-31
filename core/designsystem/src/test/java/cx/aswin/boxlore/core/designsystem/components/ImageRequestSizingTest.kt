@@ -31,6 +31,20 @@ class ImageRequestSizingTest {
     }
 
     @Test
+    fun `IIIF image servers are asked for the width instead of the proxy`() {
+        // CBC's covers are 3000px, 12 MB originals: the proxy timed out fetching them and the app waited, then downloaded all of it.
+        val cbc = "https://i.cbc.ca/ais/37226386-9eb2-4b62-b08c-98581d575af8,1791234818762/full/max/0/default.jpg?imbypass=on"
+        assertEquals(
+            "https://i.cbc.ca/ais/37226386-9eb2-4b62-b08c-98581d575af8,1791234818762/full/400,/0/default.jpg?imbypass=on",
+            cbc.optimizedImageUrl(400),
+        )
+        assertEquals("https://iiif.example/img/full/800,/90/gray.png", "http://iiif.example/img/full/!1200,1200/90/gray.png".optimizedImageUrl(800))
+        assertEquals("https://iiif.example/img/full/800,/0/default.webp", "https://iiif.example/img/full/1600,/0/default.webp".optimizedImageUrl(800))
+        // A path that only looks partly like one still goes through the proxy.
+        assertTrue("https://example.com/full/max/cover.jpg".optimizedImageUrl(400).startsWith("https://wsrv.nl/"))
+    }
+
+    @Test
     fun `local covers still bypass network proxy`() {
         assertEquals("content://artwork/1", "content://artwork/1".optimizedImageUrl(400))
     }

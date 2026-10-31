@@ -1,12 +1,15 @@
 package cx.aswin.boxlore.feature.info.components
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Newspaper
+import androidx.compose.ui.unit.dp
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -76,5 +79,15 @@ class SubscriptionToolbarMotionTest {
         assertEquals(subscriptionAutomationReveal(0f), subscriptionAutomationReveal(-0.1f))
         assertEquals(subscriptionAutomationReveal(1f), subscriptionAutomationReveal(1.1f))
         assertEquals(subscriptionAutomationReveal(0f), subscriptionAutomationReveal(Float.NaN))
+    }
+
+    @Test
+    fun `Subscribe rests on its own shape and only morphs while pressed`() {
+        // Material's built-in morph could stay at the pressed shape after the tap that changed the
+        // subscription; the button's own morph is exactly its resting shape whenever it is not pressed.
+        assertSame(SubscribeButtonShape, subscribeButtonShape(0f))
+        assertSame(SubscribeButtonShape, subscribeButtonShape(-0.2f))
+        assertEquals(RoundedCornerShape(18.dp), subscribeButtonShape(1f))
+        assertEquals(RoundedCornerShape(topStart = 21.dp, topEnd = 13.dp, bottomEnd = 13.dp, bottomStart = 21.dp), subscribeButtonShape(0.5f))
     }
 }

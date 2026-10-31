@@ -31,6 +31,8 @@ android {
     }
 
     testOptions {
+        // Compose UI tests need the merged test manifest's activity.
+        unitTests.isIncludeAndroidResources = true
         unitTests.all {
             it.useJUnitPlatform()
         }
@@ -66,4 +68,6 @@ dependencies {
     testRuntimeOnly(libs.junit.platform.launcher)
     // The player scheme runs on Android colour utilities.
     testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.test.manifest)
 }

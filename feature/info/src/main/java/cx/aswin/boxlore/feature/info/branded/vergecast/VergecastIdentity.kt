@@ -1,7 +1,6 @@
 package cx.aswin.boxlore.feature.info.branded.vergecast
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,8 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +28,8 @@ import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedCopyrightButton
+import cx.aswin.boxlore.feature.info.branded.BrandedTag
+import cx.aswin.boxlore.feature.info.branded.BrandedTagStyle
 import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
 import cx.aswin.boxlore.feature.info.branded.skewX
 
@@ -70,20 +69,19 @@ internal fun VergecastIdentity(podcast: Podcast, modifier: Modifier) {
     }
 }
 
-/** The "boxlore pick" tag: a leaning lime label, like The Verge's stickers. */
+/** The tag: a leaning lime label, like The Verge's stickers, with boxlore's mark in ultraviolet. */
 @Composable
 internal fun VergecastTag(modifier: Modifier) {
-    Row(
-        modifier
-            .skewX(-8f)
-            .height(30.dp)
-            .background(VergecastColors.Lime, RoundedCornerShape(2.dp))
-            .padding(start = 9.dp, end = 12.dp)
-            .semantics(mergeDescendants = true) {},
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(painterResource(R.drawable.ic_branded_pick), null, Modifier.size(17.dp), tint = VergecastColors.Ink)
-        Spacer(Modifier.width(6.dp))
-        Text(stringResource(R.string.branded_pick_tag), style = brandedSansStyle(14.sp, 16.sp, weight = 600), color = VergecastColors.Ink)
-    }
+    BrandedTag(
+        BrandedTagStyle(
+            fill = VergecastColors.Lime,
+            mark = VergecastColors.Ultraviolet,
+            text = VergecastColors.Ink,
+            textStyle = brandedSansStyle(14.sp, 16.sp, weight = 600),
+            height = 30.dp,
+            corner = 2.dp,
+            markHeight = 15.dp,
+        ),
+        modifier.skewX(-8f),
+    )
 }

@@ -4,22 +4,27 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.PodrollItem
 import cx.aswin.boxlore.core.model.listenerShowIds
+import kotlinx.coroutines.flow.first
 
 /**
- * A boxlore pick drawn in the show's own style. A pack owns the identity block above the chips,
+ * A show picked by boxlore, drawn in its own style. A pack owns the identity block above the chips,
  * the tag in the top bar and the latest-episode spotlight. The chips, buttons and episode list
  * keep their usual layout and take only the pack's shapes and colours.
  */
@@ -51,7 +56,7 @@ internal interface BrandedShowPage {
     @Composable
     fun Header(podcast: Podcast, description: BrandedDescription, chips: @Composable () -> Unit, modifier: Modifier)
 
-    /** The "boxlore pick" tag centred in the top bar. */
+    /** The "Made for:" tag centred in the top bar ([BrandedTag]). */
     @Composable
     fun Tag(modifier: Modifier)
 
@@ -91,6 +96,19 @@ internal interface BrandedSubscribeMoment {
     /** Everything drawn over the Subscribe button, in its [shape]; [elapsedMillis] is read while drawing. */
     @Composable
     fun Overlay(elapsedMillis: () -> Float, labels: BrandedSubscribeLabels, style: BrandedToolbarStyle, shape: Shape, modifier: Modifier)
+}
+
+/**
+ * One haptic as the subscribe moment's own clock passes [atMillis], so it lands on its beat at any
+ * system animation speed.
+ */
+@Composable
+internal fun MomentHaptic(elapsedMillis: () -> Float, atMillis: Number, type: HapticFeedbackType = HapticFeedbackType.ContextClick) {
+    val haptics = LocalHapticFeedback.current
+    LaunchedEffect(Unit) {
+        snapshotFlow { elapsedMillis() >= atMillis.toFloat() }.first { it }
+        haptics.performHapticFeedback(type)
+    }
 }
 
 @Immutable

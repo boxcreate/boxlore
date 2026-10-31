@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -196,6 +197,7 @@ fun PlayerSheetScaffold(
     }
     val geometry = rememberPlayerSheetGeometry(sheetState, layout)
     val sheetInteractionSource = remember { MutableInteractionSource() }
+    val miniSwipe = rememberMiniPlayerSwipe()
     val isDragging by sheetInteractionSource.collectIsDraggedAsState()
     PlayerSheetInteractionEffect(
         active = isPlayerSheetInteractionActive(
@@ -238,6 +240,7 @@ fun PlayerSheetScaffold(
             scope = scope,
             haptics = haptics,
             sheetInteractionSource = sheetInteractionSource,
+            miniSwipe = miniSwipe,
             flows =
             PlayerSheetFlows(
                 nestedScrollConnection = sheetNestedScrollConnection,
@@ -308,6 +311,7 @@ private data class PlayerSheetResources(
     val haptics: androidx.compose.ui.hapticfeedback.HapticFeedback,
     val sheetInteractionSource: MutableInteractionSource,
     val flows: PlayerSheetFlows,
+    val miniSwipe: MiniPlayerSwipe,
 )
 
 private data class PlayerSheetFlows(
@@ -439,6 +443,7 @@ private fun PlayerSheetSurface(
                 .graphicsLayer { clip = false }
                 .height(bounds.height),
         ) {
+            PlayerSheetShadow(geometry.sheetElevation, adaptedGeometry, bounds, rotation, resources.miniSwipe)
             Box(
                 modifier =
                 Modifier
@@ -451,7 +456,6 @@ private fun PlayerSheetSurface(
                             adaptedGeometry.cookieFraction,
                             rotation.value,
                         )
-                        shadowElevation = geometry.sheetElevation.toPx() * (1f - bounds.cookieFraction)
                         clip = true
                     }
                     // The collapsed mini player paints its own split surface (with a see-through gap), so this
@@ -595,6 +599,7 @@ private fun MiniPlayerLayer(
                     resources.scope.launch { resources.userPrefs.markSwipeDismissTipSeen() }
                 },
             ),
+            swipe = resources.miniSwipe,
             modifier =
             Modifier
                 .height(geometry.miniPlayerHeight)
@@ -956,3 +961,45 @@ private fun resolvePlayerSheetSettleTarget(
 /** The sheet's backing is clear behind the resting mini player and fully filled within 2% of opening. */
 internal fun miniPlayerBackingFill(expansionFraction: Float): Float =
     if (expansionFraction.isFinite()) (expansionFraction / 0.02f).coerceIn(0f, 1f) else 0f
+
+/**
+ * The sheet's shadow, cast by its own layer behind the sheet so it can follow the mini player when the
+ * bar is swiped aside to Dismiss ([MiniPlayerSwipe.offsetPx], as far as the bar itself moves); the
+ * sheet stays put, so a shadow on it was left behind. It keeps the sheet's outline, elevation and fade.
+ */
+@Composable
+private fun PlayerSheetShadow(
+    elevation: Dp,
+    geometry: PlayerSheetGeometry,
+    bounds: AdaptivePlayerBounds,
+    rotation: State<Float>,
+    swipe: MiniPlayerSwipe,
+) {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(bounds.height)
+            .layout { measurable, constraints ->
+                // Only the part of the bar still inside the sheet shows; the rest is cut at the sheet's edge.
+                val span = miniPlayerShadowSpan(miniPlayerShadowOffset(swipe.offsetPx, geometry.compactFraction), constraints.maxWidth)
+                val placeable = measurable.measure(constraints.copy(minWidth = span.width, maxWidth = span.width))
+                layout(constraints.maxWidth, placeable.height) { placeable.place(span.start, 0) }
+            }
+            .graphicsLayer {
+                shape = AdaptiveMiniPlayerSurfaceShape(geometry.topCornerRadius, geometry.bottomCornerRadius, geometry.cookieFraction, rotation.value)
+                shadowElevation = elevation.toPx() * (1f - bounds.cookieFraction)
+                clip = true
+            },
+    )
+}
+
+/** How far the shadow moves with a swiped bar: as far as the bar, which stops following as it shrinks to the cookie. */
+internal fun miniPlayerShadowOffset(swipeOffsetPx: Float, compactFraction: Float): Float = swipeOffsetPx * (1f - compactFraction)
+
+/** Where the shadow sits along a sheet [width] pixels wide: under the swiped bar's part still inside the sheet. */
+internal data class MiniPlayerShadowSpan(val start: Int, val width: Int)
+
+internal fun miniPlayerShadowSpan(offsetPx: Float, width: Int): MiniPlayerShadowSpan {
+    val shift = offsetPx.roundToInt().coerceIn(-width, width)
+    return MiniPlayerShadowSpan(start = shift.coerceAtLeast(0), width = width - kotlin.math.abs(shift))
+}

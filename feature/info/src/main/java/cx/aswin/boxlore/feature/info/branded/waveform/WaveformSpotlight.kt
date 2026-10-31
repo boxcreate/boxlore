@@ -18,16 +18,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.progressSemantics
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
-import androidx.compose.material.icons.automirrored.rounded.PlaylistAddCheck
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.DownloadDone
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.FavoriteBorder
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,24 +30,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.info.R
+import cx.aswin.boxlore.feature.info.branded.BrandedEpisodeActions
 import cx.aswin.boxlore.feature.info.branded.BrandedSpotlight
 import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
 import cx.aswin.boxlore.feature.info.components.formatEpisodeDuration
 import cx.aswin.boxlore.feature.info.components.formatEpisodeRelativeDate
-import cx.aswin.boxlore.feature.info.components.rememberPodcastEpisodeControlClick
 import cx.aswin.boxlore.feature.info.sections.stripHtml
 import java.util.Locale
 
@@ -120,7 +105,7 @@ internal fun WaveformSpotlight(spotlight: BrandedSpotlight, modifier: Modifier) 
                     )
                 }
                 Spacer(Modifier.height(10.dp))
-                SpotlightActions(spotlight)
+                BrandedEpisodeActions(spotlight, WaveformColors.Actions)
             }
         }
     }
@@ -196,76 +181,4 @@ internal object WaveformBand {
 
     /** A bar is played once the listening point reaches its centre; nothing is played at 0. */
     fun isPlayed(centre: Float, width: Float, progress: Float): Boolean = progress > 0f && width > 0f && centre / width <= progress
-}
-
-@Composable
-private fun SpotlightActions(spotlight: BrandedSpotlight) {
-    val state = spotlight.actions
-    val callbacks = spotlight.callbacks
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        SpotlightToggle(
-            active = state.isLiked,
-            icon = if (state.isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-            label = stringResource(if (state.isLiked) R.string.episode_info_unlike else R.string.episode_info_like),
-            onClick = callbacks.onLike,
-        )
-        SpotlightToggle(
-            active = state.isDownloaded,
-            icon = if (state.isDownloaded) Icons.Rounded.DownloadDone else Icons.Rounded.Download,
-            label = stringResource(if (state.isDownloaded) R.string.episode_info_remove_download else R.string.episode_info_download),
-            onClick = callbacks.onDownload,
-            loading = state.isDownloading,
-        )
-        SpotlightToggle(
-            active = state.isQueued,
-            icon = if (state.isQueued) Icons.AutoMirrored.Rounded.PlaylistAddCheck else Icons.AutoMirrored.Rounded.PlaylistAdd,
-            label = stringResource(if (state.isQueued) R.string.episode_info_remove_queue else R.string.episode_info_add_queue),
-            onClick = callbacks.onQueue,
-        )
-        val playLabel = stringResource(
-            when {
-                state.isPlaying -> R.string.episode_info_pause
-                state.isResume -> R.string.episode_info_resume
-                else -> R.string.episode_info_play
-            },
-        )
-        Surface(
-            onClick = callbacks.onPlay,
-            shape = RoundedCornerShape(23.dp),
-            color = WaveformColors.Text,
-            contentColor = WaveformColors.Page,
-            modifier = Modifier.weight(1f).height(46.dp).semantics { contentDescription = playLabel },
-        ) {
-            Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                Icon(if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, Modifier.size(24.dp))
-                Spacer(Modifier.width(6.dp))
-                Text(playLabel, style = brandedSansStyle(16.sp, 20.sp, weight = 500), maxLines = 1)
-            }
-        }
-    }
-}
-
-@Composable
-private fun SpotlightToggle(active: Boolean, icon: ImageVector, label: String, onClick: () -> Unit, loading: Boolean = false) {
-    val debouncedClick = rememberPodcastEpisodeControlClick(onClick)
-    val downloading = stringResource(R.string.episode_info_downloading)
-    Surface(
-        onClick = debouncedClick,
-        enabled = !loading,
-        shape = RoundedCornerShape(23.dp),
-        color = if (active) WaveformColors.Text else WaveformColors.CardControl,
-        contentColor = if (active) WaveformColors.Page else WaveformColors.Text,
-        modifier = Modifier.size(width = 48.dp, height = 46.dp).semantics {
-            contentDescription = label
-            if (loading) stateDescription = downloading
-        },
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            if (loading) {
-                BoxLoreLoader.CircularWavy(size = 20.dp, color = WaveformColors.Text)
-            } else {
-                Icon(icon, null, Modifier.size(22.dp))
-            }
-        }
-    }
 }

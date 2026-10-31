@@ -19,6 +19,8 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -51,6 +53,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -64,6 +67,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.contrastColor
 import cx.aswin.boxlore.feature.info.EpisodeSort
@@ -73,7 +77,7 @@ import cx.aswin.boxlore.feature.info.branded.BrandedSubscribeMoment
 import cx.aswin.boxlore.feature.info.branded.BrandedToolbarStyle
 import cx.aswin.boxlore.feature.info.branded.LocalBrandedHeaderMotion
 import cx.aswin.boxlore.feature.info.branded.LocalBrandedPage
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -196,7 +200,8 @@ private fun rememberToolbarSubscribeMoment(isSubscribed: Boolean, moment: Brande
     LaunchedEffect(playing) {
         if (moment == null || !playing) return@LaunchedEffect
         launch {
-            delay(moment.revealDelayMillis.toLong())
+            // On the moment's own clock, which follows the system animation speed.
+            snapshotFlow { clock.value >= moment.revealDelayMillis }.first { it }
             revealReleased = true
         }
         clock.animateTo(moment.durationMillis.toFloat(), tween(moment.durationMillis, easing = LinearEasing))
@@ -252,6 +257,11 @@ private fun SubscribeButton(
     val labels = BrandedSubscribeLabels(subscribeLabel, stringResource(R.string.podcast_info_subscribed), compact)
     val moment = subscribe.moment
     val playing = subscribe.playing
+    // The button morphs to its pressed shape and back on its own clock: Material's built-in morph
+    // could be left at the pressed shape after the tap that changed the subscription.
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val pressedness by animateFloatAsState(if (pressed) 1f else 0f, MaterialTheme.motionScheme.defaultEffectsSpec(), label = "subscribePress")
     Box(
         modifier.height(48.dp).graphicsLayer {
             val nudge = if (playing) moment?.nudge(subscribe.clock.value) else null
@@ -262,10 +272,8 @@ private fun SubscribeButton(
     ) {
         Button(
             onClick = onClick,
-            shapes = ButtonDefaults.shapes(
-                shape = SubscribeButtonShape,
-                pressedShape = RoundedCornerShape(18.dp),
-            ),
+            shape = subscribeButtonShape(pressedness),
+            interactionSource = interactionSource,
             colors = ButtonDefaults.buttonColors(containerColor = colors.first, contentColor = colors.second),
             contentPadding = PaddingValues(horizontal = if (compact) 8.dp else 12.dp),
             // While a show's moment plays it draws the whole button, so the button's own press shape never peeks out.
@@ -450,6 +458,15 @@ private fun SubscriptionToggle(
 
 /** The Subscribe button's shape: rounded on the leading side, joined to the buttons after it. */
 internal val SubscribeButtonShape = RoundedCornerShape(topStart = 24.dp, topEnd = 8.dp, bottomEnd = 8.dp, bottomStart = 24.dp)
+
+/** The Subscribe shape [pressed] of the way (0 to 1) to the pressed shape, 18dp on every corner; exactly [SubscribeButtonShape] at rest. */
+internal fun subscribeButtonShape(pressed: Float): RoundedCornerShape {
+    val p = pressed.coerceIn(0f, 1f)
+    if (p == 0f) return SubscribeButtonShape
+    val leading = lerp(24.dp, 18.dp, p)
+    val trailing = lerp(8.dp, 18.dp, p)
+    return RoundedCornerShape(topStart = leading, topEnd = trailing, bottomEnd = trailing, bottomStart = leading)
+}
 
 /** The Subscribe or Subscribed label, shared with a show's own subscribe moment so its last frame matches. */
 @Composable

@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.feature.info.R
+import cx.aswin.boxlore.feature.info.branded.BrandedActionColors
 import cx.aswin.boxlore.feature.info.branded.BrandedCopyrightStyle
 
 /** The Verge's colours, from the approved design boards. */
@@ -16,6 +17,9 @@ internal object VergecastColors {
     val Lime = Color(0xFFDEFF15)
     val Ink = Color(0xFF0E0E10)
     val CardText = Color(0xFFE8E0FF)
+
+    /** The spotlight's buttons on its ultraviolet card. */
+    val Actions = BrandedActionColors(toggle = DeepUltraviolet, onToggle = Color.White, checked = Lime, onChecked = Ink, play = Lime, onPlay = Ink)
 
     val Dark = VergecastPalette(
         page = Ink,

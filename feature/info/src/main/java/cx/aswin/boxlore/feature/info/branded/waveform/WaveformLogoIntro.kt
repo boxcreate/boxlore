@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -15,13 +14,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.feature.info.branded.BrandedButtonNudge
 import cx.aswin.boxlore.feature.info.branded.BrandedSubscribeLabels
 import cx.aswin.boxlore.feature.info.branded.BrandedSubscribeMoment
 import cx.aswin.boxlore.feature.info.branded.BrandedToolbarStyle
+import cx.aswin.boxlore.feature.info.branded.MomentHaptic
 import cx.aswin.boxlore.feature.info.components.SubscriptionLabel
 import kotlinx.coroutines.delay
 
@@ -38,11 +36,7 @@ internal object WaveformLogoIntro : BrandedSubscribeMoment {
 
     @Composable
     override fun Overlay(elapsedMillis: () -> Float, labels: BrandedSubscribeLabels, style: BrandedToolbarStyle, shape: Shape, modifier: Modifier) {
-        val haptics = LocalHapticFeedback.current
-        LaunchedEffect(Unit) {
-            delay(WaveformMotion.HAPTIC_MILLIS.toLong())
-            haptics.performHapticFeedback(HapticFeedbackType.ContextClick)
-        }
+        MomentHaptic(elapsedMillis, WaveformMotion.HAPTIC_MILLIS)
         Box(modifier.clip(shape), contentAlignment = Alignment.Center) {
             Box(
                 Modifier.fillMaxSize().drawBehind {

@@ -114,8 +114,23 @@ data class MiniPlayerSwipeTip(
     val onDismissed: () -> Unit = {},
 )
 
+/**
+ * The mini player's sideways swipe to Dismiss. The player sheet casts the bar's shadow and moves it by
+ * [offsetPx], so the shadow slides with the bar instead of staying behind.
+ */
 @Stable
-private class MiniSwipeState {
+class MiniPlayerSwipe internal constructor() {
+    internal val state = MiniSwipeState()
+
+    /** How far the bar is swiped aside, in pixels. Read it while drawing, not while composing. */
+    val offsetPx: Float get() = state.offsetX.value
+}
+
+@Composable
+fun rememberMiniPlayerSwipe(): MiniPlayerSwipe = remember { MiniPlayerSwipe() }
+
+@Stable
+internal class MiniSwipeState {
     val offsetX = Animatable(0f)
     var showConfirmPill by mutableStateOf(false)
         private set
@@ -234,12 +249,13 @@ fun MiniPlayerV2(
     swipeTip: MiniPlayerSwipeTip = MiniPlayerSwipeTip(),
     morph: MiniPlayerMorph = MiniPlayerMorph(),
     modifier: Modifier = Modifier,
+    swipe: MiniPlayerSwipe = rememberMiniPlayerSwipe(),
 ) {
     val compactFraction = morph.compactFraction
     val density = LocalDensity.current
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
-    val swipeState = remember { MiniSwipeState() }
+    val swipeState = swipe.state
     val dismissThreshold = with(density) { 100.dp.toPx() }
     val controlsEnabled = compactFraction <= 0.001f && morph.expansionFraction <= 0.001f
     LaunchedEffect(controlsEnabled) {
@@ -330,7 +346,7 @@ private fun MiniPlayerCard(
         Modifier
             .fillMaxSize()
             .zIndex(1f)
-            .offset { IntOffset((swipeState.offsetX.value * (1f - compactFraction)).toInt(), 0) }
+            .offset { IntOffset(miniPlayerShadowOffset(swipeState.offsetX.value, compactFraction).toInt(), 0) }
             .graphicsLayer {
                 shape = AdaptiveMiniPlayerSurfaceShape(
                     chrome.miniPlayerTopCornerRadius,
