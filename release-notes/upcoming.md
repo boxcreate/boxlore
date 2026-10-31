@@ -29,7 +29,7 @@ Announcement title:
 ## New
 
 - Timeline lets you search your listening history, jump to any day and pick up where you left off. (#1207)
-- The Vergecast, Conspiracy Theories, Waveform, Crime Junkie, The Joe Rogan Experience, Rotten Mango and The Daily now have show pages in their own style, with a boxlore "Made for" tag, the latest episode up top and a short moment when you subscribe. (#1204)
+- The Vergecast, Conspiracy Theories, Waveform, Crime Junkie, The Joe Rogan Experience, Rotten Mango and The Daily now have show pages in their own style, with a boxlore "Made for" tag, the latest episode up top and a short moment when you subscribe. (#1204, #1219)
 - Show pages can list episodes straight from a show's own feed, keep them for offline viewing, and tell you when boxlore is showing its own episode list instead. Rolling out gradually. (#1184)
 - On New Episodes, swipe right to add an episode to your queue or left to mark it played, and pull down to check for new episodes. (#1198)
 - Listening in German, French, Spanish, Portuguese, Russian or Dutch? You can now turn English off in Library settings › Languages, and boxlore then adds English shows to recommendations, search and suggestions only when there aren't enough in your languages. (#1187, #1191)
@@ -62,13 +62,13 @@ Announcement title:
 - On foldables and tablets, and when Android closes boxlore in the background, a show's search, open dialogs and selected episodes stay where you left them. (#1174)
 - Full episodes that a show's feed labels as trailers show as normal episodes and can play next in Smart Queue. (#1204)
 - Episodes you queue from another show, or play from Downloads, appear under the right show in the player, even after you restart boxlore. (#1203)
-- Swiping the mini player aside to dismiss it no longer leaves its shadow behind.
+- Swiping the mini player aside to dismiss it no longer leaves its shadow behind. (#1219)
 - Downloaded episodes that the Smart Queue adds play from your download. (#1178)
 - boxlore no longer crashes on some tablets and foldables when you scroll to the end of the top row on Home. (#1193)
 - Marquee hero cards with Artwork or App theme cover colours show the cover clearly instead of a dark blur. (#1195)
-- Covers for CBC shows load right away instead of after a long wait.
+- Covers for CBC shows load right away instead of after a long wait. (#1219)
 - Home and Explore keep the picks and trending shows you already see when boxlore can't reach the server. (#1180)
 - Listening insights count every episode you've finished, started or liked, not just recent ones. (#1200)
 - If boxlore can't check Google Play for updates, it offers to open its Play Store page so you can update there. (#1197)
 - Clearing boxlore's data no longer opens a random episode on the next launch. (#1185)
-- On an episode's page, More from shows the show's cover instead of a placeholder, and its header stands out from the episodes below it.
+- On an episode's page, More from shows the show's cover instead of a placeholder, and its header stands out from the episodes below it. (#1219)
