@@ -5,8 +5,8 @@ import androidx.compose.ui.graphics.toArgb
 import com.materialkolor.hct.Hct
 import cx.aswin.boxlore.core.designsystem.echo.EchoAccents
 import cx.aswin.boxlore.core.designsystem.echo.EchoCharacterSpec
-import cx.aswin.boxlore.core.designsystem.echo.EchoMotionClip
 import cx.aswin.boxlore.core.designsystem.echo.EchoFace
+import cx.aswin.boxlore.core.designsystem.echo.EchoMotionClip
 import cx.aswin.boxlore.core.designsystem.echo.EchoReach
 import cx.aswin.boxlore.core.designsystem.echo.EchoScreenTrack
 import cx.aswin.boxlore.core.model.ListeningDayEpisode

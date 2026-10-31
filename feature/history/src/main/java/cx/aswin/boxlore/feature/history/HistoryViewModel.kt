@@ -125,7 +125,6 @@ class HistoryViewModel(
 
     private val selection = combine(filter, grouping, query, today) { f, g, q, t -> Selection(f, g, q, t) }
 
-
     val timelineState: StateFlow<TimelineUiState> =
         tab.whileOpen(HistoryTab.TIMELINE) {
             combine(listeningHistoryPort.observeFullHistoryTimeline(), listeningHistoryPort.observeListeningByDay(), selection) { history, listening, chosen ->

@@ -160,6 +160,7 @@ private class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE) : Lis
                 row("molasses", "The Great Molasses Flood", "Stuff You Missed in History Class", "hc", 26, 18, 45, completed = true),
             )
         }
+
     /** September (12 h 15 min, 2 h 05 min less than October), August (mostly history) and July (mostly science). */
     private val earlierMonths: List<ListeningDayEpisode> =
         (1..29 step 2).flatMap { day -> SHOW_SPLIT.map { (podcastId, share) -> boardDay(LocalDate.of(2026, 9, day), podcastId, (49 * 60_000L * share).toLong()) } } +
@@ -274,5 +275,4 @@ private class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE) : Lis
     private companion object {
         val SHOW_SPLIT = listOf("dd" to 0.29, "ct" to 0.22, "briefing_us" to 0.16, "ks" to 0.13, "hc" to 0.08, "vc" to 0.12)
     }
-
 }

@@ -27,8 +27,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -42,7 +42,6 @@ import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.feature.history.R
 import cx.aswin.boxlore.feature.history.insights.InsightsWording
-import cx.aswin.boxlore.feature.history.insights.perDayText
 import cx.aswin.boxlore.feature.history.timeline.TimelineTime
 import cx.aswin.boxlore.feature.history.timeline.currentLocale
 import cx.aswin.boxlore.feature.history.timeline.durationText
