@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Shown only when Cloudflare's check needs the listener to confirm they are a person before
-         boxlore's AI suggestions (Echo, topic and show suggestions) can continue. The check itself
-         (a checkbox drawn by Cloudflare) sits below the body. -->
-    <string name="session_check_title">Quick check</string>
-    <string name="session_check_body">Confirm you’re a person to keep getting suggestions picked for you.</string>
+         boxlore's AI suggestions (Echo, topic and show suggestions) can continue. Echo says the
+         title beside its picture (Echo is a robot, hence the joke); the check itself (a box drawn
+         by Cloudflare) sits below the body. -->
+    <string name="session_check_title">I’m the only robot allowed in this chat.</string>
+    <string name="session_check_body">Tap the box so Cloudflare can check you’re human, then I’ll keep finding shows for you.</string>
     <!-- Closes the check. Onboarding carries on without AI suggestions (topics or charts instead). -->
     <string name="session_check_skip">Skip</string>
 </resources>

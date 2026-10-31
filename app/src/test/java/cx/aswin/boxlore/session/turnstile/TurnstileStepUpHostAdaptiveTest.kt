@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -18,6 +19,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.echo.LocalEchoMotion
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFold
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldOrientation
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldState
@@ -51,7 +53,8 @@ import org.robolectric.annotation.GraphicsMode
  * sheet or the centered dialog as the window crosses the tablet gates (600dp wide, 480dp tall), the
  * 840dp expanded width, portrait/landscape and a half-opened fold, in both directions. Window
  * changes never count as a skip; Skip and an outside tap end the run once; the page is destroyed
- * exactly once when the run ends.
+ * exactly once when the run ends. In every presentation Echo stands beside its line and the check
+ * sits inside its card.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], qualifiers = "w1300dp-h1300dp-mdpi", application = Application::class)
@@ -89,7 +92,8 @@ class TurnstileStepUpHostAdaptiveTest {
         compose.setContent {
             BoxLoreTheme(darkTheme = false, dynamicColor = false) {
                 val layout = window.value
-                CompositionLocalProvider(LocalBoxloreWindowLayout provides layout) {
+                // Echo's idle never ends; its resting still keeps Compose idle for the checks.
+                CompositionLocalProvider(LocalBoxloreWindowLayout provides layout, LocalEchoMotion provides false) {
                     Box(Modifier.requiredSize(layout.widthDp.dp, layout.heightDp.dp)) {
                         TurnstileStepUpHost(
                             controller = controller,
@@ -113,6 +117,21 @@ class TurnstileStepUpHostAdaptiveTest {
         return result
     }
 
+    /** Echo stands to the left of its line, level with it, in every presentation. */
+    private fun assertEchoBesideItsLine(window: BoxloreWindowLayout) {
+        val echo = compose.onNodeWithTag(CHECK_ECHO_TAG).getUnclippedBoundsInRoot()
+        val line = compose.onNodeWithText(TITLE).getUnclippedBoundsInRoot()
+        assertTrue("$window: Echo is left of its line", echo.right <= line.left)
+        assertTrue("$window: Echo and its line share a row", echo.top < line.bottom && line.top < echo.bottom)
+    }
+
+    /** Cloudflare's check sits inside the sheet's card, not loose on the sheet. */
+    private fun assertCheckInsideItsCard(window: BoxloreWindowLayout) {
+        val card = compose.onNodeWithTag(CHALLENGE_CARD_TAG).getUnclippedBoundsInRoot()
+        val page = compose.onNodeWithTag(CHALLENGE_PAGE_TAG).getUnclippedBoundsInRoot()
+        assertTrue("$window: check inside its card", page.left >= card.left && page.right <= card.right && page.top >= card.top && page.bottom <= card.bottom)
+    }
+
     private fun askForInteraction() {
         compose.runOnIdle { controller.onPageMessage(1, """{"type":"interactive"}""") }
         compose.waitForIdle()
@@ -125,7 +144,7 @@ class TurnstileStepUpHostAdaptiveTest {
 
         compose.onNodeWithTag(INVISIBLE_PAGE_TAG, useUnmergedTree = true).assertExists()
         compose.onNodeWithTag(INVISIBLE_PAGE_TAG).assertDoesNotExist() // hidden from accessibility services
-        compose.onNodeWithText("Quick check").assertDoesNotExist()
+        compose.onNodeWithText(TITLE).assertDoesNotExist()
         assertEquals(listOf("https://api.boxlore.example/auth/turnstile?theme=light"), urls)
         compose.runOnIdle { controller.onPageMessage(1, """{"type":"token","value":"tok"}""") }
 
@@ -142,14 +161,16 @@ class TurnstileStepUpHostAdaptiveTest {
         val page = created.single()
         askForInteraction()
 
-        compose.onNodeWithText("Quick check").assertIsDisplayed()
+        compose.onNodeWithText(TITLE).assertIsDisplayed()
         compose.onNodeWithTag(CHALLENGE_PAGE_TAG).assertExists()
         transitions.forEach { next ->
             compose.runOnIdle { window.value = next }
             compose.waitForIdle()
-            compose.onNodeWithText("Quick check").assertIsDisplayed()
-            compose.onNodeWithText("Confirm you’re a person to keep getting suggestions picked for you.").assertIsDisplayed()
+            compose.onNodeWithText(TITLE).assertIsDisplayed()
+            compose.onNodeWithText(BODY).assertIsDisplayed()
             compose.onNodeWithText("Skip").assertIsDisplayed()
+            assertEchoBesideItsLine(next)
+            assertCheckInsideItsCard(next)
             assertSame("the same page moves between presentations", page, created.single())
             assertNotNull("$next: page attached", page.parent)
             assertFalse("$next: a window change is not a skip", result.isCompleted)
@@ -159,8 +180,27 @@ class TurnstileStepUpHostAdaptiveTest {
         compose.runOnIdle { controller.onPageMessage(1, """{"type":"token","value":"after-tap"}""") }
         assertEquals(TurnstileResult.Token("after-tap"), runBlocking { result.await() })
         compose.waitForIdle()
-        compose.onNodeWithText("Quick check").assertDoesNotExist()
+        compose.onNodeWithText(TITLE).assertDoesNotExist()
         assertEquals(listOf(page), destroyed)
+    }
+
+    @Test
+    @Config(qualifiers = "w740dp-h360dp-mdpi")
+    fun `on a short landscape phone the check and Skip stay on screen and Skip still works`() {
+        window.value = BoxloreWindowLayout(740f, 360f)
+        render()
+        val result = start()
+        askForInteraction()
+
+        val bottom = 360.dp
+        listOf(compose.onNodeWithTag(CHALLENGE_CARD_TAG), compose.onNodeWithText("Skip")).forEach { node ->
+            node.assertIsDisplayed()
+            assertTrue("fully inside the 360dp window", node.getUnclippedBoundsInRoot().bottom <= bottom)
+        }
+        assertEchoBesideItsLine(window.value)
+        compose.onNodeWithText("Skip").performClick()
+
+        assertEquals(TurnstileResult.Failed("cancelled"), runBlocking { result.await() })
     }
 
     @Test
@@ -173,7 +213,7 @@ class TurnstileStepUpHostAdaptiveTest {
 
         assertEquals(TurnstileResult.Failed("cancelled"), runBlocking { result.await() })
         compose.waitForIdle()
-        compose.onNodeWithText("Quick check").assertDoesNotExist()
+        compose.onNodeWithText(TITLE).assertDoesNotExist()
         assertEquals(1, destroyed.size)
     }
 
@@ -184,14 +224,19 @@ class TurnstileStepUpHostAdaptiveTest {
         val result = start()
         askForInteraction()
 
-        compose.onNodeWithText("Quick check").performClick()
+        compose.onNodeWithText(TITLE).performClick()
         compose.waitForIdle()
         assertFalse(result.isCompleted)
         compose.onNode(isDialog()).performTouchInput { click(Offset(16f, 16f)) }
 
         assertEquals(TurnstileResult.Failed("cancelled"), runBlocking { result.await() })
         compose.waitForIdle()
-        compose.onNodeWithText("Quick check").assertDoesNotExist()
+        compose.onNodeWithText(TITLE).assertDoesNotExist()
         assertEquals(1, destroyed.size)
+    }
+
+    private companion object {
+        const val TITLE = "I’m the only robot allowed in this chat."
+        const val BODY = "Tap the box so Cloudflare can check you’re human, then I’ll keep finding shows for you."
     }
 }

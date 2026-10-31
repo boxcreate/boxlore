@@ -73,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The orphan rematch after a feed read no longer moves trusted or ambiguous episode IDs. ([#1178](https://github.com/boxcreate/boxlore/pull/1178)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - Discovery (recommendations, Home bootstrap, trending, semantic search, curated vibes, curiosity, because-you-like, similar episodes, briefing metadata and chapters) uses the `/v2` routes. Recipe IDs in answers are translated to the phone's stored IDs (`DiscoveryEpisodeIds`, `RoomDiscoveryEpisodeIds`). Seeds and exclusions are sent as alias recipe IDs. Show search and typeahead stay on v1 `/search`. The `v2-discovery-off` switch restores the v1 routes. ([#1180](https://github.com/boxcreate/boxlore/pull/1180)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `FeedAddressUpdater` is now the only writer of a show's saved feed address. Every path, including restore, cloud pulls, auto-download and feed moves, resets feed validators, keeps the previous address and re-registers notifications. ([#1182](https://github.com/boxcreate/boxlore/pull/1182)) <!-- impact:user-impact-low --> <!-- copy:locked -->
+- `TurnstileStepUpSheet` shows Echo (onboarding's asking pose, on its stage) beside a new heading, explains the check in one line and wraps Cloudflare's check in a `surfaceContainerHigh` card. `TurnstileStepUpHostAdaptiveTest` checks Echo beside its line and the check inside its card in every presentation. ([#1205](https://github.com/boxcreate/boxlore/pull/1205)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `StickyEpisodeIdentity.catalogKey` trims with an explicit character set equal to Kotlin's `trim()` on Android, so catalog keys no longer depend on the runtime's Unicode tables. ([#1139](https://github.com/boxcreate/boxlore/pull/1139)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - New chart shows get their newest 5 episodes embedded first and the rest of their window after 7 days on the charts (`NEW_ENTRANT_EPISODES`, `NEW_ENTRANT_DEPTH_DAYS`). ([#1141](https://github.com/boxcreate/boxlore/pull/1141)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync records new episodes in the episode book, names their vectors by served ID, and no longer re-embeds an episode when Podcast Index changes its ID. ([#1147](https://github.com/boxcreate/boxlore/pull/1147)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
@@ -301,6 +302,11 @@ readme-copy:end pr=1202 -->
 ### Fixes
 - Episodes you add to your queue from another show, or play from Downloads, now appear under the right show in the player, including after you restart boxlore.
 readme-copy:end pr=1203 -->
+
+<!-- readme-copy:start pr=1205
+### Improvements
+- When boxlore needs a quick check that you're a person before Echo can suggest shows, Echo now asks for it in its own voice, and the check fits in with the rest of the screen.
+readme-copy:end pr=1205 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added
