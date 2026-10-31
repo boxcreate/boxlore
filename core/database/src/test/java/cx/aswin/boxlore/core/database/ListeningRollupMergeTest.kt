@@ -146,4 +146,17 @@ class ListeningRollupMergeTest {
         // Two sessions with no totals: their longest isn't known.
         assertEquals(0L, legacy.copy(sessionCount = 2).knownTotals().longestSessionMs)
     }
+
+    @Test
+    fun aSummaryWhoseLongestIsUnknownKeepsItUnknownWhenItCouldHideALongerSitting() {
+        // Two hours over two sessions before v41: one of them was at least an hour.
+        val legacy = ListeningRollupEntity(10L, "ep-1", "p", 120L * 60_000L, sessionCount = 2, completionCount = 0, lastListenedAt = 5L)
+        val short = session("short", 5L * 60_000L).copy(localDay = 10L, endedAt = 9L)
+
+        assertEquals(0L, ListeningRollupMerge.mergeSessionsIntoRollup(10L, "ep-1", listOf(short), legacy).totals.longestSessionMs)
+        val known = ListeningRollupEntity(10L, "ep-1", "p", 5L * 60_000L, sessionCount = 1, completionCount = 0, lastListenedAt = 9L)
+        assertEquals(0L, ListeningRollupMerge.sum(known, legacy).totals.longestSessionMs)
+        // Less listening than the known sitting: it can't hide a longer one.
+        assertEquals(5L * 60_000L, ListeningDayTotals.longestOf(5L * 60_000L, 5L * 60_000L, 0L, 4L * 60_000L))
+    }
 }

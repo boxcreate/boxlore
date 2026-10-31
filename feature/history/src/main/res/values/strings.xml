@@ -199,6 +199,10 @@
     <string name="history_ins_mostly_afternoon">Mostly afternoons</string>
     <string name="history_ins_mostly_evening">Mostly evenings</string>
     <string name="history_ins_mostly_night">Mostly nights</string>
+    <string name="history_ins_lead_morning">Mornings lead</string>
+    <string name="history_ins_lead_afternoon">Afternoons lead</string>
+    <string name="history_ins_lead_evening">Evenings lead</string>
+    <string name="history_ins_lead_night">Nights lead</string>
     <string name="history_ins_all_through_day">All through the day</string>
     <!-- Legend line, e.g. "Evening 46%". -->
     <string name="history_ins_part_share">%1$s %2$d%%</string>

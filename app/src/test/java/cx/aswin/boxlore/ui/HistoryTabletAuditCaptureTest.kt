@@ -146,7 +146,7 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
 }
 
 /** The boards' history: Oct 26 to Oct 30, 2026, with their shows, times and progress. */
-private class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE) : ListeningHistoryPort {
+internal class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE) : ListeningHistoryPort {
     private val history =
         if (empty) {
             emptyList()

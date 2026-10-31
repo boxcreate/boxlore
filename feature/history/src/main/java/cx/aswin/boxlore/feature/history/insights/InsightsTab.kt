@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -27,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -49,10 +52,17 @@ internal data class InsightsCallbacks(
     val onReviewInProgress: () -> Unit,
 )
 
+/** What the Insights list shows around its cards: the monthly story's entry card above, the earlier months below. */
+internal class InsightsStorySlots(val header: LazyListScope.() -> Unit = {}, val footer: LazyListScope.() -> Unit = {})
+
+/** The Insights list's test tag. */
+const val INSIGHTS_LIST_TAG = "insights_list"
+
 /**
  * The Insights tab: stories, not stat tiles (boards A4 and A5); while boxlore has timed fewer
- * than five days of listening, what history alone can say (A6). [header] and [footer] hold the
- * monthly story's entry card and the earlier months.
+ * than five days of listening, what history alone can say (A6). [stories] hold the monthly
+ * story's entry card and the earlier months; [listState] is held by the screen, so the
+ * tab keeps its place while Timeline is open.
  */
 @Composable
 internal fun InsightsTab(
@@ -61,19 +71,20 @@ internal fun InsightsTab(
     today: LocalDate,
     callbacks: InsightsCallbacks,
     contentPadding: PaddingValues,
-    header: LazyListScope.() -> Unit = {},
-    footer: LazyListScope.() -> Unit = {},
+    listState: LazyListState = rememberLazyListState(),
+    stories: InsightsStorySlots = InsightsStorySlots(),
 ) {
     LazyColumn(
+        state = listState,
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().testTag(INSIGHTS_LIST_TAG),
     ) {
-        if (content.hasEnoughTiming) header()
+        if (content.hasEnoughTiming) stories.header(this)
         item(key = "period") { InsightsPeriodSelector(period, callbacks.onPeriodChange) }
         if (content.hasEnoughTiming) {
             fullInsights(content, period, today, callbacks)
-            footer()
+            stories.footer(this)
         } else {
             earlyInsights(content.early)
         }

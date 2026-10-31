@@ -52,6 +52,16 @@ data class ListeningDayTotals(
     )
 
     companion object {
+        /**
+         * The longest sitting of two parts of a day and episode: the longer known one, or 0 (not known)
+         * when a part whose longest isn't known holds more listening than that, so could hide a longer one.
+         */
+        fun longestOf(aLongestMs: Long, aConsumedMs: Long, bLongestMs: Long, bConsumedMs: Long): Long {
+            val known = maxOf(aLongestMs, bLongestMs)
+            val hidden = (aLongestMs == 0L && aConsumedMs > known) || (bLongestMs == 0L && bConsumedMs > known)
+            return if (hidden) 0L else known
+        }
+
         /** An episode counts as a new release for a week after it came out. */
         const val NEW_RELEASE_WINDOW_MS = 7L * 24 * 60 * 60 * 1_000
 

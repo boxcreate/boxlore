@@ -58,6 +58,7 @@ import cx.aswin.boxlore.core.designsystem.share.ShareManager
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.feature.history.insights.InsightsCallbacks
+import cx.aswin.boxlore.feature.history.insights.InsightsStorySlots
 import cx.aswin.boxlore.feature.history.insights.InsightsTab
 import cx.aswin.boxlore.feature.history.story.StoryDialog
 import cx.aswin.boxlore.feature.history.story.StoryEntryCard
@@ -98,6 +99,9 @@ fun HistoryScreen(
     var showCalendar by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val timelineListState = rememberLazyListState()
+    // Insights keeps its place and its Earlier stories while Timeline is open, and through rotation and resizing.
+    val insightsListState = rememberLazyListState()
+    var earlierExpanded by rememberSaveable { mutableStateOf(false) }
     // The large title collapses as either tab scrolls, as before the redesign.
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -149,7 +153,7 @@ fun HistoryScreen(
                             navigation = HistoryNavigation(onEpisodeClick, onExploreClick, onPlayEpisode, onOpenShow),
                             onOpenCalendar = { showCalendar = true },
                         )
-                    HistoryTab.INSIGHTS -> HistoryInsightsContent(insights, viewModel, bottom)
+                    HistoryTab.INSIGHTS -> HistoryInsightsContent(insights, viewModel, bottom, insightsListState, earlierExpanded) { earlierExpanded = it }
                 }
             }
             HistoryTabs(
@@ -343,9 +347,14 @@ private fun HistoryLoading() {
 
 /** The Insights tab: the period's stories, or what history alone can say while timing fills in. */
 @Composable
-private fun HistoryInsightsContent(state: InsightsUiState, viewModel: HistoryViewModel, bottomPadding: androidx.compose.ui.unit.Dp,) {
-    // Earlier stories stay folded or open through rotation, resizing and recreation.
-    var earlierExpanded by rememberSaveable { mutableStateOf(false) }
+private fun HistoryInsightsContent(
+    state: InsightsUiState,
+    viewModel: HistoryViewModel,
+    bottomPadding: androidx.compose.ui.unit.Dp,
+    listState: androidx.compose.foundation.lazy.LazyListState,
+    earlierExpanded: Boolean,
+    onExpandEarlier: (Boolean) -> Unit,
+) {
     when (state) {
         InsightsUiState.Loading -> HistoryLoading()
         is InsightsUiState.Ready ->
@@ -363,14 +372,18 @@ private fun HistoryInsightsContent(state: InsightsUiState, viewModel: HistoryVie
                     onReviewInProgress = viewModel::showAllInProgress,
                 ),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = bottomPadding + 16.dp),
-                header = {
-                    state.stories.latest?.let { latest ->
-                        item(key = "story") { StoryEntryCard(latest, state.stories.latestIsNew, onOpen = { viewModel.openStory(latest.month) }) }
-                    }
-                },
-                footer = {
-                    earlierStories(state.stories.earlier, earlierExpanded, onExpand = { earlierExpanded = it }, onOpen = { viewModel.openStory(it.month) })
-                },
+                listState = listState,
+                stories =
+                InsightsStorySlots(
+                    header = {
+                        state.stories.latest?.let { latest ->
+                            item(key = "story") { StoryEntryCard(latest, state.stories.latestIsNew, onOpen = { viewModel.openStory(latest.month) }) }
+                        }
+                    },
+                    footer = {
+                        earlierStories(state.stories.earlier, earlierExpanded, onExpand = onExpandEarlier, onOpen = { viewModel.openStory(it.month) })
+                    },
+                ),
             )
     }
 }

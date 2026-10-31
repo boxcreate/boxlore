@@ -419,7 +419,7 @@
         <item>{show} did the longest set.</item>
         <item>Top spot goes to comedy. Cue the rimshot.</item>
         <item>Comedy topped the bill. No heckling from me.</item>
-        <item>Stand-up on top. I\'m sitting this one out.</item>
+        <item>Comedy on top. I\'m sitting this one out.</item>
     </string-array>
     <string-array name="history_echo_top_genre_science">
         <item>Hypothesis confirmed: science on top.</item>
@@ -646,29 +646,29 @@
         <item>Phone speaker on top. A loudspeaker, quietly winning.</item>
     </string-array>
     <string-array name="history_echo_how_output_cast">
-        <item>Mostly Cast. Podcasts got the big screen.</item>
+        <item>Mostly Cast. The phone handed the show over.</item>
         <item>Cast led. Your episodes had a bigger stage.</item>
         <item>Cast on top. What a cast this month.</item>
         <item>Mostly Cast. Broadcast, but make it pod.</item>
         <item>Cast led. I\'d say the casting was spot on.</item>
         <item>Mostly Cast. Podcasts went prime time.</item>
-        <item>Cast on top. Big-speaker sound, small-box robot.</item>
+        <item>Cast on top. Sent elsewhere, still on my charts.</item>
         <item>Mostly Cast. Cast away, but not lost.</item>
         <item>Cast took most of it. Casting call answered.</item>
         <item>Cast led. Your phone passed the mic.</item>
-        <item>Cast led. Hook, line and speaker.</item>
+        <item>Cast led. Hook, line and sinker.</item>
         <item>Cast led. A podcast, cast. The name finally fits.</item>
     </string-array>
     <string-array name="history_echo_how_output_mix">
         <item>No output ran the show. A true ensemble cast.</item>
-        <item>{output} edged ahead. Quite the mixtape.</item>
+        <item>Close outputs, closer mix. Quite the mixtape.</item>
         <item>Shared outputs, no headliner. A festival lineup.</item>
         <item>Split across outputs. Stereo, and then some.</item>
         <item>Outputs in the mix. I do love a good remix.</item>
         <item>No clear winner. The sound got around.</item>
         <item>All roads led to audio this month.</item>
         <item>A shared stage this month. No solo act.</item>
-        <item>{output} on top, not by much. A close mix.</item>
+        <item>{output} and friends, all close. A tight mix.</item>
         <item>Spread across outputs. A balanced EQ.</item>
         <item>No output hogged the mic this month.</item>
         <item>Outputs took turns. Very polite, very stereo.</item>
@@ -1000,13 +1000,13 @@
         <item>A {sitting} sitting. That\'s a double album.</item>
         <item>{sitting} in a row. The pause button took a nap.</item>
         <item>A marathon sitting: {sitting}. I\'d need a recharge.</item>
-        <item>{sitting} uninterrupted. My battery bar is jealous.</item>
+        <item>{sitting} of episode in one go. My battery is jealous.</item>
         <item>Longest sitting: {sitting}. A proper long-player.</item>
         <item>{sitting} at a stretch. Feature-length listening.</item>
-        <item>Uninterrupted airtime: {sitting}.</item>
+        <item>Longest single listen: {sitting} of episode.</item>
         <item>A {sitting} session. The record kept spinning.</item>
-        <item>{sitting} nonstop. Even my firmware took a break.</item>
-        <item>Play pressed, then {sitting} of not pressing pause.</item>
+        <item>{sitting} in one listen. Even my firmware took a break.</item>
+        <item>One press of play, {sitting} of episode.</item>
         <item>{sitting} in a sitting. My legs fell asleep for you.</item>
     </string-array>
     <string-array name="history_echo_records_short_sittings">

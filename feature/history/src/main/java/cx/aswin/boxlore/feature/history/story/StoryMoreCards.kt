@@ -291,7 +291,8 @@ internal fun StoryShareArt(story: MonthStory, palette: StoryPalette, modifier: M
     val locale = currentLocale()
     val ink = palette.deep
     val month = StoryText.monthName(story.month, locale)
-    val typeLabel = story.type?.let { typeName(it) }
+    // Only when the story has its listening type card: too little timed listening calls no type.
+    val typeLabel = story.type?.takeIf { StoryCard.TYPE in StoryLogic.cards(story) }?.let { typeName(it) }
     val where = story.how?.outputs?.firstOrNull()?.takeIf { it.share >= WHERE_PILL_FROM }?.let { whereHeadline(it) }
     val description = stringResource(R.string.history_story_share_card_label, month, durationText(story.totalMs), story.topShow?.name.orEmpty(), typeLabel.orEmpty())
     Box(modifier.size(StoryShareSpot.WIDTH.dp, StoryShareSpot.HEIGHT.dp).clip(RoundedCornerShape(30.dp)).background(palette.onContainer).clearAndSetSemantics { contentDescription = description }) {

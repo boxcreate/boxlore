@@ -228,6 +228,25 @@ class InsightsLogicTest {
     }
 
     @Test
+    fun aPartOfTheDayIsMostlyOnlyWithHalfTheListening() {
+        assertEquals(DayPart.EVENING to false, InsightsWording.partLead(listOf(PartShare(DayPart.EVENING, 0.35f), PartShare(DayPart.MORNING, 0.25f))))
+        assertEquals(DayPart.EVENING to true, InsightsWording.partLead(listOf(PartShare(DayPart.EVENING, 0.5f))))
+        assertNull(InsightsWording.partLead(listOf(PartShare(DayPart.EVENING, 0.34f))))
+    }
+
+    @Test
+    fun sharesOfNewAndLoreCountListeningOnAnOutputAndroidDoesNotName() {
+        // 30 minutes on the speaker, started by hand, of an older episode; 30 on an unnamed output, new and from Lore.
+        val speaker = day(20, "a", 30).copy(speakerMs = 30 * MINUTE)
+        val unnamed = day(21, "b", 30).copy(newReleaseMs = 30 * MINUTE, loreMs = 30 * MINUTE)
+
+        val sources = build(listOf(speaker, unnamed)).sources!!
+
+        assertEquals(0.5f, sources.newShare, 0.001f)
+        assertEquals(0.5f, sources.loreShare, 0.001f)
+    }
+
+    @Test
     fun aLongestSittingAnOlderDayCouldHaveBeatenIsLeftOut() {
         // 180 minutes an older build summed from several sessions (its longest unknown), and a known 10-minute sitting.
         val known = day(21, "b", 10, longest = 10)

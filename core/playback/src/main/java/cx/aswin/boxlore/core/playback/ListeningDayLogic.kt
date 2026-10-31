@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.playback
 
+import cx.aswin.boxlore.core.database.ListeningDayTotals
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.ListeningSessionDay
 import cx.aswin.boxlore.core.model.ListeningDayEpisode
@@ -60,7 +61,8 @@ internal object ListeningDayLogic {
         afternoonMs = a.afternoonMs + b.afternoonMs,
         eveningMs = a.eveningMs + b.eveningMs,
         nightMs = a.nightMs + b.nightMs,
-        longestSessionMs = maxOf(a.longestSessionMs, b.longestSessionMs),
+        // Not known when a part without a known longest could hold a longer sitting.
+        longestSessionMs = ListeningDayTotals.longestOf(a.longestSessionMs, a.consumedMs, b.longestSessionMs, b.consumedMs),
         speakerMs = a.speakerMs + b.speakerMs,
         headphonesMs = a.headphonesMs + b.headphonesMs,
         bluetoothMs = a.bluetoothMs + b.bluetoothMs,

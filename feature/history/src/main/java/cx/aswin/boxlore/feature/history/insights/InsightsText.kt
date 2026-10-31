@@ -30,6 +30,12 @@ object InsightsWording {
     fun nearestFraction(rate: Float): Pair<Int, Int> = FRACTIONS.minBy { (a, b) -> abs(a.toFloat() / b - rate) }
 
     fun percent(share: Float): Int = (share * 100).roundToInt()
+
+    /** A part of the day leads from this share; from [MOST_FROM], it's most of the listening. */
+    const val PART_LEADS_FROM = 0.35f
+
+    /** The part of the day that leads and whether it has most of the listening; null when none leads. */
+    fun partLead(parts: List<PartShare>): Pair<DayPart, Boolean>? = parts.firstOrNull()?.takeIf { it.share >= PART_LEADS_FROM }?.let { it.part to (it.share >= MOST_FROM) }
 }
 
 @Composable
@@ -91,17 +97,16 @@ internal fun partName(part: DayPart): String = stringResource(
     },
 )
 
-/** "Mostly evenings", or "All through the day" when no part leads. */
+/** "Mostly evenings" with half the listening or more, "Evenings lead" with less, or "All through the day" when no part leads. */
 @Composable
 internal fun mostlyText(parts: List<PartShare>): String {
-    val top = parts.firstOrNull()
-    if (top == null || top.share < 0.35f) return stringResource(R.string.history_ins_all_through_day)
+    val (part, most) = InsightsWording.partLead(parts) ?: return stringResource(R.string.history_ins_all_through_day)
     return stringResource(
-        when (top.part) {
-            DayPart.MORNING -> R.string.history_ins_mostly_morning
-            DayPart.AFTERNOON -> R.string.history_ins_mostly_afternoon
-            DayPart.EVENING -> R.string.history_ins_mostly_evening
-            DayPart.NIGHT -> R.string.history_ins_mostly_night
+        when (part) {
+            DayPart.MORNING -> if (most) R.string.history_ins_mostly_morning else R.string.history_ins_lead_morning
+            DayPart.AFTERNOON -> if (most) R.string.history_ins_mostly_afternoon else R.string.history_ins_lead_afternoon
+            DayPart.EVENING -> if (most) R.string.history_ins_mostly_evening else R.string.history_ins_lead_evening
+            DayPart.NIGHT -> if (most) R.string.history_ins_mostly_night else R.string.history_ins_lead_night
         },
     )
 }

@@ -19,7 +19,7 @@ internal object InsightsDetails {
      */
     fun hasEnough(inPeriod: List<ListeningDayEpisode>): Boolean {
         val total = inPeriod.sumOf { it.consumedMs }
-        val known = inPeriod.sumOf { it.outputKnownMs }
+        val known = inPeriod.sumOf { detailedMs(it) }
         return total > 0L && known >= DETAILS_MIN_MS && known >= total * DETAILS_SHARE
     }
 
@@ -41,7 +41,7 @@ internal object InsightsDetails {
     /** Of the listening with known details: new episodes, Lore and the Smart Queue; null without enough details. */
     fun sources(inPeriod: List<ListeningDayEpisode>): ListeningSources? {
         if (!hasEnough(inPeriod)) return null
-        val known = inPeriod.sumOf { it.outputKnownMs }.toFloat()
+        val known = inPeriod.sumOf { detailedMs(it) }.toFloat()
         fun share(ms: Long) = (ms / known).coerceAtMost(1f)
         return ListeningSources(
             newShare = share(inPeriod.sumOf { it.newReleaseMs }),
@@ -49,4 +49,11 @@ internal object InsightsDetails {
             smartQueueShare = share(inPeriod.sumOf { it.smartQueueMs }),
         )
     }
+
+    /**
+     * How much of a day and episode was recorded with details, as far as its totals tell: the time on a
+     * known output, or more where Lore, the Smart Queue or new releases account for more (a session on
+     * an output Android doesn't name still records what started it and how new it was).
+     */
+    private fun detailedMs(row: ListeningDayEpisode): Long = maxOf(row.outputKnownMs, row.newReleaseMs, row.loreMs + row.smartQueueMs).coerceAtMost(row.consumedMs)
 }
