@@ -47,7 +47,6 @@ import cx.aswin.boxlore.BuildConfig
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.component.AppLoreNavigationActionSize
 import cx.aswin.boxlore.core.designsystem.component.AppNavigationBarHorizontalInset
-import cx.aswin.boxlore.core.designsystem.component.BoxLoreNavigationBar
 import cx.aswin.boxlore.core.designsystem.component.LocalAdaptivePlayerCompactProgress
 import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
@@ -55,7 +54,6 @@ import cx.aswin.boxlore.core.designsystem.component.PredictiveBackWrapper
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.designsystem.component.appMiniPlayerTopOffset
 import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
-import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalSystemNavigationInset
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
@@ -86,11 +84,11 @@ import cx.aswin.boxlore.navigation.NavSettingsState
 import cx.aswin.boxlore.navigation.dispatchPushAction
 import cx.aswin.boxlore.navigation.externalPushActionIntent
 import cx.aswin.boxlore.navigation.isLaunchLandingBackRoute
-import cx.aswin.boxlore.navigation.navigateBottomNavTab
 import cx.aswin.boxlore.navigation.navigateHomeFromLaunchSubscriptions
 import cx.aswin.boxlore.navigation.resolveBottomNavTab
 import cx.aswin.boxlore.navigation.resolveIsFromOnboarding
 import cx.aswin.boxlore.navigation.resolveLaunchSubscriptionsBack
+import cx.aswin.boxlore.navigation.selectBottomNavTab
 import cx.aswin.boxlore.navigation.shouldShowBottomNav
 import cx.aswin.boxlore.navigation.shouldShowPlayerChrome
 import cx.aswin.boxlore.navigation.snapshotNavBackStack
@@ -732,7 +730,7 @@ fun BoxLoreAppRoot(
                 playerAllowed = shouldShowPlayerChrome(isAccountActive, isFromOnboardingRoute, isSupportActive, isModeSwitching),
                 hasEpisode = currentEpisode != null,
                 activeTab = activeTab,
-                onNavigateTab = { navController.navigateBottomNavTab(it, activeTab) },
+                onNavigateTab = { tab, revealedPrimary -> navController.selectBottomNavTab(tab, activeTab, revealedPrimary) },
                 content = TabletShellContent(
                     keyboardActions = PlaybackKeyboardActions(playbackRepository::togglePlayPause, playbackRepository::skipBackward, playbackRepository::skipForward),
                     details = { navigationContent(tabletNavigation.detail, true) },
@@ -827,36 +825,8 @@ fun BoxLoreAppRoot(
                 }
 
                 if (showBottomNav && !windowLayout.usesTabletLayout) {
-                    val backStack = remember(navBackStackEntry) { snapshotNavBackStack(navController) }
-                    val activeTab =
-                        resolveBottomNavTab(
-                            currentRoute = currentRoute,
-                            backStack = backStack,
-                        )
-                    cx.aswin.boxlore.core.designsystem.theme.ArtworkNavigationTheme(
-                        navigationColors,
-                    ) {
-                    BoxLoreNavigationBar(
-                        currentRoute = activeTab,
-                        onNavigate = { route ->
-                            tabletNavigation.revealPrimary()
-                            navController.navigateBottomNavTab(route, activeTab)
-                        },
-                        style = navigationStyle,
-                        initialContentReady = isInitialHomeContentReady,
-                        compactProgress = adaptivePlayer.progress,
-                        modifier =
-                        Modifier
-                            .align(Alignment.BottomCenter)
-                            .let { navigationModifier ->
-                                if (navigationStyleUsesExternalSystemNavigationInset(navigationStyle)) {
-                                    navigationModifier.padding(bottom = systemNavBarHeight)
-                                } else {
-                                    navigationModifier
-                                }
-                            },
-                    )
-                    }
+                    val activeTab = resolveBottomNavTab(currentRoute, remember(navBackStackEntry) { snapshotNavBackStack(navController) })
+                    PhoneBottomNavigation(navController, tabletNavigation, activeTab, navigationStyle, navigationColors, isInitialHomeContentReady, adaptivePlayer.progress)
                 }
 
                 AppPlaybackNotices(

@@ -53,6 +53,8 @@ class TabletAppShellTest {
     private val allowed = mutableStateOf(true)
     private val navigationVisible = mutableStateOf(true)
     private var paneBounds: cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds? = null
+    /** Each rail tap with what the shell reported: whether it only closed a detail covering the primary pane. */
+    private val tabTaps = mutableListOf<Pair<String, Boolean>>()
     private lateinit var navigation: TabletDetailNavigation
     private lateinit var restoration: StateRestorationTester
 
@@ -178,6 +180,8 @@ class TabletAppShellTest {
         advance()
         assertEquals("explore", navigation.primary.currentDestination?.route)
         fixture.compose.onNodeWithText("Show detail rss:show/test").assertExists()
+        // Beside browsing, the detail covers nothing: the rail reports no reveal.
+        assertEquals(listOf("explore" to false), tabTaps)
 
         fixture.compose.runOnIdle { window.value = BoxloreWindowLayout(840f, 1_280f) }
         advance()
@@ -189,6 +193,10 @@ class TabletAppShellTest {
         assertEquals(TabletContextRoot, navigation.detail.currentDestination?.route)
         fixture.compose.onNodeWithText("Show detail rss:show/test").assertDoesNotExist()
         fixture.compose.onNodeWithText("Primary library").assertIsDisplayed()
+        // The covering detail closed, so that tap only revealed the pane; the next tap is a plain one.
+        fixture.compose.onNodeWithText("Explore").performClick()
+        advance()
+        assertEquals(listOf("explore" to false, "library" to true, "explore" to false), tabTaps)
 
         // Compact windows use the app's bottom bar, which calls the same reveal before navigating.
         fixture.compose.runOnIdle { window.value = BoxloreWindowLayout(1_280f, 800f) }
@@ -274,7 +282,10 @@ class TabletAppShellTest {
                             allowed.value,
                             playing.value,
                             "home",
-                            { tab -> navigation.primary.navigate(tab) },
+                            { tab, revealedPrimary ->
+                                tabTaps += tab to revealedPrimary
+                                navigation.primary.navigate(tab)
+                            },
                             TabletShellContent(
                             primary = {
                                 paneBounds = cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds.current

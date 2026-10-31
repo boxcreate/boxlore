@@ -32,7 +32,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,14 +66,10 @@ import cx.aswin.boxlore.feature.history.story.earlierStories
 import cx.aswin.boxlore.feature.history.timeline.JumpToDaySheet
 import cx.aswin.boxlore.feature.history.timeline.JumpToDayState
 import cx.aswin.boxlore.feature.history.timeline.TimelineEpisodeActions
-import cx.aswin.boxlore.feature.history.timeline.TimelineFilter
-import cx.aswin.boxlore.feature.history.timeline.TimelineGrouping
 import cx.aswin.boxlore.feature.history.timeline.TimelineTab
 import cx.aswin.boxlore.feature.history.timeline.TimelineTabCallbacks
 import cx.aswin.boxlore.feature.history.timeline.currentLocale
 import cx.aswin.boxlore.feature.history.timeline.durationText
-import cx.aswin.boxlore.feature.history.timeline.timelineIndexFor
-import kotlinx.coroutines.flow.first
 
 /**
  * Listening history: an Insights tab, which it opens on, and a Timeline tab (search, Jump back in,
@@ -106,16 +101,7 @@ fun HistoryScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     HistoryScreenEffects(viewModel, snackbarHostState)
-    LaunchedEffect(viewModel) {
-        viewModel.scrollRequests.collect { date ->
-            // Wait for the reset to every episode by day before working out where the day is.
-            val ready =
-                viewModel.timelineState.first {
-                    it is TimelineUiState.Ready && it.filter == TimelineFilter.ALL && it.grouping == TimelineGrouping.DAYS && it.query.isEmpty()
-                } as TimelineUiState.Ready
-            timelineIndexFor(ready.entries, date)?.let { timelineListState.animateScrollToItem(it) }
-        }
-    }
+    TimelineScrollEffect(viewModel, timelineListState)
 
     Scaffold(
         modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),

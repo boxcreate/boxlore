@@ -49,6 +49,7 @@ Announcement title:
 - After importing your library or picking shows in search, choose whether to see similar shows or go straight to Home, and skip to Home anytime while suggestions load. (#1194)
 - When boxlore needs a quick check that you're a person before Echo can suggest shows, Echo asks for it in its own voice, and the check fits in with the rest of the screen. (#1205)
 - New-episode notifications arrive sooner after a release. (#1151)
+- On Explore, tap the Explore tab again to start searching. From a show or episode you opened in Explore, the first tap takes you back to Explore.
 
 ## Fixed
 
