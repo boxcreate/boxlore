@@ -118,7 +118,7 @@ private fun CopyrightPopup(style: BrandedCopyrightStyle, copyright: String, onDi
             Box(
                 Modifier
                     .align(if (above) Alignment.BottomStart else Alignment.TopStart)
-                    .offset(x = style.caretCentre - 6.dp, y = if (above) 5.dp else (-5).dp)
+                    .offset { IntOffset((style.caretCentre - 6.dp).roundToPx(), (if (above) 5.dp else (-5).dp).roundToPx()) }
                     .size(12.dp)
                     .rotate(45f)
                     .background(style.popup, RoundedCornerShape(2.dp))

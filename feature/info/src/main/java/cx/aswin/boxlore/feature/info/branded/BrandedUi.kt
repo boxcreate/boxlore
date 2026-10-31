@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.info.branded
 
+import android.annotation.SuppressLint
 import android.graphics.Paint
 import androidx.annotation.FontRes
 import androidx.compose.material3.Text
@@ -141,6 +142,7 @@ internal fun rememberVariableWeights(@FontRes res: Int, vararg weights: Int): Va
  * draw the font's default weight instead.
  */
 @OptIn(ExperimentalTextApi::class)
+@SuppressLint("LocalContextResourcesRead") // A bundled font file is the same in every configuration.
 @Composable
 internal fun rememberVariableFont(@FontRes res: Int, weight: Int, vararg axes: Pair<String, Float>): FontFamily {
     val context = LocalContext.current
