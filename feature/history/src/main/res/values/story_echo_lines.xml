@@ -757,20 +757,6 @@
         <item>Here\'s how it all came through. Loud and clear.</item>
         <item>The backstage pass to your month.</item>
     </string-array>
-    <string-array name="history_echo_type_thin">
-        <item>Too early to call a type. My clock needs more ticks.</item>
-        <item>No type yet. Time will tell, it always does.</item>
-        <item>No pattern yet. The clock is keeping a poker face.</item>
-        <item>Your type is still loading. Buffering, if you will.</item>
-        <item>Still a blank clock face. I like a mystery.</item>
-        <item>A type in the making. Still in the trailer phase.</item>
-        <item>The clock\'s barely been wound. No verdict.</item>
-        <item>Not enough to tell time yet. Even for me.</item>
-        <item>Too soon to clock a type. I\'m not rushing it.</item>
-        <item>Your clock is mostly blank. A fresh face.</item>
-        <item>{month} kept its cards close. No type yet.</item>
-        <item>Rough sketch only. My charts need more ink.</item>
-    </string-array>
     <string-array name="history_echo_type_tied">
         <item>A tie on the clock. Tick and tock, equally loved.</item>
         <item>Tied at the top. The clock hands split the difference.</item>
@@ -843,17 +829,17 @@
     </string-array>
     <string-array name="history_echo_type_all_day">
         <item>No rush hour on this clock. Spread nice and even.</item>
-        <item>No part of the day led. A full-dial listener.</item>
+        <item>No part of the day led. Democracy, but for hours.</item>
         <item>All over the clock. Tick, tock, play.</item>
-        <item>Morning, noon and night, roughly even.</item>
+        <item>No peak hour. The clock kept it balanced.</item>
         <item>Evenly spread. Time zones would be jealous.</item>
-        <item>Fair slices all round. A very even pie chart.</item>
-        <item>Round the clock. Literally round, it\'s a clock.</item>
-        <item>Each part of the day got a hearing.</item>
-        <item>All day, every way. The clock is evenly fed.</item>
+        <item>Fair slices, no giant one. A tidy pie chart.</item>
+        <item>Spread out. My clock hands couldn\'t pick a side.</item>
+        <item>No single slot ran the show this month.</item>
+        <item>Spread across the dial. The clock is well fed.</item>
         <item>Spread across the day. A clock with no favourites.</item>
-        <item>{month} ran around the clock. The hands are dizzy.</item>
-        <item>A full-spectrum day, light to dark.</item>
+        <item>{month} kept the clock guessing. The hands are dizzy.</item>
+        <item>A balanced dial. My gears approve.</item>
     </string-array>
     <string-array name="history_echo_type_finisher">
         <item>Most episodes ran to the credits. Roll them.</item>

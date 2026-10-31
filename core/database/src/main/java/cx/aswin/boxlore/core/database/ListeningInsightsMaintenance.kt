@@ -116,16 +116,24 @@ class ListeningInsightsMaintenance(
      *   covers all of it ([covers]); then the sessions it sums go, and a zero day removes the day. An
      *   older day (a later backup of that phone was restored here) changes nothing.
      * Days of the origins this phone pushes are recorded as the cloud holds them, so its next push sends
-     * only what differs.
+     * only what differs. A cloud that doesn't keep the totals ([cloudStoresTotals] false) sends days
+     * without them: those days keep the totals this phone last sent, or they would differ and go up
+     * again on every sync.
      */
-    suspend fun applyCloudDailyListening(days: List<ListeningRollupEntity>, origins: ListeningOrigins,) {
+    suspend fun applyCloudDailyListening(days: List<ListeningRollupEntity>, origins: ListeningOrigins, cloudStoresTotals: Boolean = true,) {
         val incoming = days.filter { it.deviceId != ListeningRollupEntity.THIS_DEVICE }
         if (incoming.isEmpty()) return
         database.withTransaction {
             val heldSessions = sessions.getAllSessions().groupBy { Triple(it.rollupDeviceId, it.localDay, it.episodeId) }
             val known = pushes.getPushedDays(origins.own).mapTo(HashSet()) { Triple(it.deviceId, it.localDay, it.episodeId) }
             for (day in incoming) applyCloudDay(day, heldSessions[day.key].orEmpty(), isOwn = day.deviceId == origins.own, known = day.key in known)
-            recordPushedDays(incoming.filter { it.deviceId in origins.pushed })
+            val pushed = incoming.filter { it.deviceId in origins.pushed }
+            if (cloudStoresTotals) {
+                recordPushedDays(pushed)
+            } else {
+                val sentTotals = origins.pushed.flatMap { pushes.getPushedDays(it) }.associate { Triple(it.deviceId, it.localDay, it.episodeId) to it.totals }
+                recordPushedDays(pushed.map { day -> sentTotals[day.key]?.let { day.copy(totals = it) } ?: day })
+            }
         }
     }
 

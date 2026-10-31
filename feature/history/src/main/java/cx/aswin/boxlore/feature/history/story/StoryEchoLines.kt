@@ -33,14 +33,14 @@ internal object StoryEchoLines {
     private const val DOMINANT_SHARE = 0.6f
     private const val SPREAD_SHARE = 0.25f
     private const val WIDE_MIX_SHOWS = 5
-    private const val OUTPUT_LEADS = 0.6f
+    private const val OUTPUT_LEADS = 0.5f
+    private const val CLOSE_MIX = 0.15f
     private const val NEW_LEADS = 0.6f
     private const val CATCHING_UP_BELOW = 0.4f
     private const val LORE_SHARE = 0.2f
     private const val SMART_QUEUE_SHARE = 0.3f
     private const val PARTIAL_DETAILS = 0.8f
-    private const val THIN_PARTS_MS = 30 * MINUTE_MS
-    private const val THIN_EPISODES = 3
+    private const val HABIT_EPISODES = 3
     private const val FINISHER_RATE = 0.6f
     private const val SAMPLER_RATE = 0.35f
     private const val LONG_SITTING_MS = 2 * HOUR_MS
@@ -125,6 +125,9 @@ internal object StoryEchoLines {
     private val MonthStory.down get() = (change ?: 0L) <= -MINUTE_MS
     private val MonthStory.hadPrevious get() = (previousMonthMs ?: 0L) > 0L
 
+    /** Enough episodes started to call finishing or sampling a habit. */
+    private val MonthStory.habitKnown get() = (finishes?.started ?: 0) >= HABIT_EPISODES
+
     /** The month's longest run of listening days (one with listening but no run). */
     private val MonthStory.run: Int get() = bestRun?.first ?: if (listenedDays > 0) 1 else 0
 
@@ -166,10 +169,32 @@ internal object StoryEchoLines {
         EchoOutfit.HEALTH to R.array.history_echo_top_genre_health,
     )
 
+    /**
+     * The genres the genre lines name, by words in the genre's name: stricter than Echo's outfits
+     * ([StoryLogic.genreOutfit]), which dress an education show for science and a books show for fiction.
+     */
+    private val LINE_GENRES = listOf(
+        listOf("crime") to EchoOutfit.TRUE_CRIME,
+        listOf("tech") to EchoOutfit.TECH,
+        listOf("news", "politic") to EchoOutfit.NEWS,
+        listOf("history") to EchoOutfit.HISTORY,
+        listOf("fiction", "drama") to EchoOutfit.FICTION,
+        listOf("comedy") to EchoOutfit.COMEDY,
+        listOf("science") to EchoOutfit.SCIENCE,
+        listOf("business", "invest", "career") to EchoOutfit.BUSINESS,
+        listOf("health", "fitness", "wellness") to EchoOutfit.HEALTH,
+    )
+
+    /** The genre [genre] is, for the genre lines; null for one they don't name. */
+    fun lineGenre(genre: String?): EchoOutfit? {
+        val name = genre?.lowercase() ?: return null
+        return LINE_GENRES.firstOrNull { (words, _) -> words.any { it in name } }?.second
+    }
+
     private val TOP_SHOW = listOf(
         special(R.array.history_echo_top_tie) { it.echo.topTied },
         special(R.array.history_echo_top_one_show) { it.shows == 1 },
-    ) + GENRES.map { (outfit, lines) -> regular(lines) { story -> story.echo.topGenre?.let(StoryLogic::genreOutfit) == outfit } } + listOf(
+    ) + GENRES.map { (outfit, lines) -> regular(lines) { story -> lineGenre(story.echo.topGenre) == outfit } } + listOf(
         regular(R.array.history_echo_top_dominant) { it.shows > 1 && (it.topShow?.share ?: 0f) >= DOMINANT_SHARE },
         regular(R.array.history_echo_top_wide_mix) { it.shows >= WIDE_MIX_SHOWS && (it.topShow?.share ?: 1f) < SPREAD_SHARE },
         regular(R.array.history_echo_top_three_one_genre) { it.topThree { genres -> genres.size == 1 } },
@@ -197,7 +222,8 @@ internal object StoryEchoLines {
     private val HOW = OUTPUTS.map { (output, lines) ->
         regular(lines) { story -> story.how?.outputs?.firstOrNull()?.let { it.output == output && it.share >= OUTPUT_LEADS } == true }
     } + listOf(
-        regular(R.array.history_echo_how_output_mix) { story -> story.how?.outputs?.let { it.size >= 2 && it.first().share < OUTPUT_LEADS } == true },
+        // No output has most of it, and the first two are close.
+        regular(R.array.history_echo_how_output_mix) { story -> story.how?.outputs?.let { it.size >= 2 && it[0].share < OUTPUT_LEADS && it[0].share - it[1].share < CLOSE_MIX } == true },
         regular(R.array.history_echo_how_new_lead) { (it.how?.sources?.newShare ?: 0f) >= NEW_LEADS },
         regular(R.array.history_echo_how_catching_up) { (it.how?.sources?.newShare ?: 1f) <= CATCHING_UP_BELOW },
         regular(R.array.history_echo_how_lore_high) { (it.how?.sources?.loreShare ?: 0f) >= LORE_SHARE },
@@ -206,15 +232,14 @@ internal object StoryEchoLines {
     )
 
     private val TYPE = listOf(
-        special(R.array.history_echo_type_thin) { it.echo.partsMs < THIN_PARTS_MS || (it.finishes?.started ?: THIN_EPISODES) < THIN_EPISODES },
         special(R.array.history_echo_type_tied) { it.parts.size >= 2 && it.parts[0].share > 0f && it.parts[0].share == it.parts[1].share },
         regular(R.array.history_echo_type_morning) { it.type?.time == TypeTime.MORNING },
         regular(R.array.history_echo_type_daytime) { it.type?.time == TypeTime.DAYTIME },
         regular(R.array.history_echo_type_evening) { it.type?.time == TypeTime.EVENING },
         regular(R.array.history_echo_type_late_night) { it.type?.time == TypeTime.LATE_NIGHT },
         regular(R.array.history_echo_type_all_day) { it.type?.time == TypeTime.ALL_DAY },
-        regular(R.array.history_echo_type_finisher) { (it.type?.finishRate ?: 0f) >= FINISHER_RATE },
-        regular(R.array.history_echo_type_sampler) { it.type?.finishRate?.let { rate -> rate > 0f && rate < SAMPLER_RATE } == true },
+        regular(R.array.history_echo_type_finisher) { it.habitKnown && (it.type?.finishRate ?: 0f) >= FINISHER_RATE },
+        regular(R.array.history_echo_type_sampler) { it.habitKnown && it.type?.finishRate?.let { rate -> rate > 0f && rate < SAMPLER_RATE } == true },
     )
 
     private val RECORDS = listOf(

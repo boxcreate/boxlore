@@ -13,6 +13,7 @@ import cx.aswin.boxlore.feature.history.insights.ListeningType
 import cx.aswin.boxlore.feature.history.insights.MostInOneDay
 import cx.aswin.boxlore.feature.history.insights.OutputShare
 import cx.aswin.boxlore.feature.history.insights.PartShare
+import cx.aswin.boxlore.feature.history.insights.TypeHabit
 import cx.aswin.boxlore.feature.history.insights.TypeTime
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -146,7 +147,7 @@ object StoryLogic {
                 val cards = StoryCard.entries.count { card ->
                     when (card) {
                         StoryCard.HOW -> InsightsDetails.hasEnough(rows)
-                        StoryCard.TYPE -> InsightsLogic.partShares(rows).isNotEmpty()
+                        StoryCard.TYPE -> InsightsLogic.partShares(rows).isNotEmpty() && partsMs(rows) >= TYPE_MIN_MS
                         else -> true
                     }
                 }
@@ -177,6 +178,7 @@ object StoryLogic {
         val topGenre = played.firstOrNull { it.podcastId == showTimes.firstOrNull()?.key }?.genre
         val bestRunEver = InsightsLogic.longestRun(runsSoFar)?.first ?: 0
         val echo = StoryEchoFactsLogic.of(month, rows, listening, played, showTimes)
+        val finishes = finishes(history, range, zoneId)
         return MonthStory(
             month = month,
             totalMs = total,
@@ -189,7 +191,7 @@ object StoryLogic {
             previousMonthMs = previousMonthMs(listening, month),
             topShow = topShow(showTimes.firstOrNull(), total, history, range, info, zoneId),
             showOutfit = genreOutfit(topGenre ?: topGenre(rows, played)),
-            type = InsightsLogic.listeningTypeFor(input, range, rows),
+            type = typeOf(input, range, rows, finishes),
             parts = InsightsLogic.partShares(rows),
             bestRun = bestRun,
             bestRunIsRecord = bestRun != null && bestRun.first > echo.bestBefore && bestRun.first >= bestRunEver,
@@ -198,7 +200,7 @@ object StoryLogic {
             counts = StoryCounts(rows.map { it.episodeId }.distinct().size, history.count { finishedIn(it, range, zoneId) }),
             runnersUp = showTimes.drop(1).take(RUNNERS_UP).map { StoryShow(it.key, info[it.key]?.name.orEmpty(), info[it.key]?.imageUrl, it.value) },
             how = how(rows),
-            finishes = finishes(history, range, zoneId),
+            finishes = finishes,
             longestSitting = longestSitting(rows, info),
             bigWeekday = InsightsParts.weekdays(rows)?.let { it.biggest to it.biggestMs },
             bestRunEver = bestRunEver,
@@ -221,7 +223,7 @@ object StoryLogic {
     }
 
     private fun longestSitting(rows: List<ListeningDayEpisode>, info: Map<String, InsightsParts.ShowMeta>): Pair<Long, String>? =
-        rows.filter { it.longestSessionMs > 0L }.maxByOrNull { it.longestSessionMs }?.let { it.longestSessionMs to info[it.podcastId]?.name.orEmpty() }
+        InsightsParts.longestSitting(rows)?.let { it.longestSessionMs to info[it.podcastId]?.name.orEmpty() }
 
     private fun finishedIn(row: ListeningHistoryItem, range: ClosedRange<LocalDate>, zoneId: ZoneId): Boolean =
         ListeningCompletionLogic.isCompleted(row.isCompleted, row.progressMs, row.durationMs) && InsightsLogic.date(row.finishedAt?.takeIf { it > 0L } ?: row.lastPlayedAt, zoneId) in range
@@ -267,13 +269,13 @@ object StoryLogic {
 
     /**
      * The month's cards: all seven, less the top show when no show is known, How you listened until
-     * enough listening has its details, and the listening type when parts of the day weren't timed.
+     * enough listening has its details, and the listening type until half an hour is timed by part of the day.
      */
     fun cards(story: MonthStory): List<StoryCard> = StoryCard.entries.filter { card ->
         when (card) {
             StoryCard.TOP_SHOW -> story.topShow != null
             StoryCard.HOW -> story.how != null
-            StoryCard.TYPE -> story.type != null && story.parts.isNotEmpty()
+            StoryCard.TYPE -> story.type != null && story.parts.isNotEmpty() && story.echo.partsMs >= TYPE_MIN_MS
             else -> true
         }
     }
@@ -307,3 +309,17 @@ object StoryLogic {
         else -> EchoOutfit.NIGHT
     }
 }
+
+/** The listening type card needs this much listening timed by part of the day. */
+private const val TYPE_MIN_MS = 30 * 60_000L
+
+/** Finishing or sampling is a habit only across this many episodes; fewer, and the type is just a listener. */
+private const val TYPE_MIN_EPISODES = 3
+
+/** The month's listening type; finishing or sampling only across [TYPE_MIN_EPISODES] episodes or more. */
+private fun typeOf(input: InsightsLogic.Input, range: ClosedRange<LocalDate>, rows: List<ListeningDayEpisode>, finishes: StoryFinishes?): ListeningType? {
+    val type = InsightsLogic.listeningTypeFor(input, range, rows) ?: return null
+    return if ((finishes?.started ?: 0) < TYPE_MIN_EPISODES) type.copy(habit = TypeHabit.LISTENER) else type
+}
+
+private fun partsMs(rows: List<ListeningDayEpisode>) = rows.sumOf { it.morningMs + it.afternoonMs + it.eveningMs + it.nightMs }

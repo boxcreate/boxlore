@@ -126,16 +126,20 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
 
     /**
      * Sessions and daily summaries of every phone, summed per local day and episode. A Podcast
-     * Index show switched to its RSS feed counts as the RSS show, as in [observeInsights].
+     * Index show switched to its RSS feed counts as the RSS show, as in [observeInsights], and an
+     * episode stored under several trusted IDs counts once, under one of them
+     * ([EpisodeListenerStore.countedIdsFlow]).
      */
     override fun observeListeningByDay(): Flow<List<ListeningDayEpisode>> = combine(
         // Summed by the database: a day per episode, not every one of up to 400 days of sessions.
         data.listeningSessionDao.observeSessionDays(),
         data.listeningRollupDao.observeAllRollups(),
         listenerStore.showReplacementsFlow(),
-    ) { sessions, rollups, replacedBy ->
+        listenerStore.countedIdsFlow(),
+    ) { sessions, rollups, replacedBy, countedAs ->
         val days = HashMap<Pair<Long, String>, ListeningDayEpisode>()
-        fun add(part: ListeningDayEpisode) {
+        fun add(row: ListeningDayEpisode) {
+            val part = countedAs[row.episodeId]?.let { row.copy(episodeId = it) } ?: row
             val key = part.localDay to part.episodeId
             val held = days[key]
             days[key] = held?.let { ListeningDayLogic.sum(it, part) } ?: part

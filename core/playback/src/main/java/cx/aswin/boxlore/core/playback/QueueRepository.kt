@@ -227,6 +227,8 @@ class QueueRepository(
     }
 
     private suspend fun replaceQueueItems(episodes: List<cx.aswin.boxlore.core.model.Episode>) {
+        // An episode queued again without its release date (played from a history row) keeps the one the queue knew.
+        val knownDates = queueDao.getAllQueueItemsSync().filter { it.pubDate > 0L }.associate { it.episodeId to it.pubDate }
         queueDao.clearQueue()
         episodes.forEachIndexed { index, ep ->
             val item =
@@ -241,7 +243,7 @@ class QueueRepository(
                     imageUrl = ep.imageUrl,
                     audioUrl = ep.audioUrl,
                     duration = ep.duration,
-                    pubDate = ep.publishedDate,
+                    pubDate = ep.publishedDate.takeIf { it > 0L } ?: knownDates[ep.id] ?: 0L,
                     description = ep.description,
                     position = index,
                     contextType = ep.contextType ?: "MANUAL",

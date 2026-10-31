@@ -398,6 +398,27 @@ class ListeningCloudSyncTest {
     }
 
     @Test
+    fun aServerWithoutTotalsSendingThisPhonesDaysBackDoesNotMakeThemGoUpAgain() = runTest(testDispatcher) {
+        seedOwnListening()
+        coordinator.syncNow()
+        val sent = pushes.single().listeningDays
+        assertTrue(sent.any { it.longestSessionMs > 0L })
+        // The server keeps the days without their totals and sends them back that way.
+        pullAnswer =
+            SyncPullResponse(
+                syncedAt = 9_000L,
+                listeningDays = sent.map { it.copy(longestSessionMs = 0L, speakerMs = 0L, headphonesMs = 0L, bluetoothMs = 0L, carMs = 0L, castMs = 0L, loreMs = 0L, smartQueueMs = 0L, newReleaseMs = 0L) },
+            )
+        pushes.clear()
+        coordinator.syncNow()
+        pushes.clear()
+
+        coordinator.syncNow()
+
+        assertTrue(pushes.isEmpty() || pushes.single().listeningDays.isEmpty())
+    }
+
+    @Test
     fun daysGoUpOnceMoreTheFirstTimeAServerStoresTheirTotals() = runTest(testDispatcher) {
         seedOwnListening()
         val me = prefs.getOrCreateListeningDeviceId()

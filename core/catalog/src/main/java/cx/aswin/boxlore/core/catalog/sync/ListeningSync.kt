@@ -88,7 +88,7 @@ internal class ListeningSync(
         val days = body.listeningDays
         val shows = body.playedShows
         if (days == null && shows == null) return
-        maintenance.applyCloudDailyListening(days.orEmpty().mapNotNull { it.toEntity() }, origins())
+        maintenance.applyCloudDailyListening(days.orEmpty().mapNotNull { it.toEntity() }, origins(), cloudStoresTotals = body.listeningTotals)
         playedShows.mergePlayedShows(shows.orEmpty().mapNotNull { it.toEntity() }, fromCloud = true)
         // A push stored in the same millisecond after this pull carries syncedAt itself; the next pull
         // reads that millisecond again (merging what it brings is idempotent).

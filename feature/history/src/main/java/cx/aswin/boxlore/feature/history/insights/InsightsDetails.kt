@@ -12,10 +12,14 @@ internal object InsightsDetails {
     const val DETAILS_SHARE = 0.5f
     const val DETAILS_MIN_MS = 30L * 60_000L
 
-    /** Whether enough of [inPeriod]'s listening has known details to tell where and what. */
+    /**
+     * Whether enough of [inPeriod]'s listening has known details to tell where and what: the time heard
+     * on a known output, not the whole of a day that has some (one phone's detailed minute and another's
+     * hour without details add up to the same day and episode).
+     */
     fun hasEnough(inPeriod: List<ListeningDayEpisode>): Boolean {
         val total = inPeriod.sumOf { it.consumedMs }
-        val known = detailed(inPeriod).sumOf { it.consumedMs }
+        val known = inPeriod.sumOf { it.outputKnownMs }
         return total > 0L && known >= DETAILS_MIN_MS && known >= total * DETAILS_SHARE
     }
 
@@ -37,15 +41,12 @@ internal object InsightsDetails {
     /** Of the listening with known details: new episodes, Lore and the Smart Queue; null without enough details. */
     fun sources(inPeriod: List<ListeningDayEpisode>): ListeningSources? {
         if (!hasEnough(inPeriod)) return null
-        val rows = detailed(inPeriod)
-        val total = rows.sumOf { it.consumedMs }.toFloat()
+        val known = inPeriod.sumOf { it.outputKnownMs }.toFloat()
+        fun share(ms: Long) = (ms / known).coerceAtMost(1f)
         return ListeningSources(
-            newShare = rows.sumOf { it.newReleaseMs } / total,
-            loreShare = rows.sumOf { it.loreMs } / total,
-            smartQueueShare = rows.sumOf { it.smartQueueMs } / total,
+            newShare = share(inPeriod.sumOf { it.newReleaseMs }),
+            loreShare = share(inPeriod.sumOf { it.loreMs }),
+            smartQueueShare = share(inPeriod.sumOf { it.smartQueueMs }),
         )
     }
-
-    /** The days and episodes whose listening has known details: some of it was heard on a known output. */
-    private fun detailed(inPeriod: List<ListeningDayEpisode>) = inPeriod.filter { it.outputKnownMs > 0L }
 }

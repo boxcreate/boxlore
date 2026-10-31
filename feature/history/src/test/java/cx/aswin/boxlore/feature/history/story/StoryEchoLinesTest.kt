@@ -3,12 +3,16 @@ package cx.aswin.boxlore.feature.history.story
 import cx.aswin.boxlore.core.model.ListeningDayEpisode
 import cx.aswin.boxlore.core.model.ListeningPlayedShow
 import cx.aswin.boxlore.feature.history.R
+import cx.aswin.boxlore.feature.history.insights.ListeningOutput
+import cx.aswin.boxlore.feature.history.insights.ListeningSources
+import cx.aswin.boxlore.feature.history.insights.OutputShare
 import java.io.File
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneOffset
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -55,6 +59,29 @@ class StoryEchoLinesTest {
         assertFalse(R.array.history_echo_top_genre_history in crime)
         assertEquals(R.array.history_echo_top_tie, StoryEchoLines.lines(StoryCard.TOP_SHOW, story(octoberMinutes = 600, otherShowMinutes = 600)))
         assertEquals(R.array.history_echo_top_one_show, StoryEchoLines.lines(StoryCard.TOP_SHOW, story(octoberMinutes = 600)))
+    }
+
+    @Test
+    fun genreLinesNameOnlyTheGenreTheShowIs() {
+        assertEquals(EchoOutfit.SCIENCE, StoryEchoLines.lineGenre("Science"))
+        assertEquals(EchoOutfit.FICTION, StoryEchoLines.lineGenre("Drama"))
+        // Echo dresses these for science and fiction, but the lines would claim what they aren't.
+        assertNull(StoryEchoLines.lineGenre("Education"))
+        assertNull(StoryEchoLines.lineGenre("Books"))
+    }
+
+    @Test
+    fun aMixNeedsNoOutputWithMostOfItAndTheFirstTwoClose() {
+        val base = story(octoberMinutes = 600, septemberMinutes = 300)
+        fun picks(vararg shares: Pair<ListeningOutput, Float>): Set<Int> {
+            val how = StoryHow(shares.map { OutputShare(it.first, it.second) }, ListeningSources(newShare = 0.5f, loreShare = 0f, smartQueueShare = 0f))
+            return (0 until 120).map { StoryEchoLines.lines(StoryCard.HOW, base.copy(how = how, echo = base.echo.copy(detailsCoverage = 1f)), it) }.toSet()
+        }
+        // 59% headphones is most of it, not a close mix.
+        assertEquals(setOf(R.array.history_echo_how_output_headphones), picks(ListeningOutput.HEADPHONES to 0.59f, ListeningOutput.CAR to 0.11f, ListeningOutput.SPEAKER to 0.1f, ListeningOutput.BLUETOOTH to 0.1f, ListeningOutput.CAST to 0.1f))
+        assertEquals(setOf(R.array.history_echo_how_output_mix), picks(ListeningOutput.HEADPHONES to 0.45f, ListeningOutput.CAR to 0.4f, ListeningOutput.SPEAKER to 0.15f))
+        // A clear lead short of half: neither, so the usual lines.
+        assertEquals(setOf(R.array.history_echo_how_usual), picks(ListeningOutput.HEADPHONES to 0.45f, ListeningOutput.CAR to 0.2f, ListeningOutput.SPEAKER to 0.2f, ListeningOutput.CAST to 0.15f))
     }
 
     @Test

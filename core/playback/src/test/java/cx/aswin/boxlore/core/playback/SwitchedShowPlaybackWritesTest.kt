@@ -127,6 +127,19 @@ class SwitchedShowPlaybackWritesTest {
         assertEquals(listOf("Feed show", "https://img.example/show.jpg", "History", 10L, 90L), listOf(played.podcastName, played.imageUrl, played.genre, played.firstPlayedAt, played.lastPlayedAt))
     }
 
+    @Test
+    fun listeningUnderBothIdsOfAnEpisodeCountsAsOneEpisodeADay() = runTest {
+        linkFeedId()
+        database.listeningSessionDao().upsertSession(ListeningSessionEntity("a", "A", SHOW, startedAt = 1L, endedAt = 601L, consumedMs = 600_000L, completed = false, localDay = 1L, timeBucket = 0))
+        database.listeningSessionDao().upsertSession(ListeningSessionEntity("f", FEED_ID, SHOW, startedAt = 700L, endedAt = 1_900L, consumedMs = 1_200_000L, completed = false, localDay = 1L, timeBucket = 0))
+        val historyStore = EpisodeAliasFixtures.historyStore(context, database, this)
+
+        val day = historyStore.observeListeningByDay().first().single()
+
+        assertEquals("A", day.episodeId)
+        assertEquals(1_800_000L, day.consumedMs)
+    }
+
     /** "A" owns the episode; "-1" is the feed show's ID, linked to it under the Podcast Index show. */
     private suspend fun linkFeedId() {
         database.episodeIdentityDao().insertAliasesIfAbsent(

@@ -71,7 +71,7 @@ internal object InsightsParts {
     fun records(input: InsightsLogic.Input, inPeriod: List<ListeningDayEpisode>, info: Map<String, ShowMeta>): Records {
         val perDay = inPeriod.groupBy { LocalDate.ofEpochDay(it.localDay) }.mapValues { (_, rows) -> rows.sumOf { it.consumedMs } }.filterValues { it > 0L }
         val biggest = perDay.maxByOrNull { it.value }?.toPair()
-        val sitting = inPeriod.filter { it.longestSessionMs > 0L }.maxByOrNull { it.longestSessionMs }
+        val sitting = longestSitting(inPeriod)
         val titles = input.history.associate { it.episodeId to it.episodeTitle }
         val most =
             inPeriod.groupBy { LocalDate.ofEpochDay(it.localDay) to it.podcastId }
@@ -84,6 +84,16 @@ internal object InsightsParts {
             longestSitting = sitting?.let { it.longestSessionMs to (titles[it.episodeId] ?: info[it.podcastId]?.name.orEmpty()) },
             mostInOneDay = most?.let { MostInOneDay(it.third, info[it.second]?.name.orEmpty(), it.first) },
         )
+    }
+
+    /**
+     * The day and episode with the longest single sitting, or null when it can't be told: a day whose
+     * sitting isn't known (summed from several sessions by an older build) and that holds more listening
+     * than the longest known sitting could have held a longer one.
+     */
+    fun longestSitting(rows: List<ListeningDayEpisode>): ListeningDayEpisode? {
+        val sitting = rows.filter { it.longestSessionMs > 0L }.maxByOrNull { it.longestSessionMs } ?: return null
+        return sitting.takeIf { rows.none { it.longestSessionMs == 0L && it.consumedMs > sitting.longestSessionMs } }
     }
 
     /** By listening time in the period, the genres of the shows played: the top four and the rest together, or all five. */

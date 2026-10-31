@@ -12,6 +12,7 @@ import cx.aswin.boxlore.core.designsystem.echo.EchoScreenTrack
 import cx.aswin.boxlore.core.model.ListeningDayEpisode
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.core.model.ListeningPlayedShow
+import cx.aswin.boxlore.feature.history.insights.TypeHabit
 import cx.aswin.boxlore.feature.history.insights.TypeTime
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -270,6 +271,16 @@ class StoryLogicTest {
     )
 
     private fun clip(id: String, reach: EchoReach) = EchoMotionClip(id, "clips/$id.mp4", 24, 1, 4, EchoFace.Idle, "rest", listOf(EchoScreenTrack(0.5f, 0.4f, 0.2f, 0.2f, 0f)), reach = reach)
+
+    @Test
+    fun theTypeCardNeedsHalfAnHourTimedAndAHabitNeedsThreeEpisodes() {
+        // 20 minutes timed by part of the day: too little to call a listening type.
+        assertFalse(StoryCard.TYPE in StoryLogic.cards(build(listOf(day(10, 3, "dd", 20, evening = 20)))))
+        // An hour of evenings over one unfinished episode: an evening listener, not yet a sampler.
+        val story = StoryLogic.build(october, listOf(item("dd-10-3", "dd", finished = false, day = 3)), listOf(day(10, 3, "dd", 60, evening = 60)), played, today, zone)!!
+        assertTrue(StoryCard.TYPE in StoryLogic.cards(story))
+        assertEquals(TypeHabit.LISTENER, story.type!!.habit)
+    }
 
     @Test
     fun earlierStoriesFoldToTwoRowsUntilOpened() {

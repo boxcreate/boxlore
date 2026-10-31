@@ -339,6 +339,22 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
         }.distinctUntilChanged()
 
     /**
+     * For every ID that shares its episode with another trusted ID, the one ID the episode is counted
+     * under (its marked owner, else the earliest added), re-emitted when the shared aliases change. Lets
+     * listening recorded under several IDs of one episode add up as one episode.
+     */
+    fun countedIdsFlow(): Flow<Map<String, String>> =
+        sharedAliasesFlow().map { shared ->
+            shared
+                .groupBy { EpisodeGroup.tokenOf(it.podcastId, it.catalogKey) }
+                .values
+                .flatMap { members ->
+                    val counted = (members.firstOrNull { it.owner } ?: members.minWith(compareBy<EpisodeAliasEntity>({ it.createdAt }, { it.aliasId }))).aliasId
+                    members.map { it.aliasId to counted }
+                }.toMap()
+        }.distinctUntilChanged()
+
+    /**
      * Every trusted ID of [episodeId]'s episode ([episodeId] alone without a shared alias),
      * re-emitted when the shared aliases change it.
      *

@@ -214,6 +214,29 @@ class InsightsLogicTest {
     }
 
     @Test
+    fun aDayWithAFewDetailedMinutesCountsOnlyThoseMinutesAsKnown() {
+        // Phone A's 120 minutes without details and phone B's detailed minute add up to one day and episode.
+        val mixed = day(20, "a", 121).copy(headphonesMs = MINUTE, newReleaseMs = MINUTE)
+        val content = build(listOf(mixed))
+
+        assertTrue(content.outputs.isEmpty())
+        assertNull(content.sources)
+
+        // With 80 of its minutes detailed, the shares are of those 80.
+        val enough = build(listOf(mixed.copy(headphonesMs = 80 * MINUTE, newReleaseMs = 20 * MINUTE)))
+        assertEquals(0.25f, enough.sources!!.newShare, 0.001f)
+    }
+
+    @Test
+    fun aLongestSittingAnOlderDayCouldHaveBeatenIsLeftOut() {
+        // 180 minutes an older build summed from several sessions (its longest unknown), and a known 10-minute sitting.
+        val known = day(21, "b", 10, longest = 10)
+        assertNull(InsightsParts.longestSitting(listOf(day(20, "a", 180), known)))
+        // An older day too short to hold a longer sitting doesn't stand in the way.
+        assertEquals(known, InsightsParts.longestSitting(listOf(day(20, "a", 8), known)))
+    }
+
+    @Test
     fun detailsUnderHalfAnHourShowNothingEvenWhenTheyAreAllTheListening() {
         val content = build(listOf(day(20, "a", 25).copy(speakerMs = 25 * MINUTE)))
 
