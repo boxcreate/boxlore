@@ -69,7 +69,20 @@ data class ListeningDayEpisode(
     val nightMs: Long = 0L,
     /** The longest single sitting known: a session's time, or a summed day of one session; 0 when not known. */
     val longestSessionMs: Long = 0L,
-)
+    /** Where the listening was heard (Room v40 sessions, v41 summaries); all 0 when not known. */
+    val speakerMs: Long = 0L,
+    val headphonesMs: Long = 0L,
+    val bluetoothMs: Long = 0L,
+    val carMs: Long = 0L,
+    val castMs: Long = 0L,
+    /** Listening started from Lore or the Smart Queue, and of episodes out a week or less; known where an output is. */
+    val loreMs: Long = 0L,
+    val smartQueueMs: Long = 0L,
+    val newReleaseMs: Long = 0L,
+) {
+    /** The listening heard on a known output: the part whose details (output, source, release) are known. */
+    val outputKnownMs: Long get() = speakerMs + headphonesMs + bluetoothMs + carMs + castMs
+}
 
 /** A show the listener played (Room v40 `played_shows`), with its genre when known. */
 data class ListeningPlayedShow(

@@ -19,9 +19,17 @@ internal object ListeningDayLogic {
         eveningMs = row.eveningMs,
         nightMs = row.nightMs,
         longestSessionMs = row.longestSessionMs,
+        speakerMs = row.speakerMs,
+        headphonesMs = row.headphonesMs,
+        bluetoothMs = row.bluetoothMs,
+        carMs = row.carMs,
+        castMs = row.castMs,
+        loreMs = row.loreMs,
+        smartQueueMs = row.smartQueueMs,
+        newReleaseMs = row.newReleaseMs,
     )
 
-    /** A daily summary: its longest session as stored (Room v41), else known only when it sums one session. */
+    /** A daily summary: its richer totals as stored (Room v41); the longest session, else known only when it sums one session. */
     fun ofRollup(row: ListeningRollupEntity, podcastId: String) = ListeningDayEpisode(
         localDay = row.localDay,
         episodeId = row.episodeId,
@@ -34,6 +42,14 @@ internal object ListeningDayLogic {
         eveningMs = row.eveningMs,
         nightMs = row.nightMs,
         longestSessionMs = row.knownTotals().longestSessionMs,
+        speakerMs = row.totals.speakerMs,
+        headphonesMs = row.totals.headphonesMs,
+        bluetoothMs = row.totals.bluetoothMs,
+        carMs = row.totals.carMs,
+        castMs = row.totals.castMs,
+        loreMs = row.totals.loreMs,
+        smartQueueMs = row.totals.smartQueueMs,
+        newReleaseMs = row.totals.newReleaseMs,
     )
 
     fun sum(a: ListeningDayEpisode, b: ListeningDayEpisode) = a.copy(
@@ -45,5 +61,13 @@ internal object ListeningDayLogic {
         eveningMs = a.eveningMs + b.eveningMs,
         nightMs = a.nightMs + b.nightMs,
         longestSessionMs = maxOf(a.longestSessionMs, b.longestSessionMs),
+        speakerMs = a.speakerMs + b.speakerMs,
+        headphonesMs = a.headphonesMs + b.headphonesMs,
+        bluetoothMs = a.bluetoothMs + b.bluetoothMs,
+        carMs = a.carMs + b.carMs,
+        castMs = a.castMs + b.castMs,
+        loreMs = a.loreMs + b.loreMs,
+        smartQueueMs = a.smartQueueMs + b.smartQueueMs,
+        newReleaseMs = a.newReleaseMs + b.newReleaseMs,
     )
 }

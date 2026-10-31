@@ -9,6 +9,7 @@ import cx.aswin.boxlore.core.database.ListeningDayTotals
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.ListeningSessionEntity
+import cx.aswin.boxlore.core.database.ListeningSessionValues
 import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.model.ListeningPeriod
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
@@ -125,6 +126,35 @@ class HistoryBeyondScreenLimitTest {
         assertEquals(5L * 60_000L, day.nightMs)
         assertEquals(45L * 60_000L, day.longestSessionMs)
         assertEquals(20L * 86_400_000L + 45L * 60_000L, day.lastListenedAt)
+    }
+
+    @Test
+    fun eachDaysListeningCarriesWhereItWasHeardWhereItStartedAndHowNewTheEpisodeWas() = runTest(testDispatcher) {
+        val released = 20L * 86_400_000L - 2L * 86_400_000L
+        database.listeningSessionDao().upsertSessions(
+            listOf(
+                session("car", day = 20L, minutes = 30L, device = "me").copy(output = ListeningSessionValues.OUTPUT_CAR, source = ListeningSessionValues.SOURCE_LORE, episodePublishedAt = released),
+                session("buds", day = 20L, minutes = 20L, device = "me").copy(output = ListeningSessionValues.OUTPUT_BLUETOOTH, source = ListeningSessionValues.SOURCE_SMART_QUEUE),
+                session("unknown", day = 20L, minutes = 5L, device = "me"),
+            ),
+        )
+        // A summary from another phone with its totals (Room v41).
+        database.listeningRollupDao().upsertRollup(
+            ListeningRollupEntity(
+                20L, "ep-1", SHOW, 10L * 60_000L, 1, 0, lastListenedAt = 99L, deviceId = "phone-c",
+                totals = ListeningDayTotals(longestSessionMs = 10L * 60_000L, speakerMs = 10L * 60_000L, newReleaseMs = 10L * 60_000L),
+            ),
+        )
+
+        val day = historyStore().observeListeningByDay().first().single()
+
+        assertEquals(30L * 60_000L, day.carMs)
+        assertEquals(20L * 60_000L, day.bluetoothMs)
+        assertEquals(10L * 60_000L, day.speakerMs)
+        assertEquals(60L * 60_000L, day.outputKnownMs)
+        assertEquals(30L * 60_000L, day.loreMs)
+        assertEquals(20L * 60_000L, day.smartQueueMs)
+        assertEquals(40L * 60_000L, day.newReleaseMs)
     }
 
     @Test

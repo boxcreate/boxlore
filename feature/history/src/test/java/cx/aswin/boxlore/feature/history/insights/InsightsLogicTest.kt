@@ -169,6 +169,39 @@ class InsightsLogicTest {
         assertEquals(1, inProgress.stale)
     }
 
+    @Test
+    fun whereAndWhatShowOnceHalfTheListeningAndHalfAnHourHaveTheirDetails() {
+        // 60 minutes in the period: 20 with details (car, a new release from Lore), 40 from before details were recorded.
+        val detailed = day(20, "a", 20).copy(carMs = 20 * MINUTE, newReleaseMs = 20 * MINUTE, loreMs = 20 * MINUTE)
+        val older = day(21, "b", 40)
+
+        val few = build(listOf(detailed, older))
+        assertTrue(few.outputs.isEmpty())
+        assertNull(few.sources)
+
+        // Another 40 detailed minutes: 60 of 100 have details, an hour of them.
+        val buds = day(22, "b", 40).copy(bluetoothMs = 30 * MINUTE, headphonesMs = 10 * MINUTE, smartQueueMs = 10 * MINUTE)
+        val enough = build(listOf(detailed, older, buds))
+
+        assertEquals(
+            listOf(ListeningOutput.BLUETOOTH to 0.5f, ListeningOutput.CAR to 1f / 3, ListeningOutput.HEADPHONES to 1f / 6),
+            enough.outputs.map { it.output to it.share },
+        )
+        val sources = enough.sources!!
+        // Shares of the 60 detailed minutes; the 40 from before don't count.
+        assertEquals(1f / 3, sources.newShare, 0.001f)
+        assertEquals(1f / 3, sources.loreShare, 0.001f)
+        assertEquals(1f / 6, sources.smartQueueShare, 0.001f)
+    }
+
+    @Test
+    fun detailsUnderHalfAnHourShowNothingEvenWhenTheyAreAllTheListening() {
+        val content = build(listOf(day(20, "a", 25).copy(speakerMs = 25 * MINUTE)))
+
+        assertTrue(content.outputs.isEmpty())
+        assertNull(content.sources)
+    }
+
     private fun build(
         listening: List<ListeningDayEpisode>,
         history: List<ListeningHistoryItem> = emptyList(),

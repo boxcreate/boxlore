@@ -49,6 +49,8 @@ object InsightsLogic {
             mosaic = InsightsParts.mosaic(input, showInfo),
             records = InsightsParts.records(input, inPeriod, showInfo),
             genres = InsightsParts.genres(inPeriod, input.playedShows),
+            outputs = InsightsDetails.outputs(inPeriod),
+            sources = InsightsDetails.sources(inPeriod),
             milestone = InsightsParts.milestone(input.history.count { finished(it) }),
             inProgress = InsightsParts.inProgress(input),
         )

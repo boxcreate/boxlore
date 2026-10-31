@@ -63,6 +63,21 @@ data class MostInOneDay(val episodes: Int, val showName: String, val date: Local
 /** A genre's share of the period's listening, by the genres of the shows played. */
 data class GenreShare(val genre: String?, val share: Float)
 
+/** Where listening was heard (a session's output). */
+enum class ListeningOutput {
+    HEADPHONES,
+    BLUETOOTH,
+    CAR,
+    SPEAKER,
+    CAST,
+}
+
+/** An output's share of the listening heard on a known output. */
+data class OutputShare(val output: ListeningOutput, val share: Float)
+
+/** Of the listening with known details: the share of episodes out a week or less, and the shares Lore and the Smart Queue started. */
+data class ListeningSources(val newShare: Float, val loreShare: Float, val smartQueueShare: Float,)
+
 /** Finished all time and the next milestone. */
 data class FinishedMilestone(val finished: Int, val next: Int)
 
@@ -97,6 +112,10 @@ data class InsightsContent(
     val mosaic: Mosaic,
     val records: Records,
     val genres: List<GenreShare>,
+    /** Where the period's listening was heard; empty until enough of it has known details ([InsightsDetails]). */
+    val outputs: List<OutputShare>,
+    /** New episodes or catching up, and Lore and the Smart Queue; null until enough listening has known details. */
+    val sources: ListeningSources?,
     val milestone: FinishedMilestone,
     val inProgress: InProgress,
 )

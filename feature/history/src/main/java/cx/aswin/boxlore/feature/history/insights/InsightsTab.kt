@@ -85,10 +85,12 @@ private fun LazyListScope.fullInsights(content: InsightsContent, period: Listeni
     content.type?.let { type -> item(key = "type") { ListeningTypeCard(type) } }
     if (content.topShows.isNotEmpty()) item(key = "top_shows") { TopShowsCard(content.topShows) }
     if (content.parts.isNotEmpty()) item(key = "when") { WhenYouListenCard(content.parts) }
+    if (content.outputs.isNotEmpty()) item(key = "where") { WhereYouListenCard(content.outputs) }
     content.weekdays?.let { weekdays -> item(key = "weekdays") { BigDayCard(weekdays, period) } }
     item(key = "mosaic") { MonthMosaicCard(content.mosaic, today, callbacks.onOpenDay) }
     item(key = "records") { RecordsSection(content.records) }
     if (content.genres.isNotEmpty()) item(key = "genres") { GenresCard(content.genres) }
+    content.sources?.let { sources -> item(key = "fresh") { NewOrCatchingUpCard(sources) } }
     item(key = "milestone") { MilestoneCard(content.milestone) }
     if (content.inProgress.count > 0) item(key = "in_progress") { InProgressCard(content.inProgress, callbacks.onReviewInProgress) }
 }
