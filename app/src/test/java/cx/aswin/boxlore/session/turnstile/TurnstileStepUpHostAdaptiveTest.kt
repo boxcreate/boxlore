@@ -185,6 +185,25 @@ class TurnstileStepUpHostAdaptiveTest {
     }
 
     @Test
+    @Config(qualifiers = "w740dp-h360dp-mdpi")
+    fun `on a short landscape phone the check and Skip stay on screen and Skip still works`() {
+        window.value = BoxloreWindowLayout(740f, 360f)
+        render()
+        val result = start()
+        askForInteraction()
+
+        val bottom = 360.dp
+        listOf(compose.onNodeWithTag(CHALLENGE_CARD_TAG), compose.onNodeWithText("Skip")).forEach { node ->
+            node.assertIsDisplayed()
+            assertTrue("fully inside the 360dp window", node.getUnclippedBoundsInRoot().bottom <= bottom)
+        }
+        assertEchoBesideItsLine(window.value)
+        compose.onNodeWithText("Skip").performClick()
+
+        assertEquals(TurnstileResult.Failed("cancelled"), runBlocking { result.await() })
+    }
+
+    @Test
     fun `Skip ends the run once on a phone`() {
         render()
         val result = start()

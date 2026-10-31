@@ -12,11 +12,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -41,6 +44,7 @@ import cx.aswin.boxlore.core.designsystem.echo.EchoCharacter
 import cx.aswin.boxlore.core.designsystem.echo.EchoFace
 import cx.aswin.boxlore.core.designsystem.echo.EchoGaze
 import cx.aswin.boxlore.core.designsystem.echo.EchoIdle
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 
 /** Builds the page view for one run; [onMessage] and [onFailed] report back to the controller. */
 internal fun interface TurnstilePageFactory {
@@ -119,19 +123,27 @@ internal fun TurnstileStepUpHost(
  * The shared adaptive sheet: a phone sheet, or a centered dialog on expanded and folded windows.
  * Echo stands on its stage beside its line and glances down at the check now and then; the check
  * (drawn by Cloudflare) sits in a card so it reads as part of the sheet.
+ *
+ * The phone sheet opens fully rather than half way, Echo shrinks on windows under
+ * [CHECK_SHORT_WINDOW_DP] tall (landscape phones, short resizable windows), and the content scrolls
+ * when it still doesn't fit, so the check and Skip are always reachable.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun TurnstileStepUpSheet(onSkip: () -> Unit, challenge: @Composable () -> Unit) {
-    BoxloreModalBottomSheet(onDismissRequest = onSkip) {
+    val short = LocalBoxloreWindowLayout.current.heightDp < CHECK_SHORT_WINDOW_DP
+    BoxloreModalBottomSheet(onDismissRequest = onSkip, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(start = 24.dp, end = 24.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(if (short) 12.dp else 16.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 EchoCharacter(
                     sequence = CHECK_ECHO_SEQUENCE,
-                    modifier = Modifier.size(96.dp).testTag(CHECK_ECHO_TAG),
+                    modifier = Modifier.size(if (short) 56.dp else 96.dp).testTag(CHECK_ECHO_TAG),
                     idle = CheckEchoIdle,
                     stageColor = MaterialTheme.colorScheme.primaryContainer,
                 )
@@ -159,6 +171,9 @@ internal fun TurnstileStepUpSheet(onSkip: () -> Unit, challenge: @Composable () 
         }
     }
 }
+
+/** Below this window height (dp) Echo and the gaps shrink so the check and Skip fit without scrolling. */
+internal const val CHECK_SHORT_WINDOW_DP = 480f
 
 /** Echo's curious asking pose from onboarding, so the check feels like part of the same chat. */
 private const val CHECK_ECHO_SEQUENCE = "onboarding-question"
