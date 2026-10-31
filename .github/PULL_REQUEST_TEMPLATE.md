@@ -16,17 +16,17 @@ Do **not** use sentence-case titles without a type prefix (e.g. avoid `Polish th
 
 The unit workflow runs architecture checks, detekt, JVM tests, Kover coverage, dependency guards, Python release-tooling tests, and Android lint on PR pushes, as parallel jobs, unless a safe docs/chore PR uses `[skip unit]` or the PR changes only documentation. A new commit cancels the previous in-progress run; Actions → Run workflow runs the full suite. Run `./gradlew ktlintCheck` locally for Kotlin changes; ktlint is not part of the current PR workflow. There is **no merge queue**.
 
-Master is protected by a branch ruleset. Required checks before merge:
+Master is protected by a branch ruleset. Required before merge:
 
 1. **`testDebugUnitTest`** — PR pushes (new commits cancel the prior run; `[skip unit]` in the title no-ops for safe docs/chore only)
-2. **`coderabbit-threads-resolved`** — every non-outdated CodeRabbit review thread is marked Resolved
+2. **Every review conversation resolved** — GitHub's conversation resolution, CodeRabbit's threads included
 
 Also on PRs (not ruleset-required): SonarCloud App, CodeRabbit App, Gitleaks. The PR must have **zero Sonar new-code issues**.
 
 Flow:
 
 1. Open the PR and iterate (unit suite cancels prior runs).
-2. Address **every** CodeRabbit finding and mark every CodeRabbit thread **Resolved**; fix Sonar new-code issues and wait for unit + **`coderabbit-threads-resolved`**. The bare CodeRabbit status only confirms that its review completed.
+2. Address **every** CodeRabbit finding and mark every CodeRabbit thread **Resolved**; fix Sonar new-code issues and wait for the unit suite; the merge button stays locked until every conversation is resolved. The bare CodeRabbit status only confirms that its review completed.
 3. If review decision is **`CHANGES_REQUESTED`**, stop automated merging. Do not dismiss the review or force-merge; ask a maintainer to merge (or dismiss) manually.
 4. Otherwise squash-merge when required checks are green. A maintainer may explicitly authorize bypassing required status checks for this PR; general merge approval is not bypass approval. Report remaining checks and known risks before using the exception. Review requirements still apply.
 5. Optional: Actions → Run workflow (`Unit Tests`) for a manual full gate.
