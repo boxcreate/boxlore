@@ -6,7 +6,11 @@
 # Why: the CodeRabbit App status only means "review finished", not "findings cleared".
 # This job is the merge gate for CodeRabbit. SonarCloud is its own App (no bridge WF).
 #
-# After resolving threads without a new push, re-run via workflow_dispatch (pr_number).
+# Runs when the PR changes and when a review is submitted (CodeRabbit posts its findings as a review).
+# After resolving threads without a new push, re-run this check from the PR (Re-run jobs), which
+# reports on the PR's head commit; a workflow_dispatch run reports on the commit of the branch it runs on.
+# No check_run trigger: a check_run-triggered run reports on the default branch's latest commit, never
+# on the PR, so it couldn't update this check.
 
 name: CodeRabbit Threads Resolved
 
@@ -15,8 +19,6 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
   pull_request_review:
     types: [submitted, dismissed]
-  check_run:
-    types: [completed]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -35,9 +37,6 @@ permissions:
 jobs:
   coderabbit-threads-resolved:
     name: coderabbit-threads-resolved
-    if: >
-      github.event_name != 'check_run' ||
-      contains(github.event.check_run.name, 'CodeRabbit')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -48,7 +47,6 @@ jobs:
           PR_NUMBER_INPUT: ${{ github.event.inputs.pr_number || '' }}
           PR_NUMBER_EVENT: ${{ github.event.pull_request.number || '' }}
           HEAD_SHA_PR: ${{ github.event.pull_request.head.sha || '' }}
-          HEAD_SHA_CHECK: ${{ github.event.check_run.head_sha || '' }}
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
@@ -58,9 +56,6 @@ jobs:
             pull_request|pull_request_review)
               PR_NUMBER="${PR_NUMBER_EVENT}"
               HEAD_SHA="$HEAD_SHA_PR"
-              ;;
-            check_run)
-              HEAD_SHA="$HEAD_SHA_CHECK"
               ;;
             workflow_dispatch)
               HEAD_SHA="$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq .head.sha)"
@@ -171,7 +166,7 @@ jobs:
             echo "### Unresolved CodeRabbit review threads (${COUNT})"
             echo "$OPEN_JSON" | jq -r '.[] | "- **@\(.author)**: \(.preview)\n  \(.url)"'
             echo "::error::${COUNT} unresolved CodeRabbit review thread(s) on PR #${PR_NUMBER}"
-            echo "Address each finding, mark the thread Resolved, then re-run this workflow or push."
+            echo "Address each finding, mark the thread Resolved, then re-run this check (Re-run jobs) or push."
             exit 1
           fi
 
