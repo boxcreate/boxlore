@@ -2,10 +2,14 @@ name: Unit Tests
 
 # Runs on:
 # - `pull_request` — every PR push (new commits cancel the previous in-progress run)
-# - `push` to `master` — populates and refreshes the primary GitHub Actions build cache
-# - `workflow_dispatch` — manual full gate (always runs; ignores [skip unit])
-# Put `[skip unit]` in the PR title to no-op (still reports green as `testDebugUnitTest`).
-# Use only for docs/chore with no logic risk.
+# - `push` to `master` — refreshes the GitHub Actions Gradle caches that PR runs read
+# - `workflow_dispatch` — manual full gate (always runs; ignores [skip unit] and docs-only changes)
+# The suite runs as parallel jobs: static checks, unit tests in four shards (app, core, and the feature
+# modules in two groups of similar test weight), merged coverage over the shards' results, and lint in
+# three shards (app, core, features). `testDebugUnitTest`,
+# the check the master ruleset requires, passes only when every one of them passed.
+# Put `[skip unit]` in the PR title to no-op (still reports green as `testDebugUnitTest`); a PR that
+# changes only documentation skips the Android jobs on its own. Use these only with no logic risk.
 # Bot pushes to master use boxlore-master-pusher (ruleset Integration bypass).
 on:
   pull_request:
@@ -18,38 +22,59 @@ concurrency:
   group: unit-tests-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
+env:
+  # The feature modules with the heaviest tests; the others run in the features-b shard, so a new
+  # feature module lands there without a workflow change. Keep the two groups' run times similar.
+  FEATURES_A: '^:feature:(home|player|library|widgets|history|briefing)$'
+
 jobs:
-  detect-skip:
+  changes:
     name: Detect Skip Condition
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      skip: ${{ steps.check.outputs.skip }}
-    steps:
-      - name: Detect [skip unit] in PR title
-        id: check
-        env:
-          PR_TITLE: ${{ github.event.pull_request.title || '' }}
-        run: |
-          set -euo pipefail
-          echo "PR title: ${PR_TITLE}"
-          if [ "${{ github.event_name }}" = "pull_request" ] && echo "$PR_TITLE" | grep -qi '\[skip unit\]'; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "skipped via [skip unit]"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
-
-  unit-tests-and-quality:
-    name: Unit Tests & Quality
-    needs: detect-skip
-    if: needs.detect-skip.outputs.skip != 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 5
     permissions:
       contents: read
       pull-requests: read
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+    steps:
+      - name: Skip for [skip unit] or a docs-only PR
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_TITLE: ${{ github.event.pull_request.title || '' }}
+          PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          skip=false
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            if echo "$PR_TITLE" | grep -qi '\[skip unit\]'; then
+              skip=true
+              echo "Skipped via [skip unit] in the PR title."
+            else
+              files="$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" --paginate --jq '.[].filename')"
+              # Documentation: Markdown outside source sets, docs/, screenshots/ and the license.
+              code="$(printf '%s\n' "$files" | awk 'NF && !((/\.md$/ && !/\/src\//) || /^docs\// || /^screenshots\// || /^LICENSE$/)')"
+              if [ -n "$files" ] && [ -z "$code" ]; then
+                skip=true
+                echo "Only documentation changed; the Android jobs are skipped:"
+                printf '%s\n' "$files"
+              fi
+            fi
+          fi
+          echo "skip=$skip" >> "$GITHUB_OUTPUT"
+
+  static:
+    name: Static checks
+    needs: changes
+    if: needs.changes.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -65,97 +90,176 @@ jobs:
       - name: Changelog and release-note script tests
         run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
-        with:
-          cache-read-only: false
-
-      # Real google-services.json lives in the GitHub Environment "release"
-      # (GOOGLE_SERVICES_JSON_BASE64) and is not available to PR/push CI.
-      # This stub only satisfies the Google Services Gradle plugin for unit tests.
-      - name: Write CI stub google-services.json
-        uses: ./.github/actions/write-ci-google-services
-
       - name: Architecture boundary checks
         run: |
           bash scripts/ci/check-feature-no-boxlore-database.sh
           bash scripts/ci/check-feature-no-posthog.sh
 
-      - name: Detekt, Unit Tests, Coverage & Dependency Guards
+      - name: Every module belongs to a test shard
         run: |
-          ./gradlew detekt testDebugUnitTest :koverVerifyMerged :app:dependencyGuard :core:catalog:dependencyGuard :core:playback:dependencyGuard --continue
+          set -euo pipefail
+          other="$(grep -oE 'include\("[^"]+"\)' settings.gradle.kts | sed -E 's/include\("(.*)"\)/\1/' | grep -vE '^(:app|:core:.+|:feature:.+)$' || true)"
+          if [ -n "$other" ]; then
+            echo "::error::Add these modules to a shard in .github/workflows/unit-tests.yml: ${other}"
+            exit 1
+          fi
 
-      - name: Scrub google-services.json
-        if: always()
-        run: rm -f app/google-services.json
+      - uses: ./.github/actions/android-setup
+      - name: Detekt and dependency guards
+        run: ./gradlew detekt :app:dependencyGuard :core:catalog:dependencyGuard :core:playback:dependencyGuard --continue
 
-  lint-debug:
-    name: Lint Debug
-    needs: detect-skip
-    if: needs.detect-skip.outputs.skip != 'true'
+  tests:
+    name: Unit tests (${{ matrix.shard }})
+    needs: changes
+    if: needs.changes.outputs.skip != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    permissions:
-      contents: read
-      pull-requests: read
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [app, core, features-a, features-b]
     steps:
       - name: Checkout
         uses: actions/checkout@v5
         with:
           persist-credentials: false
+      - uses: ./.github/actions/android-setup
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
+      # Robolectric downloads an Android runtime jar per test SDK into ~/.m2 when tests start, and a
+      # failed download fails every test that needs it. Keep the jars per shard; the key changes with
+      # the Robolectric version and the set of SDKs tests pin. Only master saves, like the Gradle cache.
+      - name: Robolectric cache key
+        id: robolectric-key
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -euo pipefail
+          version="$(sed -nE 's/^robolectric = "([^"]+)"/\1/p' gradle/libs.versions.toml)"
+          sdks="$(grep -rhoE 'sdk *= *\[[0-9, ]+\]' --include='*.kt' . | tr -d ' ' | sort -u | sha256sum | cut -c1-12)"
+          echo "key=robolectric-${SHARD}-${version}-${sdks}" >> "$GITHUB_OUTPUT"
+      - name: Restore Robolectric runtime jars
+        id: robolectric-cache
+        uses: actions/cache/restore@v4
         with:
-          distribution: temurin
-          java-version: "17"
+          path: ~/.m2/repository/org/robolectric
+          key: ${{ steps.robolectric-key.outputs.key }}
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+      - name: Unit tests
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -euo pipefail
+          modules() { grep -oE 'include\("[^"]+"\)' settings.gradle.kts | sed -E 's/include\("(.*)"\)/\1/'; }
+          case "$SHARD" in
+            app) selected="$(modules | grep -E '^:app$')" ;;
+            core) selected="$(modules | grep -E '^:core:')" ;;
+            features-a) selected="$(modules | grep -E "$FEATURES_A")" ;;
+            features-b) selected="$(modules | grep -E '^:feature:' | grep -vE "$FEATURES_A")" ;;
+          esac
+          tasks="$(printf '%s\n' "$selected" | sed 's/$/:testDebugUnitTest/' | tr '\n' ' ')"
+          echo "Running: $tasks"
+          ./gradlew $tasks --continue
+
+      - name: Save Robolectric runtime jars
+        if: success() && github.ref == 'refs/heads/master' && steps.robolectric-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
         with:
-          cache-read-only: false
+          path: ~/.m2/repository/org/robolectric
+          key: ${{ steps.robolectric-key.outputs.key }}
 
-      - name: Write CI stub google-services.json
-        uses: ./.github/actions/write-ci-google-services
+      # Each test task writes its coverage (Kover's binary report); the coverage job merges every shard's.
+      - name: Pack coverage data
+        run: find . -path '*/build/kover/bin-reports/*.ic' -print0 | tar --null -czf "kover-${{ matrix.shard }}.tgz" --files-from=-
+      - name: Upload coverage data
+        uses: actions/upload-artifact@v4
+        with:
+          name: kover-${{ matrix.shard }}
+          path: kover-${{ matrix.shard }}.tgz
+          retention-days: 1
+
+  coverage:
+    name: Coverage
+    needs: [changes, tests]
+    if: needs.changes.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/android-setup
+
+      - name: Download the shards' coverage data
+        uses: actions/download-artifact@v4
+        with:
+          pattern: kover-*
+          path: ${{ runner.temp }}/kover
+          merge-multiple: true
+      - name: Unpack coverage data
+        run: for pack in "$RUNNER_TEMP"/kover/*.tgz; do tar -xzf "$pack"; done
+
+      # The tests already ran in the shards: verify the merged floor from their coverage data.
+      - name: Merged coverage floor
+        run: ./gradlew :koverVerifyMerged -x testDebugUnitTest
+
+  lint-debug:
+    name: Lint Debug (${{ matrix.shard }})
+    needs: changes
+    if: needs.changes.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [app, core, features]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/android-setup
 
       - name: Lint debug
-        run: ./gradlew lintDebug
-
-      - name: Scrub google-services.json
-        if: always()
-        run: rm -f app/google-services.json
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -euo pipefail
+          modules() { grep -oE 'include\("[^"]+"\)' settings.gradle.kts | sed -E 's/include\("(.*)"\)/\1/'; }
+          case "$SHARD" in
+            app) prefix='^:app$' ;;
+            core) prefix='^:core:' ;;
+            features) prefix='^:feature:' ;;
+          esac
+          tasks="$(modules | grep -E "$prefix" | sed 's/$/:lintDebug/' | tr '\n' ' ')"
+          echo "Running: $tasks"
+          ./gradlew $tasks --continue
 
   testDebugUnitTest:
     name: testDebugUnitTest
-    needs: [detect-skip, unit-tests-and-quality, lint-debug]
+    needs: [changes, static, tests, coverage, lint-debug]
     if: always()
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - name: Evaluate Check Suite
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          SKIP: ${{ needs.changes.outputs.skip }}
+          STATIC: ${{ needs.static.result }}
+          TESTS: ${{ needs.tests.result }}
+          COVERAGE: ${{ needs.coverage.result }}
+          LINT: ${{ needs.lint-debug.result }}
         run: |
           set -euo pipefail
-          SKIP="${{ needs.detect-skip.outputs.skip }}"
-          if [ "$SKIP" = "true" ]; then
-            echo "Suite skipped via [skip unit] in PR title."
+          if [ "$CHANGES" = "success" ] && [ "$SKIP" = "true" ]; then
+            echo "Suite skipped ([skip unit] in the PR title, or a docs-only PR)."
             exit 0
           fi
-
-          TEST_RES="${{ needs.unit-tests-and-quality.result }}"
-          LINT_RES="${{ needs.lint-debug.result }}"
-          echo "Unit Tests & Quality result: $TEST_RES"
-          echo "Lint Debug result: $LINT_RES"
-
-          if [ "$TEST_RES" != "success" ] || [ "$LINT_RES" != "success" ]; then
-            echo "::error::One or more required CI check jobs failed (tests: $TEST_RES, lint: $LINT_RES)."
-            exit 1
-          fi
-
+          echo "Static checks: $STATIC; unit tests: $TESTS; coverage: $COVERAGE; lint: $LINT"
+          for result in "$CHANGES" "$STATIC" "$TESTS" "$COVERAGE" "$LINT"; do
+            if [ "$result" != "success" ]; then
+              echo "::error::One or more required CI check jobs did not pass (static: $STATIC, tests: $TESTS, coverage: $COVERAGE, lint: $LINT)."
+              exit 1
+            fi
+          done
           echo "All required tests, linters, and quality gates passed successfully."

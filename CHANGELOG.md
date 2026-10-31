@@ -8,12 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > **AI-generated summaries:** May contain mistakes. Verify details against the linked pull requests.
 
 ## [Unreleased]
-
 ### Added
 - New folder flow on Subscriptions (`NewFolderFlow`) with Shows, Genre and Auto, and full-page Edit folder and Auto-organize (`BoxloreDialog`; framed panel on tablets). Folder pages and drafts are kept in saved state (`FolderPagesState`). ([#1198](https://github.com/boxcreate/boxlore/pull/1198)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - `AutoOrganizeFolderLook`: genre folders made when a show is followed or its genre changes use the look saved on Auto-organize. ([#1198](https://github.com/boxcreate/boxlore/pull/1198)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - New Episodes swipe actions (add to queue, mark played) and pull to refresh through `SubscriptionForegroundSync.refreshNow()`, which skips the cooldown. ([#1198](https://github.com/boxcreate/boxlore/pull/1198)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - `subscriptions_grid_view`, `auto_organize_folder_size` and `auto_organize_tile_covers` preferences. ([#1198](https://github.com/boxcreate/boxlore/pull/1198)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Listening history Insights tab (time, listening type, top shows, listening clock, weekdays, month mosaic, records, genres, milestones, Where you listen, New or catching up) and a monthly listening story with Echo (`StoryLogic`, `StoryPlayer`, How you listened, records, share card, Echo lines per situation in `StoryEchoLines`). ([#1207](https://github.com/boxcreate/boxlore/pull/1207)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
+- Daily listening summaries keep the longest session and time by output and source (Room v41, `ListeningDayTotals`); they sync (`listeningTotals`) and go into backup version 9. ([#1207](https://github.com/boxcreate/boxlore/pull/1207)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
 - Episode links, pushes and Android Auto items resolve by show: stored row, then trusted alias, then `/v2/episode` (old Podcast Index IDs included; v1 only when the v2 route can't answer), then one read of the show's feed for `needsFeed` episodes (`EpisodeLinkResolver`). ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `boxlore://episode/{id}?show=` and `&show=` share deep-link patterns, mapped onto the route's `podcastId`; Play install referrers keep `show`. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Episode share links carry the recipe ID plus `&show=` and register the episode first (`EpisodeSharePreparer`); `EpisodeShareRegistrationWorker` (unique work `episode-share-registration-<hash>`) retries in the background. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -51,8 +52,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optional `recipe_id` declared on every analytics event that carries `episode_id`, and `recipe_ids` on `home_surface_impression`. Optional `recipeId` and `catalogKey` on `Episode`. ([#1173](https://github.com/boxcreate/boxlore/pull/1173)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - Room v39: `episode_aliases`, `episode_group_state` and `upgrade_repair_shows`, new columns on `podcasts`, `local_episode_feeds`, `local_episodes` and `queue_metadata`, and `MIGRATION_38_39`, which records an alias and one owner for every stored episode ID of a Podcast Index show without changing any stored value. ([#1175](https://github.com/boxcreate/boxlore/pull/1175)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - Episode analytics events carry `recipe_id` (and `recipe_ids` on episode impressions) beside the local `episode_id`, and `own_ids_upgrade_completed` reports the one-time upgrade repair once per upgraded install. ([#1189](https://github.com/boxcreate/boxlore/pull/1189)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- `refresh-update-feed` operation: rewrites the update feed's text from master's README without a build or announcement. ([#1213](https://github.com/boxcreate/boxlore/pull/1213)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Changed
 - Subscriptions chips use the Explore Top tab chip style (`SubscriptionChip`); the sort sheet is rebuilt as Material 3 sections; genre folders show an auto icon instead of "Fills from" text. ([#1198](https://github.com/boxcreate/boxlore/pull/1198)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Listening history Timeline tab with Jump back in, search, days or shows and Jump to a day; floating Insights | Timeline switcher; listening sessions kept whole for 400 days (`RETENTION_DAYS`, was 180). ([#1207](https://github.com/boxcreate/boxlore/pull/1207)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
 - Cloud sync carries each history and queue row's recipe ID and catalog key, records pulled rows as episode aliases (`SyncEpisodeIdentity`, `cloud_sync` provenance), merges and removes queue entries per episode with rich removals, and runs a one-time identity catch-up (sync metadata version 3) that adds identity to older builds' cloud rows without changing their values. ([#1179](https://github.com/boxcreate/boxlore/pull/1179)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - New-episode pushes match by catalog key and (show, recipe ID) after GUID and enclosure, and open the recipe ID when no local row exists yet. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Android Auto reads queue, history and downloads across an episode's trusted IDs. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -77,6 +80,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Discovery (recommendations, Home bootstrap, trending, semantic search, curated vibes, curiosity, because-you-like, similar episodes, briefing metadata and chapters) uses the `/v2` routes. Recipe IDs in answers are translated to the phone's stored IDs (`DiscoveryEpisodeIds`, `RoomDiscoveryEpisodeIds`). Seeds and exclusions are sent as alias recipe IDs. Show search and typeahead stay on v1 `/search`. The `v2-discovery-off` switch restores the v1 routes. ([#1180](https://github.com/boxcreate/boxlore/pull/1180)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `FeedAddressUpdater` is now the only writer of a show's saved feed address. Every path, including restore, cloud pulls, auto-download and feed moves, resets feed validators, keeps the previous address and re-registers notifications. ([#1182](https://github.com/boxcreate/boxlore/pull/1182)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `TurnstileStepUpSheet` shows Echo (onboarding's asking pose, on its stage) beside a new heading, explains the check in one line and wraps Cloudflare's check in a `surfaceContainerHigh` card. `TurnstileStepUpHostAdaptiveTest` checks Echo beside its line and the check inside its card in every presentation. ([#1205](https://github.com/boxcreate/boxlore/pull/1205)) <!-- impact:user-impact-low --> <!-- copy:locked -->
+- `compileSdk` and `targetSdk` 37 (Android 17) in every module; the release build and dry run install `platforms;android-37.0`. ([#1216](https://github.com/boxcreate/boxlore/pull/1216)) <!-- impact:user-impact-low --> <!-- copy:locked -->
+- On Android 17 the full player's Cast button requests `ACCESS_LOCAL_NETWORK` before its device sheet scans, and opens the system output picker (`SystemOutputSwitcherDialogController`) when it's declined. ([#1216](https://github.com/boxcreate/boxlore/pull/1216)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `StickyEpisodeIdentity.catalogKey` trims with an explicit character set equal to Kotlin's `trim()` on Android, so catalog keys no longer depend on the runtime's Unicode tables. ([#1139](https://github.com/boxcreate/boxlore/pull/1139)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - New chart shows get their newest 5 episodes embedded first and the rest of their window after 7 days on the charts (`NEW_ENTRANT_EPISODES`, `NEW_ENTRANT_DEPTH_DAYS`). ([#1141](https://github.com/boxcreate/boxlore/pull/1141)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync records new episodes in the episode book, names their vectors by served ID, and no longer re-embeds an episode when Podcast Index changes its ID. ([#1147](https://github.com/boxcreate/boxlore/pull/1147)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
@@ -90,6 +95,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Catalog reads record an `episode_aliases` row for every ID they write, settle unresolved aliases they can attribute, and store key repairs as alias provenance (`CatalogAliasRecords`). The collision guard checks aliases, tries the recipe ID before reserving, and reserves IDs from the show ID with an alias. ([#1177](https://github.com/boxcreate/boxlore/pull/1177)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - Recipe-range episode IDs resolve through `/v2/episode` and never through the Podcast Index episode route. ([#1177](https://github.com/boxcreate/boxlore/pull/1177)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - Catalog reads no longer load a Podcast Index list (`RefreshRequest.loadPiBaseline` removed). The 1,000-item `GET episodes/match` list now serves only the feed-only extras of Podcast Index shows. ([#1177](https://github.com/boxcreate/boxlore/pull/1177)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- `PodcastInfoViewModel` is split into same-package helpers (`PodcastInfoShowLoader`, `PodcastInfoEpisodePaging`, `PodcastInfoPullRefresh`, `PodcastInfoPostSubscribeRefresh`, `PodcastInfoEpisodeActions`, `PodcastInfoSessionTracker`, `PodcastEpisodePlaybackStateLogic`) sharing one `PodcastInfoPageState`, bringing it under the 1,000-line source limit with its API and behaviour unchanged. ([#1208](https://github.com/boxcreate/boxlore/pull/1208)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- The unit suite runs as parallel jobs (static checks, three unit-test shards, merged Kover coverage from the shards, two lint shards) behind the same `testDebugUnitTest` check; only `master` saves the Gradle cache, docs-only PRs skip the Android jobs, Release copy applies the impact labels before checking them (Auto-Triage removed), and `coderabbit-threads-resolved` no longer runs for every finished check. ([#1209](https://github.com/boxcreate/boxlore/pull/1209)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- Listener notes live in `release-notes/upcoming.md`, which PRs edit in place; README Upcoming, the update feed's Coming next, What's New and the release announcement are built from it, and release preparation keeps it as `release-notes/vX.Y.Z.md`. ([#1212](https://github.com/boxcreate/boxlore/pull/1212)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- The update feed trims long notes by whole lines to the app's limits instead of failing. ([#1212](https://github.com/boxcreate/boxlore/pull/1212)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- Publication and `refresh-latest-artifacts` share one job: publication builds the merged release commit (or master's tip with `build_from: latest-master`) at the same version, checks that commit's own README and CHANGELOG, records the build commit in `build-commit.txt`, and on a re-run reuses that commit's published files instead of building again. ([#1213](https://github.com/boxcreate/boxlore/pull/1213)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- `release-contracts.yml` (**Release dry run**) runs on every release PR; `android-setup` installs SDK packages with retries for it and the release build. ([#1213](https://github.com/boxcreate/boxlore/pull/1213)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- README What's New is rendered from `release-notes/vX.Y.Z.md`, and `refresh_update_feed.py` refreshes the update feed's What's new and Coming next. ([#1213](https://github.com/boxcreate/boxlore/pull/1213)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- Listener notes about the same screen or feature are kept together in `release-notes/upcoming.md`; the list's rules, the PR template and `AGENTS.md` say so, and the current list is regrouped. ([#1214](https://github.com/boxcreate/boxlore/pull/1214)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- The unit suite runs the feature tests in two shards (`FEATURES_A` and the rest) and lint in three (app, core, features), so the merged coverage job starts sooner; coverage is counted as before. ([#1217](https://github.com/boxcreate/boxlore/pull/1217)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- Unit-test shards keep Robolectric's Android runtime jars in the Actions cache (per shard, keyed by the Robolectric version and the SDKs tests pin; saved on `master` only), so a Maven Central download can't fail the suite. ([#1218](https://github.com/boxcreate/boxlore/pull/1218)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Fixed
 - Subscription sync re-checks a dead saved feed address against `GET /podcast` once a day per show and reads a new address at once; shows whose own feed failed get their latest episode from `/sync`. ([#1160](https://github.com/boxcreate/boxlore/pull/1160)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - A feed that moved for good (301/308 redirects or `itunes:new-feed-url`, same show title) has its new HTTPS address saved; temporary redirects and `rss:` shows are never moved. ([#1160](https://github.com/boxcreate/boxlore/pull/1160)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
@@ -122,6 +137,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `InstallReferrerManager` opens an install link only on a fresh install, so clearing app data no longer reopens the shared page. ([#1185](https://github.com/boxcreate/boxlore/pull/1185)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - A feed episode whose GUID starts with U+FEFF is no longer added again on every read: feed keys are compared with stored ones as SQLite stores them (`EpisodeRecipeId.comparableKey`). ([#1190](https://github.com/boxcreate/boxlore/pull/1190)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - Play builds whose update check fails offer **Open Google Play** (`openPlayListing`) with **Try again** instead of a dead-end error. ([#1197](https://github.com/boxcreate/boxlore/pull/1197)) <!-- impact:user-impact-low --> <!-- copy:locked -->
+- Listening history's New or catching up share (Insights and the monthly story) is taken of listening whose episode release date is known, instead of counting undated episodes as older. Daily summaries keep a tenth total, `releaseKnownMs` (Room v42, `ListeningReleaseKnownMigration`), carried by cloud sync (`listeningReleaseKnown`), backup version 10 and Undo; the split shows once half the period's listening, and at least 30 minutes of it, has a known date. ([#1211](https://github.com/boxcreate/boxlore/pull/1211)) <!-- impact:user-impact-low+backend-change --> <!-- copy:locked -->
+- Widget updates rejected by Android 17's bitmap memory cap leave the widget's last update in place instead of throwing in the player service (`pushWidgetUpdate`). ([#1216](https://github.com/boxcreate/boxlore/pull/1216)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - The catalog sync no longer deletes vectors it later re-embeds: the nightly trim fails closed, shows keep the highest cap they earned, partial episode lists never cause pruning, and vectors from a failed upload are spooled and uploaded by the next run. ([#1141](https://github.com/boxcreate/boxlore/pull/1141)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync refuses to store objects as `[object Object]` text: its Turso client rejects them, and the show import and latest-episode update scrub Podcast Index values first. ([#1144](https://github.com/boxcreate/boxlore/pull/1144)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - `EpisodeRecipeId` rejects show IDs above 2^53 − 1, matching the scripts implementation. ([#1145](https://github.com/boxcreate/boxlore/pull/1145)) <!-- impact:no-user-impact --> <!-- copy:locked -->
@@ -135,190 +152,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Legacy local catalog rows keyed `id:<own ID>` or by audio address take the feed's key when the item's own minted ID equals theirs, including on a first read that matched a Podcast Index episode. Rows that find no free ID are logged instead of dropped silently. ([#1171](https://github.com/boxcreate/boxlore/pull/1171)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Removed
 - `SubscriptionFolderDialog`, `FolderEditSheet` and `FolderEditComponents`. ([#1198](https://github.com/boxcreate/boxlore/pull/1198)) <!-- impact:user-impact-high --> <!-- copy:locked -->
-
-<!-- readme-copy:start pr=1140
-### Fixes
-- Turning off episode notifications for an RSS feed now stops sharing its feed link from your device. Links already shared stay in earlier public backups.
-readme-copy:end pr=1140 -->
-
-<!-- readme-copy:start pr=1150
-### Improvements
-- New-episode notifications keep working for shows that moved to a new feed address.
-readme-copy:end pr=1150 -->
-
-<!-- readme-copy:start pr=1151
-### Improvements
-- New-episode notifications arrive sooner after a release.
-readme-copy:end pr=1151 -->
-
-<!-- readme-copy:start pr=1159
-### Fixes
-- Shows with more than 100 episodes keep progress, history and downloads on their newer episodes, and stop listing some twice.
-- An episode of one show no longer replaces an episode of another show that uses the same feed.
-- A feed address boxlore fixes on one device now reaches your other devices through sync.
-readme-copy:end pr=1159 -->
-
-<!-- readme-copy:start pr=1160
-### Critical
-- Shows whose feed stopped working get new episodes again.
-### Fixes
-- Shows that moved to a new feed address now follow it.
-readme-copy:end pr=1160 -->
-
-<!-- readme-copy:start pr=1174
-### Fixes
-- On foldables and tablets, and when Android closes boxlore in the background, a show's search, open dialogs and selected episodes now stay where you left them.
-readme-copy:end pr=1174 -->
-
-<!-- readme-copy:start pr=1176
-### Fixes
-- Some shows no longer list one new episode twice.
-readme-copy:end pr=1176 -->
-
-<!-- readme-copy:start pr=1178
-### Fixes
-- Downloaded episodes that the Smart Queue adds now play from your download.
-readme-copy:end pr=1178 -->
-
-<!-- readme-copy:start pr=1179
-### Improvements
-- Cloud sync keeps your progress, likes, finished episodes and queue in step across all your devices, including ones on older versions of boxlore, and episodes you remove from the queue stay removed everywhere.
-readme-copy:end pr=1179 -->
-
-<!-- readme-copy:start pr=1180
-### Fixes
-- Home and Explore keep the picks and trending shows you already see when boxlore can't reach the server.
-readme-copy:end pr=1180 -->
-
-<!-- readme-copy:start pr=1181
-### Improvements
-- Shared episode links open the right episode, even ones only in a show's own feed, and keep your plays, progress and downloads on the episode you already have.
-- Episodes you share now open for friends on any version of boxlore.
-readme-copy:end pr=1181 -->
-
-<!-- readme-copy:start pr=1182
-### Fixes
-- Shows whose feed moved to a new address keep getting new episodes and notifications.
-readme-copy:end pr=1182 -->
-
-<!-- readme-copy:start pr=1183
-### Fixes
-- After updating, boxlore checks the shows you follow and switches any whose feed has moved, so new episodes and notifications keep arriving.
-readme-copy:end pr=1183 -->
-
-<!-- readme-copy:start pr=1184
-### Improvements
-- Show pages can now list episodes straight from a show’s own feed, keep them for offline viewing, and tell you when boxlore is showing its own episode list instead. Rolling out gradually.
-readme-copy:end pr=1184 -->
-
-<!-- readme-copy:start pr=1185
-### Fixes
-- Clearing boxlore's data no longer opens a random episode on the next launch.
-readme-copy:end pr=1185 -->
-
-<!-- readme-copy:start pr=1186
-### Fixes
-- Shows that changed their catalog number stay followed once: no more Subscribe button or duplicate follow for a show you already follow, and the episodes you played before the change stay marked as played.
-readme-copy:end pr=1186 -->
-
-<!-- readme-copy:start pr=1187
-### Improvements
-- Listening in German, French, Spanish, Portuguese, Russian or Dutch? You can now turn English off in Library settings › Languages, and boxlore adds English shows only when there aren't enough in your languages.
-- Library settings now has separate rows for your chart country and your languages, and changing your country keeps your languages.
-readme-copy:end pr=1187 -->
-
-<!-- readme-copy:start pr=1188
-### Improvements
-- Restoring a library backup now keeps your played and liked episodes attached to the right episodes, and exported OPML files point other apps to each show's own feed.
-readme-copy:end pr=1188 -->
-
-<!-- readme-copy:start pr=1190
-### Fixes
-- Some shows no longer list the same episode over and over after refreshing.
-readme-copy:end pr=1190 -->
-
-<!-- readme-copy:start pr=1191
-### Fixes
-- Turning English off now keeps English shows out of your recommendations, search and suggestions, unless there aren't enough in your languages.
-readme-copy:end pr=1191 -->
-
-<!-- readme-copy:start pr=1192
-### Improvements
-- Free up space with Clear saved shows in Library settings: it removes the episode lists saved for shows you opened but don't follow.
-readme-copy:end pr=1192 -->
-
-<!-- readme-copy:start pr=1193
-### Fixes
-- boxlore no longer crashes on some tablets and foldables when you scroll to the end of the top row on Home.
-readme-copy:end pr=1193 -->
-
-<!-- readme-copy:start pr=1194
-### Improvements
-- After importing your library or picking shows in search, choose whether to see similar shows or go straight to Home, and skip to Home anytime while suggestions load.
-readme-copy:end pr=1194 -->
-
-<!-- readme-copy:start pr=1195
-### Fixes
-- Marquee hero cards with Artwork or App theme cover colors now show the cover clearly, about as bright as Full color, instead of a dark blur.
-readme-copy:end pr=1195 -->
-
-<!-- readme-copy:start pr=1196
-### Improvements
-- Smoother loading on show pages, with the page's shape appearing right away and clearer messages while episodes load.
-### Fixes
-- Hiding completed episodes no longer empties a show's page: boxlore keeps loading until it finds episodes you haven't finished, and tells you when you've finished them all.
-readme-copy:end pr=1196 -->
-
-<!-- readme-copy:start pr=1197
-### Fixes
-- If boxlore can't check Google Play for updates, it now offers to open its Play Store page so you can update there.
-readme-copy:end pr=1197 -->
-
-<!-- readme-copy:start pr=1198
-### Improvements
-- Subscriptions has a cleaner look, and making a folder takes a few short steps: pick shows yourself, follow one genre, or let Auto make a folder for every genre. Shows you follow later are added to their genre folder automatically.
-- On New Episodes, swipe right to add an episode to your queue or left to mark it played, and pull down to check for new episodes.
-- Subscriptions remembers whether you chose grid or list.
-readme-copy:end pr=1198 -->
-
-<!-- readme-copy:start pr=1199
-### Improvements
-- In light mode, the player keeps a light Play icon on a deeper cover colour, and its text uses a soft dark shade of the cover instead of black.
-- The player's quick-action buttons use cleaner, matching icons.
-readme-copy:end pr=1199 -->
-
-<!-- readme-copy:start pr=1200
-### Fixes
-- Backups now include your whole listening history, not just your 300 most recent episodes.
-- Listening insights now count every episode you've finished, started or liked, not just recent ones.
-readme-copy:end pr=1200 -->
-
-<!-- readme-copy:start pr=1201
-### Improvements
-- Time listened in your Listening History now comes back when you restore a backup or sign in on a new phone, and listening on each of your phones counts once.
-readme-copy:end pr=1201 -->
-
-<!-- readme-copy:start pr=1202
-### Fixes
-- New-episode notifications no longer repeat for the same episode when one show's feed misbehaves.
-readme-copy:end pr=1202 -->
-
-<!-- readme-copy:start pr=1203
-### Fixes
-- Episodes you add to your queue from another show, or play from Downloads, now appear under the right show in the player, including after you restart boxlore.
-readme-copy:end pr=1203 -->
-
-<!-- readme-copy:start pr=1204
-### Improvements
-- The Vergecast, Conspiracy Theories and Waveform now have show pages in their own style, marked as a boxlore pick, with the latest episode up top and a short moment when you subscribe.
-### Fixes
-- Full episodes that a show's feed labels as trailers now show as normal episodes and can play next in Smart Queue.
-readme-copy:end pr=1204 -->
-
-<!-- readme-copy:start pr=1205
-### Improvements
-- When boxlore needs a quick check that you're a person before Echo can suggest shows, Echo now asks for it in its own voice, and the check fits in with the rest of the screen.
-readme-copy:end pr=1205 -->
+- `coderabbit-threads-resolved` workflow and its required check; merging relies on the master ruleset's conversation resolution, which covers every review thread. ([#1210](https://github.com/boxcreate/boxlore/pull/1210)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- Per-PR README release copy, PR-link requirements, the changelog reconcile and backfill steps, the release-notes source option and the offline release rehearsal. ([#1212](https://github.com/boxcreate/boxlore/pull/1212)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- `maestro-nightly.yml` and `new-episode-check.yml`, both disabled: Maestro flows stay a local check, and the new-episode notifier runs on the VPS. ([#1215](https://github.com/boxcreate/boxlore/pull/1215)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added

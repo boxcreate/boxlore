@@ -947,6 +947,18 @@ class UserPreferencesRepository(context: Context,) {
 
     suspend fun removeLastSeenEpisodeId(podcastId: String) = library.setLastSeenEpisodeId(podcastId, null)
 
+    /** The last monthly listening story opened ("2026-10"), so Listening history stops calling it New. */
+    val seenListeningStoryStream: Flow<String?> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) emit(emptyPreferences()) else throw exception
+            }.map { preferences -> preferences[Keys.SEEN_LISTENING_STORY] }
+            .distinctUntilChanged()
+
+    suspend fun setSeenListeningStory(month: String) {
+        dataStore.edit { preferences -> preferences[Keys.SEEN_LISTENING_STORY] = month }
+    }
+
     /** Last listener-selected Home mix: `daily` (default) or `offline`. */
     val homeMixModeStream: Flow<String> =
         dataStore.data

@@ -8,9 +8,11 @@ import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.catalog.ports.ListeningHistoryBackupPort
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.ListeningDayTotals
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.ListeningSessionEntity
+import cx.aswin.boxlore.core.database.ListeningSessionValues
 import cx.aswin.boxlore.core.database.PlayedShowEntity
 import cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort
 import cx.aswin.boxlore.core.model.Episode
@@ -54,7 +56,7 @@ class LibraryBackupListeningRoomTest {
     }
 
     @Test
-    fun aV8BackupRestoresDatesTimingAndPlayedShowsOnAnotherPhone() = runTest {
+    fun aBackupRestoresDatesTimingAndPlayedShowsOnAnotherPhone() = runTest {
         seedSource()
 
         val json = manager(source, PHONE_A).exportLibraryAsJson()
@@ -62,7 +64,7 @@ class LibraryBackupListeningRoomTest {
         manager(target, PHONE_B).importLibraryFromJson(json)
 
         val exported = JsonParser.parseString(json).asJsonObject
-        assertEquals(8, exported["version"].asInt)
+        assertEquals(10, exported["version"].asInt)
         val listening = exported["listening"].asJsonObject
         assertEquals(PHONE_A, listening["deviceId"].asString)
         assertEquals("legacy-$PHONE_A", listening["dailySummaries"].asJsonArray[0].asJsonObject["deviceId"].asString)
@@ -78,6 +80,80 @@ class LibraryBackupListeningRoomTest {
         val summary = target.listeningRollupDao().getAllRollups().single()
         assertEquals("legacy-$PHONE_A" to 90_000L, summary.deviceId to summary.consumedMs)
         assertEquals(PlayedShowEntity(SHOW, "Show", null, "History", 0L, 300L, isDirty = true), target.playedShowDao().getPlayedShow(SHOW))
+    }
+
+    @Test
+    fun aDaysRicherTotalsTravelInTheBackupAndAnOlderBackupReadsThemAsUnknown() = runTest {
+        val totals = ListeningDayTotals(longestSessionMs = 45_000L, carMs = 30_000L, loreMs = 20_000L, newReleaseMs = 10_000L)
+        source.listeningRollupDao().upsertRollup(rollup(day = 7L, device = PHONE_A, consumed = 90_000L).copy(totals = totals))
+
+        manager(target, PHONE_B).importLibraryFromJson(manager(source, PHONE_A).exportLibraryAsJson())
+
+        assertEquals(totals, target.listeningRollupDao().getRollup(PHONE_A, 7L, EPISODE)!!.totals)
+
+        // A v8 backup's summary has no totals: they read 0, not known.
+        LibraryBackupListening(target, PHONE_B).restore(
+            ListeningBackup(deviceId = PHONE_C, dailySummaries = listOf(rollupBackup(day = 8L, device = PHONE_C, consumed = 60_000L))),
+            refusedEpisodeIds = emptySet(),
+        )
+        assertEquals(ListeningDayTotals(), target.listeningRollupDao().getRollup(PHONE_C, 8L, EPISODE)!!.totals)
+
+        // A v9 backup of that same listening fills its totals in; a v8 one of it again takes nothing away.
+        LibraryBackupListening(target, PHONE_B).restore(
+            ListeningBackup(deviceId = PHONE_C, dailySummaries = listOf(rollupBackup(day = 8L, device = PHONE_C, consumed = 60_000L).copy(longestSessionMs = 60_000L, carMs = 60_000L))),
+            refusedEpisodeIds = emptySet(),
+        )
+        LibraryBackupListening(target, PHONE_B).restore(
+            ListeningBackup(deviceId = PHONE_C, dailySummaries = listOf(rollupBackup(day = 8L, device = PHONE_C, consumed = 60_000L))),
+            refusedEpisodeIds = emptySet(),
+        )
+        assertEquals(ListeningDayTotals(longestSessionMs = 60_000L, carMs = 60_000L), target.listeningRollupDao().getRollup(PHONE_C, 8L, EPISODE)!!.totals)
+    }
+
+    @Test
+    fun aDaysReleaseDateTimeTravelsInTheBackupAndAV9BackupReadsItAsUnknown() = runTest {
+        val totals = ListeningDayTotals(carMs = 90_000L, newReleaseMs = 30_000L, releaseKnownMs = 70_000L)
+        source.listeningRollupDao().upsertRollup(rollup(day = 7L, device = PHONE_A, consumed = 90_000L).copy(totals = totals))
+
+        val json = manager(source, PHONE_A).exportLibraryAsJson()
+        manager(target, PHONE_B).importLibraryFromJson(json)
+
+        assertEquals(70_000L, JsonParser.parseString(json).asJsonObject["listening"].asJsonObject["dailySummaries"].asJsonArray[0].asJsonObject["releaseKnownMs"].asLong)
+        assertEquals(totals, target.listeningRollupDao().getRollup(PHONE_A, 7L, EPISODE)!!.totals)
+
+        // A v9 backup's summary has the other totals but no release date time: it reads 0, not known.
+        val v9 = rollupBackup(day = 8L, device = PHONE_C, consumed = 60_000L).copy(carMs = 60_000L, newReleaseMs = 20_000L)
+        LibraryBackupListening(target, PHONE_B).restore(ListeningBackup(deviceId = PHONE_C, dailySummaries = listOf(v9)), refusedEpisodeIds = emptySet())
+        assertEquals(ListeningDayTotals(carMs = 60_000L, newReleaseMs = 20_000L), target.listeningRollupDao().getRollup(PHONE_C, 8L, EPISODE)!!.totals)
+
+        // A v10 backup of that same listening fills it in; the v9 one again takes nothing away.
+        LibraryBackupListening(target, PHONE_B).restore(
+            ListeningBackup(deviceId = PHONE_C, dailySummaries = listOf(v9.copy(releaseKnownMs = 50_000L))),
+            refusedEpisodeIds = emptySet(),
+        )
+        LibraryBackupListening(target, PHONE_B).restore(ListeningBackup(deviceId = PHONE_C, dailySummaries = listOf(v9)), refusedEpisodeIds = emptySet())
+        assertEquals(
+            ListeningDayTotals(carMs = 60_000L, newReleaseMs = 20_000L, releaseKnownMs = 50_000L),
+            target.listeningRollupDao().getRollup(PHONE_C, 8L, EPISODE)!!.totals,
+        )
+    }
+
+    @Test
+    fun anOlderBackupsSummaryOfListeningHeldHereInSessionsKeepsTheirReleaseDateTime() = runTest {
+        // Phone C's day 9, held here as a dated session (from an earlier backup), and a later session of that day.
+        val covered = ListeningSessionEntity(
+            sessionId = "c-1", episodeId = EPISODE, podcastId = SHOW, startedAt = 9_000L, endedAt = 69_000L, consumedMs = 60_000L, completed = false,
+            localDay = 9L, timeBucket = 1, deviceId = PHONE_C, output = ListeningSessionValues.OUTPUT_CAR, episodePublishedAt = 5_000L,
+        )
+        target.listeningSessionDao().upsertSessions(listOf(covered, covered.copy(sessionId = "c-2", startedAt = 70_000L, endedAt = 130_000L)))
+        // A v9 backup of that phone has the same listening summed, without the release date time.
+        val v9 = rollupBackup(day = 9L, device = PHONE_C, consumed = 60_000L).copy(carMs = 60_000L, newReleaseMs = 60_000L)
+
+        LibraryBackupListening(target, PHONE_B).restore(ListeningBackup(deviceId = PHONE_C, dailySummaries = listOf(v9)), refusedEpisodeIds = emptySet())
+
+        // The summary sums the covered session only: it keeps that session's dated time, and the later one stays beside it.
+        assertEquals(listOf("c-2"), target.listeningSessionDao().getAllSessions().map { it.sessionId })
+        assertEquals(60_000L, target.listeningRollupDao().getRollup(PHONE_C, 9L, EPISODE)!!.totals.releaseKnownMs)
     }
 
     @Test

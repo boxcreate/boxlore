@@ -27,7 +27,7 @@ Automated coverage focused on **hermetic JVM** for product logic (queue fill, ra
 | Android lint | `./gradlew lintDebug` | Manifest / resource / API lint | Done |
 | Coverage (Kover) | `./gradlew :koverVerifyMerged` | Merged floor (ratchet toward 80%) | WIP |
 | Screenshots | `screenshots/baselines/` + optional Roborazzi (local) | Visual regressions | Optional |
-| Maestro | `maestro/` YAML validate | Flow file presence/syntax | Done |
+| Maestro | `maestro/` flows on a device | Installed-app smoke checks | Optional, local only |
 
 Architecture boundaries: [`ARCHITECTURE.md`](../ARCHITECTURE.md).
 
@@ -47,9 +47,9 @@ Run commands from the repository root. Start with the affected behavior and broa
 | Changelog or release tooling | Run `python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v` |
 | Documentation only | Review local links and instruction destinations; run `git diff --check` |
 
-For Android code changes, the full CI command is `./gradlew detekt testDebugUnitTest :koverVerifyMerged :app:dependencyGuard :core:catalog:dependencyGuard :core:playback:dependencyGuard --continue`, with `./gradlew lintDebug` in a separate job. The unit workflow also runs the architecture shell guards and Python release-tooling tests. `ktlintCheck` is a local check; it is not part of the current PR workflow.
+For Android code changes, CI runs the same gate as `./gradlew detekt testDebugUnitTest :koverVerifyMerged :app:dependencyGuard :core:catalog:dependencyGuard :core:playback:dependencyGuard lintDebug --continue`, split into parallel jobs (`.github/workflows/unit-tests.yml`): static checks (Detekt, the dependency guards, the architecture shell guards and the release-tooling script tests); unit tests in four shards (`:app`, the `:core:*` modules, and the `:feature:*` modules in two groups of similar test weight: `FEATURES_A` in the workflow lists the heavier group, and any other feature module, new ones included, runs in the second; modules are read from `settings.gradle.kts`, and a module outside `:app`, `:core:*` and `:feature:*` fails the static checks); a coverage job that checks the merged Kover floor from all shards' coverage data without running the tests again, so it starts when the last test shard finishes and still counts a module's code covered by another module's tests; and `lintDebug` in three shards (`:app`, the `:core:*` modules, the `:feature:*` modules). `testDebugUnitTest` passes only when all of them pass. Only `master` saves the Gradle cache; PR runs read it. Each test shard also keeps Robolectric's Android runtime jars (downloaded per test SDK when tests start) under a key built from the Robolectric version and the SDKs tests pin, so a failed download can't fail the suite once master has saved them. `ktlintCheck` is a local check; it is not part of the current PR workflow.
 
-For release-copy and announcement changes, the Python suite covers required copy, preserved wording/order, historical backfill, batch failure before writes, UTF-8 payload limits, provider dry-run flags and test-mode audience rejection with a fake sender. **Offline release rehearsal** (manual dispatch) runs the same suite and writes reviewable candidate files without credentials, publishing or messages. **Release copy** checks the PR's body and impact labels without an Android build. See [release-copy and rehearsal recovery](../scripts/README.md#authored-release-copy-and-isolated-rehearsals) before testing live notifications. These are offline checks; APK installation and actual notification receipt require separate device acceptance.
+For release-notes and announcement changes, the Python suite covers the notes list's rules, the PR check (developer copy, impact label, list edited or covered), README rendering, release preparation (archive, fresh list, PRs missing from CHANGELOG, no file changed when the list is empty), the announcement drawn from the released notes, update-feed trimming to the app's limits, UTF-8 payload limits, provider dry-run flags and test-mode audience rejection with a fake sender. **Release copy** checks the PR's body, labels and changed files without an Android build. See [release notes and announcements](../scripts/README.md#release-notes-and-announcements) before testing live notifications. These are offline checks; APK installation and actual notification receipt require separate device acceptance.
 
 Report which checks completed and distinguish automated coverage from manual checks or paths that still need verification. Script tests exercise local logic; they do not verify a production deployment.
 
@@ -103,7 +103,7 @@ Run `node --test .github/scripts/test_announcement_admin.cjs` and the Python sui
 | JVM | Every public behavior-owning type has a suite (happy/empty/error/branches) or an irreducible exclusion | `testDebugUnitTest` |
 | ViewModels | Behaviors via hermetic `logic/` + Settings Turbine; AndroidViewModels allowlisted when logic suites exist | unit job |
 | Screenshots | Immutable phone screen matrix and Settings dialogs (local record/verify) | Manual / local only |
-| Maestro | YAML present and well-formed | nightly validate |
+| Maestro | Flows run on a device when needed | Manual / local only |
 | Kover merged | **≥ 80%** end state (ratchet **40 → 45 → 55 → 70 → 80**) | `:koverVerifyMerged` |
 | Kover per-module | **≥ 70%** on logic-heavy modules (ratchet as suites land) | module verify |
 | Architecture | ARCHITECTURE.md boundaries | scripts + `ArchitectureGuardTest` + dependencyGuard |
@@ -208,8 +208,7 @@ Application-backed Home/Info suites are **not** pursued; hermetic `logic/` + ass
 | Target | Status |
 | :--- | :--- |
 | Flow YAML under `maestro/` | Done |
-| Nightly YAML validate | Done |
-| Maestro Cloud device runs | Optional; requires configured service credentials |
+| Device runs | Optional, local only; no CI workflow |
 
 See [`maestro/README.md`](../maestro/README.md).
 
@@ -238,17 +237,14 @@ See [`docs/screenshots/README.md`](screenshots/README.md).
 | Workflow | Runs | When | Status |
 | :--- | :--- | :--- | :--- |
 | `unit-tests.yml` | Architecture + detekt + unit + Kover + lint + Dependency Guard + Python release tests | PR / master push / dispatch | Done |
-| `release-copy.yml` | Authored release regions and exactly one impact label | PR, including body / label edits | Configured |
-| `release-rehearsal.yml` | Hermetic script tests and offline candidate previews | Manual | Configured |
-| `coderabbit-threads-resolved.yml` | Fail unless all non-outdated CodeRabbit review threads are Resolved | PR / review | Done |
+| `release-copy.yml` | Developer copy, exactly one impact label, and the listener notes list | PR, including body / label edits | Configured |
 | `gitleaks.yml` | Secret scan | PR / push to master | Done |
-| `maestro-nightly.yml` | Validate Maestro YAML; optional Cloud device job when configured | Nightly / manual | Done |
 
 **Gitleaks allowlist:** `.gitleaks.toml` allows only the `lastRssKey` lines in `scripts/data/episode-tracker.json`. They hold public RSS item GUIDs written by the episode tracker bot. Without it, the local `gitleaks protect --staged` hook flags them whenever master is merged into a branch.
 
-**Merge gate:** master uses a branch ruleset with no merge queue. Required checks are **`testDebugUnitTest`** and **`coderabbit-threads-resolved`**. SonarCloud, CodeRabbit, and Gitleaks also run on PRs. Fix all Sonar new-code issues and address every CodeRabbit finding, marking every review thread Resolved; the bare CodeRabbit status only confirms that the review completed.
+**Merge gate:** master uses a branch ruleset with no merge queue. The required check is **`testDebugUnitTest`**, and the ruleset requires every review conversation to be resolved before merging (GitHub's conversation resolution, which covers CodeRabbit's threads, outdated ones included). SonarCloud, CodeRabbit, and Gitleaks also run on PRs. Fix all Sonar new-code issues and address every CodeRabbit finding, marking every review thread Resolved; the bare CodeRabbit status only confirms that the review completed.
 
-The unit suite cancels prior in-progress runs on each PR push. `[skip unit]` in the PR title no-ops that job only for docs/chore changes with no logic risk; it still reports green. Actions → Run workflow always runs the full suite. If the review decision is `CHANGES_REQUESTED`, stop automated merging and have a maintainer handle the review or merge manually. Otherwise squash-merge after the required checks are green and review requirements are satisfied. A maintainer may explicitly authorize bypassing required status checks for a specific PR; report remaining checks and known risks first. General merge authorization does not authorize a bypass, and review requirements still apply. Repository-administration procedures belong in root `AGENTS.internal.md`.
+The unit suite cancels prior in-progress runs on each PR push. `[skip unit]` in the PR title no-ops the suite only for docs/chore changes with no logic risk, and a PR that changes only documentation (Markdown outside source sets, `docs/`, `screenshots/`, the license) skips it on its own; both still report green. **Release copy** applies the impact labels the PR body's checkboxes pick, then checks the developer copy and the listener notes against the labels as they are now, in one job. Actions → Run workflow always runs the full suite. If the review decision is `CHANGES_REQUESTED`, stop automated merging and have a maintainer handle the review or merge manually. Otherwise squash-merge after the required checks are green and review requirements are satisfied. A maintainer may explicitly authorize bypassing required status checks for a specific PR; report remaining checks and known risks first. General merge authorization does not authorize a bypass, and review requirements still apply. Repository-administration procedures belong in root `AGENTS.internal.md`.
 
 Protected inputs: `app/google-services.json` is gitignored; CI writes a non-secret stub.
 
@@ -269,7 +265,7 @@ Every `app/`, `core/*/`, and `feature/*/` module keeps a folder README. Shape: [
 
 Debug JVM tests do not run optimized DEX. `testReleaseUnitTest` also uses JVM classes before R8, so it cannot replace a release-artifact gate or device acceptance.
 
-`release-contracts.yml` is an optional manual preflight: Actions → Manual optimized release validation → Run workflow, then select the branch to test. It builds unsigned optimized APK/AAB artifacts and runs release lint using the same release rules and resource shrinking, a build-only Firebase stub, no production signing key, and no Crashlytics mapping upload. It does not run automatically on PRs and does not publish a release or send notifications. Both signed build paths in `changelog-on-merge.yml` always run the contract gate before publication. Fast hermetic contract-regression tests remain in PR CI; existing unit/review merge requirements are unchanged.
+`release-contracts.yml` is the **Release dry run**. It runs on every release PR (a `release/v*` branch: the commit that will be released, with its new version code), so a publication failure shows up before the merge, and on demand from Actions → Release dry run → Run workflow on any branch. It builds unsigned optimized APK/AAB artifacts and runs release lint using the same release rules and resource shrinking, a build-only Firebase stub, no production signing key, and no Crashlytics mapping upload. It does not publish a release or send notifications, and it is not a ruleset-required check. The one signed build in `changelog-on-merge.yml`, shared by publication and refresh, always runs the contract gate before publishing. Fast hermetic contract-regression tests remain in PR CI; existing unit/review merge requirements are unchanged.
 
 The gate derives contracts from pre-R8 release class files and the merged manifest, then checks the actual APK **and** AAB DEX with the matching R8 mapping:
 
@@ -298,7 +294,7 @@ python3 .github/scripts/verify_release_contracts.py --sdk <android-sdk> --app-va
 python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
 ```
 
-Keep the release `mapping.txt`, effective `configuration.txt`, `seeds.txt`, `usage.txt`, lint output and gate report for diagnosis. The manual preflight preserves these as diagnostic artifacts; AABs also contain their mapping and signed release builds retain normal Crashlytics upload. Never upload signing keys, local properties or service configuration.
+Keep the release `mapping.txt`, effective `configuration.txt`, `seeds.txt`, `usage.txt`, lint output and gate report for diagnosis. The release dry run preserves these as diagnostic artifacts; AABs also contain their mapping and signed release builds retain normal Crashlytics upload. Never upload signing keys, local properties or service configuration.
 
 ### Release-device acceptance
 
@@ -313,4 +309,3 @@ Install the signed release over the existing app without uninstalling or clearin
 
 Record device/runtime verification separately from optimized-artifact checks. Static checks cannot establish every vendor-ROM behavior, live SDK response, or background-delivery timing.
 
-The CodeRabbit thread check reads every GraphQL page and fails on unresolved current bot threads, incomplete pagination or invalid API responses. `test_review_threads.py` runs the workflow’s actual shell script with a hermetic GitHub fixture, including unresolved/resolved/outdated and malformed-response cases.

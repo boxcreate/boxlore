@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -233,7 +234,7 @@ class ListeningInsightsDaoInMemoryTest {
     }
 
     @Test
-    fun aCopyOfThisPhonesOldListeningPushedFromAnotherInstallationIsHeldOnceAndNotSentAgain() = runTest {
+    fun aCopyOfThisPhonesOldListeningPushedFromAnotherInstallationIsHeldOnceAndOnlyItsTotalsGoUp() = runTest {
         val origins = ListeningOrigins(own = "me", legacy = "legacy-old")
         sessions.upsertSession(session("legacy"))
         maintenance.claimLegacyListening(origins.legacy)
@@ -242,8 +243,83 @@ class ListeningInsightsDaoInMemoryTest {
         maintenance.applyCloudDailyListening(listOf(twinsDay), origins)
 
         assertTrue(sessions.getAllSessions().isEmpty())
-        assertEquals(listOf(twinsDay), rollups.getAllRollups())
+        // The twin's day has no totals (an older build): the session's stay with the same listening.
+        val held = twinsDay.copy(totals = ListeningDayTotals(longestSessionMs = 1_000L))
+        assertEquals(listOf(held), rollups.getAllRollups())
+        // The cloud's copy lacks them, so the day goes up once with them, and then not again.
+        val toPush = maintenance.listeningDaysToPush(origins.pushed, limit = 10)
+        assertEquals(listOf(held), toPush)
+        maintenance.recordPushedDays(toPush)
         assertTrue(maintenance.listeningDaysToPush(origins.pushed, limit = 10).isEmpty())
+    }
+
+    @Test
+    fun sessionDaysAddUpTheTimeWithAKnownReleaseDate() = runTest {
+        sessions.upsertSessions(
+            listOf(
+                session("new").copy(episodePublishedAt = 500L),
+                // Played over a week after its release.
+                session("old").copy(startedAt = ListeningDayTotals.NEW_RELEASE_WINDOW_MS + 1_000L, episodePublishedAt = 500L),
+                session("undated"),
+            ),
+        )
+
+        val day = sessions.observeSessionDays().first().single()
+
+        assertEquals(1_000L, day.newReleaseMs)
+        // The undated session is neither new nor older.
+        assertEquals(2_000L, day.releaseKnownMs)
+        assertEquals(3_000L, day.consumedMs)
+    }
+
+    @Test
+    fun aCloudThatKeepsTheTotalsButNotReleaseDatesDoesNotSendDaysUpAgainUntilItDoes() = runTest {
+        val origins = ListeningOrigins(own = "me", legacy = "legacy-me")
+        sessions.upsertSession(session("dated").copy(deviceId = "me", episodePublishedAt = 500L, output = ListeningSessionValues.OUTPUT_CAR))
+        val sent = maintenance.listeningDaysToPush(origins.pushed, limit = 10)
+        assertEquals(1_000L, sent.single().totals.releaseKnownMs)
+        maintenance.recordPushedDays(sent)
+
+        // The cloud sends the day back without its release date time: this phone still holds it as sent.
+        val cloudCopy = sent.single().copy(totals = sent.single().totals.copy(releaseKnownMs = 0L))
+        maintenance.applyCloudDailyListening(listOf(cloudCopy), origins, cloudStoresTotals = true, cloudStoresReleaseKnown = false)
+        assertTrue(maintenance.listeningDaysToPush(origins.pushed, limit = 10).isEmpty())
+
+        // A cloud that stores it now: the day goes up once more, then not again.
+        maintenance.forgetPushedReleaseKnown()
+        val again = maintenance.listeningDaysToPush(origins.pushed, limit = 10)
+        assertEquals(sent, again)
+        maintenance.recordPushedDays(again)
+        assertTrue(maintenance.listeningDaysToPush(origins.pushed, limit = 10).isEmpty())
+    }
+
+    @Test
+    fun anotherOriginsDayWithoutReleaseDatesKeepsTheHeldOnesOfTheSameListening() = runTest {
+        val origins = ListeningOrigins(own = "me", legacy = "legacy-old")
+        sessions.upsertSession(session("legacy").copy(episodePublishedAt = 500L, output = ListeningSessionValues.OUTPUT_CAR))
+        maintenance.claimLegacyListening(origins.legacy)
+        // A twin on a build before v42 pushed the same listening with its other totals.
+        val twinsTotals = ListeningDayTotals(longestSessionMs = 1_000L, carMs = 1_000L, newReleaseMs = 1_000L)
+        val twinsDay = ListeningRollupEntity(10L, "ep-1", "pod-1", 1_000L, 1, 0, lastListenedAt = 2_000L, deviceId = "legacy-old", totals = twinsTotals)
+
+        maintenance.applyCloudDailyListening(listOf(twinsDay), origins, cloudStoresReleaseKnown = false)
+
+        assertEquals(listOf(twinsTotals.copy(releaseKnownMs = 1_000L)), rollups.getAllRollups().map { it.totals })
+    }
+
+    @Test
+    fun aCloudDayOfTheSameListeningKnowingFewerReleaseDatesKeepsTheHeldOnes() = runTest {
+        val origins = ListeningOrigins(own = "me", legacy = "legacy-me")
+        sessions.upsertSession(session("dated").copy(deviceId = "phone-b", episodePublishedAt = 500L, output = ListeningSessionValues.OUTPUT_CAR))
+        // Phone B summed part of that listening before v42, so its copy knows the date of less of it.
+        val partial = ListeningDayTotals(longestSessionMs = 1_000L, carMs = 1_000L, newReleaseMs = 400L, releaseKnownMs = 400L)
+
+        maintenance.applyCloudDailyListening(
+            listOf(ListeningRollupEntity(10L, "ep-1", "pod-1", 1_000L, 1, 0, lastListenedAt = 2_000L, deviceId = "phone-b", totals = partial)),
+            origins,
+        )
+
+        assertEquals(listOf(partial.copy(newReleaseMs = 1_000L, releaseKnownMs = 1_000L)), rollups.getAllRollups().map { it.totals })
     }
 
     @Test

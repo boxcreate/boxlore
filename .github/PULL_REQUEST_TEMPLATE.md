@@ -14,26 +14,26 @@ Do **not** use sentence-case titles without a type prefix (e.g. avoid `Polish th
 
 ## Merge gate (required before merge)
 
-The unit workflow runs architecture checks, detekt, JVM tests, Kover coverage, dependency guards, Python release-tooling tests, and Android lint on PR pushes unless a safe docs/chore PR uses `[skip unit]`. A new commit cancels the previous in-progress run; Actions → Run workflow runs the full suite. Run `./gradlew ktlintCheck` locally for Kotlin changes; ktlint is not part of the current PR workflow. There is **no merge queue**.
+The unit workflow runs architecture checks, detekt, JVM tests, Kover coverage, dependency guards, Python release-tooling tests, and Android lint on PR pushes, as parallel jobs, unless a safe docs/chore PR uses `[skip unit]` or the PR changes only documentation. A new commit cancels the previous in-progress run; Actions → Run workflow runs the full suite. Run `./gradlew ktlintCheck` locally for Kotlin changes; ktlint is not part of the current PR workflow. There is **no merge queue**.
 
-Master is protected by a branch ruleset. Required checks before merge:
+Master is protected by a branch ruleset. Required before merge:
 
 1. **`testDebugUnitTest`** — PR pushes (new commits cancel the prior run; `[skip unit]` in the title no-ops for safe docs/chore only)
-2. **`coderabbit-threads-resolved`** — every non-outdated CodeRabbit review thread is marked Resolved
+2. **Every review conversation resolved** — GitHub's conversation resolution, CodeRabbit's threads included
 
 Also on PRs (not ruleset-required): SonarCloud App, CodeRabbit App, Gitleaks. The PR must have **zero Sonar new-code issues**.
 
 Flow:
 
 1. Open the PR and iterate (unit suite cancels prior runs).
-2. Address **every** CodeRabbit finding and mark every CodeRabbit thread **Resolved**; fix Sonar new-code issues and wait for unit + **`coderabbit-threads-resolved`**. The bare CodeRabbit status only confirms that its review completed.
+2. Address **every** CodeRabbit finding and mark every CodeRabbit thread **Resolved**; fix Sonar new-code issues and wait for the unit suite; the merge button stays locked until every conversation is resolved. The bare CodeRabbit status only confirms that its review completed.
 3. If review decision is **`CHANGES_REQUESTED`**, stop automated merging. Do not dismiss the review or force-merge; ask a maintainer to merge (or dismiss) manually.
 4. Otherwise squash-merge when required checks are green. A maintainer may explicitly authorize bypassing required status checks for this PR; general merge approval is not bypass approval. Report remaining checks and known risks before using the exception. Review requirements still apply.
 5. Optional: Actions → Run workflow (`Unit Tests`) for a manual full gate.
 
 ## Summary
 
-<!-- What changed and why. Be specific. Exact CHANGELOG / README wording goes in Release copy below. -->
+<!-- What changed and why. Be specific. Developer CHANGELOG wording goes in Release copy below; listener wording goes in release-notes/upcoming.md. -->
 
 -
 
@@ -61,7 +61,7 @@ Flow:
 
 | Label | Use when |
 |:--|:--|
-| `user-impact-critical` | **Critical fix** — listeners already feel a correctness bug (missing episodes, late/wrong alerts, data loss). Highest README / changelog priority; **release-copy below is required** and is pasted verbatim (not AI-rewritten). |
+| `user-impact-critical` | **Critical fix** — listeners already feel a correctness bug (missing episodes, late/wrong alerts, data loss) |
 | `user-impact-high` | Listeners clearly notice (player, search, downloads, onboarding, major UX) |
 | `user-impact-medium` | Noticeable but not headline (polish, secondary flows) |
 | `user-impact-low` | Minor user-facing tweak |
@@ -94,19 +94,15 @@ Examples: `user-impact-critical` + `backend-change`, `user-impact-high` + `backe
 
 Add impact labels on the PR (`gh pr edit <n> --add-label user-impact-critical --add-label backend-change`).
 
-## Release copy (verbatim — highest priority)
+## Release copy (verbatim)
 
 <!--
-changelog-on-merge (update_changelog.py) and prepare-release (prepare_release.py)
-paste these regions as-is. The PR author or coding agent writes and reviews the
-copy; workflows only order it and add PR links. No AI rewriting or fallback.
-
-Developer copy is required for every PR. Listener copy is required for every
-user-impact label; no-user-impact changes appear only in CHANGELOG.md.
-Empty bullets or TBD fail validation. Release/tooling PRs may use the established
-[skip changelog] exception.
-Do not hand-edit CHANGELOG.md or README Upcoming / What's New; this section is
-the source those workflows copy from.
+The PR author or coding agent writes both; no workflow rewrites them, and nothing in the release flow uses AI.
+- Developer copy: the CHANGELOG region below, required for every PR. Release/tooling PRs may use the
+  established [skip changelog] exception.
+- Listener notes: release-notes/upcoming.md, the one list behind README Upcoming, the app's Coming next,
+  What's New at release and the release announcement. Its rules are at the top of the file.
+Empty bullets or TBD fail validation. Do not hand-edit CHANGELOG.md or README Upcoming / What's New.
 -->
 
 ### CHANGELOG.md (required developer copy)
@@ -120,17 +116,13 @@ Keep a Changelog bullets for engineers. Use `### Added` / `### Changed` / `### F
 
 <!-- release-copy:changelog:end -->
 
-### README What's New / Upcoming (required for user-impact changes)
+### Listener notes (required for user-impact changes)
 
-Plain listener English for README Upcoming, then What's New on release, and in-app release notes. Product name is **boxlore** (lowercase). No class names, FCM keys, or CI.
-Use functional categories: `### Critical` (for `user-impact-critical`), `### Improvements`, or `### Fixes`. Do not use impact levels like `### High` or `### Medium` as headings.
+Edit [`release-notes/upcoming.md`](../release-notes/upcoming.md) in this PR. Read the whole list first: if a line already covers the feature, change that line so it says the net change since the last release; otherwise add one line to New, Improved or Fixed, right after the lines about the same screen or feature (or at the end of the group when there are none). Highlights holds at most 3 lines, most important first, and becomes the release announcement. Plain listener English; the product name is **boxlore** (lowercase); no class names, FCM keys or CI.
 
-<!-- release-copy:readme:start -->
+The **Release copy** check fails a user-impact PR that doesn't change the list, unless the list already says it (a fix to something not yet released, for example):
 
-### Critical
-- 
-
-<!-- release-copy:readme:end -->
+- [ ] Listener notes already cover this change
 
 ## Test plan
 

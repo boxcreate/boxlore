@@ -1,6 +1,12 @@
-name: Manual optimized release validation
+name: Release dry run
 
+# Builds the optimized, unsigned APK and Play bundle and checks their release contracts: on every
+# release PR (the commit that will be released, with its new version code), so a publication failure
+# shows up before the merge, and on demand from Actions. Publication still builds and signs its own.
 on:
+  pull_request:
+    branches: [master]
+    paths: [app/build.gradle.kts]
   workflow_dispatch:
 
 permissions:
@@ -13,24 +19,16 @@ concurrency:
 jobs:
   optimized-artifacts:
     name: Optimized release contracts
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'release/v')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
-      - uses: actions/setup-java@v5
+      - uses: ./.github/actions/android-setup
         with:
-          distribution: temurin
-          java-version: '17'
-      - uses: gradle/actions/setup-gradle@v5
-      - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
-        with:
-          packages: 'platform-tools'
-      - name: Install Android SDK packages
-        run: sdkmanager 'build-tools;36.0.0' 'platforms;android-36'
-      - name: Write build-only Firebase stub
-        uses: ./.github/actions/write-ci-google-services
+          sdk-packages: build-tools;36.0.0 platforms;android-37.0
       - name: Build optimized unsigned APK and bundle
         run: >-
           ./gradlew --no-daemon -I .github/scripts/release_verification.init.gradle

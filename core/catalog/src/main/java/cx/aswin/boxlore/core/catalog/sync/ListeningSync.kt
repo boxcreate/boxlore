@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.catalog.sync
 
+import cx.aswin.boxlore.core.database.ListeningDayTotals
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningInsightsMaintenance
@@ -30,6 +31,14 @@ import cx.aswin.boxlore.core.prefs.BoxcastPrefs
  *   every playback value).
  *   All of it is recorded as sent only when the server answers that it stores listening
  *   (`listeningAccepted`); an older server ignores it, and it goes again after the server update.
+ *   Each day carries its richer totals (Room v41, [ListeningDayTotals]). The first time a server answers
+ *   a push or a pull saying it stores them (`listeningTotals`), every day with totals goes up once more,
+ *   so days sent before reach the cloud with them, whichever of the app and the server updated first.
+ *   Pushes say they carry totals (`SyncPushRequest.listeningTotals`), so the server keeps a day's
+ *   stored totals when an older build pushes it. The time with a known release date (Room v42,
+ *   [ListeningDayTotals.releaseKnownMs]) goes the same way under its own flag (`listeningReleaseKnown`):
+ *   the first server answer saying it stores it sends every day that knows it once more, and pushes
+ *   say they carry it.
  * - **Pull:** every phone's days and the played shows since the pulled mark (0 on the first pull, even
  *   when the history mark is recent; then the last pull's syncedAt - 1), stored by
  *   [ListeningInsightsMaintenance.applyCloudDailyListening]: another origin's day replaces only listening
@@ -63,9 +72,11 @@ internal class ListeningSync(
     }
 
     /** After a push: records what the server stored, when it says it stores listening. */
-    suspend fun onPushed(sent: Outgoing, listeningAccepted: Boolean,) {
+    suspend fun onPushed(sent: Outgoing, listeningAccepted: Boolean, listeningTotals: Boolean = false, listeningReleaseKnown: Boolean = false,) {
         if (!listeningAccepted) return
         maintenance.recordPushedDays(sent.days)
+        if (listeningTotals) onServerStoresTotals()
+        if (listeningReleaseKnown) onServerStoresReleaseKnown()
         for (show in sent.shows) playedShows.markPlayedShowSynced(show)
         if (!prefs.areListeningDatesSent()) {
             sent.dates.lastOrNull()?.let { prefs.setListeningDatesSentAfter(it.episodeId) }
@@ -77,10 +88,17 @@ internal class ListeningSync(
 
     /** Stores a pull's listening; a pull from an older server (no listening in it) moves nothing. */
     suspend fun applyPull(body: SyncPullResponse) {
+        if (body.listeningTotals) onServerStoresTotals()
+        if (body.listeningReleaseKnown) onServerStoresReleaseKnown()
         val days = body.listeningDays
         val shows = body.playedShows
         if (days == null && shows == null) return
-        maintenance.applyCloudDailyListening(days.orEmpty().mapNotNull { it.toEntity() }, origins())
+        maintenance.applyCloudDailyListening(
+            days.orEmpty().mapNotNull { it.toEntity() },
+            origins(),
+            cloudStoresTotals = body.listeningTotals,
+            cloudStoresReleaseKnown = body.listeningReleaseKnown,
+        )
         playedShows.mergePlayedShows(shows.orEmpty().mapNotNull { it.toEntity() }, fromCloud = true)
         // A push stored in the same millisecond after this pull carries syncedAt itself; the next pull
         // reads that millisecond again (merging what it brings is idempotent).
@@ -94,6 +112,29 @@ internal class ListeningSync(
         prefs.setListeningPulledUntil(0L)
         prefs.setListeningDatesSentAfter("")
         prefs.setListeningDatesSent(false)
+    }
+
+    /**
+     * The first time a server says it stores the days' richer totals (on a push or a pull, which every
+     * sync makes even with nothing to push), every day with totals goes up again once, so days sent
+     * before (without them, or to a server that dropped them) reach the cloud with them. Only the totals
+     * are forgotten: a day pushed before that is gone still gets its zero day.
+     */
+    private suspend fun onServerStoresTotals() {
+        if (prefs.areListeningTotalsSent()) return
+        maintenance.forgetPushedTotals()
+        prefs.setListeningTotalsSent(true)
+    }
+
+    /**
+     * The first time a server says it stores the days' time with a known release date (Room v42),
+     * every day that knows it goes up again once, so days sent before to a server that dropped it reach
+     * the cloud with it.
+     */
+    private suspend fun onServerStoresReleaseKnown() {
+        if (prefs.areListeningReleaseKnownSent()) return
+        maintenance.forgetPushedReleaseKnown()
+        prefs.setListeningReleaseKnownSent(true)
     }
 
     private fun origins() = ListeningOrigins(prefs.getOrCreateListeningDeviceId(), prefs.getListeningLegacyOrigin())
@@ -114,6 +155,18 @@ internal class ListeningSync(
             nightMs = nightMs,
             deviceId = deviceId,
             wallMs = wallMs.coerceAtLeast(0L),
+            totals = ListeningDayTotals(
+                longestSessionMs = longestSessionMs.coerceAtLeast(0L),
+                speakerMs = speakerMs.coerceAtLeast(0L),
+                headphonesMs = headphonesMs.coerceAtLeast(0L),
+                bluetoothMs = bluetoothMs.coerceAtLeast(0L),
+                carMs = carMs.coerceAtLeast(0L),
+                castMs = castMs.coerceAtLeast(0L),
+                loreMs = loreMs.coerceAtLeast(0L),
+                smartQueueMs = smartQueueMs.coerceAtLeast(0L),
+                newReleaseMs = newReleaseMs.coerceAtLeast(0L),
+                releaseKnownMs = releaseKnownMs.coerceAtLeast(0L),
+            ),
         )
     }
 
@@ -157,6 +210,16 @@ internal class ListeningSync(
             eveningMs = eveningMs,
             nightMs = nightMs,
             lastListenedAt = lastListenedAt,
+            longestSessionMs = totals.longestSessionMs,
+            speakerMs = totals.speakerMs,
+            headphonesMs = totals.headphonesMs,
+            bluetoothMs = totals.bluetoothMs,
+            carMs = totals.carMs,
+            castMs = totals.castMs,
+            loreMs = totals.loreMs,
+            smartQueueMs = totals.smartQueueMs,
+            newReleaseMs = totals.newReleaseMs,
+            releaseKnownMs = totals.releaseKnownMs,
         )
 
         private fun PlayedShowEntity.toDto() = PlayedShowSyncDto(

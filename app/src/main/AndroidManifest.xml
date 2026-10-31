@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Android 17: the full player's Cast sheet finds speakers on the local network. -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     
     <!-- Included to satisfy Google Play Console Advertising ID declaration requirements -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" />

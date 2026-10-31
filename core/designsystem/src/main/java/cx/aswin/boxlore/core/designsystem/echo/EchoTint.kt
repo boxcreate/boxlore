@@ -17,19 +17,70 @@ fun tintEchoAccents(pixels: IntArray, accent: Int, darkTheme: Boolean) {
     val tone = if (darkTheme) EchoAccentToneDark else EchoAccentToneLight
     val hsl = FloatArray(3)
     for (i in pixels.indices) {
-        if (pixels[i] ushr 24 != 0) pixels[i] = tintedAccentPixel(pixels[i], hue, saturation, tone, hsl)
+        if (pixels[i] ushr 24 != 0) pixels[i] = tintedAccentPixel(pixels[i], hue, saturation, tone, hsl, EchoCalmToneRange)
+    }
+}
+
+/**
+ * How Echo is coloured: its accent parts (ear cups, boots, emblem, accent props) and the light of its
+ * face. [Theme] follows the theme calmly ([tintEchoAccents], [echoFaceColor]); [Custom] keeps Echo's own
+ * indigo when [parts] is null, or recolours the accents vividly to it ([recolorEchoAccents]), for a scene
+ * whose background would make the theme tint clash, with the face lit in [face]'s hue.
+ */
+sealed interface EchoAccents {
+    data object Theme : EchoAccents
+
+    data class Custom(val parts: Int?, val face: Int) : EchoAccents
+
+    companion object {
+        /** Echo's own indigo, its face lit lavender. */
+        val Original: EchoAccents = Custom(parts = null, face = EchoIndigo)
+    }
+}
+
+/**
+ * [EchoAccents] resolved against the theme: [parts] is the accent target (none keeps Echo's indigo),
+ * [calm] whether it is the calmed theme tint (in [dark] or light tone), and [face] the face's light.
+ */
+data class EchoPaint(val parts: Int?, val calm: Boolean, val dark: Boolean, val face: Int) {
+    fun tint(pixels: IntArray) {
+        val target = parts ?: return
+        if (calm) tintEchoAccents(pixels, target, dark) else recolorEchoAccents(pixels, target)
+    }
+}
+
+fun EchoAccents.paint(themeAccent: Int, dark: Boolean): EchoPaint = when (this) {
+    EchoAccents.Theme -> EchoPaint(themeAccent, calm = true, dark = dark, face = echoFaceColor(themeAccent))
+    is EchoAccents.Custom -> EchoPaint(parts, calm = false, dark = dark, face = echoFaceColor(face))
+}
+
+/** Echo's own indigo, as the theme colour its face light comes from. */
+const val EchoIndigo = 0xFF9C8CFF.toInt()
+
+/**
+ * Recolours Echo's accent parts to [target] vividly, in place: they take its hue, saturation and tone,
+ * each pixel keeping its own shading, so a deep or bright accent stays crisp on a strong background.
+ */
+fun recolorEchoAccents(pixels: IntArray, target: Int) {
+    val hsl = FloatArray(3).also { rgbToHsl(target shr 16 and 0xFF, target shr 8 and 0xFF, target and 0xFF, it) }
+    val hue = hsl[0]
+    val saturation = hsl[1]
+    val tone = hsl[2]
+    val scratch = FloatArray(3)
+    for (i in pixels.indices) {
+        if (pixels[i] ushr 24 != 0) pixels[i] = tintedAccentPixel(pixels[i], hue, saturation, tone, scratch, EchoVividToneRange)
     }
 }
 
 /** One visible pixel, moved toward the theme hue by how much it belongs to the accent range; others come back unchanged. */
-private fun tintedAccentPixel(argb: Int, hue: Float, saturation: Float, tone: Float, hsl: FloatArray): Int {
+private fun tintedAccentPixel(argb: Int, hue: Float, saturation: Float, tone: Float, hsl: FloatArray, toneRange: ClosedFloatingPointRange<Float>): Int {
     val r = argb shr 16 and 0xFF
     val g = argb shr 8 and 0xFF
     val b = argb and 0xFF
     val k = echoAccentWeight(r, g, b)
     if (k <= 0f) return argb
     rgbToHsl(r, g, b, hsl)
-    val lightness = (tone + (hsl[2] - EchoAccentBaseTone) * EchoShadingKeep).coerceIn(0.04f, 0.96f)
+    val lightness = (tone + (hsl[2] - EchoAccentBaseTone) * EchoShadingKeep).coerceIn(toneRange)
     val out = hslToRgb(hue, saturation, lightness)
     val nr = (r + (out shr 16 and 0xFF) * k - r * k).toInt().coerceIn(0, 255)
     val ng = (g + (out shr 8 and 0xFF) * k - g * k).toInt().coerceIn(0, 255)
@@ -43,7 +94,12 @@ fun echoFaceColor(accent: Int): Int {
     return hslToRgb(hsl[0], min(hsl[1], 0.75f), 0.80f) or (0xFF shl 24)
 }
 
-/** 0..1 membership of Echo's blue-violet accent range (HSV hue around 247°, enough saturation and value). */
+/**
+ * 0..1 membership of Echo's blue-violet accent range (HSV hue around 247°, enough saturation and value),
+ * faded out below [EchoAccentMinChroma]: dull, dark blue-greys (the detective's navy hat, the lens rim)
+ * sit at the range's edge, and partly tinting them toward a far hue (seafoam) speckled and flickered from
+ * frame to frame. The accent parts themselves, light soles included, are far above it.
+ */
 fun echoAccentWeight(r: Int, g: Int, b: Int): Float {
     val hi = max(r, max(g, b))
     val lo = min(r, min(g, b))
@@ -54,7 +110,9 @@ fun echoAccentWeight(r: Int, g: Int, b: Int): Float {
     val hue = hueDegrees(r, g, b, hi, lo)
     val d = abs(hue - EchoAccentHue).let { min(it, 360f - it) }
     if (d > 31f) return 0f
-    return min(1f, (31f - d) / 11.3f) * min(1f, (s - 0.235f) / 0.157f)
+    val chroma = (hi - lo) / 255f
+    val vivid = ((chroma - EchoAccentMinChroma) / EchoAccentChromaRamp).coerceIn(0f, 1f)
+    return min(1f, (31f - d) / 11.3f) * min(1f, (s - 0.235f) / 0.157f) * vivid
 }
 
 private fun hueDegrees(r: Int, g: Int, b: Int, hi: Int, lo: Int): Float {
@@ -103,8 +161,12 @@ private fun hslToRgb(h: Float, s: Float, l: Float): Int {
 }
 
 private const val EchoAccentHue = 247f
+private const val EchoAccentMinChroma = 0.10f
+private const val EchoAccentChromaRamp = 0.08f
 private const val EchoAccentBaseTone = 0.52f
 private const val EchoShadingKeep = 0.9f
 private const val EchoAccentMaxSaturation = 0.38f
 private const val EchoAccentToneLight = 0.44f
 private const val EchoAccentToneDark = 0.56f
+private val EchoCalmToneRange = 0.04f..0.96f
+private val EchoVividToneRange = 0.06f..0.95f

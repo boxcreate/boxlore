@@ -3,8 +3,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from refresh_upcoming import refresh
-from generate_update_manifest import build_manifest, listener_notes, upcoming_notes
+from refresh_update_feed import refresh
+from generate_update_manifest import UPCOMING_LIMIT, UPCOMING_MORE, build_manifest, fit_lines, listener_notes, upcoming_notes
 
 
 class UpdateManifestTests(unittest.TestCase):
@@ -33,6 +33,25 @@ class UpdateManifestTests(unittest.TestCase):
         readme = '<!-- release-upcoming:start --><b>Improvements:</b><ul><li><b>Library:</b> clearer controls.</li></ul><!-- release-upcoming:end -->'
         self.assertEqual('## Improvements\n- **Library:** clearer controls.', upcoming_notes(readme))
         self.assertEqual('', upcoming_notes('No upcoming region'))
+
+    def test_pr_badges_stay_out_of_the_app(self):
+        readme = ('<!-- release-upcoming:start --><b>Fixed:</b><ul><li>Clearer controls. '
+                  '<a href="https://github.com/boxcreate/boxlore/pull/12"><img alt="PR #12" src="x.svg"></a></li></ul><!-- release-upcoming:end -->')
+        self.assertEqual('## Fixed\n- Clearer controls.', upcoming_notes(readme))
+
+    def test_long_notes_keep_whole_lines_and_say_there_is_more(self):
+        lines = ["## Improved", *(f"- Line {index} " + "x" * 90 for index in range(80)), "## Fixed", "- " + "y" * 90]
+        fitted = fit_lines(lines, UPCOMING_LIMIT, UPCOMING_MORE)
+        self.assertLessEqual(len(fitted.encode("utf-16-le")) // 2, UPCOMING_LIMIT)
+        self.assertTrue(fitted.endswith(UPCOMING_MORE))
+        kept = fitted.splitlines()[:-1]
+        self.assertEqual(kept, lines[:len(kept)])
+        self.assertNotEqual(kept[-1], "## Fixed")
+        self.assertEqual("- Short", fit_lines(["- Short"], UPCOMING_LIMIT, UPCOMING_MORE))
+
+    def test_the_readme_upcoming_fits_coming_next(self):
+        readme = (Path(__file__).resolve().parents[2] / "README.md").read_text(encoding="utf-8")
+        self.assertLessEqual(len(upcoming_notes(readme).encode("utf-16-le")) // 2, UPCOMING_LIMIT)
 
     def test_preview_refresh_never_changes_binary_metadata(self):
         original = dict(schemaVersion=1, packageName='cx.aswin.boxlore', versionCode=29, apkSha256='verified')
@@ -67,28 +86,26 @@ class UpdateManifestTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "24,000"):
                 build_manifest(gradle, apk, "a.apk", "🎧" * 12_001)
 
-    def test_workflow_queues_metadata_writers_and_uses_available_refresh_token(self):
+    def test_workflow_queues_metadata_writers(self):
         root = Path(__file__).resolve().parents[2]
         workflow = (root / ".github/workflows/changelog-on-merge.yml").read_text()
         self.assertEqual(4, workflow.count("queue: max"))
         self.assertEqual(3, workflow.count("group: boxlore-release-metadata"))
         self.assertIn("group: boxlore-release-preparation", workflow)
-        refresh_job = workflow.split("  refresh-latest-artifacts:", 1)[1]
-        self.assertNotIn("steps.app-token.outputs.token", refresh_job)
-        manifest_step = refresh_job.split("- name: Publish verified update manifest", 1)[1]
-        self.assertIn("GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}", manifest_step)
+        feed_job = workflow.split("  refresh-update-feed:", 1)[1].split("\n  announce-release:", 1)[0]
+        self.assertIn("GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}", feed_job)
+        self.assertNotIn("gradlew", feed_job)
 
     def test_workflow_publishes_manifest_only_after_download_verification(self):
         root = Path(__file__).resolve().parents[2]
         workflow = (root / ".github/workflows/changelog-on-merge.yml").read_text()
         jobs = workflow.split("      - name: Verify README latest-download APK")[1:]
-        self.assertEqual(2, len(jobs))
-        for job in jobs:
-            self.assertLess(job.index("exit 1"), job.index("- name: Publish verified update manifest"))
-            self.assertIn("generate_update_manifest.py", job)
-            self.assertIn('gh release upload "$TAG" "$RUNNER_TEMP/update.json"', job)
+        self.assertEqual(1, len(jobs))
+        job = jobs[0]
+        self.assertLess(job.index("exit 1"), job.index("- name: Publish verified update manifest"))
+        self.assertIn("generate_update_manifest.py", job)
+        self.assertIn('gh release upload "$TAG" "$RUNNER_TEMP/update.json"', job)
         self.assertIn(":app:bundlePlayRelease", workflow)
         self.assertNotIn("bundleRelease", workflow)
-
 
 if __name__ == "__main__": unittest.main()

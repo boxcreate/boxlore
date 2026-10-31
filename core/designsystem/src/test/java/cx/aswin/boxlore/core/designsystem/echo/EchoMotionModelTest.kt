@@ -51,6 +51,21 @@ class EchoMotionModelTest {
         assertThrows(IllegalArgumentException::class.java) { clip.copy(tracks = clip.tracks.drop(1)) }
     }
 
+    @Test fun `a clip's face script holds each beat from its share of the clip, and blink frames close the eyes`() {
+        val clip = EchoMotionClip(
+            "story", "clips/story.mp4", fps = 24, frames = 11, size = 4, face = EchoFace.Idle, rest = "rest",
+            tracks = List(11) { EchoScreenTrack(0.5f, 0.4f, 0.2f, 0.18f, 0f) },
+            script = listOf(EchoClipBeat(0f, EchoFace.Idle, EchoGaze(0f, 1f)), EchoClipBeat(0.5f, EchoFace.Happy, EchoGaze(0f, 0f))),
+            blinks = setOf(8),
+        )
+        assertEquals(EchoClipBeat(0f, EchoFace.Idle, EchoGaze(0f, 1f)), clip.lookAt(4))
+        assertEquals(EchoFace.Happy, clip.lookAt(5).face)
+        assertEquals(EchoFace.Blink, clip.lookAt(8).face)
+        assertEquals(EchoFace.Happy, clip.copy(script = emptyList(), blinks = emptySet(), face = EchoFace.Happy).lookAt(3).face)
+        assertNull(clip.lensAt(3))
+        assertThrows(IllegalArgumentException::class.java) { clip.copy(lens = listOf(null)) }
+    }
+
     @Test fun `an alpha-packed frame unpacks to colour from the top half and alpha from the bottom`() {
         // 2x2 frame: a 2x4 luma plane (colour rows, then alpha rows) and one chroma sample per 2x2 block.
         val size = 2

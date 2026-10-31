@@ -1,0 +1,63 @@
+name: Android CI setup
+description: >
+  JDK 17, Gradle with the GitHub Actions cache, Android SDK packages when asked for, and the CI stub
+  google-services.json, for the unit suite, the release dry run and release builds. Only `master` saves
+  the Gradle cache: pull requests read it, so their many short-lived copies don't push master's out of
+  the repository's cache space.
+
+inputs:
+  sdk-packages:
+    description: >
+      Space-separated sdkmanager packages to install, such as "build-tools;36.0.0 platforms;android-37.0".
+      None by default. Retried, because sdkmanager downloads fail now and then.
+    default: ""
+  google-services-stub:
+    description: Write the CI stub google-services.json; release builds write the real one instead.
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Set up JDK 17
+      uses: actions/setup-java@v5
+      with:
+        distribution: temurin
+        java-version: "17"
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v5
+      with:
+        cache-read-only: ${{ github.ref != 'refs/heads/master' }}
+
+    - name: Set up Android SDK
+      if: inputs.sdk-packages != ''
+      uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+      with:
+        packages: 'platform-tools'
+
+    # AGP 9.3 defaults to Build Tools 36; keep apksigner/aapt2 aligned with that.
+    - name: Install Android SDK packages
+      if: inputs.sdk-packages != ''
+      shell: bash
+      env:
+        PACKAGES: ${{ inputs.sdk-packages }}
+      run: |
+        set -euo pipefail
+        yes | sdkmanager --licenses >/dev/null || true
+        read -r -a packages <<< "$PACKAGES"
+        for attempt in 1 2 3; do
+          if sdkmanager "${packages[@]}"; then
+            exit 0
+          fi
+          echo "sdkmanager failed (attempt ${attempt}/3); retrying in 20 seconds."
+          sleep 20
+        done
+        echo "::error::sdkmanager could not install ${PACKAGES}"
+        exit 1
+
+    # Real google-services.json lives in the GitHub Environment "release"
+    # (GOOGLE_SERVICES_JSON_BASE64) and is not available to PR/push CI.
+    # This stub only satisfies the Google Services Gradle plugin.
+    - name: Write CI stub google-services.json
+      if: inputs.google-services-stub == 'true'
+      uses: ./.github/actions/write-ci-google-services

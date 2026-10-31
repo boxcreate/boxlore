@@ -20,6 +20,41 @@ interface ListeningSessionDao {
     @Query("SELECT * FROM listening_sessions ORDER BY endedAt DESC")
     suspend fun getAllSessions(): List<ListeningSessionEntity>
 
+    /**
+     * Sessions added up in the database: one row per day, episode and show, with the time in each
+     * part of the day, the longest single session, and the time by output, by source, of new releases
+     * and with a known release date ([ListeningDayTotals]). Screens that only need days read this instead of every session
+     * (up to 400 days of them).
+     */
+    @Query(
+        """
+        SELECT localDay, episodeId, podcastId,
+            SUM(consumedMs) AS consumedMs,
+            COUNT(*) AS sessionCount,
+            MAX(endedAt) AS lastListenedAt,
+            SUM(CASE WHEN timeBucket = 0 THEN consumedMs ELSE 0 END) AS morningMs,
+            SUM(CASE WHEN timeBucket = 1 THEN consumedMs ELSE 0 END) AS afternoonMs,
+            SUM(CASE WHEN timeBucket = 2 THEN consumedMs ELSE 0 END) AS eveningMs,
+            SUM(CASE WHEN timeBucket = 3 THEN consumedMs ELSE 0 END) AS nightMs,
+            MAX(consumedMs) AS longestSessionMs,
+            SUM(CASE WHEN output = '${ListeningSessionValues.OUTPUT_SPEAKER}' THEN consumedMs ELSE 0 END) AS speakerMs,
+            SUM(CASE WHEN output = '${ListeningSessionValues.OUTPUT_HEADPHONES}' THEN consumedMs ELSE 0 END) AS headphonesMs,
+            SUM(CASE WHEN output = '${ListeningSessionValues.OUTPUT_BLUETOOTH}' THEN consumedMs ELSE 0 END) AS bluetoothMs,
+            SUM(CASE WHEN output = '${ListeningSessionValues.OUTPUT_CAR}' THEN consumedMs ELSE 0 END) AS carMs,
+            SUM(CASE WHEN output = '${ListeningSessionValues.OUTPUT_CAST}' THEN consumedMs ELSE 0 END) AS castMs,
+            SUM(CASE WHEN source = '${ListeningSessionValues.SOURCE_LORE}' THEN consumedMs ELSE 0 END) AS loreMs,
+            SUM(CASE WHEN source = '${ListeningSessionValues.SOURCE_SMART_QUEUE}' THEN consumedMs ELSE 0 END) AS smartQueueMs,
+            SUM(
+                CASE WHEN episodePublishedAt > 0 AND startedAt - episodePublishedAt <= ${ListeningDayTotals.NEW_RELEASE_WINDOW_MS}
+                THEN consumedMs ELSE 0 END
+            ) AS newReleaseMs,
+            SUM(CASE WHEN episodePublishedAt > 0 THEN consumedMs ELSE 0 END) AS releaseKnownMs
+        FROM listening_sessions
+        GROUP BY localDay, episodeId, podcastId
+        """,
+    )
+    fun observeSessionDays(): Flow<List<ListeningSessionDay>>
+
     @Query(
         """
         SELECT * FROM listening_sessions
@@ -79,7 +114,28 @@ interface ListeningSessionDao {
     /** Gives sessions recorded before Room v40 (no phone on them) to [deviceId]. */
     @Query("UPDATE listening_sessions SET deviceId = :deviceId WHERE deviceId IS NULL OR deviceId = ''")
     suspend fun claimLegacySessions(deviceId: String)
-
-    @Query("SELECT MIN(endedAt) FROM listening_sessions")
-    suspend fun getEarliestSessionEndedAt(): Long?
 }
+
+/** One day's sessions of an episode under one show, added up by [ListeningSessionDao.observeSessionDays]. */
+data class ListeningSessionDay(
+    val localDay: Long,
+    val episodeId: String,
+    val podcastId: String,
+    val consumedMs: Long,
+    val sessionCount: Int,
+    val lastListenedAt: Long,
+    val morningMs: Long,
+    val afternoonMs: Long,
+    val eveningMs: Long,
+    val nightMs: Long,
+    val longestSessionMs: Long,
+    val speakerMs: Long = 0L,
+    val headphonesMs: Long = 0L,
+    val bluetoothMs: Long = 0L,
+    val carMs: Long = 0L,
+    val castMs: Long = 0L,
+    val loreMs: Long = 0L,
+    val smartQueueMs: Long = 0L,
+    val newReleaseMs: Long = 0L,
+    val releaseKnownMs: Long = 0L,
+)

@@ -19,9 +19,10 @@ internal object LibraryBackupDirectFeedLogic {
      * The JSON library backup version written by this build. 6 added `directFeedOptIns`; 7 the
      * episode identity block ([BoxLoreBackup.episodeIdentity], P4 PR 17 of the own-episode-IDs plan);
      * 8 the timed listening and played shows ([BoxLoreBackup.listening]) and the history rows'
-     * listening dates.
+     * listening dates; 9 the daily summaries' richer totals (Room v41); 10 their time with a known
+     * release date (Room v42).
      */
-    const val VERSION = 8
+    const val VERSION = 10
 
     fun mergeExport(
         portOptIns: List<EpisodeSupplementPort.DirectFeedOptIn>,

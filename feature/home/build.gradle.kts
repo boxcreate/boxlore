@@ -23,8 +23,8 @@ roborazzi {
 
 android {
     namespace = "cx.aswin.boxlore.feature.home"
-    // compileSdk 36: keep AAR metadata aligned with Compose / core deps
-    compileSdk = 36
+    // compileSdk 37: keep AAR metadata aligned with Compose / core deps
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 31

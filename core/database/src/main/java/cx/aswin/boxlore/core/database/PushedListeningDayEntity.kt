@@ -1,11 +1,13 @@
 package cx.aswin.boxlore.core.database
 
+import androidx.room.Embedded
 import androidx.room.Entity
 
 /**
  * One day of this phone's listening as the cloud last stored it (Room v40): the cloud sync push sends a
  * day whose current total differs from this, and a zero day for one pushed before that is gone (its
- * listening moved to another episode ID, or was removed), so every phone counts it once.
+ * listening moved to another episode ID, or was removed), so every phone counts it once. Its richer
+ * [totals] (Room v41) count too, so a change to them alone goes up.
  */
 @Entity(
     tableName = "listening_days_pushed",
@@ -25,6 +27,7 @@ data class PushedListeningDayEntity(
     val eveningMs: Long,
     val nightMs: Long,
     val lastListenedAt: Long,
+    @Embedded val totals: ListeningDayTotals = ListeningDayTotals(),
 ) {
     fun toRollup() = ListeningRollupEntity(
         localDay = localDay,
@@ -40,6 +43,7 @@ data class PushedListeningDayEntity(
         nightMs = nightMs,
         deviceId = deviceId,
         wallMs = wallMs,
+        totals = totals,
     )
 
     companion object {
@@ -57,6 +61,7 @@ data class PushedListeningDayEntity(
             eveningMs = day.eveningMs,
             nightMs = day.nightMs,
             lastListenedAt = day.lastListenedAt,
+            totals = day.totals,
         )
     }
 }

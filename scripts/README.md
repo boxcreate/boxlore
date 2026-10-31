@@ -69,22 +69,27 @@ These commands test local logic; running a production script requires the intern
 
 CI configuration helpers, maintenance tools, and data files also live here. Check the owning workflow or runbook before using a tool; its presence in this directory does not mean it runs automatically.
 
-### Authored release copy and isolated rehearsals
+### Release notes and announcements
 
-The publication and same-version refresh jobs build the direct `assembleRelease` APK and installer-free `bundlePlayRelease` AAB, validate their optimized contracts separately, and verify the downloadable APK before generating/uploading `update.json`. The manifest identifies the immutable release APK URL, version code/name, Android minimum, byte size, checksum and full reviewed listener bullets. A refresh updates its checksum without creating a newer version or sending an update alert. If manifest publication fails after verified assets, rerun publication/refresh to repair the manifest; do not bump again solely for a failed upload. No manifest is advertised before the download check passes. App checks remain read-only and do not rely on FCM delivery.
+Publication and same-version refresh share one job in **Changelog and Release**. It builds the direct `assembleRelease` APK and installer-free `bundlePlayRelease` AAB, validates their optimized contracts separately, and verifies the downloadable APK before generating/uploading `update.json`. The manifest identifies the immutable release APK URL, version code/name, Android minimum, byte size, checksum and the listener notes. No manifest is advertised before the download check passes. App checks remain read-only and do not rely on FCM delivery.
 
-Release tooling lives in `.github/scripts/`. The PR author or coding agent writes the exact developer and listener copy in the [PR template](../.github/PULL_REQUEST_TEMPLATE.md). `update_changelog.py` normalizes historical impact-label aliases consistently with tag resolution, requires exactly one recognized impact label, rejects multiple labels even when they normalize to the same level, requires developer copy for every PR and listener copy for all user-impact labels, and never calls a text-generation service. The **Release copy** check refreshes on PR body and label edits. It is a fast standalone check; no Android build or repository-rule change is involved.
+- **Publication** runs when a release PR merges. It builds that exact merge commit, whatever has merged since.
+- **If publication fails, never prepare a new version.** Run **publish-release** again. With `build_from: release-commit` it builds the release commit again (a runner or network hiccup); with `build_from: latest-master` it builds master's tip with the same version once a fix has merged. Either way the version stays the one the release PR set, and the release commit's own README and CHANGELOG are checked, so entries merged since don't block it. A re-run skips what is done: every publication and refresh also uploads `build-commit.txt`, naming the commit its files were built from, and when the release already holds that commit's APK, AAB and `SHA256SUMS`, a re-run checks and reuses them instead of building again, then repeats the download check, the manifest and the announcement preview, which are safe to repeat. A version tagged at another commit, or whose files a refresh rebuilt from another commit, is refused and points to refresh. The update feed's text always comes from master's README, so a re-run never brings back older wording.
+- **refresh-latest-artifacts** builds master's tip for the Latest release and replaces its APK, AAB and checksums. The tag, notes and announcement stay as they are, and no update alert is sent.
+- **refresh-update-feed** rewrites only the update feed's What's new and Coming next from master's README: no build, no new version, no announcement. The same refresh runs after every merged PR, so this is for a retry or an urgent fix. To correct a released line, edit `release-notes/vX.Y.Z.md` in a PR: on merge, README What's New is rendered from it and the feed follows.
 
-README order is Critical → New features → Improvements → Fixes → Security → Other. Within a category, higher impact leads, then newer PRs; bullet order within each PR is preserved. CHANGELOG uses Keep a Changelog categories, then impact and PR order. All authored bullets are retained. `no-user-impact` stays in CHANGELOG only. Existing release notes and legacy markers remain readable.
+The **Release dry run** (`release-contracts.yml`) runs on every release PR, so a build or contract failure shows up before the merge.
 
-If copy is missing, fill that PR's release-copy region. For a merged PR, run **Changelog and Release → backfill-changelog** with its number, then retry the failed operation. Do not hand-edit generated regions. Release/tooling PRs can still use the established `[skip changelog]` exception.
+Release tooling lives in `.github/scripts/` and never calls a text-generation service. Each PR's author or coding agent writes two things:
 
-**Offline release rehearsal** writes candidate version files, release notes and an announcement payload to an artifact without editing source files, creating a release, using credentials or sending FCM. Same-version refresh previews keep the version unchanged and produce no announcement. Locally:
+- **Developer copy** in the [PR template](../.github/PULL_REQUEST_TEMPLATE.md)'s changelog region, required for every PR. On merge, `update_changelog.py` adds it to CHANGELOG `[Unreleased]` as written.
+- **Listener notes** in [`release-notes/upcoming.md`](../release-notes/upcoming.md), the one list behind README Upcoming, the app's Coming next, What's New at release and the release announcement. PRs edit it in place, so it always says the net change since the last release: a feature changed twice before a release has one line. It has Highlights (at most 3, most important first), then New, Improved and Fixed; a line may end with the PRs it covers, like `(#1234, #1240)`, which the README shows as badges and the app leaves out. An optional `Announcement title:` names the announcement. [`release_notes.py`](../.github/scripts/release_notes.py) reads it and holds its rules.
 
-```bash
-python3 .github/scripts/rehearse_release.py --output /tmp/boxlore-release-preview
-python3 .github/scripts/rehearse_release.py --output /tmp/boxlore-refresh-preview --operation refresh-latest-artifacts
-```
+The **Release copy** check (`release-copy.yml`) needs exactly one recognized impact label and the developer copy, keeps the list's rules (at most 3 highlights, no empty or TBD lines, no line twice, an announcement that fits one notification, and the list itself present), and fails a user-impact PR that doesn't change the list unless its body ticks **Listener notes already cover this change**. It refreshes on PR body and label edits and runs without an Android build. After each merge, **Changelog and Release** renders README Upcoming from the list; do not hand-edit the README's generated regions.
+
+**Prepare release** checks the list, promotes CHANGELOG `[Unreleased]` and README Upcoming into the new version, keeps the list as `release-notes/vX.Y.Z.md` and leaves an empty list for the next release. The release PR shows the final notes, the announcement draft (the title, or `boxlore vX.Y.Z is here`, then the highlights word for word) and any merged PRs with no CHANGELOG entry; those are listed for review and do not block. A quiet release (`skip_notify`) changes only the version and download link. Releases prepared before the list kept their announcement from What's New.
+
+The app's Coming next and What's new hold at most 6,000 and 24,000 characters. Longer notes keep whole lines and end with a line saying there is more, so the update feed never fails on note length.
 
 For a custom announcement, **Send boxlore Notification** separates three steps:
 
@@ -102,14 +107,14 @@ The local updater fixture accepts `--notes-file` for long UTF-8 sample release n
 
 ### Check New Episodes
 
-The checker runs **hourly on the VPS** (netcup-panel `stack/notifier`: a systemd timer runs this script from the sync runner's copy, with its own Firebase service account that can only read `tracked_podcasts` and send pushes). GitHub's scheduled runs came every 2–6 hours instead of every 30 minutes. [`.github/workflows/new-episode-check.yml`](../.github/workflows/new-episode-check.yml) is now a manual fallback that rehearses (`dry_run`) by default; a live run there would use the repo's older state file. It polls notification registrations independently of catalog sync.
+The checker runs **hourly on the VPS** (netcup-panel `stack/notifier`: a systemd timer runs this script from the sync runner's copy, with its own Firebase service account that can only read `tracked_podcasts` and send pushes). GitHub's scheduled runs came every 2–6 hours instead of every 30 minutes. The GitHub workflow that used to run it has been removed. It polls notification registrations independently of catalog sync.
 
 | What | Where |
 | :--- | :--- |
 | Script | [`scripts/check-new-episodes.js`](check-new-episodes.js) + [`check-new-episodes-lib.js`](check-new-episodes-lib.js) |
 | Who to poll | Firebase RTDB `tracked_podcasts/{podcastIndexId}` (client writes this when **show notifications** are on). Rules allow `title`, `imageUrl`, and optional HTTPS `feedUrl` only — extra children are rejected. |
 | Last-notified state | `NOTIFIER_STATE_FILE` on the VPS (`/var/lib/boxlore-notifier/episode-tracker.json`, in the daily backup). [`scripts/data/episode-tracker.json`](data/episode-tracker.json) is the last state from GitHub Actions |
-| Tests | `npm ci` then `npm run test:check-new-episodes` from `scripts/` (the Check New Episodes workflow runs the same script after `npm ci`) |
+| Tests | `npm ci` then `npm run test:check-new-episodes` from `scripts/` |
 
 Release selection and recovery:
 
@@ -138,7 +143,7 @@ Device RTDB rows use `rss:<show-id>~<registration-id>~<url-hash>`. Group only ma
 
 ### Weekly tracked-podcast feed repair
 
-[`backfill-tracked-podcast-feeds.yml`](../.github/workflows/backfill-tracked-podcast-feeds.yml) runs weekly and supports manual dispatch. Its `tracked-podcast-rtdb-maintenance` concurrency group prevents overlap with the notification checker.
+[`backfill-tracked-podcast-feeds.yml`](../.github/workflows/backfill-tracked-podcast-feeds.yml) runs weekly and supports manual dispatch. Its `tracked-podcast-rtdb-maintenance` concurrency group keeps two repairs from overlapping.
 
 Before mutation, [`backfill-tracked-podcast-feeds.js`](backfill-tracked-podcast-feeds.js) saves numeric registrations and aggregated public RSS show metadata to [`data/tracked-podcasts-backups/`](data/tracked-podcasts-backups/), retaining one snapshot per UTC ISO week for the latest 10 weeks. The workflow must successfully commit a changed snapshot to `master` before repairing rows. Backups preserve every accepted public URL scope without publishing device registration IDs.
 
@@ -161,9 +166,9 @@ python3 .github/scripts/verify_release_contracts.py --sdk <android-sdk> --app-va
   app/build/outputs/bundle/playRelease/app-playRelease.aab
 ```
 
-`release_classfile.py` reads compiled JVM contracts; `release_dex.py` reads optimized contracts and R8 class names. `test_release_contracts.py` covers missing/private constructors, persisted names, nested JSON graphs, field/default changes, generic erasure, annotations, serializers, resource loss, and workflow wiring. These fast tests run in PR CI. Actions → Manual optimized release validation → Run workflow optionally exercises the real optimizer on the selected branch without release credentials. It does not run automatically on PRs, publish a release or send notifications. See [optimized-release validation](../docs/TESTING.md#optimized-release-validation) for scope and manual acceptance.
+`release_classfile.py` reads compiled JVM contracts; `release_dex.py` reads optimized contracts and R8 class names. `test_release_contracts.py` covers missing/private constructors, persisted names, nested JSON graphs, field/default changes, generic erasure, annotations, serializers, resource loss, and workflow wiring. These fast tests run in PR CI. The **Release dry run** exercises the real optimizer without release credentials on every release PR, and on any branch from Actions → Release dry run → Run workflow. It does not publish a release or send notifications. See [optimized-release validation](../docs/TESTING.md#optimized-release-validation) for scope and manual acceptance.
 
-All three artifact-build jobs explicitly request `platform-tools` during Android SDK setup; the pinned setup action's default also requests the removed `tools` package and fails before compilation. The workflow regression check covers the manual preflight and both signed publication paths.
+Artifact builds set up the SDK through the shared [`android-setup`](../.github/actions/android-setup/action.yml) action, which requests `platform-tools` explicitly (the pinned setup action's default also requests the removed `tools` package and fails before compilation) and retries `sdkmanager`, whose downloads fail now and then. The workflow regression check covers the release dry run and the signed build.
 
 The update manifest preserves authored listener-note emphasis and links as Markdown instead of flattening them to plain text. The app renders the supported listener Markdown subset.
 

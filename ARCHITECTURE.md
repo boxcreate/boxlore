@@ -71,7 +71,7 @@ On disk, the folder path matches the Gradle id (`core/playback` → `:core:playb
 | `:core:testing` | Shared fixtures, dispatcher helpers, architecture guards | [`core/testing/README.md`](core/testing/README.md) |
 | `:feature:home` | Home feed presentation, Daily/Offline mix, and local Debug | [`feature/home/README.md`](feature/home/README.md) |
 | `:feature:settings` | Unified Settings hub, Account & Cloud Sync, Appearance, Privacy, Playback, and Download policies | [`feature/settings/README.md`](feature/settings/README.md) |
-| `:feature:history` | Listening history timeline, activity charts, pattern insights, and streak cards | [`feature/history/README.md`](feature/history/README.md) |
+| `:feature:history` | Listening history: Insights (time, listening type, top shows, clock, records, genres), the Timeline by day or show, and the monthly story with Echo | [`feature/history/README.md`](feature/history/README.md) |
 | `:feature:player` | Player overlay (`PlayerSheetScaffold`); not a NavHost destination | [`feature/player/README.md`](feature/player/README.md) |
 | `:feature:info` | Podcast and episode detail, including deep links | [`feature/info/README.md`](feature/info/README.md) |
 | `:feature:explore` | Explore plus Learn / LearnHistory | [`feature/explore/README.md`](feature/explore/README.md) |

@@ -405,6 +405,8 @@ class EpisodeListenerStoreTest {
         assertEquals(setOf("C"), store.memberIdsFlow("C").first())
         assertEquals(setOf("X"), store.memberIdsFlow("X").first())
         assertEquals(mapOf("A" to setOf("A", "B"), "B" to setOf("A", "B")), store.aliasGroupsFlow().first())
+        // The episode counts under its owner, whichever ID listening was recorded under.
+        assertEquals(mapOf("A" to "A", "B" to "A"), store.countedIdsFlow().first())
     }
 
     @Test

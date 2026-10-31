@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "cx.aswin.boxlore.core.testing"
-    compileSdk = 36
+    compileSdk = 37
 
     buildFeatures { compose = true }
 

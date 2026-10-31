@@ -348,35 +348,36 @@ Class #4 -
                 with self.assertRaisesRegex(ValueError, "raw/chime"):
                     check.validate_resources(root / "app.apk", root, Path("aapt2"))
 
-    def test_both_publication_paths_and_manual_preflight_are_guarded(self):
-        """Full R8 verification gates publication; preflight is opt-in only."""
+    def test_publication_and_release_dry_run_are_guarded(self):
+        """Full R8 verification gates publication; the dry run checks every release PR before merging."""
         root = Path(__file__).resolve().parents[2]
         workflow = (root / ".github/workflows/changelog-on-merge.yml").read_text()
-        self.assertEqual(4, workflow.count("python3 .github/scripts/verify_release_contracts.py"))
-        for block in workflow.split("- name: Verify optimized release contracts")[1:]:
-            self.assertIn("app-release.apk", block[:450])
-            self.assertIn("app-playRelease.aab", block[:600])
-        preflight = (root / ".github/workflows/release-contracts.yml").read_text()
-        self.assertIn("app-release-unsigned.apk", preflight)
-        self.assertIn("uploadCrashlyticsMappingFileRelease", preflight)
-        self.assertIn("--app-variant playRelease", preflight)
-        self.assertIn("workflow_dispatch:", preflight)
-        self.assertNotIn("pull_request:", preflight)
-        self.assertNotIn("push:", preflight)
+        self.assertEqual(2, workflow.count("python3 .github/scripts/verify_release_contracts.py"))
+        blocks = workflow.split("- name: Verify optimized release contracts")[1:]
+        self.assertEqual(1, len(blocks))
+        self.assertIn("app-release.apk", blocks[0][:500])
+        self.assertIn("app-playRelease.aab", blocks[0][:650])
+        dry_run = (root / ".github/workflows/release-contracts.yml").read_text()
+        self.assertIn("app-release-unsigned.apk", dry_run)
+        self.assertIn("uploadCrashlyticsMappingFileRelease", dry_run)
+        self.assertIn("--app-variant playRelease", dry_run)
+        self.assertIn("workflow_dispatch:", dry_run)
+        self.assertIn("startsWith(github.head_ref, 'release/v')", dry_run)
+        self.assertNotIn("push:", dry_run)
 
     def test_android_setup_never_requests_removed_tools_package(self):
-        """All artifact-build jobs override the pinned action's obsolete default."""
+        """Artifact builds set up the SDK through the shared action, which overrides the pinned action's obsolete default."""
         root = Path(__file__).resolve().parents[2]
-        for filename, expected_setups in (
-                ("release-contracts.yml", 1), ("changelog-on-merge.yml", 2)):
+        action = (root / ".github/actions/android-setup/action.yml").read_text()
+        setups = action.split("uses: android-actions/setup-android@")[1:]
+        self.assertEqual(1, len(setups))
+        self.assertIn("packages: 'platform-tools'", setups[0].split("\n    - ", 1)[0])
+        for filename in ("release-contracts.yml", "changelog-on-merge.yml"):
             with self.subTest(workflow=filename):
                 workflow = (root / ".github/workflows" / filename).read_text()
-                setups = workflow.split("uses: android-actions/setup-android@")[1:]
-                self.assertEqual(expected_setups, len(setups))
-                for setup in setups:
-                    step = setup.split("\n      - ", 1)[0]
-                    self.assertIn("packages: 'platform-tools'", step)
-
+                self.assertNotIn("android-actions/setup-android@", workflow)
+                self.assertEqual(1, workflow.count("uses: ./.github/actions/android-setup"))
+                self.assertIn("sdk-packages: build-tools;36.0.0 platforms;android-37.0", workflow)
 
 if __name__ == "__main__":
     unittest.main()

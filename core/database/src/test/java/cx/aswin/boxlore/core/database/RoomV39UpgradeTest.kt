@@ -546,7 +546,7 @@ class RoomV39UpgradeTest {
 
         val db = openWithRoom()
 
-        assertEquals(40, db.sql.version)
+        assertEquals(42, db.sql.version)
         assertTrue(db.episodeIdentityDao().getAlias("-14")!!.owner)
         assertTrue(db.localEpisodeCatalogDao().getEpisode("5001")!!.legacy)
     }
@@ -619,13 +619,13 @@ class RoomV39UpgradeTest {
 
     @Test
     fun aNewerFileOpenedByThisBuildIsRecreatedEmpty() = runBlocking<Unit> {
-        RoomSchemaFixture.open(context, NAME, 41) { db -> db.execSQL("CREATE TABLE future_table (id INTEGER PRIMARY KEY)") }
+        RoomSchemaFixture.open(context, NAME, 43) { db -> db.execSQL("CREATE TABLE future_table (id INTEGER PRIMARY KEY)") }
             .use { it.writableDatabase.execSQL("INSERT INTO future_table VALUES (1)") }
 
         val db = openWithRoom()
 
         assertEquals(0, db.upgradeRepairDao().pendingCount())
-        assertEquals(40, db.sql.version)
+        assertEquals(42, db.sql.version)
         assertFalse(RoomSchemaFixture.tables(db.sql).contains("future_table"))
     }
 
@@ -637,7 +637,7 @@ class RoomV39UpgradeTest {
         val db = openWithRoom()
 
         assertNull(db.podcastDao().getPodcast(SHOW))
-        assertEquals(40, db.sql.version)
+        assertEquals(42, db.sql.version)
     }
 
     private companion object {
