@@ -903,13 +903,17 @@ def verify_release_metadata(
     current: AppVersion,
     *,
     skip_notify: bool = False,
+    readme: str | None = None,
+    changelog: str | None = None,
 ) -> None:
+    """The README and CHANGELOG (the workspace's, or a release commit's) carry this release."""
     repository = os.environ.get(
         "GITHUB_REPOSITORY",
         update_changelog.DEFAULT_GITHUB_REPOSITORY,
     ).strip()
     expected_download_url = release_apk_url(repository, current)
-    readme = require_file(README_PATH)
+    readme = require_file(README_PATH) if readme is None else readme
+    changelog = require_file(CHANGELOG_PATH) if changelog is None else changelog
 
     if skip_notify:
         # What's New / CHANGELOG may lag; APK badge should still match Gradle when
@@ -924,14 +928,14 @@ def verify_release_metadata(
             )
         return
 
-    changelog_version = latest_changelog_version()
-    readme_version = latest_readme_version()
+    changelog_version = latest_changelog_version(changelog)
+    readme_version = latest_readme_version(readme)
     if changelog_version != current.name or readme_version != current.name:
         fail(
             "Release metadata mismatch: "
             f"Gradle={current.name}, CHANGELOG={changelog_version}, README={readme_version}"
         )
-    if update_changelog._extract_unreleased_sections(require_file(CHANGELOG_PATH)):
+    if update_changelog._extract_unreleased_sections(changelog):
         fail("Release commit still contains [Unreleased] entries")
     if expected_download_url not in readme:
         fail(f"README APK link must point to {current.apk_asset}")
@@ -1134,28 +1138,161 @@ def write_notification_outputs() -> None:
     )
 
 
-def verify_merged_commit() -> None:
-    current = read_app_version()
-    merge_sha = find_release_prepare_commit(current)
-    commit_skip = commit_skips_notify(merge_sha)
-    env_skip = os.environ.get("SKIP_NOTIFY", "").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-    }
-    # Diff/docs checks follow how the release was prepared; announce can also be
-    # suppressed via workflow_dispatch even for a normal docs-promoting release.
-    verify_release_diff(current, commit=merge_sha, skip_notify=commit_skip)
-    verify_release_metadata(current, skip_notify=commit_skip)
-    skip_announce = commit_skip or env_skip
-    print(
-        f"Publishing release prepare commit {merge_sha}"
-        + (" (skip notify)" if skip_announce else "")
+# Uploaded with every publication and refresh: the commit the release's APK and AAB were built from.
+BUILD_COMMIT_ASSET = "build-commit.txt"
+
+
+def github_asset_text(repository: str, token: str, asset_id: int) -> str:
+    """A small release asset's text. The token goes to GitHub only, never to the storage it redirects to."""
+    request = urllib.request.Request(
+        f"https://api.github.com/repos/{repository}/releases/assets/{asset_id}",
+        headers={
+            "Accept": "application/octet-stream",
+            "User-Agent": "boxlore-release/1.0",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
     )
-    write_release_verify_outputs(
-        current,
-        merge_sha=merge_sha,
-        skip_notify=skip_announce,
+    request.add_unredirected_header("Authorization", f"Bearer {token}")
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            return response.read(4096).decode("utf-8", "replace").strip()
+    except (urllib.error.URLError, OSError) as exc:
+        fail(f"Could not read the release's {BUILD_COMMIT_ASSET}: {exc}")
+    raise AssertionError("unreachable")
+
+
+def github_release_state(
+    repository: str,
+    token: str,
+    tag: str,
+) -> tuple[str | None, set[str] | None, str | None]:
+    """The commit [tag] points at, its release's file names, and the commit those files were built from.
+
+    Each is None when missing: no tag, no release, or a release published before files recorded their commit.
+    """
+    encoded = urllib.parse.quote(tag, safe="")
+    ref = github_request(repository, token, f"git/ref/tags/{encoded}", allow_missing=True)
+    tag_target = None
+    if isinstance(ref, dict):
+        target = ref["object"]
+        if target.get("type") == "tag":
+            target = github_request(repository, token, f"git/tags/{target['sha']}")["object"]
+        tag_target = str(target["sha"])
+    release = github_request(repository, token, f"releases/tags/{encoded}", allow_missing=True)
+    if not isinstance(release, dict):
+        return tag_target, None, None
+    assets = {str(asset["name"]): asset for asset in release.get("assets", [])}
+    built_from = None
+    if BUILD_COMMIT_ASSET in assets:
+        built_from = github_asset_text(repository, token, int(assets[BUILD_COMMIT_ASSET]["id"])) or None
+    return tag_target, set(assets), built_from
+
+
+def publication_plan(
+    *,
+    mode: str,
+    version: AppVersion,
+    build_sha: str,
+    tag_target: str | None,
+    release_assets: set[str] | None,
+    built_from: str | None = None,
+) -> dict[str, str]:
+    """What a publish or refresh still has to do, given the release as GitHub has it.
+
+    build: "true" to build and sign, "false" to reuse the release's own verified files (a re-run after
+    this commit's files were published). release: "create" a new GitHub release, "upload" files to the
+    existing one, or "keep" its files as they are. [built_from] is the commit the release's files were
+    built from (its build-commit.txt); without it the files' origin is unknown, so they are built again.
+    """
+    if mode == "refresh":
+        if release_assets is None:
+            fail(f"{version.tag} has no GitHub release to refresh; publish it first")
+        return {"build": "true", "release": "upload"}
+    if tag_target is not None and tag_target != build_sha:
+        fail(
+            f"{version.tag} is already tagged at {tag_target[:12]}, not {build_sha[:12]}. "
+            "To replace its files with a newer build of the same version, run refresh-latest-artifacts."
+        )
+    if release_assets is None:
+        return {"build": "true", "release": "create"}
+    if built_from is not None and built_from != build_sha:
+        fail(
+            f"{version.tag}'s files were last built from {built_from[:12]}, not {build_sha[:12]}. "
+            "To rebuild them from master, run refresh-latest-artifacts."
+        )
+    if {version.apk_asset, version.aab_asset, "SHA256SUMS"} <= release_assets and built_from == build_sha:
+        return {"build": "false", "release": "keep"}
+    return {"build": "true", "release": "upload"}
+
+
+def git_head() -> str:
+    try:
+        return subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    except subprocess.CalledProcessError as exc:
+        fail(f"Could not read HEAD: {exc}")
+    raise AssertionError("unreachable")
+
+
+def resolve_build(args: argparse.Namespace) -> None:
+    """Decide what a publish or refresh builds and what is already done; run on a master checkout.
+
+    publish builds the merged release commit, or master's tip with --latest-master when a fix merged
+    after a failed publish: the version stays the one the release commit set, so nothing is prepared
+    again. refresh builds master's tip for the Latest release and replaces its files.
+    """
+    repository = os.environ.get("GITHUB_REPOSITORY", "").strip()
+    token = os.environ.get("GITHUB_TOKEN", "").strip()
+    if not repository or not token:
+        fail("GITHUB_REPOSITORY and GITHUB_TOKEN are required")
+    current = read_app_version()
+    head = git_head()
+    if args.operation == "refresh":
+        latest = _parse_release_tag(args.latest_tag or "")
+        if current.name != latest.name:
+            fail(
+                "Gradle versionName does not match the Latest GitHub release tag: "
+                f"Gradle={current.tag}, Latest={args.latest_tag}. Publish a new release instead."
+            )
+        merge_sha, build_sha, skip_notify = "", head, True
+    else:
+        merge_sha = find_release_prepare_commit(current)
+        commit_skip = commit_skips_notify(merge_sha)
+        verify_release_diff(current, commit=merge_sha, skip_notify=commit_skip)
+        verify_release_metadata(
+            current,
+            skip_notify=commit_skip,
+            readme=git_show(f"{merge_sha}:README.md"),
+            changelog=git_show(f"{merge_sha}:CHANGELOG.md"),
+        )
+        build_sha = head if args.latest_master else merge_sha
+        skip_notify = commit_skip or os.environ.get("SKIP_NOTIFY", "").strip().lower() in {"1", "true", "yes"}
+    tag_target, release_assets, built_from = github_release_state(repository, token, current.tag)
+    plan = publication_plan(
+        mode=args.operation,
+        version=current,
+        build_sha=build_sha,
+        tag_target=tag_target,
+        release_assets=release_assets,
+        built_from=built_from,
+    )
+    print(
+        f"{args.operation} {current.tag} from {build_sha[:12]}: "
+        + ("reusing the release's verified files" if plan["build"] == "false" else "building and signing")
+    )
+    write_outputs(
+        {
+            "mode": args.operation,
+            "version": current.name,
+            "version_code": current.code,
+            "tag": current.tag,
+            "apk_asset": current.apk_asset,
+            "aab_asset": current.aab_asset,
+            "merge_sha": merge_sha,
+            "build_sha": build_sha,
+            "skip_notify": "true" if skip_notify else "false",
+            "tag_exists": "true" if tag_target else "false",
+            **plan,
+        }
     )
 
 
@@ -1208,39 +1345,6 @@ def delete_published_release_branch(
     return [f"deleted release branch {branch}"]
 
 
-def resolve_latest_refresh(args: argparse.Namespace) -> None:
-    """Resolve build metadata for clobbering assets on an existing Latest release.
-
-    Requires the checked-out Gradle versionName/versionCode to match the Latest
-    GitHub release tag (e.g. Gradle 0.0.12 ↔ tag v0.0.12). Does not bump versions.
-    """
-    current = read_app_version()
-    latest_tag = args.latest_tag.strip()
-    if not latest_tag:
-        fail("Latest release tag is empty")
-    expected = _parse_release_tag(latest_tag)
-    if current.name != expected.name:
-        fail(
-            "Gradle versionName does not match the Latest GitHub release tag: "
-            f"Gradle={current.tag}, Latest={latest_tag}. "
-            "Publish a new release, or align app/build.gradle.kts with Latest before "
-            "refreshing artifacts."
-        )
-    print(
-        f"Refreshing artifacts for {current.tag} "
-        f"(versionCode={current.code}) from current checkout"
-    )
-    write_outputs(
-        {
-            "version": current.name,
-            "version_code": current.code,
-            "tag": current.tag,
-            "apk_asset": current.apk_asset,
-            "aab_asset": current.aab_asset,
-        }
-    )
-
-
 def delete_release_branch_after_publish(args: argparse.Namespace) -> None:
     repository = os.environ.get("GITHUB_REPOSITORY", "").strip()
     token = os.environ.get("GITHUB_TOKEN", "").strip()
@@ -1283,16 +1387,17 @@ def main() -> None:
     verify_parser.add_argument("--branch", required=True)
     verify_parser.add_argument("--title", required=True)
 
-    subparsers.add_parser(
-        "verify-merged",
-        help="Verify the checked-out master commit is a merged release",
+    build_parser = subparsers.add_parser(
+        "resolve-build",
+        help="Decide what a publish or refresh builds, and what is already published",
     )
-
-    refresh_parser = subparsers.add_parser(
-        "resolve-latest-refresh",
-        help="Resolve Gradle metadata for refreshing Latest release artifacts",
+    build_parser.add_argument("--operation", required=True, choices=("publish", "refresh"))
+    build_parser.add_argument(
+        "--latest-master",
+        action="store_true",
+        help="publish: build master's tip instead of the release commit (same version)",
     )
-    refresh_parser.add_argument("--latest-tag", required=True)
+    build_parser.add_argument("--latest-tag", help="refresh: the Latest GitHub release tag")
 
     notes_parser = subparsers.add_parser(
         "notes",
@@ -1328,10 +1433,8 @@ def main() -> None:
             prepare_release(args)
         elif args.command == "verify":
             verify_release(args)
-        elif args.command == "verify-merged":
-            verify_merged_commit()
-        elif args.command == "resolve-latest-refresh":
-            resolve_latest_refresh(args)
+        elif args.command == "resolve-build":
+            resolve_build(args)
         elif args.command == "notes":
             write_release_notes(args)
         elif args.command == "notification":
