@@ -8,6 +8,7 @@ import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.catalog.ports.ListeningHistoryBackupPort
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.ListeningDayTotals
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.ListeningSessionEntity
@@ -54,7 +55,7 @@ class LibraryBackupListeningRoomTest {
     }
 
     @Test
-    fun aV8BackupRestoresDatesTimingAndPlayedShowsOnAnotherPhone() = runTest {
+    fun aBackupRestoresDatesTimingAndPlayedShowsOnAnotherPhone() = runTest {
         seedSource()
 
         val json = manager(source, PHONE_A).exportLibraryAsJson()
@@ -62,7 +63,7 @@ class LibraryBackupListeningRoomTest {
         manager(target, PHONE_B).importLibraryFromJson(json)
 
         val exported = JsonParser.parseString(json).asJsonObject
-        assertEquals(8, exported["version"].asInt)
+        assertEquals(9, exported["version"].asInt)
         val listening = exported["listening"].asJsonObject
         assertEquals(PHONE_A, listening["deviceId"].asString)
         assertEquals("legacy-$PHONE_A", listening["dailySummaries"].asJsonArray[0].asJsonObject["deviceId"].asString)
@@ -78,6 +79,23 @@ class LibraryBackupListeningRoomTest {
         val summary = target.listeningRollupDao().getAllRollups().single()
         assertEquals("legacy-$PHONE_A" to 90_000L, summary.deviceId to summary.consumedMs)
         assertEquals(PlayedShowEntity(SHOW, "Show", null, "History", 0L, 300L, isDirty = true), target.playedShowDao().getPlayedShow(SHOW))
+    }
+
+    @Test
+    fun aDaysRicherTotalsTravelInTheBackupAndAnOlderBackupReadsThemAsUnknown() = runTest {
+        val totals = ListeningDayTotals(longestSessionMs = 45_000L, carMs = 30_000L, loreMs = 20_000L, newReleaseMs = 10_000L)
+        source.listeningRollupDao().upsertRollup(rollup(day = 7L, device = PHONE_A, consumed = 90_000L).copy(totals = totals))
+
+        manager(target, PHONE_B).importLibraryFromJson(manager(source, PHONE_A).exportLibraryAsJson())
+
+        assertEquals(totals, target.listeningRollupDao().getRollup(PHONE_A, 7L, EPISODE)!!.totals)
+
+        // A v8 backup's summary has no totals: they read 0, not known.
+        LibraryBackupListening(target, PHONE_B).restore(
+            ListeningBackup(deviceId = PHONE_C, dailySummaries = listOf(rollupBackup(day = 8L, device = PHONE_C, consumed = 60_000L))),
+            refusedEpisodeIds = emptySet(),
+        )
+        assertEquals(ListeningDayTotals(), target.listeningRollupDao().getRollup(PHONE_C, 8L, EPISODE)!!.totals)
     }
 
     @Test

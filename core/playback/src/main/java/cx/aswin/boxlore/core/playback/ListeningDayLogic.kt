@@ -21,7 +21,7 @@ internal object ListeningDayLogic {
         longestSessionMs = row.longestSessionMs,
     )
 
-    /** A daily summary: its sitting is known only when it sums one session. */
+    /** A daily summary: its longest session as stored (Room v41), else known only when it sums one session. */
     fun ofRollup(row: ListeningRollupEntity, podcastId: String) = ListeningDayEpisode(
         localDay = row.localDay,
         episodeId = row.episodeId,
@@ -33,7 +33,7 @@ internal object ListeningDayLogic {
         afternoonMs = row.afternoonMs,
         eveningMs = row.eveningMs,
         nightMs = row.nightMs,
-        longestSessionMs = if (row.sessionCount == 1) row.consumedMs else 0L,
+        longestSessionMs = row.totals.longestSessionMs.takeIf { it > 0L } ?: if (row.sessionCount == 1) row.consumedMs else 0L,
     )
 
     fun sum(a: ListeningDayEpisode, b: ListeningDayEpisode) = a.copy(

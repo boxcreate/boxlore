@@ -5,9 +5,11 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.catalog.ports.QueueSyncPort
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.ListeningDayTotals
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.ListeningSessionEntity
+import cx.aswin.boxlore.core.database.ListeningSessionValues
 import cx.aswin.boxlore.core.database.PlayedShowEntity
 import cx.aswin.boxlore.core.database.entities.QueueItem
 import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
@@ -61,6 +63,7 @@ class ListeningCloudSyncTest {
     private val pushes = mutableListOf<SyncPushRequest>()
     private val pulls = mutableListOf<SyncPullRequest>()
     private var serverStoresListening = true
+    private var serverStoresTotals = false
     private var pullAnswer = SyncPullResponse(syncedAt = 9_000L)
     private var onPush: (() -> Unit)? = null
     private var pushesInFlight = 0
@@ -81,11 +84,11 @@ class ListeningCloudSyncTest {
                         pushes += args[2] as SyncPushRequest
                         onPush?.invoke()
                         pushesInFlight--
-                        FakeCall(Response.success(SyncPushResponse(syncedAt = 5_000L, listeningAccepted = serverStoresListening)))
+                        FakeCall(Response.success(SyncPushResponse(syncedAt = 5_000L, listeningAccepted = serverStoresListening, listeningTotals = serverStoresTotals)))
                     }
                     "syncPull" -> {
                         pulls += args[2] as SyncPullRequest
-                        FakeCall(Response.success(pullAnswer))
+                        FakeCall(Response.success(pullAnswer.copy(listeningTotals = serverStoresTotals)))
                     }
                     "deleteSyncAccount" -> FakeCall(Response.success(SyncDeleteAccountResponse()))
                     "hashCode" -> 42
@@ -364,6 +367,61 @@ class ListeningCloudSyncTest {
         assertEquals(listOf("100"), push.playedShows.map { it.podcastId })
         assertTrue(push.history.any { it.episodeId == "ep-1" && it.firstPlayedAt == 500L })
         assertEquals(0L, pulls.single().listeningSince)
+    }
+
+    @Test
+    fun eachDaysRicherTotalsGoUpAndComeDown() = runTest(testDispatcher) {
+        val me = prefs.getOrCreateListeningDeviceId()
+        database.listeningSessionDao().upsertSessions(
+            listOf(
+                session("car", day = 10L, device = me).copy(output = ListeningSessionValues.OUTPUT_CAR, source = ListeningSessionValues.SOURCE_LORE),
+                session("buds", day = 10L, device = me, endedOffset = 200_000L).copy(consumedMs = 90_000L, output = ListeningSessionValues.OUTPUT_HEADPHONES),
+            ),
+        )
+        pullAnswer =
+            SyncPullResponse(
+                syncedAt = 9_000L,
+                listeningDays = listOf(day("phone-b", 12L, 120_000L).copy(longestSessionMs = 80_000L, carMs = 120_000L, newReleaseMs = 40_000L)),
+                playedShows = emptyList(),
+            )
+
+        coordinator.syncNow()
+
+        val sent = pushes.single().listeningDays.single()
+        assertEquals(90_000L, sent.longestSessionMs)
+        assertEquals(60_000L, sent.carMs)
+        assertEquals(90_000L, sent.headphonesMs)
+        assertEquals(60_000L, sent.loreMs)
+        val pulled = database.listeningRollupDao().getRollup("phone-b", 12L, "ep-1")!!.totals
+        assertEquals(ListeningDayTotals(longestSessionMs = 80_000L, carMs = 120_000L, newReleaseMs = 40_000L), pulled)
+    }
+
+    @Test
+    fun daysGoUpOnceMoreTheFirstTimeAServerStoresTheirTotals() = runTest(testDispatcher) {
+        seedOwnListening()
+        val me = prefs.getOrCreateListeningDeviceId()
+
+        // A server without the totals: days are sent and marked, and stay marked.
+        coordinator.syncNow()
+        assertEquals(2, database.listeningPushDao().getPushedDays(me).size)
+        pushes.clear()
+        coordinator.syncNow()
+        assertTrue(pushes.isEmpty() || pushes.single().listeningDays.isEmpty())
+        assertFalse(prefs.areListeningTotalsSent())
+
+        // The server updates: its first answer that stores totals (here a pull, with nothing to push)
+        // sends every day once more...
+        serverStoresTotals = true
+        coordinator.syncNow()
+        assertTrue(prefs.areListeningTotalsSent())
+        pushes.clear()
+        coordinator.syncNow()
+        assertEquals(listOf(10L, 11L), pushes.single().listeningDays.map { it.localDay })
+
+        // ...and only once.
+        pushes.clear()
+        coordinator.syncNow()
+        assertTrue(pushes.isEmpty() || pushes.single().listeningDays.isEmpty())
     }
 
     private suspend fun seedOwnListening() {

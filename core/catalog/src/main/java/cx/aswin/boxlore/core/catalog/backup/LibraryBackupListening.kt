@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.catalog.backup
 
 import androidx.room.withTransaction
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.ListeningDayTotals
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.ListeningSessionEntity
 import cx.aswin.boxlore.core.database.PlayedShowEntity
@@ -53,6 +54,16 @@ data class ListeningRollupBackup(
     val eveningMs: Long? = null,
     val nightMs: Long? = null,
     val wallMs: Long? = null,
+    /** The day's richer totals (backup v9, Room v41); missing in older backups, read as 0 (not known). */
+    val longestSessionMs: Long? = null,
+    val speakerMs: Long? = null,
+    val headphonesMs: Long? = null,
+    val bluetoothMs: Long? = null,
+    val carMs: Long? = null,
+    val castMs: Long? = null,
+    val loreMs: Long? = null,
+    val smartQueueMs: Long? = null,
+    val newReleaseMs: Long? = null,
 )
 
 /** One `played_shows` row ([PlayedShowEntity]). Gson can leave any field null. */
@@ -176,6 +187,15 @@ internal class LibraryBackupListening(private val database: BoxLoreDatabase, pri
         eveningMs = eveningMs,
         nightMs = nightMs,
         wallMs = wallMs,
+        longestSessionMs = totals.longestSessionMs,
+        speakerMs = totals.speakerMs,
+        headphonesMs = totals.headphonesMs,
+        bluetoothMs = totals.bluetoothMs,
+        carMs = totals.carMs,
+        castMs = totals.castMs,
+        loreMs = totals.loreMs,
+        smartQueueMs = totals.smartQueueMs,
+        newReleaseMs = totals.newReleaseMs,
     )
 
     private fun ListeningRollupBackup.toEntity(owner: String?): ListeningRollupEntity? {
@@ -194,8 +214,21 @@ internal class LibraryBackupListening(private val database: BoxLoreDatabase, pri
             nightMs = nightMs ?: 0L,
             deviceId = deviceId?.takeIf { it.isNotBlank() } ?: owner ?: ListeningRollupEntity.THIS_DEVICE,
             wallMs = wallMs?.coerceAtLeast(0L) ?: 0L,
+            totals = totals(),
         )
     }
+
+    private fun ListeningRollupBackup.totals() = ListeningDayTotals(
+        longestSessionMs = longestSessionMs?.coerceAtLeast(0L) ?: 0L,
+        speakerMs = speakerMs?.coerceAtLeast(0L) ?: 0L,
+        headphonesMs = headphonesMs?.coerceAtLeast(0L) ?: 0L,
+        bluetoothMs = bluetoothMs?.coerceAtLeast(0L) ?: 0L,
+        carMs = carMs?.coerceAtLeast(0L) ?: 0L,
+        castMs = castMs?.coerceAtLeast(0L) ?: 0L,
+        loreMs = loreMs?.coerceAtLeast(0L) ?: 0L,
+        smartQueueMs = smartQueueMs?.coerceAtLeast(0L) ?: 0L,
+        newReleaseMs = newReleaseMs?.coerceAtLeast(0L) ?: 0L,
+    )
 
     private fun PlayedShowEntity.toBackup() = PlayedShowBackup(podcastId, podcastName, imageUrl, genre, firstPlayedAt, lastPlayedAt)
 

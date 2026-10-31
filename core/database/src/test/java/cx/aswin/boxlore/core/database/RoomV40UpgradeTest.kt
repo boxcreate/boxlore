@@ -79,7 +79,7 @@ class RoomV40UpgradeTest(private val fromVersion: Int) {
 
         val db = openWithRoom()
 
-        assertEquals(40, db.sql.version)
+        assertEquals(41, db.sql.version)
         for (table in listOf("listening_history", "listening_sessions")) {
             val old = before.getValue(table)
             assertEquals("$table from v$fromVersion", old, RoomSchemaFixture.rows(db.sql, table, old.columns))

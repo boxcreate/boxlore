@@ -139,6 +139,16 @@ data class ListeningDaySyncDto(
     @SerialName("eveningMs") val eveningMs: Long = 0L,
     @SerialName("nightMs") val nightMs: Long = 0L,
     @SerialName("lastListenedAt") val lastListenedAt: Long = 0L,
+    /** The day's richer totals (Room v41): 0 when not known, and on servers that don't store them. */
+    @SerialName("longestSessionMs") val longestSessionMs: Long = 0L,
+    @SerialName("speakerMs") val speakerMs: Long = 0L,
+    @SerialName("headphonesMs") val headphonesMs: Long = 0L,
+    @SerialName("bluetoothMs") val bluetoothMs: Long = 0L,
+    @SerialName("carMs") val carMs: Long = 0L,
+    @SerialName("castMs") val castMs: Long = 0L,
+    @SerialName("loreMs") val loreMs: Long = 0L,
+    @SerialName("smartQueueMs") val smartQueueMs: Long = 0L,
+    @SerialName("newReleaseMs") val newReleaseMs: Long = 0L,
     /** The server's write time, on pulls. */
     @SerialName("updatedAt") val updatedAt: Long = 0L,
 )
@@ -175,6 +185,8 @@ data class SyncPushResponse(
     @SerialName("syncedAt") val syncedAt: Long,
     /** The server stored the push's listening (Room v40 server); older servers leave it out. */
     @SerialName("listeningAccepted") val listeningAccepted: Boolean = false,
+    /** The server stores each day's richer totals (Room v41); older servers leave it out. */
+    @SerialName("listeningTotals") val listeningTotals: Boolean = false,
 )
 
 @Serializable
@@ -202,6 +214,8 @@ data class SyncPullResponse(
     /** Only when the pull asked for `listening`. */
     @SerialName("listeningDays") val listeningDays: List<ListeningDaySyncDto>? = null,
     @SerialName("playedShows") val playedShows: List<PlayedShowSyncDto>? = null,
+    /** The server stores each day's richer totals (Room v41); older servers leave it out. */
+    @SerialName("listeningTotals") val listeningTotals: Boolean = false,
     @SerialName("syncedAt") val syncedAt: Long,
 )
 

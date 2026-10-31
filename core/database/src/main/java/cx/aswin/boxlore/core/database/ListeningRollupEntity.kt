@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.database
 
 import androidx.room.ColumnInfo
+import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.Index
 
@@ -36,9 +37,21 @@ data class ListeningRollupEntity(
     /** Listening time at the playback speed; 0 when not known (Room v40). */
     @ColumnInfo(defaultValue = "0")
     val wallMs: Long = 0L,
+    /** The day's richer totals (Room v41), summed from its sessions; 0 when not known. */
+    @Embedded val totals: ListeningDayTotals = ListeningDayTotals(),
 ) {
     /** This summary with nothing listened: what a push sends for a day this phone no longer holds. */
-    fun zeroed() = copy(consumedMs = 0L, sessionCount = 0, completionCount = 0, morningMs = 0L, afternoonMs = 0L, eveningMs = 0L, nightMs = 0L, wallMs = 0L)
+    fun zeroed() = copy(
+        consumedMs = 0L,
+        sessionCount = 0,
+        completionCount = 0,
+        morningMs = 0L,
+        afternoonMs = 0L,
+        eveningMs = 0L,
+        nightMs = 0L,
+        wallMs = 0L,
+        totals = ListeningDayTotals(),
+    )
 
     fun isZero(): Boolean = consumedMs == 0L && sessionCount == 0
 

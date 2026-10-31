@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.ListeningDayTotals
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.ListeningSessionEntity
@@ -124,6 +125,20 @@ class HistoryBeyondScreenLimitTest {
         assertEquals(5L * 60_000L, day.nightMs)
         assertEquals(45L * 60_000L, day.longestSessionMs)
         assertEquals(20L * 86_400_000L + 45L * 60_000L, day.lastListenedAt)
+    }
+
+    @Test
+    fun aSummarysStoredLongestSessionIsItsLongestSitting() = runTest(testDispatcher) {
+        // Two sessions summed (Room v41 keeps the longer one); before v41 it couldn't be known.
+        database.listeningRollupDao().upsertRollup(
+            ListeningRollupEntity(20L, "ep-1", SHOW, 50L * 60_000L, 2, 0, lastListenedAt = 99L, deviceId = "phone-c", totals = ListeningDayTotals(longestSessionMs = 30L * 60_000L)),
+        )
+        database.listeningRollupDao().upsertRollup(ListeningRollupEntity(19L, "ep-1", SHOW, 50L * 60_000L, 2, 0, lastListenedAt = 9L, deviceId = "phone-c"))
+
+        val days = historyStore().observeListeningByDay().first().associateBy { it.localDay }
+
+        assertEquals(30L * 60_000L, days.getValue(20L).longestSessionMs)
+        assertEquals(0L, days.getValue(19L).longestSessionMs)
     }
 
     private fun historyStore(): PlaybackHistoryStore {
