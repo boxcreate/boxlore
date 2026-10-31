@@ -85,6 +85,24 @@ class StoryEchoLinesTest {
     }
 
     @Test
+    fun withoutANewShareHowNeverPicksTheNewOrCatchingUpLines() {
+        val base = story(octoberMinutes = 600, septemberMinutes = 300)
+        // A clear lead short of half: no output line, so new or catching up would speak if known.
+        val outputs = listOf(OutputShare(ListeningOutput.HEADPHONES, 0.45f), OutputShare(ListeningOutput.CAR, 0.2f), OutputShare(ListeningOutput.SPEAKER, 0.2f), OutputShare(ListeningOutput.CAST, 0.15f))
+        fun picks(newShare: Float?): Set<Int> {
+            val how = StoryHow(outputs, ListeningSources(newShare = newShare, loreShare = 0f, smartQueueShare = 0f))
+            return (0 until 120).map { StoryEchoLines.lines(StoryCard.HOW, base.copy(how = how, echo = base.echo.copy(detailsCoverage = 1f)), it) }.toSet()
+        }
+
+        assertTrue(R.array.history_echo_how_new_lead in picks(0.9f))
+        assertTrue(R.array.history_echo_how_catching_up in picks(0.05f))
+        // Too little of the month has a release date: neither, whatever else is known.
+        val unknown = picks(null)
+        assertFalse(R.array.history_echo_how_new_lead in unknown)
+        assertFalse(R.array.history_echo_how_catching_up in unknown)
+    }
+
+    @Test
     fun recordsTellANewBestFromATie() {
         // Ten days in a row in October, after five in a row in August.
         assertEquals(R.array.history_echo_records_new_record, StoryEchoLines.lines(StoryCard.RECORDS, story(octoberMinutes = 600, augustMinutes = 50, augustDays = 5)))
