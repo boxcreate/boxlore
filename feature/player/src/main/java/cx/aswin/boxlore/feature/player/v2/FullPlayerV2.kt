@@ -37,6 +37,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
@@ -279,63 +280,72 @@ fun FullPlayerV2(
     val style by dependencies.userPrefs.fullPlayerStyleStream.collectAsStateWithLifecycle(
         initialValue = dependencies.userPrefs.cachedFullPlayerStyle,
     )
-    if (tablet) {
-        TabletFullPlayerBody(
-            model = FullPlayerBodyModel(state, episode, podcast, nextEpisode, isVideo, isVideoPodcast, FullPlayerDownloadState(isDownloaded, isDownloading)),
-            dependencies = dependencies,
-            display = display,
-            actions = playerActions,
-            flows = FullPlayerFlows(positionFlow, bufferedPositionFlow),
-            ui = ui,
-            resources = TabletPlayerResources(
-                FullPlayerBodyResources(scope, queueSnackbarHostState, statusBarPadding, navBarPadding, modifier),
-                PlayerQueueSheetResources(scope, queueSnackbarHostState, queueSheetState),
-                minimalPlayerActions(dependencies, state, ui, playerActions),
-                useMinimalPlayer(style, isVideoPodcast),
-            ),
-        )
-    } else if (useMinimalPlayer(style, isVideoPodcast)) {
-        MinimalPlayerContent(
-            state = state,
-            display = display,
-            flows = PlayerProgressFlows(positionFlow, bufferedPositionFlow),
-            actions = minimalPlayerActions(dependencies, state, ui, playerActions),
-            modifier = modifier,
-        )
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-            SnackbarHost(queueSnackbarHostState, Modifier.padding(bottom = navBarPadding))
-        }
-    } else {
-        FullPlayerBody(
-            model =
-            FullPlayerBodyModel(
+    // One Cast picker above the phone and tablet layouts, so its sheet and Android 17's permission
+    // answer survive a fold, unfold or resize that swaps the layout.
+    val castPicker = rememberCastPickerState()
+    CompositionLocalProvider(LocalCastPicker provides castPicker) {
+        if (tablet) {
+            TabletFullPlayerBody(
+                model = FullPlayerBodyModel(state, episode, podcast, nextEpisode, isVideo, isVideoPodcast, FullPlayerDownloadState(isDownloaded, isDownloading)),
+                dependencies = dependencies,
+                display = display,
+                actions = playerActions,
+                flows = FullPlayerFlows(positionFlow, bufferedPositionFlow),
+                ui = ui,
+                resources = TabletPlayerResources(
+                    FullPlayerBodyResources(scope, queueSnackbarHostState, statusBarPadding, navBarPadding, modifier),
+                    PlayerQueueSheetResources(scope, queueSnackbarHostState, queueSheetState),
+                    minimalPlayerActions(dependencies, state, ui, playerActions),
+                    useMinimalPlayer(style, isVideoPodcast),
+                ),
+            )
+        } else if (useMinimalPlayer(style, isVideoPodcast)) {
+            MinimalPlayerContent(
                 state = state,
-                episode = episode,
-                podcast = podcast,
-                nextEpisode = nextEpisode,
-                isVideo = isVideo,
-                isVideoPodcast = isVideoPodcast,
-                download = FullPlayerDownloadState(isDownloaded, isDownloading),
-            ),
-            dependencies = dependencies,
-            display = display,
-            actions = playerActions,
-            flows = FullPlayerFlows(positionFlow, bufferedPositionFlow),
-            ui = ui,
-            resources =
-            FullPlayerBodyResources(
-                scope,
-                queueSnackbarHostState,
-                statusBarPadding,
-                navBarPadding,
-                modifier,
-            ),
-        )
+                display = display,
+                flows = PlayerProgressFlows(positionFlow, bufferedPositionFlow),
+                actions = minimalPlayerActions(dependencies, state, ui, playerActions),
+                modifier = modifier,
+            )
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+                SnackbarHost(queueSnackbarHostState, Modifier.padding(bottom = navBarPadding))
+            }
+        } else {
+            FullPlayerBody(
+                model =
+                FullPlayerBodyModel(
+                    state = state,
+                    episode = episode,
+                    podcast = podcast,
+                    nextEpisode = nextEpisode,
+                    isVideo = isVideo,
+                    isVideoPodcast = isVideoPodcast,
+                    download = FullPlayerDownloadState(isDownloaded, isDownloading),
+                ),
+                dependencies = dependencies,
+                display = display,
+                actions = playerActions,
+                flows = FullPlayerFlows(positionFlow, bufferedPositionFlow),
+                ui = ui,
+                resources =
+                FullPlayerBodyResources(
+                    scope,
+                    queueSnackbarHostState,
+                    statusBarPadding,
+                    navBarPadding,
+                    modifier,
+                ),
+            )
+        }
     }
 
     // ------------------------------------------------------------------
     // Sheets
     // ------------------------------------------------------------------
+
+    MaterialTheme(colorScheme = display.colorScheme) {
+        CastPickerSheetHost(castPicker, isCasting = state.playbackRoute.isRemote)
+    }
 
     FullPlayerModalSheets(
         dependencies = dependencies,
@@ -635,10 +645,9 @@ internal fun FullPlayerHeroSection(
             isCompact = isCompact,
         )
     var showCastControls by rememberSaveable { mutableStateOf(isRemote) }
-    var showCastRoutePicker by rememberSaveable { mutableStateOf(false) }
+    val castPicker = LocalCastPicker.current
     LaunchedEffect(isRemote) {
         showCastControls = isRemote
-        if (!isRemote) showCastRoutePicker = false
         if (isRemote) actions.onFullscreenVideoChange(false)
     }
     val heroMode =
@@ -666,7 +675,7 @@ internal fun FullPlayerHeroSection(
                 mode = mode,
                 model = model,
                 bindings = bindings,
-                onChangeCastDevice = { showCastRoutePicker = true },
+                onChangeCastDevice = { castPicker?.onCastClick?.invoke() },
             )
         }
         CastHeroModeToggle(
@@ -677,12 +686,6 @@ internal fun FullPlayerHeroSection(
             modifier = Modifier.align(Alignment.TopEnd),
         )
     }
-    CastRoutePickerOverlay(
-        visible = showCastRoutePicker,
-        isRemote = isRemote,
-        colorScheme = display.colorScheme,
-        onDismiss = { showCastRoutePicker = false },
-    )
     RemoteAwareVideoModeButtons(
         visible = shouldShowVideoModeButtons(model.isVideo, heroMode),
         bindings = bindings,
@@ -793,22 +796,6 @@ private fun CastHeroModeToggle(
                 contentDescription = if (showCastControls) "Show artwork" else "Show Cast controls",
             )
         }
-    }
-}
-
-@Composable
-private fun CastRoutePickerOverlay(
-    visible: Boolean,
-    isRemote: Boolean,
-    colorScheme: ColorScheme,
-    onDismiss: () -> Unit,
-) {
-    if (!visible) return
-    MaterialTheme(colorScheme = colorScheme) {
-        CastRoutePickerSheet(
-            isCasting = isRemote,
-            onDismiss = onDismiss,
-        )
     }
 }
 
