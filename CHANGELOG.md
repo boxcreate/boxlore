@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `AutoOrganizeFolderLook`: genre folders made when a show is followed or its genre changes use the look saved on Auto-organize. ([#1198](https://github.com/boxcreate/boxlore/pull/1198)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - New Episodes swipe actions (add to queue, mark played) and pull to refresh through `SubscriptionForegroundSync.refreshNow()`, which skips the cooldown. ([#1198](https://github.com/boxcreate/boxlore/pull/1198)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - `subscriptions_grid_view`, `auto_organize_folder_size` and `auto_organize_tile_covers` preferences. ([#1198](https://github.com/boxcreate/boxlore/pull/1198)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Listening history Insights tab (time, listening type, top shows, listening clock, weekdays, month mosaic, records, genres, milestones, Where you listen, New or catching up) and a monthly listening story with Echo (`StoryLogic`, `StoryPlayer`, How you listened, records, share card, Echo lines per situation in `StoryEchoLines`). ([#1207](https://github.com/boxcreate/boxlore/pull/1207)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
+- Daily listening summaries keep the longest session and time by output and source (Room v41, `ListeningDayTotals`); they sync (`listeningTotals`) and go into backup version 9. ([#1207](https://github.com/boxcreate/boxlore/pull/1207)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
 - Episode links, pushes and Android Auto items resolve by show: stored row, then trusted alias, then `/v2/episode` (old Podcast Index IDs included; v1 only when the v2 route can't answer), then one read of the show's feed for `needsFeed` episodes (`EpisodeLinkResolver`). ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `boxlore://episode/{id}?show=` and `&show=` share deep-link patterns, mapped onto the route's `podcastId`; Play install referrers keep `show`. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Episode share links carry the recipe ID plus `&show=` and register the episode first (`EpisodeSharePreparer`); `EpisodeShareRegistrationWorker` (unique work `episode-share-registration-<hash>`) retries in the background. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -53,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Episode analytics events carry `recipe_id` (and `recipe_ids` on episode impressions) beside the local `episode_id`, and `own_ids_upgrade_completed` reports the one-time upgrade repair once per upgraded install. ([#1189](https://github.com/boxcreate/boxlore/pull/1189)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Changed
 - Subscriptions chips use the Explore Top tab chip style (`SubscriptionChip`); the sort sheet is rebuilt as Material 3 sections; genre folders show an auto icon instead of "Fills from" text. ([#1198](https://github.com/boxcreate/boxlore/pull/1198)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Listening history Timeline tab with Jump back in, search, days or shows and Jump to a day; floating Insights | Timeline switcher; listening sessions kept whole for 400 days (`RETENTION_DAYS`, was 180). ([#1207](https://github.com/boxcreate/boxlore/pull/1207)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
 - Cloud sync carries each history and queue row's recipe ID and catalog key, records pulled rows as episode aliases (`SyncEpisodeIdentity`, `cloud_sync` provenance), merges and removes queue entries per episode with rich removals, and runs a one-time identity catch-up (sync metadata version 3) that adds identity to older builds' cloud rows without changing their values. ([#1179](https://github.com/boxcreate/boxlore/pull/1179)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - New-episode pushes match by catalog key and (show, recipe ID) after GUID and enclosure, and open the recipe ID when no local row exists yet. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Android Auto reads queue, history and downloads across an episode's trusted IDs. ([#1181](https://github.com/boxcreate/boxlore/pull/1181)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -322,6 +325,14 @@ readme-copy:end pr=1204 -->
 ### Improvements
 - When boxlore needs a quick check that you're a person before Echo can suggest shows, Echo now asks for it in its own voice, and the check fits in with the rest of the screen.
 readme-copy:end pr=1205 -->
+
+<!-- readme-copy:start pr=1207
+### Improvements
+- Listening history has a new Insights tab: your listening time, top shows, when and where you listen, how much of it is new episodes, and your records.
+- Each month, Echo tells the story of your last month of listening: your numbers first, how you listened, your records, and something new to say each time, ready to share.
+- Timeline lets you search your history, jump to any day and pick up where you left off.
+- Your longest listening session and where you listened now carry over with cloud sync and backups.
+readme-copy:end pr=1207 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added
