@@ -6,17 +6,24 @@ import cx.aswin.boxlore.core.domain.ports.LocalCatalogPort
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.info.logic.PostSubscribeRefreshes
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
+import kotlin.coroutines.intrinsics.intercepted
+import kotlin.coroutines.resume
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.RETURNS_DEFAULTS
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.verifyNoMoreInteractions
+import org.mockito.stubbing.Answer
 
 /** Pull to refresh's guards: a pull that must not run reads nothing, and a refresh never lands on another show. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -30,7 +37,10 @@ class PodcastInfoPullRefreshTest {
     private val postSubscribeRefreshes = PostSubscribeRefreshes()
     private val pageState = PodcastInfoPageState()
 
-    private fun pullRefresh(scope: CoroutineScope) = PodcastInfoPullRefresh(
+    private fun pullRefresh(
+        scope: CoroutineScope,
+        repository: PodcastRepository = this.repository,
+    ) = PodcastInfoPullRefresh(
         pageState = pageState,
         repository = repository,
         rssRepository = rssRepository,
@@ -99,5 +109,42 @@ class PodcastInfoPullRefreshTest {
         verifyNoMoreInteractions(repository)
         verifyNoInteractions(supplementSupport, localCatalog)
         assertSame(otherShow, pageState.uiState.value)
+    }
+
+    @Test
+    fun `a first page that arrives after the listener left the show is dropped`() = runTest {
+        // Holds the first-page request open until the test answers it (Mockito keeps the continuation in rawArguments).
+        var pendingPage: Continuation<PodcastRepository.EpisodePage>? = null
+        val pausingRepository =
+            mock(
+                PodcastRepository::class.java,
+                Answer { invocation ->
+                    if (invocation.method.name == "getShowPageEpisodes") {
+                        @Suppress("UNCHECKED_CAST")
+                        pendingPage = invocation.rawArguments.last() as Continuation<PodcastRepository.EpisodePage>
+                        COROUTINE_SUSPENDED
+                    } else {
+                        RETURNS_DEFAULTS.answer(invocation)
+                    }
+                },
+            )
+        pageState.currentPodcastId = "p1"
+        pageState.uiState.value = show("p1")
+
+        pullRefresh(this, pausingRepository).refresh()
+        advanceUntilIdle()
+        val request = checkNotNull(pendingPage) { "the first page was never requested" }
+
+        // The listener opens another show while the first page loads.
+        pageState.currentPodcastId = "p2"
+        pageState.currentOffset = 7
+        val otherShow = show("p2")
+        pageState.uiState.value = otherShow
+        request.intercepted().resume(PodcastRepository.EpisodePage(listOf(TestFixtures.episode(id = "p1-new", podcastId = "p1")), hasMore = true))
+        advanceUntilIdle()
+
+        assertSame(otherShow, pageState.uiState.value)
+        assertEquals(7, pageState.currentOffset)
+        verifyNoInteractions(supplementSupport, localCatalog)
     }
 }
