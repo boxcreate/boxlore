@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -34,6 +36,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet
+import cx.aswin.boxlore.core.designsystem.echo.EchoBeat
+import cx.aswin.boxlore.core.designsystem.echo.EchoCharacter
+import cx.aswin.boxlore.core.designsystem.echo.EchoFace
+import cx.aswin.boxlore.core.designsystem.echo.EchoGaze
+import cx.aswin.boxlore.core.designsystem.echo.EchoIdle
 
 /** Builds the page view for one run; [onMessage] and [onFailed] report back to the controller. */
 internal fun interface TurnstilePageFactory {
@@ -108,26 +115,44 @@ internal fun TurnstileStepUpHost(
     }
 }
 
-/** The shared adaptive sheet: a phone sheet, or a centered dialog on expanded and folded windows. */
+/**
+ * The shared adaptive sheet: a phone sheet, or a centered dialog on expanded and folded windows.
+ * Echo stands on its stage beside its line and glances down at the check now and then; the check
+ * (drawn by Cloudflare) sits in a card so it reads as part of the sheet.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun TurnstileStepUpSheet(onSkip: () -> Unit, challenge: @Composable () -> Unit) {
     BoxloreModalBottomSheet(onDismissRequest = onSkip) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(
-                text = stringResource(R.string.session_check_title),
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.semantics { heading() },
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                EchoCharacter(
+                    sequence = CHECK_ECHO_SEQUENCE,
+                    modifier = Modifier.size(96.dp).testTag(CHECK_ECHO_TAG),
+                    idle = CheckEchoIdle,
+                    stageColor = MaterialTheme.colorScheme.primaryContainer,
+                )
+                Text(
+                    text = stringResource(R.string.session_check_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.weight(1f).semantics { heading() },
+                )
+            }
             Text(
                 text = stringResource(R.string.session_check_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { challenge() }
+            Surface(
+                modifier = Modifier.fillMaxWidth().testTag(CHALLENGE_CARD_TAG),
+                shape = MaterialTheme.shapes.large,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ) {
+                Box(Modifier.padding(8.dp), contentAlignment = Alignment.Center) { challenge() }
+            }
             TextButton(onClick = onSkip, modifier = Modifier.align(Alignment.End)) {
                 Text(stringResource(R.string.session_check_skip))
             }
@@ -135,5 +160,20 @@ internal fun TurnstileStepUpSheet(onSkip: () -> Unit, challenge: @Composable () 
     }
 }
 
+/** Echo's curious asking pose from onboarding, so the check feels like part of the same chat. */
+private const val CHECK_ECHO_SEQUENCE = "onboarding-question"
+
+/** Echo looks at the listener, then down at the check (below and to its right), and back. */
+private val CheckEchoIdle = EchoIdle(
+    intro = listOf(EchoBeat(EchoGaze(0.3f, 0.9f), 1400, EchoFace.Curious, blinks = 1)),
+    loop = listOf(
+        EchoBeat(EchoGaze(0f, 0f), 2600, blinks = 1),
+        EchoBeat(EchoGaze(0.3f, 0.9f), 1400, EchoFace.Curious, blinks = 1),
+        EchoBeat(EchoGaze(0f, 0f), 2200, EchoFace.Happy),
+    ),
+)
+
 internal const val INVISIBLE_PAGE_TAG = "turnstile_invisible_page"
 internal const val CHALLENGE_PAGE_TAG = "turnstile_challenge_page"
+internal const val CHALLENGE_CARD_TAG = "turnstile_challenge_card"
+internal const val CHECK_ECHO_TAG = "turnstile_check_echo"
