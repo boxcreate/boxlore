@@ -7,6 +7,7 @@ import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.EpisodeGroupStateEntity
+import cx.aswin.boxlore.core.database.ListeningDayTotals
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.ListeningSessionEntity
 import cx.aswin.boxlore.core.database.episodeListenerStore
@@ -222,5 +223,7 @@ class EpisodeAliasHistoryEditsTest {
         sessionCount = 1,
         completionCount = 0,
         lastListenedAt = 2L,
+        // Richer totals (Room v41): Undo puts them back too.
+        totals = ListeningDayTotals(longestSessionMs = 60_000L, carMs = 60_000L, loreMs = 30_000L, newReleaseMs = 60_000L),
     )
 }

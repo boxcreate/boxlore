@@ -233,7 +233,7 @@ class ListeningInsightsDaoInMemoryTest {
     }
 
     @Test
-    fun aCopyOfThisPhonesOldListeningPushedFromAnotherInstallationIsHeldOnceAndNotSentAgain() = runTest {
+    fun aCopyOfThisPhonesOldListeningPushedFromAnotherInstallationIsHeldOnceAndOnlyItsTotalsGoUp() = runTest {
         val origins = ListeningOrigins(own = "me", legacy = "legacy-old")
         sessions.upsertSession(session("legacy"))
         maintenance.claimLegacyListening(origins.legacy)
@@ -242,7 +242,13 @@ class ListeningInsightsDaoInMemoryTest {
         maintenance.applyCloudDailyListening(listOf(twinsDay), origins)
 
         assertTrue(sessions.getAllSessions().isEmpty())
-        assertEquals(listOf(twinsDay), rollups.getAllRollups())
+        // The twin's day has no totals (an older build): the session's stay with the same listening.
+        val held = twinsDay.copy(totals = ListeningDayTotals(longestSessionMs = 1_000L))
+        assertEquals(listOf(held), rollups.getAllRollups())
+        // The cloud's copy lacks them, so the day goes up once with them, and then not again.
+        val toPush = maintenance.listeningDaysToPush(origins.pushed, limit = 10)
+        assertEquals(listOf(held), toPush)
+        maintenance.recordPushedDays(toPush)
         assertTrue(maintenance.listeningDaysToPush(origins.pushed, limit = 10).isEmpty())
     }
 

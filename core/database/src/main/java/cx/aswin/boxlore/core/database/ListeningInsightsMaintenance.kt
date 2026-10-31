@@ -100,6 +100,12 @@ class ListeningInsightsMaintenance(
     suspend fun forgetPushedDays() = pushes.deleteAllPushedDays()
 
     /**
+     * Forgets only the richer totals the cloud holds (a server that now stores them): every day with
+     * totals goes up again, and days pushed before that are gone still get their zero day.
+     */
+    suspend fun forgetPushedTotals() = pushes.forgetPushedTotals()
+
+    /**
      * Daily listening from the cloud, in one transaction.
      * - The installation's own days ([ListeningOrigins.own]): it is their only writer, so what it holds
      *   is never older, and its sessions keep their details. A day comes back only where it holds
@@ -110,16 +116,24 @@ class ListeningInsightsMaintenance(
      *   covers all of it ([covers]); then the sessions it sums go, and a zero day removes the day. An
      *   older day (a later backup of that phone was restored here) changes nothing.
      * Days of the origins this phone pushes are recorded as the cloud holds them, so its next push sends
-     * only what differs.
+     * only what differs. A cloud that doesn't keep the totals ([cloudStoresTotals] false) sends days
+     * without them: those days keep the totals this phone last sent, or they would differ and go up
+     * again on every sync.
      */
-    suspend fun applyCloudDailyListening(days: List<ListeningRollupEntity>, origins: ListeningOrigins,) {
+    suspend fun applyCloudDailyListening(days: List<ListeningRollupEntity>, origins: ListeningOrigins, cloudStoresTotals: Boolean = true,) {
         val incoming = days.filter { it.deviceId != ListeningRollupEntity.THIS_DEVICE }
         if (incoming.isEmpty()) return
         database.withTransaction {
             val heldSessions = sessions.getAllSessions().groupBy { Triple(it.rollupDeviceId, it.localDay, it.episodeId) }
             val known = pushes.getPushedDays(origins.own).mapTo(HashSet()) { Triple(it.deviceId, it.localDay, it.episodeId) }
             for (day in incoming) applyCloudDay(day, heldSessions[day.key].orEmpty(), isOwn = day.deviceId == origins.own, known = day.key in known)
-            recordPushedDays(incoming.filter { it.deviceId in origins.pushed })
+            val pushed = incoming.filter { it.deviceId in origins.pushed }
+            if (cloudStoresTotals) {
+                recordPushedDays(pushed)
+            } else {
+                val sentTotals = origins.pushed.flatMap { pushes.getPushedDays(it) }.associate { Triple(it.deviceId, it.localDay, it.episodeId) to it.totals }
+                recordPushedDays(pushed.map { day -> sentTotals[day.key]?.let { day.copy(totals = it) } ?: day })
+            }
         }
     }
 
@@ -133,8 +147,20 @@ class ListeningInsightsMaintenance(
         }
         if (!day.covers(stored, daySessions)) return
         // A zero day: that origin no longer holds the day (it moved to another episode ID, or was removed).
-        if (day.isZero()) rollups.deleteRollup(day.deviceId, day.localDay, day.episodeId) else rollups.upsertRollup(day)
+        if (day.isZero()) rollups.deleteRollup(day.deviceId, day.localDay, day.episodeId) else rollups.upsertRollup(day.keepingHeldTotals(stored, daySessions))
         sessions.deleteSessionsOfDailySummary(day.deviceId, day.localDay, day.episodeId, day.lastListenedAt)
+    }
+
+    /**
+     * This day, with the richer totals of what this phone holds of it when the day has none (an older
+     * build or server sent it) and holds just that listening: as late and as much. A later or larger day
+     * has more listening than the held totals cover, so they don't stand for it.
+     */
+    private fun ListeningRollupEntity.keepingHeldTotals(stored: ListeningRollupEntity?, daySessions: List<ListeningSessionEntity>,): ListeningRollupEntity {
+        if (totals != ListeningDayTotals()) return this
+        val held = if (daySessions.isEmpty()) stored else ListeningRollupMerge.mergeSessionsIntoRollup(localDay, episodeId, daySessions, stored)
+        if (held == null || held.lastListenedAt != lastListenedAt || held.consumedMs != consumedMs) return this
+        return copy(totals = held.knownTotals())
     }
 
     /**

@@ -54,11 +54,17 @@ class ListeningSessionRecordLogicTest {
         val expected =
             LocalDate
                 .of(2026, 7, 19)
-                .minusDays(180)
+                .minusDays(400)
                 .atStartOfDay(zone)
                 .toInstant()
                 .toEpochMilli()
         assertEquals(expected, cutoff)
+    }
+
+    @Test
+    fun sessionsStayWholeForMoreThanACalendarYear() {
+        // A year in review needs each play's times, output and source for the whole year.
+        assertTrue(ListeningSessionRecordLogic.RETENTION_DAYS > 366)
     }
 }
 

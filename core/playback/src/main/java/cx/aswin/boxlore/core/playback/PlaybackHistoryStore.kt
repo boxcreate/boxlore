@@ -8,14 +8,17 @@ import cx.aswin.boxlore.core.database.EpisodeListenerStore
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningInsightsMaintenance
+import cx.aswin.boxlore.core.database.PlayedShowDao
 import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.domain.ports.ListeningHistoryPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.ListeningCompletionLogic
+import cx.aswin.boxlore.core.model.ListeningDayEpisode
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.core.model.ListeningHistoryRemoval
 import cx.aswin.boxlore.core.model.ListeningInsightSummary
 import cx.aswin.boxlore.core.model.ListeningPeriod
+import cx.aswin.boxlore.core.model.ListeningPlayedShow
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -35,6 +38,8 @@ import kotlinx.coroutines.launch
  *
  * Non-port helpers live in [PlaybackHistoryStoreApi] extensions.
  */
+// Implements the whole ListeningHistoryPort and ListeningHistoryBackupPort, so the repository can delegate both.
+@Suppress("TooManyFunctions")
 internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDeps, internal val data: PlaybackHistoryDataDeps,) :
     ListeningHistoryPort,
     ListeningHistoryBackupPort {
@@ -98,6 +103,68 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
         entities
             .filter { !it.isManualCompletion && !it.isBulkCompletion }
             .map { it.toListeningHistoryItem() }
+    }
+
+    /**
+     * The whole history, read again at most once a second ([throttleLatest]): playback saves progress
+     * every few seconds, and each save would otherwise re-read and re-project every row. A Podcast Index
+     * show switched to its RSS feed counts as the RSS show, as in [observeListeningByDay] and
+     * [observePlayedShows], so the history screen joins rows, time and genres under one show.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun observeFullHistoryTimeline(): Flow<List<ListeningHistoryItem>> = combine(
+        listenerStore.projectedCompleteRows(
+            data.listeningHistoryDao.historyChangeSignal().throttleLatest(HISTORY_SETTLE_MS).mapLatest { data.listeningHistoryDao.getAllStoredHistory() },
+        ),
+        listenerStore.showReplacementsFlow(),
+    ) { entities, replacedBy ->
+        entities
+            .filter { !it.isManualCompletion && !it.isBulkCompletion }
+            .sortedWith(compareByDescending<ListeningHistoryEntity> { it.lastPlayedAt }.thenBy { it.episodeId })
+            .map { row -> (replacedBy[row.podcastId]?.let { row.copy(podcastId = it) } ?: row).toListeningHistoryItem() }
+    }
+
+    /**
+     * Sessions and daily summaries of every phone, summed per local day and episode. A Podcast
+     * Index show switched to its RSS feed counts as the RSS show, as in [observeInsights], and an
+     * episode stored under several trusted IDs counts once, under one of them
+     * ([EpisodeListenerStore.countedIdsFlow]).
+     */
+    override fun observeListeningByDay(): Flow<List<ListeningDayEpisode>> = combine(
+        // Summed by the database: a day per episode, not every one of up to 400 days of sessions.
+        data.listeningSessionDao.observeSessionDays(),
+        data.listeningRollupDao.observeAllRollups(),
+        listenerStore.showReplacementsFlow(),
+        listenerStore.countedIdsFlow(),
+    ) { sessions, rollups, replacedBy, countedAs ->
+        val days = HashMap<Pair<Long, String>, ListeningDayEpisode>()
+        fun add(row: ListeningDayEpisode) {
+            val part = countedAs[row.episodeId]?.let { row.copy(episodeId = it) } ?: row
+            val key = part.localDay to part.episodeId
+            val held = days[key]
+            days[key] = held?.let { ListeningDayLogic.sum(it, part) } ?: part
+        }
+        for (row in sessions) add(ListeningDayLogic.ofSessionDay(row, replacedBy[row.podcastId] ?: row.podcastId))
+        for (row in rollups) add(ListeningDayLogic.ofRollup(row, replacedBy[row.podcastId] ?: row.podcastId))
+        days.values.sortedWith(compareByDescending<ListeningDayEpisode> { it.localDay }.thenBy { it.episodeId })
+    }.throttleLatest(HISTORY_SETTLE_MS)
+
+    private val playedShowDao: PlayedShowDao by lazy { data.playedShowDao ?: BoxLoreDatabase.getDatabase(player.context).playedShowDao() }
+
+    /** Every show played; a switched Podcast Index show joins its RSS show (its name, art and genre win, the earliest and latest plays of both). */
+    override fun observePlayedShows(): Flow<List<ListeningPlayedShow>> = combine(playedShowDao.observeAllPlayedShows(), listenerStore.showReplacementsFlow()) { rows, replacedBy ->
+        rows.groupBy { replacedBy[it.podcastId] ?: it.podcastId }.map { (showId, group) ->
+            val main = group.firstOrNull { it.podcastId == showId } ?: group.maxBy { it.lastPlayedAt }
+            ListeningPlayedShow(
+                podcastId = showId,
+                podcastName = main.podcastName,
+                imageUrl = main.imageUrl ?: group.firstNotNullOfOrNull { it.imageUrl },
+                genre = main.genre ?: group.firstNotNullOfOrNull { it.genre },
+                // 0: first played before boxlore recorded it, which is earliest of all.
+                firstPlayedAt = group.minOf { it.firstPlayedAt },
+                lastPlayedAt = group.maxOf { it.lastPlayedAt },
+            )
+        }
     }
 
     /**
@@ -283,6 +350,11 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
             data.listeningHistoryDao.upsertAll(entitiesToUpsert)
             listenerStore.recordCompletions(historyIds, completed = true, nowMs = currentTime)
         }
+    }
+
+    private companion object {
+        /** Whole-history reads for Listening history follow changes at most this often. */
+        const val HISTORY_SETTLE_MS = 1_000L
     }
 }
 

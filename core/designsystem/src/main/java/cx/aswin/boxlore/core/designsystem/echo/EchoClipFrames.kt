@@ -25,7 +25,7 @@ import kotlinx.coroutines.withContext
  * that plays next. All decoding runs on one background thread. Frames that fall behind are dropped and
  * their bitmaps reused once nothing can still be drawing them.
  */
-class EchoClipFrames(private val assets: AssetManager, private val accent: Int, private val dark: Boolean) : Closeable {
+class EchoClipFrames(private val assets: AssetManager, private val paint: EchoPaint) : Closeable {
     private val executor = Executors.newSingleThreadExecutor { Thread(it, "EchoClipDecoder") }
     private val dispatcher = executor.asCoroutineDispatcher()
     private val frames = ConcurrentHashMap<EchoClipFrameKey, EchoClipFrame>()
@@ -92,11 +92,11 @@ class EchoClipFrames(private val assets: AssetManager, private val accent: Int, 
 
     /** Tints the frame just decoded and keeps it, with its glass mask, in reused bitmaps. */
     private fun keep(clip: EchoMotionClip, index: Int) {
-        tintEchoAccents(pixels, accent, dark)
+        paint.tint(pixels)
         val bitmap = obtain(clip.size, Bitmap.Config.ARGB_8888)
         bitmap.setPixels(pixels, 0, clip.size, 0, 0, clip.size, clip.size)
         val mask = if (clip.mask) obtain(clip.size, Bitmap.Config.ALPHA_8).also { it.copyPixelsFromBuffer(ByteBuffer.wrap(maskBytes)) } else null
-        frames[EchoClipFrameKey(clip.id, index)] = EchoClipFrame(bitmap.asImageBitmap(), mask?.asImageBitmap())
+        frames[EchoClipFrameKey(clip.id, index)] = EchoClipFrame(bitmap.asImageBitmap(), mask?.asImageBitmap(), index)
     }
 
     private fun release(key: EchoClipFrameKey) {
@@ -130,8 +130,8 @@ class EchoClipFrames(private val assets: AssetManager, private val accent: Int, 
 
 private data class EchoClipFrameKey(val clip: String, val index: Int)
 
-/** One decoded clip frame, tinted, and where the screen's glass is visible in it (alpha only), when the clip has a mask. */
-class EchoClipFrame(val image: ImageBitmap, val mask: ImageBitmap?)
+/** Decoded clip frame [index], tinted, and where the screen's glass is visible in it (alpha only), when the clip has a mask. */
+class EchoClipFrame(val image: ImageBitmap, val mask: ImageBitmap?, val index: Int)
 
 /** One clip's decoder: frames come out in order from the start; [rewind] starts again. Not thread-safe. */
 private class EchoClipDecoder(assets: AssetManager, private val clip: EchoMotionClip) : Closeable {

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="history_title">Listening History</string>
+    <string name="history_title">Listening history</string>
     <string name="history_back">Back</string>
     <string name="history_clear_all">Clear all</string>
     <string name="history_clear_confirm_title">Clear listening history?</string>
@@ -57,4 +57,339 @@
     <string name="history_tracking_notice_confirm">Got it</string>
     <string name="history_status_completed">Done</string>
     <string name="history_status_in_progress">In progress</string>
+
+    <!-- Listening history: tabs and Timeline (redesign) -->
+    <string name="history_tab_timeline">Timeline</string>
+    <string name="history_tab_insights">Insights</string>
+    <string name="history_more_options">More options</string>
+    <string name="history_search_hint">Search episodes and shows</string>
+    <string name="history_search_clear">Clear search</string>
+    <string name="history_jump_back_in">Jump back in</string>
+    <!-- Opens every in-progress episode. The argument is how many there are. -->
+    <string name="history_jump_back_in_all">All %1$d</string>
+    <string name="history_filter_finished">Finished</string>
+    <string name="history_filter_liked">Liked</string>
+    <string name="history_group_by">Group by</string>
+    <string name="history_group_days">Days</string>
+    <string name="history_group_shows">Shows</string>
+    <plurals name="history_episode_count">
+        <item quantity="one">%1$d episode</item>
+        <item quantity="other">%1$d episodes</item>
+    </plurals>
+    <plurals name="history_brief_count">
+        <item quantity="one">%1$d brief</item>
+        <item quantity="other">%1$d briefs</item>
+    </plurals>
+    <plurals name="history_show_count">
+        <item quantity="one">%1$d show</item>
+        <item quantity="other">%1$d shows</item>
+    </plurals>
+    <plurals name="history_finished_count">
+        <item quantity="one">%1$d finished</item>
+        <item quantity="other">%1$d finished</item>
+    </plurals>
+    <!-- Parts of a line of facts, joined with a middle dot, e.g. "38 episodes · 14 h 20 min". -->
+    <string name="history_meta_join">%1$s · %2$s</string>
+    <string name="history_shows_last_played_first">last played first</string>
+    <string name="history_day_today">Today</string>
+    <string name="history_day_yesterday">Yesterday</string>
+    <!-- A length of time, e.g. "2 h 05 min". -->
+    <string name="history_duration_hours_minutes">%1$d h %2$02d min</string>
+    <string name="history_duration_minutes">%1$d min</string>
+    <string name="history_duration_under_minute">Under a minute</string>
+    <!-- How much of an episode is left, e.g. "29 min left". -->
+    <string name="history_time_left">%1$s left</string>
+    <string name="history_row_finished">Finished</string>
+    <string name="history_row_liked">Liked</string>
+    <string name="history_resume">Resume %1$s</string>
+    <string name="history_more_options_for">More options for %1$s</string>
+    <string name="history_go_to_show">Go to show</string>
+    <string name="history_remove_from_history">Remove from history</string>
+    <string name="history_open_show">Open %1$s</string>
+    <!-- Segment bar of a show's episodes, e.g. "6 of 9 finished". -->
+    <string name="history_show_finished_of">%1$d of %2$d finished</string>
+    <plurals name="history_show_all_finished">
+        <item quantity="one">Finished</item>
+        <item quantity="other">All %1$d finished</item>
+    </plurals>
+    <string name="history_scroll_to_date">Scroll through your history</string>
+    <string name="history_no_results">No episodes match your search.</string>
+
+    <!-- Jump to a day sheet -->
+    <string name="history_jump_title">Jump to a day</string>
+    <string name="history_jump_body">Days you listened are filled in. Darker means longer.</string>
+    <string name="history_jump_previous_month">Previous month</string>
+    <string name="history_jump_next_month">Next month</string>
+    <string name="history_jump_less">Less</string>
+    <string name="history_jump_more">More</string>
+    <string name="history_jump_week_ago">A week ago</string>
+    <string name="history_jump_month_ago">A month ago</string>
+    <string name="history_jump_first_listen">Your first listen</string>
+    <!-- A day in the calendar, e.g. "Oct 3, 35 minutes". -->
+    <string name="history_jump_day">%1$s, %2$s</string>
+    <string name="history_jump_today">Today, %1$s</string>
+    <string name="history_jump_played">played</string>
+
+    <!-- Insights tab (redesign) -->
+    <string name="history_share_listening">Share your listening</string>
+    <string name="history_period_group">Period</string>
+    <string name="history_ins_time_title">Time listened</string>
+    <!-- A day's average, e.g. "About 29 minutes a day". -->
+    <plurals name="history_ins_per_day_minutes">
+        <item quantity="one">About %1$d minute a day</item>
+        <item quantity="other">About %1$d minutes a day</item>
+    </plurals>
+    <string name="history_ins_per_day_under_minute">Under a minute a day</string>
+    <!-- Against the period before, e.g. "2 h 05 min more than the 30 days before". -->
+    <string name="history_ins_more_than_7">%1$s more than the 7 days before</string>
+    <string name="history_ins_more_than_30">%1$s more than the 30 days before</string>
+    <string name="history_ins_more_than_180">%1$s more than the 180 days before</string>
+    <string name="history_ins_less_than_7">%1$s less than the 7 days before</string>
+    <string name="history_ins_less_than_30">%1$s less than the 30 days before</string>
+    <string name="history_ins_less_than_180">%1$s less than the 180 days before</string>
+    <plurals name="history_ins_best_run">
+        <item quantity="one">Best run: %1$d day</item>
+        <item quantity="other">Best run: %1$d days</item>
+    </plurals>
+    <string name="history_ins_type_title">Your listening type</string>
+    <!-- Listening type names: time word + habit, e.g. "Evening finisher". -->
+    <string name="history_type_morning_finisher">Morning finisher</string>
+    <string name="history_type_morning_listener">Morning listener</string>
+    <string name="history_type_morning_sampler">Morning sampler</string>
+    <string name="history_type_daytime_finisher">Daytime finisher</string>
+    <string name="history_type_daytime_listener">Daytime listener</string>
+    <string name="history_type_daytime_sampler">Daytime sampler</string>
+    <string name="history_type_evening_finisher">Evening finisher</string>
+    <string name="history_type_evening_listener">Evening listener</string>
+    <string name="history_type_evening_sampler">Evening sampler</string>
+    <string name="history_type_late_night_finisher">Late-night finisher</string>
+    <string name="history_type_late_night_listener">Late-night listener</string>
+    <string name="history_type_late_night_sampler">Late-night sampler</string>
+    <string name="history_type_all_day_finisher">All-day finisher</string>
+    <string name="history_type_all_day_listener">All-day listener</string>
+    <string name="history_type_all_day_sampler">All-day sampler</string>
+    <!-- Where listening falls, e.g. "Almost half your listening happens in the evening." -->
+    <string name="history_part_most_morning">Most of your listening happens in the morning.</string>
+    <string name="history_part_most_afternoon">Most of your listening happens in the afternoon.</string>
+    <string name="history_part_most_evening">Most of your listening happens in the evening.</string>
+    <string name="history_part_most_night">Most of your listening happens at night.</string>
+    <string name="history_part_half_morning">Almost half your listening happens in the morning.</string>
+    <string name="history_part_half_afternoon">Almost half your listening happens in the afternoon.</string>
+    <string name="history_part_half_evening">Almost half your listening happens in the evening.</string>
+    <string name="history_part_half_night">Almost half your listening happens at night.</string>
+    <string name="history_part_share_morning">%1$d%% of your listening happens in the morning.</string>
+    <string name="history_part_share_afternoon">%1$d%% of your listening happens in the afternoon.</string>
+    <string name="history_part_share_evening">%1$d%% of your listening happens in the evening.</string>
+    <string name="history_part_share_night">%1$d%% of your listening happens at night.</string>
+    <!-- How many episodes you finish, e.g. "You finish about 3 in 4 episodes you start." -->
+    <string name="history_finish_rate">You finish about %1$d in %2$d episodes you start.</string>
+    <string name="history_finish_almost_all">You finish almost every episode you start.</string>
+    <string name="history_finish_few">You finish a few of the episodes you start.</string>
+    <string name="history_finish_none">You haven\'t finished an episode you started yet.</string>
+    <string name="history_ins_top_shows">Your top shows</string>
+    <string name="history_ins_by_time">by time</string>
+    <!-- E.g. "4 h 10 min, 29% of your listening". -->
+    <string name="history_ins_top_share">%1$s, %2$d%% of your listening</string>
+    <plurals name="history_ins_episodes_finished">
+        <item quantity="one">%1$d episode finished</item>
+        <item quantity="other">%1$d episodes finished</item>
+    </plurals>
+    <string name="history_ins_when">When you listen</string>
+    <string name="history_ins_mostly_morning">Mostly mornings</string>
+    <string name="history_ins_mostly_afternoon">Mostly afternoons</string>
+    <string name="history_ins_mostly_evening">Mostly evenings</string>
+    <string name="history_ins_mostly_night">Mostly nights</string>
+    <string name="history_ins_lead_morning">Mornings lead</string>
+    <string name="history_ins_lead_afternoon">Afternoons lead</string>
+    <string name="history_ins_lead_evening">Evenings lead</string>
+    <string name="history_ins_lead_night">Nights lead</string>
+    <string name="history_ins_all_through_day">All through the day</string>
+    <!-- Legend line, e.g. "Evening 46%". -->
+    <string name="history_ins_part_share">%1$s %2$d%%</string>
+    <string name="history_clock_12am">12 am</string>
+    <string name="history_clock_6am">6 am</string>
+    <string name="history_clock_12pm">12 pm</string>
+    <string name="history_clock_6pm">6 pm</string>
+    <!-- E.g. "Wednesdays are your big day". -->
+    <string name="history_ins_big_day">%1$s are your big day</string>
+    <!-- E.g. "4 h 23 min on Wednesdays this month". -->
+    <string name="history_ins_big_day_7">%1$s on %2$s in the last 7 days</string>
+    <string name="history_ins_big_day_30">%1$s on %2$s in the last 30 days</string>
+    <string name="history_ins_big_day_180">%1$s on %2$s in the last 6 months</string>
+    <string name="history_ins_big_day_all">%1$s on %2$s of all time</string>
+    <string name="history_ins_weekday_chart">Listening by weekday: %1$s highest</string>
+    <!-- E.g. "Your October". -->
+    <string name="history_ins_your_month">Your %1$s</string>
+    <!-- E.g. "19 of 30 days". -->
+    <string name="history_ins_days_of">%1$d of %2$d days</string>
+    <string name="history_ins_mosaic_hint">Each day shows the show you played most. Tap a day to open it.</string>
+    <string name="history_ins_records">Records</string>
+    <string name="history_rec_biggest_day">Biggest day</string>
+    <string name="history_rec_longest_run">Longest run</string>
+    <string name="history_rec_longest_sitting">Longest sitting</string>
+    <string name="history_rec_most_in_day">Most in one day</string>
+    <plurals name="history_rec_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <!-- E.g. "Oct 19 to Oct 28". -->
+    <string name="history_rec_range">%1$s to %2$s</string>
+    <!-- E.g. "of Darknet Diaries, Oct 28". -->
+    <string name="history_rec_of_show">of %1$s, %2$s</string>
+    <string name="history_ins_genres">What you listen to</string>
+    <string name="history_ins_genres_hint">By the genres of the shows you played</string>
+    <string name="history_ins_percent">%1$d%%</string>
+    <string name="history_ins_where">Where you listen</string>
+    <string name="history_ins_where_mostly_headphones">Mostly on headphones</string>
+    <string name="history_ins_where_mostly_bluetooth">Mostly over Bluetooth</string>
+    <string name="history_ins_where_mostly_car">Mostly in the car</string>
+    <string name="history_ins_where_mostly_speaker">Mostly on your phone\'s speaker</string>
+    <string name="history_ins_where_mostly_cast">Mostly cast to another device</string>
+    <string name="history_ins_where_spread">Spread across your devices</string>
+    <string name="history_ins_output_headphones">Headphones</string>
+    <string name="history_ins_output_bluetooth">Bluetooth</string>
+    <string name="history_ins_output_car">Car</string>
+    <string name="history_ins_output_speaker">Phone speaker</string>
+    <string name="history_ins_output_cast">Cast</string>
+    <string name="history_ins_fresh">New or catching up</string>
+    <string name="history_ins_fresh_mostly_new">Mostly new episodes</string>
+    <string name="history_ins_fresh_mostly_back">Mostly catching up</string>
+    <string name="history_ins_fresh_half">About half new episodes</string>
+    <string name="history_ins_fresh_new">New %1$d%%</string>
+    <string name="history_ins_fresh_older">Older %1$d%%</string>
+    <string name="history_ins_fresh_hint">New means out for a week or less when you played it</string>
+    <string name="history_ins_from_lore">%1$d%% started from Lore</string>
+    <string name="history_ins_from_smart_queue">%1$d%% added by Smart queue</string>
+    <string name="history_ins_genre_other">Other</string>
+    <!-- E.g. "178 finished". -->
+    <string name="history_ins_finished_count">%1$d finished</string>
+    <string name="history_ins_all_time">all time</string>
+    <!-- E.g. "22 more to reach 200." -->
+    <string name="history_ins_to_milestone">%1$d more to reach %2$d.</string>
+    <plurals name="history_ins_in_progress_title">
+        <item quantity="one">%1$d episode in progress</item>
+        <item quantity="other">%1$d episodes in progress</item>
+    </plurals>
+    <plurals name="history_ins_in_progress_stale">
+        <item quantity="one">%1$d of them hasn\'t been played in over a month. Pick it back up, or mark it as played.</item>
+        <item quantity="other">%1$d of them haven\'t been played in over a month. Pick some back up, or mark them as played.</item>
+    </plurals>
+    <string name="history_ins_in_progress_fresh">Pick up where you left off, or mark them as played.</string>
+    <string name="history_ins_review_in_progress">Review in-progress episodes</string>
+    <!-- Little data (only a few days timed) -->
+    <string name="history_early_title">Your listening so far</string>
+    <string name="history_early_finished">episodes finished</string>
+    <string name="history_early_in_progress">%1$d in progress</string>
+    <plurals name="history_early_played_days">
+        <item quantity="one">Played on %1$d day this month</item>
+        <item quantity="other">Played on %1$d days this month</item>
+    </plurals>
+    <!-- E.g. "Listening time starts from Oct 22". -->
+    <string name="history_early_timing_title">Limited insights for now</string>
+    <string name="history_early_timing_body">boxlore started saving your listening time on %1$s. Check back after a few days of listening for the full picture.</string>
+    <string name="history_early_timing_body_new">boxlore starts saving your listening time with your next play. Check back after a few days of listening for the full picture.</string>
+    <string name="history_early_most_played">Most played shows</string>
+    <string name="history_early_by_episodes">by episodes</string>
+    <string name="history_early_clock">Your listening clock</string>
+    <plurals name="history_early_clock_more_days">
+        <item quantity="one">Listen on %1$d more day to see when you listen most.</item>
+        <item quantity="other">Listen on %1$d more days to see when you listen most.</item>
+    </plurals>
+    <string name="history_early_clock_progress">%1$d of %2$d days</string>
+
+    <!-- Monthly story (boards A7–A12) -->
+    <string name="history_story_close">Close</string>
+    <string name="history_story_card_of">Card %1$d of %2$d</string>
+    <string name="history_story_previous">Previous card</string>
+    <string name="history_story_next">Next card</string>
+    <string name="history_story_clock">Listening clock: %1$s</string>
+    <string name="history_story_hello_eyebrow">Your month in listening</string>
+    <string name="history_story_hello_eyebrow_year">Your month in listening · %1$d</string>
+    <string name="history_story_hello_line">%1$s, %2$s and one very busy %3$s.</string>
+    <plurals name="history_story_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <plurals name="history_story_shows">
+        <item quantity="one">%1$d show</item>
+        <item quantity="other">%1$d shows</item>
+    </plurals>
+    <string name="history_story_time_eyebrow">Time listened</string>
+    <string name="history_story_hours">%1$d h</string>
+    <string name="history_story_minutes">%1$d min</string>
+    <string name="history_story_time_more">%1$s, and %2$s more than %3$s.</string>
+    <string name="history_story_time_less">%1$s, and %2$s less than %3$s.</string>
+    <string name="history_story_time_only">%1$s.</string>
+    <string name="history_story_time_bubble">%1$s · %2$s</string>
+    <string name="history_story_time_chart">Listening per day in %1$s, busiest on %2$s</string>
+    <string name="history_story_top_eyebrow">Your top show</string>
+    <string name="history_story_resume">Resume %1$s · %2$s</string>
+    <string name="history_story_resume_short">Resume · %s</string>
+    <string name="history_story_type_morning">in the morning</string>
+    <string name="history_story_type_afternoon">in the afternoon</string>
+    <string name="history_story_type_evening">in the evening</string>
+    <string name="history_story_type_night">at night</string>
+    <string name="history_story_type_finish">%1$d%% of your listening was %2$s, and you finished about %3$d in %4$d episodes you started.</string>
+    <string name="history_story_type_finish_all">%1$d%% of your listening was %2$s, and you finished almost every episode you started.</string>
+    <string name="history_story_type_finish_few">%1$d%% of your listening was %2$s, and you finished a few of the episodes you started.</string>
+    <string name="history_story_type_finish_none">%1$d%% of your listening was %2$s. You haven\'t finished an episode you started yet.</string>
+    <string name="history_story_type_only">%1$d%% of your listening was %2$s.</string>
+    <string name="history_story_records_eyebrow">Your records</string>
+    <plurals name="history_story_run_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <string name="history_story_run_line">in a row, %1$s to %2$s.</string>
+    <string name="history_story_run_line_best">in a row, %1$s to %2$s. Your best run yet.</string>
+    <string name="history_story_run_pills">%1$d listening days in a row</string>
+    <string name="history_story_biggest_only">on %1$s, your biggest day.</string>
+    <plurals name="history_story_episodes">
+        <item quantity="one">%1$d episode</item>
+        <item quantity="other">%1$d episodes</item>
+    </plurals>
+    <string name="history_story_share_card_title">My %1$s in listening</string>
+    <string name="history_story_share_card_top">Top show</string>
+    <string name="history_story_share_listen_on">Listen on</string>
+    <string name="history_story_share_brand" translatable="false">boxlore</string>
+    <string name="history_story_share_card_label">Share card: My %1$s in listening, %2$s, top show %3$s, %4$s</string>
+    <string name="history_story_share">Share your %1$s</string>
+    <string name="history_story_watch_again">Watch again</string>
+    <string name="history_story_share_text">My %1$s in listening on boxlore: %2$s.</string>
+    <string name="history_story_count">%1$d</string>
+    <string name="history_story_percent">%1$d%%</string>
+    <string name="history_story_stat_listened">listened</string>
+    <string name="history_story_stat_days">days listened</string>
+    <string name="history_story_stat_episodes">episodes played</string>
+    <string name="history_story_stat_finished">finished</string>
+    <string name="history_story_time_compare">%1$s %2$s, %3$s %4$s</string>
+    <string name="history_story_top_share_of">of your %1$s</string>
+    <plurals name="history_story_top_finished_short">
+        <item quantity="one">%1$d episode finished</item>
+        <item quantity="other">%1$d episodes finished</item>
+    </plurals>
+    <string name="history_story_also">Also on repeat</string>
+    <string name="history_story_how_eyebrow">How you listened</string>
+    <string name="history_story_finished_of">%1$d of %2$d</string>
+    <string name="history_story_finished_label">episodes finished</string>
+    <string name="history_story_run_line_best_is">in a row, %1$s to %2$s. Your best is %3$d.</string>
+    <string name="history_story_rec_biggest">Biggest day\n%1$s</string>
+    <string name="history_story_rec_sitting">Longest sitting\n%1$s</string>
+    <string name="history_story_rec_binge">episodes of %1$s in one day, %2$s</string>
+    <string name="history_story_rec_weekday">your big weekday, %1$s across the month</string>
+    <string name="history_story_share_days">days</string>
+    <string name="history_story_share_episodes">episodes</string>
+    <string name="history_story_share_finished">finished</string>
+    <string name="history_story_new">New</string>
+    <string name="history_story_entry_title">Your %1$s story</string>
+    <string name="history_story_entry_meta">%1$d cards · 1 min</string>
+    <string name="history_story_entry_top">%1$s on top</string>
+    <string name="history_story_watch">Watch your %1$s story</string>
+    <string name="history_story_earlier">Earlier stories</string>
+    <!-- A weekday's plural ("Wednesdays"); %1$s is the weekday's name. -->
+    <string name="history_weekday_plural">%1$ss</string>
+    <plurals name="history_story_earlier_all">
+        <item quantity="one">Show all %d story</item>
+        <item quantity="other">Show all %d stories</item>
+    </plurals>
+    <string name="history_story_earlier_fewer">Show fewer stories</string>
 </resources>

@@ -76,6 +76,8 @@ import kotlinx.coroutines.withContext
  * [floor] of the canvas height, so Echo can fill a wide, short box (its head, raised arms and hops reach
  * above it).
  *
+ * [accents] colours Echo's accent parts and face: the theme's, calmed, by default (see [EchoAccents]).
+ *
  * Everything starts after [startDelayMillis]. A new [playbackKey] (a new question, say) plays the
  * sequence again; [paused] holds Echo where it is. Stills decode off the main thread at the drawn size
  * and stay cached, with [prefetch] sequences' stills loaded ahead; if a frame isn't ready, the last one
@@ -94,18 +96,20 @@ fun EchoCharacter(
     frameScale: Float = 1f,
     floor: Float = EchoFloorLine,
     stageColor: Color? = null,
+    accents: EchoAccents = EchoAccents.Theme,
 ) {
     val assets = LocalContext.current.applicationContext.assets
-    val spec by produceState<EchoCharacterSpec?>(null, assets) {
-        value = loadEchoCharacterSpec(assets)
-    }
+    val spec = rememberEchoCharacterSpec()
     val accent = MaterialTheme.colorScheme.primary.toArgb()
     val dark = LocalEffectiveDarkTheme.current
+    val paint = remember(accents, accent, dark) { accents.paint(accent, dark) }
     var sizePx by remember { mutableIntStateOf(0) }
-    val stills = rememberEchoStills(spec, listOf(sequence) + prefetch, echoDecodeSize(sizePx), accent, dark)
-    val clipFrames = remember(assets, accent, dark) { EchoClipFrames(assets, accent, dark) }
+    val stills = rememberEchoStills(spec, listOf(sequence) + prefetch, echoDecodeSize(sizePx), paint)
+    val clipFrames = remember(assets, paint) { EchoClipFrames(assets, paint) }
     DisposableEffect(clipFrames) { onDispose { clipFrames.close() } }
-    val (elapsed, disabled) = rememberEchoCharacterClock(sequence to playbackKey, paused, LocalEchoMotion.current)
+    // A still with no clip or idle script (a story tile, the story entry card) draws once: its clock never runs.
+    val still = idle == null && spec?.isStill(sequence) == true
+    val (elapsed, disabled) = rememberEchoCharacterClock(sequence to playbackKey, paused || still, LocalEchoMotion.current)
     // Decode ahead of playback: the clip on screen, and the next one shortly before it starts.
     LaunchedEffect(spec, sequence, playbackKey, clipFrames) {
         val loaded = spec ?: return@LaunchedEffect
@@ -115,11 +119,25 @@ fun EchoCharacter(
         }
     }
     val renderer = remember(clipFrames) { EchoRenderer(clipFrames) }
-    val placement = EchoPlacement(frameScale, floor, stageColor, remember(accent) { Color(echoFaceColor(accent)) }, idle)
+    val placement = EchoPlacement(frameScale, floor, stageColor, remember(paint) { Color(paint.face) }, idle)
     Canvas(modifier.aspectRatio(1f).onSizeChanged { sizePx = it.width }) {
         val loaded = spec ?: return@Canvas
         with(renderer) { draw(loaded, sequence, elapsed.value - startDelayMillis, disabled.value, stills, placement) }
     }
+}
+
+/** Echo's manifest, read once per process off the main thread; null until it loads (or if it can't). */
+@Composable
+fun rememberEchoCharacterSpec(): EchoCharacterSpec? {
+    val assets = LocalContext.current.applicationContext.assets
+    val spec by produceState<EchoCharacterSpec?>(EchoCharacterSpecCache.loaded, assets) {
+        value = EchoCharacterSpecCache.loaded ?: loadEchoCharacterSpec(assets)?.also { EchoCharacterSpecCache.loaded = it }
+    }
+    return spec
+}
+
+private object EchoCharacterSpecCache {
+    @Volatile var loaded: EchoCharacterSpec? = null
 }
 
 /** Readies the clip at [point] from its current frame, and the next clip shortly before it starts. */
@@ -131,14 +149,14 @@ private suspend fun EchoClipFrames.prepareFor(loaded: EchoCharacterSpec, point: 
 
 /** The stills [sequences] use, decoded and tinted off the main thread at [decodeSize] and kept while the size and theme hold. */
 @Composable
-private fun rememberEchoStills(spec: EchoCharacterSpec?, sequences: List<String>, decodeSize: Int, accent: Int, dark: Boolean): Map<String, ImageBitmap> {
+private fun rememberEchoStills(spec: EchoCharacterSpec?, sequences: List<String>, decodeSize: Int, paint: EchoPaint): Map<String, ImageBitmap> {
     val assets = LocalContext.current.applicationContext.assets
-    val frames = remember(accent, dark, decodeSize) { mutableStateMapOf<String, ImageBitmap>() }
+    val frames = remember(paint, decodeSize) { mutableStateMapOf<String, ImageBitmap>() }
     LaunchedEffect(spec, sequences, frames, decodeSize) {
         val loaded = spec ?: return@LaunchedEffect
         if (decodeSize == 0) return@LaunchedEffect
         sequences.flatMap { loaded.stills(it) }.distinct().filter { it !in frames }.forEach { id ->
-            withContext(Dispatchers.Default) { decodeTintedFrame(assets, id, decodeSize, accent, dark) }?.let { frames[id] = it }
+            withContext(Dispatchers.Default) { decodeTintedFrame(assets, id, decodeSize, paint) }?.let { frames[id] = it }
         }
     }
     return frames
@@ -167,8 +185,12 @@ private class EchoRenderer(private val clipFrames: EchoClipFrames) {
         placement.stageColor?.let { color -> loaded.reaches[timeline.lastStill]?.let { rest -> drawEchoStage(stage, rest, frame, side, color) } }
         drawEchoFrame(shown, image, frame, side, t)
         val on = shown.screen ?: return
+        shown.lens?.let { lens ->
+            with(painter) { drawLensEye(lens, on, frame, side, placement.faceColor, shown.mask) }
+            return
+        }
         val pose = echoRestingPose(point, clip, step, placement.idle, t - timeline.restStartMillis)
-        with(painter) { drawFace(on, frame, side, echoLookAt(still, step, pose, t), placement.faceColor, shown.mask) }
+        with(painter) { drawFace(on, frame, side, echoLookAt(still, step, pose, shown.scripted, t), placement.faceColor, shown.mask) }
     }
 
     /** The clip frame due now, or the step's still; while neither is ready the last frame stays up (or the rest still, before anything has shown). */
@@ -176,7 +198,7 @@ private class EchoRenderer(private val clipFrames: EchoClipFrames) {
         val clipIndex = if (clip != null && point != null) clip.frameAt(point.stepElapsed) else -1
         val clipImage = clip?.let { clipFrames.frame(it.id, clipIndex) }
         when {
-            clip != null && clipImage != null -> shown.showClip(clipImage, clip.tracks[clipIndex])
+            clip != null && clipImage != null -> shown.showClip(clipImage, clip)
             still != null && (clip == null || shown.image == null) -> shown.showStill(still, loaded.screens.getValue(step.frame))
         }
     }
@@ -199,15 +221,19 @@ private fun echoRestingPose(point: EchoTimelinePoint?, clip: EchoMotionClip?, st
     return if (step.face == EchoFace.Idle && restingMillis >= 0) echoIdlePoseAt(restingMillis, idle) else null
 }
 
-/** What Echo's face shows and where it looks: straight out when still, its idle script when resting, otherwise the step's face, blinking now and then. */
-private fun echoLookAt(still: Boolean, step: EchoCharacterStep, pose: EchoIdlePose?, t: Long): EchoLook = EchoLook(
+/**
+ * What Echo's face shows and where it looks: straight out when still, its idle script when resting, a
+ * clip's face script during the clip, otherwise the step's face, blinking now and then.
+ */
+private fun echoLookAt(still: Boolean, step: EchoCharacterStep, pose: EchoIdlePose?, scripted: EchoClipBeat?, t: Long): EchoLook = EchoLook(
     face = when {
         still -> EchoFace.Idle
         pose != null -> pose.face
+        scripted != null -> scripted.face
         step.face == EchoFace.Idle && echoIsBlinking(t) -> EchoFace.Blink
         else -> step.face
     },
-    gaze = pose?.gaze ?: EchoGaze(0f, 0f),
+    gaze = if (still) EchoGaze(0f, 0f) else pose?.gaze ?: scripted?.gaze ?: EchoGaze(0f, 0f),
 )
 
 private data class EchoLook(val face: EchoFace, val gaze: EchoGaze)
@@ -239,7 +265,47 @@ private class EchoFacePainter {
         drawImage(mask, srcSize = IntSize(mask.width, mask.height), dstOffset = frame, dstSize = IntSize(side, side), blendMode = BlendMode.DstIn)
         drawContext.canvas.restore()
     }
+
+    /**
+     * One big eye through a magnifier, centred on the glass and tilted with the screen, showing only where
+     * the clip's glass band says (the glass, less its glints, which stay on top).
+     */
+    fun DrawScope.drawLensEye(lens: EchoLensEye, on: EchoScreenOnFrame, frame: IntOffset, side: Int, color: Color, mask: ImageBitmap?) {
+        val radius = lens.radius * side
+        val pitch = minOf(EchoLensPitchOverScreen * on.width * side, radius * EchoLensPitchOverGlass) * lens.scale
+        val pattern = if (lens.blink) EchoLensBlink else EchoLensOpen
+        val rows = pattern.size
+        val columns = pattern.first().length
+        val center = Offset(frame.x + lens.centerX * side, frame.y + lens.centerY * side)
+        val dot = pitch * EchoDotFill
+        val inset = (pitch - dot) / 2f
+        val bounds = Rect(frame.x.toFloat(), frame.y.toFloat(), (frame.x + side).toFloat(), (frame.y + side).toFloat())
+        drawContext.canvas.saveLayer(bounds, Paint())
+        rotate(on.degrees, pivot = center) {
+            val glowRadius = maxOf(rows, columns) * pitch * EchoLensGlow
+            drawCircle(Brush.radialGradient(listOf(color.copy(alpha = 0.35f), color.copy(alpha = 0.18f), Color.Transparent), center = center, radius = glowRadius), glowRadius, center)
+            pattern.forEachIndexed { row, line ->
+                line.forEachIndexed { col, cell ->
+                    if (cell == '#') {
+                        val topLeft = Offset(center.x + (col - columns / 2f) * pitch + inset, center.y + (row - rows / 2f) * pitch + inset)
+                        drawRoundRect(color, topLeft, Size(dot, dot), CornerRadius(dot * 0.25f))
+                    }
+                }
+            }
+        }
+        if (mask != null) {
+            drawImage(mask, srcSize = IntSize(mask.width, mask.height), dstOffset = frame, dstSize = IntSize(side, side), blendMode = BlendMode.DstIn)
+        }
+        drawContext.canvas.restore()
+    }
 }
+
+/** The magnified eye's dots: open, and a blink. */
+private val EchoLensOpen = listOf(".##.", "####", "####", "####", "####", ".##.")
+private val EchoLensBlink = listOf("####", "####")
+private const val EchoLensPitchOverScreen = 1.5f / 26f
+private const val EchoLensPitchOverGlass = 2f * 0.8f / 6f
+private const val EchoLensGlow = 1.3f
 
 /** Echo's stage, centred on its resting pose and [EchoStageOverEcho] times its height. */
 private fun DrawScope.drawEchoStage(stage: EchoStageShape, rest: EchoReach, frame: IntOffset, side: Int, color: Color) {
@@ -282,6 +348,12 @@ private class EchoShownFrame {
         private set
     var screen: EchoScreenOnFrame? = null
         private set
+    var lens: EchoLensEye? = null
+        private set
+
+    /** The clip's scripted face and gaze for the frame on show; null for unscripted clips and stills. */
+    var scripted: EchoClipBeat? = null
+        private set
     var fadeFrom: ImageBitmap? = null
         private set
     var fadeStart = 0L
@@ -296,15 +368,20 @@ private class EchoShownFrame {
         order = stepOrder
     }
 
-    fun showClip(frame: EchoClipFrame, track: EchoScreenTrack) {
+    fun showClip(frame: EchoClipFrame, clip: EchoMotionClip) {
+        val track = clip.tracks[frame.index]
         image = frame.image
         mask = frame.mask
         screen = EchoScreenOnFrame(track.centerX, track.centerY, track.width, track.height, track.degrees)
+        lens = clip.lensAt(frame.index)
+        scripted = if (clip.script.isNotEmpty() || frame.index in clip.blinks) clip.lookAt(frame.index) else null
     }
 
     fun showStill(still: ImageBitmap, box: EchoScreenBox) {
         image = still
         mask = null
+        lens = null
+        scripted = null
         screen = EchoScreenOnFrame(box.centerX, box.centerY, box.right - box.left, box.bottom - box.top, 0f)
     }
 }
@@ -380,7 +457,7 @@ private suspend fun loadEchoCharacterSpec(assets: AssetManager): EchoCharacterSp
     null
 }
 
-private fun decodeTintedFrame(assets: AssetManager, id: String, sizePx: Int, accent: Int, dark: Boolean): ImageBitmap? = try {
+private fun decodeTintedFrame(assets: AssetManager, id: String, sizePx: Int, paint: EchoPaint): ImageBitmap? = try {
     assets.open("$EchoCharacterAssets/$id.webp").use { stream ->
         val options = BitmapFactory.Options().apply {
             inMutable = true
@@ -394,7 +471,7 @@ private fun decodeTintedFrame(assets: AssetManager, id: String, sizePx: Int, acc
         }
         val pixels = IntArray(bitmap.width * bitmap.height)
         bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-        tintEchoAccents(pixels, accent, dark)
+        paint.tint(pixels)
         val tinted = if (bitmap.isMutable) bitmap else bitmap.copy(Bitmap.Config.ARGB_8888, true)
         tinted.setPixels(pixels, 0, tinted.width, 0, 0, tinted.width, tinted.height)
         tinted.asImageBitmap()

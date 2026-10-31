@@ -49,6 +49,51 @@ data class ListeningTopShow(
 /** One local calendar day's listening total for activity charts. */
 data class ListeningDayActivity(val localDay: Long, val consumedMs: Long,)
 
+/**
+ * Timed listening of one episode on one local day, summed over every phone's sessions and daily
+ * summaries (Room v40): what Listening History shows as a day's, a month's and a show's time.
+ *
+ * @property localDay the local calendar day, as an epoch day
+ * @property lastListenedAt when that day's listening of the episode ended, epoch ms
+ */
+data class ListeningDayEpisode(
+    val localDay: Long,
+    val episodeId: String,
+    val podcastId: String,
+    val consumedMs: Long,
+    val sessionCount: Int,
+    val lastListenedAt: Long,
+    val morningMs: Long = 0L,
+    val afternoonMs: Long = 0L,
+    val eveningMs: Long = 0L,
+    val nightMs: Long = 0L,
+    /** The longest single sitting known: a session's time, or a summed day of one session; 0 when not known. */
+    val longestSessionMs: Long = 0L,
+    /** Where the listening was heard (Room v40 sessions, v41 summaries); all 0 when not known. */
+    val speakerMs: Long = 0L,
+    val headphonesMs: Long = 0L,
+    val bluetoothMs: Long = 0L,
+    val carMs: Long = 0L,
+    val castMs: Long = 0L,
+    /** Listening started from Lore or the Smart Queue, and of episodes out a week or less; known where an output is. */
+    val loreMs: Long = 0L,
+    val smartQueueMs: Long = 0L,
+    val newReleaseMs: Long = 0L,
+) {
+    /** The listening heard on a known output: the part whose details (output, source, release) are known. */
+    val outputKnownMs: Long get() = speakerMs + headphonesMs + bluetoothMs + carMs + castMs
+}
+
+/** A show the listener played (Room v40 `played_shows`), with its genre when known. */
+data class ListeningPlayedShow(
+    val podcastId: String,
+    val podcastName: String,
+    val imageUrl: String?,
+    val genre: String?,
+    val firstPlayedAt: Long,
+    val lastPlayedAt: Long,
+)
+
 data class ListeningInsightSummary(
     val period: ListeningPeriod,
     val trackingSinceEpochMs: Long?,
@@ -112,6 +157,16 @@ data class ListeningRollupSnapshot(
     val nightMs: Long,
     val deviceId: String = "",
     val wallMs: Long = 0L,
+    /** The summary's richer totals (Room v41), so Undo puts them back; 0 when not known. */
+    val longestSessionMs: Long = 0L,
+    val speakerMs: Long = 0L,
+    val headphonesMs: Long = 0L,
+    val bluetoothMs: Long = 0L,
+    val carMs: Long = 0L,
+    val castMs: Long = 0L,
+    val loreMs: Long = 0L,
+    val smartQueueMs: Long = 0L,
+    val newReleaseMs: Long = 0L,
 )
 
 /**

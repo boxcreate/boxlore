@@ -5,9 +5,11 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.catalog.ports.QueueSyncPort
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.ListeningDayTotals
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.ListeningSessionEntity
+import cx.aswin.boxlore.core.database.ListeningSessionValues
 import cx.aswin.boxlore.core.database.PlayedShowEntity
 import cx.aswin.boxlore.core.database.entities.QueueItem
 import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
@@ -61,6 +63,7 @@ class ListeningCloudSyncTest {
     private val pushes = mutableListOf<SyncPushRequest>()
     private val pulls = mutableListOf<SyncPullRequest>()
     private var serverStoresListening = true
+    private var serverStoresTotals = false
     private var pullAnswer = SyncPullResponse(syncedAt = 9_000L)
     private var onPush: (() -> Unit)? = null
     private var pushesInFlight = 0
@@ -81,11 +84,11 @@ class ListeningCloudSyncTest {
                         pushes += args[2] as SyncPushRequest
                         onPush?.invoke()
                         pushesInFlight--
-                        FakeCall(Response.success(SyncPushResponse(syncedAt = 5_000L, listeningAccepted = serverStoresListening)))
+                        FakeCall(Response.success(SyncPushResponse(syncedAt = 5_000L, listeningAccepted = serverStoresListening, listeningTotals = serverStoresTotals)))
                     }
                     "syncPull" -> {
                         pulls += args[2] as SyncPullRequest
-                        FakeCall(Response.success(pullAnswer))
+                        FakeCall(Response.success(pullAnswer.copy(listeningTotals = serverStoresTotals)))
                     }
                     "deleteSyncAccount" -> FakeCall(Response.success(SyncDeleteAccountResponse()))
                     "hashCode" -> 42
@@ -364,6 +367,135 @@ class ListeningCloudSyncTest {
         assertEquals(listOf("100"), push.playedShows.map { it.podcastId })
         assertTrue(push.history.any { it.episodeId == "ep-1" && it.firstPlayedAt == 500L })
         assertEquals(0L, pulls.single().listeningSince)
+    }
+
+    @Test
+    fun eachDaysRicherTotalsGoUpAndComeDown() = runTest(testDispatcher) {
+        val me = prefs.getOrCreateListeningDeviceId()
+        database.listeningSessionDao().upsertSessions(
+            listOf(
+                session("car", day = 10L, device = me).copy(output = ListeningSessionValues.OUTPUT_CAR, source = ListeningSessionValues.SOURCE_LORE),
+                session("buds", day = 10L, device = me, endedOffset = 200_000L).copy(consumedMs = 90_000L, output = ListeningSessionValues.OUTPUT_HEADPHONES),
+            ),
+        )
+        pullAnswer =
+            SyncPullResponse(
+                syncedAt = 9_000L,
+                listeningDays = listOf(day("phone-b", 12L, 120_000L).copy(longestSessionMs = 80_000L, carMs = 120_000L, newReleaseMs = 40_000L)),
+                playedShows = emptyList(),
+            )
+
+        coordinator.syncNow()
+
+        assertTrue(pushes.single().listeningTotals)
+        val sent = pushes.single().listeningDays.single()
+        assertEquals(90_000L, sent.longestSessionMs)
+        assertEquals(60_000L, sent.carMs)
+        assertEquals(90_000L, sent.headphonesMs)
+        assertEquals(60_000L, sent.loreMs)
+        val pulled = database.listeningRollupDao().getRollup("phone-b", 12L, "ep-1")!!.totals
+        assertEquals(ListeningDayTotals(longestSessionMs = 80_000L, carMs = 120_000L, newReleaseMs = 40_000L), pulled)
+    }
+
+    @Test
+    fun aServerWithoutTotalsSendingThisPhonesDaysBackDoesNotMakeThemGoUpAgain() = runTest(testDispatcher) {
+        seedOwnListening()
+        coordinator.syncNow()
+        val sent = pushes.single().listeningDays
+        assertTrue(sent.any { it.longestSessionMs > 0L })
+        // The server keeps the days without their totals and sends them back that way.
+        pullAnswer =
+            SyncPullResponse(
+                syncedAt = 9_000L,
+                listeningDays = sent.map { it.copy(longestSessionMs = 0L, speakerMs = 0L, headphonesMs = 0L, bluetoothMs = 0L, carMs = 0L, castMs = 0L, loreMs = 0L, smartQueueMs = 0L, newReleaseMs = 0L) },
+            )
+        pushes.clear()
+        coordinator.syncNow()
+        pushes.clear()
+
+        coordinator.syncNow()
+
+        assertTrue(pushes.isEmpty() || pushes.single().listeningDays.isEmpty())
+    }
+
+    @Test
+    fun daysGoUpOnceMoreTheFirstTimeAServerStoresTheirTotals() = runTest(testDispatcher) {
+        seedOwnListening()
+        val me = prefs.getOrCreateListeningDeviceId()
+
+        // A server without the totals: days are sent and marked, and stay marked.
+        coordinator.syncNow()
+        assertEquals(2, database.listeningPushDao().getPushedDays(me).size)
+        pushes.clear()
+        coordinator.syncNow()
+        assertTrue(pushes.isEmpty() || pushes.single().listeningDays.isEmpty())
+        assertFalse(prefs.areListeningTotalsSent())
+
+        // The server updates: its first answer that stores totals (here a pull, with nothing to push)
+        // sends every day once more...
+        serverStoresTotals = true
+        coordinator.syncNow()
+        assertTrue(prefs.areListeningTotalsSent())
+        pushes.clear()
+        coordinator.syncNow()
+        assertEquals(listOf(10L, 11L), pushes.single().listeningDays.map { it.localDay })
+
+        // ...and only once.
+        pushes.clear()
+        coordinator.syncNow()
+        assertTrue(pushes.isEmpty() || pushes.single().listeningDays.isEmpty())
+    }
+
+    @Test
+    fun aDayRemovedBeforeTheServerStoresTotalsStillGetsItsZeroDay() = runTest(testDispatcher) {
+        seedOwnListening()
+        coordinator.syncNow()
+        // Day 11's only session is removed here, then the server starts storing totals.
+        database.listeningSessionDao().deleteAllSessions()
+        serverStoresTotals = true
+        pushes.clear()
+
+        coordinator.syncNow()
+        coordinator.syncNow()
+
+        val sentDays = pushes.flatMap { it.listeningDays }
+        assertTrue(sentDays.any { it.localDay == 11L && it.consumedMs == 0L && it.sessionCount == 0 })
+        assertTrue(database.listeningPushDao().getPushedDays(prefs.getOrCreateListeningDeviceId()).none { it.localDay == 11L })
+    }
+
+    @Test
+    fun ownDaysPulledWithoutTotalsStillSendTheirTotals() = runTest(testDispatcher) {
+        val me = prefs.getOrCreateListeningDeviceId()
+        database.listeningSessionDao().upsertSessions(listOf(session("car", day = 10L, device = me).copy(output = ListeningSessionValues.OUTPUT_CAR)))
+        coordinator.syncNow()
+        // The server updates and its first pull hands back this phone's day as an older server stored it.
+        serverStoresTotals = true
+        pullAnswer = SyncPullResponse(syncedAt = 9_000L, listeningDays = listOf(day(me, 10L, 60_000L, lastListenedAt = 70_000L)), playedShows = emptyList())
+        pushes.clear()
+
+        coordinator.syncNow()
+        // Later pulls bring only what changed since.
+        pullAnswer = SyncPullResponse(syncedAt = 9_500L, listeningDays = emptyList(), playedShows = emptyList())
+        coordinator.syncNow()
+
+        val sent = pushes.flatMap { it.listeningDays }.last { it.localDay == 10L }
+        assertEquals(60_000L, sent.carMs)
+        assertEquals(60_000L, sent.longestSessionMs)
+        assertEquals(60_000L, database.listeningPushDao().getPushedDays(me).single().totals.carMs)
+    }
+
+    @Test
+    fun anEquallyCompleteDayWithoutTotalsKeepsTheHeldOnes() = runTest(testDispatcher) {
+        // A backup of phone B brought a session heard in the car; phone B, still on an older build, pushed the same day.
+        database.listeningSessionDao().upsertSessions(listOf(session("b-car", day = 20L, device = "phone-b").copy(output = ListeningSessionValues.OUTPUT_CAR)))
+        pullAnswer = SyncPullResponse(syncedAt = 9_000L, listeningDays = listOf(day("phone-b", 20L, 60_000L)), playedShows = emptyList())
+
+        coordinator.syncNow()
+
+        val kept = database.listeningRollupDao().getRollup("phone-b", 20L, "ep-1")!!
+        assertEquals(60_000L, kept.totals.carMs)
+        assertEquals(60_000L, kept.totals.longestSessionMs)
+        assertTrue(database.listeningSessionDao().getAllSessions().isEmpty())
     }
 
     private suspend fun seedOwnListening() {

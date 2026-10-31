@@ -213,6 +213,16 @@ class QueueRepositoryTest {
     }
 
     @Test
+    fun anEpisodeQueuedAgainWithoutItsReleaseDateKeepsTheOneTheQueueKnew() = runTest {
+        repository.replaceQueue(listOf(domainEpisode("1").copy(publishedDate = 1_700_000_000_000L)))
+
+        // Played again from a history row, which has no release date.
+        repository.replaceQueue(listOf(domainEpisode("1").copy(publishedDate = 0L), domainEpisode("2").copy(publishedDate = 0L)))
+
+        assertEquals(listOf(1_700_000_000_000L, 0L), database.queueDao().getAllQueueItemsSync().sortedBy { it.position }.map { it.pubDate })
+    }
+
+    @Test
     fun replaceQueueRoundTripsPodcast20Metadata() = runTest {
         val episode =
             domainEpisode("1").copy(

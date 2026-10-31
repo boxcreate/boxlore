@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.rss
 
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
+import cx.aswin.boxlore.core.database.ListeningDayTotals
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeEntity
@@ -106,14 +107,16 @@ class LocalCatalogListenerStateReconcilerTest {
 
     @Test
     fun rollupMergePreservesBothIdentitiesTotals() {
-        val old = rollup(id = "-9", consumed = 10L, sessions = 1)
-        val existing = rollup(id = "1", consumed = 20L, sessions = 2)
+        val old = rollup(id = "-9", consumed = 10L, sessions = 1).copy(totals = ListeningDayTotals(longestSessionMs = 10L, carMs = 10L))
+        val existing = rollup(id = "1", consumed = 20L, sessions = 2).copy(totals = ListeningDayTotals(longestSessionMs = 15L, carMs = 20L, loreMs = 5L))
 
         val merged = mergeRollup(old, existing, newEpisodeId = "1")
 
         assertEquals("1", merged.episodeId)
         assertEquals(30L, merged.consumedMs)
         assertEquals(3, merged.sessionCount)
+        assertEquals(ListeningDayTotals(longestSessionMs = 15L, carMs = 30L, loreMs = 5L), merged.totals)
+        assertEquals(old.totals, mergeRollup(old, existing = null, newEpisodeId = "1").totals)
     }
 
     private fun localEpisode(id: String, publishedDate: Long = 1_000L,) = LocalEpisodeEntity(
