@@ -137,6 +137,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Legacy local catalog rows keyed `id:<own ID>` or by audio address take the feed's key when the item's own minted ID equals theirs, including on a first read that matched a Podcast Index episode. Rows that find no free ID are logged instead of dropped silently. ([#1171](https://github.com/boxcreate/boxlore/pull/1171)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Removed
 - `SubscriptionFolderDialog`, `FolderEditSheet` and `FolderEditComponents`. ([#1198](https://github.com/boxcreate/boxlore/pull/1198)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- `coderabbit-threads-resolved` workflow and its required check; merging relies on the master ruleset's conversation resolution, which covers every review thread. ([#1210](https://github.com/boxcreate/boxlore/pull/1210)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1140
 ### Fixes
