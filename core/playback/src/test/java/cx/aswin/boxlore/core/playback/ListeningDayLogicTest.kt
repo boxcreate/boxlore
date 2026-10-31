@@ -20,6 +20,23 @@ class ListeningDayLogicTest {
         assertEquals(5 * MINUTE, ListeningDayLogic.sum(known, day(consumedMinutes = 4, sessions = 2, longestMinutes = 0)).longestSessionMs)
     }
 
+    @Test
+    fun aPartWithoutKnownReleaseDatesAddsNoNewReleasesToOneThatKnowsThem() {
+        // A summary from before release dates were kept (Room v42): 30 new minutes, how many dated not known.
+        val v41 = day(consumedMinutes = 60, sessions = 2, longestMinutes = 0).copy(newReleaseMs = 30 * MINUTE)
+        val dated = day(consumedMinutes = 20, sessions = 1, longestMinutes = 20).copy(newReleaseMs = 5 * MINUTE, releaseKnownMs = 20 * MINUTE)
+
+        val summed = ListeningDayLogic.sum(v41, dated)
+
+        assertEquals(5 * MINUTE, summed.newReleaseMs)
+        assertEquals(20 * MINUTE, summed.releaseKnownMs)
+        assertEquals(5 * MINUTE, summed.newOfReleaseKnownMs)
+        // Two parts without dates keep their new minutes, which still count against no known time.
+        val undated = ListeningDayLogic.sum(v41, v41)
+        assertEquals(60 * MINUTE, undated.newReleaseMs)
+        assertEquals(0L, undated.newOfReleaseKnownMs)
+    }
+
     private fun day(consumedMinutes: Long, sessions: Int, longestMinutes: Long) = ListeningDayEpisode(
         localDay = 10L,
         episodeId = "ep",

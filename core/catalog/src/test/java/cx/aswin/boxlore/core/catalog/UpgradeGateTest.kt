@@ -158,7 +158,7 @@ class UpgradeGateTest(private val version: Int) {
     private suspend fun upgrade() {
         RoomSchemaFixture.createFromSchema(context, DATABASE_NAME, version) { fill(it) }
         database = BoxLoreDatabase.getDatabase(context)
-        assertEquals(41, database.openHelper.writableDatabase.version)
+        assertEquals(42, database.openHelper.writableDatabase.version)
     }
 
     private suspend fun readAll(): LocalEpisodeCatalogRepository {

@@ -223,7 +223,7 @@ class EpisodeAliasHistoryEditsTest {
         sessionCount = 1,
         completionCount = 0,
         lastListenedAt = 2L,
-        // Richer totals (Room v41): Undo puts them back too.
-        totals = ListeningDayTotals(longestSessionMs = 60_000L, carMs = 60_000L, loreMs = 30_000L, newReleaseMs = 60_000L),
+        // Richer totals (Room v41, release dates v42): Undo puts them back too.
+        totals = ListeningDayTotals(longestSessionMs = 60_000L, carMs = 60_000L, loreMs = 30_000L, newReleaseMs = 60_000L, releaseKnownMs = 60_000L),
     )
 }

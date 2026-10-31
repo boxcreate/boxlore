@@ -272,11 +272,12 @@ internal class BoardHistory(empty: Boolean, timedDays: Int = Int.MAX_VALUE) : Li
         eveningMs = (ms * 0.46).toLong(),
         nightMs = (ms * 0.22).toLong(),
         longestSessionMs = ms,
-        // Where and what (Room v40 details): mostly Bluetooth, a good part new, some from Lore and Smart queue.
+        // Where and what (Room v40 details): mostly Bluetooth, a good part new (every release date known), some from Lore and Smart queue.
         bluetoothMs = (ms * 0.52).toLong(),
         carMs = (ms * 0.30).toLong(),
         speakerMs = (ms * 0.18).toLong(),
         newReleaseMs = (ms * 0.64).toLong(),
+        releaseKnownMs = ms,
         loreMs = (ms * 0.12).toLong(),
         smartQueueMs = (ms * 0.21).toLong(),
     )

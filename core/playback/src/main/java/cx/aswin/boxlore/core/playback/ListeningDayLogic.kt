@@ -28,6 +28,7 @@ internal object ListeningDayLogic {
         loreMs = row.loreMs,
         smartQueueMs = row.smartQueueMs,
         newReleaseMs = row.newReleaseMs,
+        releaseKnownMs = row.releaseKnownMs,
     )
 
     /** A daily summary: its richer totals as stored (Room v41); the longest session, else known only when it sums one session. */
@@ -51,6 +52,7 @@ internal object ListeningDayLogic {
         loreMs = row.totals.loreMs,
         smartQueueMs = row.totals.smartQueueMs,
         newReleaseMs = row.totals.newReleaseMs,
+        releaseKnownMs = row.totals.releaseKnownMs,
     )
 
     fun sum(a: ListeningDayEpisode, b: ListeningDayEpisode) = a.copy(
@@ -70,6 +72,8 @@ internal object ListeningDayLogic {
         castMs = a.castMs + b.castMs,
         loreMs = a.loreMs + b.loreMs,
         smartQueueMs = a.smartQueueMs + b.smartQueueMs,
-        newReleaseMs = a.newReleaseMs + b.newReleaseMs,
+        // Within the time with a known release date, once either part knows it.
+        newReleaseMs = ListeningDayTotals.newReleaseOf(a.newReleaseMs, a.releaseKnownMs, b.newReleaseMs, b.releaseKnownMs),
+        releaseKnownMs = a.releaseKnownMs + b.releaseKnownMs,
     )
 }

@@ -74,7 +74,7 @@ class LibraryBackupIdentityRoomTest {
 
         val exported = JsonParser.parseString(json).asJsonObject
         // Version 8 (the listening block) carries the version 7 identity block unchanged.
-        assertEquals(9, exported["version"].asInt)
+        assertEquals(10, exported["version"].asInt)
         assertEquals(5, exported["episodeIdentity"].asJsonObject["episodeAliases"].asJsonArray.size())
         assertEquals(2, result.first)
         val dao = target.episodeIdentityDao()

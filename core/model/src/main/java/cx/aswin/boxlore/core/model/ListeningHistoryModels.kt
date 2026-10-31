@@ -79,9 +79,17 @@ data class ListeningDayEpisode(
     val loreMs: Long = 0L,
     val smartQueueMs: Long = 0L,
     val newReleaseMs: Long = 0L,
+    /**
+     * Listening of episodes with a known release date (Room v40 sessions, v42 summaries); 0 when not
+     * known. Where it is known, [newReleaseMs] is part of it.
+     */
+    val releaseKnownMs: Long = 0L,
 ) {
     /** The listening heard on a known output: the part whose details (output, source, release) are known. */
     val outputKnownMs: Long get() = speakerMs + headphonesMs + bluetoothMs + carMs + castMs
+
+    /** Of [newReleaseMs], what counts against [releaseKnownMs]: none while that isn't known. */
+    val newOfReleaseKnownMs: Long get() = if (releaseKnownMs > 0L) minOf(newReleaseMs, releaseKnownMs) else 0L
 }
 
 /** A show the listener played (Room v40 `played_shows`), with its genre when known. */
@@ -167,6 +175,8 @@ data class ListeningRollupSnapshot(
     val loreMs: Long = 0L,
     val smartQueueMs: Long = 0L,
     val newReleaseMs: Long = 0L,
+    /** The time with a known release date (Room v42); 0 when not known. */
+    val releaseKnownMs: Long = 0L,
 )
 
 /**

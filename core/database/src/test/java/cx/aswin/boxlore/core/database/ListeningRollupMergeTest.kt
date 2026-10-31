@@ -116,9 +116,43 @@ class ListeningRollupMergeTest {
                 smartQueueMs = 45L * 60_000L,
                 // Released 2 days before: new; 8 days before or unknown: not.
                 newReleaseMs = 30L * 60_000L,
+                // Released 2 or 8 days before: a known date; the other two have none.
+                releaseKnownMs = 50L * 60_000L,
             ),
             merged.totals,
         )
+    }
+
+    @Test
+    fun newReleasesStayPartOfTheTimeWithAKnownReleaseDate() {
+        val day = 10L * 86_400_000L
+        fun dated(id: String, minutes: Long, publishedDaysBefore: Long?) =
+            session(id, minutes * 60_000L).copy(startedAt = day, endedAt = 9L, episodePublishedAt = publishedDaysBefore?.let { day - it * 86_400_000L })
+        // A summary from before v42: 10 minutes new, but how much had a date isn't known.
+        val v41 = ListeningRollupEntity(10L, "ep-1", "p", 40L * 60_000L, 2, 0, 5L, totals = ListeningDayTotals(newReleaseMs = 10L * 60_000L))
+
+        // Sessions without a date add nothing known: its new time stays, still unusable as a share.
+        val undated = ListeningRollupMerge.mergeSessionsIntoRollup(10L, "ep-1", listOf(dated("a", 5L, null)), v41).totals
+        assertEquals(ListeningDayTotals(newReleaseMs = 10L * 60_000L), undated)
+        // A dated session: the known time is its own, and new counts only its new minutes.
+        val withDate = ListeningRollupMerge.mergeSessionsIntoRollup(10L, "ep-1", listOf(dated("b", 20L, 1L), dated("c", 5L, 8L)), v41).totals
+        assertEquals(20L * 60_000L, withDate.newReleaseMs)
+        assertEquals(25L * 60_000L, withDate.releaseKnownMs)
+        // Two summaries likewise.
+        val v42 = ListeningDayTotals(newReleaseMs = 3L * 60_000L, releaseKnownMs = 12L * 60_000L)
+        assertEquals(ListeningDayTotals(newReleaseMs = 3L * 60_000L, releaseKnownMs = 12L * 60_000L), v41.totals + v42)
+        assertEquals(ListeningDayTotals(newReleaseMs = 13L * 60_000L), v41.totals + ListeningDayTotals(newReleaseMs = 3L * 60_000L))
+    }
+
+    @Test
+    fun totalsOfTheSameListeningFillInOnlyWhatTheseDoNotKnow() {
+        val v42 = ListeningDayTotals(carMs = 9L, newReleaseMs = 4L, releaseKnownMs = 6L)
+        val v41 = ListeningDayTotals(carMs = 9L, newReleaseMs = 4L)
+
+        assertEquals(v42, ListeningDayTotals().fillingIn(v42))
+        assertEquals(v42, v41.fillingIn(v42))
+        assertEquals(v42, v42.fillingIn(v41))
+        assertEquals(v41, v41.fillingIn(ListeningDayTotals()))
     }
 
     @Test

@@ -313,7 +313,7 @@ private fun storyEchoValues(story: MonthStory, genre: String?): Map<String, Stri
         story.echo.previousLeadingGenre?.let { put("previousGenre", it) }
         how?.outputs?.firstOrNull()?.let { put("output", outputName(it.output)) }
         how?.sources?.let {
-            put("newShare", InsightsWording.percent(it.newShare).toString())
+            it.newShare?.let { newShare -> put("newShare", InsightsWording.percent(newShare).toString()) }
             put("lore", InsightsWording.percent(it.loreShare).toString())
             put("smartQueue", InsightsWording.percent(it.smartQueueShare).toString())
         }
