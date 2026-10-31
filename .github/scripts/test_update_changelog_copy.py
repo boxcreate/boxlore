@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hermetic checks for verbatim PR release-copy and user-impact-critical."""
+"""Hermetic checks for verbatim PR developer copy in CHANGELOG."""
 
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ MINIMAL_CHANGELOG = """# Changelog
 
 
 class ReleaseCopyParseTest(unittest.TestCase):
-    def test_parses_keep_a_changelog_and_readme_regions(self) -> None:
+    def test_parses_keep_a_changelog_region(self) -> None:
         changelog = uc.parse_pr_changelog_copy(
             SAMPLE_PR_BODY, "feat(catalog): fill missing PI episodes", "user-impact-critical"
         )
@@ -71,17 +71,13 @@ class ReleaseCopyParseTest(unittest.TestCase):
             changelog["Fixed"],
             ["LatestEpisodeTipLogic never writes an older tip over a newer one"],
         )
-        readme = uc.parse_pr_readme_copy(SAMPLE_PR_BODY, "user-impact-critical")
-        self.assertEqual(readme[0]["heading"], "Critical")
-        self.assertIn("Missing episodes", readme[0]["bullets"][0])
 
     def test_empty_placeholders_are_ignored(self) -> None:
         self.assertEqual(uc.parse_pr_changelog_copy(EMPTY_COPY_BODY), {})
-        self.assertEqual(uc.parse_pr_readme_copy(EMPTY_COPY_BODY, "user-impact-critical"), [])
 
     def test_critical_label_scores_above_high(self) -> None:
-        impact, backend = uc._resolve_pr_tags(
-            labels=["user-impact-critical", "backend-change"]
+        impact, backend, _ = uc.validate_release_copy(
+            "fix: example", SAMPLE_PR_BODY, ["user-impact-critical", "backend-change"]
         )
         self.assertEqual(impact, "user-impact-critical")
         self.assertTrue(backend)
@@ -89,22 +85,6 @@ class ReleaseCopyParseTest(unittest.TestCase):
             uc.USER_IMPACT_SCORE["user-impact-critical"],
             uc.USER_IMPACT_SCORE["user-impact-high"],
         )
-
-    def test_critical_wins_when_multiple_impact_labels(self) -> None:
-        impact, _ = uc._resolve_pr_tags(
-            labels=["user-impact-high", "user-impact-critical"]
-        )
-        self.assertEqual(impact, "user-impact-critical")
-
-    def test_normalize_readme_heading_aliases(self) -> None:
-        self.assertEqual(uc._normalize_readme_heading("High"), "Fixes")
-        self.assertEqual(uc._normalize_readme_heading("Medium"), "Fixes")
-        self.assertEqual(uc._normalize_readme_heading("Low"), "Fixes")
-        self.assertEqual(uc._normalize_readme_heading("Key Updates"), "Critical")
-        self.assertEqual(uc._normalize_readme_heading("Highlights"), "Critical")
-        self.assertEqual(uc._normalize_readme_heading("Improvements"), "Improvements")
-        self.assertEqual(uc._normalize_readme_heading("Fixes"), "Fixes")
-
 
 
 class LockedChangelogFlowTest(unittest.TestCase):
@@ -121,15 +101,8 @@ class LockedChangelogFlowTest(unittest.TestCase):
         self.assertIn("<!-- copy:locked -->", updated)
         self.assertIn("PodcastRepository unions publisher-feed extras", updated)
         self.assertIn("<!-- impact:user-impact-critical+backend-change -->", updated)
-        with_readme = uc._upsert_readme_copy_block(
-            updated,
-            971,
-            uc.parse_pr_readme_copy(SAMPLE_PR_BODY, "user-impact-critical"),
-        )
-        self.assertIn("<!-- readme-copy:start pr=971", with_readme)
-        self.assertIn("readme-copy:end pr=971 -->", with_readme)
-        parsed = uc._extract_unreleased_sections(with_readme)
-        self.assertNotIn("Missing episodes from a show", " ".join(parsed.get("Fixed", [])))
+        parsed = uc._extract_unreleased_sections(updated)
+        self.assertNotIn("Missing episodes from a show", updated)
         self.assertTrue(any("PodcastRepository" in b for b in parsed["Added"]))
 
     def test_sync_preserves_every_locked_and_legacy_bullet(self) -> None:
@@ -149,7 +122,7 @@ class LockedChangelogFlowTest(unittest.TestCase):
                 self.assertLess(updated.index("Exact first line"), updated.index("Unrelated polish"))
                 self.assertFalse(uc.sync_changelog_unreleased())
 
-    def test_readme_sync_uses_locked_copy_verbatim_without_ai_notice(self) -> None:
+    def test_promote_changelog_strips_legacy_readme_copy_blocks(self) -> None:
         changelog, _ = uc._update_changelog(
             MINIMAL_CHANGELOG,
             {"Fixed": ["Technical bullet"]},
@@ -157,73 +130,10 @@ class LockedChangelogFlowTest(unittest.TestCase):
             impact="user-impact-critical",
             copy_locked=True,
         )
-        changelog = uc._upsert_readme_copy_block(
-            changelog,
-            971,
-            uc.parse_pr_readme_copy(SAMPLE_PR_BODY, "user-impact-critical"),
-        )
-        groups, locked_prs = uc._locked_readme_groups_from_changelog(changelog)
-        self.assertEqual(locked_prs, {971})
-        self.assertEqual(groups[0]["heading"], "Critical")
-        self.assertIn("Missing episodes from a show", groups[0]["bullets"][0])
-        readme = (
-            "# boxlore\n\n"
-            + uc._render_release_notes_shell(
-                upcoming_inner=uc.EMPTY_UPCOMING_TEXT,
-                whats_new_inner=None,
-            )
-            + "\n\n## Search\n"
-        )
-        updated = uc._update_readme(readme, groups=groups, include_ai_notice=False)
-        upcoming = uc._extract_marked_region(
-            updated, uc.RELEASE_UPCOMING_START, uc.RELEASE_UPCOMING_END
-        )
-        assert upcoming is not None
-        self.assertIn("Missing episodes from a show", upcoming)
-        self.assertIn("Critical", upcoming)
-        self.assertNotIn("AI-generated summary", upcoming)
-
-    def test_locked_readme_copy_orders_higher_impact_before_older_prs(self) -> None:
-        changelog = """# Changelog
-
-## [Unreleased]
-
-### Added
-- Existing feature ([#1001](https://github.com/boxcreate/boxlore/pull/1001)) <!-- impact:user-impact-medium -->
-- Requested widget theme ([#1002](https://github.com/boxcreate/boxlore/pull/1002)) <!-- impact:user-impact-critical -->
-
-<!-- readme-copy:start pr=1001 -->
-### New features
-- Existing feature
-<!-- readme-copy:end pr=1001 -->
-
-<!-- readme-copy:start pr=1002 -->
-### New features
-- Requested widget theme
-- Preferred default tabs
-<!-- readme-copy:end pr=1002 -->
-"""
-
-        groups, locked_prs = uc._locked_readme_groups_from_changelog(changelog)
-
-        self.assertEqual(locked_prs, {1001, 1002})
-        new_features = next(group["bullets"] for group in groups if group["heading"] == "New features")
-        self.assertIn("Requested widget theme", new_features[0])
-        self.assertIn("Preferred default tabs", new_features[1])
-        self.assertIn("Existing feature", new_features[2])
-
-    def test_promote_changelog_strips_readme_copy_blocks(self) -> None:
-        changelog, _ = uc._update_changelog(
-            MINIMAL_CHANGELOG,
-            {"Fixed": ["Technical bullet"]},
-            971,
-            impact="user-impact-critical",
-            copy_locked=True,
-        )
-        changelog = uc._upsert_readme_copy_block(
-            changelog,
-            971,
-            [{"heading": "Critical", "bullets": ["Listener line"]}],
+        # Listener copy older builds stored per PR inside [Unreleased].
+        changelog = changelog.replace(
+            "## [0.0.12]",
+            "<!-- readme-copy:start pr=971 -->\n### Critical\n- Listener line\n<!-- readme-copy:end pr=971 -->\n\n## [0.0.12]",
         )
         promoted = pr.promote_changelog(changelog, pr.AppVersion("0.0.14", 14), "2026-08-12")
         versioned = promoted.split("## [v0.0.14]")[1].split("## [0.0.12]")[0]
@@ -232,7 +142,7 @@ class LockedChangelogFlowTest(unittest.TestCase):
         self.assertNotIn("Listener line", versioned)
         self.assertIn("<!-- copy:locked -->", versioned)
 
-    def test_promote_readme_preserves_verbatim_upcoming_without_ai_notice(self) -> None:
+    def test_promote_readme_preserves_verbatim_upcoming(self) -> None:
         upcoming_body = (
             '<b>🚨 Critical:</b>\n<ul align="left">\n'
             "<li>Missing episodes now show up in the same show.</li>\n</ul>"
@@ -242,7 +152,6 @@ class LockedChangelogFlowTest(unittest.TestCase):
             + uc._render_release_notes_shell(
                 upcoming_inner=upcoming_body,
                 whats_new_inner=None,
-                include_ai_notice=False,
             )
             + "\n\n## Search\n"
         )
@@ -252,7 +161,6 @@ class LockedChangelogFlowTest(unittest.TestCase):
         )
         assert whats_new is not None
         self.assertIn("Missing episodes now show up in the same show.", whats_new)
-        self.assertNotIn("AI-generated summary", whats_new)
 
     def test_append_stores_authored_copy_without_credentials(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -266,9 +174,10 @@ class LockedChangelogFlowTest(unittest.TestCase):
                 self.assertTrue(changed)
                 text = path.read_text(encoding="utf-8")
                 self.assertIn("copy:locked", text)
-                self.assertIn("readme-copy:start pr=971", text)
                 self.assertIn("PodcastRepository unions publisher-feed extras", text)
-                self.assertIn("Missing episodes from a show", text)
+                # Listener copy lives in the notes list now, not in CHANGELOG.
+                self.assertNotIn("readme-copy", text)
+                self.assertNotIn("Missing episodes from a show", text)
                 self.assertFalse(uc.append_changelog(971, "same", SAMPLE_PR_BODY, labels=[]))
                 self.assertEqual(text, path.read_text(encoding="utf-8"))
 
@@ -297,48 +206,6 @@ class ChangelogSanitizationAndExtractionTest(unittest.TestCase):
         self.assertEqual(uc._extract_pr_number(bullet_trailing), 1021)
         simple_pr = "- Some minor polish (#999)"
         self.assertEqual(uc._extract_pr_number(simple_pr), 999)
-
-    def test_clean_pr_body_strips_test_plans_checkboxes_and_prompts(self) -> None:
-        noisy_body = """## Summary
-Real summary text.
-
-<details>
-<summary>🤖 Prompt for AI Agents</summary>
-Noise that should be stripped.
-</details>
-
-<!-- release-copy:changelog:start -->
-<!-- release-copy:changelog:end -->
-
-## Impact
-- [x] user-impact-critical
-- [ ] user-impact-high
-
-### Listener impact
-Important listener note.
-
-## Test plan
-- [x] Built / installed locally
-- [x] Tested on device
-"""
-        cleaned = uc._clean_pr_body(noisy_body)
-        self.assertIn("Real summary text.", cleaned)
-        self.assertIn("Important listener note.", cleaned)
-        self.assertNotIn("Prompt for AI Agents", cleaned)
-        self.assertNotIn("Noise that should be stripped", cleaned)
-        self.assertNotIn("user-impact-critical", cleaned)
-        self.assertNotIn("Test plan", cleaned)
-        self.assertNotIn("Built / installed locally", cleaned)
-
-    def test_format_readme_bullet_strips_category_prefixes(self) -> None:
-        self.assertEqual(
-            uc._format_readme_bullet("[Fixed] Fixed broken queue", 1019),
-            "Fixed broken queue ([#1019](https://github.com/boxcreate/boxlore/pull/1019))",
-        )
-        self.assertEqual(
-            uc._format_readme_bullet("Added: Brand new explore screen", 1020),
-            "Brand new explore screen ([#1020](https://github.com/boxcreate/boxlore/pull/1020))",
-        )
 
 
 if __name__ == "__main__":

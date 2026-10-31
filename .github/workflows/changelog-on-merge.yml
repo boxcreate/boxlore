@@ -17,7 +17,6 @@ on:
           - prepare-release
           - publish-release
           - refresh-latest-artifacts
-          - backfill-changelog
       bump:
         description: Version bump for prepare-release
         required: true
@@ -27,26 +26,13 @@ on:
           - patch
           - minor
           - major
-      release_notes_source:
-        description: Release-note source for prepare-release
-        required: true
-        default: reconcile-reviewed-copy
-        type: choice
-        options:
-          - reconcile-reviewed-copy
-          - readme-upcoming
       skip_notify:
         description: >-
-          Artifacts only — bump version, rewrite README APK download URL, publish
-          APK+AAB; skip CHANGELOG / What's New promotion and in-app notification
-          (send manually later)
+          Quiet release — bump the version and publish APK+AAB only; the notes list,
+          CHANGELOG and What's New stay as they are and no announcement is drafted
         required: true
         default: false
         type: boolean
-      pr_number:
-        description: Merged PR number for backfill-changelog
-        required: false
-        type: string
 
 permissions:
   contents: read
@@ -54,12 +40,10 @@ permissions:
 jobs:
   update-changelog:
     if: >-
-      (github.event_name == 'workflow_dispatch' &&
-       github.event.inputs.operation == 'backfill-changelog') ||
-      (github.event_name == 'pull_request' &&
-       github.event.pull_request.merged == true &&
-       !contains(github.event.pull_request.title, '[skip changelog]') &&
-       !startsWith(github.event.pull_request.head.ref, 'release/v'))
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true &&
+      !contains(github.event.pull_request.title, '[skip changelog]') &&
+      !startsWith(github.event.pull_request.head.ref, 'release/v')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -83,8 +67,7 @@ jobs:
           ref: master
           token: ${{ steps.app-token.outputs.token }}
 
-      - name: Append merged PR event to CHANGELOG
-        if: github.event_name == 'pull_request'
+      - name: Append the merged PR's developer copy to CHANGELOG
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_TITLE: ${{ github.event.pull_request.title }}
@@ -92,32 +75,15 @@ jobs:
           PR_LABELS_JSON: ${{ toJson(github.event.pull_request.labels) }}
         run: python3 .github/scripts/update_changelog.py append
 
-      - name: Load and append backfill PR
-        if: github.event_name == 'workflow_dispatch'
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          PR_NUMBER: ${{ github.event.inputs.pr_number }}
-        run: |
-          if ! [[ "$PR_NUMBER" =~ ^[0-9]+$ ]]; then
-            echo "::error::backfill-changelog requires a numeric pr_number"
-            exit 1
-          fi
-          gh pr view "$PR_NUMBER" \
-            --repo "$GITHUB_REPOSITORY" \
-            --json number,title,body,mergedAt,baseRefName,labels \
-            > "$RUNNER_TEMP/pr.json"
-          python3 .github/scripts/update_changelog.py append \
-            --pr-json "$RUNNER_TEMP/pr.json"
-
       - name: Order authored CHANGELOG bullets
         run: python3 .github/scripts/update_changelog.py sync-changelog
 
-      - name: Place authored README copy by category and impact
+      - name: Render README Upcoming from the notes list
         run: python3 .github/scripts/update_changelog.py sync-readme
 
       - name: Commit and push changelog update
         env:
-          PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number || github.event.pull_request.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           if git diff --quiet -- CHANGELOG.md README.md; then
             echo "No CHANGELOG or README changes to commit."
@@ -199,22 +165,18 @@ jobs:
           fi
           echo "tag=$latest_tag" >> "$GITHUB_OUTPUT"
 
-      - name: Reconcile notes and prepare release files
+      - name: Prepare the version, notes and release files
         id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BUMP: ${{ github.event.inputs.bump }}
           LATEST_TAG: ${{ steps.latest.outputs.tag }}
-          RELEASE_NOTES_SOURCE: ${{ github.event.inputs.release_notes_source }}
           SKIP_NOTIFY: ${{ github.event.inputs.skip_notify }}
         run: |
           head_sha="$(git rev-parse HEAD)"
           extra_args=()
           if [[ "$SKIP_NOTIFY" == "true" ]]; then
             extra_args+=(--skip-notify)
-          fi
-          if [[ "$RELEASE_NOTES_SOURCE" == "readme-upcoming" ]]; then
-            extra_args+=(--use-readme-upcoming)
           fi
           python3 .github/scripts/prepare_release.py prepare \
             --bump "$BUMP" \
@@ -225,6 +187,7 @@ jobs:
       - name: Validate release diff
         env:
           SKIP_NOTIFY: ${{ steps.release.outputs.skip_notify }}
+          NOTES_ARCHIVE: ${{ steps.release.outputs.notes_archive }}
         run: |
           git diff --check
           python3 - <<'PY'
@@ -243,14 +206,17 @@ jobs:
                       "CHANGELOG.md",
                       "README.md",
                       "app/build.gradle.kts",
+                      "release-notes/upcoming.md",
+                      os.environ["NOTES_ARCHIVE"],
                   }
               ]
           changed = {
               line
               for line in subprocess.check_output(
-                  ["git", "diff", "--name-only"],
+                  ["git", "status", "--porcelain", "--untracked-files=all"],
                   text=True,
               ).splitlines()
+              for line in [line[3:].strip()]
               if line
           }
           if changed not in expected_options:
@@ -266,6 +232,7 @@ jobs:
           BRANCH: ${{ steps.release.outputs.branch }}
           TAG: ${{ steps.release.outputs.tag }}
           SKIP_NOTIFY: ${{ steps.release.outputs.skip_notify }}
+          NOTES_ARCHIVE: ${{ steps.release.outputs.notes_archive }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -274,7 +241,7 @@ jobs:
             git add app/build.gradle.kts README.md
             git commit -m "release: prepare ${TAG} [skip changelog] [skip notify]"
           else
-            git add app/build.gradle.kts CHANGELOG.md README.md
+            git add app/build.gradle.kts CHANGELOG.md README.md release-notes/upcoming.md "$NOTES_ARCHIVE"
             git commit -m "release: prepare ${TAG} [skip changelog]"
           fi
           git push --set-upstream origin "$BRANCH"
@@ -291,8 +258,9 @@ jobs:
           NEW_VERSION: ${{ steps.release.outputs.new_version }}
           NEW_CODE: ${{ steps.release.outputs.new_code }}
           RELEASE_DATE: ${{ steps.release.outputs.release_date }}
-          RECONCILED_PRS: ${{ steps.release.outputs.reconciled_pr_count }}
-          NOTES_SOURCE: ${{ steps.release.outputs.notes_source }}
+          MISSING_PRS: ${{ steps.release.outputs.missing_changelog_prs }}
+          CHANGELOG_CHECK: ${{ steps.release.outputs.changelog_check }}
+          NOTES_ARCHIVE: ${{ steps.release.outputs.notes_archive }}
           APK_ASSET: ${{ steps.release.outputs.apk_asset }}
           AAB_ASSET: ${{ steps.release.outputs.aab_asset }}
           SKIP_NOTIFY: ${{ steps.release.outputs.skip_notify }}
@@ -300,16 +268,14 @@ jobs:
           if [[ "$SKIP_NOTIFY" == "true" ]]; then
             title="release: ${TAG} [skip changelog] [skip notify]"
             body="$(cat <<EOF
-          ## Release (artifacts only)
+          ## Quiet release
           - Version: \`${CURRENT_VERSION} (${CURRENT_CODE}) → ${NEW_VERSION} (${NEW_CODE})\`
           - Date: \`${RELEASE_DATE}\`
           - APK asset: \`${APK_ASSET}\`
           - AAB asset: \`${AAB_ASSET}\`
 
-          > **skip_notify:** CHANGELOG / What's New were not promoted and the in-app
-          > release notification will not be sent on publish. The README APK download
-          > badge is updated to this release. Send a manual notification via
-          > **Send boxlore Notification** after the GitHub Release exists if needed.
+          > The notes list, CHANGELOG and What's New stay as they are and no announcement is
+          > drafted on publish. The README APK download badge points at this release.
 
           ## On merge
           The protected release job rebuilds this merge commit and publishes signed APK/AAB only.
@@ -321,31 +287,50 @@ jobs:
           EOF
           )"
           else
-            if [[ "$NOTES_SOURCE" == "readme-upcoming" ]]; then
-              notes_message="Reviewed README Upcoming is promoted verbatim into What's New and the in-app notification."
+            # What listeners will read, and the announcement draft publication will prepare from it.
+            notes="$(sed '1,2d' "$NOTES_ARCHIVE")"
+            announcement="$(TAG="$TAG" NOTES_ARCHIVE="$NOTES_ARCHIVE" python3 - <<'PY'
+          import os, sys
+          sys.path.insert(0, ".github/scripts")
+          import release_notes
+          title, body = release_notes.announcement(release_notes.parse(open(os.environ["NOTES_ARCHIVE"]).read()), os.environ["TAG"])
+          print(f"**{title}**\n\n{body}")
+          PY
+          )"
+            if [[ "$CHANGELOG_CHECK" == "unknown" ]]; then
+              missing_message="> **CHANGELOG coverage not checked:** the merged PRs since the latest release couldn't be listed. Compare them with CHANGELOG by hand if it matters; nothing else is affected."
+            elif [[ -n "$MISSING_PRS" ]]; then
+              missing_message="> **Not in CHANGELOG:** ${MISSING_PRS}. These merged PRs have no developer entry; add one in this PR if they need it. Nothing else is affected."
             else
-              notes_message="Changelog and README use the required author-written release copy, ordered without rewriting before promotion."
+              missing_message="Every PR merged since the latest release has a CHANGELOG entry."
             fi
             title="release: ${TAG} [skip changelog]"
             body="$(cat <<EOF
           ## Release
           - Version: \`${CURRENT_VERSION} (${CURRENT_CODE}) → ${NEW_VERSION} (${NEW_CODE})\`
           - Date: \`${RELEASE_DATE}\`
-          - Reconciled PRs since the latest release: \`${RECONCILED_PRS}\`
-          - Release-note source: \`${NOTES_SOURCE}\`
           - APK asset: \`${APK_ASSET}\`
           - AAB asset: \`${AAB_ASSET}\`
+          - Listener notes: \`${NOTES_ARCHIVE}\` (the notes list starts afresh for the next release)
 
-          > ${notes_message}
+          ${missing_message}
+
+          ## What's new, as listeners will read it
+          ${notes}
+
+          ## Announcement draft
+          ${announcement}
+
+          Edit the wording in \`${NOTES_ARCHIVE}\` and README What's New in this PR if anything needs changing.
 
           ## On merge
           The protected release job will rebuild this exact merge commit, verify versions and signing identity, then publish the signed APK and AAB with checksums.
 
           ## Review checklist
           - [ ] Gradle version transition is correct
-          - [ ] CHANGELOG contains every intended change
-          - [ ] README What's New / Upcoming markers are accurate
-          - [ ] Only Gradle, CHANGELOG, and README release files changed
+          - [ ] What's new reads well, highlights first
+          - [ ] The announcement draft is right
+          - [ ] Only Gradle, CHANGELOG, README and the release notes files changed
           EOF
           )"
           fi
