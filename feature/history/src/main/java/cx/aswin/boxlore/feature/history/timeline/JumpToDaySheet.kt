@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
@@ -130,7 +131,13 @@ fun JumpToDayContent(state: JumpToDayState, onJump: (LocalDate) -> Unit, onDismi
     var shownMonth by rememberSaveable { mutableStateOf(current.toString()) }
     val month = YearMonth.parse(shownMonth)
     Column(
-        modifier = Modifier.fillMaxWidth().testTag(JUMP_TO_DAY_CONTENT_TAG).padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 24.dp),
+        modifier =
+        Modifier
+            .fillMaxWidth()
+            .testTag(JUMP_TO_DAY_CONTENT_TAG)
+            // A six-week month and the quick jumps don't fit a short window (a landscape tablet): scroll, keeping the month shown.
+            .verticalScroll(rememberScrollState())
+            .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {

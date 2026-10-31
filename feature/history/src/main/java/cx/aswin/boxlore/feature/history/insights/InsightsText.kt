@@ -21,6 +21,9 @@ object InsightsWording {
     /** "Almost every episode" from this finish rate. */
     const val ALMOST_ALL_FROM = 0.9f
 
+    /** Below this finish rate, "a few"; 1 in 5 would overstate it (and a 0 rate says none yet). */
+    const val FEW_BELOW = 0.1f
+
     private val FRACTIONS = listOf(1 to 5, 1 to 4, 1 to 3, 1 to 2, 2 to 3, 3 to 4, 4 to 5)
 
     /** The plain fraction nearest [rate], e.g. 0.74 → 3 in 4. */
@@ -72,6 +75,8 @@ internal fun partFact(part: DayPart, share: Float): String {
 @Composable
 internal fun finishFact(rate: Float): String {
     if (rate >= InsightsWording.ALMOST_ALL_FROM) return stringResource(R.string.history_finish_almost_all)
+    if (rate <= 0f) return stringResource(R.string.history_finish_none)
+    if (rate < InsightsWording.FEW_BELOW) return stringResource(R.string.history_finish_few)
     val (finished, of) = InsightsWording.nearestFraction(rate)
     return stringResource(R.string.history_finish_rate, finished, of)
 }

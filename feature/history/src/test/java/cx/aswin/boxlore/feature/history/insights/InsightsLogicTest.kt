@@ -127,6 +127,23 @@ class InsightsLogicTest {
     }
 
     @Test
+    fun allStartsTodayWhenTheFirstTimedDayIsLaterThanToday() {
+        // A clock change, or a phone in a timezone ahead: listening dated tomorrow.
+        val content = build(listOf(day(31, "a", 40), day(30, "a", 20)), period = ListeningPeriod.ALL)
+
+        assertEquals(20 * MINUTE, content.time.totalMs)
+        assertEquals(20 * MINUTE, content.time.perDayMs)
+    }
+
+    @Test
+    fun earlyPlayedDaysCountEveryTimedDayOfAnEpisodeHeardOverSeveral() {
+        // One episode heard on the 22nd, 23rd and 24th, last played on the 24th.
+        val content = build(listOf(day(22, "a", 5, episode = "e"), day(23, "a", 5, episode = "e"), day(24, "a", 5, episode = "e")), listOf(item("e", "a", playedDay = 24)))
+
+        assertEquals(3, content.early.playedDaysThisMonth)
+    }
+
+    @Test
     fun milestonesStepUp() {
         assertEquals(200, InsightsParts.milestone(178).next)
         assertEquals(10, InsightsParts.milestone(0).next)

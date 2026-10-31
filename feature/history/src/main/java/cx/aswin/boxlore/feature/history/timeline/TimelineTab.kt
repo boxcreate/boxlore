@@ -136,10 +136,19 @@ internal fun timelineEntries(state: TimelineTabState): List<TimelineEntry> {
     return LazyListKeyPolicy.deduplicateById(entries) { it.key }
 }
 
-/** The index to scroll to for [target]: the first day on or before it, else the oldest day. */
+/**
+ * The index to scroll to for [target]: its day; else the nearest later day, since an episode heard
+ * on [target] shows on the day it was last played (a calendar or mosaic day can be listened on
+ * without being any row's last play); else the first day before it, else the oldest day.
+ */
 internal fun timelineIndexFor(entries: List<TimelineEntry>, target: LocalDate): Int? {
     val dayIndexes = entries.withIndex().filter { (_, entry) -> entry is TimelineEntry.Day || entry is TimelineEntry.Month }
     if (dayIndexes.isEmpty()) return null
+    val days = dayIndexes.filter { (_, entry) -> entry is TimelineEntry.Day }
+    days.firstOrNull { (_, entry) -> entry.date == target }?.let { return it.index }
+    // Newest first: the last day after the target is the nearest one.
+    days.lastOrNull { (_, entry) -> entry.date?.let { it > target } == true }?.let { return it.index }
+    days.firstOrNull { (_, entry) -> entry.date?.let { it <= target } == true }?.let { return it.index }
     return dayIndexes.firstOrNull { (_, entry) -> entry.date?.let { it <= target } == true }?.index ?: dayIndexes.last().index
 }
 

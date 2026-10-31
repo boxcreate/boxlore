@@ -21,13 +21,16 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -65,6 +68,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.zIndex
 import cx.aswin.boxlore.core.designsystem.echo.EchoCharacterSpec
 import cx.aswin.boxlore.core.designsystem.echo.rememberEchoCharacterSpec
+import cx.aswin.boxlore.core.designsystem.layout.boxloreFoldSafeViewport
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
@@ -75,6 +79,12 @@ import kotlinx.coroutines.launch
 /** The story's frame: the boards' 400 × 890, scaled as a whole to fit the window. */
 private const val FRAME_WIDTH = 400f
 private const val FRAME_HEIGHT = 890f
+
+/**
+ * The frame never shrinks below this (its 48dp buttons stay near touch size): in a short window
+ * (a phone on its side) it keeps this size and scrolls instead.
+ */
+private const val MIN_SCALE = 0.8f
 
 /** The monthly story, full screen over everything (Back closes it). */
 @Composable
@@ -127,10 +137,18 @@ fun StoryPlayer(story: MonthStory, startCard: StoryCard, onClose: () -> Unit, on
         scope.launch { onShare(cropShareCard(frame.toImageBitmap().asAndroidBitmap(), density.density)) }
     }
     Box(modifier.fillMaxSize().background(bg)) {
-        BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing), contentAlignment = Alignment.Center) {
-            val scale = minOf(maxWidth / FRAME_WIDTH.dp, maxHeight / FRAME_HEIGHT.dp)
+        // On a spanned foldable the frame keeps to one side of the hinge, as other full-screen layers do.
+        BoxWithConstraints(Modifier.fillMaxSize().boxloreFoldSafeViewport().windowInsetsPadding(WindowInsets.safeDrawing), contentAlignment = Alignment.Center) {
+            val fit = minOf(maxWidth / FRAME_WIDTH.dp, maxHeight / FRAME_HEIGHT.dp)
+            val scale = if (fit >= MIN_SCALE) fit else minOf(maxWidth / FRAME_WIDTH.dp, MIN_SCALE)
             // The frame is artwork: its type is sized with it, not with the font scale, so nothing reflows out of place.
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 1f)) {
+                Box(
+                    Modifier
+                        .then(if (scale > fit) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+                        .size(FRAME_WIDTH.dp * scale, FRAME_HEIGHT.dp * scale),
+                    contentAlignment = Alignment.Center,
+                ) {
                 Box(
                     Modifier
                         .requiredSize(FRAME_WIDTH.dp, FRAME_HEIGHT.dp)
@@ -150,6 +168,7 @@ fun StoryPlayer(story: MonthStory, startCard: StoryCard, onClose: () -> Unit, on
                     }
                     StoryTapAreas(onPrevious = { go(index - 1) }, onNext = { go(index + 1) }, onHold = { held = it })
                     StoryChrome(cards.size, index, fg, clock, onClose)
+                }
                 }
             }
         }
@@ -224,6 +243,8 @@ private fun BoxScope.StoryTapArea(label: String, modifier: Modifier, onTap: () -
                         tryAwaitRelease()
                         hold(false)
                     },
+                    // A long press is a hold: letting go resumes this card instead of moving on.
+                    onLongPress = { },
                     onTap = { tap() },
                 )
             }
@@ -286,9 +307,16 @@ private fun cropShareCard(frame: Bitmap, density: Float): Bitmap {
     return Bitmap.createBitmap(frame, x, y, width, height)
 }
 
-/** Whether TalkBack (touch exploration) is on, so cards wait to be moved on. */
+/** Whether TalkBack (touch exploration) is on, so cards wait to be moved on; follows it being turned on or off while the story plays. */
 @Composable
 private fun rememberTouchExploration(): Boolean {
     val context = LocalContext.current
-    return remember(context) { (context.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager)?.isTouchExplorationEnabled == true }
+    val manager = remember(context) { context.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager }
+    var enabled by remember(manager) { mutableStateOf(manager?.isTouchExplorationEnabled == true) }
+    DisposableEffect(manager) {
+        val listener = AccessibilityManager.TouchExplorationStateChangeListener { enabled = it }
+        manager?.addTouchExplorationStateChangeListener(listener)
+        onDispose { manager?.removeTouchExplorationStateChangeListener(listener) }
+    }
+    return enabled
 }

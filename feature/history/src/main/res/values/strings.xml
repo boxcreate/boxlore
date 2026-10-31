@@ -184,6 +184,8 @@
     <!-- How many episodes you finish, e.g. "You finish about 3 in 4 episodes you start." -->
     <string name="history_finish_rate">You finish about %1$d in %2$d episodes you start.</string>
     <string name="history_finish_almost_all">You finish almost every episode you start.</string>
+    <string name="history_finish_few">You finish a few of the episodes you start.</string>
+    <string name="history_finish_none">You haven\'t finished an episode you started yet.</string>
     <string name="history_ins_top_shows">Your top shows</string>
     <string name="history_ins_by_time">by time</string>
     <!-- E.g. "4 h 10 min, 29% of your listening". -->
@@ -207,8 +209,8 @@
     <!-- E.g. "Wednesdays are your big day". -->
     <string name="history_ins_big_day">%1$s are your big day</string>
     <!-- E.g. "4 h 23 min on Wednesdays this month". -->
-    <string name="history_ins_big_day_7">%1$s on %2$s this week</string>
-    <string name="history_ins_big_day_30">%1$s on %2$s this month</string>
+    <string name="history_ins_big_day_7">%1$s on %2$s in the last 7 days</string>
+    <string name="history_ins_big_day_30">%1$s on %2$s in the last 30 days</string>
     <string name="history_ins_big_day_180">%1$s on %2$s in the last 6 months</string>
     <string name="history_ins_big_day_all">%1$s on %2$s of all time</string>
     <string name="history_ins_weekday_chart">Listening by weekday: %1$s highest</string>
@@ -318,6 +320,8 @@
     <string name="history_story_type_night">at night</string>
     <string name="history_story_type_finish">%1$d%% of your listening was %2$s, and you finished about %3$d in %4$d episodes you started.</string>
     <string name="history_story_type_finish_all">%1$d%% of your listening was %2$s, and you finished almost every episode you started.</string>
+    <string name="history_story_type_finish_few">%1$d%% of your listening was %2$s, and you finished a few of the episodes you started.</string>
+    <string name="history_story_type_finish_none">%1$d%% of your listening was %2$s. You haven\'t finished an episode you started yet.</string>
     <string name="history_story_type_only">%1$d%% of your listening was %2$s.</string>
     <string name="history_story_echo_evening">Cosy evenings, huh?</string>
     <string name="history_story_echo_late_night">Night owl, I see.</string>

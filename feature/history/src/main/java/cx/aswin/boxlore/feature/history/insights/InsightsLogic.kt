@@ -54,15 +54,18 @@ object InsightsLogic {
         )
     }
 
-    /** The period's days, today last: 7, 30 or 180 days, or from the first timed day for All. */
+    /**
+     * The period's days, today last: 7, 30 or 180 days, or from the first timed day for All. A first
+     * timed day after today (a clock change, or a phone in a timezone ahead) starts All today.
+     */
     fun periodRange(period: ListeningPeriod, today: LocalDate, firstTimedDay: LocalDate?): ClosedRange<LocalDate> = when (period) {
         ListeningPeriod.DAYS_7 -> today.minusDays(6)..today
         ListeningPeriod.DAYS_30 -> today.minusDays(29)..today
         ListeningPeriod.DAYS_180 -> today.minusDays(179)..today
-        ListeningPeriod.ALL -> (firstTimedDay ?: today)..today
+        ListeningPeriod.ALL -> minOf(firstTimedDay ?: today, today)..today
     }
 
-    private fun days(range: ClosedRange<LocalDate>): Long = ChronoUnit.DAYS.between(range.start, range.endInclusive) + 1
+    private fun days(range: ClosedRange<LocalDate>): Long = (ChronoUnit.DAYS.between(range.start, range.endInclusive) + 1).coerceAtLeast(1L)
 
     private fun timeListened(input: Input, range: ClosedRange<LocalDate>, inPeriod: List<ListeningDayEpisode>): TimeListened {
         val total = inPeriod.sumOf { it.consumedMs }
