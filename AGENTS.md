@@ -25,7 +25,7 @@ boxlore is a Kotlin Android app with `:app`, `:core:*`, and `:feature:*` modules
 - Use **boxlore** in user-facing copy. Keep wording concise, consistent with surrounding UI, and accurate about the resulting behavior. Apply available UX writing guidance; maintainer skill requirements are in the internal document.
 - Use solid Material 3 surfaces for cards and panels.
 - Keep secrets and local configuration out of Git, including `.env`, `local.properties`, keystores, and `google-services.json`.
-- Release workflows own `CHANGELOG.md` and the root README's generated Upcoming/What's New regions. Put exact release wording in the PR template's release-copy regions. Intentional release-note rewrites require matching script contracts.
+- Release workflows own `CHANGELOG.md` and the root README's generated Upcoming/What's New regions. Put developer wording in the PR template's changelog region. For a listener-facing change, read `release-notes/upcoming.md` and edit it in place so it says the net change since the last release: change the line that already covers the feature instead of adding another, keep Highlights to the 3 most important lines, and follow the rules at the top of the file. Intentional release-note rewrites require matching script contracts.
 - Keep private operational details out of public documentation and Android PR descriptions.
 
 ## Validation and review
