@@ -28,7 +28,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/android-setup
         with:
-          sdk-packages: build-tools;36.0.0 platforms;android-36
+          sdk-packages: build-tools;36.0.0 platforms;android-37.0
       - name: Build optimized unsigned APK and bundle
         run: >-
           ./gradlew --no-daemon -I .github/scripts/release_verification.init.gradle

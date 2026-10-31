@@ -1,5 +1,10 @@
 package cx.aswin.boxlore.feature.player.v2
 
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -44,8 +49,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.media3.cast.Cast
 import androidx.media3.common.util.UnstableApi
+import androidx.mediarouter.app.SystemOutputSwitcherDialogController
 import androidx.mediarouter.media.MediaRouteSelector
 import androidx.mediarouter.media.MediaRouter
 import com.google.android.gms.cast.framework.CastContext
@@ -63,6 +70,15 @@ internal fun BoxLoreCastRouteButton(
     activeTint: Color = MaterialTheme.colorScheme.primary,
 ) {
     var showRoutePicker by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
+    val runCastAction: (CastButtonAction) -> Unit = { action ->
+        showRoutePicker = action == CastButtonAction.SHOW_SHEET ||
+            (action == CastButtonAction.SHOW_SYSTEM_PICKER && !showSystemCastPicker(context))
+    }
+    val localNetworkRequest =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            runCastAction(castActionAfterLocalNetworkRequest(granted))
+        }
     val effectiveTint =
         resolveCastButtonTint(
             enabled = enabled,
@@ -76,7 +92,12 @@ internal fun BoxLoreCastRouteButton(
             .clickable(
                 enabled = enabled,
                 role = Role.Button,
-                onClick = { showRoutePicker = true },
+                onClick = {
+                    when (val action = castButtonAction(Build.VERSION.SDK_INT, hasLocalNetworkAccess(context))) {
+                        CastButtonAction.REQUEST_LOCAL_NETWORK -> localNetworkRequest.launch(ACCESS_LOCAL_NETWORK)
+                        else -> runCastAction(action)
+                    }
+                },
             ),
         contentAlignment = Alignment.Center,
     ) {
@@ -94,6 +115,13 @@ internal fun BoxLoreCastRouteButton(
         )
     }
 }
+
+private fun hasLocalNetworkAccess(context: Context): Boolean =
+    ContextCompat.checkSelfPermission(context, ACCESS_LOCAL_NETWORK) == PackageManager.PERMISSION_GRANTED
+
+/** Android's output picker; false when this device can't show it, so the caller falls back to the sheet. */
+private fun showSystemCastPicker(context: Context): Boolean =
+    runCatching { SystemOutputSwitcherDialogController.showDialog(context) }.getOrDefault(false)
 
 @Composable
 @kotlin.OptIn(ExperimentalMaterial3Api::class)

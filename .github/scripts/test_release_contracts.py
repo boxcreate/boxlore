@@ -377,7 +377,7 @@ Class #4 -
                 workflow = (root / ".github/workflows" / filename).read_text()
                 self.assertNotIn("android-actions/setup-android@", workflow)
                 self.assertEqual(1, workflow.count("uses: ./.github/actions/android-setup"))
-                self.assertIn("sdk-packages: build-tools;36.0.0 platforms;android-36", workflow)
+                self.assertIn("sdk-packages: build-tools;36.0.0 platforms;android-37.0", workflow)
 
 if __name__ == "__main__":
     unittest.main()

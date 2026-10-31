@@ -67,6 +67,7 @@ src/main/res/
 - Dependency holders expose `instance` with an `internal` setter — only `configure*` installs them.
 - `:app`’s `WidgetLibrarySourceAdapter` enriches/sorts subscribed podcasts with history + `AdaptiveCandidateScorer` to match Library → Subscriptions.
 - Lettering: playback episode/podcast titles use RemoteViews `TextView`s; empty-state labels may use `WidgetTextBitmapRenderer`.
+- Both renderers push updates through `pushWidgetUpdate`. From Android 17 (apps targeting API 37), an update whose bitmaps go over the launcher's cap (6 bytes per display pixel, counted across one update's distinct bitmaps) throws `IllegalArgumentException` instead of being logged; the widget then keeps its last update rather than crashing the player service that runs it. Current updates stay well under the cap: artwork is decoded to at most half the widget's short side and text bitmaps to the label's own box.
 - Widget chrome defaults to the in-app Appearance theme (Theme, Background, Colors, including wallpaper colors and a chosen accent) via `WidgetChrome` baking ARGB from `boxlore_theme_fast_cache`. Settings → Appearance → Widgets can switch to **System**, which keeps `RemoteViews.setColor(resource)` Material You (`system_neutral*` / `system_accent*`). `WidgetThemeSync` re-pushes widgets on configuration changes; `:app` also refreshes when those prefs change.
 
 ## Persistence & identity
@@ -90,7 +91,7 @@ Fallback-only snapshots attempt artwork. Successful fallback files are stored un
 
 The artwork deadline regression uses a test-scheduler dispatcher for Coil, so it verifies timed-out primary requests and successful fallback loading without depending on CI startup speed.
 
-`WidgetStartupTest` covers unused-family registration without resolving playback/library ports and independent installed-family detection. Hermetic JVM tests under `src/test` cover provider variants, RemoteViews inflation, library row cap (scrollable ListView), snapshot storage, mapper/update policy for playback widgets, widget chrome (App theme vs System), and PendingIntent generation/cancellation via `WidgetActionIntentsTest`.
+`WidgetUpdatesTest` covers an update over the bitmap cap leaving the widget as it was, and other failures still surfacing. `WidgetStartupTest` covers unused-family registration without resolving playback/library ports and independent installed-family detection. Hermetic JVM tests under `src/test` cover provider variants, RemoteViews inflation, library row cap (scrollable ListView), snapshot storage, mapper/update policy for playback widgets, widget chrome (App theme vs System), and PendingIntent generation/cancellation via `WidgetActionIntentsTest`.
 
 ```bash
 ./gradlew :feature:widgets:testDebugUnitTest

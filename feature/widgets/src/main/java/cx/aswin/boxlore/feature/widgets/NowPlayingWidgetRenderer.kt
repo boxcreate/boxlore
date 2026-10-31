@@ -40,7 +40,7 @@ object NowPlayingWidgetRenderer {
         variant: WidgetVariant = WidgetVariant.NOW_PLAYING,
     ) {
         val remoteViews = buildRemoteViews(context, appWidgetId, snapshot, options, variant)
-        appWidgetManager.updateAppWidget(appWidgetId, remoteViews)
+        appWidgetManager.pushWidgetUpdate(appWidgetId, remoteViews)
     }
 
     internal fun buildRemoteViews(

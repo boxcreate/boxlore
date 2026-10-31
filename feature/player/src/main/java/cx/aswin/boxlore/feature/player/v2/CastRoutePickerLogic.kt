@@ -70,3 +70,23 @@ internal fun resolveCastButtonTint(
     isCasting -> activeTint
     else -> tint
 }
+
+/** Android 17 (API 37): finding speakers on the local network needs this runtime permission. */
+internal const val LOCAL_NETWORK_PERMISSION_SDK = 37
+internal const val ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"
+
+/** What tapping Cast does. */
+internal enum class CastButtonAction { SHOW_SHEET, REQUEST_LOCAL_NETWORK, SHOW_SYSTEM_PICKER }
+
+/**
+ * boxlore's Cast sheet finds speakers itself, which on Android 17 needs local network access;
+ * without it, ask once per tap.
+ */
+internal fun castButtonAction(sdkInt: Int, hasLocalNetworkAccess: Boolean): CastButtonAction = when {
+    sdkInt < LOCAL_NETWORK_PERMISSION_SDK || hasLocalNetworkAccess -> CastButtonAction.SHOW_SHEET
+    else -> CastButtonAction.REQUEST_LOCAL_NETWORK
+}
+
+/** Declined (now or before): Android's own output picker still lists Cast speakers, with no permission. */
+internal fun castActionAfterLocalNetworkRequest(granted: Boolean): CastButtonAction =
+    if (granted) CastButtonAction.SHOW_SHEET else CastButtonAction.SHOW_SYSTEM_PICKER

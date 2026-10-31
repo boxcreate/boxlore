@@ -20,7 +20,7 @@ roborazzi {
 
 android {
     namespace = "cx.aswin.boxlore.feature.settings"
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         minSdk = 31
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

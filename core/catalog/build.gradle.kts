@@ -16,7 +16,7 @@ kover {
 
 android {
     namespace = "cx.aswin.boxlore.core.catalog"
-    compileSdk = 36
+    compileSdk = 37
 
     buildFeatures {
         buildConfig = true
