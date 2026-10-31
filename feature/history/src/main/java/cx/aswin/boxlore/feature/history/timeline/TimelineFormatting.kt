@@ -76,7 +76,7 @@ object TimelineTime {
 
 @Composable
 @ReadOnlyComposable
-internal fun currentLocale(): Locale = ConfigurationCompat.getLocales(LocalConfiguration.current).get(0) ?: Locale.getDefault()
+internal fun currentLocale(): Locale = ConfigurationCompat.getLocales(LocalConfiguration.current)[0] ?: Locale.getDefault()
 
 /** A length of listening: "2 h 05 min", "23 min" or "Under a minute". */
 @Composable

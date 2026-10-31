@@ -195,10 +195,10 @@ class HistoryViewModel(
         storyRequest.value = StoryRequest(month, atShare)
         if (month == YearMonth.from(today.value).minusMonths(1)) {
             viewModelScope.launch {
-                // A failed write only leaves the story New; the story stays open.
                 try {
                     markStorySeen(month.toString())
                 } catch (_: IOException) {
+                    // A failed write only leaves the story New; the story stays open.
                 }
             }
         }
