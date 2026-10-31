@@ -94,7 +94,12 @@ fun echoFaceColor(accent: Int): Int {
     return hslToRgb(hsl[0], min(hsl[1], 0.75f), 0.80f) or (0xFF shl 24)
 }
 
-/** 0..1 membership of Echo's blue-violet accent range (HSV hue around 247°, enough saturation and value). */
+/**
+ * 0..1 membership of Echo's blue-violet accent range (HSV hue around 247°, enough saturation and value),
+ * faded out below [EchoAccentMinChroma]: dull, dark blue-greys (the detective's navy hat, the lens rim)
+ * sit at the range's edge, and partly tinting them toward a far hue (seafoam) speckled and flickered from
+ * frame to frame. The accent parts themselves, light soles included, are far above it.
+ */
 fun echoAccentWeight(r: Int, g: Int, b: Int): Float {
     val hi = max(r, max(g, b))
     val lo = min(r, min(g, b))
@@ -105,7 +110,9 @@ fun echoAccentWeight(r: Int, g: Int, b: Int): Float {
     val hue = hueDegrees(r, g, b, hi, lo)
     val d = abs(hue - EchoAccentHue).let { min(it, 360f - it) }
     if (d > 31f) return 0f
-    return min(1f, (31f - d) / 11.3f) * min(1f, (s - 0.235f) / 0.157f)
+    val chroma = (hi - lo) / 255f
+    val vivid = ((chroma - EchoAccentMinChroma) / EchoAccentChromaRamp).coerceIn(0f, 1f)
+    return min(1f, (31f - d) / 11.3f) * min(1f, (s - 0.235f) / 0.157f) * vivid
 }
 
 private fun hueDegrees(r: Int, g: Int, b: Int, hi: Int, lo: Int): Float {
@@ -154,6 +161,8 @@ private fun hslToRgb(h: Float, s: Float, l: Float): Int {
 }
 
 private const val EchoAccentHue = 247f
+private const val EchoAccentMinChroma = 0.10f
+private const val EchoAccentChromaRamp = 0.08f
 private const val EchoAccentBaseTone = 0.52f
 private const val EchoShadingKeep = 0.9f
 private const val EchoAccentMaxSaturation = 0.38f

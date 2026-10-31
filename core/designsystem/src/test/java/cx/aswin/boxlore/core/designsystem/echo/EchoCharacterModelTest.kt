@@ -144,6 +144,19 @@ class EchoCharacterModelTest {
         assertEquals(0xFFF5F4EF.toInt(), pixels[2])
     }
 
+    @Test fun `a dull navy prop keeps its colour, so a far hue doesn't speckle it from frame to frame`() {
+        // The detective's hat and lens rim: blue-grey at the edge of the accent range.
+        val navy = intArrayOf(0xFF35374D.toInt(), 0xFF2E3046.toInt())
+        val pixels = navy.copyOf()
+        recolorEchoAccents(pixels, 0xFF36B28F.toInt())
+        assertTrue(navy.contentEquals(pixels))
+        // The light soles of the boots are bright, so they still move toward it.
+        val original = 0xFFA49BE0.toInt()
+        val sole = intArrayOf(original)
+        recolorEchoAccents(sole, 0xFF36B28F.toInt())
+        assertTrue((sole[0] shr 8 and 0xFF) > (original shr 8 and 0xFF), "greener sole expected, got ${Integer.toHexString(sole[0])}")
+    }
+
     @Test fun `Echo's own colours keep its indigo and light its face lavender`() {
         val original = EchoAccents.Original.paint(0xFF006A6A.toInt(), dark = true)
         val pixels = intArrayOf(0xFF7468C8.toInt())
