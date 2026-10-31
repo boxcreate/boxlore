@@ -127,7 +127,8 @@ internal class LibraryBackupListening(private val database: BoxLoreDatabase, pri
                     continue
                 }
                 // A summary of just the listening held here, from a backup without some totals, keeps the held ones.
-                val held = heldSessions[Triple(summary.deviceId, summary.localDay, summary.episodeId)].orEmpty()
+                // Sessions after it aren't part of it: they stay beside it.
+                val held = heldSessions[Triple(summary.deviceId, summary.localDay, summary.episodeId)].orEmpty().filter { it.endedAt <= summary.lastListenedAt }
                 rollupDao.upsertRollup(ListeningRollupMerge.keepingHeldTotals(summary, stored, held))
                 sessionDao.deleteSessionsOfDailySummary(summary.deviceId, summary.localDay, summary.episodeId, summary.lastListenedAt)
             }

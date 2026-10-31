@@ -140,19 +140,19 @@ class LibraryBackupListeningRoomTest {
 
     @Test
     fun anOlderBackupsSummaryOfListeningHeldHereInSessionsKeepsTheirReleaseDateTime() = runTest {
-        // Phone C's day 9, held here as a dated session (from an earlier backup).
-        target.listeningSessionDao().upsertSession(
-            ListeningSessionEntity(
-                sessionId = "c-1", episodeId = EPISODE, podcastId = SHOW, startedAt = 9_000L, endedAt = 69_000L, consumedMs = 60_000L, completed = false,
-                localDay = 9L, timeBucket = 1, deviceId = PHONE_C, output = ListeningSessionValues.OUTPUT_CAR, episodePublishedAt = 5_000L,
-            ),
+        // Phone C's day 9, held here as a dated session (from an earlier backup), and a later session of that day.
+        val covered = ListeningSessionEntity(
+            sessionId = "c-1", episodeId = EPISODE, podcastId = SHOW, startedAt = 9_000L, endedAt = 69_000L, consumedMs = 60_000L, completed = false,
+            localDay = 9L, timeBucket = 1, deviceId = PHONE_C, output = ListeningSessionValues.OUTPUT_CAR, episodePublishedAt = 5_000L,
         )
+        target.listeningSessionDao().upsertSessions(listOf(covered, covered.copy(sessionId = "c-2", startedAt = 70_000L, endedAt = 130_000L)))
         // A v9 backup of that phone has the same listening summed, without the release date time.
         val v9 = rollupBackup(day = 9L, device = PHONE_C, consumed = 60_000L).copy(carMs = 60_000L, newReleaseMs = 60_000L)
 
         LibraryBackupListening(target, PHONE_B).restore(ListeningBackup(deviceId = PHONE_C, dailySummaries = listOf(v9)), refusedEpisodeIds = emptySet())
 
-        assertTrue(target.listeningSessionDao().getAllSessions().isEmpty())
+        // The summary sums the covered session only: it keeps that session's dated time, and the later one stays beside it.
+        assertEquals(listOf("c-2"), target.listeningSessionDao().getAllSessions().map { it.sessionId })
         assertEquals(60_000L, target.listeningRollupDao().getRollup(PHONE_C, 9L, EPISODE)!!.totals.releaseKnownMs)
     }
 
