@@ -16,7 +16,11 @@ import java.time.ZoneId
 
 object ListeningSessionRecordLogic {
     const val MIN_CONSUMED_MS = 5_000L
-    const val RETENTION_DAYS = 180L
+    /**
+     * Sessions stay whole for 400 days (a calendar year and some), so a year in review still has each
+     * play's times, output, source and release date; older ones fold into daily summaries.
+     */
+    const val RETENTION_DAYS = 400L
 
     data class BuildSessionInput(
         val sessionId: String,

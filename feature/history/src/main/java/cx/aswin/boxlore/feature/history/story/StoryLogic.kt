@@ -181,19 +181,21 @@ object StoryLogic {
     /** Podcast Index genre names to Echo's genre outfits; anything else wears the hello outfit. */
     fun genreOutfit(genre: String?): EchoOutfit {
         val name = genre?.lowercase().orEmpty()
-        return when {
-            "crime" in name -> EchoOutfit.TRUE_CRIME
-            "tech" in name -> EchoOutfit.TECH
-            "news" in name || "politic" in name -> EchoOutfit.NEWS
-            "history" in name -> EchoOutfit.HISTORY
-            "fiction" in name || "drama" in name || "book" in name -> EchoOutfit.FICTION
-            "comedy" in name -> EchoOutfit.COMEDY
-            "science" in name || "education" in name -> EchoOutfit.SCIENCE
-            "business" in name || "invest" in name || "career" in name -> EchoOutfit.BUSINESS
-            "health" in name || "fitness" in name || "wellness" in name -> EchoOutfit.HEALTH
-            else -> EchoOutfit.HELLO
-        }
+        return GENRE_OUTFITS.firstOrNull { (words, _) -> words.any { it in name } }?.second ?: EchoOutfit.HELLO
     }
+
+    /** Words in a genre's name, first match wins. */
+    private val GENRE_OUTFITS = listOf(
+        listOf("crime") to EchoOutfit.TRUE_CRIME,
+        listOf("tech") to EchoOutfit.TECH,
+        listOf("news", "politic") to EchoOutfit.NEWS,
+        listOf("history") to EchoOutfit.HISTORY,
+        listOf("fiction", "drama", "book") to EchoOutfit.FICTION,
+        listOf("comedy") to EchoOutfit.COMEDY,
+        listOf("science", "education") to EchoOutfit.SCIENCE,
+        listOf("business", "invest", "career") to EchoOutfit.BUSINESS,
+        listOf("health", "fitness", "wellness") to EchoOutfit.HEALTH,
+    )
 
     /** The listening type card's outfit: morning, daytime, or night for evenings, late nights and all day. */
     fun timeOutfit(time: TypeTime?): EchoOutfit = when (time) {

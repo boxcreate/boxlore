@@ -257,9 +257,9 @@
         <item quantity="other">Played on %1$d days this month</item>
     </plurals>
     <!-- E.g. "Listening time starts from Oct 22". -->
-    <string name="history_early_timing_title">Listening time starts from %1$s</string>
-    <string name="history_early_timing_body">That\'s when boxlore started timing your plays. Time, patterns and records fill in as you listen. Your episode history goes back further.</string>
-    <string name="history_early_timing_title_new">Listening time starts with your next play</string>
+    <string name="history_early_timing_title">Limited insights for now</string>
+    <string name="history_early_timing_body">boxlore started saving your listening time on %1$s. Check back after a few days of listening for the full picture.</string>
+    <string name="history_early_timing_body_new">boxlore starts saving your listening time with your next play. Check back after a few days of listening for the full picture.</string>
     <string name="history_early_most_played">Most played shows</string>
     <string name="history_early_by_episodes">by episodes</string>
     <string name="history_early_clock">Your listening clock</string>

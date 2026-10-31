@@ -37,6 +37,10 @@ internal data class StoryEchoBox(val x: Float, val y: Float, val height: Float, 
 @Immutable
 internal data class StoryEchoSquare(val left: Float, val top: Float, val side: Float)
 
+/** How Echo came to this card: hopping from [from] (null: it starts here), its [playKey] (new each time a card opens), and whether the story is held. */
+@Immutable
+internal data class StoryEchoMoment(val from: StoryEchoBox?, val playKey: Any, val paused: Boolean)
+
 /** Echo's outline across the frame: its [left] and [right] edges, in frame dp. */
 @Immutable
 internal data class StoryEchoBounds(val left: Float, val right: Float) {
@@ -121,13 +125,12 @@ internal object StoryEchoStage {
 internal fun StoryEcho(
     spec: EchoCharacterSpec,
     cast: StoryEchoCast,
-    from: StoryEchoBox?,
+    moment: StoryEchoMoment,
     clock: StoryClock,
-    playKey: Any,
-    paused: Boolean,
     prefetch: List<String>,
     modifier: Modifier = Modifier,
 ) {
+    val from = moment.from
     // Read through derivedStateOf: Echo changes once, when the hop ends, not on every frame of the card's clock.
     val hopping by remember(from, clock) { derivedStateOf { from != null && !clock.motionOff && clock.elapsed < StoryMotion.HOP_PHASE_MS } }
     val sequence = if (hopping) StoryEchoStage.HOP else cast.sequence
@@ -153,8 +156,8 @@ internal fun StoryEcho(
         EchoCharacter(
             sequence = sequence,
             modifier = Modifier.fillMaxSize(),
-            playbackKey = playKey to hopping,
-            paused = paused,
+            playbackKey = moment.playKey to hopping,
+            paused = moment.paused,
             idle = cast.idle,
             prefetch = prefetch,
             accents = cast.accents,

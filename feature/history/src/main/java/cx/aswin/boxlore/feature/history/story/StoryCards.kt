@@ -97,7 +97,7 @@ internal fun BoxScope.StoryHelloCard(story: MonthStory, palette: StoryPalette, c
     // The board's order: the outer pair behind, then the inner pair, the top show in front.
     HelloCovers.forEach { spot ->
         val url = story.covers.getOrNull(spot.rank) ?: return@forEach
-        StoryCover(url, spot.x, spot.y, spot.size, spot.corner, spot.rotation, Modifier.zIndex(StoryLayers.BACK), motion = Modifier.storyPop(clock, spot.delay), shadow = spot.shadow)
+        StoryCover(url, spot.cover, Modifier.zIndex(StoryLayers.BACK), motion = Modifier.storyPop(clock, spot.delay))
     }
     StoryBubble(
         text = stringResource(R.string.history_story_hello_bubble, StoryText.monthName(story.month, locale)),
@@ -110,14 +110,14 @@ internal fun BoxScope.StoryHelloCard(story: MonthStory, palette: StoryPalette, c
     Box(Modifier.zIndex(StoryLayers.FRONT)) { StorySpark(110f, 610f, fg, StorySparks.Hello, clock) }
 }
 
-private data class CoverSpot(val rank: Int, val x: Float, val y: Float, val size: Float, val corner: Float, val rotation: Float, val delay: Int, val shadow: Float = 0f)
+private data class CoverSpot(val rank: Int, val cover: StoryCoverSpot, val delay: Int)
 
 private val HelloCovers = listOf(
-    CoverSpot(3, 22f, 356f, 104f, 24f, -14f, StoryMotion.D3),
-    CoverSpot(4, 274f, 356f, 104f, 24f, 14f, StoryMotion.D3),
-    CoverSpot(1, 80f, 340f, 104f, 24f, -7f, StoryMotion.D4),
-    CoverSpot(2, 216f, 340f, 104f, 24f, 7f, StoryMotion.D4),
-    CoverSpot(0, 140f, 330f, 120f, 28f, 0f, StoryMotion.D5, shadow = 10f),
+    CoverSpot(3, StoryCoverSpot(22f, 356f, 104f, 24f, -14f), StoryMotion.D3),
+    CoverSpot(4, StoryCoverSpot(274f, 356f, 104f, 24f, 14f), StoryMotion.D3),
+    CoverSpot(1, StoryCoverSpot(80f, 340f, 104f, 24f, -7f), StoryMotion.D4),
+    CoverSpot(2, StoryCoverSpot(216f, 340f, 104f, 24f, 7f), StoryMotion.D4),
+    CoverSpot(0, StoryCoverSpot(140f, 330f, 120f, 28f, shadow = 10f), StoryMotion.D5),
 )
 
 /** The time card's chart: a bar a day across the frame, the biggest day three bars wide so Echo can stand on it. */
@@ -159,17 +159,24 @@ internal fun BoxScope.StoryTimeCard(story: MonthStory, palette: StoryPalette, cl
         Text(TimelineTime.shortDate(story.month.atDay(1), locale), style = style, color = fg.copy(alpha = 0.8f))
         Text(TimelineTime.shortDate(story.month.atEndOfMonth(), locale), style = style, color = fg.copy(alpha = 0.8f))
     }
-    // The bubble sits beside Echo on the biggest day's bar, on whichever side has room.
     val bounds = spec?.let { StoryEchoStage.bounds(it, echo) }
-    val bubble = stringResource(R.string.history_story_time_bubble, TimelineTime.shortDate(story.biggestDay.first, locale), durationText(story.biggestDay.second))
-    val onLeft = bounds == null || bounds.left > 200f
+    StoryBiggestDayBubble(story, palette, clock, bounds)
+    Box(Modifier.zIndex(StoryLayers.FRONT)) { StorySpark(bounds?.center ?: 318f, 430f, fg, StorySparks.Time, clock) }
+}
+
+/** "Oct 28 · 2 h 48 min" beside Echo on the biggest day's bar, on whichever side has room (the board's: its left). */
+@Composable
+private fun BoxScope.StoryBiggestDayBubble(story: MonthStory, palette: StoryPalette, clock: StoryClock, echo: StoryEchoBounds?) {
+    val bubble = stringResource(R.string.history_story_time_bubble, TimelineTime.shortDate(story.biggestDay.first, currentLocale()), durationText(story.biggestDay.second))
+    val left = echo?.left ?: 244f
+    val right = echo?.right ?: 244f
+    val onLeft = left > 200f
     Box(
-        Modifier.zIndex(StoryLayers.FRONT).at(if (onLeft) 16f else (bounds?.right ?: 0f) + 4f, 470f).width(if (onLeft) ((bounds?.left ?: 244f) - 4f - 16f).dp else (400f - 16f - (bounds?.right ?: 0f) - 4f).dp),
+        Modifier.zIndex(StoryLayers.FRONT).at(if (onLeft) 16f else right + 4f, 470f).width(if (onLeft) (left - 20f).dp else (380f - right).dp),
         contentAlignment = if (onLeft) Alignment.TopEnd else Alignment.TopStart,
     ) {
         StoryBubble(bubble, Color.White, palette.onWhite, if (onLeft) StoryBubbles.TailBottomEnd else StoryBubbles.TailBottomStart, 220f, Modifier.storyPop(clock, StoryMotion.D6))
     }
-    Box(Modifier.zIndex(StoryLayers.FRONT)) { StorySpark(bounds?.center ?: 318f, 430f, fg, StorySparks.Time, clock) }
 }
 
 @Composable
@@ -223,7 +230,7 @@ internal fun BoxScope.StoryTopShowCard(story: MonthStory, palette: StoryPalette,
             StoryResumeButton(episode, top.resumeRemainingMs, palette, Modifier.storyRise(clock, StoryMotion.D3).padding(top = 16.dp), onResume)
         }
     }
-    StoryCover(top.imageUrl, 20f, 400f, 210f, 32f, 0f, Modifier.zIndex(StoryLayers.BACK), motion = Modifier.storyDrop(clock, StoryMotion.D3), shadow = 12f)
+    StoryCover(top.imageUrl, StoryCoverSpot(20f, 400f, 210f, 32f, shadow = 12f), Modifier.zIndex(StoryLayers.BACK), motion = Modifier.storyDrop(clock, StoryMotion.D3))
     StoryBubble(
         text = stringResource(StoryText.genreLine(story.showOutfit)),
         background = fg,

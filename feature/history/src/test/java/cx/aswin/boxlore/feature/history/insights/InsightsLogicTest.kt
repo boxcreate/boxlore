@@ -142,8 +142,21 @@ class InsightsLogicTest {
         assertEquals(3, content.early.finished)
         assertEquals(LocalDate.of(2026, 10, 22), content.early.timingSince)
         assertEquals(3, content.early.timedDaysNeeded)
+        // Episodes from Oct 21 but listening time only from Oct 22: Insights are limited for now.
+        assertTrue(content.early.historyBeforeTiming)
         assertEquals("brief", content.early.showsByEpisodes.first().podcastId)
         assertEquals(5, content.early.playedDaysThisMonth)
+    }
+
+    @Test
+    fun insightsAreLimitedOnlyWhenTheHistoryGoesBackBeforeTheListeningTime() {
+        val since22 = listOf(day(22, "dd", 5))
+
+        assertFalse(build(since22, listOf(item("a", "dd", playedDay = 22), item("b", "dd", playedDay = 25))).early.historyBeforeTiming)
+        assertTrue(build(emptyList(), listOf(item("a", "dd", playedDay = 25))).early.historyBeforeTiming)
+        assertFalse(build(emptyList()).early.historyBeforeTiming)
+        // A first play recorded before timing began counts, even when the last play came after.
+        assertTrue(build(since22, listOf(item("a", "dd", firstPlayed = 20, playedDay = 25))).early.historyBeforeTiming)
     }
 
     @Test

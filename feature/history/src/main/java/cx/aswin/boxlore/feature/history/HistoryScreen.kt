@@ -47,10 +47,11 @@ import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryTab
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryTabSwitcher
-import cx.aswin.boxlore.core.designsystem.components.DiscoveryTabSwitcherStyle
+import cx.aswin.boxlore.core.designsystem.components.discoveryTabSwitcherHeight
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.share.ShareManager
@@ -87,6 +88,7 @@ fun HistoryScreen(
     onExploreClick: () -> Unit,
     onPlayEpisode: (ListeningHistoryItem) -> Unit = {},
     onOpenShow: (podcastId: String) -> Unit = {},
+    isMiniPlayerVisible: Boolean = true,
 ) {
     val tab by viewModel.selectedTab.collectAsStateWithLifecycle()
     val timeline by viewModel.timelineState.collectAsStateWithLifecycle()
@@ -128,23 +130,30 @@ fun HistoryScreen(
             )
         },
     ) { padding ->
-        val bottom = appBottomChromeContentPadding(isMiniPlayerVisible = true) + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-        Column(
-            modifier = Modifier.fillMaxSize().padding(top = padding.calculateTopPadding()).boxloreCardWidth(BoxloreCardFamily.Reading),
-        ) {
-            HistoryTabs(tab, viewModel::selectTab)
-            when (tab) {
-                HistoryTab.TIMELINE ->
-                    HistoryTimelineContent(
-                        state = timeline,
-                        viewModel = viewModel,
-                        listState = timelineListState,
-                        bottomPadding = bottom,
-                        navigation = HistoryNavigation(onEpisodeClick, onExploreClick, onPlayEpisode, onOpenShow),
-                        onOpenCalendar = { showCalendar = true },
-                    )
-                HistoryTab.INSIGHTS -> HistoryInsightsContent(insights, viewModel, bottom)
+        // As Explore's: the switcher floats 16dp above the navigation bar and mini player, and the lists scroll fully past it.
+        val chrome = appBottomChromeContentPadding(isMiniPlayerVisible, WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+        val switcherBottom = chrome + 16.dp
+        val bottom = switcherBottom + discoveryTabSwitcherHeight()
+        Box(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding())) {
+            Column(modifier = Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Reading)) {
+                when (tab) {
+                    HistoryTab.TIMELINE ->
+                        HistoryTimelineContent(
+                            state = timeline,
+                            viewModel = viewModel,
+                            listState = timelineListState,
+                            bottomPadding = bottom,
+                            navigation = HistoryNavigation(onEpisodeClick, onExploreClick, onPlayEpisode, onOpenShow),
+                            onOpenCalendar = { showCalendar = true },
+                        )
+                    HistoryTab.INSIGHTS -> HistoryInsightsContent(insights, viewModel, bottom)
+                }
             }
+            HistoryTabs(
+                tab,
+                Modifier.align(Alignment.BottomCenter).adaptivePlayerOverlayOffset(isMiniPlayerVisible).padding(bottom = switcherBottom),
+                viewModel::selectTab,
+            )
         }
     }
 
@@ -252,9 +261,9 @@ private fun HistoryTopBar(
     )
 }
 
-/** Insights | Timeline: the Subscriptions switcher at 56dp with a surfaceContainer track and 4dp inset. */
+/** Insights | Timeline: the floating switcher Explore uses, centred at the foot of the page. */
 @Composable
-private fun HistoryTabs(tab: HistoryTab, onSelect: (HistoryTab) -> Unit) {
+private fun HistoryTabs(tab: HistoryTab, modifier: Modifier, onSelect: (HistoryTab) -> Unit) {
     DiscoveryTabSwitcher(
         // In HistoryTab order: Insights first.
         tabs =
@@ -266,9 +275,7 @@ private fun HistoryTabs(tab: HistoryTab, onSelect: (HistoryTab) -> Unit) {
         },
         selectedIndex = tab.ordinal,
         onTabSelected = { onSelect(HistoryTab.entries[it]) },
-        floating = false,
-        style = DiscoveryTabSwitcherStyle(containerColor = MaterialTheme.colorScheme.surfaceContainer, minHeight = 56.dp, inset = 4.dp),
-        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
+        modifier = modifier,
     )
 }
 

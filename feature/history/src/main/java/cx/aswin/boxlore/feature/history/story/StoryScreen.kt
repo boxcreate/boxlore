@@ -143,10 +143,10 @@ fun StoryPlayer(story: MonthStory, startCard: StoryCard, onClose: () -> Unit, on
                             drawLayer(frame)
                         },
                 ) {
-                    StoryCardContent(card, story, palette, clock, spec, onPlay, share) { go(0) }
+                    StoryCardContent(card, story, palette, clock, spec, StoryActions(onPlay, share) { go(0) })
                     if (spec != null) {
                         val next = cards.getOrNull(index + 1)?.echo(story, palette)?.sequence
-                        StoryEcho(spec, card.echo(story, palette), hopFrom, clock, plays, held, listOfNotNull(StoryEchoStage.HOP, next), Modifier.zIndex(StoryLayers.ECHO))
+                        StoryEcho(spec, card.echo(story, palette), StoryEchoMoment(hopFrom, plays, held), clock, listOfNotNull(StoryEchoStage.HOP, next), Modifier.zIndex(StoryLayers.ECHO))
                     }
                     StoryTapAreas(onPrevious = { go(index - 1) }, onNext = { go(index + 1) }, onHold = { held = it })
                     StoryChrome(cards.size, index, fg, clock, onClose)
@@ -156,6 +156,9 @@ fun StoryPlayer(story: MonthStory, startCard: StoryCard, onClose: () -> Unit, on
     }
 }
 
+/** What a card's buttons do: Resume plays, Share sends the share card, Watch again starts over. */
+private class StoryActions(val onPlay: (ListeningHistoryItem) -> Unit, val onShare: () -> Unit, val onWatchAgain: () -> Unit)
+
 /** A card's own content, by kind. */
 @Composable
 private fun BoxScope.StoryCardContent(
@@ -164,17 +167,15 @@ private fun BoxScope.StoryCardContent(
     palette: StoryPalette,
     clock: StoryClock,
     spec: EchoCharacterSpec?,
-    onPlay: (ListeningHistoryItem) -> Unit,
-    onShare: () -> Unit,
-    onWatchAgain: () -> Unit,
+    actions: StoryActions,
 ) {
     when (card) {
         StoryCard.HELLO -> StoryHelloCard(story, palette, clock, java.time.LocalDate.now().year)
         StoryCard.TIME -> StoryTimeCard(story, palette, clock, spec, card.echo(story, palette))
-        StoryCard.TOP_SHOW -> StoryTopShowCard(story, palette, clock, onPlay)
+        StoryCard.TOP_SHOW -> StoryTopShowCard(story, palette, clock, actions.onPlay)
         StoryCard.TYPE -> StoryTypeCard(story, palette, clock)
         StoryCard.RECORDS -> StoryRecordsCard(story, palette, clock)
-        StoryCard.SHARE -> StoryShareCard(story, palette, clock, onShare, onWatchAgain)
+        StoryCard.SHARE -> StoryShareCard(story, palette, clock, actions.onShare, actions.onWatchAgain)
     }
 }
 

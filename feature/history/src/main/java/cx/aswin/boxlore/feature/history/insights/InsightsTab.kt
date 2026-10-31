@@ -95,7 +95,7 @@ private fun LazyListScope.fullInsights(content: InsightsContent, period: Listeni
 
 private fun LazyListScope.earlyInsights(early: EarlyInsights) {
     item(key = "early_hero") { EarlyHeroCard(early) }
-    item(key = "early_timing") { TimingNoticeCard(early.timingSince) }
+    if (early.historyBeforeTiming) item(key = "early_timing") { TimingNoticeCard(early.timingSince) }
     if (early.showsByEpisodes.isNotEmpty()) item(key = "early_shows") { ShowsByEpisodesCard(early.showsByEpisodes) }
     item(key = "early_clock") { ListeningClockProgressCard(early) }
 }
@@ -135,29 +135,31 @@ private fun EarlyHeroCard(early: EarlyInsights) {
     }
 }
 
-/** "Listening time starts from Oct 22" (A6): when timing began, and that history goes back further. */
+/**
+ * "Limited insights for now" (A6), shown only when the episode history goes back before the
+ * listening time does: boxlore started saving listening time on that day, so check back after a
+ * few days of listening. The listening clock card below counts the days.
+ */
 @Composable
 private fun TimingNoticeCard(since: LocalDate?) {
     val colors = MaterialTheme.colorScheme
+    // The date never breaks across lines.
+    val date = since?.let { TimelineTime.shortDate(it, currentLocale()).replace(' ', '\u00A0') }
     Row(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(colors.surfaceContainerHigh).padding(20.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
-        verticalAlignment = Alignment.Top,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(40.dp).clip(CircleShape).background(colors.primaryContainer), contentAlignment = Alignment.Center) {
             Icon(Icons.Rounded.Schedule, contentDescription = null, tint = colors.onPrimaryContainer, modifier = Modifier.size(22.dp))
         }
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(stringResource(R.string.history_early_timing_title), style = TimelineType.header, color = colors.onSurface)
             Text(
-                if (since != null) {
-                    stringResource(R.string.history_early_timing_title, TimelineTime.shortDate(since, currentLocale()))
-                } else {
-                    stringResource(R.string.history_early_timing_title_new)
-                },
-                style = TimelineType.header,
-                color = colors.onSurface,
+                if (date != null) stringResource(R.string.history_early_timing_body, date) else stringResource(R.string.history_early_timing_body_new),
+                style = InsightsType.body14,
+                color = colors.onSurfaceVariant,
             )
-            Text(stringResource(R.string.history_early_timing_body), style = InsightsType.body14, color = colors.onSurfaceVariant)
         }
     }
 }

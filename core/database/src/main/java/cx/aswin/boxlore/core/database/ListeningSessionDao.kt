@@ -20,6 +20,28 @@ interface ListeningSessionDao {
     @Query("SELECT * FROM listening_sessions ORDER BY endedAt DESC")
     suspend fun getAllSessions(): List<ListeningSessionEntity>
 
+    /**
+     * Sessions added up in the database: one row per day, episode and show, with the time in each
+     * part of the day and the longest single session. Screens that only need days read this instead
+     * of every session (up to 400 days of them).
+     */
+    @Query(
+        """
+        SELECT localDay, episodeId, podcastId,
+            SUM(consumedMs) AS consumedMs,
+            COUNT(*) AS sessionCount,
+            MAX(endedAt) AS lastListenedAt,
+            SUM(CASE WHEN timeBucket = 0 THEN consumedMs ELSE 0 END) AS morningMs,
+            SUM(CASE WHEN timeBucket = 1 THEN consumedMs ELSE 0 END) AS afternoonMs,
+            SUM(CASE WHEN timeBucket = 2 THEN consumedMs ELSE 0 END) AS eveningMs,
+            SUM(CASE WHEN timeBucket = 3 THEN consumedMs ELSE 0 END) AS nightMs,
+            MAX(consumedMs) AS longestSessionMs
+        FROM listening_sessions
+        GROUP BY localDay, episodeId, podcastId
+        """,
+    )
+    fun observeSessionDays(): Flow<List<ListeningSessionDay>>
+
     @Query(
         """
         SELECT * FROM listening_sessions
@@ -79,7 +101,19 @@ interface ListeningSessionDao {
     /** Gives sessions recorded before Room v40 (no phone on them) to [deviceId]. */
     @Query("UPDATE listening_sessions SET deviceId = :deviceId WHERE deviceId IS NULL OR deviceId = ''")
     suspend fun claimLegacySessions(deviceId: String)
-
-    @Query("SELECT MIN(endedAt) FROM listening_sessions")
-    suspend fun getEarliestSessionEndedAt(): Long?
 }
+
+/** One day's sessions of an episode under one show, added up by [ListeningSessionDao.observeSessionDays]. */
+data class ListeningSessionDay(
+    val localDay: Long,
+    val episodeId: String,
+    val podcastId: String,
+    val consumedMs: Long,
+    val sessionCount: Int,
+    val lastListenedAt: Long,
+    val morningMs: Long,
+    val afternoonMs: Long,
+    val eveningMs: Long,
+    val nightMs: Long,
+    val longestSessionMs: Long,
+)

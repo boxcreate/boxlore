@@ -81,6 +81,8 @@ data class EarlyInsights(
     val showsByEpisodes: List<ShowByEpisodes>,
     val timedDays: Int,
     val timedDaysNeeded: Int,
+    /** Episodes were played before boxlore had listening time for them (a long history, little timing): Insights are limited for now. */
+    val historyBeforeTiming: Boolean,
 )
 
 /** Everything the Insights tab shows for a period ([InsightsLogic.build]). */

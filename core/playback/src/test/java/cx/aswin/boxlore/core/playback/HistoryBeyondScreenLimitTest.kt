@@ -105,6 +105,27 @@ class HistoryBeyondScreenLimitTest {
         assertEquals(4, days.first().sessionCount)
     }
 
+    @Test
+    fun listeningByDayIsAddedUpByTheDatabaseWithEachPartOfTheDayAndTheLongestSitting() = runTest(testDispatcher) {
+        database.listeningSessionDao().upsertSessions(
+            listOf(
+                session("morning", day = 20L, minutes = 30L, device = "me", bucket = 0),
+                session("evening", day = 20L, minutes = 45L, device = "me", bucket = 2),
+                session("night", day = 20L, minutes = 5L, device = "phone-b", bucket = 3),
+            ),
+        )
+
+        val day = historyStore().observeListeningByDay().first().single()
+
+        assertEquals(80L * 60_000L, day.consumedMs)
+        assertEquals(3, day.sessionCount)
+        assertEquals(30L * 60_000L, day.morningMs)
+        assertEquals(45L * 60_000L, day.eveningMs)
+        assertEquals(5L * 60_000L, day.nightMs)
+        assertEquals(45L * 60_000L, day.longestSessionMs)
+        assertEquals(20L * 86_400_000L + 45L * 60_000L, day.lastListenedAt)
+    }
+
     private fun historyStore(): PlaybackHistoryStore {
         val context = ApplicationProvider.getApplicationContext<Context>()
         return PlaybackHistoryStore(
@@ -121,7 +142,7 @@ class HistoryBeyondScreenLimitTest {
         )
     }
 
-    private fun session(id: String, day: Long, minutes: Long, device: String,) = ListeningSessionEntity(
+    private fun session(id: String, day: Long, minutes: Long, device: String, bucket: Int = 0,) = ListeningSessionEntity(
         sessionId = id,
         episodeId = "ep-1",
         podcastId = SHOW,
@@ -130,7 +151,7 @@ class HistoryBeyondScreenLimitTest {
         consumedMs = minutes * 60_000L,
         completed = false,
         localDay = day,
-        timeBucket = 0,
+        timeBucket = bucket,
         deviceId = device,
     )
 

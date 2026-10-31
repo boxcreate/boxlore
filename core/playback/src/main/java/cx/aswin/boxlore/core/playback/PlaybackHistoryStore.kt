@@ -125,7 +125,8 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
      * Index show switched to its RSS feed counts as the RSS show, as in [observeInsights].
      */
     override fun observeListeningByDay(): Flow<List<ListeningDayEpisode>> = combine(
-        data.listeningSessionDao.observeAllSessions(),
+        // Summed by the database: a day per episode, not every one of up to 400 days of sessions.
+        data.listeningSessionDao.observeSessionDays(),
         data.listeningRollupDao.observeAllRollups(),
         listenerStore.showReplacementsFlow(),
     ) { sessions, rollups, replacedBy ->
@@ -135,7 +136,7 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
             val held = days[key]
             days[key] = held?.let { ListeningDayLogic.sum(it, part) } ?: part
         }
-        for (row in sessions) add(ListeningDayLogic.ofSession(row, replacedBy[row.podcastId] ?: row.podcastId))
+        for (row in sessions) add(ListeningDayLogic.ofSessionDay(row, replacedBy[row.podcastId] ?: row.podcastId))
         for (row in rollups) add(ListeningDayLogic.ofRollup(row, replacedBy[row.podcastId] ?: row.podcastId))
         days.values.sortedWith(compareByDescending<ListeningDayEpisode> { it.localDay }.thenBy { it.episodeId })
     }.throttleLatest(HISTORY_SETTLE_MS)

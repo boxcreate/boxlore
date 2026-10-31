@@ -101,8 +101,14 @@ internal class StoryBlobShape(private val horizontal: List<Float>, private val v
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
         val w = size.width
         val h = size.height
-        val (tlX, trX, brX, blX) = horizontal.map { it * w }
-        val (tlY, trY, brY, blY) = vertical.map { it * h }
+        val tlX = horizontal[0] * w
+        val trX = horizontal[1] * w
+        val brX = horizontal[2] * w
+        val blX = horizontal[3] * w
+        val tlY = vertical[0] * h
+        val trY = vertical[1] * h
+        val brY = vertical[2] * h
+        val blY = vertical[3] * h
         val path = Path().apply {
             moveTo(tlX, 0f)
             lineTo(w - trX, 0f)
@@ -127,22 +133,16 @@ internal class StoryBlobShape(private val horizontal: List<Float>, private val v
     }
 }
 
-/**
- * A show's artwork as the boards place it: [size] square with [corner] corners at [x], [y], turned
- * [rotation] degrees, with a flat shadow [shadow] below when set.
- */
+/** Where the boards put a show's artwork: [size] square with [corner] corners at [x], [y], turned [rotation] degrees, with a flat [shadow] below when set. */
+internal data class StoryCoverSpot(val x: Float, val y: Float, val size: Float, val corner: Float, val rotation: Float = 0f, val shadow: Float = 0f)
+
+/** A show's artwork at [spot]; [motion] is its entrance. */
 @Composable
-internal fun StoryCover(
-    url: String?,
-    x: Float,
-    y: Float,
-    size: Float,
-    corner: Float,
-    rotation: Float,
-    modifier: Modifier = Modifier,
-    motion: Modifier = Modifier,
-    shadow: Float = 0f,
-) {
+internal fun StoryCover(url: String?, spot: StoryCoverSpot, modifier: Modifier = Modifier, motion: Modifier = Modifier) {
+    val (x, y, size) = spot
+    val corner = spot.corner
+    val rotation = spot.rotation
+    val shadow = spot.shadow
     val shape = RoundedCornerShape(corner.dp)
     Box(
         modifier

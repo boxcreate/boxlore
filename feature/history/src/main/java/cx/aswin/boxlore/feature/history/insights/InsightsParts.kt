@@ -122,14 +122,17 @@ internal object InsightsParts {
                     isBrief = rows.all { HistoryTimelineLogic.isBrief(it) },
                 )
             }.sortedWith(compareByDescending<ShowByEpisodes> { it.episodes }.thenByDescending { it.finished })
+        val timingSince = timedDays.minOrNull()
+        val firstPlay = input.history.minOfOrNull { InsightsLogic.date(it.firstPlayedAt?.takeIf { at -> at > 0L } ?: it.lastPlayedAt, input.zoneId) }
         return EarlyInsights(
             finished = input.history.count { InsightsLogic.finished(it) },
             inProgress = input.history.count { ListeningCompletionLogic.isInProgress(it.isCompleted, it.progressMs, it.durationMs) },
             playedDaysThisMonth = input.history.map { InsightsLogic.date(it.lastPlayedAt, input.zoneId) }.filter { YearMonth.from(it) == month }.distinct().size,
-            timingSince = timedDays.minOrNull(),
+            timingSince = timingSince,
             showsByEpisodes = shows.take(SHOWS_BY_EPISODES),
             timedDays = timedDays.size,
             timedDaysNeeded = (InsightsLogic.TIMED_DAYS_FOR_INSIGHTS - timedDays.size).coerceAtLeast(0),
+            historyBeforeTiming = firstPlay != null && (timingSince == null || firstPlay < timingSince),
         )
     }
 }

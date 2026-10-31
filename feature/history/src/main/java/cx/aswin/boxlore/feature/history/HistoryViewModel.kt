@@ -125,11 +125,9 @@ class HistoryViewModel(
 
     private val selection = combine(filter, grouping, query, today) { f, g, q, t -> Selection(f, g, q, t) }
 
-    /** Each tab works only while it is open; the other keeps its last state until it is opened again. */
-    private fun <T> whileOpen(open: HistoryTab, work: () -> Flow<T>): Flow<T> = tab.map { it == open }.distinctUntilChanged().flatMapLatest { active -> if (active) work() else emptyFlow() }
 
     val timelineState: StateFlow<TimelineUiState> =
-        whileOpen(HistoryTab.TIMELINE) {
+        tab.whileOpen(HistoryTab.TIMELINE) {
             combine(listeningHistoryPort.observeFullHistoryTimeline(), listeningHistoryPort.observeListeningByDay(), selection) { history, listening, chosen ->
                 val ready =
                     TimelineUiState.Ready(
@@ -145,7 +143,7 @@ class HistoryViewModel(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), TimelineUiState.Loading)
 
     val insightsState: StateFlow<InsightsUiState> =
-        whileOpen(HistoryTab.INSIGHTS) {
+        tab.whileOpen(HistoryTab.INSIGHTS) {
             combine(
                 listeningHistoryPort.observeFullHistoryTimeline(),
                 listeningHistoryPort.observeListeningByDay(),
@@ -237,11 +235,6 @@ class HistoryViewModel(
         scrollChannel.trySend(date)
     }
 
-    /** Called when the screen starts, so a screen left open past midnight reads the new day. */
-    fun refreshToday() {
-        today.value = now()
-    }
-
     fun removeHistoryItem(episodeId: String) {
         viewModelScope.launch {
             val removal = listeningHistoryPort.removeHistoryItem(episodeId) ?: return@launch
@@ -268,8 +261,9 @@ class HistoryViewModel(
     var episodesClickedCount = 0
     var itemsDeletedCount = 0
 
+    /** Called when the screen starts: a screen left open past midnight reads the new day. */
     fun onScreenResume() {
-        refreshToday()
+        today.value = now()
         if (sessionStartTime == 0L) {
             sessionStartTime = System.currentTimeMillis()
             hasTrackedExit = false
@@ -292,3 +286,8 @@ class HistoryViewModel(
         const val STOP_TIMEOUT_MS = 5_000L
     }
 }
+
+/** Each tab works only while it is open; the other keeps its last state until it is opened again. */
+@OptIn(ExperimentalCoroutinesApi::class)
+private fun <T> Flow<HistoryTab>.whileOpen(open: HistoryTab, work: () -> Flow<T>): Flow<T> =
+    map { it == open }.distinctUntilChanged().flatMapLatest { active -> if (active) work() else emptyFlow() }

@@ -136,6 +136,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                     )
                 historyScope.launch { playbackRepository.playEpisode(episode, podcast) }
             },
+            isMiniPlayerVisible = currentEpisode != null,
             onOpenShow = { podcastId ->
                 w.navigate("podcast/${android.net.Uri.encode(podcastId)}?entryPoint=library_history")
             },
