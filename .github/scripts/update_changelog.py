@@ -1262,7 +1262,10 @@ def main() -> None:
         if "[skip changelog]" in title or str(pull.get("head", {}).get("ref", "")).startswith("release/v"):
             print("Release/tooling PR opts out of changelog copy.")
             return
-        validate_release_copy(title, str(pull.get("body") or ""), _labels_from_env_or_payload(pull))
+        # The PR's labels as the workflow read them just now (`PR_LABELS_JSON`), else as the event saw them:
+        # labels applied earlier in the same job (from the PR body's checkboxes) aren't in the event.
+        labels = _labels_from_env_or_payload(None) if os.environ.get("PR_LABELS_JSON", "").strip() else _labels_from_env_or_payload(pull)
+        validate_release_copy(title, str(pull.get("body") or ""), labels)
         print("Release copy is ready: authored wording will be preserved.")
         return
     changelog_changed = False
