@@ -12,10 +12,7 @@ class BrandedCopyrightPopupTest {
         anchorBottom = anchorTop + 30,
         windowHeight = windowHeight,
         popupHeight = card + 30,
-        gap = 6,
-        caretRoom = 10,
-        bottomRoom = 20,
-        margin = 8,
+        spacing = CopyrightPopupSpacing(gap = 6, caretRoom = 10, bottomRoom = 20, margin = 8),
     )
 
     @Test

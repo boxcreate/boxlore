@@ -172,10 +172,12 @@ private class CopyrightPopupPosition(
                 anchorBottom = anchorBounds.bottom,
                 windowHeight = windowSize.height,
                 popupHeight = popupContentSize.height,
-                gap = style.gap.roundToPx(),
-                caretRoom = PopupCaretRoom.roundToPx(),
-                bottomRoom = PopupBottomRoom.roundToPx(),
-                margin = PopupMargin.roundToPx(),
+                spacing = CopyrightPopupSpacing(
+                    gap = style.gap.roundToPx(),
+                    caretRoom = PopupCaretRoom.roundToPx(),
+                    bottomRoom = PopupBottomRoom.roundToPx(),
+                    margin = PopupMargin.roundToPx(),
+                ),
             )
             onPlaced(placement.above)
             IntOffset(x = cardLeft - PopupShadowRoom.roundToPx(), y = placement.top)
@@ -186,22 +188,27 @@ private class CopyrightPopupPosition(
 internal data class CopyrightPopupPlacement(val top: Int, val above: Boolean)
 
 /**
+ * The popup's spacing in pixels: [gap] between the © and the card, [caretRoom] above the card and
+ * [bottomRoom] below it inside the popup, and the [margin] the card keeps from the window's edges.
+ */
+internal data class CopyrightPopupSpacing(val gap: Int, val caretRoom: Int, val bottomRoom: Int, val margin: Int)
+
+/**
  * Under the © when the card fits there; otherwise above it when it fits there; otherwise on the
  * side with more room, kept inside the window, where the card scrolls. All in pixels; the popup's
- * height includes [caretRoom] above the card and [bottomRoom] below it.
+ * height includes the [spacing]'s caret room above the card and bottom room below it.
  */
-@Suppress("LongParameterList")
 internal fun copyrightPopupTop(
     anchorTop: Int,
     anchorBottom: Int,
     windowHeight: Int,
     popupHeight: Int,
-    gap: Int,
-    caretRoom: Int,
-    bottomRoom: Int,
-    margin: Int,
+    spacing: CopyrightPopupSpacing,
 ): CopyrightPopupPlacement {
-    val card = popupHeight - caretRoom - bottomRoom
+    val gap = spacing.gap
+    val caretRoom = spacing.caretRoom
+    val margin = spacing.margin
+    val card = popupHeight - caretRoom - spacing.bottomRoom
     val roomBelow = windowHeight - margin - (anchorBottom + gap)
     val roomAbove = anchorTop - gap - margin
     val above = card > roomBelow && (card <= roomAbove || roomAbove > roomBelow)

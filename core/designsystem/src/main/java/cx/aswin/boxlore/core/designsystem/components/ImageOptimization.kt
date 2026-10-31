@@ -80,10 +80,7 @@ private fun optimizeImgixCdn(httpsUrl: String, scaledWidth: Int): String? {
  * Their originals can be 3000px and over 10 MB, too slow for the resizing proxy to fetch, so the
  * server is asked for the width itself (`.../full/400,/0/default.jpg`).
  */
-private val IiifSizeRegex = Regex(
-    "/full/(?:max|full|\\d*,\\d*|!\\d+,\\d+|pct:[\\d.]+)/(\\d+)/(default|color|gray|bitonal)\\.(jpg|jpeg|png|webp)",
-    RegexOption.IGNORE_CASE,
-)
+private val IiifSizeRegex = Regex("/full/[^/]+/(\\d+)/(default|color|gray|bitonal)\\.(jpg|png|webp)", RegexOption.IGNORE_CASE)
 
 private fun optimizeIiifImage(httpsUrl: String, scaledWidth: Int): String? = IiifSizeRegex.find(httpsUrl)?.let { match ->
     val (rotation, quality, format) = match.destructured
