@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -52,7 +53,8 @@ internal fun rememberSubscriptionButtonPhase(isSubscribed: Boolean, confirmation
         // Record the new state before suspending, so a reversal cannot replay a stale confirmation.
         previous = isSubscribed
         if (phase == SubscriptionButtonPhase.CONFIRMATION) {
-            delay(confirmationMillis)
+            // At the system's animation speed, as the confirmation's own animations run.
+            delay((confirmationMillis * (coroutineContext[MotionDurationScale]?.scaleFactor ?: 1f)).toLong())
             phase = SubscriptionButtonPhase.SUBSCRIBED
         }
     }

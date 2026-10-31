@@ -43,7 +43,7 @@ internal fun EpisodeInfoMoreFromPodcastCard(
         showName = state.podcastTitle,
         episodes = state.relatedEpisodes,
         loading = state.relatedEpisodesLoading,
-        fallbackImageUrl = state.episode.podcastImageUrl,
+        fallbackImageUrl = moreFromShowPicture(state.episode, state.relatedEpisodes),
         onEpisodeClick = {
             onRelatedEpisodeClicked()
             onEpisodeClick(it)
@@ -54,3 +54,7 @@ internal fun EpisodeInfoMoreFromPodcastCard(
         },
     )
 }
+
+/** The show's cover for the "More from" row: the page episode's, else one from the show's other episodes. */
+internal fun moreFromShowPicture(episode: Episode, related: List<Episode>): String? =
+    episode.podcastImageUrl?.takeIf(String::isNotBlank) ?: related.firstNotNullOfOrNull { it.podcastImageUrl?.takeIf(String::isNotBlank) }

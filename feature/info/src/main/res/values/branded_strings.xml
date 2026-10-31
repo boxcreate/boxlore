@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Branded show pages: a boxlore pick shown in the show's own style. -->
-    <string name="branded_pick_tag">boxlore pick</string>
+    <!-- The top-bar tag, after boxlore's mark; it reads on into the show's name below it. -->
+    <string name="branded_pick_tag">Made for:</string>
+    <string name="branded_tag_brand" translatable="false">boxlore</string>
     <string name="branded_latest_episode">Latest episode</string>
     <string name="branded_copyright_button">Copyright information</string>
     <string name="branded_copyright_title">Artwork and logos</string>
-    <string name="branded_copyright_note">A boxlore pick, shown in the show\'s own style.</string>
+    <string name="branded_copyright_note">Made by boxlore, in the show\'s own style.</string>
     <string name="vergecast_wordmark_description">The Vergecast</string>
     <string name="vergecast_publisher_description">The Verge</string>
     <string name="vergecast_copyright">© Vox Media, LLC. The Vergecast and The Verge are trademarks of Vox Media.</string>
@@ -21,4 +23,20 @@
     <string name="waveform_publisher">MKBHD · Vox Media</string>
     <string name="waveform_latest">Latest</string>
     <string name="waveform_copyright">© MKBHD. Waveform is part of the Vox Media Podcast Network.</string>
+    <string name="crimejunkie_wordmark_description">Crime Junkie</string>
+    <string name="crimejunkie_aired">Aired %1$s</string>
+    <string name="crimejunkie_copyright">© audiochuck, LLC. Crime Junkie is a registered trademark of audiochuck.</string>
+    <string name="jre_badge_description">The Joe Rogan Experience</string>
+    <string name="jre_copyright">© Joe Rogan. All rights reserved.</string>
+    <!-- Rotten Mango -->
+    <string name="rottenmango_copyright">From Rotten Mango\'s official show art. © Stephanie Soo. All rights reserved.</string>
+    <string name="rottenmango_number">No. %1$d</string>
+    <string name="rottenmango_number_description">Episode %1$d</string>
+    <string name="rottenmango_bonus">Bonus</string>
+    <!-- The show's catchphrase, played on the Subscribe button. -->
+    <string name="rottenmango_bada_bing" translatable="false">BADA BING</string>
+    <string name="rottenmango_bada_boom" translatable="false">BADA BOOM</string>
+    <!-- The Daily -->
+    <string name="daily_masthead_description">The New York Times</string>
+    <string name="daily_copyright">© The New York Times Company. The Daily and The New York Times are trademarks of The New York Times Company.</string>
 </resources>

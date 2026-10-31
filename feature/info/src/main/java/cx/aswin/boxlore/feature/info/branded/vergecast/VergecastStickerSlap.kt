@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,8 +21,6 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
@@ -32,8 +29,8 @@ import cx.aswin.boxlore.feature.info.branded.BrandedButtonNudge
 import cx.aswin.boxlore.feature.info.branded.BrandedSubscribeLabels
 import cx.aswin.boxlore.feature.info.branded.BrandedSubscribeMoment
 import cx.aswin.boxlore.feature.info.branded.BrandedToolbarStyle
+import cx.aswin.boxlore.feature.info.branded.MomentHaptic
 import cx.aswin.boxlore.feature.info.components.SubscriptionLabel
-import kotlinx.coroutines.delay
 
 /**
  * The sticker slap: The Vergecast's wordmark sticker flies in and slaps onto Subscribe, impact
@@ -54,11 +51,7 @@ internal object VergecastStickerSlap : BrandedSubscribeMoment {
 
     @Composable
     override fun Overlay(elapsedMillis: () -> Float, labels: BrandedSubscribeLabels, style: BrandedToolbarStyle, shape: Shape, modifier: Modifier) {
-        val haptics = LocalHapticFeedback.current
-        LaunchedEffect(Unit) {
-            delay(IMPACT_MILLIS)
-            haptics.performHapticFeedback(HapticFeedbackType.ContextClick)
-        }
+        MomentHaptic(elapsedMillis, IMPACT_MILLIS)
         Box(modifier, contentAlignment = Alignment.Center) {
             // The Subscribe colour, then the Subscribed colour wiping in from the left.
             Box(

@@ -36,6 +36,10 @@ import cx.aswin.boxlore.feature.info.PodcastInfoScreen
 import cx.aswin.boxlore.feature.info.PodcastInfoUiState
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
 import cx.aswin.boxlore.feature.info.branded.conspiracy.ConspiracyPage
+import cx.aswin.boxlore.feature.info.branded.crimejunkie.CrimeJunkiePage
+import cx.aswin.boxlore.feature.info.branded.daily.DailyPage
+import cx.aswin.boxlore.feature.info.branded.jre.JrePage
+import cx.aswin.boxlore.feature.info.branded.rottenmango.RottenMangoPage
 import cx.aswin.boxlore.feature.info.branded.vergecast.VergecastPage
 import cx.aswin.boxlore.feature.info.branded.waveform.WaveformPage
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPageShow
@@ -92,7 +96,7 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
             assertTrue("The description stays open", descriptionOpen())
             popupShown()
             spotlightOnce()
-            fixture.compose.onNodeWithText("boxlore pick").assertExists()
+            fixture.compose.onNodeWithText("Made for:").assertExists()
         }
         recreate(FOLD_TABLETOP)
         assertTrue("The description stays open after recreation", descriptionOpen())
@@ -102,7 +106,7 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
         // Back closes only the popup; the page stays.
         pressBackOnPopup()
         fixture.compose.onNodeWithText(COPYRIGHT_TITLE).assertDoesNotExist()
-        fixture.compose.onNodeWithText("boxlore pick").assertExists()
+        fixture.compose.onNodeWithText("Made for:").assertExists()
 
         // A tap outside closes it too, on a compact and a tablet window.
         for (host in listOf(COMPACT, TABLET)) {
@@ -253,7 +257,7 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
-        fun pages(): List<Array<Any>> = listOf(VergecastPage, ConspiracyPage, WaveformPage).map { arrayOf<Any>(it) }
+        fun pages(): List<Array<Any>> = listOf(VergecastPage, ConspiracyPage, WaveformPage, CrimeJunkiePage, JrePage, RottenMangoPage, DailyPage).map { arrayOf<Any>(it) }
     }
 }
 

@@ -4,8 +4,6 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,7 +22,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -46,9 +43,10 @@ import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedCopyrightButton
 import cx.aswin.boxlore.feature.info.branded.BrandedDescription
 import cx.aswin.boxlore.feature.info.branded.BrandedDescriptionExtras
+import cx.aswin.boxlore.feature.info.branded.BrandedTag
+import cx.aswin.boxlore.feature.info.branded.BrandedTagStyle
 import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
-import cx.aswin.boxlore.feature.info.branded.skewX
 import java.util.Locale
 
 /**
@@ -114,7 +112,9 @@ private fun PublisherLine() {
             style = brandedTextStyle(barlow, 10.5.sp, 14.sp, letterSpacing = 2.4.sp).copy(fontWeight = FontWeight.SemiBold),
             color = WaveformColors.Publisher,
             maxLines = 1,
-            modifier = Modifier.offset(x = LetterSpacingLead),
+            overflow = TextOverflow.Ellipsis,
+            // A long name gives way, so the © keeps its place at the end.
+            modifier = Modifier.weight(1f, fill = false).offset(x = LetterSpacingLead),
         )
         BrandedCopyrightButton(
             WaveformColors.Copyright,
@@ -146,22 +146,19 @@ private fun WaveformDescription(description: BrandedDescription) {
     )
 }
 
-/** The "boxlore pick" tag: a black pill with a fine ring and the logo's red slash. */
+/** The tag: black with a fine ring, boxlore's mark in the logo's red. */
 @Composable
 internal fun WaveformTag(modifier: Modifier) {
-    val shape = RoundedCornerShape(14.dp)
-    Row(
-        modifier
-            .height(28.dp)
-            .clip(shape)
-            .background(WaveformColors.Page)
-            .border(1.dp, WaveformColors.TagBorder, shape)
-            .padding(start = 12.dp, end = 13.dp)
-            .semantics(mergeDescendants = true) {},
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(Modifier.size(width = 4.dp, height = 13.dp).skewX(-22f).background(WaveformColors.Red))
-        Spacer(Modifier.width(8.dp))
-        Text(stringResource(R.string.branded_pick_tag), style = brandedSansStyle(13.sp, 16.sp, weight = 500), color = WaveformColors.Text)
-    }
+    BrandedTag(
+        BrandedTagStyle(
+            fill = WaveformColors.Page,
+            mark = WaveformColors.Red,
+            text = WaveformColors.Text,
+            textStyle = brandedSansStyle(13.sp, 16.sp, weight = 500),
+            corner = 14.dp,
+            endPadding = 13.dp,
+            ring = WaveformColors.TagBorder,
+        ),
+        modifier,
+    )
 }

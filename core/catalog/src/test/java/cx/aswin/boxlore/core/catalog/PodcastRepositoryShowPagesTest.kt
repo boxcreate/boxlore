@@ -173,6 +173,22 @@ class PodcastRepositoryShowPagesTest {
     }
 
     @Test
+    fun aStoredEpisodeCarriesItsSavedShowsNameAndCover() = runBlocking {
+        // The episode page's "More from" row showed the placeholder: the stored episode came back without its show's cover.
+        database.localEpisodeCatalogDao().upsertEpisodes(listOf(row("5001", "g1")))
+        database.podcastDao().upsert(
+            PodcastEntity(podcastId = SHOW, title = "Show", author = "Host", imageUrl = "https://art.example/show.jpg", description = null, isSubscribed = true),
+        )
+
+        val episode = requireNotNull(repository().getEpisode("5001"))
+
+        assertEquals("https://art.example/show.jpg", episode.podcastImageUrl)
+        assertEquals("Show", episode.podcastTitle)
+        assertEquals("Host", episode.podcastArtist)
+        assertTrue("a stored episode needs no network", seen.isEmpty())
+    }
+
+    @Test
     fun rollingTheFlagBackChangesNoStoredIdAndTheServersListMapsToTheSameOwners() = runBlocking {
         // An episode an older build stored under its Podcast Index ID while the show was followed.
         database.localEpisodeCatalogDao().upsertEpisodes(listOf(row("5001", "g1")))

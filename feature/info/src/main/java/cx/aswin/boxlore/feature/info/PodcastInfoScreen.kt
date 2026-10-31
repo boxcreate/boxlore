@@ -513,7 +513,9 @@ fun PodcastInfoScreen(
                         )
                     }
 
-                val spotlightEpisode = brandedPage?.let { brandedSpotlightEpisode(state.episodes, state.currentSort, isSearchActive) }
+                val spotlightEpisode = brandedPage?.let {
+                    brandedSpotlightEpisode(state.episodes, state.currentSort, isSearchActive, hiddenIds = if (hideCompleted) completedEpisodeIds else emptySet())
+                }
                 val listFeedItems = remember(feedItems, spotlightEpisode) { feedItemsWithoutSpotlight(feedItems, spotlightEpisode) }
                 val contentState = EpisodeListContentState(
                     listState = listState,

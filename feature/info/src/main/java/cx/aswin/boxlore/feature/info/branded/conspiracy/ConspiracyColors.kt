@@ -10,6 +10,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.feature.info.R
+import cx.aswin.boxlore.feature.info.branded.BrandedActionColors
 import cx.aswin.boxlore.feature.info.branded.BrandedCopyrightStyle
 
 /** The case file's colours, from the approved design boards. Paper stays paper in both themes. */
@@ -24,6 +25,10 @@ internal object ConspiracyColors {
     val Stamp = Color(0xFFA71F17)
     val Polaroid = Color(0xFFF4EFE0)
     val CopyrightOnPaper = Color(0xFF5A4D05)
+
+    /** The file's buttons: a shade of ink on the mustard paper, ink once switched on, and ink Play. */
+    val ButtonTint = Color(0xFFC5AB05)
+    val Actions = BrandedActionColors(toggle = ButtonTint, onToggle = Ink, checked = Ink, onChecked = PaperYellow, play = Ink, onPlay = PaperYellow)
 
     val Dark = ConspiracyPalette(
         page = Color(0xFF12100A),
@@ -119,7 +124,7 @@ internal class ConspiracyFonts(val typewriter: FontFamily, val courier: FontFami
 @Composable
 internal fun rememberConspiracyFonts(): ConspiracyFonts = remember {
     ConspiracyFonts(
-        typewriter = FontFamily(Font(R.font.conspiracy_special_elite)),
+        typewriter = FontFamily(Font(R.font.branded_special_elite)),
         courier = FontFamily(Font(R.font.conspiracy_courier_prime, FontWeight.Normal), Font(R.font.conspiracy_courier_prime_bold, FontWeight.Bold)),
     )
 }

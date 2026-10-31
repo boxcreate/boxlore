@@ -8,6 +8,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.feature.info.R
+import cx.aswin.boxlore.feature.info.branded.BrandedActionColors
 import cx.aswin.boxlore.feature.info.branded.BrandedCopyrightStyle
 
 /**
@@ -44,6 +45,9 @@ internal object WaveformColors {
     val BandTrack = Color(0xFF3C3C3C)
     val GlitchRed = Color(0xFFFF2020)
     val GlitchCyan = Color(0xFF18E0FF)
+
+    /** The spotlight's buttons: grey on the black card, white once switched on, and white Play. */
+    val Actions = BrandedActionColors(toggle = CardControl, onToggle = Text, checked = Text, onChecked = Page, play = Text, onPlay = Page)
 
     /** The © ends the centred publisher line; its popup keeps 8dp from the right edge on a phone. */
     val Copyright = BrandedCopyrightStyle(

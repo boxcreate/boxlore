@@ -78,11 +78,26 @@ internal suspend fun PodcastRepository.getLocalCatalogWindow(podcastId: String, 
     )
 }
 
+/**
+ * The stored episode with this ID. Its row knows only its show's ID, so the show's name, cover,
+ * genre and artist come from the saved show, as they do for the page reads above; without them
+ * the episode page's "More from" row had no cover to show.
+ */
 internal suspend fun PodcastRepository.getLocalCatalogEpisode(episodeId: String): Episode? = try {
-    localEpisodeCatalog?.getEpisode(episodeId)
+    localEpisodeCatalog?.getEpisode(episodeId)?.let { episode ->
+        episode.podcastId?.let { episode.withShowMeta(localCatalogMeta(it)) } ?: episode
+    }
 } catch (e: CancellationException) {
     throw e
 } catch (e: Exception) {
     android.util.Log.e("PodcastRepository", "local catalog getEpisode failed for $episodeId", e)
     null
 }
+
+/** Fills the show fields [meta] knows and the episode doesn't. */
+internal fun Episode.withShowMeta(meta: LocalEpisodeCatalogPort.PodcastMeta): Episode = copy(
+    podcastTitle = podcastTitle ?: meta.title,
+    podcastImageUrl = podcastImageUrl ?: meta.imageUrl?.takeIf(String::isNotBlank),
+    podcastGenre = podcastGenre ?: meta.genre,
+    podcastArtist = podcastArtist ?: meta.artist,
+)

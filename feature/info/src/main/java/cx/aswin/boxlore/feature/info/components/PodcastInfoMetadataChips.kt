@@ -403,12 +403,13 @@ internal fun PodcastInfoMetadataChipsRow(
 ) {
     val context = LocalContext.current
     val medium = resolveDisplayMedium(podcast)
-    // A branded header starts its chips at the page margin and lets them scroll to the screen edge.
+    // Chips sit centred while they fit; a branded header keeps them off its margins and lets a long row
+    // scroll to the screen edge.
     val branded = LocalBrandedPage.current != null
 
     LazyRow(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp, if (branded) Alignment.Start else Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         contentPadding = PaddingValues(horizontal = if (branded) 16.dp else 0.dp),
         modifier = if (branded) Modifier.fillMaxWidth().height(BrandedChipRowHeight) else Modifier.fillMaxWidth(),
     ) {

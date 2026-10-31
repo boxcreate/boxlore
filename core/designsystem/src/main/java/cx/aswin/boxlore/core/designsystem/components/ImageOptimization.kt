@@ -75,11 +75,27 @@ private fun optimizeImgixCdn(httpsUrl: String, scaledWidth: Int): String? {
     }
 }
 
+/**
+ * IIIF image servers, such as CBC's i.cbc.ca, name the size in the path: `.../full/max/0/default.jpg`.
+ * Their originals can be 3000px and over 10 MB, too slow for the resizing proxy to fetch, so the
+ * server is asked for the width itself (`.../full/400,/0/default.jpg`).
+ */
+private val IiifSizeRegex = Regex(
+    "/full/(?:max|full|\\d*,\\d*|!\\d+,\\d+|pct:[\\d.]+)/(\\d+)/(default|color|gray|bitonal)\\.(jpg|jpeg|png|webp)",
+    RegexOption.IGNORE_CASE,
+)
+
+private fun optimizeIiifImage(httpsUrl: String, scaledWidth: Int): String? = IiifSizeRegex.find(httpsUrl)?.let { match ->
+    val (rotation, quality, format) = match.destructured
+    httpsUrl.replaceRange(match.range, "/full/$scaledWidth,/$rotation/$quality.$format")
+}
+
 private fun optimizeKnownCdns(httpsUrl: String, scaledWidth: Int): String? {
     try {
         optimizeBbcCdn(httpsUrl, scaledWidth)?.let { return it }
         optimizeSimplecastCdn(httpsUrl, scaledWidth)?.let { return it }
         optimizeCaptivateCdn(httpsUrl, scaledWidth)?.let { return it }
+        optimizeIiifImage(httpsUrl, scaledWidth)?.let { return it }
 
         if (httpsUrl.contains("imgix.net") || httpsUrl.contains("megaphone.fm") || httpsUrl.contains("voxmedia.com")) {
             return optimizeImgixCdn(httpsUrl, scaledWidth)

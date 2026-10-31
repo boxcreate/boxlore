@@ -85,9 +85,11 @@ private fun MoreFromShowRow(showName: String, imageUrl: String?, joined: Boolean
     val shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = if (joined) 6.dp else 24.dp, bottomEnd = if (joined) 6.dp else 24.dp)
     val heading = stringResource(R.string.episode_info_more_from, showName)
     val openLabel = stringResource(R.string.episode_info_open_show, showName)
+    // A soft tint of the page's accent, so the show reads as the list's header, not as another episode row.
     Surface(
         shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
         modifier = Modifier.fillMaxWidth()
             .semantics(mergeDescendants = true) {
                 heading()
@@ -108,14 +110,10 @@ private fun MoreFromShowRow(showName: String, imageUrl: String?, joined: Boolean
                 modifier = Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)),
             )
             Column(Modifier.weight(1f)) {
-                Text(
-                    stringResource(R.string.episode_info_more_from_label),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text(stringResource(R.string.episode_info_more_from_label), style = MaterialTheme.typography.labelMedium)
                 Text(showName, style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
-            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, modifier = Modifier.size(22.dp))
         }
     }
 }

@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -16,8 +15,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,10 +24,10 @@ import cx.aswin.boxlore.feature.info.branded.BrandedButtonNudge
 import cx.aswin.boxlore.feature.info.branded.BrandedSubscribeLabels
 import cx.aswin.boxlore.feature.info.branded.BrandedSubscribeMoment
 import cx.aswin.boxlore.feature.info.branded.BrandedToolbarStyle
+import cx.aswin.boxlore.feature.info.branded.MomentHaptic
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
 import cx.aswin.boxlore.feature.info.components.SubscriptionLabel
 import java.util.Locale
-import kotlinx.coroutines.delay
 
 /**
  * Typed and filed: a typewriter strikes FILED. into the Subscribe button letter by letter, the
@@ -55,11 +52,7 @@ internal object ConspiracyTypedAndFiled : BrandedSubscribeMoment {
 
     @Composable
     override fun Overlay(elapsedMillis: () -> Float, labels: BrandedSubscribeLabels, style: BrandedToolbarStyle, shape: Shape, modifier: Modifier) {
-        val haptics = LocalHapticFeedback.current
-        LaunchedEffect(Unit) {
-            delay(strikeAt(0).toLong())
-            haptics.performHapticFeedback(HapticFeedbackType.ContextClick)
-        }
+        MomentHaptic(elapsedMillis, strikeAt(0))
         val fonts = rememberConspiracyFonts()
         val typed = stringResource(R.string.conspiracy_filed).uppercase(Locale.getDefault())
         // The whole moment is clipped to the button, like paper behind the typewriter's window.
