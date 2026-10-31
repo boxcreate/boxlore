@@ -148,6 +148,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SubscriptionFolderDialog`, `FolderEditSheet` and `FolderEditComponents`. ([#1198](https://github.com/boxcreate/boxlore/pull/1198)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - `coderabbit-threads-resolved` workflow and its required check; merging relies on the master ruleset's conversation resolution, which covers every review thread. ([#1210](https://github.com/boxcreate/boxlore/pull/1210)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - Per-PR README release copy, PR-link requirements, the changelog reconcile and backfill steps, the release-notes source option and the offline release rehearsal. ([#1212](https://github.com/boxcreate/boxlore/pull/1212)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- `maestro-nightly.yml` and `new-episode-check.yml`, both disabled: Maestro flows stay a local check, and the new-episode notifier runs on the VPS. ([#1215](https://github.com/boxcreate/boxlore/pull/1215)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added
