@@ -14,7 +14,7 @@ Do **not** use sentence-case titles without a type prefix (e.g. avoid `Polish th
 
 ## Merge gate (required before merge)
 
-The unit workflow runs architecture checks, detekt, JVM tests, Kover coverage, dependency guards, Python release-tooling tests, and Android lint on PR pushes unless a safe docs/chore PR uses `[skip unit]`. A new commit cancels the previous in-progress run; Actions → Run workflow runs the full suite. Run `./gradlew ktlintCheck` locally for Kotlin changes; ktlint is not part of the current PR workflow. There is **no merge queue**.
+The unit workflow runs architecture checks, detekt, JVM tests, Kover coverage, dependency guards, Python release-tooling tests, and Android lint on PR pushes, as parallel jobs, unless a safe docs/chore PR uses `[skip unit]` or the PR changes only documentation. A new commit cancels the previous in-progress run; Actions → Run workflow runs the full suite. Run `./gradlew ktlintCheck` locally for Kotlin changes; ktlint is not part of the current PR workflow. There is **no merge queue**.
 
 Master is protected by a branch ruleset. Required checks before merge:
 

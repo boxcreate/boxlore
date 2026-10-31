@@ -162,6 +162,18 @@ class ReleaseCopyValidationTest(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(list(Path(temp).iterdir()), [event])
 
+    def test_cli_reads_labels_applied_after_the_event(self):
+        with tempfile.TemporaryDirectory() as temp:
+            event = Path(temp) / "event.json"
+            # The event has no impact label yet: the job applied it from the body's checkbox afterwards.
+            event.write_text(json.dumps({"pull_request": {"title": "fix: downloads", "body": SAMPLE_PR_BODY, "labels": []}}))
+            env = {"PATH": os.environ["PATH"], "GITHUB_EVENT_PATH": str(event)}
+            stale = subprocess.run([sys.executable, str(Path(uc.__file__).resolve()), "validate-copy"], cwd=temp, env=env, capture_output=True, text=True)
+            self.assertNotEqual(stale.returncode, 0)
+            env["PR_LABELS_JSON"] = json.dumps(["user-impact-high"])
+            fresh = subprocess.run([sys.executable, str(Path(uc.__file__).resolve()), "validate-copy"], cwd=temp, env=env, capture_output=True, text=True)
+            self.assertEqual(fresh.returncode, 0, fresh.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
