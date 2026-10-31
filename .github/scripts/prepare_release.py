@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+import release_notes
 import update_changelog
 
 APP_GRADLE_PATH = Path("app/build.gradle.kts")
@@ -52,6 +53,13 @@ README_APK_URL_RE = re.compile(
 DOWNLOAD_APK_START = update_changelog.DOWNLOAD_APK_START
 DOWNLOAD_APK_END = update_changelog.DOWNLOAD_APK_END
 EXPECTED_FILES = {
+    "CHANGELOG.md",
+    "README.md",
+    "app/build.gradle.kts",
+    str(release_notes.UPCOMING_PATH),
+}
+# Releases prepared before the notes list changed no release-notes/ files.
+EXPECTED_FILES_BEFORE_NOTES_LIST = {
     "CHANGELOG.md",
     "README.md",
     "app/build.gradle.kts",
@@ -503,56 +511,49 @@ def pull_request_label_names(pull_request: dict[str, object]) -> list[str]:
     return names
 
 
-def reconcile_changelog(
+def missing_changelog_prs(
     repository: str,
     token: str,
     base_tag: str,
     head_sha: str,
-) -> list[int]:
-    pull_requests = pull_requests_between(repository, token, base_tag, head_sha)
-    processed: list[int] = []
+) -> list[int] | None:
+    """Merged PRs since [base_tag] with no CHANGELOG entry: listed in the release PR, never blocking it.
 
-    # Reject missing copy before appending any PR in this batch.
-    original_unreleased = unreleased_block(require_file(CHANGELOG_PATH))
-    for pull_request in pull_requests:
-        if not update_changelog._pr_already_present(original_unreleased, int(pull_request["number"])):
-            update_changelog.validate_release_copy(
-                str(pull_request.get("title") or ""), str(pull_request.get("body") or ""),
-                pull_request_label_names(pull_request),
-            )
-
-    for pull_request in pull_requests:
-        number = int(pull_request["number"])
-        current_unreleased = unreleased_block(require_file(CHANGELOG_PATH))
-        if update_changelog._pr_already_present(current_unreleased, number):
-            processed.append(number)
-            continue
-
-        changed = update_changelog.append_changelog(
-            number,
-            str(pull_request.get("title") or "").strip(),
-            str(pull_request.get("body") or ""),
-            labels=pull_request_label_names(pull_request),
-        )
-        if not changed:
-            fail(f"PR #{number} produced no changelog entry")
-        processed.append(number)
-
-    update_changelog.sync_changelog_unreleased()
-    update_changelog.sync_readme_upcoming()
-
-    final_unreleased = unreleased_block(require_file(CHANGELOG_PATH))
-    missing = [
-        number
-        for number in processed
-        if not update_changelog._pr_already_present(final_unreleased, number)
+    None when the merged PRs could not be listed, so the release PR says the check didn't run.
+    """
+    try:
+        pull_requests = pull_requests_between(repository, token, base_tag, head_sha)
+    except (OSError, ValueError, SystemExit) as error:
+        print(f"Warning: could not list merged PRs since {base_tag}: {error}", file=sys.stderr)
+        return None
+    unreleased = unreleased_block(require_file(CHANGELOG_PATH))
+    return [
+        int(pull_request["number"])
+        for pull_request in pull_requests
+        if not update_changelog._pr_already_present(unreleased, int(pull_request["number"]))
     ]
-    if missing:
-        fail(
-            "Release reconciliation lost changelog coverage for PRs: "
-            + ", ".join(f"#{number}" for number in missing)
-        )
-    return processed
+
+
+def checked_listener_notes() -> str:
+    """The notes list's text, once it keeps its rules and has something to release."""
+    upcoming = require_file(release_notes.UPCOMING_PATH)
+    try:
+        notes = release_notes.parse(upcoming)
+    except ValueError as error:
+        fail(f"{release_notes.UPCOMING_PATH}: {error}")
+    found = release_notes.problems(notes)
+    if found:
+        fail(f"{release_notes.UPCOMING_PATH}: " + " ".join(found))
+    if notes.is_empty():
+        fail(f"{release_notes.UPCOMING_PATH} is empty: add the listener notes, or prepare a quiet release")
+    return upcoming
+
+
+def archive_listener_notes(target: AppVersion, upcoming: str) -> None:
+    """Keep the notes list as release-notes/<tag>.md and start a fresh list."""
+    archived = f"<!-- Listener notes released in {target.tag}. -->\n\n" + release_notes.COMMENT_RE.sub("", upcoming).strip() + "\n"
+    release_notes.archive_path(target.tag).write_text(archived, encoding="utf-8")
+    release_notes.UPCOMING_PATH.write_text(release_notes.template(), encoding="utf-8")
 
 
 def replace_gradle_version(
@@ -626,14 +627,6 @@ def promote_readme(content: str, target: AppVersion, release_date: str) -> str:
             fail("README.md is missing the Upcoming release notes region")
         upcoming_inner = legacy.group(1)
     release_body = upcoming_inner.strip()
-    had_ai_notice = "AI-generated summary; may contain mistakes." in release_body
-    # Strip AI notice / empty placeholder before promoting into What's New.
-    release_body = re.sub(
-        r'<p align="center">\s*<sub><sub>.*?AI-generated summary.*?</sub></sub>\s*</p>\s*',
-        "",
-        release_body,
-        flags=re.DOTALL,
-    ).strip()
     if (
         not release_body
         or update_changelog.EMPTY_UPCOMING_TEXT in release_body
@@ -641,12 +634,7 @@ def promote_readme(content: str, target: AppVersion, release_date: str) -> str:
     ):
         fail("README Upcoming section is empty")
 
-    whats_new_inner = update_changelog._render_whats_new_inner(
-        target.tag,
-        release_date,
-        release_body,
-        include_ai_notice=had_ai_notice,
-    )
+    whats_new_inner = update_changelog._render_whats_new_inner(target.tag, release_date, release_body)
     replacement = update_changelog._render_release_notes_shell(
         upcoming_inner=update_changelog.EMPTY_UPCOMING_TEXT,
         whats_new_inner=whats_new_inner,
@@ -723,25 +711,10 @@ def write_outputs(values: dict[str, str | int]) -> None:
             output.write(f"{key}<<{delimiter}\n{text}\n{delimiter}\n")
 
 
-def resolve_notes_source(*, skip_notify: bool, use_readme_upcoming: bool) -> str:
-    if skip_notify and use_readme_upcoming:
-        fail("--use-readme-upcoming cannot be combined with --skip-notify")
-    if skip_notify:
-        return "artifacts-only"
-    if use_readme_upcoming:
-        return "readme-upcoming"
-    return "reconciled"
-
-
 def prepare_release(args: argparse.Namespace) -> None:
     repository = os.environ.get("GITHUB_REPOSITORY", "").strip()
     token = os.environ.get("GITHUB_TOKEN", "").strip()
     skip_notify = bool(getattr(args, "skip_notify", False))
-    use_readme_upcoming = bool(getattr(args, "use_readme_upcoming", False))
-    notes_source = resolve_notes_source(
-        skip_notify=skip_notify,
-        use_readme_upcoming=use_readme_upcoming,
-    )
     if not repository or not token:
         fail("GITHUB_REPOSITORY and GITHUB_TOKEN are required")
 
@@ -751,29 +724,26 @@ def prepare_release(args: argparse.Namespace) -> None:
     assert_remote_target_is_free(repository, token, target)
 
     release_date = datetime.now(timezone.utc).date().isoformat()
-    processed: list[int] = []
+    missing: list[int] | None = []
 
     gradle_original = require_file(APP_GRADLE_PATH)
     if skip_notify:
-        # Version bump + APK badge URL only — leave CHANGELOG / Upcoming / What's New
-        # untouched. Publish skips in-app announcement; notify manually if needed.
+        # Quiet release: version bump + APK badge URL only. The notes list, CHANGELOG and
+        # What's New stay as they are, and publication sends no announcement.
         readme_original = require_file(README_PATH)
         README_PATH.write_text(
             update_readme_download_url(readme_original, repository, target),
             encoding="utf-8",
         )
     else:
-        if notes_source == "reconciled":
-            processed = reconcile_changelog(
-                repository,
-                token,
-                args.latest_tag,
-                args.head_sha,
-            )
+        upcoming = checked_listener_notes()
+        missing = missing_changelog_prs(repository, token, args.latest_tag, args.head_sha)
+        update_changelog.sync_readme_upcoming()
         changelog_original = require_file(CHANGELOG_PATH)
         readme_original = require_file(README_PATH)
         promoted_changelog = promote_changelog(changelog_original, target, release_date)
         promoted_readme = promote_readme(readme_original, target, release_date)
+        archive_listener_notes(target, upcoming)
         CHANGELOG_PATH.write_text(promoted_changelog, encoding="utf-8")
         README_PATH.write_text(
             update_readme_download_url(promoted_readme, repository, target),
@@ -794,9 +764,10 @@ def prepare_release(args: argparse.Namespace) -> None:
             "aab_asset": target.aab_asset,
             "branch": f"release/{target.tag}",
             "release_date": release_date,
-            "reconciled_pr_count": len(processed),
             "skip_notify": "true" if skip_notify else "false",
-            "notes_source": notes_source,
+            "notes_archive": "" if skip_notify else str(release_notes.archive_path(target.tag)),
+            "missing_changelog_prs": " ".join(f"#{number}" for number in missing or []),
+            "changelog_check": "unknown" if missing is None else "done",
         }
     )
 
@@ -863,8 +834,12 @@ def commit_skips_notify(commit: str = "HEAD") -> bool:
     return SKIP_NOTIFY_MARKER in commit_subject(commit)
 
 
-def expected_release_files(*, skip_notify: bool) -> set[str]:
-    return EXPECTED_FILES_SKIP_NOTIFY if skip_notify else EXPECTED_FILES
+def expected_release_files(*, skip_notify: bool, version: AppVersion | None = None) -> set[str]:
+    """The files a release commit changes; a notes release also adds that version's notes archive."""
+    if skip_notify:
+        return EXPECTED_FILES_SKIP_NOTIFY
+    archive = {str(release_notes.archive_path(version.tag))} if version else set()
+    return EXPECTED_FILES | archive
 
 
 def _skip_notify_changed_files_ok(changed_files: set[str]) -> bool:
@@ -884,7 +859,7 @@ def verify_release_diff(
     parent = f"{commit}^1"
     if skip_notify is None:
         skip_notify = commit_skips_notify(commit)
-    expected = expected_release_files(skip_notify=skip_notify)
+    expected = expected_release_files(skip_notify=skip_notify, version=current)
     changed_files = git_changed_files(parent, commit)
     if skip_notify:
         if not _skip_notify_changed_files_ok(changed_files):
@@ -893,7 +868,7 @@ def verify_release_diff(
                 f"expected {sorted(EXPECTED_FILES_SKIP_NOTIFY)} "
                 f"(or legacy {sorted(EXPECTED_FILES_SKIP_NOTIFY_LEGACY)})"
             )
-    elif changed_files != expected:
+    elif changed_files != expected and changed_files != EXPECTED_FILES_BEFORE_NOTES_LIST:
         fail(
             f"Release commit {commit[:12]} changed {sorted(changed_files)}; "
             f"expected exactly {sorted(expected)}"
@@ -1098,7 +1073,6 @@ def notification_bullets(content: str, version: AppVersion) -> list[str]:
             fail(f"README.md has no What's New block for {version.tag}")
         release_body = release_match.group(1)
 
-    is_ai_generated = "AI-generated summary; may contain mistakes." in release_body
     candidates = [
         plain_text(item)
         for item in re.findall(
@@ -1118,14 +1092,9 @@ def notification_bullets(content: str, version: AppVersion) -> list[str]:
         ]
 
     bullets: list[str] = []
-    max_bullets = 5 if is_ai_generated else 8
+    max_bullets = 8
     for candidate in candidates:
-        if (
-            not candidate
-            or candidate in bullets
-            or candidate.lower().startswith("for more details")
-            or candidate.lower().startswith("ai-generated")
-        ):
+        if not candidate or candidate in bullets or candidate.lower().startswith("for more details"):
             continue
         bullets.append(shorten_notification_line(candidate))
         if len(bullets) == max_bullets:
@@ -1136,16 +1105,7 @@ def notification_bullets(content: str, version: AppVersion) -> list[str]:
 
 
 def notification_body(content: str, version: AppVersion) -> str:
-    bullets = notification_bullets(content, version)
-    body = "\n".join(f"- {bullet}" for bullet in bullets)
-    release_body = update_changelog._extract_marked_region(
-        content,
-        update_changelog.RELEASE_WHATS_NEW_START,
-        update_changelog.RELEASE_WHATS_NEW_END,
-    )
-    if release_body and "AI-generated summary; may contain mistakes." in release_body:
-        body += "\n\n*AI-generated summary; may contain mistakes.*"
-    return body
+    return "\n".join(f"- {bullet}" for bullet in notification_bullets(content, version))
 
 
 def write_notification_outputs() -> None:
@@ -1156,11 +1116,17 @@ def write_notification_outputs() -> None:
     ).strip()
     if not repository or "/" not in repository:
         fail("GITHUB_REPOSITORY is malformed")
-    readme = require_file(README_PATH)
+    archive = release_notes.archive_path(current.tag)
+    if archive.is_file():
+        # The release's own notes: the announcement title (or the default) and the highlights, word for word.
+        title, body = release_notes.announcement(release_notes.parse(archive.read_text(encoding="utf-8")), current.tag)
+    else:
+        # Releases prepared before the notes list: the README's What's New bullets.
+        title, body = f"boxlore {current.tag} is here", notification_body(require_file(README_PATH), current)
     write_outputs(
         {
-            "notification_title": f"boxlore {current.tag} is here",
-            "notification_body": notification_body(readme, current),
+            "notification_title": title,
+            "notification_body": body,
             "notification_route": (
                 release_apk_url(repository, current)
             ),
@@ -1292,7 +1258,7 @@ def main() -> None:
 
     prepare_parser = subparsers.add_parser(
         "prepare",
-        help="Reconcile release notes and prepare version/docs changes",
+        help="Prepare the version bump, promote the listener notes and archive them",
     )
     prepare_parser.add_argument(
         "--bump",
@@ -1305,16 +1271,8 @@ def main() -> None:
         "--skip-notify",
         action="store_true",
         help=(
-            "Artifacts-only prepare: bump Gradle version only; "
-            "skip CHANGELOG/README promotion and in-app notify on publish"
-        ),
-    )
-    prepare_parser.add_argument(
-        "--use-readme-upcoming",
-        action="store_true",
-        help=(
-            "Skip PR reconciliation and promote the reviewed README Upcoming "
-            "region verbatim into What's New and the release notification"
+            "Quiet release: bump the version only; leave the notes list, CHANGELOG and "
+            "What's New as they are, and send no announcement on publish"
         ),
     )
 

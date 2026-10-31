@@ -1,9 +1,10 @@
 name: Release copy
 
 # Every PR event: apply the impact labels the PR body's checkboxes pick (when the PR is opened or its
-# body edited), then check the impact label and the exact release wording against the labels as they
-# are now. One job, so the check never runs before the labels it needs are applied (labels applied with
-# the workflow token start no new run).
+# body edited), then check the impact label, the developer copy, and that a listener-facing PR edits the
+# notes list (release-notes/upcoming.md) or says it already covers the change. One job, so the check
+# never runs before the labels it needs are applied (labels applied with the workflow token start no
+# new run).
 on:
   pull_request:
     types: [opened, synchronize, reopened, edited, labeled, unlabeled, ready_for_review]
@@ -110,7 +111,21 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: echo "json=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/labels" --jq '[.[].name]' | tr -d '\n')" >> "$GITHUB_OUTPUT"
 
-      - name: Check impact label and exact release wording
+      - name: Read the PR's changed files
+        id: files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          {
+            echo "list<<BOXLORE_PR_FILES"
+            gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" --paginate --jq '.[].filename'
+            echo "BOXLORE_PR_FILES"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Check impact label, developer copy and listener notes
         env:
           PR_LABELS_JSON: ${{ steps.labels.outputs.json }}
+          PR_CHANGED_FILES: ${{ steps.files.outputs.list }}
         run: python3 .github/scripts/update_changelog.py validate-copy

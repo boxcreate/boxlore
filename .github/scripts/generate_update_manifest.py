@@ -14,15 +14,43 @@ from prepare_release import read_app_version
 import update_changelog
 
 
+# The app's own bounds (UpdateManifest): longer notes make it reject the whole feed.
+NOTES_LIMIT = 24_000
+UPCOMING_LIMIT = 6_000
+NOTES_MORE = "- And more: see the full release notes."
+UPCOMING_MORE = "- And more in the next release."
+
+
+def _utf16_length(value: str) -> int:
+    return len(value.encode("utf-16-le")) // 2
+
+
+def fit_lines(lines: list[str], limit: int, more: str) -> str:
+    """The lines, or as many whole lines as fit in [limit] with [more] after them; never a cut line."""
+    value = "\n".join(lines).strip()
+    if _utf16_length(value) <= limit:
+        return value
+    kept: list[str] = []
+    for line in lines:
+        if _utf16_length("\n".join([*kept, line, more]).strip()) > limit:
+            break
+        kept.append(line)
+    while kept and kept[-1].lstrip().startswith("#"):
+        kept.pop()  # A heading with nothing under it.
+    return "\n".join([*kept, more]).strip()
+
+
 def listener_markdown(fragment: str) -> str:
-    """Preserve authored emphasis and links from the generated listener HTML."""
-    fragment = re.sub(r'<a\b[^>]*href=[\'"]([^\'"]+)[\'"][^>]*>(.*?)</a>',
-                      lambda m: '[' + re.sub(r'<[^>]+>', '', m[2]) + '](' + html.unescape(m[1]) + ')',
+    """Preserve authored emphasis and links from the generated listener HTML; PR badges (links without text) go."""
+    def link(match: re.Match) -> str:
+        text = re.sub(r'<[^>]+>', '', match[2]).strip()
+        return f'[{text}]({html.unescape(match[1])})' if text else ''
+    fragment = re.sub(r'<a\b[^>]*href=[\'"]([^\'"]+)[\'"][^>]*>(.*?)</a>', link,
                       fragment, flags=re.DOTALL | re.IGNORECASE)
     for tag, marker in (("b", "**"), ("strong", "**"), ("i", "*"), ("em", "*"), ("code", "`")):
         fragment = re.sub(r'</?' + tag + r'\b[^>]*>', lambda _: marker, fragment, flags=re.IGNORECASE)
     fragment = re.sub(r'<br\s*/?>', '\n', fragment, flags=re.IGNORECASE)
-    return html.unescape(re.sub(r'<[^>]+>', '', fragment)).strip()
+    return re.sub(r'[ \t]{2,}', ' ', html.unescape(re.sub(r'<[^>]+>', '', fragment))).strip()
 
 
 def listener_notes(readme: str, tag: str | None = None) -> str:
@@ -35,10 +63,10 @@ def listener_notes(readme: str, tag: str | None = None) -> str:
     metadata = update_changelog._parse_release_meta(region)
     if tag and metadata and metadata[0] != tag:
         return ""  # An artifacts-only release must not claim the previous release's notes.
-    # Preserve every authored listener bullet, without shortening or rewriting.
-    return "\n".join("- " + listener_markdown(bullet) for bullet in re.findall(
+    # Every authored listener bullet, without shortening or rewriting; whole bullets only if they can't all fit.
+    return fit_lines(["- " + listener_markdown(bullet) for bullet in re.findall(
         r"<li\b[^>]*>(.*?)</li>", region, flags=re.DOTALL,
-    ))
+    )], NOTES_LIMIT, NOTES_MORE)
 
 
 def upcoming_notes(readme: str) -> str:
@@ -51,10 +79,10 @@ def upcoming_notes(readme: str) -> str:
             parts.append("\n## " + listener_markdown(match[1]).rstrip(":"))
         else:
             parts.append("- " + listener_markdown(match[2]))
-    value = "\n".join(parts).strip() if "<li" in region else ""
-    if len(value.encode("utf-16-le")) // 2 > 6_000:
-        raise ValueError("Upcoming preview exceeds 6,000 characters")
-    return value
+    if "<li" not in region:
+        return ""
+    # Whole lines that fit the app's Coming next bound, so a long list never fails the feed.
+    return fit_lines([line for part in parts for line in part.strip("\n").splitlines() or [""]], UPCOMING_LIMIT, UPCOMING_MORE)
 
 
 def build_manifest(gradle: str, apk: Path, asset: str, notes: str = "") -> dict:
@@ -67,7 +95,7 @@ def build_manifest(gradle: str, apk: Path, asset: str, notes: str = "") -> dict:
     size = apk.stat().st_size
     if not 0 < size <= 512 * 1024 * 1024:
         raise ValueError("APK is missing, empty or larger than the updater limit")
-    if len(notes.encode("utf-16-le")) // 2 > 24_000:
+    if _utf16_length(notes) > NOTES_LIMIT:
         raise ValueError("Release notes exceed 24,000 characters; supply concise reviewed copy")
     with apk.open("rb") as binary:
         digest = hashlib.file_digest(binary, "sha256").hexdigest()
