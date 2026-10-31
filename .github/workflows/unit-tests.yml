@@ -125,6 +125,25 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/android-setup
 
+      # Robolectric downloads an Android runtime jar per test SDK into ~/.m2 when tests start, and a
+      # failed download fails every test that needs it. Keep the jars per shard; the key changes with
+      # the Robolectric version and the set of SDKs tests pin. Only master saves, like the Gradle cache.
+      - name: Robolectric cache key
+        id: robolectric-key
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -euo pipefail
+          version="$(sed -nE 's/^robolectric = "([^"]+)"/\1/p' gradle/libs.versions.toml)"
+          sdks="$(grep -rhoE 'sdk *= *\[[0-9, ]+\]' --include='*.kt' . | tr -d ' ' | sort -u | sha256sum | cut -c1-12)"
+          echo "key=robolectric-${SHARD}-${version}-${sdks}" >> "$GITHUB_OUTPUT"
+      - name: Restore Robolectric runtime jars
+        id: robolectric-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: ${{ steps.robolectric-key.outputs.key }}
+
       - name: Unit tests
         env:
           SHARD: ${{ matrix.shard }}
@@ -140,6 +159,13 @@ jobs:
           tasks="$(printf '%s\n' "$selected" | sed 's/$/:testDebugUnitTest/' | tr '\n' ' ')"
           echo "Running: $tasks"
           ./gradlew $tasks --continue
+
+      - name: Save Robolectric runtime jars
+        if: success() && github.ref == 'refs/heads/master' && steps.robolectric-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: ${{ steps.robolectric-key.outputs.key }}
 
       # Each test task writes its coverage (Kover's binary report); the coverage job merges every shard's.
       - name: Pack coverage data
