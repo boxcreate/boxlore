@@ -18,14 +18,20 @@ internal object PodcastInfoPullRefreshLogic {
         NONE,
     }
 
-    /** [feedFirst]: the page reads the show's own feed (P4 PR 16); it replaces the Missing episodes? path. */
+    /**
+     * [feedFirst]: the page reads the show's own feed (P4 PR 16); it replaces the Missing episodes? path.
+     * [postSubscribeRunning]: the catalog refresh after subscribing is still reading the feed, so a
+     * pull would start a second read of the same show.
+     */
     fun target(
         isRss: Boolean,
         isSubscribed: Boolean = false,
         chip: DirectFeedChipState,
         feedFirst: Boolean = false,
+        postSubscribeRunning: Boolean = false,
     ): Target = when {
         isRss -> Target.RSS_CATALOG
+        postSubscribeRunning -> Target.NONE
         feedFirst -> Target.FEED_FIRST
         chip == DirectFeedChipState.Fetching -> Target.NONE
         isSubscribed -> Target.SUBSCRIBED_DIRECT_FEED
@@ -103,15 +109,17 @@ internal object PodcastInfoPostSubscribeLogic {
         uiState: MutableStateFlow<PodcastInfoUiState>,
         targetPodcastId: String,
         currentPodcastId: () -> String,
+        refreshes: PostSubscribeRefreshes = PostSubscribeRefreshes(),
         refresh: suspend () -> Unit,
     ) {
         val state = (uiState.value as? PodcastInfoUiState.Success)?.takeIf { it.podcast.id == targetPodcastId }
-        val showsLine = state != null && takesLine(state.feedStatus)
+        refreshes.begin(targetPodcastId, takesLine = state != null && takesLine(state.feedStatus))
         if (state != null) uiState.value = started(state)
         try {
             refresh()
         } finally {
-            if (showsLine) uiState.value = finished(uiState.value, currentPodcastId(), targetPodcastId)
+            // A refresh started while this one ran shares its line; the last one to end clears it.
+            if (refreshes.end(targetPodcastId)) uiState.value = finished(uiState.value, currentPodcastId(), targetPodcastId)
         }
     }
 
@@ -138,5 +146,36 @@ internal object PodcastInfoPostSubscribeLogic {
             return state
         }
         return success.copy(feedStatus = ShowFeedStatus.NONE)
+    }
+}
+
+/**
+ * The catalog refreshes after subscribing that are still running, per show. Unsubscribing and
+ * subscribing again can start a second one before the first ends: the status line stays until
+ * the last ends, and pull-to-refresh waits rather than reading the same feed a second time.
+ */
+internal class PostSubscribeRefreshes {
+    private val running = mutableMapOf<String, Int>()
+    private val heldLines = mutableSetOf<String>()
+
+    @Synchronized
+    fun isRunning(podcastId: String): Boolean = podcastId in running
+
+    @Synchronized
+    fun begin(podcastId: String, takesLine: Boolean) {
+        running[podcastId] = (running[podcastId] ?: 0) + 1
+        if (takesLine) heldLines += podcastId
+    }
+
+    /** Ends one refresh. True when it was the show's last and one of them showed the status line. */
+    @Synchronized
+    fun end(podcastId: String): Boolean {
+        val left = (running[podcastId] ?: 1) - 1
+        if (left > 0) {
+            running[podcastId] = left
+            return false
+        }
+        running -= podcastId
+        return heldLines.remove(podcastId)
     }
 }

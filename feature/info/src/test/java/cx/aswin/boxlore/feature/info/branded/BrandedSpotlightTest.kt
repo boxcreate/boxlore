@@ -3,8 +3,10 @@ package cx.aswin.boxlore.feature.info.branded
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.info.EpisodeSort
 import cx.aswin.boxlore.feature.info.logic.FeedItem
+import cx.aswin.boxlore.feature.info.logic.PodcastEpisodeSelectionLogic
 import cx.aswin.boxlore.feature.info.logic.groupEpisodes
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
@@ -52,6 +54,17 @@ class BrandedSpotlightTest {
         assertEquals(listOf("trailer", "older"), list.map { it.id })
         // Positions in the full list are kept for the rest.
         assertEquals(2, (list.last() as FeedItem.NormalEpisode).globalIndex)
+    }
+
+    @Test
+    fun `Select visible counts the spotlight episode while it is on screen`() {
+        // Regression: the spotlight's fixed list key matched no episode, so Select visible left it out.
+        val items = groupEpisodes(listOf(trailer, latest, older))
+        val visibleKeys = setOf(brandedSpotlightKey(latest), "older")
+        val visible = PodcastEpisodeSelectionLogic.visibleEpisodes(items, visibleKeys)
+        assertEquals(listOf("latest", "older"), visible.map { it.id })
+        // The list below never shows the spotlight episode, so its key is never used twice.
+        assertFalse(feedItemsWithoutSpotlight(items, latest).any { it.id == brandedSpotlightKey(latest) })
     }
 
     @Test

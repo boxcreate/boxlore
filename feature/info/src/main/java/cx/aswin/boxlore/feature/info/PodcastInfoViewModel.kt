@@ -27,6 +27,7 @@ import cx.aswin.boxlore.feature.info.logic.PodcastInfoFolderSyncLogic
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPageShow
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPostSubscribeLogic
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPullRefreshLogic
+import cx.aswin.boxlore.feature.info.logic.PostSubscribeRefreshes
 import cx.aswin.boxlore.feature.info.logic.RenumberedShowPageLogic
 import cx.aswin.boxlore.feature.info.logic.ShowFeedLogic
 import cx.aswin.boxlore.feature.info.logic.enablePodcastNotifications
@@ -117,6 +118,7 @@ class PodcastInfoViewModel(
             ) ?: MutableStateFlow(emptyList())
 
     private var currentPodcastId: String = ""
+    private val postSubscribeRefreshes = PostSubscribeRefreshes()
 
     /** Id passed to the latest [loadPodcast] call, for [retryLoad]. */
     private var requestedPodcastId: String? = null
@@ -1109,6 +1111,7 @@ class PodcastInfoViewModel(
                 chip = currentState.directFeedChip,
                 // Once followed, the show's own catalog refresh (with auto-download) takes over.
                 feedFirst = feedFirst.isActive(currentState.podcast.id) && !currentState.isSubscribed,
+                postSubscribeRunning = postSubscribeRefreshes.isRunning(currentState.podcast.id),
             )
         ) {
             PodcastInfoPullRefreshLogic.Target.FEED_FIRST -> refreshFeedFirstFromPull(currentState)
@@ -1617,7 +1620,7 @@ class PodcastInfoViewModel(
             if (latest.podcast.isRss) return
             val targetPodcastId = latest.podcast.id
             // The body's status line shows the refresh; the top-bar pill no longer spins for it.
-            PodcastInfoPostSubscribeLogic.withStatusLine(_uiState, targetPodcastId, { currentPodcastId }) {
+            PodcastInfoPostSubscribeLogic.withStatusLine(_uiState, targetPodcastId, { currentPodcastId }, postSubscribeRefreshes) {
                 val sync = subscriptionForegroundSync
                 if (sync != null) {
                     coroutineScope {
@@ -1670,15 +1673,7 @@ class PodcastInfoViewModel(
                     meta = meta,
                 ),
             )
-        val tip =
-            when (outcome) {
-                is cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Success ->
-                    outcome.newest
-                is cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Unchanged ->
-                    outcome.newest
-                is cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Failure ->
-                    null
-            }
+        val tip = PodcastInfoPullRefreshLogic.extractTip(outcome)
         tip?.let { episode ->
             subscriptionRepository.updateLatestEpisode(
                 podcastId = targetPodcastId,

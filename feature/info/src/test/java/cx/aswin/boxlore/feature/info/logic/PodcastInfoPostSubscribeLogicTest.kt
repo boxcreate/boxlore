@@ -133,4 +133,46 @@ class PodcastInfoPostSubscribeLogicTest {
         assertSame(PodcastInfoUiState.Loading, PodcastInfoPostSubscribeLogic.finished(PodcastInfoUiState.Loading, "p1", "p1"))
         assertSame(PodcastInfoUiState.Error, PodcastInfoPostSubscribeLogic.finished(PodcastInfoUiState.Error, "p1", "p1"))
     }
+
+    @Test
+    fun `a second refresh keeps the line until the last one ends`() = runTest {
+        val ui = MutableStateFlow<PodcastInfoUiState>(page())
+        val refreshes = PostSubscribeRefreshes()
+        val firstDone = CompletableDeferred<Unit>()
+        val secondDone = CompletableDeferred<Unit>()
+        launch { PodcastInfoPostSubscribeLogic.withStatusLine(ui, "p1", { "p1" }, refreshes) { firstDone.await() } }
+        runCurrent()
+        launch { PodcastInfoPostSubscribeLogic.withStatusLine(ui, "p1", { "p1" }, refreshes) { secondDone.await() } }
+        runCurrent()
+        assertTrue(refreshes.isRunning("p1"))
+        firstDone.complete(Unit)
+        runCurrent()
+        assertEquals(ShowFeedStatus.READING_NEWEST, ui.value.success().feedStatus, "The line outlives the first refresh")
+        assertTrue(refreshes.isRunning("p1"))
+        secondDone.complete(Unit)
+        runCurrent()
+        assertEquals(ShowFeedStatus.NONE, ui.value.success().feedStatus)
+        assertFalse(refreshes.isRunning("p1"))
+    }
+
+    @Test
+    fun `pull-to-refresh waits while the refresh after subscribing reads the feed`() {
+        assertEquals(
+            PodcastInfoPullRefreshLogic.Target.NONE,
+            PodcastInfoPullRefreshLogic.target(isRss = false, isSubscribed = true, chip = DirectFeedChipState.Hidden, postSubscribeRunning = true),
+        )
+        assertEquals(
+            PodcastInfoPullRefreshLogic.Target.NONE,
+            PodcastInfoPullRefreshLogic.target(isRss = false, chip = DirectFeedChipState.Hidden, feedFirst = true, postSubscribeRunning = true),
+        )
+        assertEquals(
+            PodcastInfoPullRefreshLogic.Target.SUBSCRIBED_DIRECT_FEED,
+            PodcastInfoPullRefreshLogic.target(isRss = false, isSubscribed = true, chip = DirectFeedChipState.Hidden),
+        )
+        // A true RSS show has no post-subscribe read, so its own refresh is never held back.
+        assertEquals(
+            PodcastInfoPullRefreshLogic.Target.RSS_CATALOG,
+            PodcastInfoPullRefreshLogic.target(isRss = true, chip = DirectFeedChipState.Hidden, postSubscribeRunning = true),
+        )
+    }
 }

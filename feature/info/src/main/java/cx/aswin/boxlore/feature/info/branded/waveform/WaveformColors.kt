@@ -18,7 +18,7 @@ internal object WaveformColors {
     val Page = Color(0xFF0A0A0A)
     val Text = Color(0xFFF5F5F5)
 
-    /** The logo's slanted block and the progress marker. */
+    /** The logo's slanted block. */
     val Red = Color(0xFFD61817)
 
     /** Red text, a step brighter than the block so small labels stay readable. */
@@ -37,7 +37,11 @@ internal object WaveformColors {
     val TagBorder = Color(0xFF2E2E2E)
     val NavigationBorder = Color(0xFF222222)
     val NavigationText = Color(0xFFCFCFCF)
-    val Track = Color(0xFF3A3A3A)
+
+    /** The latest episode's waveform band: a step lighter than the card, a hairline under it, unplayed bars in grey. */
+    val Band = Color(0xFF191919)
+    val BandDivider = Color(0xFF222222)
+    val BandTrack = Color(0xFF3C3C3C)
     val GlitchRed = Color(0xFFFF2020)
     val GlitchCyan = Color(0xFF18E0FF)
 

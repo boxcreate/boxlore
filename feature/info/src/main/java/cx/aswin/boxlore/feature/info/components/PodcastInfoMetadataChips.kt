@@ -89,8 +89,8 @@ internal fun computeDaysSinceLatest(
     podcast: Podcast,
     validEpisodes: List<Episode>,
 ): Long? {
-    val latestEpisodeDate = validEpisodes.firstOrNull()?.publishedDate ?: podcast.latestEpisode?.publishedDate
-    return latestEpisodeDate?.let { (System.currentTimeMillis() / 1000 - it) / (60 * 60 * 24) }
+    val latestEpisodeDate = validEpisodes.firstOrNull()?.publishedDate ?: podcast.latestEpisode?.publishedDate ?: return null
+    return (System.currentTimeMillis() / 1000 - latestEpisodeDate) / (60 * 60 * 24)
 }
 
 internal fun dormancyStatus(daysSinceLatest: Long?): Pair<String, ImageVector>? {

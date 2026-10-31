@@ -4,6 +4,7 @@ import android.animation.ValueAnimator
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,7 +40,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -58,13 +58,15 @@ import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
 import cx.aswin.boxlore.feature.info.components.formatEpisodeDuration
 import cx.aswin.boxlore.feature.info.components.formatEpisodeRelativeDate
 import cx.aswin.boxlore.feature.info.components.rememberPodcastEpisodeControlClick
+import cx.aswin.boxlore.feature.info.sections.stripHtml
 import java.util.Locale
 
 private val CardShape = RoundedCornerShape(20.dp)
 
 /**
- * The latest episode on a dark card: "LATEST" in red, the title in boxlore's font, and a waveform
- * for its progress, with a red marker where you are. Its bars move while it plays.
+ * The latest episode on a dark card. The episode's waveform runs across the top like its cover,
+ * bright up to where you are; below it "LATEST" in red, the title, two lines of the episode's own
+ * description and the actions. The bars move while it plays.
  */
 @Composable
 internal fun WaveformSpotlight(spotlight: BrandedSpotlight, modifier: Modifier) {
@@ -82,32 +84,44 @@ internal fun WaveformSpotlight(spotlight: BrandedSpotlight, modifier: Modifier) 
             onClick = spotlight.onOpen,
         ),
     ) {
-        Column(Modifier.padding(19.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    stringResource(R.string.waveform_latest).uppercase(Locale.getDefault()),
-                    style = brandedTextStyle(rememberWaveformBarlow(), 11.sp, 14.sp, letterSpacing = 2.4.sp).copy(fontWeight = FontWeight.Bold),
-                    color = WaveformColors.RedText,
-                    maxLines = 1,
-                    modifier = Modifier.offset(x = LetterSpacingLead),
-                )
-                Text(
-                    spotlightDetails(spotlight),
-                    style = brandedSansStyle(13.sp, 16.sp),
-                    color = WaveformColors.Muted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            Spacer(Modifier.height(8.dp))
-            Text(episode.title, style = brandedSansStyle(20.sp, 26.sp, weight = 500), maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Spacer(Modifier.height(10.dp))
-            WaveformProgress(
+        Column {
+            WaveformBand(
                 progress = spotlight.progress ?: if (spotlight.isCompleted) 1f else 0f,
                 playing = spotlight.actions.isPlaying,
             )
-            Spacer(Modifier.height(10.dp))
-            SpotlightActions(spotlight)
+            Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 11.dp, bottom = 13.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        stringResource(R.string.waveform_latest).uppercase(Locale.getDefault()),
+                        style = brandedTextStyle(rememberWaveformBarlow(), 11.sp, 14.sp, letterSpacing = 2.4.sp).copy(fontWeight = FontWeight.Bold),
+                        color = WaveformColors.RedText,
+                        maxLines = 1,
+                        modifier = Modifier.offset(x = LetterSpacingLead),
+                    )
+                    Text(
+                        spotlightDetails(spotlight),
+                        style = brandedSansStyle(13.sp, 16.sp),
+                        color = WaveformColors.Muted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(episode.title, style = brandedSansStyle(19.sp, 24.sp, weight = 600), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                val description = remember(episode.description) { stripHtml(episode.description) }
+                if (description.isNotEmpty()) {
+                    Text(
+                        text = description,
+                        style = brandedSansStyle(14.sp, 19.sp),
+                        color = WaveformColors.Description,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+                Spacer(Modifier.height(10.dp))
+                SpotlightActions(spotlight)
+            }
         }
     }
 }
@@ -125,11 +139,12 @@ private fun spotlightDetails(spotlight: BrandedSpotlight): String {
 }
 
 /**
- * Forty bars, lit up to where you are with a slanted red marker there. While the episode plays
- * the bars breathe on the logo's four beats.
+ * The band across the top of the card: forty bars, white up to where you are and grey after,
+ * with nothing else marking the spot. While the episode plays the bars breathe on the logo's
+ * four beats.
  */
 @Composable
-private fun WaveformProgress(progress: Float, playing: Boolean) {
+private fun WaveformBand(progress: Float, playing: Boolean) {
     val animated = animateFloatAsState(progress, label = "waveform_spotlight_progress")
     val moving = playing && remember { ValueAnimator.areAnimatorsEnabled() }
     val live = animateFloatAsState(if (moving) 1f else 0f, tween(400), label = "waveform_spotlight_live")
@@ -140,42 +155,48 @@ private fun WaveformProgress(progress: Float, playing: Boolean) {
     Box(
         Modifier
             .fillMaxWidth()
-            .height(ProgressHeight)
+            .height(WaveformBand.HEIGHT.dp)
+            .background(WaveformColors.Band)
+            .drawBehind {
+                drawRect(WaveformColors.BandDivider, Offset(0f, size.height - 1.dp.toPx()), Size(size.width, 1.dp.toPx()))
+            }
+            .padding(horizontal = 14.dp)
             .progressSemantics(progress)
             .drawBehind {
                 val unit = 1.dp.toPx()
-                val barWidth = 3 * unit
-                val step = (size.width - barWidth - 4 * unit) / (ProgressBars.size - 1)
-                val markerWidth = 6 * unit
-                val markerX = animated.value * (size.width - markerWidth)
-                val middle = size.height / 2f
-                ProgressBars.forEachIndexed { i, height ->
-                    val x = 2 * unit + i * step
+                val barWidth = WaveformBand.BAR_WIDTH * unit
+                val middle = (size.height - unit) / 2f
+                WaveformBand.Heights.forEachIndexed { i, height ->
+                    val x = WaveformBand.barLeft(i, size.width, barWidth)
                     val scale = 1f + (WaveformMotion.liveScale(clock.longValue, i % 4) - 1f) * live.value
-                    val h = height * scale * unit
-                    val lit = x + barWidth / 2f <= markerX + markerWidth / 2f && animated.value > 0f
-                    drawRect(if (lit) WaveformColors.Text else WaveformColors.Track, Offset(x, middle - h / 2f), Size(barWidth, h))
+                    val h = height * WaveformBand.HEIGHT_SCALE * scale * unit
+                    val played = WaveformBand.isPlayed(x + barWidth / 2f, size.width, animated.value)
+                    drawRect(if (played) WaveformColors.Text else WaveformColors.BandTrack, Offset(x, middle - h / 2f), Size(barWidth, h))
                 }
-                // The logo's slant: 6dp wide, its right side 3.2dp higher.
-                val marker = Path().apply {
-                    moveTo(markerX, middle - 2 * unit)
-                    lineTo(markerX + markerWidth, middle - 5.2f * unit)
-                    lineTo(markerX + markerWidth, middle + 4 * unit)
-                    lineTo(markerX, middle + 7.2f * unit)
-                    close()
-                }
-                drawPath(marker, WaveformColors.Red)
             },
     )
 }
 
-private val ProgressHeight = 36.dp
+/** The band's geometry from the approved design: 34dp tall, forty 3dp bars across its width. */
+internal object WaveformBand {
+    const val HEIGHT = 34
+    const val BAR_WIDTH = 3f
 
-/** The bar heights from the design, in dp. */
-private val ProgressBars = listOf(
-    8f, 12f, 8f, 18f, 10f, 24f, 14f, 30f, 20f, 34f, 26f, 36f, 30f, 22f, 32f, 36f, 28f, 18f, 26f, 34f,
-    30f, 20f, 14f, 24f, 16f, 28f, 12f, 20f, 10f, 16f, 8f, 14f, 10f, 18f, 8f, 12f, 6f, 10f, 6f, 8f,
-)
+    /** The bars are the design's heights at 64%, so the tallest stays inside the band. */
+    const val HEIGHT_SCALE = 0.64f
+
+    /** Each bar's height in dp before scaling. */
+    val Heights = listOf(
+        8f, 12f, 8f, 18f, 10f, 24f, 14f, 30f, 20f, 34f, 26f, 36f, 30f, 22f, 32f, 36f, 28f, 18f, 26f, 34f,
+        30f, 20f, 14f, 24f, 16f, 28f, 12f, 20f, 10f, 16f, 8f, 14f, 10f, 18f, 8f, 12f, 6f, 10f, 6f, 8f,
+    )
+
+    /** The left edge of bar [index], spreading the bars from edge to edge of [width]. */
+    fun barLeft(index: Int, width: Float, barWidth: Float): Float = index * (width - barWidth) / (Heights.size - 1)
+
+    /** A bar is played once the listening point reaches its centre; nothing is played at 0. */
+    fun isPlayed(centre: Float, width: Float, progress: Float): Boolean = progress > 0f && width > 0f && centre / width <= progress
+}
 
 @Composable
 private fun SpotlightActions(spotlight: BrandedSpotlight) {

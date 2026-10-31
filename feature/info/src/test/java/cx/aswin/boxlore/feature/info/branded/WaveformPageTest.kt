@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.info.branded.waveform.LogoGroup
+import cx.aswin.boxlore.feature.info.branded.waveform.WaveformBand
 import cx.aswin.boxlore.feature.info.branded.waveform.WaveformButtonMotion
 import cx.aswin.boxlore.feature.info.branded.waveform.WaveformColors
 import cx.aswin.boxlore.feature.info.branded.waveform.WaveformLogoIntro
@@ -14,6 +15,7 @@ import cx.aswin.boxlore.feature.info.branded.waveform.WaveformLogoShape
 import cx.aswin.boxlore.feature.info.branded.waveform.WaveformMotion
 import cx.aswin.boxlore.feature.info.branded.waveform.WaveformPage
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -58,6 +60,7 @@ class WaveformPageTest {
         assertReadable(WaveformColors.Publisher, WaveformColors.Page)
         assertReadable(WaveformColors.RedText, WaveformColors.Card)
         assertReadable(WaveformColors.Muted, WaveformColors.Card)
+        assertReadable(WaveformColors.Description, WaveformColors.Card)
         assertReadable(WaveformColors.Copyright.body, WaveformColors.Copyright.popup)
         assertReadable(WaveformColors.Copyright.note, WaveformColors.Copyright.popup)
     }
@@ -114,6 +117,32 @@ class WaveformPageTest {
         val scales = (0L..3_000L step 40L).flatMap { t -> (0..3).map { WaveformMotion.liveScale(t, it) } }
         assertTrue(scales.all { it in 0.45f..1.12f })
         assertTrue((0..3).map { WaveformMotion.liveScale(400L, it) }.distinct().size == 4)
+    }
+
+    @Test
+    fun `the spotlight band lights its bars up to where you are, with no marker`() {
+        val width = 307f
+        val barWidth = WaveformBand.BAR_WIDTH
+        val centres = WaveformBand.Heights.indices.map { WaveformBand.barLeft(it, width, barWidth) + barWidth / 2f }
+        fun played(progress: Float) = centres.map { WaveformBand.isPlayed(it, width, progress) }
+        assertTrue(played(0f).none { it }, "A new episode shows no played bars")
+        assertTrue(played(1f).all { it }, "A played episode shows every bar lit")
+        val partway = played(0.34f)
+        val lit = partway.count { it }
+        assertEquals(14, lit)
+        // Lit bars run from the left edge with no gap, so only colour marks the listening point.
+        assertTrue(partway.take(lit).all { it } && partway.drop(lit).none { it })
+        assertEquals(0f, WaveformBand.barLeft(0, width, barWidth))
+        assertEquals(width - barWidth, WaveformBand.barLeft(WaveformBand.Heights.lastIndex, width, barWidth), 0.001f)
+        assertFalse(WaveformBand.isPlayed(1f, 0f, 1f), "A band with no width draws nothing as played")
+    }
+
+    @Test
+    fun `the band's tallest breathing bar stays inside it`() {
+        val tallest = WaveformBand.Heights.max() * WaveformBand.HEIGHT_SCALE * 1.12f
+        assertTrue(tallest < WaveformBand.HEIGHT - 1, "$tallest dp must fit above the band's 1dp hairline")
+        assertReadable(WaveformColors.Text, WaveformColors.Band)
+        assertReadable(WaveformColors.BandTrack, WaveformColors.Band, minimum = 1.5f)
     }
 
     @Test

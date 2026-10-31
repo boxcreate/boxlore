@@ -30,6 +30,12 @@ internal data class BrandedSpotlight(
 internal fun brandedSpotlightEpisode(episodes: List<Episode>, sort: EpisodeSort, searching: Boolean): Episode? =
     if (sort != EpisodeSort.NEWEST || searching) null else episodes.firstOrNull { !it.isTrailer }
 
+/**
+ * The spotlight's list key is its episode's ID, the key that episode has in the list, so Select
+ * visible counts it. The list below leaves that episode out, so the key is never used twice.
+ */
+internal fun brandedSpotlightKey(episode: Episode): String = episode.id
+
 /** The spotlight's episode is not repeated in the list below it. */
 internal fun feedItemsWithoutSpotlight(items: List<FeedItem>, spotlight: Episode?): List<FeedItem> =
     if (spotlight == null) items else items.filterNot { it is FeedItem.NormalEpisode && it.episode.id == spotlight.id }

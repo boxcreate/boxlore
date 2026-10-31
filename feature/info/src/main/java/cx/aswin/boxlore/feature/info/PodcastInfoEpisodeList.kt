@@ -35,6 +35,7 @@ import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.feature.info.branded.BrandedShowHeader
 import cx.aswin.boxlore.feature.info.branded.BrandedSpotlight
 import cx.aswin.boxlore.feature.info.branded.LocalBrandedPage
+import cx.aswin.boxlore.feature.info.branded.brandedSpotlightKey
 import cx.aswin.boxlore.feature.info.components.EpisodeCardSkeleton
 import cx.aswin.boxlore.feature.info.components.EpisodeFeedItemRow
 import cx.aswin.boxlore.feature.info.components.EpisodeFeedRowUi
@@ -269,7 +270,7 @@ private fun LazyListScope.brandedSpotlightItem(
     viewModel: PodcastInfoViewModel,
 ) {
     val episode = contentState.spotlightEpisode ?: return
-    item(key = "branded_spotlight") {
+    item(key = brandedSpotlightKey(episode)) {
         val brandedPage = LocalBrandedPage.current?.page ?: return@item
         val indicators = contentState.episodeListIndicators
         EpisodePlayStateWrapper(episodeId = episode.id, playbackStateFlow = viewModel.episodePlaybackState) { playState ->
