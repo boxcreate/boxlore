@@ -359,6 +359,7 @@ open class UserSyncCoordinator(
                 queue = queueDto,
                 listeningDays = batch.listening?.dayDtos.orEmpty(),
                 playedShows = batch.listening?.showDtos.orEmpty(),
+                listeningTotals = true,
                 clientTimestamp = now,
             )
 

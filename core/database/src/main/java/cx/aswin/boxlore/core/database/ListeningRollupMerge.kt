@@ -42,7 +42,7 @@ object ListeningRollupMerge {
             eveningMs = rollup.eveningMs + if (bucket(session) == 2) ms else 0L,
             nightMs = rollup.nightMs + if (bucket(session) == 3) ms else 0L,
             wallMs = rollup.wallMs + (session.wallMs ?: 0L),
-            totals = rollup.totals.plus(session),
+            totals = rollup.knownTotals().plus(session),
         )
     }
 
@@ -59,6 +59,6 @@ object ListeningRollupMerge {
         eveningMs = a.eveningMs + b.eveningMs,
         nightMs = a.nightMs + b.nightMs,
         wallMs = a.wallMs + b.wallMs,
-        totals = a.totals + b.totals,
+        totals = a.knownTotals() + b.knownTotals(),
     )
 }

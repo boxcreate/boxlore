@@ -32,8 +32,10 @@ import cx.aswin.boxlore.core.prefs.BoxcastPrefs
  *   All of it is recorded as sent only when the server answers that it stores listening
  *   (`listeningAccepted`); an older server ignores it, and it goes again after the server update.
  *   Each day carries its richer totals (Room v41, [ListeningDayTotals]). The first time a server answers
- *   a push or a pull saying it stores them (`listeningTotals`), every day goes up once more, so days sent
- *   before reach the cloud with them, whichever of the app and the server updated first.
+ *   a push or a pull saying it stores them (`listeningTotals`), every day with totals goes up once more,
+ *   so days sent before reach the cloud with them, whichever of the app and the server updated first.
+ *   Pushes say they carry totals (`SyncPushRequest.listeningTotals`), so the server keeps a day's
+ *   stored totals when an older build pushes it.
  * - **Pull:** every phone's days and the played shows since the pulled mark (0 on the first pull, even
  *   when the history mark is recent; then the last pull's syncedAt - 1), stored by
  *   [ListeningInsightsMaintenance.applyCloudDailyListening]: another origin's day replaces only listening
@@ -104,12 +106,13 @@ internal class ListeningSync(
 
     /**
      * The first time a server says it stores the days' richer totals (on a push or a pull, which every
-     * sync makes even with nothing to push), every day goes up again once, so days sent before (without
-     * them, or to a server that dropped them) reach the cloud with them.
+     * sync makes even with nothing to push), every day with totals goes up again once, so days sent
+     * before (without them, or to a server that dropped them) reach the cloud with them. Only the totals
+     * are forgotten: a day pushed before that is gone still gets its zero day.
      */
     private suspend fun onServerStoresTotals() {
         if (prefs.areListeningTotalsSent()) return
-        maintenance.forgetPushedDays()
+        maintenance.forgetPushedTotals()
         prefs.setListeningTotalsSent(true)
     }
 

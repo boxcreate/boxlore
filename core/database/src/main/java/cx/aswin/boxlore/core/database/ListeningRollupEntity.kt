@@ -55,6 +55,13 @@ data class ListeningRollupEntity(
 
     fun isZero(): Boolean = consumedMs == 0L && sessionCount == 0
 
+    /**
+     * [totals], with a single session's length as the longest where a summary from before v41 didn't
+     * store it, so adding to the summary keeps it.
+     */
+    fun knownTotals(): ListeningDayTotals =
+        if (totals.longestSessionMs == 0L && sessionCount == 1) totals.copy(longestSessionMs = consumedMs) else totals
+
     companion object {
         /** [deviceId] of summaries recorded before Room v40 that no installation has claimed yet. */
         const val THIS_DEVICE = ""

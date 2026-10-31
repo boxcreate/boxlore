@@ -128,5 +128,22 @@ class ListeningRollupMergeTest {
 
         assertEquals(ListeningDayTotals(longestSessionMs = 40L, carMs = 17L, castMs = 3L, newReleaseMs = 5L), a + b)
         assertEquals(ListeningDayTotals(), ListeningRollupEntity(1L, "e", "p", 9L, 1, 0, 9L, totals = a).zeroed().totals)
+        val summed = ListeningRollupMerge.sum(
+            ListeningRollupEntity(1L, "e", "p", 40L, 2, 0, 9L, totals = a),
+            ListeningRollupEntity(1L, "e", "p", 25L, 2, 0, 8L, totals = b),
+        )
+        assertEquals(a + b, summed.totals)
+    }
+
+    @Test
+    fun aSummaryFromBeforeV41WithOneSessionKeepsItsLengthAsTheLongestWhenAddedTo() {
+        // Stored before v41: one hour-long session, no totals.
+        val legacy = ListeningRollupEntity(10L, "ep-1", "p", 60L * 60_000L, sessionCount = 1, completionCount = 0, lastListenedAt = 5L)
+        val later = session("later", 20L * 60_000L).copy(localDay = 10L, endedAt = 9L)
+
+        assertEquals(60L * 60_000L, ListeningRollupMerge.mergeSessionsIntoRollup(10L, "ep-1", listOf(later), legacy).totals.longestSessionMs)
+        assertEquals(60L * 60_000L, ListeningRollupMerge.sum(legacy, legacy.copy(consumedMs = 1_000L, sessionCount = 3)).totals.longestSessionMs)
+        // Two sessions with no totals: their longest isn't known.
+        assertEquals(0L, legacy.copy(sessionCount = 2).knownTotals().longestSessionMs)
     }
 }

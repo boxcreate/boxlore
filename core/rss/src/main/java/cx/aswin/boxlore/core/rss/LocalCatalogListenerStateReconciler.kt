@@ -7,6 +7,7 @@ import cx.aswin.boxlore.core.database.EpisodeGroupStateEntity
 import cx.aswin.boxlore.core.database.EpisodeListenerProjection
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
+import cx.aswin.boxlore.core.database.ListeningRollupMerge
 import cx.aswin.boxlore.core.database.LocalEpisodeEntity
 import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
@@ -378,15 +379,6 @@ private fun preferredDownloadStatus(first: Int, second: Int?,): Int = listOfNotN
         }
     }
 
-internal fun mergeRollup(old: ListeningRollupEntity, existing: ListeningRollupEntity?, newEpisodeId: String,): ListeningRollupEntity = old.copy(
-    episodeId = newEpisodeId,
-    consumedMs = old.consumedMs + (existing?.consumedMs ?: 0L),
-    sessionCount = old.sessionCount + (existing?.sessionCount ?: 0),
-    completionCount = old.completionCount + (existing?.completionCount ?: 0),
-    lastListenedAt = maxOf(old.lastListenedAt, existing?.lastListenedAt ?: 0L),
-    morningMs = old.morningMs + (existing?.morningMs ?: 0L),
-    afternoonMs = old.afternoonMs + (existing?.afternoonMs ?: 0L),
-    eveningMs = old.eveningMs + (existing?.eveningMs ?: 0L),
-    nightMs = old.nightMs + (existing?.nightMs ?: 0L),
-    wallMs = old.wallMs + (existing?.wallMs ?: 0L),
-)
+/** [old] moved to [newEpisodeId], with the summary already there ([existing]) added in, richer totals included. */
+internal fun mergeRollup(old: ListeningRollupEntity, existing: ListeningRollupEntity?, newEpisodeId: String,): ListeningRollupEntity =
+    (existing?.let { ListeningRollupMerge.sum(old, it) } ?: old).copy(episodeId = newEpisodeId)

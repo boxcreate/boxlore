@@ -21,4 +21,16 @@ interface ListeningPushDao {
     /** Forgets every pushed day (a new account or a deleted cloud copy): the next pushes send them all again. */
     @Query("DELETE FROM listening_days_pushed")
     suspend fun deleteAllPushedDays()
+
+    /**
+     * Forgets the richer totals the cloud holds of every pushed day (Room v41), keeping the days: each
+     * day with totals goes up again, and a day pushed before that is gone still gets its zero day.
+     */
+    @Query(
+        """
+        UPDATE listening_days_pushed SET longestSessionMs = 0, speakerMs = 0, headphonesMs = 0, bluetoothMs = 0,
+            carMs = 0, castMs = 0, loreMs = 0, smartQueueMs = 0, newReleaseMs = 0
+        """,
+    )
+    suspend fun forgetPushedTotals()
 }

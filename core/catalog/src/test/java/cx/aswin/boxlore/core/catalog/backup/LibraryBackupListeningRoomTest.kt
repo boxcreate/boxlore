@@ -96,6 +96,17 @@ class LibraryBackupListeningRoomTest {
             refusedEpisodeIds = emptySet(),
         )
         assertEquals(ListeningDayTotals(), target.listeningRollupDao().getRollup(PHONE_C, 8L, EPISODE)!!.totals)
+
+        // A v9 backup of that same listening fills its totals in; a v8 one of it again takes nothing away.
+        LibraryBackupListening(target, PHONE_B).restore(
+            ListeningBackup(deviceId = PHONE_C, dailySummaries = listOf(rollupBackup(day = 8L, device = PHONE_C, consumed = 60_000L).copy(longestSessionMs = 60_000L, carMs = 60_000L))),
+            refusedEpisodeIds = emptySet(),
+        )
+        LibraryBackupListening(target, PHONE_B).restore(
+            ListeningBackup(deviceId = PHONE_C, dailySummaries = listOf(rollupBackup(day = 8L, device = PHONE_C, consumed = 60_000L))),
+            refusedEpisodeIds = emptySet(),
+        )
+        assertEquals(ListeningDayTotals(longestSessionMs = 60_000L, carMs = 60_000L), target.listeningRollupDao().getRollup(PHONE_C, 8L, EPISODE)!!.totals)
     }
 
     @Test

@@ -100,6 +100,12 @@ class ListeningInsightsMaintenance(
     suspend fun forgetPushedDays() = pushes.deleteAllPushedDays()
 
     /**
+     * Forgets only the richer totals the cloud holds (a server that now stores them): every day with
+     * totals goes up again, and days pushed before that are gone still get their zero day.
+     */
+    suspend fun forgetPushedTotals() = pushes.forgetPushedTotals()
+
+    /**
      * Daily listening from the cloud, in one transaction.
      * - The installation's own days ([ListeningOrigins.own]): it is their only writer, so what it holds
      *   is never older, and its sessions keep their details. A day comes back only where it holds
@@ -133,8 +139,20 @@ class ListeningInsightsMaintenance(
         }
         if (!day.covers(stored, daySessions)) return
         // A zero day: that origin no longer holds the day (it moved to another episode ID, or was removed).
-        if (day.isZero()) rollups.deleteRollup(day.deviceId, day.localDay, day.episodeId) else rollups.upsertRollup(day)
+        if (day.isZero()) rollups.deleteRollup(day.deviceId, day.localDay, day.episodeId) else rollups.upsertRollup(day.keepingHeldTotals(stored, daySessions))
         sessions.deleteSessionsOfDailySummary(day.deviceId, day.localDay, day.episodeId, day.lastListenedAt)
+    }
+
+    /**
+     * This day, with the richer totals of what this phone holds of it when the day has none (an older
+     * build or server sent it) and holds just that listening: as late and as much. A later or larger day
+     * has more listening than the held totals cover, so they don't stand for it.
+     */
+    private fun ListeningRollupEntity.keepingHeldTotals(stored: ListeningRollupEntity?, daySessions: List<ListeningSessionEntity>,): ListeningRollupEntity {
+        if (totals != ListeningDayTotals()) return this
+        val held = if (daySessions.isEmpty()) stored else ListeningRollupMerge.mergeSessionsIntoRollup(localDay, episodeId, daySessions, stored)
+        if (held == null || held.lastListenedAt != lastListenedAt || held.consumedMs != consumedMs) return this
+        return copy(totals = held.knownTotals())
     }
 
     /**

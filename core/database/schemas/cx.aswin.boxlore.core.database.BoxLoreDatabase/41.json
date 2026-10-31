@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 41,
-    "identityHash": "9c1c17079b528a1671bd4443c6c50a5c",
+    "identityHash": "9db475976f8387430ac1bcc2771e17c7",
     "entities": [
       {
         "tableName": "listening_history",
@@ -2091,7 +2091,7 @@
       },
       {
         "tableName": "listening_days_pushed",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`deviceId` TEXT NOT NULL, `localDay` INTEGER NOT NULL, `episodeId` TEXT NOT NULL, `podcastId` TEXT NOT NULL, `consumedMs` INTEGER NOT NULL, `wallMs` INTEGER NOT NULL, `sessionCount` INTEGER NOT NULL, `completionCount` INTEGER NOT NULL, `morningMs` INTEGER NOT NULL, `afternoonMs` INTEGER NOT NULL, `eveningMs` INTEGER NOT NULL, `nightMs` INTEGER NOT NULL, `lastListenedAt` INTEGER NOT NULL, PRIMARY KEY(`deviceId`, `localDay`, `episodeId`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`deviceId` TEXT NOT NULL, `localDay` INTEGER NOT NULL, `episodeId` TEXT NOT NULL, `podcastId` TEXT NOT NULL, `consumedMs` INTEGER NOT NULL, `wallMs` INTEGER NOT NULL, `sessionCount` INTEGER NOT NULL, `completionCount` INTEGER NOT NULL, `morningMs` INTEGER NOT NULL, `afternoonMs` INTEGER NOT NULL, `eveningMs` INTEGER NOT NULL, `nightMs` INTEGER NOT NULL, `lastListenedAt` INTEGER NOT NULL, `longestSessionMs` INTEGER NOT NULL DEFAULT 0, `speakerMs` INTEGER NOT NULL DEFAULT 0, `headphonesMs` INTEGER NOT NULL DEFAULT 0, `bluetoothMs` INTEGER NOT NULL DEFAULT 0, `carMs` INTEGER NOT NULL DEFAULT 0, `castMs` INTEGER NOT NULL DEFAULT 0, `loreMs` INTEGER NOT NULL DEFAULT 0, `smartQueueMs` INTEGER NOT NULL DEFAULT 0, `newReleaseMs` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`deviceId`, `localDay`, `episodeId`))",
         "fields": [
           {
             "fieldPath": "deviceId",
@@ -2170,6 +2170,69 @@
             "columnName": "lastListenedAt",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "totals.longestSessionMs",
+            "columnName": "longestSessionMs",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "totals.speakerMs",
+            "columnName": "speakerMs",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "totals.headphonesMs",
+            "columnName": "headphonesMs",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "totals.bluetoothMs",
+            "columnName": "bluetoothMs",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "totals.carMs",
+            "columnName": "carMs",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "totals.castMs",
+            "columnName": "castMs",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "totals.loreMs",
+            "columnName": "loreMs",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "totals.smartQueueMs",
+            "columnName": "smartQueueMs",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "totals.newReleaseMs",
+            "columnName": "newReleaseMs",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
           }
         ],
         "primaryKey": {
@@ -2184,7 +2247,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9c1c17079b528a1671bd4443c6c50a5c')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9db475976f8387430ac1bcc2771e17c7')"
     ]
   }
 }

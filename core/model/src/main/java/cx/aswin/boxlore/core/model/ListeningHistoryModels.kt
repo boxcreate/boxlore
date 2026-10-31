@@ -144,6 +144,16 @@ data class ListeningRollupSnapshot(
     val nightMs: Long,
     val deviceId: String = "",
     val wallMs: Long = 0L,
+    /** The summary's richer totals (Room v41), so Undo puts them back; 0 when not known. */
+    val longestSessionMs: Long = 0L,
+    val speakerMs: Long = 0L,
+    val headphonesMs: Long = 0L,
+    val bluetoothMs: Long = 0L,
+    val carMs: Long = 0L,
+    val castMs: Long = 0L,
+    val loreMs: Long = 0L,
+    val smartQueueMs: Long = 0L,
+    val newReleaseMs: Long = 0L,
 )
 
 /**

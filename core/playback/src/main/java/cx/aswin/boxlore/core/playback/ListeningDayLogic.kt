@@ -33,7 +33,7 @@ internal object ListeningDayLogic {
         afternoonMs = row.afternoonMs,
         eveningMs = row.eveningMs,
         nightMs = row.nightMs,
-        longestSessionMs = row.totals.longestSessionMs.takeIf { it > 0L } ?: if (row.sessionCount == 1) row.consumedMs else 0L,
+        longestSessionMs = row.knownTotals().longestSessionMs,
     )
 
     fun sum(a: ListeningDayEpisode, b: ListeningDayEpisode) = a.copy(

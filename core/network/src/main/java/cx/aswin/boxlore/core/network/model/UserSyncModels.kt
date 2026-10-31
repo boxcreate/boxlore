@@ -176,6 +176,11 @@ data class SyncPushRequest(
     @SerialName("listeningDays") val listeningDays: List<ListeningDaySyncDto> = emptyList(),
     /** Shows this phone played (Room v40); not sent when empty. */
     @SerialName("playedShows") val playedShows: List<PlayedShowSyncDto> = emptyList(),
+    /**
+     * Its days carry their richer totals (Room v41), 0 included; the server keeps a day's stored totals
+     * for a push without it (an older build, which never knows them).
+     */
+    @SerialName("listeningTotals") val listeningTotals: Boolean = false,
     @SerialName("clientTimestamp") val clientTimestamp: Long = 0L,
 )
 

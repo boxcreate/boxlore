@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.playback
 
 import cx.aswin.boxlore.core.database.EpisodeGroupStateEntity
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.ListeningDayTotals
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.ListeningSessionEntity
 import cx.aswin.boxlore.core.model.ListeningCompletionLogic
@@ -171,6 +172,15 @@ internal fun ListeningRollupEntity.toListeningRollupSnapshot(): ListeningRollupS
     nightMs = nightMs,
     deviceId = deviceId,
     wallMs = wallMs,
+    longestSessionMs = totals.longestSessionMs,
+    speakerMs = totals.speakerMs,
+    headphonesMs = totals.headphonesMs,
+    bluetoothMs = totals.bluetoothMs,
+    carMs = totals.carMs,
+    castMs = totals.castMs,
+    loreMs = totals.loreMs,
+    smartQueueMs = totals.smartQueueMs,
+    newReleaseMs = totals.newReleaseMs,
 )
 
 internal fun ListeningRollupSnapshot.toListeningRollupEntity(): ListeningRollupEntity = ListeningRollupEntity(
@@ -187,4 +197,15 @@ internal fun ListeningRollupSnapshot.toListeningRollupEntity(): ListeningRollupE
     nightMs = nightMs,
     deviceId = deviceId,
     wallMs = wallMs,
+    totals = ListeningDayTotals(
+        longestSessionMs = longestSessionMs,
+        speakerMs = speakerMs,
+        headphonesMs = headphonesMs,
+        bluetoothMs = bluetoothMs,
+        carMs = carMs,
+        castMs = castMs,
+        loreMs = loreMs,
+        smartQueueMs = smartQueueMs,
+        newReleaseMs = newReleaseMs,
+    ),
 )

@@ -116,7 +116,13 @@ internal class LibraryBackupListening(private val database: BoxLoreDatabase, pri
             val sessionDao = database.listeningSessionDao()
             for (summary in summaries) {
                 val stored = rollupDao.getRollup(summary.deviceId, summary.localDay, summary.episodeId)
-                if (stored != null && !summary.isLaterThan(stored)) continue
+                if (stored != null && !summary.isLaterThan(stored)) {
+                    // The same listening without totals (an older backup or the cloud): this one's fill them in.
+                    if (stored.isSameListening(summary) && stored.totals == ListeningDayTotals() && summary.totals != ListeningDayTotals()) {
+                        rollupDao.upsertRollup(stored.copy(totals = summary.totals))
+                    }
+                    continue
+                }
                 rollupDao.upsertRollup(summary)
                 sessionDao.deleteSessionsOfDailySummary(summary.deviceId, summary.localDay, summary.episodeId, summary.lastListenedAt)
             }
@@ -133,6 +139,9 @@ internal class LibraryBackupListening(private val database: BoxLoreDatabase, pri
 
     private fun ListeningRollupEntity.isLaterThan(other: ListeningRollupEntity): Boolean =
         lastListenedAt > other.lastListenedAt || (lastListenedAt == other.lastListenedAt && consumedMs > other.consumedMs)
+
+    private fun ListeningRollupEntity.isSameListening(other: ListeningRollupEntity): Boolean =
+        lastListenedAt == other.lastListenedAt && consumedMs == other.consumedMs
 
     private fun ListeningSessionEntity.toBackup() = ListeningSessionBackup(
         sessionId = sessionId,
