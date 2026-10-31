@@ -10,6 +10,7 @@ import cx.aswin.boxlore.core.model.ListeningPeriod
 import cx.aswin.boxlore.core.model.ListeningPlayedShow
 import cx.aswin.boxlore.feature.history.timeline.TimelineFilter
 import cx.aswin.boxlore.feature.history.timeline.TimelineGrouping
+import java.io.IOException
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneOffset
@@ -154,6 +155,17 @@ class HistoryViewModelTest {
 
         vm.closeStory()
         assertEquals(StoryUiState.Closed, vm.storyState.first { it == StoryUiState.Closed })
+    }
+
+    @Test
+    fun aFailedSeenWriteLeavesTheStoryOpen() = runTest(dispatcher) {
+        val listening = listOf(day(2026, 9, 12, "show", 30))
+        val vm = HistoryViewModel(FakeHistory(history, listening), zoneId = { ZoneOffset.UTC }, now = { LocalDate.of(2026, 10, 30) }, markStorySeen = { throw IOException("disk full") }).also { created += it }
+
+        vm.openStory(YearMonth.of(2026, 9))
+
+        val open = vm.storyState.first { it is StoryUiState.Open } as StoryUiState.Open
+        assertEquals(YearMonth.of(2026, 9), open.story.month)
     }
 
     @Test

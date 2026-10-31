@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -78,6 +79,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /** The story's frame: the boards' 400 × 890, scaled as a whole to fit the window. */
+/** The story frame's test tag: in a short window it scrolls. */
+const val STORY_FRAME_TAG = "story_frame"
+
 private const val FRAME_WIDTH = 400f
 private const val FRAME_HEIGHT = 890f
 
@@ -139,6 +143,8 @@ fun StoryPlayer(story: MonthStory, startCard: StoryCard, onClose: () -> Unit, on
     val share: () -> Unit = {
         scope.launch { onShare(cropShareCard(frame.toImageBitmap().asAndroidBitmap(), density.density)) }
     }
+    // Outside the short-window check, so the frame keeps its scroll when the window grows tall and shrinks again.
+    val frameScroll = rememberScrollState()
     Box(modifier.fillMaxSize().background(bg)) {
         // On a spanned foldable the frame keeps to one side of the hinge, as other full-screen layers do.
         BoxWithConstraints(Modifier.fillMaxSize().boxloreFoldSafeViewport().windowInsetsPadding(WindowInsets.safeDrawing), contentAlignment = Alignment.Center) {
@@ -148,7 +154,8 @@ fun StoryPlayer(story: MonthStory, startCard: StoryCard, onClose: () -> Unit, on
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 1f)) {
                 Box(
                     Modifier
-                        .then(if (scale > fit) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+                        .testTag(STORY_FRAME_TAG)
+                        .then(if (scale > fit) Modifier.verticalScroll(frameScroll) else Modifier)
                         .size(FRAME_WIDTH.dp * scale, FRAME_HEIGHT.dp * scale),
                     contentAlignment = Alignment.Center,
                 ) {

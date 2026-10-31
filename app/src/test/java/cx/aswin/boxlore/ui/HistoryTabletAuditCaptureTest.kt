@@ -99,6 +99,8 @@ class HistoryTabletAuditCaptureTest(private val view: String, configuration: Pho
             Thread.sleep(50)
             fixture.compose.waitForIdle()
         }
+        val ready = if (view.startsWith("insights")) vm.insightsState.value is InsightsUiState.Ready else vm.timelineState.value is TimelineUiState.Ready
+        check(ready) { "The $view tab was still loading: a capture of it would show the loader" }
         if (view == "shows") {
             fixture.compose.mainClock.advanceTimeBy(1_000)
             fixture.compose.onNodeWithText("Shows").performClick()

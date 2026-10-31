@@ -17,6 +17,7 @@ import cx.aswin.boxlore.feature.history.timeline.TimelineFilter
 import cx.aswin.boxlore.feature.history.timeline.TimelineGrouping
 import cx.aswin.boxlore.feature.history.timeline.TimelineTabState
 import cx.aswin.boxlore.feature.history.timeline.timelineEntries
+import java.io.IOException
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -192,7 +193,15 @@ class HistoryViewModel(
     /** Opens [month]'s story, at its share card when [atShare]; opening last month's story clears its New. */
     fun openStory(month: YearMonth, atShare: Boolean = false) {
         storyRequest.value = StoryRequest(month, atShare)
-        if (month == YearMonth.from(today.value).minusMonths(1)) viewModelScope.launch { markStorySeen(month.toString()) }
+        if (month == YearMonth.from(today.value).minusMonths(1)) {
+            viewModelScope.launch {
+                // A failed write only leaves the story New; the story stays open.
+                try {
+                    markStorySeen(month.toString())
+                } catch (_: IOException) {
+                }
+            }
+        }
     }
 
     fun closeStory() {

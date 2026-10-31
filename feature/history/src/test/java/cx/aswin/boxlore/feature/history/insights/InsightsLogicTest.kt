@@ -133,6 +133,8 @@ class InsightsLogicTest {
 
         assertEquals(20 * MINUTE, content.time.totalMs)
         assertEquals(20 * MINUTE, content.time.perDayMs)
+        // Without the clamp the range would be the 31st to the 30th, empty, with the same zero totals.
+        assertEquals(today..today, InsightsLogic.periodRange(ListeningPeriod.ALL, today, today.plusDays(1)))
     }
 
     @Test

@@ -381,6 +381,8 @@
     <string name="history_story_entry_top">%1$s on top</string>
     <string name="history_story_watch">Watch your %1$s story</string>
     <string name="history_story_earlier">Earlier stories</string>
+    <!-- A weekday's plural ("Wednesdays"); %1$s is the weekday's name. -->
+    <string name="history_weekday_plural">%1$ss</string>
     <plurals name="history_story_earlier_all">
         <item quantity="one">Show all %d story</item>
         <item quantity="other">Show all %d stories</item>

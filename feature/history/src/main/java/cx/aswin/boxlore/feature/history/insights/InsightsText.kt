@@ -130,9 +130,9 @@ internal fun perDayText(perDayMs: Long): String {
     return if (minutes <= 0) stringResource(R.string.history_ins_per_day_under_minute) else pluralStringResource(R.plurals.history_ins_per_day_minutes, minutes, minutes)
 }
 
-/** "Wednesdays" — the weekday's plural as the board writes it. */
+/** "Wednesdays": the weekday's plural, from a string so each language can say it its own way. */
 @Composable
-internal fun weekdayPlural(day: DayOfWeek): String = day.getDisplayName(TextStyle.FULL_STANDALONE, currentLocale()) + "s"
+internal fun weekdayPlural(day: DayOfWeek): String = stringResource(R.string.history_weekday_plural, day.getDisplayName(TextStyle.FULL_STANDALONE, currentLocale()))
 
 /** "4 h 23 min on Wednesdays this month". */
 @Composable
