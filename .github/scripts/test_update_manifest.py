@@ -3,7 +3,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from refresh_upcoming import refresh
+from refresh_update_feed import refresh
 from generate_update_manifest import UPCOMING_LIMIT, UPCOMING_MORE, build_manifest, fit_lines, listener_notes, upcoming_notes
 
 
@@ -86,28 +86,26 @@ class UpdateManifestTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "24,000"):
                 build_manifest(gradle, apk, "a.apk", "🎧" * 12_001)
 
-    def test_workflow_queues_metadata_writers_and_uses_available_refresh_token(self):
+    def test_workflow_queues_metadata_writers(self):
         root = Path(__file__).resolve().parents[2]
         workflow = (root / ".github/workflows/changelog-on-merge.yml").read_text()
         self.assertEqual(4, workflow.count("queue: max"))
         self.assertEqual(3, workflow.count("group: boxlore-release-metadata"))
         self.assertIn("group: boxlore-release-preparation", workflow)
-        refresh_job = workflow.split("  refresh-latest-artifacts:", 1)[1]
-        self.assertNotIn("steps.app-token.outputs.token", refresh_job)
-        manifest_step = refresh_job.split("- name: Publish verified update manifest", 1)[1]
-        self.assertIn("GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}", manifest_step)
+        feed_job = workflow.split("  refresh-update-feed:", 1)[1].split("\n  announce-release:", 1)[0]
+        self.assertIn("GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}", feed_job)
+        self.assertNotIn("gradlew", feed_job)
 
     def test_workflow_publishes_manifest_only_after_download_verification(self):
         root = Path(__file__).resolve().parents[2]
         workflow = (root / ".github/workflows/changelog-on-merge.yml").read_text()
         jobs = workflow.split("      - name: Verify README latest-download APK")[1:]
-        self.assertEqual(2, len(jobs))
-        for job in jobs:
-            self.assertLess(job.index("exit 1"), job.index("- name: Publish verified update manifest"))
-            self.assertIn("generate_update_manifest.py", job)
-            self.assertIn('gh release upload "$TAG" "$RUNNER_TEMP/update.json"', job)
+        self.assertEqual(1, len(jobs))
+        job = jobs[0]
+        self.assertLess(job.index("exit 1"), job.index("- name: Publish verified update manifest"))
+        self.assertIn("generate_update_manifest.py", job)
+        self.assertIn('gh release upload "$TAG" "$RUNNER_TEMP/update.json"', job)
         self.assertIn(":app:bundlePlayRelease", workflow)
         self.assertNotIn("bundleRelease", workflow)
-
 
 if __name__ == "__main__": unittest.main()

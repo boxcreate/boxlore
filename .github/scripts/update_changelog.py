@@ -578,10 +578,11 @@ def _render_readme_upcoming_block(
     content: str,
     groups: list[dict[str, list[str]]] | None = None,
     bullets: list[str] | None = None,
+    whats_new_inner: str | None = None,
 ) -> str:
-    """Rewrite the Upcoming body; preserve the latest What's New region if present."""
+    """Rewrite the Upcoming body; keep the latest What's New region unless [whats_new_inner] replaces it."""
     body = _render_readme_upcoming_body(groups=groups, bullets=bullets)
-    existing_whats_new = _extract_marked_region(
+    existing_whats_new = whats_new_inner or _extract_marked_region(
         content,
         RELEASE_WHATS_NEW_START,
         RELEASE_WHATS_NEW_END,
@@ -611,8 +612,9 @@ def _update_readme(
     content: str,
     groups: list[dict[str, list[str]]] | None = None,
     bullets: list[str] | None = None,
+    whats_new_inner: str | None = None,
 ) -> str:
-    block = _render_readme_upcoming_block(content, groups=groups, bullets=bullets)
+    block = _render_readme_upcoming_block(content, groups=groups, bullets=bullets, whats_new_inner=whats_new_inner)
     pattern = re.compile(
         re.escape(UPCOMING_CHANGES_START) + r".*?" + re.escape(UPCOMING_CHANGES_END),
         flags=re.DOTALL,
@@ -766,18 +768,37 @@ def sync_changelog_unreleased() -> bool:
     return False
 
 
-def sync_readme_upcoming() -> bool:
-    """Render README Upcoming from the notes list: highlights first, then New, Improved and Fixed."""
-    original = README_PATH.read_text(encoding="utf-8")
-    notes = release_notes.load()
+def _checked_notes(path: Path) -> release_notes.ListenerNotes:
+    notes = release_notes.load(path)
     found = release_notes.problems(notes)
     if found:
-        raise ValueError(f"{release_notes.UPCOMING_PATH}: " + " ".join(found))
-    groups = release_notes.readme_groups(notes, _github_repository())
-    updated = _update_readme(original, groups=groups)
+        raise ValueError(f"{path}: " + " ".join(found))
+    return notes
+
+
+def released_whats_new(readme: str) -> str | None:
+    """README What's New rendered from the released version's notes (release-notes/vX.Y.Z.md), if kept.
+
+    A PR that corrects a released line edits that file; this carries it to What's New and the update feed.
+    """
+    region = _extract_marked_region(readme, RELEASE_WHATS_NEW_START, RELEASE_WHATS_NEW_END)
+    meta = _parse_release_meta(region) if region else None
+    if meta is None or not release_notes.archive_path(meta[0]).is_file():
+        return None
+    notes = _checked_notes(release_notes.archive_path(meta[0]))
+    body = _render_readme_upcoming_body(groups=release_notes.readme_groups(notes, _github_repository()))
+    return _render_whats_new_inner(meta[0], meta[1], body)
+
+
+def sync_readme_upcoming() -> bool:
+    """Render README Upcoming from the notes list (highlights first, then New, Improved and Fixed) and
+    What's New from the released version's notes."""
+    original = README_PATH.read_text(encoding="utf-8")
+    groups = release_notes.readme_groups(_checked_notes(release_notes.UPCOMING_PATH), _github_repository())
+    updated = _update_readme(original, groups=groups, whats_new_inner=released_whats_new(original))
     if updated != original:
         README_PATH.write_text(updated, encoding="utf-8")
-        print("Synced README Upcoming from the notes list.")
+        print("Synced README Upcoming and What's New from the notes.")
         return True
     return False
 
