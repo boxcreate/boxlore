@@ -45,3 +45,18 @@ data class Episode(
      */
     val catalogKey: String? = null,
 )
+
+/** The longest an episode tagged as a trailer can run and still be treated as one: 15 minutes. */
+const val TRAILER_MAX_DURATION_SECONDS = 15 * 60
+
+/**
+ * Whether this is a real trailer. Some feeds tag full-length episodes as trailers, so a "trailer"
+ * longer than [TRAILER_MAX_DURATION_SECONDS] counts as a full episode. With no known duration the
+ * feed's tag stands. [Episode.episodeType] keeps the feed's own value.
+ */
+val Episode.isTrailer: Boolean
+    get() = episodeType.equals("trailer", ignoreCase = true) && duration <= TRAILER_MAX_DURATION_SECONDS
+
+/** The feed's episode type, with full-length episodes the feed calls trailers read as "full". */
+val Episode.effectiveEpisodeType: String?
+    get() = if (episodeType.equals("trailer", ignoreCase = true) && !isTrailer) "full" else episodeType

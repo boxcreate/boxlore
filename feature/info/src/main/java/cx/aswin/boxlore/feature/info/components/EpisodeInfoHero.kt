@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.effectiveEpisodeType
 import cx.aswin.boxlore.feature.info.R
 import java.text.DateFormat
 import java.util.Date
@@ -134,7 +135,7 @@ private fun EpisodeMetadata(episode: Episode, isCompleted: Boolean, onToggleComp
 @Composable
 private fun EpisodeArtworkTags(episode: Episode, modifier: Modifier = Modifier) {
     FlowRow(modifier, horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        val type = when (episode.episodeType?.lowercase()) {
+        val type = when (episode.effectiveEpisodeType?.lowercase()) {
             "bonus" -> R.string.episode_info_bonus
             "trailer" -> R.string.episode_info_trailer
             else -> null

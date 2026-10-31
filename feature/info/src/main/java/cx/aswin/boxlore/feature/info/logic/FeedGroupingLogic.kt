@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.info.logic
 
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.isTrailer
 
 sealed class FeedItem {
     abstract val id: String
@@ -31,7 +32,7 @@ fun groupEpisodes(episodes: List<Episode>): List<FeedItem> {
     val currentTrailers = mutableListOf<Pair<Episode, Int>>()
 
     episodes.forEachIndexed { index, episode ->
-        if (episode.episodeType == "trailer") {
+        if (episode.isTrailer) {
             currentTrailers.add(episode to index)
         } else {
             if (currentTrailers.isNotEmpty()) {

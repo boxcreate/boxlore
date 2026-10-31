@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.dp
@@ -43,7 +44,7 @@ internal fun subscriptionButtonPhase(wasSubscribed: Boolean, isSubscribed: Boole
 }
 
 @Composable
-internal fun rememberSubscriptionButtonPhase(isSubscribed: Boolean): SubscriptionButtonPhase {
+internal fun rememberSubscriptionButtonPhase(isSubscribed: Boolean, confirmationMillis: Long = SUBSCRIPTION_CONFIRMATION_MILLIS): SubscriptionButtonPhase {
     var phase by remember { mutableStateOf(subscriptionButtonPhase(isSubscribed, isSubscribed, animationsEnabled = false)) }
     var previous by remember { mutableStateOf(isSubscribed) }
     LaunchedEffect(isSubscribed) {
@@ -51,12 +52,15 @@ internal fun rememberSubscriptionButtonPhase(isSubscribed: Boolean): Subscriptio
         // Record the new state before suspending, so a reversal cannot replay a stale confirmation.
         previous = isSubscribed
         if (phase == SubscriptionButtonPhase.CONFIRMATION) {
-            delay(800L)
+            delay(confirmationMillis)
             phase = SubscriptionButtonPhase.SUBSCRIBED
         }
     }
     return phase
 }
+
+/** How long the usual genre icon pop shows before the button settles on Subscribed. */
+internal const val SUBSCRIPTION_CONFIRMATION_MILLIS = 800L
 
 internal data class SubscriptionAutomationReveal(
     val extent: Float,
@@ -77,17 +81,17 @@ internal fun subscriptionAutomationReveal(fraction: Float): SubscriptionAutomati
 
 /** A clipped, measured slot reserves exactly the space the subscription button gives up. */
 @Composable
-internal fun SubscriptionAutomationSlot(reveal: SubscriptionAutomationReveal, enabled: Boolean, content: @Composable () -> Unit) {
+internal fun SubscriptionAutomationSlot(reveal: SubscriptionAutomationReveal, enabled: Boolean, gap: Dp = 3.dp, content: @Composable () -> Unit) {
     val accessibility = if (enabled && reveal.fullyVisible) Modifier else Modifier.clearAndSetSemantics {}
     Layout(
         modifier = accessibility.clipToBounds(),
         content = {
-            Row(Modifier.padding(start = 3.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            Row(Modifier.padding(start = gap), horizontalArrangement = Arrangement.spacedBy(gap)) {
                 content()
             }
         },
     ) { measurables, constraints ->
-        val fullWidth = 102.dp.roundToPx()
+        val fullWidth = (48.dp * 2 + gap * 2).roundToPx()
         val height = 48.dp.roundToPx()
         val controls = measurables.single().measure(Constraints.fixed(fullWidth, height))
         val visibleWidth = constraints.constrainWidth((fullWidth * reveal.extent).roundToInt())

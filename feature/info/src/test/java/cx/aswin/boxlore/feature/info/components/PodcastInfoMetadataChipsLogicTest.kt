@@ -13,7 +13,7 @@ class PodcastInfoMetadataChipsLogicTest {
     fun `filter valid frequency episodes drops trailers bonuses and undated`() {
         val episodes =
             listOf(
-                TestFixtures.episode(id = "trailer").copy(episodeType = "trailer", publishedDate = 100),
+                TestFixtures.episode(id = "trailer", duration = 120).copy(episodeType = "trailer", publishedDate = 100),
                 TestFixtures.episode(id = "bonus").copy(episodeType = "bonus", publishedDate = 200),
                 TestFixtures.episode(id = "undated").copy(publishedDate = 0),
                 TestFixtures.episode(id = "full").copy(publishedDate = 300),

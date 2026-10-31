@@ -218,6 +218,23 @@ class SameShowContinuationLogicTest {
     }
 
     @Test
+    fun `computeCandidates keeps a full-length episode the feed tags as a trailer`() {
+        val current = testEpisode("ep-1", publishedDate = 1000L)
+        val shortTrailer = testEpisode("short", publishedDate = 2000L, episodeType = "trailer").copy(duration = 120)
+        val longTagged = testEpisode("long", publishedDate = 3000L, episodeType = "trailer").copy(duration = 3264)
+        val atLimit = testEpisode("limit", publishedDate = 4000L, episodeType = "trailer").copy(duration = 15 * 60)
+
+        val candidates =
+            SameShowContinuationLogic.computeCandidates(
+                allEpisodes = listOf(current, shortTrailer, longTagged, atLimit),
+                currentEpisode = current,
+                podcast = testPodcast(type = "serial"),
+            )
+
+        assertEquals(listOf("long"), candidates.map { it.id })
+    }
+
+    @Test
     fun `computeCandidates filters out trailers and blank audio URLs`() {
         val ep1 = testEpisode("ep-1", publishedDate = 1000L)
         val ep2 = testEpisode("ep-2", publishedDate = 2000L, episodeType = "trailer")
