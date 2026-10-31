@@ -54,6 +54,9 @@ internal data class StoryEchoCast(val sequence: String, val box: StoryEchoBox, v
 internal object StoryEchoStage {
     const val HOP = "story-hop"
     private const val HELLO = "story-hello"
+
+    /** Echo facing front, happy: on How you listened, where no outfit fits (`front-rest`). */
+    const val FRONT = "story-entry"
     private const val WAVE_CLIP = "wave"
     private const val HOP_CLIP = "hop"
 
@@ -72,8 +75,12 @@ internal object StoryEchoStage {
             else -> null
         }
         if (clipReach != null) return fill(clipReach, box, pad = 0f)
-        return pose(spec.reaches["$sequence-rest"] ?: return null, box)
+        return pose(restReach(spec, sequence) ?: return null, box)
     }
+
+    /** The outline of [sequence]'s rest pose: its act's `-rest` still, else the still it ends on. */
+    private fun restReach(spec: EchoCharacterSpec, sequence: String): EchoReach? =
+        spec.reaches["$sequence-rest"] ?: spec.sequences[sequence]?.let { spec.reaches[it.lastStill] }
 
     /** Echo's square frame so a still whose outline is [reach] fills [box] with the boards' 3% margin. */
     fun pose(reach: EchoReach, box: StoryEchoBox): StoryEchoSquare = fill(reach, box, POSE_PAD * (reach.bottom - reach.top))
@@ -88,18 +95,19 @@ internal object StoryEchoStage {
     /** Echo's outline at rest on its card (the act's rest pose), left to right, in frame dp; null until the manifest loads. */
     fun bounds(spec: EchoCharacterSpec, cast: StoryEchoCast): StoryEchoBounds? {
         val square = square(spec, cast.sequence, cast.box) ?: return null
-        val reach = spec.reaches["${cast.sequence}-rest"] ?: spec.clips[WAVE_CLIP]?.reach ?: return null
+        val reach = restReach(spec, cast.sequence) ?: spec.clips[WAVE_CLIP]?.reach ?: return null
         return StoryEchoBounds(square.left + reach.left * square.side, square.left + reach.right * square.side)
     }
 
-    fun hello(palette: StoryPalette) = StoryEchoCast(HELLO, StoryEchoBox(6f, 560f, 300f), palette.echoOwn, EchoIdles.Hello)
+    // The refreshed boards (S1–S7): Echo about 40% smaller, a sidekick beside the stats.
+    fun hello(palette: StoryPalette) = StoryEchoCast(HELLO, StoryEchoBox(14f, 676f, 184f), palette.echoOwn, EchoIdles.Hello)
 
     fun time(palette: StoryPalette, barCenterX: Float) =
-        StoryEchoCast(EchoOutfit.HOURGLASS.asset, StoryEchoBox(244f, 394f, 210f, centerX = barCenterX), palette.echoOnVivid, EchoIdles.Hourglass)
+        StoryEchoCast(EchoOutfit.HOURGLASS.asset, StoryEchoBox(134f, 540f, 120f, centerX = barCenterX), palette.echoOnVivid, EchoIdles.Hourglass)
 
     fun topShow(palette: StoryPalette, outfit: EchoOutfit) = StoryEchoCast(
         outfit.asset,
-        StoryEchoBox(192f, 590f, 280f),
+        StoryEchoBox(226f, 682f, 186f),
         palette.echoOnGreen,
         when (outfit) {
             EchoOutfit.TRUE_CRIME -> EchoIdles.Detective
@@ -108,18 +116,22 @@ internal object StoryEchoStage {
         },
     )
 
+    /** On the light How you listened card Echo wears the deep ink, as the card's text does. */
+    fun how(palette: StoryPalette) = StoryEchoCast(FRONT, StoryEchoBox(236f, 690f, 176f), palette.echoOwn, EchoIdles.Hello)
+
     fun type(palette: StoryPalette, outfit: EchoOutfit) =
-        StoryEchoCast(outfit.asset, StoryEchoBox(14f, 600f, 270f), palette.echoOwn, if (outfit == EchoOutfit.NIGHT) EchoIdles.Night else EchoIdles.Genre)
+        StoryEchoCast(outfit.asset, StoryEchoBox(14f, 686f, 180f), palette.echoOwn, if (outfit == EchoOutfit.NIGHT) EchoIdles.Night else EchoIdles.Genre)
 
-    fun records(palette: StoryPalette) = StoryEchoCast(EchoOutfit.TROPHY.asset, StoryEchoBox(224f, 562f, 230f), palette.echoOwn, EchoIdles.Trophy)
+    fun records(palette: StoryPalette) = StoryEchoCast(EchoOutfit.TROPHY.asset, StoryEchoBox(240f, 638f, 172f), palette.echoOwn, EchoIdles.Trophy)
 
-    fun share(palette: StoryPalette) = StoryEchoCast(EchoOutfit.CELEBRATE.asset, StoryEchoBox(120f, 300f, 196f), palette.echoOwn, EchoIdles.Celebrate)
+    /** On the share card's lower right, so the shared picture has him in it. */
+    fun share(palette: StoryPalette) = StoryEchoCast(EchoOutfit.CELEBRATE.asset, StoryEchoBox(212f, 384f, 150f), palette.echoOwn, EchoIdles.Celebrate)
 }
 
 /**
- * Echo on the story frame. Arriving from another card ([from] is that card's box) it hops there over
- * 0.7s with a little overshoot, then after a second plays the card's act and rests with live eyes;
- * on the first card it acts straight away. [elapsed] is the card's clock.
+ * Echo on the story frame. Arriving from another card ([from] is that card's box) it plays its hop
+ * clip through, moving to the new spot only while airborne, then plays the card's act and rests with
+ * live eyes; on the first card it acts straight away. [clock] is the card's clock.
  */
 @Composable
 internal fun StoryEcho(
@@ -144,7 +156,7 @@ internal fun StoryEcho(
             .size(target.side.dp)
             .graphicsLayer {
                 if (start == null || !hopping) return@graphicsLayer
-                val p = clock.at(0, StoryMotion.HOP_MS, StoryMotion.Hop)
+                val p = clock.at(StoryMotion.HOP_TAKEOFF_MS, StoryMotion.HOP_LAND_MS - StoryMotion.HOP_TAKEOFF_MS, StoryMotion.Standard)
                 val side = start.side + (target.side - start.side) * p
                 transformOrigin = TransformOrigin(0f, 0f)
                 translationX = (start.left + (target.left - start.left) * p - target.left).dp.toPx()

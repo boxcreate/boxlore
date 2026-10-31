@@ -6,12 +6,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Share
@@ -30,22 +31,23 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
-import cx.aswin.boxlore.core.designsystem.theme.rememberGoogleSansFamily
 import cx.aswin.boxlore.feature.history.R
+import cx.aswin.boxlore.feature.history.insights.InsightsWording
+import cx.aswin.boxlore.feature.history.insights.ListeningType
 import cx.aswin.boxlore.feature.history.insights.TypeTime
+import cx.aswin.boxlore.feature.history.insights.finishFact
+import cx.aswin.boxlore.feature.history.insights.partName
 import cx.aswin.boxlore.feature.history.insights.typeName
+import cx.aswin.boxlore.feature.history.insights.weekdayPlural
+import cx.aswin.boxlore.feature.history.insights.whereHeadline
 import cx.aswin.boxlore.feature.history.timeline.TimelineTime
 import cx.aswin.boxlore.feature.history.timeline.currentLocale
 import cx.aswin.boxlore.feature.history.timeline.durationText
@@ -55,51 +57,91 @@ import java.time.format.DateTimeFormatter
 internal fun TypeTime.isNight(): Boolean = this != TypeTime.MORNING && this != TypeTime.DAYTIME
 
 /**
- * Story 4, listening type (A10): the type's name, the part of the day it comes from and the finish
- * rate, the listening clock, and Echo dressed for the time of day. Evenings, late nights and all-day
- * listening get the night card (deep purple, stars); mornings and daytime the light day card.
+ * Story 5, listening type (S5): the type's name, the listening clock beside the leading part of the
+ * day's share (counting up) and each part's, then how many of the episodes started were finished, as a
+ * bar, and Echo dressed for the time of day beside his line. Evenings, late nights and all-day listening
+ * get the night card (deep purple, stars); mornings and daytime the light day card.
  */
 @Composable
-internal fun BoxScope.StoryTypeCard(story: MonthStory, palette: StoryPalette, clock: StoryClock) {
+internal fun BoxScope.StoryTypeCard(story: MonthStory, palette: StoryPalette, clock: StoryClock, line: String) {
     val type = story.type ?: return
     val night = type.time.isNight()
     val fg = if (night) palette.onContainer else palette.deep
     if (night) {
-        listOf(StoryStar(44f, 380f, 4f, StoryMotion.D2), StoryStar(350f, 330f, 3f, StoryMotion.D3), StoryStar(120f, 470f, 3f, StoryMotion.D4), StoryStar(230f, 400f, 4f, StoryMotion.D2)).forEach { star ->
+        listOf(StoryStar(352f, 330f, 3f, StoryMotion.D2), StoryStar(40f, 640f, 4f, StoryMotion.D3), StoryStar(300f, 610f, 3f, StoryMotion.D4), StoryStar(210f, 300f, 4f, StoryMotion.D2)).forEach { star ->
             Box(Modifier.zIndex(StoryLayers.BACK).at(star.x, star.y).size(star.size.dp).storyPop(clock, star.delay).clip(RoundedCornerShape(2.dp)).background(fg))
         }
-    }
-    StoryHeading(gap = 4f) {
-        StoryEyebrow(stringResource(R.string.history_ins_type_title), fg, clock)
-        Text(typeName(type), style = StoryType.of(60f, 62f, GoogleSansWeight.semiBold, -0.8f), color = fg, modifier = Modifier.storyRise(clock, StoryMotion.D1))
-        Text(StoryText.typeLine(type), style = StoryType.of(17f, 24f), color = fg, modifier = Modifier.storyRise(clock, StoryMotion.D2).widthIn(max = 320.dp).padding(top = 10.dp))
     }
     val dial = if (night) {
         StoryClockColors(disc = palette.container, ring = palette.clockRing, top = fg, second = palette.clockRing, rest = palette.clockWedge, hub = palette.deep, labels = fg)
     } else {
         StoryClockColors(disc = palette.shareBlob, ring = palette.podium, top = palette.vivid, second = palette.primary, rest = palette.podium, hub = palette.onContainer, labels = fg)
     }
-    StoryListeningClock(story.parts, dial, Modifier.zIndex(StoryLayers.BACK).at(134f, 330f).storyBlob(clock, StoryMotion.D2))
-    StoryBubble(
-        text = stringResource(StoryText.typeEchoLine(type.time)),
-        background = fg,
-        color = if (night) palette.deep else palette.onContainer,
-        shape = StoryBubbles.TailBottomStart,
-        maxWidth = 150f,
-        modifier = Modifier.zIndex(StoryLayers.FRONT).at(196f, 640f).storyPop(clock, StoryMotion.D6),
-    )
-    Box(Modifier.zIndex(StoryLayers.FRONT)) { StorySpark(100f, 650f, fg, StorySparks.Type, clock) }
+    StoryHeading(gap = 4f) {
+        StoryEyebrow(stringResource(R.string.history_ins_type_title), fg, clock)
+        Text(typeName(type), style = StoryType.of(56f, 58f, GoogleSansWeight.semiBold, -0.8f), color = fg, modifier = Modifier.storyRise(clock, StoryMotion.D1))
+        Row(Modifier.padding(top = 20.dp), horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
+            StoryListeningClock(story.parts, dial, scale = 0.95f, modifier = Modifier.storyBlob(clock, StoryMotion.D2))
+            StoryTypeParts(story, type, fg, dial, clock)
+        }
+        story.finishes?.takeIf { it.started > 0 }?.let { StoryFinishBar(it, type.finishRate, fg, if (night) palette.container else palette.shareBlob, clock) }
+    }
+    StoryEchoLine(line, StoryLineSpot(176f, 712f, 176f, echoOnRight = false), fg to if (night) palette.deep else palette.onContainer, clock)
+    Box(Modifier.zIndex(StoryLayers.FRONT)) { StorySpark(100f, 700f, fg, StorySparks.Type, clock) }
+}
+
+/** The leading part of the day's share, counting up, over "late at night", then each part's share. */
+@Composable
+private fun StoryTypeParts(story: MonthStory, type: ListeningType, fg: Color, dial: StoryClockColors, clock: StoryClock) {
+    Column(Modifier.storyRise(clock, StoryMotion.D3), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column {
+            StoryCount(InsightsWording.percent(type.topPartShare).toLong(), clock, StoryMotion.D3, { stringResource(R.string.history_story_percent, it.toInt()) }, StoryType.of(44f, 46f, GoogleSansWeight.semiBold), fg)
+            Text(StoryText.partPhrase(type.topPart), style = StoryType.of(14f, 19f), color = fg.copy(alpha = 0.9f))
+        }
+        story.parts.filter { InsightsWording.percent(it.share) > 0 }.forEachIndexed { index, share ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.size(12.dp).clip(CircleShape).background(
+                        if (index == 0) {
+                            dial.top
+                        } else if (index == 1) {
+                    dial.second
+                } else {
+                    dial.rest
+                }
+                    )
+                )
+                Text(stringResource(R.string.history_ins_part_share, partName(share.part), InsightsWording.percent(share.share)), style = StoryType.of(15f, 20f), color = fg)
+            }
+        }
+    }
+}
+
+/** "33 of 41 episodes finished": a bar filling to the share, and the plain fraction. */
+@Composable
+private fun StoryFinishBar(finishes: StoryFinishes, rate: Float?, fg: Color, track: Color, clock: StoryClock) {
+    Column(Modifier.padding(top = 26.dp).storyRise(clock, StoryMotion.D4), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            StoryCount(finishes.finished.toLong(), clock, StoryMotion.D4, { stringResource(R.string.history_story_finished_of, it.toInt(), finishes.started) }, StoryType.of(44f, 46f, GoogleSansWeight.semiBold), fg)
+            Text(stringResource(R.string.history_story_finished_label), style = StoryType.of(15f, 20f), color = fg, modifier = Modifier.padding(bottom = 6.dp))
+        }
+        Box(Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)).background(track)) {
+            Box(Modifier.fillMaxWidth((finishes.finished.toFloat() / finishes.started).coerceIn(0.02f, 1f)).fillMaxHeight().storyGrowX(clock, StoryMotion.D4).clip(RoundedCornerShape(5.dp)).background(fg))
+        }
+        rate?.let { Text(finishFact(it), style = StoryType.of(16f, 22f), color = fg, modifier = Modifier.padding(top = 4.dp)) }
+    }
 }
 
 private data class StoryStar(val x: Float, val y: Float, val size: Float, val delay: Int)
 
 /**
- * Story 5, records (A11): the month's best run of listening days with a pill a day, the biggest day
- * and the most episodes of a show in one day, and Echo with a trophy on the winner's podium. With no
- * run of two days or more, the biggest day leads instead.
+ * Story 6, records (S6): the month's best run of listening days (counting up) with a pill a day and how
+ * it compares with the best ever, then the biggest day, longest sitting, most episodes of a show in a day
+ * and the big weekday as tiles, and Echo with a trophy on the podium. With no run of two days or more, the
+ * biggest day leads instead.
  */
 @Composable
-internal fun BoxScope.StoryRecordsCard(story: MonthStory, palette: StoryPalette, clock: StoryClock) {
+internal fun BoxScope.StoryRecordsCard(story: MonthStory, palette: StoryPalette, clock: StoryClock, line: String) {
     val locale = currentLocale()
     val fg = palette.onPrimary
     val run = story.bestRun
@@ -107,72 +149,97 @@ internal fun BoxScope.StoryRecordsCard(story: MonthStory, palette: StoryPalette,
     StoryHeading(gap = 4f) {
         StoryEyebrow(stringResource(R.string.history_story_records_eyebrow), fg, clock)
         if (run != null) {
-            Text(pluralStringResource(R.plurals.history_story_run_days, run.first, run.first), style = StoryType.of(96f, 96f, GoogleSansWeight.semiBold, -2f), color = fg, maxLines = 1, modifier = Modifier.storyLine(96f).storyRise(clock, StoryMotion.D1))
-            val line = if (story.bestRunIsRecord) R.string.history_story_run_line_best else R.string.history_story_run_line
-            Text(stringResource(line, TimelineTime.shortDate(run.second, locale), run.third.dayOfMonth.toString()), style = StoryType.of(18f, 25f), color = fg, modifier = Modifier.storyRise(clock, StoryMotion.D2))
+            StoryCount(run.first.toLong(), clock, StoryMotion.D1, { pluralStringResource(R.plurals.history_story_run_days, it.toInt(), it.toInt()) }, StoryType.of(96f, 96f, GoogleSansWeight.semiBold, -2f), fg, Modifier.storyLine(96f).storyRise(clock, StoryMotion.D1))
+            val from = TimelineTime.shortDate(run.second, locale)
+            val to = run.third.dayOfMonth.toString()
+            val sentence = if (story.bestRunIsRecord) stringResource(R.string.history_story_run_line_best, from, to) else stringResource(R.string.history_story_run_line_best_is, from, to, story.bestRunEver)
+            Text(sentence, style = StoryType.of(18f, 25f), color = fg, modifier = Modifier.storyRise(clock, StoryMotion.D2))
             StoryRunPills(run.first, fg, clock)
         } else {
             Text(durationText(story.biggestDay.second), style = StoryType.of(64f, 68f, GoogleSansWeight.semiBold, -1f), color = fg, maxLines = 1, modifier = Modifier.storyLine(68f).storyRise(clock, StoryMotion.D1))
             Text(stringResource(R.string.history_story_biggest_only, biggestDay), style = StoryType.of(18f, 25f), color = fg, modifier = Modifier.storyRise(clock, StoryMotion.D2))
         }
-        Column(Modifier.storyRise(clock, StoryMotion.D6).padding(top = 24.dp).widthIn(max = 200.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (run != null) StoryRecordLine(durationText(story.biggestDay.second), stringResource(R.string.history_story_biggest_day, biggestDay), fg)
-            story.mostInOneDay?.takeIf { it.episodes > 1 }?.let { most ->
-                StoryRecordLine(pluralStringResource(R.plurals.history_story_episodes, most.episodes, most.episodes), stringResource(R.string.history_story_in_one_day, most.showName), fg)
-            }
-        }
+        StoryRecordTiles(story, run != null, biggestDay, fg, clock)
     }
     Box(
-        Modifier.zIndex(StoryLayers.BACK).at(222f, 788f).size(170.dp, 130.dp).storyRise(clock, StoryMotion.D3)
-            .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).background(palette.podium).padding(top = 18.dp),
+        Modifier.zIndex(StoryLayers.BACK).at(232f, 806f).size(160.dp, 110.dp).storyRise(clock, StoryMotion.D3)
+            .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).background(palette.podium).padding(top = 14.dp),
         contentAlignment = Alignment.TopCenter,
     ) {
-        Text("1", style = StoryType.of(40f, 48f, GoogleSansWeight.bold), color = fg)
+        Text("1", style = StoryType.of(34f, 40f, GoogleSansWeight.bold), color = fg)
     }
-    Box(Modifier.zIndex(StoryLayers.FRONT)) { StorySpark(306f, 600f, fg, StorySparks.Wide, clock) }
+    StoryEchoLine(line, StoryLineSpot(24f, 640f, 196f, echoOnRight = true), fg to palette.onContainer, clock)
+    Box(Modifier.zIndex(StoryLayers.FRONT)) { StorySpark(316f, 660f, fg, StorySparks.Wide, clock) }
 }
 
-/** A pill a day of the run, 30 × 44 and 5 apart, narrower when the run is longer than ten days; each pops in 90ms after the last. */
+/** The month's other records as tiles: two side by side, then full-width ones. */
+@Composable
+private fun StoryRecordTiles(story: MonthStory, withBiggestDay: Boolean, biggestDay: String, fg: Color, clock: StoryClock) {
+    val locale = currentLocale()
+    val pair = listOfNotNull(
+        if (withBiggestDay) durationText(story.biggestDay.second) to stringResource(R.string.history_story_rec_biggest, biggestDay) else null,
+        story.longestSitting?.let { (ms, show) -> durationText(ms) to stringResource(R.string.history_story_rec_sitting, show) },
+    )
+    val most = story.mostInOneDay?.takeIf { it.episodes > 1 }
+    Column(Modifier.padding(top = 22.dp).storyRise(clock, StoryMotion.D6), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (pair.isNotEmpty()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                pair.forEach { (value, label) -> StoryRecordTile(value, label, fg, Modifier.weight(1f), wide = false) }
+                if (pair.size == 1) Box(Modifier.weight(1f))
+            }
+        }
+        most?.let {
+            val day = TimelineTime.shortDate(it.date, locale)
+            StoryRecordTile(it.episodes.toString(), stringResource(R.string.history_story_rec_binge, it.showName, day), fg, Modifier.fillMaxWidth(), wide = true, valueSize = 40f)
+        }
+        story.bigWeekday?.let { (day, ms) ->
+            StoryRecordTile(weekdayPlural(day), stringResource(R.string.history_story_rec_weekday, durationText(ms)), fg, Modifier.fillMaxWidth(), wide = true)
+        }
+    }
+}
+
+/** A record: its value large, its description below, or beside it on a [wide] tile. */
+@Composable
+private fun StoryRecordTile(value: String, label: String, fg: Color, modifier: Modifier, wide: Boolean, valueSize: Float = 28f) {
+    val content: @Composable () -> Unit = {
+        Text(value, style = StoryType.of(valueSize, valueSize + 4f, GoogleSansWeight.semiBold, -0.3f), color = fg, maxLines = 1)
+        Text(label, style = StoryType.of(14f, 19f), color = fg, maxLines = 3)
+    }
+    val tile = modifier.clip(RoundedCornerShape(22.dp)).background(fg.copy(alpha = 0.1f)).padding(horizontal = 16.dp, vertical = 14.dp).semantics(mergeDescendants = true) { }
+    if (wide) {
+        Row(tile, horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) { content() }
+    } else {
+        Column(tile, verticalArrangement = Arrangement.spacedBy(2.dp)) { content() }
+    }
+}
+
+/** A pill a day of the run, up to 30 × 40 and 4 apart, narrower when the run is longer; each pops in 90ms after the last. */
 @Composable
 private fun StoryRunPills(days: Int, color: Color, clock: StoryClock) {
     val description = stringResource(R.string.history_story_run_pills, days)
-    val width = minOf(30f, (360f - (days - 1) * 5f) / days)
-    Row(Modifier.padding(top = 16.dp).clearAndSetSemantics { contentDescription = description }, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+    val width = minOf(30f, (360f - (days - 1) * 4f) / days)
+    Row(Modifier.padding(top = 14.dp).clearAndSetSemantics { contentDescription = description }, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         repeat(days) { index ->
-            Box(Modifier.size(width.dp, 44.dp).storyPop(clock, StoryMotion.pillDelay(index)).clip(RoundedCornerShape((width / 2f).dp)).background(color))
+            Box(Modifier.size(width.dp, 40.dp).storyPop(clock, StoryMotion.pillDelay(index)).clip(RoundedCornerShape((minOf(width, 26f) / 2f).dp)).background(color))
         }
     }
 }
 
-/** "**2 h 48 min**" over "Biggest day, Wed, Oct 28". */
-@Composable
-private fun StoryRecordLine(value: String, description: String, color: Color) {
-    val valueFont = rememberGoogleSansFamily(GoogleSansWeight.semiBold.weight)
-    Text(
-        buildAnnotatedString {
-            withStyle(SpanStyle(fontFamily = valueFont, fontSize = 22.sp, fontWeight = GoogleSansWeight.semiBold)) { append(value) }
-            append("\n")
-            append(description)
-        },
-        style = StoryType.of(15f, 21f),
-        color = color,
-    )
-}
-
 /**
- * Story 6, that's a wrap (A12): the share card (the month's time, top show and listening type, with
- * Echo celebrating on it), confetti, and Share and Watch again. The share card is what gets shared.
+ * Story 7, that's a wrap (S7): the share card (the month's time, days, episodes and finishes, top show,
+ * listening type and where it was heard, with Echo celebrating on it), confetti, Echo's closing line, and
+ * Share and Watch again. The share card is what gets shared.
  */
 @Composable
-internal fun BoxScope.StoryShareCard(story: MonthStory, palette: StoryPalette, clock: StoryClock, onShare: () -> Unit, onWatchAgain: () -> Unit) {
+internal fun BoxScope.StoryShareCard(story: MonthStory, palette: StoryPalette, clock: StoryClock, onShare: () -> Unit, onWatchAgain: () -> Unit, line: String) {
     val locale = currentLocale()
     val fg = palette.onContainer
     StoryShareArt(story, palette, Modifier.zIndex(StoryLayers.BACK).at(StoryShareSpot.X, StoryShareSpot.Y).storyPop(clock))
     listOf(
-        StoryConfetti(40f, 140f, 10f, 10f, 20f, palette.mint, StoryMotion.D3),
-        StoryConfetti(350f, 200f, 12f, 8f, -30f, fg, StoryMotion.D4),
-        StoryConfetti(30f, 420f, 8f, 12f, 40f, palette.primary, StoryMotion.D5),
-        StoryConfetti(356f, 470f, 10f, 10f, -10f, palette.mint, StoryMotion.D3),
+        StoryConfetti(26f, 140f, 10f, 10f, 20f, palette.mint, StoryMotion.D3),
+        StoryConfetti(360f, 200f, 12f, 8f, -30f, fg, StoryMotion.D4),
+        StoryConfetti(24f, 440f, 8f, 12f, 40f, palette.primary, StoryMotion.D5),
+        StoryConfetti(362f, 500f, 10f, 10f, -10f, palette.mint, StoryMotion.D3),
     ).forEach { piece ->
         Box(
             Modifier.zIndex(StoryLayers.FRONT).at(piece.x, piece.y).size(piece.width.dp, piece.height.dp).storyPop(clock, piece.delay)
@@ -182,10 +249,10 @@ internal fun BoxScope.StoryShareCard(story: MonthStory, palette: StoryPalette, c
     Box(Modifier.zIndex(StoryLayers.BUTTONS).at(16f, 0f).size(368.dp, 862.dp), contentAlignment = Alignment.BottomCenter) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
-                stringResource(R.string.history_story_see_you, StoryText.monthName(story.month.plusMonths(1), locale)),
-                style = StoryType.of(26f, 32f, GoogleSansWeight.semiBold).copy(textAlign = TextAlign.Center),
+                line,
+                style = StoryType.of(24f, 30f, GoogleSansWeight.semiBold).copy(textAlign = TextAlign.Center),
                 color = fg,
-                modifier = Modifier.fillMaxWidth().storyRise(clock, StoryMotion.D3).padding(bottom = 16.dp),
+                modifier = Modifier.fillMaxWidth().storyRise(clock, StoryMotion.ECHO_LINE_MS).padding(bottom = 14.dp),
             )
             val shareShape = RoundedCornerShape(28.dp)
             Row(
@@ -214,9 +281,10 @@ internal fun BoxScope.StoryShareCard(story: MonthStory, palette: StoryPalette, c
 private data class StoryConfetti(val x: Float, val y: Float, val width: Float, val height: Float, val rotation: Float, val color: Color, val delay: Int)
 
 /**
- * The share card (A12): 264 × 470, 30dp corners, onContainer with the deep ink; a blob behind, "My
- * October in listening", the total, the top show, and "Listen on boxlore" beside the listening-type
- * pill. Echo (drawn by the story frame) stands on its lower half.
+ * The share card (S7): 288 × 500, 30dp corners, onContainer with the deep ink; a blob behind, "My
+ * September in listening", the total, days, episodes and finishes, the top show, the listening type and
+ * where it was heard as pills, and "Listen on boxlore". Echo (drawn by the story frame) stands on its
+ * lower right.
  */
 @Composable
 internal fun StoryShareArt(story: MonthStory, palette: StoryPalette, modifier: Modifier = Modifier) {
@@ -224,40 +292,61 @@ internal fun StoryShareArt(story: MonthStory, palette: StoryPalette, modifier: M
     val ink = palette.deep
     val month = StoryText.monthName(story.month, locale)
     val typeLabel = story.type?.let { typeName(it) }
+    val where = story.how?.outputs?.firstOrNull()?.takeIf { it.share >= WHERE_PILL_FROM }?.let { whereHeadline(it) }
     val description = stringResource(R.string.history_story_share_card_label, month, durationText(story.totalMs), story.topShow?.name.orEmpty(), typeLabel.orEmpty())
     Box(modifier.size(StoryShareSpot.WIDTH.dp, StoryShareSpot.HEIGHT.dp).clip(RoundedCornerShape(30.dp)).background(palette.onContainer).clearAndSetSemantics { contentDescription = description }) {
-        Box(Modifier.at(22f, 228f).size(220.dp).graphicsLayer { rotationZ = -8f }.clip(StoryBlobShape.Card).background(palette.shareBlob))
-        Column(Modifier.padding(horizontal = 20.dp, vertical = 22.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(Modifier.at(120f, 300f).size(240.dp).graphicsLayer { rotationZ = -8f }.clip(StoryBlobShape.Card).background(palette.shareBlob))
+        Column(Modifier.padding(horizontal = 22.dp, vertical = 22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.history_story_share_card_title, month), style = StoryType.of(13f, 18f, GoogleSansWeight.semiBold), color = ink)
-            Text(durationText(story.totalMs), style = StoryType.of(36f, 40f, GoogleSansWeight.semiBold, -0.3f), color = ink, maxLines = 1, modifier = Modifier.storyLine(40f))
+            Text(durationText(story.totalMs), style = StoryType.of(44f, 46f, GoogleSansWeight.semiBold, -0.5f), color = ink, maxLines = 1, modifier = Modifier.storyLine(46f))
+            Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                StoryShareStat(story.listenedDays, R.string.history_story_share_days, ink)
+                StoryShareStat(story.counts.episodes, R.string.history_story_share_episodes, ink)
+                StoryShareStat(story.counts.finished, R.string.history_story_share_finished, ink)
+            }
             story.topShow?.let { top ->
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    OptimizedImage(url = top.imageUrl, proxyWidth = 128, contentDescription = null, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)))
+                Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    OptimizedImage(url = top.imageUrl, proxyWidth = 128, contentDescription = null, modifier = Modifier.size(44.dp).clip(RoundedCornerShape(11.dp)))
                     Column {
                         Text(stringResource(R.string.history_story_share_card_top), style = StoryType.of(11f, 14f), color = ink)
-                        Text(top.name, style = StoryType.of(14f, 18f, GoogleSansWeight.semiBold), color = ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(top.name, style = StoryType.of(15f, 19f, GoogleSansWeight.semiBold), color = ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }
-        }
-        Row(Modifier.align(Alignment.BottomStart).padding(start = 20.dp, end = 20.dp, bottom = 18.dp).width(224.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
-            Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                Text(stringResource(R.string.history_story_share_listen_on), style = StoryType.of(10f, 13f), color = ink)
-                Text(stringResource(R.string.history_story_share_brand), style = StoryType.of(19f, 22f, GoogleSansWeight.bold), color = ink)
-            }
-            typeLabel?.let { label ->
-                Box(Modifier.height(28.dp).clip(RoundedCornerShape(14.dp)).background(ink).padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
-                    Text(label, style = StoryType.of(12f, 16f, GoogleSansWeight.semiBold), color = palette.onContainer, maxLines = 1)
-                }
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                typeLabel?.let { StorySharePill(it, ink, palette.onContainer) }
+                where?.let { StorySharePill(it, palette.shareBlob, ink) }
             }
         }
+        Column(Modifier.align(Alignment.BottomStart).padding(start = 22.dp, bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Text(stringResource(R.string.history_story_share_listen_on), style = StoryType.of(10f, 13f), color = ink)
+            Text(stringResource(R.string.history_story_share_brand), style = StoryType.of(19f, 22f, GoogleSansWeight.bold), color = ink)
+        }
+    }
+}
+
+/** The share card's pills show where the listening was heard only when one output leads it. */
+private const val WHERE_PILL_FROM = 0.5f
+
+@Composable
+private fun StoryShareStat(value: Int, label: Int, ink: Color) {
+    Column {
+        Text(value.toString(), style = StoryType.of(22f, 26f, GoogleSansWeight.semiBold), color = ink)
+        Text(stringResource(label), style = StoryType.of(11f, 14f), color = ink)
+    }
+}
+
+@Composable
+private fun StorySharePill(text: String, background: Color, color: Color) {
+    Box(Modifier.height(28.dp).clip(RoundedCornerShape(14.dp)).background(background).padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
+        Text(text, style = StoryType.of(12f, 16f, GoogleSansWeight.semiBold), color = color, maxLines = 1)
     }
 }
 
 /** Where the share card sits on the frame. */
 internal object StoryShareSpot {
-    const val X = 68f
-    const val Y = 92f
-    const val WIDTH = 264f
-    const val HEIGHT = 470f
+    const val X = 56f
+    const val Y = 88f
+    const val WIDTH = 288f
+    const val HEIGHT = 500f
 }

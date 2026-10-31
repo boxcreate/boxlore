@@ -172,7 +172,7 @@ private fun SourceFact(icon: ImageVector, text: String) {
 }
 
 @Composable
-private fun whereHeadline(top: OutputShare): String {
+internal fun whereHeadline(top: OutputShare): String {
     if (top.share < MOSTLY_FROM) return stringResource(R.string.history_ins_where_spread)
     return stringResource(
         when (top.output) {
@@ -186,7 +186,7 @@ private fun whereHeadline(top: OutputShare): String {
 }
 
 @Composable
-private fun freshHeadline(newShare: Float): String = stringResource(
+internal fun freshHeadline(newShare: Float): String = stringResource(
     when {
         newShare >= NEW_FROM -> R.string.history_ins_fresh_mostly_new
         newShare < CATCHING_UP_BELOW -> R.string.history_ins_fresh_mostly_back
@@ -195,7 +195,7 @@ private fun freshHeadline(newShare: Float): String = stringResource(
 )
 
 @Composable
-private fun outputName(output: ListeningOutput): String = stringResource(
+internal fun outputName(output: ListeningOutput): String = stringResource(
     when (output) {
         ListeningOutput.HEADPHONES -> R.string.history_ins_output_headphones
         ListeningOutput.BLUETOOTH -> R.string.history_ins_output_bluetooth
@@ -205,7 +205,7 @@ private fun outputName(output: ListeningOutput): String = stringResource(
     },
 )
 
-private fun outputIcon(output: ListeningOutput): ImageVector = when (output) {
+internal fun outputIcon(output: ListeningOutput): ImageVector = when (output) {
     ListeningOutput.HEADPHONES -> Icons.Rounded.Headphones
     ListeningOutput.BLUETOOTH -> Icons.Rounded.Bluetooth
     ListeningOutput.CAR -> Icons.Rounded.DirectionsCar

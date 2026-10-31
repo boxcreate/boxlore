@@ -5,33 +5,38 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.echo.EchoAccents
 import cx.aswin.boxlore.core.designsystem.echo.EchoCharacter
@@ -44,20 +49,20 @@ import cx.aswin.boxlore.feature.history.timeline.currentLocale
 import cx.aswin.boxlore.feature.history.timeline.durationText
 
 /**
- * The Insights tab's story card (A4): "Your October story", 150dp, 28dp corners, in the story's
- * primary; a blob and a happy Echo at the left, a New badge until it is opened, and a play button.
+ * The Insights tab's story card (S0): 214dp, 28dp corners, in the story's primary. "Your September
+ * story" with a New badge until it is opened and how many cards it has, the month's time and top show,
+ * the top three covers fanned at the top right, a small Echo beside the play button.
  */
 @Composable
 internal fun StoryEntryCard(month: StoryMonth, isNew: Boolean, onOpen: () -> Unit, modifier: Modifier = Modifier) {
     val palette = rememberStoryPalette()
-    val spec = rememberEchoCharacterSpec()
     val name = StoryText.monthName(month.month, currentLocale())
     val label = stringResource(R.string.history_story_watch, name)
     val shape = RoundedCornerShape(28.dp)
     Box(
         modifier
             .fillMaxWidth()
-            .height(150.dp)
+            .height(214.dp)
             .clip(shape)
             .background(palette.primary)
             .expressiveClickable(shape = shape, onClick = onOpen)
@@ -70,56 +75,114 @@ internal fun StoryEntryCard(month: StoryMonth, isNew: Boolean, onOpen: () -> Uni
                 }
             },
     ) {
-        Box(Modifier.offset((-18).dp, 36.dp).size(160.dp).graphicsLayer { rotationZ = -8f }.clip(StoryBlobShape.Entry).background(palette.podium))
-        // The board's picture: Echo's outline plus a 3% margin, 168dp tall from 12dp down, running off the card's foot.
-        spec?.reaches?.get(ENTRY_POSE)?.let { reach ->
-            val square = StoryEchoStage.pose(reach, StoryEchoBox(12f, 12f, 168f))
-            EchoCharacter(
-                ENTRY_SEQUENCE,
-                Modifier.offset(square.left.dp, square.top.dp).wrapContentSize(Alignment.TopStart, unbounded = true).size(square.side.dp),
-                accents = palette.echoOwn,
-            )
+        Box(Modifier.align(Alignment.TopEnd).offset(40.dp, (-50).dp).size(210.dp).graphicsLayer { rotationZ = -8f }.clip(StoryBlobShape.Entry).background(palette.podium))
+        EntryCovers.forEach { spot ->
+            val url = month.covers.getOrNull(spot.rank) ?: return@forEach
+            Box(Modifier.align(Alignment.TopEnd).offset(-spot.end.dp, spot.top.dp).size(spot.size.dp).graphicsLayer { rotationZ = spot.rotation }) {
+                StoryCover(url, StoryCoverSpot(0f, 0f, spot.size, spot.size * 0.26f, shadow = 6f))
+            }
         }
-        Row(Modifier.fillMaxSize().padding(start = 138.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.padding(start = 20.dp, top = 18.dp).widthIn(max = 200.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (isNew) {
                     Box(Modifier.height(22.dp).clip(RoundedCornerShape(11.dp)).background(palette.onPrimary).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
                         Text(stringResource(R.string.history_story_new), style = StoryType.of(11f, 14f, GoogleSansWeight.bold), color = palette.onContainer)
                     }
                 }
-                Text(stringResource(R.string.history_story_entry_title, name), style = StoryType.of(20f, 24f, GoogleSansWeight.semiBold), color = palette.onPrimary)
-                Text(stringResource(R.string.history_story_entry_meta), style = StoryType.of(13f, 18f), color = palette.onPrimary)
+                Text(stringResource(R.string.history_story_entry_meta, month.cards), style = StoryType.of(12f, 16f, GoogleSansWeight.semiBold), color = palette.onPrimary)
             }
-            Box(Modifier.size(48.dp).clip(CircleShape).background(palette.onPrimary), contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.PlayArrow, contentDescription = null, tint = palette.primary, modifier = Modifier.size(20.dp))
+            Text(stringResource(R.string.history_story_entry_title, name), style = StoryType.of(22f, 28f, GoogleSansWeight.semiBold), color = palette.onPrimary)
+        }
+        Column(Modifier.align(Alignment.BottomStart).padding(start = 20.dp, bottom = 18.dp, end = 150.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(durationText(month.totalMs), style = StoryType.of(36f, 40f, GoogleSansWeight.semiBold, -0.4f), color = palette.onPrimary, maxLines = 1)
+            month.topShowName?.let { show ->
+                Text(stringResource(R.string.history_story_entry_top, show), style = StoryType.of(14f, 19f), color = palette.onPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
+        }
+        EntryEcho(palette, Modifier.align(Alignment.BottomEnd).padding(end = 70.dp).offset(y = 6.dp))
+        Box(Modifier.align(Alignment.BottomEnd).padding(end = 18.dp, bottom = 18.dp).size(56.dp).clip(CircleShape).background(palette.onPrimary), contentAlignment = Alignment.Center) {
+            Icon(Icons.Rounded.PlayArrow, contentDescription = null, tint = palette.primary, modifier = Modifier.size(24.dp))
         }
     }
 }
+
+/** A small Echo at rest, 104dp tall: the hello pose's outline plus the boards' 3% margin. A still, so it draws once. */
+@Composable
+private fun EntryEcho(palette: StoryPalette, modifier: Modifier) {
+    val spec = rememberEchoCharacterSpec()
+    val reach = spec?.reaches?.get(ENTRY_POSE) ?: return
+    val square = StoryEchoStage.pose(reach, StoryEchoBox(0f, 0f, ENTRY_ECHO_HEIGHT))
+    val width = (reach.right - reach.left) * square.side + ENTRY_ECHO_HEIGHT * 0.06f
+    Box(modifier.size(width.dp, ENTRY_ECHO_HEIGHT.dp)) {
+        EchoCharacter(
+            ENTRY_SEQUENCE,
+            Modifier.offset(square.left.dp, square.top.dp).wrapContentSize(Alignment.TopStart, unbounded = true).size(square.side.dp),
+            accents = palette.echoOwn,
+        )
+    }
+}
+
+private data class EntryCover(val rank: Int, val end: Float, val top: Float, val size: Float, val rotation: Float)
+
+/** Two covers behind at an angle, the top show in front: right edges and tops in dp from the card's top right. */
+private val EntryCovers = listOf(
+    EntryCover(2, 22f, 26f, 62f, 12f),
+    EntryCover(1, 84f, 26f, 62f, -12f),
+    EntryCover(0, 50f, 16f, 70f, 0f),
+)
+
+private const val ENTRY_ECHO_HEIGHT = 104f
 
 /**
  * "Earlier stories" (A5): a tile a month, three across, 10dp apart: surfaceContainer, 22dp corners,
  * 168dp tall, with a primaryContainer blob and Echo in the month's outfit above the month and its time.
+ * Two rows show until [expanded]; a button under them shows the rest or folds them away again.
  * Each row is its own list item, so only rows on screen are composed.
  */
-internal fun LazyListScope.earlierStories(months: List<StoryMonth>, onOpen: (StoryMonth) -> Unit) {
+internal fun LazyListScope.earlierStories(months: List<StoryMonth>, expanded: Boolean, onExpand: (Boolean) -> Unit, onOpen: (StoryMonth) -> Unit) {
     if (months.isEmpty()) return
     item(key = "earlier-stories") {
         Text(stringResource(R.string.history_story_earlier), style = TimelineType.header, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp))
     }
-    months.chunked(TILES_PER_ROW).forEach { row ->
+    EarlierStories.shown(months, expanded).chunked(EarlierStories.TILES_PER_ROW).forEach { row ->
         item(key = "earlier-stories-${row.first().month}") {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 row.forEach { month -> StoryTile(month, Modifier.weight(1f)) { onOpen(month) } }
-                repeat(TILES_PER_ROW - row.size) { Box(Modifier.weight(1f)) }
+                repeat(EarlierStories.TILES_PER_ROW - row.size) { Box(Modifier.weight(1f)) }
+            }
+        }
+    }
+    if (EarlierStories.folds(months)) {
+        item(key = "earlier-stories-more") {
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                TextButton(onClick = { onExpand(!expanded) }) {
+                    Text(
+                        if (expanded) {
+                            stringResource(R.string.history_story_earlier_fewer)
+                        } else {
+                            pluralStringResource(R.plurals.history_story_earlier_all, months.size, months.size)
+                        },
+                    )
+                    Icon(if (expanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown, contentDescription = null, modifier = Modifier.padding(start = 4.dp).size(18.dp))
+                }
             }
         }
     }
 }
 
-private const val TILES_PER_ROW = 3
-private const val ENTRY_SEQUENCE = "story-entry"
-private const val ENTRY_POSE = "front-rest"
+/** How many earlier stories show: two rows of three until the listener asks for the rest. */
+internal object EarlierStories {
+    const val TILES_PER_ROW = 3
+    private const val ROWS_FOLDED = 2
+
+    /** Whether there are more than two rows, so the list folds and gets its button. */
+    fun folds(months: List<StoryMonth>): Boolean = months.size > TILES_PER_ROW * ROWS_FOLDED
+
+    fun shown(months: List<StoryMonth>, expanded: Boolean): List<StoryMonth> = if (expanded) months else months.take(TILES_PER_ROW * ROWS_FOLDED)
+}
+
+private const val ENTRY_SEQUENCE = "story-hello-still"
+private const val ENTRY_POSE = "t1-rest"
 
 @Composable
 private fun StoryTile(month: StoryMonth, modifier: Modifier, onOpen: () -> Unit) {

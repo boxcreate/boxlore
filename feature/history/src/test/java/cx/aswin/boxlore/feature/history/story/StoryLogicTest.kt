@@ -75,6 +75,27 @@ class StoryLogicTest {
     }
 
     @Test
+    fun aRunThatOnlyTiesAnEarlierBestIsNotARecord() {
+        // Three days in September, three in October: the same length, so October doesn't claim a new best.
+        val listening = (1..3).map { day(9, it, "dd", 10) } + (19..21).map { day(10, it, "dd", 10) }
+        val story = build(listening)
+
+        assertEquals(3, story.bestRun!!.first)
+        assertEquals(3, story.bestRunEver)
+        assertFalse(story.bestRunIsRecord)
+    }
+
+    @Test
+    fun aRunCrossingIntoTheMonthCountsAgainstTheMonthsOwnRun() {
+        // Sep 25 to Oct 5 is 11 days; October's own longest run, Oct 20 to 27, is 8: not a record.
+        val listening = (25..30).map { day(9, it, "dd", 10) } + (1..5).map { day(10, it, "dd", 10) } + (20..27).map { day(10, it, "dd", 10) }
+        val story = build(listening)
+
+        assertEquals(8, story.bestRun!!.first)
+        assertFalse(story.bestRunIsRecord)
+    }
+
+    @Test
     fun theThisMonthsDaysStillToComeAreLeftEmpty() {
         val story = StoryLogic.build(october, emptyList(), listOf(day(10, 3, "dd", 30)), played, LocalDate.of(2026, 10, 30), zone)!!
 
@@ -114,12 +135,16 @@ class StoryLogicTest {
 
     @Test
     fun cardsWithoutTheirDataAreLeftOut() {
+        // How you listened needs the listening's details (where it was heard), recorded since Room v40.
+        val detailed = build((20..23).map { day(10, it, "dd", 30, evening = 30).copy(bluetoothMs = 30 * MINUTE) })
+        assertEquals(StoryCard.entries, StoryLogic.cards(detailed))
+
         val timed = build((20..23).map { day(10, it, "dd", 30, evening = 30) })
-        assertEquals(StoryCard.entries, StoryLogic.cards(timed))
+        assertEquals(StoryCard.entries - StoryCard.HOW, StoryLogic.cards(timed))
 
         val untimed = build((20..23).map { day(10, it, "dd", 30) })
-        assertEquals(StoryCard.entries - StoryCard.TYPE, StoryLogic.cards(untimed))
-        assertEquals(StoryCard.entries - StoryCard.TYPE - StoryCard.TOP_SHOW, StoryLogic.cards(untimed.copy(topShow = null)))
+        assertEquals(StoryCard.entries - StoryCard.HOW - StoryCard.TYPE, StoryLogic.cards(untimed))
+        assertEquals(StoryCard.entries - StoryCard.HOW - StoryCard.TYPE - StoryCard.TOP_SHOW, StoryLogic.cards(untimed.copy(topShow = null)))
     }
 
     @Test
@@ -175,11 +200,40 @@ class StoryLogicTest {
     }
 
     @Test
-    fun theBiggestDaysBarIsThreeWideAndEchoStandsOnItsMiddle() {
-        // 31 days: 30 one-wide bars and the biggest three wide share 344dp less 30 gaps.
-        val unit = (344f - 30 * 4f) / 33f
-        assertEquals(16f + 1.5f * unit, StoryTimeChart.biggestCenter(31, 0), 0.01f)
-        assertEquals(16f + 27 * (unit + 4f) + 1.5f * unit, StoryTimeChart.biggestCenter(31, 27), 0.01f)
+    fun echoStandsOnTheMiddleOfTheBiggestDaysBar() {
+        // 31 days: 31 bars share 368dp less 30 gaps.
+        val unit = (368f - 30 * 4f) / 31f
+        assertEquals(16f + unit / 2f, StoryTimeChart.biggestCenter(31, 0), 0.01f)
+        assertEquals(16f + 27 * (unit + 4f) + unit / 2f, StoryTimeChart.biggestCenter(31, 27), 0.01f)
+    }
+
+    @Test
+    fun theStoryCarriesItsCountsRunnersUpDetailsAndRecords() {
+        val listening = (1..10).map { day(10, it, "dd", 60, evening = 60).copy(longestSessionMs = 40 * MINUTE, carMs = 60 * MINUTE, newReleaseMs = 20 * MINUTE, loreMs = 15 * MINUTE) } +
+            listOf(day(10, 12, "ct", 30, evening = 30).copy(longestSessionMs = 90 * MINUTE, headphonesMs = 30 * MINUTE), day(10, 13, "hc", 20, evening = 20).copy(speakerMs = 20 * MINUTE)) +
+            (20..23).map { day(9, it, "dd", 30, evening = 30) }
+        val story = build(listening)
+
+        assertEquals(12, story.counts.episodes)
+        assertEquals(listOf("ct", "hc"), story.runnersUp.map { it.podcastId })
+        assertEquals(30 * MINUTE, story.runnersUp.first().listenedMs)
+        assertEquals(90 * MINUTE to "Conspiracy Theories", story.longestSitting)
+        val how = story.how!!
+        assertEquals(cx.aswin.boxlore.feature.history.insights.ListeningOutput.CAR, how.outputs.first().output)
+        assertEquals(15f / 65f, how.sources.loreShare, 0.001f)
+        // Oct 1 to 10 is the month's run and the longest so far (September's was four days).
+        assertEquals(10, story.bestRunEver)
+        assertEquals(java.time.DayOfWeek.THURSDAY, story.bigWeekday!!.first)
+    }
+
+    @Test
+    fun theEntryCardsTeaserHasTheTopShowItsCoversAndHowManyCards() {
+        val listening = (20..23).map { day(10, it, "dd", 60, evening = 60).copy(bluetoothMs = 60 * MINUTE) } + day(10, 24, "ct", 20, evening = 20).copy(bluetoothMs = 20 * MINUTE)
+        val month = StoryLogic.months(listening, played, today).single()
+
+        assertEquals("Darknet Diaries", month.topShowName)
+        assertEquals(2, month.covers.size)
+        assertEquals(StoryCard.entries.size, month.cards)
     }
 
     private fun build(listening: List<ListeningDayEpisode>) = StoryLogic.build(october, emptyList(), listening, played, today, zone)!!
@@ -216,6 +270,17 @@ class StoryLogicTest {
     )
 
     private fun clip(id: String, reach: EchoReach) = EchoMotionClip(id, "clips/$id.mp4", 24, 1, 4, EchoFace.Idle, "rest", listOf(EchoScreenTrack(0.5f, 0.4f, 0.2f, 0.2f, 0f)), reach = reach)
+
+    @Test
+    fun earlierStoriesFoldToTwoRowsUntilOpened() {
+        val months = (1..8).map { StoryMonth(YearMonth.of(2026, 1).plusMonths(it.toLong()), it * MINUTE, EchoOutfit.HELLO) }
+        assertTrue(EarlierStories.folds(months))
+        assertEquals(months.take(6), EarlierStories.shown(months, expanded = false))
+        assertEquals(months, EarlierStories.shown(months, expanded = true))
+        // Two rows or fewer: everything shows and there's no button.
+        assertFalse(EarlierStories.folds(months.take(6)))
+        assertEquals(months.take(6), EarlierStories.shown(months.take(6), expanded = false))
+    }
 
     private companion object {
         const val MINUTE = 60_000L

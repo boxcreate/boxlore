@@ -73,6 +73,7 @@ import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.feature.history.R
+import kotlin.random.Random
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -108,6 +109,8 @@ fun StoryPlayer(story: MonthStory, startCard: StoryCard, onClose: () -> Unit, on
     val cards = remember(story) { StoryLogic.cards(story) }
     var index by rememberSaveable(story.month) { mutableIntStateOf(cards.indexOf(startCard).coerceAtLeast(0)) }
     var plays by rememberSaveable(story.month) { mutableIntStateOf(0) }
+    // Picks Echo's lines: a new seed each time the story opens, kept through rotation and resizing.
+    val lineSeed = rememberSaveable(story.month) { Random.nextInt() }
     var hopFrom by remember { mutableStateOf<StoryEchoBox?>(null) }
     var held by remember { mutableStateOf(false) }
     val card = cards[index.coerceIn(0, cards.lastIndex)]
@@ -161,7 +164,7 @@ fun StoryPlayer(story: MonthStory, startCard: StoryCard, onClose: () -> Unit, on
                             drawLayer(frame)
                         },
                 ) {
-                    StoryCardContent(card, story, palette, clock, spec, StoryActions(onPlay, share) { go(0) })
+                    StoryCardContent(card, story, palette, clock, spec, StoryActions(onPlay, share) { go(0) }, storyEchoLine(card, story, lineSeed))
                     if (spec != null) {
                         val next = cards.getOrNull(index + 1)?.echo(story, palette)?.sequence
                         StoryEcho(spec, card.echo(story, palette), StoryEchoMoment(hopFrom, plays, held), clock, listOfNotNull(StoryEchoStage.HOP, next), Modifier.zIndex(StoryLayers.ECHO))
@@ -187,14 +190,16 @@ private fun BoxScope.StoryCardContent(
     clock: StoryClock,
     spec: EchoCharacterSpec?,
     actions: StoryActions,
+    line: String,
 ) {
     when (card) {
-        StoryCard.HELLO -> StoryHelloCard(story, palette, clock, java.time.LocalDate.now().year)
-        StoryCard.TIME -> StoryTimeCard(story, palette, clock, spec, card.echo(story, palette))
-        StoryCard.TOP_SHOW -> StoryTopShowCard(story, palette, clock, actions.onPlay)
-        StoryCard.TYPE -> StoryTypeCard(story, palette, clock)
-        StoryCard.RECORDS -> StoryRecordsCard(story, palette, clock)
-        StoryCard.SHARE -> StoryShareCard(story, palette, clock, actions.onShare, actions.onWatchAgain)
+        StoryCard.HELLO -> StoryHelloCard(story, palette, clock, java.time.LocalDate.now().year, line)
+        StoryCard.TIME -> StoryTimeCard(story, palette, clock, spec, card.echo(story, palette), line)
+        StoryCard.TOP_SHOW -> StoryTopShowCard(story, palette, clock, actions.onPlay, line)
+        StoryCard.HOW -> StoryHowCard(story, palette, clock, line)
+        StoryCard.TYPE -> StoryTypeCard(story, palette, clock, line)
+        StoryCard.RECORDS -> StoryRecordsCard(story, palette, clock, line)
+        StoryCard.SHARE -> StoryShareCard(story, palette, clock, actions.onShare, actions.onWatchAgain, line)
     }
 }
 
@@ -203,6 +208,7 @@ internal fun StoryCard.colors(story: MonthStory, palette: StoryPalette): Pair<Co
     StoryCard.HELLO, StoryCard.SHARE -> palette.container to palette.onContainer
     StoryCard.TIME -> palette.vivid to Color.White
     StoryCard.TOP_SHOW -> palette.green to palette.onGreen
+    StoryCard.HOW -> palette.onContainer to palette.deep
     StoryCard.TYPE -> if (story.type?.time?.isNight() != false) palette.deep to palette.onContainer else palette.onContainer to palette.deep
     StoryCard.RECORDS -> palette.primary to palette.onPrimary
 }
@@ -212,6 +218,7 @@ internal fun StoryCard.echo(story: MonthStory, palette: StoryPalette): StoryEcho
     StoryCard.HELLO -> StoryEchoStage.hello(palette)
     StoryCard.TIME -> StoryEchoStage.time(palette, StoryTimeChart.biggestCenter(story.perDay.size, story.biggestDay.first.dayOfMonth - 1))
     StoryCard.TOP_SHOW -> StoryEchoStage.topShow(palette, story.showOutfit)
+    StoryCard.HOW -> StoryEchoStage.how(palette)
     StoryCard.TYPE -> StoryEchoStage.type(palette, StoryLogic.timeOutfit(story.type?.time))
     StoryCard.RECORDS -> StoryEchoStage.records(palette)
     StoryCard.SHARE -> StoryEchoStage.share(palette)

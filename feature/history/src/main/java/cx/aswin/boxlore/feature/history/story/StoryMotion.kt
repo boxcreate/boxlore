@@ -104,13 +104,21 @@ internal object StoryMotion {
     const val SPARK_DELAY_MS = 950
     const val SPARK_MS = 700
     const val COUNT_UP_MS = 1100
-    const val HOP_MS = 700
 
     /** How long each card shows before the next. */
     const val CARD_MS = 8_000L
 
-    /** Echo hops for this long before its card's act starts. */
-    const val HOP_PHASE_MS = 1_000L
+    /**
+     * Echo's hop clip runs 40 frames at 24 fps (1667ms): he crouches, is in the air from about frame 9
+     * to 30, and settles. He moves to his new spot only while airborne, and his card's act starts once
+     * the clip has played out, so nothing cuts the hop short.
+     */
+    const val HOP_PHASE_MS = 1_700L
+    const val HOP_TAKEOFF_MS = 375
+    const val HOP_LAND_MS = 1_250
+
+    /** Echo's line pops in once he has landed and started his act, after the card's stats. */
+    const val ECHO_LINE_MS = 2_000
 
     /** Bars grow from 250ms, 22ms apart; record pills pop from 1.1s, 90ms apart. */
     fun barDelay(index: Int) = 250 + index * 22
@@ -152,6 +160,12 @@ internal fun Modifier.storyBlob(clock: StoryClock, delay: Int = 0): Modifier = g
 internal fun Modifier.storyGrow(clock: StoryClock, delay: Int): Modifier = graphicsLayer {
     scaleY = clock.at(delay, StoryMotion.GROW_MS, StoryMotion.Standard).coerceAtLeast(0f)
     transformOrigin = TransformOrigin(0.5f, 1f)
+}
+
+/** Grows out from its start edge (a bar filling to its share). */
+internal fun Modifier.storyGrowX(clock: StoryClock, delay: Int): Modifier = graphicsLayer {
+    scaleX = clock.at(delay, StoryMotion.GROW_MS + 250, StoryMotion.Standard).coerceAtLeast(0f)
+    transformOrigin = TransformOrigin(0f, 0.5f)
 }
 
 /** Drops in from 60dp above, swinging from -18° to its resting -6°. */

@@ -344,6 +344,8 @@ private fun HistoryLoading() {
 /** The Insights tab: the period's stories, or what history alone can say while timing fills in. */
 @Composable
 private fun HistoryInsightsContent(state: InsightsUiState, viewModel: HistoryViewModel, bottomPadding: androidx.compose.ui.unit.Dp,) {
+    // Earlier stories stay folded or open through rotation, resizing and recreation.
+    var earlierExpanded by rememberSaveable { mutableStateOf(false) }
     when (state) {
         InsightsUiState.Loading -> HistoryLoading()
         is InsightsUiState.Ready ->
@@ -367,7 +369,7 @@ private fun HistoryInsightsContent(state: InsightsUiState, viewModel: HistoryVie
                     }
                 },
                 footer = {
-                    earlierStories(state.stories.earlier, onOpen = { viewModel.openStory(it.month) })
+                    earlierStories(state.stories.earlier, earlierExpanded, onExpand = { earlierExpanded = it }, onOpen = { viewModel.openStory(it.month) })
                 },
             )
     }

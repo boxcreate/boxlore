@@ -310,7 +310,6 @@
         <item quantity="one">%1$d show</item>
         <item quantity="other">%1$d shows</item>
     </plurals>
-    <string name="history_story_hello_bubble">Hi, I\'m Echo! Tap through your %1$s with me.</string>
     <string name="history_story_time_eyebrow">Time listened</string>
     <string name="history_story_hours">%1$d h</string>
     <string name="history_story_minutes">%1$d min</string>
@@ -320,22 +319,8 @@
     <string name="history_story_time_bubble">%1$s · %2$s</string>
     <string name="history_story_time_chart">Listening per day in %1$s, busiest on %2$s</string>
     <string name="history_story_top_eyebrow">Your top show</string>
-    <string name="history_story_top_line">%1$s, %2$d%% of your %3$s.</string>
-    <plurals name="history_story_top_finished">
-        <item quantity="one">%1$d episode finished.</item>
-        <item quantity="other">%1$d episodes finished.</item>
-    </plurals>
     <string name="history_story_resume">Resume %1$s · %2$s</string>
-    <string name="history_story_echo_crime">True crime again. Very detective of you.</string>
-    <string name="history_story_echo_tech">So much tech. Very plugged in of you.</string>
-    <string name="history_story_echo_news">Always on top of the news, huh?</string>
-    <string name="history_story_echo_history">History again. Quiz night is yours.</string>
-    <string name="history_story_echo_fiction">You do love a good story.</string>
-    <string name="history_story_echo_comedy">Lots of laughs this month.</string>
-    <string name="history_story_echo_science">Such a curious mind.</string>
-    <string name="history_story_echo_business">Talking shop again, I see.</string>
-    <string name="history_story_echo_health">Looking after yourself. Love it.</string>
-    <string name="history_story_echo_any">Good taste, if you ask me.</string>
+    <string name="history_story_resume_short">Resume · %s</string>
     <string name="history_story_type_morning">in the morning</string>
     <string name="history_story_type_afternoon">in the afternoon</string>
     <string name="history_story_type_evening">in the evening</string>
@@ -345,11 +330,6 @@
     <string name="history_story_type_finish_few">%1$d%% of your listening was %2$s, and you finished a few of the episodes you started.</string>
     <string name="history_story_type_finish_none">%1$d%% of your listening was %2$s. You haven\'t finished an episode you started yet.</string>
     <string name="history_story_type_only">%1$d%% of your listening was %2$s.</string>
-    <string name="history_story_echo_evening">Cosy evenings, huh?</string>
-    <string name="history_story_echo_late_night">Night owl, I see.</string>
-    <string name="history_story_echo_all_day">Morning, noon or night. Nice.</string>
-    <string name="history_story_echo_morning">Up early with a podcast. Nice.</string>
-    <string name="history_story_echo_daytime">Keeping your day company, huh?</string>
     <string name="history_story_records_eyebrow">Your records</string>
     <plurals name="history_story_run_days">
         <item quantity="one">%1$d day</item>
@@ -358,25 +338,52 @@
     <string name="history_story_run_line">in a row, %1$s to %2$s.</string>
     <string name="history_story_run_line_best">in a row, %1$s to %2$s. Your best run yet.</string>
     <string name="history_story_run_pills">%1$d listening days in a row</string>
-    <string name="history_story_biggest_day">Biggest day, %1$s</string>
     <string name="history_story_biggest_only">on %1$s, your biggest day.</string>
     <plurals name="history_story_episodes">
         <item quantity="one">%1$d episode</item>
         <item quantity="other">%1$d episodes</item>
     </plurals>
-    <string name="history_story_in_one_day">of %1$s in one day</string>
     <string name="history_story_share_card_title">My %1$s in listening</string>
     <string name="history_story_share_card_top">Top show</string>
     <string name="history_story_share_listen_on">Listen on</string>
     <string name="history_story_share_brand" translatable="false">boxlore</string>
     <string name="history_story_share_card_label">Share card: My %1$s in listening, %2$s, top show %3$s, %4$s</string>
-    <string name="history_story_see_you">See you in %1$s!</string>
     <string name="history_story_share">Share your %1$s</string>
     <string name="history_story_watch_again">Watch again</string>
     <string name="history_story_share_text">My %1$s in listening on boxlore: %2$s.</string>
+    <string name="history_story_count">%1$d</string>
+    <string name="history_story_percent">%1$d%%</string>
+    <string name="history_story_stat_listened">listened</string>
+    <string name="history_story_stat_days">days listened</string>
+    <string name="history_story_stat_episodes">episodes played</string>
+    <string name="history_story_stat_finished">finished</string>
+    <string name="history_story_time_compare">%1$s %2$s, %3$s %4$s</string>
+    <string name="history_story_top_share_of">of your %1$s</string>
+    <plurals name="history_story_top_finished_short">
+        <item quantity="one">%1$d episode finished</item>
+        <item quantity="other">%1$d episodes finished</item>
+    </plurals>
+    <string name="history_story_also">Also on repeat</string>
+    <string name="history_story_how_eyebrow">How you listened</string>
+    <string name="history_story_finished_of">%1$d of %2$d</string>
+    <string name="history_story_finished_label">episodes finished</string>
+    <string name="history_story_run_line_best_is">in a row, %1$s to %2$s. Your best is %3$d.</string>
+    <string name="history_story_rec_biggest">Biggest day\n%1$s</string>
+    <string name="history_story_rec_sitting">Longest sitting\n%1$s</string>
+    <string name="history_story_rec_binge">episodes of %1$s in one day, %2$s</string>
+    <string name="history_story_rec_weekday">your big weekday, %1$s across the month</string>
+    <string name="history_story_share_days">days</string>
+    <string name="history_story_share_episodes">episodes</string>
+    <string name="history_story_share_finished">finished</string>
     <string name="history_story_new">New</string>
     <string name="history_story_entry_title">Your %1$s story</string>
-    <string name="history_story_entry_meta">6 cards with Echo · 1 min</string>
+    <string name="history_story_entry_meta">%1$d cards · 1 min</string>
+    <string name="history_story_entry_top">%1$s on top</string>
     <string name="history_story_watch">Watch your %1$s story</string>
     <string name="history_story_earlier">Earlier stories</string>
+    <plurals name="history_story_earlier_all">
+        <item quantity="one">Show all %d story</item>
+        <item quantity="other">Show all %d stories</item>
+    </plurals>
+    <string name="history_story_earlier_fewer">Show fewer stories</string>
 </resources>

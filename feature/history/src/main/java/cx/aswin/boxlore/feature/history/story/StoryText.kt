@@ -1,13 +1,11 @@
 package cx.aswin.boxlore.feature.history.story
 
-import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import cx.aswin.boxlore.feature.history.R
 import cx.aswin.boxlore.feature.history.insights.DayPart
 import cx.aswin.boxlore.feature.history.insights.InsightsWording
 import cx.aswin.boxlore.feature.history.insights.ListeningType
-import cx.aswin.boxlore.feature.history.insights.TypeTime
 import cx.aswin.boxlore.feature.history.insights.perDayText
 import cx.aswin.boxlore.feature.history.timeline.durationText
 import java.time.DayOfWeek
@@ -29,11 +27,13 @@ internal object StoryText {
     fun weekday(day: DayOfWeek, locale: Locale): String = day.getDisplayName(TextStyle.FULL, locale)
 
     /** The time card's total in whole minutes, counting up over 1.1s as the card opens (cubic ease out). */
-    fun countUp(totalMs: Long, clock: StoryClock): Long {
-        val minutes = totalMs / 60_000L
-        if (clock.motionOff) return minutes
-        val p = clock.linear(0, StoryMotion.COUNT_UP_MS)
-        return (minutes * (1.0 - (1.0 - p).pow(3))).roundToLong()
+    fun countUp(totalMs: Long, clock: StoryClock): Long = countUp(totalMs / 60_000L, clock, delay = 0)
+
+    /** [value] counting up from 0 over 1.1s after [delay] (cubic ease out); the value itself with motion off. */
+    fun countUp(value: Long, clock: StoryClock, delay: Int): Long {
+        if (clock.motionOff) return value
+        val p = clock.linear(delay, StoryMotion.COUNT_UP_MS)
+        return (value * (1.0 - (1.0 - p).pow(3))).roundToLong()
     }
 
     /** "About 29 minutes a day, and 2 h 05 min more than September." */
@@ -48,30 +48,16 @@ internal object StoryText {
         return stringResource(id, perDay, durationText(abs(delta)), before)
     }
 
-    /** What Echo says beside the top show, by its outfit. */
-    @StringRes
-    fun genreLine(outfit: EchoOutfit): Int = when (outfit) {
-        EchoOutfit.TRUE_CRIME -> R.string.history_story_echo_crime
-        EchoOutfit.TECH -> R.string.history_story_echo_tech
-        EchoOutfit.NEWS -> R.string.history_story_echo_news
-        EchoOutfit.HISTORY -> R.string.history_story_echo_history
-        EchoOutfit.FICTION -> R.string.history_story_echo_fiction
-        EchoOutfit.COMEDY -> R.string.history_story_echo_comedy
-        EchoOutfit.SCIENCE -> R.string.history_story_echo_science
-        EchoOutfit.BUSINESS -> R.string.history_story_echo_business
-        EchoOutfit.HEALTH -> R.string.history_story_echo_health
-        else -> R.string.history_story_echo_any
-    }
-
-    /** What Echo says on the listening-type card, by the time of day. */
-    @StringRes
-    fun typeEchoLine(time: TypeTime): Int = when (time) {
-        TypeTime.MORNING -> R.string.history_story_echo_morning
-        TypeTime.DAYTIME -> R.string.history_story_echo_daytime
-        TypeTime.EVENING -> R.string.history_story_echo_evening
-        TypeTime.LATE_NIGHT -> R.string.history_story_echo_late_night
-        TypeTime.ALL_DAY -> R.string.history_story_echo_all_day
-    }
+    /** "at night": where the type card's leading share of the listening fell. */
+    @Composable
+    fun partPhrase(part: DayPart?): String = stringResource(
+        when (part) {
+            DayPart.MORNING -> R.string.history_story_type_morning
+            DayPart.AFTERNOON -> R.string.history_story_type_afternoon
+            DayPart.NIGHT -> R.string.history_story_type_night
+            DayPart.EVENING, null -> R.string.history_story_type_evening
+        },
+    )
 
     /** "46% of your listening was in the evening, and you finished about 3 in 4 episodes you started." */
     @Composable

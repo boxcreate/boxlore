@@ -5,10 +5,13 @@ import cx.aswin.boxlore.core.model.ListeningDayEpisode
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.core.model.ListeningPeriod
 import cx.aswin.boxlore.core.model.ListeningPlayedShow
+import cx.aswin.boxlore.feature.history.insights.InsightsDetails
 import cx.aswin.boxlore.feature.history.insights.InsightsLogic
 import cx.aswin.boxlore.feature.history.insights.InsightsParts
+import cx.aswin.boxlore.feature.history.insights.ListeningSources
 import cx.aswin.boxlore.feature.history.insights.ListeningType
 import cx.aswin.boxlore.feature.history.insights.MostInOneDay
+import cx.aswin.boxlore.feature.history.insights.OutputShare
 import cx.aswin.boxlore.feature.history.insights.PartShare
 import cx.aswin.boxlore.feature.history.insights.TypeTime
 import java.time.DayOfWeek
@@ -48,7 +51,19 @@ data class StoryTopShow(
     val resumeRemainingMs: Long,
 )
 
-/** One month's story (boards A7–A12). */
+/** A show behind the top one (the top show card's runners-up). */
+data class StoryShow(val podcastId: String, val name: String, val imageUrl: String?, val listenedMs: Long,)
+
+/** The hello card's counts: episodes played in the month and episodes finished in it. */
+data class StoryCounts(val episodes: Int, val finished: Int)
+
+/** Of the episodes started in the month (or, before listening dates, played in it), how many were finished. */
+data class StoryFinishes(val finished: Int, val started: Int)
+
+/** How the month was listened to (the How you listened card): where, and new or catching up with what started it. */
+data class StoryHow(val outputs: List<OutputShare>, val sources: ListeningSources)
+
+/** One month's story (the refreshed boards S1–S7). */
 data class MonthStory(
     val month: YearMonth,
     val totalMs: Long,
@@ -70,18 +85,44 @@ data class MonthStory(
     val parts: List<PartShare>,
     /** The longest run of listening days, when longer than one day. */
     val bestRun: Triple<Int, LocalDate, LocalDate>?,
-    /** Whether [bestRun] is the longest run so far, up to the month's end. */
+    /** Whether [bestRun] is a new record: longer than any run before the month, and the longest up to its end (a tie isn't). */
     val bestRunIsRecord: Boolean,
     val mostInOneDay: MostInOneDay?,
     /** The month's top five shows' artwork, by time, top show first. */
     val covers: List<String?>,
-)
+    val counts: StoryCounts = StoryCounts(0, 0),
+    /** The two shows after the top one, by time. */
+    val runnersUp: List<StoryShow> = emptyList(),
+    /** Null until enough of the month's listening has its details ([InsightsDetails]). */
+    val how: StoryHow? = null,
+    val finishes: StoryFinishes? = null,
+    /** The month's longest single sitting and its show's name. */
+    val longestSitting: Pair<Long, String>? = null,
+    /** The weekday with the most listening in the month, and how much. */
+    val bigWeekday: Pair<DayOfWeek, Long>? = null,
+    /** The longest run of listening days up to the month's end, this month's included. */
+    val bestRunEver: Int = 0,
+    val echo: StoryEchoFacts = StoryEchoFacts(),
+) {
+    /** No listening was timed before this month: the first story. */
+    val isFirst: Boolean get() = previousMonthMs == null
+}
 
 /** The story's cards, in order. */
-enum class StoryCard { HELLO, TIME, TOP_SHOW, TYPE, RECORDS, SHARE }
+enum class StoryCard { HELLO, TIME, TOP_SHOW, HOW, TYPE, RECORDS, SHARE }
 
-/** A month with a story: its name for the entry card and its time listened. */
-data class StoryMonth(val month: YearMonth, val totalMs: Long, val outfit: EchoOutfit,)
+/**
+ * A month with a story: its name, time listened and outfit for the entry card and Earlier stories,
+ * with the entry card's teaser: the top show's name, the top three covers and how many cards it has.
+ */
+data class StoryMonth(
+    val month: YearMonth,
+    val totalMs: Long,
+    val outfit: EchoOutfit,
+    val topShowName: String? = null,
+    val covers: List<String?> = emptyList(),
+    val cards: Int = StoryCard.entries.size,
+)
 
 /**
  * The monthly story: from the 1st of a month, the month before gets one when it has timed
@@ -89,15 +130,35 @@ data class StoryMonth(val month: YearMonth, val totalMs: Long, val outfit: EchoO
  */
 object StoryLogic {
     private const val COVERS = 5
+    private const val ENTRY_COVERS = 3
+    private const val RUNNERS_UP = 2
 
     /** Every month before [today]'s with timed listening, newest first. */
     fun months(listening: List<ListeningDayEpisode>, played: List<ListeningPlayedShow>, today: LocalDate): List<StoryMonth> {
         val current = YearMonth.from(today)
+        val shows = played.associateBy { it.podcastId }
         return listening.filter { it.consumedMs > 0L }
             .groupBy { YearMonth.from(LocalDate.ofEpochDay(it.localDay)) }
             .filterKeys { it < current }
             .toSortedMap(reverseOrder())
-            .map { (month, rows) -> StoryMonth(month, rows.sumOf { it.consumedMs }, genreOutfit(topGenre(rows, played))) }
+            .map { (month, rows) ->
+                val top = rows.groupBy { it.podcastId }.mapValues { (_, show) -> show.sumOf { it.consumedMs } }.entries.sortedByDescending { it.value }
+                val cards = StoryCard.entries.count { card ->
+                    when (card) {
+                        StoryCard.HOW -> InsightsDetails.hasEnough(rows)
+                        StoryCard.TYPE -> InsightsLogic.partShares(rows).isNotEmpty()
+                        else -> true
+                    }
+                }
+                StoryMonth(
+                    month = month,
+                    totalMs = rows.sumOf { it.consumedMs },
+                    outfit = genreOutfit(topGenre(rows, played)),
+                    topShowName = top.firstOrNull()?.let { shows[it.key]?.podcastName },
+                    covers = top.take(ENTRY_COVERS).map { shows[it.key]?.imageUrl },
+                    cards = cards,
+                )
+            }
     }
 
     fun build(month: YearMonth, history: List<ListeningHistoryItem>, listening: List<ListeningDayEpisode>, played: List<ListeningPlayedShow>, today: LocalDate, zoneId: ZoneId,): MonthStory? {
@@ -107,15 +168,15 @@ object StoryLogic {
         val total = rows.sumOf { it.consumedMs }
         val lastDay = if (YearMonth.from(today) == month) today.dayOfMonth else month.lengthOfMonth()
         val biggest = byDay.maxWith(compareBy<Map.Entry<LocalDate, Long>> { it.value }.thenBy { it.key }).toPair()
-        val previous = month.minusMonths(1)
         val input = InsightsLogic.Input(history, listening, played, ListeningPeriod.ALL, month.atEndOfMonth(), zoneId)
         val range = month.atDay(1)..month.atEndOfMonth()
         val info = InsightsParts.showInfo(history, played)
         val showTimes = rows.groupBy { it.podcastId }.mapValues { (_, show) -> show.sumOf { it.consumedMs } }.entries.sortedByDescending { it.value }
-        val timedBefore = listening.filter { it.consumedMs > 0L && LocalDate.ofEpochDay(it.localDay) < month.atDay(1) }
         val bestRun = InsightsLogic.longestRun(byDay.keys)?.takeIf { it.first > 1 }
         val runsSoFar = listening.filter { it.consumedMs > 0L && LocalDate.ofEpochDay(it.localDay) <= month.atEndOfMonth() }.map { LocalDate.ofEpochDay(it.localDay) }
         val topGenre = played.firstOrNull { it.podcastId == showTimes.firstOrNull()?.key }?.genre
+        val bestRunEver = InsightsLogic.longestRun(runsSoFar)?.first ?: 0
+        val echo = StoryEchoFactsLogic.of(month, rows, listening, played, showTimes)
         return MonthStory(
             month = month,
             totalMs = total,
@@ -125,16 +186,54 @@ object StoryLogic {
             perDay = (1..month.lengthOfMonth()).map { day -> if (day > lastDay) null else byDay[month.atDay(day)] ?: 0L },
             biggestDay = biggest,
             perDayAverageMs = total / lastDay,
-            previousMonthMs = if (timedBefore.isEmpty()) null else listening.filter { YearMonth.from(LocalDate.ofEpochDay(it.localDay)) == previous }.sumOf { it.consumedMs },
+            previousMonthMs = previousMonthMs(listening, month),
             topShow = topShow(showTimes.firstOrNull(), total, history, range, info, zoneId),
             showOutfit = genreOutfit(topGenre ?: topGenre(rows, played)),
             type = InsightsLogic.listeningTypeFor(input, range, rows),
             parts = InsightsLogic.partShares(rows),
             bestRun = bestRun,
-            bestRunIsRecord = bestRun != null && bestRun.first >= (InsightsLogic.longestRun(runsSoFar)?.first ?: 0),
+            bestRunIsRecord = bestRun != null && bestRun.first > echo.bestBefore && bestRun.first >= bestRunEver,
             mostInOneDay = InsightsParts.records(input, rows, info).mostInOneDay,
             covers = showTimes.take(COVERS).map { info[it.key]?.imageUrl },
+            counts = StoryCounts(rows.map { it.episodeId }.distinct().size, history.count { finishedIn(it, range, zoneId) }),
+            runnersUp = showTimes.drop(1).take(RUNNERS_UP).map { StoryShow(it.key, info[it.key]?.name.orEmpty(), info[it.key]?.imageUrl, it.value) },
+            how = how(rows),
+            finishes = finishes(history, range, zoneId),
+            longestSitting = longestSitting(rows, info),
+            bigWeekday = InsightsParts.weekdays(rows)?.let { it.biggest to it.biggestMs },
+            bestRunEver = bestRunEver,
+            echo = echo,
         )
+    }
+
+    /** The month before's listening, or null when nothing was timed before [month]. */
+    private fun previousMonthMs(listening: List<ListeningDayEpisode>, month: YearMonth): Long? {
+        val start = month.atDay(1)
+        if (listening.none { it.consumedMs > 0L && LocalDate.ofEpochDay(it.localDay) < start }) return null
+        val previous = month.minusMonths(1)
+        return listening.filter { YearMonth.from(LocalDate.ofEpochDay(it.localDay)) == previous }.sumOf { it.consumedMs }
+    }
+
+    private fun how(rows: List<ListeningDayEpisode>): StoryHow? {
+        val outputs = InsightsDetails.outputs(rows)
+        val sources = InsightsDetails.sources(rows)
+        return if (outputs.isNotEmpty() && sources != null) StoryHow(outputs, sources) else null
+    }
+
+    private fun longestSitting(rows: List<ListeningDayEpisode>, info: Map<String, InsightsParts.ShowMeta>): Pair<Long, String>? =
+        rows.filter { it.longestSessionMs > 0L }.maxByOrNull { it.longestSessionMs }?.let { it.longestSessionMs to info[it.podcastId]?.name.orEmpty() }
+
+    private fun finishedIn(row: ListeningHistoryItem, range: ClosedRange<LocalDate>, zoneId: ZoneId): Boolean =
+        ListeningCompletionLogic.isCompleted(row.isCompleted, row.progressMs, row.durationMs) && InsightsLogic.date(row.finishedAt?.takeIf { it > 0L } ?: row.lastPlayedAt, zoneId) in range
+
+    /** As [InsightsLogic.finishRate], as counts: the episodes first played in [range] and how many were finished, else those played in it. */
+    internal fun finishes(history: List<ListeningHistoryItem>, range: ClosedRange<LocalDate>, zoneId: ZoneId): StoryFinishes? {
+        val started = history.filter { (it.firstPlayedAt ?: 0L) > 0L && InsightsLogic.date(it.firstPlayedAt!!, zoneId) in range }
+        if (started.isNotEmpty()) return StoryFinishes(started.count { it.finishedAt != null }, started.size)
+        val played = history.filter { InsightsLogic.date(it.lastPlayedAt, zoneId) in range }
+        val done = played.count { InsightsLogic.finished(it) }
+        val going = played.count { ListeningCompletionLogic.isInProgress(it.isCompleted, it.progressMs, it.durationMs) }
+        return if (done + going == 0) null else StoryFinishes(done, done + going)
     }
 
     private fun topShow(
@@ -147,7 +246,7 @@ object StoryLogic {
     ): StoryTopShow? {
         top ?: return null
         val rows = history.filter { it.podcastId == top.key }
-        val finished = rows.count { ListeningCompletionLogic.isCompleted(it.isCompleted, it.progressMs, it.durationMs) && InsightsLogic.date(it.finishedAt?.takeIf { at -> at > 0L } ?: it.lastPlayedAt, zoneId) in range }
+        val finished = rows.count { finishedIn(it, range, zoneId) }
         val resume = rows.filter { ListeningCompletionLogic.isInProgress(it.isCompleted, it.progressMs, it.durationMs) }.maxByOrNull { it.lastPlayedAt }
         return StoryTopShow(
             podcastId = top.key,
@@ -166,10 +265,14 @@ object StoryLogic {
         return rows.groupBy { genreOf[it.podcastId] }.filterKeys { it != null }.maxByOrNull { (_, day) -> day.sumOf { it.consumedMs } }?.key
     }
 
-    /** The month's cards: all six, less the top show when no show is known and the listening type when parts of the day weren't timed. */
+    /**
+     * The month's cards: all seven, less the top show when no show is known, How you listened until
+     * enough listening has its details, and the listening type when parts of the day weren't timed.
+     */
     fun cards(story: MonthStory): List<StoryCard> = StoryCard.entries.filter { card ->
         when (card) {
             StoryCard.TOP_SHOW -> story.topShow != null
+            StoryCard.HOW -> story.how != null
             StoryCard.TYPE -> story.type != null && story.parts.isNotEmpty()
             else -> true
         }

@@ -168,13 +168,13 @@ internal fun StoryCover(url: String?, spot: StoryCoverSpot, modifier: Modifier =
  * four hours around it in [labels].
  */
 @Composable
-internal fun StoryListeningClock(parts: List<PartShare>, colors: StoryClockColors, modifier: Modifier = Modifier) {
+internal fun StoryListeningClock(parts: List<PartShare>, colors: StoryClockColors, modifier: Modifier = Modifier, scale: Float = CLOCK_SCALE) {
     val description = parts.map { stringResource(R.string.history_ins_part_share, partName(it.part), InsightsWording.percent(it.share)) }.joinToString()
     val label = stringResource(R.string.history_story_clock, description)
     val hours = listOf(R.string.history_clock_12am, R.string.history_clock_6am, R.string.history_clock_12pm, R.string.history_clock_6pm).map { stringResource(it) }
-    val style = StoryType.of(11f * CLOCK_SCALE)
-    Box(modifier.size((200 * CLOCK_SCALE).dp).clearAndSetSemantics { contentDescription = label }) {
-        Canvas(Modifier.size((200 * CLOCK_SCALE).dp)) {
+    val style = StoryType.of(11f * scale)
+    Box(modifier.size((200 * scale).dp).clearAndSetSemantics { contentDescription = label }) {
+        Canvas(Modifier.size((200 * scale).dp)) {
             val unit = size.width / 200f
             val center = Offset(size.width / 2, size.height / 2)
             drawCircle(colors.disc, 78 * unit, center)
@@ -198,11 +198,11 @@ internal fun StoryListeningClock(parts: List<PartShare>, colors: StoryClockColor
             drawCircle(colors.hub, 5 * unit, center)
         }
         // The board's labels: centred at the top and bottom, against the right and left edges, on the middle line.
-        val at = { x: Float, y: Float -> Modifier.offset((x * CLOCK_SCALE).dp, (y * CLOCK_SCALE).dp) }
-        Text(hours[0], style = style.copy(textAlign = TextAlign.Center), color = colors.labels, modifier = at(70f, 0f).size((60 * CLOCK_SCALE).dp, (14 * CLOCK_SCALE).dp))
-        Text(hours[1], style = style.copy(textAlign = TextAlign.End), color = colors.labels, modifier = at(136f, 92f).size((60 * CLOCK_SCALE).dp, (14 * CLOCK_SCALE).dp))
-        Text(hours[2], style = style.copy(textAlign = TextAlign.Center), color = colors.labels, modifier = at(70f, 184f).size((60 * CLOCK_SCALE).dp, (14 * CLOCK_SCALE).dp))
-        Text(hours[3], style = style, color = colors.labels, modifier = at(4f, 92f).size((60 * CLOCK_SCALE).dp, (14 * CLOCK_SCALE).dp))
+        val at = { x: Float, y: Float -> Modifier.offset((x * scale).dp, (y * scale).dp) }
+        Text(hours[0], style = style.copy(textAlign = TextAlign.Center), color = colors.labels, modifier = at(70f, 0f).size((60 * scale).dp, (14 * scale).dp))
+        Text(hours[1], style = style.copy(textAlign = TextAlign.End), color = colors.labels, modifier = at(136f, 92f).size((60 * scale).dp, (14 * scale).dp))
+        Text(hours[2], style = style.copy(textAlign = TextAlign.Center), color = colors.labels, modifier = at(70f, 184f).size((60 * scale).dp, (14 * scale).dp))
+        Text(hours[3], style = style, color = colors.labels, modifier = at(4f, 92f).size((60 * scale).dp, (14 * scale).dp))
     }
 }
 
