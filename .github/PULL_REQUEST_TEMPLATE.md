@@ -118,7 +118,7 @@ Keep a Changelog bullets for engineers. Use `### Added` / `### Changed` / `### F
 
 ### Listener notes (required for user-impact changes)
 
-Edit [`release-notes/upcoming.md`](../release-notes/upcoming.md) in this PR. Read the whole list first: if a line already covers the feature, change that line so it says the net change since the last release; otherwise add one line at the end of New, Improved or Fixed. Highlights holds at most 3 lines, most important first, and becomes the release announcement. Plain listener English; the product name is **boxlore** (lowercase); no class names, FCM keys or CI.
+Edit [`release-notes/upcoming.md`](../release-notes/upcoming.md) in this PR. Read the whole list first: if a line already covers the feature, change that line so it says the net change since the last release; otherwise add one line to New, Improved or Fixed, right after the lines about the same screen or feature (or at the end of the group when there are none). Highlights holds at most 3 lines, most important first, and becomes the release announcement. Plain listener English; the product name is **boxlore** (lowercase); no class names, FCM keys or CI.
 
 The **Release copy** check fails a user-impact PR that doesn't change the list, unless the list already says it (a fix to something not yet released, for example):
 

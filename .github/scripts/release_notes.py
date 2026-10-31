@@ -39,7 +39,9 @@ and the release announcement. Every PR that changes something listeners notice e
 - Highlights: at most 3 lines, most important first. They open What's new and form the release
   announcement, which must fit one notification with its title (the PR check measures it). To add
   one when there are 3, move the least important down into its group.
-- New, Improved, Fixed: add the line to the group it belongs to, at the end of that group.
+- New, Improved, Fixed: keep lines about the same screen or feature together (show pages, the
+  player, Home, Listening history, notifications, sync and backups...). Add a line right after
+  the last line about the same screen, or at the end of its group when there is none.
 - End a line with the PRs it covers, like (#1234) or (#1234, #1240). Optional.
 - Announcement title: optional; without it the announcement reads "boxlore vX.Y.Z is here".
 
