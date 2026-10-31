@@ -47,6 +47,9 @@ data class EchoCharacterSpec(
 
     /** Every still a sequence can show, including the rests its clips start and end on. */
     fun stills(id: String): List<String> = sequence(id).let { it.steps + it.loop }.map { it.frame }.distinct()
+
+    /** Whether [id] is one picture: a single step, no clip and no loop, so nothing in it moves (its face stays as drawn at its start). */
+    fun isStill(id: String): Boolean = sequences[id]?.let { it.loop.isEmpty() && it.steps.size == 1 && it.steps.single().clip == null } == true
 }
 
 fun parseEchoCharacterManifest(manifest: String): EchoCharacterSpec {

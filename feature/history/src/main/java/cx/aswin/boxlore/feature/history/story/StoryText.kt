@@ -87,6 +87,8 @@ internal object StoryText {
         val share = InsightsWording.percent(type.topPartShare)
         val rate = type.finishRate ?: return stringResource(R.string.history_story_type_only, share, part)
         if (rate >= InsightsWording.ALMOST_ALL_FROM) return stringResource(R.string.history_story_type_finish_all, share, part)
+        if (rate <= 0f) return stringResource(R.string.history_story_type_finish_none, share, part)
+        if (rate < InsightsWording.FEW_BELOW) return stringResource(R.string.history_story_type_finish_few, share, part)
         val (finished, of) = InsightsWording.nearestFraction(rate)
         return stringResource(R.string.history_story_type_finish, share, part, finished, of)
     }

@@ -33,6 +33,14 @@ class EchoCharacterModelTest {
         }
     }
 
+    @Test fun `story tiles and the entry card are stills that need no clock, the acts are not`() {
+        assertTrue(spec.isStill("story-entry"))
+        assertTrue(spec.isStill("story-trophy-still"))
+        assertFalse(spec.isStill("story-trophy"))
+        assertFalse(spec.isStill("story-hello"))
+        assertFalse(spec.isStill("no-such-sequence"))
+    }
+
     @Test fun `Echo blinks briefly and rarely while resting`() {
         val samples = (0 until 20_000 step 10).map { echoIsBlinking(it.toLong()) }
         val blinking = samples.count { it } / samples.size.toFloat()

@@ -94,25 +94,30 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                     ) as T
                 },
             )
+        val openEpisode: (cx.aswin.boxlore.core.model.ListeningHistoryItem) -> Unit = { item ->
+            fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+            val desc = "Resuming from History"
+            w.navigate(
+                "episode/${item.episodeId}/${encode(item.episodeTitle)}/" +
+                    "${encode(desc)}/" +
+                    "${encode(item.episodeImageUrl ?: item.podcastImageUrl)}/" +
+                    "${encode(item.episodeAudioUrl)}/" +
+                    "${item.durationMs}/${encode(item.podcastId)}/" +
+                    "${encode(item.podcastName)}" +
+                    "?entryPoint=library_history",
+            )
+        }
         cx.aswin.boxlore.feature.history.HistoryScreen(
             viewModel = viewModel,
             onBack = { navController.popBackStack() },
-            onEpisodeClick = { item ->
-                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                val desc = "Resuming from History"
-                w.navigate(
-                    "episode/${item.episodeId}/${encode(item.episodeTitle)}/" +
-                        "${encode(desc)}/" +
-                        "${encode(item.episodeImageUrl ?: item.podcastImageUrl)}/" +
-                        "${encode(item.episodeAudioUrl)}/" +
-                        "${item.durationMs}/${encode(item.podcastId)}/" +
-                        "${encode(item.podcastName)}" +
-                        "?entryPoint=library_history",
-                )
-            },
+            onEpisodeClick = openEpisode,
             onPlayEpisode = { item ->
                 val audio = item.episodeAudioUrl
-                if (audio.isNullOrBlank()) return@HistoryScreen
+                // A restored or synced row without its audio address: its episode page finds the episode to play.
+                if (audio.isNullOrBlank()) {
+                    openEpisode(item)
+                    return@HistoryScreen
+                }
                 val episode =
                     cx.aswin.boxlore.core.model.Episode(
                         id = item.episodeId,

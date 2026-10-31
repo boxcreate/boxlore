@@ -219,11 +219,12 @@ class HistoryViewModel(
         period.value = selected
     }
 
-    /** "All {n}" of Jump back in: every in-progress episode. */
+    /** "All {n}" of Jump back in, and Review in-progress episodes: every in-progress episode, no search. */
     fun showAllInProgress() {
         tab.value = HistoryTab.TIMELINE
         grouping.value = TimelineGrouping.DAYS
         filter.value = TimelineFilter.IN_PROGRESS
+        query.value = ""
     }
 
     /** Jump to a day: back to every episode by day, then the screen scrolls to [date]. */

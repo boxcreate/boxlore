@@ -59,10 +59,10 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.feature.history.insights.InsightsCallbacks
 import cx.aswin.boxlore.feature.history.insights.InsightsTab
-import cx.aswin.boxlore.feature.history.story.EarlierStories
 import cx.aswin.boxlore.feature.history.story.StoryDialog
 import cx.aswin.boxlore.feature.history.story.StoryEntryCard
 import cx.aswin.boxlore.feature.history.story.StoryText
+import cx.aswin.boxlore.feature.history.story.earlierStories
 import cx.aswin.boxlore.feature.history.timeline.JumpToDaySheet
 import cx.aswin.boxlore.feature.history.timeline.JumpToDayState
 import cx.aswin.boxlore.feature.history.timeline.TimelineEpisodeActions
@@ -119,7 +119,10 @@ fun HistoryScreen(
         topBar = {
             HistoryTopBar(
                 tab = tab,
-                canClear = (timeline as? TimelineUiState.Ready)?.content?.isHistoryEmpty == false,
+                // Each tab loads only while open: Insights knows the history has rows from its shows by episodes.
+                canClear =
+                    (timeline as? TimelineUiState.Ready)?.content?.isHistoryEmpty == false ||
+                        (insights as? InsightsUiState.Ready)?.content?.early?.showsByEpisodes?.isNotEmpty() == true,
                 insightsHaveTiming = (insights as? InsightsUiState.Ready)?.content?.hasEnoughTiming == true,
                 onBack = onBack,
                 onRequestClearAll = { showClearDialog = true },
@@ -364,9 +367,7 @@ private fun HistoryInsightsContent(state: InsightsUiState, viewModel: HistoryVie
                     }
                 },
                 footer = {
-                    if (state.stories.earlier.isNotEmpty()) {
-                        item(key = "earlier-stories") { EarlierStories(state.stories.earlier, onOpen = { viewModel.openStory(it.month) }) }
-                    }
+                    earlierStories(state.stories.earlier, onOpen = { viewModel.openStory(it.month) })
                 },
             )
     }

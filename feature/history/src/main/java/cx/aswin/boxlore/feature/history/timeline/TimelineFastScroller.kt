@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,6 +70,8 @@ internal fun TimelineFastScroller(listState: LazyListState, dateAt: (Int) -> Loc
     val layout by remember { derivedStateOf { listState.layoutInfo } }
     val total = layout.totalItemsCount
     val visible = layout.visibleItemsInfo.size
+    val currentTotal by rememberUpdatedState(total)
+    val currentVisible by rememberUpdatedState(visible)
     if (!TimelineScrollerLogic.isLongEnough(total, visible)) return
     var dragging by remember { mutableStateOf(false) }
     var dragFraction by remember { mutableStateOf(0f) }
@@ -88,6 +91,7 @@ internal fun TimelineFastScroller(listState: LazyListState, dateAt: (Int) -> Loc
         val density = LocalDensity.current
         val thumbHeight = 56.dp
         val travelPx = with(density) { (maxHeight - thumbHeight).toPx() }.coerceAtLeast(1f)
+        val currentTravel by rememberUpdatedState(travelPx)
         val thumbTopPx = (fraction * travelPx).roundToInt()
         AnimatedVisibility(
             visible = shown,
@@ -101,19 +105,25 @@ internal fun TimelineFastScroller(listState: LazyListState, dateAt: (Int) -> Loc
                     .padding(end = 3.dp)
                     .size(width = 24.dp, height = thumbHeight)
                     .semantics { contentDescription = description }
-                    .pointerInput(total, visible, travelPx) {
-                        detectVerticalDragGestures(
-                            onDragStart = {
-                                dragging = true
-                                dragFraction = TimelineScrollerLogic.fraction(listState.firstVisibleItemIndex, total, visible)
-                            },
-                            onDragEnd = { dragging = false },
-                            onDragCancel = { dragging = false },
-                        ) { change, dragAmount ->
-                            change.consume()
-                            dragFraction = (dragFraction + dragAmount / travelPx).coerceIn(0f, 1f)
-                            val index = TimelineScrollerLogic.indexAt(dragFraction, total, visible)
-                            scope.launch { listState.scrollToItem(index) }
+                    // One gesture for the whole drag: the visible count and travel change as rows of different
+                    // heights scroll by, so they're read as they are now rather than restarting the gesture.
+                    .pointerInput(Unit) {
+                        try {
+                            detectVerticalDragGestures(
+                                onDragStart = {
+                                    dragging = true
+                                    dragFraction = TimelineScrollerLogic.fraction(listState.firstVisibleItemIndex, currentTotal, currentVisible)
+                                },
+                                onDragEnd = { dragging = false },
+                                onDragCancel = { dragging = false },
+                            ) { change, dragAmount ->
+                                change.consume()
+                                dragFraction = (dragFraction + dragAmount / currentTravel).coerceIn(0f, 1f)
+                                val index = TimelineScrollerLogic.indexAt(dragFraction, currentTotal, currentVisible)
+                                scope.launch { listState.scrollToItem(index) }
+                            }
+                        } finally {
+                            dragging = false
                         }
                     },
                 contentAlignment = Alignment.CenterEnd,

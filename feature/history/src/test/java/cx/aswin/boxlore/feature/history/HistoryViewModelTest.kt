@@ -77,6 +77,7 @@ class HistoryViewModelTest {
     @Test
     fun allInProgressOpensTheTimelineFilteredByDay() = runTest(dispatcher) {
         val vm = viewModel()
+        vm.setQuery("no such episode")
         vm.selectTab(HistoryTab.INSIGHTS)
         vm.setGrouping(TimelineGrouping.SHOWS)
 
@@ -85,6 +86,8 @@ class HistoryViewModelTest {
         val timeline = vm.timelineState.first { it is TimelineUiState.Ready && it.filter == TimelineFilter.IN_PROGRESS } as TimelineUiState.Ready
         assertEquals(HistoryTab.TIMELINE, vm.selectedTab.value)
         assertEquals(TimelineGrouping.DAYS, timeline.grouping)
+        // An earlier search doesn't hide the in-progress episodes.
+        assertEquals("", timeline.query)
         assertEquals(listOf("a"), timeline.content.months.flatMap { month -> month.days.flatMap { day -> day.episodes.map { it.item.episodeId } } })
     }
 

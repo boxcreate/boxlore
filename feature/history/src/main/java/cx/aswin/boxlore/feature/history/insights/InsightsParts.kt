@@ -127,7 +127,8 @@ internal object InsightsParts {
         return EarlyInsights(
             finished = input.history.count { InsightsLogic.finished(it) },
             inProgress = input.history.count { ListeningCompletionLogic.isInProgress(it.isCompleted, it.progressMs, it.durationMs) },
-            playedDaysThisMonth = input.history.map { InsightsLogic.date(it.lastPlayedAt, input.zoneId) }.filter { YearMonth.from(it) == month }.distinct().size,
+            // Days with timed listening count too: an episode heard over several days was last played on one.
+            playedDaysThisMonth = (input.history.map { InsightsLogic.date(it.lastPlayedAt, input.zoneId) } + timedDays).filter { YearMonth.from(it) == month }.distinct().size,
             timingSince = timingSince,
             showsByEpisodes = shows.take(SHOWS_BY_EPISODES),
             timedDays = timedDays.size,

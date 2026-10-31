@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -99,13 +100,15 @@ internal fun StoryEntryCard(month: StoryMonth, isNew: Boolean, onOpen: () -> Uni
 /**
  * "Earlier stories" (A5): a tile a month, three across, 10dp apart: surfaceContainer, 22dp corners,
  * 168dp tall, with a primaryContainer blob and Echo in the month's outfit above the month and its time.
+ * Each row is its own list item, so only rows on screen are composed.
  */
-@Composable
-internal fun EarlierStories(months: List<StoryMonth>, onOpen: (StoryMonth) -> Unit, modifier: Modifier = Modifier) {
+internal fun LazyListScope.earlierStories(months: List<StoryMonth>, onOpen: (StoryMonth) -> Unit) {
     if (months.isEmpty()) return
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    item(key = "earlier-stories") {
         Text(stringResource(R.string.history_story_earlier), style = TimelineType.header, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp))
-        months.chunked(TILES_PER_ROW).forEach { row ->
+    }
+    months.chunked(TILES_PER_ROW).forEach { row ->
+        item(key = "earlier-stories-${row.first().month}") {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 row.forEach { month -> StoryTile(month, Modifier.weight(1f)) { onOpen(month) } }
                 repeat(TILES_PER_ROW - row.size) { Box(Modifier.weight(1f)) }

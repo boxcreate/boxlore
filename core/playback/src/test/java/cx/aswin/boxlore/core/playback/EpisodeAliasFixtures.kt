@@ -119,6 +119,7 @@ internal object EpisodeAliasFixtures {
             podcastRepository = mock(PodcastRepository::class.java),
             rankingFeedbackRepository = RankingFeedbackRepository.create(null),
             listenerStore = database.episodeListenerStore(),
+            playedShowDao = database.playedShowDao(),
         ),
     )
 }

@@ -6,6 +6,8 @@ import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.episodeListenerStore
+import cx.aswin.boxlore.core.database.PlayedShowEntity
+import cx.aswin.boxlore.core.database.ListeningSessionEntity
 import cx.aswin.boxlore.core.model.ListeningPeriod
 import cx.aswin.boxlore.core.playback.EpisodeAliasFixtures.SHOW
 import cx.aswin.boxlore.core.playback.EpisodeAliasFixtures.alias
@@ -95,6 +97,34 @@ class SwitchedShowPlaybackWritesTest {
         val summary = historyStore.observeInsights(ListeningPeriod.ALL).first()
 
         assertEquals(RSS_SHOW, summary.topShow?.podcastId)
+    }
+
+    @Test
+    fun theHistoryScreenSeesTheOldShowsRowsTimeAndPlaysAsTheFeedShow() = runTest {
+        linkFeedId()
+        dao.upsert(history("A", progress = 600_000L, playedAt = 40L))
+        database.podcastDao().upsert(PodcastEntity(podcastId = SHOW, title = "Index show", author = "", imageUrl = "", description = null))
+        database.podcastDao().upsert(
+            PodcastEntity(podcastId = RSS_SHOW, title = "Feed show", author = "", imageUrl = "", description = null, isSubscribed = true, sourceType = PodcastEntity.SOURCE_RSS, linkedPodcastIndexId = SHOW),
+        )
+        database.playedShowDao().mergePlayedShows(
+            listOf(
+                PlayedShowEntity(SHOW, "Index show", "https://img.example/show.jpg", "History", firstPlayedAt = 10L, lastPlayedAt = 40L),
+                PlayedShowEntity(RSS_SHOW, "Feed show", null, null, firstPlayedAt = 50L, lastPlayedAt = 90L),
+            ),
+            fromCloud = true,
+        )
+        database.listeningSessionDao().upsertSession(
+            ListeningSessionEntity("s", "A", SHOW, startedAt = 1L, endedAt = 61L, consumedMs = 60_000L, completed = false, localDay = 1L, timeBucket = 0),
+        )
+        val historyStore = EpisodeAliasFixtures.historyStore(context, database, this)
+
+        // The row, its listening and the played show all under the feed show, so they join.
+        assertEquals(listOf(RSS_SHOW), historyStore.observeFullHistoryTimeline().first().map { it.podcastId }.distinct())
+        assertEquals(listOf(RSS_SHOW), historyStore.observeListeningByDay().first().map { it.podcastId })
+        val played = historyStore.observePlayedShows().first().single()
+        assertEquals(RSS_SHOW, played.podcastId)
+        assertEquals(listOf("Feed show", "https://img.example/show.jpg", "History", 10L, 90L), listOf(played.podcastName, played.imageUrl, played.genre, played.firstPlayedAt, played.lastPlayedAt))
     }
 
     /** "A" owns the episode; "-1" is the feed show's ID, linked to it under the Podcast Index show. */

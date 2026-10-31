@@ -107,7 +107,9 @@ fun EchoCharacter(
     val stills = rememberEchoStills(spec, listOf(sequence) + prefetch, echoDecodeSize(sizePx), paint)
     val clipFrames = remember(assets, paint) { EchoClipFrames(assets, paint) }
     DisposableEffect(clipFrames) { onDispose { clipFrames.close() } }
-    val (elapsed, disabled) = rememberEchoCharacterClock(sequence to playbackKey, paused, LocalEchoMotion.current)
+    // A still with no clip or idle script (a story tile, the story entry card) draws once: its clock never runs.
+    val still = idle == null && spec?.isStill(sequence) == true
+    val (elapsed, disabled) = rememberEchoCharacterClock(sequence to playbackKey, paused || still, LocalEchoMotion.current)
     // Decode ahead of playback: the clip on screen, and the next one shortly before it starts.
     LaunchedEffect(spec, sequence, playbackKey, clipFrames) {
         val loaded = spec ?: return@LaunchedEffect

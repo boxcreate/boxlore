@@ -71,7 +71,7 @@ class TimelinePiecesTest {
     }
 
     @Test
-    fun aJumpLandsOnTheFirstDayOnOrBeforeIt() {
+    fun aJumpLandsOnItsDayElseTheNearestLaterDayWhereItsEpisodesWereLastPlayed() {
         val day = { date: LocalDate -> TimelineDay(date, 0L, listOf(HistoryTimelineLogic.episodeOf(item("e$date")))) }
         val month =
             TimelineMonth(YearMonth.of(2026, 10), 3, 0L, listOf(day(LocalDate.of(2026, 10, 28)), day(LocalDate.of(2026, 10, 20)), day(LocalDate.of(2026, 10, 3))), emptyList())
@@ -79,8 +79,12 @@ class TimelinePiecesTest {
         val entries = timelineEntries(TimelineTabState(content, TimelineFilter.ALL, TimelineGrouping.DAYS, "", LocalDate.of(2026, 10, 30)))
 
         val landed = { target: LocalDate -> (entries[timelineIndexFor(entries, target)!!] as? TimelineEntry.Day)?.day?.date }
-        assertEquals(LocalDate.of(2026, 10, 20), landed(LocalDate.of(2026, 10, 23)))
+        assertEquals(LocalDate.of(2026, 10, 20), landed(LocalDate.of(2026, 10, 20)))
+        // Listened on the 23rd but last played on the 28th: that's where the episode is.
+        assertEquals(LocalDate.of(2026, 10, 28), landed(LocalDate.of(2026, 10, 23)))
         assertEquals(LocalDate.of(2026, 10, 3), landed(LocalDate.of(2026, 10, 1)))
+        // After the newest day: the newest day.
+        assertEquals(LocalDate.of(2026, 10, 28), landed(LocalDate.of(2026, 10, 30)))
         assertEquals(entries.map { it.key }.distinct(), entries.map { it.key })
     }
 
