@@ -94,6 +94,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Catalog reads no longer load a Podcast Index list (`RefreshRequest.loadPiBaseline` removed). The 1,000-item `GET episodes/match` list now serves only the feed-only extras of Podcast Index shows. ([#1177](https://github.com/boxcreate/boxlore/pull/1177)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - `PodcastInfoViewModel` is split into same-package helpers (`PodcastInfoShowLoader`, `PodcastInfoEpisodePaging`, `PodcastInfoPullRefresh`, `PodcastInfoPostSubscribeRefresh`, `PodcastInfoEpisodeActions`, `PodcastInfoSessionTracker`, `PodcastEpisodePlaybackStateLogic`) sharing one `PodcastInfoPageState`, bringing it under the 1,000-line source limit with its API and behaviour unchanged. ([#1208](https://github.com/boxcreate/boxlore/pull/1208)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - The unit suite runs as parallel jobs (static checks, three unit-test shards, merged Kover coverage from the shards, two lint shards) behind the same `testDebugUnitTest` check; only `master` saves the Gradle cache, docs-only PRs skip the Android jobs, Release copy applies the impact labels before checking them (Auto-Triage removed), and `coderabbit-threads-resolved` no longer runs for every finished check. ([#1209](https://github.com/boxcreate/boxlore/pull/1209)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- Listener notes live in `release-notes/upcoming.md`, which PRs edit in place; README Upcoming, the update feed's Coming next, What's New and the release announcement are built from it, and release preparation keeps it as `release-notes/vX.Y.Z.md`. ([#1212](https://github.com/boxcreate/boxlore/pull/1212)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- The update feed trims long notes by whole lines to the app's limits instead of failing. ([#1212](https://github.com/boxcreate/boxlore/pull/1212)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Fixed
 - Subscription sync re-checks a dead saved feed address against `GET /podcast` once a day per show and reads a new address at once; shows whose own feed failed get their latest episode from `/sync`. ([#1160](https://github.com/boxcreate/boxlore/pull/1160)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - A feed that moved for good (301/308 redirects or `itunes:new-feed-url`, same show title) has its new HTTPS address saved; temporary redirects and `rss:` shows are never moved. ([#1160](https://github.com/boxcreate/boxlore/pull/1160)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
@@ -140,7 +142,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - `SubscriptionFolderDialog`, `FolderEditSheet` and `FolderEditComponents`. ([#1198](https://github.com/boxcreate/boxlore/pull/1198)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - `coderabbit-threads-resolved` workflow and its required check; merging relies on the master ruleset's conversation resolution, which covers every review thread. ([#1210](https://github.com/boxcreate/boxlore/pull/1210)) <!-- impact:no-user-impact --> <!-- copy:locked -->
-
+- Per-PR README release copy, PR-link requirements, the changelog reconcile and backfill steps, the release-notes source option and the offline release rehearsal. ([#1212](https://github.com/boxcreate/boxlore/pull/1212)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added
