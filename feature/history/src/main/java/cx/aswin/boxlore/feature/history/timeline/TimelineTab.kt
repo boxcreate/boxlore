@@ -1,8 +1,14 @@
 package cx.aswin.boxlore.feature.history.timeline
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -114,11 +120,18 @@ sealed interface TimelineEntry {
     }
 }
 
-/** The list's entries for [state], top to bottom. */
+/** Jump back in shows by day with no search; by show or while searching it folds away. */
+internal fun timelineShowsJumpBackIn(state: TimelineTabState): Boolean =
+    state.grouping == TimelineGrouping.DAYS && state.query.isBlank() && state.content.jumpBackIn.isNotEmpty()
+
+/**
+ * The list's entries for [state], top to bottom. Jump back in stays listed while it has episodes, even
+ * when [timelineShowsJumpBackIn] is false, so switching Days|Shows folds it smoothly instead of
+ * moving everything below, the toggle included, by its full height in one frame.
+ */
 internal fun timelineEntries(state: TimelineTabState): List<TimelineEntry> {
     val entries = mutableListOf<TimelineEntry>(TimelineEntry.Search)
-    val showJumpBackIn = state.grouping == TimelineGrouping.DAYS && state.query.isBlank() && state.content.jumpBackIn.isNotEmpty()
-    if (showJumpBackIn) entries += TimelineEntry.JumpBackIn
+    if (state.content.jumpBackIn.isNotEmpty()) entries += TimelineEntry.JumpBackIn
     entries += TimelineEntry.Chips
     state.content.months.forEachIndexed { index, month ->
         entries += TimelineEntry.Month(month, isFirst = index == 0)
@@ -174,7 +187,14 @@ private fun TimelineEntryContent(entry: TimelineEntry, state: TimelineTabState, 
     val side = Modifier.padding(horizontal = 16.dp)
     when (entry) {
         TimelineEntry.Search -> TimelineSearchField(state.query, callbacks.onQueryChange, side.padding(top = 16.dp))
-        TimelineEntry.JumpBackIn -> JumpBackInSection(state.content, callbacks)
+        TimelineEntry.JumpBackIn ->
+            AnimatedVisibility(
+                visible = timelineShowsJumpBackIn(state),
+                enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
+                exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut(),
+            ) {
+                Column { JumpBackInSection(state.content, callbacks) }
+            }
         TimelineEntry.Chips -> TimelineChipsRow(state.filter, callbacks)
         is TimelineEntry.Month -> {
             val month = entry.month

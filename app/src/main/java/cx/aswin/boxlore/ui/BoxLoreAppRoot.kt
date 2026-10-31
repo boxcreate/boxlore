@@ -86,11 +86,11 @@ import cx.aswin.boxlore.navigation.NavSettingsState
 import cx.aswin.boxlore.navigation.dispatchPushAction
 import cx.aswin.boxlore.navigation.externalPushActionIntent
 import cx.aswin.boxlore.navigation.isLaunchLandingBackRoute
-import cx.aswin.boxlore.navigation.navigateBottomNavTab
 import cx.aswin.boxlore.navigation.navigateHomeFromLaunchSubscriptions
 import cx.aswin.boxlore.navigation.resolveBottomNavTab
 import cx.aswin.boxlore.navigation.resolveIsFromOnboarding
 import cx.aswin.boxlore.navigation.resolveLaunchSubscriptionsBack
+import cx.aswin.boxlore.navigation.selectBottomNavTab
 import cx.aswin.boxlore.navigation.shouldShowBottomNav
 import cx.aswin.boxlore.navigation.shouldShowPlayerChrome
 import cx.aswin.boxlore.navigation.snapshotNavBackStack
@@ -732,7 +732,7 @@ fun BoxLoreAppRoot(
                 playerAllowed = shouldShowPlayerChrome(isAccountActive, isFromOnboardingRoute, isSupportActive, isModeSwitching),
                 hasEpisode = currentEpisode != null,
                 activeTab = activeTab,
-                onNavigateTab = { navController.navigateBottomNavTab(it, activeTab) },
+                onNavigateTab = { tab, revealedPrimary -> navController.selectBottomNavTab(tab, activeTab, revealedPrimary) },
                 content = TabletShellContent(
                     keyboardActions = PlaybackKeyboardActions(playbackRepository::togglePlayPause, playbackRepository::skipBackward, playbackRepository::skipForward),
                     details = { navigationContent(tabletNavigation.detail, true) },
@@ -839,8 +839,8 @@ fun BoxLoreAppRoot(
                     BoxLoreNavigationBar(
                         currentRoute = activeTab,
                         onNavigate = { route ->
-                            tabletNavigation.revealPrimary()
-                            navController.navigateBottomNavTab(route, activeTab)
+                            val revealedPrimary = tabletNavigation.revealPrimary()
+                            navController.selectBottomNavTab(route, activeTab, revealedPrimary)
                         },
                         style = navigationStyle,
                         initialContentReady = isInitialHomeContentReady,

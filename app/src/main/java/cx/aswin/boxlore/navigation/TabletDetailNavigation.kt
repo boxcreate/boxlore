@@ -86,9 +86,14 @@ internal class TabletDetailNavigation(
         detail.popBackStack(TabletContextRoot, inclusive = false)
     }
 
-    /** Rail and bottom-bar taps navigate the primary pane, so a detail covering it closes first. */
-    fun revealPrimary() {
-        if (detailCoversPrimary) closeDetails()
+    /**
+     * Rail and bottom-bar taps navigate the primary pane, so a detail covering it closes first.
+     * Returns true when a covering detail closed, so that tap only reveals the primary pane.
+     */
+    fun revealPrimary(): Boolean {
+        if (!detailCoversPrimary) return false
+        closeDetails()
+        return true
     }
 }
 

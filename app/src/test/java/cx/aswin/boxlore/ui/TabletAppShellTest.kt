@@ -274,7 +274,7 @@ class TabletAppShellTest {
                             allowed.value,
                             playing.value,
                             "home",
-                            { tab -> navigation.primary.navigate(tab) },
+                            { tab, _ -> navigation.primary.navigate(tab) },
                             TabletShellContent(
                             primary = {
                                 paneBounds = cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds.current

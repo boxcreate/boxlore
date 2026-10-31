@@ -90,6 +90,8 @@ class HistoryViewModelTest {
         // An earlier search doesn't hide the in-progress episodes.
         assertEquals("", timeline.query)
         assertEquals(listOf("a"), timeline.content.months.flatMap { month -> month.days.flatMap { day -> day.episodes.map { it.item.episodeId } } })
+        // The chip alone is easy to miss: the screen is asked to scroll to the filters.
+        assertEquals(TimelineScrollTarget.InProgress, vm.scrollRequests.first())
     }
 
     @Test
@@ -102,7 +104,7 @@ class HistoryViewModelTest {
 
         vm.jumpTo(LocalDate.of(2026, 10, 3))
 
-        assertEquals(LocalDate.of(2026, 10, 3), vm.scrollRequests.first())
+        assertEquals(TimelineScrollTarget.Day(LocalDate.of(2026, 10, 3)), vm.scrollRequests.first())
         val timeline = vm.timelineState.first { it is TimelineUiState.Ready } as TimelineUiState.Ready
         assertEquals(TimelineFilter.ALL, timeline.filter)
         assertEquals(TimelineGrouping.DAYS, timeline.grouping)

@@ -36,7 +36,7 @@ internal fun TabletShellCapture(route: String, episode: Episode, podcast: Podcas
             true,
             playing,
             route,
-            {},
+            { _, _ -> },
             TabletShellContent(
             primary = content,
             details = { NavHost(navigation.detail, TabletContextRoot) { composable(TabletContextRoot) {} } },

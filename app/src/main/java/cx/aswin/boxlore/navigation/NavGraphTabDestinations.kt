@@ -5,6 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
@@ -343,9 +344,15 @@ internal fun androidx.navigation.NavGraphBuilder.addExploreDestination(w: NavGra
                 },
             )
 
+        val searchRequested by remember(backStackEntry) {
+            backStackEntry.savedStateHandle.getStateFlow(ExploreSearchRequestKey, false)
+        }.collectAsStateWithLifecycle()
+
         cx.aswin.boxlore.feature.explore.ExploreScreen(
             viewModel = viewModel,
             entryPoint = entryPoint,
+            searchRequested = searchRequested,
+            onSearchRequestHandled = { backStackEntry.savedStateHandle[ExploreSearchRequestKey] = false },
             onPodcastClick = { podcastId, entryPointStr, genreStr, depthVal ->
                 var route = "podcast/$podcastId"
                 val params = mutableListOf<String>()

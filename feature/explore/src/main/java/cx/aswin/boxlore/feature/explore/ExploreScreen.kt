@@ -60,6 +60,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -119,6 +120,8 @@ fun ExploreScreen(
     onPodcastClick: (String, String, String?, Int?) -> Unit,
     onEpisodeClick: (Episode, Podcast) -> Unit,
     onNavigateToRegionSettings: () -> Unit = {},
+    searchRequested: Boolean = false,
+    onSearchRequestHandled: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val activeRegionCode by viewModel.activeRegionCode.collectAsStateWithLifecycle()
@@ -152,7 +155,9 @@ fun ExploreScreen(
         onVibeSelected = viewModel::onVibeSelected,
         onClearVibe = viewModel::clearVibe,
         onRegionClick = onNavigateToRegionSettings,
-        onLoadMore = { viewModel.loadMoreTrending() }
+        onLoadMore = { viewModel.loadMoreTrending() },
+        searchRequested = searchRequested,
+        onSearchRequestHandled = onSearchRequestHandled,
     )
 }
 
@@ -172,7 +177,9 @@ fun ExploreContent(
     onVibeSelected: (String, String) -> Unit,
     onClearVibe: () -> Unit,
     onRegionClick: () -> Unit = {},
-    onLoadMore: () -> Unit = {}
+    onLoadMore: () -> Unit = {},
+    searchRequested: Boolean = false,
+    onSearchRequestHandled: () -> Unit = {},
 ) {
     // Handle error/loading states
     val state = when (uiState) {
@@ -210,6 +217,15 @@ fun ExploreContent(
         onSearchQueryChanged("")
         onClearVibe()
         focusManager.clearFocus()
+    }
+    // Set when the Explore tab is tapped again on this page; opens search like the topic Search button.
+    LaunchedEffect(searchRequested) {
+        if (searchRequested) {
+            if (state.currentVibe != null) onClearVibe()
+            searchActive = true
+            focusSearch = true
+            onSearchRequestHandled()
+        }
     }
     ExploreTopicTransition(
         state = state,
@@ -256,9 +272,12 @@ fun ExploreContent(
         val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
         val density = LocalDensity.current
         val searchFocusRequester = remember { FocusRequester() }
+        val keyboard = LocalSoftwareKeyboardController.current
         LaunchedEffect(state.currentVibe, focusSearch, active) {
             if (active && state.currentVibe == null && focusSearch) {
                 searchFocusRequester.requestFocus()
+                // An already focused field keeps a dismissed keyboard hidden.
+                keyboard?.show()
                 focusSearch = false
             }
         }

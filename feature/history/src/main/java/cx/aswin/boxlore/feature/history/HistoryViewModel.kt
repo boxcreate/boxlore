@@ -54,6 +54,15 @@ sealed interface HistoryUiEvent {
     data object HistoryCleared : HistoryUiEvent
 }
 
+/** Where the Timeline scrolls once its filter and grouping reset has applied. */
+sealed interface TimelineScrollTarget {
+    /** Jump to a day: that day, with every episode by day. */
+    data class Day(val date: LocalDate) : TimelineScrollTarget
+
+    /** All in progress: the filter chips at the top, with In progress chosen and its episodes below. */
+    data object InProgress : TimelineScrollTarget
+}
+
 /** The Timeline tab: loading, or its content with the chosen filter, grouping and search text. */
 sealed interface TimelineUiState {
     data object Loading : TimelineUiState
@@ -116,8 +125,8 @@ class HistoryViewModel(
     private val eventsChannel = Channel<HistoryUiEvent>(Channel.BUFFERED)
     val events = eventsChannel.receiveAsFlow()
 
-    /** Days the Timeline should scroll to (Jump to a day), once each filter and grouping reset has applied. */
-    private val scrollChannel = Channel<LocalDate>(Channel.CONFLATED)
+    /** Where the Timeline should scroll (Jump to a day, All in progress), once each filter and grouping reset has applied. */
+    private val scrollChannel = Channel<TimelineScrollTarget>(Channel.CONFLATED)
     val scrollRequests = scrollChannel.receiveAsFlow()
 
     val selectedTab: StateFlow<HistoryTab> = tab.asStateFlow()
@@ -234,6 +243,8 @@ class HistoryViewModel(
         grouping.value = TimelineGrouping.DAYS
         filter.value = TimelineFilter.IN_PROGRESS
         query.value = ""
+        // Only the chip changes otherwise, often off screen: scrolling shows where the episodes are.
+        scrollChannel.trySend(TimelineScrollTarget.InProgress)
     }
 
     /** Jump to a day: back to every episode by day, then the screen scrolls to [date]. */
@@ -241,7 +252,7 @@ class HistoryViewModel(
         filter.value = TimelineFilter.ALL
         grouping.value = TimelineGrouping.DAYS
         query.value = ""
-        scrollChannel.trySend(date)
+        scrollChannel.trySend(TimelineScrollTarget.Day(date))
     }
 
     fun removeHistoryItem(episodeId: String) {

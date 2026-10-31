@@ -88,6 +88,28 @@ class TimelinePiecesTest {
         assertEquals(entries.map { it.key }.distinct(), entries.map { it.key })
     }
 
+    @Test
+    fun jumpBackInFoldsInsteadOfLeavingTheListSoTheToggleKeepsItsRow() {
+        val day = TimelineDay(LocalDate.of(2026, 10, 28), 0L, listOf(HistoryTimelineLogic.episodeOf(item("e1"))))
+        val month = TimelineMonth(YearMonth.of(2026, 10), 1, 0L, listOf(day), emptyList())
+        val content = TimelineContent(listOf(HistoryTimelineLogic.episodeOf(item("e1"))), 1, listOf(month), emptyMap(), emptySet(), day.date, false)
+        val today = LocalDate.of(2026, 10, 30)
+        val state = { grouping: TimelineGrouping, query: String -> TimelineTabState(content, TimelineFilter.ALL, grouping, query, today) }
+        val head = { s: TimelineTabState -> timelineEntries(s).take(4).map { it.key } }
+
+        val expected = listOf("search", "jump_back_in", "chips", "month_2026-10")
+        assertEquals(expected, head(state(TimelineGrouping.DAYS, "")))
+        assertEquals(expected, head(state(TimelineGrouping.SHOWS, "")))
+        assertEquals(expected, head(state(TimelineGrouping.DAYS, "ripper")))
+        assertTrue(timelineShowsJumpBackIn(state(TimelineGrouping.DAYS, "")))
+        assertFalse(timelineShowsJumpBackIn(state(TimelineGrouping.SHOWS, "")))
+        assertFalse(timelineShowsJumpBackIn(state(TimelineGrouping.DAYS, "ripper")))
+
+        val nothingInProgress = TimelineTabState(content.copy(jumpBackIn = emptyList()), TimelineFilter.ALL, TimelineGrouping.DAYS, "", today)
+        assertFalse(timelineEntries(nothingInProgress).any { it is TimelineEntry.JumpBackIn })
+        assertFalse(timelineShowsJumpBackIn(nothingInProgress))
+    }
+
     private fun item(id: String) = ListeningHistoryItem(id, "show", "Episode", null, null, null, "Show", 0L, 0L, false, false, 0L)
 
     private companion object {

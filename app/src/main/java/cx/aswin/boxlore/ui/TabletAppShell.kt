@@ -105,7 +105,7 @@ internal fun TabletAppShell(
     playerAllowed: Boolean,
     hasEpisode: Boolean,
     activeTab: String,
-    onNavigateTab: (String) -> Unit,
+    onNavigateTab: (tab: String, revealedPrimary: Boolean) -> Unit,
     content: TabletShellContent,
 ) {
     val window = LocalBoxloreWindowLayout.current
@@ -138,10 +138,7 @@ internal fun TabletAppShell(
                 if (geometry.railVisible) {
                     BoxLoreNavigationRail(
                         activeTab,
-                        { tab ->
-                            navigation.revealPrimary()
-                            onNavigateTab(tab)
-                        },
+                        { tab -> onNavigateTab(tab, navigation.revealPrimary()) },
                         Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing),
                     )
                 }
