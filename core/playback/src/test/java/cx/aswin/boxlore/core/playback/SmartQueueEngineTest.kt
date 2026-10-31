@@ -271,7 +271,7 @@ class SmartQueueEngineTest {
                 episode(1),
                 episode(2),
                 episode(3),
-                episode(4, episodeType = "trailer"),
+                episode(4, episodeType = "trailer", duration = 120),
                 episode(5),
             )
         sources.completedIds = setOf("3")
@@ -279,6 +279,21 @@ class SmartQueueEngineTest {
         val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
 
         assertEquals(listOf("2", "5"), batch.map { it.episode.id.toString() })
+    }
+
+    @Test
+    fun `a full-length episode the feed tags as a trailer is suggested`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] =
+            listOf(
+                episode(1),
+                episode(2, episodeType = "trailer", duration = 3264),
+                episode(3),
+            )
+
+        val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+
+        assertEquals(listOf("2", "3"), batch.map { it.episode.id.toString() })
     }
 
     @Test

@@ -34,15 +34,22 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.designsystem.theme.rememberGoogleSansFamily
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.effectiveEpisodeType
 import cx.aswin.boxlore.feature.info.R
+import cx.aswin.boxlore.feature.info.branded.LocalBrandedPage
 import cx.aswin.boxlore.feature.info.sections.stripHtml
 
 @Composable
@@ -187,33 +194,24 @@ fun EpisodeListItem(
                         return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
                     }
 
-                    fun formatRelativeDate(timestampSeconds: Long): String {
-                        if (timestampSeconds == 0L) return ""
-                        val now = System.currentTimeMillis() / 1000
-                        val diff = now - timestampSeconds
-                        return when {
-                            diff < 3600 -> "${diff / 60}m ago"
-                            diff < 86400 -> "${diff / 3600}h ago"
-                            diff < 604800 -> "${diff / 86400}d ago"
-                            diff < 2592000 -> "${diff / 604800}w ago"
-                            diff < 31536000 -> "${diff / 2592000}mo ago"
-                            else -> "${diff / 31536000}y ago"
-                        }
-                    }
-
                     val seasonEpisode = buildString {
                         episode.seasonNumber?.let { append("S$it ") }
                         episode.episodeNumber?.let { append("E$it") }
                     }.trim()
+                    val timeHighlight = LocalBrandedPage.current?.style?.episodeTimeColor
+                    val highlightFamily = rememberGoogleSansFamily(weight = 600)
                     Text(
-                        text = listOf(seasonEpisode, formatRelativeDate(episode.publishedDate), formatDuration(episode.duration))
-                            .filter { it.isNotBlank() }.joinToString(" · "),
+                        text = episodeDetailsLine(
+                            parts = listOf(seasonEpisode, formatEpisodeRelativeDate(episode.publishedDate), formatDuration(episode.duration)),
+                            highlightIndex = 1,
+                            highlight = timeHighlight?.let { SpanStyle(color = it, fontFamily = highlightFamily) },
+                        ),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    val type = episode.episodeType?.takeUnless { it == "full" }
+                    val type = episode.effectiveEpisodeType?.takeUnless { it == "full" }
                     val isVideo = episode.enclosureType?.startsWith("video/") == true
                     if (type != null || isVideo) {
                         FlowRow(
@@ -292,5 +290,28 @@ private fun EpisodeTypeChip(label: String, video: Boolean = false) {
             if (video) Icon(Icons.Rounded.Videocam, null, Modifier.size(14.dp))
             Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = GoogleSansWeight.medium)
         }
+    }
+}
+
+/** "2h ago" style age of an episode published at [timestampSeconds]; blank when the date is unknown. */
+internal fun formatEpisodeRelativeDate(timestampSeconds: Long, nowSeconds: Long = System.currentTimeMillis() / 1000): String {
+    if (timestampSeconds == 0L) return ""
+    val diff = nowSeconds - timestampSeconds
+    return when {
+        diff < 3600 -> "${diff / 60}m ago"
+        diff < 86400 -> "${diff / 3600}h ago"
+        diff < 604800 -> "${diff / 86400}d ago"
+        diff < 2592000 -> "${diff / 604800}w ago"
+        diff < 31536000 -> "${diff / 2592000}mo ago"
+        else -> "${diff / 31536000}y ago"
+    }
+}
+
+/** Joins the non-blank [parts] with " · ", styling the part at [highlightIndex] when [highlight] is set. */
+internal fun episodeDetailsLine(parts: List<String>, highlightIndex: Int = -1, highlight: SpanStyle? = null): AnnotatedString = buildAnnotatedString {
+    parts.forEachIndexed { index, part ->
+        if (part.isBlank()) return@forEachIndexed
+        if (length > 0) append(" · ")
+        if (index == highlightIndex && highlight != null) withStyle(highlight) { append(part) } else append(part)
     }
 }

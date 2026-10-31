@@ -1,16 +1,9 @@
 package cx.aswin.boxlore.feature.info
 
-import android.Manifest
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -23,13 +16,11 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -60,7 +51,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -74,8 +64,11 @@ import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPaddin
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.Person
-import cx.aswin.boxlore.core.prefs.BoxcastPrefs
+import cx.aswin.boxlore.feature.info.branded.LocalBrandedHeaderMotion
+import cx.aswin.boxlore.feature.info.branded.LocalBrandedPage
+import cx.aswin.boxlore.feature.info.branded.brandedShowPageFor
+import cx.aswin.boxlore.feature.info.branded.brandedSpotlightEpisode
+import cx.aswin.boxlore.feature.info.branded.feedItemsWithoutSpotlight
 import cx.aswin.boxlore.feature.info.components.EpisodeListIndicators
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbar
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbarActions
@@ -123,7 +116,19 @@ fun PodcastInfoScreen(
     val pageShow by viewModel.pageShow.collectAsState()
     // The route's show, or the show this route resolved to (a linked feed, a renumbered show); never a previous page's.
     val artworkPodcast = cx.aswin.boxlore.feature.info.logic.RenumberedShowPageLogic.artworkPodcast(uiState, podcastId, pageShow)
-    cx.aswin.boxlore.feature.info.components.ArtworkInfoTheme(listOf(artworkPodcast?.let { it.imageUrl.takeIf(String::isNotBlank) ?: it.fallbackImageUrl }), isLoading = uiState is PodcastInfoUiState.Loading) {
+    val brandedShowPage = remember(artworkPodcast) { brandedShowPageFor(artworkPodcast) }
+    cx.aswin.boxlore.feature.info.components.ArtworkInfoTheme(
+        listOf(artworkPodcast?.let { it.imageUrl.takeIf(String::isNotBlank) ?: it.fallbackImageUrl }),
+        isLoading = uiState is PodcastInfoUiState.Loading,
+        branded = brandedShowPage,
+    ) {
+    val brandedPage = LocalBrandedPage.current?.page
+    val headerMotion = LocalBrandedHeaderMotion.current
+    LaunchedEffect(headerMotion, viewModel) {
+        // Only this show's episodes are ever marked playing here.
+        headerMotion ?: return@LaunchedEffect
+        viewModel.episodePlaybackState.map { states -> states.values.any { it.isPlaying } }.distinctUntilChanged().collect { headerMotion.showPlaying = it }
+    }
     val queuedEpisodeIds by viewModel.queuedEpisodeIds.collectAsState()
     val downloadedEpisodeIds by viewModel.downloadedEpisodeIds.collectAsState()
     val downloadingEpisodeIds by viewModel.downloadingEpisodeIds.collectAsState()
@@ -191,44 +196,11 @@ fun PodcastInfoScreen(
     val selectionActive = selectedEpisodeIds.isNotEmpty()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    var isSystemNotificationsBlocked by remember { mutableStateOf(!areAppNotificationsEnabled(context)) }
-    var pendingPermissionAction by remember(podcastId) { mutableStateOf<(() -> Unit)?>(null) }
-    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                val blocked = !areAppNotificationsEnabled(context)
-                isSystemNotificationsBlocked = blocked
-                if (!blocked) {
-                    if (toolbarWarning == ToolbarWarning.SYSTEM_PERMISSION_BLOCKED) {
-                        toolbarWarning = ToolbarWarning.NONE
-                    }
-                    pendingPermissionAction?.invoke()
-                    pendingPermissionAction = null
-                }
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
-    // Permission Launcher for Android 13+ Notification Permission
-    val notifPermissionLauncher =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestPermission(),
-        ) { isGranted ->
-            BoxcastPrefs(context).setHasRequestedNotificationPermission(true)
-            if (isGranted) {
-                isSystemNotificationsBlocked = false
-                toolbarWarning = ToolbarWarning.NONE
-                pendingPermissionAction?.invoke()
-                pendingPermissionAction = null
-            } else {
-                isSystemNotificationsBlocked = true
-                toolbarWarning = ToolbarWarning.SYSTEM_PERMISSION_BLOCKED
-                pendingPermissionAction = null
-            }
-        }
+    val notificationPermission = rememberShowNotificationPermission(
+        podcastId = podcastId,
+        onAllowed = { granted -> if (granted || toolbarWarning == ToolbarWarning.SYSTEM_PERMISSION_BLOCKED) toolbarWarning = ToolbarWarning.NONE },
+        onDenied = { toolbarWarning = ToolbarWarning.SYSTEM_PERMISSION_BLOCKED },
+    )
 
     // 10-second auto-dismiss for toolbar warning banner
     LaunchedEffect(toolbarWarning) {
@@ -246,11 +218,11 @@ fun PodcastInfoScreen(
                 podcastNotificationsEnabled = state.podcast.notificationsEnabled,
                 isWarningVisible = toolbarWarning == ToolbarWarning.SYSTEM_PERMISSION_BLOCKED,
                 onRequestPermission = {
-                    pendingPermissionAction = { viewModel.toggleNotifications(disclosureAccepted, disclosedFeedUrl) }
-                    notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    notificationPermission.pendingAction = { viewModel.toggleNotifications(disclosureAccepted, disclosedFeedUrl) }
+                    notificationPermission.request()
                 },
                 onShowPermissionBlockedWarning = {
-                    if (!state.podcast.notificationsEnabled) pendingPermissionAction = { viewModel.toggleNotifications(disclosureAccepted, disclosedFeedUrl) }
+                    if (!state.podcast.notificationsEnabled) notificationPermission.pendingAction = { viewModel.toggleNotifications(disclosureAccepted, disclosedFeedUrl) }
                     toolbarWarning = ToolbarWarning.SYSTEM_PERMISSION_BLOCKED
                 },
                 onToggleNotifications = { viewModel.toggleNotifications(disclosureAccepted, disclosedFeedUrl) },
@@ -275,7 +247,7 @@ fun PodcastInfoScreen(
     BackHandler(enabled = isSearchActive) {
         closeSearch()
     }
-    BackHandler(enabled = selectionActive) {
+    val clearEpisodeSelection = {
         selectionRequestGeneration += 1
         selectedEpisodeIds = emptyList()
         selectionAnchorEpisodeId = null
@@ -285,6 +257,7 @@ fun PodcastInfoScreen(
         selectionRestorePending = false
         selectionRestoreFailedOn = null
     }
+    BackHandler(enabled = selectionActive) { clearEpisodeSelection() }
 
     TrackScreenSession(
         onSessionResume = viewModel::onScreenResume,
@@ -301,74 +274,8 @@ fun PodcastInfoScreen(
     var isTargetOngoing by remember(podcastId) { mutableStateOf(false) }
     val completedEpisodeIds by viewModel.completedEpisodesState.collectAsState()
 
-    // Scroll state for floating title animation (like Episode Info)
-    val scrollOffset by remember {
-        derivedStateOf {
-            if (listState.firstVisibleItemIndex == 0) {
-                listState.firstVisibleItemScrollOffset.toFloat()
-            } else {
-                1000f // Fully collapsed
-            }
-        }
-    }
-
-    // Scroll fraction: 0 (expanded) -> 1 (collapsed)
-    val density = LocalDensity.current
-    val keyboardVisible = WindowInsets.ime.getBottom(density) > 0
-    val morphThreshold = with(density) { 150.dp.toPx() }
-    val scrollFraction = (scrollOffset / morphThreshold).coerceIn(0f, 1f)
-
-    // Header dimensions
-    val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val collapsedHeaderHeight = 64.dp + statusBarHeight
-
-    // Header background: transparent → surfaceContainer
-    // NOTE: Don't lerp from Color.Transparent - it has RGB=0,0,0 causing black flash
-    val surfaceColor = MaterialTheme.colorScheme.surfaceContainer
-    val headerColor by animateColorAsState(
-        targetValue = surfaceColor.copy(alpha = scrollFraction),
-        animationSpec = spring(stiffness = Spring.StiffnessLow),
-        label = "headerColor",
-    )
-
-    // Title animation - floating title like Episode Info
-    val titleSizeStart = MaterialTheme.typography.headlineSmall.fontSize
-    val titleSizeEnd = MaterialTheme.typography.titleMedium.fontSize
-    val titleFontSize =
-        androidx.compose.ui.unit
-            .lerp(titleSizeStart, titleSizeEnd, scrollFraction)
-
-    // Y position: starts below header (above hero), ends in header
-    val bodyTitleYPx = with(density) { collapsedHeaderHeight.toPx() + 16.dp.toPx() }
-    val headerTitleYPx = with(density) { (statusBarHeight + 18.dp).toPx() }
-    val titleTranslationY by animateFloatAsState(
-        targetValue =
-        androidx.compose.ui.util
-            .lerp(bodyTitleYPx, headerTitleYPx, scrollFraction),
-        animationSpec = spring(stiffness = Spring.StiffnessMedium, dampingRatio = 0.85f),
-        label = "titleY",
-    )
-
-    // MaxLines - 3 when expanded, 1 when collapsed (change at 70% for late transition)
-    val titleMaxLines = 1
-    // Keep alpha at 0 until header collapses, then fade in
-    val titleAlpha = if (scrollFraction > 0.8f) (scrollFraction - 0.8f) / 0.2f else 0f
-
-    // Horizontal padding
-    val titleStartPadding by animateDpAsState(
-        targetValue =
-        androidx.compose.ui.unit
-            .lerp(20.dp, 56.dp, scrollFraction),
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-        label = "titleStartPadding",
-    )
-    val titleEndPadding by animateDpAsState(
-        targetValue =
-        androidx.compose.ui.unit
-            .lerp(20.dp, 112.dp, scrollFraction),
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-        label = "titleEndPadding",
-    )
+    // Scroll-linked header and floating title, like Episode Info.
+    val titleMotion = rememberShowPageTitleMotion(listState)
 
     // State for options sheet
 
@@ -397,14 +304,16 @@ fun PodcastInfoScreen(
             }
 
             is PodcastInfoUiState.Success -> {
-                // Blurred Background Header
-                InfoArtworkBackground(
-                    imageUrl = state.podcast.imageUrl,
-                    fallbackUrls = listOf(state.podcast.fallbackImageUrl, state.podcast.latestEpisode?.imageUrl),
-                    height = collapsedHeaderHeight + 240.dp,
-                    scrollOffset = scrollOffset,
-                    scrollFraction = scrollFraction,
-                )
+                // Blurred Background Header; a branded page keeps its own flat background.
+                if (brandedPage == null) {
+                    InfoArtworkBackground(
+                        imageUrl = state.podcast.imageUrl,
+                        fallbackUrls = listOf(state.podcast.fallbackImageUrl, state.podcast.latestEpisode?.imageUrl),
+                        height = titleMotion.collapsedHeaderHeight + 240.dp,
+                        scrollOffset = titleMotion.scrollOffset,
+                        scrollFraction = titleMotion.scrollFraction,
+                    )
+                }
 
                 // Content
                 val displayEpisodes =
@@ -444,16 +353,6 @@ fun PodcastInfoScreen(
                             completedEpisodeIds = completedEpisodeIds,
                         )
                     }
-                val clearEpisodeSelection = {
-                    selectionRequestGeneration += 1
-                    selectedEpisodeIds = emptyList()
-                    selectionAnchorEpisodeId = null
-                    selectionSortName = null
-                    selectionEpisodePool = emptyList()
-                    isLoadingFullSelection = false
-                    selectionRestorePending = false
-                    selectionRestoreFailedOn = null
-                }
                 // Records the order a new selection is made in, for the restore after recreation.
                 val noteSelectionSort = {
                     if (selectedEpisodeIds.isEmpty()) selectionSortName = state.currentSort.name
@@ -582,25 +481,10 @@ fun PodcastInfoScreen(
                     }
                 }
 
-                var isDescExpanded by remember { mutableStateOf(false) }
+                // Saved, so an open description stays open when a fold or resize recreates the page.
+                var isDescExpanded by rememberSaveable { mutableStateOf(false) }
 
-                val podcastPersons =
-                    remember(state.episodes) {
-                        state.episodes
-                            .take(15)
-                            .flatMap { it.persons ?: emptyList() }
-                            .distinctBy { it.name.lowercase().trim() }
-                    }
-
-                val sortedPersons =
-                    remember(podcastPersons) {
-                        podcastPersons.sortedWith(
-                            compareByDescending<Person> {
-                                val role = it.role?.lowercase() ?: ""
-                                role.contains("host") || role.contains("creator") || role.contains("presenter")
-                            }.thenBy { it.name },
-                        )
-                    }
+                val sortedPersons = remember(state.episodes) { sortedShowPersons(state.episodes) }
 
                 val pullToRefreshState = rememberPullToRefreshState()
                 val episodeListModifier =
@@ -629,12 +513,14 @@ fun PodcastInfoScreen(
                         )
                     }
 
+                val spotlightEpisode = brandedPage?.let { brandedSpotlightEpisode(state.episodes, state.currentSort, isSearchActive) }
+                val listFeedItems = remember(feedItems, spotlightEpisode) { feedItemsWithoutSpotlight(feedItems, spotlightEpisode) }
                 val contentState = EpisodeListContentState(
                     listState = listState,
                     modifier = episodeListModifier,
                     contentPadding = PaddingValues(
-                        top = collapsedHeaderHeight + 16.dp,
-                        bottom = if (isSearchActive && keyboardVisible) {
+                        top = brandedPage?.let { titleMotion.statusBarHeight + it.headerTop } ?: (titleMotion.collapsedHeaderHeight + 16.dp),
+                        bottom = if (isSearchActive && titleMotion.keyboardVisible) {
                             16.dp
                         } else {
                             WindowInsets.navigationBars
@@ -647,9 +533,9 @@ fun PodcastInfoScreen(
                     sortedPersons = sortedPersons,
                     isDescExpanded = isDescExpanded,
                     accentColor = accentColor,
-                    isSystemNotificationsBlocked = isSystemNotificationsBlocked,
+                    isSystemNotificationsBlocked = notificationPermission.systemBlocked,
                     toolbarWarning = toolbarWarning,
-                    feedItems = feedItems,
+                    feedItems = listFeedItems,
                     episodeListIndicators = episodeListIndicators,
                     autoScrolledEpisodeId = autoScrolledEpisodeId,
                     selectedEpisodeIdSet = selectedEpisodeIdSet,
@@ -657,6 +543,7 @@ fun PodcastInfoScreen(
                     isSearchActive = isSearchActive,
                     searchFocusRequester = searchFocusRequester,
                     hideCompletedFill = hideCompletedFill,
+                    spotlightEpisode = spotlightEpisode,
                 )
 
                 val contentCallbacks = EpisodeListContentCallbacks(
@@ -671,7 +558,7 @@ fun PodcastInfoScreen(
                         cx.aswin.boxlore.feature.info.logic.requestPodcastNotificationAction(
                             podcast = state.podcast,
                             onDisclosureRequired = {
-                                pendingPermissionAction = null
+                                notificationPermission.pendingAction = null
                                 pendingRssNotificationAction = it
                             },
                             onProceed = toggleNotifications,
@@ -700,12 +587,12 @@ fun PodcastInfoScreen(
                         cx.aswin.boxlore.feature.info.logic.requestPodcastNotificationAction(
                             podcast = state.podcast,
                             onDisclosureRequired = {
-                                pendingPermissionAction = null
+                                notificationPermission.pendingAction = null
                                 pendingRssNotificationAction = it
                             },
                             onProceed = { accepted, feedUrl ->
                                 val enableNotifications = { viewModel.enableShowNotifications(accepted, feedUrl) }
-                                pendingPermissionAction = if (
+                                notificationPermission.pendingAction = if (
                                     !areAppNotificationsEnabled(context) &&
                                     (currentWarning == ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY || !state.podcast.notificationsEnabled)
                                 ) {
@@ -718,7 +605,7 @@ fun PodcastInfoScreen(
                                     context = context,
                                     onEnableNotifications = enableNotifications,
                                     onRequestNotificationPermission = {
-                                        notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                        notificationPermission.request()
                                     },
                                     onShowPermissionBlockedWarning = { toolbarWarning = ToolbarWarning.SYSTEM_PERMISSION_BLOCKED },
                                 )
@@ -763,7 +650,7 @@ fun PodcastInfoScreen(
                             modifier =
                             Modifier
                                 .align(Alignment.TopCenter)
-                                .padding(top = collapsedHeaderHeight)
+                                .padding(top = titleMotion.collapsedHeaderHeight)
                                 .testTag(PODCAST_INFO_REFRESH_INDICATOR_TAG),
                         )
                     },
@@ -775,13 +662,16 @@ fun PodcastInfoScreen(
                     )
                 }
 
-                // FIXED HEADER
+                // FIXED HEADER. A branded page keeps its tag in the middle of the bar: only the
+                // missing-episodes offer, which asks for a choice, replaces it; passing feed-check
+                // statuses are left to the list's status line.
+                val topBarChip = if (brandedPage != null && state.directFeedChip != DirectFeedChipState.Offer) DirectFeedChipState.Hidden else state.directFeedChip
+                val tagShown by animateFloatAsState(if (topBarChip == DirectFeedChipState.Hidden) 1f else 0f, label = "brandedTagShown")
                 PodcastInfoTopOverlay(
                     podcast = state.podcast,
-                    headerColor = headerColor,
-                    collapsedHeaderHeight = collapsedHeaderHeight,
+                    headerColor = titleMotion.headerColor,
+                    collapsedHeaderHeight = titleMotion.collapsedHeaderHeight,
                     hideCompleted = hideCompleted,
-                    context = context,
                     actions =
                     PodcastInfoTopOverlayActions(
                         onBack = if (selectionActive) clearEpisodeSelection else onBack,
@@ -794,10 +684,11 @@ fun PodcastInfoScreen(
                         onToggleHomePin = viewModel::toggleHomePin,
                         onEditGenre = handleEditGenreClick,
                     ),
+                    tagAlpha = if (brandedPage == null) 0f else tagShown * (1f - (titleMotion.scrollFraction / 0.5f).coerceIn(0f, 1f)),
                     missingEpisodesChip =
                     MissingEpisodesChip(
-                        visible = scrollFraction < 0.5f,
-                        state = state.directFeedChip,
+                        visible = titleMotion.scrollFraction < 0.5f,
+                        state = topBarChip,
                         onClick = {
                             if (state.directFeedChip == DirectFeedChipState.Offer) {
                                 showMissingEpisodesConfirm = true
@@ -950,19 +841,19 @@ fun PodcastInfoScreen(
                 // FLOATING TITLE
                 Text(
                     text = state.podcast.title,
-                    fontSize = titleFontSize,
+                    fontSize = titleMotion.titleFontSize,
                     fontWeight = GoogleSansWeight.bold,
                     color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = titleMaxLines,
+                    maxLines = titleMotion.titleMaxLines,
                     overflow = TextOverflow.Ellipsis,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Start,
                     modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(start = titleStartPadding, end = titleEndPadding)
+                        .padding(start = titleMotion.titleStartPadding, end = titleMotion.titleEndPadding)
                         .graphicsLayer {
-                            translationY = titleTranslationY
-                            alpha = titleAlpha
+                            translationY = titleMotion.titleTranslationY
+                            alpha = titleMotion.titleAlpha
                         },
                 )
 

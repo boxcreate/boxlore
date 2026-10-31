@@ -28,8 +28,8 @@ class FeedGroupingLogicTest {
     fun `groupEpisodes collapses consecutive trailers into a stack`() {
         val episodes =
             listOf(
-                TestFixtures.episode(id = "t1").copy(episodeType = "trailer"),
-                TestFixtures.episode(id = "t2").copy(episodeType = "trailer"),
+                TestFixtures.episode(id = "t1", duration = 120).copy(episodeType = "trailer"),
+                TestFixtures.episode(id = "t2", duration = 120).copy(episodeType = "trailer"),
                 TestFixtures.episode(id = "full").copy(episodeType = "full"),
             )
 
@@ -45,7 +45,7 @@ class FeedGroupingLogicTest {
     fun `groupEpisodes keeps a single trailer as SingleTrailer`() {
         val episodes =
             listOf(
-                TestFixtures.episode(id = "t1").copy(episodeType = "trailer"),
+                TestFixtures.episode(id = "t1", duration = 120).copy(episodeType = "trailer"),
                 TestFixtures.episode(id = "full").copy(episodeType = "full"),
             )
 
@@ -54,6 +54,22 @@ class FeedGroupingLogicTest {
         assertEquals(2, grouped.size)
         assertTrue(grouped[0] is FeedItem.SingleTrailer)
         assertEquals("t1", (grouped[0] as FeedItem.SingleTrailer).episode.id)
+    }
+
+    @Test
+    fun `groupEpisodes lists a full-length episode the feed tags as a trailer as a normal episode`() {
+        val episodes =
+            listOf(
+                TestFixtures.episode(id = "newest").copy(episodeType = "full"),
+                TestFixtures.episode(id = "mislabelled", duration = 3264).copy(episodeType = "trailer"),
+                TestFixtures.episode(id = "older").copy(episodeType = "full"),
+            )
+
+        val grouped = groupEpisodes(episodes)
+
+        assertEquals(3, grouped.size)
+        assertTrue(grouped.all { it is FeedItem.NormalEpisode })
+        assertEquals("mislabelled", (grouped[1] as FeedItem.NormalEpisode).episode.id)
     }
 
     @Test
