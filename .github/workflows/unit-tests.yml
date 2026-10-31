@@ -4,8 +4,9 @@ name: Unit Tests
 # - `pull_request` — every PR push (new commits cancel the previous in-progress run)
 # - `push` to `master` — refreshes the GitHub Actions Gradle caches that PR runs read
 # - `workflow_dispatch` — manual full gate (always runs; ignores [skip unit] and docs-only changes)
-# The suite runs as parallel jobs: static checks, unit tests in three shards (app, core, feature
-# modules), merged coverage over the shards' results, and lint in two shards. `testDebugUnitTest`,
+# The suite runs as parallel jobs: static checks, unit tests in four shards (app, core, and the feature
+# modules in two groups of similar test weight), merged coverage over the shards' results, and lint in
+# three shards (app, core, features). `testDebugUnitTest`,
 # the check the master ruleset requires, passes only when every one of them passed.
 # Put `[skip unit]` in the PR title to no-op (still reports green as `testDebugUnitTest`); a PR that
 # changes only documentation skips the Android jobs on its own. Use these only with no logic risk.
@@ -23,6 +24,11 @@ concurrency:
 
 permissions:
   contents: read
+
+env:
+  # The feature modules with the heaviest tests; the others run in the features-b shard, so a new
+  # feature module lands there without a workflow change. Keep the two groups' run times similar.
+  FEATURES_A: '^:feature:(home|player|library|widgets|history|briefing)$'
 
 jobs:
   changes:
@@ -111,7 +117,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [app, core, features]
+        shard: [app, core, features-a, features-b]
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -126,11 +132,12 @@ jobs:
           set -euo pipefail
           modules() { grep -oE 'include\("[^"]+"\)' settings.gradle.kts | sed -E 's/include\("(.*)"\)/\1/'; }
           case "$SHARD" in
-            app) prefix='^:app$' ;;
-            core) prefix='^:core:' ;;
-            features) prefix='^:feature:' ;;
+            app) selected="$(modules | grep -E '^:app$')" ;;
+            core) selected="$(modules | grep -E '^:core:')" ;;
+            features-a) selected="$(modules | grep -E "$FEATURES_A")" ;;
+            features-b) selected="$(modules | grep -E '^:feature:' | grep -vE "$FEATURES_A")" ;;
           esac
-          tasks="$(modules | grep -E "$prefix" | sed 's/$/:testDebugUnitTest/' | tr '\n' ' ')"
+          tasks="$(printf '%s\n' "$selected" | sed 's/$/:testDebugUnitTest/' | tr '\n' ' ')"
           echo "Running: $tasks"
           ./gradlew $tasks --continue
 
@@ -179,7 +186,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [app, libraries]
+        shard: [app, core, features]
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -191,11 +198,16 @@ jobs:
         env:
           SHARD: ${{ matrix.shard }}
         run: |
-          if [ "$SHARD" = "app" ]; then
-            ./gradlew :app:lintDebug
-          else
-            ./gradlew lintDebug -x :app:lintDebug --continue
-          fi
+          set -euo pipefail
+          modules() { grep -oE 'include\("[^"]+"\)' settings.gradle.kts | sed -E 's/include\("(.*)"\)/\1/'; }
+          case "$SHARD" in
+            app) prefix='^:app$' ;;
+            core) prefix='^:core:' ;;
+            features) prefix='^:feature:' ;;
+          esac
+          tasks="$(modules | grep -E "$prefix" | sed 's/$/:lintDebug/' | tr '\n' ' ')"
+          echo "Running: $tasks"
+          ./gradlew $tasks --continue
 
   testDebugUnitTest:
     name: testDebugUnitTest
