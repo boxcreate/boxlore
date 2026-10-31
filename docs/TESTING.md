@@ -27,7 +27,7 @@ Automated coverage focused on **hermetic JVM** for product logic (queue fill, ra
 | Android lint | `./gradlew lintDebug` | Manifest / resource / API lint | Done |
 | Coverage (Kover) | `./gradlew :koverVerifyMerged` | Merged floor (ratchet toward 80%) | WIP |
 | Screenshots | `screenshots/baselines/` + optional Roborazzi (local) | Visual regressions | Optional |
-| Maestro | `maestro/` YAML validate | Flow file presence/syntax | Done |
+| Maestro | `maestro/` flows on a device | Installed-app smoke checks | Optional, local only |
 
 Architecture boundaries: [`ARCHITECTURE.md`](../ARCHITECTURE.md).
 
@@ -103,7 +103,7 @@ Run `node --test .github/scripts/test_announcement_admin.cjs` and the Python sui
 | JVM | Every public behavior-owning type has a suite (happy/empty/error/branches) or an irreducible exclusion | `testDebugUnitTest` |
 | ViewModels | Behaviors via hermetic `logic/` + Settings Turbine; AndroidViewModels allowlisted when logic suites exist | unit job |
 | Screenshots | Immutable phone screen matrix and Settings dialogs (local record/verify) | Manual / local only |
-| Maestro | YAML present and well-formed | nightly validate |
+| Maestro | Flows run on a device when needed | Manual / local only |
 | Kover merged | **≥ 80%** end state (ratchet **40 → 45 → 55 → 70 → 80**) | `:koverVerifyMerged` |
 | Kover per-module | **≥ 70%** on logic-heavy modules (ratchet as suites land) | module verify |
 | Architecture | ARCHITECTURE.md boundaries | scripts + `ArchitectureGuardTest` + dependencyGuard |
@@ -208,8 +208,7 @@ Application-backed Home/Info suites are **not** pursued; hermetic `logic/` + ass
 | Target | Status |
 | :--- | :--- |
 | Flow YAML under `maestro/` | Done |
-| Nightly YAML validate | Done |
-| Maestro Cloud device runs | Optional; requires configured service credentials |
+| Device runs | Optional, local only; no CI workflow |
 
 See [`maestro/README.md`](../maestro/README.md).
 
@@ -240,7 +239,6 @@ See [`docs/screenshots/README.md`](screenshots/README.md).
 | `unit-tests.yml` | Architecture + detekt + unit + Kover + lint + Dependency Guard + Python release tests | PR / master push / dispatch | Done |
 | `release-copy.yml` | Developer copy, exactly one impact label, and the listener notes list | PR, including body / label edits | Configured |
 | `gitleaks.yml` | Secret scan | PR / push to master | Done |
-| `maestro-nightly.yml` | Validate Maestro YAML; optional Cloud device job when configured | Nightly / manual | Done |
 
 **Gitleaks allowlist:** `.gitleaks.toml` allows only the `lastRssKey` lines in `scripts/data/episode-tracker.json`. They hold public RSS item GUIDs written by the episode tracker bot. Without it, the local `gitleaks protect --staged` hook flags them whenever master is merged into a branch.
 

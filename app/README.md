@@ -245,7 +245,6 @@ Episode push artwork keeps its six-second total deadline and uses 700ms per rout
 ## CI relevance
 
 - `unit-tests.yml` runs app JVM tests and uses the CI Firebase configuration stub.
-- `maestro-nightly.yml` exercises installed-app smoke flows when the optional device-farm secrets are available.
 - App assembly validates dependency wiring for all feature and core modules.
 
 ## See also

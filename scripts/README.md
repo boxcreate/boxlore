@@ -107,14 +107,14 @@ The local updater fixture accepts `--notes-file` for long UTF-8 sample release n
 
 ### Check New Episodes
 
-The checker runs **hourly on the VPS** (netcup-panel `stack/notifier`: a systemd timer runs this script from the sync runner's copy, with its own Firebase service account that can only read `tracked_podcasts` and send pushes). GitHub's scheduled runs came every 2–6 hours instead of every 30 minutes. [`.github/workflows/new-episode-check.yml`](../.github/workflows/new-episode-check.yml) is now a manual fallback that rehearses (`dry_run`) by default; a live run there would use the repo's older state file. It polls notification registrations independently of catalog sync.
+The checker runs **hourly on the VPS** (netcup-panel `stack/notifier`: a systemd timer runs this script from the sync runner's copy, with its own Firebase service account that can only read `tracked_podcasts` and send pushes). GitHub's scheduled runs came every 2–6 hours instead of every 30 minutes. The GitHub workflow that used to run it has been removed. It polls notification registrations independently of catalog sync.
 
 | What | Where |
 | :--- | :--- |
 | Script | [`scripts/check-new-episodes.js`](check-new-episodes.js) + [`check-new-episodes-lib.js`](check-new-episodes-lib.js) |
 | Who to poll | Firebase RTDB `tracked_podcasts/{podcastIndexId}` (client writes this when **show notifications** are on). Rules allow `title`, `imageUrl`, and optional HTTPS `feedUrl` only — extra children are rejected. |
 | Last-notified state | `NOTIFIER_STATE_FILE` on the VPS (`/var/lib/boxlore-notifier/episode-tracker.json`, in the daily backup). [`scripts/data/episode-tracker.json`](data/episode-tracker.json) is the last state from GitHub Actions |
-| Tests | `npm ci` then `npm run test:check-new-episodes` from `scripts/` (the Check New Episodes workflow runs the same script after `npm ci`) |
+| Tests | `npm ci` then `npm run test:check-new-episodes` from `scripts/` |
 
 Release selection and recovery:
 
@@ -143,7 +143,7 @@ Device RTDB rows use `rss:<show-id>~<registration-id>~<url-hash>`. Group only ma
 
 ### Weekly tracked-podcast feed repair
 
-[`backfill-tracked-podcast-feeds.yml`](../.github/workflows/backfill-tracked-podcast-feeds.yml) runs weekly and supports manual dispatch. Its `tracked-podcast-rtdb-maintenance` concurrency group prevents overlap with the notification checker.
+[`backfill-tracked-podcast-feeds.yml`](../.github/workflows/backfill-tracked-podcast-feeds.yml) runs weekly and supports manual dispatch. Its `tracked-podcast-rtdb-maintenance` concurrency group keeps two repairs from overlapping.
 
 Before mutation, [`backfill-tracked-podcast-feeds.js`](backfill-tracked-podcast-feeds.js) saves numeric registrations and aggregated public RSS show metadata to [`data/tracked-podcasts-backups/`](data/tracked-podcasts-backups/), retaining one snapshot per UTC ISO week for the latest 10 weeks. The workflow must successfully commit a changed snapshot to `master` before repairing rows. Backups preserve every accepted public URL scope without publishing device registration IDs.
 

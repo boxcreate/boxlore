@@ -1,6 +1,6 @@
 # Maestro smoke flows
 
-Maestro flows provide device or emulator smoke coverage for the installed Boxlore app. Local runs require a connected device or emulator. CI validates flow files and can run Maestro Cloud when the optional secrets are configured.
+Maestro flows provide device or emulator smoke coverage for the installed Boxlore app. Local runs require a connected device or emulator.
 
 ## App id
 
@@ -59,19 +59,7 @@ Every flow keeps a single optional line — the first-run consent/permission tap
 
 ## CI
 
-Workflow: [`.github/workflows/maestro-nightly.yml`](../.github/workflows/maestro-nightly.yml)
-
-| Trigger | Behavior |
-| :--- | :--- |
-| Cron or `workflow_dispatch` | Validates `maestro/*.yaml` presence and basic syntax |
-| Optional device-farm job | Builds `:app:assembleDebug` and runs Maestro Cloud when secrets are set |
-
-Optional secrets for full device-farm runs:
-
-- `MAESTRO_CLOUD_API_KEY`
-- `MAESTRO_PROJECT_ID`
-
-Without those secrets, the workflow still validates flow files and reports that the device-farm job is skipped.
+No CI workflow runs or validates these flows; they are a local check on a device.
 
 ## Notes
 
