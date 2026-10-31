@@ -1,8 +1,8 @@
 package cx.aswin.boxlore.core.catalog.sync
 
 import cx.aswin.boxlore.core.catalog.ports.ActivePlaybackSyncPort
-import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningDates
+import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.model.persistableArtworkUrl
 import cx.aswin.boxlore.core.network.model.ListeningHistorySyncDto

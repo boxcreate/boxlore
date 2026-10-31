@@ -20,6 +20,7 @@ import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.node.currentValueOf
 import androidx.compose.ui.node.invalidateDraw
 import androidx.compose.ui.platform.InspectorInfo
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -53,8 +54,8 @@ private class ShimmerNode(private var base: Color, private var highlight: Color)
     Modifier.Node(),
     DrawModifierNode,
     CompositionLocalConsumerModifierNode {
-    private var sharedPhase: State<Float>? = null
     private val ownPhase = mutableFloatStateOf(0f)
+    private var ownClock: Job? = null
     private var brush: Brush? = null
     private var brushWidth = Float.NaN
 
@@ -66,12 +67,26 @@ private class ShimmerNode(private var base: Color, private var highlight: Color)
         invalidateDraw()
     }
 
-    override fun onAttach() {
-        sharedPhase = currentValueOf(LocalShimmerPhase)
-        if (sharedPhase != null) return
+    /**
+     * Follows the [ShimmerScope]'s shared clock when there is one and runs its own otherwise. It is
+     * checked while drawing, which runs again when the shared clock comes or goes, so a block attached
+     * before or after its scope switches clocks instead of keeping the one it was attached with.
+     */
+    private fun followPhase(): State<Float>? {
+        val shared = currentValueOf(LocalShimmerPhase)
+        if (shared != null) {
+            ownClock?.cancel()
+            ownClock = null
+        } else if (ownClock == null) {
+            ownClock = runOwnClock()
+        }
+        return shared
+    }
+
+    private fun runOwnClock(): Job {
         // An infinite-animation frame, like an infinite transition, so tests can still go idle. It
         // follows the system animation speed and holds still while animations are off.
-        coroutineScope.launch {
+        return coroutineScope.launch {
             val motionScale = coroutineContext[MotionDurationScale]
             var start = withInfiniteAnimationFrameMillis { it }
             var previousScale = motionScale?.scaleFactor ?: 1f
@@ -92,7 +107,8 @@ private class ShimmerNode(private var base: Color, private var highlight: Color)
     }
 
     override fun onDetach() {
-        sharedPhase = null
+        // The node's coroutine scope is cancelled on detach; a later attach starts a fresh clock.
+        ownClock = null
     }
 
     override fun ContentDrawScope.draw() {
@@ -103,7 +119,7 @@ private class ShimmerNode(private var base: Color, private var highlight: Color)
         }
         drawRect(color = base)
         // Start with a visible band, including short cache-loading sessions.
-        val phase = sharedPhase?.value ?: ownPhase.floatValue
+        val phase = followPhase()?.value ?: ownPhase.floatValue
         val offset = -width + ((phase + 0.25f) % 1f) * (2f * width)
         translate(left = offset) {
             // Move the shader, keeping its drawing rectangle over the entire
