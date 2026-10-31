@@ -8,8 +8,8 @@ reviews:
   profile: assertive
   # Do NOT use request_changes_workflow — it leaves a sticky CHANGES_REQUESTED
   # review that blocks merge even when every CI check is green and threads are
-  # resolved. Merge gating for CodeRabbit is the Actions check
-  # `coderabbit-threads-resolved` (+ GitHub required_review_thread_resolution).
+  # resolved. Merge gating for CodeRabbit is the master ruleset's conversation
+  # resolution (required_review_thread_resolution): every review thread Resolved.
   request_changes_workflow: false
   auto_approve: true
   high_level_summary: true

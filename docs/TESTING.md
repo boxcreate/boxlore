@@ -240,13 +240,12 @@ See [`docs/screenshots/README.md`](screenshots/README.md).
 | `unit-tests.yml` | Architecture + detekt + unit + Kover + lint + Dependency Guard + Python release tests | PR / master push / dispatch | Done |
 | `release-copy.yml` | Authored release regions and exactly one impact label | PR, including body / label edits | Configured |
 | `release-rehearsal.yml` | Hermetic script tests and offline candidate previews | Manual | Configured |
-| `coderabbit-threads-resolved.yml` | Fail unless all non-outdated CodeRabbit review threads are Resolved | PR / review | Done |
 | `gitleaks.yml` | Secret scan | PR / push to master | Done |
 | `maestro-nightly.yml` | Validate Maestro YAML; optional Cloud device job when configured | Nightly / manual | Done |
 
 **Gitleaks allowlist:** `.gitleaks.toml` allows only the `lastRssKey` lines in `scripts/data/episode-tracker.json`. They hold public RSS item GUIDs written by the episode tracker bot. Without it, the local `gitleaks protect --staged` hook flags them whenever master is merged into a branch.
 
-**Merge gate:** master uses a branch ruleset with no merge queue. Required checks are **`testDebugUnitTest`** and **`coderabbit-threads-resolved`**. SonarCloud, CodeRabbit, and Gitleaks also run on PRs. Fix all Sonar new-code issues and address every CodeRabbit finding, marking every review thread Resolved; the bare CodeRabbit status only confirms that the review completed.
+**Merge gate:** master uses a branch ruleset with no merge queue. The required check is **`testDebugUnitTest`**, and the ruleset requires every review conversation to be resolved before merging (GitHub's conversation resolution, which covers CodeRabbit's threads, outdated ones included). SonarCloud, CodeRabbit, and Gitleaks also run on PRs. Fix all Sonar new-code issues and address every CodeRabbit finding, marking every review thread Resolved; the bare CodeRabbit status only confirms that the review completed.
 
 The unit suite cancels prior in-progress runs on each PR push. `[skip unit]` in the PR title no-ops the suite only for docs/chore changes with no logic risk, and a PR that changes only documentation (Markdown outside source sets, `docs/`, `screenshots/`, the license) skips it on its own; both still report green. **Release copy** applies the impact labels the PR body's checkboxes pick, then checks the release wording against the labels as they are now, in one job. Actions → Run workflow always runs the full suite. If the review decision is `CHANGES_REQUESTED`, stop automated merging and have a maintainer handle the review or merge manually. Otherwise squash-merge after the required checks are green and review requirements are satisfied. A maintainer may explicitly authorize bypassing required status checks for a specific PR; report remaining checks and known risks first. General merge authorization does not authorize a bypass, and review requirements still apply. Repository-administration procedures belong in root `AGENTS.internal.md`.
 
@@ -313,4 +312,3 @@ Install the signed release over the existing app without uninstalling or clearin
 
 Record device/runtime verification separately from optimized-artifact checks. Static checks cannot establish every vendor-ROM behavior, live SDK response, or background-delivery timing.
 
-The CodeRabbit thread check reads every GraphQL page and fails on unresolved current bot threads, incomplete pagination or invalid API responses. `test_review_threads.py` runs the workflow’s actual shell script with a hermetic GitHub fixture, including unresolved/resolved/outdated and malformed-response cases.
