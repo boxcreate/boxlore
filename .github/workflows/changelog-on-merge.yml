@@ -460,7 +460,7 @@ jobs:
         if: steps.release.outputs.build == 'true'
         uses: ./.github/actions/android-setup
         with:
-          sdk-packages: build-tools;36.0.0 platforms;android-36 cmdline-tools;latest
+          sdk-packages: build-tools;36.0.0 platforms;android-37.0 cmdline-tools;latest
           google-services-stub: "false"
 
       # The update feed's text comes from master's README, so a re-run never brings back older wording.

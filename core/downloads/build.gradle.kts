@@ -13,7 +13,7 @@ kover {
 
 android {
     namespace = "cx.aswin.boxlore.core.downloads"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 31

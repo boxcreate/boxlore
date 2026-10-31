@@ -238,4 +238,23 @@ class CastRoutePickerLogicTest {
             ),
         )
     }
+
+    @Test
+    fun `Android 16 and older open the Cast sheet without asking`() {
+        assertEquals(CastButtonAction.SHOW_SHEET, castButtonAction(sdkInt = 36, hasLocalNetworkAccess = false))
+        assertEquals(CastButtonAction.SHOW_SHEET, castButtonAction(sdkInt = 31, hasLocalNetworkAccess = false))
+    }
+
+    @Test
+    fun `Android 17 asks for local network access before the sheet searches for speakers`() {
+        assertEquals(CastButtonAction.REQUEST_LOCAL_NETWORK, castButtonAction(sdkInt = 37, hasLocalNetworkAccess = false))
+        assertEquals(CastButtonAction.SHOW_SHEET, castButtonAction(sdkInt = 37, hasLocalNetworkAccess = true))
+        assertEquals(CastButtonAction.REQUEST_LOCAL_NETWORK, castButtonAction(sdkInt = 38, hasLocalNetworkAccess = false))
+    }
+
+    @Test
+    fun `declining local network access opens the system picker instead`() {
+        assertEquals(CastButtonAction.SHOW_SHEET, castActionAfterLocalNetworkRequest(granted = true))
+        assertEquals(CastButtonAction.SHOW_SYSTEM_PICKER, castActionAfterLocalNetworkRequest(granted = false))
+    }
 }

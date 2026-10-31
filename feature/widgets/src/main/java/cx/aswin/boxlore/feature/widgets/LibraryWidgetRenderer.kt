@@ -31,8 +31,9 @@ object LibraryWidgetRenderer {
         kind: LibraryWidgetKind,
     ) {
         val views = build(context, appWidgetId, snapshot, kind)
-        appWidgetManager.updateAppWidget(appWidgetId, views)
-        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_list_view)
+        if (appWidgetManager.pushWidgetUpdate(appWidgetId, views)) {
+            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_list_view)
+        }
     }
 
     fun build(

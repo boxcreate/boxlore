@@ -40,7 +40,10 @@ object NowPlayingWidgetRenderer {
         variant: WidgetVariant = WidgetVariant.NOW_PLAYING,
     ) {
         val remoteViews = buildRemoteViews(context, appWidgetId, snapshot, options, variant)
-        appWidgetManager.updateAppWidget(appWidgetId, remoteViews)
+        // Over Android 17's bitmap cap, fall back to the placeholder artwork rather than an empty widget.
+        appWidgetManager.pushWidgetUpdate(appWidgetId, remoteViews) {
+            buildRemoteViews(context, appWidgetId, snapshot.copy(artworkCachePath = null), options, variant)
+        }
     }
 
     internal fun buildRemoteViews(

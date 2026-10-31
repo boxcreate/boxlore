@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.player.v2
 
+import android.content.Context
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -62,7 +63,8 @@ internal fun BoxLoreCastRouteButton(
     tint: Color = MaterialTheme.colorScheme.onSurface,
     activeTint: Color = MaterialTheme.colorScheme.primary,
 ) {
-    var showRoutePicker by rememberSaveable { mutableStateOf(false) }
+    val hosted = LocalCastPicker.current
+    val picker = hosted ?: rememberCastPickerState()
     val effectiveTint =
         resolveCastButtonTint(
             enabled = enabled,
@@ -76,7 +78,7 @@ internal fun BoxLoreCastRouteButton(
             .clickable(
                 enabled = enabled,
                 role = Role.Button,
-                onClick = { showRoutePicker = true },
+                onClick = picker.onCastClick,
             ),
         contentAlignment = Alignment.Center,
     ) {
@@ -87,12 +89,8 @@ internal fun BoxLoreCastRouteButton(
             modifier = Modifier.size(20.dp),
         )
     }
-    if (showRoutePicker) {
-        CastRoutePickerSheet(
-            isCasting = isCasting,
-            onDismiss = { showRoutePicker = false },
-        )
-    }
+    // Without a host (outside the full player), the button shows its own sheet.
+    if (hosted == null) CastPickerSheetHost(picker, isCasting)
 }
 
 @Composable

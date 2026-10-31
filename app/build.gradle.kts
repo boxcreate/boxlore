@@ -26,7 +26,7 @@ android {
         }
     }
     namespace = "cx.aswin.boxlore"
-    compileSdk = 36
+    compileSdk = 37
 
     // Load local.properties globally for the android block
     val localPropsFile = rootProject.file("local.properties")
@@ -60,7 +60,7 @@ android {
     defaultConfig {
         applicationId = "cx.aswin.boxlore"
         minSdk = 31
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 29
         versionName = "0.0.29"
 

@@ -14,7 +14,7 @@ kover {
 
 android {
     namespace = "cx.aswin.boxlore.feature.briefing"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 31

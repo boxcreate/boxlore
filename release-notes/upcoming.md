@@ -43,6 +43,7 @@ Announcement title:
 - Subscriptions remembers whether you chose grid or list, and shows you follow later are added to their genre folder automatically. (#1198)
 - Show pages load more smoothly, with the page's shape appearing right away and clearer messages while episodes load. (#1196)
 - In light mode, the player keeps a light Play icon on a deeper cover colour and uses a soft dark shade of the cover for its text, and its quick-action buttons use cleaner, matching icons. (#1199)
+- On Android 17, the Cast button asks once for permission to find devices on your network. If you'd rather not allow it, it opens Android's own picker, so you can still cast.
 - Shared episode links open the right episode for friends on any version of boxlore, even episodes only in a show's own feed, and keep your plays, progress and downloads on the episode you already have. (#1181)
 - Library settings has separate rows for your chart country and your languages, and changing your country keeps your languages. (#1187)
 - After importing your library or picking shows in search, choose whether to see similar shows or go straight to Home, and skip to Home anytime while suggestions load. (#1194)

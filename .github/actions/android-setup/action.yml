@@ -8,7 +8,7 @@ description: >
 inputs:
   sdk-packages:
     description: >
-      Space-separated sdkmanager packages to install, such as "build-tools;36.0.0 platforms;android-36".
+      Space-separated sdkmanager packages to install, such as "build-tools;36.0.0 platforms;android-37.0".
       None by default. Retried, because sdkmanager downloads fail now and then.
     default: ""
   google-services-stub:
