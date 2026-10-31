@@ -58,6 +58,12 @@ EXPECTED_FILES = {
     "app/build.gradle.kts",
     str(release_notes.UPCOMING_PATH),
 }
+# Releases prepared before the notes list changed no release-notes/ files.
+EXPECTED_FILES_BEFORE_NOTES_LIST = {
+    "CHANGELOG.md",
+    "README.md",
+    "app/build.gradle.kts",
+}
 # Artifacts-only prepare: version bump + APK download URL; no CHANGELOG/README
 # promotion (Upcoming → What's New) and no in-app notify.
 EXPECTED_FILES_SKIP_NOTIFY = {
@@ -510,13 +516,16 @@ def missing_changelog_prs(
     token: str,
     base_tag: str,
     head_sha: str,
-) -> list[int]:
-    """Merged PRs since [base_tag] with no CHANGELOG entry: listed in the release PR, never blocking it."""
+) -> list[int] | None:
+    """Merged PRs since [base_tag] with no CHANGELOG entry: listed in the release PR, never blocking it.
+
+    None when the merged PRs could not be listed, so the release PR says the check didn't run.
+    """
     try:
         pull_requests = pull_requests_between(repository, token, base_tag, head_sha)
     except (OSError, ValueError, SystemExit) as error:
         print(f"Warning: could not list merged PRs since {base_tag}: {error}", file=sys.stderr)
-        return []
+        return None
     unreleased = unreleased_block(require_file(CHANGELOG_PATH))
     return [
         int(pull_request["number"])
@@ -715,7 +724,7 @@ def prepare_release(args: argparse.Namespace) -> None:
     assert_remote_target_is_free(repository, token, target)
 
     release_date = datetime.now(timezone.utc).date().isoformat()
-    missing: list[int] = []
+    missing: list[int] | None = []
 
     gradle_original = require_file(APP_GRADLE_PATH)
     if skip_notify:
@@ -757,7 +766,8 @@ def prepare_release(args: argparse.Namespace) -> None:
             "release_date": release_date,
             "skip_notify": "true" if skip_notify else "false",
             "notes_archive": "" if skip_notify else str(release_notes.archive_path(target.tag)),
-            "missing_changelog_prs": " ".join(f"#{number}" for number in missing),
+            "missing_changelog_prs": " ".join(f"#{number}" for number in missing or []),
+            "changelog_check": "unknown" if missing is None else "done",
         }
     )
 
@@ -858,7 +868,7 @@ def verify_release_diff(
                 f"expected {sorted(EXPECTED_FILES_SKIP_NOTIFY)} "
                 f"(or legacy {sorted(EXPECTED_FILES_SKIP_NOTIFY_LEGACY)})"
             )
-    elif changed_files != expected:
+    elif changed_files != expected and changed_files != EXPECTED_FILES_BEFORE_NOTES_LIST:
         fail(
             f"Release commit {commit[:12]} changed {sorted(changed_files)}; "
             f"expected exactly {sorted(expected)}"

@@ -717,10 +717,9 @@ def validate_listener_notes(pr_body: str, impact: str, changed_files: set[str] |
     [changed_files] is the PR's file list; without it (a local run) only the list's own rules are checked.
     """
     path = release_notes.UPCOMING_PATH
-    if path.is_file():
-        found = release_notes.problems(release_notes.parse(path.read_text(encoding="utf-8")))
-        if found:
-            raise ValueError(f"{path}: " + " ".join(found))
+    found = release_notes.problems(release_notes.load(path))
+    if found:
+        raise ValueError(f"{path}: " + " ".join(found))
     if impact == "no-user-impact" or changed_files is None:
         return
     if str(path) not in changed_files and not NOTES_COVERED_RE.search(pr_body or ""):

@@ -117,6 +117,25 @@ class ListenerNotesRuleTest(unittest.TestCase):
             # A local run without the PR's files checks only the list's own rules.
             uc.validate_listener_notes(SAMPLE_PR_BODY, "user-impact-high", None)
 
+    def test_a_deleted_list_fails_the_check_and_the_readme_sync(self):
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            path = notes_paths(stack, Path(temp), text=None)
+            with self.assertRaisesRegex(ValueError, "is missing"):
+                uc.validate_listener_notes(SAMPLE_PR_BODY, "user-impact-medium", {str(path)})
+            with self.assertRaisesRegex(ValueError, "is missing"):
+                uc.sync_readme_upcoming()
+
+    def test_the_announcement_must_fit_a_notification(self):
+        notes = rn.parse(NOTES)
+        self.assertLess(rn.announcement_bytes(notes), 2048)
+        long_line = "Listening history has a new Insights tab " + "with more detail " * 40 + "(#1207)"
+        long_notes = rn.parse(NOTES.replace("1. Listening history has a new Insights tab. (#1207)", "\n".join(
+            f"{number}. {long_line.replace('Insights', f'Insights {number}')}" for number in (1, 2, 3))))
+        self.assertEqual(3, len(long_notes.highlights))
+        self.assertGreater(rn.announcement_bytes(long_notes), 2048)
+        self.assertTrue(any("notification carries" in problem for problem in rn.problems(long_notes)))
+        self.assertEqual(0, rn.announcement_bytes(rn.parse(rn.template())))
+
     def test_the_list_keeps_its_rules_on_every_pr(self):
         too_many = NOTES.replace("## New", "2. Two\n3. Three\n4. Four\n\n## New")
         with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
@@ -217,6 +236,34 @@ class ChangelogAndPrepareTest(unittest.TestCase):
             self.assertLess(whats_new.index("Listening history has a new Insights tab."), whats_new.index("Shows no longer list"))
             self.assertIn("missing_changelog_prs=#971", output.read_text())
 
+    def test_prepare_says_when_changelog_coverage_could_not_be_checked(self):
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            root = Path(temp)
+            self._prepare(root, stack, NOTES, [])
+            stack.enter_context(patch.object(pr, "pull_requests_between", side_effect=ValueError("compare failed")))
+            output = root / "outputs"
+            stack.enter_context(patch.dict(os.environ, {"GITHUB_OUTPUT": str(output)}))
+            pr.prepare_release(Namespace(bump="patch", latest_tag="v0.0.12", head_sha="candidate", skip_notify=False))
+            written = output.read_text()
+            self.assertIn("changelog_check=unknown", written)
+            self.assertIn("missing_changelog_prs=\n", written)
+
+    def test_a_release_prepared_before_the_notes_list_still_publishes(self):
+        previous = 'versionCode = 12\nversionName = "0.0.12"\n'
+        released = 'versionCode = 13\nversionName = "0.0.13"\n'
+        with patch.object(pr, "git_show", side_effect=lambda spec: previous if spec.startswith("old^1") else released):
+            for files, accepted in (
+                (pr.EXPECTED_FILES_BEFORE_NOTES_LIST, True),
+                (pr.expected_release_files(skip_notify=False, version=pr.AppVersion("0.0.13", 13)), True),
+                (pr.EXPECTED_FILES_BEFORE_NOTES_LIST | {"app/src/Feature.kt"}, False),
+            ):
+                with self.subTest(files=sorted(files)), patch.object(pr, "git_changed_files", return_value=set(files)):
+                    if accepted:
+                        pr.verify_release_diff(pr.AppVersion("0.0.13", 13), commit="old", skip_notify=False)
+                    else:
+                        with self.assertRaisesRegex(ValueError, "expected exactly"):
+                            pr.verify_release_diff(pr.AppVersion("0.0.13", 13), commit="old", skip_notify=False)
+
     def test_prepare_with_an_empty_list_fails_without_changing_any_file(self):
         with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
             files, upcoming = self._prepare(Path(temp), stack, rn.template(), [])
@@ -252,6 +299,8 @@ class ChangelogAndPrepareTest(unittest.TestCase):
 
 class ValidateCopyCliTest(unittest.TestCase):
     def _run(self, temp: str, labels: list | None, files: str | None, body: str = SAMPLE_PR_BODY):
+        (Path(temp) / "release-notes").mkdir(exist_ok=True)
+        (Path(temp) / "release-notes" / "upcoming.md").write_text(NOTES, encoding="utf-8")
         event = Path(temp) / "event.json"
         event.write_text(json.dumps({"pull_request": {"title": "fix: downloads", "body": body, "labels": [{"name": "user-impact-high"}]}}))
         env = {"PATH": os.environ["PATH"], "GITHUB_EVENT_PATH": str(event)}
@@ -265,7 +314,8 @@ class ValidateCopyCliTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             result = self._run(temp, None, None)
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual([path.name for path in Path(temp).iterdir()], ["event.json"])
+            self.assertEqual(sorted(path.name for path in Path(temp).iterdir()), ["event.json", "release-notes"])
+            self.assertEqual(NOTES, (Path(temp) / "release-notes" / "upcoming.md").read_text(encoding="utf-8"))
 
     def test_cli_reads_labels_applied_after_the_event(self):
         with tempfile.TemporaryDirectory() as temp:

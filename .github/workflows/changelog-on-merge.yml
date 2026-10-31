@@ -259,6 +259,7 @@ jobs:
           NEW_CODE: ${{ steps.release.outputs.new_code }}
           RELEASE_DATE: ${{ steps.release.outputs.release_date }}
           MISSING_PRS: ${{ steps.release.outputs.missing_changelog_prs }}
+          CHANGELOG_CHECK: ${{ steps.release.outputs.changelog_check }}
           NOTES_ARCHIVE: ${{ steps.release.outputs.notes_archive }}
           APK_ASSET: ${{ steps.release.outputs.apk_asset }}
           AAB_ASSET: ${{ steps.release.outputs.aab_asset }}
@@ -296,7 +297,9 @@ jobs:
           print(f"**{title}**\n\n{body}")
           PY
           )"
-            if [[ -n "$MISSING_PRS" ]]; then
+            if [[ "$CHANGELOG_CHECK" == "unknown" ]]; then
+              missing_message="> **CHANGELOG coverage not checked:** the merged PRs since the latest release couldn't be listed. Compare them with CHANGELOG by hand if it matters; nothing else is affected."
+            elif [[ -n "$MISSING_PRS" ]]; then
               missing_message="> **Not in CHANGELOG:** ${MISSING_PRS}. These merged PRs have no developer entry; add one in this PR if they need it. Nothing else is affected."
             else
               missing_message="Every PR merged since the latest release has a CHANGELOG entry."

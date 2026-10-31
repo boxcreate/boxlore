@@ -9,8 +9,11 @@ built from it. Release preparation archives it as `release-notes/vX.Y.Z.md` and 
 from __future__ import annotations
 
 import re
+from argparse import Namespace
 from dataclasses import dataclass, field
 from pathlib import Path
+
+import manual_dispatch
 
 UPCOMING_PATH = Path("release-notes/upcoming.md")
 ARCHIVE_DIR = Path("release-notes")
@@ -34,7 +37,8 @@ and the release announcement. Every PR that changes something listeners notice e
 - One line per change, in plain listener words: what they notice, not how it was built. No class
   names, CI or internal terms. The product name is boxlore (lowercase).
 - Highlights: at most 3 lines, most important first. They open What's new and form the release
-  announcement. To add one when there are 3, move the least important down into its group.
+  announcement, which must fit one notification with its title (the PR check measures it). To add
+  one when there are 3, move the least important down into its group.
 - New, Improved, Fixed: add the line to the group it belongs to, at the end of that group.
 - End a line with the PRs it covers, like (#1234) or (#1234, #1240). Optional.
 - Announcement title: optional; without it the announcement reads "boxlore vX.Y.Z is here".
@@ -105,7 +109,38 @@ def problems(notes: ListenerNotes) -> list[str]:
         if key in seen:
             found.append(f"'{strip_refs(line)[:60]}' appears twice; keep one line per change.")
         seen.add(key)
+    size = announcement_bytes(notes)
+    if size > manual_dispatch.TOPIC_PAYLOAD_LIMIT:
+        found.append(
+            f"The release announcement (the title and the highlights) needs {size:,} bytes of the "
+            f"{manual_dispatch.TOPIC_PAYLOAD_LIMIT:,} a notification carries; shorten the highlights or the title."
+        )
     return found
+
+
+# The longest tag the announcement will plausibly carry, so a list that passes now still fits at release.
+_SIZING_TAG = "v99.99.999"
+
+
+def _release_announcement_args(title: str, body: str) -> Namespace:
+    """The announcement as release publication sends it (the announce-release job's settings)."""
+    return Namespace(
+        title=title, body=body, type="in-app", target="direct_users", image="",
+        route=f"https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-{_SIZING_TAG}.apk",
+        release_url=f"https://github.com/boxcreate/boxlore/releases/tag/{_SIZING_TAG}",
+        release_alert="true", release_version_code="2147483647", presentation="fullscreen",
+        sound="silent", action_label="Download", show_action_in_push="false",
+        show_action_in_app="true", category="NEW RELEASE",
+    )
+
+
+def announcement_bytes(notes: ListenerNotes) -> int:
+    """The notification data the release announcement needs, in the bytes FCM counts; 0 for an empty list."""
+    if notes.is_empty():
+        return 0
+    title, body = announcement(notes, _SIZING_TAG)
+    overhead = manual_dispatch.notification_plan(_release_announcement_args("x", "x"))["payload_bytes"] - 2
+    return overhead + len(title.encode("utf-8")) + len(body.encode("utf-8"))
 
 
 def strip_refs(line: str) -> str:
@@ -143,5 +178,8 @@ def archive_path(tag: str) -> Path:
 
 
 def load(path: Path | None = None) -> ListenerNotes:
+    """The notes in [path] (the list by default); a missing file is an error, never an empty list."""
     path = path or UPCOMING_PATH
-    return parse(path.read_text(encoding="utf-8")) if path.is_file() else ListenerNotes()
+    if not path.is_file():
+        raise ValueError(f"{path} is missing; restore it (an empty list keeps its section headings)")
+    return parse(path.read_text(encoding="utf-8"))
