@@ -228,6 +228,30 @@ class StoryLogicTest {
     }
 
     @Test
+    fun howYouListenedLeavesNewOrCatchingUpOutUntilEnoughOfTheMonthHasAReleaseDate() {
+        val undated = (1..10).map { day(10, it, "dd", 60, evening = 60).copy(carMs = 60 * MINUTE, newReleaseMs = 20 * MINUTE, loreMs = 15 * MINUTE) }
+
+        // Where and what started it still show; new or older doesn't, as none of the month's release dates are known.
+        val how = build(undated).how!!
+        assertEquals(cx.aswin.boxlore.feature.history.insights.ListeningOutput.CAR, how.outputs.first().output)
+        assertEquals(0.25f, how.sources.loreShare, 0.001f)
+        assertNull(how.sources.newShare)
+
+        // With 40 of each hour dated, new is a share of those 40 minutes.
+        assertEquals(0.5f, build(undated.map { it.copy(releaseKnownMs = 40 * MINUTE) }).how!!.sources.newShare!!, 0.001f)
+    }
+
+    @Test
+    fun theEntryCardCountsHowYouListenedOnlyWhenThatCardIsMade() {
+        // Every minute has a known release date but no output: details, yet nothing to say where it was heard.
+        val listening = (20..23).map { day(10, it, "dd", 60, evening = 60).copy(newReleaseMs = 30 * MINUTE, releaseKnownMs = 60 * MINUTE) }
+        val month = StoryLogic.months(listening, played, today).single()
+
+        assertEquals(StoryCard.entries.size - 1, month.cards)
+        assertEquals(StoryLogic.cards(build(listening)).size, month.cards)
+    }
+
+    @Test
     fun theEntryCardsTeaserHasTheTopShowItsCoversAndHowManyCards() {
         val listening = (20..23).map { day(10, it, "dd", 60, evening = 60).copy(bluetoothMs = 60 * MINUTE) } + day(10, 24, "ct", 20, evening = 20).copy(bluetoothMs = 20 * MINUTE)
         val month = StoryLogic.months(listening, played, today).single()

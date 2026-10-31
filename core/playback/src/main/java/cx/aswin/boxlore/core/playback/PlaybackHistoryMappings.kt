@@ -1,8 +1,8 @@
 package cx.aswin.boxlore.core.playback
 
 import cx.aswin.boxlore.core.database.EpisodeGroupStateEntity
-import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningDayTotals
+import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.ListeningSessionEntity
 import cx.aswin.boxlore.core.model.ListeningCompletionLogic
@@ -181,6 +181,7 @@ internal fun ListeningRollupEntity.toListeningRollupSnapshot(): ListeningRollupS
     loreMs = totals.loreMs,
     smartQueueMs = totals.smartQueueMs,
     newReleaseMs = totals.newReleaseMs,
+    releaseKnownMs = totals.releaseKnownMs,
 )
 
 internal fun ListeningRollupSnapshot.toListeningRollupEntity(): ListeningRollupEntity = ListeningRollupEntity(
@@ -207,5 +208,6 @@ internal fun ListeningRollupSnapshot.toListeningRollupEntity(): ListeningRollupE
         loreMs = loreMs,
         smartQueueMs = smartQueueMs,
         newReleaseMs = newReleaseMs,
+        releaseKnownMs = releaseKnownMs,
     ),
 )

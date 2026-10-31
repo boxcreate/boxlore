@@ -48,6 +48,18 @@ object ListeningRollupMerge {
 
     private fun bucket(session: ListeningSessionEntity): Int = session.timeBucket.coerceIn(0, 3)
 
+    /**
+     * [day] (from the cloud or a backup), with the richer totals of what this phone holds of its phone,
+     * day and episode ([stored] and [daySessions]) where those know more ([ListeningDayTotals.fillingIn]):
+     * only when this phone holds just that listening, as late and as much. A later or larger day has more
+     * listening than the held totals cover, so they don't stand for it.
+     */
+    fun keepingHeldTotals(day: ListeningRollupEntity, stored: ListeningRollupEntity?, daySessions: List<ListeningSessionEntity>,): ListeningRollupEntity {
+        val held = if (daySessions.isEmpty()) stored else mergeSessionsIntoRollup(day.localDay, day.episodeId, daySessions, stored)
+        if (held == null || held.lastListenedAt != day.lastListenedAt || held.consumedMs != day.consumedMs) return day
+        return day.copy(totals = day.totals.fillingIn(held.knownTotals()))
+    }
+
     /** Two summaries of one phone, day and episode added up, keeping [a]'s key and show. */
     fun sum(a: ListeningRollupEntity, b: ListeningRollupEntity): ListeningRollupEntity = a.copy(
         consumedMs = a.consumedMs + b.consumedMs,

@@ -75,8 +75,12 @@ enum class ListeningOutput {
 /** An output's share of the listening heard on a known output. */
 data class OutputShare(val output: ListeningOutput, val share: Float)
 
-/** Of the listening with known details: the share of episodes out a week or less, and the shares Lore and the Smart Queue started. */
-data class ListeningSources(val newShare: Float, val loreShare: Float, val smartQueueShare: Float,)
+/**
+ * Of the listening with known details: the shares Lore and the Smart Queue started, and of the listening
+ * whose release date is known, the share of episodes out a week or less ([newShare]; null until enough of
+ * it has a known date, [InsightsDetails.newShare]).
+ */
+data class ListeningSources(val newShare: Float?, val loreShare: Float, val smartQueueShare: Float,)
 
 /** Finished all time and the next milestone. */
 data class FinishedMilestone(val finished: Int, val next: Int)
@@ -114,7 +118,10 @@ data class InsightsContent(
     val genres: List<GenreShare>,
     /** Where the period's listening was heard; empty until enough of it has known details ([InsightsDetails]). */
     val outputs: List<OutputShare>,
-    /** New episodes or catching up, and Lore and the Smart Queue; null until enough listening has known details. */
+    /**
+     * New episodes or catching up, and Lore and the Smart Queue; null until enough listening has known
+     * details. The card shows once enough of it also has a known release date ([ListeningSources.newShare]).
+     */
     val sources: ListeningSources?,
     val milestone: FinishedMilestone,
     val inProgress: InProgress,

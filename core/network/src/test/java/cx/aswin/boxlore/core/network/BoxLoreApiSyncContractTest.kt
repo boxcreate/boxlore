@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.network
 
+import cx.aswin.boxlore.core.network.model.ListeningDaySyncDto
 import cx.aswin.boxlore.core.network.model.ListeningHistorySyncDto
 import cx.aswin.boxlore.core.network.model.QueueItemSyncDto
 import cx.aswin.boxlore.core.network.model.QueueRemovalSyncDto
@@ -13,6 +14,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -306,6 +308,44 @@ class BoxLoreApiSyncContractTest {
         assertEquals("77", removal.getValue("show").jsonPrimitive.content)
         assertEquals("guid-1", removal.getValue("catalogKey").jsonPrimitive.content)
         assertEquals(listOf(RECIPE.toString()), queue.getValue("recentRemovedEpisodeIds").jsonArray.map { it.jsonPrimitive.content })
+    }
+
+    @Test
+    fun `syncPush says its days carry their release date time, and a zero is left out for the server to read as 0`() {
+        server.enqueue(MockResponse().setResponseCode(200).setBody("""{"status":"ok","syncedAt":1,"listeningAccepted":true,"listeningTotals":true,"listeningReleaseKnown":true}"""))
+        val request = SyncPushRequest(
+            listeningDays = listOf(
+                ListeningDaySyncDto(deviceId = "d", localDay = 1L, episodeId = "e1", podcastId = "77", consumedMs = 60_000L, newReleaseMs = 20_000L, releaseKnownMs = 40_000L),
+                ListeningDaySyncDto(deviceId = "d", localDay = 2L, episodeId = "e2", podcastId = "77", consumedMs = 60_000L),
+            ),
+            listeningTotals = true,
+            listeningReleaseKnown = true,
+        )
+
+        val answer = api.syncPush(APP_KEY, AUTH_HEADER, request).execute().body()!!
+
+        assertTrue(answer.listeningReleaseKnown)
+        val body = Json.parseToJsonElement(server.takeRequest().body.readUtf8()).jsonObject
+        assertTrue(body.getValue("listeningReleaseKnown").jsonPrimitive.boolean)
+        val days = body.getValue("listeningDays").jsonArray.map { it.jsonObject }
+        assertEquals(40_000L, days[0].getValue("releaseKnownMs").jsonPrimitive.long)
+        // Defaults stay out of the JSON, as for every total; a push with the flag has the server store a missing one as 0.
+        assertFalse("releaseKnownMs" in days[1])
+    }
+
+    @Test
+    fun `an older server's answers read as not storing the release date time`() {
+        server.enqueue(okPush())
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """{"subscriptions":[],"history":[],"listeningDays":[{"deviceId":"d","localDay":1,"episodeId":"e1","podcastId":"77","consumedMs":5,"newReleaseMs":5}],"listeningTotals":true,"syncedAt":9}""",
+            ),
+        )
+
+        assertFalse(api.syncPush(APP_KEY, AUTH_HEADER, SyncPushRequest()).execute().body()!!.listeningReleaseKnown)
+        val pulled = api.syncPull(APP_KEY, AUTH_HEADER, SyncPullRequest(since = 0L)).execute().body()!!
+        assertFalse(pulled.listeningReleaseKnown)
+        assertEquals(0L, pulled.listeningDays!!.single().releaseKnownMs)
     }
 
     @Test

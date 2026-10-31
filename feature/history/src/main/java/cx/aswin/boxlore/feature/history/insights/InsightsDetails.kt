@@ -6,7 +6,8 @@ import cx.aswin.boxlore.core.model.ListeningDayEpisode
  * Where listening was heard, how new its episodes were and what started it, from each day's
  * details (recorded since Room v40, kept in summaries since v41). Listening from before has none,
  * so the cards show only once enough of the period's listening has them: [DETAILS_SHARE] of it
- * and at least [DETAILS_MIN_MS].
+ * and at least [DETAILS_MIN_MS]. How new is a share of the listening whose episode release date is
+ * known (kept in summaries since v42), and shows by the same rule once enough of it has one.
  */
 internal object InsightsDetails {
     const val DETAILS_SHARE = 0.5f
@@ -38,22 +39,38 @@ internal object InsightsDetails {
         return heard.filterValues { it > 0L }.map { (output, ms) -> OutputShare(output, ms.toFloat() / total) }.sortedByDescending { it.share }
     }
 
-    /** Of the listening with known details: new episodes, Lore and the Smart Queue; null without enough details. */
+    /**
+     * Of the listening with known details: Lore and the Smart Queue, and of the listening whose release
+     * date is known, new episodes ([newShare]); null without enough details.
+     */
     fun sources(inPeriod: List<ListeningDayEpisode>): ListeningSources? {
         if (!hasEnough(inPeriod)) return null
         val known = inPeriod.sumOf { detailedMs(it) }.toFloat()
         fun share(ms: Long) = (ms / known).coerceAtMost(1f)
         return ListeningSources(
-            newShare = share(inPeriod.sumOf { it.newReleaseMs }),
+            newShare = newShare(inPeriod),
             loreShare = share(inPeriod.sumOf { it.loreMs }),
             smartQueueShare = share(inPeriod.sumOf { it.smartQueueMs }),
         )
     }
 
     /**
-     * How much of a day and episode was recorded with details, as far as its totals tell: the time on a
-     * known output, or more where Lore, the Smart Queue or new releases account for more (a session on
-     * an output Android doesn't name still records what started it and how new it was).
+     * The share of new episodes (out a week or less) in the listening whose release date is known; an
+     * episode without one is neither new nor older. Null until [DETAILS_SHARE] of [inPeriod]'s listening
+     * and at least [DETAILS_MIN_MS] has a known date, so a few dated minutes never stand for the period.
      */
-    private fun detailedMs(row: ListeningDayEpisode): Long = maxOf(row.outputKnownMs, row.newReleaseMs, row.loreMs + row.smartQueueMs).coerceAtMost(row.consumedMs)
+    fun newShare(inPeriod: List<ListeningDayEpisode>): Float? {
+        val total = inPeriod.sumOf { it.consumedMs }
+        val dated = inPeriod.sumOf { it.releaseKnownMs.coerceAtMost(it.consumedMs) }
+        if (total <= 0L || dated < DETAILS_MIN_MS || dated < total * DETAILS_SHARE) return null
+        return (inPeriod.sumOf { it.newOfReleaseKnownMs.coerceAtMost(it.consumedMs) }.toFloat() / dated).coerceAtMost(1f)
+    }
+
+    /**
+     * How much of a day and episode was recorded with details, as far as its totals tell: the time on a
+     * known output, or more where Lore, the Smart Queue or a known release date account for more (a
+     * session on an output Android doesn't name still records what started it and how new it was).
+     */
+    private fun detailedMs(row: ListeningDayEpisode): Long =
+        maxOf(row.outputKnownMs, row.releaseKnownMs, row.newReleaseMs, row.loreMs + row.smartQueueMs).coerceAtMost(row.consumedMs)
 }

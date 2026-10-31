@@ -47,8 +47,8 @@ private const val SOURCE_FROM = 0.01f
 
 /**
  * Story 4, how you listened (S4): where the listening was heard (each output's share, as a bar), new
- * episodes or catching up, what Lore and Smart queue started, and Echo beside his line. The light card:
- * onContainer with the deep ink.
+ * episodes or catching up (once enough of the month's listening has a known release date), what Lore and
+ * Smart queue started, and Echo beside his line. The light card: onContainer with the deep ink.
  */
 @Composable
 internal fun BoxScope.StoryHowCard(story: MonthStory, palette: StoryPalette, clock: StoryClock, line: String) {
@@ -63,7 +63,7 @@ internal fun BoxScope.StoryHowCard(story: MonthStory, palette: StoryPalette, clo
         Column(Modifier.padding(top = 22.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             how.outputs.take(OUTPUTS_SHOWN).forEachIndexed { index, share -> StoryOutputRow(share, index == 0, palette, clock, StoryMotion.D2 + index * 120) }
         }
-        StoryFresh(how.sources.newShare, palette, clock)
+        how.sources.newShare?.let { StoryFresh(it, palette, clock) }
         Column(Modifier.padding(top = 16.dp).storyRise(clock, StoryMotion.D5), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (how.sources.loreShare >= SOURCE_FROM) StorySourceFact(Icons.Rounded.AutoAwesome, stringResource(R.string.history_ins_from_lore, InsightsWording.percent(how.sources.loreShare)), palette)
             if (how.sources.smartQueueShare >= SOURCE_FROM) {

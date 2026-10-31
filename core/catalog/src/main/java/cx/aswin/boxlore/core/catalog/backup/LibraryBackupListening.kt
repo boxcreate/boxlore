@@ -4,6 +4,7 @@ import androidx.room.withTransaction
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.ListeningDayTotals
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
+import cx.aswin.boxlore.core.database.ListeningRollupMerge
 import cx.aswin.boxlore.core.database.ListeningSessionEntity
 import cx.aswin.boxlore.core.database.PlayedShowEntity
 import cx.aswin.boxlore.core.database.rollupDeviceId
@@ -64,6 +65,8 @@ data class ListeningRollupBackup(
     val loreMs: Long? = null,
     val smartQueueMs: Long? = null,
     val newReleaseMs: Long? = null,
+    /** The day's time with a known release date (backup v10, Room v42); missing in older backups, read as 0 (not known). */
+    val releaseKnownMs: Long? = null,
 )
 
 /** One `played_shows` row ([PlayedShowEntity]). Gson can leave any field null. */
@@ -114,16 +117,19 @@ internal class LibraryBackupListening(private val database: BoxLoreDatabase, pri
         database.withTransaction {
             val rollupDao = database.listeningRollupDao()
             val sessionDao = database.listeningSessionDao()
+            val heldSessions = sessionDao.getAllSessions().groupBy { Triple(it.rollupDeviceId, it.localDay, it.episodeId) }
             for (summary in summaries) {
                 val stored = rollupDao.getRollup(summary.deviceId, summary.localDay, summary.episodeId)
                 if (stored != null && !summary.isLaterThan(stored)) {
-                    // The same listening without totals (an older backup or the cloud): this one's fill them in.
-                    if (stored.isSameListening(summary) && stored.totals == ListeningDayTotals() && summary.totals != ListeningDayTotals()) {
-                        rollupDao.upsertRollup(stored.copy(totals = summary.totals))
-                    }
+                    // The same listening without totals or release dates (an older backup or the cloud): this one's fill them in.
+                    val filled = stored.totals.fillingIn(summary.totals)
+                    if (stored.isSameListening(summary) && filled != stored.totals) rollupDao.upsertRollup(stored.copy(totals = filled))
                     continue
                 }
-                rollupDao.upsertRollup(summary)
+                // A summary of just the listening held here, from a backup without some totals, keeps the held ones.
+                // Sessions after it aren't part of it: they stay beside it.
+                val held = heldSessions[Triple(summary.deviceId, summary.localDay, summary.episodeId)].orEmpty().filter { it.endedAt <= summary.lastListenedAt }
+                rollupDao.upsertRollup(ListeningRollupMerge.keepingHeldTotals(summary, stored, held))
                 sessionDao.deleteSessionsOfDailySummary(summary.deviceId, summary.localDay, summary.episodeId, summary.lastListenedAt)
             }
             val summarizedUntil = rollupDao.getAllRollups().associate { Triple(it.deviceId, it.localDay, it.episodeId) to it.lastListenedAt }
@@ -205,6 +211,7 @@ internal class LibraryBackupListening(private val database: BoxLoreDatabase, pri
         loreMs = totals.loreMs,
         smartQueueMs = totals.smartQueueMs,
         newReleaseMs = totals.newReleaseMs,
+        releaseKnownMs = totals.releaseKnownMs,
     )
 
     private fun ListeningRollupBackup.toEntity(owner: String?): ListeningRollupEntity? {
@@ -237,6 +244,7 @@ internal class LibraryBackupListening(private val database: BoxLoreDatabase, pri
         loreMs = loreMs?.coerceAtLeast(0L) ?: 0L,
         smartQueueMs = smartQueueMs?.coerceAtLeast(0L) ?: 0L,
         newReleaseMs = newReleaseMs?.coerceAtLeast(0L) ?: 0L,
+        releaseKnownMs = releaseKnownMs?.coerceAtLeast(0L) ?: 0L,
     )
 
     private fun PlayedShowEntity.toBackup() = PlayedShowBackup(podcastId, podcastName, imageUrl, genre, firstPlayedAt, lastPlayedAt)

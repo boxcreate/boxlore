@@ -99,25 +99,28 @@ private fun OutputRow(share: OutputShare, fraction: Float, isTop: Boolean) {
     }
 }
 
-/** New or catching up: the share of episodes out a week or less as one bar (older on primaryContainer), then what Lore and Smart queue started. */
+/**
+ * New or catching up: [newShare] of the listening with a known release date, episodes out a week or less,
+ * as one bar (older on primaryContainer), then what Lore and Smart queue started.
+ */
 @Composable
-internal fun NewOrCatchingUpCard(sources: ListeningSources) {
+internal fun NewOrCatchingUpCard(sources: ListeningSources, newShare: Float) {
     val colors = MaterialTheme.colorScheme
-    val newPercent = InsightsWording.percent(sources.newShare)
+    val newPercent = InsightsWording.percent(newShare)
     val olderPercent = 100 - newPercent
     val newLabel = stringResource(R.string.history_ins_fresh_new, newPercent)
     val olderLabel = stringResource(R.string.history_ins_fresh_older, olderPercent)
     InsightsCard {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(stringResource(R.string.history_ins_fresh), style = TimelineType.header, color = colors.onSurface)
-            Text(freshHeadline(sources.newShare), style = InsightsType.title18, color = colors.onSurface)
+            Text(freshHeadline(newShare), style = InsightsType.title18, color = colors.onSurface)
         }
         Row(
             modifier = Modifier.fillMaxWidth().height(16.dp).clearAndSetSemantics { contentDescription = "$newLabel, $olderLabel" },
             horizontalArrangement = Arrangement.spacedBy(3.dp),
         ) {
-            if (newPercent > 0) SplitPart(sources.newShare, colors.primary, start = true, end = olderPercent == 0)
-            if (olderPercent > 0) SplitPart(1f - sources.newShare, colors.primaryContainer, start = newPercent == 0, end = true)
+            if (newPercent > 0) SplitPart(newShare, colors.primary, start = true, end = olderPercent == 0)
+            if (olderPercent > 0) SplitPart(1f - newShare, colors.primaryContainer, start = newPercent == 0, end = true)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             LegendDot(colors.primary, newLabel)

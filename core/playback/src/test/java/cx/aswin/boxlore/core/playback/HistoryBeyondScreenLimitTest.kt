@@ -138,11 +138,11 @@ class HistoryBeyondScreenLimitTest {
                 session("unknown", day = 20L, minutes = 5L, device = "me"),
             ),
         )
-        // A summary from another phone with its totals (Room v41).
+        // A summary from another phone with its totals (Room v41, release dates v42).
         database.listeningRollupDao().upsertRollup(
             ListeningRollupEntity(
                 20L, "ep-1", SHOW, 10L * 60_000L, 1, 0, lastListenedAt = 99L, deviceId = "phone-c",
-                totals = ListeningDayTotals(longestSessionMs = 10L * 60_000L, speakerMs = 10L * 60_000L, newReleaseMs = 10L * 60_000L),
+                totals = ListeningDayTotals(longestSessionMs = 10L * 60_000L, speakerMs = 10L * 60_000L, newReleaseMs = 10L * 60_000L, releaseKnownMs = 10L * 60_000L),
             ),
         )
 
@@ -155,6 +155,8 @@ class HistoryBeyondScreenLimitTest {
         assertEquals(30L * 60_000L, day.loreMs)
         assertEquals(20L * 60_000L, day.smartQueueMs)
         assertEquals(40L * 60_000L, day.newReleaseMs)
+        // Only the car session and the summary have a known release date.
+        assertEquals(40L * 60_000L, day.releaseKnownMs)
     }
 
     @Test

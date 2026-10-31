@@ -22,8 +22,8 @@ interface ListeningSessionDao {
 
     /**
      * Sessions added up in the database: one row per day, episode and show, with the time in each
-     * part of the day, the longest single session, and the time by output, by source and of new
-     * releases ([ListeningDayTotals]). Screens that only need days read this instead of every session
+     * part of the day, the longest single session, and the time by output, by source, of new releases
+     * and with a known release date ([ListeningDayTotals]). Screens that only need days read this instead of every session
      * (up to 400 days of them).
      */
     @Query(
@@ -47,7 +47,8 @@ interface ListeningSessionDao {
             SUM(
                 CASE WHEN episodePublishedAt > 0 AND startedAt - episodePublishedAt <= ${ListeningDayTotals.NEW_RELEASE_WINDOW_MS}
                 THEN consumedMs ELSE 0 END
-            ) AS newReleaseMs
+            ) AS newReleaseMs,
+            SUM(CASE WHEN episodePublishedAt > 0 THEN consumedMs ELSE 0 END) AS releaseKnownMs
         FROM listening_sessions
         GROUP BY localDay, episodeId, podcastId
         """,
@@ -136,4 +137,5 @@ data class ListeningSessionDay(
     val loreMs: Long = 0L,
     val smartQueueMs: Long = 0L,
     val newReleaseMs: Long = 0L,
+    val releaseKnownMs: Long = 0L,
 )

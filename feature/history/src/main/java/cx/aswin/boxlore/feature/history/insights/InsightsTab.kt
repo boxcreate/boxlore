@@ -101,7 +101,7 @@ private fun LazyListScope.fullInsights(content: InsightsContent, period: Listeni
     item(key = "mosaic") { MonthMosaicCard(content.mosaic, today, callbacks.onOpenDay) }
     item(key = "records") { RecordsSection(content.records) }
     if (content.genres.isNotEmpty()) item(key = "genres") { GenresCard(content.genres) }
-    content.sources?.let { sources -> item(key = "fresh") { NewOrCatchingUpCard(sources) } }
+    content.sources?.let { sources -> sources.newShare?.let { newShare -> item(key = "fresh") { NewOrCatchingUpCard(sources, newShare) } } }
     item(key = "milestone") { MilestoneCard(content.milestone) }
     if (content.inProgress.count > 0) item(key = "in_progress") { InProgressCard(content.inProgress, callbacks.onReviewInProgress) }
 }

@@ -360,13 +360,14 @@ open class UserSyncCoordinator(
                 listeningDays = batch.listening?.dayDtos.orEmpty(),
                 playedShows = batch.listening?.showDtos.orEmpty(),
                 listeningTotals = true,
+                listeningReleaseKnown = true,
                 clientTimestamp = now,
             )
 
             val answer = sendPushPayload(resolvedToken, pushReq)
             val syncedAt = answer.syncedAt
             clearOptimisticConcurrencyFlags(batch.dirtyPodcasts, batch.dirtyHistory, batch.queueMeta, syncedAt)
-            batch.listening?.let { listeningSync?.onPushed(it, answer.listeningAccepted, answer.listeningTotals) }
+            batch.listening?.let { listeningSync?.onPushed(it, answer.listeningAccepted, answer.listeningTotals, answer.listeningReleaseKnown) }
 
             PushBatchSummary(
                 pushedSubscriptions = subDtos.size,

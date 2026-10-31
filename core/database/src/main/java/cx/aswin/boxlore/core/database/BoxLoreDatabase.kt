@@ -33,7 +33,7 @@ import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
         PlayedShowEntity::class,
         PushedListeningDayEntity::class,
     ],
-    version = 41,
+    version = 42,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -341,6 +341,13 @@ abstract class BoxLoreDatabase : RoomDatabase() {
             }
         }
 
+        /** The daily summaries' time with a known release date; see [ListeningReleaseKnownMigration]. Never edit it; later changes go to v43. */
+        private val MIGRATION_41_42 = object : Migration(41, 42) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                ListeningReleaseKnownMigration.migrate(db)
+            }
+        }
+
         /**
          * Every upgrade path, in order. Production and the upgrade tests open the database through
          * [builder] with this list, so the tests run exactly the migrations a phone runs.
@@ -379,6 +386,7 @@ abstract class BoxLoreDatabase : RoomDatabase() {
             MIGRATION_38_39,
             MIGRATION_39_40,
             MIGRATION_40_41,
+            MIGRATION_41_42,
         )
 
         /** Versions older than the first migration (12→13). Only these may still be wiped on upgrade. */

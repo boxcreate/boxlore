@@ -106,6 +106,12 @@ class ListeningInsightsMaintenance(
     suspend fun forgetPushedTotals() = pushes.forgetPushedTotals()
 
     /**
+     * Forgets only the time with a known release date the cloud holds (a server that now stores it,
+     * Room v42): every day that knows it goes up again.
+     */
+    suspend fun forgetPushedReleaseKnown() = pushes.forgetPushedReleaseKnown()
+
+    /**
      * Daily listening from the cloud, in one transaction.
      * - The installation's own days ([ListeningOrigins.own]): it is their only writer, so what it holds
      *   is never older, and its sessions keep their details. A day comes back only where it holds
@@ -118,9 +124,15 @@ class ListeningInsightsMaintenance(
      * Days of the origins this phone pushes are recorded as the cloud holds them, so its next push sends
      * only what differs. A cloud that doesn't keep the totals ([cloudStoresTotals] false) sends days
      * without them: those days keep the totals this phone last sent, or they would differ and go up
-     * again on every sync.
+     * again on every sync. The same goes for a cloud that keeps the totals but not the time with a known
+     * release date ([cloudStoresReleaseKnown] false, Room v42): those days keep the one this phone sent.
      */
-    suspend fun applyCloudDailyListening(days: List<ListeningRollupEntity>, origins: ListeningOrigins, cloudStoresTotals: Boolean = true,) {
+    suspend fun applyCloudDailyListening(
+        days: List<ListeningRollupEntity>,
+        origins: ListeningOrigins,
+        cloudStoresTotals: Boolean = true,
+        cloudStoresReleaseKnown: Boolean = true,
+    ) {
         val incoming = days.filter { it.deviceId != ListeningRollupEntity.THIS_DEVICE }
         if (incoming.isEmpty()) return
         database.withTransaction {
@@ -128,11 +140,13 @@ class ListeningInsightsMaintenance(
             val known = pushes.getPushedDays(origins.own).mapTo(HashSet()) { Triple(it.deviceId, it.localDay, it.episodeId) }
             for (day in incoming) applyCloudDay(day, heldSessions[day.key].orEmpty(), isOwn = day.deviceId == origins.own, known = day.key in known)
             val pushed = incoming.filter { it.deviceId in origins.pushed }
-            if (cloudStoresTotals) {
+            if (cloudStoresTotals && cloudStoresReleaseKnown) {
                 recordPushedDays(pushed)
             } else {
                 val sentTotals = origins.pushed.flatMap { pushes.getPushedDays(it) }.associate { Triple(it.deviceId, it.localDay, it.episodeId) to it.totals }
-                recordPushedDays(pushed.map { day -> sentTotals[day.key]?.let { day.copy(totals = it) } ?: day })
+                // The totals this phone sent where the cloud keeps none, else just the release date time it sent.
+                fun ListeningDayTotals.asCloudHolds(sent: ListeningDayTotals) = if (cloudStoresTotals) copy(releaseKnownMs = sent.releaseKnownMs) else sent
+                recordPushedDays(pushed.map { day -> sentTotals[day.key]?.let { day.copy(totals = day.totals.asCloudHolds(it)) } ?: day })
             }
         }
     }
@@ -147,20 +161,8 @@ class ListeningInsightsMaintenance(
         }
         if (!day.covers(stored, daySessions)) return
         // A zero day: that origin no longer holds the day (it moved to another episode ID, or was removed).
-        if (day.isZero()) rollups.deleteRollup(day.deviceId, day.localDay, day.episodeId) else rollups.upsertRollup(day.keepingHeldTotals(stored, daySessions))
+        if (day.isZero()) rollups.deleteRollup(day.deviceId, day.localDay, day.episodeId) else rollups.upsertRollup(ListeningRollupMerge.keepingHeldTotals(day, stored, daySessions))
         sessions.deleteSessionsOfDailySummary(day.deviceId, day.localDay, day.episodeId, day.lastListenedAt)
-    }
-
-    /**
-     * This day, with the richer totals of what this phone holds of it when the day has none (an older
-     * build or server sent it) and holds just that listening: as late and as much. A later or larger day
-     * has more listening than the held totals cover, so they don't stand for it.
-     */
-    private fun ListeningRollupEntity.keepingHeldTotals(stored: ListeningRollupEntity?, daySessions: List<ListeningSessionEntity>,): ListeningRollupEntity {
-        if (totals != ListeningDayTotals()) return this
-        val held = if (daySessions.isEmpty()) stored else ListeningRollupMerge.mergeSessionsIntoRollup(localDay, episodeId, daySessions, stored)
-        if (held == null || held.lastListenedAt != lastListenedAt || held.consumedMs != consumedMs) return this
-        return copy(totals = held.knownTotals())
     }
 
     /**

@@ -191,7 +191,7 @@ class InsightsLogicTest {
     @Test
     fun whereAndWhatShowOnceHalfTheListeningAndHalfAnHourHaveTheirDetails() {
         // 60 minutes in the period: 20 with details (car, a new release from Lore), 40 from before details were recorded.
-        val detailed = day(20, "a", 20).copy(carMs = 20 * MINUTE, newReleaseMs = 20 * MINUTE, loreMs = 20 * MINUTE)
+        val detailed = day(20, "a", 20).copy(carMs = 20 * MINUTE, newReleaseMs = 20 * MINUTE, releaseKnownMs = 20 * MINUTE, loreMs = 20 * MINUTE)
         val older = day(21, "b", 40)
 
         val few = build(listOf(detailed, older))
@@ -199,7 +199,7 @@ class InsightsLogicTest {
         assertNull(few.sources)
 
         // Another 40 detailed minutes: 60 of 100 have details, an hour of them.
-        val buds = day(22, "b", 40).copy(bluetoothMs = 30 * MINUTE, headphonesMs = 10 * MINUTE, smartQueueMs = 10 * MINUTE)
+        val buds = day(22, "b", 40).copy(bluetoothMs = 30 * MINUTE, headphonesMs = 10 * MINUTE, smartQueueMs = 10 * MINUTE, releaseKnownMs = 40 * MINUTE)
         val enough = build(listOf(detailed, older, buds))
 
         assertEquals(
@@ -207,8 +207,8 @@ class InsightsLogicTest {
             enough.outputs.map { it.output to it.share },
         )
         val sources = enough.sources!!
-        // Shares of the 60 detailed minutes; the 40 from before don't count.
-        assertEquals(1f / 3, sources.newShare, 0.001f)
+        // Shares of the 60 detailed minutes (all with a known release date); the 40 from before don't count.
+        assertEquals(1f / 3, sources.newShare!!, 0.001f)
         assertEquals(1f / 3, sources.loreShare, 0.001f)
         assertEquals(1f / 6, sources.smartQueueShare, 0.001f)
     }
@@ -223,8 +223,57 @@ class InsightsLogicTest {
         assertNull(content.sources)
 
         // With 80 of its minutes detailed, the shares are of those 80.
-        val enough = build(listOf(mixed.copy(headphonesMs = 80 * MINUTE, newReleaseMs = 20 * MINUTE)))
-        assertEquals(0.25f, enough.sources!!.newShare, 0.001f)
+        val enough = build(listOf(mixed.copy(headphonesMs = 80 * MINUTE, newReleaseMs = 20 * MINUTE, releaseKnownMs = 80 * MINUTE)))
+        assertEquals(0.25f, enough.sources!!.newShare!!, 0.001f)
+    }
+
+    @Test
+    fun newOrCatchingUpCountsOnlyListeningWhoseReleaseDateIsKnown() {
+        // 90 minutes on the speaker: 30 new, 30 older, and 30 of episodes without a release date.
+        val listening = listOf(
+            day(20, "a", 30).copy(speakerMs = 30 * MINUTE, newReleaseMs = 30 * MINUTE, releaseKnownMs = 30 * MINUTE),
+            day(21, "b", 30).copy(speakerMs = 30 * MINUTE, releaseKnownMs = 30 * MINUTE),
+            day(22, "c", 30).copy(speakerMs = 30 * MINUTE),
+        )
+
+        // Half new: the undated half hour is neither new nor older (it used to read as older, a third new).
+        assertEquals(0.5f, build(listening).sources!!.newShare!!, 0.001f)
+    }
+
+    @Test
+    fun newOrCatchingUpWaitsUntilHalfTheListeningAndHalfAnHourHaveAReleaseDate() {
+        // 80 detailed minutes from Lore, only 20 of them with a release date: Lore's share shows, new or older doesn't.
+        val dated = day(20, "a", 20).copy(speakerMs = 20 * MINUTE, newReleaseMs = 20 * MINUTE, releaseKnownMs = 20 * MINUTE, loreMs = 20 * MINUTE)
+        val undated = day(21, "b", 60).copy(speakerMs = 60 * MINUTE, loreMs = 60 * MINUTE)
+
+        val few = build(listOf(dated, undated)).sources!!
+        assertNull(few.newShare)
+        assertEquals(1f, few.loreShare, 0.001f)
+
+        // 40 of 80 minutes dated: enough, and the share is of those 40.
+        val enough = build(listOf(dated, undated.copy(releaseKnownMs = 20 * MINUTE))).sources!!
+        assertEquals(0.5f, enough.newShare!!, 0.001f)
+        // Half the listening, but under half an hour, isn't enough.
+        assertNull(InsightsDetails.newShare(listOf(day(20, "a", 20).copy(newReleaseMs = 20 * MINUTE, releaseKnownMs = 20 * MINUTE))))
+    }
+
+    @Test
+    fun aSummaryFromBeforeReleaseDatesWereKeptCountsNeitherNewNorOlder() {
+        // An hour summed before Room v42: all of it new, but how much had a date isn't known. And an hour that knows.
+        val v41 = day(20, "a", 60).copy(speakerMs = 60 * MINUTE, newReleaseMs = 60 * MINUTE)
+        val known = day(21, "b", 60).copy(speakerMs = 60 * MINUTE, newReleaseMs = 15 * MINUTE, releaseKnownMs = 60 * MINUTE)
+
+        assertEquals(0.25f, build(listOf(v41, known)).sources!!.newShare!!, 0.001f)
+        assertNull(build(listOf(v41)).sources!!.newShare)
+    }
+
+    @Test
+    fun aDayClaimingMoreDatedTimeThanItsListeningCountsNoMoreThanItsListening() {
+        // A cloud day whose dated (and new) time exceeds its 30 minutes, beside 30 dated minutes of older episodes.
+        val overstated = day(20, "a", 30).copy(speakerMs = 30 * MINUTE, newReleaseMs = 60 * MINUTE, releaseKnownMs = 60 * MINUTE)
+        val older = day(21, "b", 30).copy(speakerMs = 30 * MINUTE, releaseKnownMs = 30 * MINUTE)
+
+        assertEquals(0.5f, InsightsDetails.newShare(listOf(overstated, older))!!, 0.001f)
     }
 
     @Test
@@ -237,12 +286,12 @@ class InsightsLogicTest {
     @Test
     fun sharesOfNewAndLoreCountListeningOnAnOutputAndroidDoesNotName() {
         // 30 minutes on the speaker, started by hand, of an older episode; 30 on an unnamed output, new and from Lore.
-        val speaker = day(20, "a", 30).copy(speakerMs = 30 * MINUTE)
-        val unnamed = day(21, "b", 30).copy(newReleaseMs = 30 * MINUTE, loreMs = 30 * MINUTE)
+        val speaker = day(20, "a", 30).copy(speakerMs = 30 * MINUTE, releaseKnownMs = 30 * MINUTE)
+        val unnamed = day(21, "b", 30).copy(newReleaseMs = 30 * MINUTE, releaseKnownMs = 30 * MINUTE, loreMs = 30 * MINUTE)
 
         val sources = build(listOf(speaker, unnamed)).sources!!
 
-        assertEquals(0.5f, sources.newShare, 0.001f)
+        assertEquals(0.5f, sources.newShare!!, 0.001f)
         assertEquals(0.5f, sources.loreShare, 0.001f)
     }
 

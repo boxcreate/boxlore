@@ -189,6 +189,7 @@ class BoxcastPrefs(context: Context) {
         const val KEY_LISTENING_DATES_SENT_AFTER = "sync_listening_dates_sent_after"
         const val KEY_LISTENING_DATES_SENT = "sync_listening_dates_sent"
         const val KEY_LISTENING_TOTALS_SENT = "sync_listening_totals_sent"
+        const val KEY_LISTENING_RELEASE_KNOWN_SENT = "sync_listening_release_known_sent"
 
         /** In `noBackupFilesDir`: never in an Android backup or device transfer. */
         const val LISTENING_DEVICE_ID_FILE = "boxlore_listening_device_id"
@@ -306,6 +307,16 @@ class BoxcastPrefs(context: Context) {
 
     fun setListeningTotalsSent(sent: Boolean) {
         prefs.edit().putBoolean(KEY_LISTENING_TOTALS_SENT, sent).apply()
+    }
+
+    /**
+     * Whether this phone's days went up again, once, to a server that stores their time with a known
+     * release date (Room v42); before that, days were sent to a server that dropped it.
+     */
+    fun areListeningReleaseKnownSent(): Boolean = prefs.getBoolean(KEY_LISTENING_RELEASE_KNOWN_SENT, false)
+
+    fun setListeningReleaseKnownSent(sent: Boolean) {
+        prefs.edit().putBoolean(KEY_LISTENING_RELEASE_KNOWN_SENT, sent).apply()
     }
 
     /** Server time of the last listening pull (0: none yet, pull every phone's listening). */

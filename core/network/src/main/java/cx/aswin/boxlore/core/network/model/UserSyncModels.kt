@@ -149,6 +149,8 @@ data class ListeningDaySyncDto(
     @SerialName("loreMs") val loreMs: Long = 0L,
     @SerialName("smartQueueMs") val smartQueueMs: Long = 0L,
     @SerialName("newReleaseMs") val newReleaseMs: Long = 0L,
+    /** The time with a known release date (Room v42): 0 when not known, and on servers that don't store it. */
+    @SerialName("releaseKnownMs") val releaseKnownMs: Long = 0L,
     /** The server's write time, on pulls. */
     @SerialName("updatedAt") val updatedAt: Long = 0L,
 )
@@ -181,6 +183,11 @@ data class SyncPushRequest(
      * for a push without it (an older build, which never knows them).
      */
     @SerialName("listeningTotals") val listeningTotals: Boolean = false,
+    /**
+     * Its days carry their time with a known release date (Room v42), 0 included; the server keeps a
+     * day's stored one for a push without it (an older build, which never knows it).
+     */
+    @SerialName("listeningReleaseKnown") val listeningReleaseKnown: Boolean = false,
     @SerialName("clientTimestamp") val clientTimestamp: Long = 0L,
 )
 
@@ -192,6 +199,8 @@ data class SyncPushResponse(
     @SerialName("listeningAccepted") val listeningAccepted: Boolean = false,
     /** The server stores each day's richer totals (Room v41); older servers leave it out. */
     @SerialName("listeningTotals") val listeningTotals: Boolean = false,
+    /** The server stores each day's time with a known release date (Room v42); older servers leave it out. */
+    @SerialName("listeningReleaseKnown") val listeningReleaseKnown: Boolean = false,
 )
 
 @Serializable
@@ -221,6 +230,8 @@ data class SyncPullResponse(
     @SerialName("playedShows") val playedShows: List<PlayedShowSyncDto>? = null,
     /** The server stores each day's richer totals (Room v41); older servers leave it out. */
     @SerialName("listeningTotals") val listeningTotals: Boolean = false,
+    /** The server stores each day's time with a known release date (Room v42); older servers leave it out. */
+    @SerialName("listeningReleaseKnown") val listeningReleaseKnown: Boolean = false,
     @SerialName("syncedAt") val syncedAt: Long,
 )
 

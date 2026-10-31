@@ -64,6 +64,7 @@ class ListeningCloudSyncTest {
     private val pulls = mutableListOf<SyncPullRequest>()
     private var serverStoresListening = true
     private var serverStoresTotals = false
+    private var serverStoresReleaseKnown = false
     private var pullAnswer = SyncPullResponse(syncedAt = 9_000L)
     private var onPush: (() -> Unit)? = null
     private var pushesInFlight = 0
@@ -84,11 +85,11 @@ class ListeningCloudSyncTest {
                         pushes += args[2] as SyncPushRequest
                         onPush?.invoke()
                         pushesInFlight--
-                        FakeCall(Response.success(SyncPushResponse(syncedAt = 5_000L, listeningAccepted = serverStoresListening, listeningTotals = serverStoresTotals)))
+                        FakeCall(Response.success(SyncPushResponse(syncedAt = 5_000L, listeningAccepted = serverStoresListening, listeningTotals = serverStoresTotals, listeningReleaseKnown = serverStoresReleaseKnown)))
                     }
                     "syncPull" -> {
                         pulls += args[2] as SyncPullRequest
-                        FakeCall(Response.success(pullAnswer.copy(listeningTotals = serverStoresTotals)))
+                        FakeCall(Response.success(pullAnswer.copy(listeningTotals = serverStoresTotals, listeningReleaseKnown = serverStoresReleaseKnown)))
                     }
                     "deleteSyncAccount" -> FakeCall(Response.success(SyncDeleteAccountResponse()))
                     "hashCode" -> 42
@@ -395,6 +396,68 @@ class ListeningCloudSyncTest {
         assertEquals(60_000L, sent.loreMs)
         val pulled = database.listeningRollupDao().getRollup("phone-b", 12L, "ep-1")!!.totals
         assertEquals(ListeningDayTotals(longestSessionMs = 80_000L, carMs = 120_000L, newReleaseMs = 40_000L), pulled)
+    }
+
+    @Test
+    fun eachDaysReleaseDateTimeGoesUpAndComesDown() = runTest(testDispatcher) {
+        val me = prefs.getOrCreateListeningDeviceId()
+        prefs.setListeningTotalsSent(true)
+        serverStoresTotals = true
+        serverStoresReleaseKnown = true
+        database.listeningSessionDao().upsertSessions(
+            listOf(
+                session("new", day = 10L, device = me).copy(episodePublishedAt = 9_000L),
+                session("undated", day = 10L, device = me, endedOffset = 200_000L),
+            ),
+        )
+        pullAnswer =
+            SyncPullResponse(
+                syncedAt = 9_000L,
+                listeningDays = listOf(day("phone-b", 12L, 120_000L).copy(carMs = 120_000L, newReleaseMs = 40_000L, releaseKnownMs = 100_000L)),
+                playedShows = emptyList(),
+            )
+
+        coordinator.syncNow()
+
+        assertTrue(pushes.single().listeningReleaseKnown)
+        val sent = pushes.single().listeningDays.single()
+        assertEquals(60_000L to 60_000L, sent.newReleaseMs to sent.releaseKnownMs)
+        val pulled = database.listeningRollupDao().getRollup("phone-b", 12L, "ep-1")!!.totals
+        assertEquals(ListeningDayTotals(carMs = 120_000L, newReleaseMs = 40_000L, releaseKnownMs = 100_000L), pulled)
+    }
+
+    @Test
+    fun daysGoUpOnceMoreTheFirstTimeAServerStoresTheirReleaseDateTime() = runTest(testDispatcher) {
+        val me = prefs.getOrCreateListeningDeviceId()
+        // A server with the v41 totals already stored; this phone sent them before.
+        prefs.setListeningTotalsSent(true)
+        serverStoresTotals = true
+        database.listeningSessionDao().upsertSessions(listOf(session("dated", day = 10L, device = me).copy(episodePublishedAt = 9_000L), session("undated", day = 11L, device = me)))
+        coordinator.syncNow()
+        val sent = pushes.single().listeningDays
+        assertEquals(listOf(60_000L, 0L), sent.map { it.releaseKnownMs })
+
+        // It keeps the days without their release date time and sends them back that way: nothing goes up again.
+        pullAnswer = SyncPullResponse(syncedAt = 9_000L, listeningDays = sent.map { it.copy(releaseKnownMs = 0L) }, playedShows = emptyList())
+        pushes.clear()
+        coordinator.syncNow()
+        coordinator.syncNow()
+        assertTrue(pushes.all { it.listeningDays.isEmpty() })
+        assertFalse(prefs.areListeningReleaseKnownSent())
+
+        // The server updates: its first answer that stores it sends the dated day once more...
+        serverStoresReleaseKnown = true
+        pullAnswer = SyncPullResponse(syncedAt = 9_500L, listeningDays = emptyList(), playedShows = emptyList())
+        coordinator.syncNow()
+        assertTrue(prefs.areListeningReleaseKnownSent())
+        pushes.clear()
+        coordinator.syncNow()
+        assertEquals(listOf(10L to 60_000L), pushes.single().listeningDays.map { it.localDay to it.releaseKnownMs })
+
+        // ...and only once.
+        pushes.clear()
+        coordinator.syncNow()
+        assertTrue(pushes.isEmpty() || pushes.single().listeningDays.isEmpty())
     }
 
     @Test
