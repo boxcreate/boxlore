@@ -60,12 +60,12 @@ data class ListeningDayTotals(
 
     /**
      * These totals of some listening, with what [other] (totals of the same listening, from a backup or
-     * the cloud) knows that these don't: all of them where these hold none, else the release dates
-     * (Room v42) where these have none.
+     * the cloud) knows better: all of them where these hold none, else the release dates (Room v42)
+     * where [other] knows them for more of it (a copy that summed part of the day before v42 knows less).
      */
     fun fillingIn(other: ListeningDayTotals): ListeningDayTotals = when {
         this == ListeningDayTotals() -> other
-        releaseKnownMs == 0L && other.releaseKnownMs > 0L -> copy(newReleaseMs = other.newReleaseMs, releaseKnownMs = other.releaseKnownMs)
+        other.releaseKnownMs > releaseKnownMs -> copy(newReleaseMs = other.newReleaseMs, releaseKnownMs = other.releaseKnownMs)
         else -> this
     }
 

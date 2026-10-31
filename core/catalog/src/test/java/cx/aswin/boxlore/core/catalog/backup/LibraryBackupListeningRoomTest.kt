@@ -12,6 +12,7 @@ import cx.aswin.boxlore.core.database.ListeningDayTotals
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.ListeningSessionEntity
+import cx.aswin.boxlore.core.database.ListeningSessionValues
 import cx.aswin.boxlore.core.database.PlayedShowEntity
 import cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort
 import cx.aswin.boxlore.core.model.Episode
@@ -135,6 +136,24 @@ class LibraryBackupListeningRoomTest {
             ListeningDayTotals(carMs = 60_000L, newReleaseMs = 20_000L, releaseKnownMs = 50_000L),
             target.listeningRollupDao().getRollup(PHONE_C, 8L, EPISODE)!!.totals,
         )
+    }
+
+    @Test
+    fun anOlderBackupsSummaryOfListeningHeldHereInSessionsKeepsTheirReleaseDateTime() = runTest {
+        // Phone C's day 9, held here as a dated session (from an earlier backup).
+        target.listeningSessionDao().upsertSession(
+            ListeningSessionEntity(
+                sessionId = "c-1", episodeId = EPISODE, podcastId = SHOW, startedAt = 9_000L, endedAt = 69_000L, consumedMs = 60_000L, completed = false,
+                localDay = 9L, timeBucket = 1, deviceId = PHONE_C, output = ListeningSessionValues.OUTPUT_CAR, episodePublishedAt = 5_000L,
+            ),
+        )
+        // A v9 backup of that phone has the same listening summed, without the release date time.
+        val v9 = rollupBackup(day = 9L, device = PHONE_C, consumed = 60_000L).copy(carMs = 60_000L, newReleaseMs = 60_000L)
+
+        LibraryBackupListening(target, PHONE_B).restore(ListeningBackup(deviceId = PHONE_C, dailySummaries = listOf(v9)), refusedEpisodeIds = emptySet())
+
+        assertTrue(target.listeningSessionDao().getAllSessions().isEmpty())
+        assertEquals(60_000L, target.listeningRollupDao().getRollup(PHONE_C, 9L, EPISODE)!!.totals.releaseKnownMs)
     }
 
     @Test

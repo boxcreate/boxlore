@@ -161,21 +161,8 @@ class ListeningInsightsMaintenance(
         }
         if (!day.covers(stored, daySessions)) return
         // A zero day: that origin no longer holds the day (it moved to another episode ID, or was removed).
-        if (day.isZero()) rollups.deleteRollup(day.deviceId, day.localDay, day.episodeId) else rollups.upsertRollup(day.keepingHeldTotals(stored, daySessions))
+        if (day.isZero()) rollups.deleteRollup(day.deviceId, day.localDay, day.episodeId) else rollups.upsertRollup(ListeningRollupMerge.keepingHeldTotals(day, stored, daySessions))
         sessions.deleteSessionsOfDailySummary(day.deviceId, day.localDay, day.episodeId, day.lastListenedAt)
-    }
-
-    /**
-     * This day, with the richer totals of what this phone holds of it where the day lacks them (an older
-     * build or server sent it: none, or none of the release dates) and this phone holds just that
-     * listening: as late and as much ([ListeningDayTotals.fillingIn]). A later or larger day has more
-     * listening than the held totals cover, so they don't stand for it.
-     */
-    private fun ListeningRollupEntity.keepingHeldTotals(stored: ListeningRollupEntity?, daySessions: List<ListeningSessionEntity>,): ListeningRollupEntity {
-        if (totals.releaseKnownMs > 0L) return this
-        val held = if (daySessions.isEmpty()) stored else ListeningRollupMerge.mergeSessionsIntoRollup(localDay, episodeId, daySessions, stored)
-        if (held == null || held.lastListenedAt != lastListenedAt || held.consumedMs != consumedMs) return this
-        return copy(totals = totals.fillingIn(held.knownTotals()))
     }
 
     /**

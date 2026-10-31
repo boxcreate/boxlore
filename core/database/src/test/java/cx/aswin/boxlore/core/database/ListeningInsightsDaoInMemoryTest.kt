@@ -308,6 +308,21 @@ class ListeningInsightsDaoInMemoryTest {
     }
 
     @Test
+    fun aCloudDayOfTheSameListeningKnowingFewerReleaseDatesKeepsTheHeldOnes() = runTest {
+        val origins = ListeningOrigins(own = "me", legacy = "legacy-me")
+        sessions.upsertSession(session("dated").copy(deviceId = "phone-b", episodePublishedAt = 500L, output = ListeningSessionValues.OUTPUT_CAR))
+        // Phone B summed part of that listening before v42, so its copy knows the date of less of it.
+        val partial = ListeningDayTotals(longestSessionMs = 1_000L, carMs = 1_000L, newReleaseMs = 400L, releaseKnownMs = 400L)
+
+        maintenance.applyCloudDailyListening(
+            listOf(ListeningRollupEntity(10L, "ep-1", "pod-1", 1_000L, 1, 0, lastListenedAt = 2_000L, deviceId = "phone-b", totals = partial)),
+            origins,
+        )
+
+        assertEquals(listOf(partial.copy(newReleaseMs = 1_000L, releaseKnownMs = 1_000L)), rollups.getAllRollups().map { it.totals })
+    }
+
+    @Test
     fun deleteEpisodeAndClearAll() = runTest {
         sessions.upsertSession(session("s1").copy(episodeId = "ep-a"))
         sessions.upsertSession(session("s2").copy(episodeId = "ep-b"))

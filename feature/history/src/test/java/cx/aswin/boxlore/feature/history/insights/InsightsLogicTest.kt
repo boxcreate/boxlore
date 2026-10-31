@@ -268,6 +268,15 @@ class InsightsLogicTest {
     }
 
     @Test
+    fun aDayClaimingMoreDatedTimeThanItsListeningCountsNoMoreThanItsListening() {
+        // A cloud day whose dated (and new) time exceeds its 30 minutes, beside 30 dated minutes of older episodes.
+        val overstated = day(20, "a", 30).copy(speakerMs = 30 * MINUTE, newReleaseMs = 60 * MINUTE, releaseKnownMs = 60 * MINUTE)
+        val older = day(21, "b", 30).copy(speakerMs = 30 * MINUTE, releaseKnownMs = 30 * MINUTE)
+
+        assertEquals(0.5f, InsightsDetails.newShare(listOf(overstated, older))!!, 0.001f)
+    }
+
+    @Test
     fun aPartOfTheDayIsMostlyOnlyWithHalfTheListening() {
         assertEquals(DayPart.EVENING to false, InsightsWording.partLead(listOf(PartShare(DayPart.EVENING, 0.35f), PartShare(DayPart.MORNING, 0.25f))))
         assertEquals(DayPart.EVENING to true, InsightsWording.partLead(listOf(PartShare(DayPart.EVENING, 0.5f))))

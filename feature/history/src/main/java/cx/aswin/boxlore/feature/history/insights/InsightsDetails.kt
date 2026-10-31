@@ -63,7 +63,7 @@ internal object InsightsDetails {
         val total = inPeriod.sumOf { it.consumedMs }
         val dated = inPeriod.sumOf { it.releaseKnownMs.coerceAtMost(it.consumedMs) }
         if (total <= 0L || dated < DETAILS_MIN_MS || dated < total * DETAILS_SHARE) return null
-        return (inPeriod.sumOf { it.newOfReleaseKnownMs }.toFloat() / dated).coerceAtMost(1f)
+        return (inPeriod.sumOf { it.newOfReleaseKnownMs.coerceAtMost(it.consumedMs) }.toFloat() / dated).coerceAtMost(1f)
     }
 
     /**

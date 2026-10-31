@@ -153,6 +153,10 @@ class ListeningRollupMergeTest {
         assertEquals(v42, v41.fillingIn(v42))
         assertEquals(v42, v42.fillingIn(v41))
         assertEquals(v41, v41.fillingIn(ListeningDayTotals()))
+        // A copy that summed part of the day before v42 knows fewer dates: the fuller pair wins either way.
+        val partial = ListeningDayTotals(carMs = 9L, newReleaseMs = 2L, releaseKnownMs = 3L)
+        assertEquals(v42, partial.fillingIn(v42))
+        assertEquals(v42, v42.fillingIn(partial))
     }
 
     @Test

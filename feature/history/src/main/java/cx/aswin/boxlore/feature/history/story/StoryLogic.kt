@@ -146,7 +146,8 @@ object StoryLogic {
                 val top = rows.groupBy { it.podcastId }.mapValues { (_, show) -> show.sumOf { it.consumedMs } }.entries.sortedByDescending { it.value }
                 val cards = StoryCard.entries.count { card ->
                     when (card) {
-                        StoryCard.HOW -> InsightsDetails.hasEnough(rows)
+                        // The same test the card is built by: details alone (a known release date, say) without an output don't make one.
+                        StoryCard.HOW -> how(rows) != null
                         StoryCard.TYPE -> InsightsLogic.partShares(rows).isNotEmpty() && partsMs(rows) >= TYPE_MIN_MS
                         else -> true
                     }

@@ -4,6 +4,7 @@ import androidx.room.withTransaction
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.ListeningDayTotals
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
+import cx.aswin.boxlore.core.database.ListeningRollupMerge
 import cx.aswin.boxlore.core.database.ListeningSessionEntity
 import cx.aswin.boxlore.core.database.PlayedShowEntity
 import cx.aswin.boxlore.core.database.rollupDeviceId
@@ -116,6 +117,7 @@ internal class LibraryBackupListening(private val database: BoxLoreDatabase, pri
         database.withTransaction {
             val rollupDao = database.listeningRollupDao()
             val sessionDao = database.listeningSessionDao()
+            val heldSessions = sessionDao.getAllSessions().groupBy { Triple(it.rollupDeviceId, it.localDay, it.episodeId) }
             for (summary in summaries) {
                 val stored = rollupDao.getRollup(summary.deviceId, summary.localDay, summary.episodeId)
                 if (stored != null && !summary.isLaterThan(stored)) {
@@ -124,7 +126,9 @@ internal class LibraryBackupListening(private val database: BoxLoreDatabase, pri
                     if (stored.isSameListening(summary) && filled != stored.totals) rollupDao.upsertRollup(stored.copy(totals = filled))
                     continue
                 }
-                rollupDao.upsertRollup(summary)
+                // A summary of just the listening held here, from a backup without some totals, keeps the held ones.
+                val held = heldSessions[Triple(summary.deviceId, summary.localDay, summary.episodeId)].orEmpty()
+                rollupDao.upsertRollup(ListeningRollupMerge.keepingHeldTotals(summary, stored, held))
                 sessionDao.deleteSessionsOfDailySummary(summary.deviceId, summary.localDay, summary.episodeId, summary.lastListenedAt)
             }
             val summarizedUntil = rollupDao.getAllRollups().associate { Triple(it.deviceId, it.localDay, it.episodeId) to it.lastListenedAt }
