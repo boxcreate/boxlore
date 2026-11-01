@@ -373,7 +373,7 @@ class BoxLoreApplication :
         val environment = PostHogWiring.environment(debug = BuildConfig.DEBUG, isolatedTests = BuildConfig.BOXLORE_ISOLATED_TESTS)
         val config =
             PostHogAndroidConfig(
-                apiKey = BuildConfig.POSTHOG_API_KEY,
+                projectToken = BuildConfig.POSTHOG_API_KEY,
                 host = BuildConfig.POSTHOG_HOST,
             ).apply {
                 captureApplicationLifecycleEvents = true
