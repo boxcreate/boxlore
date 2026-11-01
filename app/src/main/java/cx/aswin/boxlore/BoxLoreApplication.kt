@@ -15,9 +15,9 @@ import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.cast.framework.SessionTransferCallback
 import com.posthog.PostHog
-import com.posthog.PostHogOnFeatureFlags
 import com.posthog.android.PostHogAndroid
 import com.posthog.android.PostHogAndroidConfig
+import cx.aswin.boxlore.analytics.PostHogWiring
 import cx.aswin.boxlore.core.catalog.EngagementPromptCoordinator
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.downloads.DownloadsDependenciesHolder
@@ -369,7 +369,8 @@ class BoxLoreApplication :
     /** PostHog setup: event levels first, then the SDK off the main thread. */
     private fun startPostHog() {
         // Event levels: this install's sample bucket and the last remote switch, before any capture.
-        cx.aswin.boxlore.core.analytics.AnalyticsHelper.initPolicy(this)
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper.initPolicy(this, BuildConfig.VERSION_NAME)
+        val environment = PostHogWiring.environment(debug = BuildConfig.DEBUG, isolatedTests = BuildConfig.BOXLORE_ISOLATED_TESTS)
         val config =
             PostHogAndroidConfig(
                 apiKey = BuildConfig.POSTHOG_API_KEY,
@@ -388,16 +389,21 @@ class BoxLoreApplication :
                         userPrefs = userPreferencesRepository,
                         engagementCoordinator = engagementPromptCoordinator,
                     )
-                onFeatureFlags = onFlagsLoaded()
+                onFeatureFlags =
+                    PostHogWiring.onFlagsLoaded(
+                        // LEGACY(own-ids): staged feed-first rollout; remove at S7 with rememberRolloutAnswers.
+                        { rememberRolloutAnswers() },
+                        { cx.aswin.boxlore.core.analytics.AnalyticsHelper.refreshAnalyticsPolicy() },
+                    )
                 // Drops events this install doesn't send and tags every event, SDK lifecycle ones included.
-                addBeforeSend(cx.aswin.boxlore.core.analytics.AnalyticsBeforeSend(postHogEnvironment()))
+                addBeforeSend(cx.aswin.boxlore.core.analytics.AnalyticsBeforeSend(environment))
             }
         // Off the main thread: setup reads package info over binder (startup ANR). Calls made
         // before it finishes are queued by PostHogStartup and replayed in order.
         cx.aswin.boxlore.core.analytics.PostHogStartup.start {
             PostHogAndroid.setup(this, config)
             // Registered before queued calls replay so early events keep the internal tag.
-            postHogEnvironment().forEach { (key, value) -> PostHog.register(key, value) }
+            environment.forEach { (key, value) -> PostHog.register(key, value) }
         }
     }
 
@@ -411,28 +417,9 @@ class BoxLoreApplication :
      * LEGACY(own-ids): staged feed-first rollout. Remove at sunset step S7 (MIGRATION.md §6) once
      * `feed_first` has been at 100% for 30 days.
      */
-    private fun rememberRolloutAnswers() =
-        PostHogOnFeatureFlags {
-            container.rolloutFlagMemory.onFlagsLoaded { flag -> PostHog.getFeatureFlag(flag, null, false) }
-        }
-
-    /** Flags loaded: the rollout answers, then the analytics switch (`analytics-policy-v1`). */
-    private fun onFlagsLoaded(): PostHogOnFeatureFlags {
-        // LEGACY(own-ids): staged feed-first rollout; remove at S7 with rememberRolloutAnswers.
-        val rollout = rememberRolloutAnswers()
-        return PostHogOnFeatureFlags {
-            rollout.loaded()
-            cx.aswin.boxlore.core.analytics.AnalyticsHelper.refreshAnalyticsPolicy(this, BuildConfig.VERSION_NAME)
-        }
+    private fun rememberRolloutAnswers() {
+        container.rolloutFlagMemory.onFlagsLoaded { flag -> PostHog.getFeatureFlag(flag, null, false) }
     }
-
-    /** Tags internal/test users so they can be filtered in PostHog settings. */
-    private fun postHogEnvironment(): Map<String, Any> =
-        if (BuildConfig.DEBUG || BuildConfig.BOXLORE_ISOLATED_TESTS) {
-            mapOf("is_internal" to true, "app_environment" to if (BuildConfig.BOXLORE_ISOLATED_TESTS) "update_test" else "debug")
-        } else {
-            mapOf("is_internal" to false, "app_environment" to "production")
-        }
 
     @Suppress("TooGenericExceptionCaught")
     private fun reportAdaptiveRankingStatus() {

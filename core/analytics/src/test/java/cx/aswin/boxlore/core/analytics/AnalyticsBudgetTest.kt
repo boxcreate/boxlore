@@ -14,7 +14,8 @@ import org.junit.jupiter.api.Test
  * `monthly_per_install` is each event's count over active installs from PostHog (30 days to
  * 1 Nov 2026, test phones left out). A new event needs an estimate; turning a heavy event on, or
  * raising its estimate, has to fit the budget. SDK-backed rows (`app_open`, `app_background`) use the
- * PostHog event named in `glossary_emission_coverage.csv`.
+ * PostHog event named in `glossary_emission_coverage.csv`. The budget covers glossary events only; SDK
+ * traffic outside the glossary (identity, flag, survey and exception events) isn't counted.
  */
 class AnalyticsBudgetTest {
     private val projectRoot: File =
