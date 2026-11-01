@@ -221,7 +221,7 @@ internal object PlaybackAnalyticsTracks {
         val props =
             mutableMapOf<String, Any>(
                 "error_type" to errorCode,
-                "error_message" to errorMessage,
+                "error_message" to AnalyticsRedaction.text(errorMessage).orEmpty(),
                 "error_code" to errorCode,
                 "entry_point" to AnalyticsGlossary.normalizeEntryPoint(entryPoint),
             )

@@ -25,7 +25,7 @@ internal object AnalyticsEmit {
         }
     }
 
-    /** PostHog error tracking (`$exception`); [event] properties ride along. */
+    /** PostHog error tracking (`$exception`); receives [AnalyticsRedaction] copies only. */
     @Volatile
     var exceptionSink: (Throwable, Map<String, Any>) -> Unit = { error, properties ->
         PostHogStartup.runWhenReady { PostHog.captureException(error, properties) }
@@ -69,8 +69,9 @@ internal object AnalyticsEmit {
         personSetSink(properties)
     }
 
+    /** Sends a redacted copy of [error] to error tracking: no links or signed tokens in any message. */
     fun exception(error: Throwable, properties: Map<String, Any> = emptyMap(),) {
-        exceptionSink(error, properties)
+        exceptionSink(AnalyticsRedaction.throwable(error), properties)
     }
 
     /** How a recording sink names error-tracking captures. */

@@ -13,6 +13,8 @@
         <exclude domain="sharedpref" path="boxlore_test_updates.xml" />
         <exclude domain="sharedpref" path="boxlore_update_session.xml" />
         <exclude domain="sharedpref" path="boxlore_test_update_session.xml" />
+        <!-- The note of a listen in progress belongs to this run; restored, it would report a cut-off listen again. -->
+        <exclude domain="sharedpref" path="boxlore_listen_note.xml" />
         <exclude domain="database" path="androidx.work.workdb" />
         <exclude domain="database" path="androidx.work.workdb-journal" />
         <exclude domain="database" path="androidx.work.workdb-wal" />
@@ -31,6 +33,8 @@
         <exclude domain="sharedpref" path="boxlore_test_updates.xml" />
         <exclude domain="sharedpref" path="boxlore_update_session.xml" />
         <exclude domain="sharedpref" path="boxlore_test_update_session.xml" />
+        <!-- The note of a listen in progress belongs to this run; restored, it would report a cut-off listen again. -->
+        <exclude domain="sharedpref" path="boxlore_listen_note.xml" />
         <exclude domain="database" path="androidx.work.workdb" />
         <exclude domain="database" path="androidx.work.workdb-journal" />
         <exclude domain="database" path="androidx.work.workdb-wal" />

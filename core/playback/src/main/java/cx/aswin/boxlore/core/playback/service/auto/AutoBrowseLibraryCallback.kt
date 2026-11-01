@@ -291,6 +291,7 @@ internal class AutoBrowseLibraryCallback(
 
     @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
     override fun onMediaButtonEvent(session: MediaSession, controllerInfo: MediaSession.ControllerInfo, intent: Intent,): Boolean {
+        host.noteMediaButton(session, controllerInfo)
         val keyEvent =
             androidx.core.content.IntentCompat.getParcelableExtra(
                 intent,

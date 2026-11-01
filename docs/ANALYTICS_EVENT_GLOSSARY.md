@@ -37,10 +37,11 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 
 `playback_session_ended` and `playback_interrupted` values (`PlaybackListenValues`):
 - **`end_reason`:** `paused` (including Android pausing for a call or unplugged headphones; `pause_reason` says which), `finished`, `switched_episode`, `stopped`, `app_closed`.
-- **`controlled_by`:** `app`, `car` (Android Auto or Android Automotive), `notification` (the media notification and system media controls), `other` (headset buttons, a watch, the Assistant). A listen that follows another keeps its controller. `client_surface` is `car` only when the car controls the listen.
-- **`output`:** `speaker`, `wired`, `bluetooth`, `cast`, `other`. The car is a controller, not an output.
-- **`playback_mode`:** `download` when any stored ID of the episode holds a finished download, else `stream`.
-- **`heard_seconds`** comes from the player's position (natural advances only, so seeks and paused time never count); **`elapsed_seconds`** is the time the listen took. `qualified` is `heard_seconds` of 60 or more.
+- **`controlled_by`:** `app`, `car` (Android Auto or Android Automotive), `notification` (the media notification and system media controls), `other` (headset buttons, a watch, the Assistant). A media button keeps its real sender even though the player receives it from the notification. A listen that follows another keeps its controller. `client_surface` is `car` only when the car controls the listen.
+- **`output`:** where the sound went when the listen ended: `speaker`, `wired`, `bluetooth` (hearing aids included), `cast`, `other`. The car is a controller, not an output.
+- **`playback_mode`:** `download` when any stored ID of the episode holds a finished download and it plays on this phone, `stream` otherwise (Cast always streams), `unknown` when the listen ended before the lookup answered.
+- **`heard_seconds`** comes from the player's position (natural advances only, so seeks and paused time never count), including the audio between the last once-a-second sample and a seek or the end; **`elapsed_seconds`** is the time the listen took. `qualified` is `heard_seconds` of 60 or more. **`start_wait_ms`** counts from the first play request of a press, so resolving a resumed session counts too.
+- **Errors:** `error_message` and everything sent to error tracking have links and signed tokens removed (`AnalyticsRedaction`); error tracking gets a copy of each error that names the original type and keeps its stack.
 
 ### Home hero look
 

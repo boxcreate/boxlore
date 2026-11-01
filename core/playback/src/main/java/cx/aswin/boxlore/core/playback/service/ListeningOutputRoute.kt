@@ -34,15 +34,17 @@ internal object ListeningOutputRoute {
     fun forAnalytics(context: Context, player: Player?,): String = runCatching {
         if (player?.deviceInfo?.playbackType == DeviceInfo.PLAYBACK_TYPE_REMOTE) return@runCatching PlaybackListenValues.OUTPUT_CAST
         val audio = context.getSystemService(AudioManager::class.java) ?: return@runCatching PlaybackListenValues.OUTPUT_OTHER
-        analyticsOutput(classify(activeOutputTypes(audio)))
+        analyticsOutputOf(activeOutputTypes(audio))
     }.getOrDefault(PlaybackListenValues.OUTPUT_OTHER)
 
-    /** A stored route ([ListeningSessionValues] `OUTPUT_*`) as a listen's `output`. */
-    fun analyticsOutput(route: String?): String = when (route) {
-        ListeningSessionValues.OUTPUT_CAST -> PlaybackListenValues.OUTPUT_CAST
-        ListeningSessionValues.OUTPUT_BLUETOOTH -> PlaybackListenValues.OUTPUT_BLUETOOTH
-        ListeningSessionValues.OUTPUT_HEADPHONES -> PlaybackListenValues.OUTPUT_WIRED
-        ListeningSessionValues.OUTPUT_SPEAKER -> PlaybackListenValues.OUTPUT_SPEAKER
+    /**
+     * A listen's `output` among [deviceTypes], in [classify]'s order. Hearing aids connect over
+     * Bluetooth, so they count as Bluetooth here, not as headphones.
+     */
+    fun analyticsOutputOf(deviceTypes: Collection<Int>): String = when {
+        deviceTypes.any { it in BLUETOOTH || it == AudioDeviceInfo.TYPE_HEARING_AID } -> PlaybackListenValues.OUTPUT_BLUETOOTH
+        deviceTypes.any { it in HEADPHONES } -> PlaybackListenValues.OUTPUT_WIRED
+        deviceTypes.any { it in SPEAKER } -> PlaybackListenValues.OUTPUT_SPEAKER
         else -> PlaybackListenValues.OUTPUT_OTHER
     }
 

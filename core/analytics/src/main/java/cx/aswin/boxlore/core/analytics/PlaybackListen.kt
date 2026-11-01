@@ -38,6 +38,9 @@ object PlaybackListenValues {
     const val MODE_DOWNLOAD = "download"
     const val MODE_STREAM = "stream"
 
+    /** `playback_mode` when the listen ended before the download lookup answered. */
+    const val MODE_UNKNOWN = "unknown"
+
     /** A listen with at least this much audio heard counts as listening (`qualified`). */
     const val QUALIFIED_LISTEN_SECONDS = 60
 

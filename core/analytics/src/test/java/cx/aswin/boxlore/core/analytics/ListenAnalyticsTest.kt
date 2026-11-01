@@ -4,6 +4,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -175,6 +176,30 @@ class ListenAnalyticsTest {
         assertEquals("download", props["playback_mode"])
         assertEquals(2f, props["speed"])
         assertEquals("phone", props["client_surface"])
+    }
+
+    @Test
+    fun `error tracking and error_message never carry links or signed tokens`() {
+        val sent = mutableListOf<Throwable>()
+        val previous = AnalyticsEmit.exceptionSink
+        AnalyticsEmit.exceptionSink = { error, _ -> sent += error }
+        val parser =
+            IllegalStateException("Couldn't match GROUP-ID in #EXT-X-MEDIA:URI=\"https://cdn.example.com/a.m3u8?token=abc123\"")
+        val failure = RuntimeException("Source error at https://cdn.example.com/e1.mp3?sig=xyz&expires=99", parser)
+        try {
+            AnalyticsHelper.trackPlaybackError("ERROR_CODE_IO", "Load failed: https://cdn.example.com/e1.mp3?key=k1", "p1", "e1", cause = failure)
+        } finally {
+            AnalyticsEmit.exceptionSink = previous
+        }
+
+        val reported = sent.single()
+        val messages = generateSequence(reported) { it.cause }.map { it.message.orEmpty() }.toList()
+        assertEquals(2, messages.size)
+        assertTrue(messages[0].startsWith("java.lang.RuntimeException: Source error at <url>"), messages[0])
+        assertTrue(messages[1].startsWith("java.lang.IllegalStateException: Couldn't match GROUP-ID"), messages[1])
+        messages.forEach { message -> assertFalse("example.com" in message || "abc123" in message || "xyz" in message, message) }
+        assertEquals("Load failed: <url>", props("playback_error")["error_message"])
+        assertEquals(failure.stackTrace.toList(), reported.stackTrace.toList(), "the stack stays for grouping")
     }
 
     @Test

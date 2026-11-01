@@ -43,6 +43,12 @@ interface AutoBrowseLibraryHost {
 
     fun markCurrentEpisodeCompletedAndSkip(session: MediaSession)
 
+    /** A media button arrived from [controller]; the play it causes reaches the player as the notification. */
+    fun noteMediaButton(session: MediaSession, controller: MediaSession.ControllerInfo,) {}
+
+    /** A play request arrived with nothing loaded, before its items are resolved. */
+    fun notePlaybackResumptionRequested() {}
+
     suspend fun refillQueue(player: Player)
 
     fun toAutoPodcast(entity: PodcastEntity): Podcast

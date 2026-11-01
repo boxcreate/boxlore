@@ -57,6 +57,8 @@ internal class AutoPlaybackResumptionHandler(
             TAG,
             "onPlaybackResumption called from ${controller.packageName}, notification=$isStartedFromMediaNotification",
         )
+        // The wait before sound counts from this request, not from when the resolved items start.
+        host.notePlaybackResumptionRequested()
         return host.serviceScope.future {
             resolveResumption(mediaSession)
         }

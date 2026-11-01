@@ -1,13 +1,15 @@
 package cx.aswin.boxlore.core.playback.service
 
+import android.media.AudioDeviceInfo
+import androidx.media3.common.Player
 import cx.aswin.boxlore.core.analytics.PlaybackListenValues
-import cx.aswin.boxlore.core.database.ListeningSessionValues
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/** A listen's labels: what controlled it, whether a car is really connected, and where the sound went. */
+/** A listen's labels: what controlled it, whether a car is really connected, where the sound went, and when it ends. */
 class PlaybackControllerKindTest {
     private fun kind(isCar: Boolean = false, isNotification: Boolean = false, packageName: String,) =
         PlaybackControllerKind.classify(isCar, isNotification, packageName, ownPackage = "cx.aswin.boxlore")
@@ -34,12 +36,22 @@ class PlaybackControllerKindTest {
     }
 
     @Test
-    fun `the output is where the sound goes, never the car`() {
-        assertEquals(PlaybackListenValues.OUTPUT_WIRED, ListeningOutputRoute.analyticsOutput(ListeningSessionValues.OUTPUT_HEADPHONES))
-        assertEquals(PlaybackListenValues.OUTPUT_BLUETOOTH, ListeningOutputRoute.analyticsOutput(ListeningSessionValues.OUTPUT_BLUETOOTH))
-        assertEquals(PlaybackListenValues.OUTPUT_SPEAKER, ListeningOutputRoute.analyticsOutput(ListeningSessionValues.OUTPUT_SPEAKER))
-        assertEquals(PlaybackListenValues.OUTPUT_CAST, ListeningOutputRoute.analyticsOutput(ListeningSessionValues.OUTPUT_CAST))
-        assertEquals(PlaybackListenValues.OUTPUT_OTHER, ListeningOutputRoute.analyticsOutput(ListeningSessionValues.OUTPUT_CAR))
-        assertEquals(PlaybackListenValues.OUTPUT_OTHER, ListeningOutputRoute.analyticsOutput(null))
+    fun `the output is where the sound goes, with hearing aids as Bluetooth`() {
+        val output = ListeningOutputRoute::analyticsOutputOf
+        assertEquals(PlaybackListenValues.OUTPUT_WIRED, output(listOf(AudioDeviceInfo.TYPE_WIRED_HEADPHONES, AudioDeviceInfo.TYPE_BUILTIN_SPEAKER)))
+        assertEquals(PlaybackListenValues.OUTPUT_WIRED, output(listOf(AudioDeviceInfo.TYPE_USB_HEADSET)))
+        assertEquals(PlaybackListenValues.OUTPUT_BLUETOOTH, output(listOf(AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, AudioDeviceInfo.TYPE_WIRED_HEADSET)))
+        assertEquals(PlaybackListenValues.OUTPUT_BLUETOOTH, output(listOf(AudioDeviceInfo.TYPE_HEARING_AID)))
+        assertEquals(PlaybackListenValues.OUTPUT_SPEAKER, output(listOf(AudioDeviceInfo.TYPE_BUILTIN_SPEAKER)))
+        assertEquals(PlaybackListenValues.OUTPUT_OTHER, output(emptyList()))
+    }
+
+    @Test
+    fun `sound stopping ends the listen unless it's only rebuffering`() {
+        assertNull(ListenEndRule.reason(playWhenReady = true, playbackState = Player.STATE_BUFFERING, suppressed = false))
+        assertEquals(PlaybackListenValues.END_PAUSED, ListenEndRule.reason(playWhenReady = false, playbackState = Player.STATE_BUFFERING, suppressed = false))
+        assertEquals(PlaybackListenValues.END_PAUSED, ListenEndRule.reason(playWhenReady = true, playbackState = Player.STATE_READY, suppressed = true))
+        assertEquals(PlaybackListenValues.END_STOPPED, ListenEndRule.reason(playWhenReady = false, playbackState = Player.STATE_IDLE, suppressed = false))
+        assertEquals(PlaybackListenValues.END_FINISHED, ListenEndRule.reason(playWhenReady = true, playbackState = Player.STATE_ENDED, suppressed = false))
     }
 }

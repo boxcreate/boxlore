@@ -21,6 +21,8 @@ import cx.aswin.boxlore.core.ranking.FeedbackTarget
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -116,7 +118,8 @@ internal class PlaybackTelemetrySession(
     }
 
     /** The player jumped from [fromMs] to [toMs]; see [ListenRecorder.jump]. */
-    fun onPositionJump(fromMs: Long, toMs: Long, userSeek: Boolean = false,) = listens.jump(fromMs, toMs, userSeek)
+    fun onPositionJump(fromMs: Long, toMs: Long, userSeek: Boolean = false, sameEpisode: Boolean = true,) =
+        listens.jump(fromMs, toMs, userSeek, sameEpisode)
 
     fun start(
         episodeId: String,
@@ -168,8 +171,14 @@ internal class PlaybackTelemetrySession(
         listenContext()?.let(listens::started)
 
         val listenStart = ListenStart(listenId = listen.listenId, controlledBy = listens.controlledBy)
+        // Download or stream right away, not after the slower show lookups, so a short listen knows it.
+        val modeLookup = scope.async { playbackModeOf(episodeId) }
         scope.launch {
-            enrich(episodeId, currentItem, genre, listenStart)
+            val mode = modeLookup.await()
+            withContext(mainDispatcher) { listens.resolvedPlaybackMode(listen.listenId, mode) }
+        }
+        scope.launch {
+            enrich(episodeId, currentItem, genre, listenStart, modeLookup)
         }
     }
 
@@ -256,6 +265,7 @@ internal class PlaybackTelemetrySession(
         currentItem: MediaItem?,
         genre: String?,
         listen: ListenStart,
+        modeLookup: Deferred<String>,
     ) {
         try {
             val queueItem = database.queueDao().getQueueItemByEpisodeId(episodeId)
@@ -307,12 +317,8 @@ internal class PlaybackTelemetrySession(
         }
 
         val isSubscribed = resolvedPodcastId?.let { subscriptionRepository.isSubscribed(it) } ?: false
-        val mode = playbackModeOf(episodeId)
-        val speed =
-            withContext(mainDispatcher) {
-                if (listens.current?.listenId == listen.listenId) listens.playbackMode = mode
-                playerProvider()?.playbackParameters?.speed ?: 1f
-            }
+        val mode = modeLookup.await()
+        val speed = withContext(mainDispatcher) { playerProvider()?.playbackParameters?.speed ?: 1f }
 
         AnalyticsHelper.trackPlaybackStarted(
             podcastId = resolvedPodcastId,
@@ -354,9 +360,11 @@ internal class PlaybackTelemetrySession(
         val currentEpisodeId = episodeId
         if (startTimeMs <= 0 || currentEpisodeId == null) return
 
-        playerProvider()?.let(::updateConsumedAudio)
-        val listen = listens.current?.also { it.finish(listens.clock()) }
-        val consumedAudioSeconds = (listen?.heardMs ?: 0L) / 1000f
+        val player = playerProvider()
+        if (player != null) listens.close(player) else listens.current?.finish(listens.clock())
+        val listen = listens.current
+        // The local record and ranking keep the count they always had; the listen record adds the edges.
+        val consumedAudioSeconds = (listen?.sampledMs ?: 0L) / 1000f
         val isCompleted = forceCompleted || isCompletedByProgress()
         val currentQueueSize = queueSize()
         val pauseReason = if (isCompleted) null else AnalyticsHelper.consumePauseReason()
@@ -378,8 +386,8 @@ internal class PlaybackTelemetrySession(
                 podcastName = podcastName,
                 podcastGenre = podcastGenre,
                 startedAt = startTimeMs,
-                consumedMs = listen?.heardMs ?: 0L,
-                wallMs = listen?.heardWallMs ?: 0L,
+                consumedMs = listen?.sampledMs ?: 0L,
+                wallMs = listen?.sampledWallMs ?: 0L,
                 completed = isCompleted,
                 source = ListeningSessionRecordLogic.playSource(contextType, entryPoint),
                 output = runCatching(listeningOutput).getOrNull(),

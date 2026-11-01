@@ -45,25 +45,46 @@ internal class ListenRecorder(private val playerProvider: () -> Player?) {
     var controlledBy: String = PlaybackListenValues.CONTROL_OTHER
         private set
 
-    /** Download or stream, once [PlaybackTelemetrySession] has looked it up. */
-    var playbackMode: String = PlaybackListenValues.MODE_STREAM
+    /** Download or stream once [PlaybackTelemetrySession] has looked it up, else unknown. */
+    var playbackMode: String = PlaybackListenValues.MODE_UNKNOWN
 
-    /** When the listener last asked to play, for the wait before sound; cleared when a listen starts. */
+    /** When the listener asked to play, for the wait before sound; cleared when a listen starts. */
     private var playRequestedAtMs: Long? = null
 
     /** What sent the last play request, for the next listen; null when nothing new asked. */
     private var pendingController: String? = null
 
+    /** When a media button named its real sender, which the session then hides behind the notification. */
+    private var mediaButtonAtMs: Long? = null
+
     private val errorsOnce = PlaybackErrorOnce()
 
-    /** The listener asked to play; the next listen's wait before sound counts from here. */
+    /**
+     * The listener asked to play; the next listen's wait before sound counts from here. A request
+     * already waiting from the last few seconds keeps its time, so resolving a resumed session
+     * (which asks before the player gets its items) counts in the wait.
+     */
     fun notePlayRequested() {
-        playRequestedAtMs = clock()
+        val now = clock()
+        val pending = playRequestedAtMs
+        if (pending == null || now - pending > REQUEST_GROUP_MS) playRequestedAtMs = now
     }
 
-    /** What sent a play request ([PlaybackListenValues] `CONTROL_*`), for the next listen. */
-    fun noteController(kind: String) {
+    /**
+     * What sent a play request ([PlaybackListenValues] `CONTROL_*`), for the next listen. Media3
+     * hands media buttons (a headset's play key) to the session as its notification controller, so
+     * [viaNotificationController] doesn't overwrite what [noteMediaButton] just recorded.
+     */
+    fun noteController(kind: String, viaNotificationController: Boolean = false,) {
+        val button = mediaButtonAtMs
+        if (viaNotificationController && button != null && clock() - button <= REQUEST_GROUP_MS) return
         pendingController = kind
+    }
+
+    /** A media button arrived from [kind]; the play it causes reaches the session as the notification. */
+    fun noteMediaButton(kind: String) {
+        pendingController = kind
+        mediaButtonAtMs = clock()
     }
 
     /** Opens a listen: its ID, its controller and the wait before sound. */
@@ -73,7 +94,8 @@ internal class ListenRecorder(private val playerProvider: () -> Player?) {
         playRequestedAtMs = null
         pendingController?.let { controlledBy = it }
         pendingController = null
-        playbackMode = PlaybackListenValues.MODE_STREAM
+        mediaButtonAtMs = null
+        playbackMode = PlaybackListenValues.MODE_UNKNOWN
         errorsOnce.reset()
         return ListenTally(
             listenId =
@@ -84,6 +106,11 @@ internal class ListenRecorder(private val playerProvider: () -> Player?) {
             startPositionMs = playerProvider()?.currentPosition?.coerceAtLeast(0L) ?: 0L,
             startWaitMs = startWaitMs,
         ).also { current = it }
+    }
+
+    /** Download or stream for [listenId], when it's still the listen in progress. */
+    fun resolvedPlaybackMode(listenId: String, mode: String,) {
+        if (current?.listenId == listenId) playbackMode = mode
     }
 
     /** Writes the note of the listen just opened. */
@@ -102,14 +129,30 @@ internal class ListenRecorder(private val playerProvider: () -> Player?) {
 
     /**
      * The player jumped from [fromMs] to [toMs] (a seek, a skip or a new item): audio up to [fromMs]
-     * counts, the jump doesn't. [userSeek] also counts it as one of the listener's seeks.
+     * counts for analytics, the jump doesn't. [userSeek] also counts it as one of the listener's
+     * seeks; [sameEpisode] false means the player moved on to another episode.
      */
-    fun jump(fromMs: Long, toMs: Long, userSeek: Boolean,) {
+    fun jump(fromMs: Long, toMs: Long, userSeek: Boolean, sameEpisode: Boolean = true,) {
         val listen = current ?: return
         val now = clock()
-        playerProvider()?.let { player -> listen.samplePosition(now, fromMs, player.isPlaying, player.playbackParameters.speed) }
+        listen.edge(now, fromMs, playerProvider()?.playbackParameters?.speed ?: 1f)
         if (userSeek) listen.countSeek(fromMs, toMs)
+        if (!sameEpisode) listen.leaveEpisode(fromMs)
         listen.moveTo(now, toMs)
+    }
+
+    /**
+     * The last sample of a listen that's ending. The local count samples exactly as it always has;
+     * when playback already stopped, analytics also counts the audio since the last sample, unless
+     * the player has moved on to another episode.
+     */
+    fun close(player: Player) {
+        val listen = current ?: return
+        val now = clock()
+        val speed = player.playbackParameters.speed
+        if (!player.isPlaying && listen.leftEpisodeAtMs == null) listen.edge(now, player.currentPosition, speed)
+        listen.samplePosition(now, player.currentPosition, player.isPlaying, speed)
+        listen.finish(now)
     }
 
     /** True the first time [cause] fails for [episodeId] since the last listen started. */
@@ -121,6 +164,7 @@ internal class ListenRecorder(private val playerProvider: () -> Player?) {
         current = null
         listenNotes?.ended()
         val player = playerProvider()
+        val output = runCatching(analyticsOutput).getOrDefault(PlaybackListenValues.OUTPUT_OTHER)
         AnalyticsHelper.trackPlaybackSessionEnded(
             PlaybackListenSummary(
                 listenId = listen.listenId,
@@ -136,14 +180,15 @@ internal class ListenRecorder(private val playerProvider: () -> Player?) {
                 heardMs = listen.heardMs,
                 elapsedMs = listen.elapsedMs(clock()),
                 startPositionMs = listen.startPositionMs,
-                endPositionMs = player?.currentPosition?.coerceAtLeast(0L) ?: listen.lastPositionMs,
+                endPositionMs = listen.leftEpisodeAtMs ?: player?.currentPosition?.coerceAtLeast(0L) ?: listen.lastPositionMs,
                 durationMs = context.durationMs,
                 completed = isCompleted,
                 previouslyFinished = context.previouslyFinished,
-                playbackMode = playbackMode,
+                // A Cast device streams the episode even when this phone holds a download.
+                playbackMode = if (output == PlaybackListenValues.OUTPUT_CAST) PlaybackListenValues.MODE_STREAM else playbackMode,
                 speed = player?.playbackParameters?.speed ?: 1f,
                 controlledBy = controlledBy,
-                output = runCatching(analyticsOutput).getOrDefault(PlaybackListenValues.OUTPUT_OTHER),
+                output = output,
                 seeks = listen.seeks,
                 startWaitMs = listen.startWaitMs,
                 bufferingCount = listen.bufferingCount,
@@ -169,5 +214,8 @@ internal class ListenRecorder(private val playerProvider: () -> Player?) {
     private companion object {
         /** A play request older than this isn't what started the listen, so it gives no wait before sound. */
         const val MAX_START_WAIT_MS = 120_000L
+
+        /** Requests this close together belong to one press (resumption, a media button and its play). */
+        const val REQUEST_GROUP_MS = 5_000L
     }
 }

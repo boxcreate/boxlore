@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.playback
 
+import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
@@ -119,6 +120,75 @@ class PlaybackTelemetrySessionListenTest {
         assertEquals("user_voluntary", record["pause_reason"])
         assertEquals(PlaybackListenValues.OUTPUT_BLUETOOTH, record["output"])
         assertEquals(3, record["queue_size"])
+    }
+
+    @Test
+    fun `a pause between samples still counts the last stretch, so a 60 second listen qualifies`() {
+        startListen()
+        play(59)
+        now += 1_000L
+        positionMs += 1_000L
+        isPlaying = false
+        session.end(reason = PlaybackListenValues.END_PAUSED)
+
+        val record = ended().single()
+        assertEquals(60f, record["heard_seconds"])
+        assertEquals(true, record["qualified"])
+    }
+
+    @Test
+    fun `an episode that hands over to the next one reports where it ended, not the next one's start`() {
+        durationMs = 600_000L
+        positionMs = 590_000L
+        startListen("e1")
+        play(10)
+        session.onPositionJump(fromMs = 600_000L, toMs = 0L, sameEpisode = false)
+        positionMs = 0L
+        session.end(isTransition = true)
+
+        assertEquals(600f, ended().single()["end_position_seconds"])
+    }
+
+    @Test
+    fun `a listen that ends before the download lookup answers says unknown, and Cast always streams`() {
+        startListen()
+        play(5)
+        session.end(reason = PlaybackListenValues.END_PAUSED)
+        assertEquals(PlaybackListenValues.MODE_UNKNOWN, ended().last()["playback_mode"])
+
+        startListen()
+        session.listens.resolvedPlaybackMode(requireNotNull(session.listens.current).listenId, PlaybackListenValues.MODE_DOWNLOAD)
+        session.listens.analyticsOutput = { PlaybackListenValues.OUTPUT_CAST }
+        play(5)
+        session.end(reason = PlaybackListenValues.END_PAUSED)
+        assertEquals(PlaybackListenValues.MODE_STREAM, ended().last()["playback_mode"])
+    }
+
+    @Test
+    fun `the wait before sound counts from the first request of a press, resumption included`() {
+        session.listens.notePlayRequested()
+        now += 3_000L
+        session.listens.notePlayRequested()
+        now += 500L
+        startListen()
+        session.end(reason = PlaybackListenValues.END_PAUSED)
+
+        assertEquals(3_500L, ended().single()["start_wait_ms"])
+    }
+
+    @Test
+    fun `a headset button stays the controller although the session hands it over as the notification`() {
+        session.listens.noteMediaButton(PlaybackListenValues.CONTROL_OTHER)
+        session.listens.noteController(PlaybackListenValues.CONTROL_NOTIFICATION, viaNotificationController = true)
+        startListen("e1")
+        session.end(reason = PlaybackListenValues.END_PAUSED)
+
+        now += 60_000L
+        session.listens.noteController(PlaybackListenValues.CONTROL_NOTIFICATION, viaNotificationController = true)
+        startListen("e2")
+        session.end(reason = PlaybackListenValues.END_PAUSED)
+
+        assertEquals(listOf("other", "notification"), ended().map { it["controlled_by"] })
     }
 
     @Test
@@ -242,15 +312,21 @@ class PlaybackTelemetrySessionListenTest {
         repeat(5) { session.trackPlayerError(network) }
         session.trackPlayerError(decoder)
         session.end(reason = PlaybackListenValues.END_PAUSED)
+        // Offline, trying A, B and A again before any sound: each episode's failure is sent once.
+        var current = "e1"
+        `when`(player.currentMediaItem).thenAnswer { MediaItem.Builder().setMediaId(current).build() }
+        listOf("e1", "e2", "e1").forEach {
+            current = it
+            session.trackPlayerError(network)
+        }
+        current = "e1"
         startListen()
         session.trackPlayerError(network)
 
-        val errors = recorder.filter { it.first == "playback_error" }.map { it.second["error_code"] }
-        assertEquals(
-            listOf("ERROR_CODE_IO_NETWORK_CONNECTION_FAILED", "ERROR_CODE_DECODING_FAILED", "ERROR_CODE_IO_NETWORK_CONNECTION_FAILED"),
-            errors,
-        )
-        assertEquals(3, recorder.count { it.first == "\$exception" }, "each one also goes to error tracking")
+        val errors = recorder.filter { it.first == "playback_error" }.map { it.second["episode_id"] to it.second["error_code"] }
+        val io = "ERROR_CODE_IO_NETWORK_CONNECTION_FAILED"
+        assertEquals(listOf("e1" to io, "e1" to "ERROR_CODE_DECODING_FAILED", "e2" to io, "e1" to io), errors)
+        assertEquals(4, recorder.count { it.first == "\$exception" }, "each one also goes to error tracking")
     }
 
     private class FakeNoteStore : ListenNoteStore {

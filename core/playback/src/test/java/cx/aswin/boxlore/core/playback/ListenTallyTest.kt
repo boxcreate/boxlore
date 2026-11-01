@@ -25,7 +25,7 @@ class ListenTallyTest {
 
         assertEquals(600_000L, tally.heardMs)
         assertEquals(600_000L, tally.elapsedMs(now))
-        assertEquals(600_000L, tally.heardWallMs)
+        assertEquals(600_000L, tally.sampledWallMs)
         assertEquals(800L, tally.startWaitMs)
     }
 
@@ -36,7 +36,7 @@ class ListenTallyTest {
         tally.play(600, speed = 2f)
 
         assertEquals(1_200_000L, tally.heardMs)
-        assertEquals(600_000L, tally.heardWallMs)
+        assertEquals(600_000L, tally.sampledWallMs)
         assertEquals(600_000L, tally.elapsedMs(now))
     }
 
@@ -59,6 +59,34 @@ class ListenTallyTest {
 
         assertEquals(20_000L, tally.heardMs)
         assertEquals(ListenSeeks(forward = 1, back = 1, forwardMs = 120_000L, backMs = 30_000L), tally.seeks)
+    }
+
+    @Test
+    fun `edges before a jump count for analytics only, so the local count stays as it was`() {
+        val tally = ListenTally("l1", startedAtMs = now, startPositionMs = 0L, startWaitMs = null)
+        tally.play(4)
+
+        now += 500L
+        tally.edge(now, 4_500L, speed = 1f)
+        tally.countSeek(fromMs = 4_500L, toMs = 34_500L)
+        tally.moveTo(now, 34_500L)
+        now += 500L
+        tally.samplePosition(now, 35_000L, isPlaying = true, speed = 1f)
+
+        assertEquals(4_500L, tally.sampledMs, "the samples alone, as the local record always counted")
+        assertEquals(5_000L, tally.heardMs, "plus the half second heard before the seek")
+    }
+
+    @Test
+    fun `leaving the episode keeps where it was left`() {
+        val tally = ListenTally("l1", startedAtMs = now, startPositionMs = 590_000L, startWaitMs = null)
+        tally.play(10)
+
+        tally.leaveEpisode(600_000L)
+        tally.moveTo(now, 0L)
+        tally.leaveEpisode(0L)
+
+        assertEquals(600_000L, tally.leftEpisodeAtMs)
     }
 
     @Test
