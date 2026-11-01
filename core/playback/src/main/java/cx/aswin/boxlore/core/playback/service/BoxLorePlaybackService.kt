@@ -152,6 +152,9 @@ open class BoxLorePlaybackService :
 
     @Volatile private var cachedSameShowQueueOnly = false
 
+    /** The last value `onIsPlayingChanged` reported, so a pause during rebuffering still ends the listen. */
+    private var lastReportedIsPlaying = false
+
     // Breaks circular lazy init between telemetry ↔ intro/outro controllers.
     private var introOutroControllerRef: PlaybackIntroOutroController? = null
 
@@ -180,6 +183,9 @@ open class BoxLorePlaybackService :
             session.listeningOutput = { ListeningOutputRoute.current(this, mediaSession?.player ?: playbackPlayer) }
             val prefs = cx.aswin.boxlore.core.prefs.BoxcastPrefs(applicationContext)
             session.listeningDeviceId = { prefs.getOrCreateListeningDeviceId() }
+            session.listens.analyticsOutput = { ListeningOutputRoute.forAnalytics(this, mediaSession?.player ?: playbackPlayer) }
+            session.listens.isAppInBackground = { !PlaybackUiVisibility.isForeground.value }
+            session.listens.listenNotes = cx.aswin.boxlore.core.playback.ListenNoteKeeper(cx.aswin.boxlore.core.playback.PrefsListenNoteStore(this))
         }
     }
 
@@ -360,8 +366,9 @@ open class BoxLorePlaybackService :
                         "BoxCastPlayer",
                         "onPositionDiscontinuity: reason=$reason, from ${oldPosition.positionMs} to ${newPosition.positionMs}",
                     )
-                    telemetrySession.noteSeekPosition(newPosition.positionMs)
-                    if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+                    if (reason != Player.DISCONTINUITY_REASON_SEEK) {
+                        telemetrySession.onPositionJump(oldPosition.positionMs, newPosition.positionMs, sameEpisode = isSameEpisode(oldPosition, newPosition))
+                    } else {
                         telemetrySession.updateHeartbeatsForPosition(
                             newPosition.positionMs,
                             telemetrySession.totalDurationMs,
@@ -378,6 +385,13 @@ open class BoxLorePlaybackService :
                         android.util.Log.d(
                             "BoxCastPlayer",
                             "onPositionDiscontinuity (SEEK): source=$source, reason=$reason, from ${oldPosition.positionMs} to ${newPosition.positionMs}",
+                        )
+                        val sameEpisode = isSameEpisode(oldPosition, newPosition)
+                        telemetrySession.onPositionJump(
+                            oldPosition.positionMs,
+                            newPosition.positionMs,
+                            userSeek = !seekResult.isLifecycleSeek && sameEpisode,
+                            sameEpisode = sameEpisode,
                         )
                         val epId = telemetrySession.episodeId
                         if (!seekResult.isLifecycleSeek && epId != null) {
@@ -430,6 +444,7 @@ open class BoxLorePlaybackService :
                 }
 
                 override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int,) {
+                    if (playWhenReady) telemetrySession.listens.notePlayRequested()
                     if (!playWhenReady) {
                         val pauseReason =
                             when (reason) {
@@ -444,6 +459,7 @@ open class BoxLorePlaybackService :
                             "BoxCastPlayer",
                             "onPlayWhenReadyChanged: playWhenReady=false, reason=$reason, pauseReason=$pauseReason",
                         )
+                        endStalledListen(player)
                     }
                     reconcilePausedIdleTeardown(player)
                 }
@@ -458,6 +474,7 @@ open class BoxLorePlaybackService :
                             .setPauseReason("audio_focus_loss_transient")
                         android.util.Log.d("BoxCastPlayer", "onPlaybackSuppressionReasonChanged: transient audio focus loss")
                     }
+                    if (reason != Player.PLAYBACK_SUPPRESSION_REASON_NONE) endStalledListen(player)
                 }
 
                 override fun onPlaybackStateChanged(playbackState: Int) {
@@ -468,6 +485,7 @@ open class BoxLorePlaybackService :
                             telemetrySession.onBufferingEnded()
                         }
                     }
+                    if (playbackState == Player.STATE_IDLE || playbackState == Player.STATE_ENDED) endStalledListen(player)
                     when (playbackState) {
                         Player.STATE_READY -> {
                             introOutroController.onReadyOrPlaying(player)
@@ -509,6 +527,7 @@ open class BoxLorePlaybackService :
         player.addListener(
             object : Player.Listener {
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    lastReportedIsPlaying = isPlaying
                     val currentItem = player.currentMediaItem
                     val episodeId = currentItem?.mediaId?.stripEpisodePrefix()
 
@@ -532,15 +551,9 @@ open class BoxLorePlaybackService :
                                 player = player,
                                 activePlaybackEnded = wasActive,
                             )
-                        val shouldEndSession =
-                            !player.playWhenReady ||
-                                player.playbackState == Player.STATE_ENDED ||
-                                player.playbackState == Player.STATE_IDLE ||
-                                player.playbackSuppressionReason != Player.PLAYBACK_SUPPRESSION_REASON_NONE
-
-                        if (shouldEndSession) {
+                        ListenEndRule.reason(player)?.let { endReason ->
                             telemetrySession.lastPausedEpisodeId = episodeId
-                            telemetrySession.end(forceCompleted = false)
+                            telemetrySession.end(forceCompleted = false, reason = endReason)
                         }
 
                         progressSaverJob?.cancel()
@@ -585,6 +598,7 @@ open class BoxLorePlaybackService :
                     seekBackMs = { cachedSeekBackwardMs },
                     onSeekByConfiguredIncrement = ::seekByConfiguredIncrement,
                     onSkipNext = ::handleSkipNext,
+                    onPlayRequested = ::notePlayController,
                     callback = AutoBrowseLibraryCallback(this),
                     seekButtons = buttons,
                 )
@@ -641,14 +655,51 @@ open class BoxLorePlaybackService :
         android.util.Log.d("BoxCastPlayer", "$source to ${target}ms")
     }
 
+    /** Labels the next listen with what asked to play, when a controller sent the request (not the service itself). */
+    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+    private fun notePlayController() {
+        val session = mediaSession ?: return
+        val controller = session.controllerForCurrentRequest ?: return
+        telemetrySession.listens.noteController(
+            PlaybackControllerKind.of(session, controller, packageName),
+            viaNotificationController = runCatching { session.isMediaNotificationController(controller) }.getOrDefault(false),
+        )
+    }
+
+    override fun noteMediaButton(session: MediaSession, controller: MediaSession.ControllerInfo,) {
+        telemetrySession.listens.noteMediaButton(PlaybackControllerKind.of(session, controller, packageName))
+    }
+
+    override fun notePlaybackResumptionRequested() {
+        telemetrySession.listens.notePlayRequested()
+    }
+
+    /**
+     * Sound already stopped for rebuffering (the listen stayed open), and now the listener paused or
+     * stopped: no second "stopped playing" callback comes, so the listen ends here ([ListenEndRule]).
+     */
+    private fun endStalledListen(player: Player) {
+        if (lastReportedIsPlaying) return
+        val endReason = ListenEndRule.reason(player) ?: return
+        telemetrySession.lastPausedEpisodeId = player.currentMediaItem?.mediaId?.stripEpisodePrefix()
+        telemetrySession.end(forceCompleted = false, reason = endReason)
+    }
+
+    /** Whether a jump stays inside one episode (a seek), rather than moving to another item. */
+    private fun isSameEpisode(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo,): Boolean =
+        oldPosition.mediaItemIndex == newPosition.mediaItemIndex &&
+            oldPosition.mediaItem?.mediaId == newPosition.mediaItem?.mediaId
+
     private fun handleRemotePositionDiscontinuity(
         player: Player,
         oldPosition: Player.PositionInfo,
         newPosition: Player.PositionInfo,
         reason: Int,
     ) {
-        telemetrySession.noteSeekPosition(newPosition.positionMs)
-        if (reason != Player.DISCONTINUITY_REASON_SEEK) return
+        if (reason != Player.DISCONTINUITY_REASON_SEEK) {
+            telemetrySession.onPositionJump(oldPosition.positionMs, newPosition.positionMs, sameEpisode = isSameEpisode(oldPosition, newPosition))
+            return
+        }
         telemetrySession.updateHeartbeatsForPosition(
             newPosition.positionMs,
             telemetrySession.totalDurationMs,
@@ -662,6 +713,13 @@ open class BoxLorePlaybackService :
                 durationMs = player.duration,
                 source = source,
             )
+        val sameEpisode = isSameEpisode(oldPosition, newPosition)
+        telemetrySession.onPositionJump(
+            oldPosition.positionMs,
+            newPosition.positionMs,
+            userSeek = !seekResult.isLifecycleSeek && sameEpisode,
+            sameEpisode = sameEpisode,
+        )
         val episodeId = telemetrySession.episodeId
         if (!seekResult.isLifecycleSeek && episodeId != null) {
             cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackPlaybackSeeked(
@@ -828,7 +886,7 @@ open class BoxLorePlaybackService :
                     },
                     isStillIdle = { isPausedLocalTeardownEligible(player) },
                     tearDown = {
-                        telemetrySession.end(forceCompleted = false)
+                        telemetrySession.end(forceCompleted = false, reason = cx.aswin.boxlore.core.analytics.PlaybackListenValues.END_STOPPED)
                         introOutroController.reset(null, 0L)
                         player.pause()
                         stopSelf()
@@ -862,7 +920,7 @@ open class BoxLorePlaybackService :
     override fun onDestroy() {
         pausedIdleTeardownJob?.cancel()
         pausedIdleTeardownJob = null
-        telemetrySession.end(forceCompleted = false)
+        telemetrySession.end(forceCompleted = false, reason = cx.aswin.boxlore.core.analytics.PlaybackListenValues.END_APP_CLOSED)
         introOutroController.reset(null, 0L)
         clearEndOfEpisodeSleep()
         PlaybackActivationRequest.clear()
@@ -907,7 +965,7 @@ open class BoxLorePlaybackService :
                     playbackState = latestPlayer?.playbackState ?: Player.STATE_IDLE,
                 )
             if (!latestPlan.keepServiceRunning) {
-                telemetrySession.end(forceCompleted = false)
+                telemetrySession.end(forceCompleted = false, reason = cx.aswin.boxlore.core.analytics.PlaybackListenValues.END_APP_CLOSED)
                 introOutroController.reset(null, 0L)
                 finishTaskRemoval(rootIntent)
             }

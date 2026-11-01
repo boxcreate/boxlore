@@ -405,6 +405,9 @@ class BoxLoreApplication :
             // Registered before queued calls replay so early events keep the internal tag.
             environment.forEach { (key, value) -> PostHog.register(key, value) }
         }
+        // A listen the last run left unfinished because Android ended the app (queued until setup ends).
+        cx.aswin.boxlore.core.playback.ListenInterruptions
+            .reportLeftover(this)
     }
 
     /**

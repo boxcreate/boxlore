@@ -167,6 +167,12 @@ class GlossaryAllEventsEmissionTest {
                 "playback_seeked" to {
                     AnalyticsHelper.trackPlaybackSeeked("p1", "Pod", "e1", "Ep", 10f, 20f, 100f, "scrubber")
                 },
+                "playback_session_ended" to {
+                    AnalyticsHelper.trackPlaybackSessionEnded(ListenAnalyticsFixtures.summary())
+                },
+                "playback_interrupted" to {
+                    AnalyticsHelper.trackPlaybackInterrupted(ListenAnalyticsFixtures.interrupted())
+                },
                 "session_restore_prompt" to {
                     AnalyticsHelper.trackSessionRestorePrompt("shown", "e1", "p1", 12f)
                 },

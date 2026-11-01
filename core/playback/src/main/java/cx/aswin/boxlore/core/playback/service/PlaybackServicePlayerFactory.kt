@@ -46,6 +46,8 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
         val onSkipNext: () -> Unit,
         val callback: AutoBrowseLibraryCallback,
         val seekButtons: SeekButtons,
+        /** A play request reached the session's player; reads which controller sent it. */
+        val onPlayRequested: () -> Unit = {},
     )
 
     fun createExoPlayer(): ExoPlayer {
@@ -124,7 +126,18 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
         seekBackMs: () -> Long,
         onSeekByConfiguredIncrement: (Player, Long, String) -> Unit,
         onSkipNext: () -> Unit,
+        onPlayRequested: () -> Unit = {},
     ): ForwardingPlayer = object : ForwardingPlayer(player) {
+        override fun play() {
+            onPlayRequested()
+            super.play()
+        }
+
+        override fun setPlayWhenReady(playWhenReady: Boolean) {
+            if (playWhenReady) onPlayRequested()
+            super.setPlayWhenReady(playWhenReady)
+        }
+
         override fun getSeekForwardIncrement(): Long = seekForwardMs()
 
         override fun getSeekBackIncrement(): Long = seekBackMs()
@@ -284,6 +297,7 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
                 seekBackMs = config.seekBackMs,
                 onSeekByConfiguredIncrement = config.onSeekByConfiguredIncrement,
                 onSkipNext = config.onSkipNext,
+                onPlayRequested = config.onPlayRequested,
             )
         val customActions = buildCustomActions()
         val pendingIntent = createPlayerSessionActivityIntent()

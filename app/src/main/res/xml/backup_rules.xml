@@ -18,6 +18,8 @@
     <exclude domain="sharedpref" path="boxlore_test_updates.xml" />
     <exclude domain="sharedpref" path="boxlore_update_session.xml" />
     <exclude domain="sharedpref" path="boxlore_test_update_session.xml" />
+    <!-- The note of a listen in progress belongs to this run; restored, it would report a cut-off listen again. -->
+    <exclude domain="sharedpref" path="boxlore_listen_note.xml" />
     <!-- Rebuild WorkManager jobs from DataStore instead of restoring stale schedules. -->
     <exclude domain="database" path="androidx.work.workdb" />
     <exclude domain="database" path="androidx.work.workdb-journal" />

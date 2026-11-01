@@ -9,6 +9,7 @@ import android.media.AudioManager
 import android.os.Build
 import androidx.media3.common.DeviceInfo
 import androidx.media3.common.Player
+import cx.aswin.boxlore.core.analytics.PlaybackListenValues
 import cx.aswin.boxlore.core.database.ListeningSessionValues
 
 /**
@@ -24,6 +25,28 @@ internal object ListeningOutputRoute {
         val audio = context.getSystemService(AudioManager::class.java) ?: return@runCatching null
         classify(activeOutputTypes(audio))
     }.getOrNull()
+
+    /**
+     * Where the sound goes for a listen's `output`: Cast, Bluetooth, wired (or USB) headphones, the
+     * speaker, or other. The car counts as a controller, not an output, so car mode reads the audio
+     * route like anywhere else.
+     */
+    fun forAnalytics(context: Context, player: Player?,): String = runCatching {
+        if (player?.deviceInfo?.playbackType == DeviceInfo.PLAYBACK_TYPE_REMOTE) return@runCatching PlaybackListenValues.OUTPUT_CAST
+        val audio = context.getSystemService(AudioManager::class.java) ?: return@runCatching PlaybackListenValues.OUTPUT_OTHER
+        analyticsOutputOf(activeOutputTypes(audio))
+    }.getOrDefault(PlaybackListenValues.OUTPUT_OTHER)
+
+    /**
+     * A listen's `output` among [deviceTypes], in [classify]'s order. Hearing aids connect over
+     * Bluetooth, so they count as Bluetooth here, not as headphones.
+     */
+    fun analyticsOutputOf(deviceTypes: Collection<Int>): String = when {
+        deviceTypes.any { it in BLUETOOTH || it == AudioDeviceInfo.TYPE_HEARING_AID } -> PlaybackListenValues.OUTPUT_BLUETOOTH
+        deviceTypes.any { it in HEADPHONES } -> PlaybackListenValues.OUTPUT_WIRED
+        deviceTypes.any { it in SPEAKER } -> PlaybackListenValues.OUTPUT_SPEAKER
+        else -> PlaybackListenValues.OUTPUT_OTHER
+    }
 
     /**
      * The route among [deviceTypes]: Bluetooth before wired headphones before the speaker, which is

@@ -97,7 +97,7 @@ class AnalyticsBudgetTest {
     private companion object {
         const val SDK_BACKED = "sdk_backed:"
 
-        /** About 252 under today's defaults; lower it as the listening record and page views land. */
-        const val MONTHLY_BUDGET_PER_INSTALL = 260.0
+        /** About 216 with the listening record; lower it again as page views land. */
+        const val MONTHLY_BUDGET_PER_INSTALL = 225.0
     }
 }
