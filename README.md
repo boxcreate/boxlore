@@ -92,6 +92,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>After importing your library or picking shows in search, choose whether to see similar shows or go straight to Home, and skip to Home anytime while suggestions load. <a href="https://github.com/boxcreate/boxlore/pull/1194"><img src="https://img.shields.io/badge/PR-1194-6750A4?style=flat-square" alt="PR #1194" height="18"/></a></li>
 <li>When boxlore needs a quick check that you're a person before Echo can suggest shows, Echo asks for it in its own voice, and the check fits in with the rest of the screen. Fewer phones need it: phones that are slow to confirm they run genuine boxlore now get more time to finish in the background. <a href="https://github.com/boxcreate/boxlore/pull/1205"><img src="https://img.shields.io/badge/PR-1205-6750A4?style=flat-square" alt="PR #1205" height="18"/></a></li>
 <li>New-episode notifications arrive sooner after a release. <a href="https://github.com/boxcreate/boxlore/pull/1151"><img src="https://img.shields.io/badge/PR-1151-6750A4?style=flat-square" alt="PR #1151" height="18"/></a></li>
+<li>boxlore asks to send notifications only when you turn them on for a show or finish importing your library, not every time you open Home. <a href="https://github.com/boxcreate/boxlore/pull/1226"><img src="https://img.shields.io/badge/PR-1226-6750A4?style=flat-square" alt="PR #1226" height="18"/></a></li>
 <li>On Explore, tap the Explore tab again to start searching. From a show or episode you opened in Explore, the first tap takes you back to Explore.</li>
 </ul>
 <b>🐛 Fixed:</b>
@@ -117,6 +118,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>If boxlore can't check Google Play for updates, it offers to open its Play Store page so you can update there. <a href="https://github.com/boxcreate/boxlore/pull/1197"><img src="https://img.shields.io/badge/PR-1197-6750A4?style=flat-square" alt="PR #1197" height="18"/></a></li>
 <li>Clearing boxlore's data no longer opens a random episode on the next launch. <a href="https://github.com/boxcreate/boxlore/pull/1185"><img src="https://img.shields.io/badge/PR-1185-6750A4?style=flat-square" alt="PR #1185" height="18"/></a></li>
 <li>On an episode's page, More from shows the show's cover instead of a placeholder, and its header stands out from the episodes below it. <a href="https://github.com/boxcreate/boxlore/pull/1219"><img src="https://img.shields.io/badge/PR-1219-6750A4?style=flat-square" alt="PR #1219" height="18"/></a></li>
+<li>The prompt to rate boxlore counts only episodes you finish in boxlore on this phone, waits two days after you install or import your library, and doesn't ask twice for the same milestone. <a href="https://github.com/boxcreate/boxlore/pull/1226"><img src="https://img.shields.io/badge/PR-1226-6750A4?style=flat-square" alt="PR #1226" height="18"/></a></li>
 </ul>
 <!-- release-upcoming:end -->
 
