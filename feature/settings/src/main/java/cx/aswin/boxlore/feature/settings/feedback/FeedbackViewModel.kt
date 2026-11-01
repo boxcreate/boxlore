@@ -16,6 +16,7 @@ import cx.aswin.boxlore.core.support.SendResult
 import cx.aswin.boxlore.core.support.SupportMeta
 import cx.aswin.boxlore.core.support.SupportRepository
 import java.net.URLEncoder
+import java.security.MessageDigest
 import java.util.UUID
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -100,21 +101,70 @@ internal fun limitedMessage(current: String, next: String, limit: Int): String =
     else -> next.take(limit)
 }
 
+/** Where a retry key outlives the screen: (fingerprint of the content, key). */
+interface RetryKeyStore {
+    fun load(): Pair<String, String>?
+
+    fun save(fingerprint: String, key: String)
+
+    fun clear()
+}
+
+/** [RetryKeyStore] in the feature's own preferences file, so a send retried after the app was closed keeps its key. */
+class SharedPrefsRetryKeyStore(context: Context) : RetryKeyStore {
+    private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    override fun load(): Pair<String, String>? {
+        val fingerprint = prefs.getString(KEY_FINGERPRINT, null) ?: return null
+        val key = prefs.getString(KEY_REQUEST, null) ?: return null
+        return fingerprint to key
+    }
+
+    override fun save(fingerprint: String, key: String) {
+        prefs.edit().putString(KEY_FINGERPRINT, fingerprint).putString(KEY_REQUEST, key).apply()
+    }
+
+    override fun clear() {
+        prefs.edit().clear().apply()
+    }
+
+    private companion object {
+        const val PREFS_NAME = "boxlore_feedback_retry"
+        const val KEY_FINGERPRINT = "fingerprint"
+        const val KEY_REQUEST = "request_id"
+    }
+}
+
 /**
  * One retry key per message: sending the same content again (after a failure whose answer may
- * have been lost) reuses the key, so the API saves it once; changed content gets a new key.
+ * have been lost) reuses the key, so the API saves it once; changed content gets a new key. With a
+ * [store] the key also survives the screen closing or the app being killed.
  */
-internal class RetryKeys(private val newKey: () -> String = { UUID.randomUUID().toString() }) {
+internal class RetryKeys(
+    private val newKey: () -> String = { UUID.randomUUID().toString() },
+    private val store: RetryKeyStore? = null,
+) {
     private var last: Pair<Any, String>? = null
 
     fun keyFor(content: Any): String {
         last?.let { (seen, key) -> if (seen == content) return key }
-        return newKey().also { last = content to it }
+        val fingerprint = fingerprintOf(content)
+        store?.load()?.let { (saved, key) ->
+            if (saved == fingerprint) return key.also { last = content to it }
+        }
+        return newKey().also {
+            last = content to it
+            store?.save(fingerprint, it)
+        }
     }
 
     fun clear() {
         last = null
+        store?.clear()
     }
+
+    private fun fingerprintOf(content: Any): String =
+        MessageDigest.getInstance("SHA-256").digest(content.toString().toByteArray()).joinToString("") { "%02x".format(it) }
 }
 
 /** What the screen needs from support; the factory wires [SupportRepository], tests pass fakes. */
@@ -134,15 +184,17 @@ private sealed interface PhotoBatch {
     data object Failed : PhotoBatch
 }
 
-class FeedbackViewModel(
+class FeedbackViewModel internal constructor(
     private val support: FeedbackSupport,
     private val boxcastPrefs: BoxcastPrefs,
     private val context: Context,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val readPhoto: (Uri) -> ByteArray? = { uri -> PhotoPrep.prepare(context.contentResolver, uri) },
+    private val retryKeys: RetryKeys = RetryKeys(),
 ) : ViewModel() {
 
-    private val retryKeys = RetryKeys()
+    /** Photos already uploaded for this message, so a retry doesn't upload (and count) them again. */
+    private val uploadedPhotos = mutableMapOf<Uri, String>()
     private val _uiState = MutableStateFlow(FeedbackUiState())
     val uiState: StateFlow<FeedbackUiState> = _uiState.asStateFlow()
 
@@ -216,6 +268,7 @@ class FeedbackViewModel(
     fun onDiscardDraft() {
         if (sending) return
         boxcastPrefs.clearFeedbackDraft()
+        retryKeys.clear()
         _uiState.update {
             it.copy(
                 categoryId = FeedbackCategory.FEATURE.id,
@@ -302,10 +355,15 @@ class FeedbackViewModel(
         if (!state.meta.photosEnabled) return PhotoBatch.Unavailable
         val ids = mutableListOf<String>()
         for (photo in state.photos) {
+            val uploaded = uploadedPhotos[photo.uri]
+            if (uploaded != null) {
+                ids += uploaded
+                continue
+            }
             val bytes = withContext(ioDispatcher) { readPhoto(photo.uri) } ?: return PhotoBatch.Failed
             if (state.meta.maxPhotoBytes > 0 && bytes.size > state.meta.maxPhotoBytes) return PhotoBatch.Failed
             when (val upload = support.uploadPhoto(bytes, "image/jpeg")) {
-                is PhotoUpload.Uploaded -> ids += upload.id
+                is PhotoUpload.Uploaded -> ids += upload.id.also { uploadedPhotos[photo.uri] = it }
                 PhotoUpload.Unavailable -> return PhotoBatch.Unavailable
                 PhotoUpload.Failed -> return PhotoBatch.Failed
             }
@@ -331,6 +389,7 @@ class FeedbackViewModel(
                 )
                 boxcastPrefs.clearFeedbackDraft()
                 retryKeys.clear()
+                uploadedPhotos.clear()
                 _uiState.update {
                     it.copy(
                         isSubmitting = false,
@@ -364,6 +423,7 @@ class FeedbackViewModel(
             ),
             boxcastPrefs = boxcastPrefs,
             context = context.applicationContext,
+            retryKeys = RetryKeys(store = SharedPrefsRetryKeyStore(context.applicationContext)),
         ) as T
     }
 }

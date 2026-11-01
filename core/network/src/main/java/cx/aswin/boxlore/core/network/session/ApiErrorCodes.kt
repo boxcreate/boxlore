@@ -13,11 +13,15 @@ object ApiErrorCodes {
     const val VERIFICATION_REQUIRED = "verification_required"
     const val DAILY_AI_LIMIT = "daily_ai_limit"
 
+    /** Support routes: the session has no device key, or the request wasn't signed with it. */
+    const val DEVICE_KEY_REQUIRED = "device_key_required"
+    const val PROOF_REQUIRED = "proof_required"
+
     /** The session itself was refused: get a new one once, then retry. */
     val SESSION_REJECTIONS = setOf(SESSION_EXPIRED, SESSION_INVALID, SESSION_REVOKED)
 
     /** Answers about the API session, never about a Firebase sign-in. */
-    val SHIELD_CODES = SESSION_REJECTIONS + setOf(SESSION_REQUIRED, VERIFICATION_REQUIRED, DAILY_AI_LIMIT)
+    val SHIELD_CODES = SESSION_REJECTIONS + setOf(SESSION_REQUIRED, VERIFICATION_REQUIRED, DAILY_AI_LIMIT, DEVICE_KEY_REQUIRED, PROOF_REQUIRED)
 
     /** AI routes refused for this session even after any step-up: onboarding uses its non-AI path. */
     val AI_UNAVAILABLE = setOf(VERIFICATION_REQUIRED, DAILY_AI_LIMIT)

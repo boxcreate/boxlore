@@ -44,6 +44,15 @@ object NetworkModule {
 
     private val sessionInterceptor = ApiSessionInterceptor { sessionManager }
 
+    /**
+     * The signed-in account's Firebase ID token (cached, may block briefly on an OkHttp thread), set
+     * by app wiring. Support requests carry it so the API links conversations to the account.
+     */
+    @Volatile
+    var accountToken: (() -> String?)? = null
+
+    private val accountTokenInterceptor = AccountTokenInterceptor { accountToken?.invoke() }
+
     /** Signs support requests with the device key (see [RequestProofInterceptor]). */
     private val requestProofInterceptor = RequestProofInterceptor { token, method, path -> sessionManager?.requestProofs?.proof(token, method, path) }
 
@@ -130,10 +139,14 @@ object NetworkModule {
 
     /**
      * Builds [SupportApi] on [client] (production: the cached client from [createCachedClient]),
-     * with every request signed by the device key, which the support routes require.
+     * with every request signed by the device key, which the support routes require, and the
+     * account's ID token when signed in ([accountToken]).
      */
     fun createSupportApi(baseUrl: String, client: OkHttpClient): SupportApi =
-        retrofit(baseUrl, client.newBuilder().addNetworkInterceptor(requestProofInterceptor).build()).create(SupportApi::class.java)
+        retrofit(
+            baseUrl,
+            client.newBuilder().addInterceptor(accountTokenInterceptor).addNetworkInterceptor(requestProofInterceptor).build(),
+        ).create(SupportApi::class.java)
 
     private fun retrofit(baseUrl: String, client: OkHttpClient): Retrofit = Retrofit.Builder()
         .baseUrl(baseUrl)

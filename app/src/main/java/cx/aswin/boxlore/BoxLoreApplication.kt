@@ -170,6 +170,12 @@ class BoxLoreApplication :
             cx.aswin.boxlore.core.model.EpisodeShareTargetSource { container.episodeSharePreparer.targetFor(it) }
         NetworkModule.authenticator =
             FirebaseAuthAuthenticator(container.authRepository)
+        // Support requests carry the account's cached token, so conversations follow the account.
+        NetworkModule.accountToken = {
+            kotlinx.coroutines.runBlocking {
+                kotlinx.coroutines.withTimeoutOrNull(ACCOUNT_TOKEN_WAIT_MS) { container.authRepository.getIdToken(forceRefresh = false) }
+            }
+        }
         cx.aswin.boxlore.lifecycle.AutoDownloadLifecycle(this, container, applicationScope).start()
         HomeScreenWidgetsInstaller.install(
             context = this,
@@ -514,3 +520,6 @@ internal object CastSessionTransferPolicy {
 }
 
 private const val CAST_SESSION_RECHECK_DELAY_MS = 15_000L
+
+/** How long a support request waits for the account's token before going without it. */
+private const val ACCOUNT_TOKEN_WAIT_MS = 3_000L

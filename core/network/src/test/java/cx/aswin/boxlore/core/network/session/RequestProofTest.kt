@@ -48,6 +48,27 @@ class RequestProofTest {
     }
 
     @Test
+    fun `support requests carry the account token when signed in, and nothing when signed out`() {
+        val server = MockWebServer().apply { start() }
+        try {
+            var token: String? = "id-token-1"
+            val client = OkHttpClient.Builder().addInterceptor(cx.aswin.boxlore.core.network.AccountTokenInterceptor { token }).build()
+            server.enqueue(MockResponse())
+            server.enqueue(MockResponse())
+            server.enqueue(MockResponse())
+            client.newCall(Request.Builder().url(server.url("/support/threads")).build()).execute().close()
+            client.newCall(Request.Builder().url(server.url("/support/threads")).header("Authorization", "Bearer other").build()).execute().close()
+            token = null
+            client.newCall(Request.Builder().url(server.url("/support/threads")).build()).execute().close()
+            assertEquals("Bearer id-token-1", server.takeRequest().getHeader("Authorization"))
+            assertEquals("Bearer other", server.takeRequest().getHeader("Authorization"))
+            assertNull(server.takeRequest().getHeader("Authorization"))
+        } finally {
+            server.shutdown()
+        }
+    }
+
+    @Test
     fun `the interceptor signs the session the request carries, and leaves other requests alone`() {
         val server = MockWebServer().apply { start() }
         try {

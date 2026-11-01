@@ -235,9 +235,39 @@ class FeedbackViewModelTest {
     }
 
     @Test
+    fun a_retry_key_outlives_the_screen_and_photos_upload_once() = runTest(testDispatcher) {
+        val saved = object : RetryKeyStore {
+            var value: Pair<String, String>? = null
+            override fun load() = value
+            override fun save(fingerprint: String, key: String) { value = fingerprint to key }
+            override fun clear() { value = null }
+        }
+        val support = FakeSupport(SupportMeta.Offline.copy(photosEnabled = true, maxPhotos = 3, maxPhotoBytes = 100)).apply { result = SendResult.Failed }
+        val first = FeedbackViewModel(support.asSupport(), prefs, context, ioDispatcher = testDispatcher, readPhoto = { ByteArray(10) }, retryKeys = RetryKeys(store = saved))
+        advanceUntilIdle()
+        first.onPhotosPicked(listOf(Uri.parse("content://a")))
+        first.onMessageChanged("Lost answer")
+        first.onSubmit()
+        advanceUntilIdle()
+        first.onSubmit()
+        advanceUntilIdle()
+        assertEquals("One upload for two tries", 1, support.uploads.size)
+
+        // The screen (or the app) went away: a new one sending the same message uses the same key.
+        val second = FeedbackViewModel(support.asSupport(), prefs, context, ioDispatcher = testDispatcher, readPhoto = { ByteArray(10) }, retryKeys = RetryKeys(store = saved))
+        advanceUntilIdle()
+        second.onPhotosPicked(listOf(Uri.parse("content://a")))
+        support.result = SendResult.Sent("t1")
+        second.onSubmit()
+        advanceUntilIdle()
+        assertEquals(1, support.sent.map { it.requestId }.distinct().size)
+        assertNull("Cleared once it was saved", saved.value)
+    }
+
+    @Test
     fun retry_keys_change_with_content_and_start_over_once_cleared() {
         var n = 0
-        val keys = RetryKeys { "key-${++n}" }
+        val keys = RetryKeys(newKey = { "key-${++n}" })
         assertEquals("key-1", keys.keyFor(listOf("bug", "a")))
         assertEquals("key-1", keys.keyFor(listOf("bug", "a")))
         assertEquals("key-2", keys.keyFor(listOf("bug", "b")))
