@@ -538,35 +538,13 @@ class UserPreferencesRepositoryTest {
         assertEquals(9, repository.npsLastScore())
     }
 
-    @Test
-    fun promoterReviewPendingRoundTrips() = runTest {
-        assertFalse(repository.isPromoterReviewPending())
-        repository.setPromoterReviewPending(true)
-        assertTrue(repository.isPromoterReviewPending())
-    }
-
-    // ---- NPS survey lifecycle ----
+    // ---- NPS survey ----
 
     @Test
-    fun npsSurveyPendingThenFiredLifecycle() = runTest {
-        assertFalse(repository.isNpsSurveyPending())
+    fun npsSurveyFiredLifecycle() = runTest {
         assertFalse(repository.hasNpsSurveyFired())
-        assertNull(repository.npsSurveyCompletedCount())
-
-        repository.markNpsSurveyPending(3)
-        assertTrue(repository.isNpsSurveyPending())
-        assertEquals(3, repository.npsSurveyCompletedCount())
-
         repository.markNpsSurveyFired()
         assertTrue(repository.hasNpsSurveyFired())
-        assertFalse(repository.isNpsSurveyPending())
-    }
-
-    @Test
-    fun markNpsSurveyPendingNoOpAfterFired() = runTest {
-        repository.markNpsSurveyFired()
-        repository.markNpsSurveyPending(10)
-        assertFalse(repository.isNpsSurveyPending())
     }
 
     // ---- Hide-completed toggles ----

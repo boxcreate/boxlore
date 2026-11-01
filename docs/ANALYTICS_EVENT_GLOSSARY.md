@@ -150,7 +150,9 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 | `show_notification_toggled` | Per-show notification preference changed | podcast_id:string; enabled:bool | — | none |
 | `share_content` | User shared podcast/episode/app | content_type:enum | podcast_id:string; episode_id:string; recipe_id:string; channel:string; surface:string | none |
 | `backup_restore_result` | Library backup or restore finished | action:string; success:bool | item_count:int; format:string; error_message:string | none |
-| `feedback_submitted` | NPS survey trigger (eligible or manual); the survey shows on any of these | feedback_type:string | score:int; source:string | none |
+| `survey shown` | The NPS survey sheet was on screen (PostHog's standard survey event) | $survey_id:string | — | none |
+| `survey sent` | NPS answers so far: the score at once (partial), then the follow-up (completed); answers as `$survey_response_<question_id>` | $survey_id:string; $survey_submission_id:string; $survey_completed:bool; $survey_questions:list | — | logged_by_policy |
+| `survey dismissed` | The NPS survey closed before any answer | $survey_id:string | — | none |
 | `engagement_prompt_shown` | A Home review prompt was shown | prompt_type:string; source:string | completed_episodes:int; nps_score:int | none |
 | `store_review_opened` | boxlore launched Play's review flow (Play may still not show the sheet) or opened the store page | method:string; source:string | — | none |
 | `feedback_sent` | In-app feedback form accepted by the server | category:string; with_email:bool; with_diagnostics:bool | — | none |

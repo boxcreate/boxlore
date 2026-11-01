@@ -13,11 +13,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
 import com.posthog.PostHog
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.playback.PlaybackRepository
-import cx.aswin.boxlore.surveys.NpsSurveyTriggers
 import cx.aswin.boxlore.ui.BoxLoreAppRoot
 import cx.aswin.boxlore.updates.PlayAppUpdateHelper
 
@@ -38,17 +36,8 @@ class MainActivity : ComponentActivity() {
     @Suppress("unused")
     private var isFirstResumeAfterLaunch = true
 
-    private val surveyPrefs by lazy {
-        (application as BoxLoreApplication).userPreferencesRepository
-    }
-    private val engagementCoordinator by lazy {
-        (application as BoxLoreApplication).engagementPromptCoordinator
-    }
-
     @Volatile
     private var playbackRepositoryRef: PlaybackRepository? = null
-
-    private fun isCurrentlyPlaying(): Boolean = playbackRepositoryRef?.playerState?.value?.isPlaying == true
 
     private val updateLauncher =
         registerForActivityResult(
@@ -165,12 +154,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun resumeForegroundPrompts() {
-        NpsSurveyTriggers.check(
-            surveyPrefs = surveyPrefs,
-            engagementCoordinator = engagementCoordinator,
-            isCurrentlyPlaying = ::isCurrentlyPlaying,
-            scope = lifecycleScope,
-        )
         appUpdates.foreground()
         if (appUpdates.usesPlay) playAppUpdateHelper.resumeInProgressUpdate()
     }

@@ -8,7 +8,6 @@ internal data class ReviewPromptRecord(
     val source: String,
     val completedEpisodes: Int? = null,
     val npsScore: Int? = null,
-    val isPromoterHandoff: Boolean = false,
 )
 
 /**

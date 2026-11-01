@@ -168,7 +168,7 @@ class AnalyticsGlossaryAllowlistTest {
     @Test
     fun `phase A union B has expected cardinality`() {
         // 40 Phase A (with onboarding_similar_choice, the two listen events and the two screen events) + 1 A/B + 29 Phase B + 5 Support + 2 custom-theme + 1 hero-style + 1 LeaveMeAlone events.
-        assertEquals(83, AnalyticsGlossary.PHASE_A_UNION_B.size)
+        assertEquals(85, AnalyticsGlossary.PHASE_A_UNION_B.size)
     }
 
     @Test
@@ -194,7 +194,8 @@ class AnalyticsGlossaryAllowlistTest {
         assertTrue(AnalyticsGlossary.isAllowedEvent("learn_card_action"))
         assertTrue(AnalyticsGlossary.isAllowedEvent("queue_modified"))
         assertTrue(AnalyticsGlossary.isAllowedEvent("search_performed"))
-        assertTrue(AnalyticsGlossary.isAllowedEvent("feedback_submitted"))
+        assertTrue(AnalyticsGlossary.isAllowedEvent("survey sent"))
+        assertFalse(AnalyticsGlossary.isAllowedEvent("feedback_submitted"))
         assertTrue(AnalyticsGlossary.isAllowedEvent("\$set"))
     }
 

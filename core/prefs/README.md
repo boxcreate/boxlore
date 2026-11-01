@@ -50,6 +50,8 @@ src/main/java/cx/aswin/boxlore/core/prefs/
   FontRoundnessAxis.kt
   HomePinnedShows.kt
   LibraryPreferences.kt
+  NpsSurveySchedule.kt
+  NpsSurveyStore.kt
   PlaybackSkipBounds.kt
   PreferenceIdList.kt
   PrefsFileMigrator.kt
@@ -82,6 +84,7 @@ src/main/java/cx/aswin/boxlore/core/prefs/
 - `subscription_manual_order` and `home_pinned_podcast_ids` live in the same `user_preferences` DataStore (do not rename the file). Unsubscribe drops that id from both lists.
 - `seen_listening_story` (`seenListeningStoryStream` / `setSeenListeningStory`, added 2026-10-31): the last monthly listening story opened, as `yyyy-MM`, so Listening history stops calling it New. Local to the phone.
 - Review prompt (`EngagementPreferences`): a milestone (5, 15 or 30 episodes finished in boxlore on this install; Home counts them) is stored as `review_milestone_pending` and, once a prompt shows, as `review_milestone_consumed`, so the same milestone never asks again. `shouldShowReviewPrompt` and `isInReviewQuietPeriod` take Android's install time (a backup doesn't carry it) and keep a 2-day quiet period (`REVIEW_QUIET_DAYS`) after it and after `library_imported_at` (`markLibraryImported`). `review_first_launch_at` (the old lazily set install day) is no longer read. The pending milestone follows the count, so one a backup brought onto a phone with no listening behind it is dropped; on the first sync after updating, an install already prompted counts milestone 5 (or the one it has reached) as used (`ReviewPromptPreferencesTest`). `has_logged_first_play` is read only so an updated install doesn't send `first_episode_played` again; the player claims it now. `UserPreferencesRepositoryTest` covers the quiet days after install and import and a used milestone never coming back.
+- NPS survey: `NpsSurveySchedule` decides when it may appear: right after the player on this phone plays an episode to the end in this run of boxlore (within 2 hours and never in the future; never on an open alone, a sync or a mark-played), with 3 episodes finished here, a week since install, not in the first run, outside the quiet days and the shared 14-day cooldown, and 90 days after it last appeared. `NpsSurveyStore` keeps when it last appeared and how many times boxlore has started in its own file, `boxlore_nps_survey`, which backups leave out, so a restored phone is asked afresh. Once per install `carryOverLegacy` makes an install that Android updated from an older version and that showed the old popover survey (`nps_survey_fired`) wait 90 days from the update; a fresh install, restored from a backup or not and however late it first opens, ignores the copied flag. `nps_survey_fired` and `nps_last_score` stay in `user_preferences`, because the milestone review prompt waits for the survey and skips low scores; the old pending and Play hand-off keys are no longer used. `unmet` names the rules a moment misses, for the debug screen, and `resetSchedule` (debug) forgets the last showing. `NpsSurveyScheduleTest` and `NpsSurveyStoreTest` cover each rule.
 - `legacy_rss_repair_*` keys are a crash-recovery contract; keep them until every shipping build that can begin the repair has aged out.
 
 ## Testing notes

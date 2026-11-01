@@ -25,7 +25,6 @@ import cx.aswin.boxlore.core.network.FirebaseAuthAuthenticator
 import cx.aswin.boxlore.core.network.NetworkModule
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.LearningEventLog
-import cx.aswin.boxlore.surveys.BoxcastPostHogSurveysDelegate
 import cx.aswin.boxlore.sync.CloudSyncWorker
 import cx.aswin.boxlore.ui.StartupWorkGate
 import cx.aswin.boxlore.widgets.HomeScreenWidgetsInstaller
@@ -180,7 +179,21 @@ class BoxLoreApplication :
             userPreferencesRepository = userPreferencesRepository,
             adaptiveScorer = { container.adaptiveCandidateScorer },
         )
-        engagementPromptCoordinator = EngagementPromptCoordinator(userPreferencesRepository)
+        engagementPromptCoordinator =
+            EngagementPromptCoordinator(userPreferencesRepository, cx.aswin.boxlore.core.prefs.NpsSurveyStore(this))
+        applicationScope.launch {
+            // Updated after installing: this install ran an older version (a fresh or restored install has not).
+            val updatedInstall =
+                runCatching { packageManager.getPackageInfo(packageName, 0).let { it.lastUpdateTime > it.firstInstallTime } }.getOrDefault(false)
+            try {
+                engagementPromptCoordinator.onAppLaunched(updatedInstall)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // A disk error here only skips one launch count; it must never crash startup.
+                android.util.Log.w("BoxLoreApplication", "Failed to record the launch for the NPS survey", e)
+            }
+        }
         scheduleOptionalStartup()
 
         // Live learner signal log: on by default in debug; release stays off unless the
@@ -373,22 +386,18 @@ class BoxLoreApplication :
         val environment = PostHogWiring.environment(debug = BuildConfig.DEBUG, isolatedTests = BuildConfig.BOXLORE_ISOLATED_TESTS)
         val config =
             PostHogAndroidConfig(
-                apiKey = BuildConfig.POSTHOG_API_KEY,
+                projectToken = BuildConfig.POSTHOG_API_KEY,
                 host = BuildConfig.POSTHOG_HOST,
             ).apply {
                 captureApplicationLifecycleEvents = true
                 captureScreenViews = false
                 captureDeepLinks = false
                 debug = BuildConfig.DEBUG
-                // PostHog Surveys with a Material3 1.5-compatible delegate (the published
-                // posthog-android-surveys-compose:0.1.0 module crashes against our M3 pin).
-                surveys = true
-                surveysConfig.surveysDelegate =
-                    BoxcastPostHogSurveysDelegate(
-                        context = this@BoxLoreApplication,
-                        userPrefs = userPreferencesRepository,
-                        engagementCoordinator = engagementPromptCoordinator,
-                    )
+                // The NPS survey is boxlore's own sheet (Home), reporting to an API survey; PostHog draws none.
+                surveys = false
+                // boxlore doesn't use PostHog push: never send it the FCM token or notification opens (on by default since 3.7x).
+                capturePushNotificationSubscriptions = false
+                capturePushNotificationOpened = false
                 onFeatureFlags =
                     PostHogWiring.onFlagsLoaded(
                         // LEGACY(own-ids): staged feed-first rollout; remove at S7 with rememberRolloutAnswers.

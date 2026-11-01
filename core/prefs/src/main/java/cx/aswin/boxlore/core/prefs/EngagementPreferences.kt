@@ -44,26 +44,16 @@ private object AnalyticsKeys {
         androidx.datastore.preferences.core
             .booleanPreferencesKey("review_has_reviewed")
 
-    // NPS survey: milestone marks eligibility (pending); the event fires on
-    // the next app open so it never surfaces during background playback.
-    val NPS_SURVEY_PENDING =
-        androidx.datastore.preferences.core
-            .booleanPreferencesKey("nps_survey_pending")
+    // NPS survey: whether it has appeared, which the milestone review prompt waits for.
     val NPS_SURVEY_FIRED =
         androidx.datastore.preferences.core
             .booleanPreferencesKey("nps_survey_fired")
-    val NPS_SURVEY_COMPLETED_COUNT =
-        androidx.datastore.preferences.core
-            .intPreferencesKey("nps_survey_completed_count")
     val ENGAGEMENT_LAST_PROMPT_AT =
         androidx.datastore.preferences.core
             .longPreferencesKey("engagement_last_prompt_at")
     val NPS_LAST_SCORE =
         androidx.datastore.preferences.core
             .intPreferencesKey("nps_last_score")
-    val PROMOTER_REVIEW_PENDING =
-        androidx.datastore.preferences.core
-            .booleanPreferencesKey("promoter_review_pending")
     val REVIEW_MILESTONE_PENDING =
         androidx.datastore.preferences.core
             .intPreferencesKey("review_milestone_pending")
@@ -286,49 +276,24 @@ internal class EngagementPreferences(private val dataStore: DataStore<Preference
     /** True when at least [EngagementPromptConstants.ENGAGEMENT_COOLDOWN_DAYS] have passed since the last prompt. */
     suspend fun isEngagementCooldownElapsed(): Boolean = isEngagementCooldownElapsed(dataStore.data.first())
 
-    /** Persists the most recent NPS score for milestone gating and promoter handoff. */
+    /** Debug: forgets the last proactive prompt, so the shared cooldown has passed. */
+    suspend fun clearEngagementCooldown() {
+        dataStore.edit { it.remove(AnalyticsKeys.ENGAGEMENT_LAST_PROMPT_AT) }
+    }
+
+    /** The latest NPS score; the milestone review prompt skips listeners who scored [EngagementPromptConstants.DETRACTOR_SCORE_MAX] or lower. */
     suspend fun setNpsLastScore(score: Int) {
         dataStore.edit { it[AnalyticsKeys.NPS_LAST_SCORE] = score }
     }
 
     suspend fun npsLastScore(): Int? = dataStore.data.first()[AnalyticsKeys.NPS_LAST_SCORE]
 
-    /** Sets whether a promoter Play review should show on the next eligible app open. */
-    suspend fun setPromoterReviewPending(pending: Boolean) {
-        dataStore.edit { it[AnalyticsKeys.PROMOTER_REVIEW_PENDING] = pending }
-    }
-
-    suspend fun isPromoterReviewPending(): Boolean = dataStore.data.first()[AnalyticsKeys.PROMOTER_REVIEW_PENDING] ?: false
-
-    // --- NPS SURVEY (PostHog) TRIGGER STATE ---
-    // The eligibility milestone (e.g. 3rd completed episode) can be reached
-    // while playback runs in the background. Rather than fire immediately, we
-    // mark the survey "pending" and let MainActivity fire the trigger event on
-    // the next app open. Firing happens at most once (guarded by the fired flag).
-
-    /** Mark the NPS survey pending (no-op if it has already fired). */
-    suspend fun markNpsSurveyPending(completedCount: Int) {
-        dataStore.edit { pref ->
-            if (pref[AnalyticsKeys.NPS_SURVEY_FIRED] == true) return@edit
-            pref[AnalyticsKeys.NPS_SURVEY_PENDING] = true
-            pref[AnalyticsKeys.NPS_SURVEY_COMPLETED_COUNT] = completedCount
-        }
-    }
-
-    suspend fun isNpsSurveyPending(): Boolean = dataStore.data.first()[AnalyticsKeys.NPS_SURVEY_PENDING] ?: false
-
-    /** Whether the NPS trigger event has already fired for this install. */
+    /** Whether the NPS survey has appeared for this listener; the milestone review prompt waits for it. */
     suspend fun hasNpsSurveyFired(): Boolean = dataStore.data.first()[AnalyticsKeys.NPS_SURVEY_FIRED] ?: false
 
-    /** Completed-episode count captured when the survey became pending. */
-    suspend fun npsSurveyCompletedCount(): Int? = dataStore.data.first()[AnalyticsKeys.NPS_SURVEY_COMPLETED_COUNT]
-
-    /** Mark the NPS survey as fired and clear the pending flag. */
+    /** The NPS survey appeared. Its own schedule lives in [NpsSurveyStore], which backups leave out. */
     suspend fun markNpsSurveyFired() {
-        dataStore.edit { pref ->
-            pref[AnalyticsKeys.NPS_SURVEY_FIRED] = true
-            pref[AnalyticsKeys.NPS_SURVEY_PENDING] = false
-        }
+        dataStore.edit { pref -> pref[AnalyticsKeys.NPS_SURVEY_FIRED] = true }
     }
 }
 

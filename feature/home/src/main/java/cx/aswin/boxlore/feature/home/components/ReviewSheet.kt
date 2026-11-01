@@ -25,9 +25,6 @@ import kotlinx.coroutines.launch
 /**
  * Milestone review prompt — M3 Expressive bottom sheet.
  * Diverts happy users to Play Store, frustrated users to Feedback.
- *
- * @param variant Milestone uses episode-based copy; [ReviewPromptVariant.PromoterHandoff]
- *   acknowledges the user already scored 8+ on NPS.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,54 +33,14 @@ fun ReviewPromptSheet(
     onDismissRequest: () -> Unit,
     onNavigateToReview: () -> Unit,
     onNavigateToFeedback: () -> Unit,
-    variant: ReviewPromptVariant = ReviewPromptVariant.Milestone,
 ) {
     TrackScreenView("review_prompt", send = {}) // the prompt is counted when it is decided
-    val title =
-        when (variant) {
-            ReviewPromptVariant.PromoterHandoff -> "Glad you're enjoying boxlore"
-            ReviewPromptVariant.Milestone ->
-                when {
-                    completedCount >= 30 -> "You're a podcast pro"
-                    completedCount >= 15 -> "You're a regular listener"
-                    else -> "You're on a roll"
-                }
-        }
-
-    val body =
-        when (variant) {
-            ReviewPromptVariant.PromoterHandoff ->
-                "Thanks for the great score — a quick Play Store rating helps other listeners discover boxlore."
-            ReviewPromptVariant.Milestone ->
-                when {
-                    completedCount >= 30 ->
-                        "$completedCount episodes and counting — your review would mean the world to us."
-                    completedCount >= 15 ->
-                        "You've finished $completedCount episodes. Mind leaving a quick rating?"
-                    else -> "You've completed $completedCount episodes. How's boxlore treating you?"
-                }
-        }
-
-    val primaryLabel =
-        when (variant) {
-            ReviewPromptVariant.PromoterHandoff -> "Rate on Play Store"
-            ReviewPromptVariant.Milestone ->
-                if (completedCount >= 15) "Rate boxlore" else "Loving it"
-        }
-
-    val secondaryLabel =
-        when (variant) {
-            ReviewPromptVariant.PromoterHandoff -> "Not right now"
-            ReviewPromptVariant.Milestone ->
-                if (completedCount >= 30) "Not right now" else "Could be better"
-        }
-
-    val onSecondaryClick =
-        when (variant) {
-            ReviewPromptVariant.PromoterHandoff -> onDismissRequest
-            ReviewPromptVariant.Milestone ->
-                if (completedCount >= 30) onDismissRequest else onNavigateToFeedback
-        }
+    val copy = reviewPromptCopy(completedCount)
+    val title = copy.title
+    val body = copy.body
+    val primaryLabel = copy.primary
+    val secondaryLabel = copy.secondary
+    val onSecondaryClick = if (copy.secondaryDismisses) onDismissRequest else onNavigateToFeedback
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -178,13 +135,31 @@ fun ReviewPromptSheet(
     }
 }
 
-/** Copy variant for [ReviewPromptSheet] — milestone-based or post-NPS promoter handoff. */
-enum class ReviewPromptVariant {
-    /** Episode-count milestone (5/15/30 completed). */
-    Milestone,
+/** The milestone review prompt's words for [completedCount] finished episodes; at 30 the second button only closes it. */
+internal data class ReviewPromptCopy(val title: String, val body: String, val primary: String, val secondary: String, val secondaryDismisses: Boolean)
 
-    /** Deferred Play review after the user scored 8+ on NPS. */
-    PromoterHandoff,
+internal fun reviewPromptCopy(completedCount: Int): ReviewPromptCopy = when {
+    completedCount >= 30 -> ReviewPromptCopy(
+        title = "You're a podcast pro",
+        body = "$completedCount episodes and counting — your review would mean the world to us.",
+        primary = "Rate boxlore",
+        secondary = "Not right now",
+        secondaryDismisses = true,
+    )
+    completedCount >= 15 -> ReviewPromptCopy(
+        title = "You're a regular listener",
+        body = "You've finished $completedCount episodes. Mind leaving a quick rating?",
+        primary = "Rate boxlore",
+        secondary = "Could be better",
+        secondaryDismisses = false,
+    )
+    else -> ReviewPromptCopy(
+        title = "You're on a roll",
+        body = "You've completed $completedCount episodes. How's boxlore treating you?",
+        primary = "Loving it",
+        secondary = "Could be better",
+        secondaryDismisses = false,
+    )
 }
 
 /**

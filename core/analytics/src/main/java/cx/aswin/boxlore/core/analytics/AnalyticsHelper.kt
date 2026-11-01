@@ -246,51 +246,31 @@ object AnalyticsHelper : Analytics {
     fun rememberEpisodeRecipeIds(episodes: Iterable<Episode>) = EpisodeRecipeIds.remember(episodes.filter { it.recipeId != null }.associate { it.id to it.recipeId })
 
     // ── Feedback / NPS ──────────────────────────────────────────────
-    // feedback_submitted is only the NPS survey's trigger (its display condition keys off it); prompts
-    // that appear are engagement_prompt_shown, hand-offs to Play store_review_opened, and a sent
-    // feedback form feedback_sent.
+    // The NPS survey is boxlore's own sheet reporting PostHog's survey events; prompts that appear are
+    // engagement_prompt_shown, hand-offs to Play store_review_opened, and a sent feedback form
+    // feedback_sent.
 
-    /** Deferred automatic trigger, fired on app open once the user hits the eligibility milestone. */
-    override fun trackSurveyNpsEligible(completedEpisodes: Int?, triggerContext: String,) {
-        AnalyticsEmit.event(
-            "feedback_submitted",
-            buildMap {
-                put("feedback_type", "nps_eligible")
-                put("source", triggerContext)
-                put("trigger_type", "automatic")
-                put("trigger_context", triggerContext)
-                completedEpisodes?.let { put("completed_episodes", it) }
-            },
-        )
-        deliverSurveyTriggerEvent()
-    }
+    /** The survey [surveyId] is on screen: `survey shown`. */
+    fun trackSurveyShown(surveyId: String) = SurveyAnalyticsTracks.trackSurveyShown(surveyId)
 
-    /** Manual trigger from a long-press or a remote console feature flag. */
-    override fun trackSurveyNpsManualTrigger(source: String) {
-        AnalyticsEmit.event(
-            "feedback_submitted",
-            mapOf(
-                "feedback_type" to "nps_manual",
-                "source" to source,
-                "trigger_source" to source,
-                "trigger_type" to "manual",
-                "trigger_context" to if (source == "remote_flag") "console" else "manual",
-            ),
-        )
-        deliverSurveyTriggerEvent()
-    }
+    /** One send of a submission's answers so far: `survey sent`, partial until [completed]. */
+    fun trackSurveySent(
+        surveyId: String,
+        submissionId: String,
+        questions: List<SurveyQuestionRef>,
+        responses: Map<String, Any>,
+        completed: Boolean,
+    ) = SurveyAnalyticsTracks.trackSurveySent(surveyId, submissionId, questions, responses, completed)
 
-    /** Flush and refresh flags so the SDK evaluates survey display conditions immediately. */
-    private fun deliverSurveyTriggerEvent() {
-        PostHogStartup.runWhenReady {
-            PostHog.flush()
-            reloadFeatureFlags()
-        }
-    }
+    /** The survey closed before any answer: `survey dismissed`. */
+    fun trackSurveyDismissed(surveyId: String) = SurveyAnalyticsTracks.trackSurveyDismissed(surveyId)
+
+    /** A survey's wording overrides from [flagKey]'s payload; empty until flags load or with none set. */
+    fun surveyCopyOverrides(flagKey: String): Map<String, String> = SurveyAnalyticsTracks.surveyCopyOverrides(flagKey)
 
     /**
-     * A review prompt appeared (`milestone_review`, or `promoter_review` for an NPS promoter, with
-     * [npsScore]). Not `feedback_submitted`, which would also make the person eligible for the survey.
+     * A review prompt appeared (`milestone_review`, with [npsScore] when the listener answered the
+     * NPS survey).
      */
     override fun trackEngagementPromptShown(promptType: String, source: String, completedEpisodes: Int?, npsScore: Int?,) {
         AnalyticsEmit.event(

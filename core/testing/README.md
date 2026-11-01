@@ -50,7 +50,7 @@ src/test/java/cx/aswin/boxlore/core/testing/architecture/
 
 - Run this module to execute architecture guards.
 - Guards cover feature isolation, selected singleton allowlists (including Android framework entry points such as `MediaRouter`), catalog-to-designsystem boundaries, direct database access restrictions, and README presence for included app/core/feature modules.
-- `GlossaryCoverageGuardTest` asserts every `docs/analytics/event_glossary.csv` name is in `AnalyticsGlossary`, and every name has a row in `docs/analytics/glossary_emission_coverage.csv` with mode `emission:*`, `sdk_backed:*`, or `person_props_only` (opens/installs must not be dual-counted as custom emits).
+- `GlossaryCoverageGuardTest` asserts every `docs/analytics/event_glossary.csv` name (snake case, or PostHog's spaced survey names such as `survey sent`) is in `AnalyticsGlossary`, and every name has a row in `docs/analytics/glossary_emission_coverage.csv` with mode `emission:*`, `sdk_backed:*`, or `person_props_only` (opens/installs must not be dual-counted as custom emits).
 - `BrandNameGuardTest` scans `src/main` string resources, manifest labels and Kotlin string literals in `app`, `core` and `feature` for `BoxLore`, `Boxlore`, `BOXLORE` and the retired BoxCast name. Word boundaries skip identifiers, log tags and constants; lowercase `boxcast` deep links and legacy migration names stay allowed in Kotlin. HTTP User-Agent product tokens are allowlisted by file because podcast hosts identify the app by them.
 - Do **not** add `api(projects.core.analytics)` here — `:core:analytics` already `testImplementation`s this module (cycle risk). Emission suites live in `:core:analytics`.
 

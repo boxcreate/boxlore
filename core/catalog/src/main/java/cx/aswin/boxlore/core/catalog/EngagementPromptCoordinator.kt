@@ -1,7 +1,10 @@
 package cx.aswin.boxlore.core.catalog
 
 import android.util.Log
-import cx.aswin.boxlore.core.prefs.EngagementPromptConstants
+import cx.aswin.boxlore.core.prefs.NpsSurveyMoment
+import cx.aswin.boxlore.core.prefs.NpsSurveyRule
+import cx.aswin.boxlore.core.prefs.NpsSurveySchedule
+import cx.aswin.boxlore.core.prefs.NpsSurveyStore
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -11,11 +14,14 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 /**
- * Coordinates proactive engagement prompts (NPS survey, Play review) so only one
- * surfaces per session and promoter handoffs follow the unified strategy.
+ * Coordinates proactive engagement prompts (NPS survey, Play review) so only one surfaces per
+ * session, and only at a finish moment: an episode finished since boxlore started
+ * ([processStartedAtMs], when this coordinator is made at startup), never on an open alone.
  */
 class EngagementPromptCoordinator(
     private val userPrefs: UserPreferencesRepository,
+    private val surveyStore: NpsSurveyStore,
+    private val processStartedAtMs: Long = System.currentTimeMillis(),
     private val scope: CoroutineScope =
         CoroutineScope(
             SupervisorJob() +
@@ -41,57 +47,99 @@ class EngagementPromptCoordinator(
     /** Marks the current session as having shown a proactive prompt and persists cooldown. */
     fun recordProactivePromptShown() {
         sessionProactivePromptShown = true
+        launchSafely("Failed to record engagement prompt") { userPrefs.recordEngagementPromptShown() }
+    }
+
+    private fun launchSafely(failure: String, block: suspend () -> Unit) {
         scope.launch {
             try {
-                userPrefs.recordEngagementPromptShown()
+                block()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to record engagement prompt", e)
+                Log.e(TAG, failure, e)
             }
         }
     }
 
-    /** Called when the PostHog NPS sheet becomes visible. */
-    fun onSurveyDisplayed() {
-        recordProactivePromptShown()
-    }
+    /** An episode finished in this run of boxlore, recently: the only time a prompt may appear. */
+    fun isFinishMoment(lastFinishedAtMs: Long?, nowMs: Long = System.currentTimeMillis()): Boolean =
+        NpsSurveySchedule.isFinishMoment(lastFinishedAtMs, processStartedAtMs, nowMs)
 
     /**
-     * Persists the first NPS rating and queues promoter Play review when [score] is 8+.
+     * Counts this start of boxlore and, once per install, carries over an older version's survey
+     * ([NpsSurveyStore.carryOverLegacy]; [updatedInstall] when Android updated boxlore after installing
+     * it). Called once at startup.
      */
-    fun onNpsRatingSubmitted(score: Int?) {
-        if (score == null) return
-        scope.launch {
-            try {
-                userPrefs.setNpsLastScore(score)
-                if (score >= EngagementPromptConstants.PROMOTER_SCORE_THRESHOLD) {
-                    userPrefs.setPromoterReviewPending(true)
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to persist NPS score", e)
-            }
-        }
+    suspend fun onAppLaunched(updatedInstall: Boolean, nowMs: Long = System.currentTimeMillis()) {
+        surveyStore.recordLaunch()
+        surveyStore.carryOverLegacy(userPrefs.hasNpsSurveyFired(), updatedInstall, nowMs)
     }
 
-    /**
-     * True when a deferred promoter handoff is pending and the user has not reviewed yet.
-     * Does not apply the 14-day cooldown — that prompt completes the NPS journey — but waits out
-     * the quiet days after installing ([installedAtMs]) or importing a library.
-     */
-    suspend fun shouldShowPromoterReview(isPlaying: Boolean, installedAtMs: Long,): Boolean {
+    /** Whether the NPS survey should appear now, by [NpsSurveySchedule] with nothing playing and no prompt yet this session. */
+    suspend fun shouldShowNpsSurvey(
+        isPlaying: Boolean,
+        installedAtMs: Long,
+        finishedSinceInstall: Int,
+        lastFinishedAtMs: Long?,
+        nowMs: Long = System.currentTimeMillis(),
+    ): Boolean {
         if (!canShowProactivePrompt(isPlaying)) return false
-        if (userPrefs.hasReviewedSync()) return false
-        if (userPrefs.isInReviewQuietPeriod(installedAtMs)) return false
-        if (!userPrefs.hasNpsSurveyFired()) return false
-        return userPrefs.isPromoterReviewPending()
+        if (!isFinishMoment(lastFinishedAtMs, nowMs)) return false
+        return NpsSurveySchedule.isDue(
+            NpsSurveyMoment(
+                nowMs = nowMs,
+                installedAtMs = installedAtMs,
+                finishedSinceInstall = finishedSinceInstall,
+                lastFinishedAtMs = lastFinishedAtMs,
+                processStartedAtMs = processStartedAtMs,
+                record = surveyStore.record(),
+                inQuietDays = userPrefs.isInReviewQuietPeriod(installedAtMs, nowMs),
+                cooldownElapsed = userPrefs.isEngagementCooldownElapsed(),
+            ),
+        )
     }
 
-    /** Clears the one-shot promoter handoff flag after the review sheet is shown or dismissed. */
-    suspend fun clearPromoterReviewPending() {
-        userPrefs.setPromoterReviewPending(false)
+    /**
+     * Debug: what the NPS survey still waits for, apart from a finish moment (the next finished
+     * episode is one).
+     */
+    suspend fun npsSurveyWaitsFor(installedAtMs: Long, finishedSinceInstall: Int, nowMs: Long = System.currentTimeMillis()): List<NpsSurveyRule> =
+        NpsSurveySchedule.unmet(
+            NpsSurveyMoment(
+                nowMs = nowMs,
+                installedAtMs = installedAtMs,
+                finishedSinceInstall = finishedSinceInstall,
+                lastFinishedAtMs = nowMs,
+                processStartedAtMs = processStartedAtMs,
+                record = surveyStore.record(),
+                inQuietDays = userPrefs.isInReviewQuietPeriod(installedAtMs, nowMs),
+                cooldownElapsed = userPrefs.isEngagementCooldownElapsed(),
+            ),
+        ) - NpsSurveyRule.FinishMoment
+
+    /** Debug: forgets the survey's last showing, the shared cooldown and this session's prompt, so the next finish can ask. */
+    suspend fun resetNpsSurveyForTesting() {
+        surveyStore.resetSchedule()
+        userPrefs.clearEngagementCooldown()
+        sessionProactivePromptShown = false
+    }
+
+    /**
+     * The NPS survey is on screen: it uses up this session's prompt, the shared cooldown and its own
+     * 90 days, and lets the milestone review prompt follow later.
+     */
+    fun onSurveyDisplayed(nowMs: Long = System.currentTimeMillis()) {
+        recordProactivePromptShown()
+        launchSafely("Failed to record the NPS survey") {
+            surveyStore.markShown(nowMs)
+            userPrefs.markNpsSurveyFired()
+        }
+    }
+
+    /** Keeps the latest score, so the milestone review prompt skips listeners who scored low. */
+    fun onNpsRatingSubmitted(score: Int) {
+        launchSafely("Failed to persist NPS score") { userPrefs.setNpsLastScore(score) }
     }
 
     /** Whether enough time has passed since the last proactive engagement prompt. */

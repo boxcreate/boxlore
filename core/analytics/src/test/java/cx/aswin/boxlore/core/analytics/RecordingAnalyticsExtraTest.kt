@@ -20,35 +20,8 @@ class RecordingAnalyticsExtraTest {
     }
 
     @Test
-    fun trackSurveyNpsEligibleEmitsFeedbackSubmitted() {
-        analytics.trackSurveyNpsEligible(completedEpisodes = 7, triggerContext = "home")
-
-        val event = analytics.lastEvent!!
-        assertEquals("feedback_submitted", event.name)
-        assertEquals("nps_eligible", event.properties["feedback_type"])
-        assertEquals("home", event.properties["source"])
-        assertEquals(7, event.properties["completed_episodes"])
-    }
-
-    @Test
-    fun trackSurveyNpsEligibleOmitsCompletedWhenNull() {
-        analytics.trackSurveyNpsEligible(completedEpisodes = null, triggerContext = "settings")
-
-        assertFalse("completed_episodes" in analytics.lastEvent!!.properties)
-    }
-
-    @Test
-    fun trackSurveyNpsManualTriggerEmitsFeedbackSubmitted() {
-        analytics.trackSurveyNpsManualTrigger("about_screen")
-
-        val event = analytics.lastEvent!!
-        assertEquals("nps_manual", event.properties["feedback_type"])
-        assertEquals("about_screen", event.properties["source"])
-    }
-
-    @Test
     fun trackEngagementPromptShownCarriesNpsScoreWhenPresent() {
-        analytics.trackEngagementPromptShown("promoter_review", "nps_handoff", npsScore = 10)
+        analytics.trackEngagementPromptShown("milestone_review", "episode_milestone", npsScore = 10)
 
         val event = analytics.lastEvent!!
         assertEquals("engagement_prompt_shown", event.name)

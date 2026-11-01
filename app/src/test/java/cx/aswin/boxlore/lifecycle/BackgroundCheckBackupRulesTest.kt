@@ -15,20 +15,25 @@ import org.xmlpull.v1.XmlPullParser
 @Config(sdk = [34], application = Application::class)
 class BackgroundCheckBackupRulesTest {
     @Test fun consentIsExcludedFromLegacyBackupCloudBackupAndDeviceTransfer() {
+        assertExcludedEverywhere("datastore/auto_download_background.preferences_pb")
+    }
+
+    /** A restored phone is a new install: it must not inherit when the NPS survey last appeared. */
+    @Test fun npsSurveyHistoryIsExcludedFromLegacyBackupCloudBackupAndDeviceTransfer() {
+        assertExcludedEverywhere("datastore/boxlore_nps_survey.preferences_pb")
+    }
+
+    private fun assertExcludedEverywhere(path: String) {
         val context = ApplicationProvider.getApplicationContext<Context>()
         for ((resource, expected) in listOf(R.xml.backup_rules to 1, R.xml.data_extraction_rules to 2)) {
             val xml = context.resources.getXml(resource)
             var exclusions = 0
             while (xml.next() != XmlPullParser.END_DOCUMENT) {
                 if (xml.eventType != XmlPullParser.START_TAG || xml.name != "exclude") continue
-                if (xml.getAttributeValue(null, "domain") == "file" &&
-                    xml.getAttributeValue(null, "path") == "datastore/auto_download_background.preferences_pb"
-                ) {
-                        exclusions++
-                    }
+                if (xml.getAttributeValue(null, "domain") == "file" && xml.getAttributeValue(null, "path") == path) exclusions++
             }
             xml.close()
-            assertEquals(expected, exclusions)
+            assertEquals(path, expected, exclusions)
         }
     }
 }

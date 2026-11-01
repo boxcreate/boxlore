@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.home
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import cx.aswin.boxlore.core.catalog.EngagementPromptCoordinator
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.playback.PlaybackRepository
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
@@ -37,6 +39,7 @@ class DebugViewModel(
     private val subscriptionRepository: SubscriptionRepository,
     private val userPrefs: UserPreferencesRepository,
     private val adaptiveRankingRepository: AdaptiveRankingRepository,
+    private val engagementCoordinator: EngagementPromptCoordinator,
 ) : AndroidViewModel(application) {
     val history: Flow<List<DebugHistoryItem>> =
         playbackRepository
@@ -64,8 +67,15 @@ class DebugViewModel(
     private val _shadowDiagnostics = MutableStateFlow<List<RankingShadowSnapshot>>(emptyList())
     val shadowDiagnostics: StateFlow<List<RankingShadowSnapshot>> = _shadowDiagnostics.asStateFlow()
 
+    private val _npsSurveyStatus = MutableStateFlow<String?>(null)
+    val npsSurveyStatus: StateFlow<String?> = _npsSurveyStatus.asStateFlow()
+
+    private val installedAtMs: Long =
+        runCatching { application.packageManager.getPackageInfo(application.packageName, 0).firstInstallTime }.getOrDefault(0L)
+
     init {
         refreshLearnerSnapshot()
+        refreshNpsSurveyStatus()
     }
 
     fun setLogEnabled(enabled: Boolean) {
@@ -105,6 +115,21 @@ class DebugViewModel(
 
     fun clearDismissedCuriosities() {
         boxcastPrefs.clearLearnCuriosity()
+    }
+
+    fun refreshNpsSurveyStatus() {
+        viewModelScope.launch {
+            val finished = playbackRepository.getAllHistory().first().map { it.toHomeListeningHistoryItem() }.countFinishedSince(installedAtMs)
+            _npsSurveyStatus.value = npsSurveyDebugStatus(engagementCoordinator.npsSurveyWaitsFor(installedAtMs, finished), finished)
+        }
+    }
+
+    /** Lets the next finished episode ask the survey again, then shows what else it waits for. */
+    fun resetNpsSurveyTiming() {
+        viewModelScope.launch {
+            engagementCoordinator.resetNpsSurveyForTesting()
+            refreshNpsSurveyStatus()
+        }
     }
 
     fun refreshLearnerSnapshot() {

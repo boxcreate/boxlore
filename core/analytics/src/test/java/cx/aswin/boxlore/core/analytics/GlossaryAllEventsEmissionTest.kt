@@ -271,8 +271,14 @@ class GlossaryAllEventsEmissionTest {
                 "backup_restore_result" to {
                     AnalyticsHelper.trackBackupRestoreResult("export", success = true, itemCount = 3, format = "opml")
                 },
-                "feedback_submitted" to {
-                    AnalyticsHelper.trackSurveyNpsManualTrigger(source = "long_press")
+                "survey shown" to {
+                    AnalyticsHelper.trackSurveyShown("s1")
+                },
+                "survey sent" to {
+                    AnalyticsHelper.trackSurveySent("s1", "sub1", listOf(SurveyQuestionRef("q1", "Score?")), mapOf("q1" to 9), completed = false)
+                },
+                "survey dismissed" to {
+                    AnalyticsHelper.trackSurveyDismissed("s1")
                 },
                 "engagement_prompt_shown" to {
                     AnalyticsHelper.trackEngagementPromptShown("milestone_review", "episode_milestone", 5)

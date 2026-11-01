@@ -27,6 +27,7 @@ internal fun androidx.navigation.NavGraphBuilder.addDebugDestination(w: NavGraph
             subscriptionRepository = subscriptionRepository,
             userPreferencesRepository = userPrefs,
             adaptiveRankingRepository = container.adaptiveRankingRepository,
+            engagementPromptCoordinator = w.application.engagementPromptCoordinator,
             bottomContentPadding = w.session.miniPlayerPadding,
             onBack = { navController.popBackStack() },
         )

@@ -115,8 +115,6 @@ data class HomePlaybackUi(
 @androidx.compose.runtime.Stable
 data class HomeSheetUi(
     val showReviewPrompt: Boolean = false,
-    val reviewPromptVariant: cx.aswin.boxlore.feature.home.components.ReviewPromptVariant =
-        cx.aswin.boxlore.feature.home.components.ReviewPromptVariant.Milestone,
     val showPostReview: Boolean = false,
     val showFeedback: Boolean = false,
     val candidatePodcasts: List<Podcast> = emptyList(),
@@ -287,7 +285,6 @@ fun HomeRoute(
         viewModel.playerState.map { it.isLoading }.distinctUntilChanged()
     }.collectAsState(initial = false)
     val showReviewPrompt by viewModel.showReviewPrompt.collectAsState()
-    val reviewPromptVariant by viewModel.reviewPromptVariant.collectAsState()
     val showPostReview by viewModel.showPostReview.collectAsState()
     val showFeedback by viewModel.showFeedback.collectAsState()
 
@@ -392,7 +389,6 @@ fun HomeRoute(
             sheets =
             HomeSheetUi(
                 showReviewPrompt = showReviewPrompt,
-                reviewPromptVariant = reviewPromptVariant,
                 showPostReview = showPostReview,
                 showFeedback = showFeedback,
                 candidatePodcasts = candidatePodcasts,
@@ -401,6 +397,7 @@ fun HomeRoute(
             snackbarHostState = snackbarHostState,
             modifier = modifier,
         )
+        NpsSurveyHost(viewModel.npsSurvey, isPlaying = isPlaying)
     }
 }
 
@@ -499,7 +496,6 @@ private fun HomeScreenBottomSheets(
         }
         cx.aswin.boxlore.feature.home.components.ReviewPromptSheet(
             completedCount = uiState.completedEpisodeCount,
-            variant = sheets.reviewPromptVariant,
             onDismissRequest = callbacks.onDismissReviewPrompt,
             onNavigateToReview = callbacks.onNavigateToPlayStoreReview,
             onNavigateToFeedback = {
@@ -537,19 +533,7 @@ private fun HomeScreenBottomSheets(
                 callbacks.onDismissFeedback()
                 cx.aswin.boxlore.core.analytics.AnalyticsHelper
                     .trackStoreReviewOpened(method = "store_page", source = "home_feedback")
-                val pkgName = context.packageName
-                try {
-                    context.startActivity(
-                        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=$pkgName")),
-                    )
-                } catch (e: Exception) {
-                    context.startActivity(
-                        android.content.Intent(
-                            android.content.Intent.ACTION_VIEW,
-                            android.net.Uri.parse("https://play.google.com/store/apps/details?id=$pkgName"),
-                        ),
-                    )
-                }
+                openPlayStorePage(context)
             },
             onDismissRequest = callbacks.onDismissFeedback,
         )
