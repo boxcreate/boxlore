@@ -111,7 +111,7 @@ internal fun FeedbackThreadScreen(
     val systemBar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     Surface(modifier = modifier.fillMaxSize().testTag(FEEDBACK_THREAD_TAG), color = MaterialTheme.colorScheme.surface) {
         Box(
-            Modifier.fillMaxSize().statusBarsPadding().padding(bottom = feedbackBottomPadding(imeBottom, bottomContentPadding, systemBar)),
+            Modifier.fillMaxSize().statusBarsPadding().feedbackBottomSpace(chrome = bottomContentPadding, extra = systemBar, imeBottom = imeBottom),
             contentAlignment = Alignment.TopCenter,
         ) {
             Column(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility)) {

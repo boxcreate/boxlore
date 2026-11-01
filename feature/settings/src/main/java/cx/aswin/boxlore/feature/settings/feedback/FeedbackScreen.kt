@@ -211,7 +211,7 @@ internal fun FeedbackComposeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(bottom = feedbackBottomPadding(imeBottom, bottomContentPadding, systemBar)),
+                .feedbackBottomSpace(chrome = bottomContentPadding, extra = systemBar, imeBottom = imeBottom),
             contentAlignment = Alignment.TopCenter,
         ) {
             Column(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility)) {
