@@ -103,6 +103,8 @@ class ScreenViewCoverageTest {
         /** Destinations that need no page view of their own, and why. Keep it short. */
         val EXEMPT: Map<String, String> =
             mapOf(
+                "settings:feature/settings/feedback/FeedbackScreen.kt#FeedbackScreen" to
+                    "Only hosts the Feedback panes; the list, conversation, compose and sent screens each send their own page view.",
                 "home:feature/home/DebugScreen.kt#DebugScreen" to DEBUG,
                 "home:feature/home/DebugScreenContent.kt#DebugScreenPagerPage" to DEBUG,
                 "home:feature/home/components/MarqueePreview.kt#MarqueePreviewScreen" to DEBUG,

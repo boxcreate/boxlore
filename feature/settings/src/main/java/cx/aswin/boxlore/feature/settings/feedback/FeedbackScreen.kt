@@ -79,7 +79,6 @@ fun FeedbackScreen(
     bottomContentPadding: Dp = 0.dp,
     openThreadId: String? = null,
 ) {
-    TrackScreenView("feedback")
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val scope = rememberCoroutineScope()
@@ -195,6 +194,7 @@ internal fun FeedbackComposeScreen(
     imeBottom: Dp,
     modifier: Modifier = Modifier,
 ) {
+    TrackScreenView("feedback")
     var messageFocused by rememberSaveable { mutableStateOf(false) }
     val systemBar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val typing = isTypingLayout(messageFocused, imeBottom)

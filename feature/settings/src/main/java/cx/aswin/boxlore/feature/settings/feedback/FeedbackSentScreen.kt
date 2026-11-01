@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.echo.EchoCharacter
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
@@ -85,6 +86,7 @@ internal fun FeedbackSentScreen(
     bottomContentPadding: Dp,
     modifier: Modifier = Modifier,
 ) {
+    TrackScreenView("feedback_sent")
     val context = LocalContext.current
     var notificationsOn by remember { mutableStateOf(areAppNotificationsEnabled(context)) }
     var dismissed by rememberSaveable { mutableStateOf(false) }
