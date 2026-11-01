@@ -40,17 +40,18 @@ object NpsSurveySchedule {
     fun isDue(moment: NpsSurveyMoment): Boolean = unmet(moment).isEmpty()
 
     /** The rules [moment] doesn't meet yet, in the order a listener meets them; empty when the survey is due. */
-    fun unmet(moment: NpsSurveyMoment): List<NpsSurveyRule> {
+    fun unmet(moment: NpsSurveyMoment): List<NpsSurveyRule> = NpsSurveyRule.entries.filterNot { isMet(it, moment) }
+
+    private fun isMet(rule: NpsSurveyRule, moment: NpsSurveyMoment): Boolean {
         val now = moment.nowMs
-        val lastShown = moment.record.lastShownAtMs
-        return buildList {
-            if (!isFinishMoment(moment.lastFinishedAtMs, moment.processStartedAtMs, now)) add(NpsSurveyRule.FinishMoment)
-            if (moment.finishedSinceInstall < MIN_FINISHED_EPISODES) add(NpsSurveyRule.FinishedEpisodes)
-            if (moment.installedAtMs <= 0L || now - moment.installedAtMs < MIN_DAYS_INSTALLED * DAY_MS) add(NpsSurveyRule.DaysInstalled)
-            if (moment.record.launches < 2) add(NpsSurveyRule.FirstRun)
-            if (moment.inQuietDays) add(NpsSurveyRule.QuietDays)
-            if (!moment.cooldownElapsed) add(NpsSurveyRule.Cooldown)
-            if (lastShown != null && now - lastShown < ASK_AGAIN_DAYS * DAY_MS) add(NpsSurveyRule.AskAgainGap)
+        return when (rule) {
+            NpsSurveyRule.FinishMoment -> isFinishMoment(moment.lastFinishedAtMs, moment.processStartedAtMs, now)
+            NpsSurveyRule.FinishedEpisodes -> moment.finishedSinceInstall >= MIN_FINISHED_EPISODES
+            NpsSurveyRule.DaysInstalled -> moment.installedAtMs > 0L && now - moment.installedAtMs >= MIN_DAYS_INSTALLED * DAY_MS
+            NpsSurveyRule.FirstRun -> moment.record.launches >= 2
+            NpsSurveyRule.QuietDays -> !moment.inQuietDays
+            NpsSurveyRule.Cooldown -> moment.cooldownElapsed
+            NpsSurveyRule.AskAgainGap -> moment.record.lastShownAtMs?.let { now - it >= ASK_AGAIN_DAYS * DAY_MS } ?: true
         }
     }
 

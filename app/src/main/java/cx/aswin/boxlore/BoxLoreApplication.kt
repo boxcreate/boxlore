@@ -185,7 +185,14 @@ class BoxLoreApplication :
             // Updated after installing: this install ran an older version (a fresh or restored install has not).
             val updatedInstall =
                 runCatching { packageManager.getPackageInfo(packageName, 0).let { it.lastUpdateTime > it.firstInstallTime } }.getOrDefault(false)
-            engagementPromptCoordinator.onAppLaunched(updatedInstall)
+            try {
+                engagementPromptCoordinator.onAppLaunched(updatedInstall)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // A disk error here only skips one launch count; it must never crash startup.
+                android.util.Log.w("BoxLoreApplication", "Failed to record the launch for the NPS survey", e)
+            }
         }
         scheduleOptionalStartup()
 
