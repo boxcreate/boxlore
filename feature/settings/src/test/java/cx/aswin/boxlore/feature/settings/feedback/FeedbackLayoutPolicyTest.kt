@@ -1,6 +1,8 @@
 package cx.aswin.boxlore.feature.settings.feedback
 
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
+import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -17,6 +19,18 @@ class FeedbackLayoutPolicyTest {
     @Test fun `the keyboard replaces the bottom chrome instead of stacking on it`() {
         assertEquals(300.dp, feedbackBottomPadding(imeBottom = 300.dp, chrome = 96.dp, systemBar = 24.dp))
         assertEquals(120.dp, feedbackBottomPadding(imeBottom = 0.dp, chrome = 96.dp, systemBar = 24.dp))
+    }
+
+    @Test fun `no empty strip above navigation once the compact player has docked beside it`() {
+        val navigationOnly = appBottomChromeContentPadding(NavigationStyle.Floating, isMiniPlayerVisible = false)
+        val withMiniPlayer = appBottomChromeContentPadding(NavigationStyle.Floating, isMiniPlayerVisible = true)
+        assertEquals(navigationOnly, feedbackChromePadding(withMiniPlayer, navigationOnly, NavigationStyle.Floating, compactProgress = 1f))
+        assertEquals("Not docked yet: the mini player still needs its room", withMiniPlayer, feedbackChromePadding(withMiniPlayer, navigationOnly, NavigationStyle.Floating, compactProgress = 0f))
+        assertEquals("Nothing playing: never less than navigation needs", navigationOnly, feedbackChromePadding(navigationOnly, navigationOnly, NavigationStyle.Floating, compactProgress = 1f))
+        val classicNavigation = appBottomChromeContentPadding(NavigationStyle.Classic, isMiniPlayerVisible = false)
+        val classicPlayer = appBottomChromeContentPadding(NavigationStyle.Classic, isMiniPlayerVisible = true)
+        assertEquals("Classic keeps the full mini player", classicPlayer, feedbackChromePadding(classicPlayer, classicNavigation, NavigationStyle.Classic, compactProgress = 1f))
+        assertEquals("A navigation rail leaves the docked player's room alone", 96.dp, feedbackChromePadding(96.dp, 0.dp, NavigationStyle.Floating, compactProgress = 0f))
     }
 
     @Test fun `Android's prompt is asked for only while it will still show`() {

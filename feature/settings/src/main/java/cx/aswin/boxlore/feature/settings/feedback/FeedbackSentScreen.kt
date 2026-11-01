@@ -109,7 +109,7 @@ internal fun FeedbackSentScreen(
 
     Surface(modifier = modifier.fillMaxSize().testTag(FEEDBACK_SENT_TAG), color = MaterialTheme.colorScheme.surface) {
         Box(
-            modifier = Modifier.fillMaxSize().statusBarsPadding().padding(bottom = bottomContentPadding + systemBar),
+            modifier = Modifier.fillMaxSize().statusBarsPadding().feedbackBottomSpace(chrome = bottomContentPadding, extra = systemBar),
             contentAlignment = Alignment.TopCenter,
         ) {
             Column(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility)) {

@@ -108,7 +108,12 @@ internal fun FeedbackListScreen(
                         loadFailed -> LoadFailed(actions.onRetry, Modifier.align(Alignment.Center).padding(bottom = bottom + LIST_ACTIONS_HEIGHT))
                         else -> CircularProgressIndicator(Modifier.align(Alignment.Center).padding(bottom = bottom + LIST_ACTIONS_HEIGHT))
                     }
-                    ListActions(actions.onNew, actions.onRate, actions.onGitHub, Modifier.align(Alignment.BottomCenter).padding(start = 16.dp, end = 16.dp, bottom = bottom + 12.dp))
+                    ListActions(
+                        actions.onNew,
+                        actions.onRate,
+                        actions.onGitHub,
+                        Modifier.align(Alignment.BottomCenter).feedbackBottomSpace(chrome = bottomContentPadding, extra = systemBar + 12.dp).padding(horizontal = 16.dp),
+                    )
                 }
             }
         }

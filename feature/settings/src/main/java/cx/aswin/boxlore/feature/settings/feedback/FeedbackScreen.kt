@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -202,51 +203,19 @@ internal fun FeedbackComposeScreen(
         ActivityResultContracts.PickMultipleVisualMedia(maxItems = state.meta.maxPhotos.coerceAtLeast(2)),
     ) { uris -> actions.onPhotosPicked(uris) }
     val pickPhotos = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
-    val uriHandler = LocalUriHandler.current
     val scroll = rememberScrollState()
-    val editable = !state.isSubmitting
 
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(bottom = feedbackBottomPadding(imeBottom, bottomContentPadding, systemBar)),
+                .feedbackBottomSpace(chrome = bottomContentPadding, extra = systemBar, imeBottom = imeBottom),
             contentAlignment = Alignment.TopCenter,
         ) {
             Column(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility)) {
                 if (typing) TypingHeader(state, actions) else TopRow(state, actions)
-                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-                    // While typing the field takes the room the keyboard leaves; a short window otherwise scrolls.
-                    val stretch = typing || maxHeight >= FEEDBACK_TALL_ENOUGH
-                    Column(Modifier.fillMaxSize().then(if (stretch) Modifier else Modifier.verticalScroll(scroll))) {
-                        if (!typing) Intro(state)
-                        if (!typing) {
-                            FeedbackTypePills(
-                                choices = state.choices,
-                                selected = state.choice,
-                                enabled = editable,
-                                onSelect = actions.onCategorySelected,
-                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp),
-                            )
-                        }
-                        FeedbackMessageCard(
-                            value = state.message,
-                            onValueChange = actions.onMessageChanged,
-                            placeholder = state.choice.placeholder,
-                            maxChars = state.meta.maxBody,
-                            readOnly = !editable,
-                            onFocusChanged = { messageFocused = it },
-                            modifier = Modifier
-                                .padding(start = 16.dp, end = 16.dp, top = if (typing) 8.dp else 16.dp)
-                                .fillMaxWidth()
-                                .then(if (stretch) Modifier.weight(1f) else Modifier.height(FEEDBACK_SHORT_MESSAGE_HEIGHT)),
-                        )
-                        if (!typing) AttachRows(state, onAddPhoto = pickPhotos, actions = actions)
-                        (state.errorMessage ?: state.limitMessage)?.let { error -> ErrorLine(error, small = typing) }
-                        if (!typing) SendFooter(state, onSubmit = actions.onSubmit, onPrivacy = { uriHandler.openUri(FEEDBACK_PRIVACY_URL) })
-                    }
-                }
+                ComposeFields(state, actions, typing, scroll, onMessageFocused = { messageFocused = it }, onAddPhoto = pickPhotos)
                 if (typing) {
                     FeedbackTypingBar(
                         state = state,
@@ -256,6 +225,50 @@ internal fun FeedbackComposeScreen(
                     )
                 }
             }
+        }
+    }
+}
+
+/** Everything between the header and the typing bar. While typing the field takes the room the keyboard leaves; a short window otherwise scrolls. */
+@Composable
+private fun ColumnScope.ComposeFields(
+    state: FeedbackUiState,
+    actions: FeedbackComposeActions,
+    typing: Boolean,
+    scroll: ScrollState,
+    onMessageFocused: (Boolean) -> Unit,
+    onAddPhoto: () -> Unit,
+) {
+    val uriHandler = LocalUriHandler.current
+    val editable = !state.isSubmitting
+    BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+        val stretch = typing || maxHeight >= FEEDBACK_TALL_ENOUGH
+        Column(Modifier.fillMaxSize().then(if (stretch) Modifier else Modifier.verticalScroll(scroll))) {
+            if (!typing) {
+                Intro(state)
+                FeedbackTypePills(
+                    choices = state.choices,
+                    selected = state.choice,
+                    enabled = editable,
+                    onSelect = actions.onCategorySelected,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp),
+                )
+            }
+            FeedbackMessageCard(
+                value = state.message,
+                onValueChange = actions.onMessageChanged,
+                placeholder = state.choice.placeholder,
+                maxChars = state.meta.maxBody,
+                readOnly = !editable,
+                onFocusChanged = onMessageFocused,
+                modifier = Modifier
+                    .padding(start = 16.dp, end = 16.dp, top = if (typing) 8.dp else 16.dp)
+                    .fillMaxWidth()
+                    .then(if (stretch) Modifier.weight(1f) else Modifier.height(FEEDBACK_SHORT_MESSAGE_HEIGHT)),
+            )
+            if (!typing) AttachRows(state, onAddPhoto = onAddPhoto, actions = actions)
+            (state.errorMessage ?: state.limitMessage)?.let { error -> ErrorLine(error, small = typing) }
+            if (!typing) SendFooter(state, onSubmit = actions.onSubmit, onPrivacy = { uriHandler.openUri(FEEDBACK_PRIVACY_URL) })
         }
     }
 }
