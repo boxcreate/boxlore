@@ -2,6 +2,7 @@ package cx.aswin.boxlore.ui
 
 import android.app.Application
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsNodeInteraction
@@ -16,7 +17,7 @@ import cx.aswin.boxlore.feature.history.HistoryViewModel
 import cx.aswin.boxlore.feature.history.InsightsUiState
 import cx.aswin.boxlore.feature.history.TimelineUiState
 import cx.aswin.boxlore.feature.history.insights.INSIGHTS_LIST_TAG
-import androidx.compose.runtime.CompositionLocalProvider
+import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -25,7 +26,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import java.time.ZoneId
 
 /** Insights keeps its place while Timeline is open: back on Insights, the list is where it was left. */
 @RunWith(RobolectricTestRunner::class)

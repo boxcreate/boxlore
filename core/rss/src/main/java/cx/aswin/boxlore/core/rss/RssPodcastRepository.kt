@@ -206,30 +206,28 @@ class RssPodcastRepository private constructor(
         }
     }
 
-    private suspend fun refreshEpisodesOnce(podcastId: String, manual: Boolean): Result<Int> {
-        return try {
-            val row = podcastDao.getPodcast(podcastId) ?: error(ERROR_RSS_SUBSCRIPTION_NOT_FOUND)
-            val outcome = episodeCatalog.refresh(
-                cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshRequest(
-                    podcastId,
-                    row.feedUrl.orEmpty(),
-                    reason = if (manual) {
-                        cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshReason.MANUAL
-                    } else {
-                        cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshReason.NORMAL
-                    },
-                ),
-            )
-            when (outcome) {
-                is cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Success -> Result.success(outcome.itemCount)
-                is cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Unchanged -> Result.success(0)
-                is cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Failure -> Result.failure(IllegalStateException(outcome.message))
-            }
-        } catch (error: kotlinx.coroutines.CancellationException) {
-            throw error
-        } catch (error: Exception) {
-            Result.failure(error)
+    private suspend fun refreshEpisodesOnce(podcastId: String, manual: Boolean): Result<Int> = try {
+        val row = podcastDao.getPodcast(podcastId) ?: error(ERROR_RSS_SUBSCRIPTION_NOT_FOUND)
+        val outcome = episodeCatalog.refresh(
+            cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshRequest(
+                podcastId,
+                row.feedUrl.orEmpty(),
+                reason = if (manual) {
+                    cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshReason.MANUAL
+                } else {
+                    cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshReason.NORMAL
+                },
+            ),
+        )
+        when (outcome) {
+            is cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Success -> Result.success(outcome.itemCount)
+            is cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Unchanged -> Result.success(0)
+            is cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Failure -> Result.failure(IllegalStateException(outcome.message))
         }
+    } catch (error: kotlinx.coroutines.CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        Result.failure(error)
     }
 
     /** Existing imports are repaired in place and all feeds fetch episodes, including HEAD-less feeds. */
