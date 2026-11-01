@@ -34,6 +34,7 @@ Announcement title:
 - On New Episodes, swipe right to add an episode to your queue or left to mark it played, and pull down to check for new episodes. (#1198)
 - Listening in German, French, Spanish, Portuguese, Russian or Dutch? You can now turn English off in Library settings › Languages, and boxlore then adds English shows to recommendations, search and suggestions only when there aren't enough in your languages. (#1187, #1191)
 - Free up space with Clear saved shows in Library settings: it removes the episode lists saved for shows you opened but don't follow. (#1192)
+- Feedback is now a conversation: pick a type, write your message and send, no email needed. The boxlore team's reply shows up in Feedback, and a notification tells you when it arrives if you turn them on.
 
 ## Improved
 

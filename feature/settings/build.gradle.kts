@@ -63,6 +63,7 @@ dependencies {
     implementation(projects.core.analytics)
     implementation(projects.core.ranking)
     implementation(projects.core.rss)
+    implementation(projects.core.support)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

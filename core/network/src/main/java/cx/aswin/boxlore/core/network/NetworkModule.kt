@@ -123,6 +123,9 @@ object NetworkModule {
      */
     fun createBoxLoreApiV2(baseUrl: String, client: OkHttpClient): BoxLoreApiV2 = retrofit(baseUrl, client).create(BoxLoreApiV2::class.java)
 
+    /** Builds [SupportApi] on the same cached client as [BoxLoreApi] ([createCachedClient]). */
+    fun createSupportApi(baseUrl: String, client: OkHttpClient): SupportApi = retrofit(baseUrl, client).create(SupportApi::class.java)
+
     private fun retrofit(baseUrl: String, client: OkHttpClient): Retrofit = Retrofit.Builder()
         .baseUrl(baseUrl)
         .client(client)

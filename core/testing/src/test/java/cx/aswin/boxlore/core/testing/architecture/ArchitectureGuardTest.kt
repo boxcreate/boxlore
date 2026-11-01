@@ -442,6 +442,7 @@ class ArchitectureGuardTest {
                 "rss" to "cx.aswin.boxlore.core.rss",
                 "ranking" to "cx.aswin.boxlore.core.ranking",
                 "database" to "cx.aswin.boxlore.core.database",
+                "support" to "cx.aswin.boxlore.core.support",
             )
         val violations =
             modulePackageRoots.flatMap { (module, expectedRoot) ->

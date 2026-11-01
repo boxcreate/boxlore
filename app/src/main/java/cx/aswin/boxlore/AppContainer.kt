@@ -77,6 +77,7 @@ import cx.aswin.boxlore.core.rss.RenumberedShows
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.core.rss.SharedPreferencesRenumberedShows
 import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
+import cx.aswin.boxlore.core.support.SupportRepository
 import cx.aswin.boxlore.fcm.PodcastNotificationRegistrationWorker
 import cx.aswin.boxlore.share.EpisodeShareRegistrationWorker
 import cx.aswin.boxlore.sync.AnalyticsFeedTelemetry
@@ -366,6 +367,16 @@ class AppContainer(
     val feedTelemetry: FeedTelemetryPort by lazy { AnalyticsFeedTelemetry() }
 
     val boxcastPrefs: BoxcastPrefs by lazy { BoxcastPrefs(appContext) }
+
+    /** Feedback conversations; falls back to the old one-way form while `/support` is unavailable. */
+    val supportRepository: SupportRepository by lazy {
+        SupportRepository(
+            api = podcastRepository.supportApi,
+            legacySubmit = { category, message, version, diagnostics, logs ->
+                podcastRepository.submitFeedback(category, message, version, null, diagnostics, logs)
+            },
+        )
+    }
 
     override val deviceIdentityPort: DeviceIdentityPort by lazy {
         DeviceIdentityPort { boxcastPrefs.getOrCreateSyncDeviceId() }

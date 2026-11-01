@@ -396,9 +396,10 @@ private fun androidx.navigation.NavGraphBuilder.addFeedbackRoute(w: NavGraphWiri
 
     composable("feedback") {
         cx.aswin.boxlore.feature.settings.feedback.FeedbackScreen(
-            podcastRepository = container.podcastRepository,
+            supportRepository = container.supportRepository,
             boxcastPrefs = container.boxcastPrefs,
             onBack = { navController.popBackStack() },
+            bottomContentPadding = w.session.miniPlayerPadding,
         )
     }
 }

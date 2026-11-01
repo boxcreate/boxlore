@@ -1,294 +1,184 @@
 package cx.aswin.boxlore.feature.settings.feedback
 
-import android.content.ActivityNotFoundException
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.horizontalScroll
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.Launch
-import androidx.compose.material.icons.automirrored.rounded.Message
-import androidx.compose.material.icons.rounded.BugReport
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.DeleteOutline
-import androidx.compose.material.icons.rounded.Headphones
-import androidx.compose.material.icons.rounded.Lightbulb
-import androidx.compose.material.icons.rounded.Restore
-import androidx.compose.material.icons.rounded.Star
-import androidx.compose.material.icons.rounded.Visibility
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
+import cx.aswin.boxlore.core.support.SupportRepository
 
-private val FEEDBACK_CONTENT_BOTTOM_PADDING = 240.dp
+/** Below this height the full layout scrolls instead of stretching the message card. */
+internal val FEEDBACK_TALL_ENOUGH = 600.dp
+private val FEEDBACK_SHORT_MESSAGE_HEIGHT = 220.dp
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * "Share your thoughts": the type pills, a roomy message card, photos (when the server switches
+ * them on), diagnostics and Send. While typing, the pills fold into one pill in the header and a
+ * slim bar rides on the keyboard, so Send is always reachable. After sending, [FeedbackSentScreen].
+ */
 @Composable
 fun FeedbackScreen(
-    podcastRepository: PodcastRepository,
+    supportRepository: SupportRepository,
     boxcastPrefs: BoxcastPrefs,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    bottomContentPadding: Dp = 0.dp,
 ) {
     TrackScreenView("feedback")
     val context = LocalContext.current
     val feedbackViewModel: FeedbackViewModel = viewModel(
-        factory = FeedbackViewModel.Factory(podcastRepository, boxcastPrefs, context),
+        factory = FeedbackViewModel.Factory(supportRepository, boxcastPrefs, context),
     )
     val uiState by feedbackViewModel.uiState.collectAsStateWithLifecycle()
 
     BackHandler(onBack = onBack)
 
-    Scaffold(
-        modifier = modifier.imePadding(),
-        topBar = {
-            TopAppBar(
-                modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
-                title = {
-                    Text(
-                        text = "Share your thoughts",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = GoogleSansWeight.semiBold,
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = "Navigate back",
-                        )
-                    }
-                },
-                actions = {
-                    if (uiState.message.isNotBlank() || uiState.stepsToReproduce.isNotBlank()) {
-                        IconButton(onClick = { feedbackViewModel.onDiscardDraft() }) {
-                            Icon(
-                                imageVector = Icons.Rounded.DeleteOutline,
-                                contentDescription = "Discard draft",
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                ),
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.surface,
-    ) { paddingValues ->
-        if (uiState.isSuccess) {
-            FeedbackSuccessView(
-                uiState = uiState,
-                onDone = onBack,
-                bottomPadding = FEEDBACK_CONTENT_BOTTOM_PADDING,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .boxloreCardWidth(BoxloreCardFamily.Utility)
-                    .padding(paddingValues)
-                    .padding(horizontal = 24.dp),
-            )
-        } else {
-            FeedbackFormView(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .boxloreCardWidth(BoxloreCardFamily.Utility)
-                    .padding(paddingValues)
-                    .verticalScroll(rememberScrollState())
-                    .padding(
-                        start = 20.dp,
-                        top = 12.dp,
-                        end = 20.dp,
-                        bottom = FEEDBACK_CONTENT_BOTTOM_PADDING,
-                    ),
-                uiState = uiState,
-                viewModel = feedbackViewModel,
-                context = context,
-            )
-        }
-
-        if (uiState.logsPreview != null || uiState.isLoadingLogs) {
-            LogsPreviewDialog(
-                logs = uiState.logsPreview,
-                isLoading = uiState.isLoadingLogs,
-                diagnosticInfo = uiState.diagnosticInfo,
-                onShare = { shareFeedbackDiagnostics(context, uiState) },
-                onDismissRequest = { feedbackViewModel.clearLogsPreview() },
-            )
-        }
-    }
-}
-
-@Composable
-private fun FeedbackFormView(
-    modifier: Modifier = Modifier,
-    uiState: FeedbackUiState,
-    viewModel: FeedbackViewModel,
-    context: Context,
-) {
-    Column(
+    FeedbackContent(
+        state = uiState,
+        actions = FeedbackComposeActions(
+            onBack = onBack,
+            onCategorySelected = feedbackViewModel::onCategorySelected,
+            onMessageChanged = feedbackViewModel::onMessageChanged,
+            onAttachDiagnosticsChanged = feedbackViewModel::onAttachDiagnosticsChanged,
+            onPhotosPicked = feedbackViewModel::onPhotosPicked,
+            onRemovePhoto = feedbackViewModel::onRemovePhoto,
+            onSubmit = feedbackViewModel::onSubmit,
+            onPreviewDiagnostics = feedbackViewModel::loadLogsForPreview,
+            onDiscardDraft = feedbackViewModel::onDiscardDraft,
+        ),
+        boxcastPrefs = boxcastPrefs,
+        bottomContentPadding = bottomContentPadding,
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        FeedbackDraftBanner(
-            visible = uiState.isDraftRestored,
-            onDiscard = { viewModel.onDiscardDraft() },
-            onDismiss = { viewModel.onDismissDraftBanner() },
-        )
+    )
 
-        FeedbackCategorySelector(
-            selectedCategory = uiState.category,
-            onSelectCategory = { viewModel.onCategorySelected(it) },
-        )
-
-        FeedbackMessageInput(
-            category = uiState.category,
-            message = uiState.message,
-            enabled = !uiState.isSubmitting,
-            onMessageChanged = { viewModel.onMessageChanged(it) },
-        )
-
-        if (uiState.category.isBugReport) {
-            FeedbackStepsInput(
-                steps = uiState.stepsToReproduce,
-                enabled = !uiState.isSubmitting,
-                onStepsChanged = { viewModel.onStepsChanged(it) },
-            )
-        }
-
-        FeedbackEmailInput(
-            category = uiState.category,
-            email = uiState.email,
-            enabled = !uiState.isSubmitting,
-            onEmailChanged = { viewModel.onEmailChanged(it) },
-        )
-
-        FeedbackDiagnosticsSection(
-            attachDiagnostics = uiState.attachDiagnostics,
+    if (uiState.logsPreview != null || uiState.isLoadingLogs) {
+        LogsPreviewDialog(
+            logs = uiState.logsPreview,
+            isLoading = uiState.isLoadingLogs,
             diagnosticInfo = uiState.diagnosticInfo,
-            onToggleAttach = { viewModel.onAttachDiagnosticsChanged(it) },
-            onPreviewLogs = { viewModel.loadLogsForPreview() },
+            onShare = { shareFeedbackDiagnostics(context, uiState) },
+            onDismissRequest = feedbackViewModel::clearLogsPreview,
         )
-
-        FeedbackCommunityRow(
-            gitHubUrl = buildFeedbackGitHubIssueUrl(uiState),
-            context = context,
-        )
-
-        FeedbackSubmitButton(
-            isSubmitting = uiState.isSubmitting,
-            message = uiState.message,
-            errorMessage = uiState.errorMessage,
-            onSubmit = { viewModel.onSubmit() },
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
+internal class FeedbackComposeActions(
+    val onBack: () -> Unit,
+    val onCategorySelected: (FeedbackCategory) -> Unit,
+    val onMessageChanged: (String) -> Unit,
+    val onAttachDiagnosticsChanged: (Boolean) -> Unit,
+    val onPhotosPicked: (List<Uri>) -> Unit,
+    val onRemovePhoto: (PickedPhoto) -> Unit,
+    val onSubmit: () -> Unit,
+    val onPreviewDiagnostics: () -> Unit,
+    val onDiscardDraft: () -> Unit,
+)
+
+/** The compose screen until the message is sent, then [FeedbackSentScreen]; Done leaves like Back. */
 @Composable
-private fun FeedbackDraftBanner(
-    visible: Boolean,
-    onDiscard: () -> Unit,
-    onDismiss: () -> Unit,
+internal fun FeedbackContent(
+    state: FeedbackUiState,
+    actions: FeedbackComposeActions,
+    boxcastPrefs: BoxcastPrefs,
+    bottomContentPadding: Dp,
+    modifier: Modifier = Modifier,
 ) {
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(),
-        exit = fadeOut(),
-    ) {
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            ),
-            shape = MaterialTheme.shapes.medium,
+    if (state.isSuccess) {
+        FeedbackSentScreen(
+            boxcastPrefs = boxcastPrefs,
+            repliesInApp = state.repliesInApp,
+            onDone = actions.onBack,
+            bottomContentPadding = bottomContentPadding,
+            modifier = modifier,
+        )
+    } else {
+        FeedbackComposeScreen(state = state, actions = actions, bottomContentPadding = bottomContentPadding, modifier = modifier)
+    }
+}
+
+/** True while the listener is writing: the message has focus and the keyboard is up. */
+internal fun isTypingLayout(messageFocused: Boolean, imeBottom: Dp): Boolean = messageFocused && imeBottom > 0.dp
+
+/** Space under the content: the keyboard while it's up, otherwise the app's bottom chrome and the system bar. */
+internal fun feedbackBottomPadding(imeBottom: Dp, chrome: Dp, systemBar: Dp): Dp = if (imeBottom > 0.dp) imeBottom else chrome + systemBar
+
+@Composable
+internal fun FeedbackComposeScreen(
+    state: FeedbackUiState,
+    actions: FeedbackComposeActions,
+    bottomContentPadding: Dp,
+    modifier: Modifier = Modifier,
+) {
+    var messageFocused by rememberSaveable { mutableStateOf(false) }
+    val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+    val systemBar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val typing = isTypingLayout(messageFocused, imeBottom)
+    val picker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickMultipleVisualMedia(maxItems = state.meta.maxPhotos.coerceAtLeast(2)),
+    ) { uris -> actions.onPhotosPicked(uris) }
+    val pickPhotos = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+
+    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(bottom = feedbackBottomPadding(imeBottom, bottomContentPadding, systemBar)),
+            contentAlignment = Alignment.TopCenter,
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Restore,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Restored draft from last session",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.weight(1f),
-                )
-                TextButton(onClick = onDiscard) {
-                    Text(
-                        text = "Discard",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    )
-                }
-                IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
-                    Icon(
-                        imageVector = Icons.Rounded.Close,
-                        contentDescription = "Dismiss banner",
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.size(16.dp),
-                    )
+            Column(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility)) {
+                if (typing) {
+                    TypingLayout(state, actions, onFocusChanged = { messageFocused = it }, onAddPhoto = pickPhotos)
+                } else {
+                    FullLayout(state, actions, onFocusChanged = { messageFocused = it }, onAddPhoto = pickPhotos)
                 }
             }
         }
@@ -296,452 +186,179 @@ private fun FeedbackDraftBanner(
 }
 
 @Composable
-private fun FeedbackCategorySelector(
-    selectedCategory: FeedbackCategory,
-    onSelectCategory: (FeedbackCategory) -> Unit,
+private fun ColumnScope.FullLayout(
+    state: FeedbackUiState,
+    actions: FeedbackComposeActions,
+    onFocusChanged: (Boolean) -> Unit,
+    onAddPhoto: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = "Category",
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = GoogleSansWeight.medium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            FeedbackCategory.entries.forEach { cat ->
-                val selected = selectedCategory == cat
-                FilterChip(
-                    selected = selected,
-                    onClick = { onSelectCategory(cat) },
-                    leadingIcon = {
-                        val icon = when (cat) {
-                            FeedbackCategory.FEATURE -> Icons.Rounded.Lightbulb
-                            FeedbackCategory.BUG -> Icons.Rounded.BugReport
-                            FeedbackCategory.AUDIO -> Icons.Rounded.Headphones
-                            FeedbackCategory.OTHER -> Icons.AutoMirrored.Rounded.Message
-                        }
-                        Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(16.dp))
-                    },
-                    label = { Text(cat.label) },
-                    shape = MaterialTheme.shapes.medium,
-                    colors = FilterChipDefaults.filterChipColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    ),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun FeedbackMessageInput(
-    category: FeedbackCategory,
-    message: String,
-    enabled: Boolean = true,
-    onMessageChanged: (String) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        OutlinedTextField(
-            value = message,
-            onValueChange = onMessageChanged,
-            enabled = enabled,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(150.dp),
-            placeholder = {
+    val uriHandler = LocalUriHandler.current
+    TopRow(state, actions)
+    BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+        val tall = maxHeight >= FEEDBACK_TALL_ENOUGH
+        val content: @Composable ColumnScope.() -> Unit = {
+            Column(Modifier.padding(horizontal = 20.dp)) {
+                Text("Share your thoughts", style = MaterialTheme.typography.headlineMedium)
+                Spacer(Modifier.height(4.dp))
                 Text(
-                    text = category.placeholder,
+                    "Bugs, ideas, anything at all. The boxlore team reads every message.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                )
-            },
-            shape = MaterialTheme.shapes.large,
-            textStyle = MaterialTheme.typography.bodyMedium,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            ),
-        )
-
-        Text(
-            text = "${message.length}/2000",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.End,
-        )
-    }
-}
-
-@Composable
-private fun FeedbackStepsInput(
-    steps: String,
-    enabled: Boolean = true,
-    onStepsChanged: (String) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(
-            text = "Steps to Reproduce (Optional)",
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = GoogleSansWeight.medium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-
-        Surface(
-            shape = MaterialTheme.shapes.small,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Lightbulb,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(16.dp),
-                )
-                Text(
-                    text = "Tip: Reproduce the issue right before sending so recent logs capture the error.",
-                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            }
-        }
-
-        OutlinedTextField(
-            value = steps,
-            onValueChange = onStepsChanged,
-            enabled = enabled,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(100.dp),
-            placeholder = {
-                Text(
-                    text = "1. Play episode X\n2. At 02:15 audio stops\n3. Happens on both Wi-Fi and Cellular",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                )
-            },
-            shape = MaterialTheme.shapes.large,
-            textStyle = MaterialTheme.typography.bodyMedium,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            ),
-        )
-    }
-}
-
-private fun getEmailSupportingText(category: FeedbackCategory): String = when (category) {
-    FeedbackCategory.BUG, FeedbackCategory.AUDIO ->
-        "We obsess over getting boxlore right. Rather than applying a quick band-aid, we would like to chat more about the issue to ensure that it is truly solved. So please, if possible, share your email — we promise to respect your inbox with no marketing, only direct help on this issue."
-    FeedbackCategory.FEATURE ->
-        "We love shaping boxlore alongside our listeners. If your idea sparks something great, we’d love to reach out to brainstorm, discuss designs, or have you test it early — strictly product chats, zero marketing."
-    FeedbackCategory.OTHER ->
-        "Every note helps shape where boxlore goes next. Leave your email if you'd like us to write back — we read every single message and promise to respect your inbox with zero marketing."
-}
-
-@Composable
-private fun FeedbackEmailInput(
-    category: FeedbackCategory,
-    email: String,
-    enabled: Boolean = true,
-    onEmailChanged: (String) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = "Contact Email (Optional)",
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = GoogleSansWeight.medium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-
-        OutlinedTextField(
-            value = email,
-            onValueChange = onEmailChanged,
-            enabled = enabled,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = {
-                Text(
-                    text = "you@example.com",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                )
-            },
-            supportingText = {
-                Text(
-                    text = getEmailSupportingText(category),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                )
-            },
-            singleLine = true,
-            shape = MaterialTheme.shapes.large,
-            textStyle = MaterialTheme.typography.bodyMedium,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            ),
-        )
-    }
-}
-
-@Composable
-private fun FeedbackDiagnosticsSection(
-    attachDiagnostics: Boolean,
-    diagnosticInfo: DiagnosticInfo?,
-    onToggleAttach: (Boolean) -> Unit,
-    onPreviewLogs: () -> Unit,
-) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ),
-        shape = MaterialTheme.shapes.large,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Include device diagnostics",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = GoogleSansWeight.medium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        text = "Helps troubleshoot hardware, OS, and network issues",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                state.shownNotice?.let { notice ->
+                    Spacer(Modifier.height(12.dp))
+                    Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+                        Text(
+                            notice,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        )
+                    }
                 }
-                Switch(
-                    checked = attachDiagnostics,
-                    onCheckedChange = onToggleAttach,
+            }
+            FeedbackTypePills(
+                selected = state.category,
+                onSelect = actions.onCategorySelected,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp),
+            )
+            FeedbackMessageCard(
+                value = state.message,
+                onValueChange = actions.onMessageChanged,
+                placeholder = state.category.placeholder,
+                maxChars = state.meta.maxBody.coerceAtMost(FeedbackViewModel.MAX_MESSAGE),
+                onFocusChanged = onFocusChanged,
+                modifier = Modifier
+                    .padding(start = 16.dp, end = 16.dp, top = 16.dp)
+                    .fillMaxWidth()
+                    .then(if (tall) Modifier.weight(1f) else Modifier.height(FEEDBACK_SHORT_MESSAGE_HEIGHT)),
+            )
+            if (state.meta.photosEnabled) {
+                FeedbackPhotoRow(
+                    photos = state.photos,
+                    canAdd = state.canAddPhotos,
+                    maxPhotos = state.meta.maxPhotos,
+                    onAdd = onAddPhoto,
+                    onRemove = actions.onRemovePhoto,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
                 )
             }
-
-            if (attachDiagnostics && diagnosticInfo != null) {
-                DiagnosticsDetailsContent(
-                    diagnosticInfo = diagnosticInfo,
-                    onPreviewLogs = onPreviewLogs,
+            FeedbackDiagnosticsRow(
+                checked = state.attachDiagnostics,
+                onCheckedChange = actions.onAttachDiagnosticsChanged,
+                modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 8.dp),
+            )
+            state.errorMessage?.let { error ->
+                Text(
+                    error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
                 )
             }
+            FeedbackSendButton(
+                enabled = state.canSend,
+                sending = state.isSubmitting,
+                onClick = actions.onSubmit,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp).fillMaxWidth().height(64.dp),
+            )
+            FeedbackPrivacyLink(
+                onOpen = { uriHandler.openUri(FEEDBACK_PRIVACY_URL) },
+                modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 4.dp),
+            )
+        }
+        if (tall) {
+            Column(Modifier.fillMaxSize(), content = content)
+        } else {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), content = content)
         }
     }
 }
 
 @Composable
-private fun DiagnosticsDetailsContent(
-    diagnosticInfo: DiagnosticInfo,
-    onPreviewLogs: () -> Unit,
+private fun ColumnScope.TypingLayout(
+    state: FeedbackUiState,
+    actions: FeedbackComposeActions,
+    onFocusChanged: (Boolean) -> Unit,
+    onAddPhoto: () -> Unit,
 ) {
-    Surface(
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = "boxlore v${diagnosticInfo.appVersion} (${diagnosticInfo.buildCode}) • Android ${diagnosticInfo.androidRelease} (API ${diagnosticInfo.sdkInt})",
-                style = MaterialTheme.typography.bodySmall,
-                fontFamily = FontFamily.Monospace,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = "${diagnosticInfo.manufacturer} ${diagnosticInfo.model} • ${diagnosticInfo.networkType} • ${diagnosticInfo.audioRoute}",
-                style = MaterialTheme.typography.bodySmall,
-                fontFamily = FontFamily.Monospace,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 2.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier.weight(1f),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.CheckCircle,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(15.dp),
-            )
-            Text(
-                text = "Included automatically with report",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-            )
-        }
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        TextButton(
-            onClick = onPreviewLogs,
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Visibility,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = "Preview logs",
-                style = MaterialTheme.typography.labelMedium,
-            )
+        FeedbackIconButton(Icons.AutoMirrored.Rounded.ArrowBack, "Navigate back", actions.onBack)
+        Text("Share your thoughts", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+        Box(Modifier.padding(end = 8.dp)) {
+            FeedbackTypeMenuPill(selected = state.category, onSelect = actions.onCategorySelected)
         }
     }
+    FeedbackMessageCard(
+        value = state.message,
+        onValueChange = actions.onMessageChanged,
+        placeholder = state.category.placeholder,
+        maxChars = state.meta.maxBody.coerceAtMost(FeedbackViewModel.MAX_MESSAGE),
+        onFocusChanged = onFocusChanged,
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp).fillMaxWidth().weight(1f),
+    )
+    state.errorMessage?.let { error ->
+        Text(error, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
+    }
+    FeedbackTypingBar(
+        state = state,
+        onAddPhoto = onAddPhoto,
+        onToggleDiagnostics = { actions.onAttachDiagnosticsChanged(!state.attachDiagnostics) },
+        onSend = actions.onSubmit,
+    )
 }
 
 @Composable
-private fun FeedbackCommunityRow(
-    gitHubUrl: String,
-    context: Context,
-) {
+private fun TopRow(state: FeedbackUiState, actions: FeedbackComposeActions) {
+    val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
+    var menuOpen by remember { mutableStateOf(false) }
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        OutlinedButton(
-            onClick = {
-                try {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(gitHubUrl)).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    context.startActivity(intent)
-                } catch (_: ActivityNotFoundException) {
-                    // Ignored if no browser/app can handle the intent
+        FeedbackIconButton(Icons.AutoMirrored.Rounded.ArrowBack, "Navigate back", actions.onBack)
+        Box {
+            FeedbackIconButton(Icons.Rounded.MoreVert, "More options", { menuOpen = true })
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                DropdownMenuItem(text = { Text("Preview diagnostics") }, onClick = {
+                    menuOpen = false
+                    actions.onPreviewDiagnostics()
+                })
+                DropdownMenuItem(text = { Text("Rate on Play") }, onClick = {
+                    menuOpen = false
+                    AnalyticsHelper.trackStoreReviewOpened(method = "store_page", source = "feedback_screen")
+                    openPlayStorePage(context)
+                })
+                DropdownMenuItem(text = { Text("Report on GitHub") }, onClick = {
+                    menuOpen = false
+                    uriHandler.openUri(buildFeedbackGitHubIssueUrl(state))
+                })
+                if (state.message.isNotBlank()) {
+                    DropdownMenuItem(text = { Text("Discard draft") }, onClick = {
+                        menuOpen = false
+                        actions.onDiscardDraft()
+                    })
                 }
-            },
-            modifier = Modifier.weight(1f),
-            shape = MaterialTheme.shapes.large,
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Rounded.Launch,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text("GitHub Issue", maxLines = 1)
-        }
-
-        OutlinedButton(
-            onClick = {
-                cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                    .trackStoreReviewOpened(method = "store_page", source = "feedback_screen")
-                val pkgName = context.packageName
-                val marketUri = try {
-                    Uri.parse("market://details?id=$pkgName")
-                } catch (_: Exception) {
-                    Uri.parse("https://play.google.com/store/apps/details?id=$pkgName")
-                }
-                try {
-                    val intent = Intent(Intent.ACTION_VIEW, marketUri).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    context.startActivity(intent)
-                } catch (_: ActivityNotFoundException) {
-                    try {
-                        val webIntent = Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse("https://play.google.com/store/apps/details?id=$pkgName"),
-                        ).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        context.startActivity(webIntent)
-                    } catch (_: ActivityNotFoundException) {
-                        // Ignored if neither store nor browser is available
-                    }
-                }
-            },
-            modifier = Modifier.weight(1f),
-            shape = MaterialTheme.shapes.large,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Star,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text("Rate on Play", maxLines = 1)
+            }
         }
     }
 }
 
-@Composable
-private fun FeedbackSubmitButton(
-    isSubmitting: Boolean,
-    message: String,
-    errorMessage: String?,
-    onSubmit: () -> Unit,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        if (errorMessage != null) {
-            Text(
-                text = errorMessage,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-            )
-        }
-
-        Button(
-            onClick = onSubmit,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            enabled = !isSubmitting && message.isNotBlank(),
-            shape = MaterialTheme.shapes.large,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ),
-        ) {
-            if (isSubmitting) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    strokeWidth = 2.dp,
-                )
-            } else {
-                Text(
-                    text = "Send Feedback",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = GoogleSansWeight.semiBold,
-                )
-            }
+/** The app's Play listing: the store app when there is one, else the web page. */
+internal fun openPlayStorePage(context: android.content.Context) {
+    val pkg = context.packageName
+    val tries = listOf(Uri.parse("market://details?id=$pkg"), Uri.parse("https://play.google.com/store/apps/details?id=$pkg"))
+    for (uri in tries) {
+        try {
+            context.startActivity(Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            return
+        } catch (_: android.content.ActivityNotFoundException) {
+            // Try the next way, or do nothing when neither store nor browser exists.
         }
     }
 }

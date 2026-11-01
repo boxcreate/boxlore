@@ -2,13 +2,14 @@ package cx.aswin.boxlore.feature.settings
 
 import android.app.Application
 import androidx.compose.runtime.Composable
-import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.network.SupportApi
 import cx.aswin.boxlore.core.prefs.AutoDownloadBackgroundSettings
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.DiscoverySections
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import cx.aswin.boxlore.core.support.SupportRepository
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import cx.aswin.boxlore.feature.settings.downloads.AutoDownloadSettingsScreen
@@ -60,7 +61,7 @@ class TabletSettingsCaptureTest(private val scene: String, configuration: PhoneG
                 when {
                     scene.startsWith("automatic") -> AutoDownloadSettingsScreen(prefs, {})
                     scene.startsWith("smart") -> SmartDownloadsSettingsScreen(prefs, {})
-                    scene == "feedback" -> FeedbackScreen(mock(PodcastRepository::class.java), mock(BoxcastPrefs::class.java), {})
+                    scene == "feedback" -> FeedbackScreen(SupportRepository(mock(SupportApi::class.java), { _, _, _, _, _ -> false }), mock(BoxcastPrefs::class.java), {})
                     else -> {
                         val destination = captureDestination(scene)
                         AdaptiveSettingsLayout(destination, SettingsScreenConfig({}, {}), {}) { current -> CaptureSettingsPage(current) }

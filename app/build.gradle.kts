@@ -182,6 +182,7 @@ dependencies {
     implementation(libs.androidx.media3.cast)
     implementation(libs.androidx.media3.session)
     implementation(projects.core.rss)
+    implementation(projects.core.support)
     implementation(projects.feature.home)
     implementation(projects.feature.settings)
     implementation(project(":feature:player"))

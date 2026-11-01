@@ -85,6 +85,7 @@ dependencies {
     kover(projects.feature.library)
         kover(projects.feature.history)
         kover(projects.core.auth)
+    kover(projects.core.support)
     kover(projects.feature.onboarding)
     kover(projects.feature.briefing)
     kover(projects.feature.widgets)
