@@ -47,6 +47,19 @@ class AdaptivePlayerChromeControllerTest {
     }
 
     @Test
+    fun `Feedback keeps the small player on every pane, like Lore`() {
+        controller.configure(true, "episode-a", "feedback?thread={thread}")
+        assertTrue(controller.isCompact)
+        browse(-200f)
+        assertTrue(controller.isCompact)
+        controller.configure(true, "episode-a", "settings")
+        assertFalse(controller.isCompact)
+        assertTrue(keepsCompactPlayer("feedback"))
+        assertFalse(keepsCompactPlayer("settings?page=feedback"))
+        assertFalse(keepsCompactPlayer(null))
+    }
+
+    @Test
     fun `Lore history is ordinary browsing and unavailable chrome never compacts`() {
         controller.configure(true, "episode-a", "learn/history")
         assertFalse(controller.isCompact)

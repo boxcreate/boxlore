@@ -32,6 +32,7 @@ object PushTargetRouteAllowlist {
         "explore?",
         "briefing",
         "library/",
+        "feedback?",
     )
 
     private val appOrWebSchemes = listOf("http://", "https://", "boxlore://", "boxcast://")
@@ -56,3 +57,6 @@ object PushTargetRouteAllowlist {
         return if (isAllowed(trimmed)) trimmed else null
     }
 }
+
+/** Push targets that replace an open tablet detail instead of opening beneath it: Feedback (a reply notification). */
+fun pushClosesDetails(route: String): Boolean = route == "feedback" || route.startsWith("feedback?")

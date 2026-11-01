@@ -4,12 +4,16 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Feedback
@@ -21,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -29,12 +34,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.BoxloreClickInteraction
 import cx.aswin.boxlore.core.designsystem.theme.BoxloreClickOptions
 import cx.aswin.boxlore.core.designsystem.theme.boxloreCombinedClickable as combinedClickable
 import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
+
+/**
+ * True while a reply from the boxlore team is unread; the app shell provides it. The Feedback
+ * segment then takes the Update segment's look (primary container and shimmer) with a dot.
+ */
+val LocalFeedbackReplyWaiting = compositionLocalOf { false }
 
 /** Connected action segments; screen owners retain navigation and shortcut callbacks. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -68,16 +80,24 @@ fun TopBarUtilityActions(
                 UpdateAvailableIcon(Modifier.size(22.dp))
             }
         }
-        UtilityActionSegment(
-            onClick = onFeedbackClick,
-            onLongClick = onFeedbackLongClick,
-            shape = if (onUpdate == null) leading else middle,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Feedback,
-                contentDescription = "Send Feedback",
-                modifier = Modifier.size(20.dp),
-            )
+        val replyWaiting = LocalFeedbackReplyWaiting.current
+        val feedbackShape = if (onUpdate == null) leading else middle
+        Box {
+            UtilityActionSegment(
+                onClick = onFeedbackClick,
+                onLongClick = onFeedbackLongClick,
+                shape = feedbackShape,
+                modifier = if (replyWaiting) Modifier.clip(feedbackShape).then(updateShimmerModifier()) else Modifier,
+                containerColor = if (replyWaiting) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = if (replyWaiting) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Feedback,
+                    contentDescription = if (replyWaiting) "Feedback, new reply" else "Send Feedback",
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            if (replyWaiting) FeedbackReplyDot(Modifier.align(Alignment.TopEnd))
         }
         UtilityActionSegment(
             onClick = onSettingsClick,
@@ -93,6 +113,22 @@ fun TopBarUtilityActions(
         }
     }
 }
+
+/** The new-reply dot: outside the segment's clip, ringed with the surface so it reads on any background. */
+@Composable
+private fun FeedbackReplyDot(modifier: Modifier = Modifier) {
+    Box(
+        modifier
+            .offset(x = 3.dp, y = (-3).dp)
+            .size(10.dp)
+            .background(MaterialTheme.colorScheme.surface, CircleShape)
+            .padding(2.dp)
+            .background(MaterialTheme.colorScheme.primary, CircleShape)
+            .testTag(FEEDBACK_REPLY_DOT_TAG),
+    )
+}
+
+const val FEEDBACK_REPLY_DOT_TAG = "top_bar_feedback_reply_dot"
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

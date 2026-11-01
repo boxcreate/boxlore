@@ -69,6 +69,12 @@ Here is the data collected by our application and API services, and exactly how 
 * **Why:** To see which design people respond to best. Each person keeps seeing the same design, so the comparison stays fair.
 * **Good to know:** This is part design survey, part our attempt to earn back what it costs to keep boxlore running. Rest assured, it's tied only to the anonymous analytics ID described above, never to your name, email or account. We just want a rough idea of which designs lead more people to support boxlore.
 
+### 9. Feedback and Replies
+* **What is sent:** What you write when you send feedback, the type you pick, and the app version. If you leave "Include device diagnostics" on, also your phone model, Android version, network type, audio output and language, and boxlore's own recent logs with keys, sign-in details and email addresses removed. Any photos or screenshots you attach.
+* **Why:** So the boxlore team can read it, reply in the app, and fix what broke.
+* **Where it goes:** Your conversations are stored on our servers, tied to your phone through a coded form of boxlore's install ID and a key stored on your phone (and to your account, also coded, if you're signed in, so they show on your other devices). They aren't linked to your analytics ID; analytics only notes that feedback was sent and its type. The team reads and answers in Telegram, which receives your message, its type, your phone model, app version and any photos, but never your email address, your logs or your analytics ID. Reply notifications go through Firebase Cloud Messaging. Older versions of boxlore also email your feedback to the team, with your email address if you gave one.
+* **Good to know:** Conversations are kept until you ask us to delete them; photos are deleted 60 days after a conversation is solved or closed. Deleting your account doesn't delete them: email privacy@aswin.cx, tell us roughly what you wrote and when, and we'll delete them from our servers and the team's Telegram chat.
+
 ---
 
 ## What Stays Strictly Local
@@ -76,6 +82,7 @@ Here is the data collected by our application and API services, and exactly how 
 * **Your Library Database & Sync Isolation:** Your downloaded audio files, custom tags, and complete library records live on your phone. If you choose to enable cloud sync, your backup data is stored solely for device synchronization and is never tied to or cross-referenced with telemetry events. (Individual actions like liking an episode or playing a show emit anonymous telemetry events as described above, but they are never connected to your personal identity or account email).
 * **Your Local Learning Brain:** The local ranking weights, skip counters, and playback habit adjustments that tune the order of your feeds live in your phone's local SQLite database.
 * **Your Backups:** A full JSON backup you export in Settings is created on your phone and saved to your phone storage; we don't receive a copy. If you turn on cloud sync, your library is stored on our servers so it can sync across your devices, as described above.
+* **Your Feedback Draft:** A message you haven't sent yet stays on your phone.
 
 ---
 

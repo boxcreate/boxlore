@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -17,9 +18,12 @@ import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.FEEDBACK_REPLY_DOT_TAG
+import cx.aswin.boxlore.core.designsystem.components.LocalFeedbackReplyWaiting
 import cx.aswin.boxlore.core.designsystem.components.LocalUpdateAvailableAction
 import cx.aswin.boxlore.core.designsystem.components.TopBarUtilityActions
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
@@ -38,6 +42,7 @@ class TopBarUtilityActionsTest {
     @get:Rule val composeRule = createComposeRule()
     private lateinit var view: View
     private val actions = mutableListOf<String>()
+    private val replyWaiting = mutableStateOf(false)
 
     @Test fun `press retains the outer connected corners without a rectangular highlight`() {
         show(update = false)
@@ -88,11 +93,34 @@ class TopBarUtilityActionsTest {
         composeRule.waitForIdle()
     }
 
+    @Test fun `a waiting reply lights the Feedback segment with a dot, next to an update too`() {
+        show(update = true)
+        composeRule.onNodeWithTag(FEEDBACK_REPLY_DOT_TAG).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Send Feedback").assertExists()
+
+        composeRule.runOnIdle { replyWaiting.value = true }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(FEEDBACK_REPLY_DOT_TAG).assertExists()
+        composeRule.onNodeWithContentDescription("Update available").assertExists()
+        composeRule.onNodeWithContentDescription("Feedback, new reply").performClick()
+        assertEquals(listOf("feedback"), actions)
+        checkCornerWhilePressed("Settings", trailing = true)
+    }
+
+    @Test fun `without an update, a waiting reply takes the leading Feedback segment`() {
+        show(update = false)
+        composeRule.runOnIdle { replyWaiting.value = true }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(FEEDBACK_REPLY_DOT_TAG).assertExists()
+        checkCornerWhilePressed("Feedback, new reply", trailing = false)
+        checkCornerWhilePressed("Settings", trailing = true)
+    }
+
     private fun show(update: Boolean) {
         val updateAction: (() -> Unit)? = if (update) ({ actions.add("update") }) else null
         composeRule.setContent {
             view = LocalView.current
-            CompositionLocalProvider(LocalUpdateAvailableAction provides updateAction) {
+            CompositionLocalProvider(LocalUpdateAvailableAction provides updateAction, LocalFeedbackReplyWaiting provides replyWaiting.value) {
                 BoxLoreTheme(dynamicColor = false) {
                     Box(Modifier.fillMaxSize().background(Color.Magenta).padding(24.dp)) {
                         TopBarUtilityActions(

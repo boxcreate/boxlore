@@ -394,11 +394,17 @@ private fun androidx.navigation.NavGraphBuilder.addFeedbackRoute(w: NavGraphWiri
     val navController = w.navController
     val container = w.container
 
-    composable("feedback") {
+    // `feedback?thread=<id>` opens one conversation (a reply notification's tap); plain `feedback` still works.
+    composable(
+        route = "feedback?thread={thread}",
+        arguments = listOf(navArgument("thread") { type = NavType.StringType; nullable = true; defaultValue = null }),
+    ) { entry ->
         cx.aswin.boxlore.feature.settings.feedback.FeedbackScreen(
-            podcastRepository = container.podcastRepository,
+            supportRepository = container.supportRepository,
             boxcastPrefs = container.boxcastPrefs,
             onBack = { navController.popBackStack() },
+            bottomContentPadding = w.session.miniPlayerPadding,
+            openThreadId = entry.arguments?.getString("thread"),
         )
     }
 }

@@ -146,7 +146,11 @@ fun BoxLoreAppRoot(
                     )
                     tabletNavigation.handleDeepLink(if (intent.data != null) intent else deepLinkIntent)
                 },
-                navigate = { tabletNavigation.navigate(navController, it) },
+                navigate = { route ->
+                    // A reply notification opens Feedback over whatever detail the tablet had open.
+                    if (cx.aswin.boxlore.navigation.pushClosesDetails(route)) tabletNavigation.closeDetails()
+                    tabletNavigation.navigate(navController, route)
+                },
                 openExternal = { activity.startActivity(externalPushActionIntent(it)) },
                 openUpdater = { download ->
                     if (download) {
@@ -361,6 +365,7 @@ fun BoxLoreAppRoot(
             val observer =
                 LifecycleEventObserver { _, event ->
                     if (event == Lifecycle.Event.ON_START) {
+                        container.checkSupportReplies()
                         if (SubscriptionResumeRefreshLogic.shouldRequestRefreshOnStart(skipFirstStart)) {
                             container.subscriptionForegroundSync.requestRefresh()
                         }
@@ -556,7 +561,8 @@ fun BoxLoreAppRoot(
         fontRoundness = fontRoundness,
     ) {
         cx.aswin.boxlore.updates.AppUpdatesHost(application.container.appUpdates, activity) {
-        CompositionLocalProvider(LocalBoxloreWindowLayout provides windowLayout, cx.aswin.boxlore.core.designsystem.components.LocalArtworkRecoveryGeneration provides artworkRecoveryGeneration, LocalNavigationStyle provides navigationStyle, cx.aswin.boxlore.core.designsystem.theme.LocalArtworkNavigationColors provides artworkNavigation) {
+        val feedbackReplyWaiting by application.container.supportRepository.replyWaiting.collectAsState()
+        CompositionLocalProvider(cx.aswin.boxlore.core.designsystem.components.LocalFeedbackReplyWaiting provides feedbackReplyWaiting, LocalBoxloreWindowLayout provides windowLayout, cx.aswin.boxlore.core.designsystem.components.LocalArtworkRecoveryGeneration provides artworkRecoveryGeneration, LocalNavigationStyle provides navigationStyle, cx.aswin.boxlore.core.designsystem.theme.LocalArtworkNavigationColors provides artworkNavigation) {
             // Limited API sessions step up here before AI routes; invisible unless Turnstile asks for a tap.
             application.apiSessions?.let { sessions ->
                 cx.aswin.boxlore.session.turnstile.TurnstileStepUpHost(sessions.turnstile, sessions.apiBaseUrl)

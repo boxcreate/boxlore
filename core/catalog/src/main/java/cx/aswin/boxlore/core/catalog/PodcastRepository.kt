@@ -100,6 +100,9 @@ class PodcastRepository(
      */
     val apiV2: BoxLoreApiV2 by lazy { boxLoreApiV2 ?: NetworkModule.createBoxLoreApiV2(baseUrl, cachedClient) }
 
+    /** Support conversations (`/support/...`), on the same cached client and base URL (one HTTP cache per process). */
+    val supportApi: cx.aswin.boxlore.core.network.SupportApi by lazy { NetworkModule.createSupportApi(baseUrl, cachedClient) }
+
     /**
      * The feed-first show page: reads a show's own feed into the phone's stored copy, with its
      * failure ladder (P4 PR 16, own-IDs plan section 11).

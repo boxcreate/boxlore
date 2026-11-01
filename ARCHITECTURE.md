@@ -43,7 +43,7 @@ These values are part of the shipping product. Renames or recreations break upgr
 :app
 :core:model | :core:auth | :core:network | :core:domain | :core:database | :core:prefs
 :core:analytics | :core:catalog | :core:rss | :core:downloads | :core:playback | :core:ranking
-:core:designsystem | :core:testing
+:core:designsystem | :core:testing | :core:support
 :feature:home | :feature:settings | :feature:history | :feature:player | :feature:info | :feature:explore
 :feature:library | :feature:onboarding | :feature:briefing | :feature:widgets
 ```
@@ -57,6 +57,7 @@ On disk, the folder path matches the Gradle id (`core/playback` → `:core:playb
 | `:app` | `Application`, `AppContainer`, navigation host, FCM, `WorkerFactory` | [`app/README.md`](app/README.md) |
 | `:core:model` | Shared models and enums | [`core/model/README.md`](core/model/README.md) |
 | `:core:auth` | Authentication domain, `AuthRepository`, and Firebase Auth implementation | [`core/auth/README.md`](core/auth/README.md) |
+| `:core:support` | Support conversations with the API (`SupportRepository`): switches, sending, photo upload, old-form fallback | [`core/support/README.md`](core/support/README.md) |
 | `:core:network` | HTTP clients (`BoxLoreApi`, `BoxLoreApiV2` for `/v2` / `NetworkModule`) and network DTOs | [`core/network/README.md`](core/network/README.md) |
 | `:core:domain` | Thin ports and small result types (no Room or repositories) | [`core/domain/README.md`](core/domain/README.md) |
 | `:core:database` | Main Room database, entities, DAOs, migrations | [`core/database/README.md`](core/database/README.md) |
@@ -92,6 +93,7 @@ On disk, the folder path matches the Gradle id (`core/playback` → `:core:playb
 | `:core:playback` | `cx.aswin.boxlore.core.playback` |
 | `:core:database` | `cx.aswin.boxlore.core.database` |
 | `:core:catalog` | `cx.aswin.boxlore.core.catalog` |
+| `:core:support` | `cx.aswin.boxlore.core.support` |
 
 ## Dependency direction
 
@@ -118,6 +120,7 @@ flowchart TB
   domain[:core:domain]
   database[:core:database]
   network[:core:network]
+  support[:core:support]
   design[:core:designsystem]
   model[:core:model]
 
@@ -140,6 +143,9 @@ flowchart TB
   catalog --> database
   catalog --> ranking
   catalog --> network
+  features --> support
+  app --> support
+  support --> network
   catalog --> model
   features --> analytics
   features --> ranking

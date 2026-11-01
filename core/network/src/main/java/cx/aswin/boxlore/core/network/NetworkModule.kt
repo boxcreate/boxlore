@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.network
 import android.util.Log
 import cx.aswin.boxlore.core.network.session.ApiSessionInterceptor
 import cx.aswin.boxlore.core.network.session.ApiSessionManager
+import cx.aswin.boxlore.core.network.session.RequestProofInterceptor
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -44,6 +45,18 @@ object NetworkModule {
     private val sessionInterceptor = ApiSessionInterceptor { sessionManager }
 
     /**
+     * The signed-in account's Firebase ID token (cached, may block briefly on an OkHttp thread), set
+     * by app wiring. Support requests carry it so the API links conversations to the account.
+     */
+    @Volatile
+    var accountToken: (() -> String?)? = null
+
+    private val accountTokenInterceptor = AccountTokenInterceptor { accountToken?.invoke() }
+
+    /** Signs support requests with the device key (see [RequestProofInterceptor]). */
+    private val requestProofInterceptor = RequestProofInterceptor { token, method, path -> sessionManager?.requestProofs?.proof(token, method, path) }
+
+    /**
      * Optional Authenticator (e.g. FirebaseAuthAuthenticator) for handling HTTP 401
      * token refreshes. Set by application wiring at startup.
      */
@@ -64,6 +77,7 @@ object NetworkModule {
         redactHeader(ApiSessionInterceptor.SESSION_HEADER)
         redactHeader(ApiSessionInterceptor.RENEW_HEADER)
         redactHeader(ApiSessionInterceptor.PROOF_HEADER)
+        redactHeader(RequestProofInterceptor.PROOF_HEADER)
     }
 
     private val okHttpClient = OkHttpClient.Builder().apply {
@@ -122,6 +136,17 @@ object NetworkModule {
      * Added in P4 of the own-episode-IDs plan (plan section 9).
      */
     fun createBoxLoreApiV2(baseUrl: String, client: OkHttpClient): BoxLoreApiV2 = retrofit(baseUrl, client).create(BoxLoreApiV2::class.java)
+
+    /**
+     * Builds [SupportApi] on [client] (production: the cached client from [createCachedClient]),
+     * with every request signed by the device key, which the support routes require, and the
+     * account's ID token when signed in ([accountToken]).
+     */
+    fun createSupportApi(baseUrl: String, client: OkHttpClient): SupportApi =
+        retrofit(
+            baseUrl,
+            client.newBuilder().addInterceptor(accountTokenInterceptor).addNetworkInterceptor(requestProofInterceptor).build(),
+        ).create(SupportApi::class.java)
 
     private fun retrofit(baseUrl: String, client: OkHttpClient): Retrofit = Retrofit.Builder()
         .baseUrl(baseUrl)

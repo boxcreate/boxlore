@@ -160,6 +160,9 @@ class ApiSessionManager(
     fun stepUpForAiRoute(): SessionHeaders? =
         runBlocking { withTimeoutOrNull(timing.stepUpRequestWaitMs) { stepUp.run(joinRunning = false) } }?.let { current() }
 
+    /** Signs requests to routes that hold this install's private data (see [RequestProofSigner]). */
+    val requestProofs = RequestProofSigner(deviceKey) { synchronized(lock) { book.serverNow } }
+
     fun onForegroundChanged(foreground: Boolean) = scheduler.setForeground(foreground)
 
     fun onNetworkChanged(online: Boolean) = scheduler.setOnline(online)

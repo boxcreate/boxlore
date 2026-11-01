@@ -28,6 +28,12 @@ data class DiagnosticInfo(
     /**
      * Compact summary designed to fit comfortably inside the in-app feedback body (~120 chars).
      */
+    /** "Google Pixel 9", without repeating a brand the model already starts with. */
+    fun deviceLabel(): String {
+        val brand = manufacturer.replaceFirstChar { it.uppercaseChar() }
+        return if (model.startsWith(manufacturer, ignoreCase = true)) model else "$brand $model".trim()
+    }
+
     fun toCondensedSummary(): String = "App: v$appVersion ($buildCode) | OS: Android $androidRelease (API $sdkInt) | Device: $manufacturer $model | Net: $networkType | Audio: $audioRoute"
 
     /**
