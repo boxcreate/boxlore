@@ -589,6 +589,9 @@ object AnalyticsHelper : Analytics {
         isSubscribed: Boolean,
         entryPoint: String? = null,
         entryPointContext: Map<String, Any>? = null,
+        playbackMode: String = PlaybackListenValues.MODE_STREAM,
+        speed: Float = 1.0f,
+        listen: ListenStart? = null,
     ) = PlaybackAnalyticsTracks.trackPlaybackStarted(
         podcastId,
         podcastName,
@@ -601,7 +604,17 @@ object AnalyticsHelper : Analytics {
         isSubscribed,
         entryPoint,
         entryPointContext,
+        playbackMode = playbackMode,
+        clientSurface = PlaybackListenValues.clientSurface(listen?.controlledBy.orEmpty()),
+        speed = speed,
+        listen = listen,
     )
+
+    /** One record per listen, sent when it ends; see [PlaybackListenSummary]. */
+    fun trackPlaybackSessionEnded(listen: PlaybackListenSummary) = ListenAnalyticsTracks.trackPlaybackSessionEnded(listen)
+
+    /** A listen the previous run left unfinished because Android ended the app. */
+    fun trackPlaybackInterrupted(listen: PlaybackInterruptedListen) = ListenAnalyticsTracks.trackPlaybackInterrupted(listen)
 
     fun trackPlaybackPaused(
         podcastId: String?,
@@ -711,7 +724,18 @@ object AnalyticsHelper : Analytics {
         episodeId: String?,
         podcastName: String? = null,
         episodeTitle: String? = null,
-    ) = PlaybackAnalyticsTracks.trackPlaybackError(errorCode, errorMessage, podcastId, episodeId, podcastName, episodeTitle)
+        listenId: String? = null,
+        cause: Throwable? = null,
+    ) = PlaybackAnalyticsTracks.trackPlaybackError(
+        errorCode,
+        errorMessage,
+        podcastId,
+        episodeId,
+        podcastName,
+        episodeTitle,
+        listenId = listenId,
+        cause = cause,
+    )
 
     fun trackExploreScreenViewed(sourceEntryPoint: String? = null) = PlaybackAnalyticsTracks.trackExploreScreenViewed(sourceEntryPoint)
 

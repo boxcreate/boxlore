@@ -17,11 +17,13 @@ internal object PlaybackAnalyticsTracks {
         playbackMode: String = "stream",
         clientSurface: String = "phone",
         speed: Float = 1.0f,
+        listen: ListenStart? = null,
     ) {
         val props =
             mutableMapOf<String, Any>(
                 "episode_id" to episodeId,
                 "entry_point" to AnalyticsGlossary.normalizeEntryPoint(entryPoint),
+                // Means "finished before", not resumed partway; kept for old charts (`previously_finished`).
                 "is_resume" to isRepeating,
                 "playback_mode" to playbackMode,
                 "client_surface" to clientSurface,
@@ -39,6 +41,11 @@ internal object PlaybackAnalyticsTracks {
         podcastGenre?.let { props["podcast_genre"] = it }
         episodeTitle?.let { props["episode_title"] = it }
         entryPointContext?.let { props.putAll(it) }
+        listen?.let {
+            props["listen_id"] = it.listenId
+            props["previously_finished"] = isRepeating
+            props["controlled_by"] = it.controlledBy
+        }
 
         AnalyticsEmit.event("playback_started", props)
     }
@@ -208,6 +215,8 @@ internal object PlaybackAnalyticsTracks {
         entryPoint: String? = null,
         playbackMode: String? = null,
         clientSurface: String? = null,
+        listenId: String? = null,
+        cause: Throwable? = null,
     ) {
         val props =
             mutableMapOf<String, Any>(
@@ -222,7 +231,10 @@ internal object PlaybackAnalyticsTracks {
         episodeTitle?.let { props["episode_title"] = it }
         playbackMode?.let { props["playback_mode"] = it }
         clientSurface?.let { props["client_surface"] = it }
+        listenId?.let { props["listen_id"] = it }
         AnalyticsEmit.event("playback_error", props)
+        // Also to PostHog error tracking, which has its own free allowance and keeps the stack.
+        cause?.let { AnalyticsEmit.exception(it, props) }
     }
 
     fun trackPlaybackBuffering(

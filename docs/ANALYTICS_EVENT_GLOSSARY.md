@@ -33,6 +33,15 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 
 `home`, `explore`, `learn`, `library_hub`, `library_subscriptions`, `library_liked`, `library_downloads`, `library_history`, `podcast_detail`, `episode_detail`, `player_full`, `player_mini`, `queue_sheet`, `settings`, `onboarding`, `briefing`, `android_auto`, `system_notification`, `share_sheet`
 
+### Listen record
+
+`playback_session_ended` and `playback_interrupted` values (`PlaybackListenValues`):
+- **`end_reason`:** `paused` (including Android pausing for a call or unplugged headphones; `pause_reason` says which), `finished`, `switched_episode`, `stopped`, `app_closed`.
+- **`controlled_by`:** `app`, `car` (Android Auto or Android Automotive), `notification` (the media notification and system media controls), `other` (headset buttons, a watch, the Assistant). A listen that follows another keeps its controller. `client_surface` is `car` only when the car controls the listen.
+- **`output`:** `speaker`, `wired`, `bluetooth`, `cast`, `other`. The car is a controller, not an output.
+- **`playback_mode`:** `download` when any stored ID of the episode holds a finished download, else `stream`.
+- **`heard_seconds`** comes from the player's position (natural advances only, so seeks and paused time never count); **`elapsed_seconds`** is the time the listen took. `qualified` is `heard_seconds` of 60 or more.
+
 ### Home hero look
 
 `hero_card_style` / `home_hero_card_style`: `block`, `cover`, `tide`, `duotone`, `halo`, `marquee` (the names in Settings; stored keys `standard` and `classic` are reported as `block` and `cover`). `hero_colors` / `home_hero_colors`: `dark`, `artwork`, `theme` (App theme, the accent color), or `none` for Block, which takes no artwork colors. Marquee's **Full color** is the stored Dark choice, so it reports `dark`. `changed`: `style` or `colors`. `home_hero_style_selected` is skipped when a pick leaves the look unchanged. Tablets show Marquee as Cover; the event still reports the picked style.
@@ -94,13 +103,15 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 | `onboarding_import_sheet_opened` | OPML/import sheet shown | — | entry_point:string | none |
 | `onboarding_import_failed` | OPML/library import failed | import_type:string | error_message:string | none |
 | `onboarding_manual_step_completed` | Genre/manual onboarding step finished | step_name:string; selections_count:int | selections_list:list; time_spent_seconds:float | none |
-| `playback_started` | Audio playback started | episode_id:string; podcast_id:string; entry_point:enum; is_resume:bool; playback_mode:enum; client_surface:enum; speed:float; is_subscribed:bool | recipe_id:string; position_seconds:float; duration_seconds:float | none |
+| `playback_started` | Audio playback started (`is_resume` means finished before; `previously_finished` says so by name) | episode_id:string; podcast_id:string; entry_point:enum; is_resume:bool; playback_mode:enum; client_surface:enum; speed:float; is_subscribed:bool | recipe_id:string; position_seconds:float; duration_seconds:float; listen_id:string; previously_finished:bool; controlled_by:enum | none |
 | `playback_heartbeat` | Periodic progress while playing | episode_id:string; podcast_id:string; entry_point:enum; position_seconds:float; playback_mode:enum; client_surface:enum | recipe_id:string; duration_seconds:float; percent_complete:float; milestone:int; speed:float; is_subscribed:bool | none |
-| `playback_paused` | Playback paused | episode_id:string; podcast_id:string; entry_point:enum; position_seconds:float; listened_delta_seconds:float; pause_reason:enum; playback_mode:enum; client_surface:enum | recipe_id:string; duration_seconds:float; percent_complete:float; is_subscribed:bool | none |
+| `playback_paused` | Playback paused (off by default; replaced by `playback_session_ended`) | episode_id:string; podcast_id:string; entry_point:enum; position_seconds:float; listened_delta_seconds:float; pause_reason:enum; playback_mode:enum; client_surface:enum | recipe_id:string; duration_seconds:float; percent_complete:float; is_subscribed:bool | none |
 | `playback_completed` | Episode reached completion | episode_id:string; podcast_id:string; entry_point:enum; listened_delta_seconds:float; playback_mode:enum; client_surface:enum | recipe_id:string; duration_seconds:float; is_subscribed:bool; speed:float | none |
-| `playback_error` | Playback failed | error_type:string; entry_point:enum | episode_id:string; recipe_id:string; podcast_id:string; error_message:string; playback_mode:enum; client_surface:enum | none |
-| `playback_buffering` | Buffering stall observed | entry_point:enum | episode_id:string; recipe_id:string; podcast_id:string; buffer_duration_ms:int; playback_mode:enum; client_surface:enum | none |
+| `playback_error` | Playback failed, once per cause per episode until a listen starts; also sent to error tracking | error_type:string; entry_point:enum | episode_id:string; recipe_id:string; podcast_id:string; error_message:string; playback_mode:enum; client_surface:enum; listen_id:string | none |
+| `playback_buffering` | Buffering stall of 5 seconds or more | entry_point:enum | episode_id:string; recipe_id:string; podcast_id:string; buffer_duration_ms:int; playback_mode:enum; client_surface:enum | none |
 | `playback_seeked` | User seeked in episode | episode_id:string; podcast_id:string; entry_point:enum; from_seconds:float; to_seconds:float | recipe_id:string; seek_source:string; client_surface:enum | none |
+| `playback_session_ended` | One record per listen, from sound starting until it pauses, finishes, switches episode, stops or the app closes; `qualified` from 60 s heard | listen_id:string; episode_id:string; entry_point:enum; end_reason:enum; heard_seconds:float; elapsed_seconds:float; qualified:bool; completed:bool; previously_finished:bool; playback_mode:enum; client_surface:enum; controlled_by:enum; output:enum; speed:float; seeks_forward:int; seeks_back:int; skipped_forward_seconds:float; skipped_back_seconds:float; buffering_count:int; buffering_seconds:float; start_position_seconds:float; end_position_seconds:float; duration_seconds:float | recipe_id:string; podcast_id:string; pause_reason:enum; start_wait_ms:int; queue_size:int | none |
+| `playback_interrupted` | A listen the last run left unfinished because Android ended the app, sent at the next launch | listen_id:string; episode_id:string; entry_point:enum; heard_seconds:float; elapsed_seconds:float; in_background:bool; playback_mode:enum; controlled_by:enum; client_surface:enum | recipe_id:string; podcast_id:string | none |
 | `session_restore_prompt` | Resume previous session prompt shown/acted | action:string | episode_id:string; recipe_id:string; podcast_id:string; position_seconds:float | none |
 | `podcast_subscription_toggled` | User subscribed or unsubscribed | podcast_id:string; is_subscribed:bool | surface:string; source:string | none |
 | `notification_permission_requested` | System permission prompt requested | — | surface:string | none |
@@ -144,7 +155,7 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 | `player_chrome_interaction` | Mini/full player, control bar, or playback-route action | surface:string; action:string | screen:string; volume_control_available:bool | none |
 | `daily_briefing_action` | Briefing impression or interaction | action:string; region:string; date:string | content_id:string; source:string; chapter_index:int; chapter_title:string; method:string; playback_status:string; previous_region:string; episode_id:string; recipe_id:string; episode_title:string; podcast_id:string; podcast_title:string | none |
 | `home_import_banner_action` | Import banner shown/clicked/dismissed | action:string | — | none |
-| `android_auto_connected` | Auto session began | — | session_id:string | none |
+| `android_auto_connected` | Auto session began in a car (car mode or Android Automotive; Android Auto's background connections don't count) | — | session_id:string | none |
 | `android_auto_disconnected` | Auto session ended | — | session_id:string; duration_seconds:int | none |
 | `android_auto_browse` | User browsed Auto media tree | node:string | action:string | none |
 | `adaptive_ranking_status` | Ranking engine status/update | status:string | details:string | none |

@@ -1,19 +1,20 @@
 package cx.aswin.boxlore.core.playback
 
 import android.os.Bundle
-import android.os.SystemClock
 import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.analytics.ListenStart
 import cx.aswin.boxlore.core.analytics.PendingEntryPoint
+import cx.aswin.boxlore.core.analytics.PlaybackListenValues
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
-import cx.aswin.boxlore.core.database.ListeningSessionEntity
 import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.playback.QueueMath
 import cx.aswin.boxlore.core.playback.QueueSkipMemory
+import cx.aswin.boxlore.core.playback.service.auto.stripEpisodePrefix
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.FeedbackTarget
@@ -27,6 +28,11 @@ import kotlinx.coroutines.withContext
 /**
  * Playback analytics session: start / enrich / end, heartbeats, and consumed-audio accounting.
  * Extracted from [cx.aswin.boxlore.core.playback.service.BoxLorePlaybackService].
+ *
+ * One listen runs from sound starting until it pauses, finishes, switches episode, stops or the
+ * service closes; rebuffering inside it doesn't end it. [listens] ([ListenRecorder]) counts it and
+ * sends its one `playback_session_ended`, and keeps a note of it so the next launch can report one
+ * Android cut off. [ListeningRecordWriter] saves the play to the local listening record.
  */
 internal class PlaybackTelemetrySession(
     private val scope: CoroutineScope,
@@ -48,6 +54,11 @@ internal class PlaybackTelemetrySession(
 
     /** This installation's listening device ID (`BoxcastPrefs.getOrCreateListeningDeviceId`); set by the service. */
     var listeningDeviceId: () -> String? = { null }
+
+    /** The listen in progress and its one record; the service sets its route, note and visibility. */
+    val listens = ListenRecorder(playerProvider)
+
+    private val records = ListeningRecordWriter(scope, database)
 
     private val firedHeartbeats = java.util.Collections.synchronizedSet(mutableSetOf<String>())
 
@@ -75,38 +86,37 @@ internal class PlaybackTelemetrySession(
     var contextSourceId: String? = null
         private set
 
+    /** Start of the buffering spell in progress, listen or not, for stall events. */
     private var bufferingStartTimeMs: Long = 0L
-    private var totalBufferedTimeMs: Long = 0L
-    private var consumedAudioMs: Long = 0L
-    private var listenedWallMs: Long = 0L
-    private var lastPositionMs: Long? = null
-    private var lastPositionSampleMs: Long = 0L
 
     /** Episode paused so a bare remote play() can be attributed as resume. */
     var lastPausedEpisodeId: String? = null
 
     fun onBufferingStarted() {
-        bufferingStartTimeMs = System.currentTimeMillis()
+        bufferingStartTimeMs = listens.clock()
+        listens.current?.bufferingStarted(bufferingStartTimeMs)
     }
 
+    /** Ends a buffering spell; one of [PlaybackListenValues.STALL_MS] or more is sent as a stall. */
     fun onBufferingEnded() {
+        val now = listens.clock()
+        listens.current?.bufferingEnded(now)
         if (bufferingStartTimeMs > 0) {
-            val bufferMs = System.currentTimeMillis() - bufferingStartTimeMs
-            totalBufferedTimeMs += bufferMs
+            val bufferMs = now - bufferingStartTimeMs
             bufferingStartTimeMs = 0L
-            AnalyticsHelper.trackPlaybackBuffering(
-                episodeId = episodeId,
-                podcastId = podcastId,
-                entryPoint = entryPoint,
-                bufferDurationMs = bufferMs,
-            )
+            if (bufferMs >= PlaybackListenValues.STALL_MS) {
+                AnalyticsHelper.trackPlaybackBuffering(
+                    episodeId = episodeId,
+                    podcastId = podcastId,
+                    entryPoint = entryPoint,
+                    bufferDurationMs = bufferMs,
+                )
+            }
         }
     }
 
-    fun noteSeekPosition(positionMs: Long) {
-        lastPositionMs = positionMs
-        lastPositionSampleMs = SystemClock.elapsedRealtime()
-    }
+    /** The player jumped from [fromMs] to [toMs]; see [ListenRecorder.jump]. */
+    fun onPositionJump(fromMs: Long, toMs: Long, userSeek: Boolean = false,) = listens.jump(fromMs, toMs, userSeek)
 
     fun start(
         episodeId: String,
@@ -115,7 +125,7 @@ internal class PlaybackTelemetrySession(
     ) {
         if (startTimeMs > 0 && this.episodeId == episodeId) return
 
-        end(forceCompleted = false)
+        end(forceCompleted = false, reason = PlaybackListenValues.END_SWITCHED)
 
         if (this.episodeId != episodeId) {
             firedHeartbeats.clear()
@@ -123,12 +133,8 @@ internal class PlaybackTelemetrySession(
 
         startTimeMs = System.currentTimeMillis()
         bufferingStartTimeMs = 0L
-        totalBufferedTimeMs = 0L
-        consumedAudioMs = 0L
-        listenedWallMs = 0L
-        lastPositionMs = playerProvider()?.currentPosition
-        lastPositionSampleMs = SystemClock.elapsedRealtime()
         this.episodeId = episodeId
+        val listen = listens.begin()
 
         val title = currentItem?.mediaMetadata?.title?.toString()
         val artist =
@@ -159,10 +165,28 @@ internal class PlaybackTelemetrySession(
                 }
         }
         lastPausedEpisodeId = null
+        listenContext()?.let(listens::started)
 
+        val listenStart = ListenStart(listenId = listen.listenId, controlledBy = listens.controlledBy)
         scope.launch {
-            enrich(episodeId, currentItem, genre)
+            enrich(episodeId, currentItem, genre, listenStart)
         }
+    }
+
+    /** What the listen in progress plays, or null between listens. */
+    private fun listenContext(): ListenContext? {
+        val currentEpisodeId = episodeId ?: return null
+        return ListenContext(
+            episodeId = currentEpisodeId,
+            podcastId = podcastId,
+            podcastName = podcastName,
+            podcastGenre = podcastGenre,
+            episodeTitle = episodeTitle,
+            entryPoint = entryPoint,
+            entryPointContext = entryPointContext,
+            durationMs = totalDurationMs,
+            previouslyFinished = isRepeating,
+        )
     }
 
     private suspend fun resolvePodcastFromDb(podcastId: String): Pair<String?, String?> =
@@ -231,6 +255,7 @@ internal class PlaybackTelemetrySession(
         episodeId: String,
         currentItem: MediaItem?,
         genre: String?,
+        listen: ListenStart,
     ) {
         try {
             val queueItem = database.queueDao().getQueueItemByEpisodeId(episodeId)
@@ -282,6 +307,12 @@ internal class PlaybackTelemetrySession(
         }
 
         val isSubscribed = resolvedPodcastId?.let { subscriptionRepository.isSubscribed(it) } ?: false
+        val mode = playbackModeOf(episodeId)
+        val speed =
+            withContext(mainDispatcher) {
+                if (listens.current?.listenId == listen.listenId) listens.playbackMode = mode
+                playerProvider()?.playbackParameters?.speed ?: 1f
+            }
 
         AnalyticsHelper.trackPlaybackStarted(
             podcastId = resolvedPodcastId,
@@ -295,130 +326,181 @@ internal class PlaybackTelemetrySession(
             isSubscribed = isSubscribed,
             entryPoint = entryPoint,
             entryPointContext = entryPointContext,
+            playbackMode = mode,
+            speed = speed,
+            listen = listen,
         )
     }
 
+    /** Download when any stored ID of the episode holds a finished download, else stream. */
+    private suspend fun playbackModeOf(episodeId: String): String = runCatching {
+        val ids = database.episodeListenerStore().memberIds(episodeId).ifEmpty { listOf(episodeId) }
+        if (database.downloadedEpisodeDao().getCompletedDownloadIds(ids).isNotEmpty()) {
+            PlaybackListenValues.MODE_DOWNLOAD
+        } else {
+            PlaybackListenValues.MODE_STREAM
+        }
+    }.getOrDefault(PlaybackListenValues.MODE_STREAM)
+
+    /**
+     * Ends the listen in progress. The reason is finished when it reached the end (or [forceCompleted]),
+     * switched episode for [isTransition], else [reason].
+     */
     fun end(
         forceCompleted: Boolean = false,
         isTransition: Boolean = false,
+        reason: String = PlaybackListenValues.END_PAUSED,
     ) {
         val currentEpisodeId = episodeId
         if (startTimeMs <= 0 || currentEpisodeId == null) return
 
         playerProvider()?.let(::updateConsumedAudio)
-        val durationPlayedMs = System.currentTimeMillis() - startTimeMs
-        val durationPlayedSeconds = durationPlayedMs / 1000f
-        val consumedAudioSeconds = consumedAudioMs / 1000f
-        val currentPodcastId = podcastId
-        val currentPodcastName = podcastName
-        val currentPodcastGenre = podcastGenre
-        val currentEpisodeTitle = episodeTitle
-        val sessionTotalDurationMs = totalDurationMs
-        val sessionEntryPoint = entryPoint
-        val sessionEntryPointContext = entryPointContext
+        val listen = listens.current?.also { it.finish(listens.clock()) }
+        val consumedAudioSeconds = (listen?.heardMs ?: 0L) / 1000f
+        val isCompleted = forceCompleted || isCompletedByProgress()
+        val currentQueueSize = queueSize()
+        val pauseReason = if (isCompleted) null else AnalyticsHelper.consumePauseReason()
 
-        var isCompleted = forceCompleted
-        if (!isCompleted) {
-            try {
-                val pos = playerProvider()?.currentPosition ?: 0L
-                isCompleted =
-                    PlaybackSkipPolicy.shouldCompleteFromProgress(
-                        positionMs = pos,
-                        durationMs = sessionTotalDurationMs,
-                        effectiveSkipEndingMs = effectiveSkipEndingMs(sessionTotalDurationMs),
-                    )
-            } catch (e: Exception) {
-                Log.w(
-                    "BoxLorePlaybackService",
-                    "Failed to evaluate playback completion; using fallback",
-                    e,
-                )
-            }
+        if (isCompleted) {
+            if (markCompletionTelemetryDispatched()) trackCompletion(currentEpisodeId)
+        } else {
+            trackPause(currentEpisodeId, pauseReason, currentQueueSize, listen)
+            if (isTransition && consumedAudioSeconds <= 30f) recordSmartQueueSkip(currentEpisodeId)
+        }
+        listenContext()?.let { context ->
+            listens.end(context, endReasonOf(isCompleted, isTransition, reason), pauseReason, isCompleted, currentQueueSize)
+        }
+        recordRankingFeedback(currentEpisodeId, consumedAudioSeconds, isCompleted, isTransition)
+        records.save(
+            ListeningRecordWriter.Play(
+                episodeId = currentEpisodeId,
+                podcastId = podcastId,
+                podcastName = podcastName,
+                podcastGenre = podcastGenre,
+                startedAt = startTimeMs,
+                consumedMs = listen?.heardMs ?: 0L,
+                wallMs = listen?.heardWallMs ?: 0L,
+                completed = isCompleted,
+                source = ListeningSessionRecordLogic.playSource(contextType, entryPoint),
+                output = runCatching(listeningOutput).getOrNull(),
+            ),
+            deviceId = listeningDeviceId,
+        )
+
+        AnalyticsHelper.flush()
+        reset()
+    }
+
+    private fun endReasonOf(isCompleted: Boolean, isTransition: Boolean, reason: String,): String = when {
+        isCompleted -> PlaybackListenValues.END_FINISHED
+        isTransition -> PlaybackListenValues.END_SWITCHED
+        else -> reason
+    }
+
+    private fun queueSize(): Int = try {
+        playerProvider()?.mediaItemCount ?: 0
+    } catch (_: Exception) {
+        0
+    }
+
+    private fun isCompletedByProgress(): Boolean = try {
+        PlaybackSkipPolicy.shouldCompleteFromProgress(
+            positionMs = playerProvider()?.currentPosition ?: 0L,
+            durationMs = totalDurationMs,
+            effectiveSkipEndingMs = effectiveSkipEndingMs(totalDurationMs),
+        )
+    } catch (e: Exception) {
+        Log.w(
+            "BoxLorePlaybackService",
+            "Failed to evaluate playback completion; using fallback",
+            e,
+        )
+        false
+    }
+
+    /** The 100% heartbeat, `playback_completed`, and removing the download when that setting is on. */
+    private fun trackCompletion(currentEpisodeId: String) {
+        if (!firedHeartbeats.contains("percent_100")) {
+            firedHeartbeats.add("percent_100")
+            AnalyticsHelper.trackPlaybackHeartbeat(
+                podcastId = podcastId,
+                podcastName = podcastName,
+                episodeId = currentEpisodeId,
+                episodeTitle = episodeTitle,
+                currentPositionSeconds = totalDurationMs / 1000f,
+                totalDurationSeconds = totalDurationMs / 1000f,
+                heartbeatPercentage = 100,
+                heartbeatType = "percent",
+                entryPoint = entryPoint,
+            )
         }
 
-        val currentQueueSize =
-            try {
-                playerProvider()?.mediaItemCount ?: 0
-            } catch (_: Exception) {
-                0
-            }
+        AnalyticsHelper.trackPlaybackCompleted(
+            podcastId = podcastId,
+            podcastName = podcastName,
+            podcastGenre = podcastGenre,
+            episodeId = currentEpisodeId,
+            episodeTitle = episodeTitle,
+            totalDurationSeconds = totalDurationMs / 1000f,
+            entryPoint = entryPoint,
+            entryPointContext = entryPointContext,
+        )
 
-        if (isCompleted && markCompletionTelemetryDispatched()) {
-            if (!firedHeartbeats.contains("percent_100")) {
-                firedHeartbeats.add("percent_100")
-                AnalyticsHelper.trackPlaybackHeartbeat(
-                    podcastId = currentPodcastId,
-                    podcastName = currentPodcastName,
-                    episodeId = currentEpisodeId,
-                    episodeTitle = currentEpisodeTitle,
-                    currentPositionSeconds = sessionTotalDurationMs / 1000f,
-                    totalDurationSeconds = sessionTotalDurationMs / 1000f,
-                    heartbeatPercentage = 100,
-                    heartbeatType = "percent",
-                    entryPoint = sessionEntryPoint,
-                )
-            }
-
-            AnalyticsHelper.trackPlaybackCompleted(
-                podcastId = currentPodcastId,
-                podcastName = currentPodcastName,
-                podcastGenre = currentPodcastGenre,
-                episodeId = currentEpisodeId,
-                episodeTitle = currentEpisodeTitle,
-                totalDurationSeconds = sessionTotalDurationMs / 1000f,
-                entryPoint = sessionEntryPoint,
-                entryPointContext = sessionEntryPointContext,
-            )
-
-            if (currentEpisodeId.isNotEmpty()) {
-                scope.launch {
-                    try {
-                        val shouldDelete = userPreferencesRepository.autoDownloadDeleteCompletedStream.first()
-                        if (shouldDelete) {
-                            removeCompletedDownload(currentEpisodeId)
-                            Log.d("BoxLorePlaybackService", "Auto-deleted completed downloaded episode: $currentEpisodeId")
-                        }
-                    } catch (e: Exception) {
-                        Log.e("BoxLorePlaybackService", "Failed to auto-delete completed download", e)
-                    }
-                }
-            }
-        } else if (!isCompleted) {
-            val pauseReason = AnalyticsHelper.consumePauseReason()
-            AnalyticsHelper.trackPlaybackPaused(
-                podcastId = currentPodcastId,
-                podcastName = currentPodcastName,
-                podcastGenre = currentPodcastGenre,
-                episodeId = currentEpisodeId,
-                episodeTitle = currentEpisodeTitle,
-                durationPlayedSeconds = durationPlayedSeconds,
-                totalBufferedTimeSeconds = totalBufferedTimeMs / 1000f,
-                totalDurationSeconds = sessionTotalDurationMs / 1000f,
-                isCompleted = false,
-                entryPoint = sessionEntryPoint,
-                entryPointContext = sessionEntryPointContext,
-                queueSize = currentQueueSize,
-                pauseReason = pauseReason,
-            )
-
-            if (isTransition && consumedAudioSeconds <= 30f && contextType == "AUTO_FILL") {
-                AnalyticsHelper.trackSmartQueueEpisodeSkipped(
-                    episodeId = currentEpisodeId,
-                    recommendationSource = contextSourceId ?: "unknown",
-                    positionInQueue = 0,
-                )
+        if (currentEpisodeId.isNotEmpty()) {
+            scope.launch {
                 try {
-                    queueSkipMemory.recordSkip(
-                        episodeId = currentEpisodeId,
-                        podcastId = currentPodcastId,
-                        source = contextSourceId,
-                    )
+                    val shouldDelete = userPreferencesRepository.autoDownloadDeleteCompletedStream.first()
+                    if (shouldDelete) {
+                        removeCompletedDownload(currentEpisodeId)
+                        Log.d("BoxLorePlaybackService", "Auto-deleted completed downloaded episode: $currentEpisodeId")
+                    }
                 } catch (e: Exception) {
-                    Log.e("AutoQueue", "Failed to record skip memory", e)
+                    Log.e("BoxLorePlaybackService", "Failed to auto-delete completed download", e)
                 }
             }
         }
+    }
 
+    /** `playback_paused`: off by default since `playback_session_ended`, kept for the remote switch. */
+    private fun trackPause(currentEpisodeId: String, pauseReason: String?, queueSize: Int, listen: ListenTally?,) {
+        AnalyticsHelper.trackPlaybackPaused(
+            podcastId = podcastId,
+            podcastName = podcastName,
+            podcastGenre = podcastGenre,
+            episodeId = currentEpisodeId,
+            episodeTitle = episodeTitle,
+            durationPlayedSeconds = (System.currentTimeMillis() - startTimeMs) / 1000f,
+            totalBufferedTimeSeconds = (listen?.bufferingMs ?: 0L) / 1000f,
+            totalDurationSeconds = totalDurationMs / 1000f,
+            isCompleted = false,
+            entryPoint = entryPoint,
+            entryPointContext = entryPointContext,
+            queueSize = queueSize,
+            pauseReason = pauseReason ?: "user_voluntary",
+        )
+    }
+
+    /** An auto-filled episode skipped within 30 seconds: Smart Queue counts it and remembers the skip. */
+    private fun recordSmartQueueSkip(currentEpisodeId: String) {
+        if (contextType != "AUTO_FILL") return
+        AnalyticsHelper.trackSmartQueueEpisodeSkipped(
+            episodeId = currentEpisodeId,
+            recommendationSource = contextSourceId ?: "unknown",
+            positionInQueue = 0,
+        )
+        try {
+            queueSkipMemory.recordSkip(
+                episodeId = currentEpisodeId,
+                podcastId = podcastId,
+                source = contextSourceId,
+            )
+        } catch (e: Exception) {
+            Log.e("AutoQueue", "Failed to record skip memory", e)
+        }
+    }
+
+    /** What the adaptive ranking learns from the play: how much was heard, finished, or skipped early. */
+    private fun recordRankingFeedback(currentEpisodeId: String, consumedAudioSeconds: Float, isCompleted: Boolean, isTransition: Boolean,) {
         val adaptiveSource =
             when (contextType) {
                 "AUTO_FILL" -> CandidateSource.SERVER_RECOMMENDATION
@@ -429,98 +511,28 @@ internal class PlaybackTelemetrySession(
             isTransition &&
                 consumedAudioSeconds <= 30f &&
                 adaptiveSource != null
+        val target =
+            FeedbackTarget(
+                episodeId = currentEpisodeId,
+                podcastId = podcastId.orEmpty(),
+                genre = podcastGenre,
+                source = adaptiveSource,
+            )
+        val durationSeconds = (totalDurationMs / 1_000L).coerceAtLeast(0L)
         scope.launch {
             rankingFeedbackRepository.recordPlayback(
-                target =
-                    FeedbackTarget(
-                        episodeId = currentEpisodeId,
-                        podcastId = currentPodcastId.orEmpty(),
-                        genre = currentPodcastGenre,
-                        source = adaptiveSource,
-                    ),
+                target = target,
                 listenSeconds = consumedAudioSeconds.toLong().coerceAtLeast(0L),
-                durationSeconds = (sessionTotalDurationMs / 1_000L).coerceAtLeast(0L),
+                durationSeconds = durationSeconds,
                 completed = isCompleted,
                 earlySkip = isAdaptiveEarlySkip,
             )
         }
-
-        val sessionStartedAt = startTimeMs
-        val sessionConsumedMs = consumedAudioMs
-        val sessionWallMs = listenedWallMs
-        val sessionPodcastIdForRecord = currentPodcastId
-        val sessionSource = ListeningSessionRecordLogic.playSource(contextType, sessionEntryPoint)
-        val sessionOutput = runCatching(listeningOutput).getOrNull()
-        scope.launch {
-            try {
-                val deviceId = runCatching(listeningDeviceId).getOrNull()
-                // Older untagged listening belongs to this installation; claim it before adding to it.
-                deviceId?.let { database.listeningInsightsMaintenance().claimLegacyListening(it) }
-                val entity =
-                    ListeningSessionRecordLogic.buildSession(
-                        ListeningSessionRecordLogic.BuildSessionInput(
-                            sessionId =
-                                java.util.UUID
-                                    .randomUUID()
-                                    .toString(),
-                            episodeId = currentEpisodeId,
-                            podcastId = sessionPodcastIdForRecord.orEmpty(),
-                            startedAt = sessionStartedAt,
-                            endedAt = System.currentTimeMillis(),
-                            consumedMs = sessionConsumedMs,
-                            completed = isCompleted,
-                            wallMs = sessionWallMs,
-                            source = sessionSource,
-                            output = sessionOutput,
-                            episodePublishedAt = episodeReleaseDateMs(currentEpisodeId),
-                            deviceId = deviceId,
-                        ),
-                    ) ?: return@launch
-                ListeningSessionRecordLogic.persistSessionAndRollUp(
-                    sessions = database.listeningSessionDao(),
-                    maintenance = database.listeningInsightsMaintenance(),
-                    session = entity,
-                )
-                recordPlayedShow(entity, currentPodcastName, currentPodcastGenre)
-            } catch (e: Exception) {
-                Log.e("BoxLorePlaybackService", "Failed to persist listening session", e)
-            }
-        }
-
-        AnalyticsHelper.flush()
-        reset()
-    }
-
-    /** The playing episode's release date from the queue, else the stored catalog (epoch ms). */
-    private suspend fun episodeReleaseDateMs(episodeId: String): Long? = runCatching {
-        val stored =
-            database.queueDao().getQueueItemByEpisodeId(episodeId)?.pubDate?.takeIf { it > 0L }
-                ?: database.localEpisodeCatalogDao().getEpisode(episodeId)?.publishedDate?.takeIf { it > 0L }
-                ?: database.rssEpisodeDao().getEpisode(episodeId)?.publishedDate
-        ListeningSessionRecordLogic.releaseDateMs(stored)
-    }.getOrNull()
-
-    /** Adds the show of a recorded play to the played shows, with the art its history row holds. */
-    private suspend fun recordPlayedShow(session: ListeningSessionEntity, podcastName: String?, genre: String?,) {
-        if (session.podcastId.isBlank()) return
-        val history = database.listeningHistoryDao().getHistoryItem(database.episodeListenerStore().historyId(session.episodeId))
-        database.playedShowDao().recordPlay(
-            podcastId = session.podcastId,
-            podcastName = podcastName ?: history?.podcastName.orEmpty(),
-            imageUrl = history?.podcastImageUrl ?: history?.episodeImageUrl,
-            genre = genre,
-            playedAt = session.startedAt,
-        )
     }
 
     private fun reset() {
         startTimeMs = 0L
         bufferingStartTimeMs = 0L
-        totalBufferedTimeMs = 0L
-        consumedAudioMs = 0L
-        listenedWallMs = 0L
-        lastPositionMs = null
-        lastPositionSampleMs = 0L
         episodeId = null
         episodeTitle = null
         podcastId = null
@@ -531,24 +543,8 @@ internal class PlaybackTelemetrySession(
         entryPointContext = null
     }
 
-    fun updateConsumedAudio(player: Player) {
-        val now = SystemClock.elapsedRealtime()
-        val currentPosition = player.currentPosition.coerceAtLeast(0L)
-        val previousPosition = lastPositionMs
-        val previousSample = lastPositionSampleMs
-        if (player.isPlaying && previousPosition != null && previousSample > 0L) {
-            val positionAdvance = currentPosition - previousPosition
-            val elapsed = (now - previousSample).coerceAtLeast(0L)
-            val maximumNaturalAdvance =
-                (elapsed * player.playbackParameters.speed * 1.5f).toLong() + 1_000L
-            if (positionAdvance in 0..maximumNaturalAdvance) {
-                consumedAudioMs += positionAdvance
-                listenedWallMs += ListeningSessionRecordLogic.listenedWallMs(positionAdvance, player.playbackParameters.speed)
-            }
-        }
-        lastPositionMs = currentPosition
-        lastPositionSampleMs = now
-    }
+    /** Counts audio heard since the last sample (each second while playing), and refreshes the note. */
+    fun updateConsumedAudio(player: Player) = listens.sample(player, ::listenContext)
 
     fun dispatchHeartbeatTelemetry(player: Player) {
         val episodeId = episodeId ?: return
@@ -653,14 +649,19 @@ internal class PlaybackTelemetrySession(
         )
     }
 
+    /** `playback_error` and error tracking, once per cause per episode until a listen starts ([PlaybackErrorOnce]). */
     fun trackPlayerError(error: androidx.media3.common.PlaybackException) {
+        val failingEpisodeId = episodeId ?: playerProvider()?.currentMediaItem?.mediaId?.stripEpisodePrefix()
+        if (!listens.isFirstError(failingEpisodeId, error.errorCodeName)) return
         AnalyticsHelper.trackPlaybackError(
             errorCode = error.errorCodeName,
             errorMessage = error.message ?: "Unknown",
             podcastId = podcastId,
-            episodeId = episodeId,
+            episodeId = failingEpisodeId,
             podcastName = podcastName,
             episodeTitle = episodeTitle,
+            listenId = listens.current?.listenId,
+            cause = error,
         )
     }
 }

@@ -290,7 +290,28 @@ class AutoBrowseLibraryCallbackTest {
     }
 
     @Test
-    fun `onConnect and onDisconnected emit analytics for Android Auto controller`() {
+    fun `onConnect and onDisconnected emit analytics for Android Auto controller in a car`() {
+        val session = mock(MediaSession::class.java)
+        val player = mock(Player::class.java)
+        `when`(player.availableCommands).thenReturn(Player.Commands.EMPTY)
+        `when`(session.player).thenReturn(player)
+        val controller = mock(MediaSession.ControllerInfo::class.java)
+        `when`(controller.packageName).thenReturn("com.google.android.projection.gearhead")
+        val uiMode = context.getSystemService(android.app.UiModeManager::class.java)
+        uiMode.enableCarMode(0)
+        try {
+            callback.onConnect(session, controller)
+            assertTrue(recordedEvents.any { it.first == "android_auto_connected" })
+
+            callback.onDisconnected(session, controller)
+            assertTrue(recordedEvents.any { it.first == "android_auto_disconnected" })
+        } finally {
+            uiMode.disableCarMode(0)
+        }
+    }
+
+    @Test
+    fun `Android Auto connecting without a car sends no connection analytics`() {
         val session = mock(MediaSession::class.java)
         val player = mock(Player::class.java)
         `when`(player.availableCommands).thenReturn(Player.Commands.EMPTY)
@@ -299,10 +320,9 @@ class AutoBrowseLibraryCallbackTest {
         `when`(controller.packageName).thenReturn("com.google.android.projection.gearhead")
 
         callback.onConnect(session, controller)
-        assertTrue(recordedEvents.any { it.first == "android_auto_connected" })
-
         callback.onDisconnected(session, controller)
-        assertTrue(recordedEvents.any { it.first == "android_auto_disconnected" })
+
+        assertTrue(recordedEvents.none { it.first == "android_auto_connected" || it.first == "android_auto_disconnected" })
     }
 
     @Test

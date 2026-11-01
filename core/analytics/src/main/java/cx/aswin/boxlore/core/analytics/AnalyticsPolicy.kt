@@ -54,6 +54,8 @@ object AnalyticsPolicy {
             "android_auto_browse" to AnalyticsLevel.Off,
             "session_restore_prompt" to AnalyticsLevel.Off,
             "Application Backgrounded" to AnalyticsLevel.Off,
+            // Replaced by playback_session_ended, one record per listen with real minutes.
+            "playback_paused" to AnalyticsLevel.Off,
             "playback_seeked" to AnalyticsLevel.Sampled,
         )
 

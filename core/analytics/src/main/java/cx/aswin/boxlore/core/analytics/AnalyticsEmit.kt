@@ -25,6 +25,12 @@ internal object AnalyticsEmit {
         }
     }
 
+    /** PostHog error tracking (`$exception`); [event] properties ride along. */
+    @Volatile
+    var exceptionSink: (Throwable, Map<String, Any>) -> Unit = { error, properties ->
+        PostHogStartup.runWhenReady { PostHog.captureException(error, properties) }
+    }
+
     /** False while a recording sink that ignores event levels is installed. */
     @Volatile
     private var applyLevels = true
@@ -36,13 +42,16 @@ internal object AnalyticsEmit {
     fun installRecordingSink(recorder: MutableList<Pair<String, Map<String, Any>>>, applyLevels: Boolean = false,): () -> Unit {
         val previousEvent = eventSink
         val previousPerson = personSetSink
+        val previousException = exceptionSink
         val previousLevels = this.applyLevels
         eventSink = { event, props -> recorder.add(event to props) }
         personSetSink = { props -> recorder.add(AnalyticsGlossary.PERSON_SET_EVENT to props) }
+        exceptionSink = { _, props -> recorder.add(EXCEPTION_EVENT to props) }
         this.applyLevels = applyLevels
         return {
             eventSink = previousEvent
             personSetSink = previousPerson
+            exceptionSink = previousException
             this.applyLevels = previousLevels
         }
     }
@@ -59,4 +68,11 @@ internal object AnalyticsEmit {
     fun personSet(properties: Map<String, Any>) {
         personSetSink(properties)
     }
+
+    fun exception(error: Throwable, properties: Map<String, Any> = emptyMap(),) {
+        exceptionSink(error, properties)
+    }
+
+    /** How a recording sink names error-tracking captures. */
+    const val EXCEPTION_EVENT = "\$exception"
 }

@@ -14,6 +14,7 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.database.episodeListenerStore
+import cx.aswin.boxlore.core.playback.service.CarConnectionState
 import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.launch
 
@@ -77,7 +78,8 @@ internal class AutoBrowseLibraryCallback(
         AutoBrowseControllerMatcher.isAndroidAuto(session, controller)
 
     override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult {
-        if (isAndroidAuto(session, controller)) {
+        // Android Auto's app also connects without a car (to list media apps); count only real car connections.
+        if (isAndroidAuto(session, controller) && CarConnectionState.isInCar(host.asContext())) {
             connectedAtMs[controller] = System.currentTimeMillis()
             AnalyticsHelper.trackAndroidAutoConnected(sessionId = controller.packageName)
         }

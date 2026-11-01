@@ -35,7 +35,7 @@ class AnalyticsPolicyTest {
     @Test
     fun `defaults keep most events on, turn the dropped ones off and sample seeks`() {
         assertEquals(AnalyticsLevel.Always, AnalyticsPolicy.levelFor("playback_started"))
-        listOf("playback_heartbeat", "adaptive_ranking_status", "android_auto_browse", "session_restore_prompt", "Application Backgrounded")
+        listOf("playback_heartbeat", "playback_paused", "adaptive_ranking_status", "android_auto_browse", "session_restore_prompt", "Application Backgrounded")
             .forEach { assertEquals(AnalyticsLevel.Off, AnalyticsPolicy.levelFor(it), it) }
         assertEquals(AnalyticsLevel.Sampled, AnalyticsPolicy.levelFor("playback_seeked"))
         assertEquals(emptyMap<String, Any>(), AnalyticsPolicy.admit("playback_started"))
