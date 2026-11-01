@@ -5,6 +5,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -29,9 +31,26 @@ class FirstPlayClaimTest {
         val store = MemoryStore()
         val claim = FirstPlayClaim(store, isUpdatedInstall = { false }) { false }
 
-        assertTrue(claim.claim())
-        assertFalse(claim.claim())
+        val ticket = claim.claim()
+        assertNotNull(ticket)
+        assertNull(claim.claim())
+        ticket!!.sent()
+        ticket.releaseIfUnsent()
+
         assertTrue(store.claimed)
+        assertNull(claim.claim())
+    }
+
+    @Test
+    fun `a listen whose lookups fail hands the first play to a later one`() = runTest {
+        // Regression: the claim was saved before the event was sent, so a failed lookup lost it for good.
+        val store = MemoryStore()
+        val claim = FirstPlayClaim(store, isUpdatedInstall = { false }) { false }
+
+        claim.claim()!!.releaseIfUnsent()
+
+        assertFalse(store.claimed)
+        assertNotNull(claim.claim())
     }
 
     @Test
@@ -40,7 +59,7 @@ class FirstPlayClaimTest {
 
         val results = List(5) { async { claim.claim() } }.awaitAll()
 
-        assertEquals(1, results.count { it })
+        assertEquals(1, results.count { it != null })
     }
 
     @Test
@@ -48,7 +67,7 @@ class FirstPlayClaimTest {
         val store = MemoryStore()
         val claim = FirstPlayClaim(store, isUpdatedInstall = { true }) { true }
 
-        assertFalse(claim.claim())
+        assertNull(claim.claim())
         assertTrue(store.claimed)
     }
 
@@ -59,7 +78,7 @@ class FirstPlayClaimTest {
         FirstPlayClaim.noteInstallOrigin(store) { false }
         val claim = FirstPlayClaim(store, isUpdatedInstall = { true }) { true }
 
-        assertTrue(claim.claim())
+        assertNotNull(claim.claim())
     }
 
     @Test
@@ -75,6 +94,6 @@ class FirstPlayClaimTest {
     fun `a failed legacy read still claims`() = runTest {
         val claim = FirstPlayClaim(MemoryStore(), isUpdatedInstall = { true }) { error("datastore unavailable") }
 
-        assertTrue(claim.claim())
+        assertNotNull(claim.claim())
     }
 }

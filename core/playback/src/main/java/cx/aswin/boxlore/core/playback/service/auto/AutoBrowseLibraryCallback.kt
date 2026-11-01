@@ -638,6 +638,7 @@ internal class AutoBrowseLibraryCallback(
         mediaItems: List<MediaItem>,
         fromCar: Boolean,
     ): MutableList<MediaItem> {
+        if (mediaItems.isEmpty()) return mutableListOf()
         if (mediaItems.size > 1) {
             labelCarPlay(fromCar, "android_auto_play_all")
             return mediaItems.map { mediaResolver.resolveMediaItem(it) }.toMutableList()

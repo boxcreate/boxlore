@@ -177,9 +177,6 @@ internal class PlaybackTelemetrySession(
         listenContext()?.let(listens::started)
 
         val listenStart = ListenStart(listenId = listen.listenId, controlledBy = listens.controlledBy)
-        // Claimed now, in the order listens start (the scope runs on the main thread), not when the
-        // slower show lookups finish, so the first play is the one that started first.
-        val firstPlayClaim = firstPlay?.let { claim -> scope.async { claim.claim() } }
         // Download or stream right away, not after the slower show lookups, so a short listen knows it.
         val modeLookup = scope.async { playbackModeOf(episodeId) }
         scope.launch {
@@ -187,7 +184,14 @@ internal class PlaybackTelemetrySession(
             withContext(mainDispatcher) { listens.resolvedPlaybackMode(listen.listenId, mode) }
         }
         scope.launch {
-            enrich(episodeId, currentItem, genre, listenStart, modeLookup, firstPlayClaim)
+            // Claimed first, in the order listens start (the scope runs on the main thread), not when
+            // the slower show lookups finish, so the first play is the one that started first.
+            val firstPlayTicket = firstPlay?.claim()
+            try {
+                enrich(episodeId, currentItem, genre, listenStart, modeLookup, firstPlayTicket)
+            } finally {
+                firstPlayTicket?.releaseIfUnsent()
+            }
         }
     }
 
@@ -275,7 +279,7 @@ internal class PlaybackTelemetrySession(
         genre: String?,
         listen: ListenStart,
         modeLookup: Deferred<String>,
-        firstPlayClaim: Deferred<Boolean>?,
+        firstPlayTicket: FirstPlayClaim.Ticket?,
     ) {
         try {
             val queueItem = database.queueDao().getQueueItemByEpisodeId(episodeId)
@@ -346,7 +350,10 @@ internal class PlaybackTelemetrySession(
             speed = speed,
             listen = listen,
         )
-        if (firstPlayClaim?.await() == true) AnalyticsHelper.trackFirstEpisodePlayed(episodeId, resolvedPodcastId)
+        firstPlayTicket?.let { ticket ->
+            AnalyticsHelper.trackFirstEpisodePlayed(episodeId, resolvedPodcastId)
+            ticket.sent()
+        }
     }
 
     /** Download when any stored ID of the episode holds a finished download, else stream. */

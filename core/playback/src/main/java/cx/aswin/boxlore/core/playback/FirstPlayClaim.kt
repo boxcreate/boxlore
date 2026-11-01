@@ -19,14 +19,38 @@ internal class FirstPlayClaim(
 ) {
     private val lock = Mutex()
 
-    /** True exactly once per install: for the first play that should send the event. */
-    suspend fun claim(): Boolean = lock.withLock {
-        if (store.isClaimed()) return@withLock false
+    @Volatile private var held = false
+
+    /**
+     * A [Ticket] for the listen that should send the event, or null: it was sent, an older build sent
+     * it, or another listen holds the ticket. Saved only once the event is sent ([Ticket.sent]), so a
+     * listen whose lookups fail hands it to a later one ([Ticket.releaseIfUnsent]).
+     */
+    suspend fun claim(): Ticket? = lock.withLock {
+        if (held || store.isClaimed()) return@withLock null
         val updated = store.updatedFromOlderBuild() ?: isUpdatedInstall()
         // Only an install that ran an older build can have sent it; a restored copy of that flag can't count.
-        val alreadySent = updated && runCatching { loggedByOlderBuild() }.getOrDefault(false)
-        store.markClaimed()
-        !alreadySent
+        if (updated && runCatching { loggedByOlderBuild() }.getOrDefault(false)) {
+            store.markClaimed()
+            return@withLock null
+        }
+        held = true
+        Ticket()
+    }
+
+    inner class Ticket internal constructor() {
+        @Volatile private var done = false
+
+        /** The event went out: no later listen sends it. */
+        fun sent() {
+            store.markClaimed()
+            done = true
+        }
+
+        /** The listen ended without sending it: a later listen may. */
+        fun releaseIfUnsent() {
+            if (!done) held = false
+        }
     }
 
     companion object {
