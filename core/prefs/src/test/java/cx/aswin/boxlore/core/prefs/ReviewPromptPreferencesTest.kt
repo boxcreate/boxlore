@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.prefs
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -115,12 +116,36 @@ class ReviewPromptPreferencesTest {
         repository.syncReviewMilestonePending(30)
         assertEquals(30, repository.reviewMilestonePending())
 
-        // Lower milestone does not downgrade.
+        // The pending milestone follows the count.
         repository.syncReviewMilestonePending(15)
-        assertEquals(30, repository.reviewMilestonePending())
+        assertEquals(15, repository.reviewMilestonePending())
 
         repository.clearReviewMilestonePending()
         assertNull(repository.reviewMilestonePending())
+    }
+
+    @Test
+    fun restoredMilestoneWithoutListeningHereIsDropped() = runTest {
+        // Regression: a backup brought a pending milestone onto a phone with no finished episodes.
+        context.userPreferencesDataStore.edit { it[intPreferencesKey("review_milestone_pending")] = 30 }
+        repository.markNpsSurveyFired()
+
+        repository.syncReviewMilestonePending(0)
+
+        assertNull(repository.reviewMilestonePending())
+        assertFalse(repository.shouldShowReviewPrompt(isPlaying = false, installedAtMs = INSTALLED_LONG_AGO))
+    }
+
+    @Test
+    fun anInstallPromptedBeforeTheUpdateDoesNotRepeatItsMilestone() = runTest {
+        // Regression: builds before the used-milestone record could ask for milestone 5 again.
+        context.userPreferencesDataStore.edit { it[intPreferencesKey("review_prompt_count")] = 1 }
+
+        repository.syncReviewMilestonePending(7)
+        assertNull(repository.reviewMilestonePending())
+
+        repository.syncReviewMilestonePending(16)
+        assertEquals(15, repository.reviewMilestonePending())
     }
 
     @Test

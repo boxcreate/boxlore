@@ -159,8 +159,10 @@ internal class PlaybackTelemetrySession(
             val contextMap = pendingEntryPoint.filterKeys { it != "entry_point" }
             entryPointContext = contextMap.ifEmpty { null }
         } else {
-            entryPoint = extras?.getString("entry_point")
-            entryPointContext = analyticsEntryPointContext(extras)
+            val (itemEntryPoint, itemContext) =
+                itemEntry(extras?.getString("entry_point"), analyticsEntryPointContext(extras), fallbackEntryPoint)
+            entryPoint = itemEntryPoint
+            entryPointContext = itemContext
         }
 
         if (entryPoint == null) {
@@ -175,6 +177,9 @@ internal class PlaybackTelemetrySession(
         listenContext()?.let(listens::started)
 
         val listenStart = ListenStart(listenId = listen.listenId, controlledBy = listens.controlledBy)
+        // Claimed now, in the order listens start (the scope runs on the main thread), not when the
+        // slower show lookups finish, so the first play is the one that started first.
+        val firstPlayClaim = firstPlay?.let { claim -> scope.async { claim.claim() } }
         // Download or stream right away, not after the slower show lookups, so a short listen knows it.
         val modeLookup = scope.async { playbackModeOf(episodeId) }
         scope.launch {
@@ -182,7 +187,7 @@ internal class PlaybackTelemetrySession(
             withContext(mainDispatcher) { listens.resolvedPlaybackMode(listen.listenId, mode) }
         }
         scope.launch {
-            enrich(episodeId, currentItem, genre, listenStart, modeLookup)
+            enrich(episodeId, currentItem, genre, listenStart, modeLookup, firstPlayClaim)
         }
     }
 
@@ -270,6 +275,7 @@ internal class PlaybackTelemetrySession(
         genre: String?,
         listen: ListenStart,
         modeLookup: Deferred<String>,
+        firstPlayClaim: Deferred<Boolean>?,
     ) {
         try {
             val queueItem = database.queueDao().getQueueItemByEpisodeId(episodeId)
@@ -340,7 +346,7 @@ internal class PlaybackTelemetrySession(
             speed = speed,
             listen = listen,
         )
-        if (firstPlay?.claim() == true) AnalyticsHelper.trackFirstEpisodePlayed(episodeId, resolvedPodcastId)
+        if (firstPlayClaim?.await() == true) AnalyticsHelper.trackFirstEpisodePlayed(episodeId, resolvedPodcastId)
     }
 
     /** Download when any stored ID of the episode holds a finished download, else stream. */
@@ -678,6 +684,18 @@ internal class PlaybackTelemetrySession(
         )
     }
 }
+
+/**
+ * A listen's entry point from its media item. When the queue moved on by itself or by a skip
+ * ([transition], `queue_auto_advance` or `queue_skip`), that names it, and the surface that started
+ * the queue (copied onto every item) becomes its `source_entry_point` unless the item names one.
+ */
+internal fun itemEntry(itemEntryPoint: String?, itemContext: Map<String, Any>?, transition: String?,): Pair<String?, Map<String, Any>?> =
+    if (transition != null && itemEntryPoint != null) {
+        transition to (mapOf<String, Any>("source_entry_point" to itemEntryPoint) + itemContext.orEmpty())
+    } else {
+        itemEntryPoint to itemContext
+    }
 
 /** The entry-point details in a media item's extras; its artwork links, stream address and Auto keys stay out. */
 internal fun analyticsEntryPointContext(extras: Bundle?): Map<String, Any>? {

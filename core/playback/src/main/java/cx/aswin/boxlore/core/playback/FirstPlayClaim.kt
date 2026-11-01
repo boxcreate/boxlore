@@ -12,25 +12,50 @@ import kotlinx.coroutines.sync.withLock
  */
 internal class FirstPlayClaim(
     private val store: FirstPlayStore,
-    /** True when an install updated from an older boxlore already sent the event from the screen. */
-    private val loggedBeforeUpdate: suspend () -> Boolean,
+    /** True when this install was updated after it was installed; read only if the first launch didn't note it. */
+    private val isUpdatedInstall: () -> Boolean,
+    /** The flag older builds set when they sent the event from the screen. */
+    private val loggedByOlderBuild: suspend () -> Boolean,
 ) {
     private val lock = Mutex()
 
     /** True exactly once per install: for the first play that should send the event. */
     suspend fun claim(): Boolean = lock.withLock {
         if (store.isClaimed()) return@withLock false
-        val alreadySent = runCatching { loggedBeforeUpdate() }.getOrDefault(false)
+        val updated = store.updatedFromOlderBuild() ?: isUpdatedInstall()
+        // Only an install that ran an older build can have sent it; a restored copy of that flag can't count.
+        val alreadySent = updated && runCatching { loggedByOlderBuild() }.getOrDefault(false)
         store.markClaimed()
         !alreadySent
     }
+
+    companion object {
+        /** See [FirstPlayInstallOrigin]. */
+        fun noteInstallOrigin(store: FirstPlayStore, isUpdatedInstall: () -> Boolean) {
+            if (store.updatedFromOlderBuild() == null) store.setUpdatedFromOlderBuild(isUpdatedInstall())
+        }
+    }
 }
 
-/** Where [FirstPlayClaim] keeps its flag: SharedPreferences in the app, a fake in tests. */
+/** The app-start hook for [FirstPlayClaim]. */
+object FirstPlayInstallOrigin {
+    /**
+     * Notes once, on this build's first launch, whether the install came from an older build, so
+     * updating a restored phone before its first listen can't hide that listen. Call off the main thread.
+     */
+    fun note(context: Context) = FirstPlayClaim.noteInstallOrigin(PrefsFirstPlayStore(context)) { context.isUpdatedInstall() }
+}
+
+/** Where [FirstPlayClaim] keeps its flags: SharedPreferences in the app, a fake in tests. */
 internal interface FirstPlayStore {
     fun isClaimed(): Boolean
 
     fun markClaimed()
+
+    /** Null until the first launch of a build with [FirstPlayClaim] notes it. */
+    fun updatedFromOlderBuild(): Boolean?
+
+    fun setUpdatedFromOlderBuild(updated: Boolean)
 }
 
 /** [FirstPlayStore] in `boxlore_install_milestones.xml`, which the backup rules exclude. */
@@ -43,9 +68,17 @@ internal class PrefsFirstPlayStore(context: Context) : FirstPlayStore {
         prefs.edit().putBoolean(KEY_FIRST_PLAY, true).apply()
     }
 
+    override fun updatedFromOlderBuild(): Boolean? =
+        if (prefs.contains(KEY_UPDATED_FROM_OLDER_BUILD)) prefs.getBoolean(KEY_UPDATED_FROM_OLDER_BUILD, false) else null
+
+    override fun setUpdatedFromOlderBuild(updated: Boolean) {
+        prefs.edit().putBoolean(KEY_UPDATED_FROM_OLDER_BUILD, updated).apply()
+    }
+
     private companion object {
         const val PREFS_NAME = "boxlore_install_milestones"
         const val KEY_FIRST_PLAY = "first_play_claimed"
+        const val KEY_UPDATED_FROM_OLDER_BUILD = "updated_from_older_build"
     }
 }
 

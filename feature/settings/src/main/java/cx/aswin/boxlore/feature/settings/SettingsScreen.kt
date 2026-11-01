@@ -773,9 +773,7 @@ internal fun AppearanceActions.trackedForAnalytics(currentState: () -> Appearanc
             onSetHeroTideProgress(shape)
         },
         onApplyTheme = { selection, custom ->
-            // A theme is its brand and surface together; either changing is a change.
-            val state = currentState()
-            if (state == null || state.currentThemeBrand != selection.brand || state.currentSurfaceStyle != selection.surfaceStyle) {
+            if (currentState()?.hasSameTheme(selection) != true) {
                 AnalyticsHelper.trackSettingsInteraction("surface_style_changed", selection.surfaceStyle)
             }
             onApplyTheme(selection, custom)

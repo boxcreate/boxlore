@@ -162,3 +162,10 @@ internal fun jsonImportOutcome(count: Int, hasNotificationsEnabled: Boolean): Op
 /** The notifications nudge after a backup restore: only when restored shows use alerts or downloads and notifications are off. */
 internal fun showsImportNotificationPrompt(state: OpmlImportState.Success, notificationsAllowed: Boolean): Boolean =
     state.isJson && state.hasNotificationsEnabled && !notificationsAllowed
+
+/** Where an import is, for the review prompt's quiet days: null when none is under way or done. */
+internal fun libraryImportPhase(state: OpmlImportState): String? = when (state) {
+    is OpmlImportState.Parsing, is OpmlImportState.ActiveImportState, is OpmlImportState.Completing -> "running"
+    is OpmlImportState.Success -> "done"
+    else -> null
+}

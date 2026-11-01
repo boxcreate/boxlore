@@ -96,6 +96,7 @@ import cx.aswin.boxlore.ui.libraryimport.OpmlImportDialog
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportDialogActions
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportEffects
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportState
+import cx.aswin.boxlore.ui.libraryimport.libraryImportPhase
 import cx.aswin.boxlore.ui.libraryimport.performJsonLibraryImport
 import cx.aswin.boxlore.ui.logic.SubscriptionResumeRefreshLogic
 import cx.aswin.boxlore.ui.logic.canUseAdaptivePlayer
@@ -482,10 +483,11 @@ fun BoxLoreAppRoot(
     var opmlImportState by remember { mutableStateOf<OpmlImportState>(OpmlImportState.Idle) }
     var opmlImportSource by remember { mutableStateOf("welcome_screen") }
     var importTriggerKey by remember { mutableStateOf(0L) }
-    // Every import path ends in Success; Home's review prompt waits a couple of days after one.
-    val importSucceeded = opmlImportState is OpmlImportState.Success
-    LaunchedEffect(importSucceeded) {
-        if (importSucceeded) userPrefs.markLibraryImported()
+    // Home's review prompt waits a couple of days after an import: marked when it starts (a backup's
+    // listening history lands before it ends) and again when it succeeds.
+    val importPhase = libraryImportPhase(opmlImportState)
+    LaunchedEffect(importPhase) {
+        if (importPhase != null) userPrefs.markLibraryImported()
     }
 
     fun performJsonImport(uri: android.net.Uri) {

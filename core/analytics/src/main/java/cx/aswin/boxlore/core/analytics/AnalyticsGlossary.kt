@@ -141,6 +141,7 @@ object AnalyticsGlossary {
      */
     val EPISODE_ID_EVENTS: Set<String> =
         setOf(
+            "explore_recommendation_tapped",
             "deep_link_opened",
             "playback_started",
             "playback_heartbeat",

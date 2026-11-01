@@ -17,8 +17,10 @@ data class HomeListeningHistoryItem(
 )
 
 /**
- * Episodes played to the end in boxlore since it was installed on this device. Marked-played rows
- * and rows restored or synced from before the install don't count.
+ * Episodes played to the end after boxlore was installed here, on this phone or another one synced to
+ * the same account. Marked-played rows and listening from before the install don't count; a first
+ * sign-in or a library import starts the review prompt's quiet days, so synced history can't
+ * trigger it at once.
  */
 internal fun List<HomeListeningHistoryItem>.countFinishedSince(installedAtMs: Long): Int =
     count { it.isCompleted && it.finishedAt?.let { at -> at >= installedAtMs } == true }

@@ -216,14 +216,15 @@ internal fun HomeViewModel.loadData() {
                         if (!_showReviewPrompt.value && !_showFeedback.value && !_showPostReview.value) {
                             val isPlayingNow = playerState.value.isPlaying
                             if (engagementCoordinator.shouldShowPromoterReview(isPlayingNow, installedAtMs)) {
-                                engagementCoordinator.recordProactivePromptShown()
-                                engagementCoordinator.clearPromoterReviewPending()
-                                // Counted when shown, so closing the app mid-prompt can't bring it back.
-                                userPrefs.markReviewPromptShown()
-                                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackEngagementPromptShown(
-                                    promptType = "promoter_review",
-                                    source = "nps_handoff",
-                                    npsScore = userPrefs.npsLastScore(),
+                                // Recorded once the sheet is on screen (onReviewPromptDisplayed).
+                                engagementCoordinator.reserveSessionForPrompt()
+                                reviewPromptRecorder.decided(
+                                    ReviewPromptRecord(
+                                        promptType = "promoter_review",
+                                        source = "nps_handoff",
+                                        npsScore = userPrefs.npsLastScore(),
+                                        isPromoterHandoff = true,
+                                    ),
                                 )
                                 _reviewPromptVariant.value =
                                     cx.aswin.boxlore.feature.home.components.ReviewPromptVariant.PromoterHandoff
@@ -232,12 +233,13 @@ internal fun HomeViewModel.loadData() {
                                 userPrefs.syncReviewMilestonePending(completedCount)
                                 val shouldPrompt = userPrefs.shouldShowReviewPrompt(isPlayingNow, installedAtMs)
                                 if (shouldPrompt) {
-                                    engagementCoordinator.recordProactivePromptShown()
-                                    userPrefs.markReviewPromptShown()
-                                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackEngagementPromptShown(
-                                        promptType = "milestone_review",
-                                        source = "episode_milestone",
-                                        completedEpisodes = completedCount,
+                                    engagementCoordinator.reserveSessionForPrompt()
+                                    reviewPromptRecorder.decided(
+                                        ReviewPromptRecord(
+                                            promptType = "milestone_review",
+                                            source = "episode_milestone",
+                                            completedEpisodes = completedCount,
+                                        ),
                                     )
                                     _reviewPromptVariant.value =
                                         cx.aswin.boxlore.feature.home.components.ReviewPromptVariant.Milestone

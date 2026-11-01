@@ -68,7 +68,7 @@ internal object OnboardingAnalyticsTracks {
                 "total_onboarding_time_seconds" to totalOnboardingTimeSeconds,
             ),
         )
-        setOnboardingPerson(method = "skip", intent = "casual_browser")
+        setOnboardingPerson(method = "skip", intent = "casual_browser", initialSubscribed = 0)
     }
 
     fun trackOnboardingAiTurnSubmitted(turnNumber: Int, selectedOptions: Set<String>, customInputText: String, timeSpentSeconds: Float,) {

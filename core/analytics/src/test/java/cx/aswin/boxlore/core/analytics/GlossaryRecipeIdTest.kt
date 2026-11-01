@@ -48,7 +48,7 @@ class GlossaryRecipeIdTest {
         val withEpisodeId = csvProperties.filterValues { props -> props.any { it.startsWith("episode_id:") } }.keys
 
         assertEquals(AnalyticsGlossary.EPISODE_ID_EVENTS, withEpisodeId)
-        assertEquals(28, AnalyticsGlossary.EPISODE_ID_EVENTS.size)
+        assertEquals(29, AnalyticsGlossary.EPISODE_ID_EVENTS.size)
         assertTrue(AnalyticsGlossary.ALL_ALLOWED_EVENTS.containsAll(AnalyticsGlossary.EPISODE_ID_EVENTS))
     }
 

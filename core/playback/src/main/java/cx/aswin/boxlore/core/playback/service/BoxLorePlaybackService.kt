@@ -188,9 +188,11 @@ open class BoxLorePlaybackService :
             session.listens.isAppInBackground = { !PlaybackUiVisibility.isForeground.value }
             session.listens.listenNotes = cx.aswin.boxlore.core.playback.ListenNoteKeeper(cx.aswin.boxlore.core.playback.PrefsListenNoteStore(this))
             session.firstPlay =
-                cx.aswin.boxlore.core.playback.FirstPlayClaim(cx.aswin.boxlore.core.playback.PrefsFirstPlayStore(this)) {
-                    isUpdatedInstall() && userPreferencesRepository.hasLoggedFirstPlay.first()
-                }
+                cx.aswin.boxlore.core.playback.FirstPlayClaim(
+                    store = cx.aswin.boxlore.core.playback.PrefsFirstPlayStore(this),
+                    isUpdatedInstall = ::isUpdatedInstall,
+                    loggedByOlderBuild = { userPreferencesRepository.hasLoggedFirstPlay.first() },
+                )
         }
     }
 

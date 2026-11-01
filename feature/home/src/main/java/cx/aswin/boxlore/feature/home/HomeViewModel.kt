@@ -100,6 +100,7 @@ class HomeViewModel(
 
     internal val _showReviewPrompt = MutableStateFlow(false)
     val showReviewPrompt = _showReviewPrompt.asStateFlow()
+    internal val reviewPromptRecorder = ReviewPromptRecorder()
 
     internal val _reviewPromptVariant =
         MutableStateFlow(cx.aswin.boxlore.feature.home.components.ReviewPromptVariant.Milestone)
@@ -582,6 +583,25 @@ class HomeViewModel(
 
     fun togglePlayback(entryPointContext: android.os.Bundle? = null) {
         playbackRepository.togglePlayPause(entryPointContext)
+    }
+
+    /**
+     * The review sheet is on screen with Home resumed: the prompt's milestone, cooldown and promoter
+     * hand-off are used up now, and `engagement_prompt_shown` sent once.
+     */
+    fun onReviewPromptDisplayed() {
+        val record = reviewPromptRecorder.displayed() ?: return
+        viewModelScope.launch {
+            engagementCoordinator.recordProactivePromptShown()
+            if (record.isPromoterHandoff) engagementCoordinator.clearPromoterReviewPending()
+            userPrefs.markReviewPromptShown()
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackEngagementPromptShown(
+                promptType = record.promptType,
+                source = record.source,
+                completedEpisodes = record.completedEpisodes,
+                npsScore = record.npsScore,
+            )
+        }
     }
 
     fun dismissReviewPrompt() {

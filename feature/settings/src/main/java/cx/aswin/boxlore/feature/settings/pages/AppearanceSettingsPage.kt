@@ -74,7 +74,12 @@ data class AppearanceUiState(
     val fullPlayerStyle: String = FullPlayerStyle.STANDARD,
     /** Read-only here: Navigation hides Explore's opening tab without For you. Library > Recommendations sets it. */
     val discoverySections: DiscoverySections = DiscoverySections(),
-)
+) {
+    /** A theme is its brand, surface and wallpaper colours together; [selection] is the same only if all match. */
+    fun hasSameTheme(selection: ThemeSelection): Boolean = currentThemeBrand == selection.brand &&
+        currentSurfaceStyle == selection.surfaceStyle &&
+        isDynamicColorEnabled == selection.wallpaperColors
+}
 
 /** Callbacks for [AppearanceSettingsPage], grouped to keep the page's parameter count small. */
 data class AppearanceActions(

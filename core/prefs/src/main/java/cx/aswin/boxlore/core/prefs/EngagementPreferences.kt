@@ -205,8 +205,11 @@ internal class ReviewPromptPreferences(private val dataStore: DataStore<Preferen
     }
 
     /**
-     * Remember the highest milestone reached so prompts survive playback gaps; one a prompt already
-     * used never comes back. [completedCount] should count episodes finished in boxlore on this install.
+     * Stores the milestone [completedCount] reaches (5, 15 or 30) so a prompt can show once playback
+     * stops; a milestone a prompt already used never comes back. [completedCount] counts episodes
+     * finished since boxlore was installed here, so a pending milestone a backup brought in with no such
+     * listening behind it is dropped. On the first run after updating, an install that was already
+     * prompted counts at least milestone 5, and the milestone it has reached now, as used.
      */
     suspend fun syncReviewMilestonePending(completedCount: Int) {
         val milestone =
@@ -214,13 +217,16 @@ internal class ReviewPromptPreferences(private val dataStore: DataStore<Preferen
                 completedCount >= 30 -> 30
                 completedCount >= 15 -> 15
                 completedCount >= 5 -> 5
-                else -> return
+                else -> null
             }
         dataStore.edit { pref ->
             if (pref[AnalyticsKeys.REVIEW_HAS_REVIEWED] == true) return@edit
-            if (milestone <= (pref[AnalyticsKeys.REVIEW_MILESTONE_CONSUMED] ?: 0)) return@edit
-            val current = pref[AnalyticsKeys.REVIEW_MILESTONE_PENDING]
-            if (current == null || milestone > current) {
+            if (pref[AnalyticsKeys.REVIEW_MILESTONE_CONSUMED] == null && (pref[AnalyticsKeys.REVIEW_PROMPT_COUNT] ?: 0) > 0) {
+                pref[AnalyticsKeys.REVIEW_MILESTONE_CONSUMED] = maxOf(FIRST_MILESTONE, milestone ?: 0)
+            }
+            if (milestone == null || milestone <= (pref[AnalyticsKeys.REVIEW_MILESTONE_CONSUMED] ?: 0)) {
+                pref.remove(AnalyticsKeys.REVIEW_MILESTONE_PENDING)
+            } else {
                 pref[AnalyticsKeys.REVIEW_MILESTONE_PENDING] = milestone
             }
         }
@@ -334,3 +340,5 @@ private fun isEngagementCooldownElapsed(pref: Preferences): Boolean {
 }
 
 private const val DAY_MS = 24L * 60 * 60 * 1000
+
+private const val FIRST_MILESTONE = 5

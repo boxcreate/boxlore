@@ -138,7 +138,7 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 | `learn_card_action` | User acted on a Learn card | action:string; episode_id:string; podcast_id:string | recipe_id:string; position_index:int | none |
 | `learn_screen_viewed` | Learn tab/screen opened | — | cards_available:int | none |
 | `explore_screen_viewed` | Explore opened | — | tab:string | none |
-| `explore_recommendation_tapped` | For You/trending card tapped (taps only) | — | podcast_id:string; position_index:int; rail:string | none |
+| `explore_recommendation_tapped` | For You/trending card tapped (taps only) | — | podcast_id:string; episode_id:string; recipe_id:string; position_index:int; rail:string | none |
 | `explore_surface_impression` | Explore rail became visible | surface_component:string | items_count:int; episode_ids:list; recipe_ids:list | none |
 | `queue_modified` | Queue add/remove/reorder/clear (clear only when the listener chose it) | action:string | episode_id:string; recipe_id:string; podcast_id:string; queue_size:int; source:string; items_count:int | none |
 | `episode_liked_toggled` | Like/unlike episode | episode_id:string; podcast_id:string; is_liked:bool | recipe_id:string; surface:string | none |
