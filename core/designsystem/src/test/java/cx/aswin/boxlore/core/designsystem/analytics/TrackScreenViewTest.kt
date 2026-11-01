@@ -39,7 +39,7 @@ class TrackScreenViewTest {
 
     @Test
     fun aVisitSendsOnceAndRecreatingTheScreenDoesNotSendAgain() {
-        ScreenViews.enter("library_hub")
+        ScreenViews.show(ScreenViews.Registration(), "library_hub")
         val restoration = StateRestorationTester(compose)
         restoration.setContent { TrackScreenView("history_insights") { previous -> sent += "history_insights after $previous" } }
         compose.waitForIdle()
@@ -83,5 +83,37 @@ class TrackScreenViewTest {
             listOf("player_full after null", "player_speed_sheet after player_full", "player_speed_sheet after player_full"),
             sent,
         )
+    }
+
+    @Test
+    fun theNextStepReplacesTheLastOneAndNamesItAsTheScreenBefore() {
+        ScreenViews.show(ScreenViews.Registration(), "subscriptions")
+        var step by mutableStateOf("new_folder_contents")
+        compose.setContent { TrackScreenView(step) { previous -> sent += "$step after $previous" } }
+        compose.waitForIdle()
+
+        step = "new_folder_name"
+        compose.waitForIdle()
+
+        assertEquals(listOf("new_folder_contents after subscriptions", "new_folder_name after new_folder_contents"), sent)
+        assertEquals(ScreenViews.Trail(current = "new_folder_name", previous = "new_folder_contents"), ScreenViews.trail)
+    }
+
+    @Test
+    fun closingAStoryWithItsCardGivesThePageBack() {
+        var storyOpen by mutableStateOf(true)
+        compose.setContent {
+            TrackScreenView("history_insights", send = {})
+            if (storyOpen) {
+                TrackScreenView("listening_story", send = {})
+                TrackScreenView("listening_story_card", send = {})
+            }
+        }
+        compose.waitForIdle()
+
+        storyOpen = false
+        compose.waitForIdle()
+
+        assertEquals("history_insights", ScreenViews.trail.current)
     }
 }

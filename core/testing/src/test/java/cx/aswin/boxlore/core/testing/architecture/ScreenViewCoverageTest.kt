@@ -98,7 +98,7 @@ class ScreenViewCoverageTest {
         private const val UNUSED = "not shown anywhere yet"
         private const val WRAPPER = "a wrapper or frame; the screen it shows sends the page view"
         private const val ONBOARDING_STEP = "an onboarding step; OnboardingScreen sends its onboarding_step_viewed"
-        private const val SHEET_CONTENT = "the content of a sheet or page that sends the page view itself"
+        private const val SHEET_CONTENT = "the content of a sheet, page or tab that sends the page view itself, empty or not"
 
         /** Destinations that need no page view of their own, and why. Keep it short. */
         val EXEMPT: Map<String, String> =
@@ -129,6 +129,7 @@ class ScreenViewCoverageTest {
                 "player:feature/player/v2/ControlDeck.kt#SpeedSheet" to SHEET_CONTENT,
                 "player:feature/player/v2/ControlDeck.kt#SleepSheet" to SHEET_CONTENT,
                 "settings:feature/settings/pages/SupportDevelopmentPage.kt#SupportPageScreen" to SHEET_CONTENT,
+                "history:feature/history/timeline/TimelineTab.kt#TimelineTab" to SHEET_CONTENT,
             )
     }
 }

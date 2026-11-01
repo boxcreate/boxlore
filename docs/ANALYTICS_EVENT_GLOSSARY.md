@@ -46,7 +46,7 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 
 ### Screens
 
-`screen` and `previous_screen` (`screen_viewed`, `screen_left`, plays): snake_case screen names from `TrackScreenView`. Screens with a view event of their own (`podcast_detail_viewed`, `episode_detail_viewed`, `explore_screen_viewed`, `library_destination_viewed`, `learn_screen_viewed`, `support_page_viewed`, `onboarding_step_viewed`, `settings_interaction` views) keep it and send nothing else; their leaving summaries are `screen_left`.
+`screen` and `previous_screen` (`screen_viewed`, `screen_left`, plays): snake_case screen names from `TrackScreenView`. Screens with a view event of their own (`podcast_detail_viewed`, `episode_detail_viewed`, `explore_screen_viewed`, `library_destination_viewed`, `learn_screen_viewed`, `support_page_viewed`, `onboarding_step_viewed`, `settings_interaction` views) keep it and send nothing else; their leaving summaries are `screen_left`, under the same screen names. On a two-pane tablet layout, `screen` on a play is the pane opened most recently.
 
 ### Home hero look
 

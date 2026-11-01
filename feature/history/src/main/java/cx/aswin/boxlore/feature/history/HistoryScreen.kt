@@ -294,6 +294,7 @@ private fun HistoryTimelineContent(
     navigation: HistoryNavigation,
     onOpenCalendar: () -> Unit,
 ) {
+    TrackScreenView("history_timeline")
     when (state) {
         TimelineUiState.Loading -> HistoryLoading()
         is TimelineUiState.Ready ->

@@ -18,7 +18,7 @@ internal object LibraryAnalyticsTracks {
                 "time_spent_seconds" to timeSpentSeconds,
             )
         navigatedTo?.let { props["navigated_to"] = it }
-        ScreenAnalyticsTracks.trackScreenLeft("library_hub", props)
+        ScreenAnalyticsTracks.trackScreenLeft("library", props)
     }
 
     fun trackLibrarySubscriptionsViewed(sourceEntryPoint: String, initialTab: String,) {
@@ -50,7 +50,7 @@ internal object LibraryAnalyticsTracks {
                 "episodes_clicked_count" to episodesClickedCount,
             )
         finalSearchQuery?.let { props["final_search_query"] = it }
-        ScreenAnalyticsTracks.trackScreenLeft("library_subscriptions", props)
+        ScreenAnalyticsTracks.trackScreenLeft("subscriptions", props)
     }
 
     fun trackLibraryLikedViewed(sourceEntryPoint: String) {
@@ -62,7 +62,7 @@ internal object LibraryAnalyticsTracks {
 
     fun trackLibraryLikedSession(timeSpentSeconds: Float, episodesClickedCount: Int, episodesUnlikedCount: Int,) {
         ScreenAnalyticsTracks.trackScreenLeft(
-            "library_liked",
+            "liked_episodes",
             mapOf(
                 "destination" to "liked",
                 "time_spent_seconds" to timeSpentSeconds,
@@ -81,7 +81,7 @@ internal object LibraryAnalyticsTracks {
 
     fun trackLibraryDownloadsSession(timeSpentSeconds: Float, episodesClickedCount: Int, episodesDeletedCount: Int,) {
         ScreenAnalyticsTracks.trackScreenLeft(
-            "library_downloads",
+            "downloads",
             mapOf(
                 "destination" to "downloads",
                 "time_spent_seconds" to timeSpentSeconds,
@@ -100,7 +100,7 @@ internal object LibraryAnalyticsTracks {
 
     fun trackLibraryHistorySession(timeSpentSeconds: Float, episodesClickedCount: Int, itemsDeletedCount: Int,) {
         ScreenAnalyticsTracks.trackScreenLeft(
-            "library_history",
+            "listening_history",
             mapOf(
                 "destination" to "history",
                 "time_spent_seconds" to timeSpentSeconds,

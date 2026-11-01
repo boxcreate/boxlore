@@ -250,8 +250,11 @@ fun ExploreContent(
                 visibleTab == ExploreDefaultTab.INDEX_TOP -> "explore_top"
                 else -> "explore_for_you"
             }
-        TrackScreenView(exploreView, state.currentVibe) { previous ->
-            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackScreenViewed(exploreView, previous, state.currentVibe?.let { mapOf("topic" to it) }.orEmpty())
+        // The browse pane kept behind a topic isn't on show, so only the active pane counts.
+        if (active) {
+            TrackScreenView(exploreView, state.currentVibe) { previous ->
+                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackScreenViewed(exploreView, previous, state.currentVibe?.let { mapOf("topic" to it) }.orEmpty())
+            }
         }
         val forYouGridState = rememberLazyStaggeredGridState()
         val topGridState = rememberLazyStaggeredGridState()

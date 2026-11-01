@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion
@@ -751,6 +752,9 @@ private fun PlayerSheetSettledEffects(
     episode: cx.aswin.boxlore.core.model.Episode,
     podcast: cx.aswin.boxlore.core.model.Podcast?,
 ) {
+    // The full player is a screen in the trail (its sheets and plays name it); its views are
+    // player_chrome_interaction "expanded".
+    if (sheetState.settledValue == PlayerSheetValue.Expanded) TrackScreenView("player_full", send = {})
     LaunchedEffect(sheetState, episode.id) {
         var previous = sheetState.settledValue
         snapshotFlow { sheetState.settledValue }.collect { value ->
