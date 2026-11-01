@@ -49,22 +49,20 @@ function applyPureRssCheck({ existing, item, now = Date.now() }) {
 }
 
 /**
- * The feed address the job reads and puts in pushes (own-episode-IDs plan P2, R6). A confirmed
- * registry address (the old one is dead and a working one was verified) wins over the address the
- * phone registered; with no registered address, the registry's view (Podcast Index's) is used.
+ * The feed address the job reads for a catalog show and puts in its pushes (own-episode-IDs plan
+ * P2, R6): the registry's view (a confirmed working address, else Podcast Index's). A phone's
+ * registration is never used: anyone can write to tracked_podcasts. During a registry outage the
+ * address the state last read is kept, so a show never flips to another address and back.
  * @param {{ feedUrl?: string, feedSource?: string }|null} registryEntry from /internal/notifier/shows
  */
-function workingFeedUrl(podcastData, registryEntry) {
-    const registered = usableFeedUrl(podcastData && podcastData.feedUrl);
-    const known = registryEntry ? usableFeedUrl(registryEntry.feedUrl) : null;
-    if (known && String(registryEntry.feedSource || '').startsWith('registry:')) return known;
-    return registered || known || null;
+function catalogFeedUrl(registryEntry, existing) {
+    return usableFeedUrl(registryEntry && registryEntry.feedUrl) || usableFeedUrl(existing && existing.lastFeedUrl) || null;
 }
 
 /**
- * Records which address the RSS state came from when it isn't the registered one, and treats the
- * first read of a different address as a quiet baseline: a moved feed can relabel old episodes, and
- * that must never look like a new release.
+ * Remembers which address the RSS state came from, and treats the first read of a different address
+ * as a quiet baseline: a moved feed can relabel old episodes, and that must never look like a new
+ * release. State saved before addresses were always remembered read the registered address.
  */
 function withFeedAddress(decision, { existing, feedUrl, registered, newest, now }) {
     const previous = (existing && existing.lastFeedUrl) || registered;
@@ -76,9 +74,32 @@ function withFeedAddress(decision, { existing, feedUrl, registered, newest, now 
         };
     }
     const nextState = { ...decision.nextState };
-    if (feedUrl && feedUrl !== registered) nextState.lastFeedUrl = feedUrl;
+    if (feedUrl) nextState.lastFeedUrl = feedUrl;
     else delete nextState.lastFeedUrl;
     return { ...decision, nextState };
+}
+
+/** A Podcast Index decision drops the RSS fields it doesn't use; the remembered address stays. */
+function keepFeedAddress(decision, existing) {
+    const remembered = usableFeedUrl(existing && existing.lastFeedUrl);
+    if (!remembered || decision.nextState.lastFeedUrl) return decision;
+    return { ...decision, nextState: { ...decision.nextState, lastFeedUrl: remembered } };
+}
+
+/**
+ * The order shows are checked in, catalog shows the registry knows first, then shows checked
+ * before, then the rest (new RSS feeds, IDs the catalog doesn't know). Anyone can add entries to
+ * tracked_podcasts, so added ones can only use up the end of a run's time budget.
+ */
+function checkOrder(stateIds, { registryIds = new Set(), knownIds = new Set() } = {}) {
+    const rank = (id) => {
+        if (!String(id).startsWith('rss:') && registryIds.has(String(id))) return 0;
+        return knownIds.has(id) ? 1 : 2;
+    };
+    return stateIds
+        .map((id, index) => ({ id, index, rank: rank(id) }))
+        .sort((a, b) => a.rank - b.rank || a.index - b.index)
+        .map(({ id }) => id);
 }
 
 /** True when the state for a show changed and must be saved (even when the decision is "unchanged"). */
@@ -86,15 +107,16 @@ function stateChanged(previous, next) {
     return JSON.stringify(previous ?? null) !== JSON.stringify(next ?? null);
 }
 
+/**
+ * Decides whether a tracked show has a new release and builds its push. Pushes never carry the
+ * title or artwork a phone registered: show details come from the feed itself (or later from
+ * Podcast Index, `withShowDetails`). A pure RSS show's registered address is its identity: its
+ * topic is scoped to that address and phones accept only pushes that carry it.
+ */
 async function resolveTrackedRelease({ podcastId, podcastData, existing, fetchRssNewest, fetchPiLatest, now, registryEntry = null }) {
     const pureRss = String(podcastId).startsWith('rss:');
     const registered = usableFeedUrl(podcastData.feedUrl);
-    // Without the registry this run (API down, no key), keep the address the state last read, so
-    // an outage never flips a show back to a dead address and back again.
-    const remembered = usableFeedUrl(existing && existing.lastFeedUrl);
-    const feedUrl = pureRss
-        ? registered
-        : (registryEntry ? workingFeedUrl(podcastData, registryEntry) : (remembered || registered || null));
+    const feedUrl = pureRss ? registered : catalogFeedUrl(registryEntry, existing);
     let rssItem = null;
     if (feedUrl) {
         try {
@@ -105,7 +127,7 @@ async function resolveTrackedRelease({ podcastId, podcastData, existing, fetchRs
     }
     if (pureRss) {
         const decision = applyPureRssCheck({ existing, item: rssItem, now });
-        return decision ? { decision, data: buildRssFcmData({ podcastId, podcastTitle: podcastData.title || 'Podcast', imageUrl: podcastData.imageUrl, rssItem, feedUrl }) } : null;
+        return decision ? { decision, data: buildRssFcmData({ podcastId, show: rssItem && rssItem.show, rssItem, feedUrl }) } : null;
     }
     if (rssItem && rssItemKey(rssItem)) {
         let piEpisode = null;
@@ -115,16 +137,16 @@ async function resolveTrackedRelease({ podcastId, podcastData, existing, fetchRs
         const decision = withFeedAddress(applyCheck({ existing, source: 'rss', newest, now }), { existing, feedUrl, registered, newest, now });
         return {
             decision,
-            data: buildRssFcmData({ podcastId, podcastTitle: podcastData.title || 'Podcast', imageUrl: podcastData.imageUrl, rssItem, piEpisode: matched ? piEpisode : null, feedUrl }),
+            data: buildRssFcmData({ podcastId, show: rssItem.show, rssItem, piEpisode: matched ? piEpisode : null, feedUrl }),
             identity: { piId: matched ? piEpisode.id : null, guid: rssItem.guid || null, enclosureUrl: rssItem.enclosureUrl || null },
         };
     }
     const piEpisode = await fetchPiLatest(podcastId);
     if (!piEpisode) return null;
-    const decision = applyCheck({ existing, source: 'pi', newest: { piEpisodeId: String(piEpisode.id), title: piEpisode.title || 'New Episode', rssKey: rssItemKey(piEpisode) }, now });
+    const decision = keepFeedAddress(applyCheck({ existing, source: 'pi', newest: { piEpisodeId: String(piEpisode.id), title: piEpisode.title || 'New Episode', rssKey: rssItemKey(piEpisode) }, now }), existing);
     return {
         decision,
-        data: buildPiFcmData({ podcastId, podcastTitle: podcastData.title || 'Podcast', imageUrl: podcastData.imageUrl, piEpisode, feedUrl }),
+        data: buildPiFcmData({ podcastId, piEpisode, feedUrl }),
         identity: { piId: piEpisode.id, guid: piEpisode.guid || null, enclosureUrl: piEpisode.enclosureUrl || null },
     };
 }
@@ -291,6 +313,40 @@ function parseFeedItems(xml) {
         if (item) items.push(item);
     }
     return items;
+}
+
+const SHOW_TITLE_MAX = 200;
+
+/** The show's own name and artwork: the channel (or Atom feed) part before the first entry. */
+function parseFeedShow(xml) {
+    const source = String(xml || '');
+    const firstEntry = source.search(/<(item|entry)[\s>]/i);
+    const head = firstEntry >= 0 ? source.slice(0, firstEntry) : source;
+    // RSS <image> has its own <title>, which isn't the show's.
+    const imageBlock = (head.match(/<image[\s>][\s\S]*?<\/image>/i) || [''])[0];
+    const title = tagText(imageBlock ? head.replace(imageBlock, '') : head, 'title');
+    const image =
+        attrValue(head, 'itunes:image', 'href') ||
+        tagText(imageBlock, 'url') ||
+        tagText(head, 'logo') ||
+        tagText(head, 'icon');
+    return { title: title.slice(0, SHOW_TITLE_MAX), image };
+}
+
+/**
+ * Fills a push's missing show name and artwork from the catalog's own record of the show (Podcast
+ * Index `podcasts/byfeedid`), never from a phone's registration. Without one the phone shows the
+ * name it has stored.
+ * @param {{ title?: string, artwork?: string, image?: string }|null} piFeed
+ */
+function withShowDetails(data, piFeed) {
+    if (!piFeed) return data;
+    const out = { ...data };
+    const title = String(piFeed.title || '').trim().slice(0, SHOW_TITLE_MAX);
+    if (!out.podcastTitle && title) out.podcastTitle = title;
+    const image = String(piFeed.artwork || piFeed.image || '').trim();
+    if (!out.image && image) out.image = image;
+    return out;
 }
 
 function newestRssItem(items) {
@@ -517,8 +573,7 @@ function omitEmpty(data) {
 
 function buildRssFcmData({
     podcastId,
-    podcastTitle,
-    imageUrl,
+    show,
     rssItem,
     piEpisode,
     feedUrl,
@@ -527,7 +582,7 @@ function buildRssFcmData({
     const data = {
         type: 'new_episode',
         podcastId: String(podcastId),
-        podcastTitle: String(podcastTitle),
+        podcastTitle: (show && show.title) || '',
         episodeTitle: String((rssItem && rssItem.title) || 'New Episode'),
         duration: durationMinutes(
             (rssItem && rssItem.duration) || (piEpisode && piEpisode.duration),
@@ -535,7 +590,7 @@ function buildRssFcmData({
         image: String(
             (rssItem && rssItem.image) ||
                 (piEpisode && (piEpisode.image || piEpisode.feedImage)) ||
-                imageUrl ||
+                (show && show.image) ||
                 '',
         ),
         feedUrl: feedUrl || '',
@@ -551,16 +606,15 @@ function buildRssFcmData({
     return omitEmpty(data);
 }
 
-function buildPiFcmData({ podcastId, podcastTitle, imageUrl, piEpisode, feedUrl }) {
+function buildPiFcmData({ podcastId, piEpisode, feedUrl }) {
     const episodeId = String(piEpisode.id);
     return omitEmpty({
         type: 'new_episode',
         podcastId: String(podcastId),
-        podcastTitle: String(podcastTitle),
         episodeTitle: String(piEpisode.title || 'New Episode'),
         episodeId,
         duration: durationMinutes(piEpisode.duration),
-        image: String(piEpisode.image || piEpisode.feedImage || imageUrl || ''),
+        image: String(piEpisode.image || piEpisode.feedImage || ''),
         // R6: the working address rides along, as it does in RSS pushes.
         feedUrl: feedUrl || '',
         route: `boxlore://episode/${episodeId}?autoplay=false`,
@@ -580,6 +634,8 @@ module.exports = {
     durationMinutes,
     rssMatchesPi,
     parseFeedItems,
+    parseFeedShow,
+    withShowDetails,
     newestRssItem,
     applyCheck,
     buildRssFcmData,
@@ -587,7 +643,9 @@ module.exports = {
     MAX_FEED_BYTES,
     rssDownloadDecision,
     fetchRssText,
-    workingFeedUrl,
+    catalogFeedUrl,
+    keepFeedAddress,
+    checkOrder,
     withFeedAddress,
     stateChanged,
     applyServedId,

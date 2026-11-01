@@ -188,8 +188,7 @@ describe('check-new-episodes-lib', () => {
     it('buildRssFcmData omits PI episodeId when unmatched and never mints negative ids', () => {
         const data = lib.buildRssFcmData({
             podcastId: '123',
-            podcastTitle: 'Show',
-            imageUrl: 'https://img',
+            show: { title: 'Show', image: 'https://img' },
             feedUrl: 'https://feeds.example/show.xml',
             rssItem: {
                 title: 'Feed only',
@@ -209,8 +208,7 @@ describe('check-new-episodes-lib', () => {
     it('buildRssFcmData includes PI episodeId when enclosure matches', () => {
         const data = lib.buildRssFcmData({
             podcastId: '123',
-            podcastTitle: 'Show',
-            imageUrl: 'https://img',
+            show: { title: 'Show', image: 'https://img' },
             feedUrl: 'https://feeds.example/show.xml',
             rssItem: {
                 title: 'Matched',
@@ -430,7 +428,7 @@ describe('pure RSS notifications', () => {
     });
 
     it('catalog shows retain the PI fallback when RSS fails', async () => {
-        const result = await lib.resolveTrackedRelease({ podcastId: '123', podcastData, fetchRssNewest: async () => { throw new Error('offline'); }, fetchPiLatest: async () => ({ id: 42, title: 'PI release' }), now: 100 });
+        const result = await lib.resolveTrackedRelease({ podcastId: '123', podcastData, registryEntry: { feedUrl: 'https://pi.example/rss', feedSource: 'pidump' }, fetchRssNewest: async () => { throw new Error('offline'); }, fetchPiLatest: async () => ({ id: 42, title: 'PI release' }), now: 100 });
         assert.equal(result.decision.reason, 'pi-baseline');
         assert.equal(result.data.episodeId, '42');
     });
@@ -510,11 +508,12 @@ describe('working addresses, served IDs and safe topics (own-episode-IDs P2)', (
     const repaired = { feedUrl: 'https://new.example/rss', feedSource: 'registry:apple' };
     const dumpOnly = { feedUrl: 'https://pi.example/rss', feedSource: 'pidump' };
 
-    it('a confirmed registry address wins; the dump fills in only when nothing is registered', () => {
-        assert.equal(lib.workingFeedUrl({ feedUrl: 'https://old.example/rss' }, repaired), 'https://new.example/rss');
-        assert.equal(lib.workingFeedUrl({ feedUrl: 'https://old.example/rss' }, dumpOnly), 'https://old.example/rss');
-        assert.equal(lib.workingFeedUrl({}, dumpOnly), 'https://pi.example/rss');
-        assert.equal(lib.workingFeedUrl({ feedUrl: 'https://old.example/rss' }, null), 'https://old.example/rss');
+    it('catalog shows read the registry address, then the remembered one, never a registered one', () => {
+        assert.equal(lib.catalogFeedUrl(repaired, null), 'https://new.example/rss');
+        assert.equal(lib.catalogFeedUrl(dumpOnly, { lastFeedUrl: 'https://new.example/rss' }), 'https://pi.example/rss');
+        assert.equal(lib.catalogFeedUrl(null, { lastFeedUrl: 'https://new.example/rss' }), 'https://new.example/rss');
+        assert.equal(lib.catalogFeedUrl({ feedUrl: 'http://plain.example/rss' }, null), null);
+        assert.equal(lib.catalogFeedUrl(null, null), null);
     });
 
     it('reads the working address, starts it quietly, and remembers it', async () => {
@@ -670,5 +669,99 @@ describe('a stuck show never holds the run (30 Oct 2026: same pushes resent hour
         });
         assert.equal(xml, body);
         assert.equal(headers['Accept-Encoding'], 'identity');
+    });
+});
+
+describe('registrations anyone can write never reach a push', () => {
+    const written = { title: 'Written name', imageUrl: 'https://written.example/art.jpg', feedUrl: 'https://written.example/feed.xml' };
+    const dumpOnly = { feedUrl: 'https://pi.example/rss', feedSource: 'pidump' };
+    const show = { title: 'Feed name', image: 'https://feed.example/art.jpg' };
+    const onlyFrom = (allowed) => async (url) => {
+        assert.equal(url, allowed, 'reads only the catalog address');
+        return { title: 'New drop', guid: 'g2', enclosureUrl: 'https://cdn.example/2.mp3', show };
+    };
+
+    it('a catalog show reads the catalog address, not the one written into its entry', async () => {
+        const release = await lib.resolveTrackedRelease({
+            podcastId: '74467', podcastData: written, existing: { lastRssKey: 'g1', lastFeedUrl: 'https://pi.example/rss' },
+            registryEntry: dumpOnly, fetchRssNewest: onlyFrom('https://pi.example/rss'), fetchPiLatest: async () => null, now: 2,
+        });
+        assert.equal(release.decision.notify, true);
+        assert.equal(release.data.feedUrl, 'https://pi.example/rss');
+    });
+
+    it('a catalog show unknown to the registry, with nothing remembered, uses Podcast Index alone', async () => {
+        const release = await lib.resolveTrackedRelease({
+            podcastId: '74467', podcastData: written, existing: { lastEpisodeId: '1' }, registryEntry: null,
+            fetchRssNewest: async () => { assert.fail('a written address is never read'); },
+            fetchPiLatest: async () => ({ id: 2, title: 'PI release', feedImage: 'https://pi.example/art.jpg' }), now: 2,
+        });
+        assert.equal(release.decision.notify, true);
+        assert.equal(release.data.podcastTitle, undefined, 'the name is filled in later from Podcast Index, never from the entry');
+        assert.equal(release.data.image, 'https://pi.example/art.jpg');
+        assert.equal(release.data.feedUrl, undefined);
+    });
+
+    it('pushes take the show name and artwork from the feed, never from the entry', async () => {
+        const release = await lib.resolveTrackedRelease({
+            podcastId: '74467', podcastData: written, existing: { lastRssKey: 'g1', lastFeedUrl: 'https://pi.example/rss' },
+            registryEntry: dumpOnly, fetchRssNewest: onlyFrom('https://pi.example/rss'), fetchPiLatest: async () => null, now: 2,
+        });
+        assert.equal(release.data.podcastTitle, 'Feed name');
+        assert.equal(release.data.image, 'https://feed.example/art.jpg');
+        assert.equal(JSON.stringify(release.data).includes('written'), false);
+
+        const pureRss = await lib.resolveTrackedRelease({
+            podcastId: 'rss:abc', podcastData: written, existing: lib.applyPureRssCheck({ item: { guid: 'g1', title: 'Old' } }).nextState,
+            fetchRssNewest: async () => ({ title: 'New drop', guid: 'g2', enclosureUrl: 'https://cdn.example/2.mp3', show: { title: '', image: '' } }),
+            fetchPiLatest: async () => { assert.fail('pure RSS never asks Podcast Index'); }, now: 2,
+        });
+        assert.equal(pureRss.decision.notify, true);
+        assert.equal(pureRss.data.podcastTitle, undefined, 'with no feed name the phone uses the one it stored');
+        assert.equal(pureRss.data.image, undefined);
+        assert.equal(pureRss.data.feedUrl, written.feedUrl, 'a pure RSS show keeps its address: it scopes the topic');
+    });
+
+    it('withShowDetails fills only what the push lacks, from the catalog record', () => {
+        const data = { podcastId: '1', episodeTitle: 'E' };
+        assert.deepEqual(lib.withShowDetails(data, null), data);
+        assert.deepEqual(lib.withShowDetails(data, { title: ' PI name ', artwork: 'https://pi/a.jpg', image: 'https://pi/b.jpg' }), { ...data, podcastTitle: 'PI name', image: 'https://pi/a.jpg' });
+        assert.deepEqual(lib.withShowDetails({ ...data, podcastTitle: 'Feed name', image: 'https://feed/a.jpg' }, { title: 'PI name', artwork: 'https://pi/a.jpg' }).podcastTitle, 'Feed name');
+        assert.equal(lib.withShowDetails(data, { title: 'x'.repeat(500) }).podcastTitle.length, 200);
+    });
+
+    it('parseFeedShow reads the channel name and artwork, not the image block or an episode', () => {
+        const rss = `<rss><channel><image><url>https://feed/logo.png</url><title>Logo title</title></image>
+            <title><![CDATA[The Show]]></title><itunes:image href="https://feed/art.jpg"/>
+            <item><title>Episode</title><itunes:image href="https://feed/ep.jpg"/></item></channel></rss>`;
+        assert.deepEqual(lib.parseFeedShow(rss), { title: 'The Show', image: 'https://feed/art.jpg' });
+        assert.deepEqual(lib.parseFeedShow('<rss><channel><title>Plain</title><image><url>https://feed/logo.png</url></image></channel></rss>'), { title: 'Plain', image: 'https://feed/logo.png' });
+        const atom = '<feed><title type="text">Atom &amp; Show</title><logo>https://feed/logo.png</logo><entry><title>E</title></entry></feed>';
+        assert.deepEqual(lib.parseFeedShow(atom), { title: 'Atom & Show', image: 'https://feed/logo.png' });
+        assert.deepEqual(lib.parseFeedShow(''), { title: '', image: '' });
+    });
+
+    it('remembers the address it read, and a Podcast Index fallback keeps it', async () => {
+        const read = await lib.resolveTrackedRelease({
+            podcastId: '74467', podcastData: {}, existing: { lastRssKey: 'g1' }, registryEntry: dumpOnly,
+            fetchRssNewest: onlyFrom('https://pi.example/rss'), fetchPiLatest: async () => null, now: 2,
+        });
+        assert.equal(read.decision.nextState.lastFeedUrl, 'https://pi.example/rss');
+        const fallback = await lib.resolveTrackedRelease({
+            podcastId: '74467', podcastData: {}, existing: { ...read.decision.nextState, lastEpisodeId: '1' }, registryEntry: dumpOnly,
+            fetchRssNewest: async () => { throw new Error('down'); },
+            fetchPiLatest: async () => ({ id: 3, title: 'PI release' }), now: 3,
+        });
+        assert.equal(fallback.decision.reason, 'pi-new');
+        assert.equal(fallback.decision.nextState.lastFeedUrl, 'https://pi.example/rss');
+    });
+
+    it('checks catalog shows first, then shows seen before, then new entries', () => {
+        const order = lib.checkOrder(['rss:new~h', '999', 'rss:old~h', '123', '456'], {
+            registryIds: new Set(['123', '456']),
+            knownIds: new Set(['rss:old~h', '999']),
+        });
+        assert.deepEqual(order, ['123', '456', '999', 'rss:old~h', 'rss:new~h']);
+        assert.deepEqual(lib.checkOrder(['b', 'a']), ['b', 'a'], 'without a registry or state the order is kept');
     });
 });

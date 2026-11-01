@@ -56,9 +56,39 @@ async function fetchPiLatest(podcastId) {
     }
 }
 
+/** The show's own record in Podcast Index (title, artwork), or null. Asked only before a push. */
+async function fetchPiShow(podcastId) {
+    const encoded = encodeURIComponent(String(podcastId));
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), 15000);
+    try {
+        const response = await fetch(`https://api.podcastindex.org/api/1.0/podcasts/byfeedid?id=${encoded}`, {
+            headers: generateAuthHeaders(),
+            signal: ac.signal,
+        });
+        if (!response.ok) throw new Error(`Podcast Index API returned status ${response.status}`);
+        const result = await response.json();
+        return result.feed && typeof result.feed === 'object' ? result.feed : null;
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
 async function fetchRssNewest(feedUrl) {
     const xml = await lib.fetchRssText(feedUrl);
-    return lib.newestRssItem(lib.parseFeedItems(xml));
+    const item = lib.newestRssItem(lib.parseFeedItems(xml));
+    return item ? { ...item, show: lib.parseFeedShow(xml) } : null;
+}
+
+/** Catalog pushes the feed gave no name or artwork get the show's Podcast Index record. */
+async function completeShowDetails(podcastId, data) {
+    if (String(podcastId).startsWith('rss:') || (data.podcastTitle && data.image)) return data;
+    try {
+        return lib.withShowDetails(data, await fetchPiShow(podcastId));
+    } catch (e) {
+        console.warn(`Show details lookup failed for ${podcastId} (${e.message}); the phone uses its own.`);
+        return data;
+    }
 }
 
 // Our API (own-episode-IDs plan P2): working feed addresses and served episode IDs. Optional: without
@@ -185,7 +215,10 @@ async function run() {
     };
     const label = (id) => (String(id).startsWith('rss:') ? 'an rss show' : id);
     try {
-        const stateIds = Object.keys(activePodcasts);
+        const stateIds = lib.checkOrder(Object.keys(activePodcasts), {
+            registryIds: new Set(registry.keys()),
+            knownIds: new Set(Object.keys(state.podcasts)),
+        });
         const outcome = await lib.checkEachShow(stateIds, {
             showLimitMs,
             deadlineAt: runStartedAt + runBudgetMs,
@@ -196,7 +229,6 @@ async function run() {
                 if (!podcastData || typeof podcastData !== 'object') {
                     return;
                 }
-                const podcastTitle = podcastData.title || "Podcast";
                 const existingState = state.podcasts[stateId];
                 let release = null;
                 try {
@@ -208,7 +240,8 @@ async function run() {
                     const { decision } = release;
                     if (decision.notify) {
                         const servedId = await servedEpisodeId(podcastId, release.identity);
-                        await sendFcm(podcastId, lib.applyServedId(release.data, podcastId, servedId));
+                        const data = await completeShowDetails(podcastId, release.data);
+                        await sendFcm(podcastId, lib.applyServedId(data, podcastId, servedId));
                     }
                     // Save every change, including "unchanged" decisions that moved a key forward.
                     if (lib.stateChanged(existingState, decision.nextState)) {
@@ -228,7 +261,7 @@ async function run() {
                     if (podcastError && podcastError.code && String(podcastError.code).startsWith('messaging/')) sendFailures++;
                     // Never print private feed URLs or request errors for pure RSS registrations.
                     if (String(podcastId).startsWith('rss:')) console.warn(`RSS check failed for ${podcastId}; retaining baseline for retry`);
-                    else console.error(`Error checking podcast ${podcastTitle} (${podcastId}):`, podcastError);
+                    else console.error(`Error checking podcast ${podcastId}:`, podcastError);
                 }
             },
         });
