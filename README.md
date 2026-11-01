@@ -10,7 +10,7 @@
 <!-- download-play:end -->
 &nbsp;&nbsp;
 <!-- download-apk:start -->
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.29.apk"><img src="docs/images/button_github_v8.svg" width="224" height="60" alt="Download the boxlore APK from GitHub"/></a>
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.30.apk"><img src="docs/images/button_github_v8.svg" width="224" height="60" alt="Download the boxlore APK from GitHub"/></a>
 <!-- download-apk:end -->
 &nbsp;&nbsp;
 <!-- download-obtainium:start -->
@@ -63,6 +63,14 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 ### Upcoming
 
 <!-- release-upcoming:start -->
+New features and improvements for the next release are currently in development.
+<!-- release-upcoming:end -->
+
+
+### What's New · `v0.0.30` · 2026-11-01
+
+<!-- release-whats-new:start -->
+<!-- release-meta: version=v0.0.30 date=2026-11-01 -->
 <b>✨ Highlights:</b>
 <ul align="left">
 <li>Listening history has a new Insights tab: your listening time, top shows, when and where you listen, how much of it is new episodes, and your records. <a href="https://github.com/boxcreate/boxlore/pull/1207"><img src="https://img.shields.io/badge/PR-1207-6750A4?style=flat-square" alt="PR #1207" height="18"/></a></li>
@@ -121,112 +129,6 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>Clearing boxlore's data no longer opens a random episode on the next launch. <a href="https://github.com/boxcreate/boxlore/pull/1185"><img src="https://img.shields.io/badge/PR-1185-6750A4?style=flat-square" alt="PR #1185" height="18"/></a></li>
 <li>On an episode's page, More from shows the show's cover instead of a placeholder, and its header stands out from the episodes below it. <a href="https://github.com/boxcreate/boxlore/pull/1219"><img src="https://img.shields.io/badge/PR-1219-6750A4?style=flat-square" alt="PR #1219" height="18"/></a></li>
 <li>The prompt to rate boxlore appears only right after you finish an episode, counts only episodes you finish in boxlore on this phone, waits two days after you install or import your library, and doesn't ask twice for the same milestone. <a href="https://github.com/boxcreate/boxlore/pull/1226"><img src="https://img.shields.io/badge/PR-1226-6750A4?style=flat-square" alt="PR #1226" height="18"/></a> <a href="https://github.com/boxcreate/boxlore/pull/1227"><img src="https://img.shields.io/badge/PR-1227-6750A4?style=flat-square" alt="PR #1227" height="18"/></a></li>
-</ul>
-<!-- release-upcoming:end -->
-
-
-### What's New · `v0.0.29` · 2026-10-17
-
-<!-- release-whats-new:start -->
-<!-- release-meta: version=v0.0.29 date=2026-10-17 -->
-<b>🚨 Critical:</b>
-<ul align="left">
-<li>Fixed a release-build issue that could prevent automatic and Smart downloads from starting. <a href="https://github.com/boxcreate/boxlore/pull/1106"><img src="https://img.shields.io/badge/PR-1106-6750A4?style=flat-square" alt="PR #1106" height="18"/></a></li>
-</ul>
-<b>⚡ Improvements:</b>
-<ul align="left">
-<li>Smaller app download while retaining artwork, fonts and notification sounds. <a href="https://github.com/boxcreate/boxlore/pull/1106"><img src="https://img.shields.io/badge/PR-1106-6750A4?style=flat-square" alt="PR #1106" height="18"/></a></li>
-<li>Onboarding show cards are bigger and bolder, and always show their whole description. <a href="https://github.com/boxcreate/boxlore/pull/1127"><img src="https://img.shields.io/badge/PR-1127-6750A4?style=flat-square" alt="PR #1127" height="18"/></a></li>
-<li>Block hero cards can use artwork or dark colours, and Tide can use a smooth progress ring. <a href="https://github.com/boxcreate/boxlore/pull/1127"><img src="https://img.shields.io/badge/PR-1127-6750A4?style=flat-square" alt="PR #1127" height="18"/></a></li>
-<li>Each hero style's options now sit right beside its preview in Appearance. <a href="https://github.com/boxcreate/boxlore/pull/1127"><img src="https://img.shields.io/badge/PR-1127-6750A4?style=flat-square" alt="PR #1127" height="18"/></a></li>
-<li>Marquee shows the whole cover with a soft glow of its colours and a frosted top bar. <a href="https://github.com/boxcreate/boxlore/pull/1127"><img src="https://img.shields.io/badge/PR-1127-6750A4?style=flat-square" alt="PR #1127" height="18"/></a></li>
-<li>Echo now moves as you set up boxlore: it waves, thinks, shuffles show cards and looks around. <a href="https://github.com/boxcreate/boxlore/pull/1124"><img src="https://img.shields.io/badge/PR-1124-6750A4?style=flat-square" alt="PR #1124" height="18"/></a></li>
-<li>Signing in to sync is simpler, and you can carry on while your shows, queue and progress come over. <a href="https://github.com/boxcreate/boxlore/pull/1124"><img src="https://img.shields.io/badge/PR-1124-6750A4?style=flat-square" alt="PR #1124" height="18"/></a></li>
-<li>Importing your library is clearer: choose where your shows are, follow each step, and see what was added. <a href="https://github.com/boxcreate/boxlore/pull/1124"><img src="https://img.shields.io/badge/PR-1124-6750A4?style=flat-square" alt="PR #1124" height="18"/></a></li>
-<li>Home's top cards now show each show's full cover. Pick Block, Cover, Tide, Duotone, Halo or Marquee, with colour options for each, in Settings > Appearance > Home. <a href="https://github.com/boxcreate/boxlore/pull/1119"><img src="https://img.shields.io/badge/PR-1119-6750A4?style=flat-square" alt="PR #1119" height="18"/></a></li>
-<li>Marquee puts one big cover under the top bar and moves to the next card on its own, pausing while you touch it. Tablets show Cover cards instead. <a href="https://github.com/boxcreate/boxlore/pull/1119"><img src="https://img.shields.io/badge/PR-1119-6750A4?style=flat-square" alt="PR #1119" height="18"/></a></li>
-<li>Appearance settings open on a short overview, with separate pages for Home, the player, navigation and text. <a href="https://github.com/boxcreate/boxlore/pull/1119"><img src="https://img.shields.io/badge/PR-1119-6750A4?style=flat-square" alt="PR #1119" height="18"/></a></li>
-<li>Tablets and foldables now have layouts that fit their space, with side navigation, split Settings and more room for browsing and playback. <a href="https://github.com/boxcreate/boxlore/pull/1118"><img src="https://img.shields.io/badge/PR-1118-6750A4?style=flat-square" alt="PR #1118" height="18"/></a></li>
-<li>Tablet layouts are in alpha. A one-time notice before Welcome shows how to send feedback from the Home top bar. <a href="https://github.com/boxcreate/boxlore/pull/1118"><img src="https://img.shields.io/badge/PR-1118-6750A4?style=flat-square" alt="PR #1118" height="18"/></a></li>
-<li>Meet Echo when you first open boxlore: answer a few questions, react to a few shows, then pick what to follow. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
-<li>Home is tidier, loads more smoothly, and has a new Because you like card. Prefer the earlier hero cards? Choose Classic in Appearance. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
-<li>The player and mini player take their colours from the show’s cover, with progress shown around the cover. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
-<li>Lore cards show the whole question and story, and the deck moves smoothly as you swipe. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
-<li>The boxlore brief shows its layout while an edition loads. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
-<li>Add a soft blur behind the floating navigation bar, or turn it off, in Appearance. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
-<li>Meet boxlore with a new welcome screen: moving podcast covers, a playful invitation and clear choices to find shows, search or import your library. <a href="https://github.com/boxcreate/boxlore/pull/1115"><img src="https://img.shields.io/badge/PR-1115-6750A4?style=flat-square" alt="PR #1115" height="18"/></a></li>
-<li>Welcome adapts to smaller screens and larger text, and respects your phone's animation settings. <a href="https://github.com/boxcreate/boxlore/pull/1115"><img src="https://img.shields.io/badge/PR-1115-6750A4?style=flat-square" alt="PR #1115" height="18"/></a></li>
-<li>Choose the new bunpod player in Appearance settings for a minimal listening screen with larger titles, artwork-inspired colors and expressive controls. Your queue and miniplayer stay the same. <a href="https://github.com/boxcreate/boxlore/pull/1114"><img src="https://img.shields.io/badge/PR-1114-6750A4?style=flat-square" alt="PR #1114" height="18"/></a></li>
-<li>The boxlore Brief has refreshed regional artwork, clearer headlines and layouts that match your light or dark theme. <a href="https://github.com/boxcreate/boxlore/pull/1113"><img src="https://img.shields.io/badge/PR-1113-6750A4?style=flat-square" alt="PR #1113" height="18"/></a></li>
-<li>Choose your default Brief edition without changing your podcast discovery region. <a href="https://github.com/boxcreate/boxlore/pull/1113"><img src="https://img.shields.io/badge/PR-1113-6750A4?style=flat-square" alt="PR #1113" height="18"/></a></li>
-<li>Account setup and cloud sync have clearer progress and actions, with no miniplayer covering the page. <a href="https://github.com/boxcreate/boxlore/pull/1113"><img src="https://img.shields.io/badge/PR-1113-6750A4?style=flat-square" alt="PR #1113" height="18"/></a></li>
-<li>Daily Mix episode cards are easier to distinguish across themes. <a href="https://github.com/boxcreate/boxlore/pull/1113"><img src="https://img.shields.io/badge/PR-1113-6750A4?style=flat-square" alt="PR #1113" height="18"/></a></li>
-<li>A refreshed Home brings larger artwork, readable titles and clearer listening progress. Tap artwork to play or a title to open episode details. <a href="https://github.com/boxcreate/boxlore/pull/1110"><img src="https://img.shields.io/badge/PR-1110-6750A4?style=flat-square" alt="PR #1110" height="18"/></a></li>
-<li>Your shows and Daily mix now share a smoother layout with expressive selections and transitions. <a href="https://github.com/boxcreate/boxlore/pull/1110"><img src="https://img.shields.io/badge/PR-1110-6750A4?style=flat-square" alt="PR #1110" height="18"/></a></li>
-<li>Missing artwork uses the boxlore mark, and cards have more consistent tap feedback across the app. <a href="https://github.com/boxcreate/boxlore/pull/1110"><img src="https://img.shields.io/badge/PR-1110-6750A4?style=flat-square" alt="PR #1110" height="18"/></a></li>
-<li>Explore has refreshed cards, genre filters and collection shortcuts that match Home. <a href="https://github.com/boxcreate/boxlore/pull/1109"><img src="https://img.shields.io/badge/PR-1109-6750A4?style=flat-square" alt="PR #1109" height="18"/></a></li>
-<li>Swipe between For You and Top, keep search within reach while scrolling, and switch tabs above the player. <a href="https://github.com/boxcreate/boxlore/pull/1109"><img src="https://img.shields.io/badge/PR-1109-6750A4?style=flat-square" alt="PR #1109" height="18"/></a></li>
-<li>Search suggestions and results are easier to scan, with distinct cards for shows and episodes. <a href="https://github.com/boxcreate/boxlore/pull/1109"><img src="https://img.shields.io/badge/PR-1109-6750A4?style=flat-square" alt="PR #1109" height="18"/></a></li>
-<li>Download updates in boxlore if you installed from GitHub, with download progress and checks before installation. <a href="https://github.com/boxcreate/boxlore/pull/1107"><img src="https://img.shields.io/badge/PR-1107-6750A4?style=flat-square" alt="PR #1107" height="18"/></a></li>
-<li>Read release notes and upcoming changes from Settings → Check for updates. <a href="https://github.com/boxcreate/boxlore/pull/1107"><img src="https://img.shields.io/badge/PR-1107-6750A4?style=flat-square" alt="PR #1107" height="18"/></a></li>
-<li>Read longer announcements in compact or full-screen layouts, with actions that stay visible as you scroll. <a href="https://github.com/boxcreate/boxlore/pull/1107"><img src="https://img.shields.io/badge/PR-1107-6750A4?style=flat-square" alt="PR #1107" height="18"/></a></li>
-<li>Browse shows with clearer controls, compact episode cards and search that keeps the episode list in view. <a href="https://github.com/boxcreate/boxlore/pull/1105"><img src="https://img.shields.io/badge/PR-1105-6750A4?style=flat-square" alt="PR #1105" height="18"/></a></li>
-<li>Let podcast and episode pages match their artwork, or turn artwork colors off in Appearance. <a href="https://github.com/boxcreate/boxlore/pull/1105"><img src="https://img.shields.io/badge/PR-1105-6750A4?style=flat-square" alt="PR #1105" height="18"/></a></li>
-<li>Create your own theme with live light and dark previews. <a href="https://github.com/boxcreate/boxlore/pull/1105"><img src="https://img.shields.io/badge/PR-1105-6750A4?style=flat-square" alt="PR #1105" height="18"/></a></li>
-<li>Open episodes with clearer playback controls, artwork and reading layouts. <a href="https://github.com/boxcreate/boxlore/pull/1104"><img src="https://img.shields.io/badge/PR-1104-6750A4?style=flat-square" alt="PR #1104" height="18"/></a></li>
-<li>Find chapters and useful links more easily, with recognizable icons and shorter social profile labels. <a href="https://github.com/boxcreate/boxlore/pull/1104"><img src="https://img.shields.io/badge/PR-1104-6750A4?style=flat-square" alt="PR #1104" height="18"/></a></li>
-<li>Browse the show’s five latest episodes directly from the episode page. <a href="https://github.com/boxcreate/boxlore/pull/1104"><img src="https://img.shields.io/badge/PR-1104-6750A4?style=flat-square" alt="PR #1104" height="18"/></a></li>
-<li>Browse Home with clearer sections, sharper artwork and refreshed Daily Mix cards. <a href="https://github.com/boxcreate/boxlore/pull/1102"><img src="https://img.shields.io/badge/PR-1102-6750A4?style=flat-square" alt="PR #1102" height="18"/></a></li>
-<li>Enjoy updated colours and logos, with time-of-day animations that wait until the heading is in view. <a href="https://github.com/boxcreate/boxlore/pull/1102"><img src="https://img.shields.io/badge/PR-1102-6750A4?style=flat-square" alt="PR #1102" height="18"/></a></li>
-<li>Share episodes with cleaner “Listen on boxlore” branding. <a href="https://github.com/boxcreate/boxlore/pull/1102"><img src="https://img.shields.io/badge/PR-1102-6750A4?style=flat-square" alt="PR #1102" height="18"/></a></li>
-<li>Lore colors now blend as you swipe between cards. <a href="https://github.com/boxcreate/boxlore/pull/1101"><img src="https://img.shields.io/badge/PR-1101-6750A4?style=flat-square" alt="PR #1101" height="18"/></a></li>
-<li>Lore cards have more reading room, larger playback controls, and clearer swipe feedback. <a href="https://github.com/boxcreate/boxlore/pull/1101"><img src="https://img.shields.io/badge/PR-1101-6750A4?style=flat-square" alt="PR #1101" height="18"/></a></li>
-<li>The Lore queue prompt explains how to start a new queue or add episodes to your current one. <a href="https://github.com/boxcreate/boxlore/pull/1101"><img src="https://img.shields.io/badge/PR-1101-6750A4?style=flat-square" alt="PR #1101" height="18"/></a></li>
-<li>Imported RSS shows now refresh and support automatic and Smart Downloads. Existing imports upgrade while keeping your saved state. <a href="https://github.com/boxcreate/boxlore/pull/1098"><img src="https://img.shields.io/badge/PR-1098-6750A4?style=flat-square" alt="PR #1098" height="18"/></a></li>
-<li>Enable release notifications for public RSS feeds after confirmation. Keep notifications off for private or premium feeds because the shared checker publishes feed URLs in public backups. <a href="https://github.com/boxcreate/boxlore/pull/1098"><img src="https://img.shields.io/badge/PR-1098-6750A4?style=flat-square" alt="PR #1098" height="18"/></a></li>
-<li>Opening a sign-in link from your email now shows boxlore signing you in and syncing your library. If the link has expired, you can send a new one right there. <a href="https://github.com/boxcreate/boxlore/pull/1135"><img src="https://img.shields.io/badge/PR-1135-6750A4?style=flat-square" alt="PR #1135" height="18"/></a></li>
-<li>boxlore opens faster: Home no longer waits on a background check before loading. <a href="https://github.com/boxcreate/boxlore/pull/1130"><img src="https://img.shields.io/badge/PR-1130-6750A4?style=flat-square" alt="PR #1130" height="18"/></a></li>
-<li>New LeaveMeAlone page in Settings › Library: turn off recommendations across the app, including the Brief, Picked for you, Because you like, time-of-day picks and Try these episodes. Sections you turn off don’t load. <a href="https://github.com/boxcreate/boxlore/pull/1123"><img src="https://img.shields.io/badge/PR-1123-6750A4?style=flat-square" alt="PR #1123" height="18"/></a></li>
-<li>Hiding the Brief from its card can now be undone in LeaveMeAlone. <a href="https://github.com/boxcreate/boxlore/pull/1123"><img src="https://img.shields.io/badge/PR-1123-6750A4?style=flat-square" alt="PR #1123" height="18"/></a></li>
-<li>Tapping to support boxlore now tells you that payments aren't set up yet, and nothing is charged. <a href="https://github.com/boxcreate/boxlore/pull/1122"><img src="https://img.shields.io/badge/PR-1122-6750A4?style=flat-square" alt="PR #1122" height="18"/></a></li>
-<li>Some listeners will see one of five new Support boxlore designs while we learn which one people like best. <a href="https://github.com/boxcreate/boxlore/pull/1122"><img src="https://img.shields.io/badge/PR-1122-6750A4?style=flat-square" alt="PR #1122" height="18"/></a></li>
-<li>A show's colours now match across its page, its episodes and the player. <a href="https://github.com/boxcreate/boxlore/pull/1121"><img src="https://img.shields.io/badge/PR-1121-6750A4?style=flat-square" alt="PR #1121" height="18"/></a></li>
-<li>Episode pages recognise far more trailers and promos for other shows, and link to the show being promoted. <a href="https://github.com/boxcreate/boxlore/pull/1120"><img src="https://img.shields.io/badge/PR-1120-6750A4?style=flat-square" alt="PR #1120" height="18"/></a></li>
-<li>Home’s setup options now use a compact layout with clearer choices to find shows, search podcasts or import your library. <a href="https://github.com/boxcreate/boxlore/pull/1116"><img src="https://img.shields.io/badge/PR-1116-6750A4?style=flat-square" alt="PR #1116" height="18"/></a></li>
-<li>Customize your theme with a live preview, quick color choices and more precise controls. <a href="https://github.com/boxcreate/boxlore/pull/1112"><img src="https://img.shields.io/badge/PR-1112-6750A4?style=flat-square" alt="PR #1112" height="18"/></a></li>
-<li>Enjoy refined Classic, Pure and Material 3 colors, with clearer panels and episode cards in Pure mode. <a href="https://github.com/boxcreate/boxlore/pull/1112"><img src="https://img.shields.io/badge/PR-1112-6750A4?style=flat-square" alt="PR #1112" height="18"/></a></li>
-<li>Choose from sixteen new complete themes, with simple light/dark previews and clearer wallpaper and custom-color controls. <a href="https://github.com/boxcreate/boxlore/pull/1099"><img src="https://img.shields.io/badge/PR-1099-6750A4?style=flat-square" alt="PR #1099" height="18"/></a></li>
-<li>Automatic download settings are easier to read, with grouped controls and a separate help guide. <a href="https://github.com/boxcreate/boxlore/pull/1097"><img src="https://img.shields.io/badge/PR-1097-6750A4?style=flat-square" alt="PR #1097" height="18"/></a></li>
-<li>Backup background checks now clearly explain how they help when show notifications are off or do not arrive. <a href="https://github.com/boxcreate/boxlore/pull/1097"><img src="https://img.shields.io/badge/PR-1097-6750A4?style=flat-square" alt="PR #1097" height="18"/></a></li>
-<li>Links you share from boxlore now use boxlore.in. Links shared before still open in the app. <a href="https://github.com/boxcreate/boxlore/pull/1133"><img src="https://img.shields.io/badge/PR-1133-6750A4?style=flat-square" alt="PR #1133" height="18"/></a></li>
-</ul>
-<b>🐛 Fixes:</b>
-<ul align="left">
-<li>boxlore crashes and freezes less when playing, downloading and starting up. <a href="https://github.com/boxcreate/boxlore/pull/1128"><img src="https://img.shields.io/badge/PR-1128-6750A4?style=flat-square" alt="PR #1128" height="18"/></a></li>
-<li>Playback stops after a few failed episodes instead of skipping forever, and Pause always works. <a href="https://github.com/boxcreate/boxlore/pull/1128"><img src="https://img.shields.io/badge/PR-1128-6750A4?style=flat-square" alt="PR #1128" height="18"/></a></li>
-<li>Restoring a damaged boxlore backup now says it couldn't be restored, instead of showing success. <a href="https://github.com/boxcreate/boxlore/pull/1124"><img src="https://img.shields.io/badge/PR-1124-6750A4?style=flat-square" alt="PR #1124" height="18"/></a></li>
-<li>Improve tablet card sizing, spacing and dark-mode readability, and keep player controls above system navigation. <a href="https://github.com/boxcreate/boxlore/pull/1118"><img src="https://img.shields.io/badge/PR-1118-6750A4?style=flat-square" alt="PR #1118" height="18"/></a></li>
-<li>Show pages no longer load forever when show details can’t be reached. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
-<li>The boxlore brief card stays on Home until you finish or hide it. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
-<li>Older Briefs show the correct artwork after an update or cloud restore, without losing listening progress. <a href="https://github.com/boxcreate/boxlore/pull/1113"><img src="https://img.shields.io/badge/PR-1113-6750A4?style=flat-square" alt="PR #1113" height="18"/></a></li>
-<li>Episode artwork can fall back to the show cover when its image is unavailable. <a href="https://github.com/boxcreate/boxlore/pull/1111"><img src="https://img.shields.io/badge/PR-1111-6750A4?style=flat-square" alt="PR #1111" height="18"/></a></li>
-<li>Covers that failed to load can recover after reconnecting or loading successfully on another page. <a href="https://github.com/boxcreate/boxlore/pull/1111"><img src="https://img.shields.io/badge/PR-1111-6750A4?style=flat-square" alt="PR #1111" height="18"/></a></li>
-<li>New episodes appear newest first, and the offline Daily mix action takes you to downloads. <a href="https://github.com/boxcreate/boxlore/pull/1110"><img src="https://img.shields.io/badge/PR-1110-6750A4?style=flat-square" alt="PR #1110" height="18"/></a></li>
-<li>Back from a collection returns to where you were in Explore. <a href="https://github.com/boxcreate/boxlore/pull/1109"><img src="https://img.shields.io/badge/PR-1109-6750A4?style=flat-square" alt="PR #1109" height="18"/></a></li>
-<li>Search cards show a specific genre when available, instead of a generic Podcast label. <a href="https://github.com/boxcreate/boxlore/pull/1109"><img src="https://img.shields.io/badge/PR-1109-6750A4?style=flat-square" alt="PR #1109" height="18"/></a></li>
-<li>Rounded controls keep their shape while scrolling and pressing. <a href="https://github.com/boxcreate/boxlore/pull/1109"><img src="https://img.shields.io/badge/PR-1109-6750A4?style=flat-square" alt="PR #1109" height="18"/></a></li>
-<li>Notification actions open the intended screen or link whether boxlore is already open or starting. <a href="https://github.com/boxcreate/boxlore/pull/1107"><img src="https://img.shields.io/badge/PR-1107-6750A4?style=flat-square" alt="PR #1107" height="18"/></a></li>
-<li>Prepared updates remain available after returning from Android's install-permission settings or cancelling installation. <a href="https://github.com/boxcreate/boxlore/pull/1107"><img src="https://img.shields.io/badge/PR-1107-6750A4?style=flat-square" alt="PR #1107" height="18"/></a></li>
-<li>Smoother page colors when opening details, loading another page or going back. <a href="https://github.com/boxcreate/boxlore/pull/1105"><img src="https://img.shields.io/badge/PR-1105-6750A4?style=flat-square" alt="PR #1105" height="18"/></a></li>
-<li>Featured-show cards now recognize more introductions to other podcasts. <a href="https://github.com/boxcreate/boxlore/pull/1104"><img src="https://img.shields.io/badge/PR-1104-6750A4?style=flat-square" alt="PR #1104" height="18"/></a></li>
-<li>Social links use a profile username when known, instead of repeating the platform name. <a href="https://github.com/boxcreate/boxlore/pull/1104"><img src="https://img.shields.io/badge/PR-1104-6750A4?style=flat-square" alt="PR #1104" height="18"/></a></li>
-<li>Daily Mix now uses show artwork when an episode has none. <a href="https://github.com/boxcreate/boxlore/pull/1102"><img src="https://img.shields.io/badge/PR-1102-6750A4?style=flat-square" alt="PR #1102" height="18"/></a></li>
-<li>A caught-up Daily Mix takes up less space. <a href="https://github.com/boxcreate/boxlore/pull/1102"><img src="https://img.shields.io/badge/PR-1102-6750A4?style=flat-square" alt="PR #1102" height="18"/></a></li>
-<li>If you follow more than 40 shows, Auto-download now picks up new episodes from all of them. <a href="https://github.com/boxcreate/boxlore/pull/1130"><img src="https://img.shields.io/badge/PR-1130-6750A4?style=flat-square" alt="PR #1130" height="18"/></a></li>
-<li>Jump back in shows real covers again after syncing. <a href="https://github.com/boxcreate/boxlore/pull/1121"><img src="https://img.shields.io/badge/PR-1121-6750A4?style=flat-square" alt="PR #1121" height="18"/></a></li>
-<li>Fullscreen transcripts keep their controls on screen. <a href="https://github.com/boxcreate/boxlore/pull/1121"><img src="https://img.shields.io/badge/PR-1121-6750A4?style=flat-square" alt="PR #1121" height="18"/></a></li>
-<li>Navigation highlights match your chosen accent, and the miniplayer stays above the navbar when Android navigation buttons are enabled. <a href="https://github.com/boxcreate/boxlore/pull/1099"><img src="https://img.shields.io/badge/PR-1099-6750A4?style=flat-square" alt="PR #1099" height="18"/></a></li>
-<li>When automatic downloads depend on opening boxlore, a notice explains this and offers to turn on show notifications. <a href="https://github.com/boxcreate/boxlore/pull/1097"><img src="https://img.shields.io/badge/PR-1097-6750A4?style=flat-square" alt="PR #1097" height="18"/></a></li>
 </ul>
 <!-- release-whats-new:end -->
 
