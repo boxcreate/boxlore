@@ -62,6 +62,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
@@ -227,7 +228,7 @@ fun SubscriptionsScreen(
             }
         }
 
-        LaunchedEffect(Unit) {
+        TrackScreenView("subscriptions") {
             val initialTabName = if (initialTab == 0) "shows" else "latest"
             cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsViewed(
                 sourceEntryPoint = "library_hub_card",
@@ -753,6 +754,7 @@ fun SubscriptionsScreen(
 
             val folderToDelete = confirmDeleteFolder
             if (folderToDelete != null) {
+                TrackScreenView("delete_folder_confirmation")
                 androidx.compose.material3.AlertDialog(
                     onDismissRequest = { confirmDeleteFolder = null },
                     title = { Text("Delete folder?") },
@@ -784,6 +786,7 @@ fun SubscriptionsScreen(
 
             val podcastToUnsubscribe = confirmUnsubscribePodcast
             if (podcastToUnsubscribe != null) {
+                TrackScreenView("unsubscribe_confirmation")
                 androidx.compose.material3.AlertDialog(
                     onDismissRequest = { confirmUnsubscribePodcast = null },
                     title = { Text("Unsubscribe?") },

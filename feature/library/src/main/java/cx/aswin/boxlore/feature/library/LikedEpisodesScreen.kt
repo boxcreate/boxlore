@@ -29,6 +29,7 @@ import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
@@ -71,7 +72,7 @@ fun LikedEpisodesScreen(
         }
     }
 
-    androidx.compose.runtime.LaunchedEffect(Unit) {
+    TrackScreenView("liked_episodes") {
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibraryLikedViewed("library_hub_card")
     }
 

@@ -82,6 +82,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import androidx.core.view.WindowCompat
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
 import cx.aswin.boxlore.feature.settings.pages.supportworlds.LocalSupportPageSession
@@ -105,6 +106,7 @@ internal fun SupportDevelopmentPage(
     topBarActions: @Composable RowScope.() -> Unit = {},
     style: SupportPageStyle = ControlSupportPageStyle,
 ) {
+    TrackScreenView("support", send = {}) // support_page_viewed is its view
     CompositionLocalProvider(LocalSupportPageStyle provides style) {
         SupportPageScreen(onBack, totalListeningHours, topBarActions)
     }

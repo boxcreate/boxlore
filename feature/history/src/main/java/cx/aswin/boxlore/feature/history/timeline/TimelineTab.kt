@@ -48,6 +48,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -168,6 +169,7 @@ internal fun timelineIndexFor(entries: List<TimelineEntry>, target: LocalDate): 
 /** The Timeline tab (boards A1 and A3): search, Jump back in, filter chips and each month by day or by show. */
 @Composable
 internal fun TimelineTab(state: TimelineTabState, entries: List<TimelineEntry>, callbacks: TimelineTabCallbacks, listState: LazyListState, contentPadding: PaddingValues,) {
+    TrackScreenView("history_timeline")
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(state = listState, contentPadding = contentPadding, modifier = Modifier.fillMaxSize()) {
             items(entries, key = { it.key }, contentType = { it::class }) { entry ->

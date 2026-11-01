@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.R
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.echo.EchoBeat
 import cx.aswin.boxlore.core.designsystem.echo.EchoCharacter
@@ -131,6 +132,7 @@ internal fun TurnstileStepUpHost(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun TurnstileStepUpSheet(onSkip: () -> Unit, challenge: @Composable () -> Unit) {
+    TrackScreenView("connection_check")
     val short = LocalBoxloreWindowLayout.current.heightDp < CHECK_SHORT_WINDOW_DP
     BoxloreModalBottomSheet(onDismissRequest = onSkip, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(

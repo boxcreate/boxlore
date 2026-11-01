@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.R
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreDialog as Dialog
 import cx.aswin.boxlore.ui.NativeDialogSystemBars
 
@@ -62,6 +63,7 @@ import cx.aswin.boxlore.ui.NativeDialogSystemBars
 fun AppUpdatesPanel(updates: AppUpdates, onInstall: () -> Unit, onPlayUpdate: () -> Unit, onOpenPlay: () -> Unit = {}) {
     val visible by updates.visible.collectAsStateWithLifecycle()
     if (!visible) return
+    TrackScreenView("app_updates")
     val check by updates.checker.state.collectAsStateWithLifecycle()
     val install by updates.install.collectAsStateWithLifecycle()
     Dialog(

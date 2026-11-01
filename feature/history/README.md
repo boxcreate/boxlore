@@ -10,6 +10,7 @@ Listening history: an Insights tab (it opens on it), a Timeline tab, and the mon
 - `HistoryTab` (`INSIGHTS`, `TIMELINE`), `TimelineUiState`, `InsightsUiState` (with its `StoryShelf`) and `StoryUiState`.
 - `story.StoryPlayer` / `story.StoryDialog`: the monthly story, built from a `story.MonthStory` (`story.StoryLogic.build`).
 - `timeline.JumpToDayContent` / `JumpToDayHandle` / `JumpToDayState`, public so captures can draw the sheet's content (modal windows don't draw offline).
+- **Page views** (`TrackScreenView`, `:core:designsystem`): `listening_history` sends `library_destination_viewed` (history) through the helper; `history_insights`, `history_timeline`, `history_jump_to_day`, `clear_listening_history_confirmation`, `listening_story` and each `listening_story_card` (with `card` and `month`) send `screen_viewed`. Sharing the story's card sends `share_content` (`content_type=listening_story`).
 
 ## Internal structure
 

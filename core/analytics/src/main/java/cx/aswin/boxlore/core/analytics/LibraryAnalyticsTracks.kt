@@ -18,7 +18,7 @@ internal object LibraryAnalyticsTracks {
                 "time_spent_seconds" to timeSpentSeconds,
             )
         navigatedTo?.let { props["navigated_to"] = it }
-        AnalyticsEmit.event("library_destination_viewed", props)
+        ScreenAnalyticsTracks.trackScreenLeft("library_hub", props)
     }
 
     fun trackLibrarySubscriptionsViewed(sourceEntryPoint: String, initialTab: String,) {
@@ -50,7 +50,7 @@ internal object LibraryAnalyticsTracks {
                 "episodes_clicked_count" to episodesClickedCount,
             )
         finalSearchQuery?.let { props["final_search_query"] = it }
-        AnalyticsEmit.event("library_destination_viewed", props)
+        ScreenAnalyticsTracks.trackScreenLeft("library_subscriptions", props)
     }
 
     fun trackLibraryLikedViewed(sourceEntryPoint: String) {
@@ -61,8 +61,8 @@ internal object LibraryAnalyticsTracks {
     }
 
     fun trackLibraryLikedSession(timeSpentSeconds: Float, episodesClickedCount: Int, episodesUnlikedCount: Int,) {
-        AnalyticsEmit.event(
-            "library_destination_viewed",
+        ScreenAnalyticsTracks.trackScreenLeft(
+            "library_liked",
             mapOf(
                 "destination" to "liked",
                 "time_spent_seconds" to timeSpentSeconds,
@@ -80,8 +80,8 @@ internal object LibraryAnalyticsTracks {
     }
 
     fun trackLibraryDownloadsSession(timeSpentSeconds: Float, episodesClickedCount: Int, episodesDeletedCount: Int,) {
-        AnalyticsEmit.event(
-            "library_destination_viewed",
+        ScreenAnalyticsTracks.trackScreenLeft(
+            "library_downloads",
             mapOf(
                 "destination" to "downloads",
                 "time_spent_seconds" to timeSpentSeconds,
@@ -99,8 +99,8 @@ internal object LibraryAnalyticsTracks {
     }
 
     fun trackLibraryHistorySession(timeSpentSeconds: Float, episodesClickedCount: Int, itemsDeletedCount: Int,) {
-        AnalyticsEmit.event(
-            "library_destination_viewed",
+        ScreenAnalyticsTracks.trackScreenLeft(
+            "library_history",
             mapOf(
                 "destination" to "history",
                 "time_spent_seconds" to timeSpentSeconds,

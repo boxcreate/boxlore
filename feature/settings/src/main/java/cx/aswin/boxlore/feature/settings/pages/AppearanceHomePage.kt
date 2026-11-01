@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.core.prefs.HeroCoverShade
@@ -67,6 +68,7 @@ internal fun AppearanceHomePage(
     onBack: () -> Unit,
     onOpenRecommendations: () -> Unit = {},
 ) {
+    TrackScreenView("appearance_home")
     val style = HeroCardStyle.sanitize(state.heroCardStyle)
     // The stored choice, unpicked until a colour is chosen: each preview applies its own style's default.
     val storedColors = state.heroCoverShade

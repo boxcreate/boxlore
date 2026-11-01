@@ -37,6 +37,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.R
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreFoldSafeViewport
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
@@ -66,6 +67,7 @@ internal fun TabletAlphaStartupGate(
 
 @Composable
 private fun TabletAlphaNoticeScreen(onAcknowledge: () -> Unit) {
+    TrackScreenView("tablet_alpha_notice")
     Surface(Modifier.fillMaxSize().testTag("tablet_alpha_notice"), color = MaterialTheme.colorScheme.surface.copy(alpha = 1f)) {
         BoxWithConstraints(Modifier.fillMaxSize().boxloreFoldSafeViewport().safeDrawingPadding().padding(24.dp), contentAlignment = Alignment.Center) {
             Column(Modifier.widthIn(max = 560.dp).fillMaxWidth().heightIn(max = maxHeight), verticalArrangement = Arrangement.spacedBy(24.dp)) {

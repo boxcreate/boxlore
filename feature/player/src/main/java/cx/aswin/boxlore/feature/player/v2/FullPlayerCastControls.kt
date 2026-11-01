@@ -50,6 +50,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.mediarouter.media.MediaRouteSelector
 import androidx.mediarouter.media.MediaRouter
 import com.google.android.gms.cast.framework.CastContext
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import kotlinx.coroutines.delay
@@ -100,6 +101,7 @@ internal fun CastRoutePickerSheet(
     isCasting: Boolean,
     onDismiss: () -> Unit,
 ) {
+    TrackScreenView("player_cast")
     val context = LocalContext.current
     val mediaRouter = remember(context) { MediaRouter.getInstance(context) }
     val routeSelector = remember(context) { resolveCastRouteSelector(context) }

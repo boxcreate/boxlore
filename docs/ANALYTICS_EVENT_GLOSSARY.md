@@ -41,7 +41,12 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 - **`output`:** where the sound went when the listen ended: `speaker`, `wired`, `bluetooth` (hearing aids included), `cast`, `other`. The car is a controller, not an output.
 - **`playback_mode`:** `download` when any stored ID of the episode holds a finished download and it plays on this phone, `stream` otherwise (Cast always streams), `unknown` when the listen ended before the lookup answered.
 - **`heard_seconds`** comes from the player's position (natural advances only, so seeks and paused time never count), including the audio between the last once-a-second sample and a seek or the end; **`elapsed_seconds`** is the time the listen took. `qualified` is `heard_seconds` of 60 or more. **`start_wait_ms`** counts from the first play request of a press, so resolving a resumed session counts too.
+- **`screen` / `previous_screen`** on `playback_started` and `playback_session_ended`: the screen the listener asked to play from and the one before it ([Screens](#screens)); left out for plays from the car, voice and other controllers.
 - **Errors:** `error_message` and everything sent to error tracking have links and signed tokens removed (`AnalyticsRedaction`); error tracking gets a copy of each error that names the original type and keeps its stack.
+
+### Screens
+
+`screen` and `previous_screen` (`screen_viewed`, `screen_left`, plays): snake_case screen names from `TrackScreenView`. Screens with a view event of their own (`podcast_detail_viewed`, `episode_detail_viewed`, `explore_screen_viewed`, `library_destination_viewed`, `learn_screen_viewed`, `support_page_viewed`, `onboarding_step_viewed`, `settings_interaction` views) keep it and send nothing else; their leaving summaries are `screen_left`.
 
 ### Home hero look
 
@@ -67,7 +72,7 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 
 ### content_type
 
-`podcast`, `episode`, `briefing`, `mixtape`, `announcement`, `unknown`
+`podcast`, `episode`, `briefing`, `mixtape`, `announcement`, `listening_story` (the monthly story's share card), `unknown`
 
 ### Other
 
@@ -104,15 +109,17 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 | `onboarding_import_sheet_opened` | OPML/import sheet shown | — | entry_point:string | none |
 | `onboarding_import_failed` | OPML/library import failed | import_type:string | error_message:string | none |
 | `onboarding_manual_step_completed` | Genre/manual onboarding step finished | step_name:string; selections_count:int | selections_list:list; time_spent_seconds:float | none |
-| `playback_started` | Audio playback started (`is_resume` means finished before; `previously_finished` says so by name) | episode_id:string; podcast_id:string; entry_point:enum; is_resume:bool; playback_mode:enum; client_surface:enum; speed:float; is_subscribed:bool | recipe_id:string; position_seconds:float; duration_seconds:float; listen_id:string; previously_finished:bool; controlled_by:enum | none |
+| `playback_started` | Audio playback started (`is_resume` means finished before; `previously_finished` says so by name) | episode_id:string; podcast_id:string; entry_point:enum; is_resume:bool; playback_mode:enum; client_surface:enum; speed:float; is_subscribed:bool | recipe_id:string; position_seconds:float; duration_seconds:float; listen_id:string; previously_finished:bool; controlled_by:enum; screen:string; previous_screen:string | none |
 | `playback_heartbeat` | Periodic progress while playing | episode_id:string; podcast_id:string; entry_point:enum; position_seconds:float; playback_mode:enum; client_surface:enum | recipe_id:string; duration_seconds:float; percent_complete:float; milestone:int; speed:float; is_subscribed:bool | none |
 | `playback_paused` | Playback paused (off by default; replaced by `playback_session_ended`) | episode_id:string; podcast_id:string; entry_point:enum; position_seconds:float; listened_delta_seconds:float; pause_reason:enum; playback_mode:enum; client_surface:enum | recipe_id:string; duration_seconds:float; percent_complete:float; is_subscribed:bool | none |
 | `playback_completed` | Episode reached completion | episode_id:string; podcast_id:string; entry_point:enum; listened_delta_seconds:float; playback_mode:enum; client_surface:enum | recipe_id:string; duration_seconds:float; is_subscribed:bool; speed:float | none |
 | `playback_error` | Playback failed, once per cause per episode until a listen starts; also sent to error tracking | error_type:string; entry_point:enum | episode_id:string; recipe_id:string; podcast_id:string; error_message:string; playback_mode:enum; client_surface:enum; listen_id:string | none |
 | `playback_buffering` | Buffering stall of 5 seconds or more | entry_point:enum | episode_id:string; recipe_id:string; podcast_id:string; buffer_duration_ms:int; playback_mode:enum; client_surface:enum | none |
 | `playback_seeked` | User seeked in episode | episode_id:string; podcast_id:string; entry_point:enum; from_seconds:float; to_seconds:float | recipe_id:string; seek_source:string; client_surface:enum | none |
-| `playback_session_ended` | One record per listen, from sound starting until it pauses, finishes, switches episode, stops or the app closes; `qualified` from 60 s heard | listen_id:string; episode_id:string; entry_point:enum; end_reason:enum; heard_seconds:float; elapsed_seconds:float; qualified:bool; completed:bool; previously_finished:bool; playback_mode:enum; client_surface:enum; controlled_by:enum; output:enum; speed:float; seeks_forward:int; seeks_back:int; skipped_forward_seconds:float; skipped_back_seconds:float; buffering_count:int; buffering_seconds:float; start_position_seconds:float; end_position_seconds:float; duration_seconds:float | recipe_id:string; podcast_id:string; pause_reason:enum; start_wait_ms:int; queue_size:int | none |
+| `playback_session_ended` | One record per listen, from sound starting until it pauses, finishes, switches episode, stops or the app closes; `qualified` from 60 s heard | listen_id:string; episode_id:string; entry_point:enum; end_reason:enum; heard_seconds:float; elapsed_seconds:float; qualified:bool; completed:bool; previously_finished:bool; playback_mode:enum; client_surface:enum; controlled_by:enum; output:enum; speed:float; seeks_forward:int; seeks_back:int; skipped_forward_seconds:float; skipped_back_seconds:float; buffering_count:int; buffering_seconds:float; start_position_seconds:float; end_position_seconds:float; duration_seconds:float | recipe_id:string; podcast_id:string; pause_reason:enum; start_wait_ms:int; queue_size:int; screen:string; previous_screen:string | none |
 | `playback_interrupted` | A listen the last run left unfinished because Android ended the app, sent at the next launch | listen_id:string; episode_id:string; entry_point:enum; heard_seconds:float; elapsed_seconds:float; in_background:bool; playback_mode:enum; controlled_by:enum; client_surface:enum | recipe_id:string; podcast_id:string | none |
+| `screen_viewed` | A screen, tab, sheet or dialog without a view event of its own was shown, once per visit (`TrackScreenView`; rotating, folding, resizing or coming back from a screen on top doesn't send it again) | screen:string | previous_screen:string; tab:string | none |
+| `screen_left` | A screen's leaving summary (time on it, what was done there), sampled; it used to go out under the screen's view event, which counted each visit twice | screen:string; time_spent_seconds:float | episode_id:string; recipe_id:string; podcast_id:string; destination:string | none |
 | `session_restore_prompt` | Resume previous session prompt shown/acted | action:string | episode_id:string; recipe_id:string; podcast_id:string; position_seconds:float | none |
 | `podcast_subscription_toggled` | User subscribed or unsubscribed | podcast_id:string; is_subscribed:bool | surface:string; source:string | none |
 | `notification_permission_requested` | System permission prompt requested | — | surface:string | none |

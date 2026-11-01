@@ -50,6 +50,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.AutoTranscriptState
@@ -216,6 +217,7 @@ internal fun InlineSpeedSelector(
     onBack: () -> Unit,
     onSpeedSelected: (Float) -> Unit
 ) {
+    TrackScreenView("player_speed")
     val speeds = remember {
         listOf(0.5f, 0.8f, 0.9f, 1f, 1.1f, 1.2f, 1.25f, 1.5f, 1.75f, 2f, 2.5f, 3f)
     }
@@ -306,6 +308,7 @@ internal fun InlineSleepSelector(
     onBack: () -> Unit,
     onDurationSelected: (Int) -> Unit
 ) {
+    TrackScreenView("player_sleep_timer")
     val timerActive = sleepAtEndOfEpisode ||
         (sleepTimerEnd != null && sleepTimerEnd > System.currentTimeMillis())
     val remainingMinutes = sleepTimerEnd

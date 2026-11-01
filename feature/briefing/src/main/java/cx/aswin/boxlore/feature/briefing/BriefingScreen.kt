@@ -90,6 +90,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.designsystem.R
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.briefing.BRIEFING_COVER_ASPECT_RATIO
 import cx.aswin.boxlore.core.designsystem.briefing.BriefingCover
 import cx.aswin.boxlore.core.designsystem.briefing.BriefingEditorialTheme
@@ -173,6 +174,7 @@ fun BriefingScreen(
     defaultEdition: String = BriefingEdition.FOLLOW_APP,
     onDefaultEditionSelect: (String) -> Unit = {},
 ) {
+    TrackScreenView("daily_briefing", send = {}) // daily_briefing_action screen_viewed is its view
     val scroll = rememberScrollState()
     var showPreferences by remember { mutableStateOf(false) }
     var showSources by remember { mutableStateOf(false) }
@@ -312,6 +314,7 @@ private fun BriefingProgressTrack(progress: () -> Float, playing: Boolean) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BriefingPreferencesSheet(defaultEdition: String, onSelect: (String) -> Unit, onDismiss: () -> Unit) {
+    TrackScreenView("briefing_preferences")
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 12.dp)) {
             Text(stringResource(R.string.briefing_default_region), style = MaterialTheme.typography.headlineSmall)
@@ -332,6 +335,7 @@ private fun BriefingPreferencesSheet(defaultEdition: String, onSelect: (String) 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BriefingSourcesSheet(briefing: Briefing, onDismiss: () -> Unit) {
+    TrackScreenView("briefing_sources")
     val uriHandler = LocalUriHandler.current
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {

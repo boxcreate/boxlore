@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -51,6 +52,7 @@ fun PodcastPlaybackSettingsSheet(
     state: PodcastPlaybackSettingsState,
     actions: PodcastPlaybackSettingsActions,
 ) {
+    TrackScreenView("podcast_playback_settings")
     val usesDefaults =
         state.skipBeginningOverrideMs == null && state.skipEndingOverrideMs == null
     ModalBottomSheet(onDismissRequest = actions.onDismissRequest) {

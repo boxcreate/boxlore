@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
@@ -94,6 +95,7 @@ internal fun SubscriptionFolderPage(
     actions: FolderPageActions,
     modifier: Modifier = Modifier,
 ) {
+    TrackScreenView("subscription_folder", folder.id)
     val lastSeenEpisodes = LocalLastSeenEpisodes.current
     val newCount = remember(podcasts, lastSeenEpisodes) {
         podcasts.count { it.isLatestEpisodeNew(lastSeenEpisodes[it.id]) }

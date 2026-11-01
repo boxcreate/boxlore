@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
@@ -574,6 +575,7 @@ internal fun MarkAllEpisodesDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
+    TrackScreenView(if (markAsPlayed) "podcast_mark_all_played_confirmation" else "podcast_mark_all_unplayed_confirmation")
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = {

@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.EngagementBottomSheetScaffold
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -37,6 +38,7 @@ fun ReviewPromptSheet(
     onNavigateToFeedback: () -> Unit,
     variant: ReviewPromptVariant = ReviewPromptVariant.Milestone,
 ) {
+    TrackScreenView("review_prompt", send = {}) // the prompt is counted when it is decided
     val title =
         when (variant) {
             ReviewPromptVariant.PromoterHandoff -> "Glad you're enjoying boxlore"
@@ -194,6 +196,7 @@ fun PostReviewSheet(
     onDismissRequest: () -> Unit,
     onNavigateToFeedback: () -> Unit,
 ) {
+    TrackScreenView("post_review")
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
@@ -336,6 +339,7 @@ fun FeedbackSheet(
     onRateInstead: () -> Unit,
     onDismissRequest: () -> Unit,
 ) {
+    TrackScreenView("home_feedback")
     var message by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("feature") }

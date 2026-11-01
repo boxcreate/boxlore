@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.prefs.AutoDownloadBackgroundSettings
@@ -44,6 +45,7 @@ fun AutoDownloadSettingsScreen(
     userPrefs: UserPreferencesRepository,
     onBack: () -> Unit,
 ) {
+    TrackScreenView("auto_download_settings")
     val scope = rememberCoroutineScope()
     val wifiOnly by userPrefs.autoDownloadWifiOnlyStream.collectAsStateWithLifecycle(initialValue = true)
     val maxEpisodes by userPrefs.autoDownloadMaxEpisodesStream.collectAsStateWithLifecycle(initialValue = 2)

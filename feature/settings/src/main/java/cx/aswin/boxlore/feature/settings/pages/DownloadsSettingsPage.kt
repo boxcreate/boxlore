@@ -6,6 +6,7 @@ import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsNavigationRow
@@ -23,6 +24,7 @@ internal fun DownloadsSettingsPage(
     onAutoDownloadsClick: () -> Unit,
     onBack: () -> Unit,
 ) {
+    TrackScreenView("downloads_settings")
     SettingsScaffold(
         title = "Downloads",
         onBack = onBack,

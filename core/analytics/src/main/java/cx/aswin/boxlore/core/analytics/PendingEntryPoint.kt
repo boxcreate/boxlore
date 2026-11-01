@@ -30,10 +30,27 @@ object PendingEntryPoint {
         if (pending == null) pending = context
     }
 
+    /**
+     * [context] with the screen the listener asked to play from and the one before it
+     * ([ScreenViews]), as `screen` and `previous_screen`, when known. Only for plays asked from
+     * boxlore's own screens; the car and voice requests leave them out.
+     */
+    fun withScreens(context: Map<String, Any>): Map<String, Any> {
+        val trail = ScreenViews.trail
+        return buildMap {
+            putAll(context)
+            trail.current?.let { if (SCREEN !in context) put(SCREEN, it) }
+            trail.previous?.let { if (PREVIOUS_SCREEN !in context) put(PREVIOUS_SCREEN, it) }
+        }
+    }
+
     @Synchronized
     fun consume(): Map<String, Any>? {
         val result = pending
         pending = null
         return result
     }
+
+    private const val SCREEN = "screen"
+    private const val PREVIOUS_SCREEN = "previous_screen"
 }

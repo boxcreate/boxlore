@@ -26,8 +26,8 @@ class PodcastInfoSessionTrackerTest {
         restore()
     }
 
-    /** The session events: screen views carry no time spent. */
-    private fun sessions() = events.filter { (name, props) -> name == "podcast_detail_viewed" && "time_spent_seconds" in props }.map { it.second }
+    /** The show page's leaving summaries, which have their own event since visits stopped counting twice. */
+    private fun sessions() = events.filter { (name, props) -> name == "screen_left" && props["screen"] == "podcast_detail" }.map { it.second }
 
     @Test
     fun `the session is sent once per visit, with the follow state the page opened with`() {

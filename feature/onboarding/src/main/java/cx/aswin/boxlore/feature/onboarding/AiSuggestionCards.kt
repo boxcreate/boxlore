@@ -45,6 +45,7 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
@@ -138,6 +139,7 @@ internal fun SuggestionPodcastDetailSheet(
     onDismiss: () -> Unit,
     onToggleSubscription: (String) -> Unit,
 ) {
+    TrackScreenView("onboarding_podcast_detail")
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val description =
         remember(podcast.id, podcast.description, podcast.title, podcast.artist) {

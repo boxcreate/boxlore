@@ -43,6 +43,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 
@@ -282,6 +283,7 @@ private class EchoFooterMemory {
 
 @Composable
 private fun EchoFinishConfirmation(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    TrackScreenView("onboarding_echo_finish_confirmation")
     AlertDialog(
         onDismissRequest = onDismiss,
         modifier = Modifier.testTag("echo_finish_confirmation"),

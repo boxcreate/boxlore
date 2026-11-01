@@ -18,6 +18,7 @@ Owns Library presentation: hub, subscriptions, liked episodes, downloaded episod
 - Floating Subscriptions tabs and all library Play All controls follow designsystem's shared adaptive-player placement offset, including New Episodes with either Top or Floating tabs. Play All keeps its spacing above the floating selector. Existing system-bar and list clearances stay stable while the player morphs, and Classic retains its existing placement.
 - Missing or failed show/episode artwork uses designsystem's shared B-and-microphone fallback in grids, folders and rows; titles alongside the artwork remain unchanged.
 - Library UI uses centralized Google Sans Flex weight tokens from `:core:designsystem`.
+- **Page views** (`TrackScreenView`, `:core:designsystem`): `library`, `subscriptions`, `liked_episodes` and `downloads` send `library_destination_viewed` through the helper, once per visit; their leaving summaries are `screen_left`. Folders send `screen_viewed`: `subscription_folder`, the new-folder steps (`new_folder_contents`, `new_folder_name`, `new_folder_look`, with `mode`), `edit_folder`, `auto_organize_folders`, `add_to_folders`, `folder_show_selection`, `move_to_folder`, `subscription_context_menu`, `subscription_sort` and the delete-folder, unsubscribe and disable-auto-organize confirmations; `downloaded_show_episodes` too.
 
 ## Internal structure
 

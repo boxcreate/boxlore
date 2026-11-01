@@ -173,6 +173,12 @@ class GlossaryAllEventsEmissionTest {
                 "playback_interrupted" to {
                     AnalyticsHelper.trackPlaybackInterrupted(ListenAnalyticsFixtures.interrupted())
                 },
+                "screen_viewed" to {
+                    AnalyticsHelper.trackScreenViewed("history_insights", previousScreen = "library_hub")
+                },
+                "screen_left" to {
+                    AnalyticsHelper.trackLibraryHubSession(5f, null)
+                },
                 "session_restore_prompt" to {
                     AnalyticsHelper.trackSessionRestorePrompt("shown", "e1", "p1", 12f)
                 },

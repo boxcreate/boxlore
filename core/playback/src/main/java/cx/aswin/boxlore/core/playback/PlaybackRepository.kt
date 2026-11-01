@@ -657,7 +657,7 @@ class PlaybackRepository internal constructor(
             }
             if (map.isNotEmpty()) {
                 cx.aswin.boxlore.core.analytics.PendingEntryPoint
-                    .set(map)
+                    .set(cx.aswin.boxlore.core.analytics.PendingEntryPoint.withScreens(map))
             }
         }
     }

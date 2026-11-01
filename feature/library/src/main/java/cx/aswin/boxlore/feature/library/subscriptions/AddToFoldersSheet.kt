@@ -38,6 +38,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -73,6 +74,7 @@ internal fun AddToFoldersSheet(
     onNewFolderWithShow: () -> Unit,
     onDismissRequest: () -> Unit,
 ) {
+    TrackScreenView("add_to_folders")
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val pickable = folders.filterNot { it.isGenreLinked }
     val genreFolders = folders.filter { it.isGenreLinked }

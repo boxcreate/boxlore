@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -48,6 +49,7 @@ fun SmartDownloadsSettingsScreen(
     userPrefs: UserPreferencesRepository,
     onBack: () -> Unit
 ) {
+    TrackScreenView("smart_downloads_settings")
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 

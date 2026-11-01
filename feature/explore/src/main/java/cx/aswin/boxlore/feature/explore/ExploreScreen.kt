@@ -65,6 +65,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
@@ -129,7 +130,7 @@ fun ExploreScreen(
         viewModel.playerState.map { it.currentEpisode != null }.distinctUntilChanged()
     }.collectAsStateWithLifecycle(initialValue = remember(viewModel) { viewModel.playerState.value.currentEpisode != null })
 
-    androidx.compose.runtime.LaunchedEffect(Unit) {
+    TrackScreenView("explore") {
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackExploreScreenViewed(entryPoint)
     }
 
@@ -241,6 +242,17 @@ fun ExploreContent(
         val browsePager = rememberExploreTabPagerState(state.selectedTab, active && !isSearchModeActive && state.hasForYou, onTabSelected)
         // Without Picked for you there is no For you tab, so Explore shows Top on its own.
         val visibleTab = if (state.hasForYou) browsePager.visibleTab else ExploreDefaultTab.INDEX_TOP
+        val exploreView =
+            when {
+                state.currentVibe != null -> "explore_topic"
+                isSearchModeActive && state.searchTab == SearchTab.EPISODES -> "explore_search_episodes"
+                isSearchModeActive -> "explore_search_shows"
+                visibleTab == ExploreDefaultTab.INDEX_TOP -> "explore_top"
+                else -> "explore_for_you"
+            }
+        TrackScreenView(exploreView, state.currentVibe) { previous ->
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackScreenViewed(exploreView, previous, state.currentVibe?.let { mapOf("topic" to it) }.orEmpty())
+        }
         val forYouGridState = rememberLazyStaggeredGridState()
         val topGridState = rememberLazyStaggeredGridState()
         val searchGridState = rememberLazyStaggeredGridState()

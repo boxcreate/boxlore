@@ -43,10 +43,6 @@ internal fun HistoryScreenEffects(
         }
     }
 
-    LaunchedEffect(Unit) {
-        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibraryHistoryViewed("library_hub_card")
-    }
-
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {

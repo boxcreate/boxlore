@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 
 // Genre data matching GenreSelector.kt
 data class GenreItem(
@@ -129,8 +130,8 @@ fun OnboardingScreen(
         },
         label = "onboarding_step",
     ) { step ->
-        LaunchedEffect(step) {
-            val (stepName, stepIndex, flowType) =
+        val (stepName, stepIndex, flowType) =
+            remember(step) {
                 when (step) {
                     OnboardingStep.WELCOME -> Triple("welcome", 0, "welcome")
                     OnboardingStep.GENRES -> Triple("genres", 1, "manual_genre")
@@ -141,6 +142,8 @@ fun OnboardingScreen(
                     OnboardingStep.AI_ONBOARDING -> Triple("ai_chat", 1, "ai_chat")
                     OnboardingStep.AI_SUGGESTIONS -> Triple("ai_suggestions", 6, "ai_chat")
                 }
+            }
+        TrackScreenView("onboarding_$stepName") {
             cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackOnboardingStepViewed(
                 stepName = stepName,
                 flowType = flowType,

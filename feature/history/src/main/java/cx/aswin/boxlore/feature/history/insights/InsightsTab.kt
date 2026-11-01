@@ -37,6 +37,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.model.ListeningPeriod
 import cx.aswin.boxlore.feature.history.R
@@ -74,6 +75,7 @@ internal fun InsightsTab(
     listState: LazyListState = rememberLazyListState(),
     stories: InsightsStorySlots = InsightsStorySlots(),
 ) {
+    TrackScreenView("history_insights")
     LazyColumn(
         state = listState,
         contentPadding = contentPadding,

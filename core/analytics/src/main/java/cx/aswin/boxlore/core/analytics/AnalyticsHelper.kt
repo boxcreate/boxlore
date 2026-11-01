@@ -610,6 +610,13 @@ object AnalyticsHelper : Analytics {
         listen = listen,
     )
 
+    /**
+     * The page view of a screen, tab, sheet or dialog without a view event of its own, with the
+     * screen before it ([ScreenViews]). Screens call it through `TrackScreenView`, once per visit.
+     */
+    fun trackScreenViewed(screen: String, previousScreen: String?, properties: Map<String, Any> = emptyMap(),) =
+        ScreenAnalyticsTracks.trackScreenViewed(screen, previousScreen, properties)
+
     /** One record per listen, sent when it ends; see [PlaybackListenSummary]. */
     fun trackPlaybackSessionEnded(listen: PlaybackListenSummary) = ListenAnalyticsTracks.trackPlaybackSessionEnded(listen)
 

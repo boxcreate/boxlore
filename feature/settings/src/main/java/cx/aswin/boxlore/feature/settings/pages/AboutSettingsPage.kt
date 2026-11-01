@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.R
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
@@ -59,6 +60,7 @@ internal fun AboutSettingsPage(
     onBack: () -> Unit,
     onCheckForUpdates: (() -> Unit)? = null,
 ) {
+    TrackScreenView("about")
     SettingsScaffold(
         title = "About boxlore",
         onBack = onBack,

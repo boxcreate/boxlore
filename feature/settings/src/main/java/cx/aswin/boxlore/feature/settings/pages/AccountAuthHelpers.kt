@@ -248,6 +248,7 @@ internal class AccountAuthState(
             errorMessage = "Please enter your email address"
             return
         }
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSettingsInteraction("account_sign_in_email_link")
         if (!isValidEmail(trimmedEmail)) {
             errorMessage = ERROR_INVALID_EMAIL
             return
@@ -433,6 +434,7 @@ internal class AccountAuthState(
 
     fun handleGoogleSignIn() {
         if (isAnyLoading) return
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSettingsInteraction("account_sign_in_google")
         focusManager.clearFocus()
         isGoogleLoading = true
         errorMessage = null

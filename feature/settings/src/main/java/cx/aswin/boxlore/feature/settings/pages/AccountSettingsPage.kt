@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.UriHandler
 import cx.aswin.boxlore.core.auth.AuthRepository
 import cx.aswin.boxlore.core.auth.EmailLinkSignInStatus
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.model.BoxLoreUser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -114,15 +115,24 @@ internal fun AccountSettingsPage(
     val user = currentUser
     val isAwaiting = isAwaitingVerificationState(authState, user, context)
     val mode = accountPageModeFor(user, isAwaiting, isOnboarding, authState, emailLink.status)
+    TrackScreenView("account", mode) { previous ->
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackScreenViewed("account", previous, mapOf("mode" to mode.analyticsName))
+    }
     LaunchedEffect(mode) {
         if (mode.showsLinkResult) scrollState.animateScrollTo(0)
     }
     val signedInActions = SignedInActions(
         onResetPassword = { sendResetPasswordEmail(scope, authRepository, user?.email, context) },
-        onSignOut = { handleSignOut(authRepository, authState, context) },
+        onSignOut = {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSettingsInteraction("account_sign_out")
+            handleSignOut(authRepository, authState, context)
+        },
         onDeleteAccountClick = { showDeleteConfirmation = true },
         onOpenAccountDeletionInfo = onOpenAccountDeletionInfo,
-        onSyncNow = onSyncNow,
+        onSyncNow = {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSettingsInteraction("account_sync_now")
+            onSyncNow()
+        },
     )
     AccountPageScaffold(
         onBack = onBack,
@@ -144,6 +154,7 @@ internal fun AccountSettingsPage(
         onDismissDeleteConfirmation = { showDeleteConfirmation = false },
         onConfirmDelete = {
             showDeleteConfirmation = false
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSettingsInteraction("account_delete_confirmed")
             handleDeleteAccount(
                 scope = scope,
                 context = context,
@@ -206,6 +217,9 @@ internal enum class AccountPageMode(val signedIn: Boolean) {
     CheckLinkEmail(false),
     SignedOut(false),
     ;
+
+    /** This mode as `account` page views name it (`signed_in_settings`, `check_link_email`, ...). */
+    val analyticsName: String get() = name.replace(Regex("(?<=[a-z])(?=[A-Z])"), "_").lowercase()
 
     /** An opened sign-in link's progress or failure, shown from the top of the page. */
     val showsLinkResult: Boolean get() = this == SigningInWithLink || this == LinkFailed

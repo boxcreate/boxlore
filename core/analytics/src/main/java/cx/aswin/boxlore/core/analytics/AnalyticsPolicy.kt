@@ -57,6 +57,8 @@ object AnalyticsPolicy {
             // Replaced by playback_session_ended, one record per listen with real minutes.
             "playback_paused" to AnalyticsLevel.Off,
             "playback_seeked" to AnalyticsLevel.Sampled,
+            // Leaving summaries (time on a screen, what was done there); visits stay always on.
+            "screen_left" to AnalyticsLevel.Sampled,
         )
 
     /**

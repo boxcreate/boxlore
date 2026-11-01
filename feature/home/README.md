@@ -40,6 +40,7 @@ Owns Home feed presentation, Daily and Offline mixes, and local debug surfaces f
 - Pure logic helpers under `logic/` for Home assembly, discovery, hero ordering, selection, playback-state mapping, serial episodes, affinity behavior, and Daily/Offline mix eligibility and queue selection.
 - Home Brief play uses `PlaybackEntryPoint.BRIEFING` so `playback_*` gets glossary `entry_point=briefing` (interactions stay on existing `daily_briefing_action`).
 - Home Brief play builds its show and episode metadata from `:core:designsystem`'s `briefingShowPodcast`, the same identity the Brief screen uses, so the show name matches the masthead.
+- **Page views** (`TrackScreenView`, `:core:designsystem`): `home` and `review_prompt` only move the screen trail (Home visits are app opens and Home taps; the prompt is counted when decided). `recommendation_show_picker`, `home_feedback` and `post_review` send `screen_viewed`.
 
 ## Internal structure
 

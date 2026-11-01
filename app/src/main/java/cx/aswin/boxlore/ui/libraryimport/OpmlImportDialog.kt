@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.catalog.backup.JsonBackupPhase
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreFoldSafeViewport
@@ -289,6 +290,7 @@ private fun ImportDialogBody(
         contentKey = { importScreenFor(it) },
         label = "import_content",
     ) { current ->
+        importScreenFor(current)?.let { step -> TrackScreenView("library_import_${step.name.lowercase()}") }
         when (importScreenFor(current)) {
             ImportScreen.Pick ->
                 SelectorContent(

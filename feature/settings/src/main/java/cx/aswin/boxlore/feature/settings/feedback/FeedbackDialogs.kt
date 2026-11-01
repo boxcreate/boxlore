@@ -42,6 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 @Composable
@@ -53,6 +54,7 @@ fun LogsPreviewDialog(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    TrackScreenView("feedback_logs_preview")
     AlertDialog(
         onDismissRequest = onDismissRequest,
         modifier = modifier

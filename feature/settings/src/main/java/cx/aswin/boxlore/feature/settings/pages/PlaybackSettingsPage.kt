@@ -10,6 +10,7 @@ import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material.icons.rounded.Update
 import androidx.compose.runtime.Composable
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.feature.settings.components.SettingsChoiceRow
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsDurationSliderIcon
@@ -54,6 +55,7 @@ internal fun PlaybackSettingsPage(
     actions: PlaybackActions,
     onBack: () -> Unit,
 ) {
+    TrackScreenView("playback_settings")
     SettingsScaffold(
         title = "Playback",
         onBack = onBack,

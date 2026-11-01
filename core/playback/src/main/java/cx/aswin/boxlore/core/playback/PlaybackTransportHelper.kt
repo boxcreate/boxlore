@@ -50,7 +50,8 @@ internal class PlaybackTransportHelper(
                 storePendingEntryPoint(entryPointContext)
             } else {
                 cx.aswin.boxlore.core.analytics.PendingEntryPoint.setIfAbsent(
-                    mapOf("entry_point" to default),
+                    cx.aswin.boxlore.core.analytics.PendingEntryPoint
+                        .withScreens(mapOf("entry_point" to default)),
                 )
             }
         }

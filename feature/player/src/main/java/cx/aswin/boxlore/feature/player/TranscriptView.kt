@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isSpecified
 import cx.aswin.boxlore.core.catalog.TranscriptSegment
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import kotlinx.coroutines.delay
 
@@ -305,6 +306,7 @@ fun FullscreenTranscriptScreen(
     modifier: Modifier = Modifier,
     transcriptUrl: String? = null
 ) {
+    TrackScreenView("player_transcript_fullscreen")
     val positionMs by positionFlow.collectAsState(initial = 0L)
     val containerColor = colorScheme.surface
 

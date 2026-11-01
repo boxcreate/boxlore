@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.catalog.ChapterRepository
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
@@ -419,6 +420,7 @@ internal fun PlayerQueueSheet(
     ui: FullPlayerUiState,
     actions: FullPlayerActions? = null,
 ) {
+    TrackScreenView("player_queue")
     val sameShowQueueOnly by userPrefs.sameShowQueueOnlyStream
         .collectAsStateWithLifecycle(initialValue = false)
     ModalBottomSheet(
@@ -534,6 +536,7 @@ internal fun PlayerChaptersSheet(
     sheetState: SheetState,
     ui: FullPlayerUiState
 ) {
+    TrackScreenView("player_chapters")
     ModalBottomSheet(
         onDismissRequest = { ui.showChaptersSheet = false },
         sheetState = sheetState,

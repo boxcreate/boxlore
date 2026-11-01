@@ -31,6 +31,21 @@ class PlayerSessionAggregatorTest {
     private fun lastSession() = captured.last { it.first == "player_chrome_interaction" }.second
 
     @Test
+    fun transcriptOpensAndHidesAreCounted() {
+        // Regression: the summary read "transcript_view", which the player never logs, so it was always 0.
+        PlayerSessionAggregator.startSession("pod-1", "ep-1")
+        PlayerSessionAggregator.logAction(PlayerSessionAggregator.TRANSCRIPT_OPENED)
+        PlayerSessionAggregator.logAction(PlayerSessionAggregator.TRANSCRIPT_HIDDEN)
+        PlayerSessionAggregator.logAction(PlayerSessionAggregator.TRANSCRIPT_OPENED)
+
+        PlayerSessionAggregator.endSession()
+
+        assertEquals(3, lastSession()["transcript_view_toggles"])
+        assertEquals(2, lastSession()["transcript_opens"])
+        assertEquals("transcript_inline", PlayerSessionAggregator.TRANSCRIPT_OPENED, "the name the player has always logged")
+    }
+
+    @Test
     fun endSessionAggregatesActionCounts() {
         PlayerSessionAggregator.startSession("pod-1", "ep-1", "Podcast", "Episode")
         PlayerSessionAggregator.logAction("play_pause")

@@ -9,6 +9,7 @@ import androidx.compose.material.icons.rounded.WbTwilight
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.prefs.DiscoverySection
 import cx.aswin.boxlore.core.prefs.DiscoverySections
 import cx.aswin.boxlore.feature.settings.R
@@ -37,6 +38,7 @@ private val EpisodeSwitches = listOf(
  */
 @Composable
 internal fun RecommendationsSettingsPage(sections: DiscoverySections, onSet: (DiscoverySection, Boolean) -> Unit, onBack: () -> Unit) {
+    TrackScreenView("recommendations_settings")
     SettingsScaffold(title = stringResource(R.string.recommendations_title), onBack = onBack) {
         RecommendationSwitchGroup(stringResource(R.string.recommendations_home_title), stringResource(R.string.recommendations_home_footer), HomeSwitches, sections, onSet)
         RecommendationSwitchGroup(stringResource(R.string.recommendations_episodes_title), null, EpisodeSwitches, sections, onSet)

@@ -47,6 +47,7 @@ import coil.compose.AsyncImage
 import cx.aswin.boxlore.BuildConfig
 import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreDialog as Dialog
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository.Announcement
 import cx.aswin.boxlore.ui.NativeDialogSystemBars
@@ -56,6 +57,7 @@ import cx.aswin.boxlore.util.isInstalledFromPlayStore
 /** Native Material 3 presentation; the admin's browser preview follows the same visual specification. */
 @Composable
 fun InAppAnnouncementDialog(announcement: Announcement, onDismiss: () -> Unit, onAction: (route: String) -> Unit) {
+    TrackScreenView("in_app_announcement", send = {}) // feature_announcement_action viewed is its view
     val actions = remember(announcement) { announcementActions(announcement) }
     val fullscreen = announcement.presentation == "fullscreen"
     val colors = announcementColors(MaterialTheme.colorScheme, announcement.tone)

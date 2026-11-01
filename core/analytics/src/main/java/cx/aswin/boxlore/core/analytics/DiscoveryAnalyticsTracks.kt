@@ -233,8 +233,8 @@ internal object DiscoveryAnalyticsTracks {
         episodesPlayedCount: Int,
         episodesClickedCount: Int,
     ) {
-        AnalyticsEmit.event(
-            "podcast_detail_viewed",
+        ScreenAnalyticsTracks.trackScreenLeft(
+            "podcast_detail",
             mapOf(
                 "podcast_id" to podcastId,
                 "podcast_name" to podcastName,
@@ -273,7 +273,7 @@ internal object DiscoveryAnalyticsTracks {
     }
 
     fun trackEpisodeInfoScreenSession(properties: Map<String, Any>) {
-        AnalyticsEmit.event("episode_detail_viewed", properties)
+        ScreenAnalyticsTracks.trackScreenLeft("episode_detail", properties)
     }
 
     fun trackProxyFallbackTriggered(imageHost: String, proxyWidth: Int, sampleMultiplier: Int = 10,) {

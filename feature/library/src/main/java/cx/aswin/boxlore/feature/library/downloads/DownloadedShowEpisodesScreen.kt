@@ -76,6 +76,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
@@ -100,6 +101,7 @@ fun DownloadedShowEpisodesScreen(
     onEpisodeClick: (Episode, Podcast) -> Unit,
     isPlayerActive: Boolean = false
 ) {
+    TrackScreenView("downloaded_show_episodes", podcastId)
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val downloads = (uiState as? LibraryUiState.Success)?.downloadedEpisodes ?: emptyList()
 

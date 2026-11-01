@@ -19,12 +19,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.posthog.surveys.PostHogDisplaySurveyTextContentType
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.surveys.internal.theme.localAppearance
 
 /** Post-submit thank-you screen shown when the survey appearance enables it. */
 @Composable
 internal fun ConfirmationScreen(onClose: () -> Unit) {
+    TrackScreenView("nps_survey_confirmation")
     val appearance = localAppearance()
     Column(
         modifier = Modifier.fillMaxWidth(),
