@@ -44,8 +44,8 @@ class EngagementPromptCoordinatorSurveyTest {
         suspend fun due(lastFinishedAt: Long?, playing: Boolean = false) =
             coordinator.shouldShowNpsSurvey(playing, installedAtMs = now - 30 * day, finishedSinceInstall = 5, lastFinishedAtMs = lastFinishedAt, nowMs = now)
 
-        coordinator.onAppLaunched(installedAtMs = now - 30 * day, nowMs = now)
-        coordinator.onAppLaunched(installedAtMs = now - 30 * day, nowMs = now)
+        coordinator.onAppLaunched(updatedInstall = false, nowMs = now)
+        coordinator.onAppLaunched(updatedInstall = false, nowMs = now)
         // A restored or older install that never showed the old survey starts with no history.
         assertNull(store.record().lastShownAtMs)
 

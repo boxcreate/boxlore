@@ -68,11 +68,12 @@ class EngagementPromptCoordinator(
 
     /**
      * Counts this start of boxlore and, once per install, carries over an older version's survey
-     * ([NpsSurveyStore.carryOverLegacy]). Called once at startup.
+     * ([NpsSurveyStore.carryOverLegacy]; [updatedInstall] when Android updated boxlore after installing
+     * it). Called once at startup.
      */
-    suspend fun onAppLaunched(installedAtMs: Long, nowMs: Long = System.currentTimeMillis()) {
+    suspend fun onAppLaunched(updatedInstall: Boolean, nowMs: Long = System.currentTimeMillis()) {
         surveyStore.recordLaunch()
-        surveyStore.carryOverLegacy(userPrefs.hasNpsSurveyFired(), installedAtMs, nowMs)
+        surveyStore.carryOverLegacy(userPrefs.hasNpsSurveyFired(), updatedInstall, nowMs)
     }
 
     /** Whether the NPS survey should appear now, by [NpsSurveySchedule] with nothing playing and no prompt yet this session. */

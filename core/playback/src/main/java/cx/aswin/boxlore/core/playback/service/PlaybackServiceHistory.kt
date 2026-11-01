@@ -120,6 +120,7 @@ private suspend fun BoxLorePlaybackService.persistNaturalCompletionOnce(
     val persisted = existing ?: dao.getHistoryItem(historyId) ?: return
     val completionDurationMs = durationMs.takeIf { it > 0L } ?: persisted.durationMs
     val completedAt = System.currentTimeMillis()
+    cx.aswin.boxlore.core.playback.PlaybackFinishes.record(completedAt)
     dao.completeFromPlayback(
         episodeId = historyId,
         durationMs = completionDurationMs,

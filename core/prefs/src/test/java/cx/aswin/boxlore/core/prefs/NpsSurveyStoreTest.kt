@@ -46,28 +46,29 @@ class NpsSurveyStoreTest {
 
     @Test
     fun anUpdatedInstallThatShowedTheOldSurveyWaitsFromTheUpdate() = runTest {
-        store.carryOverLegacy(legacyShown = true, installedAtMs = now - 40 * day, nowMs = now)
+        store.carryOverLegacy(legacyShown = true, updatedInstall = true, nowMs = now)
         assertEquals(now, store.record().lastShownAtMs)
     }
 
     @Test
-    fun aRestoredPhoneIgnoresTheBackedUpFlag() = runTest {
-        // Installed an hour ago: the old flag came in with a backup, so this phone is asked afresh.
-        store.carryOverLegacy(legacyShown = true, installedAtMs = now - 60 * 60 * 1000, nowMs = now)
+    fun aRestoredPhoneIgnoresTheBackedUpFlagHoweverLateItFirstOpens() = runTest {
+        // Installed fresh (never updated) with the old flag from a backup, first opened days later:
+        // regression, the old 24-hour guess counted this as an updated install and waited 90 days.
+        store.carryOverLegacy(legacyShown = true, updatedInstall = false, nowMs = now + 2 * day)
         assertNull(store.record().lastShownAtMs)
     }
 
     @Test
     fun theCarryOverRunsOnce() = runTest {
-        store.carryOverLegacy(legacyShown = false, installedAtMs = now - 40 * day, nowMs = now)
-        store.carryOverLegacy(legacyShown = true, installedAtMs = now - 40 * day, nowMs = now + day)
+        store.carryOverLegacy(legacyShown = false, updatedInstall = true, nowMs = now)
+        store.carryOverLegacy(legacyShown = true, updatedInstall = true, nowMs = now + day)
         assertNull(store.record().lastShownAtMs)
     }
 
     @Test
     fun theCarryOverNeverMovesARealShowing() = runTest {
         store.markShown(now - 10 * day)
-        store.carryOverLegacy(legacyShown = true, installedAtMs = now - 40 * day, nowMs = now)
+        store.carryOverLegacy(legacyShown = true, updatedInstall = true, nowMs = now)
         assertEquals(now - 10 * day, store.record().lastShownAtMs)
     }
 

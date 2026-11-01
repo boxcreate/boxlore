@@ -48,8 +48,12 @@ internal data class NpsSurveySession(
     val score: Int? = null,
     /** Opened by long-pressing Feedback: it sends its events but never uses up the schedule. */
     val manual: Boolean = false,
+    /** A decided survey not on screen by then is dropped: its finish moment has passed. */
+    val expiresAtMs: Long? = null,
 ) {
     val band: NpsScoreBand? get() = score?.let(NpsScoreBand::of)
+
+    fun isExpired(nowMs: Long): Boolean = !manual && expiresAtMs != null && nowMs > expiresAtMs
 }
 
 /**
@@ -128,11 +132,16 @@ internal class NpsSurveyController(
     /** This survey has been on screen. */
     val wasDisplayed: Boolean get() = displayed.get()
 
-    fun open(manual: Boolean, copy: NpsSurveyCopy) {
+    fun open(manual: Boolean, copy: NpsSurveyCopy, expiresAtMs: Long? = null) {
         if (isOpen) return
         this.copy = copy
         displayed.set(false)
-        _session.value = NpsSurveySession(submissionId = newSubmissionId(), manual = manual)
+        _session.value = NpsSurveySession(submissionId = newSubmissionId(), manual = manual, expiresAtMs = expiresAtMs)
+    }
+
+    /** Drops a decided survey that never reached the screen; nothing is sent and nothing is used up. */
+    fun discardUndisplayed() {
+        if (!displayed.get()) _session.value = null
     }
 
     /** The sheet is on screen with Home resumed: `survey shown`, once per survey. */
@@ -179,9 +188,12 @@ internal class NpsSurveyController(
         AnalyticsHelper.trackSurveySent(
             surveyId = NpsSurveyDefinition.SURVEY_ID,
             submissionId = session.submissionId,
+            // Every question in the survey's order, as PostHog's own SDKs send them: its queries read answers by position.
             questions = listOf(
                 SurveyQuestionRef(NpsSurveyDefinition.SCORE_QUESTION_ID, copy.question),
-                SurveyQuestionRef(followUpId, copy.followUpTitle(band)),
+                SurveyQuestionRef(NpsSurveyDefinition.FIX_QUESTION_ID, copy.fixTitle),
+                SurveyQuestionRef(NpsSurveyDefinition.TEN_QUESTION_ID, copy.tenTitle),
+                SurveyQuestionRef(NpsSurveyDefinition.IDEA_QUESTION_ID, copy.ideaTitle),
             ),
             responses = buildMap {
                 put(NpsSurveyDefinition.SCORE_QUESTION_ID, score)

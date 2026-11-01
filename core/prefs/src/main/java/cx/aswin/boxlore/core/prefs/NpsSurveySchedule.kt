@@ -6,7 +6,7 @@ data class NpsSurveyMoment(
     val installedAtMs: Long,
     /** Episodes played to the end in boxlore since it was installed here. */
     val finishedSinceInstall: Int,
-    /** When the latest of them finished; null when none has. */
+    /** When the player on this phone last played an episode to the end in this run; null when it hasn't. */
     val lastFinishedAtMs: Long?,
     val processStartedAtMs: Long,
     val record: NpsSurveyRecord,
@@ -33,9 +33,9 @@ object NpsSurveySchedule {
     /** How long after an episode finishes Home still counts it as the moment to ask. */
     const val FINISH_MOMENT_WINDOW_MS = 2L * 60 * 60 * 1000
 
-    /** An episode finished since this run of boxlore started, and recently. */
+    /** An episode finished since this run of boxlore started, within the window and not in the future. */
     fun isFinishMoment(lastFinishedAtMs: Long?, processStartedAtMs: Long, nowMs: Long,): Boolean =
-        lastFinishedAtMs != null && lastFinishedAtMs >= processStartedAtMs && nowMs - lastFinishedAtMs <= FINISH_MOMENT_WINDOW_MS
+        lastFinishedAtMs != null && lastFinishedAtMs >= processStartedAtMs && nowMs - lastFinishedAtMs in 0L..FINISH_MOMENT_WINDOW_MS
 
     fun isDue(moment: NpsSurveyMoment): Boolean = unmet(moment).isEmpty()
 

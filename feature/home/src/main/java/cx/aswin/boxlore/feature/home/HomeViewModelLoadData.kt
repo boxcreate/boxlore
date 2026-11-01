@@ -212,14 +212,18 @@ internal fun HomeViewModel.loadData() {
                         // Prompts count only episodes finished here, so a restore or import can't trigger them.
                         val completedCount = allHistory.countFinishedSince(installedAtMs)
 
-                        // Prompts appear only at a finish moment: an episode finished in this run of boxlore.
-                        val lastFinishedAtMs = allHistory.lastFinishedAt()
+                        // Prompts appear only at a finish moment: the player here played an episode to the end in this run.
+                        val lastFinishedAtMs = cx.aswin.boxlore.core.playback.PlaybackFinishes.lastAtMs
                         if (!isPromptSheetOpen) {
                             val isPlayingNow = playerState.value.isPlaying
                             if (engagementCoordinator.shouldShowNpsSurvey(isPlayingNow, installedAtMs, completedCount, lastFinishedAtMs)) {
                                 // Recorded once the sheet is on screen (NpsSurveyController.onDisplayed).
                                 engagementCoordinator.reserveSessionForPrompt()
-                                npsSurvey.open(manual = false, copy = npsSurveyCopy())
+                                npsSurvey.open(
+                                    manual = false,
+                                    copy = npsSurveyCopy(),
+                                    expiresAtMs = lastFinishedAtMs?.plus(cx.aswin.boxlore.core.prefs.NpsSurveySchedule.FINISH_MOMENT_WINDOW_MS),
+                                )
                             } else if (engagementCoordinator.canShowProactivePrompt(isPlayingNow)) {
                                 userPrefs.syncReviewMilestonePending(completedCount)
                                 val shouldPrompt =

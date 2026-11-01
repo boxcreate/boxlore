@@ -43,6 +43,12 @@ class NpsSurveyScheduleTest {
     }
 
     @Test
+    fun aFinishStampedInTheFutureIsNotTheMoment() {
+        // Regression: a finish synced from a device whose clock runs ahead passed the window check.
+        assertFalse(NpsSurveySchedule.isDue(moment(lastFinishedAt = now + 60_000)))
+    }
+
+    @Test
     fun aFinishLongAgoInThisRunIsNotTheMoment() {
         val longRun = moment(lastFinishedAt = now - NpsSurveySchedule.FINISH_MOMENT_WINDOW_MS - 1)
         assertFalse(NpsSurveySchedule.isDue(longRun.copy(processStartedAtMs = now - 10 * day)))

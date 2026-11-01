@@ -8,6 +8,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.click
@@ -20,6 +21,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.echo.LocalEchoMotion
@@ -47,6 +49,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import org.robolectric.shadows.ShadowDialog
 
 /**
  * The NPS survey keeps one survey through every presentation: the phone sheet or the centered dialog as
@@ -171,6 +174,70 @@ class NpsSurveySheetAdaptiveTest {
         assertEquals(NpsSurveyStep.FollowUp, controller.session.value?.step)
         compose.onNodeWithText(copy.ideaTitle).assertIsDisplayed()
         assertFalse(names().contains("survey dismissed"))
+    }
+
+    @Test
+    fun `Back on the expanded dialog's follow-up keeps the score and closes`() {
+        // Regression: the follow-up blocked every implicit dismissal on tablets, Back included.
+        window.value = BoxloreWindowLayout(1280f, 800f)
+        render()
+        open()
+        compose.onNodeWithTag("nps_score_8").performClick()
+        compose.waitForIdle()
+
+        compose.runOnUiThread { ShadowDialog.getLatestDialog().onBackPressed() }
+        compose.waitForIdle()
+
+        assertNull(controller.session.value)
+        assertEquals(listOf("survey shown", "survey sent", "survey sent"), names())
+        assertEquals(listOf(false, true), events.filter { it.first == "survey sent" }.map { it.second["\$survey_completed"] })
+    }
+
+    @Test
+    @Config(qualifiers = "w840dp-h480dp-mdpi")
+    fun `the scroll position survives crossing from the sheet to the dialog`() {
+        // Regression: the scroll state lived inside the modal, so the dialog started back at the top.
+        window.value = BoxloreWindowLayout(839f, 480f)
+        render()
+        open()
+        compose.onNodeWithTag("nps_score_3").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag(NPS_SCROLL_TAG).performTouchInput { swipeUp() }
+        compose.waitForIdle()
+        val before = scrollRange().value()
+        assertTrue("scrolled in the sheet", before > 0f)
+
+        compose.runOnIdle { window.value = BoxloreWindowLayout(840f, 480f) }
+        compose.waitForIdle()
+
+        compose.onNode(isDialog()).assertExists()
+        assertEquals("same position in the dialog", minOf(before, scrollRange().maxValue()), scrollRange().value(), 1f)
+    }
+
+    /** The survey content's scroll position and its end, from its scroll semantics. */
+    private fun scrollRange() = compose.onNodeWithTag(NPS_SCROLL_TAG).fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange]
+
+    @Test
+    fun `a decided survey dropped after its finish moment never appears`() {
+        var now = 1_000L
+        compose.setContent {
+            BoxLoreTheme(darkTheme = false, dynamicColor = false) {
+                CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value, LocalEchoMotion provides false) {
+                    Box(Modifier.requiredSize(360.dp, 740.dp)) { NpsSurveyHost(controller, isPlaying = playing.value, nowMs = { now }) }
+                }
+            }
+        }
+        playing.value = true
+        compose.runOnIdle { controller.open(manual = false, copy = copy, expiresAtMs = 2_000L) }
+        compose.waitForIdle()
+        now = 3_000L
+        compose.runOnIdle { playing.value = false }
+        compose.waitForIdle()
+
+        compose.onNodeWithTag(NPS_SHEET_TAG).assertDoesNotExist()
+        assertNull(controller.session.value)
+        assertTrue(names().isEmpty())
+        assertEquals(0, scheduledDisplays)
     }
 
     @Test

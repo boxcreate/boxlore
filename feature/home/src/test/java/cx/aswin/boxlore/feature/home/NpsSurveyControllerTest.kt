@@ -97,9 +97,19 @@ class NpsSurveyControllerTest {
             openAndShow()
             controller.onScore(score)
             controller.onFollowUpDone("idea")
-            val questions = sent().last()["\$survey_questions"] as List<*>
-            assertEquals("score $score", questionId, (questions.last() as Map<*, *>)["id"])
+            val questions = (sent().last()["\$survey_questions"] as List<*>).map { (it as Map<*, *>)["id"] }
+            // All four in the survey's order (PostHog reads answers by position), answers only for those given.
+            assertEquals(
+                listOf(
+                    NpsSurveyDefinition.SCORE_QUESTION_ID,
+                    NpsSurveyDefinition.FIX_QUESTION_ID,
+                    NpsSurveyDefinition.TEN_QUESTION_ID,
+                    NpsSurveyDefinition.IDEA_QUESTION_ID,
+                ),
+                questions,
+            )
             assertEquals("score $score", "idea", sent().last()["\$survey_response_$questionId"])
+            assertEquals("score $score", 2, sent().last().keys.count { it.startsWith("\$survey_response_") })
             controller.onClose()
         }
     }
@@ -151,6 +161,31 @@ class NpsSurveyControllerTest {
         val before = events.size
         controller.onClose()
         assertEquals(before, events.size)
+    }
+
+    @Test
+    fun `a decided survey that never appeared before its finish moment passed is dropped silently`() {
+        controller.open(manual = false, copy = NpsSurveyCopy(), expiresAtMs = 1_000L)
+        val session = controller.session.value!!
+        assertFalse(session.isExpired(1_000L))
+        assertTrue(session.isExpired(1_001L))
+
+        controller.discardUndisplayed()
+
+        assertNull(controller.session.value)
+        assertTrue(events.isEmpty())
+        assertEquals(0, scheduledDisplays)
+    }
+
+    @Test
+    fun `a survey on screen, or opened by hand, never expires or gets dropped`() {
+        controller.open(manual = true, copy = NpsSurveyCopy(), expiresAtMs = 1_000L)
+        assertFalse(controller.session.value!!.isExpired(5_000L))
+        controller.onClose()
+
+        openAndShow()
+        controller.discardUndisplayed()
+        assertTrue(controller.isOpen)
     }
 
     @Test

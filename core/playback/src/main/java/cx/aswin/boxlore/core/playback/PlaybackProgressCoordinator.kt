@@ -259,6 +259,7 @@ internal class PlaybackProgressCoordinator(
                 existing.lastPlayedAt
             }
         if (checkIsPlaybackCompleted(snapshot.positionMs, resolvedDurationMs)) {
+            PlaybackFinishes.record(System.currentTimeMillis())
             dao.completeFromPlayback(
                 episodeId = historyId,
                 durationMs = resolvedDurationMs,

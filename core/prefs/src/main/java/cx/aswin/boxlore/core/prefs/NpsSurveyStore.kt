@@ -46,23 +46,21 @@ class NpsSurveyStore internal constructor(private val dataStore: DataStore<Prefe
     }
 
     /**
-     * Runs once per install. An install that already showed the survey from an older version
-     * ([legacyShown], the backed-up `nps_survey_fired`) waits the full gap from the update. A phone
-     * restored from a backup is new here (installed within a day of [nowMs]), so the copied flag is
-     * ignored and it is asked like any new install.
+     * Runs once per install. An install that ran an older version ([updatedInstall]: Android updated it
+     * after installing it) and already showed the old survey ([legacyShown], the backed-up
+     * `nps_survey_fired`) waits the full gap from the update. A phone installed fresh, restored from a
+     * backup or not, ignores the copied flag and is asked like any new install.
      */
-    suspend fun carryOverLegacy(legacyShown: Boolean, installedAtMs: Long, nowMs: Long,) {
+    suspend fun carryOverLegacy(legacyShown: Boolean, updatedInstall: Boolean, nowMs: Long,) {
         dataStore.edit { prefs ->
             if (prefs[LEGACY_CHECKED] == true) return@edit
             prefs[LEGACY_CHECKED] = true
-            val updatedInstall = installedAtMs > 0L && nowMs - installedAtMs >= RESTORED_INSTALL_WINDOW_MS
             if (legacyShown && updatedInstall && prefs[LAST_SHOWN_AT] == null) prefs[LAST_SHOWN_AT] = nowMs
         }
     }
 
     companion object {
         const val FILE_NAME = "boxlore_nps_survey"
-        private const val RESTORED_INSTALL_WINDOW_MS = 24L * 60 * 60 * 1000
         private val LAST_SHOWN_AT = longPreferencesKey("last_shown_at")
         private val LAUNCHES = intPreferencesKey("launches")
         private val LEGACY_CHECKED = booleanPreferencesKey("legacy_checked")

@@ -182,8 +182,10 @@ class BoxLoreApplication :
         engagementPromptCoordinator =
             EngagementPromptCoordinator(userPreferencesRepository, cx.aswin.boxlore.core.prefs.NpsSurveyStore(this))
         applicationScope.launch {
-            val installedAtMs = runCatching { packageManager.getPackageInfo(packageName, 0).firstInstallTime }.getOrDefault(0L)
-            engagementPromptCoordinator.onAppLaunched(installedAtMs)
+            // Updated after installing: this install ran an older version (a fresh or restored install has not).
+            val updatedInstall =
+                runCatching { packageManager.getPackageInfo(packageName, 0).let { it.lastUpdateTime > it.firstInstallTime } }.getOrDefault(false)
+            engagementPromptCoordinator.onAppLaunched(updatedInstall)
         }
         scheduleOptionalStartup()
 
@@ -386,6 +388,9 @@ class BoxLoreApplication :
                 debug = BuildConfig.DEBUG
                 // The NPS survey is boxlore's own sheet (Home), reporting to an API survey; PostHog draws none.
                 surveys = false
+                // boxlore doesn't use PostHog push: never send it the FCM token or notification opens (on by default since 3.7x).
+                capturePushNotificationSubscriptions = false
+                capturePushNotificationOpened = false
                 onFeatureFlags =
                     PostHogWiring.onFlagsLoaded(
                         // LEGACY(own-ids): staged feed-first rollout; remove at S7 with rememberRolloutAnswers.

@@ -63,21 +63,6 @@ class HomeListeningHistoryItemTest {
         assertEquals(2, history.countFinishedSince(installedAt))
     }
 
-    @Test
-    fun `the latest finish counts only episodes still finished`() {
-        val history =
-            listOf(
-                item("earlier", isCompleted = true, finishedAt = 1_500L),
-                item("latest", isCompleted = true, finishedAt = 1_800L),
-                // Replayed after finishing: its old finish is not a finish moment.
-                item("restarted", isCompleted = false, finishedAt = 1_900L),
-                item("marked-played", isCompleted = true, finishedAt = null),
-            )
-
-        assertEquals(1_800L, history.lastFinishedAt())
-        assertNull(listOf(item("marked-played", isCompleted = true, finishedAt = null)).lastFinishedAt())
-    }
-
     private fun item(id: String, isCompleted: Boolean, finishedAt: Long?) =
         HomeListeningHistoryItem(id, "show", "Show", null, 0L, 1L, isCompleted, false, 2_000L, finishedAt)
 }

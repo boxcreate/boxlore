@@ -16,12 +16,17 @@ import cx.aswin.boxlore.feature.home.components.NpsSurveySheet
 
 /**
  * Shows [controller]'s survey over Home. A decided survey is checked again as it appears: it waits while
- * something plays, and counts as shown only once Home is resumed with the sheet on screen.
+ * something plays, is dropped once its finish moment has passed ([nowMs]), and counts as shown only once
+ * Home is resumed with the sheet on screen.
  */
 @Composable
-internal fun NpsSurveyHost(controller: NpsSurveyController, isPlaying: Boolean) {
+internal fun NpsSurveyHost(controller: NpsSurveyController, isPlaying: Boolean, nowMs: () -> Long = System::currentTimeMillis) {
     val session by controller.session.collectAsState()
     val current = session ?: return
+    if (!controller.wasDisplayed && current.isExpired(nowMs())) {
+        LaunchedEffect(current.submissionId) { controller.discardUndisplayed() }
+        return
+    }
     if (!current.manual && isPlaying && !controller.wasDisplayed) return
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(lifecycleOwner, current.submissionId) {

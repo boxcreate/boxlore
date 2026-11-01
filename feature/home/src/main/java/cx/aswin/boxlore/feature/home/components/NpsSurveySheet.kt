@@ -73,7 +73,8 @@ import cx.aswin.boxlore.feature.home.NpsSurveyStep
  * eyes alive. The sheet keeps the app's own colours in every theme, rises above the keyboard (Echo shrinks
  * and the score chip and helper make room), scrolls on short windows, and is a centered dialog on
  * expanded and folded tablets. Before a score and after the answer it closes like any sheet; on the
- * follow-up only Skip, Send or back close it, so a typed answer isn't lost to a stray tap.
+ * follow-up only Skip, Send or Back close it (Back keeps the score), so a typed answer isn't lost to a
+ * stray tap.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,6 +103,8 @@ internal fun NpsSurveySheet(
     val shortWindow = LocalBoxloreWindowLayout.current.heightDp < NPS_SHORT_WINDOW_DP
     val echoSize by animateDpAsState(npsEchoSize(typing, shortWindow), label = "npsEchoSize")
     val above = echoSize * NPS_ECHO_ABOVE_SHEET
+    // Outside the sheet, so the position survives switching between the phone sheet and the tablet dialog.
+    val scroll = rememberScrollState()
 
     BoxloreModalBottomSheet(
         onDismissRequest = onClose,
@@ -110,8 +113,12 @@ internal fun NpsSurveySheet(
         containerColor = Color.Transparent,
         dragHandle = null,
         contentWindowInsets = { WindowInsets(0) },
-        properties = ModalBottomSheetProperties(shouldDismissOnBackPress = true),
-        centeredDismissAllowed = session.step != NpsSurveyStep.FollowUp,
+        // Back closes every step (the follow-up keeps the score); an outside tap never closes the follow-up.
+        properties = ModalBottomSheetProperties(
+            shouldDismissOnBackPress = true,
+            shouldDismissOnClickOutside = session.step != NpsSurveyStep.FollowUp,
+        ),
+        centeredDismissAllowed = true,
     ) {
         Box(Modifier.fillMaxWidth().testTag(NPS_SHEET_TAG)) {
             Surface(
@@ -122,7 +129,8 @@ internal fun NpsSurveySheet(
                 Column(
                     modifier = Modifier
                         .then(if (centered) Modifier else Modifier.windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime)))
-                        .verticalScroll(rememberScrollState())
+                        .verticalScroll(scroll)
+                        .testTag(NPS_SCROLL_TAG)
                         .padding(start = 24.dp, end = 24.dp, top = echoSize - above + 4.dp, bottom = if (typing) 16.dp else 28.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -277,6 +285,7 @@ private const val NPS_SHORT_WINDOW_DP = 600f
 
 internal const val NPS_SHEET_TAG = "nps_survey_sheet"
 internal const val NPS_ANSWER_TAG = "nps_survey_answer"
+internal const val NPS_SCROLL_TAG = "nps_survey_scroll"
 
 private val NPS_ECHO_PREFETCH = listOf("survey-notes", "survey-think", "survey-idea", "survey-thanks", "survey-celebrate")
 
