@@ -212,26 +212,19 @@ internal fun HomeViewModel.loadData() {
                         // Prompts count only episodes finished here, so a restore or import can't trigger them.
                         val completedCount = allHistory.countFinishedSince(installedAtMs)
 
-                        // Check if review prompt should be shown (promoter handoff or milestone-based)
-                        if (!_showReviewPrompt.value && !_showFeedback.value && !_showPostReview.value) {
+                        // Prompts appear only at a finish moment: an episode finished in this run of boxlore.
+                        val lastFinishedAtMs = allHistory.lastFinishedAt()
+                        if (!isPromptSheetOpen) {
                             val isPlayingNow = playerState.value.isPlaying
-                            if (engagementCoordinator.shouldShowPromoterReview(isPlayingNow, installedAtMs)) {
-                                // Recorded once the sheet is on screen (onReviewPromptDisplayed).
+                            if (engagementCoordinator.shouldShowNpsSurvey(isPlayingNow, installedAtMs, completedCount, lastFinishedAtMs)) {
+                                // Recorded once the sheet is on screen (NpsSurveyController.onDisplayed).
                                 engagementCoordinator.reserveSessionForPrompt()
-                                reviewPromptRecorder.decided(
-                                    ReviewPromptRecord(
-                                        promptType = "promoter_review",
-                                        source = "nps_handoff",
-                                        npsScore = userPrefs.npsLastScore(),
-                                        isPromoterHandoff = true,
-                                    ),
-                                )
-                                _reviewPromptVariant.value =
-                                    cx.aswin.boxlore.feature.home.components.ReviewPromptVariant.PromoterHandoff
-                                _showReviewPrompt.value = true
+                                npsSurvey.open(manual = false, copy = npsSurveyCopy())
                             } else if (engagementCoordinator.canShowProactivePrompt(isPlayingNow)) {
                                 userPrefs.syncReviewMilestonePending(completedCount)
-                                val shouldPrompt = userPrefs.shouldShowReviewPrompt(isPlayingNow, installedAtMs)
+                                val shouldPrompt =
+                                    engagementCoordinator.isFinishMoment(lastFinishedAtMs) &&
+                                        userPrefs.shouldShowReviewPrompt(isPlayingNow, installedAtMs)
                                 if (shouldPrompt) {
                                     engagementCoordinator.reserveSessionForPrompt()
                                     reviewPromptRecorder.decided(
@@ -239,20 +232,12 @@ internal fun HomeViewModel.loadData() {
                                             promptType = "milestone_review",
                                             source = "episode_milestone",
                                             completedEpisodes = completedCount,
+                                            npsScore = userPrefs.npsLastScore(),
                                         ),
                                     )
-                                    _reviewPromptVariant.value =
-                                        cx.aswin.boxlore.feature.home.components.ReviewPromptVariant.Milestone
                                     _showReviewPrompt.value = true
                                 }
                             }
-                        }
-
-                        // NPS survey: mark eligible once the user reaches 3+ completed episodes.
-                        // The trigger event fires on the next app open (see MainActivity)
-                        // so it never interrupts background playback.
-                        if (completedCount >= 3 && !userPrefs.hasNpsSurveyFired() && !userPrefs.isNpsSurveyPending()) {
-                            userPrefs.markNpsSurveyPending(completedCount)
                         }
 
                         val podScoresMap =

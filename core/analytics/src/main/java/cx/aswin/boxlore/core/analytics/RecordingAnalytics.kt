@@ -76,27 +76,6 @@ class RecordingAnalytics : Analytics {
         )
     }
 
-    override fun trackSurveyNpsEligible(completedEpisodes: Int?, triggerContext: String,) {
-        capture(
-            "feedback_submitted",
-            buildMap {
-                put("feedback_type", "nps_eligible")
-                put("source", triggerContext)
-                completedEpisodes?.let { put("completed_episodes", it) }
-            },
-        )
-    }
-
-    override fun trackSurveyNpsManualTrigger(source: String) {
-        capture(
-            "feedback_submitted",
-            mapOf(
-                "feedback_type" to "nps_manual",
-                "source" to source,
-            ),
-        )
-    }
-
     override fun trackFirstEpisodePlayed(episodeId: String?, podcastId: String?) {
         capture(
             "first_episode_played",

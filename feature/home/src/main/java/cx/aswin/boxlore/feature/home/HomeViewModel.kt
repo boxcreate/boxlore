@@ -102,9 +102,16 @@ class HomeViewModel(
     val showReviewPrompt = _showReviewPrompt.asStateFlow()
     internal val reviewPromptRecorder = ReviewPromptRecorder()
 
-    internal val _reviewPromptVariant =
-        MutableStateFlow(cx.aswin.boxlore.feature.home.components.ReviewPromptVariant.Milestone)
-    val reviewPromptVariant = _reviewPromptVariant.asStateFlow()
+    /** A review, feedback or survey sheet is up (or decided), so no other prompt is. */
+    internal val isPromptSheetOpen: Boolean
+        get() = _showReviewPrompt.value || _showFeedback.value || _showPostReview.value || npsSurvey.isOpen
+
+    /** The NPS survey on screen, if any; Home decides it at a finish moment ([loadData]). */
+    internal val npsSurvey =
+        NpsSurveyController(
+            onScheduledDisplay = { engagementCoordinator.onSurveyDisplayed() },
+            onScored = { engagementCoordinator.onNpsRatingSubmitted(it) },
+        )
 
     internal val _showPostReview = MutableStateFlow(false)
     val showPostReview = _showPostReview.asStateFlow()
@@ -593,7 +600,6 @@ class HomeViewModel(
         val record = reviewPromptRecorder.displayed() ?: return
         viewModelScope.launch {
             engagementCoordinator.recordProactivePromptShown()
-            if (record.isPromoterHandoff) engagementCoordinator.clearPromoterReviewPending()
             userPrefs.markReviewPromptShown()
             cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackEngagementPromptShown(
                 promptType = record.promptType,
@@ -606,8 +612,6 @@ class HomeViewModel(
 
     fun dismissReviewPrompt() {
         _showReviewPrompt.value = false
-        _reviewPromptVariant.value =
-            cx.aswin.boxlore.feature.home.components.ReviewPromptVariant.Milestone
     }
 
     fun dismissPostReview() {
@@ -631,11 +635,17 @@ class HomeViewModel(
         _showReviewPrompt.value = true
     }
 
-    /** Manually trigger the NPS survey (long-press feedback icon). Bypasses the ep-3 milestone. */
+    /** Opens the NPS survey by hand (long-press Feedback), whatever its schedule; it doesn't use the schedule up. */
     fun forceSurveyNps() {
-        cx.aswin.boxlore.core.analytics.AnalyticsHelper
-            .trackSurveyNpsManualTrigger(source = "long_press")
+        _showReviewPrompt.value = false
+        _showPostReview.value = false
+        _showFeedback.value = false
+        npsSurvey.open(manual = true, copy = npsSurveyCopy())
     }
+
+    /** The survey's wording, with any overrides from its PostHog flag. */
+    internal fun npsSurveyCopy() =
+        NpsSurveyCopy(cx.aswin.boxlore.core.analytics.AnalyticsHelper.surveyCopyOverrides(NpsSurveyDefinition.COPY_FLAG))
 
     fun triggerPostReview() {
         _showReviewPrompt.value = false

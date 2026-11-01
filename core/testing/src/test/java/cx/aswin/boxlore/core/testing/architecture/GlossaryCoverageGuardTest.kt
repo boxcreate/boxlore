@@ -117,7 +117,8 @@ class GlossaryCoverageGuardTest {
             i++
         }
         val body = text.substring(start, i - 1)
-        return Regex(""""([a-z][a-z0-9_]*)"""")
+        // Snake case, or PostHog's own spaced names such as "survey sent".
+        return Regex(""""([a-z][a-z0-9_]*(?: [a-z][a-z0-9_]*)*)"""")
             .findAll(body)
             .map { it.groupValues[1] }
             .toSet()

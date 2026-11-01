@@ -24,6 +24,13 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowWidth
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.foldSafeRegions
 
+/** Whether [BoxloreModalBottomSheet] shows as a centered dialog here (expanded or folded tablet windows) rather than a sheet. */
+@Composable
+fun boxloreSheetIsCentered(): Boolean {
+    val window = LocalBoxloreWindowLayout.current
+    return window.usesTabletLayout && (window.widthClass >= BoxloreWindowWidth.Expanded || window.foldSafeRegions().size > 1)
+}
+
 /** Native phone sheet; a bounded, inset-aware dialog on expanded tablet windows. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,9 +52,7 @@ fun BoxloreModalBottomSheet(
     centeredDismissAllowed: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val window = LocalBoxloreWindowLayout.current
-    val centered = window.usesTabletLayout && (window.widthClass >= BoxloreWindowWidth.Expanded || window.foldSafeRegions().size > 1)
-    if (!centered) {
+    if (!boxloreSheetIsCentered()) {
         ModalBottomSheet(
             onDismissRequest, modifier, sheetState, sheetMaxWidth, sheetGesturesEnabled, shape,
             containerColor, contentColor, tonalElevation, scrimColor, dragHandle, contentWindowInsets, properties, content,

@@ -134,8 +134,6 @@ fun LibraryScreen(
         onFeedbackLongClick = {
             cx.aswin.boxlore.core.analytics.AnalyticsHelper
                 .trackTopControlbarInteraction("feedback_long_clicked", "library")
-            cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                .trackSurveyNpsManualTrigger(source = "long_press")
         },
         onSettingsClick = {
             cx.aswin.boxlore.core.analytics.AnalyticsHelper

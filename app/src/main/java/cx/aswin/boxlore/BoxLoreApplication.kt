@@ -25,7 +25,6 @@ import cx.aswin.boxlore.core.network.FirebaseAuthAuthenticator
 import cx.aswin.boxlore.core.network.NetworkModule
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.LearningEventLog
-import cx.aswin.boxlore.surveys.BoxcastPostHogSurveysDelegate
 import cx.aswin.boxlore.sync.CloudSyncWorker
 import cx.aswin.boxlore.ui.StartupWorkGate
 import cx.aswin.boxlore.widgets.HomeScreenWidgetsInstaller
@@ -180,7 +179,12 @@ class BoxLoreApplication :
             userPreferencesRepository = userPreferencesRepository,
             adaptiveScorer = { container.adaptiveCandidateScorer },
         )
-        engagementPromptCoordinator = EngagementPromptCoordinator(userPreferencesRepository)
+        engagementPromptCoordinator =
+            EngagementPromptCoordinator(userPreferencesRepository, cx.aswin.boxlore.core.prefs.NpsSurveyStore(this))
+        applicationScope.launch {
+            val installedAtMs = runCatching { packageManager.getPackageInfo(packageName, 0).firstInstallTime }.getOrDefault(0L)
+            engagementPromptCoordinator.onAppLaunched(installedAtMs)
+        }
         scheduleOptionalStartup()
 
         // Live learner signal log: on by default in debug; release stays off unless the
@@ -380,15 +384,8 @@ class BoxLoreApplication :
                 captureScreenViews = false
                 captureDeepLinks = false
                 debug = BuildConfig.DEBUG
-                // PostHog Surveys with a Material3 1.5-compatible delegate (the published
-                // posthog-android-surveys-compose:0.1.0 module crashes against our M3 pin).
-                surveys = true
-                surveysConfig.surveysDelegate =
-                    BoxcastPostHogSurveysDelegate(
-                        context = this@BoxLoreApplication,
-                        userPrefs = userPreferencesRepository,
-                        engagementCoordinator = engagementPromptCoordinator,
-                    )
+                // The NPS survey is boxlore's own sheet (Home), reporting to an API survey; PostHog draws none.
+                surveys = false
                 onFeatureFlags =
                     PostHogWiring.onFlagsLoaded(
                         // LEGACY(own-ids): staged feed-first rollout; remove at S7 with rememberRolloutAnswers.

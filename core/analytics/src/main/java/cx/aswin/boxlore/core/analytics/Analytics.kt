@@ -26,11 +26,6 @@ interface Analytics {
     /** An engagement prompt (a review prompt) appeared: `engagement_prompt_shown`. */
     fun trackEngagementPromptShown(promptType: String, source: String, completedEpisodes: Int? = null, npsScore: Int? = null,)
 
-    /** The NPS survey's trigger: `feedback_submitted`, which the survey's display condition keys off. */
-    fun trackSurveyNpsEligible(completedEpisodes: Int?, triggerContext: String,)
-
-    fun trackSurveyNpsManualTrigger(source: String)
-
     /** The first play on this install, with the episode playing when known. */
     fun trackFirstEpisodePlayed(episodeId: String? = null, podcastId: String? = null,)
 

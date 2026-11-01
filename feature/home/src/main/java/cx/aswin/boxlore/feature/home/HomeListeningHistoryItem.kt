@@ -25,6 +25,9 @@ data class HomeListeningHistoryItem(
 internal fun List<HomeListeningHistoryItem>.countFinishedSince(installedAtMs: Long): Int =
     count { it.isCompleted && it.finishedAt?.let { at -> at >= installedAtMs } == true }
 
+/** When the latest episode played to the end finished; null when none has. */
+internal fun List<HomeListeningHistoryItem>.lastFinishedAt(): Long? = filter { it.isCompleted }.mapNotNull { it.finishedAt }.maxOrNull()
+
 internal fun ListeningHistoryEntity.toHomeListeningHistoryItem(): HomeListeningHistoryItem = HomeListeningHistoryItem(
     episodeId = episodeId,
     podcastId = podcastId,

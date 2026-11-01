@@ -648,17 +648,7 @@ class UserPreferencesRepository(context: Context,) {
 
     suspend fun npsLastScore(): Int? = engagement.npsLastScore()
 
-    suspend fun setPromoterReviewPending(pending: Boolean) = engagement.setPromoterReviewPending(pending)
-
-    suspend fun isPromoterReviewPending(): Boolean = engagement.isPromoterReviewPending()
-
-    suspend fun markNpsSurveyPending(completedCount: Int) = engagement.markNpsSurveyPending(completedCount)
-
-    suspend fun isNpsSurveyPending(): Boolean = engagement.isNpsSurveyPending()
-
     suspend fun hasNpsSurveyFired(): Boolean = engagement.hasNpsSurveyFired()
-
-    suspend fun npsSurveyCompletedCount(): Int? = engagement.npsSurveyCompletedCount()
 
     suspend fun markNpsSurveyFired() = engagement.markNpsSurveyFired()
 
