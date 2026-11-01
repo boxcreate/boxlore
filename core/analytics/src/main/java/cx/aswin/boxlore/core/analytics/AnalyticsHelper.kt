@@ -17,9 +17,10 @@ object AnalyticsHelper : Analytics {
 
     @Volatile private var activePauseReason: String = "user_voluntary"
 
+    /** Wiring tests see every event whatever its level; pass [applyLevels] to test the levels. */
     @androidx.annotation.VisibleForTesting
-    fun installRecordingSink(recorder: MutableList<Pair<String, Map<String, Any>>>): () -> Unit =
-        AnalyticsEmit.installRecordingSink(recorder)
+    fun installRecordingSink(recorder: MutableList<Pair<String, Map<String, Any>>>, applyLevels: Boolean = false,): () -> Unit =
+        AnalyticsEmit.installRecordingSink(recorder, applyLevels)
 
     fun setSeekSource(source: String) {
         activeSeekSource = source
@@ -43,8 +44,38 @@ object AnalyticsHelper : Analytics {
 
     private const val PREFS_NAME = PrefsFileMigrator.Files.ANALYTICS
     private const val KEY_FIRST_LAUNCH = "is_first_launch"
+    private const val KEY_SAMPLE_BUCKET = "analytics_sample_bucket"
+    private const val KEY_POLICY = "analytics_policy"
 
     fun deriveGenrePersona(selectedGenres: Set<String>): Map<String, String> = GenrePersonaLogic.deriveGenrePersona(selectedGenres)
+
+    // ── 0. Event levels ────────────────────────────────────────────
+
+    /**
+     * Loads this install's sample bucket (picked once, kept across PostHog resets) and the switch
+     * remembered from the last launch. Call before PostHog setup so the first events already follow it.
+     */
+    fun initPolicy(context: Context) {
+        val prefs = analyticsPrefs(context)
+        val bucket =
+            prefs.getInt(KEY_SAMPLE_BUCKET, -1).takeIf { it in 0 until AnalyticsPolicy.BUCKETS }
+                ?: kotlin.random.Random.nextInt(AnalyticsPolicy.BUCKETS).also { prefs.edit().putInt(KEY_SAMPLE_BUCKET, it).apply() }
+        AnalyticsPolicy.restore(bucket, prefs.getString(KEY_POLICY, null))
+    }
+
+    /** Applies the `analytics-policy-v1` flag after flags load, and remembers it for the next launch. */
+    fun refreshAnalyticsPolicy(context: Context, appVersion: String,) {
+        val payload = PostHog.getFeatureFlagPayload(AnalyticsPolicy.FLAG_KEY, null)
+        val encoded = AnalyticsPolicy.applyPayload(payload, appVersion)
+        analyticsPrefs(context).edit().putString(KEY_POLICY, encoded).apply()
+    }
+
+    private fun analyticsPrefs(context: Context) =
+        PrefsFileMigrator.open(
+            context,
+            newName = PREFS_NAME,
+            oldName = PrefsFileMigrator.LegacyFiles.ANALYTICS,
+        )
 
     // ── 1. App Launch ──────────────────────────────────────────────
 

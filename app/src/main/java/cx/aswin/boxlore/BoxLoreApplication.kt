@@ -191,34 +191,7 @@ class BoxLoreApplication :
                 .resolveLearnerLogEnabled(isDebugBuild = BuildConfig.DEBUG),
         )
 
-        val config =
-            PostHogAndroidConfig(
-                apiKey = BuildConfig.POSTHOG_API_KEY,
-                host = BuildConfig.POSTHOG_HOST,
-            ).apply {
-                captureApplicationLifecycleEvents = true
-                captureScreenViews = false
-                captureDeepLinks = false
-                debug = BuildConfig.DEBUG
-                // PostHog Surveys with a Material3 1.5-compatible delegate (the published
-                // posthog-android-surveys-compose:0.1.0 module crashes against our M3 pin).
-                surveys = true
-                surveysConfig.surveysDelegate =
-                    BoxcastPostHogSurveysDelegate(
-                        context = this@BoxLoreApplication,
-                        userPrefs = userPreferencesRepository,
-                        engagementCoordinator = engagementPromptCoordinator,
-                    )
-                // LEGACY(own-ids): staged feed-first rollout; remove at S7 with rememberRolloutAnswers.
-                onFeatureFlags = rememberRolloutAnswers()
-            }
-        // Off the main thread: setup reads package info over binder (startup ANR). Calls made
-        // before it finishes are queued by PostHogStartup and replayed in order.
-        cx.aswin.boxlore.core.analytics.PostHogStartup.start {
-            PostHogAndroid.setup(this, config)
-            // Registered before queued calls replay so early events keep the internal tag.
-            registerPostHogEnvironment()
-        }
+        startPostHog()
 
         // Non-fatal error sink: Crashlytics when available, Logcat fallback inside ErrorReporter.
         cx.aswin.boxlore.core.analytics.ErrorReporter.install { throwable, message ->
@@ -393,6 +366,41 @@ class BoxLoreApplication :
         }
     }
 
+    /** PostHog setup: event levels first, then the SDK off the main thread. */
+    private fun startPostHog() {
+        // Event levels: this install's sample bucket and the last remote switch, before any capture.
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper.initPolicy(this)
+        val config =
+            PostHogAndroidConfig(
+                apiKey = BuildConfig.POSTHOG_API_KEY,
+                host = BuildConfig.POSTHOG_HOST,
+            ).apply {
+                captureApplicationLifecycleEvents = true
+                captureScreenViews = false
+                captureDeepLinks = false
+                debug = BuildConfig.DEBUG
+                // PostHog Surveys with a Material3 1.5-compatible delegate (the published
+                // posthog-android-surveys-compose:0.1.0 module crashes against our M3 pin).
+                surveys = true
+                surveysConfig.surveysDelegate =
+                    BoxcastPostHogSurveysDelegate(
+                        context = this@BoxLoreApplication,
+                        userPrefs = userPreferencesRepository,
+                        engagementCoordinator = engagementPromptCoordinator,
+                    )
+                onFeatureFlags = onFlagsLoaded()
+                // Drops events this install doesn't send and tags every event, SDK lifecycle ones included.
+                addBeforeSend(cx.aswin.boxlore.core.analytics.AnalyticsBeforeSend(postHogEnvironment()))
+            }
+        // Off the main thread: setup reads package info over binder (startup ANR). Calls made
+        // before it finishes are queued by PostHogStartup and replayed in order.
+        cx.aswin.boxlore.core.analytics.PostHogStartup.start {
+            PostHogAndroid.setup(this, config)
+            // Registered before queued calls replay so early events keep the internal tag.
+            postHogEnvironment().forEach { (key, value) -> PostHog.register(key, value) }
+        }
+    }
+
     /**
      * Saves each loaded `feed_first` and v2 kill-switch answer for the next process; this process
      * keeps the `feed_first` value its first read fixed. PostHog calls this after the setup
@@ -408,16 +416,23 @@ class BoxLoreApplication :
             container.rolloutFlagMemory.onFlagsLoaded { flag -> PostHog.getFeatureFlag(flag, null, false) }
         }
 
-    /** Tag internal/test users so they can be filtered in PostHog settings. */
-    private fun registerPostHogEnvironment() {
-        if (BuildConfig.DEBUG || BuildConfig.BOXLORE_ISOLATED_TESTS) {
-            PostHog.register("is_internal", true)
-            PostHog.register("app_environment", if (BuildConfig.BOXLORE_ISOLATED_TESTS) "update_test" else "debug")
-        } else {
-            PostHog.register("is_internal", false)
-            PostHog.register("app_environment", "production")
+    /** Flags loaded: the rollout answers, then the analytics switch (`analytics-policy-v1`). */
+    private fun onFlagsLoaded(): PostHogOnFeatureFlags {
+        // LEGACY(own-ids): staged feed-first rollout; remove at S7 with rememberRolloutAnswers.
+        val rollout = rememberRolloutAnswers()
+        return PostHogOnFeatureFlags {
+            rollout.loaded()
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.refreshAnalyticsPolicy(this, BuildConfig.VERSION_NAME)
         }
     }
+
+    /** Tags internal/test users so they can be filtered in PostHog settings. */
+    private fun postHogEnvironment(): Map<String, Any> =
+        if (BuildConfig.DEBUG || BuildConfig.BOXLORE_ISOLATED_TESTS) {
+            mapOf("is_internal" to true, "app_environment" to if (BuildConfig.BOXLORE_ISOLATED_TESTS) "update_test" else "debug")
+        } else {
+            mapOf("is_internal" to false, "app_environment" to "production")
+        }
 
     @Suppress("TooGenericExceptionCaught")
     private fun reportAdaptiveRankingStatus() {

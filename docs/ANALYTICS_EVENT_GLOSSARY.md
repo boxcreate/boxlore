@@ -5,6 +5,10 @@ Companion CSV: [`docs/analytics/event_glossary.csv`](analytics/event_glossary.cs
 Coverage inventory: [`docs/analytics/glossary_emission_coverage.csv`](analytics/glossary_emission_coverage.csv).
 Architecture: [`ARCHITECTURE.md`](../ARCHITECTURE.md).
 
+The CSV gives every event a `level` and a `monthly_per_install` figure:
+- **`level`:** `always` (every install sends it), `sampled` (a fixed 10% of installs send it, tagged `sample_percent`), or `off` (nobody sends it until the `analytics-policy-v1` flag turns it on). It must match `AnalyticsPolicy.DEFAULT_LEVELS`; SDK-backed rows use their PostHog event.
+- **`monthly_per_install`:** events per active install over 30 days, from PostHog, with test phones left out. New events need an estimate, and `AnalyticsBudgetTest` keeps the total within the monthly budget.
+
 ## SDK-backed vs custom (no double-count)
 
 | Glossary name | Production source of truth | App action |
