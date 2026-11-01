@@ -635,7 +635,7 @@ internal class AutoBrowseLibraryCallback(
 
     private suspend fun itemsToAdd(
         mediaSession: MediaSession,
-        mediaItems: MutableList<MediaItem>,
+        mediaItems: List<MediaItem>,
         fromCar: Boolean,
     ): MutableList<MediaItem> {
         if (mediaItems.size > 1) {
