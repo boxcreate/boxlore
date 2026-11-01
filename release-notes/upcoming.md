@@ -49,6 +49,7 @@ Announcement title:
 - After importing your library or picking shows in search, choose whether to see similar shows or go straight to Home, and skip to Home anytime while suggestions load. (#1194)
 - When boxlore needs a quick check that you're a person before Echo can suggest shows, Echo asks for it in its own voice, and the check fits in with the rest of the screen. Fewer phones need it: phones that are slow to confirm they run genuine boxlore now get more time to finish in the background. (#1205)
 - New-episode notifications arrive sooner after a release. (#1151)
+- boxlore asks to send notifications only when you turn them on for a show or finish importing your library, not every time you open Home. (#1226)
 - On Explore, tap the Explore tab again to start searching. From a show or episode you opened in Explore, the first tap takes you back to Explore.
 
 ## Fixed
@@ -74,3 +75,4 @@ Announcement title:
 - If boxlore can't check Google Play for updates, it offers to open its Play Store page so you can update there. (#1197)
 - Clearing boxlore's data no longer opens a random episode on the next launch. (#1185)
 - On an episode's page, More from shows the show's cover instead of a placeholder, and its header stands out from the episodes below it. (#1219)
+- The prompt to rate boxlore counts only episodes you finish in boxlore on this phone, waits two days after you install or import your library, and doesn't ask twice for the same milestone. (#1226)

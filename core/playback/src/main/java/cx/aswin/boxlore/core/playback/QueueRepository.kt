@@ -146,7 +146,11 @@ class QueueRepository(
         }
     }
 
-    suspend fun clearQueue() {
+    /**
+     * Empties the queue. Only a clear the listener chose sends `queue_modified` "clear" (pass its
+     * [listenerSource]); starting a new episode or mix replaces the queue without one.
+     */
+    suspend fun clearQueue(listenerSource: String? = null) {
         android.util.Log.d(TAG, "clearQueue: Clearing all queue items")
         val localDeviceId = deviceIdentityPort?.getDeviceId()
         database.withTransaction {
@@ -160,10 +164,9 @@ class QueueRepository(
                 removedIdentities = listenerStore.queueIdentities(removedIds),
             )
         }
-        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackQueueModified(
-            action = "clear",
-            queueSize = 0,
-        )
+        listenerSource?.let { source ->
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackQueueModified(action = "clear", queueSize = 0, source = source)
+        }
     }
 
     /** Rolls back suspended refill writes if another transport request or queue edit wins. */

@@ -16,51 +16,50 @@ internal object DiscoveryAnalyticsTracks {
         )
     }
 
-    fun trackInAppAnnouncementViewed(category: String, hasImage: Boolean, hasAction: Boolean,) {
+    fun trackInAppAnnouncementViewed(category: String, hasImage: Boolean, hasAction: Boolean, announcement: AnnouncementRef? = null,) {
         AnalyticsEmit.event(
             "feature_announcement_action",
-            mapOf(
-                "action" to "viewed",
-                "category" to category,
-                "has_image" to hasImage,
-                "has_action" to hasAction,
-            ),
+            announcementProps("viewed", category, hasImage, announcement) + ("has_action" to hasAction),
         )
     }
 
-    fun trackInAppAnnouncementDismissed(category: String, hasImage: Boolean, hasAction: Boolean,) {
+    fun trackInAppAnnouncementDismissed(category: String, hasImage: Boolean, hasAction: Boolean, announcement: AnnouncementRef? = null,) {
         AnalyticsEmit.event(
             "feature_announcement_action",
-            mapOf(
-                "action" to "dismissed",
-                "category" to category,
-                "has_image" to hasImage,
-                "has_action" to hasAction,
-            ),
+            announcementProps("dismissed", category, hasImage, announcement) + ("has_action" to hasAction),
         )
     }
 
-    fun trackInAppAnnouncementAction(category: String, hasImage: Boolean, actionLabel: String,) {
+    /** A button on an in-app announcement was tapped; [actionLabel] is its kind (`update`, `github`, `custom`). */
+    fun trackInAppAnnouncementAction(category: String, hasImage: Boolean, actionLabel: String, announcement: AnnouncementRef? = null,) {
         AnalyticsEmit.event(
             "feature_announcement_action",
-            mapOf(
-                "action" to "acted",
-                "category" to category,
-                "has_image" to hasImage,
-                "feature_id" to actionLabel,
-                "action_label" to actionLabel,
-            ),
+            announcementProps("acted", category, hasImage, announcement) + mapOf("feature_id" to actionLabel, "action_label" to actionLabel),
         )
     }
 
-    fun trackNotificationPermissionRequested() {
-        AnalyticsEmit.event("notification_permission_requested")
+    private fun announcementProps(action: String, category: String, hasImage: Boolean, announcement: AnnouncementRef?,): Map<String, Any> =
+        buildMap {
+            put("action", action)
+            put("category", category)
+            put("has_image", hasImage)
+            announcement?.let {
+                put("announcement_id", it.id)
+                put("announcement_title", it.title.take(ANNOUNCEMENT_TITLE_MAX))
+                put("presentation", it.presentation)
+            }
+        }
+
+    private const val ANNOUNCEMENT_TITLE_MAX = 80
+
+    fun trackNotificationPermissionRequested(surface: String? = null) {
+        AnalyticsEmit.event("notification_permission_requested", surface?.let { mapOf("surface" to it) }.orEmpty())
     }
 
-    fun trackNotificationPermissionDecided(isGranted: Boolean) {
+    fun trackNotificationPermissionDecided(isGranted: Boolean, surface: String? = null,) {
         AnalyticsEmit.event(
             "notification_permission_decided",
-            mapOf("granted" to isGranted),
+            mapOf("granted" to isGranted) + surface?.let { mapOf("surface" to it) }.orEmpty(),
         )
         AnalyticsEmit.personSet(mapOf("notifications_enabled" to isGranted))
     }
@@ -159,14 +158,13 @@ internal object DiscoveryAnalyticsTracks {
         AnalyticsEmit.event("home_surface_tapped", props)
     }
 
+    /** The For You rail was shown; taps are `explore_recommendation_tapped`, which this once shared. */
     fun trackExploreRecommendationsImpression(recommendationsCount: Int, episodeIds: List<String>,) {
         AnalyticsEmit.event(
-            "explore_recommendation_tapped",
+            "explore_surface_impression",
             mapOf(
-                "rail" to "for_you",
-                "interaction" to "impression",
-                "position_index" to -1,
-                "recommendations_count" to recommendationsCount,
+                "surface_component" to "for_you",
+                "items_count" to recommendationsCount,
                 "episode_ids" to episodeIds,
             ),
         )

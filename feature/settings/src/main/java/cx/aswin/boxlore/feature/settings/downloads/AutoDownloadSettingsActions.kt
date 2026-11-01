@@ -1,10 +1,19 @@
 package cx.aswin.boxlore.feature.settings.downloads
 
+import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.prefs.AutoDownloadBackgroundSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 internal val autoDownloadEpisodeLimits = listOf(1, 2, 3, 5)
+
+/**
+ * One `settings_interaction` per download control (Smart Downloads and automatic downloads), sent
+ * only when [value] differs from [previous], so re-picking the current choice reports nothing.
+ */
+internal fun trackDownloadSetting(key: String, value: Any, previous: Any) {
+    if (value != previous) AnalyticsHelper.trackSettingsInteraction(key, value.toString())
+}
 
 /** Only write the chosen preference; hiding background controls never resets their values. */
 internal class AutoDownloadSettingsActions(

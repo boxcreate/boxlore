@@ -24,6 +24,9 @@ import cx.aswin.boxlore.feature.history.story.STORY_FRAME_TAG
 import cx.aswin.boxlore.feature.history.story.StoryCard
 import cx.aswin.boxlore.feature.history.story.StoryLogic
 import cx.aswin.boxlore.feature.history.story.StoryPlayer
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.ZoneOffset
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -33,9 +36,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import java.time.LocalDate
-import java.time.YearMonth
-import java.time.ZoneOffset
 
 /**
  * The open story keeps its place while the window changes: scrolled down in a short window (a phone

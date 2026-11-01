@@ -65,7 +65,7 @@ class AnalyticsTracksFacadeTest {
     @Test
     fun onboardingAiFlowEvents() {
         AnalyticsHelper.trackOnboardingAiTurnSubmitted(1, setOf("news"), "custom", 3f)
-        AnalyticsHelper.trackOnboardingAiResponseReceived(1, "hello", 2, listOf("a", "b"), 1f, "intent")
+        AnalyticsHelper.trackOnboardingAiResponseReceived(1, 2, listOf("a", "b"), 1f, "intent")
         AnalyticsHelper.trackOnboardingAiSearchRedirect(2, "query")
         AnalyticsHelper.trackOnboardingAiSearchRedirect(2, null)
         AnalyticsHelper.trackOnboardingAiSynthesisCompleted(3, 4, 2f)
@@ -141,6 +141,9 @@ class AnalyticsTracksFacadeTest {
         assertTrue("home_surface_impression" in names())
         assertTrue("home_surface_tapped" in names())
         assertTrue("explore_recommendation_tapped" in names())
+        // Regression: the For You impression was sent as explore_recommendation_tapped.
+        assertEquals(2, recorder.count { it.first == "explore_recommendation_tapped" })
+        assertEquals(listOf("e1"), firstProps("explore_surface_impression")["episode_ids"])
         val spotlightImpression =
             recorder
                 .first {
@@ -400,7 +403,8 @@ class AnalyticsTracksFacadeTest {
 
         assertTrue("queue_modified" in names())
         assertTrue("offline_mode_entered" in names())
-        assertTrue("explore_recommendation_tapped" in names())
+        assertTrue("explore_recommendation_tapped" !in names(), "a category filter is a Home tap")
+        assertEquals("category_filter", firstProps("home_surface_tapped")["surface_component"])
         assertTrue(firstProps("queue_modified").containsKey("source_count_server"))
     }
 

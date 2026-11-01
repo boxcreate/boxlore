@@ -9,7 +9,11 @@ class FeedFixSwitchesTest {
     @Test
     fun aFixRunsUnlessItsOffFlagIsOn() {
         val asked = mutableListOf<String>()
-        assertTrue(FeedFixSwitches.isOn(FeedFixSwitches.MATCH_BASELINE_OFF) { asked += it; false })
+        val recordAsked: (String) -> Boolean = { flag ->
+            asked += flag
+            false
+        }
+        assertTrue(FeedFixSwitches.isOn(FeedFixSwitches.MATCH_BASELINE_OFF, recordAsked))
         assertFalse(FeedFixSwitches.isOn(FeedFixSwitches.MATCH_BASELINE_OFF) { true })
         assertEquals(listOf("feed-fix-match-baseline-off"), asked)
     }
@@ -29,7 +33,11 @@ class FeedFixSwitchesTest {
             )
         flags.forEach { (flag, key) ->
             val asked = mutableListOf<String>()
-            assertTrue(FeedFixSwitches.isOn(flag) { asked += it; false })
+            val recordAsked: (String) -> Boolean = { asking ->
+                asked += asking
+                false
+            }
+            assertTrue(FeedFixSwitches.isOn(flag, recordAsked))
             assertTrue(FeedFixSwitches.isOn(flag) { error("PostHog not started") })
             assertFalse(FeedFixSwitches.isOn(flag) { it == key })
             assertEquals(listOf(key), asked)

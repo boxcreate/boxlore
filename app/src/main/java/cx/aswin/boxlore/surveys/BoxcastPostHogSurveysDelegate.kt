@@ -7,7 +7,6 @@ import com.posthog.surveys.OnPostHogSurveyResponse
 import com.posthog.surveys.OnPostHogSurveyShown
 import com.posthog.surveys.PostHogDisplaySurvey
 import com.posthog.surveys.PostHogSurveysDelegate
-import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.catalog.EngagementPromptCoordinator
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.surveys.internal.ActivityProvider
@@ -32,11 +31,8 @@ class BoxcastPostHogSurveysDelegate(
             activityProvider = activityProvider,
             userPrefs = userPrefs,
             onSurveyDisplayed = {
+                // PostHog records the display itself ("survey shown"); a copy here counted it twice.
                 engagementCoordinator.onSurveyDisplayed()
-                AnalyticsHelper.trackEngagementPromptShown(
-                    promptType = "nps_survey",
-                    source = "posthog",
-                )
             },
             onFirstRatingSubmitted = { score ->
                 engagementCoordinator.onNpsRatingSubmitted(score)

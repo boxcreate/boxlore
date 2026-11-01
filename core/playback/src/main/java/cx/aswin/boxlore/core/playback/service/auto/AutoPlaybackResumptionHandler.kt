@@ -34,6 +34,7 @@ internal class AutoPlaybackResumptionHandler(
             oldName = PrefsFileMigrator.LegacyFiles.PLAYER,
         )
     }
+
     /**
      * The last played episode as its projected state, so an episode stored under several IDs
      * resumes from its shared progress (own-episode-IDs P4, plan section 8).

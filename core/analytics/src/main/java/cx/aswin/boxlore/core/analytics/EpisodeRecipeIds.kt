@@ -42,7 +42,7 @@ internal object EpisodeRecipeIds {
 
     private const val EPISODE_ID_PROPERTY = "episode_id"
     private const val EPISODE_IDS_PROPERTY = "episode_ids"
-    private const val HOME_SURFACE_IMPRESSION = "home_surface_impression"
+    private val SURFACE_IMPRESSIONS = setOf("home_surface_impression", "explore_surface_impression")
 
     private val lock = Any()
     private val known = lruMap<Long>(MAX_KNOWN)
@@ -78,7 +78,7 @@ internal object EpisodeRecipeIds {
             val recipeId = (properties[EPISODE_ID_PROPERTY] as? String)?.let { recipeIdsFor(listOf(it)).firstOrNull() }
             if (recipeId == null) properties else properties + (AnalyticsGlossary.RECIPE_ID_PROPERTY to recipeId.toString())
         }
-        event == HOME_SURFACE_IMPRESSION && AnalyticsGlossary.RECIPE_IDS_PROPERTY !in properties -> {
+        event in SURFACE_IMPRESSIONS && AnalyticsGlossary.RECIPE_IDS_PROPERTY !in properties -> {
             val ids = (properties[EPISODE_IDS_PROPERTY] as? List<*>)?.filterIsInstance<String>().orEmpty()
             val recipeIds = recipeIdsFor(ids).distinct().map(Long::toString)
             if (recipeIds.isEmpty()) properties else properties + (AnalyticsGlossary.RECIPE_IDS_PROPERTY to recipeIds)

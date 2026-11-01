@@ -250,18 +250,20 @@ internal class PodcastInfoEpisodeActions(
     fun addEpisodesToQueue(episodes: List<Episode>) {
         val currentState = uiState.value as? PodcastInfoUiState.Success ?: return
         scope.launch {
-            episodes.distinctBy(Episode::id).forEach { episode ->
-                val added =
-                    playbackRepository.addToQueue(
-                        episode = episode,
-                        podcast = currentState.podcast,
-                    )
-                if (added) {
+            var added = 0
+            try {
+                episodes.distinctBy(Episode::id).forEach { episode ->
+                    if (playbackRepository.addToQueue(episode = episode, podcast = currentState.podcast)) added++
+                }
+            } finally {
+                // One event for the whole selection, with what was added even if a later add failed.
+                if (added > 0) {
                     AnalyticsHelper.trackQueueModified(
                         action = "add",
-                        episodeId = episode.id,
                         podcastId = currentState.podcast.id,
                         queueSize = playbackRepository.playerState.value.queue.size,
+                        source = "episode_selection",
+                        itemsCount = added,
                     )
                 }
             }

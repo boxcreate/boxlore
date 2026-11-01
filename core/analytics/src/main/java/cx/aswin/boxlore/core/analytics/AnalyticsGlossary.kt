@@ -64,6 +64,7 @@ object AnalyticsGlossary {
             "learn_screen_viewed",
             "explore_screen_viewed",
             "explore_recommendation_tapped",
+            "explore_surface_impression",
             "queue_modified",
             "episode_liked_toggled",
             "episode_mark_played",
@@ -75,6 +76,9 @@ object AnalyticsGlossary {
             "share_content",
             "backup_restore_result",
             "feedback_submitted",
+            "engagement_prompt_shown",
+            "store_review_opened",
+            "feedback_sent",
             "library_destination_viewed",
             "podcast_detail_viewed",
             "episode_detail_viewed",
@@ -126,7 +130,7 @@ object AnalyticsGlossary {
      */
     const val RECIPE_ID_PROPERTY = "recipe_id"
 
-    /** Recipe IDs of the episodes on an episode surface, on `home_surface_impression` (P4). */
+    /** Recipe IDs of the episodes on an episode surface, on `home_surface_impression` and `explore_surface_impression` (P4). */
     const val RECIPE_IDS_PROPERTY = "recipe_ids"
 
     /**
@@ -137,6 +141,7 @@ object AnalyticsGlossary {
      */
     val EPISODE_ID_EVENTS: Set<String> =
         setOf(
+            "explore_recommendation_tapped",
             "deep_link_opened",
             "playback_started",
             "playback_heartbeat",
@@ -258,6 +263,10 @@ object AnalyticsGlossary {
             "podcast_detail",
             "episode_detail",
             "queue",
+            // The next episode started by itself, or the listener skipped to it, without a new entry point.
+            "queue_auto_advance",
+            "queue_skip",
+            "library_latest_episodes",
             "downloads",
             "history",
             "liked",

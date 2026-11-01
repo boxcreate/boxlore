@@ -1,17 +1,12 @@
 package cx.aswin.boxlore.navigation
 
-import android.Manifest
 import android.annotation.SuppressLint
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import cx.aswin.boxlore.BoxLoreApplication
@@ -190,9 +185,7 @@ data class NavHostSession(
     val openedToLandingOnLaunch: androidx.compose.runtime.MutableState<Boolean>,
     val currentEpisode: Episode?,
     val miniPlayerPadding: androidx.compose.ui.unit.Dp,
-    val showFeatureDialog: Boolean,
     val hasSeenMarkPlayedTip: Boolean,
-    val permissionLauncher: ManagedActivityResultLauncher<String, Boolean>,
     val appInstanceId: String?,
 )
 
@@ -398,18 +391,14 @@ internal fun entryPointBundle(entryPoint: String?, vibeId: String = "", carousel
 @androidx.compose.runtime.Composable
 internal fun miniPlayerBottomPadding(isPlayerVisible: Boolean): androidx.compose.ui.unit.Dp = appBottomChromeContentPadding(isMiniPlayerVisible = isPlayerVisible)
 
-internal fun shouldRequestNotificationPermission(showFeatureDialog: Boolean, context: android.content.Context,): Boolean = !showFeatureDialog &&
-    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-    ContextCompat.checkSelfPermission(
-        context,
-        Manifest.permission.POST_NOTIFICATIONS,
-    ) != PackageManager.PERMISSION_GRANTED
-
 internal fun launchInAppReview(context: android.content.Context) {
     val activity = context as? androidx.activity.ComponentActivity ?: return
     val reviewManager = com.google.android.play.core.review.ReviewManagerFactory.create(activity)
     reviewManager.requestReviewFlow().addOnCompleteListener { task ->
         if (task.isSuccessful) {
+            // Play can still skip showing the sheet (its quota), so this means boxlore launched the flow.
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                .trackStoreReviewOpened(method = "in_app_review", source = "review_prompt")
             reviewManager.launchReviewFlow(activity, task.result)
         }
     }

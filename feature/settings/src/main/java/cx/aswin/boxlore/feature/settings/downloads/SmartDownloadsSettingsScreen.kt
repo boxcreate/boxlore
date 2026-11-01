@@ -138,6 +138,7 @@ fun SmartDownloadsSettingsScreen(
                             .clickable {
                                 scope.launch {
                                     val nextVal = !isEnabled
+                                    trackDownloadSetting("smart_downloads_toggled", nextVal, isEnabled)
                                     userPrefs.setSmartDownloadsEnabled(nextVal)
                                     if (nextVal) {
                                         cx.aswin.boxlore.core.downloads.SmartDownloadManager.schedulePeriodicSync(context, wifiOnly, chargingOnly)
@@ -182,6 +183,7 @@ fun SmartDownloadsSettingsScreen(
                             checked = isEnabled,
                             onCheckedChange = { checked ->
                                 scope.launch {
+                                    trackDownloadSetting("smart_downloads_toggled", checked, isEnabled)
                                     userPrefs.setSmartDownloadsEnabled(checked)
                                     if (checked) {
                                         cx.aswin.boxlore.core.downloads.SmartDownloadManager.schedulePeriodicSync(context, wifiOnly, chargingOnly)
@@ -258,6 +260,7 @@ fun SmartDownloadsSettingsScreen(
                                     FilterChip(
                                         selected = isSelected,
                                         onClick = {
+                                            trackDownloadSetting("smart_downloads_max_episodes_changed", count, maxEpisodes)
                                             scope.launch {
                                                 userPrefs.setSmartDownloadsMaxEpisodes(count)
                                             }
@@ -309,6 +312,7 @@ fun SmartDownloadsSettingsScreen(
                                     FilterChip(
                                         selected = isSelected,
                                         onClick = {
+                                            trackDownloadSetting("smart_downloads_storage_budget_changed", bytes, storageBudget)
                                             scope.launch {
                                                 userPrefs.setSmartDownloadsStorageBudget(bytes)
                                             }
@@ -388,6 +392,7 @@ fun SmartDownloadsSettingsScreen(
                                 .clickable {
                                     scope.launch {
                                         val nextVal = !wifiOnly
+                                        trackDownloadSetting("smart_downloads_wifi_only_toggled", nextVal, wifiOnly)
                                         userPrefs.setSmartDownloadsWifiOnly(nextVal)
                                         if (isEnabled) {
                                             cx.aswin.boxlore.core.downloads.SmartDownloadManager.schedulePeriodicSync(context, wifiOnly = nextVal, chargingOnly = chargingOnly)
@@ -420,6 +425,7 @@ fun SmartDownloadsSettingsScreen(
                                 checked = wifiOnly,
                                 onCheckedChange = { checked ->
                                     scope.launch {
+                                        trackDownloadSetting("smart_downloads_wifi_only_toggled", checked, wifiOnly)
                                         userPrefs.setSmartDownloadsWifiOnly(checked)
                                         if (isEnabled) {
                                             cx.aswin.boxlore.core.downloads.SmartDownloadManager.schedulePeriodicSync(context, wifiOnly = checked, chargingOnly = chargingOnly)
@@ -438,6 +444,7 @@ fun SmartDownloadsSettingsScreen(
                                 .clickable {
                                     scope.launch {
                                         val nextVal = !chargingOnly
+                                        trackDownloadSetting("smart_downloads_charging_only_toggled", nextVal, chargingOnly)
                                         userPrefs.setSmartDownloadsChargingOnly(nextVal)
                                         if (isEnabled) {
                                             cx.aswin.boxlore.core.downloads.SmartDownloadManager.schedulePeriodicSync(context, wifiOnly = wifiOnly, chargingOnly = nextVal)
@@ -470,6 +477,7 @@ fun SmartDownloadsSettingsScreen(
                                 checked = chargingOnly,
                                 onCheckedChange = { checked ->
                                     scope.launch {
+                                        trackDownloadSetting("smart_downloads_charging_only_toggled", checked, chargingOnly)
                                         userPrefs.setSmartDownloadsChargingOnly(checked)
                                         if (isEnabled) {
                                             cx.aswin.boxlore.core.downloads.SmartDownloadManager.schedulePeriodicSync(context, wifiOnly = wifiOnly, chargingOnly = checked)
@@ -533,6 +541,7 @@ fun SmartDownloadsSettingsScreen(
                                 FilterChip(
                                     selected = isSelected,
                                     onClick = {
+                                        trackDownloadSetting("smart_downloads_cleanup_rule_changed", rule, cleanupRule)
                                         scope.launch {
                                             userPrefs.setSmartDownloadsCleanupRule(rule)
                                         }

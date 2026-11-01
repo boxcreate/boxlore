@@ -134,6 +134,7 @@ src/main/java/cx/aswin/boxlore/core/database/
 
 ## Testing notes
 
+- Style only (1 Nov 2026): `ListeningInsightsMaintenance` gained a blank line before a local function's comment for ktlint; no behaviour change.
 - Unit tests live under `core/database/src/test`.
 - `BriefingArtworkCompatibilityTest` covers upgrade/reopen, restored rows, all region aliases, recursive-trigger safety, unchanged non-Brief artwork and preservation of playback/download/queue state. Opening recreates trigger definitions transactionally, including after a database comes from another application variant, so future restores use the current authority and aliases.
 - `PodcastDaoExtendedTest.setFeedUrlMarksACorrectedAddressForTheNextPush` covers a corrected address marking the row dirty and an unchanged one staying clean.

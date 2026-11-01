@@ -75,4 +75,22 @@ class AutoDownloadSettingsActionsTest {
             assertEquals(AutoDownloadBackgroundSettings(true, wifi, charging), saved)
         }
     }
+
+    @Test
+    fun `a download control reports only a real change`() {
+        val events = mutableListOf<Pair<String, Map<String, Any>>>()
+        val restore = cx.aswin.boxlore.core.analytics.AnalyticsHelper.installRecordingSink(events)
+        try {
+            trackDownloadSetting("auto_download_episode_limit_changed", 2, previous = 2)
+            trackDownloadSetting("auto_download_episode_limit_changed", 3, previous = 2)
+            trackDownloadSetting("smart_downloads_toggled", true, previous = false)
+        } finally {
+            restore()
+        }
+
+        assertEquals(
+            listOf("auto_download_episode_limit_changed" to "3", "smart_downloads_toggled" to "true"),
+            events.filter { it.first == "settings_interaction" }.map { it.second["setting_key"] to it.second["value"] },
+        )
+    }
 }

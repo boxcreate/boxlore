@@ -169,7 +169,6 @@ internal fun OnboardingViewModel.sendAiTurnInput() {
                         }
                     AnalyticsHelper.trackOnboardingAiResponseReceived(
                         turnNumber = currentState.aiCurrentTurn,
-                        assistantMessage = body.assistantMessage,
                         optionsCount = body.options.size,
                         optionsList = body.options,
                         durationSeconds = durationSec,

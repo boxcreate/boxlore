@@ -80,8 +80,9 @@ internal fun PrivacySettingsPage(
                     Text(
                         text =
                         "Analytics can suggest a rough sketch (rough place, device, podcast taste) — " +
-                            "never a precise profile, and never age or gender. We don’t ask for name or " +
-                            "email, and there’s no account; your library stays on this device.",
+                            "never a precise profile, and never age or gender. Analytics never includes your " +
+                            "name or email. An account is optional and only backs up and syncs your library; " +
+                            "it’s never linked to your analytics.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

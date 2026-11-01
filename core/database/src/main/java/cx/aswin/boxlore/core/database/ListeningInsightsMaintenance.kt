@@ -144,6 +144,7 @@ class ListeningInsightsMaintenance(
                 recordPushedDays(pushed)
             } else {
                 val sentTotals = origins.pushed.flatMap { pushes.getPushedDays(it) }.associate { Triple(it.deviceId, it.localDay, it.episodeId) to it.totals }
+
                 // The totals this phone sent where the cloud keeps none, else just the release date time it sent.
                 fun ListeningDayTotals.asCloudHolds(sent: ListeningDayTotals) = if (cloudStoresTotals) copy(releaseKnownMs = sent.releaseKnownMs) else sent
                 recordPushedDays(pushed.map { day -> sentTotals[day.key]?.let { day.copy(totals = day.totals.asCloudHolds(it)) } ?: day })

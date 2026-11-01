@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
@@ -155,6 +156,7 @@ data class HomeScreenCallbacks(
     val onForceReviewPrompt: () -> Unit = {},
     val onForceSurveyNps: () -> Unit = {},
     val onDismissReviewPrompt: () -> Unit = {},
+    val onReviewPromptDisplayed: () -> Unit = {},
     val onDismissPostReview: () -> Unit = {},
     val onDismissFeedback: () -> Unit = {},
     val onNavigateToPlayStoreReview: () -> Unit = {},
@@ -351,10 +353,8 @@ fun HomeRoute(
                 onNavigateToSettings = onNavigateToSettings,
                 onForceReviewPrompt = viewModel::forceReviewPrompt,
                 onForceSurveyNps = viewModel::forceSurveyNps,
-                onDismissReviewPrompt = {
-                    viewModel.markReviewPromptShown()
-                    viewModel.dismissReviewPrompt()
-                },
+                onDismissReviewPrompt = viewModel::dismissReviewPrompt,
+                onReviewPromptDisplayed = viewModel::onReviewPromptDisplayed,
                 onDismissPostReview = viewModel::dismissPostReview,
                 onDismissFeedback = viewModel::dismissFeedback,
                 onNavigateToPlayStoreReview = {
@@ -493,6 +493,10 @@ private fun HomeScreenBottomSheets(
     onDismissChangePodcastSheet: () -> Unit,
 ) {
     if (sheets.showReviewPrompt) {
+        val lifecycleOwner = LocalLifecycleOwner.current
+        LaunchedEffect(lifecycleOwner) {
+            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) { callbacks.onReviewPromptDisplayed() }
+        }
         cx.aswin.boxlore.feature.home.components.ReviewPromptSheet(
             completedCount = uiState.completedEpisodeCount,
             variant = sheets.reviewPromptVariant,
@@ -531,6 +535,8 @@ private fun HomeScreenBottomSheets(
             onSubmit = callbacks.onSubmitFeedback,
             onRateInstead = {
                 callbacks.onDismissFeedback()
+                cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                    .trackStoreReviewOpened(method = "store_page", source = "home_feedback")
                 val pkgName = context.packageName
                 try {
                     context.startActivity(

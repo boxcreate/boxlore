@@ -26,8 +26,6 @@ internal object CastMediaMetadata {
 
     fun effectiveUri(mediaItem: MediaItem): String? = remoteUri(mediaItem)
         ?: mediaItem.localConfiguration?.uri?.toString()
-
-    fun isAnalyticsSafeExtra(key: String): Boolean = key != REMOTE_URI_KEY
 }
 
 /**

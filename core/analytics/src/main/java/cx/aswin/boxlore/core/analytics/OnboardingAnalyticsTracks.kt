@@ -68,17 +68,12 @@ internal object OnboardingAnalyticsTracks {
                 "total_onboarding_time_seconds" to totalOnboardingTimeSeconds,
             ),
         )
-        AnalyticsEmit.personSet(
-            mapOf(
-                "onboarding_status" to "completed",
-                "onboarding_method" to "skip",
-                "user_intent" to "casual_browser",
-            ),
-        )
+        setOnboardingPerson(method = "skip", intent = "casual_browser", initialSubscribed = 0)
     }
 
     fun trackOnboardingAiTurnSubmitted(turnNumber: Int, selectedOptions: Set<String>, customInputText: String, timeSpentSeconds: Float,) {
-        val userInputText = customInputText
+        // Capped here as well as in the chat box, so no caller can send more.
+        val userInputText = customInputText.take(USER_INPUT_TEXT_MAX)
         AnalyticsEmit.event(
             "onboarding_ai_turn_submitted",
             mapOf(
@@ -91,9 +86,9 @@ internal object OnboardingAnalyticsTracks {
         )
     }
 
+    /** Not the reply's text, which can repeat what the listener typed; the Worker logs the readable steps. */
     fun trackOnboardingAiResponseReceived(
         turnNumber: Int,
-        assistantMessage: String,
         optionsCount: Int,
         optionsList: List<String>,
         durationSeconds: Float,
@@ -103,7 +98,6 @@ internal object OnboardingAnalyticsTracks {
             "onboarding_ai_response_received",
             buildMap {
                 put("turn_number", turnNumber)
-                put("assistant_message", assistantMessage.take(500))
                 put("options_count", optionsCount)
                 put("options_list", optionsList)
                 put("duration_seconds", durationSeconds)
@@ -161,14 +155,11 @@ internal object OnboardingAnalyticsTracks {
                 "favorite_genres" to favoriteGenres,
             ),
         )
-        AnalyticsEmit.personSet(
-            mapOf(
-                "onboarding_status" to "completed",
-                "onboarding_method" to "ai_chat",
-                "user_intent" to "ai_guided_listener",
-                "initial_podcasts_subscribed" to totalSubscribedCount,
-                "favorite_genres" to favoriteGenres,
-            ),
+        setOnboardingPerson(
+            method = "ai_chat",
+            intent = "ai_guided_listener",
+            initialSubscribed = totalSubscribedCount,
+            extra = mapOf("favorite_genres" to favoriteGenres),
         )
     }
 
@@ -227,14 +218,7 @@ internal object OnboardingAnalyticsTracks {
                 "total_onboarding_time_seconds" to totalOnboardingTimeSeconds,
             ),
         )
-        AnalyticsEmit.personSet(
-            mapOf(
-                "onboarding_status" to "completed",
-                "onboarding_method" to "search",
-                "user_intent" to "targeted_listener",
-                "initial_podcasts_subscribed" to totalSubscribedCount,
-            ),
-        )
+        setOnboardingPerson(method = "search", intent = "targeted_listener", initialSubscribed = totalSubscribedCount)
     }
 
     fun trackImportSheetOpened() {
@@ -262,14 +246,7 @@ internal object OnboardingAnalyticsTracks {
                 "entry_point" to entryPoint,
             ),
         )
-        AnalyticsEmit.personSet(
-            mapOf(
-                "onboarding_status" to "completed",
-                "onboarding_method" to "import",
-                "user_intent" to "migrating_power_user",
-                "initial_podcasts_subscribed" to importedPodcastCount,
-            ),
-        )
+        setOnboardingPerson(method = "import", intent = "migrating_power_user", initialSubscribed = importedPodcastCount)
     }
 
     fun trackOnboardingImportFailed(importType: String, errorMessage: String?,) {
@@ -338,27 +315,41 @@ internal object OnboardingAnalyticsTracks {
             ),
         )
 
-        val personaMap = GenrePersonaLogic.deriveGenrePersona(favoriteGenres)
-        val finalProps =
-            mutableMapOf<String, Any>(
-                "onboarding_status" to "completed",
-                "onboarding_method" to "manual_genre",
-                "user_intent" to "selective_curator",
-                "initial_podcasts_subscribed" to totalSubscribedCount,
-                "favorite_genres" to favoriteGenres.toList(),
-            )
-        finalProps.putAll(personaMap)
-        AnalyticsEmit.personSet(finalProps)
+        setOnboardingPerson(
+            method = "manual_genre",
+            intent = "selective_curator",
+            initialSubscribed = totalSubscribedCount,
+            extra = mapOf("favorite_genres" to favoriteGenres.toList()) + GenrePersonaLogic.deriveGenrePersona(favoriteGenres),
+        )
     }
 
     fun setOnboardingImportCompletedUserProperties(initialPodcastsSubscribed: Int) {
+        setOnboardingPerson(method = "import", intent = "migrating_power_user", initialSubscribed = initialPodcastsSubscribed)
+    }
+
+    /**
+     * The setup route on the person. `onboarding_method` and `user_intent` follow the latest route,
+     * so an import from Home later replaces them; `first_onboarding_method`, `first_user_intent` and
+     * `initial_podcasts_subscribed` keep how the listener first set up.
+     */
+    private fun setOnboardingPerson(
+        method: String,
+        intent: String,
+        initialSubscribed: Int? = null,
+        extra: Map<String, Any> = emptyMap(),
+    ) {
         AnalyticsEmit.personSet(
-            mapOf(
-                "onboarding_status" to "completed",
-                "onboarding_method" to "import",
-                "user_intent" to "migrating_power_user",
-                "initial_podcasts_subscribed" to initialPodcastsSubscribed,
-            ),
+            mapOf("onboarding_status" to "completed", "onboarding_method" to method, "user_intent" to intent) + extra,
+        )
+        AnalyticsEmit.personSetOnce(
+            buildMap {
+                put("first_onboarding_method", method)
+                put("first_user_intent", intent)
+                initialSubscribed?.let { put("initial_podcasts_subscribed", it) }
+            },
         )
     }
 }
+
+/** The Echo chat box's own limit. */
+private const val USER_INPUT_TEXT_MAX = 500

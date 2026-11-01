@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.navigation
 
-import android.Manifest
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -59,22 +57,13 @@ internal fun androidx.navigation.NavGraphBuilder.addHomeDestination(w: NavGraphW
     val context = w.context
     val opmlCallbacks = w.opmlCallbacks
     val onboardingViewModel = w.session.onboardingViewModel
-    val showFeatureDialog = w.session.showFeatureDialog
-    val permissionLauncher = w.session.permissionLauncher
     val onSubmitFeedback = w.actions.onSubmitFeedback
 
     // -----------------------------------------------------------------------
     // Home
     // -----------------------------------------------------------------------
     composable("home") {
-        LaunchedEffect(showFeatureDialog) {
-            if (shouldRequestNotificationPermission(showFeatureDialog, context)) {
-                cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                    .trackNotificationPermissionRequested()
-                cx.aswin.boxlore.core.prefs.BoxcastPrefs(context).setHasRequestedNotificationPermission(true)
-                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
+        // Notifications are asked for only where the listener shows intent: a show's bell and the import card.
         HomeRoute(
             podcastRepository = podcastRepository,
             playbackRepository = playbackRepository,

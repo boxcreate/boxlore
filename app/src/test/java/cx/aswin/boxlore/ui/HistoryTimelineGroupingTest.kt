@@ -28,6 +28,7 @@ import cx.aswin.boxlore.feature.history.HistoryViewModel
 import cx.aswin.boxlore.feature.history.TimelineUiState
 import cx.aswin.boxlore.feature.history.timeline.TimelineFilter
 import cx.aswin.boxlore.feature.history.timeline.TimelineGrouping
+import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -36,7 +37,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import java.time.ZoneId
 
 /**
  * Days|Shows on Timeline: Jump back in, above the toggle, folds away and back, so the toggle slides

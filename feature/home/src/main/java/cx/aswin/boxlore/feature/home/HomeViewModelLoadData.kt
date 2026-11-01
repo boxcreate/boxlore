@@ -209,35 +209,37 @@ internal fun HomeViewModel.loadData() {
                         val resolvedSerial = wrapper.resolvedSerial
                         val completedEpisodeIds = wrapper.completedEpisodeIds
 
-                        // Compute completed count for review prompt logic
-                        val completedCount = allHistory.count { it.isCompleted }
+                        // Prompts count only episodes finished here, so a restore or import can't trigger them.
+                        val completedCount = allHistory.countFinishedSince(installedAtMs)
 
                         // Check if review prompt should be shown (promoter handoff or milestone-based)
                         if (!_showReviewPrompt.value && !_showFeedback.value && !_showPostReview.value) {
                             val isPlayingNow = playerState.value.isPlaying
-                            if (engagementCoordinator.shouldShowPromoterReview(isPlayingNow)) {
-                                engagementCoordinator.recordProactivePromptShown()
-                                engagementCoordinator.clearPromoterReviewPending()
-                                val npsScore = userPrefs.npsLastScore()
-                                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackPromoterReviewHandoff(
-                                    npsScore,
-                                )
-                                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackEngagementPromptShown(
-                                    promptType = "promoter_review",
-                                    source = "nps_handoff",
+                            if (engagementCoordinator.shouldShowPromoterReview(isPlayingNow, installedAtMs)) {
+                                // Recorded once the sheet is on screen (onReviewPromptDisplayed).
+                                engagementCoordinator.reserveSessionForPrompt()
+                                reviewPromptRecorder.decided(
+                                    ReviewPromptRecord(
+                                        promptType = "promoter_review",
+                                        source = "nps_handoff",
+                                        npsScore = userPrefs.npsLastScore(),
+                                        isPromoterHandoff = true,
+                                    ),
                                 )
                                 _reviewPromptVariant.value =
                                     cx.aswin.boxlore.feature.home.components.ReviewPromptVariant.PromoterHandoff
                                 _showReviewPrompt.value = true
                             } else if (engagementCoordinator.canShowProactivePrompt(isPlayingNow)) {
                                 userPrefs.syncReviewMilestonePending(completedCount)
-                                val shouldPrompt = userPrefs.shouldShowReviewPrompt(isPlayingNow)
+                                val shouldPrompt = userPrefs.shouldShowReviewPrompt(isPlayingNow, installedAtMs)
                                 if (shouldPrompt) {
-                                    engagementCoordinator.recordProactivePromptShown()
-                                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackEngagementPromptShown(
-                                        promptType = "milestone_review",
-                                        source = "episode_milestone",
-                                        completedEpisodes = completedCount,
+                                    engagementCoordinator.reserveSessionForPrompt()
+                                    reviewPromptRecorder.decided(
+                                        ReviewPromptRecord(
+                                            promptType = "milestone_review",
+                                            source = "episode_milestone",
+                                            completedEpisodes = completedCount,
+                                        ),
                                     )
                                     _reviewPromptVariant.value =
                                         cx.aswin.boxlore.feature.home.components.ReviewPromptVariant.Milestone
@@ -274,6 +276,7 @@ internal fun HomeViewModel.loadData() {
                                 subs = subs,
                                 allHistory = allHistory,
                                 episodeAliases = wrapper.episodeAliases,
+                                installedAtMs = installedAtMs,
                                 resolvedSerial = resolvedSerial,
                                 completedEpisodeIds = completedEpisodeIds,
                                 region = region,

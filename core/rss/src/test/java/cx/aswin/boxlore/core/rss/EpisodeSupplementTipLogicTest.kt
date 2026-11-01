@@ -158,8 +158,14 @@ class EpisodeSupplementTipLogicTest {
                 .copy(description = "From the feed", imageUrl = "https://img/feed.jpg")
         val full =
             Episode(
-                id = "42", title = "Fresh", description = "From Podcast Index", audioUrl = "https://cdn.example/fresh.mp3",
-                imageUrl = "https://img/pi.jpg", duration = 1800, podcastId = "pi-1", publishedDate = 200L,
+                id = "42",
+                title = "Fresh",
+                description = "From Podcast Index",
+                audioUrl = "https://cdn.example/fresh.mp3",
+                imageUrl = "https://img/pi.jpg",
+                duration = 1800,
+                podcastId = "pi-1",
+                publishedDate = 200L,
             )
 
         val tip = EpisodeSupplementTipLogic.resolveNewestTip(feed, "pi-1", listOf(full), null, null, null, null)

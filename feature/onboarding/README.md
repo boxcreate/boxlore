@@ -120,6 +120,7 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
 
 ## Testing notes
 
+- `onboarding_ai_response_received` no longer carries the reply's text (it can repeat what the listener typed); the turn event's typed text is capped at 500 characters in `:core:analytics`.
 - `EchoRequestLifecycleTest` covers which API refusals send a failed Echo turn to the topic picker (`verification_required`, `daily_ai_limit`) and which keep Try again. No onboarding ViewModel harness exists, so the switch itself is verified by source inspection.
 
 - Tablet search respects IME insets, and suggestion forms remain reachable in short contiguous regions. Existing onboarding steps, state owners and phone composition remain unchanged.

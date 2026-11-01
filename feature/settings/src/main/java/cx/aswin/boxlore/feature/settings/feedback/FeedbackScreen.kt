@@ -655,6 +655,8 @@ private fun FeedbackCommunityRow(
 
         OutlinedButton(
             onClick = {
+                cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                    .trackStoreReviewOpened(method = "store_page", source = "feedback_screen")
                 val pkgName = context.packageName
                 val marketUri = try {
                     Uri.parse("market://details?id=$pkgName")

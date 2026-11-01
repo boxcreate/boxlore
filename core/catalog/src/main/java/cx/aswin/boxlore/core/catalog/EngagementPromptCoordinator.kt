@@ -33,6 +33,11 @@ class EngagementPromptCoordinator(
     /** Returns true when playback is idle and no proactive prompt has shown this session. */
     fun canShowProactivePrompt(isPlaying: Boolean): Boolean = !isPlaying && !sessionProactivePromptShown
 
+    /** A prompt was decided and waits for its screen: no other proactive prompt this session; nothing saved yet. */
+    fun reserveSessionForPrompt() {
+        sessionProactivePromptShown = true
+    }
+
     /** Marks the current session as having shown a proactive prompt and persists cooldown. */
     fun recordProactivePromptShown() {
         sessionProactivePromptShown = true
@@ -73,11 +78,13 @@ class EngagementPromptCoordinator(
 
     /**
      * True when a deferred promoter handoff is pending and the user has not reviewed yet.
-     * Does not apply the 14-day cooldown — that prompt completes the NPS journey.
+     * Does not apply the 14-day cooldown — that prompt completes the NPS journey — but waits out
+     * the quiet days after installing ([installedAtMs]) or importing a library.
      */
-    suspend fun shouldShowPromoterReview(isPlaying: Boolean): Boolean {
+    suspend fun shouldShowPromoterReview(isPlaying: Boolean, installedAtMs: Long,): Boolean {
         if (!canShowProactivePrompt(isPlaying)) return false
         if (userPrefs.hasReviewedSync()) return false
+        if (userPrefs.isInReviewQuietPeriod(installedAtMs)) return false
         if (!userPrefs.hasNpsSurveyFired()) return false
         return userPrefs.isPromoterReviewPending()
     }

@@ -70,7 +70,7 @@ class AutoEpisodeAliasListsTest {
 
     @Test
     fun playAllLikedQueuesAnEpisodeStoredUnderTwoIdsOnce() = runBlocking {
-        val ids = voiceHandler.handlePlayAllLiked().map { it.mediaId }
+        val ids = voiceHandler.handlePlayAllLiked(fromCar = true).map { it.mediaId }
 
         assertEquals(2, ids.size)
         assertTrue(ids.none { it.endsWith("B") })

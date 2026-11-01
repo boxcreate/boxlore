@@ -64,13 +64,14 @@ class RecordingAnalytics : Analytics {
         )
     }
 
-    override fun trackEngagementPromptShown(promptType: String, source: String, completedEpisodes: Int?,) {
+    override fun trackEngagementPromptShown(promptType: String, source: String, completedEpisodes: Int?, npsScore: Int?,) {
         capture(
-            "feedback_submitted",
+            "engagement_prompt_shown",
             buildMap {
-                put("feedback_type", promptType)
+                put("prompt_type", promptType)
                 put("source", source)
                 completedEpisodes?.let { put("completed_episodes", it) }
+                npsScore?.let { put("nps_score", it) }
             },
         )
     }
@@ -93,16 +94,6 @@ class RecordingAnalytics : Analytics {
                 "feedback_type" to "nps_manual",
                 "source" to source,
             ),
-        )
-    }
-
-    override fun trackPromoterReviewHandoff(npsScore: Int?) {
-        capture(
-            "feedback_submitted",
-            buildMap {
-                put("feedback_type", "promoter_review_handoff")
-                npsScore?.let { put("score", it) }
-            },
         )
     }
 

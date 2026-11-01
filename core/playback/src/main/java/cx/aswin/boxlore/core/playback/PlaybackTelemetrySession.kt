@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.analytics.EntryPointContext
 import cx.aswin.boxlore.core.analytics.ListenStart
 import cx.aswin.boxlore.core.analytics.PendingEntryPoint
 import cx.aswin.boxlore.core.analytics.PlaybackListenValues
@@ -56,6 +57,9 @@ internal class PlaybackTelemetrySession(
 
     /** This installation's listening device ID (`BoxcastPrefs.getOrCreateListeningDeviceId`); set by the service. */
     var listeningDeviceId: () -> String? = { null }
+
+    /** Sends `first_episode_played` once per install when a listen starts; set by the service. */
+    var firstPlay: FirstPlayClaim? = null
 
     /** The listen in progress and its one record; the service sets its route, note and visibility. */
     val listens = ListenRecorder(playerProvider)
@@ -155,8 +159,10 @@ internal class PlaybackTelemetrySession(
             val contextMap = pendingEntryPoint.filterKeys { it != "entry_point" }
             entryPointContext = contextMap.ifEmpty { null }
         } else {
-            entryPoint = extras?.getString("entry_point")
-            entryPointContext = analyticsEntryPointContext(extras)
+            val (itemEntryPoint, itemContext) =
+                itemEntry(extras?.getString("entry_point"), analyticsEntryPointContext(extras), fallbackEntryPoint)
+            entryPoint = itemEntryPoint
+            entryPointContext = itemContext
         }
 
         if (entryPoint == null) {
@@ -178,7 +184,14 @@ internal class PlaybackTelemetrySession(
             withContext(mainDispatcher) { listens.resolvedPlaybackMode(listen.listenId, mode) }
         }
         scope.launch {
-            enrich(episodeId, currentItem, genre, listenStart, modeLookup)
+            // Claimed first, in the order listens start (the scope runs on the main thread), not when
+            // the slower show lookups finish, so the first play is the one that started first.
+            val firstPlayTicket = firstPlay?.claim()
+            try {
+                enrich(episodeId, currentItem, genre, listenStart, modeLookup, firstPlayTicket)
+            } finally {
+                firstPlayTicket?.releaseIfUnsent()
+            }
         }
     }
 
@@ -266,6 +279,7 @@ internal class PlaybackTelemetrySession(
         genre: String?,
         listen: ListenStart,
         modeLookup: Deferred<String>,
+        firstPlayTicket: FirstPlayClaim.Ticket?,
     ) {
         try {
             val queueItem = database.queueDao().getQueueItemByEpisodeId(episodeId)
@@ -336,6 +350,10 @@ internal class PlaybackTelemetrySession(
             speed = speed,
             listen = listen,
         )
+        firstPlayTicket?.let { ticket ->
+            AnalyticsHelper.trackFirstEpisodePlayed(episodeId, resolvedPodcastId)
+            ticket.sent()
+        }
     }
 
     /** Download when any stored ID of the episode holds a finished download, else stream. */
@@ -674,13 +692,26 @@ internal class PlaybackTelemetrySession(
     }
 }
 
+/**
+ * A listen's entry point from its media item. When the queue moved on by itself or by a skip
+ * ([transition], `queue_auto_advance` or `queue_skip`), that names it, and the surface that started
+ * the queue (copied onto every item) becomes its `source_entry_point` unless the item names one.
+ */
+internal fun itemEntry(itemEntryPoint: String?, itemContext: Map<String, Any>?, transition: String?,): Pair<String?, Map<String, Any>?> =
+    if (transition != null && itemEntryPoint != null) {
+        transition to (mapOf<String, Any>("source_entry_point" to itemEntryPoint) + itemContext.orEmpty())
+    } else {
+        itemEntryPoint to itemContext
+    }
+
+/** The entry-point details in a media item's extras; its artwork links, stream address and Auto keys stay out. */
 internal fun analyticsEntryPointContext(extras: Bundle?): Map<String, Any>? {
     if (extras == null) return null
     val context = mutableMapOf<String, Any>()
     extras.keySet().forEach { key ->
         @Suppress("DEPRECATION")
         val value = extras.get(key)
-        if (value != null && key != "entry_point" && CastMediaMetadata.isAnalyticsSafeExtra(key)) {
+        if (value != null && EntryPointContext.isAllowed(key)) {
             context[key] = value
         }
     }

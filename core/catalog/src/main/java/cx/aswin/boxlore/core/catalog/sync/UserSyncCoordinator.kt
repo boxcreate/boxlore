@@ -79,6 +79,11 @@ open class UserSyncCoordinator(
     private val playedShowDao: PlayedShowDao? = null,
     /** Daily listening per phone for the cloud sync (Room v40); null syncs no listening, as older builds. */
     private val listeningInsightsMaintenance: ListeningInsightsMaintenance? = null,
+    /**
+     * Runs before this phone's first pull for an account (a sign-in or an account switch), which can
+     * bring in another phone's finished episodes: starts the review prompt's quiet days.
+     */
+    private val onFirstAccountPull: suspend () -> Unit = { userPreferencesRepository?.markLibraryImported() },
 ) {
     private val syncMutex = Mutex()
 
@@ -120,6 +125,7 @@ open class UserSyncCoordinator(
                 return handleAccountSwitch(userId, token)
             }
             if (lastSyncedUser == null) {
+                onFirstAccountPull()
                 requireBoxcastPrefs.setLastSyncedUserId(userId)
             }
 
@@ -156,6 +162,7 @@ open class UserSyncCoordinator(
     }
 
     private suspend fun handleAccountSwitch(userId: String, token: String?): SyncResult {
+        onFirstAccountPull()
         purgeLocalDataForAccountSwitch()
         requireBoxcastPrefs.setLastSyncTimestamp(0L)
         resetListeningSync()

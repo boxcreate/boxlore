@@ -108,4 +108,13 @@ class ImportFlowModelTest {
         assertFalse(showsImportNotificationPrompt(backup.copy(hasNotificationsEnabled = false), notificationsAllowed = false))
         assertFalse(showsImportNotificationPrompt(backup.copy(isJson = false), notificationsAllowed = false))
     }
+
+    @Test fun `an import starts the review prompt's quiet days when it begins, not only when it ends`() {
+        // Regression: a backup's listening history landed before Success, so a prompt could show first.
+        assertEquals("running", libraryImportPhase(OpmlImportState.ImportingJson()))
+        assertEquals("running", libraryImportPhase(OpmlImportState.Parsing(Uri.parse("content://backup"))))
+        assertEquals("done", libraryImportPhase(OpmlImportState.Success(importedCount = 3, completedCount = 0)))
+        assertNull(libraryImportPhase(OpmlImportState.Idle))
+        assertNull(libraryImportPhase(OpmlImportState.ShowSelector))
+    }
 }

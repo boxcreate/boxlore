@@ -126,7 +126,14 @@ internal class ShowNotificationPermission(blocked: Boolean) {
 
     /** Asks for Android 13's notification permission. */
     fun request() {
-        launcher?.launch(Manifest.permission.POST_NOTIFICATIONS)
+        val launcher = launcher ?: return
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackNotificationPermissionRequested(SURFACE)
+        launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    internal companion object {
+        /** `surface` on the permission events: a show's bell. */
+        const val SURFACE = "show_bell"
     }
 
     internal fun runPending() {
@@ -165,6 +172,7 @@ internal fun rememberShowNotificationPermission(
     }
     permission.launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         BoxcastPrefs(context).setHasRequestedNotificationPermission(true)
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackNotificationPermissionDecided(isGranted, ShowNotificationPermission.SURFACE)
         permission.systemBlocked = !isGranted
         if (isGranted) {
             allowed(true)

@@ -624,7 +624,13 @@ class UserPreferencesRepository(context: Context,) {
 
     suspend fun markReviewPromptShown() = reviews.markReviewPromptShown()
 
-    suspend fun shouldShowReviewPrompt(isPlaying: Boolean): Boolean = reviews.shouldShowReviewPrompt(isPlaying)
+    suspend fun shouldShowReviewPrompt(isPlaying: Boolean, installedAtMs: Long, nowMs: Long = System.currentTimeMillis(),): Boolean =
+        reviews.shouldShowReviewPrompt(isPlaying, installedAtMs, nowMs)
+
+    suspend fun isInReviewQuietPeriod(installedAtMs: Long, nowMs: Long = System.currentTimeMillis(),): Boolean =
+        reviews.isInReviewQuietPeriod(installedAtMs, nowMs)
+
+    suspend fun markLibraryImported(nowMs: Long = System.currentTimeMillis()) = reviews.markLibraryImported(nowMs)
 
     suspend fun syncReviewMilestonePending(completedCount: Int) = reviews.syncReviewMilestonePending(completedCount)
 

@@ -788,6 +788,40 @@ class UserSyncCoordinatorTest {
     }
 
     @Test
+    fun firstSyncForAnAccountStartsTheReviewQuietDaysOnce() = runTest(testDispatcher) {
+        // Regression: a sign-in pulled another phone's finished episodes, which could cross a review
+        // milestone at once.
+        var firstPulls = 0
+        val customCoordinator = UserSyncCoordinator(
+            boxLoreApi = fakeBoxLoreApi,
+            publicKey = "test-public-key",
+            authUserIdProvider = { currentUserId },
+            tokenProvider = { currentToken },
+            podcastDao = podcastDao,
+            listeningHistoryDao = listeningHistoryDao,
+            queueSyncPort = fakeQueueSyncPort,
+            subscriptionSyncResolver = subscriptionSyncResolver,
+            historySyncResolver = historySyncResolver,
+            queueSyncResolver = queueSyncResolver,
+            boxcastPrefs = prefs,
+            ioDispatcher = testDispatcher,
+            onFirstAccountPull = { firstPulls++ },
+        )
+        syncPushHandler = { _, _, _ -> FakeCall(Response.success(SyncPushResponse(status = "ok", syncedAt = 4000L))) }
+        syncPullHandler = { _, _, _ ->
+            FakeCall(Response.success(SyncPullResponse(subscriptions = emptyList(), history = emptyList(), queue = null, syncedAt = 5000L)))
+        }
+
+        customCoordinator.syncNow()
+        customCoordinator.syncNow()
+        assertEquals(1, firstPulls)
+
+        currentUserId = "user-B"
+        customCoordinator.syncNow()
+        assertEquals(2, firstPulls)
+    }
+
+    @Test
     fun executePull_handoffsNewestRemoteSessionToIdlePlaybackPort() = runTest(testDispatcher) {
         val fakePlayback = FakeActivePlaybackSyncPort()
         val customCoordinator = UserSyncCoordinator(

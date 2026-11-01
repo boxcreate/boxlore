@@ -100,6 +100,7 @@ class HomeViewModel(
 
     internal val _showReviewPrompt = MutableStateFlow(false)
     val showReviewPrompt = _showReviewPrompt.asStateFlow()
+    internal val reviewPromptRecorder = ReviewPromptRecorder()
 
     internal val _reviewPromptVariant =
         MutableStateFlow(cx.aswin.boxlore.feature.home.components.ReviewPromptVariant.Milestone)
@@ -177,6 +178,12 @@ class HomeViewModel(
             )
     internal val userPrefs = userPreferencesRepository
     internal val boxcastPrefs = BoxcastPrefs(application)
+
+    /** When boxlore was installed on this device; a backup restore doesn't carry it over. 0 if unknown. */
+    internal val installedAtMs: Long by lazy {
+        runCatching { application.packageManager.getPackageInfo(application.packageName, 0).firstInstallTime }
+            .getOrDefault(0L)
+    }
     private val _featuredVideoPodcasts = MutableStateFlow(featuredVideoPodcasts())
     val featuredVideoPodcasts: StateFlow<List<Podcast>> = _featuredVideoPodcasts.asStateFlow()
     private val _featuredVideoShowcaseDismissed =
@@ -578,6 +585,25 @@ class HomeViewModel(
         playbackRepository.togglePlayPause(entryPointContext)
     }
 
+    /**
+     * The review sheet is on screen with Home resumed: the prompt's milestone, cooldown and promoter
+     * hand-off are used up now, and `engagement_prompt_shown` sent once.
+     */
+    fun onReviewPromptDisplayed() {
+        val record = reviewPromptRecorder.displayed() ?: return
+        viewModelScope.launch {
+            engagementCoordinator.recordProactivePromptShown()
+            if (record.isPromoterHandoff) engagementCoordinator.clearPromoterReviewPending()
+            userPrefs.markReviewPromptShown()
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackEngagementPromptShown(
+                promptType = record.promptType,
+                source = record.source,
+                completedEpisodes = record.completedEpisodes,
+                npsScore = record.npsScore,
+            )
+        }
+    }
+
     fun dismissReviewPrompt() {
         _showReviewPrompt.value = false
         _reviewPromptVariant.value =
@@ -614,13 +640,6 @@ class HomeViewModel(
     fun triggerPostReview() {
         _showReviewPrompt.value = false
         _showPostReview.value = true
-    }
-
-    fun markReviewPromptShown() {
-        viewModelScope.launch {
-            userPrefs.markReviewPromptShown()
-            _showReviewPrompt.value = false
-        }
     }
 
     fun markReviewed() {

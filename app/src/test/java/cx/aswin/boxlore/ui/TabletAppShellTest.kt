@@ -53,6 +53,7 @@ class TabletAppShellTest {
     private val allowed = mutableStateOf(true)
     private val navigationVisible = mutableStateOf(true)
     private var paneBounds: cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds? = null
+
     /** Each rail tap with what the shell reported: whether it only closed a detail covering the primary pane. */
     private val tabTaps = mutableListOf<Pair<String, Boolean>>()
     private lateinit var navigation: TabletDetailNavigation

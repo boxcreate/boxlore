@@ -3,8 +3,6 @@ package cx.aswin.boxlore.ui
 import android.net.Uri
 import android.util.Log
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -98,6 +96,7 @@ import cx.aswin.boxlore.ui.libraryimport.OpmlImportDialog
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportDialogActions
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportEffects
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportState
+import cx.aswin.boxlore.ui.libraryimport.libraryImportPhase
 import cx.aswin.boxlore.ui.libraryimport.performJsonLibraryImport
 import cx.aswin.boxlore.ui.logic.SubscriptionResumeRefreshLogic
 import cx.aswin.boxlore.ui.logic.canUseAdaptivePlayer
@@ -443,7 +442,6 @@ fun BoxLoreAppRoot(
             FontRoundness.axisValue(fontRoundnessKey)
         }
     val hasSeenMarkPlayedTip by userPrefs.hasSeenMarkPlayedTip.collectAsState(initial = true)
-    val hasLoggedFirstPlay by userPrefs.hasLoggedFirstPlay.collectAsState(initial = true)
     val activeAnnouncement by userPrefs.activeAnnouncementStream.collectAsState(initial = null)
     val dismissedFeatureVersion by userPrefs.dismissedFeatureVersion.collectAsState(initial = "")
     val legacyRssRepairInProgress by container.legacyRssRepair.inProgress.collectAsStateWithLifecycle()
@@ -478,13 +476,6 @@ fun BoxLoreAppRoot(
 
     var appInstanceId by remember { mutableStateOf<String?>(null) }
     var isInitialHomeContentReady by remember { mutableStateOf(false) }
-    val permissionLauncher =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.RequestPermission(),
-        ) { isGranted ->
-            AnalyticsHelper.trackNotificationPermissionDecided(isGranted)
-        }
-
     LaunchedEffect(Unit) {
         FcmTopicHelper.subscribeDefaultTopics(activity)
     }
@@ -492,6 +483,12 @@ fun BoxLoreAppRoot(
     var opmlImportState by remember { mutableStateOf<OpmlImportState>(OpmlImportState.Idle) }
     var opmlImportSource by remember { mutableStateOf("welcome_screen") }
     var importTriggerKey by remember { mutableStateOf(0L) }
+    // Home's review prompt waits a couple of days after an import: marked when it starts (a backup's
+    // listening history lands before it ends) and again when it succeeds.
+    val importPhase = libraryImportPhase(opmlImportState)
+    LaunchedEffect(importPhase) {
+        if (importPhase != null) userPrefs.markLibraryImported()
+    }
 
     fun performJsonImport(uri: android.net.Uri) {
         scope.launch {
@@ -526,13 +523,6 @@ fun BoxLoreAppRoot(
                 podcastId = state.currentPodcast?.id,
                 positionSeconds = state.position / 1000f,
             )
-        }
-    }
-
-    LaunchedEffect(isPlaying, hasLoggedFirstPlay) {
-        if (isPlaying && !hasLoggedFirstPlay) {
-            AnalyticsHelper.trackFirstEpisodePlayed()
-            userPrefs.markFirstPlayLogged()
         }
     }
 
@@ -659,9 +649,7 @@ fun BoxLoreAppRoot(
                     } else {
                         miniPlayerPadding
                     },
-                    showFeatureDialog = showFeatureDialog,
                     hasSeenMarkPlayedTip = hasSeenMarkPlayedTip,
-                    permissionLauncher = permissionLauncher,
                     appInstanceId = appInstanceId,
                 ),
                 opmlCallbacks =

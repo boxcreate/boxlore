@@ -408,6 +408,8 @@ class BoxLoreApplication :
         // A listen the last run left unfinished because Android ended the app (queued until setup ends).
         cx.aswin.boxlore.core.playback.ListenInterruptions
             .reportLeftover(this)
+        // Reads package info over binder, so off the main thread.
+        applicationScope.launch { cx.aswin.boxlore.core.playback.FirstPlayInstallOrigin.note(this@BoxLoreApplication) }
     }
 
     /**

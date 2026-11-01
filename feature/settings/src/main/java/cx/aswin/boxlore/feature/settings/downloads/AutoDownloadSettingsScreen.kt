@@ -38,6 +38,7 @@ import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
 import cx.aswin.boxlore.feature.settings.components.SettingsSwitchRow
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
@@ -95,7 +96,10 @@ fun AutoDownloadSettingsScreen(
                 supportingText = "Audio files wait for an unmetered connection.",
                 icon = Icons.Rounded.Wifi,
                 checked = wifiOnly,
-                onCheckedChange = { scope.launch { userPrefs.setAutoDownloadWifiOnly(it) } },
+                onCheckedChange = {
+                    trackDownloadSetting("auto_download_wifi_only_toggled", it, wifiOnly)
+                    scope.launch { userPrefs.setAutoDownloadWifiOnly(it) }
+                },
             )
         }
 
@@ -111,7 +115,10 @@ fun AutoDownloadSettingsScreen(
                     ConnectedOptionSelector(
                         options = autoDownloadEpisodeLimits.map { it to it.toString() },
                         selected = maxEpisodes,
-                        onSelect = actions::selectEpisodeLimit,
+                        onSelect = { limit ->
+                            trackDownloadSetting("auto_download_episode_limit_changed", limit, maxEpisodes)
+                            actions.selectEpisodeLimit(limit)
+                        },
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
                     )
                 }
@@ -122,19 +129,42 @@ fun AutoDownloadSettingsScreen(
                 supportingText = "Delete downloaded files after an episode is finished.",
                 icon = Icons.Rounded.DeleteOutline,
                 checked = deleteCompleted,
-                onCheckedChange = { scope.launch { userPrefs.setAutoDownloadDeleteCompleted(it) } },
+                onCheckedChange = {
+                    trackDownloadSetting("auto_download_delete_completed_toggled", it, deleteCompleted)
+                    scope.launch { userPrefs.setAutoDownloadDeleteCompleted(it) }
+                },
             )
         }
 
-        AutoDownloadBackgroundSettingsCard(
-            settings = background,
-            onEnabledChange = actions::setBackgroundEnabled,
-            onWifiOnlyChange = { scope.launch { userPrefs.setAutoDownloadBackgroundWifiOnly(it) } },
-            onChargingOnlyChange = { scope.launch { userPrefs.setAutoDownloadBackgroundChargingOnly(it) } },
-        )
+        TrackedBackgroundSettingsCard(background, actions, userPrefs, scope)
     }
 
     if (showHelp) {
         AutoDownloadSettingsHelp(onDismiss = actions::dismissHelp)
     }
+}
+
+/** The background checks card; each switch reports only when it changes. */
+@Composable
+private fun TrackedBackgroundSettingsCard(
+    background: AutoDownloadBackgroundSettings,
+    actions: AutoDownloadSettingsActions,
+    userPrefs: UserPreferencesRepository,
+    scope: CoroutineScope,
+) {
+    AutoDownloadBackgroundSettingsCard(
+        settings = background,
+        onEnabledChange = {
+            trackDownloadSetting("auto_download_background_toggled", it, background.enabled)
+            actions.setBackgroundEnabled(it)
+        },
+        onWifiOnlyChange = {
+            trackDownloadSetting("auto_download_background_wifi_only_toggled", it, background.wifiOnly)
+            scope.launch { userPrefs.setAutoDownloadBackgroundWifiOnly(it) }
+        },
+        onChargingOnlyChange = {
+            trackDownloadSetting("auto_download_background_charging_only_toggled", it, background.chargingOnly)
+            scope.launch { userPrefs.setAutoDownloadBackgroundChargingOnly(it) }
+        },
+    )
 }

@@ -199,6 +199,28 @@ class QueueRepositoryTest {
     }
 
     @Test
+    fun onlyAListenerClearIsReported() = runTest {
+        // Regression: every new episode or mix replaced the queue through clearQueue and was reported
+        // as the listener clearing it.
+        val recorder = mutableListOf<Pair<String, Map<String, Any>>>()
+        val restore = cx.aswin.boxlore.core.analytics.AnalyticsHelper.installRecordingSink(recorder)
+        try {
+            repository.addToQueue(episodeItem(1), podcast())
+            recorder.clear()
+            repository.clearQueue()
+            assertFalse(recorder.any { it.first == "queue_modified" && it.second["action"] == "clear" })
+
+            repository.addToQueue(episodeItem(2), podcast())
+            recorder.clear()
+            repository.clearQueue(listenerSource = "lore_conflict")
+            val clear = recorder.single { it.first == "queue_modified" && it.second["action"] == "clear" }.second
+            assertEquals("lore_conflict", clear["source"])
+        } finally {
+            restore()
+        }
+    }
+
+    @Test
     fun replaceQueueDeduplicatesAndOrders() = runTest {
         repository.replaceQueue(
             listOf(

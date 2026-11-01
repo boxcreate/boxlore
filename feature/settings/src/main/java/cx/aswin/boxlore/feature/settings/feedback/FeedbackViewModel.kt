@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.FeedbackDraft
@@ -218,6 +219,13 @@ class FeedbackViewModel(
                 sanitizedLogs,
             )
 
+            if (success) {
+                AnalyticsHelper.trackFeedbackSent(
+                    category = wireCategory,
+                    withEmail = state.email.isNotBlank(),
+                    withDiagnostics = state.attachDiagnostics,
+                )
+            }
             handleSubmissionResult(success)
         }
     }

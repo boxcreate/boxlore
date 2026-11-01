@@ -956,7 +956,8 @@ internal class PlaybackQueueCoordinator(
         // A new queue is about to start; don't block session restore on next launch.
         prefs.edit().putBoolean(playerDismissedKey, false).apply()
         try {
-            queueRepository.clearQueue()
+            // Only the Lore conflict dialog stops and clears, after the listener chose to start Lore.
+            queueRepository.clearQueue(listenerSource = "lore_conflict")
         } catch (e: Exception) {
             android.util.Log.e("PlaybackRepo", "stopAndClearQueue: Failed to clear DB queue", e)
         }

@@ -18,6 +18,7 @@ import cx.aswin.boxlore.core.playback.PlaybackSkipPolicy
 import cx.aswin.boxlore.core.playback.PlaybackTaskRemovalPolicy
 import cx.aswin.boxlore.core.playback.PlaybackTelemetrySession
 import cx.aswin.boxlore.core.playback.PlaybackUiVisibility
+import cx.aswin.boxlore.core.playback.isUpdatedInstall
 import cx.aswin.boxlore.core.playback.service.auto.AutoBrowseLibraryCallback
 import cx.aswin.boxlore.core.playback.service.auto.AutoBrowseLibraryHost
 import cx.aswin.boxlore.core.playback.service.auto.stripEpisodePrefix
@@ -186,6 +187,12 @@ open class BoxLorePlaybackService :
             session.listens.analyticsOutput = { ListeningOutputRoute.forAnalytics(this, mediaSession?.player ?: playbackPlayer) }
             session.listens.isAppInBackground = { !PlaybackUiVisibility.isForeground.value }
             session.listens.listenNotes = cx.aswin.boxlore.core.playback.ListenNoteKeeper(cx.aswin.boxlore.core.playback.PrefsListenNoteStore(this))
+            session.firstPlay =
+                cx.aswin.boxlore.core.playback.FirstPlayClaim(
+                    store = cx.aswin.boxlore.core.playback.PrefsFirstPlayStore(this),
+                    isUpdatedInstall = ::isUpdatedInstall,
+                    loggedByOlderBuild = { userPreferencesRepository.hasLoggedFirstPlay.first() },
+                )
         }
     }
 

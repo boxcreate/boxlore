@@ -43,9 +43,6 @@ private object AnalyticsKeys {
     val REVIEW_HAS_REVIEWED =
         androidx.datastore.preferences.core
             .booleanPreferencesKey("review_has_reviewed")
-    val REVIEW_FIRST_LAUNCH_AT =
-        androidx.datastore.preferences.core
-            .longPreferencesKey("review_first_launch_at")
 
     // NPS survey: milestone marks eligibility (pending); the event fires on
     // the next app open so it never surfaces during background playback.
@@ -70,6 +67,16 @@ private object AnalyticsKeys {
     val REVIEW_MILESTONE_PENDING =
         androidx.datastore.preferences.core
             .intPreferencesKey("review_milestone_pending")
+
+    /** The highest milestone a review prompt already used; a milestone counts once. */
+    val REVIEW_MILESTONE_CONSUMED =
+        androidx.datastore.preferences.core
+            .intPreferencesKey("review_milestone_consumed")
+
+    /** When a library import or backup restore last finished, for the quiet days after it. */
+    val LIBRARY_IMPORTED_AT =
+        androidx.datastore.preferences.core
+            .longPreferencesKey("library_imported_at")
 }
 
 private object FeatureKeys {
@@ -146,8 +153,28 @@ internal class ReviewPromptPreferences(private val dataStore: DataStore<Preferen
             pref[AnalyticsKeys.REVIEW_PROMPT_COUNT] = count + 1
             pref[AnalyticsKeys.REVIEW_LAST_PROMPT_AT] = System.currentTimeMillis()
             pref[AnalyticsKeys.ENGAGEMENT_LAST_PROMPT_AT] = System.currentTimeMillis()
+            pref[AnalyticsKeys.REVIEW_MILESTONE_PENDING]?.let { used ->
+                pref[AnalyticsKeys.REVIEW_MILESTONE_CONSUMED] = maxOf(used, pref[AnalyticsKeys.REVIEW_MILESTONE_CONSUMED] ?: 0)
+            }
             pref.remove(AnalyticsKeys.REVIEW_MILESTONE_PENDING)
         }
+    }
+
+    /** A library import or backup restore finished: no review prompt for the quiet days after it. */
+    suspend fun markLibraryImported(nowMs: Long = System.currentTimeMillis()) {
+        dataStore.edit { it[AnalyticsKeys.LIBRARY_IMPORTED_AT] = nowMs }
+    }
+
+    /**
+     * True within [EngagementPromptConstants.REVIEW_QUIET_DAYS] of installing boxlore ([installedAtMs],
+     * Android's own install time, which a backup doesn't carry) or of the last library import.
+     */
+    suspend fun isInReviewQuietPeriod(installedAtMs: Long, nowMs: Long = System.currentTimeMillis(),): Boolean =
+        isInReviewQuietPeriod(dataStore.data.first(), installedAtMs, nowMs)
+
+    private fun isInReviewQuietPeriod(prefs: Preferences, installedAtMs: Long, nowMs: Long,): Boolean {
+        val quietFrom = maxOf(installedAtMs, prefs[AnalyticsKeys.LIBRARY_IMPORTED_AT] ?: 0L)
+        return nowMs - quietFrom < EngagementPromptConstants.REVIEW_QUIET_DAYS * DAY_MS
     }
 
     /**
@@ -155,10 +182,11 @@ internal class ReviewPromptPreferences(private val dataStore: DataStore<Preferen
      * - A milestone (5/15/30) was reached and stored as pending (survives playback gaps)
      * - NPS survey already fired; skip detractors (score &lt;= 7)
      * - Shared 14-day engagement cooldown
-     * - User has NOT reviewed yet; app installed 2+ days; max 3 lifetime; 30-day review gap
+     * - User has NOT reviewed yet; 2+ days since install ([installedAtMs]) and since the last import;
+     *   max 3 lifetime; 30-day review gap
      * - Never during playback
      */
-    suspend fun shouldShowReviewPrompt(isPlaying: Boolean): Boolean {
+    suspend fun shouldShowReviewPrompt(isPlaying: Boolean, installedAtMs: Long, nowMs: Long = System.currentTimeMillis(),): Boolean {
         if (isPlaying) return false
 
         val prefs = dataStore.data.first()
@@ -169,33 +197,36 @@ internal class ReviewPromptPreferences(private val dataStore: DataStore<Preferen
         val promptCount = prefs[AnalyticsKeys.REVIEW_PROMPT_COUNT] ?: 0
         if (promptCount >= 3) return false
 
-        val firstLaunch = prefs[AnalyticsKeys.REVIEW_FIRST_LAUNCH_AT]
-        if (firstLaunch == null) {
-            dataStore.edit { it[AnalyticsKeys.REVIEW_FIRST_LAUNCH_AT] = System.currentTimeMillis() }
-            return false
-        }
-
-        val daysSinceInstall = (System.currentTimeMillis() - firstLaunch) / (1000 * 60 * 60 * 24)
-        if (daysSinceInstall < 2) return false
+        if (isInReviewQuietPeriod(prefs, installedAtMs, nowMs)) return false
 
         val lastPrompt = prefs[AnalyticsKeys.REVIEW_LAST_PROMPT_AT] ?: 0L
-        val daysSinceLastPrompt = (System.currentTimeMillis() - lastPrompt) / (1000 * 60 * 60 * 24)
+        val daysSinceLastPrompt = (nowMs - lastPrompt) / DAY_MS
         return lastPrompt == 0L || daysSinceLastPrompt >= 30
     }
 
-    /** Remember the highest unreached milestone so prompts survive playback gaps. */
+    /**
+     * Stores the milestone [completedCount] reaches (5, 15 or 30) so a prompt can show once playback
+     * stops; a milestone a prompt already used never comes back. [completedCount] counts episodes
+     * finished since boxlore was installed here, so a pending milestone a backup brought in with no such
+     * listening behind it is dropped. On the first run after updating, an install that was already
+     * prompted counts at least milestone 5, and the milestone it has reached now, as used.
+     */
     suspend fun syncReviewMilestonePending(completedCount: Int) {
         val milestone =
             when {
                 completedCount >= 30 -> 30
                 completedCount >= 15 -> 15
                 completedCount >= 5 -> 5
-                else -> return
+                else -> null
             }
         dataStore.edit { pref ->
             if (pref[AnalyticsKeys.REVIEW_HAS_REVIEWED] == true) return@edit
-            val current = pref[AnalyticsKeys.REVIEW_MILESTONE_PENDING]
-            if (current == null || milestone > current) {
+            if (pref[AnalyticsKeys.REVIEW_MILESTONE_CONSUMED] == null && (pref[AnalyticsKeys.REVIEW_PROMPT_COUNT] ?: 0) > 0) {
+                pref[AnalyticsKeys.REVIEW_MILESTONE_CONSUMED] = maxOf(FIRST_MILESTONE, milestone ?: 0)
+            }
+            if (milestone == null || milestone <= (pref[AnalyticsKeys.REVIEW_MILESTONE_CONSUMED] ?: 0)) {
+                pref.remove(AnalyticsKeys.REVIEW_MILESTONE_PENDING)
+            } else {
                 pref[AnalyticsKeys.REVIEW_MILESTONE_PENDING] = milestone
             }
         }
@@ -222,6 +253,10 @@ internal class ReviewPromptPreferences(private val dataStore: DataStore<Preferen
 }
 
 internal class EngagementPreferences(private val dataStore: DataStore<Preferences>) {
+    /**
+     * Set by versions that sent `first_episode_played` from the screen. The player now claims it once
+     * per install (core:playback `FirstPlayClaim`) and reads this only so an update doesn't send it again.
+     */
     val hasLoggedFirstPlay: Flow<Boolean> =
         dataStore.data
             .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
@@ -303,3 +338,7 @@ private fun isEngagementCooldownElapsed(pref: Preferences): Boolean {
     val days = (System.currentTimeMillis() - last) / (1000 * 60 * 60 * 24)
     return days >= EngagementPromptConstants.ENGAGEMENT_COOLDOWN_DAYS
 }
+
+private const val DAY_MS = 24L * 60 * 60 * 1000
+
+private const val FIRST_MILESTONE = 5
