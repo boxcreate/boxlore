@@ -69,7 +69,7 @@ internal const val FEEDBACK_SEND_TAG = "feedback_send"
 internal const val FEEDBACK_PILLS_TAG = "feedback_pills"
 internal const val FEEDBACK_TYPING_BAR_TAG = "feedback_typing_bar"
 internal const val FEEDBACK_PHOTOS_TAG = "feedback_photos"
-internal const val FEEDBACK_PRIVACY_URL = "https://boxlore.in/privacy#feedback"
+internal const val FEEDBACK_PRIVACY_URL = "https://boxlore.in/privacy/#feedback"
 
 /** The app's icon for the choices it knows; a speech bubble for any the server adds later. */
 internal val FeedbackChoice.icon: ImageVector
