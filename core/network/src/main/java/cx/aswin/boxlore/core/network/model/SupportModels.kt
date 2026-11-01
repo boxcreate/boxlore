@@ -93,6 +93,9 @@ data class SupportEndingDto(
 data class SupportEndingActionDto(val kind: String = "", val label: String = "")
 
 @Serializable
+data class SupportReadRequest(val upTo: Long? = null)
+
+@Serializable
 data class SupportReplyRequest(
     val body: String,
     val photos: List<String> = emptyList(),

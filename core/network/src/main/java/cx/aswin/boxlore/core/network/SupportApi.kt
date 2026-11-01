@@ -4,6 +4,7 @@ import cx.aswin.boxlore.core.network.model.SupportConversationResponse
 import cx.aswin.boxlore.core.network.model.SupportListResponse
 import cx.aswin.boxlore.core.network.model.SupportNewThreadRequest
 import cx.aswin.boxlore.core.network.model.SupportPhotoResponse
+import cx.aswin.boxlore.core.network.model.SupportReadRequest
 import cx.aswin.boxlore.core.network.model.SupportReplyRequest
 import cx.aswin.boxlore.core.network.model.SupportReplyResponse
 import cx.aswin.boxlore.core.network.model.SupportThreadResponse
@@ -45,9 +46,10 @@ interface SupportApi {
     @POST("support/threads/{id}/messages")
     suspend fun reply(@Path("id") id: String, @Body request: SupportReplyRequest): Response<SupportReplyResponse>
 
+    /** Marks the team's replies read up to `upTo` (ms; the newest message shown), so a later one stays unread. */
     @Headers(NO_STORE)
     @POST("support/threads/{id}/read")
-    suspend fun markRead(@Path("id") id: String): Response<Unit>
+    suspend fun markRead(@Path("id") id: String, @Body request: SupportReadRequest): Response<Unit>
 
     @Headers(NO_STORE)
     @POST("support/threads/{id}/solve")

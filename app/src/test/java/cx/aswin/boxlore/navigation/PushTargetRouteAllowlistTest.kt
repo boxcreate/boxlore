@@ -26,6 +26,10 @@ class PushTargetRouteAllowlistTest {
         assertEquals("feedback?thread=0123456789abcdef01234567", cx.aswin.boxlore.fcm.SupportReplyNotifications.routeFor("0123456789abcdef01234567"))
         assertEquals("feedback", cx.aswin.boxlore.fcm.SupportReplyNotifications.routeFor("../../etc"))
         assertEquals("feedback", cx.aswin.boxlore.fcm.SupportReplyNotifications.routeFor(null))
+        assertTrue(pushClosesDetails("feedback?thread=0123456789abcdef01234567"))
+        assertTrue(pushClosesDetails("feedback"))
+        assertFalse(pushClosesDetails("podcast/123"))
+        assertFalse(pushClosesDetails("feedbackish"))
     }
 
     @Test

@@ -447,6 +447,21 @@ class FeedbackViewModelTest {
     }
 
     @Test
+    fun a_send_finishing_late_doesnt_clear_a_newer_draft() = runTest(testDispatcher) {
+        val support = FakeSupport().apply { sendGate = CompletableDeferred() }
+        val vm = viewModel(support)
+        vm.onMessageChanged("Message A")
+        vm.onSubmit()
+        advanceUntilIdle()
+        // Another form (a tablet's new message) saved B meanwhile.
+        prefs.saveFeedbackDraft(FeedbackDraft(category = "bug", message = "Message B", email = "", stepsToReproduce = "", attachDiagnostics = false))
+        support.sendGate!!.complete(Unit)
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.isSuccess)
+        assertEquals("Message B", prefs.getFeedbackDraft()?.message)
+    }
+
+    @Test
     fun the_phone_model_goes_only_with_diagnostics() = runTest(testDispatcher) {
         val support = FakeSupport()
         val vm = viewModel(support)

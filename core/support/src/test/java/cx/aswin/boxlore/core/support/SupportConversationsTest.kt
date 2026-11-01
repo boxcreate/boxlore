@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.support
 
 import cx.aswin.boxlore.core.network.NetworkModule
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
@@ -84,6 +85,7 @@ class SupportConversationsTest {
     @Test
     fun `replies are sent with their retry key, a closed conversation and a limit say why`() = runTest {
         server.enqueue(MockResponse().setResponseCode(201).setBody("""{"message":{"id":"m3","from":"you","body":"Still"}}"""))
+        server.enqueue(MockResponse().setBody(list))
         server.enqueue(MockResponse().setResponseCode(409).setBody("""{"error":"closed","ending":{"kind":"closed","title":"This conversation is closed","action":{"kind":"new","label":"Send new feedback"}}}"""))
         server.enqueue(MockResponse().setResponseCode(429).setBody("""{"error":"limit","message":"Try again tomorrow."}"""))
         server.enqueue(MockResponse().setResponseCode(503))
@@ -91,21 +93,52 @@ class SupportConversationsTest {
         val sent = repo.reply("t1", "Still", requestId = "retry-key-0001") as ReplyResult.Sent
         assertEquals("m3", sent.message?.id)
         assertTrue(server.takeRequest().body.readUtf8().contains("\"requestId\":\"retry-key-0001\""))
+        assertEquals("/support/threads", server.takeRequest().path)
         assertEquals("Send new feedback", (repo.reply("t1", "Hello?", null) as ReplyResult.Closed).ending?.actionLabel)
         assertEquals(ReplyResult.Refused("Try again tomorrow."), repo.reply("t1", "More", null))
         assertEquals(ReplyResult.Failed, repo.reply("t1", "More", null))
     }
 
     @Test
-    fun `reading the last unread reply clears the waiting flag`() = runTest {
+    fun `reading up to the shown message sends the marker and takes the list from the server again`() = runTest {
         server.enqueue(MockResponse().setBody(list))
         server.enqueue(MockResponse().setResponseCode(204))
+        server.enqueue(MockResponse().setBody(list.replace("\"unread\":true", "\"unread\":false").replace("new_reply", "replied")))
         val repo = repository()
         repo.refresh()
-        assertTrue(repo.markRead("a1b2c3d4e5f6a1b2c3d4e5f6"))
-        assertFalse(repo.threads.value!!.first().unread)
+        server.takeRequest()
+        assertTrue(repo.markRead("a1b2c3d4e5f6a1b2c3d4e5f6", upTo = 5))
+        assertEquals("""{"upTo":5}""", server.takeRequest().body.readUtf8())
+        assertEquals("replied", repo.threads.value!!.first().status.key)
         assertFalse(repo.replyWaiting.value)
         assertFalse(local.replyWaiting)
+    }
+
+    @Test
+    fun `a list asked for before a push can't clear the push's waiting flag`() = runTest {
+        server.enqueue(MockResponse().setBody("""{"meta":{},"threads":[{"id":"a1b2c3d4e5f6a1b2c3d4e5f6","unread":false}]}"""))
+        local.lastPushAt = now + 1
+        val repo = repository()
+        repo.refresh()
+        assertTrue(repo.replyWaiting.value)
+    }
+
+    @Test
+    fun `every successful refresh is announced, and a push says which conversation`() = runTest {
+        val metas = mutableListOf<SupportMeta>()
+        val pushed = mutableListOf<String?>()
+        val repo = repository()
+        backgroundScope.launch(kotlinx.coroutines.test.UnconfinedTestDispatcher(testScheduler)) { repo.refreshed.collect { metas += it } }
+        backgroundScope.launch(kotlinx.coroutines.test.UnconfinedTestDispatcher(testScheduler)) { repo.pushedReplies.collect { pushed += it } }
+        server.enqueue(MockResponse().setBody(list))
+        server.enqueue(MockResponse().setBody(list))
+        repo.refresh()
+        repo.refresh()
+        testScheduler.advanceUntilIdle()
+        assertEquals(2, metas.size)
+        repo.onReplyPushed("a1b2c3d4e5f6a1b2c3d4e5f6")
+        testScheduler.advanceUntilIdle()
+        assertEquals(listOf<String?>("a1b2c3d4e5f6a1b2c3d4e5f6"), pushed)
     }
 
     @Test
@@ -134,8 +167,12 @@ class SupportConversationsTest {
         assertNull(repo.refreshIfDue(30 * 60_000L))
         assertEquals(1, server.requestCount)
         now += 30 * 60_000L
-        server.enqueue(MockResponse().setBody(list))
+        server.enqueue(MockResponse().setResponseCode(500))
         repo.refreshIfDue(30 * 60_000L)
+        assertEquals(2, server.requestCount)
+        // A failed check still counts: the next start doesn't ask again straight away.
+        now += 60_000L
+        assertNull(repo.refreshIfDue(30 * 60_000L))
         assertEquals(2, server.requestCount)
     }
 

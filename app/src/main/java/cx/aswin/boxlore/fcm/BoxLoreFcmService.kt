@@ -80,7 +80,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
 
     /** The boxlore team replied: Home shows it, and a notification opens the conversation. */
     private fun handleSupportReply(data: Map<String, String>) {
-        runCatching { (application as BoxLoreApplication).container.supportRepository.onReplyPushed() }
+        runCatching { (application as BoxLoreApplication).container.supportRepository.onReplyPushed(data["threadId"]) }
             .onFailure { android.util.Log.w("BoxLoreFcmService", "Reply not recorded", it) }
         SupportReplyNotifications.show(this, data["threadId"], data["title"], data["body"])
     }

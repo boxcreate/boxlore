@@ -5,6 +5,7 @@ import android.text.format.DateFormat
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -74,17 +76,23 @@ internal const val FEEDBACK_THREAD_TAG = "feedback_thread"
 internal const val FEEDBACK_REPLY_FIELD_TAG = "feedback_reply_field"
 internal const val FEEDBACK_REPLY_SEND_TAG = "feedback_reply_send"
 
+internal class FeedbackReplyActions(val onOpen: (Boolean) -> Unit, val onChanged: (String) -> Unit, val onSend: () -> Unit)
+
 internal class FeedbackThreadActions(
     val onBack: (() -> Unit)?,
     val onRetry: () -> Unit,
     val onLoadEarlier: () -> Unit,
-    val onReplyOpen: (Boolean) -> Unit,
-    val onReplyChanged: (String) -> Unit,
-    val onSendReply: () -> Unit,
+    val reply: FeedbackReplyActions,
     val onSolve: () -> Unit,
     val onNewFeedback: () -> Unit,
     val photo: suspend (String) -> ByteArray?,
-)
+    /** The conversation is on screen (marks the team's replies read up to the newest one shown). */
+    val onSeen: () -> Unit = {},
+) {
+    val onReplyOpen: (Boolean) -> Unit get() = reply.onOpen
+    val onReplyChanged: (String) -> Unit get() = reply.onChanged
+    val onSendReply: () -> Unit get() = reply.onSend
+}
 
 /**
  * One conversation: the listener's messages in outlined cards, the team's in a filled card, then
@@ -132,12 +140,27 @@ internal fun FeedbackThreadScreen(
 @Composable
 private fun Messages(state: FeedbackThreadUiState, actions: FeedbackThreadActions) {
     val conversation = state.conversation ?: return
+    // Read only once it is really showing, up to what is showing.
+    LaunchedEffect(conversation.thread.unread, state.newestShownAt) { if (conversation.thread.unread) actions.onSeen() }
     val context = LocalContext.current
     val is24Hour = DateFormat.is24HourFormat(context)
     val now = System.currentTimeMillis()
     val zone = ZoneId.systemDefault()
     val locale = Locale.getDefault()
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        if (state.loadFailed) {
+            item(key = "refresh_failed") {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Couldn't refresh this conversation.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = actions.onRetry) { Text("Try again", fontWeight = GoogleSansWeight.semiBold) }
+                }
+            }
+        }
         if (conversation.earlier != null) {
             item(key = "earlier") {
                 TextButton(onClick = actions.onLoadEarlier, enabled = !state.loadingEarlier, modifier = Modifier.fillMaxWidth()) {
@@ -196,13 +219,14 @@ private fun MessageCard(message: SupportMessage, time: String, photo: suspend (S
                 Text("${message.author.ifBlank { "You" }} · $time", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(message.body, style = MaterialTheme.typography.bodyLarge)
-            if (message.photoIds.isNotEmpty() || message.diagnostics) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
+            if (message.photoIds.isNotEmpty()) {
+                // Scrolls sideways, so all of a message's photos stay reachable on narrow phones.
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     message.photoIds.forEachIndexed { index, id -> PhotoThumb(id, index, photo) }
-                    if (message.diagnostics) {
-                        Text("Diagnostics included", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
-                    }
                 }
+            }
+            if (message.diagnostics) {
+                Text("Diagnostics included", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

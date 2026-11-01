@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -24,6 +25,12 @@ import cx.aswin.boxlore.core.support.SupportThread
 internal val FEEDBACK_LIST_PANE_WIDTH = 400.dp
 
 /** One pane at a time on phones; side by side, the list keeps a conversation open: the picked one, else the newest, else a new message. */
+/**
+ * One pane at a time on phones; side by side, the list keeps a conversation open: the picked one,
+ * else the newest, else a new message. The list and the detail keep their places in one row in
+ * every window, so crossing the split gate never rebuilds them: the conversation's scroll, the
+ * reply box's text, cursor and focus all stay (the list's scroll is kept by the host).
+ */
 @Composable
 internal fun FeedbackPanesLayout(
     split: Boolean,
@@ -33,17 +40,19 @@ internal fun FeedbackPanesLayout(
     detail: @Composable (FeedbackPane, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (split) {
-        val shown = if (pane == FeedbackPane.List) threads?.firstOrNull()?.let { FeedbackPane.Thread(it.id) } ?: FeedbackPane.Compose else pane
-        Row(modifier.fillMaxSize()) {
-            list(Modifier.width(FEEDBACK_LIST_PANE_WIDTH).fillMaxHeight(), (shown as? FeedbackPane.Thread)?.id)
-            VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            Box(Modifier.weight(1f).fillMaxHeight()) { detail(shown, false) }
+    val shown = if (split && pane == FeedbackPane.List) threads?.firstOrNull()?.let { FeedbackPane.Thread(it.id) } ?: FeedbackPane.Compose else pane
+    val showList = split || pane == FeedbackPane.List
+    val showDetail = split || pane != FeedbackPane.List
+    Row(modifier.fillMaxSize()) {
+        if (showList) {
+            Box(if (split) Modifier.width(FEEDBACK_LIST_PANE_WIDTH).fillMaxHeight() else Modifier.weight(1f).fillMaxHeight()) {
+                list(Modifier.fillMaxSize(), if (split) (shown as? FeedbackPane.Thread)?.id else null)
+            }
         }
-    } else if (pane == FeedbackPane.List) {
-        list(modifier, null)
-    } else {
-        Box(modifier) { detail(pane, true) }
+        if (split) VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        if (showDetail) {
+            Box(Modifier.weight(1f).fillMaxHeight()) { detail(shown, !split) }
+        }
     }
 }
 
@@ -138,18 +147,19 @@ private fun FeedbackThreadRoute(
         factory = FeedbackThreadViewModel.Factory(supportRepository, threadId),
     )
     val state by threadViewModel.uiState.collectAsStateWithLifecycle()
+    // The view model can be kept from an earlier visit: load fresh each time the conversation shows.
+    LaunchedEffect(threadViewModel) { threadViewModel.activate() }
     FeedbackThreadScreen(
         state = state,
         actions = FeedbackThreadActions(
             onBack = onBack,
             onRetry = threadViewModel::reload,
             onLoadEarlier = threadViewModel::loadEarlier,
-            onReplyOpen = threadViewModel::onReplyOpen,
-            onReplyChanged = threadViewModel::onReplyChanged,
-            onSendReply = threadViewModel::sendReply,
+            reply = FeedbackReplyActions(threadViewModel::onReplyOpen, threadViewModel::onReplyChanged, threadViewModel::sendReply),
             onSolve = threadViewModel::solve,
             onNewFeedback = onNewFeedback,
             photo = threadViewModel::photo,
+            onSeen = threadViewModel::onSeen,
         ),
         bottomContentPadding = bottomContentPadding,
     )

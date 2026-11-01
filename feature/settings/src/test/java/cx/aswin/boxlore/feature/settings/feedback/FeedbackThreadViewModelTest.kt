@@ -40,6 +40,8 @@ class FeedbackThreadViewModelTest {
         var solves = 0
         var photoCalls = 0
         var maxBody = 2000
+        var lastUpTo: Long? = null
+        val pushes = kotlinx.coroutines.flow.MutableSharedFlow<String?>(extraBufferCapacity = 4)
 
         fun support() = FeedbackThreadSupport(
             load = { _, before ->
@@ -50,7 +52,10 @@ class FeedbackThreadViewModelTest {
                 replies += body to key
                 replyResult
             },
-            markRead = { reads++ },
+            markRead = { _, upTo ->
+                reads++
+                lastUpTo = upTo
+            },
             solve = {
                 solves++
                 true
@@ -60,6 +65,7 @@ class FeedbackThreadViewModelTest {
                 byteArrayOf(1)
             },
             maxBody = { maxBody },
+            pushes = pushes,
         )
     }
 
@@ -70,22 +76,30 @@ class FeedbackThreadViewModelTest {
 
     @After fun tearDown() = Dispatchers.resetMain()
 
-    @Test fun `opening an unread conversation marks it read once`() = runTest(dispatcher) {
+    @Test fun `an unread conversation is marked read once it shows, up to the newest message`() = runTest(dispatcher) {
         val fake = Fake(mutableListOf(loaded(message("m1", false), message("m2", true), unread = true)))
         val vm = FeedbackThreadViewModel(fake.support(), "t")
+        vm.activate()
         advanceUntilIdle()
         assertEquals(2, vm.uiState.value.conversation?.messages?.size)
+        assertEquals("Nothing is read until it is on screen", 0, fake.reads)
+        vm.onSeen()
+        vm.onSeen()
+        advanceUntilIdle()
         assertEquals(1, fake.reads)
+        assertEquals(1L, fake.lastUpTo)
         assertTrue(vm.uiState.value.canSolve)
     }
 
     @Test fun `a gone conversation and a failed load say so, and a retry recovers`() = runTest(dispatcher) {
         val gone = FeedbackThreadViewModel(Fake(mutableListOf(ConversationResult.Gone)).support(), "t")
+        gone.activate()
         advanceUntilIdle()
         assertTrue(gone.uiState.value.gone)
 
         val fake = Fake(mutableListOf(ConversationResult.Failed, loaded(message("m1", false))))
         val vm = FeedbackThreadViewModel(fake.support(), "t")
+        vm.activate()
         advanceUntilIdle()
         assertTrue(vm.uiState.value.loadFailed)
         vm.reload()
@@ -98,6 +112,7 @@ class FeedbackThreadViewModelTest {
     @Test fun `earlier messages go before the ones on screen`() = runTest(dispatcher) {
         val fake = Fake(mutableListOf(loaded(message("m3", false), earlier = "m3"), loaded(message("m1", false), message("m2", true))))
         val vm = FeedbackThreadViewModel(fake.support(), "t")
+        vm.activate()
         advanceUntilIdle()
         vm.loadEarlier()
         advanceUntilIdle()
@@ -110,6 +125,7 @@ class FeedbackThreadViewModelTest {
         val fake = Fake(mutableListOf(loaded(message("m1", false), message("m2", true))))
         fake.replyResult = ReplyResult.Failed
         val vm = FeedbackThreadViewModel(fake.support(), "t")
+        vm.activate()
         advanceUntilIdle()
         vm.onReplyOpen(true)
         vm.onReplyChanged("  Still happening  ")
@@ -132,6 +148,7 @@ class FeedbackThreadViewModelTest {
         val fake = Fake(mutableListOf(loaded(message("m1", false)), loaded(message("m1", false), ending = ending, canReply = false)))
         fake.replyResult = ReplyResult.Refused("Try again tomorrow.")
         val vm = FeedbackThreadViewModel(fake.support(), "t")
+        vm.activate()
         advanceUntilIdle()
         vm.onReplyOpen(true)
         vm.onReplyChanged("More")
@@ -148,10 +165,67 @@ class FeedbackThreadViewModelTest {
         assertFalse(vm.uiState.value.replyOpen)
     }
 
+    @Test fun `a closed answer shows its ending at once, even if the reload then fails, and gone clears the screen`() = runTest(dispatcher) {
+        val ending = SupportEnding("closed", "This conversation is closed", "", 2, "new", "Send new feedback")
+        val fake = Fake(mutableListOf(loaded(message("m1", false)), ConversationResult.Failed))
+        fake.replyResult = ReplyResult.Closed(ending)
+        val vm = FeedbackThreadViewModel(fake.support(), "t")
+        vm.activate()
+        advanceUntilIdle()
+        vm.onReplyOpen(true)
+        vm.onReplyChanged("Hello?")
+        vm.sendReply()
+        advanceUntilIdle()
+        assertEquals(ending, vm.uiState.value.conversation?.ending)
+        assertFalse(vm.uiState.value.canReply)
+        assertTrue("The failed reload is shown beside what is kept", vm.uiState.value.loadFailed)
+
+        fake.pages = mutableListOf(ConversationResult.Gone)
+        vm.reload()
+        advanceUntilIdle()
+        assertNull(vm.uiState.value.conversation)
+        assertTrue(vm.uiState.value.gone)
+    }
+
+    @Test fun `a reply push for this conversation reloads it, and the reply draft outlives the view model`() = runTest(dispatcher) {
+        val fake = Fake(mutableListOf(loaded(message("m1", false)), loaded(message("m1", false), message("m2", true))))
+        val handle = androidx.lifecycle.SavedStateHandle()
+        val vm = FeedbackThreadViewModel(fake.support(), "t", handle)
+        vm.activate()
+        advanceUntilIdle()
+        fake.pushes.emit("other")
+        advanceUntilIdle()
+        assertEquals(1, vm.uiState.value.conversation?.messages?.size)
+        fake.pushes.emit("t")
+        advanceUntilIdle()
+        assertEquals(2, vm.uiState.value.conversation?.messages?.size)
+
+        vm.onReplyOpen(true)
+        vm.onReplyChanged("Half a reply")
+        val again = FeedbackThreadViewModel(fake.support(), "t", handle)
+        assertEquals("Half a reply", again.uiState.value.reply)
+        assertTrue(again.uiState.value.replyOpen)
+    }
+
+    @Test fun `a failed photo is fetched again, and a kept one isn't`() = runTest(dispatcher) {
+        var calls = 0
+        var fail = true
+        val cache = PhotoCache {
+            calls++
+            if (fail) null else byteArrayOf(1)
+        }
+        assertNull(cache.get("p1"))
+        fail = false
+        assertEquals(1, cache.get("p1")?.size)
+        cache.get("p1")
+        assertEquals(2, calls)
+    }
+
     @Test fun `mark solved, the server's limit for replies, and photos fetched once`() = runTest(dispatcher) {
         val fake = Fake(mutableListOf(loaded(message("m1", false), message("m2", true))))
         fake.maxBody = 5
         val vm = FeedbackThreadViewModel(fake.support(), "t")
+        vm.activate()
         advanceUntilIdle()
         vm.solve()
         advanceUntilIdle()

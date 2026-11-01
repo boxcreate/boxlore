@@ -93,7 +93,6 @@ import cx.aswin.boxlore.sync.SavedKillSwitch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 
 /**
@@ -388,7 +387,7 @@ class AppContainer(
             local = supportLocalStore,
         ).also { repository ->
             val topicSync = SupportPushTopicSync(repository, SupportPushTopics(supportLocalStore))
-            syncScope.launch { repository.threads.filterNotNull().collect { topicSync.sync() } }
+            syncScope.launch { repository.refreshed.collect { meta -> topicSync.sync(meta) } }
         }
     }
 

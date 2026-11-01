@@ -67,7 +67,12 @@ interface SupportLocalStore {
     var hasConversations: Boolean
     var replyWaiting: Boolean
     var subscribedTopics: Set<String>
+
+    /** The last time the app asked for the list (tried, not only succeeded). */
     var lastCheckedAt: Long
+
+    /** When the last reply push arrived: a list fetched before it can't clear its waiting flag. */
+    var lastPushAt: Long
 
     /** For tests and before the app wires a real one. */
     class InMemory : SupportLocalStore {
@@ -75,6 +80,7 @@ interface SupportLocalStore {
         override var replyWaiting = false
         override var subscribedTopics: Set<String> = emptySet()
         override var lastCheckedAt = 0L
+        override var lastPushAt = 0L
     }
 }
 

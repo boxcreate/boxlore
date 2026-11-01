@@ -19,7 +19,13 @@ send pushes; that is the API's job.
   a refresh succeeds), `replyWaiting`, `hasConversations`, `conversation(id, before)` (a page of
   messages oldest first, `earlier` to page back, `ending`), `reply(id, body, requestId)`
   (`ReplyResult.Sent`, `Closed` with the server's ending, `Refused`, `Failed`), `markRead`, `solve`,
-  `photo(id)` (bytes, owner only), `onReplyPushed()` and `refreshIfDue(minIntervalMs)`.
+  `photo(id)` (bytes, owner only), `onReplyPushed(threadId)` and `refreshIfDue(minIntervalMs)`.
+  `markRead(id, upTo)` sends the newest shown message's time, so a later reply stays unread; it,
+  `reply` and `solve` refresh the list afterwards so its labels follow the server. `refreshed`
+  announces every successful refresh's `meta` (push topics follow it even when the list didn't
+  change) and `pushedReplies` the conversation a push was for. A list asked for before a push
+  arrived (`lastPushAt`) can't clear the push's waiting flag. `refreshIfDue` runs one check at a
+  time and counts a failed attempt, so an outage isn't asked about on every start.
 - `SupportLocalStore`: what the phone remembers between launches (has conversations, a reply
   waiting, joined push topics, last check); the app backs it with its own preferences file.
   `SupportPushTopics` plans which topics to join and leave (`PushTopicPlan`) from a successful
@@ -81,7 +87,9 @@ Features use it; it never depends on a feature, the design system or the catalog
   (messages, photos, ending, the `before` cursor, gone and failed), replies (retry key, closed with
   its ending, refused, failed), reading the last unread reply, a push marking a reply waiting until a
   refresh says otherwise, the start-up check (only with conversations, not more often than asked), a
-  first conversation remembered at once, photo bytes, and push-topic plans.
+  first conversation remembered at once, photo bytes, push-topic plans, the read marker and the
+  refresh after it, a list from before a push keeping its waiting flag, every refresh announced
+  and a push naming its conversation, and a failed start-up check still counting.
 
 ```bash
 ./gradlew :core:support:testDebugUnitTest

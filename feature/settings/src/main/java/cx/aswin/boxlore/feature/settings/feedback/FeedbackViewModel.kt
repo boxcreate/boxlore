@@ -145,10 +145,12 @@ internal class RetryKeys(
     private val store: RetryKeyStore? = null,
 ) {
     private var last: Pair<Any, String>? = null
+    private var lastFingerprint: String? = null
 
     fun keyFor(content: Any): String {
         last?.let { (seen, key) -> if (seen == content) return key }
         val fingerprint = fingerprintOf(content)
+        lastFingerprint = fingerprint
         store?.load()?.let { (saved, key) ->
             if (saved == fingerprint) return key.also { last = content to it }
         }
@@ -158,9 +160,11 @@ internal class RetryKeys(
         }
     }
 
+    /** Forgets this message's key; a key another message saved since (another form) stays. */
     fun clear() {
         last = null
-        store?.clear()
+        if (store != null && store.load()?.first == lastFingerprint) store.clear()
+        lastFingerprint = null
     }
 
     private fun fingerprintOf(content: Any): String =
@@ -387,7 +391,8 @@ class FeedbackViewModel internal constructor(
                     withEmail = false,
                     withDiagnostics = state.attachDiagnostics,
                 )
-                boxcastPrefs.clearFeedbackDraft()
+                // Clear the saved draft only if it is still the one sent: another form may have saved a new one meanwhile.
+                if (boxcastPrefs.getFeedbackDraft()?.message == state.message) boxcastPrefs.clearFeedbackDraft()
                 retryKeys.clear()
                 uploadedPhotos.clear()
                 _uiState.update {

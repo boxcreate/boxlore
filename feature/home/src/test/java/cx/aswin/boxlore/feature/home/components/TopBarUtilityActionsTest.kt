@@ -107,6 +107,15 @@ class TopBarUtilityActionsTest {
         checkCornerWhilePressed("Settings", trailing = true)
     }
 
+    @Test fun `without an update, a waiting reply takes the leading Feedback segment`() {
+        show(update = false)
+        composeRule.runOnIdle { replyWaiting.value = true }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(FEEDBACK_REPLY_DOT_TAG).assertExists()
+        checkCornerWhilePressed("Feedback, new reply", trailing = false)
+        checkCornerWhilePressed("Settings", trailing = true)
+    }
+
     private fun show(update: Boolean) {
         val updateAction: (() -> Unit)? = if (update) ({ actions.add("update") }) else null
         composeRule.setContent {

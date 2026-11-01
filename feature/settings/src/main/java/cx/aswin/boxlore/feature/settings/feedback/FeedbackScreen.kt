@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -85,6 +86,8 @@ fun FeedbackScreen(
     var pane by rememberSaveable(stateSaver = FeedbackPaneSaver) { mutableStateOf(initialFeedbackPane(openThreadId, supportRepository.hasConversations)) }
     var composeSession by rememberSaveable { mutableIntStateOf(0) }
     var loadFailed by remember { mutableStateOf(false) }
+    // Kept here, so the list's scroll position survives it being hidden behind a conversation on phones.
+    val listState = rememberLazyListState()
     val threads by supportRepository.threads.collectAsStateWithLifecycle()
     val refresh: () -> Unit = {
         scope.launch { loadFailed = supportRepository.refresh() == null && supportRepository.threads.value == null }
@@ -92,6 +95,13 @@ fun FeedbackScreen(
     // The list is fresh each time it shows: replies read or sent elsewhere change its statuses.
     LaunchedEffect(pane == FeedbackPane.List) { if (pane == FeedbackPane.List || supportRepository.threads.value == null) refresh() }
     val split = feedbackUsesSplit(LocalBoxlorePaneWidth.current, LocalBoxloreWindowLayout.current)
+    // Side by side, the conversation shown for the list becomes the selection, so narrowing the window keeps it open.
+    val newestId = threads?.firstOrNull()?.id
+    LaunchedEffect(split, newestId, threads != null) {
+        if (split && pane == FeedbackPane.List && threads != null) pane = newestId?.let { FeedbackPane.Thread(it) } ?: FeedbackPane.Compose
+    }
+    // A reply push brings the list's statuses up to date while Feedback is open.
+    LaunchedEffect(supportRepository) { supportRepository.pushedReplies.collect { refresh() } }
     val goBack: () -> Unit = { feedbackBack(pane, supportRepository.hasConversations, split)?.let { pane = it } ?: onBack() }
     BackHandler(onBack = goBack)
     val openCompose: () -> Unit = {
@@ -120,7 +130,7 @@ fun FeedbackScreen(
         split = split,
         pane = pane,
         threads = threads,
-        list = { listModifier, selectedId -> FeedbackListScreen(threads, loadFailed, selectedId, bottomContentPadding, listActions, listModifier) },
+        list = { listModifier, selectedId -> FeedbackListScreen(threads, loadFailed, selectedId, bottomContentPadding, listActions, listModifier, listState) },
         detail = { detail, showBack -> FeedbackDetailPane(supportRepository, boxcastPrefs, detail, composeSession, bottomContentPadding, callbacks, showBack) },
         modifier = modifier,
     )

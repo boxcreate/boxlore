@@ -10,9 +10,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.StateRestorationTester
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.designsystem.echo.LocalEchoMotion
@@ -27,6 +29,7 @@ import cx.aswin.boxlore.core.network.model.SupportMessageDto
 import cx.aswin.boxlore.core.network.model.SupportMetaDto
 import cx.aswin.boxlore.core.network.model.SupportNewThreadRequest
 import cx.aswin.boxlore.core.network.model.SupportPhotoResponse
+import cx.aswin.boxlore.core.network.model.SupportReadRequest
 import cx.aswin.boxlore.core.network.model.SupportReplyRequest
 import cx.aswin.boxlore.core.network.model.SupportReplyResponse
 import cx.aswin.boxlore.core.network.model.SupportStatusDto
@@ -77,7 +80,7 @@ class FeedbackConversationsAdaptiveTest {
             ),
         )
         override suspend fun reply(id: String, request: SupportReplyRequest) = Response.success(SupportReplyResponse())
-        override suspend fun markRead(id: String): Response<Unit> {
+        override suspend fun markRead(id: String, request: SupportReadRequest): Response<Unit> {
             reads += id
             return Response.success(Unit)
         }
@@ -122,6 +125,26 @@ class FeedbackConversationsAdaptiveTest {
         fixture.compose.runOnUiThread { fixture.compose.activity.onBackPressedDispatcher.onBackPressed() }
         fixture.compose.waitForIdle()
         assertEquals(1, backs.size)
+    }
+
+    @Test
+    fun `a reply being written keeps its text and focus across the split gate, and the shown conversation stays when narrowing`() {
+        window.value = TABLET
+        render()
+        // Entered side by side: the newest conversation shows, and stays when the window narrows.
+        fixture.compose.runOnIdle { window.value = PHONE }
+        fixture.compose.waitForIdle()
+        fixture.compose.onNodeWithText("Message for $first").assertExists()
+        fixture.compose.onNodeWithText("Reply").performClick()
+        fixture.compose.waitForIdle()
+        fixture.compose.onNodeWithTag(FEEDBACK_REPLY_FIELD_TAG).performTextInput("Still happening")
+        fixture.compose.waitForIdle()
+        for (size in listOf(TABLET, PHONE, BoxloreWindowLayout(840f, 600f), BoxloreWindowLayout(839f, 600f))) {
+            fixture.compose.runOnIdle { window.value = size }
+            fixture.compose.waitForIdle()
+            fixture.compose.onNodeWithTag(FEEDBACK_REPLY_FIELD_TAG).assertIsFocused()
+            fixture.compose.onNodeWithText("Still happening").assertExists()
+        }
     }
 
     @Test

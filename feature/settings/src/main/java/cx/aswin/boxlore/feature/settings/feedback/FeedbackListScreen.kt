@@ -20,7 +20,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -86,6 +88,7 @@ internal fun FeedbackListScreen(
     bottomContentPadding: Dp,
     actions: FeedbackListActions,
     modifier: Modifier = Modifier,
+    listState: LazyListState = rememberLazyListState(),
 ) {
     val onBack = actions.onBack
     val systemBar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -99,7 +102,7 @@ internal fun FeedbackListScreen(
                 }
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     when {
-                        threads != null -> ThreadList(threads, selectedId, actions.onOpen, PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = bottom + LIST_ACTIONS_HEIGHT + 16.dp))
+                        threads != null -> ThreadList(threads, selectedId, actions.onOpen, listState, PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = bottom + LIST_ACTIONS_HEIGHT + 16.dp))
                         loadFailed -> LoadFailed(actions.onRetry, Modifier.align(Alignment.Center).padding(bottom = bottom + LIST_ACTIONS_HEIGHT))
                         else -> CircularProgressIndicator(Modifier.align(Alignment.Center).padding(bottom = bottom + LIST_ACTIONS_HEIGHT))
                     }
@@ -111,11 +114,11 @@ internal fun FeedbackListScreen(
 }
 
 @Composable
-private fun ThreadList(threads: List<SupportThread>, selectedId: String?, onOpen: (String) -> Unit, contentPadding: PaddingValues) {
+private fun ThreadList(threads: List<SupportThread>, selectedId: String?, onOpen: (String) -> Unit, listState: LazyListState, contentPadding: PaddingValues) {
     val context = LocalContext.current
     val is24Hour = DateFormat.is24HourFormat(context)
     val now = System.currentTimeMillis()
-    LazyColumn(Modifier.fillMaxSize().testTag(FEEDBACK_LIST_TAG), contentPadding = contentPadding) {
+    LazyColumn(Modifier.fillMaxSize().testTag(FEEDBACK_LIST_TAG), state = listState, contentPadding = contentPadding) {
         item(key = "heading") {
             Text(
                 "Your feedback",

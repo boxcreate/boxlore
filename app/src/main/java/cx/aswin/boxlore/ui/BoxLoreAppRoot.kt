@@ -146,7 +146,11 @@ fun BoxLoreAppRoot(
                     )
                     tabletNavigation.handleDeepLink(if (intent.data != null) intent else deepLinkIntent)
                 },
-                navigate = { tabletNavigation.navigate(navController, it) },
+                navigate = { route ->
+                    // A reply notification opens Feedback over whatever detail the tablet had open.
+                    if (cx.aswin.boxlore.navigation.pushClosesDetails(route)) tabletNavigation.closeDetails()
+                    tabletNavigation.navigate(navController, route)
+                },
                 openExternal = { activity.startActivity(externalPushActionIntent(it)) },
                 openUpdater = { download ->
                     if (download) {

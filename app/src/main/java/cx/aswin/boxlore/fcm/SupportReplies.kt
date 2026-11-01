@@ -14,6 +14,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.google.firebase.messaging.FirebaseMessaging
 import cx.aswin.boxlore.core.support.SupportLocalStore
+import cx.aswin.boxlore.core.support.SupportMeta
 import cx.aswin.boxlore.core.support.SupportPushTopics
 import cx.aswin.boxlore.core.support.SupportRepository
 
@@ -37,12 +38,17 @@ class SupportPrefsStore(context: Context) : SupportLocalStore {
         get() = prefs.getLong(KEY_LAST_CHECKED, 0L)
         set(value) = prefs.edit().putLong(KEY_LAST_CHECKED, value).apply()
 
+    override var lastPushAt: Long
+        get() = prefs.getLong(KEY_LAST_PUSH, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_PUSH, value).apply()
+
     companion object {
         const val PREFS_NAME = "boxlore_support"
         private const val KEY_HAS_CONVERSATIONS = "has_conversations"
         private const val KEY_REPLY_WAITING = "reply_waiting"
         private const val KEY_TOPICS = "push_topics"
         private const val KEY_LAST_CHECKED = "last_checked_at"
+        private const val KEY_LAST_PUSH = "last_push_at"
     }
 }
 
@@ -92,8 +98,10 @@ object SupportReplyNotifications {
  * (none for a phone without conversations), recording only what Firebase confirmed.
  */
 class SupportPushTopicSync(private val repository: SupportRepository, private val topics: SupportPushTopics) {
-    fun sync() {
-        val plan = topics.planFor(repository.meta.value, repository.hasConversations)
+    /** [meta] is a successful refresh's; one plan at a time, and topics Firebase didn't confirm are planned again next time. */
+    @Synchronized
+    fun sync(meta: SupportMeta) {
+        val plan = topics.planFor(meta, repository.hasConversations)
         if (plan.isEmpty) return
         val messaging = runCatching { FirebaseMessaging.getInstance() }.getOrNull() ?: return
         plan.subscribe.forEach { topic -> messaging.subscribeToTopic(topic).addOnSuccessListener { topics.joined(topic) } }
