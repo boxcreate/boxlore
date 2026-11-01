@@ -27,4 +27,16 @@ class CarPlayLabelTest {
 
         assertEquals("android_auto_liked", PendingEntryPoint.consume()?.get("entry_point"))
     }
+
+    @Test
+    fun `an empty car request drops only its own label`() {
+        // Regression: an empty car request cleared a phone play's pending entry point it never set.
+        PendingEntryPoint.set(mapOf("entry_point" to "home_hero_resume"))
+        discardCarPlayLabel()
+        assertEquals("home_hero_resume", PendingEntryPoint.consume()?.get("entry_point"))
+
+        labelCarPlay(fromCar = true, entryPoint = "android_auto_new_episodes")
+        discardCarPlayLabel()
+        assertEquals(null, PendingEntryPoint.consume())
+    }
 }

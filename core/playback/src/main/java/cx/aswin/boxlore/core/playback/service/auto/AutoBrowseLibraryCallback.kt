@@ -13,7 +13,6 @@ import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
-import cx.aswin.boxlore.core.analytics.PendingEntryPoint
 import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.playback.service.CarConnectionState
 import kotlinx.coroutines.guava.future
@@ -628,8 +627,8 @@ internal class AutoBrowseLibraryCallback(
         val fromCar = isAndroidAuto(mediaSession, controller)
 
         return host.serviceScope.future {
-            // A car request that found nothing to play drops its label, so a later phone play can't take it.
-            itemsToAdd(mediaSession, mediaItems, fromCar).also { if (fromCar && it.isEmpty()) PendingEntryPoint.consume() }
+            // A car request that found nothing to play drops its own label, so a later phone play can't take it.
+            itemsToAdd(mediaSession, mediaItems, fromCar).also { if (fromCar && it.isEmpty()) discardCarPlayLabel() }
         }
     }
 

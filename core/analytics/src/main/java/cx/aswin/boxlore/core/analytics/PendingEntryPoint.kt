@@ -61,6 +61,12 @@ object PendingEntryPoint {
     @Volatile
     internal var clock: () -> Long = { System.nanoTime() / NANOS_PER_MS }
 
+    /** Drops the pending context only when [matches] says it's the one to drop; anything else stays. */
+    @Synchronized
+    fun discardIf(matches: (Map<String, Any>) -> Boolean) {
+        if (pending?.let(matches) == true) pending = null
+    }
+
     @Synchronized
     fun consume(): Map<String, Any>? {
         val result = pending

@@ -10,3 +10,13 @@ import cx.aswin.boxlore.core.analytics.PendingEntryPoint
 internal fun labelCarPlay(fromCar: Boolean, entryPoint: String) {
     if (fromCar) PendingEntryPoint.set(mapOf("entry_point" to entryPoint))
 }
+
+/**
+ * Drops a car label left by a request that found nothing to play. A request that set none (an empty
+ * or stale one) leaves whatever is pending, such as a phone play's own entry point.
+ */
+internal fun discardCarPlayLabel() {
+    PendingEntryPoint.discardIf { (it["entry_point"] as? String)?.startsWith(CAR_ENTRY_PREFIX) == true }
+}
+
+private const val CAR_ENTRY_PREFIX = "android_auto_"
