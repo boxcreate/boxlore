@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.ContentLanguagesSheet
 import cx.aswin.boxlore.core.designsystem.components.ContentRegionPickerSheet
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -76,6 +77,7 @@ internal fun LibrarySettingsPage(
     onBack: () -> Unit,
     onOpenRecommendations: () -> Unit = {},
 ) {
+    TrackScreenView("library_settings")
     var isCountryFaqExpanded by rememberSaveable { mutableStateOf(false) }
     val collapseCountryFaq = { isCountryFaqExpanded = false }
     // Saveable, so an open sheet survives rotation, folding and window resizes.

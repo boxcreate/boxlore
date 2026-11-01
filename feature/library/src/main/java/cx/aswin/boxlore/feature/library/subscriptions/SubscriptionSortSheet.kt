@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.feature.library.SubscriptionSort
 
@@ -73,6 +74,7 @@ internal fun SubscriptionSortSheet(
     actions: SubscriptionSortActions,
     modifier: Modifier = Modifier,
 ) {
+    TrackScreenView("subscription_sort")
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
         onDismissRequest = actions.onDismiss,

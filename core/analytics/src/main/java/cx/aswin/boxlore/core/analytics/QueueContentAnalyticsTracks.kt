@@ -295,8 +295,8 @@ internal object QueueContentAnalyticsTracks {
         podcastsClickedCount: Int,
         infosClickedCount: Int,
     ) {
-        AnalyticsEmit.event(
-            "learn_screen_viewed",
+        ScreenAnalyticsTracks.trackScreenLeft(
+            "learn",
             mapOf(
                 "cards_available" to (
                     cardsDismissedCount + cardsQueuedCount + playsCount +

@@ -86,7 +86,7 @@ internal fun TabletPlayerSupport(
                                 val event = when (tab) {
                                     PlayerSupportingTab.UpNext -> "queue"
                                     PlayerSupportingTab.Chapters -> "chapters_sheet"
-                                    PlayerSupportingTab.Transcript -> "transcript_inline"
+                                    PlayerSupportingTab.Transcript -> cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.TRANSCRIPT_OPENED
                                     PlayerSupportingTab.Notes -> null
                                 }
                                 event?.let { cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction(it) }

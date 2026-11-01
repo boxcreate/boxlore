@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
@@ -55,6 +56,7 @@ internal fun SyncAndBackupsPage(
     onBack: () -> Unit,
     onAccountClick: () -> Unit,
 ) {
+    TrackScreenView("sync_and_backups")
     SettingsScaffold(
         title = "Cloud Sync & Backups",
         onBack = onBack,

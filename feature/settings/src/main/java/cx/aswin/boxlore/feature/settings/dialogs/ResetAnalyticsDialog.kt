@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
@@ -29,6 +30,7 @@ internal fun ResetAnalyticsDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    TrackScreenView("reset_analytics_confirmation")
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = {

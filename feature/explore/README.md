@@ -30,6 +30,7 @@ Owns Explore discovery and the Learn tab presentation: browse/search discovery, 
 - `LearnHistoryScreen` and `LearnHistoryViewModel` for Learn history.
 - `LearnCuriosityHistoryStore` for Learn history persistence through prefs APIs.
 - `LearnCuriosityCard` as the feature UI model for curiosity cards.
+- **Page views** (`TrackScreenView`, `:core:designsystem`): `explore` sends `explore_screen_viewed` and `learn` sends `learn_screen_viewed` through the helper, once per visit (no longer again on remount); their leaving summaries are `screen_left`. Inside Explore, `explore_top`, `explore_for_you`, `explore_search_shows`, `explore_search_episodes` and `explore_topic` (with `topic`) send `screen_viewed` when they show; only the active pane counts, not the browse pane kept behind a topic. `learn_history` and its `learn_history_clear_confirmation` send `screen_viewed`.
 
 ## Internal structure
 

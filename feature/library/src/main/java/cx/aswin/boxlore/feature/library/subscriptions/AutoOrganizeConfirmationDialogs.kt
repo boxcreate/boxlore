@@ -11,6 +11,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
@@ -20,6 +21,7 @@ internal fun AutoOrganizeDisableDialog(
     onProceed: () -> Unit,
     onCancel: () -> Unit,
 ) {
+    TrackScreenView("disable_auto_organize_confirmation")
     AlertDialog(
         onDismissRequest = onCancel,
         title = {

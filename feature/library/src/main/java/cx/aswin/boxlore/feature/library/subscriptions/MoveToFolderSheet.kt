@@ -37,6 +37,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
@@ -58,6 +59,7 @@ internal fun MoveToFolderSheet(
     modifier: Modifier = Modifier,
     currentFolderId: String? = null,
 ) {
+    TrackScreenView("move_to_folder")
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val candidateFolders = remember(availableFolders, currentFolderId) {

@@ -12,6 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
 import cx.aswin.boxlore.core.designsystem.layout.boxloreFoldSafeViewport
 import cx.aswin.boxlore.core.model.Episode
@@ -178,6 +179,7 @@ internal fun PlayerSpeedSheet(
     model: FullPlayerModalModel,
     ui: FullPlayerUiState
 ) {
+    TrackScreenView("player_speed")
     SpeedSheet(
         currentSpeed = model.state.playbackSpeed,
         colorScheme = model.colorScheme,
@@ -199,6 +201,7 @@ internal fun PlayerSleepSheet(
     model: FullPlayerModalModel,
     ui: FullPlayerUiState
 ) {
+    TrackScreenView("player_sleep_timer")
     SleepSheet(
         sleepTimerEnd = model.state.sleepTimerEnd,
         colorScheme = model.colorScheme,
@@ -220,6 +223,7 @@ internal fun PlayerShareSheet(
     ui: FullPlayerUiState,
     context: android.content.Context
 ) {
+    TrackScreenView("player_share")
     val currentPosition by model.positionFlow.collectAsStateWithLifecycle(initialValue = 0L)
     cx.aswin.boxlore.core.designsystem.components.ShareBottomSheet(
         id = model.episode.id,

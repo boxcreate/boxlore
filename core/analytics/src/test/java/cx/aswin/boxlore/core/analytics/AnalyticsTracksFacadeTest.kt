@@ -332,7 +332,8 @@ class AnalyticsTracksFacadeTest {
         AnalyticsHelper.trackLibrarySubscriptionsGenreFiltered("News", "shows")
 
         assertTrue("library_destination_viewed" in names())
-        assertEquals(16, names().count { it == "library_destination_viewed" })
+        assertEquals(9, names().count { it == "library_destination_viewed" }, "visits and layout actions")
+        assertEquals(7, names().count { it == "screen_left" }, "leaving summaries have their own event")
     }
 
     @Test

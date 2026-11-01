@@ -1,6 +1,10 @@
 package cx.aswin.boxlore.core.analytics
 
 object PlayerSessionAggregator {
+    /** [logAction] names the player logs for the transcript, so the summary counts what was logged. */
+    const val TRANSCRIPT_OPENED = "transcript_inline"
+    const val TRANSCRIPT_HIDDEN = "transcript_hide"
+
     private var isSessionActive = false
     private var podcastId: String? = null
     private var episodeId: String? = null
@@ -63,7 +67,9 @@ object PlayerSessionAggregator {
                 "episode_info_clicks" to (actionCounts["episode_info"] ?: 0),
                 "podcast_info_clicks" to (actionCounts["podcast_info"] ?: 0),
                 "chapters_sheet_toggles" to (actionCounts["chapters_sheet"] ?: 0),
-                "transcript_view_toggles" to (actionCounts["transcript_view"] ?: 0),
+                // Opens and hides; it read a name the player never logged, so it always said 0.
+                "transcript_view_toggles" to ((actionCounts[TRANSCRIPT_OPENED] ?: 0) + (actionCounts[TRANSCRIPT_HIDDEN] ?: 0)),
+                "transcript_opens" to (actionCounts[TRANSCRIPT_OPENED] ?: 0),
             )
 
         // Include any terminal property values (like the final speed or sleep timer duration)

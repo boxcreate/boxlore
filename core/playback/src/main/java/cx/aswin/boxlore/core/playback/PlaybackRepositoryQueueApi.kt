@@ -13,6 +13,7 @@ suspend fun PlaybackRepository.playQueue(
     initialPositionMs: Long? = null,
     sourceContext: android.os.Bundle? = null,
 ) {
+    PlaybackUiVisibility.noteScreenPlayRequest()
     queueCoordinator.playQueue(episodes, podcast, startIndex, entryPoint, initialPositionMs, sourceContext)
 }
 
@@ -46,9 +47,15 @@ suspend fun PlaybackRepository.playEpisode(
     podcast: Podcast,
     entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
     initialPositionMs: Long? = null,
-) = queueCoordinator.playEpisode(episode, podcast, entryPoint, initialPositionMs)
+) {
+    PlaybackUiVisibility.noteScreenPlayRequest()
+    queueCoordinator.playEpisode(episode, podcast, entryPoint, initialPositionMs)
+}
 
-suspend fun PlaybackRepository.playFromQueueIndex(episodeId: String, queueList: List<Episode>, podcast: Podcast,) = queueCoordinator.playFromQueueIndex(episodeId, queueList, podcast)
+suspend fun PlaybackRepository.playFromQueueIndex(episodeId: String, queueList: List<Episode>, podcast: Podcast,) {
+    PlaybackUiVisibility.noteScreenPlayRequest()
+    queueCoordinator.playFromQueueIndex(episodeId, queueList, podcast)
+}
 
 fun PlaybackRepository.dismissSameShowContinuation() = continuationCoordinator.dismissBanner()
 

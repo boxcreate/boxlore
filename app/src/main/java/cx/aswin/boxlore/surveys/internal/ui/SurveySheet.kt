@@ -34,6 +34,7 @@ import com.posthog.surveys.PostHogDisplaySurveyQuestion
 import com.posthog.surveys.PostHogDisplaySurveyRatingType
 import com.posthog.surveys.PostHogNextSurveyQuestion
 import com.posthog.surveys.PostHogSurveyResponse
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.EngagementBottomSheetScaffold
 import cx.aswin.boxlore.surveys.NpsSurveyBranching
 import cx.aswin.boxlore.surveys.internal.theme.LocalSurveyAppearance
@@ -75,6 +76,7 @@ internal fun SurveySheet(
     onClose: () -> Unit,
     onFirstRatingSubmitted: (Int?) -> Unit = {},
 ) {
+    TrackScreenView("nps_survey", send = {}) // the survey is counted when it is shown
     val appearance = survey.appearance.resolveAppearance()
     val coroutineScope = rememberCoroutineScope()
     val hostSaveableRegistry = LocalSaveableStateRegistry.current

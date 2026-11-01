@@ -59,6 +59,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -117,6 +118,12 @@ fun PodcastInfoScreen(
     // The route's show, or the show this route resolved to (a linked feed, a renumbered show); never a previous page's.
     val artworkPodcast = cx.aswin.boxlore.feature.info.logic.RenumberedShowPageLogic.artworkPodcast(uiState, podcastId, pageShow)
     val brandedShowPage = remember(artworkPodcast) { brandedShowPageFor(artworkPodcast) }
+    // podcast_detail_viewed goes out once the show loads; a Showcase page also says it was one.
+    TrackScreenView(if (brandedShowPage != null) "podcast_showcase" else "podcast_detail", podcastId) { previous ->
+        if (brandedShowPage != null) {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackScreenViewed("podcast_showcase", previous, mapOf("podcast_id" to podcastId))
+        }
+    }
     cx.aswin.boxlore.feature.info.components.ArtworkInfoTheme(
         listOf(artworkPodcast?.let { it.imageUrl.takeIf(String::isNotBlank) ?: it.fallbackImageUrl }),
         isLoading = uiState is PodcastInfoUiState.Loading,

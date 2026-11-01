@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.auth.AuthRepository
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import kotlinx.coroutines.CoroutineScope
@@ -92,6 +93,7 @@ private fun DeleteAccountConfirmationDialog(
     onConfirmDelete: () -> Unit,
     onOpenAccountDeletionInfo: () -> Unit = {},
 ) {
+    TrackScreenView("delete_account_confirmation")
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Delete Account", fontWeight = GoogleSansWeight.bold) },
@@ -133,6 +135,7 @@ private fun ReauthRequiredDialog(
     onDismiss: () -> Unit,
     onSignOutToReauth: () -> Unit,
 ) {
+    TrackScreenView("account_reauthentication_required")
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Recent Sign-In Required", fontWeight = GoogleSansWeight.bold) },

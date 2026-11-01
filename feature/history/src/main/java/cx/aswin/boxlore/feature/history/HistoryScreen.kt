@@ -46,6 +46,7 @@ import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryTab
@@ -86,6 +87,7 @@ fun HistoryScreen(
     onOpenShow: (podcastId: String) -> Unit = {},
     isMiniPlayerVisible: Boolean = true,
 ) {
+    TrackScreenView("listening_history") { cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibraryHistoryViewed("library_hub_card") }
     val tab by viewModel.selectedTab.collectAsStateWithLifecycle()
     val timeline by viewModel.timelineState.collectAsStateWithLifecycle()
     val insights by viewModel.insightsState.collectAsStateWithLifecycle()
@@ -181,7 +183,10 @@ private fun HistoryStory(open: StoryUiState.Open, viewModel: HistoryViewModel, o
             viewModel.closeStory()
             onPlayEpisode(episode)
         },
-        onShare = { card -> ShareManager.shareImage(context, card, text, title) },
+        onShare = { card ->
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackShareContent(contentType = "listening_story", surface = "listening_story")
+            ShareManager.shareImage(context, card, text, title)
+        },
     )
 }
 
@@ -289,6 +294,7 @@ private fun HistoryTimelineContent(
     navigation: HistoryNavigation,
     onOpenCalendar: () -> Unit,
 ) {
+    TrackScreenView("history_timeline")
     when (state) {
         TimelineUiState.Loading -> HistoryLoading()
         is TimelineUiState.Ready ->

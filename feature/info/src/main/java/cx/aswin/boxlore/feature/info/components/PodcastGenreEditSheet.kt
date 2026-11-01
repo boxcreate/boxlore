@@ -51,6 +51,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
 import cx.aswin.boxlore.core.designsystem.icon.GenreIconItem
@@ -69,6 +70,7 @@ internal fun PodcastGenreEditSheet(
     onSave: (customGenre: String?, customGenreIcon: String?) -> Unit,
     folderNames: List<String> = emptyList(),
 ) {
+    TrackScreenView("podcast_genre_edit")
     // The unsaved draft survives activity recreation while the sheet stays open.
     var genreText by rememberSaveable(customGenre) { mutableStateOf(customGenre ?: "") }
     var selectedIconKey by rememberSaveable(customGenreIcon) { mutableStateOf(customGenreIcon) }

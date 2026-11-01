@@ -67,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.zIndex
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.echo.EchoCharacterSpec
 import cx.aswin.boxlore.core.designsystem.echo.rememberEchoCharacterSpec
 import cx.aswin.boxlore.core.designsystem.layout.boxloreFoldSafeViewport
@@ -94,6 +95,7 @@ private const val MIN_SCALE = 0.8f
 /** The monthly story, full screen over everything (Back closes it). */
 @Composable
 fun StoryDialog(story: MonthStory, startAtShare: Boolean, onClose: () -> Unit, onPlay: (ListeningHistoryItem) -> Unit, onShare: (Bitmap) -> Unit) {
+    TrackScreenView("listening_story", story.month)
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         StoryPlayer(story, if (startAtShare) StoryCard.SHARE else StoryCard.HELLO, onClose, onPlay, onShare)
     }
@@ -118,6 +120,9 @@ fun StoryPlayer(story: MonthStory, startCard: StoryCard, onClose: () -> Unit, on
     var hopFrom by remember { mutableStateOf<StoryEchoBox?>(null) }
     var held by remember { mutableStateOf(false) }
     val card = cards[index.coerceIn(0, cards.lastIndex)]
+    TrackScreenView("listening_story_card", story.month, card) { previous ->
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackScreenViewed("listening_story_card", previous, mapOf("card" to card.name.lowercase(), "month" to story.month.toString()))
+    }
     val clock = rememberStoryClock(key = plays, paused = held, stopAtMillis = StoryMotion.CARD_MS)
     val go: (Int) -> Unit = { target ->
         val next = target.coerceIn(0, cards.lastIndex)

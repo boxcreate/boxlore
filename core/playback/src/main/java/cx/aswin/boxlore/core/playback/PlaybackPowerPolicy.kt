@@ -44,6 +44,15 @@ object PlaybackPowerPolicy {
  * service observes it; no persisted identity or second dependency graph is introduced.
  */
 internal object PlaybackUiVisibility {
+    /**
+     * A play was asked for through the app's playback API: while boxlore's screens are showing, the
+     * play is credited to them ([cx.aswin.boxlore.core.analytics.PendingEntryPoint.noteRequest]); a
+     * widget or another background caller gets no screen.
+     */
+    fun noteScreenPlayRequest() {
+        if (isForeground.value) cx.aswin.boxlore.core.analytics.PendingEntryPoint.noteRequest()
+    }
+
     private val mutableForeground = MutableStateFlow(false)
     val isForeground = mutableForeground.asStateFlow()
 

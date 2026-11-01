@@ -28,6 +28,7 @@ Owns the Daily Briefing presentation flow: region-aware briefing content, story 
 - `BriefingStoriesPager` and `BriefingStoryComponents` provide extracted story-presentation pieces.
 - Story cards share one height: the pager measures every card at the page width and current text size and takes the tallest, capped at 70% of the screen height so a card stays a comfortable read. Stories longer than the cap scroll inside their text area, and the last line fades while more text is below; shorter stories keep related episodes and Play pinned to the bottom. In a window shorter than 480dp (a phone on its side, a split screen) the whole card scrolls instead (`storyCardScrollsAsOne`), so the heading, story, related episodes and Play all stay reachable. Measured copies are never placed and are hidden from accessibility. Story text uses body-large type in the full on-surface colour.
 - While an edition loads, the page shows its own layout (`BriefingLoadingContent`): the bundled cover for the chosen edition at once, with shimmering placeholders for the date line, headline, Listen button and first story in their final places, so the edition settles in place rather than replacing a spinner. The status bar treats the loading cover like the edition's.
+- **Page views** (`TrackScreenView`, `:core:designsystem`): `daily_briefing` keeps `daily_briefing_action` `screen_viewed` as its view and only moves the screen trail; `briefing_preferences` and `briefing_sources` send `screen_viewed` once per visit.
 
 ## Internal structure
 

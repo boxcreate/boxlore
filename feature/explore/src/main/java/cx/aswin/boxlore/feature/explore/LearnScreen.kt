@@ -43,6 +43,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
@@ -89,7 +90,7 @@ fun LearnScreen(
     )
     val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
+    TrackScreenView("learn") {
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLearnScreenViewed()
     }
 

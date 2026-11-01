@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.prefs.WidgetAppearance
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
@@ -27,6 +28,7 @@ import cx.aswin.boxlore.feature.settings.components.ThemeLookPicture
  */
 @Composable
 internal fun AppearanceThemePage(state: AppearanceUiState, actions: AppearanceActions, onBack: () -> Unit, onEditCustomTheme: () -> Unit) {
+    TrackScreenView("appearance_theme")
     val selected = state.selectedLookKey()
     SettingsScaffold(title = "Theme & colors", onBack = onBack) {
         SettingsGroup(title = "Display mode") {

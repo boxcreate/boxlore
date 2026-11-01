@@ -33,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.prefs.DiscoverySection
 import cx.aswin.boxlore.core.prefs.DiscoverySections
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
@@ -245,7 +246,7 @@ fun SettingsScreen(
             onResult = { uri -> uri?.let(libraryBackupWriters.onImportOpml) },
         )
 
-    LaunchedEffect(Unit) {
+    TrackScreenView("settings") {
         AnalyticsHelper.trackSettingsScreenViewed("home_top_bar")
     }
 

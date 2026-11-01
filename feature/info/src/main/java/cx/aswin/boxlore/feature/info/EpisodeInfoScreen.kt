@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -73,6 +74,7 @@ fun EpisodeInfoScreen(
     bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier,
 ) {
+    TrackScreenView("episode_detail", episodeId, send = {}) // episode_detail_viewed goes out once the episode loads
     val uiState by viewModel.uiState.collectAsState()
     val moreLikeThisOn by viewModel.moreLikeThisOn.collectAsState()
     val pageEpisode = EpisodeLoadRequests.pageEpisode(uiState, episodeId)

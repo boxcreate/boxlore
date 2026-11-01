@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryTab
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryTabSwitcher
 import cx.aswin.boxlore.core.designsystem.icon.findExactGenreIconKey
@@ -63,6 +64,15 @@ internal fun NewFolderFlow(
     modifier: Modifier = Modifier,
 ) {
     val onBack = { NewFolderFlowLogic.back(draft)?.let(onDraftChange) ?: actions.onClose() }
+    val stepScreen =
+        when {
+            draft.step == 0 -> "new_folder_contents"
+            draft.mode == NewFolderMode.PickShows && draft.step == 1 -> "new_folder_name"
+            else -> "new_folder_look"
+        }
+    TrackScreenView(stepScreen) { previous ->
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackScreenViewed(stepScreen, previous, mapOf("mode" to draft.mode.name.lowercase()))
+    }
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding().imePadding()) {
             FolderFlowTopBar(

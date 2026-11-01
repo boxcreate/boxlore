@@ -14,6 +14,7 @@ fun PlaybackRepository.isTransportReady(): Boolean =
     }
 
 fun PlaybackRepository.resume(entryPointContext: android.os.Bundle? = null) {
+    PlaybackUiVisibility.noteScreenPlayRequest()
     runOnMainThread {
         transportHelper.resume(entryPointContext)
     }
@@ -24,6 +25,7 @@ fun PlaybackRepository.skipToEpisode(
     entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
     sourceContext: android.os.Bundle? = null,
 ) {
+    PlaybackUiVisibility.noteScreenPlayRequest()
     runOnMainThread {
         transportHelper.skipToEpisode(index, entryPoint, sourceContext)
     }
@@ -74,6 +76,7 @@ fun PlaybackRepository.cycleRepeatMode(): Int {
 }
 
 fun PlaybackRepository.togglePlayPause(entryPointContext: android.os.Bundle? = null) {
+    PlaybackUiVisibility.noteScreenPlayRequest()
     runOnMainThread {
         val mediaController = controller?.takeIf { it.isConnected } ?: return@runOnMainThread
         if (mediaController.isPlaying) {

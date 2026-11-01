@@ -42,6 +42,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -98,6 +99,7 @@ data class JumpToDayState(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun JumpToDaySheet(state: JumpToDayState, onJump: (LocalDate) -> Unit, onDismiss: () -> Unit,) {
+    TrackScreenView("history_jump_to_day")
     val colors = MaterialTheme.colorScheme
     BoxloreModalBottomSheet(
         onDismissRequest = onDismiss,

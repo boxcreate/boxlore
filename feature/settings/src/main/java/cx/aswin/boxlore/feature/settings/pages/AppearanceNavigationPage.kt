@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
 import cx.aswin.boxlore.core.prefs.ExploreDefaultTab
 import cx.aswin.boxlore.core.prefs.NavigationBlurLevel
@@ -20,6 +21,7 @@ import cx.aswin.boxlore.feature.settings.components.SettingsTileSection
 /** Navigation: the bar's style as picture tiles, its blur, then where boxlore starts and which tabs pages open to. */
 @Composable
 internal fun AppearanceNavigationPage(state: AppearanceUiState, actions: AppearanceActions, onBack: () -> Unit) {
+    TrackScreenView("appearance_navigation")
     val bar = NavigationStyle.fromKey(state.currentNavigationStyle)
     SettingsScaffold(title = "Navigation", onBack = onBack) {
         SettingsTileSection(title = "Navigation bar") {

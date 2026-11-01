@@ -26,6 +26,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
 import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
@@ -123,6 +124,7 @@ internal fun AppearanceSettingsPage(
     onBack: () -> Unit,
     onOpenSection: (AppearanceSection) -> Unit,
 ) {
+    TrackScreenView("appearance")
     val summary = appearanceSummary(state)
     SettingsScaffold(title = "Appearance", onBack = onBack) {
         SettingsGroup(title = "Display mode") {

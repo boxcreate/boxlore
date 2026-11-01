@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -83,6 +84,7 @@ fun FeedbackScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    TrackScreenView("feedback")
     val context = LocalContext.current
     val feedbackViewModel: FeedbackViewModel = viewModel(
         factory = FeedbackViewModel.Factory(podcastRepository, boxcastPrefs, context),

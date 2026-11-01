@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 
 object SettingsClearSavedShowsTestTags {
@@ -32,6 +33,7 @@ internal fun ClearSavedShowsDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    TrackScreenView("clear_saved_shows_confirmation")
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(imageVector = Icons.Rounded.DeleteSweep, contentDescription = null) },

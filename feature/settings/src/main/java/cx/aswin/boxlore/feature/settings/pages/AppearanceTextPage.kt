@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
 import cx.aswin.boxlore.core.designsystem.theme.buildGoogleSansFamily
 import cx.aswin.boxlore.core.designsystem.theme.buildSectionHeaderFontFamily
@@ -30,6 +31,7 @@ import cx.aswin.boxlore.feature.settings.components.SettingsTileSection
 /** Text: the letter shape as tiles drawn in each shape, and a preview that is always shown. */
 @Composable
 internal fun AppearanceTextPage(state: AppearanceUiState, actions: AppearanceActions, onBack: () -> Unit) {
+    TrackScreenView("appearance_text")
     val selectedKey = FontRoundness.sanitizeKey(state.currentFontRoundness)
     val context = LocalContext.current
     val axis = remember(selectedKey) { FontRoundness.axisValue(selectedKey) }

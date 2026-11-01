@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.prefs.FullPlayerStyle
 import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
@@ -25,6 +26,7 @@ import cx.aswin.boxlore.feature.settings.components.SettingsTileSection
 /** Player: the full player's style as picture tiles, then the miniplayer's seek buttons. */
 @Composable
 internal fun AppearancePlayerPage(state: AppearanceUiState, actions: AppearanceActions, onBack: () -> Unit) {
+    TrackScreenView("appearance_player")
     SettingsScaffold(title = "Player", onBack = onBack) {
         PlayerStyleSection(state.fullPlayerStyle, actions.onSetFullPlayerStyle)
         SettingsGroup(title = "Miniplayer") {

@@ -39,6 +39,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.downloads.CompletedDownloadItem
 import cx.aswin.boxlore.core.model.Episode
@@ -617,6 +618,7 @@ fun HomeScreen(
     snackbarHostState: SnackbarHostState = SnackbarHostState(),
     showTopBarShortcuts: Boolean = true,
 ) {
+    TrackScreenView("home", send = {}) // visits are app opens and Home tab taps
     // Track scroll state for collapsing top bar
     val gridState = rememberLazyStaggeredGridState()
     var showChangePodcastSheet by remember { androidx.compose.runtime.mutableStateOf(false) }

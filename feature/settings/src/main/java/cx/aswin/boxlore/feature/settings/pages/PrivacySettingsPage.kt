@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -66,6 +67,7 @@ internal fun PrivacySettingsPage(
     actions: PrivacySettingsActions,
     onBack: () -> Unit,
 ) {
+    TrackScreenView("privacy")
     SettingsScaffold(
         title = "Privacy",
         onBack = onBack,

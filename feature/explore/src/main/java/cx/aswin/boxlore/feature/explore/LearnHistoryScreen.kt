@@ -42,6 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
@@ -60,6 +61,7 @@ fun LearnHistoryScreen(
     onBack: () -> Unit,
     onEpisodeClick: (Episode) -> Unit
 ) {
+    TrackScreenView("learn_history")
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showClearDialog by remember { mutableStateOf(false) }
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
@@ -77,6 +79,7 @@ fun LearnHistoryScreen(
     }
 
     if (showClearDialog) {
+        TrackScreenView("learn_history_clear_confirmation")
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
             title = { Text("Clear card history?") },

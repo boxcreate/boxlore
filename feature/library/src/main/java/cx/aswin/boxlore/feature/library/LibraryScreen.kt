@@ -57,6 +57,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.TopBarUtilityActions
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
@@ -102,7 +103,7 @@ fun LibraryScreen(
         }
     }
 
-    androidx.compose.runtime.LaunchedEffect(Unit) {
+    TrackScreenView("library") {
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibraryHubViewed(entryPoint)
     }
 

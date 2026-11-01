@@ -43,6 +43,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.model.Podcast
@@ -62,6 +63,7 @@ internal fun FolderShowsSelectionSheet(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    TrackScreenView("folder_show_selection")
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var selectedIds by rememberSaveable(folder.id) {
         mutableStateOf(folder.podcastIds.toSet())

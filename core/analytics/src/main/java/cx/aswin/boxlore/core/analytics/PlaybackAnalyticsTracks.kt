@@ -288,7 +288,7 @@ internal object PlaybackAnalyticsTracks {
         finalVibeState: String?,
         finalSearchQuery: String?,
     ) {
-        // Fold session summary into explore_screen_viewed (glossary Phase B).
+        // The leaving summary has its own event; explore_screen_viewed counts visits only.
         val props =
             mutableMapOf<String, Any>(
                 "tab" to finalCategoryState,
@@ -301,6 +301,6 @@ internal object PlaybackAnalyticsTracks {
             )
         finalVibeState?.let { props["final_vibe_state"] = it }
         finalSearchQuery?.let { props["final_search_query"] = it }
-        AnalyticsEmit.event("explore_screen_viewed", props)
+        ScreenAnalyticsTracks.trackScreenLeft("explore", props)
     }
 }

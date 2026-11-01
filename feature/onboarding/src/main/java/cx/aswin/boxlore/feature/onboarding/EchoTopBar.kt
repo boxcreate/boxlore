@@ -38,6 +38,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 
@@ -117,6 +118,7 @@ internal fun EchoTopBar(progress: Float, busy: Boolean, searchEnabled: Boolean, 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EchoAboutSheet(onDismiss: () -> Unit) {
+    TrackScreenView("onboarding_echo_about")
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column(
             Modifier.fillMaxWidth().tabletSheetScroll().navigationBarsPadding().padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
