@@ -35,9 +35,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -47,22 +50,24 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.support.SupportRepository
+import kotlinx.coroutines.launch
 
 /** Below this height the full layout scrolls instead of stretching the message card. */
 internal val FEEDBACK_TALL_ENOUGH = 600.dp
 private val FEEDBACK_SHORT_MESSAGE_HEIGHT = 220.dp
 
 /**
- * "Share your thoughts": the type pills, a roomy message card, photos (when the server switches
- * them on), diagnostics and Send. While typing, the pills fold into one pill in the header and a
- * slim bar rides on the keyboard, so Send is always reachable. After sending, [FeedbackSentScreen].
+ * Feedback: the conversation list once there are conversations, otherwise straight to "Share
+ * your thoughts"; one conversation from the list or a reply notification ([openThreadId]). On a
+ * landscape tablet the list and the conversation sit side by side.
  */
 @Composable
 fun FeedbackScreen(
@@ -71,43 +76,54 @@ fun FeedbackScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     bottomContentPadding: Dp = 0.dp,
+    openThreadId: String? = null,
 ) {
     TrackScreenView("feedback")
     val context = LocalContext.current
-    val feedbackViewModel: FeedbackViewModel = viewModel(
-        factory = FeedbackViewModel.Factory(supportRepository, boxcastPrefs, context),
+    val uriHandler = LocalUriHandler.current
+    val scope = rememberCoroutineScope()
+    var pane by rememberSaveable(stateSaver = FeedbackPaneSaver) { mutableStateOf(initialFeedbackPane(openThreadId, supportRepository.hasConversations)) }
+    var composeSession by rememberSaveable { mutableIntStateOf(0) }
+    var loadFailed by remember { mutableStateOf(false) }
+    val threads by supportRepository.threads.collectAsStateWithLifecycle()
+    val refresh: () -> Unit = {
+        scope.launch { loadFailed = supportRepository.refresh() == null && supportRepository.threads.value == null }
+    }
+    // The list is fresh each time it shows: replies read or sent elsewhere change its statuses.
+    LaunchedEffect(pane == FeedbackPane.List) { if (pane == FeedbackPane.List || supportRepository.threads.value == null) refresh() }
+    val split = feedbackUsesSplit(LocalBoxlorePaneWidth.current, LocalBoxloreWindowLayout.current)
+    val goBack: () -> Unit = { feedbackBack(pane, supportRepository.hasConversations, split)?.let { pane = it } ?: onBack() }
+    BackHandler(onBack = goBack)
+    val openCompose: () -> Unit = {
+        composeSession += 1
+        pane = FeedbackPane.Compose
+    }
+    val listActions = FeedbackListActions(
+        onOpen = { pane = FeedbackPane.Thread(it) },
+        onNew = openCompose,
+        onRetry = refresh,
+        onRate = {
+            AnalyticsHelper.trackStoreReviewOpened(method = "store_page", source = "feedback_list")
+            openPlayStorePage(context)
+        },
+        onGitHub = { uriHandler.openUri(FEEDBACK_GITHUB_NEW_ISSUE_URL) },
+        onBack = onBack,
     )
-    val uiState by feedbackViewModel.uiState.collectAsStateWithLifecycle()
-
-    BackHandler(onBack = onBack)
-
-    FeedbackContent(
-        state = uiState,
-        actions = FeedbackComposeActions(
-            onBack = onBack,
-            onCategorySelected = feedbackViewModel::onCategorySelected,
-            onMessageChanged = feedbackViewModel::onMessageChanged,
-            onAttachDiagnosticsChanged = feedbackViewModel::onAttachDiagnosticsChanged,
-            onPhotosPicked = feedbackViewModel::onPhotosPicked,
-            onRemovePhoto = feedbackViewModel::onRemovePhoto,
-            onSubmit = feedbackViewModel::onSubmit,
-            onPreviewDiagnostics = feedbackViewModel::loadLogsForPreview,
-            onDiscardDraft = feedbackViewModel::onDiscardDraft,
-        ),
-        boxcastPrefs = boxcastPrefs,
-        bottomContentPadding = bottomContentPadding,
+    val callbacks = FeedbackDetailCallbacks(
+        back = goBack,
+        leave = onBack,
+        newFeedback = openCompose,
+        // A message that became a conversation goes to the list; one through the old form leaves.
+        sent = { repliesInApp -> if (repliesInApp) pane = FeedbackPane.List else onBack() },
+    )
+    FeedbackPanesLayout(
+        split = split,
+        pane = pane,
+        threads = threads,
+        list = { listModifier, selectedId -> FeedbackListScreen(threads, loadFailed, selectedId, bottomContentPadding, listActions, listModifier) },
+        detail = { detail, showBack -> FeedbackDetailPane(supportRepository, boxcastPrefs, detail, composeSession, bottomContentPadding, callbacks, showBack) },
         modifier = modifier,
     )
-
-    if (uiState.logsPreview != null || uiState.isLoadingLogs) {
-        LogsPreviewDialog(
-            logs = uiState.logsPreview,
-            isLoading = uiState.isLoadingLogs,
-            diagnosticInfo = uiState.diagnosticInfo,
-            onShare = { shareFeedbackDiagnostics(context, uiState) },
-            onDismissRequest = feedbackViewModel::clearLogsPreview,
-        )
-    }
 }
 
 internal class FeedbackComposeActions(
@@ -123,7 +139,7 @@ internal class FeedbackComposeActions(
 )
 
 /**
- * The compose screen until the message is sent, then [FeedbackSentScreen]; Done leaves like Back.
+ * The compose screen until the message is sent, then [FeedbackSentScreen], whose Done calls [onDone].
  * [imeBottom] is the keyboard's height (tests pass their own).
  */
 @Composable
@@ -134,13 +150,14 @@ internal fun FeedbackContent(
     bottomContentPadding: Dp,
     modifier: Modifier = Modifier,
     imeBottom: Dp = WindowInsets.ime.asPaddingValues().calculateBottomPadding(),
+    onDone: () -> Unit = actions.onBack,
 ) {
     if (state.isSuccess) {
         FeedbackSentScreen(
             boxcastPrefs = boxcastPrefs,
             repliesInApp = state.repliesInApp,
             photosDropped = state.photosDropped,
-            onDone = actions.onBack,
+            onDone = onDone,
             bottomContentPadding = bottomContentPadding,
             modifier = modifier,
         )

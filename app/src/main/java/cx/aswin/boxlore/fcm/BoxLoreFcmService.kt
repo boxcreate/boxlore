@@ -52,6 +52,10 @@ class BoxLoreFcmService : FirebaseMessagingService() {
             handleNewEpisodeMessage(data, message.priority == RemoteMessage.PRIORITY_HIGH)
             return
         }
+        if (type == "support_reply") {
+            handleSupportReply(data)
+            return
+        }
 
         val parsed = FcmPayloadParser.parse(data)
         if (applicationContext.shouldSuppressAnnouncement(parsed.toAnnouncement())) return
@@ -72,6 +76,13 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         } catch (e: Exception) {
             android.util.Log.e("BoxLoreFcmService", "Failed to show push notification", e)
         }
+    }
+
+    /** The boxlore team replied: Home shows it, and a notification opens the conversation. */
+    private fun handleSupportReply(data: Map<String, String>) {
+        runCatching { (application as BoxLoreApplication).container.supportRepository.onReplyPushed() }
+            .onFailure { android.util.Log.w("BoxLoreFcmService", "Reply not recorded", it) }
+        SupportReplyNotifications.show(this, data["threadId"], data["title"], data["body"])
     }
 
     private fun handleNewEpisodeMessage(data: Map<String, String>, highPriority: Boolean) {

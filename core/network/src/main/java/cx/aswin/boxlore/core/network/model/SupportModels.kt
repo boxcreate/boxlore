@@ -36,6 +36,7 @@ data class SupportPhotoLimitsDto(
 data class SupportThreadDto(
     val id: String,
     val category: String = "other",
+    val categoryLabel: String = "",
     val title: String = "",
     val status: SupportStatusDto? = null,
     val updatedAt: Long = 0,
@@ -53,6 +54,58 @@ data class SupportStatusDto(
 
 @Serializable
 data class SupportThreadResponse(val thread: SupportThreadDto? = null)
+
+/** `GET /support/threads/{id}`: the thread, a page of messages oldest first, the cursor for older ones, and the ending. */
+@Serializable
+data class SupportConversationResponse(
+    val thread: SupportThreadDto? = null,
+    val messages: List<SupportMessageDto> = emptyList(),
+    val earlier: String? = null,
+    val ending: SupportEndingDto? = null,
+)
+
+@Serializable
+data class SupportMessageDto(
+    val id: String,
+    /** `you` or `team`. */
+    val from: String = "you",
+    val author: String = "",
+    val body: String = "",
+    val photos: List<SupportPhotoRefDto> = emptyList(),
+    val diagnostics: Boolean = false,
+    val createdAt: Long = 0,
+)
+
+@Serializable
+data class SupportPhotoRefDto(val id: String = "")
+
+/** How a conversation ended (`solved` or `closed`), with the server's words and the one action it offers. */
+@Serializable
+data class SupportEndingDto(
+    val kind: String = "",
+    val title: String = "",
+    val body: String = "",
+    val at: Long = 0,
+    val action: SupportEndingActionDto? = null,
+)
+
+@Serializable
+data class SupportEndingActionDto(val kind: String = "", val label: String = "")
+
+@Serializable
+data class SupportReplyRequest(
+    val body: String,
+    val photos: List<String> = emptyList(),
+    /** Same key for a retry of the same reply, so the API saves it once. */
+    val requestId: String? = null,
+)
+
+@Serializable
+data class SupportReplyResponse(
+    val thread: SupportThreadDto? = null,
+    val message: SupportMessageDto? = null,
+    val ending: SupportEndingDto? = null,
+)
 
 @Serializable
 data class SupportPhotoResponse(val id: String)

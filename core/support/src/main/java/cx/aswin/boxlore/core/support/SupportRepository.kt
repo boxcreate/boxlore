@@ -3,7 +3,12 @@ package cx.aswin.boxlore.core.support
 import cx.aswin.boxlore.core.network.SupportApi
 import cx.aswin.boxlore.core.network.model.SupportErrorResponse
 import cx.aswin.boxlore.core.network.model.SupportListResponse
+import cx.aswin.boxlore.core.network.model.SupportEndingDto
+import cx.aswin.boxlore.core.network.model.SupportMessageDto
 import cx.aswin.boxlore.core.network.model.SupportNewThreadRequest
+import cx.aswin.boxlore.core.network.model.SupportReplyRequest
+import cx.aswin.boxlore.core.network.model.SupportReplyResponse
+import cx.aswin.boxlore.core.network.model.SupportThreadDto
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -27,13 +32,26 @@ class SupportRepository(
     private val api: SupportApi,
     private val legacySubmit: suspend (category: String, message: String, appVersion: String, diagnostics: String?, logs: String?) -> Boolean,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val local: SupportLocalStore = SupportLocalStore.InMemory(),
+    private val clock: () -> Long = System::currentTimeMillis,
 ) {
     private val _meta = MutableStateFlow(SupportMeta.Offline)
+    private val _threads = MutableStateFlow<List<SupportThread>?>(null)
+    private val _replyWaiting = MutableStateFlow(local.replyWaiting)
 
     /** The last known switches and limits; [SupportMeta.Offline] until [refresh] succeeds. */
     val meta: StateFlow<SupportMeta> = _meta.asStateFlow()
 
-    /** Reads the switches (and the conversation list, used from the next app update on). */
+    /** This phone's conversations, newest first; null until [refresh] succeeds. */
+    val threads: StateFlow<List<SupportThread>?> = _threads.asStateFlow()
+
+    /** A team reply hasn't been read yet: Home's Feedback button shows it. */
+    val replyWaiting: StateFlow<Boolean> = _replyWaiting.asStateFlow()
+
+    /** Whether this phone has (or had, last time it looked) conversations: Feedback then opens on the list. */
+    val hasConversations: Boolean get() = _threads.value?.isNotEmpty() ?: local.hasConversations
+
+    /** Reads the switches and this phone's conversations. */
     suspend fun refresh(): SupportMeta? = withContext(ioDispatcher) {
         val response = call { api.threads() } ?: return@withContext null
         if (!response.isSuccessful) {
@@ -41,9 +59,84 @@ class SupportRepository(
             if (usesOldForm(response)) _meta.value = SupportMeta.Offline
             return@withContext null
         }
-        val meta = response.body()?.toMeta() ?: return@withContext null
+        val body = response.body() ?: return@withContext null
+        val meta = body.toMeta() ?: return@withContext null
         _meta.value = meta
+        val threads = body.threads.map { it.toThread() }
+        _threads.value = threads
+        local.hasConversations = threads.isNotEmpty()
+        local.lastCheckedAt = clock()
+        setReplyWaiting(threads.any { it.unread })
         meta
+    }
+
+    /**
+     * [refresh] for a phone that has conversations, at most once per [minIntervalMs], so the app
+     * can look for replies a push missed without every phone asking the server on every launch.
+     */
+    suspend fun refreshIfDue(minIntervalMs: Long): SupportMeta? {
+        if (!local.hasConversations || clock() - local.lastCheckedAt < minIntervalMs) return null
+        return refresh()
+    }
+
+    /** A reply push arrived: show it on Home until the conversation is read. */
+    fun onReplyPushed() {
+        local.hasConversations = true
+        setReplyWaiting(true)
+    }
+
+    private fun setReplyWaiting(waiting: Boolean) {
+        local.replyWaiting = waiting
+        _replyWaiting.value = waiting
+    }
+
+    /** One conversation, newest messages first in view; [before] loads the page older than that message. */
+    suspend fun conversation(id: String, before: String? = null): ConversationResult = withContext(ioDispatcher) {
+        val response = call { api.conversation(id, before) } ?: return@withContext ConversationResult.Failed
+        val body = response.body()
+        val thread = body?.thread?.toThread()
+        when {
+            response.isSuccessful && thread != null -> ConversationResult.Loaded(
+                SupportConversation(thread, body.messages.map { it.toMessage() }, body.earlier, body.ending?.toEnding()),
+            )
+            response.code() == HTTP_NOT_FOUND || usesOldForm(response) -> ConversationResult.Gone
+            else -> ConversationResult.Failed
+        }
+    }
+
+    /** A reply in a conversation; [requestId] is the retry key, as for new messages. */
+    suspend fun reply(id: String, body: String, requestId: String?, photoIds: List<String> = emptyList()): ReplyResult = withContext(ioDispatcher) {
+        val response = call { api.reply(id, SupportReplyRequest(body = body, photos = photoIds, requestId = requestId)) } ?: return@withContext ReplyResult.Failed
+        val reply = response.body()
+        when {
+            response.isSuccessful -> ReplyResult.Sent(reply?.thread?.toThread(), reply?.message?.toMessage())
+            response.code() == HTTP_CONFLICT -> ReplyResult.Closed(response.errorBody()?.ending()?.toEnding())
+            response.code() == HTTP_TOO_MANY -> ReplyResult.Refused(response.errorBody()?.message() ?: DEFAULT_REFUSAL)
+            else -> ReplyResult.Failed
+        }
+    }
+
+    /** The team's reply was seen: the list and Home stop showing it. */
+    suspend fun markRead(id: String): Boolean = withContext(ioDispatcher) {
+        val ok = call { api.markRead(id) }?.isSuccessful == true
+        if (ok) {
+            val threads = _threads.value?.map { if (it.id == id) it.copy(unread = false) else it }
+            _threads.value = threads
+            setReplyWaiting(threads?.any { it.unread } == true)
+        }
+        ok
+    }
+
+    /** The listener marks an open conversation solved. */
+    suspend fun solve(id: String): Boolean = withContext(ioDispatcher) {
+        call { api.solve(id) }?.isSuccessful == true
+    }
+
+    /** A photo's bytes from a conversation (owner only), or null. */
+    suspend fun photo(id: String): ByteArray? = withContext(ioDispatcher) {
+        val response = call { api.photo(id) } ?: return@withContext null
+        if (!response.isSuccessful) return@withContext null
+        runCatching { response.body()?.bytes() }.getOrNull()
     }
 
     /** Uploads one prepared photo. [PhotoUpload.Unavailable] when photos are off or support isn't there. */
@@ -72,7 +165,10 @@ class SupportRepository(
         )
         val response = call { api.startThread(request) } ?: return@withContext SendResult.Failed
         when {
-            response.isSuccessful -> response.body()?.thread?.id?.let { SendResult.Sent(it) } ?: SendResult.Failed
+            response.isSuccessful -> response.body()?.thread?.id?.let {
+                local.hasConversations = true
+                SendResult.Sent(it)
+            } ?: SendResult.Failed
             usesOldForm(response) -> sendThroughOldForm(feedback)
             response.code() == HTTP_CONFLICT || response.code() == HTTP_TOO_MANY -> SendResult.Refused(
                 response.errorBody()?.message() ?: DEFAULT_REFUSAL,
@@ -131,6 +227,10 @@ class SupportRepository(
             runCatching { errorJson.decodeFromString(SupportErrorResponse.serializer(), body.source().peek().readUtf8()) }.getOrNull()
         }
 
+        private fun okhttp3.ResponseBody.ending(): SupportEndingDto? = runCatching {
+            errorJson.decodeFromString(SupportReplyResponse.serializer(), string()).ending
+        }.getOrNull()
+
         private fun okhttp3.ResponseBody.message(): String? = runCatching {
             errorJson.decodeFromString(SupportErrorResponse.serializer(), string()).message?.takeIf { it.isNotBlank() }
         }.getOrNull()
@@ -164,3 +264,33 @@ private val CATEGORY_ID = Regex("[a-z0-9_]{1,32}")
 private val TOPIC = Regex("[A-Za-z0-9\\-_.~%]{1,900}")
 private const val MAX_PHOTOS_CEILING = 10
 private const val MAX_BODY_CEILING = 10_000
+
+internal fun SupportThreadDto.toThread(): SupportThread = SupportThread(
+    id = id,
+    category = category,
+    categoryLabel = categoryLabel.ifBlank { "Feedback" },
+    title = title.ifBlank { "Feedback" },
+    status = SupportStatus(key = status?.key ?: "waiting", label = status?.label.orEmpty(), showTime = status?.showTime ?: true),
+    updatedAt = updatedAt,
+    unread = unread,
+    canReply = canReply,
+)
+
+internal fun SupportMessageDto.toMessage(): SupportMessage = SupportMessage(
+    id = id,
+    fromTeam = from == "team",
+    author = author,
+    body = body,
+    photoIds = photos.map { it.id }.filter { it.isNotBlank() },
+    diagnostics = diagnostics,
+    createdAt = createdAt,
+)
+
+internal fun SupportEndingDto.toEnding(): SupportEnding = SupportEnding(
+    kind = kind,
+    title = title,
+    body = body,
+    at = at,
+    actionKind = action?.kind?.takeIf { it.isNotBlank() },
+    actionLabel = action?.label?.takeIf { it.isNotBlank() },
+)

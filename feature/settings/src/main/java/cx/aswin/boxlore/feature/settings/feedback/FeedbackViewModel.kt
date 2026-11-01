@@ -291,6 +291,8 @@ class FeedbackViewModel(
                 ),
             )
             handleResult(choice, state, result, photosDropped = photos is PhotoBatch.Unavailable)
+            // A first conversation: refresh now, so the phone joins its reply-push topic before a reply can arrive.
+            if (result is SendResult.Sent) runCatching { support.refresh() }
         }
     }
 

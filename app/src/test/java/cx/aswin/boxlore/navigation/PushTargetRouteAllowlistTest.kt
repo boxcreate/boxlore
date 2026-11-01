@@ -21,6 +21,14 @@ class PushTargetRouteAllowlistTest {
     }
 
     @Test
+    fun aReplyNotificationOpensItsConversation() {
+        assertTrue(PushTargetRouteAllowlist.isAllowed(cx.aswin.boxlore.fcm.SupportReplyNotifications.routeFor("0123456789abcdef01234567")))
+        assertEquals("feedback?thread=0123456789abcdef01234567", cx.aswin.boxlore.fcm.SupportReplyNotifications.routeFor("0123456789abcdef01234567"))
+        assertEquals("feedback", cx.aswin.boxlore.fcm.SupportReplyNotifications.routeFor("../../etc"))
+        assertEquals("feedback", cx.aswin.boxlore.fcm.SupportReplyNotifications.routeFor(null))
+    }
+
+    @Test
     fun rejectsUnknownAndEmpty() {
         assertFalse(PushTargetRouteAllowlist.isAllowed(""))
         assertFalse(PushTargetRouteAllowlist.isAllowed("javascript:alert(1)"))

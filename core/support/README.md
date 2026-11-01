@@ -15,6 +15,15 @@ send pushes; that is the API's job.
   `send(OutgoingFeedback): SendResult`. Application-scoped: create it once in `AppContainer`.
 - `SupportMeta`, `OutgoingFeedback`, `SendResult` (`Sent`, `SentByEmailForm`, `Refused`, `Failed`).
 - `PhotoPrep`: shrinks a picked photo (long edge 1600 px, JPEG) before upload; `targetSize` is pure.
+- Conversations (`SupportConversations.kt`): `threads` (`StateFlow<List<SupportThread>?>`, null until
+  a refresh succeeds), `replyWaiting`, `hasConversations`, `conversation(id, before)` (a page of
+  messages oldest first, `earlier` to page back, `ending`), `reply(id, body, requestId)`
+  (`ReplyResult.Sent`, `Closed` with the server's ending, `Refused`, `Failed`), `markRead`, `solve`,
+  `photo(id)` (bytes, owner only), `onReplyPushed()` and `refreshIfDue(minIntervalMs)`.
+- `SupportLocalStore`: what the phone remembers between launches (has conversations, a reply
+  waiting, joined push topics, last check); the app backs it with its own preferences file.
+  `SupportPushTopics` plans which topics to join and leave (`PushTopicPlan`) from a successful
+  refresh's `meta`.
 
 ## Internal structure
 
@@ -68,6 +77,11 @@ Features use it; it never depends on a feature, the design system or the catalog
   the server's message, no connection, photo upload results and the no-store header, photos off,
   `PhotoPrep.targetSize`.
   `RequestProofTest` in `:core:network` covers the signed message and the interceptor.
+- `SupportConversationsTest` covers the list and what the phone remembers, a conversation page
+  (messages, photos, ending, the `before` cursor, gone and failed), replies (retry key, closed with
+  its ending, refused, failed), reading the last unread reply, a push marking a reply waiting until a
+  refresh says otherwise, the start-up check (only with conversations, not more often than asked), a
+  first conversation remembered at once, photo bytes, and push-topic plans.
 
 ```bash
 ./gradlew :core:support:testDebugUnitTest

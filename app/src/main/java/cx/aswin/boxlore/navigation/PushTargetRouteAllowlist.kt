@@ -32,6 +32,7 @@ object PushTargetRouteAllowlist {
         "explore?",
         "briefing",
         "library/",
+        "feedback?",
     )
 
     private val appOrWebSchemes = listOf("http://", "https://", "boxlore://", "boxcast://")

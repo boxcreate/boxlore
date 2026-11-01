@@ -139,6 +139,7 @@ class FeedbackViewModelTest {
             val state = vm.uiState.value
             assertTrue(state.isSuccess)
             assertTrue(state.repliesInApp)
+            assertEquals("Refreshed on open and again after the first conversation", 2, support.refreshes)
             assertNull(prefs.getFeedbackDraft())
             val sent = support.sent.single()
             assertEquals("audio", sent.category)

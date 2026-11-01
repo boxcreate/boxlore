@@ -76,7 +76,7 @@ internal class AdaptivePlayerChromeController(threshold: Float) {
     private fun updateCompactness() {
         // Lore borrows the compact presentation without changing ordinary browsing state.
         if (!playerBusy || !enabled) {
-            isCompact = enabled && (route == "learn" || scroll.isCompact)
+            isCompact = enabled && (keepsCompactPlayer(route) || scroll.isCompact)
         }
     }
 
@@ -94,7 +94,7 @@ internal class AdaptivePlayerChromeController(threshold: Float) {
             val before = preAvailable.takeIf { preSource == source }
             preAvailable = null
             preSource = null
-            if (route == "learn") {
+            if (keepsCompactPlayer(route)) {
                 scroll.endGesture()
                 updateCompactness()
                 return Offset.Zero
@@ -118,3 +118,6 @@ internal class AdaptivePlayerChromeController(threshold: Float) {
         }
     }
 }
+
+/** Lore, and Feedback (where the bottom buttons need the room), keep the mini player in its small form. */
+internal fun keepsCompactPlayer(route: String?): Boolean = route == "learn" || route?.startsWith("feedback") == true

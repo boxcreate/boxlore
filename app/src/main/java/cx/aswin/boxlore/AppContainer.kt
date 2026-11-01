@@ -77,8 +77,12 @@ import cx.aswin.boxlore.core.rss.RenumberedShows
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.core.rss.SharedPreferencesRenumberedShows
 import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
+import cx.aswin.boxlore.core.support.SupportLocalStore
+import cx.aswin.boxlore.core.support.SupportPushTopics
 import cx.aswin.boxlore.core.support.SupportRepository
 import cx.aswin.boxlore.fcm.PodcastNotificationRegistrationWorker
+import cx.aswin.boxlore.fcm.SupportPrefsStore
+import cx.aswin.boxlore.fcm.SupportPushTopicSync
 import cx.aswin.boxlore.share.EpisodeShareRegistrationWorker
 import cx.aswin.boxlore.sync.AnalyticsFeedTelemetry
 import cx.aswin.boxlore.sync.CloudSyncTriggerCoordinator
@@ -89,6 +93,7 @@ import cx.aswin.boxlore.sync.SavedKillSwitch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 
 /**
@@ -368,14 +373,28 @@ class AppContainer(
 
     val boxcastPrefs: BoxcastPrefs by lazy { BoxcastPrefs(appContext) }
 
-    /** Feedback conversations; falls back to the old one-way form while `/support` is unavailable. */
+    private val supportLocalStore: SupportLocalStore by lazy { SupportPrefsStore(appContext) }
+
+    /**
+     * Feedback conversations; falls back to the old one-way form while `/support` is unavailable.
+     * After every successful refresh the reply-push topics are brought in line with the server's.
+     */
     val supportRepository: SupportRepository by lazy {
         SupportRepository(
             api = podcastRepository.supportApi,
             legacySubmit = { category, message, version, diagnostics, logs ->
                 podcastRepository.submitFeedback(category, message, version, null, diagnostics, logs)
             },
-        )
+            local = supportLocalStore,
+        ).also { repository ->
+            val topicSync = SupportPushTopicSync(repository, SupportPushTopics(supportLocalStore))
+            syncScope.launch { repository.threads.filterNotNull().collect { topicSync.sync() } }
+        }
+    }
+
+    /** On each app start: look for replies a push missed, for phones with conversations, at most every 30 minutes. */
+    fun checkSupportReplies() {
+        syncScope.launch { runCatching { supportRepository.refreshIfDue(SUPPORT_CHECK_INTERVAL_MS) } }
     }
 
     override val deviceIdentityPort: DeviceIdentityPort by lazy {
@@ -781,3 +800,5 @@ class AppContainer(
         )
     }
 }
+
+private const val SUPPORT_CHECK_INTERVAL_MS = 30 * 60_000L
