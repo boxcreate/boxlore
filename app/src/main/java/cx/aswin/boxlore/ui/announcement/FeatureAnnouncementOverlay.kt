@@ -131,6 +131,7 @@ fun FeatureAnnouncementOverlay(featureAnnouncementId: String, userPrefs: UserPre
             Box(modifier = Modifier.graphicsLayer { alpha = phase3.value }) {
                 FilledTonalButton(
                     onClick = {
+                        AnalyticsHelper.trackFeatureAnnouncementDismissed(featureAnnouncementId)
                         scope.launch { userPrefs.dismissFeatureAnnouncement(featureAnnouncementId) }
                     },
                     shape = CircleShape,

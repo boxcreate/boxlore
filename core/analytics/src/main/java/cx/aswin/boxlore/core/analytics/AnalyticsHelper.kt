@@ -245,9 +245,10 @@ object AnalyticsHelper : Analytics {
     /** Records the [Episode.recipeId] of each of [episodes] that has one, for later events. Phase P4 PR 18. */
     fun rememberEpisodeRecipeIds(episodes: Iterable<Episode>) = EpisodeRecipeIds.remember(episodes.filter { it.recipeId != null }.associate { it.id to it.recipeId })
 
-    // ── Feedback / NPS (glossary: feedback_submitted) ───────────────
-    // PostHog survey display conditions should key off feedback_submitted
-    // after the PR7 dashboard rebuild (see glossary checklist).
+    // ── Feedback / NPS ──────────────────────────────────────────────
+    // feedback_submitted is only the NPS survey's trigger (its display condition keys off it); prompts
+    // that appear are engagement_prompt_shown, hand-offs to Play store_review_opened, and a sent
+    // feedback form feedback_sent.
 
     /** Deferred automatic trigger, fired on app open once the user hits the eligibility milestone. */
     override fun trackSurveyNpsEligible(completedEpisodes: Int?, triggerContext: String,) {
@@ -287,29 +288,35 @@ object AnalyticsHelper : Analytics {
         }
     }
 
-    /** Tracks when a proactive engagement modal (NPS, review, etc.) is shown. */
-    override fun trackEngagementPromptShown(promptType: String, source: String, completedEpisodes: Int?,) {
+    /**
+     * A review prompt appeared (`milestone_review`, or `promoter_review` for an NPS promoter, with
+     * [npsScore]). Not `feedback_submitted`, which would also make the person eligible for the survey.
+     */
+    override fun trackEngagementPromptShown(promptType: String, source: String, completedEpisodes: Int?, npsScore: Int?,) {
         AnalyticsEmit.event(
-            "feedback_submitted",
+            "engagement_prompt_shown",
             buildMap {
-                put("feedback_type", promptType)
+                put("prompt_type", promptType)
                 put("source", source)
                 completedEpisodes?.let { put("completed_episodes", it) }
+                npsScore?.let { put("nps_score", it) }
             },
         )
     }
 
-    /** Fired when a promoter (NPS 8+) is routed to the Play Store review sheet on a later open. */
-    override fun trackPromoterReviewHandoff(npsScore: Int?) {
+    /**
+     * The listener was sent to Play to rate boxlore: [method] `in_app_review` (Play's review sheet was
+     * requested; Play doesn't say whether it appeared) or `store_page`, from [source].
+     */
+    fun trackStoreReviewOpened(method: String, source: String,) {
+        AnalyticsEmit.event("store_review_opened", mapOf("method" to method, "source" to source))
+    }
+
+    /** The in-app feedback form was sent and the server accepted it: categories only, never the text. */
+    fun trackFeedbackSent(category: String, withEmail: Boolean, withDiagnostics: Boolean,) {
         AnalyticsEmit.event(
-            "feedback_submitted",
-            buildMap {
-                put("feedback_type", "promoter_review_handoff")
-                npsScore?.let {
-                    put("score", it)
-                    put("nps_score", it)
-                }
-            },
+            "feedback_sent",
+            mapOf("category" to category, "with_email" to withEmail, "with_diagnostics" to withDiagnostics),
         )
     }
 
@@ -378,14 +385,12 @@ object AnalyticsHelper : Analytics {
 
     fun trackOnboardingAiResponseReceived(
         turnNumber: Int,
-        assistantMessage: String,
         optionsCount: Int,
         optionsList: List<String>,
         durationSeconds: Float,
         detectedIntent: String? = null,
     ) = OnboardingAnalyticsTracks.trackOnboardingAiResponseReceived(
         turnNumber,
-        assistantMessage,
         optionsCount,
         optionsList,
         durationSeconds,
@@ -474,15 +479,20 @@ object AnalyticsHelper : Analytics {
 
     fun trackFeatureAnnouncementDismissed(featureId: String) = DiscoveryAnalyticsTracks.trackFeatureAnnouncementDismissed(featureId)
 
-    fun trackInAppAnnouncementViewed(category: String, hasImage: Boolean, hasAction: Boolean,) = DiscoveryAnalyticsTracks.trackInAppAnnouncementViewed(category, hasImage, hasAction)
+    fun trackInAppAnnouncementViewed(category: String, hasImage: Boolean, hasAction: Boolean, announcement: AnnouncementRef? = null,) =
+        DiscoveryAnalyticsTracks.trackInAppAnnouncementViewed(category, hasImage, hasAction, announcement)
 
-    fun trackInAppAnnouncementDismissed(category: String, hasImage: Boolean, hasAction: Boolean,) = DiscoveryAnalyticsTracks.trackInAppAnnouncementDismissed(category, hasImage, hasAction)
+    fun trackInAppAnnouncementDismissed(category: String, hasImage: Boolean, hasAction: Boolean, announcement: AnnouncementRef? = null,) =
+        DiscoveryAnalyticsTracks.trackInAppAnnouncementDismissed(category, hasImage, hasAction, announcement)
 
-    fun trackInAppAnnouncementAction(category: String, hasImage: Boolean, actionLabel: String,) = DiscoveryAnalyticsTracks.trackInAppAnnouncementAction(category, hasImage, actionLabel)
+    fun trackInAppAnnouncementAction(category: String, hasImage: Boolean, actionLabel: String, announcement: AnnouncementRef? = null,) =
+        DiscoveryAnalyticsTracks.trackInAppAnnouncementAction(category, hasImage, actionLabel, announcement)
 
-    fun trackNotificationPermissionRequested() = DiscoveryAnalyticsTracks.trackNotificationPermissionRequested()
+    /** The system notification prompt was shown, from [surface] (`show_bell`, `library_import`). */
+    fun trackNotificationPermissionRequested(surface: String? = null) = DiscoveryAnalyticsTracks.trackNotificationPermissionRequested(surface)
 
-    fun trackNotificationPermissionDecided(isGranted: Boolean) = DiscoveryAnalyticsTracks.trackNotificationPermissionDecided(isGranted)
+    fun trackNotificationPermissionDecided(isGranted: Boolean, surface: String? = null,) =
+        DiscoveryAnalyticsTracks.trackNotificationPermissionDecided(isGranted, surface)
 
     fun trackHomeHeroCarouselSwiped(maxCardIndexViewed: Int, totalCardsAvailable: Int,) = DiscoveryAnalyticsTracks.trackHomeHeroCarouselSwiped(maxCardIndexViewed, totalCardsAvailable)
 
@@ -961,7 +971,8 @@ object AnalyticsHelper : Analytics {
         podcastId: String? = null,
         queueSize: Int? = null,
         source: String? = null,
-    ) = QueueContentAnalyticsTracks.trackQueueModified(action, episodeId, podcastId, queueSize, source)
+        itemsCount: Int? = null,
+    ) = QueueContentAnalyticsTracks.trackQueueModified(action, episodeId, podcastId, queueSize, source, itemsCount)
 
     fun trackNavTabClicked(tabName: String, previousTab: String? = null,) = QueueContentAnalyticsTracks.trackNavTabClicked(tabName, previousTab)
 

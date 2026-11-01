@@ -70,13 +70,14 @@ internal object QueueContentAnalyticsTracks {
         AnalyticsEmit.event("offline_mode_entered")
     }
 
+    /** A category chip on Home's discovery section; a Home tap, not an Explore one. */
     fun trackDiscoverCategoryFiltered(categoryName: String) {
         AnalyticsEmit.event(
-            "explore_recommendation_tapped",
+            "home_surface_tapped",
             mapOf(
-                "rail" to "category",
-                "interaction" to "filter",
-                "category_name" to categoryName,
+                "surface_component" to "category_filter",
+                "content_id" to categoryName,
+                "click_target" to "filter",
             ),
         )
     }
@@ -212,6 +213,7 @@ internal object QueueContentAnalyticsTracks {
         podcastId: String? = null,
         queueSize: Int? = null,
         source: String? = null,
+        itemsCount: Int? = null,
     ) {
         AnalyticsEmit.event(
             "queue_modified",
@@ -221,6 +223,7 @@ internal object QueueContentAnalyticsTracks {
                 podcastId?.let { put("podcast_id", it) }
                 queueSize?.let { put("queue_size", it) }
                 source?.let { put("source", it) }
+                itemsCount?.let { put("items_count", it) }
             },
         )
     }

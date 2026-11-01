@@ -124,6 +124,7 @@ The spotlight shows the newest full episode while the list is newest first and s
 
 ## Testing notes
 
+- The show bell asks for notifications with `surface` `show_bell` on both permission events; batch-adding selected episodes to the queue sends one `queue_modified` add with `items_count`, not one per episode.
 - `EpisodeInfoAdaptiveTransitionTest` drives one live episode page through "Finding this episode", "Episode not found" (with and without its show) and a later loaded episode across 599↔600, 479↔480, 839↔840 landscape, portrait↔landscape and flat↔tabletop fold both ways, plus `StateRestorationTester` recreation, and checks View show and Back run once and that window changes never load the page again; it also opens the page by a link ID that resolves to a downloaded row under the phone's own ID and checks the download shows across the same window changes. `EpisodeLoadRequestsTest` covers which loads are skipped, which unresolved states are not found or the load error, the page's episode, and the show a share fills in.
 
 - Tablet detail content is centered in the shared Reading width (720dp); the app palette still paints the full viewport. Poster rails keep fixed card sizes and Podroll rail items use the shared RailItem cap. Phone modifiers return unchanged.

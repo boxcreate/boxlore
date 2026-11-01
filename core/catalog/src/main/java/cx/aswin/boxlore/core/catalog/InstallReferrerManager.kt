@@ -177,6 +177,8 @@ class InstallReferrerManager(private val context: Context,) {
                     decoded.contains("type=episode") ||
                     decoded.startsWith("podcast_") ||
                     decoded.startsWith("episode_") -> "share"
+                // Play's placeholder when the install came with no referrer: not a campaign.
+                decoded.contains("utm_source=(not set)") -> "unknown"
                 decoded.contains("utm_source=") -> "utm"
                 else -> "unknown"
             }

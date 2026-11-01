@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.analytics.EntryPointContext
 import cx.aswin.boxlore.core.analytics.ListenStart
 import cx.aswin.boxlore.core.analytics.PendingEntryPoint
 import cx.aswin.boxlore.core.analytics.PlaybackListenValues
@@ -56,6 +57,9 @@ internal class PlaybackTelemetrySession(
 
     /** This installation's listening device ID (`BoxcastPrefs.getOrCreateListeningDeviceId`); set by the service. */
     var listeningDeviceId: () -> String? = { null }
+
+    /** Sends `first_episode_played` once per install when a listen starts; set by the service. */
+    var firstPlay: FirstPlayClaim? = null
 
     /** The listen in progress and its one record; the service sets its route, note and visibility. */
     val listens = ListenRecorder(playerProvider)
@@ -336,6 +340,7 @@ internal class PlaybackTelemetrySession(
             speed = speed,
             listen = listen,
         )
+        if (firstPlay?.claim() == true) AnalyticsHelper.trackFirstEpisodePlayed(episodeId, resolvedPodcastId)
     }
 
     /** Download when any stored ID of the episode holds a finished download, else stream. */
@@ -674,13 +679,14 @@ internal class PlaybackTelemetrySession(
     }
 }
 
+/** The entry-point details in a media item's extras; its artwork links, stream address and Auto keys stay out. */
 internal fun analyticsEntryPointContext(extras: Bundle?): Map<String, Any>? {
     if (extras == null) return null
     val context = mutableMapOf<String, Any>()
     extras.keySet().forEach { key ->
         @Suppress("DEPRECATION")
         val value = extras.get(key)
-        if (value != null && key != "entry_point" && CastMediaMetadata.isAnalyticsSafeExtra(key)) {
+        if (value != null && EntryPointContext.isAllowed(key)) {
             context[key] = value
         }
     }

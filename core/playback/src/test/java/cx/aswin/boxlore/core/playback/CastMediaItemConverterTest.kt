@@ -69,6 +69,11 @@ class CastMediaItemConverterTest {
                 putString("entry_point", "queue")
                 putString("recommendation_id", "rec-1")
                 putString(CastMediaMetadata.REMOTE_URI_KEY, "https://cdn.example.com/episode.mp3")
+                // Regression: these reached playback events as properties.
+                putStringArrayList("boxlore_artwork_sources", arrayListOf("https://cdn.example.com/cover.jpg?token=1"))
+                putString("cx.aswin.boxlore.auto.SOURCE", "discover")
+                putInt("android.media.extra.DOWNLOAD_STATUS", 2)
+                putString("boxlore_podcast_id", "123")
             }
 
         assertEquals(

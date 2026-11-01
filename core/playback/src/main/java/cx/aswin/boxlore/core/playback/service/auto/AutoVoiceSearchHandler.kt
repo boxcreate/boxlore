@@ -111,7 +111,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
     private fun voiceMatchScore(title: String, author: String?, query: String,): Int = cx.aswin.boxlore.core.playback.AutoVoiceSearchLogic
         .voiceMatchScore(title, author, query)
 
-    suspend fun handleVoiceSearchQuery(searchQuery: String): MutableList<MediaItem> {
+    suspend fun handleVoiceSearchQuery(searchQuery: String, fromCar: Boolean): MutableList<MediaItem> {
         val rawQuery = searchQuery.lowercase()
         val normalizedQuery = normalizeVoiceQuery(searchQuery)
         android.util.Log.d(
@@ -119,7 +119,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
             "Normalized voice query '$searchQuery' → '$normalizedQuery'",
         )
 
-        handleVoiceQueryQuickFallbacks(rawQuery, normalizedQuery)?.let { return it }
+        handleVoiceQueryQuickFallbacks(rawQuery, normalizedQuery, fromCar)?.let { return it }
         handleVoiceQueryHistoryResume(rawQuery)?.let { return it }
         handleVoiceQuerySubscriptionMatch(normalizedQuery)?.let { return it }
         handleVoiceQueryRemoteSearch(normalizedQuery)?.let { return it }
@@ -130,17 +130,17 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
             return mutableListOf(voiceHistoryItem(fallback))
         }
 
-        return handlePlayAllMixtape().ifEmpty {
+        return handlePlayAllMixtape(fromCar).ifEmpty {
             treeBuilder.getDownloadEpisodeItems().take(1).toMutableList()
         }
     }
 
-    private suspend fun handleVoiceQueryQuickFallbacks(rawQuery: String, normalizedQuery: String,): MutableList<MediaItem>? {
+    private suspend fun handleVoiceQueryQuickFallbacks(rawQuery: String, normalizedQuery: String, fromCar: Boolean,): MutableList<MediaItem>? {
         if (rawQuery.contains("download") || rawQuery.contains("offline")) {
             return treeBuilder.getDownloadEpisodeItems().toMutableList()
         }
         if (rawQuery.contains("drive mix") || rawQuery.contains("mixtape")) {
-            return handlePlayAllMixtape()
+            return handlePlayAllMixtape(fromCar)
         }
         if (
             normalizedQuery in
@@ -155,7 +155,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
                 "my mix",
             )
         ) {
-            return handlePlayAllMixtape()
+            return handlePlayAllMixtape(fromCar)
         }
         return null
     }
@@ -328,7 +328,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
         groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_continue),
     )
 
-    suspend fun handlePlayAllNewEpisodes(): MutableList<MediaItem> {
+    suspend fun handlePlayAllNewEpisodes(fromCar: Boolean): MutableList<MediaItem> {
         android.util.Log.d("AutoBrowse", "Play All New Episodes triggered")
         val subscriptions = host.database.podcastDao().getSubscribedPodcastsList()
 
@@ -338,9 +338,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
                 .sortedByDescending { (ep, _) -> ep.publishedDate }
                 .take(20)
 
-        cx.aswin.boxlore.core.analytics.PendingEntryPoint.set(
-            mapOf("entry_point" to "android_auto_new_episodes"),
-        )
+        labelCarPlay(fromCar, "android_auto_new_episodes")
         return newEpisodes
             .map { (episode, podcast) ->
                 AutoMediaItemFactory.fromEpisode(
@@ -356,10 +354,8 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
             }.toMutableList()
     }
 
-    suspend fun handlePlayAllLiked(): MutableList<MediaItem> {
-        cx.aswin.boxlore.core.analytics.PendingEntryPoint.set(
-            mapOf("entry_point" to "android_auto_liked"),
-        )
+    suspend fun handlePlayAllLiked(fromCar: Boolean): MutableList<MediaItem> {
+        labelCarPlay(fromCar, "android_auto_liked")
         // Each liked episode once, even when its like is stored under several IDs.
         return host.database
             .episodeListenerStore()
@@ -383,32 +379,26 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
             }.toMutableList()
     }
 
-    suspend fun handlePlayAllDownloads(): MutableList<MediaItem> {
-        cx.aswin.boxlore.core.analytics.PendingEntryPoint.set(
-            mapOf("entry_point" to "android_auto_downloads"),
-        )
+    suspend fun handlePlayAllDownloads(fromCar: Boolean): MutableList<MediaItem> {
+        labelCarPlay(fromCar, "android_auto_downloads")
         return treeBuilder.getDownloadEpisodeItems().toMutableList()
     }
 
-    suspend fun handlePlayAllDrivePicks(): MutableList<MediaItem> {
-        cx.aswin.boxlore.core.analytics.PendingEntryPoint.set(
-            mapOf("entry_point" to "android_auto_drive_picks"),
-        )
+    suspend fun handlePlayAllDrivePicks(fromCar: Boolean): MutableList<MediaItem> {
+        labelCarPlay(fromCar, "android_auto_drive_picks")
         return treeBuilder.getDrivePicksChildren()
             .filterNot { it.mediaId == AutoBrowseContract.PLAY_ALL_DRIVE_ID }
             .toMutableList()
     }
 
-    suspend fun handlePlayAllMixtape(): MutableList<MediaItem> {
-        cx.aswin.boxlore.core.analytics.PendingEntryPoint.set(
-            mapOf("entry_point" to "android_auto_mixtape"),
-        )
+    suspend fun handlePlayAllMixtape(fromCar: Boolean): MutableList<MediaItem> {
+        labelCarPlay(fromCar, "android_auto_mixtape")
         return treeBuilder.getMixtapeChildren()
             .filterNot { it.mediaId == AutoBrowseContract.PLAY_ALL_MIXTAPE_ID }
             .toMutableList()
     }
 
-    suspend fun handlePlayFromMixtape(episodeId: String): MutableList<MediaItem> {
+    suspend fun handlePlayFromMixtape(episodeId: String, fromCar: Boolean): MutableList<MediaItem> {
         val mixtape =
             treeBuilder.getMixtapeChildren()
                 .filterNot { it.mediaId == AutoBrowseContract.PLAY_ALL_MIXTAPE_ID }
@@ -417,22 +407,18 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
                 it.mediaId.stripEpisodePrefix() == episodeId
             }
         if (selectedIndex < 0) return mutableListOf()
-        cx.aswin.boxlore.core.analytics.PendingEntryPoint.set(
-            mapOf("entry_point" to "android_auto_mixtape"),
-        )
+        labelCarPlay(fromCar, "android_auto_mixtape")
         return mixtape.drop(selectedIndex).toMutableList()
     }
 
-    suspend fun handlePlayFromQueue(episodeId: String): MutableList<MediaItem> {
+    suspend fun handlePlayFromQueue(episodeId: String, fromCar: Boolean): MutableList<MediaItem> {
         val queue = host.queueRepository.getQueueEpisodeSnapshot()
         val selectedIndex = queue.indexOfFirst { it.id == episodeId }
         if (selectedIndex < 0) {
             android.util.Log.w("AutoBrowse", "Ignoring stale queue selection: $episodeId")
             return mutableListOf()
         }
-        cx.aswin.boxlore.core.analytics.PendingEntryPoint.set(
-            mapOf("entry_point" to "android_auto_queue"),
-        )
+        labelCarPlay(fromCar, "android_auto_queue")
         return queue
             .drop(selectedIndex)
             .map { episode ->

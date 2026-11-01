@@ -115,6 +115,16 @@ class InstallReferrerManagerTest {
     }
 
     @Test
+    fun deriveInstallChannel_playPlaceholderIsUnknownNotUtm() {
+        // Regression: Play's "(not set)" placeholder was counted as a utm campaign.
+        assertEquals(
+            "unknown",
+            InstallReferrerManager.deriveInstallChannel("utm_source=(not%20set)&utm_medium=(not%20set)"),
+        )
+        assertEquals("utm", InstallReferrerManager.deriveInstallChannel("utm_source=newsletter&utm_medium=email"))
+    }
+
+    @Test
     fun deriveInstallChannel_googlePlayIsOrganicBeforeGenericUtm() {
         assertEquals("organic", InstallReferrerManager.deriveInstallChannel("utm_source=google-play"))
         assertEquals(

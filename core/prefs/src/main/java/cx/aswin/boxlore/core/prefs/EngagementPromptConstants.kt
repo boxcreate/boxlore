@@ -12,4 +12,7 @@ object EngagementPromptConstants {
 
     /** Maximum NPS score (inclusive) treated as a detractor for milestone review gating. */
     const val DETRACTOR_SCORE_MAX = 7
+
+    /** Days after installing boxlore, or after a library import, before any review prompt. */
+    const val REVIEW_QUIET_DAYS = 2
 }

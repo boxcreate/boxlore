@@ -158,6 +158,7 @@ src/main/java/cx/aswin/boxlore/feature/settings/
 
 ## Testing notes
 
+- Settings analytics: a control sends `settings_interaction` only when its value changes (`trackedForAnalytics` reads the current `AppearanceUiState`; `trackDownloadSetting` for Smart Downloads and automatic downloads, which now report each control as `smart_downloads_*` and `auto_download_*`; the playback lengths compare with the saved value). Player appearance reports `mini_player_seek_buttons_toggled` and `full_player_style_changed`. A sent feedback form sends `feedback_sent` (category, with email, with diagnostics; never the text), and the Feedback screen's rate button sends `store_review_opened`. `AppearanceActionsTrackedTest` and `AutoDownloadSettingsActionsTest` cover re-picks reporting nothing.
 - Tablet top bars align with their bounded content column and keep a flat surface. Footer clearance follows actual mini-player visibility. RSS match confirmation remains scrollable in short viewports; the Support page fits without scrolling instead (see Support worlds). Phone spacing remains unchanged.
 
 - Tablet settings use the shared Utility cap (720dp), including Smart Downloads, Feedback and Support outside the ordinary settings scaffold. Existing account/editor caps remain smaller or bound each editor column. Phone constraints are unchanged.

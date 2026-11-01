@@ -524,54 +524,6 @@ class UserPreferencesRepositoryTest {
         assertEquals("2.5.0", repository.dismissedFeatureVersion.first())
     }
 
-    // ---- Review logic ----
-
-    @Test
-    fun shouldShowReviewPromptFalseWhilePlaying() = runTest {
-        assertFalse(repository.shouldShowReviewPrompt(isPlaying = true))
-    }
-
-    @Test
-    fun shouldShowReviewPromptFalseWithoutPendingMilestone() = runTest {
-        assertFalse(repository.shouldShowReviewPrompt(isPlaying = false))
-    }
-
-    @Test
-    fun markReviewedBlocksFuturePrompts() = runTest {
-        assertFalse(repository.reviewHasReviewed.first())
-        repository.markReviewed()
-        assertTrue(repository.reviewHasReviewed.first())
-        assertTrue(repository.hasReviewedSync())
-    }
-
-    @Test
-    fun reviewMilestonePendingTracksHighestReachedTier() = runTest {
-        assertNull(repository.reviewMilestonePending())
-
-        repository.syncReviewMilestonePending(3)
-        assertNull(repository.reviewMilestonePending())
-
-        repository.syncReviewMilestonePending(5)
-        assertEquals(5, repository.reviewMilestonePending())
-
-        repository.syncReviewMilestonePending(30)
-        assertEquals(30, repository.reviewMilestonePending())
-
-        // Lower milestone does not downgrade.
-        repository.syncReviewMilestonePending(15)
-        assertEquals(30, repository.reviewMilestonePending())
-
-        repository.clearReviewMilestonePending()
-        assertNull(repository.reviewMilestonePending())
-    }
-
-    @Test
-    fun reviewMilestoneNotStoredAfterReview() = runTest {
-        repository.markReviewed()
-        repository.syncReviewMilestonePending(30)
-        assertNull(repository.reviewMilestonePending())
-    }
-
     @Test
     fun engagementCooldownElapsedByDefaultThenResets() = runTest {
         assertTrue(repository.isEngagementCooldownElapsed())

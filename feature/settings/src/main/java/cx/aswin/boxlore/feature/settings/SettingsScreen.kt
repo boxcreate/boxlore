@@ -677,95 +677,112 @@ private fun trackedLibraryBackupActions(
 
 /**
  * Wraps the appearance callbacks with their analytics tracking, without changing behavior.
- * [currentState] is read at each pick, so a hero card style or colour pick reports the full look it makes.
+ * [currentState] is read at each pick, so a hero card style or colour pick reports the full look it
+ * makes, and a pick that leaves a setting as it was (re-tapping the current choice) reports nothing.
  */
-internal fun AppearanceActions.trackedForAnalytics(currentState: () -> AppearanceUiState? = { null }): AppearanceActions = AppearanceActions(
-    onSetThemeConfig = {
-        AnalyticsHelper.trackSettingsInteraction("theme_mode_changed", it)
-        onSetThemeConfig(it)
-    },
-    onToggleDynamicColor = {
-        AnalyticsHelper.trackSettingsInteraction("dynamic_color_toggled", it.toString())
-        onToggleDynamicColor(it)
-    },
-    onSetThemeBrand = {
-        AnalyticsHelper.trackSettingsInteraction("theme_brand_changed", it)
-        onSetThemeBrand(it)
-    },
-    onSetThemePreset = {
-        AnalyticsHelper.trackSettingsInteraction("surface_style_changed", it)
-        onSetThemePreset(it)
-    },
-    onSetSurfaceStyle = {
-        AnalyticsHelper.trackSettingsInteraction("surface_style_changed", it)
-        onSetSurfaceStyle(it)
-    },
-    onSetFontRoundness = {
-        AnalyticsHelper.trackSettingsInteraction("font_roundness_changed", it)
-        onSetFontRoundness(it)
-    },
-    onSetNavigationStyle = {
-        AnalyticsHelper.trackSettingsInteraction("navigation_style_changed", it)
-        onSetNavigationStyle(it)
-    },
-    onSetOpenAppTo = {
-        AnalyticsHelper.trackSettingsInteraction("open_app_to_changed", it)
-        onSetOpenAppTo(it)
-    },
-    onSetHomeShortcutsInLibrary = {
-        AnalyticsHelper.trackSettingsInteraction("home_shortcuts_in_library_toggled", it.toString())
-        onSetHomeShortcutsInLibrary(it)
-    },
-    onSetWidgetAppearance = {
-        AnalyticsHelper.trackSettingsInteraction("widget_appearance_changed", it)
-        onSetWidgetAppearance(it)
-    },
-    onSetExploreDefaultTab = {
-        AnalyticsHelper.trackSettingsInteraction("explore_default_tab_changed", it)
-        onSetExploreDefaultTab(it)
-    },
-    onSetSubscriptionsDefaultTab = {
-        AnalyticsHelper.trackSettingsInteraction("subscriptions_default_tab_changed", it)
-        onSetSubscriptionsDefaultTab(it)
-    },
-    onSetSubscriptionsTabStyle = {
-        AnalyticsHelper.trackSettingsInteraction("subscriptions_tab_style_changed", it)
-        onSetSubscriptionsTabStyle(it)
-    },
-    onSetMiniPlayerSeekButtonsEnabled = onSetMiniPlayerSeekButtonsEnabled,
-    onSetFullPlayerStyle = onSetFullPlayerStyle,
-    onSetArtworkColorsEnabled = { enabled ->
-        AnalyticsHelper.trackSettingsInteraction("artwork_colors_toggled", enabled.toString())
-        onSetArtworkColorsEnabled(enabled)
-    },
-    onSetNavigationBlurLevel = {
-        AnalyticsHelper.trackSettingsInteraction("navigation_blur_changed", it)
-        onSetNavigationBlurLevel(it)
-    },
-    onSetHeroCardStyle = { style ->
-        AnalyticsHelper.trackSettingsInteraction("hero_card_style_changed", style)
-        val current = currentState()
-        val shade = current?.heroCoverShade ?: HeroCoverShade.UNSET
-        AnalyticsHelper.trackHomeHeroStyleSelected(current?.heroCardStyle, current?.heroCoverShade, style, shade)
-        onSetHeroCardStyle(style)
-    },
-    onSetHeroCoverShade = { shade ->
-        AnalyticsHelper.trackSettingsInteraction("hero_cover_shade_changed", shade)
-        val current = currentState()
-        val style = current?.heroCardStyle ?: HeroCardStyle.DEFAULT
-        AnalyticsHelper.trackHomeHeroStyleSelected(current?.heroCardStyle, current?.heroCoverShade, style, shade)
-        onSetHeroCoverShade(shade)
-    },
-    onSetHeroTideProgress = { shape ->
-        AnalyticsHelper.trackSettingsInteraction("hero_tide_progress_changed", shape)
-        onSetHeroTideProgress(shape)
-    },
-    onApplyTheme = { selection, custom ->
-        AnalyticsHelper.trackSettingsInteraction("surface_style_changed", selection.surfaceStyle)
-        onApplyTheme(selection, custom)
-    },
-    onSaveCustomTheme = onSaveCustomTheme,
-)
+internal fun AppearanceActions.trackedForAnalytics(currentState: () -> AppearanceUiState? = { null }): AppearanceActions {
+    fun <T : Any> report(key: String, value: T, current: (AppearanceUiState) -> T) {
+        val state = currentState()
+        if (state == null || current(state) != value) AnalyticsHelper.trackSettingsInteraction(key, value.toString())
+    }
+    return AppearanceActions(
+        onSetThemeConfig = {
+            report("theme_mode_changed", it) { state -> state.currentThemeConfig }
+            onSetThemeConfig(it)
+        },
+        onToggleDynamicColor = {
+            report("dynamic_color_toggled", it) { state -> state.isDynamicColorEnabled }
+            onToggleDynamicColor(it)
+        },
+        onSetThemeBrand = {
+            report("theme_brand_changed", it) { state -> state.currentThemeBrand }
+            onSetThemeBrand(it)
+        },
+        onSetThemePreset = {
+            report("surface_style_changed", it) { state -> state.currentSurfaceStyle }
+            onSetThemePreset(it)
+        },
+        onSetSurfaceStyle = {
+            report("surface_style_changed", it) { state -> state.currentSurfaceStyle }
+            onSetSurfaceStyle(it)
+        },
+        onSetFontRoundness = {
+            report("font_roundness_changed", it) { state -> state.currentFontRoundness }
+            onSetFontRoundness(it)
+        },
+        onSetNavigationStyle = {
+            report("navigation_style_changed", it) { state -> state.currentNavigationStyle }
+            onSetNavigationStyle(it)
+        },
+        onSetOpenAppTo = {
+            report("open_app_to_changed", it) { state -> state.currentOpenAppTo }
+            onSetOpenAppTo(it)
+        },
+        onSetHomeShortcutsInLibrary = {
+            report("home_shortcuts_in_library_toggled", it) { state -> state.homeShortcutsInLibrary }
+            onSetHomeShortcutsInLibrary(it)
+        },
+        onSetWidgetAppearance = {
+            report("widget_appearance_changed", it) { state -> state.currentWidgetAppearance }
+            onSetWidgetAppearance(it)
+        },
+        onSetExploreDefaultTab = {
+            report("explore_default_tab_changed", it) { state -> state.currentExploreDefaultTab }
+            onSetExploreDefaultTab(it)
+        },
+        onSetSubscriptionsDefaultTab = {
+            report("subscriptions_default_tab_changed", it) { state -> state.currentSubscriptionsDefaultTab }
+            onSetSubscriptionsDefaultTab(it)
+        },
+        onSetSubscriptionsTabStyle = {
+            report("subscriptions_tab_style_changed", it) { state -> state.currentSubscriptionsTabStyle }
+            onSetSubscriptionsTabStyle(it)
+        },
+        onSetMiniPlayerSeekButtonsEnabled = {
+            report("mini_player_seek_buttons_toggled", it) { state -> state.miniPlayerSeekButtonsEnabled }
+            onSetMiniPlayerSeekButtonsEnabled(it)
+        },
+        onSetFullPlayerStyle = {
+            report("full_player_style_changed", it) { state -> state.fullPlayerStyle }
+            onSetFullPlayerStyle(it)
+        },
+        onSetArtworkColorsEnabled = { enabled ->
+            report("artwork_colors_toggled", enabled) { state -> state.artworkColorsEnabled }
+            onSetArtworkColorsEnabled(enabled)
+        },
+        onSetNavigationBlurLevel = {
+            report("navigation_blur_changed", it) { state -> state.navigationBlurLevel }
+            onSetNavigationBlurLevel(it)
+        },
+        onSetHeroCardStyle = { style ->
+            report("hero_card_style_changed", style) { state -> state.heroCardStyle }
+            val current = currentState()
+            val shade = current?.heroCoverShade ?: HeroCoverShade.UNSET
+            AnalyticsHelper.trackHomeHeroStyleSelected(current?.heroCardStyle, current?.heroCoverShade, style, shade)
+            onSetHeroCardStyle(style)
+        },
+        onSetHeroCoverShade = { shade ->
+            report("hero_cover_shade_changed", shade) { state -> state.heroCoverShade }
+            val current = currentState()
+            val style = current?.heroCardStyle ?: HeroCardStyle.DEFAULT
+            AnalyticsHelper.trackHomeHeroStyleSelected(current?.heroCardStyle, current?.heroCoverShade, style, shade)
+            onSetHeroCoverShade(shade)
+        },
+        onSetHeroTideProgress = { shape ->
+            report("hero_tide_progress_changed", shape) { state -> state.heroTideProgress }
+            onSetHeroTideProgress(shape)
+        },
+        onApplyTheme = { selection, custom ->
+            // A theme is its brand and surface together; either changing is a change.
+            val state = currentState()
+            if (state == null || state.currentThemeBrand != selection.brand || state.currentSurfaceStyle != selection.surfaceStyle) {
+                AnalyticsHelper.trackSettingsInteraction("surface_style_changed", selection.surfaceStyle)
+            }
+            onApplyTheme(selection, custom)
+        },
+        onSaveCustomTheme = onSaveCustomTheme,
+    )
+}
 
 @Composable
 private fun rememberAppInfo(context: Context): AppInfo {

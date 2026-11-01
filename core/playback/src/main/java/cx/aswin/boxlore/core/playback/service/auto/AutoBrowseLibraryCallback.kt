@@ -623,12 +623,12 @@ internal class AutoBrowseLibraryCallback(
         mediaItems: MutableList<MediaItem>,
     ): ListenableFuture<MutableList<MediaItem>> {
         android.util.Log.d("AutoBrowse", "onAddMediaItems: ${mediaItems.size} items")
+        // The app's own plays come through here too (Media3 sends setMediaItems this way).
+        val fromCar = isAndroidAuto(mediaSession, controller)
 
         return host.serviceScope.future {
             if (mediaItems.size > 1) {
-                cx.aswin.boxlore.core.analytics.PendingEntryPoint.set(
-                    mapOf("entry_point" to "android_auto_play_all"),
-                )
+                labelCarPlay(fromCar, "android_auto_play_all")
                 return@future mediaItems.map { mediaResolver.resolveMediaItem(it) }.toMutableList()
             }
 
@@ -637,18 +637,16 @@ internal class AutoBrowseLibraryCallback(
 
             if (!searchQuery.isNullOrBlank()) {
                 android.util.Log.d("AutoBrowse", "Voice play request: '$searchQuery'")
-                cx.aswin.boxlore.core.analytics.PendingEntryPoint.set(
-                    mapOf("entry_point" to "android_auto_voice"),
-                )
-                return@future voiceSearch.handleVoiceSearchQuery(searchQuery)
+                labelCarPlay(fromCar, "android_auto_voice")
+                return@future voiceSearch.handleVoiceSearchQuery(searchQuery, fromCar)
             }
 
             when (selectedItem.mediaId) {
-                PLAY_ALL_NEW_EPISODES_ID -> return@future voiceSearch.handlePlayAllNewEpisodes()
-                AutoBrowseContract.PLAY_ALL_LIKED_ID -> return@future voiceSearch.handlePlayAllLiked()
-                AutoBrowseContract.PLAY_ALL_DOWNLOADS_ID -> return@future voiceSearch.handlePlayAllDownloads()
-                AutoBrowseContract.PLAY_ALL_DRIVE_ID -> return@future voiceSearch.handlePlayAllDrivePicks()
-                AutoBrowseContract.PLAY_ALL_MIXTAPE_ID -> return@future voiceSearch.handlePlayAllMixtape()
+                PLAY_ALL_NEW_EPISODES_ID -> return@future voiceSearch.handlePlayAllNewEpisodes(fromCar)
+                AutoBrowseContract.PLAY_ALL_LIKED_ID -> return@future voiceSearch.handlePlayAllLiked(fromCar)
+                AutoBrowseContract.PLAY_ALL_DOWNLOADS_ID -> return@future voiceSearch.handlePlayAllDownloads(fromCar)
+                AutoBrowseContract.PLAY_ALL_DRIVE_ID -> return@future voiceSearch.handlePlayAllDrivePicks(fromCar)
+                AutoBrowseContract.PLAY_ALL_MIXTAPE_ID -> return@future voiceSearch.handlePlayAllMixtape(fromCar)
             }
 
             val source =
@@ -656,13 +654,13 @@ internal class AutoBrowseLibraryCallback(
                     ?.getString(AutoBrowseContract.EXTRA_SOURCE)
                     ?: AutoBrowseContract.SOURCE_DISCOVER
             if (selectedItem.mediaId.startsWith(AutoBrowseContract.QUEUE_PREFIX)) {
-                return@future voiceSearch.handlePlayFromQueue(selectedItem.mediaId.stripEpisodePrefix())
+                return@future voiceSearch.handlePlayFromQueue(selectedItem.mediaId.stripEpisodePrefix(), fromCar)
             }
             if (source == AutoBrowseContract.SOURCE_MIXTAPE) {
-                return@future voiceSearch.handlePlayFromMixtape(selectedItem.mediaId.stripEpisodePrefix())
+                return@future voiceSearch.handlePlayFromMixtape(selectedItem.mediaId.stripEpisodePrefix(), fromCar)
             }
 
-            handleSingleMediaItemSelection(mediaSession, selectedItem, source)
+            handleSingleMediaItemSelection(mediaSession, selectedItem, source, fromCar)
         }
     }
 
@@ -670,15 +668,14 @@ internal class AutoBrowseLibraryCallback(
         mediaSession: MediaSession,
         selectedItem: MediaItem,
         source: String,
+        fromCar: Boolean,
     ): MutableList<MediaItem> {
         android.util.Log.d(
             "BoxCastPlayer",
             "onAddMediaItems: selectedItem.mediaId=${selectedItem.mediaId}, " +
                 "extrasKeys=${selectedItem.mediaMetadata.extras?.keySet()?.joinToString(", ")}",
         )
-        cx.aswin.boxlore.core.analytics.PendingEntryPoint.set(
-            mapOf("entry_point" to "android_auto_$source"),
-        )
+        labelCarPlay(fromCar, "android_auto_$source")
         val resolvedItem = mediaResolver.resolveMediaItem(selectedItem)
         val episodeId = selectedItem.mediaId.stripEpisodePrefix()
         android.util.Log.d(

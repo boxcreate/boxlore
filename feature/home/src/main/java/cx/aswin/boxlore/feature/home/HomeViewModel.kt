@@ -177,6 +177,12 @@ class HomeViewModel(
             )
     internal val userPrefs = userPreferencesRepository
     internal val boxcastPrefs = BoxcastPrefs(application)
+
+    /** When boxlore was installed on this device; a backup restore doesn't carry it over. 0 if unknown. */
+    internal val installedAtMs: Long by lazy {
+        runCatching { application.packageManager.getPackageInfo(application.packageName, 0).firstInstallTime }
+            .getOrDefault(0L)
+    }
     private val _featuredVideoPodcasts = MutableStateFlow(featuredVideoPodcasts())
     val featuredVideoPodcasts: StateFlow<List<Podcast>> = _featuredVideoPodcasts.asStateFlow()
     private val _featuredVideoShowcaseDismissed =
@@ -614,13 +620,6 @@ class HomeViewModel(
     fun triggerPostReview() {
         _showReviewPrompt.value = false
         _showPostReview.value = true
-    }
-
-    fun markReviewPromptShown() {
-        viewModelScope.launch {
-            userPrefs.markReviewPromptShown()
-            _showReviewPrompt.value = false
-        }
     }
 
     fun markReviewed() {

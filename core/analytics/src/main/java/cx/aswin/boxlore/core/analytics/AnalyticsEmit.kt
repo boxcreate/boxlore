@@ -25,6 +25,17 @@ internal object AnalyticsEmit {
         }
     }
 
+    /**
+     * Person properties PostHog keeps from the first time they arrive. They go in the SDK's own
+     * set-once slot: nested under [personSetSink] they'd land as one property named `$set_once`.
+     */
+    @Volatile
+    var personSetOnceSink: (Map<String, Any>) -> Unit = { userProperties ->
+        PostHogStartup.runWhenReady {
+            PostHog.capture(event = AnalyticsGlossary.PERSON_SET_EVENT, userPropertiesSetOnce = userProperties)
+        }
+    }
+
     /** PostHog error tracking (`$exception`); receives [AnalyticsRedaction] copies only. */
     @Volatile
     var exceptionSink: (Throwable, Map<String, Any>) -> Unit = { error, properties ->
@@ -42,15 +53,18 @@ internal object AnalyticsEmit {
     fun installRecordingSink(recorder: MutableList<Pair<String, Map<String, Any>>>, applyLevels: Boolean = false,): () -> Unit {
         val previousEvent = eventSink
         val previousPerson = personSetSink
+        val previousPersonOnce = personSetOnceSink
         val previousException = exceptionSink
         val previousLevels = this.applyLevels
         eventSink = { event, props -> recorder.add(event to props) }
         personSetSink = { props -> recorder.add(AnalyticsGlossary.PERSON_SET_EVENT to props) }
+        personSetOnceSink = { props -> recorder.add(AnalyticsGlossary.PERSON_SET_EVENT to mapOf(SET_ONCE_KEY to props)) }
         exceptionSink = { _, props -> recorder.add(EXCEPTION_EVENT to props) }
         this.applyLevels = applyLevels
         return {
             eventSink = previousEvent
             personSetSink = previousPerson
+            personSetOnceSink = previousPersonOnce
             exceptionSink = previousException
             this.applyLevels = previousLevels
         }
@@ -69,6 +83,11 @@ internal object AnalyticsEmit {
         personSetSink(properties)
     }
 
+    /** Sets person properties only where the person doesn't have them yet. */
+    fun personSetOnce(properties: Map<String, Any>) {
+        if (properties.isNotEmpty()) personSetOnceSink(properties)
+    }
+
     /** Sends a redacted copy of [error] to error tracking: no links or signed tokens in any message. */
     fun exception(error: Throwable, properties: Map<String, Any> = emptyMap(),) {
         exceptionSink(AnalyticsRedaction.throwable(error), properties)
@@ -76,4 +95,7 @@ internal object AnalyticsEmit {
 
     /** How a recording sink names error-tracking captures. */
     const val EXCEPTION_EVENT = "\$exception"
+
+    /** How a recording sink shows [personSetOnce] properties. */
+    const val SET_ONCE_KEY = "\$set_once"
 }

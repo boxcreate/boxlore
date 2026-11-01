@@ -47,6 +47,7 @@ import coil.compose.AsyncImage
 import cx.aswin.boxlore.BuildConfig
 import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.analytics.AnnouncementRef
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreDialog as Dialog
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository.Announcement
@@ -61,12 +62,21 @@ fun InAppAnnouncementDialog(announcement: Announcement, onDismiss: () -> Unit, o
     val actions = remember(announcement) { announcementActions(announcement) }
     val fullscreen = announcement.presentation == "fullscreen"
     val colors = announcementColors(MaterialTheme.colorScheme, announcement.tone)
+    val ref = remember(announcement) { AnnouncementRef(announcement.timestamp.toString(), announcement.title, announcement.presentation) }
+    val hasImage = !announcement.imageUrl.isNullOrBlank()
+    // Whether the alert shows a button that does something, from the buttons it actually draws.
+    val hasAction = actions.isNotEmpty()
     val dismiss = {
-        AnalyticsHelper.trackInAppAnnouncementDismissed(announcement.category, !announcement.imageUrl.isNullOrBlank(), announcement.showActionInApp)
+        AnalyticsHelper.trackInAppAnnouncementDismissed(announcement.category, hasImage, hasAction, ref)
         onDismiss()
     }
+    val act: (String) -> Unit = { route ->
+        val kind = actions.firstOrNull { it.route == route }?.kind ?: AnnouncementActionKind.CUSTOM
+        AnalyticsHelper.trackInAppAnnouncementAction(announcement.category, hasImage, kind.name.lowercase(), ref)
+        onAction(route)
+    }
     LaunchedEffect(announcement.timestamp) {
-        AnalyticsHelper.trackInAppAnnouncementViewed(announcement.category, !announcement.imageUrl.isNullOrBlank(), announcement.showActionInApp && !announcement.route.isNullOrBlank())
+        AnalyticsHelper.trackInAppAnnouncementViewed(announcement.category, hasImage, hasAction, ref)
     }
     MaterialTheme(colorScheme = colors) {
         Dialog(onDismissRequest = dismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
@@ -95,7 +105,7 @@ fun InAppAnnouncementDialog(announcement: Announcement, onDismiss: () -> Unit, o
                             Text(announcement.title, style = if (fullscreen) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.headlineSmall)
                             ReleaseNotesMarkdown(announcement.body, stripPrLinks = false)
                         }
-                        AnnouncementFooter(actions, dismiss, onAction)
+                        AnnouncementFooter(actions, dismiss, act)
                     }
                 }
             }

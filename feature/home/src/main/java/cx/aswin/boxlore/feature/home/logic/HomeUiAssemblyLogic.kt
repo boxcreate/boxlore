@@ -10,6 +10,7 @@ import cx.aswin.boxlore.core.playback.PlaybackSkipPolicy
 import cx.aswin.boxlore.feature.home.HomeEditorialRow
 import cx.aswin.boxlore.feature.home.HomeListeningHistoryItem
 import cx.aswin.boxlore.feature.home.SmartHeroItem
+import cx.aswin.boxlore.feature.home.countFinishedSince
 
 internal data class HomeMixtapeCache(
     val podcasts: List<Podcast>,
@@ -107,8 +108,10 @@ internal object HomeUiAssemblyLogic {
         pinnedPodcastIds: List<String> = emptyList(),
         refreshShowsOrderFromScores: Boolean = false,
         episodeAliases: Map<String, Set<String>> = emptyMap(),
+        installedAtMs: Long = 0L,
     ): HomeUiAssemblyResult {
-        val completedCount = allHistory.count { it.isCompleted }
+        // The review prompt's count: the same one that decides when it shows.
+        val completedCount = allHistory.countFinishedSince(installedAtMs)
         // Looked up by the IDs the shows list: an episode stored under several IDs under each of them.
         val historyByEveryId = HomeCatchUpLogic.underEveryId(allHistory, episodeAliases)
         val catchUp =

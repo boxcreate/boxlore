@@ -277,6 +277,8 @@ fun PostReviewSheet(
             OutlinedButton(
                 onClick = {
                     onDismissRequest()
+                    cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                        .trackStoreReviewOpened(method = "store_page", source = "post_review")
                     val pkgName = context.packageName
                     try {
                         context.startActivity(

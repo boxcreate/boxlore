@@ -81,6 +81,7 @@ src/main/java/cx/aswin/boxlore/core/prefs/
 - Preference keys defined in `UserPreferenceKeys` and `BoxcastPrefs` are persisted user identity and must not be renamed casually.
 - `subscription_manual_order` and `home_pinned_podcast_ids` live in the same `user_preferences` DataStore (do not rename the file). Unsubscribe drops that id from both lists.
 - `seen_listening_story` (`seenListeningStoryStream` / `setSeenListeningStory`, added 2026-10-31): the last monthly listening story opened, as `yyyy-MM`, so Listening history stops calling it New. Local to the phone.
+- Review prompt (`EngagementPreferences`): a milestone (5, 15 or 30 episodes finished in boxlore on this install; Home counts them) is stored as `review_milestone_pending` and, once a prompt shows, as `review_milestone_consumed`, so the same milestone never asks again. `shouldShowReviewPrompt` and `isInReviewQuietPeriod` take Android's install time (a backup doesn't carry it) and keep a 2-day quiet period (`REVIEW_QUIET_DAYS`) after it and after `library_imported_at` (`markLibraryImported`). `review_first_launch_at` (the old lazily set install day) is no longer read. `has_logged_first_play` is read only so an updated install doesn't send `first_episode_played` again; the player claims it now. `UserPreferencesRepositoryTest` covers the quiet days after install and import and a used milestone never coming back.
 - `legacy_rss_repair_*` keys are a crash-recovery contract; keep them until every shipping build that can begin the repair has aged out.
 
 ## Testing notes

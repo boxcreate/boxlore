@@ -73,11 +73,13 @@ class EngagementPromptCoordinator(
 
     /**
      * True when a deferred promoter handoff is pending and the user has not reviewed yet.
-     * Does not apply the 14-day cooldown — that prompt completes the NPS journey.
+     * Does not apply the 14-day cooldown — that prompt completes the NPS journey — but waits out
+     * the quiet days after installing ([installedAtMs]) or importing a library.
      */
-    suspend fun shouldShowPromoterReview(isPlaying: Boolean): Boolean {
+    suspend fun shouldShowPromoterReview(isPlaying: Boolean, installedAtMs: Long,): Boolean {
         if (!canShowProactivePrompt(isPlaying)) return false
         if (userPrefs.hasReviewedSync()) return false
+        if (userPrefs.isInReviewQuietPeriod(installedAtMs)) return false
         if (!userPrefs.hasNpsSurveyFired()) return false
         return userPrefs.isPromoterReviewPending()
     }

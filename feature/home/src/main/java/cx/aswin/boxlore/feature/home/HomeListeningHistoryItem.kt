@@ -12,7 +12,16 @@ data class HomeListeningHistoryItem(
     val isCompleted: Boolean,
     val isLiked: Boolean,
     val lastPlayedAt: Long,
+    /** When it was played to the end; null when only marked played or not finished. */
+    val finishedAt: Long? = null,
 )
+
+/**
+ * Episodes played to the end in boxlore since it was installed on this device. Marked-played rows
+ * and rows restored or synced from before the install don't count.
+ */
+internal fun List<HomeListeningHistoryItem>.countFinishedSince(installedAtMs: Long): Int =
+    count { it.isCompleted && it.finishedAt?.let { at -> at >= installedAtMs } == true }
 
 internal fun ListeningHistoryEntity.toHomeListeningHistoryItem(): HomeListeningHistoryItem = HomeListeningHistoryItem(
     episodeId = episodeId,
@@ -24,4 +33,5 @@ internal fun ListeningHistoryEntity.toHomeListeningHistoryItem(): HomeListeningH
     isCompleted = isCompleted,
     isLiked = isLiked,
     lastPlayedAt = lastPlayedAt,
+    finishedAt = finishedAt,
 )

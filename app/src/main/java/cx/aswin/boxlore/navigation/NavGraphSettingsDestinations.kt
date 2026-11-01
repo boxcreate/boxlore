@@ -254,9 +254,12 @@ private fun buildPlaybackSettings(w: NavGraphWiring): PlaybackSettings {
     val userPrefs = w.userPrefs
     val settingsState = w.settingsState
 
-    fun trackAndPersistPlaybackDuration(eventName: String, value: Long, persist: suspend (Long) -> Unit) {
-        cx.aswin.boxlore.core.analytics.AnalyticsHelper
-            .trackSettingsInteraction(eventName, value.toString())
+    // Reported only when the value changes, so re-picking the current length sends nothing.
+    fun trackAndPersistPlaybackDuration(eventName: String, value: Long, previous: Long, persist: suspend (Long) -> Unit) {
+        if (value != previous) {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                .trackSettingsInteraction(eventName, value.toString())
+        }
         scope.launch { persist(value) }
     }
 
@@ -276,16 +279,16 @@ private fun buildPlaybackSettings(w: NavGraphWiring): PlaybackSettings {
         actions = PlaybackActions(
             onSetSkipBehavior = { behavior -> scope.launch { userPrefs.setSkipBehavior(behavior) } },
             onSetSkipBeginningMs = { value ->
-                trackAndPersistPlaybackDuration("skip_beginning_changed", value, userPrefs::setSkipBeginningMs)
+                trackAndPersistPlaybackDuration("skip_beginning_changed", value, settingsState.skipBeginningMs, userPrefs::setSkipBeginningMs)
             },
             onSetSkipEndingMs = { value ->
-                trackAndPersistPlaybackDuration("skip_ending_changed", value, userPrefs::setSkipEndingMs)
+                trackAndPersistPlaybackDuration("skip_ending_changed", value, settingsState.skipEndingMs, userPrefs::setSkipEndingMs)
             },
             onSetSeekBackwardMs = { value ->
-                trackAndPersistPlaybackDuration("seek_backward_changed", value, userPrefs::setSeekBackwardMs)
+                trackAndPersistPlaybackDuration("seek_backward_changed", value, settingsState.seekBackwardMs, userPrefs::setSeekBackwardMs)
             },
             onSetSeekForwardMs = { value ->
-                trackAndPersistPlaybackDuration("seek_forward_changed", value, userPrefs::setSeekForwardMs)
+                trackAndPersistPlaybackDuration("seek_forward_changed", value, settingsState.seekForwardMs, userPrefs::setSeekForwardMs)
             },
             onSetHideCompletedInHome = { hide -> scope.launch { userPrefs.setHideCompletedInHome(hide) } },
             onSetHideCompletedInSubs = { hide -> scope.launch { userPrefs.setHideCompletedInSubs(hide) } },

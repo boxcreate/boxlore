@@ -15,17 +15,12 @@ internal object GrowthSessionAnalyticsTracks {
         utmSource: String? = null,
         shareToken: String? = null,
     ) {
-        AnalyticsEmit.personSet(
+        AnalyticsEmit.personSetOnce(
             buildMap {
-                put(
-                    "\$set_once",
-                    buildMap {
-                        put("install_channel", installChannel)
-                        referrerRaw?.takeIf { it.isNotBlank() }?.let { put("referrer_raw", it) }
-                        utmSource?.takeIf { it.isNotBlank() }?.let { put("utm_source", it) }
-                        shareToken?.takeIf { it.isNotBlank() }?.let { put("share_token", it) }
-                    },
-                )
+                put("install_channel", installChannel)
+                referrerRaw?.takeIf { it.isNotBlank() }?.let { put("referrer_raw", it) }
+                utmSource?.takeIf { it.isNotBlank() }?.let { put("utm_source", it) }
+                shareToken?.takeIf { it.isNotBlank() }?.let { put("share_token", it) }
             },
         )
     }

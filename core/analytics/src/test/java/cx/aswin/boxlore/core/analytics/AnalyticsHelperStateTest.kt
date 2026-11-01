@@ -73,38 +73,33 @@ class AnalyticsHelperStateTest {
 
     @Test
     fun trackEngagementPromptShownIncludesCompletedEpisodesWhenPresent() {
-        AnalyticsHelper.trackEngagementPromptShown("nps", "home", 7)
+        AnalyticsHelper.trackEngagementPromptShown("milestone_review", "episode_milestone", 7)
 
-        val event = recorder.first { it.first == "feedback_submitted" }
-        assertEquals("nps", event.second["feedback_type"])
-        assertEquals("home", event.second["source"])
+        val event = recorder.first { it.first == "engagement_prompt_shown" }
+        assertEquals("milestone_review", event.second["prompt_type"])
+        assertEquals("episode_milestone", event.second["source"])
         assertEquals(7, event.second["completed_episodes"])
     }
 
     @Test
     fun trackEngagementPromptShownOmitsCompletedWhenNull() {
-        AnalyticsHelper.trackEngagementPromptShown("nps", "home", null)
+        AnalyticsHelper.trackEngagementPromptShown("promoter_review", "nps_handoff", null, npsScore = 9)
 
-        val event = recorder.first { it.first == "feedback_submitted" }
+        val event = recorder.first { it.first == "engagement_prompt_shown" }
         assertFalse(event.second.containsKey("completed_episodes"))
-    }
-
-    @Test
-    fun trackPromoterReviewHandoffIncludesScores() {
-        AnalyticsHelper.trackPromoterReviewHandoff(9)
-
-        val event = recorder.first { it.first == "feedback_submitted" }
-        assertEquals("promoter_review_handoff", event.second["feedback_type"])
-        assertEquals(9, event.second["score"])
         assertEquals(9, event.second["nps_score"])
     }
 
     @Test
-    fun trackPromoterReviewHandoffOmitsScoreWhenNull() {
-        AnalyticsHelper.trackPromoterReviewHandoff(null)
+    fun reviewPromptsNeverSendTheSurveyTrigger() {
+        // Regression: prompts sent feedback_submitted, which also made the person eligible for the NPS survey.
+        AnalyticsHelper.trackEngagementPromptShown("milestone_review", "episode_milestone", 5)
+        AnalyticsHelper.trackStoreReviewOpened(method = "in_app_review", source = "review_prompt")
+        AnalyticsHelper.trackFeedbackSent(category = "bug", withEmail = true, withDiagnostics = false)
 
-        val event = recorder.first { it.first == "feedback_submitted" }
-        assertFalse(event.second.containsKey("score"))
+        assertFalse(recorder.any { it.first == "feedback_submitted" }, "got ${recorder.map { it.first }}")
+        val sent = recorder.first { it.first == "feedback_sent" }.second
+        assertEquals(mapOf("category" to "bug", "with_email" to true, "with_diagnostics" to false), sent)
     }
 
     @Test

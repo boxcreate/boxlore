@@ -47,19 +47,19 @@ class RecordingAnalyticsExtraTest {
     }
 
     @Test
-    fun trackPromoterReviewHandoffIncludesScoreWhenPresent() {
-        analytics.trackPromoterReviewHandoff(npsScore = 10)
+    fun trackEngagementPromptShownCarriesNpsScoreWhenPresent() {
+        analytics.trackEngagementPromptShown("promoter_review", "nps_handoff", npsScore = 10)
 
         val event = analytics.lastEvent!!
-        assertEquals("promoter_review_handoff", event.properties["feedback_type"])
-        assertEquals(10, event.properties["score"])
+        assertEquals("engagement_prompt_shown", event.name)
+        assertEquals(10, event.properties["nps_score"])
     }
 
     @Test
-    fun trackPromoterReviewHandoffOmitsScoreWhenNull() {
-        analytics.trackPromoterReviewHandoff(npsScore = null)
+    fun trackEngagementPromptShownOmitsNpsScoreWhenNull() {
+        analytics.trackEngagementPromptShown("milestone_review", "episode_milestone", completedEpisodes = 5)
 
-        assertFalse("score" in analytics.lastEvent!!.properties)
+        assertFalse("nps_score" in analytics.lastEvent!!.properties)
     }
 
     @Test

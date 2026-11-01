@@ -101,12 +101,12 @@ class RecordingAnalyticsTest {
     }
 
     @Test
-    fun `trackEngagementPromptShown emits feedback_submitted`() {
-        analytics.trackEngagementPromptShown("nps", "home_screen", 5)
+    fun `trackEngagementPromptShown emits engagement_prompt_shown`() {
+        analytics.trackEngagementPromptShown("milestone_review", "home_screen", 5)
 
         val event = analytics.lastEvent!!
-        assertEquals("feedback_submitted", event.name)
-        assertEquals("nps", event.properties["feedback_type"])
+        assertEquals("engagement_prompt_shown", event.name)
+        assertEquals("milestone_review", event.properties["prompt_type"])
         assertEquals("home_screen", event.properties["source"])
         assertEquals(5, event.properties["completed_episodes"])
     }
@@ -168,7 +168,7 @@ class AnalyticsGlossaryAllowlistTest {
     @Test
     fun `phase A union B has expected cardinality`() {
         // 40 Phase A (with onboarding_similar_choice, the two listen events and the two screen events) + 1 A/B + 29 Phase B + 5 Support + 2 custom-theme + 1 hero-style + 1 LeaveMeAlone events.
-        assertEquals(79, AnalyticsGlossary.PHASE_A_UNION_B.size)
+        assertEquals(83, AnalyticsGlossary.PHASE_A_UNION_B.size)
     }
 
     @Test
@@ -265,7 +265,7 @@ class AnalyticsGlossaryAllowlistTest {
                 isSubscribed = true,
                 entryPoint = "home_hero_resume_grid",
             )
-            AnalyticsHelper.trackEngagementPromptShown("nps", "home", 3)
+            AnalyticsHelper.trackEngagementPromptShown("milestone_review", "home", 3)
             AnalyticsHelper.trackAdaptiveRankingStatus(
                 listOf(RankingAggregateTelemetry("DISCOVERY", 1, "adaptive", "50_199", true)),
             )
@@ -290,7 +290,7 @@ class AnalyticsGlossaryAllowlistTest {
         assertTrue(eventNames.contains("onboarding_search_performed"))
         assertTrue(eventNames.contains("onboarding_ai_turn_submitted"))
         assertTrue(eventNames.contains("playback_started"))
-        assertTrue(eventNames.contains("feedback_submitted"))
+        assertTrue(eventNames.contains("engagement_prompt_shown"))
         assertTrue(eventNames.contains("adaptive_ranking_status"))
         assertTrue(eventNames.contains("late_night_safeguard_decision"))
         assertTrue(eventNames.contains("proxy_fallback_triggered"))
@@ -315,6 +315,10 @@ class AnalyticsRawTextAndEntryPointTest {
             AnalyticsGlossary.normalizeEntryPoint(AnalyticsGlossary.VIDEO_SPOTLIGHT_ENTRY_POINT),
         )
         assertEquals("android_auto_discover", AnalyticsGlossary.normalizeEntryPoint("android_auto_drive_picks"))
+        // Regression: these were sent as "unknown".
+        assertEquals("queue_auto_advance", AnalyticsGlossary.normalizeEntryPoint("queue_auto_advance"))
+        assertEquals("queue_skip", AnalyticsGlossary.normalizeEntryPoint("queue_skip"))
+        assertEquals("library_latest_episodes", AnalyticsGlossary.normalizeEntryPoint("library_latest_episodes"))
     }
 
     @Test
@@ -336,6 +340,21 @@ class AnalyticsRawTextAndEntryPointTest {
         assertEquals("show me science podcasts", event.second["user_input_text"])
         assertEquals(true, event.second["has_custom_input"])
         assertFalse(event.second.containsKey("custom_input_text"))
+    }
+
+    @Test
+    fun `onboarding AI text is capped and replies never carry their text`() {
+        val captured = mutableListOf<Pair<String, Map<String, Any>>>()
+        val restore = AnalyticsEmit.installRecordingSink(captured)
+        try {
+            AnalyticsHelper.trackOnboardingAiTurnSubmitted(1, emptySet(), "a".repeat(800), 2f)
+            AnalyticsHelper.trackOnboardingAiResponseReceived(1, optionsCount = 2, optionsList = listOf("x", "y"), durationSeconds = 1f)
+        } finally {
+            restore()
+        }
+
+        assertEquals(500, (captured.first { it.first == "onboarding_ai_turn_submitted" }.second["user_input_text"] as String).length)
+        assertFalse("assistant_message" in captured.first { it.first == "onboarding_ai_response_received" }.second)
     }
 
     @Test
@@ -382,6 +401,47 @@ class AnalyticsRawTextAndEntryPointTest {
 
         val onboardingLegacy = captured.first { it.first == "onboarding_search_performed" }
         assertEquals("history wars", onboardingLegacy.second["search_query"])
+    }
+
+    @Test
+    fun `playback events keep only entry details and never let them replace a field`() {
+        // Regression: media item extras (artwork links, Android Auto keys) were copied onto playback
+        // events, and a context key could overwrite podcast_id or entry_point.
+        val captured = mutableListOf<Pair<String, Map<String, Any>>>()
+        val restore = AnalyticsEmit.installRecordingSink(captured)
+        try {
+            AnalyticsHelper.trackPlaybackStarted(
+                podcastId = "p",
+                podcastName = null,
+                podcastGenre = null,
+                episodeId = "e",
+                episodeTitle = null,
+                startPositionSeconds = 0f,
+                totalDurationSeconds = 60f,
+                isRepeating = false,
+                isSubscribed = false,
+                entryPoint = "queue",
+                entryPointContext =
+                mapOf(
+                    "source_entry_point" to "home_new_episodes",
+                    "screen" to "home",
+                    "podcast_id" to "other",
+                    "entry_point" to "search",
+                    "boxlore_artwork_sources" to listOf("https://cdn.example.com/cover.jpg"),
+                    "cx.aswin.boxlore.auto.SOURCE" to "discover",
+                ),
+            )
+        } finally {
+            restore()
+        }
+
+        val props = captured.first { it.first == "playback_started" }.second
+        assertEquals("p", props["podcast_id"])
+        assertEquals("queue", props["entry_point"])
+        assertEquals("home_new_episodes", props["source_entry_point"])
+        assertEquals("home", props["screen"])
+        assertFalse("boxlore_artwork_sources" in props)
+        assertFalse("cx.aswin.boxlore.auto.SOURCE" in props)
     }
 
     @Test

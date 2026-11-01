@@ -25,7 +25,7 @@ Launch enrichment (`first_seen_at`, `onboarding_status=pending`) goes on **perso
 
 ### entry_point
 
-`home_hero_resume`, `home_hero_jump_back_in`, `home_hero_new_episodes`, `home_hero_spotlight`, `home_mixtape`, `home_adaptive_*`, `home_because_you_like`, `home_discover_grid`, `home_video_spotlight`, `home_recommendations`, `briefing`, `explore_for_you`, `explore_trending`, `explore_category`, `explore_search_shows`, `explore_search_episodes`, `learn`, `podcast_detail`, `episode_detail`, `queue`, `downloads`, `history`, `liked`, `notification`, `deep_link`, `share`, `install_referrer`, `android_auto`, `android_auto_continue`, `android_auto_queue`, `android_auto_new_episodes`, `android_auto_mixtape`, `android_auto_downloads`, `android_auto_liked`, `android_auto_history`, `android_auto_discover`, `android_auto_voice`, `android_auto_play_all`, `mini_player`, `session_restore`, `player_up_next`, `smart_queue`, `onboarding_suggestion`, `unknown`
+`home_hero_resume`, `home_hero_jump_back_in`, `home_hero_new_episodes`, `home_hero_spotlight`, `home_mixtape`, `home_adaptive_*`, `home_because_you_like`, `home_discover_grid`, `home_video_spotlight`, `home_recommendations`, `briefing`, `explore_for_you`, `explore_trending`, `explore_category`, `explore_search_shows`, `explore_search_episodes`, `learn`, `podcast_detail`, `episode_detail`, `queue`, `queue_auto_advance`, `queue_skip`, `library_latest_episodes`, `downloads`, `history`, `liked`, `notification`, `deep_link`, `share`, `install_referrer`, `android_auto`, `android_auto_continue`, `android_auto_queue`, `android_auto_new_episodes`, `android_auto_mixtape`, `android_auto_downloads`, `android_auto_liked`, `android_auto_history`, `android_auto_discover`, `android_auto_voice`, `android_auto_play_all`, `mini_player`, `session_restore`, `player_up_next`, `smart_queue`, `onboarding_suggestion`, `unknown`
 
 Aliases (normalized in app; do not add as new enum values): `learn_history` → `learn`. Brief audio play tags `briefing` on `playback_*` (interactions remain on `daily_briefing_action`).
 
@@ -58,7 +58,7 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 
 ### Episode identity
 
-`episode_id` is always the episode's ID on this phone. Events that carry it may also carry `recipe_id`, boxlore's own ID for the same episode (a decimal string), when the app knows it. `home_surface_impression` may carry `recipe_ids` for episode surfaces (the known recipe IDs of `episode_ids`, in surface order). Join impressions, taps and plays across devices on `recipe_id`; it is absent for episodes without one (shows added by feed address, and episodes not yet matched). The recipe ID is the episode ID itself when that is a recipe-range ID, else the episode's own `recipeId` or the recipe ID of its trusted alias; it is never guessed. Events are never held back for it: an episode whose recipe ID is not in memory yet is looked up in the background, so the first event of a stored older ID can lack it while the tap and play after the impression carry it.
+`episode_id` is always the episode's ID on this phone. Events that carry it may also carry `recipe_id`, boxlore's own ID for the same episode (a decimal string), when the app knows it. `home_surface_impression` and `explore_surface_impression` may carry `recipe_ids` for episode surfaces (the known recipe IDs of `episode_ids`, in surface order). Join impressions, taps and plays across devices on `recipe_id`; it is absent for episodes without one (shows added by feed address, and episodes not yet matched). The recipe ID is the episode ID itself when that is a recipe-range ID, else the episode's own `recipeId` or the recipe ID of its trusted alias; it is never guessed. Events are never held back for it: an episode whose recipe ID is not in memory yet is looked up in the background, so the first event of a stored older ID can lack it while the tap and play after the impression carry it.
 
 ### Feed reads and addresses
 
@@ -78,7 +78,8 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 
 - playback_mode: `stream` | `download` | `unknown` (see Listen record)
 - client_surface: `phone` | `car` (`car` only when the car controls the listen)
-- install_channel: `play_store` | `apk_github` | `share_referrer` | `unknown`
+- install_channel: `organic` | `share` | `utm` | `unknown` (Play's `(not set)` referrer is `unknown`); set once on the person
+- first_onboarding_method / first_user_intent / initial_podcasts_subscribed: set once at the first setup; `onboarding_method` and `user_intent` follow the latest route
 - search_mode: `show_keyword` | `episode_semantic`
 - mix_mode: `daily` | `offline`
 - pause_reason: `user_voluntary` | `interruption` | `error` | `sleep_timer` | `app_kill` | `auto_pause`
@@ -99,8 +100,8 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 | `onboarding_abandoned` | User left before complete | last_step:string; flow_type:string | time_spent_seconds:int; subscribed_count:int | none |
 | `onboarding_completed` | User finished an onboarding path | method:string; total_subscribed_count:int | screen:string; subscribed_podcasts_list:list; total_onboarding_time_seconds:float; entry_point:string; favorite_genres:list; did_scroll_suggestions:bool; did_switch_from_ai:bool; import_type:string; searches_performed:int | none |
 | `onboarding_similar_choice` | After search or import, the listener chose See similar shows (`similar`), Go to Home (`home`) or Skip to Home while suggestions loaded (`skip_loading`) | path:string; choice:string; seed_count:int | — | none |
-| `onboarding_ai_turn_submitted` | User sent a message in onboarding AI chat | turn_number:int; user_input_text:string; has_custom_input:bool | selected_options:list; time_spent_seconds:float | logged_by_policy |
-| `onboarding_ai_response_received` | Assistant reply returned in onboarding AI | turn_number:int; options_count:int | options_list:list; duration_seconds:float; detected_intent:string; assistant_message:string | none |
+| `onboarding_ai_turn_submitted` | User sent a message in onboarding AI chat (user_input_text capped at 500 characters) | turn_number:int; user_input_text:string; has_custom_input:bool | selected_options:list; time_spent_seconds:float | logged_by_policy |
+| `onboarding_ai_response_received` | Assistant reply returned in onboarding AI | turn_number:int; options_count:int | options_list:list; duration_seconds:float; detected_intent:string | none |
 | `onboarding_ai_search_redirect` | AI suggested leaving chat for search | turn_number:int | suggested_query:string | logged_by_policy |
 | `onboarding_ai_synthesis_completed` | AI produced podcast suggestions | rows_count:int; podcasts_count:int | duration_seconds:float | none |
 | `onboarding_ai_synthesis_failed` | AI suggestion generation failed | — | error_message:string | none |
@@ -123,7 +124,7 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 | `session_restore_prompt` | Resume previous session prompt shown/acted | action:string | episode_id:string; recipe_id:string; podcast_id:string; position_seconds:float | none |
 | `podcast_subscription_toggled` | User subscribed or unsubscribed | podcast_id:string; is_subscribed:bool | surface:string; source:string | none |
 | `notification_permission_requested` | System permission prompt requested | — | surface:string | none |
-| `notification_permission_decided` | User granted/denied notifications | granted:bool | — | none |
+| `notification_permission_decided` | User granted/denied notifications | granted:bool | surface:string | none |
 | `notification_tapped` | User opened a push/local notification | notification_type:string | podcast_id:string; episode_id:string; recipe_id:string; target_route:string | none |
 | `notification_received` | Push/local notification delivered | notification_type:string | podcast_id:string; episode_id:string; recipe_id:string | none |
 | `identity_reset` | Analytics identity cleared/reset | — | reason:string | none |
@@ -137,8 +138,9 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 | `learn_card_action` | User acted on a Learn card | action:string; episode_id:string; podcast_id:string | recipe_id:string; position_index:int | none |
 | `learn_screen_viewed` | Learn tab/screen opened | — | cards_available:int | none |
 | `explore_screen_viewed` | Explore opened | — | tab:string | none |
-| `explore_recommendation_tapped` | For You/trending card tapped | — | podcast_id:string; position_index:int; rail:string | none |
-| `queue_modified` | Queue add/remove/reorder/clear | action:string | episode_id:string; recipe_id:string; podcast_id:string; queue_size:int; source:string | none |
+| `explore_recommendation_tapped` | For You/trending card tapped (taps only) | — | podcast_id:string; position_index:int; rail:string | none |
+| `explore_surface_impression` | Explore rail became visible | surface_component:string | items_count:int; episode_ids:list; recipe_ids:list | none |
+| `queue_modified` | Queue add/remove/reorder/clear (clear only when the listener chose it) | action:string | episode_id:string; recipe_id:string; podcast_id:string; queue_size:int; source:string; items_count:int | none |
 | `episode_liked_toggled` | Like/unlike episode | episode_id:string; podcast_id:string; is_liked:bool | recipe_id:string; surface:string | none |
 | `episode_mark_played` | User marked episode played/unplayed | episode_id:string; podcast_id:string; is_played:bool | recipe_id:string; surface:string | none |
 | `download_requested` | User or Smart Downloads requested download | episode_id:string; podcast_id:string; source:string | recipe_id:string; wifi_only:bool | none |
@@ -148,17 +150,20 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 | `show_notification_toggled` | Per-show notification preference changed | podcast_id:string; enabled:bool | — | none |
 | `share_content` | User shared podcast/episode/app | content_type:enum | podcast_id:string; episode_id:string; recipe_id:string; channel:string; surface:string | none |
 | `backup_restore_result` | Library backup or restore finished | action:string; success:bool | item_count:int; format:string; error_message:string | none |
-| `feedback_submitted` | In-app feedback/NPS/review handoff | feedback_type:string | score:int; source:string | none |
+| `feedback_submitted` | NPS survey trigger (eligible or manual); the survey shows on any of these | feedback_type:string | score:int; source:string | none |
+| `engagement_prompt_shown` | A Home review prompt was shown | prompt_type:string; source:string | completed_episodes:int; nps_score:int | none |
+| `store_review_opened` | Play review sheet or store page opened from boxlore | method:string; source:string | — | none |
+| `feedback_sent` | In-app feedback form accepted by the server | category:string; with_email:bool; with_diagnostics:bool | — | none |
 | `library_destination_viewed` | Library hub or sub-destination opened | destination:string | item_count:int | none |
 | `podcast_detail_viewed` | Podcast info screen opened | podcast_id:string | is_subscribed:bool | none |
 | `episode_detail_viewed` | Episode info screen opened | episode_id:string; podcast_id:string | recipe_id:string | none |
 | `nav_tab_clicked` | Bottom nav tab selected | tab:string | previous_tab:string | none |
-| `settings_interaction` | Settings screen view or control | action:string | setting_key:string | none |
+| `settings_interaction` | Settings screen view or control; a control reports only when its value changes (`smart_downloads_*`, `auto_download_*`, `mini_player_seek_buttons_toggled`, `full_player_style_changed` among the keys) | action:string | setting_key:string; value:string | none |
 | `custom_theme_editor_opened` | Custom theme editor becomes visible | entry_point:string | — | none |
 | `custom_theme_saved` | Custom theme preferences saved successfully | background_style:string | — | none |
 | `home_hero_style_selected` | Home hero card style or its colors picked in Settings › Appearance › Home | hero_card_style:string; hero_colors:string; hero_style_combo:string; changed:string | previous_hero_style_combo:string | none |
 | `recommendation_section_toggled` | A LeaveMeAlone switch flipped, or the Brief hidden from its card | section:string; enabled:bool; source:string; sections_off:int | — | none |
-| `feature_announcement_action` | In-app/feature announcement viewed/dismissed/acted | action:string | feature_id:string; category:string | none |
+| `feature_announcement_action` | In-app/feature announcement viewed/dismissed/acted | action:string | feature_id:string; category:string; has_image:bool; has_action:bool; action_label:string; announcement_id:string; announcement_title:string; presentation:string | none |
 | `offline_mode_entered` | App detected offline / offline UI | — | reason:string | none |
 | `player_chrome_interaction` | Mini/full player, control bar, or playback-route action | surface:string; action:string | screen:string; volume_control_available:bool | none |
 | `daily_briefing_action` | Briefing impression or interaction | action:string; region:string; date:string | content_id:string; source:string; chapter_index:int; chapter_title:string; method:string; playback_status:string; previous_region:string; episode_id:string; recipe_id:string; episode_title:string; podcast_id:string; podcast_title:string | none |

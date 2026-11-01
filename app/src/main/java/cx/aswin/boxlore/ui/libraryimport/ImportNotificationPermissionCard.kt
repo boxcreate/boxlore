@@ -94,7 +94,7 @@ internal fun ImportNotificationPermissionCard(
         onResult = { granted ->
             promptAttempted = true
             cx.aswin.boxlore.core.prefs.BoxcastPrefs(context).setHasRequestedNotificationPermission(true)
-            AnalyticsHelper.trackNotificationPermissionDecided(granted)
+            AnalyticsHelper.trackNotificationPermissionDecided(granted, IMPORT_SURFACE)
             onPermissionChanged(areAppNotificationsEnabled(context))
         },
     )
@@ -127,6 +127,7 @@ internal fun ImportNotificationPermissionCard(
             Button(
                 onClick = {
                     if (canRequestRuntimePermission) {
+                        AnalyticsHelper.trackNotificationPermissionRequested(IMPORT_SURFACE)
                         launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     } else {
                         onOpenSettings()
@@ -142,3 +143,6 @@ internal fun ImportNotificationPermissionCard(
         }
     }
 }
+
+/** `surface` on the permission events: the import card. */
+private const val IMPORT_SURFACE = "library_import"

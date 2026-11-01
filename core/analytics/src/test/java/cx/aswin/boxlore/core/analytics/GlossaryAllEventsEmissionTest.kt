@@ -101,7 +101,7 @@ class GlossaryAllEventsEmissionTest {
                     AnalyticsHelper.trackOnboardingAiTurnSubmitted(1, setOf("news"), "hi", 1f)
                 },
                 "onboarding_ai_response_received" to {
-                    AnalyticsHelper.trackOnboardingAiResponseReceived(1, "hello", 2, listOf("a"), 1f, "intent")
+                    AnalyticsHelper.trackOnboardingAiResponseReceived(1, 2, listOf("a"), 1f, "intent")
                 },
                 "onboarding_ai_search_redirect" to {
                     AnalyticsHelper.trackOnboardingAiSearchRedirect(1, "query")
@@ -238,6 +238,9 @@ class GlossaryAllEventsEmissionTest {
                 "explore_recommendation_tapped" to {
                     AnalyticsHelper.trackExploreRecommendationCardTapped("e1", "T", "p1", "Pod", 0)
                 },
+                "explore_surface_impression" to {
+                    AnalyticsHelper.trackExploreRecommendationsImpression(2, listOf("e1", "e2"))
+                },
                 "queue_modified" to {
                     AnalyticsHelper.trackQueueModified("add", "e1", "p1", queueSize = 2, source = "player")
                 },
@@ -269,7 +272,16 @@ class GlossaryAllEventsEmissionTest {
                     AnalyticsHelper.trackBackupRestoreResult("export", success = true, itemCount = 3, format = "opml")
                 },
                 "feedback_submitted" to {
-                    AnalyticsHelper.trackEngagementPromptShown("nps", "home", 5)
+                    AnalyticsHelper.trackSurveyNpsManualTrigger(source = "long_press")
+                },
+                "engagement_prompt_shown" to {
+                    AnalyticsHelper.trackEngagementPromptShown("milestone_review", "episode_milestone", 5)
+                },
+                "store_review_opened" to {
+                    AnalyticsHelper.trackStoreReviewOpened(method = "store_page", source = "post_review")
+                },
+                "feedback_sent" to {
+                    AnalyticsHelper.trackFeedbackSent(category = "bug", withEmail = false, withDiagnostics = true)
                 },
                 "library_destination_viewed" to {
                     AnalyticsHelper.trackLibraryHubViewed("nav")

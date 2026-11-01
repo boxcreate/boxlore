@@ -40,7 +40,7 @@ internal object PlaybackAnalyticsTracks {
         podcastName?.let { props["podcast_name"] = it }
         podcastGenre?.let { props["podcast_genre"] = it }
         episodeTitle?.let { props["episode_title"] = it }
-        entryPointContext?.let { props.putAll(it) }
+        EntryPointContext.addTo(props, entryPointContext)
         listen?.let {
             props["listen_id"] = it.listenId
             props["previously_finished"] = isRepeating
@@ -93,7 +93,7 @@ internal object PlaybackAnalyticsTracks {
         podcastName?.let { props["podcast_name"] = it }
         podcastGenre?.let { props["podcast_genre"] = it }
         episodeTitle?.let { props["episode_title"] = it }
-        entryPointContext?.let { props.putAll(it) }
+        EntryPointContext.addTo(props, entryPointContext)
         queueSize?.let { props["queue_size"] = it }
 
         AnalyticsEmit.event("playback_paused", props)
@@ -130,7 +130,7 @@ internal object PlaybackAnalyticsTracks {
         episodeTitle?.let { props["episode_title"] = it }
         speed?.let { props["speed"] = it }
         isSubscribed?.let { props["is_subscribed"] = it }
-        entryPointContext?.let { props.putAll(it) }
+        EntryPointContext.addTo(props, entryPointContext)
 
         AnalyticsEmit.event("playback_completed", props)
     }

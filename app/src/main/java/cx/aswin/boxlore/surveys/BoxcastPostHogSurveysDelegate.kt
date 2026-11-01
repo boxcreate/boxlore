@@ -32,11 +32,8 @@ class BoxcastPostHogSurveysDelegate(
             activityProvider = activityProvider,
             userPrefs = userPrefs,
             onSurveyDisplayed = {
+                // PostHog records the display itself ("survey shown"); a copy here counted it twice.
                 engagementCoordinator.onSurveyDisplayed()
-                AnalyticsHelper.trackEngagementPromptShown(
-                    promptType = "nps_survey",
-                    source = "posthog",
-                )
             },
             onFirstRatingSubmitted = { score ->
                 engagementCoordinator.onNpsRatingSubmitted(score)

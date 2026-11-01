@@ -76,6 +76,7 @@ src/main/java/cx/aswin/boxlore/feature/explore/
 
 ## Testing notes
 
+- The For You rail being shown sends `explore_surface_impression`; `explore_recommendation_tapped` is taps only (it used to carry the impressions too, 94% of its rows).
 - `LoreTabletPaneSizeTest` covers pane sizing, missing-pane fallback, and width/height threshold transitions. Lore retains configuration-based phone geometry while tablet spacing follows the current shell-owned pane.
 
 - `ExploreGridResizeTest` scrolls the production search and topic grids before live compact/tablet width and height transitions, including changing tablet column counts, then verifies the same result remains visible and its original tap rank is retained. Every poster stays an independently keyed lazy item so the saved scroll anchor does not turn into a row index when resizing.

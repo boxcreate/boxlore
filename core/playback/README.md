@@ -156,6 +156,7 @@ Files under `core/data/service` are compatibility stubs for old service class na
 - Media ID prefixes such as `episode:`, `queue:`, and `learn:` are session and Android Auto contracts.
 - SharedPreferences file `boxcast_player` stores playback session flags.
 - SharedPreferences file `boxlore_listen_note` holds the note of the listen in progress (`PrefsListenNoteStore`); it is empty between listens and left out of backups and device transfers, so a restore never reports a listen again.
+- SharedPreferences file `boxlore_install_milestones` holds `first_play_claimed` (`FirstPlayClaim`, `PrefsFirstPlayStore`): `first_episode_played` is claimed once per install when a listen starts, whatever started it, with the episode and show. The file is left out of backups and device transfers, so a restored or new phone counts its own first play; an install updated from an older build that already sent it from the screen stays quiet (`FirstPlayClaimTest`).
 - SharedPreferences file `android_auto_artwork_sources` maps Android Auto artwork content keys to remote HTTPS URLs or sandboxed local paths (identity for Auto collage ContentProvider; do not rename lightly).
 - Preference key `device_uuid` is a stable install identifier and must not be logged raw.
 - Queue, history, and download rows are persisted by `:core:database` and `:core:downloads`.
@@ -164,6 +165,8 @@ Files under `core/data/service` are compatibility stubs for old service class na
 Media-session bitmap loading classifies transient transport failures separately from decoding failures and preserves cancellation across fallback attempts.
 
 ## Testing notes
+
+- Analytics labels: `labelCarPlay` (`service/auto/CarPlayLabel.kt`) names a play `android_auto_*` only when Android Auto's controller asked for it. The app's own plays reach `onAddMediaItems` too (Media3 sends `setMediaItems` through it), and labelling them replaced the app's entry point, so phone plays were counted as car plays (`CarPlayLabelTest`). `QueueRepository.clearQueue` reports `queue_modified` "clear" only with a `listenerSource` (the Lore conflict dialog); starting a new episode or mix replaces the queue silently (`QueueRepositoryTest`). `analyticsEntryPointContext` keeps only `EntryPointContext.ALLOWED_KEYS` from a media item's extras (`CastMediaItemConverterTest`). Auto-advance and skips start listens as `queue_auto_advance` and `queue_skip`, which are now named entry points.
 
 - `PlaybackIntroOutroControllerTest` covers the 1 ms / 100 ms automatic-transition regression, explicit zero, intro trim, stale cutoff, explicit History resume, completed episodes, delayed readiness, and manual seeks. `QueueManagerPlaybackTest`, `QueueRepositoryTest`, `SmartQueueRefillCoordinatorTest`, and `ContextQueueContinuationCoordinatorTest` cover context replacement, ordered mixed-show playback, transactional rollback, completion-before-refill, long lists, and delayed results after a new queue or pause.
 - Review regressions also cover abandoned positions after a different activation, current-item transport seeks, live Auto resume, Room prefix trimming during candidate loading, rejected upcoming queue edits, and natural-advance telemetry signal expiry.

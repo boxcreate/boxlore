@@ -57,6 +57,8 @@ src/main/java/cx/aswin/boxlore/core/analytics/
   SupportAnalyticsTracks.kt                            # Support events + support-world flag read
   FeedAnalyticsTracks.kt                               # feed_fetch_result / feed_url_corrected
   ErrorReporter.kt
+  EntryPointContext.kt                                 # the entry details allowed onto playback events
+  AnnouncementRef.kt                                   # which in-app alert an announcement event is about
   PendingEntryPoint.kt
   RecordingAnalytics.kt
   SessionAggregator.kt
@@ -86,7 +88,12 @@ src/main/java/cx/aswin/boxlore/core/analytics/
 
 - Opens / backgrounds / install **counts** come from PostHog SDK autocapture (`Application Opened`, `Application Backgrounded`, `Application Installed`) with `captureApplicationLifecycleEvents = true`.
 - Do **not** emit glossary `app_open`, `app_background`, or volume `install_attributed`.
-- Install channel: `$set_once` person `install_channel` only (`trackInstallChannelAttributed`).
+- Install channel: set-once person `install_channel` only (`trackInstallChannelAttributed`). Set-once properties go through `AnalyticsEmit.personSetOnce` (the SDK's set-once slot); nested as `$set_once` under `personSet` they landed as one person property named `$set_once`, which hid `install_channel` from every person before this fix.
+- Setup route: `onboarding_method` and `user_intent` follow the latest route (`$set`); `first_onboarding_method`, `first_user_intent` and `initial_podcasts_subscribed` are set once, so a later import from Home doesn't overwrite how the listener first set up.
+- Feedback: `feedback_submitted` is only the NPS survey's trigger (`nps_eligible`, `nps_manual`), because the survey shows on any of them. A Home review prompt is `engagement_prompt_shown`, a hand-off to Play `store_review_opened` (`in_app_review` or `store_page`), and an accepted feedback form `feedback_sent` (categories only, never the text or email).
+- Explore: the For You rail being shown is `explore_surface_impression`; `explore_recommendation_tapped` is taps only. Home's category chips are `home_surface_tapped` (`category_filter`).
+- Playback events take only `EntryPointContext.ALLOWED_KEYS` from a play's context, and none replaces a field the event set; media item extras (artwork links, Android Auto keys, the stream address) never reach analytics.
+- Echo's chat sends what the listener typed capped at 500 characters, and never the reply text.
 - Deep links: custom `deep_link_opened` (`captureDeepLinks = false`).
 - Weekly Pulse KPIs stay on **Application Opened** / **Application Installed**.
 - Coverage inventory: [`docs/analytics/glossary_emission_coverage.csv`](../../docs/analytics/glossary_emission_coverage.csv) (`emission` | `sdk_backed` | `person_props_only`).
@@ -100,6 +107,7 @@ src/main/java/cx/aswin/boxlore/core/analytics/
 - `ScreenViewsTest` covers the screen trail, `screen_viewed`, every leaving summary going out as `screen_left`, and the screens added to plays. `PlayerSessionAggregatorTest` covers the transcript counter (regression: it read a name the player never logged).
 - `ListenAnalyticsTest` covers redacted error messages and error-tracking copies (a nested playlist error with a signed URL), the listen record's fields, the qualified threshold, the car as a client surface, context not overwriting the record, `playback_interrupted`, the listen fields on `playback_started`, and errors reaching error tracking.
 - `AnalyticsPolicyTest` covers the default levels, sampling by bucket, the switch payload (base, per version, bad input), the remembered switch and its version check, bucket persistence through `Store` (a saved bucket is reused; a missing or out-of-range one is picked and saved), `AnalyticsEmit` dropping and tagging, and `AnalyticsBeforeSend` tagging (replacing another build's tags), dropping SDK events and keeping a queued event's sample share, the identity events that ignore the switch, and an explicit flag reload applying the switch; a source scan keeps every `PostHog.reloadFeatureFlags` call inside `AnalyticsHelper`. `AnalyticsBudgetTest` checks that every glossary event has a level matching `DEFAULT_LEVELS` and a monthly estimate, and that estimated monthly events per active install stay within the budget (225; about 212 with the listening record and page views; `screen_viewed`'s 20 a month is an estimate to re-measure). The budget counts glossary events only, not SDK identity, flag, survey or exception events.
+- `PersonSetOnceTest` covers the install channel and the first setup route going through the set-once slot. `AnalyticsHelperStateTest` checks review prompts never send the survey trigger; `RecordingAnalyticsTest` covers the entry-detail allowlist, the capped Echo text and the queue and Library entry points.
 - `GlossaryAllEventsEmissionTest` covers every `emission:` inventory row; `LifecycleSdkMappingTest` / `InstallChannelAttributionTest` assert no dual open/install emits.
 - Architecture guards in `:core:testing` enforce CSV ↔ allowlist ↔ inventory parity.
 

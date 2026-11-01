@@ -174,7 +174,7 @@ class AppearanceActionsTrackedTest {
 
             actions.onSetHeroCardStyle(HeroCardStyle.DUOTONE)
             actions.onSetHeroCoverShade(HeroCoverShade.DARK)
-            // Re-tapping the picked tile or colour keeps the look, so only settings_interaction records it.
+            // Re-tapping the picked tile or colour keeps the look, so neither event records it.
             actions.onSetHeroCardStyle(HeroCardStyle.DUOTONE)
             actions.onSetHeroCoverShade(HeroCoverShade.DARK)
 
@@ -182,9 +182,42 @@ class AppearanceActionsTrackedTest {
             assertEquals(listOf("duotone_theme", "duotone_dark"), picks.map { it["hero_style_combo"] })
             assertEquals(listOf("style", "colors"), picks.map { it["changed"] })
             assertEquals(listOf("cover_theme", "duotone_theme"), picks.map { it["previous_hero_style_combo"] })
-            assertEquals(4, events.count { it.first == "settings_interaction" })
+            assertEquals(2, events.count { it.first == "settings_interaction" })
             assertEquals(HeroCardStyle.DUOTONE, state.heroCardStyle)
             assertEquals(HeroCoverShade.DARK, state.heroCoverShade)
+        } finally {
+            restore()
+        }
+    }
+
+    @Test
+    fun `a setting reports only when its value changes`() {
+        // Regression: every tap reported, so re-picking the current choice looked like a change.
+        val events = mutableListOf<Pair<String, Map<String, Any>>>()
+        val restore = AnalyticsHelper.installRecordingSink(events)
+        try {
+            var state = AppearanceUiState("system", false, "violet", "standard")
+            val actions = AppearanceActions(
+                onSetThemeConfig = { state = state.copy(currentThemeConfig = it) },
+                onToggleDynamicColor = {},
+                onSetThemeBrand = {},
+                onSetSurfaceStyle = {},
+                onSetFullPlayerStyle = { state = state.copy(fullPlayerStyle = it) },
+                onSetMiniPlayerSeekButtonsEnabled = { state = state.copy(miniPlayerSeekButtonsEnabled = it) },
+            ).trackedForAnalytics { state }
+
+            actions.onSetThemeConfig("system")
+            actions.onSetThemeConfig("dark")
+            actions.onSetThemeConfig("dark")
+            actions.onSetFullPlayerStyle("bunpod")
+            actions.onSetFullPlayerStyle("bunpod")
+            actions.onSetMiniPlayerSeekButtonsEnabled(true)
+
+            val keys = events.filter { it.first == "settings_interaction" }.map { it.second["setting_key"] to it.second["value"] }
+            assertEquals(
+                listOf("theme_mode_changed" to "dark", "full_player_style_changed" to "bunpod", "mini_player_seek_buttons_toggled" to "true"),
+                keys,
+            )
         } finally {
             restore()
         }

@@ -351,10 +351,7 @@ fun HomeRoute(
                 onNavigateToSettings = onNavigateToSettings,
                 onForceReviewPrompt = viewModel::forceReviewPrompt,
                 onForceSurveyNps = viewModel::forceSurveyNps,
-                onDismissReviewPrompt = {
-                    viewModel.markReviewPromptShown()
-                    viewModel.dismissReviewPrompt()
-                },
+                onDismissReviewPrompt = viewModel::dismissReviewPrompt,
                 onDismissPostReview = viewModel::dismissPostReview,
                 onDismissFeedback = viewModel::dismissFeedback,
                 onNavigateToPlayStoreReview = {
@@ -531,6 +528,8 @@ private fun HomeScreenBottomSheets(
             onSubmit = callbacks.onSubmitFeedback,
             onRateInstead = {
                 callbacks.onDismissFeedback()
+                cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                    .trackStoreReviewOpened(method = "store_page", source = "home_feedback")
                 val pkgName = context.packageName
                 try {
                     context.startActivity(
