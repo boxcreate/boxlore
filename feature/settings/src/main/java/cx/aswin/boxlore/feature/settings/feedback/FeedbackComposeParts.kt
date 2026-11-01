@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.settings.feedback
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -69,22 +71,24 @@ internal const val FEEDBACK_TYPING_BAR_TAG = "feedback_typing_bar"
 internal const val FEEDBACK_PHOTOS_TAG = "feedback_photos"
 internal const val FEEDBACK_PRIVACY_URL = "https://boxlore.in/privacy#feedback"
 
-internal val FeedbackCategory.icon: ImageVector
-    get() = when (this) {
+/** The app's icon for the choices it knows; a speech bubble for any the server adds later. */
+internal val FeedbackChoice.icon: ImageVector
+    get() = when (known) {
         FeedbackCategory.FEATURE -> Icons.Rounded.Lightbulb
         FeedbackCategory.BUG -> Icons.Rounded.BugReport
         FeedbackCategory.AUDIO -> Icons.Rounded.Headphones
-        FeedbackCategory.OTHER -> Icons.Rounded.ChatBubbleOutline
+        FeedbackCategory.OTHER, null -> Icons.Rounded.ChatBubbleOutline
     }
 
 /** The genre-chip look from Explore: round, 48 dp, icon first, primary container when chosen. */
 @Composable
-internal fun FeedbackTypePill(category: FeedbackCategory, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+internal fun FeedbackTypePill(choice: FeedbackChoice, selected: Boolean, enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     FilterChip(
         selected = selected,
         onClick = onClick,
-        label = { Text(category.label, fontWeight = GoogleSansWeight.semiBold) },
-        leadingIcon = { Icon(category.icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
+        enabled = enabled,
+        label = { Text(choice.label, fontWeight = GoogleSansWeight.semiBold) },
+        leadingIcon = { Icon(choice.icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
         modifier = modifier.heightIn(min = 48.dp),
         shape = CircleShape,
         border = null,
@@ -101,25 +105,32 @@ internal fun FeedbackTypePill(category: FeedbackCategory, selected: Boolean, onC
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun FeedbackTypePills(selected: FeedbackCategory, onSelect: (FeedbackCategory) -> Unit, modifier: Modifier = Modifier) {
+internal fun FeedbackTypePills(
+    choices: List<FeedbackChoice>,
+    selected: FeedbackChoice,
+    enabled: Boolean,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     FlowRow(
         modifier = modifier.testTag(FEEDBACK_PILLS_TAG),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        FeedbackCategory.entries.forEach { category ->
-            FeedbackTypePill(category = category, selected = category == selected, onClick = { onSelect(category) })
+        choices.forEach { choice ->
+            FeedbackTypePill(choice = choice, selected = choice.id == selected.id, enabled = enabled, onClick = { onSelect(choice.id) })
         }
     }
 }
 
-/** Compact type picker for the typing layout: the chosen pill, opening a menu of the four types. */
+/** Compact type picker for the typing layout: the chosen pill, opening a menu of every choice. */
 @Composable
-internal fun FeedbackTypeMenuPill(selected: FeedbackCategory, onSelect: (FeedbackCategory) -> Unit) {
+internal fun FeedbackTypeMenuPill(choices: List<FeedbackChoice>, selected: FeedbackChoice, enabled: Boolean, onSelect: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Box {
         Surface(
             onClick = { open = true },
+            enabled = enabled,
             shape = CircleShape,
             color = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -138,17 +149,17 @@ internal fun FeedbackTypeMenuPill(selected: FeedbackCategory, onSelect: (Feedbac
             }
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            FeedbackCategory.entries.forEach { category ->
+            choices.forEach { choice ->
                 DropdownMenuItem(
-                    text = { Text(category.label) },
-                    leadingIcon = { Icon(category.icon, contentDescription = null) },
-                    trailingIcon = if (category == selected) {
+                    text = { Text(choice.label) },
+                    leadingIcon = { Icon(choice.icon, contentDescription = null) },
+                    trailingIcon = if (choice.id == selected.id) {
                         { Icon(Icons.Rounded.Check, contentDescription = null) }
                     } else {
                         null
                     },
                     onClick = {
-                        onSelect(category)
+                        onSelect(choice.id)
                         open = false
                     },
                 )
@@ -164,9 +175,11 @@ internal fun FeedbackMessageCard(
     onValueChange: (String) -> Unit,
     placeholder: String,
     maxChars: Int,
+    readOnly: Boolean,
     onFocusChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val over = value.length > maxChars
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(24.dp),
@@ -180,6 +193,7 @@ internal fun FeedbackMessageCard(
                 BasicTextField(
                     value = value,
                     onValueChange = onValueChange,
+                    readOnly = readOnly,
                     textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                     modifier = Modifier
@@ -192,7 +206,8 @@ internal fun FeedbackMessageCard(
             Text(
                 text = "${value.length}/$maxChars",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (over) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = if (over) GoogleSansWeight.semiBold else null,
                 modifier = Modifier.align(Alignment.End),
             )
         }
@@ -203,6 +218,7 @@ internal fun FeedbackMessageCard(
 internal fun FeedbackPhotoRow(
     photos: List<PickedPhoto>,
     canAdd: Boolean,
+    canRemove: Boolean,
     maxPhotos: Int,
     onAdd: () -> Unit,
     onRemove: (PickedPhoto) -> Unit,
@@ -213,54 +229,66 @@ internal fun FeedbackPhotoRow(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Surface(
-            onClick = onAdd,
-            enabled = canAdd,
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surfaceContainer,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier
-                .size(64.dp)
-                .semantics { contentDescription = "Add a photo or screenshot" },
+        // Scrolls sideways, so every photo and its Remove stay reachable on narrow phones.
+        Row(
+            modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                Icon(Icons.Rounded.AddPhotoAlternate, contentDescription = null, modifier = Modifier.size(20.dp))
-                Text("Add", style = MaterialTheme.typography.labelSmall, fontWeight = GoogleSansWeight.semiBold)
-            }
+            FeedbackPhotoTiles(photos, canAdd, canRemove, onAdd, onRemove)
         }
-        photos.forEachIndexed { index, photo ->
-            Box(Modifier.size(64.dp)) {
-                AsyncImage(
-                    model = photo.uri,
-                    contentDescription = "Photo ${index + 1}",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-                )
-                Surface(
-                    onClick = { onRemove(photo) },
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.inverseSurface,
-                    contentColor = MaterialTheme.colorScheme.inverseOnSurface,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(2.dp)
-                        .size(24.dp)
-                        .semantics { contentDescription = "Remove photo ${index + 1}" },
-                ) {
-                    Icon(Icons.Rounded.Close, contentDescription = null, modifier = Modifier.padding(5.dp))
-                }
-            }
-        }
-        Spacer(Modifier.weight(1f))
         Text("Up to $maxPhotos", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
 @Composable
-internal fun FeedbackDiagnosticsRow(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
+private fun FeedbackPhotoTiles(photos: List<PickedPhoto>, canAdd: Boolean, canRemove: Boolean, onAdd: () -> Unit, onRemove: (PickedPhoto) -> Unit) {
+    Surface(
+        onClick = onAdd,
+        enabled = canAdd,
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier
+            .size(64.dp)
+            .semantics { contentDescription = "Add a photo or screenshot" },
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            Icon(Icons.Rounded.AddPhotoAlternate, contentDescription = null, modifier = Modifier.size(20.dp))
+            Text("Add", style = MaterialTheme.typography.labelSmall, fontWeight = GoogleSansWeight.semiBold)
+        }
+    }
+    photos.forEachIndexed { index, photo ->
+        Box(Modifier.size(64.dp)) {
+            AsyncImage(
+                model = photo.uri,
+                contentDescription = "Photo ${index + 1}",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+            )
+            Surface(
+                onClick = { onRemove(photo) },
+                enabled = canRemove,
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.inverseSurface,
+                contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(2.dp)
+                    .size(24.dp)
+                    .semantics { contentDescription = "Remove photo ${index + 1}" },
+            ) {
+                Icon(Icons.Rounded.Close, contentDescription = null, modifier = Modifier.padding(5.dp))
+            }
+        }
+    }
+}
+
+@Composable
+internal fun FeedbackDiagnosticsRow(checked: Boolean, enabled: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
     Row(modifier = modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = "Include device diagnostics",
@@ -270,6 +298,7 @@ internal fun FeedbackDiagnosticsRow(checked: Boolean, onCheckedChange: (Boolean)
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
+            enabled = enabled,
             modifier = Modifier.semantics { contentDescription = "Include device diagnostics" },
         )
     }
@@ -343,6 +372,7 @@ internal fun FeedbackTypingBar(
         FilterChip(
             selected = state.attachDiagnostics,
             onClick = onToggleDiagnostics,
+            enabled = !state.isSubmitting,
             label = { Text("Diagnostics", fontWeight = GoogleSansWeight.semiBold) },
             leadingIcon = if (state.attachDiagnostics) {
                 { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }

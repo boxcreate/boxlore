@@ -47,16 +47,26 @@ Features use it; it never depends on a feature, the design system or the catalog
   message goes through the old form.
 - `OutgoingFeedback.requestId` is the retry key: the screen sends the same key when the same message
   is sent again, so a send whose answer was lost isn't saved twice.
-- Fallback: when the support API answers 404, 401 or 503 `support_unavailable`, the message goes
-  through the old `POST /feedback` form (`legacySubmit`), so feedback sent before the server side is
-  live (or without a session) is never lost. The old form has no `audio` category (sent as `bug`)
-  and no photos.
+- Fallback: when support isn't there but the old `POST /feedback` form can still deliver (404, 503
+  `support_unavailable`, or 401 `device_key_required` / `proof_required`), the message goes through it
+  (`legacySubmit`). The old form needs the API session too, so a 401 for a missing or refused session
+  is a failure: the screen keeps the draft to send later. The old form knows only feature, bug and
+  other (audio goes as bug, anything newer as other) and has no photos. A refresh that finds support
+  gone resets `meta` to `SupportMeta.Offline`, so a pause the server set earlier can't keep Send off.
+- `uploadPhoto` answers `PhotoUpload.Uploaded`, `Unavailable` (photos off, or support not there: the
+  message can still go without them) or `Failed`.
+- `meta.categories` are the server's choices (ids `[a-z0-9_]`, labels trimmed, at most 12); empty means
+  the app's own list. Support calls are Retrofit `suspend` functions, so leaving the screen cancels
+  them, and they ask the HTTP cache not to store anything (`Cache-Control: no-store`).
 
 ## Testing notes
 
 - `SupportRepositoryTest` runs the real `SupportApi` against MockWebServer: meta parsing (push topics
-  filtered to valid names), sending with the retry key, the fallback cases (401 for a missing proof
-  included), refusals with the server's message, no connection, photos off, `PhotoPrep.targetSize`.
+  and categories filtered to valid ones, a limit above 2,000 kept), sending with the retry key, the
+  fallback cases (401 for a missing proof included, a new category sent as other), no fallback without
+  a session, a pause forgotten once support is gone (but kept over a plain server error), refusals with
+  the server's message, no connection, photo upload results and the no-store header, photos off,
+  `PhotoPrep.targetSize`.
   `RequestProofTest` in `:core:network` covers the signed message and the interceptor.
 
 ```bash

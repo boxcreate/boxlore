@@ -54,12 +54,18 @@ class SupportRepositoryTest {
     fun `reads the switches and limits from the server`() = runTest {
         server.enqueue(
             MockResponse().setBody(
-                """{"meta":{"notice":"Slow this week","canStartNew":true,"photos":{"enabled":true,"max":5,"maxBytes":5242880},"maxBody":2000,"pushTopics":["support_ab","support_cd","bad topic"],"replyAuthor":"boxlore team","extra":1},"threads":[]}""",
+                """{"meta":{"notice":"Slow this week","canStartNew":true,"photos":{"enabled":true,"max":5,"maxBytes":5242880},"maxBody":4000,"pushTopics":["support_ab","support_cd","bad topic"],"replyAuthor":"boxlore team","categories":[{"id":"bug","label":"Bug report"},{"id":"account","label":"Account and sync"},{"id":"Bad Id","label":"x"},{"id":"empty","label":" "}],"extra":1},"threads":[]}""",
             ),
         )
         val repo = repository()
         val meta = repo.refresh()
-        assertEquals(SupportMeta(true, "Slow this week", true, 5, 5_242_880, 2000, listOf("support_ab", "support_cd")), meta)
+        assertEquals(
+            SupportMeta(
+                true, "Slow this week", true, 5, 5_242_880, 4000, listOf("support_ab", "support_cd"),
+                listOf(SupportCategory("bug", "Bug report"), SupportCategory("account", "Account and sync")),
+            ),
+            meta,
+        )
         assertEquals(meta, repo.meta.value)
         assertEquals("/support/threads", server.takeRequest().path)
     }
@@ -77,10 +83,10 @@ class SupportRepositoryTest {
     }
 
     @Test
-    fun `falls back to the old form when the support API is not there or has no session`() = runTest {
+    fun `falls back to the old form when support is not there or the phone can't prove its key`() = runTest {
         for (reply in listOf(
             MockResponse().setResponseCode(404).setBody("""{"error":"Not Found"}"""),
-            MockResponse().setResponseCode(401).setBody("""{"error":"session_required"}"""),
+            MockResponse().setResponseCode(401).setBody("""{"error":"device_key_required"}"""),
             MockResponse().setResponseCode(401).setBody("""{"error":"proof_required"}"""),
             MockResponse().setResponseCode(503).setBody("""{"error":"support_unavailable"}"""),
         )) {
@@ -89,6 +95,36 @@ class SupportRepositoryTest {
         }
         assertEquals(4, legacyCalls.size)
         assertEquals(listOf("bug", "Static after ten minutes", "0.0.30", "Android 17", "log line"), legacyCalls.first())
+        // A category the old form doesn't know goes as "other".
+        server.enqueue(MockResponse().setResponseCode(404))
+        repository().send(feedback.copy(category = "account"))
+        assertEquals("other", legacyCalls.last().first())
+    }
+
+    @Test
+    fun `without any session the old form can't deliver either, so it is a failure`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(401).setBody("""{"error":"session_required"}"""))
+        server.enqueue(MockResponse().setResponseCode(401).setBody("""{"error":"session_invalid"}"""))
+        val repo = repository()
+        assertEquals(SendResult.Failed, repo.send(feedback))
+        assertEquals(SendResult.Failed, repo.send(feedback))
+        assertTrue(legacyCalls.isEmpty())
+    }
+
+    @Test
+    fun `a pause is forgotten once support goes away, so Send reaches the old form`() = runTest {
+        server.enqueue(MockResponse().setBody("""{"meta":{"canStartNew":false,"notice":"Paused"},"threads":[]}"""))
+        server.enqueue(MockResponse().setResponseCode(500))
+        server.enqueue(MockResponse().setResponseCode(404))
+        val repo = repository()
+        repo.refresh()
+        assertFalse(repo.meta.value.canStartNew)
+        // A plain server error keeps what was last known…
+        assertNull(repo.refresh())
+        assertFalse(repo.meta.value.canStartNew)
+        // …but support being gone clears it.
+        assertNull(repo.refresh())
+        assertEquals(SupportMeta.Offline, repo.meta.value)
     }
 
     @Test
@@ -121,8 +157,25 @@ class SupportRepositoryTest {
 
     @Test
     fun `photos are not uploaded while switched off`() = runTest {
-        assertNull(repository().uploadPhoto(byteArrayOf(1, 2, 3), "image/jpeg"))
+        assertEquals(PhotoUpload.Unavailable, repository().uploadPhoto(byteArrayOf(1, 2, 3), "image/jpeg"))
         assertEquals(0, server.requestCount)
+    }
+
+    @Test
+    fun `photo uploads tell a missing support API from a failed upload`() = runTest {
+        server.enqueue(MockResponse().setBody("""{"meta":{"photos":{"enabled":true,"max":5,"maxBytes":100}},"threads":[]}"""))
+        server.enqueue(MockResponse().setResponseCode(201).setBody("""{"id":"0123456789abcdef01234567"}"""))
+        server.enqueue(MockResponse().setResponseCode(503).setBody("""{"error":"support_unavailable"}"""))
+        server.enqueue(MockResponse().setResponseCode(403).setBody("""{"error":"photos_off"}"""))
+        server.enqueue(MockResponse().setResponseCode(429).setBody("""{"error":"limit"}"""))
+        val repo = repository()
+        repo.refresh()
+        assertEquals(PhotoUpload.Uploaded("0123456789abcdef01234567"), repo.uploadPhoto(byteArrayOf(1), "image/jpeg"))
+        assertEquals(PhotoUpload.Unavailable, repo.uploadPhoto(byteArrayOf(1), "image/jpeg"))
+        assertEquals(PhotoUpload.Unavailable, repo.uploadPhoto(byteArrayOf(1), "image/jpeg"))
+        assertEquals(PhotoUpload.Failed, repo.uploadPhoto(byteArrayOf(1), "image/jpeg"))
+        server.takeRequest()
+        assertEquals("no-store", server.takeRequest().getHeader("Cache-Control"))
     }
 
     @Test

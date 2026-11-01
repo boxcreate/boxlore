@@ -18,7 +18,12 @@ data class SupportMetaDto(
     /** Every topic to subscribe to for reply pushes: this install's, and the account's when signed in. */
     val pushTopics: List<String> = emptyList(),
     val replyAuthor: String? = null,
+    /** What a message can be about, in the order to show them. */
+    val categories: List<SupportCategoryDto> = emptyList(),
 )
+
+@Serializable
+data class SupportCategoryDto(val id: String = "", val label: String = "")
 
 @Serializable
 data class SupportPhotoLimitsDto(

@@ -11,6 +11,7 @@ import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.FeedbackDraft
 import cx.aswin.boxlore.core.support.OutgoingFeedback
 import cx.aswin.boxlore.core.support.PhotoPrep
+import cx.aswin.boxlore.core.support.PhotoUpload
 import cx.aswin.boxlore.core.support.SendResult
 import cx.aswin.boxlore.core.support.SupportMeta
 import cx.aswin.boxlore.core.support.SupportRepository
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/** The app's own list: shown when the server sends none, and the icons and hints for the ids it knows. */
 enum class FeedbackCategory(
     val id: String,
     val label: String,
@@ -39,11 +41,23 @@ enum class FeedbackCategory(
 val FeedbackCategory.isBugReport: Boolean
     get() = this == FeedbackCategory.BUG || this == FeedbackCategory.AUDIO
 
+/** One choice of what a message is about: the server's id and label, with the app's hint when it knows the id. */
+data class FeedbackChoice(val id: String, val label: String) {
+    val known: FeedbackCategory? get() = FeedbackCategory.entries.find { it.id == id }
+    val placeholder: String get() = known?.placeholder ?: FeedbackCategory.OTHER.placeholder
+
+    /** Bug reports start with diagnostics on. */
+    val isBugReport: Boolean get() = known?.isBugReport == true
+}
+
+internal val DEFAULT_CHOICES = FeedbackCategory.entries.map { FeedbackChoice(it.id, it.label) }
+
 /** A photo or screenshot picked for the message; uploaded only when the message is sent. */
 data class PickedPhoto(val uri: Uri)
 
 data class FeedbackUiState(
-    val category: FeedbackCategory = FeedbackCategory.FEATURE,
+    /** The picked choice's id; [choice] falls back to the first one when the server no longer lists it. */
+    val categoryId: String = FeedbackCategory.FEATURE.id,
     val message: String = "",
     val attachDiagnostics: Boolean = false,
     val photos: List<PickedPhoto> = emptyList(),
@@ -53,19 +67,38 @@ data class FeedbackUiState(
     val isSuccess: Boolean = false,
     /** True when the message became a conversation, so the reply will show up in the app. */
     val repliesInApp: Boolean = false,
+    /** Support wasn't available, so the message went without its photos. */
+    val photosDropped: Boolean = false,
     val errorMessage: String? = null,
     val diagnosticInfo: DiagnosticInfo? = null,
     val logsPreview: String? = null,
     val isLoadingLogs: Boolean = false,
 ) {
-    val canAddPhotos: Boolean get() = meta.photosEnabled && photos.size < meta.maxPhotos
-    val canSend: Boolean get() = message.isNotBlank() && !isSubmitting && meta.canStartNew
+    val choices: List<FeedbackChoice> get() = meta.categories.map { FeedbackChoice(it.id, it.label) }.ifEmpty { DEFAULT_CHOICES }
+    val choice: FeedbackChoice get() = choices.firstOrNull { it.id == categoryId } ?: choices.first()
+    val canAddPhotos: Boolean get() = meta.photosEnabled && photos.size < meta.maxPhotos && !isSubmitting
+
+    /** An older draft can be longer than the limit; it must be shortened before it can be sent. */
+    val overLimit: Boolean get() = message.length > meta.maxBody
+    val canSend: Boolean get() = message.isNotBlank() && !overLimit && !isSubmitting && meta.canStartNew
+    val limitMessage: String? get() = if (overLimit) "This is over the ${"%,d".format(meta.maxBody)}-character limit. Shorten it to send." else null
 
     /** The server's notice, or a plain one when new messages are paused without one. */
     val shownNotice: String? get() = meta.notice ?: PAUSED_NOTICE.takeUnless { meta.canStartNew }
 }
 
 internal const val PAUSED_NOTICE = "Sending is paused for now. Your message stays saved here."
+
+/**
+ * The message after an edit: typing stops at [limit], and text already past it (an older, longer
+ * draft) can only get shorter, so nothing of it is cut off without the listener choosing to.
+ */
+internal fun limitedMessage(current: String, next: String, limit: Int): String = when {
+    next.length <= limit -> next
+    next.length < current.length -> next
+    current.length > limit -> current
+    else -> next.take(limit)
+}
 
 /**
  * One retry key per message: sending the same content again (after a failure whose answer may
@@ -88,9 +121,18 @@ internal class RetryKeys(private val newKey: () -> String = { UUID.randomUUID().
 class FeedbackSupport(
     val meta: StateFlow<SupportMeta>,
     val refresh: suspend () -> Unit,
-    val uploadPhoto: suspend (bytes: ByteArray, mimeType: String) -> String?,
+    val uploadPhoto: suspend (bytes: ByteArray, mimeType: String) -> PhotoUpload,
     val send: suspend (OutgoingFeedback) -> SendResult,
 )
+
+private sealed interface PhotoBatch {
+    data class Uploaded(val ids: List<String>) : PhotoBatch
+
+    /** Support isn't there for photos; the message goes without them. */
+    data object Unavailable : PhotoBatch
+
+    data object Failed : PhotoBatch
+}
 
 class FeedbackViewModel(
     private val support: FeedbackSupport,
@@ -104,6 +146,9 @@ class FeedbackViewModel(
     private val _uiState = MutableStateFlow(FeedbackUiState())
     val uiState: StateFlow<FeedbackUiState> = _uiState.asStateFlow()
 
+    /** While a message is going out its draft is fixed, so what was sent is what gets cleared. */
+    private val sending: Boolean get() = _uiState.value.isSubmitting
+
     init {
         loadInitialState()
         viewModelScope.launch { support.meta.collect { meta -> _uiState.update { it.copy(meta = meta) } } }
@@ -113,15 +158,15 @@ class FeedbackViewModel(
     private fun loadInitialState() {
         val diagnostics = DiagnosticCollector.collect(context)
         val draft = boxcastPrefs.getFeedbackDraft()
-        // Older drafts kept "steps to reproduce" apart; they now join the message.
+        // Older drafts kept "steps to reproduce" apart; they now join the message, in full.
         val draftMessage = draft?.let {
             listOf(it.message.trim(), it.stepsToReproduce.trim()).filter(String::isNotBlank).joinToString("\n\n")
         }.orEmpty()
         if (draft != null && draftMessage.isNotBlank()) {
             _uiState.update {
                 it.copy(
-                    category = FeedbackCategory.entries.find { c -> c.id == draft.category } ?: FeedbackCategory.FEATURE,
-                    message = draftMessage.take(MAX_MESSAGE),
+                    categoryId = draft.category.ifBlank { FeedbackCategory.FEATURE.id },
+                    message = draftMessage,
                     attachDiagnostics = draft.attachDiagnostics,
                     isDraftRestored = true,
                     diagnosticInfo = diagnostics,
@@ -132,23 +177,29 @@ class FeedbackViewModel(
         }
     }
 
-    fun onCategorySelected(category: FeedbackCategory) {
-        _uiState.update { it.copy(category = category, attachDiagnostics = category.isBugReport, errorMessage = null) }
+    fun onCategorySelected(id: String) {
+        if (sending) return
+        _uiState.update { state ->
+            val choice = state.choices.firstOrNull { it.id == id } ?: return@update state
+            state.copy(categoryId = choice.id, attachDiagnostics = choice.isBugReport, errorMessage = null)
+        }
         saveCurrentDraft()
     }
 
     fun onMessageChanged(message: String) {
-        val limit = _uiState.value.meta.maxBody.coerceAtMost(MAX_MESSAGE)
-        _uiState.update { it.copy(message = message.take(limit), errorMessage = null) }
+        if (sending) return
+        _uiState.update { it.copy(message = limitedMessage(it.message, message, it.meta.maxBody), errorMessage = null) }
         saveCurrentDraft()
     }
 
     fun onAttachDiagnosticsChanged(attach: Boolean) {
+        if (sending) return
         _uiState.update { it.copy(attachDiagnostics = attach) }
         saveCurrentDraft()
     }
 
     fun onPhotosPicked(uris: List<Uri>) {
+        if (sending) return
         _uiState.update { state ->
             if (!state.meta.photosEnabled) return@update state
             val room = (state.meta.maxPhotos - state.photos.size).coerceAtLeast(0)
@@ -158,14 +209,16 @@ class FeedbackViewModel(
     }
 
     fun onRemovePhoto(photo: PickedPhoto) {
+        if (sending) return
         _uiState.update { it.copy(photos = it.photos - photo) }
     }
 
     fun onDiscardDraft() {
+        if (sending) return
         boxcastPrefs.clearFeedbackDraft()
         _uiState.update {
             it.copy(
-                category = FeedbackCategory.FEATURE,
+                categoryId = FeedbackCategory.FEATURE.id,
                 message = "",
                 attachDiagnostics = false,
                 photos = emptyList(),
@@ -183,7 +236,7 @@ class FeedbackViewModel(
         }
         boxcastPrefs.saveFeedbackDraft(
             FeedbackDraft(
-                category = current.category.id,
+                category = current.categoryId,
                 message = current.message,
                 email = "",
                 stepsToReproduce = "",
@@ -206,49 +259,56 @@ class FeedbackViewModel(
 
     fun onSubmit() {
         val state = _uiState.value
-        if (state.isSubmitting) return
+        if (state.isSubmitting || state.overLimit) return
         val body = state.message.trim()
         if (body.isBlank()) {
             _uiState.update { it.copy(errorMessage = "Write a message first.") }
             return
         }
+        val choice = state.choice
         _uiState.update { it.copy(isSubmitting = true, errorMessage = null) }
-        val requestId = retryKeys.keyFor(listOf(state.category, body, state.photos, state.attachDiagnostics))
+        val requestId = retryKeys.keyFor(listOf(choice.id, body, state.photos, state.attachDiagnostics))
 
         viewModelScope.launch {
             val diagnosticsInfo = state.diagnosticInfo ?: DiagnosticCollector.collect(context)
             val (diagnosticsReport, sanitizedLogs) = prepareDiagnosticPayload(state, diagnosticsInfo)
-            val photoIds = uploadPhotos(state)
-            if (photoIds == null) {
+            val photos = uploadPhotos(state)
+            if (photos is PhotoBatch.Failed) {
                 _uiState.update { it.copy(isSubmitting = false, errorMessage = "Couldn't attach your photos. Check your connection and try again.") }
                 return@launch
             }
             val result = support.send(
                 OutgoingFeedback(
-                    category = state.category.id,
+                    category = choice.id,
                     body = body,
                     appVersion = diagnosticsInfo.appVersion,
-                    device = diagnosticsInfo.deviceLabel(),
+                    // The phone model is part of the diagnostics the listener can turn off.
+                    device = diagnosticsInfo.deviceLabel().takeIf { state.attachDiagnostics },
                     diagnostics = diagnosticsReport,
                     logs = sanitizedLogs,
-                    photoIds = photoIds,
+                    photoIds = (photos as? PhotoBatch.Uploaded)?.ids.orEmpty(),
                     requestId = requestId,
                 ),
             )
-            handleResult(state, result)
+            handleResult(choice, state, result, photosDropped = photos is PhotoBatch.Unavailable)
         }
     }
 
-    /** Photo ids in order, or null when any upload failed (nothing is sent half-attached). */
-    private suspend fun uploadPhotos(state: FeedbackUiState): List<String>? {
-        if (state.photos.isEmpty() || !state.meta.photosEnabled) return emptyList()
+    /** Photo ids in order; nothing is sent half-attached, and photos are left out only when support can't take them. */
+    private suspend fun uploadPhotos(state: FeedbackUiState): PhotoBatch {
+        if (state.photos.isEmpty()) return PhotoBatch.Uploaded(emptyList())
+        if (!state.meta.photosEnabled) return PhotoBatch.Unavailable
         val ids = mutableListOf<String>()
         for (photo in state.photos) {
-            val bytes = withContext(ioDispatcher) { readPhoto(photo.uri) } ?: return null
-            if (state.meta.maxPhotoBytes > 0 && bytes.size > state.meta.maxPhotoBytes) return null
-            ids += support.uploadPhoto(bytes, "image/jpeg") ?: return null
+            val bytes = withContext(ioDispatcher) { readPhoto(photo.uri) } ?: return PhotoBatch.Failed
+            if (state.meta.maxPhotoBytes > 0 && bytes.size > state.meta.maxPhotoBytes) return PhotoBatch.Failed
+            when (val upload = support.uploadPhoto(bytes, "image/jpeg")) {
+                is PhotoUpload.Uploaded -> ids += upload.id
+                PhotoUpload.Unavailable -> return PhotoBatch.Unavailable
+                PhotoUpload.Failed -> return PhotoBatch.Failed
+            }
         }
-        return ids
+        return PhotoBatch.Uploaded(ids)
     }
 
     private suspend fun prepareDiagnosticPayload(state: FeedbackUiState, diagnosticsInfo: DiagnosticInfo): Pair<String?, String?> {
@@ -259,19 +319,25 @@ class FeedbackViewModel(
         return diagnosticsInfo.toMarkdownReport() to sanitizedLogs
     }
 
-    private fun handleResult(state: FeedbackUiState, result: SendResult) {
+    private fun handleResult(choice: FeedbackChoice, state: FeedbackUiState, result: SendResult, photosDropped: Boolean) {
         when (result) {
             is SendResult.Sent, SendResult.SentByEmailForm -> {
-                val repliesInApp = result is SendResult.Sent
                 AnalyticsHelper.trackFeedbackSent(
-                    category = analyticsCategory(state.category),
+                    category = analyticsCategory(choice),
                     withEmail = false,
                     withDiagnostics = state.attachDiagnostics,
                 )
                 boxcastPrefs.clearFeedbackDraft()
                 retryKeys.clear()
                 _uiState.update {
-                    it.copy(isSubmitting = false, isSuccess = true, repliesInApp = repliesInApp, isDraftRestored = false, photos = emptyList())
+                    it.copy(
+                        isSubmitting = false,
+                        isSuccess = true,
+                        repliesInApp = result is SendResult.Sent,
+                        photosDropped = photosDropped,
+                        isDraftRestored = false,
+                        photos = emptyList(),
+                    )
                 }
             }
             is SendResult.Refused -> _uiState.update { it.copy(isSubmitting = false, errorMessage = result.message) }
@@ -298,21 +364,17 @@ class FeedbackViewModel(
             context = context.applicationContext,
         ) as T
     }
-
-    companion object {
-        const val MAX_MESSAGE = 2000
-    }
 }
 
-/** Analytics keeps the categories it always had: audio counts as a bug report. */
-private fun analyticsCategory(category: FeedbackCategory): String = when (category) {
+/** Analytics keeps the categories it always had: audio counts as a bug report, anything new as other. */
+private fun analyticsCategory(choice: FeedbackChoice): String = when (choice.known) {
     FeedbackCategory.FEATURE -> "feature"
     FeedbackCategory.BUG, FeedbackCategory.AUDIO -> "bug"
-    FeedbackCategory.OTHER -> "other"
+    FeedbackCategory.OTHER, null -> "other"
 }
 
 fun buildFeedbackGitHubIssueUrl(state: FeedbackUiState): String {
-    val title = "[${state.category.label}]: " + state.message.take(60).replace("\n", " ").trim()
+    val title = "[${state.choice.label}]: " + state.message.take(60).replace("\n", " ").trim()
     val body = buildString {
         append("### Description\n")
         append(state.message.ifBlank { "Describe the issue or feature request here." })

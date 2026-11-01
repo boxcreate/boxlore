@@ -27,8 +27,16 @@ class FeedbackLayoutPolicyTest {
         assertFalse("No runtime prompt before Android 13", canAskForNotifications(32, granted = false, askedBefore = false, shouldShowRationale = false))
     }
 
-    @Test fun `only a conversation promises a reply in Feedback`() {
+    @Test fun `only a conversation promises a reply in Feedback, and dropped photos are mentioned`() {
         assertTrue(feedbackSentBody(repliesInApp = true).contains("reply will show up in Feedback"))
         assertFalse(feedbackSentBody(repliesInApp = false).contains("reply"))
+        assertTrue(feedbackSentBody(repliesInApp = false, photosDropped = true).endsWith("Your photos couldn't be sent this time."))
+    }
+
+    @Test fun `typing stops at the limit, and text already past it can only shrink`() {
+        assertEquals("abc", limitedMessage(current = "ab", next = "abc", limit = 5))
+        assertEquals("abcde", limitedMessage(current = "ab", next = "abcdefg", limit = 5))
+        assertEquals("abcdefg", limitedMessage(current = "abcdefgh", next = "abcdefg", limit = 5))
+        assertEquals("abcdefgh", limitedMessage(current = "abcdefgh", next = "abcdefghi", limit = 5))
     }
 }

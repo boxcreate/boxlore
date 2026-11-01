@@ -112,7 +112,7 @@ fun FeedbackScreen(
 
 internal class FeedbackComposeActions(
     val onBack: () -> Unit,
-    val onCategorySelected: (FeedbackCategory) -> Unit,
+    val onCategorySelected: (String) -> Unit,
     val onMessageChanged: (String) -> Unit,
     val onAttachDiagnosticsChanged: (Boolean) -> Unit,
     val onPhotosPicked: (List<Uri>) -> Unit,
@@ -122,7 +122,10 @@ internal class FeedbackComposeActions(
     val onDiscardDraft: () -> Unit,
 )
 
-/** The compose screen until the message is sent, then [FeedbackSentScreen]; Done leaves like Back. */
+/**
+ * The compose screen until the message is sent, then [FeedbackSentScreen]; Done leaves like Back.
+ * [imeBottom] is the keyboard's height (tests pass their own).
+ */
 @Composable
 internal fun FeedbackContent(
     state: FeedbackUiState,
@@ -130,17 +133,19 @@ internal fun FeedbackContent(
     boxcastPrefs: BoxcastPrefs,
     bottomContentPadding: Dp,
     modifier: Modifier = Modifier,
+    imeBottom: Dp = WindowInsets.ime.asPaddingValues().calculateBottomPadding(),
 ) {
     if (state.isSuccess) {
         FeedbackSentScreen(
             boxcastPrefs = boxcastPrefs,
             repliesInApp = state.repliesInApp,
+            photosDropped = state.photosDropped,
             onDone = actions.onBack,
             bottomContentPadding = bottomContentPadding,
             modifier = modifier,
         )
     } else {
-        FeedbackComposeScreen(state = state, actions = actions, bottomContentPadding = bottomContentPadding, modifier = modifier)
+        FeedbackComposeScreen(state = state, actions = actions, bottomContentPadding = bottomContentPadding, imeBottom = imeBottom, modifier = modifier)
     }
 }
 
@@ -150,21 +155,29 @@ internal fun isTypingLayout(messageFocused: Boolean, imeBottom: Dp): Boolean = m
 /** Space under the content: the keyboard while it's up, otherwise the app's bottom chrome and the system bar. */
 internal fun feedbackBottomPadding(imeBottom: Dp, chrome: Dp, systemBar: Dp): Dp = if (imeBottom > 0.dp) imeBottom else chrome + systemBar
 
+/**
+ * One layout for every state, so the message field is never replaced: the keyboard coming up
+ * (the typing layout) or the window getting short (scrolling) only changes what sits around it,
+ * and the field keeps its focus, cursor and the text being composed.
+ */
 @Composable
 internal fun FeedbackComposeScreen(
     state: FeedbackUiState,
     actions: FeedbackComposeActions,
     bottomContentPadding: Dp,
+    imeBottom: Dp,
     modifier: Modifier = Modifier,
 ) {
     var messageFocused by rememberSaveable { mutableStateOf(false) }
-    val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
     val systemBar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val typing = isTypingLayout(messageFocused, imeBottom)
     val picker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia(maxItems = state.meta.maxPhotos.coerceAtLeast(2)),
     ) { uris -> actions.onPhotosPicked(uris) }
     val pickPhotos = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+    val uriHandler = LocalUriHandler.current
+    val scroll = rememberScrollState()
+    val editable = !state.isSubmitting
 
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         Box(
@@ -175,113 +188,120 @@ internal fun FeedbackComposeScreen(
             contentAlignment = Alignment.TopCenter,
         ) {
             Column(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility)) {
-                if (typing) {
-                    TypingLayout(state, actions, onFocusChanged = { messageFocused = it }, onAddPhoto = pickPhotos)
-                } else {
-                    FullLayout(state, actions, onFocusChanged = { messageFocused = it }, onAddPhoto = pickPhotos)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ColumnScope.FullLayout(
-    state: FeedbackUiState,
-    actions: FeedbackComposeActions,
-    onFocusChanged: (Boolean) -> Unit,
-    onAddPhoto: () -> Unit,
-) {
-    val uriHandler = LocalUriHandler.current
-    TopRow(state, actions)
-    BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-        val tall = maxHeight >= FEEDBACK_TALL_ENOUGH
-        val content: @Composable ColumnScope.() -> Unit = {
-            Column(Modifier.padding(horizontal = 20.dp)) {
-                Text("Share your thoughts", style = MaterialTheme.typography.headlineMedium)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "Bugs, ideas, anything at all. The boxlore team reads every message.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                state.shownNotice?.let { notice ->
-                    Spacer(Modifier.height(12.dp))
-                    Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
-                        Text(
-                            notice,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                if (typing) TypingHeader(state, actions) else TopRow(state, actions)
+                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+                    // While typing the field takes the room the keyboard leaves; a short window otherwise scrolls.
+                    val stretch = typing || maxHeight >= FEEDBACK_TALL_ENOUGH
+                    Column(Modifier.fillMaxSize().then(if (stretch) Modifier else Modifier.verticalScroll(scroll))) {
+                        if (!typing) Intro(state)
+                        if (!typing) {
+                            FeedbackTypePills(
+                                choices = state.choices,
+                                selected = state.choice,
+                                enabled = editable,
+                                onSelect = actions.onCategorySelected,
+                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp),
+                            )
+                        }
+                        FeedbackMessageCard(
+                            value = state.message,
+                            onValueChange = actions.onMessageChanged,
+                            placeholder = state.choice.placeholder,
+                            maxChars = state.meta.maxBody,
+                            readOnly = !editable,
+                            onFocusChanged = { messageFocused = it },
+                            modifier = Modifier
+                                .padding(start = 16.dp, end = 16.dp, top = if (typing) 8.dp else 16.dp)
+                                .fillMaxWidth()
+                                .then(if (stretch) Modifier.weight(1f) else Modifier.height(FEEDBACK_SHORT_MESSAGE_HEIGHT)),
                         )
+                        if (!typing) AttachRows(state, onAddPhoto = pickPhotos, actions = actions)
+                        (state.errorMessage ?: state.limitMessage)?.let { error -> ErrorLine(error, small = typing) }
+                        if (!typing) SendFooter(state, onSubmit = actions.onSubmit, onPrivacy = { uriHandler.openUri(FEEDBACK_PRIVACY_URL) })
                     }
                 }
+                if (typing) {
+                    FeedbackTypingBar(
+                        state = state,
+                        onAddPhoto = pickPhotos,
+                        onToggleDiagnostics = { actions.onAttachDiagnosticsChanged(!state.attachDiagnostics) },
+                        onSend = actions.onSubmit,
+                    )
+                }
             }
-            FeedbackTypePills(
-                selected = state.category,
-                onSelect = actions.onCategorySelected,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp),
-            )
-            FeedbackMessageCard(
-                value = state.message,
-                onValueChange = actions.onMessageChanged,
-                placeholder = state.category.placeholder,
-                maxChars = state.meta.maxBody.coerceAtMost(FeedbackViewModel.MAX_MESSAGE),
-                onFocusChanged = onFocusChanged,
-                modifier = Modifier
-                    .padding(start = 16.dp, end = 16.dp, top = 16.dp)
-                    .fillMaxWidth()
-                    .then(if (tall) Modifier.weight(1f) else Modifier.height(FEEDBACK_SHORT_MESSAGE_HEIGHT)),
-            )
-            if (state.meta.photosEnabled) {
-                FeedbackPhotoRow(
-                    photos = state.photos,
-                    canAdd = state.canAddPhotos,
-                    maxPhotos = state.meta.maxPhotos,
-                    onAdd = onAddPhoto,
-                    onRemove = actions.onRemovePhoto,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
-                )
-            }
-            FeedbackDiagnosticsRow(
-                checked = state.attachDiagnostics,
-                onCheckedChange = actions.onAttachDiagnosticsChanged,
-                modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 8.dp),
-            )
-            state.errorMessage?.let { error ->
-                Text(
-                    error,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-                )
-            }
-            FeedbackSendButton(
-                enabled = state.canSend,
-                sending = state.isSubmitting,
-                onClick = actions.onSubmit,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp).fillMaxWidth().height(64.dp),
-            )
-            FeedbackPrivacyLink(
-                onOpen = { uriHandler.openUri(FEEDBACK_PRIVACY_URL) },
-                modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 4.dp),
-            )
         }
-        if (tall) {
-            Column(Modifier.fillMaxSize(), content = content)
-        } else {
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), content = content)
+    }
+}
+
+/** Photos (while the server allows them) and the diagnostics switch, under the message. */
+@Composable
+private fun AttachRows(state: FeedbackUiState, onAddPhoto: () -> Unit, actions: FeedbackComposeActions) {
+    if (state.meta.photosEnabled) {
+        FeedbackPhotoRow(
+            photos = state.photos,
+            canAdd = state.canAddPhotos,
+            canRemove = !state.isSubmitting,
+            maxPhotos = state.meta.maxPhotos,
+            onAdd = onAddPhoto,
+            onRemove = actions.onRemovePhoto,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
+        )
+    }
+    FeedbackDiagnosticsRow(
+        checked = state.attachDiagnostics,
+        enabled = !state.isSubmitting,
+        onCheckedChange = actions.onAttachDiagnosticsChanged,
+        modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 8.dp),
+    )
+}
+
+@Composable
+private fun ErrorLine(text: String, small: Boolean) {
+    Text(
+        text,
+        style = if (small) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.error,
+        modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+    )
+}
+
+@Composable
+private fun ColumnScope.SendFooter(state: FeedbackUiState, onSubmit: () -> Unit, onPrivacy: () -> Unit) {
+    FeedbackSendButton(
+        enabled = state.canSend,
+        sending = state.isSubmitting,
+        onClick = onSubmit,
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp).fillMaxWidth().height(64.dp),
+    )
+    FeedbackPrivacyLink(onOpen = onPrivacy, modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 4.dp))
+}
+
+@Composable
+private fun Intro(state: FeedbackUiState) {
+    Column(Modifier.padding(horizontal = 20.dp)) {
+        Text("Share your thoughts", style = MaterialTheme.typography.headlineMedium)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "Bugs, ideas, anything at all. The boxlore team reads every message.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        state.shownNotice?.let { notice ->
+            Spacer(Modifier.height(12.dp))
+            Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+                Text(
+                    notice,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun ColumnScope.TypingLayout(
-    state: FeedbackUiState,
-    actions: FeedbackComposeActions,
-    onFocusChanged: (Boolean) -> Unit,
-    onAddPhoto: () -> Unit,
-) {
+private fun TypingHeader(state: FeedbackUiState, actions: FeedbackComposeActions) {
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -289,26 +309,9 @@ private fun ColumnScope.TypingLayout(
         FeedbackIconButton(Icons.AutoMirrored.Rounded.ArrowBack, "Navigate back", actions.onBack)
         Text("Share your thoughts", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
         Box(Modifier.padding(end = 8.dp)) {
-            FeedbackTypeMenuPill(selected = state.category, onSelect = actions.onCategorySelected)
+            FeedbackTypeMenuPill(choices = state.choices, selected = state.choice, enabled = !state.isSubmitting, onSelect = actions.onCategorySelected)
         }
     }
-    FeedbackMessageCard(
-        value = state.message,
-        onValueChange = actions.onMessageChanged,
-        placeholder = state.category.placeholder,
-        maxChars = state.meta.maxBody.coerceAtMost(FeedbackViewModel.MAX_MESSAGE),
-        onFocusChanged = onFocusChanged,
-        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp).fillMaxWidth().weight(1f),
-    )
-    state.errorMessage?.let { error ->
-        Text(error, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
-    }
-    FeedbackTypingBar(
-        state = state,
-        onAddPhoto = onAddPhoto,
-        onToggleDiagnostics = { actions.onAttachDiagnosticsChanged(!state.attachDiagnostics) },
-        onSend = actions.onSubmit,
-    )
 }
 
 @Composable

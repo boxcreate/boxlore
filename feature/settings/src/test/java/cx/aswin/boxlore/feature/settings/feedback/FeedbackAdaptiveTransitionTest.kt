@@ -14,12 +14,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -38,6 +40,7 @@ import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.support.OutgoingFeedback
+import cx.aswin.boxlore.core.support.PhotoUpload
 import cx.aswin.boxlore.core.support.SendResult
 import cx.aswin.boxlore.core.support.SupportMeta
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
@@ -45,7 +48,6 @@ import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertSame
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -56,7 +58,10 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * Drives the live feedback screen across the shared window gates in both directions and through a
  * recreation: the typed message, the picked type and the reachable Send survive, the message goes
- * out once, and the sent screen keeps its Done and notification card through the same changes.
+ * out once, and the sent screen keeps its Done and notification card through the same changes. The
+ * view model is built outside composition, as the navigation entry holds it in the app, so these
+ * tests cover the screen's own state, not the view model's lifetime. The keyboard is played by
+ * passing its height in.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], application = Application::class)
@@ -65,6 +70,8 @@ class FeedbackAdaptiveTransitionTest {
     @get:Rule val fixture = PhoneGoldenRule(PhoneGoldenConfiguration(1_280, 960, false))
 
     private val window = mutableStateOf(COMPACT)
+    private val ime = mutableStateOf(0.dp)
+    private val meta = MutableStateFlow(SupportMeta.Offline)
     private val sent = mutableListOf<OutgoingFeedback>()
     private var result: SendResult = SendResult.Sent("t1")
     private var backs = 0
@@ -77,12 +84,8 @@ class FeedbackAdaptiveTransitionTest {
         fixture.compose.onNodeWithText("Bug report").performClick()
         fixture.compose.onNodeWithTag(FEEDBACK_MESSAGE_TAG).performTextInput(MESSAGE)
         fixture.compose.waitForIdle()
-        val owner = viewModel
 
-        acrossWindowChanges {
-            composeStateKept()
-            assertSame("The same view model keeps the draft", owner, viewModel)
-        }
+        acrossWindowChanges { composeStateKept() }
         recreate(FOLD_TABLETOP)
         composeStateKept()
 
@@ -121,6 +124,47 @@ class FeedbackAdaptiveTransitionTest {
             fixture.compose.onNodeWithText(feedbackSentBody(repliesInApp = false)).assertExists()
             fixture.compose.onNodeWithTag(FEEDBACK_NOTIFY_CARD_TAG).assertDoesNotExist()
         }
+    }
+
+    @Test
+    fun `the message field keeps its focus and text as the keyboard comes and goes and the window changes height`() {
+        render()
+        fixture.compose.onNodeWithTag(FEEDBACK_MESSAGE_TAG).performClick()
+        fixture.compose.onNodeWithTag(FEEDBACK_MESSAGE_TAG).performTextInput(MESSAGE)
+        fixture.compose.waitForIdle()
+        fixture.compose.onNodeWithTag(FEEDBACK_MESSAGE_TAG).assertIsFocused()
+
+        for (step in listOf(300.dp, 0.dp, 280.dp, 0.dp)) {
+            fixture.compose.runOnIdle { ime.value = step }
+            fixture.compose.waitForIdle()
+            val typing = step > 0.dp
+            fixture.compose.onNodeWithTag(FEEDBACK_MESSAGE_TAG).assertIsFocused()
+            fixture.compose.onNodeWithText(MESSAGE).assertExists()
+            fixture.compose.onNodeWithTag(FEEDBACK_TYPING_BAR_TAG).apply { if (typing) assertExists() else assertDoesNotExist() }
+            fixture.compose.onNodeWithTag(FEEDBACK_PILLS_TAG).apply { if (typing) assertDoesNotExist() else assertExists() }
+        }
+        // Short (scrolling) and tall (stretching) windows keep the same field.
+        for (size in listOf(BoxloreWindowLayout(840f, 479f), BoxloreWindowLayout(840f, 700f), BoxloreWindowLayout(800f, 360f), COMPACT)) {
+            fixture.compose.runOnIdle { window.value = size }
+            fixture.compose.waitForIdle()
+            fixture.compose.onNodeWithTag(FEEDBACK_MESSAGE_TAG).assertIsFocused()
+            fixture.compose.onNodeWithText(MESSAGE).assertExists()
+        }
+        fixture.compose.onNodeWithText(MESSAGE).performTextInput(" more")
+        assertEquals("$MESSAGE more", viewModel.uiState.value.message)
+    }
+
+    @Test
+    fun `five photos and their Remove buttons stay reachable on a narrow phone`() {
+        meta.value = SupportMeta.Offline.copy(photosEnabled = true, maxPhotos = 5, maxPhotoBytes = 1_000_000)
+        window.value = BoxloreWindowLayout(360f, 800f)
+        render()
+        fixture.compose.runOnIdle { viewModel.onPhotosPicked((1..5).map { android.net.Uri.parse("content://photo/$it") }) }
+        fixture.compose.waitForIdle()
+        fixture.compose.onNodeWithContentDescription("Remove photo 5").performScrollTo().assertIsDisplayed().performClick()
+        fixture.compose.waitForIdle()
+        assertEquals(4, viewModel.uiState.value.photos.size)
+        fixture.compose.onNodeWithContentDescription("Add a photo or screenshot").performScrollTo().assertIsDisplayed()
     }
 
     private fun composeStateKept() {
@@ -164,9 +208,9 @@ class FeedbackAdaptiveTransitionTest {
         context.getSharedPreferences(BoxcastPrefs.PREFS_NAME, Context.MODE_PRIVATE).edit().clear().commit()
         val prefs = BoxcastPrefs(context)
         val support = FeedbackSupport(
-            meta = MutableStateFlow(SupportMeta.Offline),
+            meta = meta,
             refresh = {},
-            uploadPhoto = { _, _ -> null },
+            uploadPhoto = { _, _ -> PhotoUpload.Unavailable },
             send = { feedback ->
                 sent += feedback
                 result
@@ -202,6 +246,7 @@ class FeedbackAdaptiveTransitionTest {
                             ),
                             boxcastPrefs = prefs,
                             bottomContentPadding = 96.dp,
+                            imeBottom = ime.value,
                         )
                     }
                 }

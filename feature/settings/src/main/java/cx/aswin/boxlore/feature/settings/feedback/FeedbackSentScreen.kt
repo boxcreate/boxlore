@@ -59,11 +59,17 @@ internal const val FEEDBACK_NOTIFY_CARD_TAG = "feedback_notify_card"
 /** Echo looks through the magnifier once, then rests. */
 internal const val FEEDBACK_SENT_ECHO = "feedback-sent"
 
-/** The reply promise only when the message became a conversation; the old form has no replies in the app. */
-internal fun feedbackSentBody(repliesInApp: Boolean): String = if (repliesInApp) {
-    "Thanks for telling us. The boxlore team reads every message, and the reply will show up in Feedback."
-} else {
-    "Thanks for telling us. The boxlore team reads every message."
+/**
+ * The reply promise only when the message became a conversation (the old form has no replies in
+ * the app), and a plain note when its photos couldn't go along.
+ */
+internal fun feedbackSentBody(repliesInApp: Boolean, photosDropped: Boolean = false): String {
+    val thanks = if (repliesInApp) {
+        "Thanks for telling us. The boxlore team reads every message, and the reply will show up in Feedback."
+    } else {
+        "Thanks for telling us. The boxlore team reads every message."
+    }
+    return if (photosDropped) "$thanks Your photos couldn't be sent this time." else thanks
 }
 
 /**
@@ -74,6 +80,7 @@ internal fun feedbackSentBody(repliesInApp: Boolean): String = if (repliesInApp)
 internal fun FeedbackSentScreen(
     boxcastPrefs: BoxcastPrefs,
     repliesInApp: Boolean,
+    photosDropped: Boolean,
     onDone: () -> Unit,
     bottomContentPadding: Dp,
     modifier: Modifier = Modifier,
@@ -116,7 +123,7 @@ internal fun FeedbackSentScreen(
                     Text("Feedback sent", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        feedbackSentBody(repliesInApp),
+                        feedbackSentBody(repliesInApp, photosDropped),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,

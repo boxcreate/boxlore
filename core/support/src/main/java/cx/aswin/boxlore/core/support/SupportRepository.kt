@@ -18,9 +18,10 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Response
 
 /**
- * Talks to the support API (`/support/...`). Sending never loses a message: when the support API
- * isn't available yet (an older server, or no API session) it falls back to the old feedback form
- * through [legacySubmit].
+ * Talks to the support API (`/support/...`). When the support API isn't available (an older
+ * server, support switched off, or a session without a device key or proof) a message goes
+ * through the old feedback form ([legacySubmit]) instead. Without any API session neither can
+ * deliver, so that is a failure and the screen keeps the draft.
  */
 class SupportRepository(
     private val api: SupportApi,
@@ -34,19 +35,28 @@ class SupportRepository(
 
     /** Reads the switches (and the conversation list, used from the next app update on). */
     suspend fun refresh(): SupportMeta? = withContext(ioDispatcher) {
-        val response = call { api.threads().execute() } ?: return@withContext null
-        if (!response.isSuccessful) return@withContext null
+        val response = call { api.threads() } ?: return@withContext null
+        if (!response.isSuccessful) {
+            // Support went away (or this phone can't use it): forget switches like a pause, so Send works and falls back.
+            if (usesOldForm(response)) _meta.value = SupportMeta.Offline
+            return@withContext null
+        }
         val meta = response.body()?.toMeta() ?: return@withContext null
         _meta.value = meta
         meta
     }
 
-    /** Uploads one prepared photo; null when photos are off or the upload fails. */
-    suspend fun uploadPhoto(bytes: ByteArray, mimeType: String): String? = withContext(ioDispatcher) {
-        if (!_meta.value.photosEnabled) return@withContext null
+    /** Uploads one prepared photo. [PhotoUpload.Unavailable] when photos are off or support isn't there. */
+    suspend fun uploadPhoto(bytes: ByteArray, mimeType: String): PhotoUpload = withContext(ioDispatcher) {
+        if (!_meta.value.photosEnabled) return@withContext PhotoUpload.Unavailable
         val body = bytes.toRequestBody(mimeType.toMediaType())
-        val response = call { api.uploadPhoto(body).execute() } ?: return@withContext null
-        response.body()?.id?.takeIf { response.isSuccessful }
+        val response = call { api.uploadPhoto(body) } ?: return@withContext PhotoUpload.Failed
+        val id = response.body()?.id
+        when {
+            response.isSuccessful && id != null -> PhotoUpload.Uploaded(id)
+            usesOldForm(response) || response.code() == HTTP_FORBIDDEN -> PhotoUpload.Unavailable
+            else -> PhotoUpload.Failed
+        }
     }
 
     suspend fun send(feedback: OutgoingFeedback): SendResult = withContext(ioDispatcher) {
@@ -60,7 +70,7 @@ class SupportRepository(
             logs = feedback.logs,
             requestId = feedback.requestId,
         )
-        val response = call { api.startThread(request).execute() } ?: return@withContext SendResult.Failed
+        val response = call { api.startThread(request) } ?: return@withContext SendResult.Failed
         when {
             response.isSuccessful -> response.body()?.thread?.id?.let { SendResult.Sent(it) } ?: SendResult.Failed
             usesOldForm(response) -> sendThroughOldForm(feedback)
@@ -72,8 +82,12 @@ class SupportRepository(
     }
 
     private suspend fun sendThroughOldForm(feedback: OutgoingFeedback): SendResult {
-        // The old form has no audio category and no photo field.
-        val category = if (feedback.category == "audio") "bug" else feedback.category
+        // The old form knows only these categories and has no photo field.
+        val category = when (feedback.category) {
+            "feature", "bug", "other" -> feedback.category
+            "audio" -> "bug"
+            else -> "other"
+        }
         val ok = legacySubmit(category, feedback.body, feedback.appVersion ?: "unknown", feedback.diagnostics, feedback.logs)
         return if (ok) SendResult.SentByEmailForm else SendResult.Failed
     }
@@ -90,6 +104,7 @@ class SupportRepository(
 
     companion object {
         private const val HTTP_UNAUTHORIZED = 401
+        private const val HTTP_FORBIDDEN = 403
         private const val HTTP_NOT_FOUND = 404
         private const val HTTP_CONFLICT = 409
         private const val HTTP_TOO_MANY = 429
@@ -97,11 +112,19 @@ class SupportRepository(
         private const val DEFAULT_REFUSAL = "This can't be sent right now. Please try again later."
         private val errorJson = Json { ignoreUnknownKeys = true }
 
-        /** Not live yet (404), no API session (401) or switched off (503 `support_unavailable`). */
-        internal fun usesOldForm(response: Response<*>): Boolean {
-            val code = response.code()
-            if (code == HTTP_NOT_FOUND || code == HTTP_UNAUTHORIZED) return true
-            return code == HTTP_UNAVAILABLE && response.peekError()?.error == "support_unavailable"
+        /** Errors meaning a session without a device key or proof: the old form, which needs only the session, still works. */
+        private val PROOF_ERRORS = setOf("device_key_required", "proof_required")
+
+        /**
+         * Support isn't there but the old form can still deliver: not live yet (404), switched off
+         * (503 `support_unavailable`), or a session without a device key or proof (401). A 401 for a
+         * missing or refused session isn't one: the old form needs that session too.
+         */
+        internal fun usesOldForm(response: Response<*>): Boolean = when (response.code()) {
+            HTTP_NOT_FOUND -> true
+            HTTP_UNAUTHORIZED -> response.peekError()?.error in PROOF_ERRORS
+            HTTP_UNAVAILABLE -> response.peekError()?.error == "support_unavailable"
+            else -> false
         }
 
         private fun Response<*>.peekError(): SupportErrorResponse? = errorBody()?.let { body ->
@@ -124,10 +147,18 @@ internal fun SupportListResponse.toMeta(): SupportMeta? {
         maxPhotoBytes = m.photos.maxBytes,
         maxBody = m.maxBody.coerceIn(1, MAX_BODY_CEILING),
         pushTopics = m.pushTopics.filter { TOPIC.matches(it) }.distinct().take(MAX_TOPICS),
+        categories = m.categories
+            .filter { CATEGORY_ID.matches(it.id) && it.label.isNotBlank() }
+            .distinctBy { it.id }
+            .take(MAX_CATEGORIES)
+            .map { SupportCategory(it.id, it.label.trim().take(MAX_CATEGORY_LABEL)) },
     )
 }
 
 private const val MAX_TOPICS = 5
+private const val MAX_CATEGORIES = 12
+private const val MAX_CATEGORY_LABEL = 40
+private val CATEGORY_ID = Regex("[a-z0-9_]{1,32}")
 
 /** FCM topic names. */
 private val TOPIC = Regex("[A-Za-z0-9\\-_.~%]{1,900}")

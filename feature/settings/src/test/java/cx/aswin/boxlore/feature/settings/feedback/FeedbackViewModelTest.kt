@@ -7,8 +7,11 @@ import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.FeedbackDraft
 import cx.aswin.boxlore.core.support.OutgoingFeedback
+import cx.aswin.boxlore.core.support.PhotoUpload
+import cx.aswin.boxlore.core.support.SupportCategory
 import cx.aswin.boxlore.core.support.SendResult
 import cx.aswin.boxlore.core.support.SupportMeta
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,7 +47,9 @@ class FeedbackViewModelTest {
         val sent = mutableListOf<OutgoingFeedback>()
         val uploads = mutableListOf<Int>()
         var result: SendResult = SendResult.Sent("t1")
-        var photoIds: (Int) -> String? = { "p$it" }
+        var photoIds: (Int) -> PhotoUpload = { PhotoUpload.Uploaded("p$it") }
+        /** While set, send waits for it. */
+        var sendGate: CompletableDeferred<Unit>? = null
         var refreshes = 0
 
         fun asSupport() = FeedbackSupport(
@@ -55,6 +60,7 @@ class FeedbackViewModelTest {
                 photoIds(uploads.size)
             },
             send = { feedback ->
+                sendGate?.await()
                 sent += feedback
                 result
             },
@@ -90,7 +96,7 @@ class FeedbackViewModelTest {
         )
         val state = viewModel(FakeSupport()).uiState.value
 
-        assertEquals(FeedbackCategory.BUG, state.category)
+        assertEquals("bug", state.choice.id)
         assertEquals("Player stops after 3 minutes\n\n1. Play\n2. Wait", state.message)
         assertTrue(state.attachDiagnostics)
         assertTrue(state.isDraftRestored)
@@ -124,7 +130,7 @@ class FeedbackViewModelTest {
         try {
             val support = FakeSupport()
             val vm = viewModel(support)
-            vm.onCategorySelected(FeedbackCategory.AUDIO)
+            vm.onCategorySelected(FeedbackCategory.AUDIO.id)
             vm.onMessageChanged("  Stream cuts off at end of track  ")
 
             vm.onSubmit()
@@ -281,7 +287,7 @@ class FeedbackViewModelTest {
     @Test
     fun a_failed_photo_upload_sends_nothing() = runTest(testDispatcher) {
         val support = FakeSupport(SupportMeta.Offline.copy(photosEnabled = true, maxPhotos = 3, maxPhotoBytes = 100))
-        support.photoIds = { index -> if (index == 2) null else "p$index" }
+        support.photoIds = { index -> if (index == 2) PhotoUpload.Failed else PhotoUpload.Uploaded("p$index") }
         val vm = viewModel(support)
         advanceUntilIdle()
         vm.onPhotosPicked(listOf(Uri.parse("content://a"), Uri.parse("content://b")))
@@ -331,23 +337,149 @@ class FeedbackViewModelTest {
         val support = FakeSupport(SupportMeta.Offline.copy(photosEnabled = true, maxPhotos = 3, maxPhotoBytes = 100))
         val vm = viewModel(support)
         advanceUntilIdle()
-        vm.onCategorySelected(FeedbackCategory.BUG)
+        vm.onCategorySelected(FeedbackCategory.BUG.id)
         vm.onMessageChanged("Never mind")
         vm.onPhotosPicked(listOf(Uri.parse("content://a")))
 
         vm.onDiscardDraft()
 
         val state = vm.uiState.value
-        assertEquals(FeedbackCategory.FEATURE, state.category)
+        assertEquals("feature", state.choice.id)
         assertEquals("", state.message)
         assertTrue(state.photos.isEmpty())
         assertNull(prefs.getFeedbackDraft())
     }
 
     @Test
+    fun an_old_draft_longer_than_the_limit_is_kept_whole_and_must_be_shortened_to_send() = runTest(testDispatcher) {
+        val message = "m".repeat(2000)
+        val steps = "s".repeat(1000)
+        prefs.saveFeedbackDraft(FeedbackDraft(category = "bug", message = message, email = "", stepsToReproduce = steps, attachDiagnostics = true))
+        val support = FakeSupport()
+        val vm = viewModel(support)
+        advanceUntilIdle()
+        val joined = "$message\n\n$steps"
+        assertEquals(joined, vm.uiState.value.message)
+        assertTrue(vm.uiState.value.overLimit)
+        assertFalse(vm.uiState.value.canSend)
+        assertEquals("This is over the 2,000-character limit. Shorten it to send.", vm.uiState.value.limitMessage)
+
+        // Nothing is cut off behind the listener's back: a category change saves it whole, typing can't grow it.
+        vm.onCategorySelected(FeedbackCategory.AUDIO.id)
+        assertEquals(joined, prefs.getFeedbackDraft()?.message)
+        vm.onMessageChanged(joined + "x")
+        assertEquals(joined, vm.uiState.value.message)
+        vm.onSubmit()
+        advanceUntilIdle()
+        assertTrue(support.sent.isEmpty())
+
+        // Shortening works, and once under the limit it can be sent.
+        vm.onMessageChanged(joined.dropLast(10))
+        assertEquals(joined.length - 10, vm.uiState.value.message.length)
+        vm.onMessageChanged(message)
+        assertTrue(vm.uiState.value.canSend)
+    }
+
+    @Test
+    fun a_higher_server_limit_applies_as_is() = runTest(testDispatcher) {
+        val vm = viewModel(FakeSupport(SupportMeta.Offline.copy(maxBody = 4000)))
+        advanceUntilIdle()
+        vm.onMessageChanged("x".repeat(3500))
+        assertEquals(3500, vm.uiState.value.message.length)
+        assertTrue(vm.uiState.value.canSend)
+        vm.onMessageChanged("x".repeat(4500))
+        assertEquals(4000, vm.uiState.value.message.length)
+    }
+
+    @Test
+    fun the_draft_is_fixed_while_it_is_being_sent() = runTest(testDispatcher) {
+        val support = FakeSupport().apply { sendGate = CompletableDeferred() }
+        val vm = viewModel(support)
+        vm.onMessageChanged("What I meant")
+        vm.onSubmit()
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.isSubmitting)
+
+        vm.onMessageChanged("What I meant, and more")
+        vm.onCategorySelected(FeedbackCategory.BUG.id)
+        vm.onAttachDiagnosticsChanged(true)
+        vm.onDiscardDraft()
+        assertEquals("What I meant", vm.uiState.value.message)
+        assertEquals("feature", vm.uiState.value.choice.id)
+        assertFalse(vm.uiState.value.attachDiagnostics)
+
+        support.sendGate!!.complete(Unit)
+        advanceUntilIdle()
+        assertEquals("What I meant", support.sent.single().body)
+        assertTrue(vm.uiState.value.isSuccess)
+        assertNull(prefs.getFeedbackDraft())
+    }
+
+    @Test
+    fun the_phone_model_goes_only_with_diagnostics() = runTest(testDispatcher) {
+        val support = FakeSupport()
+        val vm = viewModel(support)
+        vm.onMessageChanged("An idea")
+        vm.onSubmit()
+        advanceUntilIdle()
+        assertNull(support.sent.single().device)
+        assertNull(support.sent.single().diagnostics)
+
+        val withDiagnostics = viewModel(support)
+        withDiagnostics.onMessageChanged("A bug")
+        withDiagnostics.onAttachDiagnosticsChanged(true)
+        withDiagnostics.onSubmit()
+        advanceUntilIdle()
+        assertNotNull(support.sent.last().device)
+    }
+
+    @Test
+    fun the_servers_categories_are_the_choices() = runTest(testDispatcher) {
+        val events = mutableListOf<Pair<String, Map<String, Any>>>()
+        val restore = AnalyticsHelper.installRecordingSink(events)
+        try {
+            val support = FakeSupport(SupportMeta.Offline.copy(categories = listOf(SupportCategory("bug", "Something broke"), SupportCategory("account", "Account and sync"))))
+            val vm = viewModel(support)
+            advanceUntilIdle()
+            val state = vm.uiState.value
+            assertEquals(listOf("Something broke", "Account and sync"), state.choices.map { it.label })
+            // The default "feature" isn't offered any more, so the first choice stands in.
+            assertEquals("bug", state.choice.id)
+
+            vm.onCategorySelected("account")
+            vm.onCategorySelected("not-offered")
+            assertEquals("account", vm.uiState.value.choice.id)
+            assertEquals(FeedbackCategory.OTHER.placeholder, vm.uiState.value.choice.placeholder)
+            vm.onMessageChanged("Sync stopped")
+            vm.onSubmit()
+            advanceUntilIdle()
+            assertEquals("account", support.sent.single().category)
+            assertEquals("other", events.single { it.first == "feedback_sent" }.second["category"])
+        } finally {
+            restore()
+        }
+    }
+
+    @Test
+    fun photos_are_left_out_when_support_cant_take_them_and_the_listener_is_told() = runTest(testDispatcher) {
+        val support = FakeSupport(SupportMeta.Offline.copy(photosEnabled = true, maxPhotos = 3, maxPhotoBytes = 100))
+        support.photoIds = { PhotoUpload.Unavailable }
+        support.result = SendResult.SentByEmailForm
+        val vm = viewModel(support)
+        advanceUntilIdle()
+        vm.onPhotosPicked(listOf(Uri.parse("content://a")))
+        vm.onMessageChanged("See the screenshot")
+        vm.onSubmit()
+        advanceUntilIdle()
+        assertEquals(emptyList<String>(), support.sent.single().photoIds)
+        assertTrue(vm.uiState.value.isSuccess)
+        assertTrue(vm.uiState.value.photosDropped)
+    }
+
+    @Test
     fun buildGitHubIssueUrl_creates_valid_URL_with_encoded_title() {
         val vm = viewModel(FakeSupport())
-        vm.onCategorySelected(FeedbackCategory.BUG)
+        vm.onCategorySelected(FeedbackCategory.BUG.id)
         vm.onMessageChanged("Crash when clicking download button")
 
         val url = buildFeedbackGitHubIssueUrl(vm.uiState.value)
@@ -359,19 +491,19 @@ class FeedbackViewModelTest {
     @Test
     fun category_selection_toggles_attachDiagnostics_default_for_bug_reports() {
         val vm = viewModel(FakeSupport())
-        assertEquals(FeedbackCategory.FEATURE, vm.uiState.value.category)
+        assertEquals("feature", vm.uiState.value.choice.id)
         assertFalse(vm.uiState.value.attachDiagnostics)
 
-        vm.onCategorySelected(FeedbackCategory.BUG)
+        vm.onCategorySelected(FeedbackCategory.BUG.id)
         assertTrue(vm.uiState.value.attachDiagnostics)
 
-        vm.onCategorySelected(FeedbackCategory.AUDIO)
+        vm.onCategorySelected(FeedbackCategory.AUDIO.id)
         assertTrue(vm.uiState.value.attachDiagnostics)
 
-        vm.onCategorySelected(FeedbackCategory.FEATURE)
+        vm.onCategorySelected(FeedbackCategory.FEATURE.id)
         assertFalse(vm.uiState.value.attachDiagnostics)
 
-        vm.onCategorySelected(FeedbackCategory.OTHER)
+        vm.onCategorySelected(FeedbackCategory.OTHER.id)
         assertFalse(vm.uiState.value.attachDiagnostics)
     }
 }
