@@ -19,6 +19,8 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -59,6 +61,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.contentDescription
@@ -105,6 +108,7 @@ internal fun EpisodeToolbar(
     genre: String = "",
     onSearchFocused: () -> Unit = {},
     modifier: Modifier = Modifier,
+    subscribeInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val branded = LocalBrandedPage.current?.style?.toolbar
     val subscribe = rememberToolbarSubscribeMoment(
@@ -143,6 +147,7 @@ internal fun EpisodeToolbar(
                 compact = compact,
                 genre = genre,
                 style = branded,
+                interactionSource = subscribeInteractionSource,
                 modifier = Modifier.weight(1f),
             )
             SubscriptionAutomationSlot(automationReveal, automationEnabled) {
@@ -250,6 +255,7 @@ private fun SubscribeButton(
     compact: Boolean,
     genre: String,
     style: BrandedToolbarStyle?,
+    interactionSource: MutableInteractionSource,
     modifier: Modifier,
 ) {
     val subscribeLabel = stringResource(R.string.podcast_info_subscribe)
@@ -258,10 +264,14 @@ private fun SubscribeButton(
     val moment = subscribe.moment
     val playing = subscribe.playing
     // The button morphs to its pressed shape and back on its own clock: Material's built-in morph
-    // could be left at the pressed shape after the tap that changed the subscription.
-    val interactionSource = remember { MutableInteractionSource() }
+    // could be left at the pressed shape after the tap that changed the subscription. It is pressed
+    // only while a finger is on it too, so a press whose end never reaches the button can't hold it.
     val pressed by interactionSource.collectIsPressedAsState()
-    val pressedness by animateFloatAsState(if (pressed) 1f else 0f, MaterialTheme.motionScheme.defaultEffectsSpec(), label = "subscribePress")
+    var fingerDown by remember { mutableStateOf(false) }
+    val pressedness = remember { Animatable(0f) }
+    val pressSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    val pressTarget = subscribePressTarget(pressed, fingerDown)
+    LaunchedEffect(pressTarget) { pressedness.animateTo(pressTarget, pressSpec) }
     Box(
         modifier.height(48.dp).graphicsLayer {
             val nudge = if (playing) moment?.nudge(subscribe.clock.value) else null
@@ -272,12 +282,12 @@ private fun SubscribeButton(
     ) {
         Button(
             onClick = onClick,
-            shape = subscribeButtonShape(pressedness),
+            shape = subscribeButtonShape(pressedness.value),
             interactionSource = interactionSource,
             colors = ButtonDefaults.buttonColors(containerColor = colors.first, contentColor = colors.second),
             contentPadding = PaddingValues(horizontal = if (compact) 8.dp else 12.dp),
             // While a show's moment plays it draws the whole button, so the button's own press shape never peeks out.
-            modifier = Modifier.fillMaxWidth().height(48.dp).graphicsLayer { alpha = if (playing) 0f else 1f }.semantics {
+            modifier = Modifier.fillMaxWidth().height(48.dp).trackFingerDown { fingerDown = it }.graphicsLayer { alpha = if (playing) 0f else 1f }.semantics {
                 contentDescription = if (isSubscribed) unsubscribeLabel else subscribeLabel
             },
         ) {
@@ -458,6 +468,27 @@ private fun SubscriptionToggle(
 
 /** The Subscribe button's shape: rounded on the leading side, joined to the buttons after it. */
 internal val SubscribeButtonShape = RoundedCornerShape(topStart = 24.dp, topEnd = 8.dp, bottomEnd = 8.dp, bottomStart = 24.dp)
+
+/** The pressed shape shows while the button reports a press and a finger is still on it; otherwise the resting shape. */
+internal fun subscribePressTarget(pressed: Boolean, fingerDown: Boolean): Float = if (pressed && fingerDown) 1f else 0f
+
+/**
+ * Reports whether a finger is on this element, without consuming anything, so its own click still
+ * works. A finger that lifts, or a gesture cut off mid-way, always reports false.
+ */
+private fun Modifier.trackFingerDown(onChange: (Boolean) -> Unit): Modifier = pointerInput(Unit) {
+    awaitEachGesture {
+        awaitFirstDown(requireUnconsumed = false)
+        onChange(true)
+        try {
+            do {
+                val event = awaitPointerEvent()
+            } while (event.changes.any { it.pressed })
+        } finally {
+            onChange(false)
+        }
+    }
+}
 
 /** The Subscribe shape [pressed] of the way (0 to 1) to the pressed shape, 18dp on every corner; exactly [SubscribeButtonShape] at rest. */
 internal fun subscribeButtonShape(pressed: Float): RoundedCornerShape {

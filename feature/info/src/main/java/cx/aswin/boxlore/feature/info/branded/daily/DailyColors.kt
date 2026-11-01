@@ -29,9 +29,6 @@ internal object DailyColors {
         1f to Color(0xFFF2F050),
     )
 
-    /** The dawn as a glint across the top of the next-episode box. */
-    val DawnAcross = listOf(0f to Color(0xFF0054B7), 0.45f to Color(0xFF00C2EE), 0.7f to Color(0xFF81DD9A), 1f to Color(0xFFF2F050))
-
     fun dawn(): Brush = Brush.verticalGradient(*Dawn.toTypedArray())
 
     val Light = DailyPalette(

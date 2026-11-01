@@ -7,14 +7,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.info.branded.daily.DailyColors
+import cx.aswin.boxlore.feature.info.branded.daily.DailyDawn
+import cx.aswin.boxlore.feature.info.branded.daily.DailyDaybreak
 import cx.aswin.boxlore.feature.info.branded.daily.DailyPage
-import cx.aswin.boxlore.feature.info.branded.daily.DailyPress
 import cx.aswin.boxlore.feature.info.branded.daily.millisUntilNextDay
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -66,16 +66,26 @@ class DailyPageTest {
     }
 
     @Test
-    fun `the press prints left to right and lifts off before the button takes over`() {
-        assertEquals(0f, DailyPress.printed(90f), 0.001f)
-        assertEquals(1f, DailyPress.printed(690f), 0.001f)
-        assertNull(DailyPress.roller(89f))
-        assertEquals(1f, DailyPress.roller(400f)!!.first, 0.001f)
-        assertNull(DailyPress.roller(840f), "The roller has lifted off")
-        assertEquals(0.78f, DailyPress.printedInk(500f), 0.001f)
-        assertEquals(1f, DailyPress.printedInk(DailyPress.DURATION_MILLIS.toFloat()), 0.001f)
-        assertEquals(0f, DailyPress.subscribeLabel(120f).first, 0.001f)
-        assertTrue(DailyPress.REVEAL_MILLIS < DailyPress.DURATION_MILLIS)
+    fun `daybreak rises, taps as the sun clears the horizon, and lands on Subscribed`() {
+        assertEquals(1f, DailyDawn.subscribeLabel(0f).first, 0.001f)
+        assertEquals(0f, DailyDawn.subscribeLabel(140f).first, 0.001f)
+        assertEquals(0f, DailyDawn.sky(60f), 0.001f)
+        assertEquals(1f, DailyDawn.sky(700f), 0.001f)
+        // At rest the sun and its glow sit below the button, so the first frame is the plain button.
+        val glowTop = DailyDawn.sunTop(0f) + DailyDawn.SUN_DIAMETER / 2 - DailyDawn.SUN_GLOW_RADIUS
+        assertTrue(glowTop >= DailyDawn.BUTTON_HEIGHT, "glow top $glowTop")
+        // The one tap comes just as the sun's disc clears the bottom edge.
+        val clear = DailyDawn.SUN_CLEAR_MILLIS.toFloat()
+        assertTrue(DailyDawn.sunTop(clear) + DailyDawn.SUN_DIAMETER <= DailyDawn.BUTTON_HEIGHT)
+        assertTrue(DailyDawn.sunTop(clear - 20f) + DailyDawn.SUN_DIAMETER > DailyDawn.BUTTON_HEIGHT)
+        // Daylight starts after the sun is up and is full, with Subscribed in, by the end.
+        val end = DailyDawn.DURATION_MILLIS.toFloat()
+        assertEquals(0f, DailyDawn.daylight(800f), 0.001f)
+        assertEquals(1f, DailyDawn.daylight(end), 0.001f)
+        assertEquals(1f, DailyDawn.subscribedLabel(end), 0.001f)
+        assertEquals(0f, DailyDawn.sunAlpha(end), 0.001f)
+        assertTrue(DailyDawn.REVEAL_MILLIS < DailyDawn.DURATION_MILLIS)
+        assertSame(DailyDaybreak, DailyPage.subscribeMoment)
     }
 
     @Test
