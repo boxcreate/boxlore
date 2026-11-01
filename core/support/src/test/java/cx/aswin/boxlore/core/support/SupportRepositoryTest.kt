@@ -54,12 +54,12 @@ class SupportRepositoryTest {
     fun `reads the switches and limits from the server`() = runTest {
         server.enqueue(
             MockResponse().setBody(
-                """{"meta":{"notice":"Slow this week","canStartNew":true,"photos":{"enabled":true,"max":5,"maxBytes":5242880},"maxBody":2000,"pushTopic":"support_ab","replyAuthor":"boxlore team","extra":1},"threads":[]}""",
+                """{"meta":{"notice":"Slow this week","canStartNew":true,"photos":{"enabled":true,"max":5,"maxBytes":5242880},"maxBody":2000,"pushTopics":["support_ab","support_cd","bad topic"],"replyAuthor":"boxlore team","extra":1},"threads":[]}""",
             ),
         )
         val repo = repository()
         val meta = repo.refresh()
-        assertEquals(SupportMeta(true, "Slow this week", true, 5, 5_242_880, 2000, "support_ab"), meta)
+        assertEquals(SupportMeta(true, "Slow this week", true, 5, 5_242_880, 2000, listOf("support_ab", "support_cd")), meta)
         assertEquals(meta, repo.meta.value)
         assertEquals("/support/threads", server.takeRequest().path)
     }
@@ -67,9 +67,10 @@ class SupportRepositoryTest {
     @Test
     fun `sends a conversation and keeps the audio category`() = runTest {
         server.enqueue(MockResponse().setResponseCode(201).setBody("""{"thread":{"id":"a1b2c3d4e5f6a1b2c3d4e5f6","status":{"key":"waiting"}}}"""))
-        val result = repository().send(feedback)
+        val result = repository().send(feedback.copy(requestId = "retry-key-0001"))
         assertEquals(SendResult.Sent("a1b2c3d4e5f6a1b2c3d4e5f6"), result)
         val body = server.takeRequest().body.readUtf8()
+        assertTrue(body.contains("\"requestId\":\"retry-key-0001\""))
         assertTrue(body.contains("\"category\":\"audio\""))
         assertTrue(body.contains("\"device\":\"Pixel 9\""))
         assertTrue(legacyCalls.isEmpty())
@@ -80,12 +81,13 @@ class SupportRepositoryTest {
         for (reply in listOf(
             MockResponse().setResponseCode(404).setBody("""{"error":"Not Found"}"""),
             MockResponse().setResponseCode(401).setBody("""{"error":"session_required"}"""),
+            MockResponse().setResponseCode(401).setBody("""{"error":"proof_required"}"""),
             MockResponse().setResponseCode(503).setBody("""{"error":"support_unavailable"}"""),
         )) {
             server.enqueue(reply)
             assertEquals(SendResult.SentByEmailForm, repository().send(feedback))
         }
-        assertEquals(3, legacyCalls.size)
+        assertEquals(4, legacyCalls.size)
         assertEquals(listOf("bug", "Static after ten minutes", "0.0.30", "Android 17", "log line"), legacyCalls.first())
     }
 

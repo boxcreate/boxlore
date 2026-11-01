@@ -3,7 +3,7 @@
 ## Purpose
 
 Listener feedback as support conversations with the boxlore API (`/support/...`): reading what the
-server allows (switches, limits, the push topic), sending a new message, and uploading photos.
+server allows (switches, limits, the push topics), sending a new message, and uploading photos.
 Wording, statuses and limits come from the server, so they change without an app update.
 
 It does not own any UI (the screens live in `:feature:settings`) and does not talk to Telegram or
@@ -40,7 +40,13 @@ Features use it; it never depends on a feature, the design system or the catalog
 ## Persistence & identity
 
 - Nothing stored on the phone. The API knows the install from the API session the shared client
-  attaches (`X-Boxlore-Session`); the app never sends an id of its own.
+  attaches (`X-Boxlore-Session`) together with the device key that session registered: every
+  support request carries `X-Request-Proof`, the device key's signature over the session, method
+  and path (`RequestProofInterceptor` in `:core:network`, added by `NetworkModule.createSupportApi`).
+  The app never sends an id of its own. Without a device key or proof the API answers 401 and the
+  message goes through the old form.
+- `OutgoingFeedback.requestId` is the retry key: the screen sends the same key when the same message
+  is sent again, so a send whose answer was lost isn't saved twice.
 - Fallback: when the support API answers 404, 401 or 503 `support_unavailable`, the message goes
   through the old `POST /feedback` form (`legacySubmit`), so feedback sent before the server side is
   live (or without a session) is never lost. The old form has no `audio` category (sent as `bug`)
@@ -48,8 +54,10 @@ Features use it; it never depends on a feature, the design system or the catalog
 
 ## Testing notes
 
-- `SupportRepositoryTest` runs the real `SupportApi` against MockWebServer: meta parsing, sending,
-  the fallback cases, refusals with the server's message, no connection, photos off, `PhotoPrep.targetSize`.
+- `SupportRepositoryTest` runs the real `SupportApi` against MockWebServer: meta parsing (push topics
+  filtered to valid names), sending with the retry key, the fallback cases (401 for a missing proof
+  included), refusals with the server's message, no connection, photos off, `PhotoPrep.targetSize`.
+  `RequestProofTest` in `:core:network` covers the signed message and the interceptor.
 
 ```bash
 ./gradlew :core:support:testDebugUnitTest

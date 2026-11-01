@@ -15,6 +15,7 @@ import cx.aswin.boxlore.core.support.SendResult
 import cx.aswin.boxlore.core.support.SupportMeta
 import cx.aswin.boxlore.core.support.SupportRepository
 import java.net.URLEncoder
+import java.util.UUID
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -66,6 +67,23 @@ data class FeedbackUiState(
 
 internal const val PAUSED_NOTICE = "Sending is paused for now. Your message stays saved here."
 
+/**
+ * One retry key per message: sending the same content again (after a failure whose answer may
+ * have been lost) reuses the key, so the API saves it once; changed content gets a new key.
+ */
+internal class RetryKeys(private val newKey: () -> String = { UUID.randomUUID().toString() }) {
+    private var last: Pair<Any, String>? = null
+
+    fun keyFor(content: Any): String {
+        last?.let { (seen, key) -> if (seen == content) return key }
+        return newKey().also { last = content to it }
+    }
+
+    fun clear() {
+        last = null
+    }
+}
+
 /** What the screen needs from support; the factory wires [SupportRepository], tests pass fakes. */
 class FeedbackSupport(
     val meta: StateFlow<SupportMeta>,
@@ -82,6 +100,7 @@ class FeedbackViewModel(
     private val readPhoto: (Uri) -> ByteArray? = { uri -> PhotoPrep.prepare(context.contentResolver, uri) },
 ) : ViewModel() {
 
+    private val retryKeys = RetryKeys()
     private val _uiState = MutableStateFlow(FeedbackUiState())
     val uiState: StateFlow<FeedbackUiState> = _uiState.asStateFlow()
 
@@ -194,6 +213,7 @@ class FeedbackViewModel(
             return
         }
         _uiState.update { it.copy(isSubmitting = true, errorMessage = null) }
+        val requestId = retryKeys.keyFor(listOf(state.category, body, state.photos, state.attachDiagnostics))
 
         viewModelScope.launch {
             val diagnosticsInfo = state.diagnosticInfo ?: DiagnosticCollector.collect(context)
@@ -212,6 +232,7 @@ class FeedbackViewModel(
                     diagnostics = diagnosticsReport,
                     logs = sanitizedLogs,
                     photoIds = photoIds,
+                    requestId = requestId,
                 ),
             )
             handleResult(state, result)
@@ -248,6 +269,7 @@ class FeedbackViewModel(
                     withDiagnostics = state.attachDiagnostics,
                 )
                 boxcastPrefs.clearFeedbackDraft()
+                retryKeys.clear()
                 _uiState.update {
                     it.copy(isSubmitting = false, isSuccess = true, repliesInApp = repliesInApp, isDraftRestored = false, photos = emptyList())
                 }

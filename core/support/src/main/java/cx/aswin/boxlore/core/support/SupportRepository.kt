@@ -58,6 +58,7 @@ class SupportRepository(
             device = feedback.device,
             diagnostics = feedback.diagnostics,
             logs = feedback.logs,
+            requestId = feedback.requestId,
         )
         val response = call { api.startThread(request).execute() } ?: return@withContext SendResult.Failed
         when {
@@ -122,9 +123,13 @@ internal fun SupportListResponse.toMeta(): SupportMeta? {
         maxPhotos = m.photos.max.coerceIn(0, MAX_PHOTOS_CEILING),
         maxPhotoBytes = m.photos.maxBytes,
         maxBody = m.maxBody.coerceIn(1, MAX_BODY_CEILING),
-        pushTopic = m.pushTopic,
+        pushTopics = m.pushTopics.filter { TOPIC.matches(it) }.distinct().take(MAX_TOPICS),
     )
 }
 
+private const val MAX_TOPICS = 5
+
+/** FCM topic names. */
+private val TOPIC = Regex("[A-Za-z0-9\\-_.~%]{1,900}")
 private const val MAX_PHOTOS_CEILING = 10
 private const val MAX_BODY_CEILING = 10_000

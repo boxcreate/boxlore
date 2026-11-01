@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.network
 import android.util.Log
 import cx.aswin.boxlore.core.network.session.ApiSessionInterceptor
 import cx.aswin.boxlore.core.network.session.ApiSessionManager
+import cx.aswin.boxlore.core.network.session.RequestProofInterceptor
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -43,6 +44,9 @@ object NetworkModule {
 
     private val sessionInterceptor = ApiSessionInterceptor { sessionManager }
 
+    /** Signs support requests with the device key (see [RequestProofInterceptor]). */
+    private val requestProofInterceptor = RequestProofInterceptor { token, method, path -> sessionManager?.requestProofs?.proof(token, method, path) }
+
     /**
      * Optional Authenticator (e.g. FirebaseAuthAuthenticator) for handling HTTP 401
      * token refreshes. Set by application wiring at startup.
@@ -64,6 +68,7 @@ object NetworkModule {
         redactHeader(ApiSessionInterceptor.SESSION_HEADER)
         redactHeader(ApiSessionInterceptor.RENEW_HEADER)
         redactHeader(ApiSessionInterceptor.PROOF_HEADER)
+        redactHeader(RequestProofInterceptor.PROOF_HEADER)
     }
 
     private val okHttpClient = OkHttpClient.Builder().apply {
@@ -123,8 +128,12 @@ object NetworkModule {
      */
     fun createBoxLoreApiV2(baseUrl: String, client: OkHttpClient): BoxLoreApiV2 = retrofit(baseUrl, client).create(BoxLoreApiV2::class.java)
 
-    /** Builds [SupportApi] on the same cached client as [BoxLoreApi] ([createCachedClient]). */
-    fun createSupportApi(baseUrl: String, client: OkHttpClient): SupportApi = retrofit(baseUrl, client).create(SupportApi::class.java)
+    /**
+     * Builds [SupportApi] on [client] (production: the cached client from [createCachedClient]),
+     * with every request signed by the device key, which the support routes require.
+     */
+    fun createSupportApi(baseUrl: String, client: OkHttpClient): SupportApi =
+        retrofit(baseUrl, client.newBuilder().addNetworkInterceptor(requestProofInterceptor).build()).create(SupportApi::class.java)
 
     private fun retrofit(baseUrl: String, client: OkHttpClient): Retrofit = Retrofit.Builder()
         .baseUrl(baseUrl)

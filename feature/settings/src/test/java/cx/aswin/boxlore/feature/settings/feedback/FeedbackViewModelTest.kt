@@ -203,6 +203,42 @@ class FeedbackViewModelTest {
     }
 
     @Test
+    fun a_resend_of_the_same_message_keeps_its_retry_key_and_an_edit_gets_a_new_one() = runTest(testDispatcher) {
+        val support = FakeSupport().apply { result = SendResult.Failed }
+        val vm = viewModel(support)
+        vm.onMessageChanged("Try me")
+
+        vm.onSubmit()
+        advanceUntilIdle()
+        vm.onSubmit()
+        advanceUntilIdle()
+        vm.onMessageChanged("Try me, edited")
+        vm.onSubmit()
+        advanceUntilIdle()
+        support.result = SendResult.Sent("t1")
+        vm.onSubmit()
+        advanceUntilIdle()
+
+        val keys = support.sent.map { it.requestId }
+        assertEquals(4, keys.size)
+        assertTrue(keys.all { !it.isNullOrBlank() })
+        assertEquals(keys[0], keys[1])
+        assertTrue(keys[1] != keys[2])
+        assertEquals(keys[2], keys[3])
+    }
+
+    @Test
+    fun retry_keys_change_with_content_and_start_over_once_cleared() {
+        var n = 0
+        val keys = RetryKeys { "key-${++n}" }
+        assertEquals("key-1", keys.keyFor(listOf("bug", "a")))
+        assertEquals("key-1", keys.keyFor(listOf("bug", "a")))
+        assertEquals("key-2", keys.keyFor(listOf("bug", "b")))
+        keys.clear()
+        assertEquals("key-3", keys.keyFor(listOf("bug", "b")))
+    }
+
+    @Test
     fun a_blank_message_is_never_sent() = runTest(testDispatcher) {
         val support = FakeSupport()
         val vm = viewModel(support)

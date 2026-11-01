@@ -17,7 +17,7 @@ import retrofit2.http.POST
  * Build it with [NetworkModule.createSupportApi] on the same cached client as [BoxLoreApi].
  */
 interface SupportApi {
-    /** `meta` (switches, limits, push topic) and this install's conversations. */
+    /** `meta` (switches, limits, push topics) and this install's conversations. */
     @GET("support/threads")
     fun threads(): Call<SupportListResponse>
 

@@ -15,7 +15,8 @@ data class SupportMetaDto(
     val canStartNew: Boolean = true,
     val photos: SupportPhotoLimitsDto = SupportPhotoLimitsDto(),
     val maxBody: Int = 2000,
-    val pushTopic: String? = null,
+    /** Every topic to subscribe to for reply pushes: this install's, and the account's when signed in. */
+    val pushTopics: List<String> = emptyList(),
     val replyAuthor: String? = null,
 )
 
@@ -60,6 +61,8 @@ data class SupportNewThreadRequest(
     val device: String? = null,
     val diagnostics: String? = null,
     val logs: String? = null,
+    /** Same key for a retry of the same message, so the API saves it once. */
+    val requestId: String? = null,
 )
 
 /** Error bodies (`paused`, `limit`, `photos_off`, ...) with an optional message to show as is. */

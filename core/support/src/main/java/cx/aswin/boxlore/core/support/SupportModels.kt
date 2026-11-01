@@ -8,11 +8,12 @@ data class SupportMeta(
     val maxPhotos: Int,
     val maxPhotoBytes: Long,
     val maxBody: Int,
-    val pushTopic: String?,
+    /** Topics to subscribe to for reply pushes (this install's, and the account's when signed in). */
+    val pushTopics: List<String>,
 ) {
     companion object {
         /** Before the first answer, or when the API is unreachable: text only, nothing switched on. */
-        val Offline = SupportMeta(canStartNew = true, notice = null, photosEnabled = false, maxPhotos = 0, maxPhotoBytes = 0, maxBody = 2000, pushTopic = null)
+        val Offline = SupportMeta(canStartNew = true, notice = null, photosEnabled = false, maxPhotos = 0, maxPhotoBytes = 0, maxBody = 2000, pushTopics = emptyList())
     }
 }
 
@@ -25,6 +26,8 @@ data class OutgoingFeedback(
     val diagnostics: String?,
     val logs: String?,
     val photoIds: List<String> = emptyList(),
+    /** The same key for a retry of the same message, so the API saves it once. */
+    val requestId: String? = null,
 )
 
 sealed interface SendResult {
