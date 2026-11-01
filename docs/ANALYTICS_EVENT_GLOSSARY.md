@@ -71,8 +71,8 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 
 ### Other
 
-- playback_mode: `stream` | `offline`
-- client_surface: `phone` | `android_auto`
+- playback_mode: `stream` | `download` | `unknown` (see Listen record)
+- client_surface: `phone` | `car` (`car` only when the car controls the listen)
 - install_channel: `play_store` | `apk_github` | `share_referrer` | `unknown`
 - search_mode: `show_keyword` | `episode_semantic`
 - mix_mode: `daily` | `offline`
