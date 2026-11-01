@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.prefs
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -74,5 +75,12 @@ class NpsSurveyScheduleTest {
     fun asksAgainOnlyAfterNinetyDays() {
         assertFalse(NpsSurveySchedule.isDue(moment(lastShownAt = now - 89 * day)))
         assertTrue(NpsSurveySchedule.isDue(moment(lastShownAt = now - 90 * day)))
+    }
+
+    @Test
+    fun unmetNamesEveryMissingRule() {
+        val blocked = moment(finished = 1, lastFinishedAt = null, installedAt = now - day, launches = 1, lastShownAt = now - day, quiet = true, cooldown = false)
+        assertEquals(NpsSurveyRule.entries.toList(), NpsSurveySchedule.unmet(blocked))
+        assertEquals(emptyList<NpsSurveyRule>(), NpsSurveySchedule.unmet(moment()))
     }
 }

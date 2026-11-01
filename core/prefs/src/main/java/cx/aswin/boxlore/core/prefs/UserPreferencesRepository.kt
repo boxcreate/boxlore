@@ -644,6 +644,8 @@ class UserPreferencesRepository(context: Context,) {
 
     suspend fun isEngagementCooldownElapsed(): Boolean = engagement.isEngagementCooldownElapsed()
 
+    suspend fun clearEngagementCooldown() = engagement.clearEngagementCooldown()
+
     suspend fun setNpsLastScore(score: Int) = engagement.setNpsLastScore(score)
 
     suspend fun npsLastScore(): Int? = engagement.npsLastScore()

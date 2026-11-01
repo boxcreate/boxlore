@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.catalog
 
 import android.util.Log
 import cx.aswin.boxlore.core.prefs.NpsSurveyMoment
+import cx.aswin.boxlore.core.prefs.NpsSurveyRule
 import cx.aswin.boxlore.core.prefs.NpsSurveySchedule
 import cx.aswin.boxlore.core.prefs.NpsSurveyStore
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
@@ -96,6 +97,31 @@ class EngagementPromptCoordinator(
                 cooldownElapsed = userPrefs.isEngagementCooldownElapsed(),
             ),
         )
+    }
+
+    /**
+     * Debug: what the NPS survey still waits for, apart from a finish moment (the next finished
+     * episode is one).
+     */
+    suspend fun npsSurveyWaitsFor(installedAtMs: Long, finishedSinceInstall: Int, nowMs: Long = System.currentTimeMillis()): List<NpsSurveyRule> =
+        NpsSurveySchedule.unmet(
+            NpsSurveyMoment(
+                nowMs = nowMs,
+                installedAtMs = installedAtMs,
+                finishedSinceInstall = finishedSinceInstall,
+                lastFinishedAtMs = nowMs,
+                processStartedAtMs = processStartedAtMs,
+                record = surveyStore.record(),
+                inQuietDays = userPrefs.isInReviewQuietPeriod(installedAtMs, nowMs),
+                cooldownElapsed = userPrefs.isEngagementCooldownElapsed(),
+            ),
+        ) - NpsSurveyRule.FinishMoment
+
+    /** Debug: forgets the survey's last showing, the shared cooldown and this session's prompt, so the next finish can ask. */
+    suspend fun resetNpsSurveyForTesting() {
+        surveyStore.resetSchedule()
+        userPrefs.clearEngagementCooldown()
+        sessionProactivePromptShown = false
     }
 
     /**

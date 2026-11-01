@@ -276,6 +276,11 @@ internal class EngagementPreferences(private val dataStore: DataStore<Preference
     /** True when at least [EngagementPromptConstants.ENGAGEMENT_COOLDOWN_DAYS] have passed since the last prompt. */
     suspend fun isEngagementCooldownElapsed(): Boolean = isEngagementCooldownElapsed(dataStore.data.first())
 
+    /** Debug: forgets the last proactive prompt, so the shared cooldown has passed. */
+    suspend fun clearEngagementCooldown() {
+        dataStore.edit { it.remove(AnalyticsKeys.ENGAGEMENT_LAST_PROMPT_AT) }
+    }
+
     /** The latest NPS score; the milestone review prompt skips listeners who scored [EngagementPromptConstants.DETRACTOR_SCORE_MAX] or lower. */
     suspend fun setNpsLastScore(score: Int) {
         dataStore.edit { it[AnalyticsKeys.NPS_LAST_SCORE] = score }

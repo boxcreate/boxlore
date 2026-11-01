@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cx.aswin.boxlore.core.catalog.EngagementPromptCoordinator
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
@@ -61,15 +62,18 @@ import kotlinx.coroutines.delay
 /**
  * Full-screen debug tools: sleep-prompt testing (including a night-window bypass), a live
  * playback state readout, a DB inspector, and misc flag/cache resets. Reached via a long-press
- * on the Home avatar; available in all builds, matching the previous dialog's behavior.
+ * on the Home avatar; available in all builds, matching the previous dialog's behavior. The Flags tab can
+ * reset the NPS survey's timing so the next finished episode asks it again.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("LongParameterList") // The debug tools take each service they inspect or reset.
 fun DebugScreen(
     playbackRepository: PlaybackRepository,
     subscriptionRepository: SubscriptionRepository,
     userPreferencesRepository: UserPreferencesRepository,
     adaptiveRankingRepository: AdaptiveRankingRepository,
+    engagementPromptCoordinator: EngagementPromptCoordinator,
     onBack: () -> Unit,
     bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier,
@@ -86,6 +90,7 @@ fun DebugScreen(
                     subscriptionRepository = subscriptionRepository,
                     userPrefs = userPreferencesRepository,
                     adaptiveRankingRepository = adaptiveRankingRepository,
+                    engagementCoordinator = engagementPromptCoordinator,
                 ) as T
             },
         )

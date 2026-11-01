@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.home
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,11 +21,13 @@ import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.ranking.LearnerInspectorSnapshot
@@ -179,10 +182,14 @@ private fun DebugScreenPagerPage(
 
         DebugTab.Flags ->
             DebugTabScrollPane(bottomContentPadding = state.scrollBottomPadding) {
-                FlagsCacheSection(
-                    onResetFeatureFlag = viewModel::resetFeatureFlag,
-                    onClearDismissedCuriosities = viewModel::clearDismissedCuriosities,
-                )
+                val npsSurveyStatus by viewModel.npsSurveyStatus.collectAsStateWithLifecycle()
+                Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                    FlagsCacheSection(
+                        onResetFeatureFlag = viewModel::resetFeatureFlag,
+                        onClearDismissedCuriosities = viewModel::clearDismissedCuriosities,
+                    )
+                    NpsSurveyDebugSection(status = npsSurveyStatus, onReset = viewModel::resetNpsSurveyTiming)
+                }
             }
     }
 }

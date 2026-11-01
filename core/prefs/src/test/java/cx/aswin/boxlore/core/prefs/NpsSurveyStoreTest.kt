@@ -70,4 +70,14 @@ class NpsSurveyStoreTest {
         store.carryOverLegacy(legacyShown = true, installedAtMs = now - 40 * day, nowMs = now)
         assertEquals(now - 10 * day, store.record().lastShownAtMs)
     }
+
+    @Test
+    fun theDebugResetForgetsTheLastShowingAndCountsTwoStarts() = runTest {
+        store.markShown(now)
+        store.resetSchedule()
+        assertEquals(NpsSurveyRecord(lastShownAtMs = null, launches = 2), store.record())
+        repeat(3) { store.recordLaunch() }
+        store.resetSchedule()
+        assertEquals(5, store.record().launches)
+    }
 }

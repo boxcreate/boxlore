@@ -16,6 +16,9 @@ data class NpsSurveyMoment(
     val cooldownElapsed: Boolean,
 )
 
+/** One of [NpsSurveySchedule]'s rules, as the debug screen reports what the survey still waits for. */
+enum class NpsSurveyRule { FinishMoment, FinishedEpisodes, DaysInstalled, FirstRun, QuietDays, Cooldown, AskAgainGap }
+
 /**
  * When the NPS survey may appear: right after an episode finishes in this run of boxlore (never on an
  * open alone), once 3 episodes have finished here and boxlore has been installed for a week, never in
@@ -34,17 +37,21 @@ object NpsSurveySchedule {
     fun isFinishMoment(lastFinishedAtMs: Long?, processStartedAtMs: Long, nowMs: Long,): Boolean =
         lastFinishedAtMs != null && lastFinishedAtMs >= processStartedAtMs && nowMs - lastFinishedAtMs <= FINISH_MOMENT_WINDOW_MS
 
-    fun isDue(moment: NpsSurveyMoment): Boolean {
+    fun isDue(moment: NpsSurveyMoment): Boolean = unmet(moment).isEmpty()
+
+    /** The rules [moment] doesn't meet yet, in the order a listener meets them; empty when the survey is due. */
+    fun unmet(moment: NpsSurveyMoment): List<NpsSurveyRule> {
         val now = moment.nowMs
         val lastShown = moment.record.lastShownAtMs
-        return isFinishMoment(moment.lastFinishedAtMs, moment.processStartedAtMs, now) &&
-            moment.finishedSinceInstall >= MIN_FINISHED_EPISODES &&
-            moment.installedAtMs > 0L &&
-            now - moment.installedAtMs >= MIN_DAYS_INSTALLED * DAY_MS &&
-            moment.record.launches >= 2 &&
-            !moment.inQuietDays &&
-            moment.cooldownElapsed &&
-            (lastShown == null || now - lastShown >= ASK_AGAIN_DAYS * DAY_MS)
+        return buildList {
+            if (!isFinishMoment(moment.lastFinishedAtMs, moment.processStartedAtMs, now)) add(NpsSurveyRule.FinishMoment)
+            if (moment.finishedSinceInstall < MIN_FINISHED_EPISODES) add(NpsSurveyRule.FinishedEpisodes)
+            if (moment.installedAtMs <= 0L || now - moment.installedAtMs < MIN_DAYS_INSTALLED * DAY_MS) add(NpsSurveyRule.DaysInstalled)
+            if (moment.record.launches < 2) add(NpsSurveyRule.FirstRun)
+            if (moment.inQuietDays) add(NpsSurveyRule.QuietDays)
+            if (!moment.cooldownElapsed) add(NpsSurveyRule.Cooldown)
+            if (lastShown != null && now - lastShown < ASK_AGAIN_DAYS * DAY_MS) add(NpsSurveyRule.AskAgainGap)
+        }
     }
 
     private const val DAY_MS = 24L * 60 * 60 * 1000

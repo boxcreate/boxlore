@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.catalog
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ApplicationProvider
+import cx.aswin.boxlore.core.prefs.NpsSurveyRule
 import cx.aswin.boxlore.core.prefs.NpsSurveyStore
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.prefs.userPreferencesDataStore
@@ -68,6 +69,13 @@ class EngagementPromptCoordinatorSurveyTest {
             "not again within 90 days",
             nextRun.shouldShowNpsSurvey(false, now - 30 * day, 6, lastFinishedAtMs = now + 1, nowMs = now + 2),
         )
+        assertEquals(listOf(NpsSurveyRule.Cooldown, NpsSurveyRule.AskAgainGap), nextRun.npsSurveyWaitsFor(now - 30 * day, 6, nowMs = now + 2))
+
+        // The debug reset lets the next finish ask again, in this session too.
+        nextRun.reserveSessionForPrompt()
+        nextRun.resetNpsSurveyForTesting()
+        assertEquals(emptyList<NpsSurveyRule>(), nextRun.npsSurveyWaitsFor(now - 30 * day, 6, nowMs = now + 2))
+        assertTrue(nextRun.shouldShowNpsSurvey(false, now - 30 * day, 6, lastFinishedAtMs = now + 1, nowMs = now + 2))
         context.userPreferencesDataStore.edit { it.clear() }
     }
 }

@@ -37,6 +37,14 @@ class NpsSurveyStore internal constructor(private val dataStore: DataStore<Prefe
         dataStore.edit { it[LAST_SHOWN_AT] = nowMs }
     }
 
+    /** Debug: forgets when the survey last appeared and counts at least two starts, so the next finish can ask. */
+    suspend fun resetSchedule() {
+        dataStore.edit { prefs ->
+            prefs.remove(LAST_SHOWN_AT)
+            prefs[LAUNCHES] = maxOf(prefs[LAUNCHES] ?: 0, 2)
+        }
+    }
+
     /**
      * Runs once per install. An install that already showed the survey from an older version
      * ([legacyShown], the backed-up `nps_survey_fired`) waits the full gap from the update. A phone
