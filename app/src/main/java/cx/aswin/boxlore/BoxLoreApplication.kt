@@ -15,9 +15,9 @@ import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.cast.framework.SessionTransferCallback
 import com.posthog.PostHog
-import com.posthog.PostHogOnFeatureFlags
 import com.posthog.android.PostHogAndroid
 import com.posthog.android.PostHogAndroidConfig
+import cx.aswin.boxlore.analytics.PostHogWiring
 import cx.aswin.boxlore.core.catalog.EngagementPromptCoordinator
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.downloads.DownloadsDependenciesHolder
@@ -191,34 +191,7 @@ class BoxLoreApplication :
                 .resolveLearnerLogEnabled(isDebugBuild = BuildConfig.DEBUG),
         )
 
-        val config =
-            PostHogAndroidConfig(
-                apiKey = BuildConfig.POSTHOG_API_KEY,
-                host = BuildConfig.POSTHOG_HOST,
-            ).apply {
-                captureApplicationLifecycleEvents = true
-                captureScreenViews = false
-                captureDeepLinks = false
-                debug = BuildConfig.DEBUG
-                // PostHog Surveys with a Material3 1.5-compatible delegate (the published
-                // posthog-android-surveys-compose:0.1.0 module crashes against our M3 pin).
-                surveys = true
-                surveysConfig.surveysDelegate =
-                    BoxcastPostHogSurveysDelegate(
-                        context = this@BoxLoreApplication,
-                        userPrefs = userPreferencesRepository,
-                        engagementCoordinator = engagementPromptCoordinator,
-                    )
-                // LEGACY(own-ids): staged feed-first rollout; remove at S7 with rememberRolloutAnswers.
-                onFeatureFlags = rememberRolloutAnswers()
-            }
-        // Off the main thread: setup reads package info over binder (startup ANR). Calls made
-        // before it finishes are queued by PostHogStartup and replayed in order.
-        cx.aswin.boxlore.core.analytics.PostHogStartup.start {
-            PostHogAndroid.setup(this, config)
-            // Registered before queued calls replay so early events keep the internal tag.
-            registerPostHogEnvironment()
-        }
+        startPostHog()
 
         // Non-fatal error sink: Crashlytics when available, Logcat fallback inside ErrorReporter.
         cx.aswin.boxlore.core.analytics.ErrorReporter.install { throwable, message ->
@@ -393,6 +366,47 @@ class BoxLoreApplication :
         }
     }
 
+    /** PostHog setup: event levels first, then the SDK off the main thread. */
+    private fun startPostHog() {
+        // Event levels: this install's sample bucket and the last remote switch, before any capture.
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper.initPolicy(this, BuildConfig.VERSION_NAME)
+        val environment = PostHogWiring.environment(debug = BuildConfig.DEBUG, isolatedTests = BuildConfig.BOXLORE_ISOLATED_TESTS)
+        val config =
+            PostHogAndroidConfig(
+                apiKey = BuildConfig.POSTHOG_API_KEY,
+                host = BuildConfig.POSTHOG_HOST,
+            ).apply {
+                captureApplicationLifecycleEvents = true
+                captureScreenViews = false
+                captureDeepLinks = false
+                debug = BuildConfig.DEBUG
+                // PostHog Surveys with a Material3 1.5-compatible delegate (the published
+                // posthog-android-surveys-compose:0.1.0 module crashes against our M3 pin).
+                surveys = true
+                surveysConfig.surveysDelegate =
+                    BoxcastPostHogSurveysDelegate(
+                        context = this@BoxLoreApplication,
+                        userPrefs = userPreferencesRepository,
+                        engagementCoordinator = engagementPromptCoordinator,
+                    )
+                onFeatureFlags =
+                    PostHogWiring.onFlagsLoaded(
+                        // LEGACY(own-ids): staged feed-first rollout; remove at S7 with rememberRolloutAnswers.
+                        { rememberRolloutAnswers() },
+                        { cx.aswin.boxlore.core.analytics.AnalyticsHelper.refreshAnalyticsPolicy() },
+                    )
+                // Drops events this install doesn't send and tags every event, SDK lifecycle ones included.
+                addBeforeSend(cx.aswin.boxlore.core.analytics.AnalyticsBeforeSend(environment))
+            }
+        // Off the main thread: setup reads package info over binder (startup ANR). Calls made
+        // before it finishes are queued by PostHogStartup and replayed in order.
+        cx.aswin.boxlore.core.analytics.PostHogStartup.start {
+            PostHogAndroid.setup(this, config)
+            // Registered before queued calls replay so early events keep the internal tag.
+            environment.forEach { (key, value) -> PostHog.register(key, value) }
+        }
+    }
+
     /**
      * Saves each loaded `feed_first` and v2 kill-switch answer for the next process; this process
      * keeps the `feed_first` value its first read fixed. PostHog calls this after the setup
@@ -403,20 +417,8 @@ class BoxLoreApplication :
      * LEGACY(own-ids): staged feed-first rollout. Remove at sunset step S7 (MIGRATION.md §6) once
      * `feed_first` has been at 100% for 30 days.
      */
-    private fun rememberRolloutAnswers() =
-        PostHogOnFeatureFlags {
-            container.rolloutFlagMemory.onFlagsLoaded { flag -> PostHog.getFeatureFlag(flag, null, false) }
-        }
-
-    /** Tag internal/test users so they can be filtered in PostHog settings. */
-    private fun registerPostHogEnvironment() {
-        if (BuildConfig.DEBUG || BuildConfig.BOXLORE_ISOLATED_TESTS) {
-            PostHog.register("is_internal", true)
-            PostHog.register("app_environment", if (BuildConfig.BOXLORE_ISOLATED_TESTS) "update_test" else "debug")
-        } else {
-            PostHog.register("is_internal", false)
-            PostHog.register("app_environment", "production")
-        }
+    private fun rememberRolloutAnswers() {
+        container.rolloutFlagMemory.onFlagsLoaded { flag -> PostHog.getFeatureFlag(flag, null, false) }
     }
 
     @Suppress("TooGenericExceptionCaught")

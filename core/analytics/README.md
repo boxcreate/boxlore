@@ -6,6 +6,13 @@ Owns analytics event capture and non-fatal error reporting for Boxlore. The modu
 
 ## Public API
 
+- **Event levels** (`AnalyticsPolicy`, `AnalyticsLevel`). Every event is always on, sampled, or off.
+  - Defaults are in `AnalyticsPolicy.DEFAULT_LEVELS`; anything unlisted is always on. Off: `playback_heartbeat`, `adaptive_ranking_status`, `android_auto_browse`, `session_restore_prompt`, and the SDK's `Application Backgrounded`. Sampled: `playback_seeked`.
+  - **Remote switch:** the PostHog flag `analytics-policy-v1` changes levels with no release. Its JSON payload is `{"sample_percent": 10, "events": {"<event>": "always|sampled|off"}, "versions": {"<app version>": {...}}}`; a version entry applies on top for that version only. Targeting a flag variant at one person changes events for that person alone. A missing flag or a payload that isn't an object means the defaults. `AnalyticsHelper.refreshAnalyticsPolicy` applies it whenever PostHog reports loaded flags (its configured callback at startup, `identify` and `reset`, and `AnalyticsHelper.reloadFeatureFlags`, which every explicit reload uses because PostHog doesn't run that callback for them) and remembers it with the app version, and `initPolicy` restores it at the next launch before PostHog is set up, only on that same version, so a version entry never carries over an update.
+  - **Sampling:** an install is in the sample when its bucket (0–99, picked once) is below `sample_percent` (default 10). Sampled events carry `sample_percent`, so charts can scale them back up.
+  - **Where levels apply:** `AnalyticsEmit` applies them to app events. `AnalyticsBeforeSend`, added to the PostHog config by `:app`, applies them to everything PostHog captures, SDK lifecycle events included, and stamps this build's environment tags (`is_internal`, `app_environment`), replacing any an event carries: setup events such as `Application Updated` otherwise inherit the tags the previous build saved. It runs at capture, before the SDK's upload queue, so events already queued (an offline stretch) aren't checked again. An app event that waited for PostHog setup keeps the sample decision and `sample_percent` it was emitted with, even if the switch changed meanwhile, since charts weigh it by that share; it is dropped only if the event is now off (`admitCaptured`). The identity events `$identify`, `$create_alias`, `$set` and `$groupidentify` (`ALWAYS_SENT`) ignore the switch, because the SDK updates its identity state before an event is checked. `Application Installed` is captured during SDK setup, before `register` runs, so it used to arrive untagged.
+  - **Glossary columns:** `docs/analytics/event_glossary.csv` mirrors the defaults in its `level` column, and gives each event's measured `monthly_per_install`.
+
 - `trackHomeHeroStyleSelected` emits `home_hero_style_selected` when a Settings pick changes the Home hero look (style, colors, one-value combo, what changed, the previous combo); re-picking the current look sends nothing. `syncHomeHeroStylePersonProperties` keeps person properties `home_hero_card_style`, `home_hero_colors` and `home_hero_style_combo` on the current look, default included; it sends once per process and on each change, so activity recreation on rotation, fold or resize does not resend, and `resetIdentity` resends it to the new anonymous person. Both report the names in Settings (`block`, `cover`, …), not the stored keys, with colors `none` for Block in the app theme (its look before it had a colour choice, so the breakdown continues) and `block_artwork` / `block_dark` once a Block listener picks those (`AppearanceAnalyticsTracks`, `HomeHeroStyleAnalyticsTest`).
 - `trackRecommendationSectionToggled` emits `recommendation_section_toggled` when a LeaveMeAlone switch (Settings › Library) flips or the Brief card's Always hide turns the Brief off: `section` (names listeners see: `brief`, `picked_for_you`, `because_you_like`, `time_of_day_picks`, `more_like_this`), `enabled`, `source` (`settings` / `brief_card`) and `sections_off` after the change (`RecommendationsAnalyticsTracks`, `RecommendationsAnalyticsTest`). It sends events only, no person properties.
 
@@ -33,6 +40,8 @@ src/main/java/cx/aswin/boxlore/core/analytics/
   Analytics.kt
   AnalyticsHelper.kt                                   # PostHog singleton + track façades
   AnalyticsEmit.kt
+  AnalyticsPolicy.kt                                   # event levels, sampling, analytics-policy-v1 switch
+  AnalyticsBeforeSend.kt                               # PostHog beforeSend: levels + environment tags on every event
   *AnalyticsTracks.kt                                  # domain emit implementations
   SupportAnalyticsTracks.kt                            # Support events + support-world flag read
   FeedAnalyticsTracks.kt                               # feed_fetch_result / feed_url_corrected
@@ -59,6 +68,7 @@ src/main/java/cx/aswin/boxlore/core/analytics/
 
 - SharedPreferences file `boxlore_analytics_prefs` stores the first-launch flag and migrates from `boxcast_analytics_prefs` through `PrefsFileMigrator`.
 - Preference key `is_first_launch` must remain stable.
+- Event levels keep `analytics_sample_bucket` (this install's sample bucket, 0–99; a PostHog reset keeps it, clearing app data picks a new one) and `analytics_policy` (the last remote switch, `<app version>|<percent>|<event>=<level>,…`; a value from another version, or the older form without one, is ignored) in the same file. `AnalyticsPolicy.Store` is the seam: the app's `SharedPreferences` store in `AnalyticsHelper`, a fake in tests. Keep both keys stable.
 - Event identity must remain aligned with [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md).
 
 ## Lifecycle / volume (no double-count)
@@ -75,7 +85,8 @@ src/main/java/cx/aswin/boxlore/core/analytics/
 
 - Unit tests live under `src/test/java/cx/aswin/boxlore/core/analytics`.
 - Use `RecordingAnalytics` when testing classes that accept `Analytics`.
-- Use `AnalyticsHelper.installRecordingSink(recorder)` when testing classes or callbacks that interact directly with the singleton `AnalyticsHelper`.
+- Use `AnalyticsHelper.installRecordingSink(recorder)` when testing classes or callbacks that interact directly with the singleton `AnalyticsHelper`. It records every event whatever its level, so wiring tests still see events that are off; pass `applyLevels = true` to test the levels.
+- `AnalyticsPolicyTest` covers the default levels, sampling by bucket, the switch payload (base, per version, bad input), the remembered switch and its version check, bucket persistence through `Store` (a saved bucket is reused; a missing or out-of-range one is picked and saved), `AnalyticsEmit` dropping and tagging, and `AnalyticsBeforeSend` tagging (replacing another build's tags), dropping SDK events and keeping a queued event's sample share, the identity events that ignore the switch, and an explicit flag reload applying the switch; a source scan keeps every `PostHog.reloadFeatureFlags` call inside `AnalyticsHelper`. `AnalyticsBudgetTest` checks that every glossary event has a level matching `DEFAULT_LEVELS` and a monthly estimate, and that estimated monthly events per active install stay within the budget (260; about 252 today). The budget counts glossary events only, not SDK identity, flag, survey or exception events.
 - `GlossaryAllEventsEmissionTest` covers every `emission:` inventory row; `LifecycleSdkMappingTest` / `InstallChannelAttributionTest` assert no dual open/install emits.
 - Architecture guards in `:core:testing` enforce CSV ↔ allowlist ↔ inventory parity.
 

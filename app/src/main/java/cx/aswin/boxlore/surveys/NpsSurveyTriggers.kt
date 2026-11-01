@@ -38,7 +38,7 @@ object NpsSurveyTriggers {
                         engagementCoordinator.canShowProactivePrompt(isCurrentlyPlaying())
                     ) {
                         AnalyticsHelper.trackSurveyNpsManualTrigger(source = "remote_flag")
-                        PostHog.reloadFeatureFlags()
+                        AnalyticsHelper.reloadFeatureFlags()
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Remote trigger check failed", e)
