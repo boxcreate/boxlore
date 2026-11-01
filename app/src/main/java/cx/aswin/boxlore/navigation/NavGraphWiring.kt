@@ -393,11 +393,12 @@ internal fun miniPlayerBottomPadding(isPlayerVisible: Boolean): androidx.compose
 
 internal fun launchInAppReview(context: android.content.Context) {
     val activity = context as? androidx.activity.ComponentActivity ?: return
-    cx.aswin.boxlore.core.analytics.AnalyticsHelper
-        .trackStoreReviewOpened(method = "in_app_review", source = "review_prompt")
     val reviewManager = com.google.android.play.core.review.ReviewManagerFactory.create(activity)
     reviewManager.requestReviewFlow().addOnCompleteListener { task ->
         if (task.isSuccessful) {
+            // Play can still skip showing the sheet (its quota), so this means boxlore launched the flow.
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                .trackStoreReviewOpened(method = "in_app_review", source = "review_prompt")
             reviewManager.launchReviewFlow(activity, task.result)
         }
     }

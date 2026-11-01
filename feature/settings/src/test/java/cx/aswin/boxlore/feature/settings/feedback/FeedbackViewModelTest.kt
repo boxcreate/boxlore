@@ -200,6 +200,39 @@ class FeedbackViewModelTest {
     }
 
     @Test
+    fun onSubmit_sends_feedback_sent_only_when_the_server_accepts_it() = runTest(testDispatcher) {
+        val events = mutableListOf<Pair<String, Map<String, Any>>>()
+        val restore = cx.aswin.boxlore.core.analytics.AnalyticsHelper.installRecordingSink(events)
+        try {
+            var accepted = false
+            val vm = FeedbackViewModel(
+                dummyPodcastRepository,
+                prefs,
+                context,
+                ioDispatcher = testDispatcher,
+                submitFeedbackAction = { _, _, _, _, _, _ -> accepted },
+            )
+            vm.onCategorySelected(FeedbackCategory.AUDIO)
+            vm.onMessageChanged("Stream cuts off at end of track")
+            vm.onEmailChanged("dev@example.com")
+
+            vm.onSubmit()
+            advanceUntilIdle()
+            assertTrue(events.none { it.first == "feedback_sent" })
+
+            accepted = true
+            vm.onSubmit()
+            advanceUntilIdle()
+            val sent = events.single { it.first == "feedback_sent" }.second
+            assertEquals("bug", sent["category"])
+            assertEquals(true, sent["with_email"])
+            assertTrue(sent.values.none { it == "Stream cuts off at end of track" || it == "dev@example.com" })
+        } finally {
+            restore()
+        }
+    }
+
+    @Test
     fun onSubmit_with_audio_category_maps_to_bug_on_wire() = runTest(testDispatcher) {
         var capturedCategory: String? = null
 

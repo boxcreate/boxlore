@@ -152,7 +152,7 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 | `backup_restore_result` | Library backup or restore finished | action:string; success:bool | item_count:int; format:string; error_message:string | none |
 | `feedback_submitted` | NPS survey trigger (eligible or manual); the survey shows on any of these | feedback_type:string | score:int; source:string | none |
 | `engagement_prompt_shown` | A Home review prompt was shown | prompt_type:string; source:string | completed_episodes:int; nps_score:int | none |
-| `store_review_opened` | Play review sheet or store page opened from boxlore | method:string; source:string | — | none |
+| `store_review_opened` | boxlore launched Play's review flow (Play may still not show the sheet) or opened the store page | method:string; source:string | — | none |
 | `feedback_sent` | In-app feedback form accepted by the server | category:string; with_email:bool; with_diagnostics:bool | — | none |
 | `library_destination_viewed` | Library hub or sub-destination opened | destination:string | item_count:int | none |
 | `podcast_detail_viewed` | Podcast info screen opened | podcast_id:string | is_subscribed:bool | none |

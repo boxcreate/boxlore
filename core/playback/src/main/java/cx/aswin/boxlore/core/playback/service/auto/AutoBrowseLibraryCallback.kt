@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.analytics.PendingEntryPoint
 import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.playback.service.CarConnectionState
 import kotlinx.coroutines.guava.future
@@ -627,41 +628,50 @@ internal class AutoBrowseLibraryCallback(
         val fromCar = isAndroidAuto(mediaSession, controller)
 
         return host.serviceScope.future {
-            if (mediaItems.size > 1) {
-                labelCarPlay(fromCar, "android_auto_play_all")
-                return@future mediaItems.map { mediaResolver.resolveMediaItem(it) }.toMutableList()
-            }
-
-            val selectedItem = mediaItems.first()
-            val searchQuery = selectedItem.requestMetadata.searchQuery
-
-            if (!searchQuery.isNullOrBlank()) {
-                android.util.Log.d("AutoBrowse", "Voice play request: '$searchQuery'")
-                labelCarPlay(fromCar, "android_auto_voice")
-                return@future voiceSearch.handleVoiceSearchQuery(searchQuery, fromCar)
-            }
-
-            when (selectedItem.mediaId) {
-                PLAY_ALL_NEW_EPISODES_ID -> return@future voiceSearch.handlePlayAllNewEpisodes(fromCar)
-                AutoBrowseContract.PLAY_ALL_LIKED_ID -> return@future voiceSearch.handlePlayAllLiked(fromCar)
-                AutoBrowseContract.PLAY_ALL_DOWNLOADS_ID -> return@future voiceSearch.handlePlayAllDownloads(fromCar)
-                AutoBrowseContract.PLAY_ALL_DRIVE_ID -> return@future voiceSearch.handlePlayAllDrivePicks(fromCar)
-                AutoBrowseContract.PLAY_ALL_MIXTAPE_ID -> return@future voiceSearch.handlePlayAllMixtape(fromCar)
-            }
-
-            val source =
-                selectedItem.mediaMetadata.extras
-                    ?.getString(AutoBrowseContract.EXTRA_SOURCE)
-                    ?: AutoBrowseContract.SOURCE_DISCOVER
-            if (selectedItem.mediaId.startsWith(AutoBrowseContract.QUEUE_PREFIX)) {
-                return@future voiceSearch.handlePlayFromQueue(selectedItem.mediaId.stripEpisodePrefix(), fromCar)
-            }
-            if (source == AutoBrowseContract.SOURCE_MIXTAPE) {
-                return@future voiceSearch.handlePlayFromMixtape(selectedItem.mediaId.stripEpisodePrefix(), fromCar)
-            }
-
-            handleSingleMediaItemSelection(mediaSession, selectedItem, source, fromCar)
+            // A car request that found nothing to play drops its label, so a later phone play can't take it.
+            itemsToAdd(mediaSession, mediaItems, fromCar).also { if (fromCar && it.isEmpty()) PendingEntryPoint.consume() }
         }
+    }
+
+    private suspend fun itemsToAdd(
+        mediaSession: MediaSession,
+        mediaItems: MutableList<MediaItem>,
+        fromCar: Boolean,
+    ): MutableList<MediaItem> {
+        if (mediaItems.size > 1) {
+            labelCarPlay(fromCar, "android_auto_play_all")
+            return mediaItems.map { mediaResolver.resolveMediaItem(it) }.toMutableList()
+        }
+
+        val selectedItem = mediaItems.first()
+        val searchQuery = selectedItem.requestMetadata.searchQuery
+
+        if (!searchQuery.isNullOrBlank()) {
+            android.util.Log.d("AutoBrowse", "Voice play request: '$searchQuery'")
+            labelCarPlay(fromCar, "android_auto_voice")
+            return voiceSearch.handleVoiceSearchQuery(searchQuery, fromCar)
+        }
+
+        when (selectedItem.mediaId) {
+            PLAY_ALL_NEW_EPISODES_ID -> return voiceSearch.handlePlayAllNewEpisodes(fromCar)
+            AutoBrowseContract.PLAY_ALL_LIKED_ID -> return voiceSearch.handlePlayAllLiked(fromCar)
+            AutoBrowseContract.PLAY_ALL_DOWNLOADS_ID -> return voiceSearch.handlePlayAllDownloads(fromCar)
+            AutoBrowseContract.PLAY_ALL_DRIVE_ID -> return voiceSearch.handlePlayAllDrivePicks(fromCar)
+            AutoBrowseContract.PLAY_ALL_MIXTAPE_ID -> return voiceSearch.handlePlayAllMixtape(fromCar)
+        }
+
+        val source =
+            selectedItem.mediaMetadata.extras
+                ?.getString(AutoBrowseContract.EXTRA_SOURCE)
+                ?: AutoBrowseContract.SOURCE_DISCOVER
+        if (selectedItem.mediaId.startsWith(AutoBrowseContract.QUEUE_PREFIX)) {
+            return voiceSearch.handlePlayFromQueue(selectedItem.mediaId.stripEpisodePrefix(), fromCar)
+        }
+        if (source == AutoBrowseContract.SOURCE_MIXTAPE) {
+            return voiceSearch.handlePlayFromMixtape(selectedItem.mediaId.stripEpisodePrefix(), fromCar)
+        }
+
+        return handleSingleMediaItemSelection(mediaSession, selectedItem, source, fromCar)
     }
 
     private suspend fun handleSingleMediaItemSelection(
