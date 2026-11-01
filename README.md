@@ -77,6 +77,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>On New Episodes, swipe right to add an episode to your queue or left to mark it played, and pull down to check for new episodes. <a href="https://github.com/boxcreate/boxlore/pull/1198"><img src="https://img.shields.io/badge/PR-1198-6750A4?style=flat-square" alt="PR #1198" height="18"/></a></li>
 <li>Listening in German, French, Spanish, Portuguese, Russian or Dutch? You can now turn English off in Library settings › Languages, and boxlore then adds English shows to recommendations, search and suggestions only when there aren't enough in your languages. <a href="https://github.com/boxcreate/boxlore/pull/1187"><img src="https://img.shields.io/badge/PR-1187-6750A4?style=flat-square" alt="PR #1187" height="18"/></a> <a href="https://github.com/boxcreate/boxlore/pull/1191"><img src="https://img.shields.io/badge/PR-1191-6750A4?style=flat-square" alt="PR #1191" height="18"/></a></li>
 <li>Free up space with Clear saved shows in Library settings: it removes the episode lists saved for shows you opened but don't follow. <a href="https://github.com/boxcreate/boxlore/pull/1192"><img src="https://img.shields.io/badge/PR-1192-6750A4?style=flat-square" alt="PR #1192" height="18"/></a></li>
+<li>Feedback is now a conversation: pick a type, write your message and send, no email needed. The boxlore team's reply shows up in Feedback, Home's Feedback button lights up, and a notification tells you when it arrives if you turn them on.</li>
 </ul>
 <b>⚡ Improved:</b>
 <ul align="left">
