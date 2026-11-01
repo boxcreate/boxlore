@@ -16,6 +16,11 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 data class ApiSessionTiming(
     /** App Check (Play Integrity) gets this long inside an exchange before the app asks without it. */
     val appCheckTimeoutMs: Long = 6_000L,
+    /**
+     * App Check's limit in background upgrades and refreshes instead. A usable session is held
+     * then and no request waits, so slow Play Integrity gets time to finish.
+     */
+    val backgroundAppCheckTimeoutMs: Long = 30_000L,
     /** A request with no usable session waits this long for the shared exchange. */
     val requestWaitMs: Long = 15_000L,
     /** A request made before the stored session has been read waits this long for the read. */
@@ -200,8 +205,9 @@ class ApiSessionManager(
         val installId = synchronized(lock) { book.installIdOrCreate() }
         val publicKey = runCatching { deviceKey.publicKey() }.getOrNull()
         val appCheckResult: AppCheckResult? = if (useAppCheck) {
+            val waitMs = if (trigger in BACKGROUND_TRIGGERS) timing.backgroundAppCheckTimeoutMs else timing.appCheckTimeoutMs
             nonCancellationFailure<AppCheckResult>({ AppCheckResult.Failed("error") }) {
-                withTimeoutOrNull(timing.appCheckTimeoutMs) { appCheck.fetch() } ?: AppCheckResult.Failed("timeout")
+                withTimeoutOrNull(waitMs) { appCheck.fetch() } ?: AppCheckResult.Failed("timeout")
             }
         } else {
             null
@@ -257,6 +263,9 @@ class ApiSessionManager(
 
     companion object {
         const val AUTH_SESSION_PATH = "/auth/session"
+
+        /** Scheduler exchanges that run while a usable session is held, so nothing waits on them. */
+        private val BACKGROUND_TRIGGERS = setOf(ApiSessionTrigger.Upgrade, ApiSessionTrigger.Refresh)
 
         /** The string the device key signs to renew: `bls-renew.<sid>.<unix seconds>`. */
         fun renewalProofMessage(sid: String, unixSeconds: Long): String = "bls-renew.$sid.$unixSeconds"

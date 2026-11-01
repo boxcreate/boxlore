@@ -2,25 +2,28 @@ package cx.aswin.boxlore.core.network.session
 
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
  * Background upkeep in virtual time: a limited session retries App Check about a minute after the
  * first failure, then hourly, then daily, only in the foreground with a network, and swaps in the
- * full session silently when App Check passes.
+ * full session silently when App Check passes. Those retries give slow App Check longer than launch does.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ApiSessionSchedulerTest {
     private val minute = 60_000L
     private val hour = 60 * minute
 
-    private class Harness(scope: TestScope, stored: StoredApiSession, appCheckPassesOnAttempt: Int) {
+    private class Harness(scope: TestScope, stored: StoredApiSession, appCheckPassesOnAttempt: Int, appCheckDelayMs: Long = 0L) {
         val appCheckCalls = AtomicInteger()
         val full = sessionToken(sid = "full", att = "appcheck", tag = "full")
         val exchanger = FakeExchanger { request ->
@@ -33,7 +36,9 @@ class ApiSessionSchedulerTest {
             store = store,
             deviceKey = FakeDeviceKey(),
             appCheck = {
-                if (appCheckCalls.incrementAndGet() >= appCheckPassesOnAttempt) AppCheckResult.Token("ok") else AppCheckResult.Failed("play_integrity_-9")
+                val attempt = appCheckCalls.incrementAndGet()
+                delay(appCheckDelayMs)
+                if (attempt >= appCheckPassesOnAttempt) AppCheckResult.Token("ok") else AppCheckResult.Failed("play_integrity_-9")
             },
             scope = scope.backgroundScope,
             clock = { BASE_MS + scope.testScheduler.currentTime },
@@ -77,6 +82,26 @@ class ApiSessionSchedulerTest {
         assertEquals(3, harness.appCheckCalls.get())
         assertEquals(harness.full, harness.heldToken(), "the full session replaces the limited one silently")
         assertEquals(0, harness.store.state.appCheckFailures)
+    }
+
+    @Test
+    fun `slow App Check gives up at launch but has time to pass on the background upgrade`() = runTest {
+        // Play Integrity takes 10 s on this phone: longer than the 6 s launch limit, within the 30 s background one.
+        val harness = Harness(this, StoredApiSession(), appCheckPassesOnAttempt = 1, appCheckDelayMs = 10_000)
+        harness.manager.start()
+        runCurrent()
+        testScheduler.advanceTimeBy(6_001)
+        runCurrent()
+        assertNull(harness.exchanger.requests.single().appCheckToken, "launch signs in without App Check after 6 s")
+        assertNotEquals(harness.full, harness.heldToken(), "so the first session is limited")
+
+        harness.manager.onForegroundChanged(true)
+        runCurrent()
+        testScheduler.advanceTimeBy(minute + 11_000)
+        runCurrent()
+        assertEquals(2, harness.appCheckCalls.get())
+        assertEquals("ok", harness.exchanger.requests.last().appCheckToken, "the background retry waits for App Check")
+        assertEquals(harness.full, harness.heldToken())
     }
 
     @Test

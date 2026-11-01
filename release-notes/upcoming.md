@@ -47,7 +47,7 @@ Announcement title:
 - Shared episode links open the right episode for friends on any version of boxlore, even episodes only in a show's own feed, and keep your plays, progress and downloads on the episode you already have. (#1181)
 - Library settings has separate rows for your chart country and your languages, and changing your country keeps your languages. (#1187)
 - After importing your library or picking shows in search, choose whether to see similar shows or go straight to Home, and skip to Home anytime while suggestions load. (#1194)
-- When boxlore needs a quick check that you're a person before Echo can suggest shows, Echo asks for it in its own voice, and the check fits in with the rest of the screen. (#1205)
+- When boxlore needs a quick check that you're a person before Echo can suggest shows, Echo asks for it in its own voice, and the check fits in with the rest of the screen. Fewer phones need it: phones that are slow to confirm they run genuine boxlore now get more time to finish in the background. (#1205)
 - New-episode notifications arrive sooner after a release. (#1151)
 - On Explore, tap the Explore tab again to start searching. From a show or episode you opened in Explore, the first tap takes you back to Explore.
 
