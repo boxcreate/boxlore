@@ -25,7 +25,7 @@ internal object DailyPage : BrandedShowPage {
         feedUrl = "https://feeds.simplecast.com/54nAGcIl",
     )
     override val headerTop = 74.dp
-    override val subscribeMoment: BrandedSubscribeMoment = DailyOffThePress
+    override val subscribeMoment: BrandedSubscribeMoment = DailyDaybreak
 
     override fun headerToButtons(description: BrandedDescription) = 14.dp
 

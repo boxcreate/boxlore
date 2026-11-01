@@ -82,8 +82,9 @@ internal object CrimeJunkiePage : BrandedShowPage {
                 outline = c.chipLine,
             ),
             toolbar = BrandedToolbarStyle(
-                subscribeContainer = c.ink,
-                subscribeContent = c.page,
+                // The show's violet, like Play and the genre chip.
+                subscribeContainer = c.accent,
+                subscribeContent = c.onAccent,
                 subscribedContainer = c.control,
                 subscribedContent = c.ink,
                 toggleContainer = c.control,

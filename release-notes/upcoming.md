@@ -61,6 +61,7 @@ Announcement title:
 - Shows no longer list the same episode more than once after refreshing. (#1176, #1190)
 - Hiding completed episodes no longer empties a show's page: boxlore keeps loading until it finds episodes you haven't finished, and tells you when you've finished them all. (#1196)
 - On foldables and tablets, and when Android closes boxlore in the background, a show's search, open dialogs and selected episodes stay where you left them. (#1174)
+- The Subscribe button on a show's page no longer stays stuck in its pressed shape after you tap it.
 - Full episodes that a show's feed labels as trailers show as normal episodes and can play next in Smart Queue. (#1204)
 - Episodes you queue from another show, or play from Downloads, appear under the right show in the player, even after you restart boxlore. (#1203)
 - Swiping the mini player aside to dismiss it no longer leaves its shadow behind. (#1219)
