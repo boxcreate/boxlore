@@ -15,6 +15,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.playback.service.CarConnectionState
+import cx.aswin.boxlore.core.playback.service.playbackButtonPreferences
 import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.launch
 
@@ -73,6 +74,11 @@ internal class AutoBrowseLibraryCallback(
             AutoBrowseContract.COMMAND_MARK_COMPLETE,
             Bundle.EMPTY,
         )
+    private val skipNextCommand =
+        androidx.media3.session.SessionCommand(
+            AutoBrowseContract.COMMAND_SKIP_NEXT,
+            Bundle.EMPTY,
+        )
 
     internal fun isAndroidAuto(session: MediaSession, controller: MediaSession.ControllerInfo): Boolean =
         AutoBrowseControllerMatcher.isAndroidAuto(session, controller)
@@ -93,12 +99,20 @@ internal class AutoBrowseLibraryCallback(
                 .add(TOGGLE_LIKE_CMD)
                 .add(addToQueueCommand)
                 .add(markCompleteCommand)
+                .add(skipNextCommand)
                 .build()
         return MediaSession.ConnectionResult
             .AcceptedResultBuilder(session)
             .setAvailableSessionCommands(sessionCommands)
             .setAvailablePlayerCommands(defaultResult.availablePlayerCommands)
-            .setCustomLayout(listOf(host.seekBackAction, host.seekForwardAction, host.markCompleteAction))
+            .setMediaButtonPreferences(
+                playbackButtonPreferences(
+                    host.seekBackAction,
+                    host.seekForwardAction,
+                    host.markCompleteAction,
+                    host.skipNextAction.takeIf { session.player.hasNextMediaItem() },
+                ),
+            )
             .build()
     }
 
@@ -172,6 +186,8 @@ internal class AutoBrowseLibraryCallback(
             "MARK_COMPLETED_SKIP" -> {
                 host.markCurrentEpisodeCompletedAndSkip(session)
             }
+            // The session's player hands this to the service's skip (handleSkipNext), so the skip setting applies.
+            AutoBrowseContract.COMMAND_SKIP_NEXT -> session.player.seekToNext()
             else -> return super.onCustomCommand(session, controller, customCommand, args)
         }
         return Futures.immediateFuture(

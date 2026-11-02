@@ -62,6 +62,7 @@ internal object AutoBrowseContract {
     const val COMMAND_TOGGLE_LIKE = "AUTO_TOGGLE_LIKE"
     const val COMMAND_ADD_TO_QUEUE = "AUTO_ADD_TO_QUEUE"
     const val COMMAND_MARK_COMPLETE = "AUTO_MARK_COMPLETE"
+    const val COMMAND_SKIP_NEXT = "AUTO_SKIP_NEXT"
 
     fun listChildrenExtras(): Bundle = contentStyleExtras(
         browsable = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,

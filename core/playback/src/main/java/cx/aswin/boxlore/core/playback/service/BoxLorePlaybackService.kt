@@ -56,6 +56,11 @@ open class BoxLorePlaybackService :
     internal lateinit var addToQueueAction: androidx.media3.session.CommandButton
     override lateinit var markCompleteAction: androidx.media3.session.CommandButton
         protected set
+    override lateinit var skipNextAction: androidx.media3.session.CommandButton
+        protected set
+
+    /** Whether the published buttons include Next episode; follows whether another episode is queued. */
+    private var nextEpisodeButtonShown = false
 
     @Volatile
     override var autoCollageUris: Map<String, android.net.Uri> = emptyMap()
@@ -620,7 +625,18 @@ open class BoxLorePlaybackService :
             likeAction = built.customActions.like
             addToQueueAction = built.customActions.addToQueue
             markCompleteAction = built.customActions.markComplete
+            skipNextAction = built.customActions.skipNext
             mediaSession = built.mediaSession
+            player.addListener(
+                object : Player.Listener {
+                    override fun onEvents(player: Player, events: Player.Events) {
+                        if (events.containsAny(*NEXT_EPISODE_EVENTS) && player.hasNextMediaItem() != nextEpisodeButtonShown) {
+                            publishMediaButtons()
+                        }
+                    }
+                },
+            )
+            publishMediaButtons()
             serviceScope.launch { autoCollagePrewarmer.prewarm() }
         } catch (e: SecurityException) {
             android.util.Log.e(
@@ -634,6 +650,7 @@ open class BoxLorePlaybackService :
             likeAction = customActions.like
             addToQueueAction = customActions.addToQueue
             markCompleteAction = customActions.markComplete
+            skipNextAction = customActions.skipNext
             mediaSession = null
         }
     }
@@ -646,11 +663,18 @@ open class BoxLorePlaybackService :
 
     private fun updateSeekCommandButtons() {
         rebuildSeekCommandButtons()
-        if (::markCompleteAction.isInitialized) {
-            mediaSession?.setCustomLayout(
-                listOf(seekBackAction, seekForwardAction, markCompleteAction),
-            )
-        }
+        publishMediaButtons()
+    }
+
+    /** Sets the session's buttons, with Next episode only while another episode is queued (main thread). */
+    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+    private fun publishMediaButtons() {
+        if (!::markCompleteAction.isInitialized || !::skipNextAction.isInitialized) return
+        val hasNext = playbackPlayer?.hasNextMediaItem() == true
+        nextEpisodeButtonShown = hasNext
+        mediaSession?.setMediaButtonPreferences(
+            playbackButtonPreferences(seekBackAction, seekForwardAction, markCompleteAction, skipNextAction.takeIf { hasNext }),
+        )
     }
 
     private fun seekByConfiguredIncrement(player: Player, deltaMs: Long, source: String,) {
@@ -1075,3 +1099,12 @@ open class BoxLorePlaybackService :
         }
     }
 }
+
+/** Player changes that can add or remove the next episode, and with it the Next episode button. */
+private val NEXT_EPISODE_EVENTS =
+    intArrayOf(
+        Player.EVENT_TIMELINE_CHANGED,
+        Player.EVENT_MEDIA_ITEM_TRANSITION,
+        Player.EVENT_REPEAT_MODE_CHANGED,
+        Player.EVENT_SHUFFLE_MODE_ENABLED_CHANGED,
+    )
