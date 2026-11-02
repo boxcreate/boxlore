@@ -38,14 +38,14 @@ class PlaybackButtonSlotsTest {
     private val factory = PlaybackServicePlayerFactory(context, CoroutineScope(Dispatchers.Unconfined))
 
     @Test
-    fun `rewind takes the back slot, forward the forward slot, Next episode and Mark played the overflow`() {
+    fun `rewind takes the back slot, forward the forward slot, then Mark played and Next episode last`() {
         val seek = factory.buildSeekButtons(seekBackwardMs = 15_000L, seekForwardMs = 45_000L)
         val actions = factory.buildCustomActions()
 
         val buttons = playbackButtonPreferences(seek.seekBack, seek.seekForward, actions.markComplete, nextEpisode = actions.skipNext)
 
         assertEquals(
-            listOf("SEEK_BACK", "SEEK_FORWARD", AutoBrowseContract.COMMAND_SKIP_NEXT, AutoBrowseContract.COMMAND_MARK_COMPLETE),
+            listOf("SEEK_BACK", "SEEK_FORWARD", AutoBrowseContract.COMMAND_MARK_COMPLETE, AutoBrowseContract.COMMAND_SKIP_NEXT),
             buttons.map { it.sessionCommand?.customAction },
         )
         assertEquals(

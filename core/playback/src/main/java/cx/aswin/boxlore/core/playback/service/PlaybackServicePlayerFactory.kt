@@ -332,15 +332,17 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
 
 /**
  * The buttons around play/pause on the notification, lock screen, Android Auto and other controllers:
- * rewind in the back slot, forward in the forward slot, then Next episode ([nextEpisode], passed only
- * while another episode is queued, since skipping with nothing queued stops playback) and Mark played
- * in the overflow. The slots are set on the buttons themselves; without them Media3 fills a missing
- * next slot with the first button, and Samsung's Now Bar showed previous, play, rewind whenever
- * nothing was queued next.
+ * rewind in the back slot, forward in the forward slot, then Mark played and Next episode in the
+ * overflow ([nextEpisode], passed only while another episode is queued, since skipping with nothing
+ * queued stops playback). Next goes last: system players that put one extra button on each side of
+ * the row (HyperOS's notification) show the first on the left and the second on the right, after
+ * forward. The slots are set on the buttons themselves; without them Media3 fills a missing next slot
+ * with the first button, and Samsung's Now Bar showed previous, play, rewind whenever nothing was
+ * queued next.
  */
 internal fun playbackButtonPreferences(
     seekBack: CommandButton,
     seekForward: CommandButton,
     markComplete: CommandButton,
     nextEpisode: CommandButton? = null,
-): List<CommandButton> = listOfNotNull(seekBack, seekForward, nextEpisode, markComplete)
+): List<CommandButton> = listOfNotNull(seekBack, seekForward, markComplete, nextEpisode)
