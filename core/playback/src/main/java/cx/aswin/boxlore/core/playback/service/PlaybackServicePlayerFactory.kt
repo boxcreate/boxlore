@@ -35,7 +35,7 @@ import kotlinx.coroutines.CoroutineScope
 internal open class PlaybackServicePlayerFactory(private val context: Context, private val serviceScope: CoroutineScope,) {
     data class SeekButtons(val seekBack: CommandButton, val seekForward: CommandButton,)
 
-    data class CustomActions(val like: CommandButton, val addToQueue: CommandButton, val markComplete: CommandButton,)
+    data class CustomActions(val like: CommandButton, val addToQueue: CommandButton, val markComplete: CommandButton, val skipNext: CommandButton,)
 
     data class BuiltSession(val mediaSession: MediaLibrarySession, val seekButtons: SeekButtons, val customActions: CustomActions,)
 
@@ -225,7 +225,16 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
                     SessionCommand(AutoBrowseContract.COMMAND_MARK_COMPLETE, Bundle.EMPTY),
                 ).setSlots(CommandButton.SLOT_OVERFLOW)
                 .build()
-        return CustomActions(like = like, addToQueue = addToQueue, markComplete = markComplete)
+        val skipNext =
+            CommandButton
+                .Builder()
+                .setDisplayName(context.getString(cx.aswin.boxlore.core.catalog.R.string.auto_skip_next))
+                .setIconResId(cx.aswin.boxlore.core.catalog.R.drawable.rounded_skip_next_24)
+                .setSessionCommand(
+                    SessionCommand(AutoBrowseContract.COMMAND_SKIP_NEXT, Bundle.EMPTY),
+                ).setSlots(CommandButton.SLOT_OVERFLOW)
+                .build()
+        return CustomActions(like = like, addToQueue = addToQueue, markComplete = markComplete, skipNext = skipNext)
     }
 
     fun createPlayerSessionActivityIntent(
@@ -323,12 +332,15 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
 
 /**
  * The buttons around play/pause on the notification, lock screen, Android Auto and other controllers:
- * rewind in the back slot, forward in the forward slot, Mark played in the overflow. The slots are set
- * on the buttons themselves; without them Media3 fills a missing next slot with the first button, and
- * Samsung's Now Bar showed previous, play, rewind whenever nothing was queued next.
+ * rewind in the back slot, forward in the forward slot, then Next episode ([nextEpisode], passed only
+ * while another episode is queued, since skipping with nothing queued stops playback) and Mark played
+ * in the overflow. The slots are set on the buttons themselves; without them Media3 fills a missing
+ * next slot with the first button, and Samsung's Now Bar showed previous, play, rewind whenever
+ * nothing was queued next.
  */
 internal fun playbackButtonPreferences(
     seekBack: CommandButton,
     seekForward: CommandButton,
     markComplete: CommandButton,
-): List<CommandButton> = listOf(seekBack, seekForward, markComplete)
+    nextEpisode: CommandButton? = null,
+): List<CommandButton> = listOfNotNull(seekBack, seekForward, nextEpisode, markComplete)

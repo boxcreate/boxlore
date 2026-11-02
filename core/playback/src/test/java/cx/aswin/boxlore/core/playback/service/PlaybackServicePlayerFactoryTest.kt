@@ -101,6 +101,7 @@ class PlaybackServicePlayerFactoryTest {
                 like = dummyButton,
                 addToQueue = dummyButton,
                 markComplete = dummyButton,
+                skipNext = dummyButton,
             )
 
         val session =
@@ -155,6 +156,7 @@ class PlaybackServicePlayerFactoryTest {
                 like = dummyButton,
                 addToQueue = dummyButton,
                 markComplete = dummyButton,
+                skipNext = dummyButton,
             )
         val pendingIntent = factory.createPlayerSessionActivityIntent()
         assertNotNull(pendingIntent)

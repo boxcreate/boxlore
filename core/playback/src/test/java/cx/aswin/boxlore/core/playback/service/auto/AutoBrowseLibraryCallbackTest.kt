@@ -2,11 +2,13 @@ package cx.aswin.boxlore.core.playback.service.auto
 
 import android.content.Context
 import android.net.Uri
+import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.MediaSession
+import androidx.media3.session.SessionCommand
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
@@ -17,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -24,6 +27,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -73,6 +77,7 @@ class AutoBrowseLibraryCallbackTest {
         `when`(host.seekBackAction).thenReturn(commandButton)
         `when`(host.seekForwardAction).thenReturn(commandButton)
         `when`(host.markCompleteAction).thenReturn(commandButton)
+        `when`(host.skipNextAction).thenReturn(commandButton)
 
         `when`(treeBuilder.getRootChildren()).thenReturn(emptyList())
         `when`(treeBuilder.getHomeChildren()).thenReturn(emptyList())
@@ -343,5 +348,25 @@ class AutoBrowseLibraryCallbackTest {
 
         callback.onGetChildren(session, controller, AutoBrowseContract.ROOT_ID, 0, 10, null)
         assertTrue(recordedEvents.any { it.first == "android_auto_browse" })
+    }
+
+    @Test
+    fun `Next episode joins the buttons only while another episode is queued, and skips like a headset`() {
+        val next = mock(androidx.media3.session.CommandButton::class.java)
+        `when`(host.skipNextAction).thenReturn(next)
+        val session = mock(MediaSession::class.java)
+        val player = mock(Player::class.java)
+        `when`(player.availableCommands).thenReturn(Player.Commands.EMPTY)
+        `when`(session.player).thenReturn(player)
+        val controller = mock(MediaSession.ControllerInfo::class.java)
+        `when`(controller.packageName).thenReturn("com.android.systemui")
+
+        `when`(player.hasNextMediaItem()).thenReturn(false)
+        assertFalse(callback.onConnect(session, controller).mediaButtonPreferences!!.contains(next))
+        `when`(player.hasNextMediaItem()).thenReturn(true)
+        assertTrue(callback.onConnect(session, controller).mediaButtonPreferences!!.contains(next))
+
+        callback.onCustomCommand(session, controller, SessionCommand(AutoBrowseContract.COMMAND_SKIP_NEXT, Bundle.EMPTY), Bundle.EMPTY)
+        verify(player).seekToNext()
     }
 }

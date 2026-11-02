@@ -46,4 +46,5 @@
     <string name="auto_like">Like episode</string>
     <string name="auto_add_queue">Add to queue</string>
     <string name="auto_mark_complete">Mark complete</string>
+    <string name="auto_skip_next">Next episode</string>
 </resources>

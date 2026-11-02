@@ -53,6 +53,7 @@ class BoxLorePlaybackServiceFallbackTest {
                 like = dummyButton,
                 addToQueue = dummyButton,
                 markComplete = dummyButton,
+                skipNext = dummyButton,
             )
 
         val throwingFactory =

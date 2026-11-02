@@ -19,7 +19,7 @@ import org.robolectric.annotation.Config
  * Issue 1231: with no slots, Media3 put the first button (rewind) in the forward slot whenever
  * nothing was queued next, and Samsung's Now Bar showed previous, play, rewind. Each button now
  * names its slot, so Media3 drops previous/next from the session's actions and system players show
- * rewind, play, forward.
+ * rewind, play, forward, with Next episode after them while another episode is queued.
  */
 @androidx.annotation.OptIn(UnstableApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -38,14 +38,30 @@ class PlaybackButtonSlotsTest {
     private val factory = PlaybackServicePlayerFactory(context, CoroutineScope(Dispatchers.Unconfined))
 
     @Test
-    fun `rewind takes the back slot, forward the forward slot and Mark played the overflow`() {
+    fun `rewind takes the back slot, forward the forward slot, Next episode and Mark played the overflow`() {
         val seek = factory.buildSeekButtons(seekBackwardMs = 15_000L, seekForwardMs = 45_000L)
-        val markComplete = factory.buildCustomActions().markComplete
+        val actions = factory.buildCustomActions()
 
-        val buttons = playbackButtonPreferences(seek.seekBack, seek.seekForward, markComplete)
+        val buttons = playbackButtonPreferences(seek.seekBack, seek.seekForward, actions.markComplete, nextEpisode = actions.skipNext)
+
+        assertEquals(
+            listOf("SEEK_BACK", "SEEK_FORWARD", AutoBrowseContract.COMMAND_SKIP_NEXT, AutoBrowseContract.COMMAND_MARK_COMPLETE),
+            buttons.map { it.sessionCommand?.customAction },
+        )
+        assertEquals(
+            listOf(listOf(CommandButton.SLOT_BACK), listOf(CommandButton.SLOT_FORWARD), listOf(CommandButton.SLOT_OVERFLOW), listOf(CommandButton.SLOT_OVERFLOW)),
+            buttons.map { it.slots.asList() },
+        )
+    }
+
+    @Test
+    fun `with nothing queued next there is no Next episode button`() {
+        val seek = factory.buildSeekButtons(seekBackwardMs = 15_000L, seekForwardMs = 45_000L)
+        val actions = factory.buildCustomActions()
+
+        val buttons = playbackButtonPreferences(seek.seekBack, seek.seekForward, actions.markComplete)
 
         assertEquals(listOf("SEEK_BACK", "SEEK_FORWARD", AutoBrowseContract.COMMAND_MARK_COMPLETE), buttons.map { it.sessionCommand?.customAction })
-        assertEquals(listOf(listOf(CommandButton.SLOT_BACK), listOf(CommandButton.SLOT_FORWARD), listOf(CommandButton.SLOT_OVERFLOW)), buttons.map { it.slots.asList() })
     }
 
     @Test

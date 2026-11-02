@@ -29,6 +29,7 @@ interface AutoBrowseLibraryHost {
     val seekBackAction: CommandButton
     val seekForwardAction: CommandButton
     val markCompleteAction: CommandButton
+    val skipNextAction: CommandButton
     val autoCollageUris: Map<String, Uri>
     var isRefilling: Boolean
 
