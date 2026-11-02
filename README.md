@@ -63,7 +63,10 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 ### Upcoming
 
 <!-- release-upcoming:start -->
-New features and improvements for the next release are currently in development.
+<b>🐛 Fixed:</b>
+<ul align="left">
+<li>Playback controls on the lock screen, in notifications and in Samsung's Now Bar show rewind, play and forward in that order, even when nothing is queued next, with a Next episode button beside them when there is.</li>
+</ul>
 <!-- release-upcoming:end -->
 
 
