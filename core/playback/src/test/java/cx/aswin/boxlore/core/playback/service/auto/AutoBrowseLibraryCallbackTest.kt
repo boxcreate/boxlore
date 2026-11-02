@@ -351,7 +351,7 @@ class AutoBrowseLibraryCallbackTest {
     }
 
     @Test
-    fun `Next episode joins the buttons only while another episode is queued, and skips like a headset`() {
+    fun `Next episode joins the buttons only while another episode is queued, and skips to the next episode`() {
         val next = mock(androidx.media3.session.CommandButton::class.java)
         `when`(host.skipNextAction).thenReturn(next)
         val session = mock(MediaSession::class.java)

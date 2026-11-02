@@ -186,7 +186,7 @@ internal class AutoBrowseLibraryCallback(
             "MARK_COMPLETED_SKIP" -> {
                 host.markCurrentEpisodeCompletedAndSkip(session)
             }
-            // The session's player hands this to the service's skip, like a headset's next key.
+            // The session's player hands this to the service's skip (handleSkipNext), so the skip setting applies.
             AutoBrowseContract.COMMAND_SKIP_NEXT -> session.player.seekToNext()
             else -> return super.onCustomCommand(session, controller, customCommand, args)
         }
