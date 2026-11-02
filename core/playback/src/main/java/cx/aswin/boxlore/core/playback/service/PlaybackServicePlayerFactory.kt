@@ -182,6 +182,7 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
                     ),
                 ).setIconResId(cx.aswin.boxlore.core.catalog.R.drawable.rounded_replay_24)
                 .setSessionCommand(SessionCommand("SEEK_BACK", Bundle.EMPTY))
+                .setSlots(CommandButton.SLOT_BACK)
                 .build()
         val seekForward =
             CommandButton
@@ -193,6 +194,7 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
                     ),
                 ).setIconResId(cx.aswin.boxlore.core.catalog.R.drawable.rounded_forward_24)
                 .setSessionCommand(SessionCommand("SEEK_FORWARD", Bundle.EMPTY))
+                .setSlots(CommandButton.SLOT_FORWARD)
                 .build()
         return SeekButtons(seekBack = seekBack, seekForward = seekForward)
     }
@@ -221,7 +223,8 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
                 .setIconResId(cx.aswin.boxlore.core.catalog.R.drawable.ic_auto_complete)
                 .setSessionCommand(
                     SessionCommand(AutoBrowseContract.COMMAND_MARK_COMPLETE, Bundle.EMPTY),
-                ).build()
+                ).setSlots(CommandButton.SLOT_OVERFLOW)
+                .build()
         return CustomActions(like = like, addToQueue = addToQueue, markComplete = markComplete)
     }
 
@@ -272,7 +275,7 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
         val builder =
             MediaLibrarySession
                 .Builder(service, forwardingPlayer, callback)
-                .setCustomLayout(listOf(seekButtons.seekBack, seekButtons.seekForward, customActions.markComplete))
+                .setMediaButtonPreferences(playbackButtonPreferences(seekButtons.seekBack, seekButtons.seekForward, customActions.markComplete))
                 .setCommandButtonsForMediaItems(
                     listOf(customActions.like, customActions.addToQueue, customActions.markComplete),
                 ).setBitmapLoader(cacheBitmapLoader)
@@ -317,3 +320,15 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
         )
     }
 }
+
+/**
+ * The buttons around play/pause on the notification, lock screen, Android Auto and other controllers:
+ * rewind in the back slot, forward in the forward slot, Mark played in the overflow. The slots are set
+ * on the buttons themselves; without them Media3 fills a missing next slot with the first button, and
+ * Samsung's Now Bar showed previous, play, rewind whenever nothing was queued next.
+ */
+internal fun playbackButtonPreferences(
+    seekBack: CommandButton,
+    seekForward: CommandButton,
+    markComplete: CommandButton,
+): List<CommandButton> = listOf(seekBack, seekForward, markComplete)

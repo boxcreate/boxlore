@@ -27,3 +27,5 @@ Announcement title:
 ## Improved
 
 ## Fixed
+
+- Playback controls on the lock screen, in notifications and in Samsung's Now Bar show rewind, play and forward in that order, even when nothing is queued next.

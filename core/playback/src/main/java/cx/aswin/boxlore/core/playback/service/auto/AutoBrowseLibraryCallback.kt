@@ -15,6 +15,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.playback.service.CarConnectionState
+import cx.aswin.boxlore.core.playback.service.playbackButtonPreferences
 import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.launch
 
@@ -98,7 +99,7 @@ internal class AutoBrowseLibraryCallback(
             .AcceptedResultBuilder(session)
             .setAvailableSessionCommands(sessionCommands)
             .setAvailablePlayerCommands(defaultResult.availablePlayerCommands)
-            .setCustomLayout(listOf(host.seekBackAction, host.seekForwardAction, host.markCompleteAction))
+            .setMediaButtonPreferences(playbackButtonPreferences(host.seekBackAction, host.seekForwardAction, host.markCompleteAction))
             .build()
     }
 

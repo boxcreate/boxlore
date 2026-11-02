@@ -644,11 +644,12 @@ open class BoxLorePlaybackService :
         seekForwardAction = buttons.seekForward
     }
 
+    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
     private fun updateSeekCommandButtons() {
         rebuildSeekCommandButtons()
         if (::markCompleteAction.isInitialized) {
-            mediaSession?.setCustomLayout(
-                listOf(seekBackAction, seekForwardAction, markCompleteAction),
+            mediaSession?.setMediaButtonPreferences(
+                playbackButtonPreferences(seekBackAction, seekForwardAction, markCompleteAction),
             )
         }
     }
