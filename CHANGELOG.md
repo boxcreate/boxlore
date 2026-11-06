@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `docs/announcements/` holds announcement images, linked by commit; adds the boxlore.in beta announcement image. ([#1233](https://github.com/boxcreate/boxlore/pull/1233)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Fixed
 - Media session buttons use media button preferences with explicit slots (rewind `SLOT_BACK`, forward `SLOT_FORWARD`, Next episode and Mark played `SLOT_OVERFLOW`) via `playbackButtonPreferences`, so system players show rewind, play, forward instead of previous, play, rewind when nothing is queued next; Next episode is offered only while a next item exists. ([#1232](https://github.com/boxcreate/boxlore/pull/1232)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 ## [v0.0.30] - 2026-11-01
