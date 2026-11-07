@@ -372,42 +372,53 @@ fun PodcastInfoScreen(
                         Toast.makeText(context, subscribeToEditGenreMessage, Toast.LENGTH_SHORT).show()
                     }
                 }
-                val selectionLimitMessage = stringResource(R.string.episode_selection_limit)
+                val selectionFailedMessage = stringResource(R.string.episode_selection_failed)
+                val addRange: (EpisodeSelectionRange, List<Episode>, Boolean) -> Unit = { range, episodes, newestFirst ->
+                    selectionEpisodePool = (selectionEpisodePool + episodes).distinctBy(Episode::id)
+                    selectedEpisodeIds =
+                        PodcastEpisodeSelectionLogic
+                            .addRange(
+                                selectedIds = selectedEpisodeIds.toSet(),
+                                episodes = episodes,
+                                anchorEpisodeId = selectionAnchorEpisodeId,
+                                range = range,
+                                newestFirst = newestFirst,
+                            ).toList()
+                }
                 val selectFullRange: (EpisodeSelectionRange) -> Unit = { range ->
                     selectionRequestGeneration += 1
                     val requestGeneration = selectionRequestGeneration
-                    val rangeSort = state.currentSort
-                    isLoadingFullSelection = true
-                    coroutineScope.launch {
-                        try {
-                            val window = viewModel.loadEpisodeSelectionWindow(rangeSort)
-                            if (requestGeneration != selectionRequestGeneration) return@launch
-                            selectionSortName = rangeSort.name
-                            // A loaded window can also settle a restore that failed earlier.
-                            selectionRestoreFailedOn = null
-                            val eligibleEpisodes =
-                                if (hideCompleted) {
-                                    window.episodes.filter { it.id !in completedEpisodeIds }
-                                } else {
-                                    window.episodes
+                    if (isSearchActive && state.searchQuery.isNotBlank()) {
+                        // While searching, a range covers the results on screen, newest first.
+                        noteSelectionSort()
+                        addRange(range, PodcastEpisodeSelectionLogic.searchRangeEpisodes(displayEpisodes), true)
+                    } else {
+                        val rangeSort = state.currentSort
+                        isLoadingFullSelection = true
+                        coroutineScope.launch {
+                            try {
+                                val window = viewModel.selectionWindowOrNull(rangeSort)
+                                if (requestGeneration != selectionRequestGeneration) return@launch
+                                if (window == null) {
+                                    // The selection stays as it was: never part of a show passed off as all of it.
+                                    isLoadingFullSelection = false
+                                    snackbarHostState.showSnackbar(selectionFailedMessage)
+                                    return@launch
                                 }
-                            selectionEpisodePool = eligibleEpisodes
-                            selectedEpisodeIds =
-                                PodcastEpisodeSelectionLogic
-                                    .addRange(
-                                        selectedIds = selectedEpisodeIds.toSet(),
-                                        episodes = eligibleEpisodes,
-                                        anchorEpisodeId = selectionAnchorEpisodeId,
-                                        range = range,
-                                        newestFirst = window.newestFirst,
-                                    ).toList()
-                            isLoadingFullSelection = false
-                            if (window.isTruncated) {
-                                snackbarHostState.showSnackbar(selectionLimitMessage)
-                            }
-                        } finally {
-                            if (requestGeneration == selectionRequestGeneration) {
-                                isLoadingFullSelection = false
+                                selectionSortName = rangeSort.name
+                                // A loaded window can also settle a restore that failed earlier.
+                                selectionRestoreFailedOn = null
+                                val eligibleEpisodes =
+                                    if (hideCompleted) {
+                                        window.episodes.filter { it.id !in completedEpisodeIds }
+                                    } else {
+                                        window.episodes
+                                    }
+                                addRange(range, eligibleEpisodes, window.newestFirst)
+                            } finally {
+                                if (requestGeneration == selectionRequestGeneration) {
+                                    isLoadingFullSelection = false
+                                }
                             }
                         }
                     }
@@ -972,15 +983,16 @@ private val EpisodeIdListSaver = Saver<List<String>, ArrayList<String>>(
 )
 
 /**
- * The selection window, in [sort], used to look selected episodes up again after the page is
- * recreated, or null when it cannot be loaded; the restore then keeps every ID and tries again.
+ * The selection window, in [sort], for a range selection or to look selected episodes up again
+ * after the page is recreated, or null when it cannot be loaded: a range selection then leaves the
+ * selection as it was and says so, and the restore keeps every ID and tries again.
  */
-@Suppress("TooGenericExceptionCaught") // Any load failure leaves the restore pending.
+@Suppress("TooGenericExceptionCaught") // Any load failure is handled by the caller.
 private suspend fun PodcastInfoViewModel.selectionWindowOrNull(sort: EpisodeSort): PodcastEpisodeSelectionWindow? = try {
     loadEpisodeSelectionWindow(sort)
 } catch (cancelled: CancellationException) {
     throw cancelled
 } catch (failure: Exception) {
-    android.util.Log.w("PodcastInfoScreen", "Could not restore the episode selection", failure)
+    android.util.Log.w("PodcastInfoScreen", "Could not load the show's episodes for selection", failure)
     null
 }

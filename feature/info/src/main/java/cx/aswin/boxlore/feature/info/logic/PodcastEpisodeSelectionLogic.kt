@@ -25,8 +25,9 @@ internal object PodcastEpisodeSelectionLogic {
     }
 
     /**
-     * Adds a chronological range from a complete fetched episode window.
-     * OLDER and NEWER include the anchor, which is already selected in normal use.
+     * Adds a chronological range from a complete episode window to the selection: every episode
+     * (ALL), or those older or newer than the anchor, which they include (it is already selected
+     * in normal use). Episodes already selected stay selected.
      */
     fun addRange(
         selectedIds: Set<String>,
@@ -37,7 +38,7 @@ internal object PodcastEpisodeSelectionLogic {
     ): Set<String> {
         val orderedIds = episodes.map(Episode::id)
         if (orderedIds.isEmpty()) return selectedIds
-        if (range == EpisodeSelectionRange.ALL) return orderedIds.toSet()
+        if (range == EpisodeSelectionRange.ALL) return selectedIds + orderedIds
 
         val anchorIndex = orderedIds.indexOf(anchorEpisodeId)
         if (anchorIndex < 0) return selectedIds
@@ -59,6 +60,14 @@ internal object PodcastEpisodeSelectionLogic {
             }
         return selectedIds + rangeIds
     }
+
+    /**
+     * The episodes a range selection covers while searching: the results on screen (trailer groups
+     * and all), newest first, so Select older and newer follow release dates whatever order the
+     * results came in.
+     */
+    fun searchRangeEpisodes(results: List<Episode>): List<Episode> =
+        results.distinctBy(Episode::id).sortedByDescending(Episode::publishedDate)
 
     fun visibleEpisodes(
         feedItems: List<FeedItem>,

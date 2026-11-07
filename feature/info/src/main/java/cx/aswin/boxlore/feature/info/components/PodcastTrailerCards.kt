@@ -25,10 +25,12 @@ import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -100,6 +102,7 @@ private fun SingleTrailerContent(
     modifier: Modifier,
 ) {
     val isSelected = episode.id in selection.selectedEpisodeIds
+    val selected = episodeSelectionColors()
     Surface(
         modifier =
         modifier
@@ -113,7 +116,8 @@ private fun SingleTrailerContent(
                 },
             ),
         shape = RoundedCornerShape(24.dp),
-        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+        color = if (isSelected) selected.container else MaterialTheme.colorScheme.surfaceContainerLow,
+        contentColor = if (isSelected) selected.content else MaterialTheme.colorScheme.onSurface,
         border = trailerBorder(isSelected),
     ) {
         Row(
@@ -149,13 +153,15 @@ internal fun TrailerStackCard(
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     val selectedCount = group.trailers.count { (episode, _) -> episode.id in selection.selectedEpisodeIds }
+    val selected = episodeSelectionColors()
     Surface(
         modifier =
         modifier
             .fillMaxWidth()
             .animateContentSize(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)),
         shape = RoundedCornerShape(24.dp),
-        color = if (selectedCount > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+        color = if (selectedCount > 0) selected.container else MaterialTheme.colorScheme.surfaceContainerLow,
+        contentColor = if (selectedCount > 0) selected.content else MaterialTheme.colorScheme.onSurface,
         border = trailerBorder(selectedCount > 0),
     ) {
         Column {
@@ -276,11 +282,12 @@ private fun TrailerStackRow(
 ) {
     EpisodePlayStateWrapper(episode.id, playbackStateFlow) { playState ->
         val isSelected = episode.id in selection.selectedEpisodeIds
+        val selected = episodeSelectionColors()
         Row(
             modifier =
             Modifier
                 .fillMaxWidth()
-                .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
+                .background(if (isSelected) selected.container else Color.Transparent)
                 .expressiveClickable(
                     shape = RoundedCornerShape(24.dp),
                     onLongClickLabel = "Select episode",
@@ -291,20 +298,23 @@ private fun TrailerStackRow(
                 ).padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TrailerLeadButton(
-                episode = episode,
-                playback = TrailerPlaybackUi(playState?.isPlaying == true, playState?.isResume == true),
-                selection = selection,
-                size = 36.dp,
-                iconPadding = 8.dp,
-                onPlayClick = onPlayClick,
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            TrailerSummary(
-                episode = episode,
-                showBadge = false,
-                modifier = Modifier.weight(1f),
-            )
+            // The row's own text colour for its selected fill (on a Showcase page, the card's usual text).
+            CompositionLocalProvider(LocalContentColor provides if (isSelected) selected.content else LocalContentColor.current) {
+                TrailerLeadButton(
+                    episode = episode,
+                    playback = TrailerPlaybackUi(playState?.isPlaying == true, playState?.isResume == true),
+                    selection = selection,
+                    size = 36.dp,
+                    iconPadding = 8.dp,
+                    onPlayClick = onPlayClick,
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                TrailerSummary(
+                    episode = episode,
+                    showBadge = false,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }
