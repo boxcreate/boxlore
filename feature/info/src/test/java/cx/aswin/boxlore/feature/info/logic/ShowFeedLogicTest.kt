@@ -77,6 +77,12 @@ class ShowFeedLogicTest {
     fun `search, the oldest sort and scrolling past the stored newest wait for the archive`() {
         assertTrue(ShowFeedLogic.needsArchive(false, ShowFeedLogic.ArchiveAction.SEARCH))
         assertTrue(ShowFeedLogic.needsArchive(false, ShowFeedLogic.ArchiveAction.SORT_OLDEST))
+        assertTrue(ShowFeedLogic.needsArchive(false, ShowFeedLogic.ArchiveAction.SELECT_RANGE))
+        assertFalse(ShowFeedLogic.needsArchive(true, ShowFeedLogic.ArchiveAction.SELECT_RANGE))
+        // A range only reads the whole show from a whole copy, or from the server's list after a fallback.
+        assertTrue(ShowFeedLogic.selectionReadsWholeShow(readsFeed = true, archiveComplete = true))
+        assertFalse(ShowFeedLogic.selectionReadsWholeShow(readsFeed = true, archiveComplete = false))
+        assertTrue(ShowFeedLogic.selectionReadsWholeShow(readsFeed = false, archiveComplete = false))
         assertTrue(ShowFeedLogic.needsArchive(false, ShowFeedLogic.ArchiveAction.LOAD_MORE, pageSize = 20, pageCount = 0))
         assertFalse(ShowFeedLogic.needsArchive(false, ShowFeedLogic.ArchiveAction.LOAD_MORE, pageSize = 20, pageCount = 20))
         assertFalse(ShowFeedLogic.needsArchive(true, ShowFeedLogic.ArchiveAction.SEARCH))
