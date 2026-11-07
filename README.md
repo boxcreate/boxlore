@@ -65,6 +65,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <!-- release-upcoming:start -->
 <b>🐛 Fixed:</b>
 <ul align="left">
+<li>On show pages, Select all selects every episode of the show instead of stopping at 100, and while you search it selects your search results. A selected episode on a show's own-style page now stays readable.</li>
 <li>Playback controls on the lock screen, in notifications and in Samsung's Now Bar show rewind, play and forward in that order, even when nothing is queued next, with a Next episode button beside them when there is.</li>
 </ul>
 <!-- release-upcoming:end -->

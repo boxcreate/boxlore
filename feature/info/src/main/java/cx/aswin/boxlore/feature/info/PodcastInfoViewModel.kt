@@ -316,8 +316,8 @@ class PodcastInfoViewModel(
     fun addEpisodesToQueue(episodes: List<Episode>) = episodeActions.addEpisodesToQueue(episodes)
 
     /**
-     * Loads up to [MAX_SELECTION_EPISODES] episodes for range selection and for looking a saved
-     * selection up again after recreation. [sort] is the order the selection was made in; null
+     * Loads every episode of the show for range selection and for looking a saved selection up
+     * again after recreation. [sort] is the order the selection was made in; null
      * uses the page's current sort. A recreated page passes the saved sort, because the reloaded
      * page may open in a different order than the one the listener selected in.
      */

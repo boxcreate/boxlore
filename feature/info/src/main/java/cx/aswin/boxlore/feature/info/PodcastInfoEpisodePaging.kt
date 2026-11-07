@@ -8,6 +8,7 @@ import cx.aswin.boxlore.feature.info.PodcastInfoPageState.Companion.pageSizeFor
 import cx.aswin.boxlore.feature.info.PodcastInfoPageState.Companion.sortParamFor
 import cx.aswin.boxlore.feature.info.logic.ShowFeedLogic
 import cx.aswin.boxlore.feature.info.logic.podcastSearchResponseIsCurrent
+import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -224,16 +225,27 @@ internal class PodcastInfoEpisodePaging(
         return feedFirst.readsFeed(feedId) && repository.showPageSource(feedId) == ShowPageSource.FEED
     }
 
-    /** The range-selection window ([loadPodcastEpisodeSelectionWindow]) for the page's show, in [sort] or the page's sort. */
-    suspend fun selectionWindow(sort: EpisodeSort?): PodcastEpisodeSelectionWindow =
-        loadPodcastEpisodeSelectionWindow(uiState.value as? PodcastInfoUiState.Success, sort) { limit, sortParam ->
-            repository.getShowPageEpisodes(
-                feedId = pageState.currentPodcastId,
-                limit = limit,
-                offset = 0,
-                sort = sortParam,
-            )
+    /**
+     * Every episode of the page's show for range selection ([loadPodcastEpisodeSelectionWindow]), in
+     * [sort] or the page's sort. A feed-first page whose copy holds only the newest items reads the
+     * rest of the feed first, as search does, so the selection reaches the show's first episode.
+     */
+    suspend fun selectionWindow(sort: EpisodeSort?): PodcastEpisodeSelectionWindow {
+        val feedId = pageState.currentPodcastId
+        val state = uiState.value as? PodcastInfoUiState.Success
+        val needsArchive = ShowFeedLogic.needsArchive(feedFirst.archiveComplete, ShowFeedLogic.ArchiveAction.SELECT_RANGE)
+        if (state != null && needsArchive && feedFirst.readsFeed(feedId)) {
+            feedFirst.completeArchive(scope, state.podcast)
+            // Offline, or the read failed: the copy still holds only the newest items, so the window
+            // would be part of the show. Fail instead; a page that fell back pages the server's list.
+            if (!ShowFeedLogic.selectionReadsWholeShow(feedFirst.readsFeed(feedId), feedFirst.archiveComplete)) {
+                throw IOException("The show's feed could not be read in full")
+            }
         }
+        return loadPodcastEpisodeSelectionWindow(uiState.value as? PodcastInfoUiState.Success, sort) { limit, offset, sortParam ->
+            repository.getShowPageEpisodes(feedId = feedId, limit = limit, offset = offset, sort = sortParam)
+        }
+    }
 
     private companion object {
         const val SEARCH_DEBOUNCE_MS = 500L
