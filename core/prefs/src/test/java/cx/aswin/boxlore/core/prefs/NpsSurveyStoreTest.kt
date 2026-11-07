@@ -46,10 +46,18 @@ class NpsSurveyStoreTest {
 
     @Test
     fun keepsTheLatestFinishAcrossRestarts() = runTest {
-        store.recordFinish(now - day)
-        store.recordFinish(now)
-        store.recordFinish(now - 2 * day)
+        store.recordFinish(now - day, nowMs = now)
+        store.recordFinish(now, nowMs = now)
+        store.recordFinish(now - 2 * day, nowMs = now)
         assertEquals(now, NpsSurveyStore(context).record().lastFinishedAtMs)
+    }
+
+    @Test
+    fun aFinishKeptFromTheFutureIsReplacedByTheNextRealOne() = runTest {
+        // A clock set ahead, then put right: the kept finish must not outrank every real one after it.
+        store.recordFinish(now + 30 * day, nowMs = now + 30 * day)
+        store.recordFinish(now, nowMs = now)
+        assertEquals(now, store.record().lastFinishedAtMs)
     }
 
     @Test

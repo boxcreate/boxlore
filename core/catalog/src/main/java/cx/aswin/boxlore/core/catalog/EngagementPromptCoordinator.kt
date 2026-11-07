@@ -70,8 +70,12 @@ class EngagementPromptCoordinator(
         launchSafely("Failed to keep the finish") { surveyStore.recordFinish(atMs) }
     }
 
-    /** The latest finish here: [inThisRunAtMs] (the player's own, this run) or the one kept from before a restart. */
-    suspend fun lastFinishedAtMs(inThisRunAtMs: Long?): Long? = listOfNotNull(inThisRunAtMs, surveyStore.record().lastFinishedAtMs).maxOrNull()
+    /**
+     * The latest finish here: [inThisRunAtMs] (the player's own, this run) or the one kept from before a
+     * restart. A finish later than [nowMs] is left out, so a clock that ran ahead can't hide a real one.
+     */
+    suspend fun lastFinishedAtMs(inThisRunAtMs: Long?, nowMs: Long = System.currentTimeMillis()): Long? =
+        listOfNotNull(inThisRunAtMs, surveyStore.record().lastFinishedAtMs).filter { it <= nowMs }.maxOrNull()
 
     /**
      * Counts this start of boxlore and, once per install, carries over an older version's survey for a

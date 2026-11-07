@@ -30,9 +30,16 @@ class NpsSurveyStore internal constructor(private val dataStore: DataStore<Prefe
         return NpsSurveyRecord(lastShownAtMs = prefs[LAST_SHOWN_AT], launches = prefs[LAUNCHES] ?: 0, lastFinishedAtMs = prefs[LAST_FINISHED_AT])
     }
 
-    /** The player here played an episode to the end at [atMs]; keeps the latest, so the finish outlives a restart. */
-    suspend fun recordFinish(atMs: Long) {
-        dataStore.edit { prefs -> if (atMs > (prefs[LAST_FINISHED_AT] ?: 0L)) prefs[LAST_FINISHED_AT] = atMs }
+    /**
+     * The player here played an episode to the end at [atMs]; keeps the latest, so the finish outlives a
+     * restart. A kept finish later than [nowMs] (the clock was set ahead, then put right) is replaced,
+     * so it can never hold the moment back.
+     */
+    suspend fun recordFinish(atMs: Long, nowMs: Long = System.currentTimeMillis()) {
+        dataStore.edit { prefs ->
+            val kept = prefs[LAST_FINISHED_AT]
+            if (kept == null || atMs > kept || kept > nowMs) prefs[LAST_FINISHED_AT] = atMs
+        }
     }
 
     /** Counts one start of boxlore on this install, so the survey never appears in the first one. */

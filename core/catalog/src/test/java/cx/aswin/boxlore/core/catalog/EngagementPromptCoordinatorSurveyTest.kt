@@ -70,7 +70,9 @@ class EngagementPromptCoordinatorSurveyTest {
         settle()
         val nextRun = EngagementPromptCoordinator(prefs, store, scope = scope)
         assertEquals(now - 60_000, nextRun.lastFinishedAtMs(inThisRunAtMs = null))
-        assertEquals(now + 1, nextRun.lastFinishedAtMs(inThisRunAtMs = now + 1))
+        assertEquals(now + 1, nextRun.lastFinishedAtMs(inThisRunAtMs = now + 1, nowMs = now + 2))
+        // A finish from a clock that ran ahead is left out.
+        assertEquals(now - 60_000, nextRun.lastFinishedAtMs(inThisRunAtMs = now + day, nowMs = now))
         assertFalse(
             "not again within 90 days",
             nextRun.shouldShowNpsSurvey(false, now - 30 * day, 6, lastFinishedAtMs = now + 1, nowMs = now + 2),
