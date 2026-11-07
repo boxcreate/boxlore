@@ -65,7 +65,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <!-- release-upcoming:start -->
 <b>🆕 New:</b>
 <ul align="left">
-<li>The Rest Is History, Darknet Diaries and Serial have show pages in their own style: a gallery wall hung with the latest episodes, the show's flag-bearer with the flag waving, and Serial's stack of cards dealt from its seasons. Each has its own moment when you subscribe.</li>
+<li>The Rest Is History, Darknet Diaries, Serial, Sherlock Holmes Short Stories and The Desi Crime Podcast have show pages in their own style: a gallery wall hung with the latest episodes, the show's flag-bearer with the flag waving, Serial's stack of cards dealt from its seasons, an 1891 Strand Magazine that opens to the stories read so far, and the hosts' crime board pinned with past cases. Each has its own moment when you subscribe.</li>
 </ul>
 <b>⚡ Improved:</b>
 <ul align="left">

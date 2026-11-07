@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Showcase pages for The Rest Is History (`history/`), Darknet Diaries (`darknet/`) and Serial (`serial/`), each with its own header, latest-episode card and subscribe moment. ([#1238](https://github.com/boxcreate/boxlore/pull/1238)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `BrandedSeal`, the "The best of boxlore" Showcase seal, in place of `BrandedTag`. ([#1238](https://github.com/boxcreate/boxlore/pull/1238)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Showcase pages for Sherlock Holmes Short Stories (`SherlockPage`: The Strand Magazine with a feed-driven contents page, an opening-page card and the 221B letterbox moment) and The Desi Crime Podcast (`DesiCrimePage`: the hosts' crime board of case prints cut from each episode's picture, a sticky-note card and the chai and chithi moment). ([#1240](https://github.com/boxcreate/boxlore/pull/1240)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- `rememberBrandedIntro` and `keyframes`, shared by Showcase headers and subscribe moments. ([#1240](https://github.com/boxcreate/boxlore/pull/1240)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `docs/announcements/` holds announcement images, linked by commit; adds the boxlore.in beta announcement image. ([#1233](https://github.com/boxcreate/boxlore/pull/1233)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Changed
 - Conspiracy Theories' Showcase page is an evidence board (`ConspiracyBoard*`, `ConspiracyItAllConnects`). ([#1238](https://github.com/boxcreate/boxlore/pull/1238)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
