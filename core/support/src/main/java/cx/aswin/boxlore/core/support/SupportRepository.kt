@@ -1,9 +1,9 @@
 package cx.aswin.boxlore.core.support
 
 import cx.aswin.boxlore.core.network.SupportApi
+import cx.aswin.boxlore.core.network.model.SupportEndingDto
 import cx.aswin.boxlore.core.network.model.SupportErrorResponse
 import cx.aswin.boxlore.core.network.model.SupportListResponse
-import cx.aswin.boxlore.core.network.model.SupportEndingDto
 import cx.aswin.boxlore.core.network.model.SupportMessageDto
 import cx.aswin.boxlore.core.network.model.SupportNewThreadRequest
 import cx.aswin.boxlore.core.network.model.SupportReadRequest
@@ -11,17 +11,17 @@ import cx.aswin.boxlore.core.network.model.SupportReplyRequest
 import cx.aswin.boxlore.core.network.model.SupportReplyResponse
 import cx.aswin.boxlore.core.network.model.SupportThreadDto
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType

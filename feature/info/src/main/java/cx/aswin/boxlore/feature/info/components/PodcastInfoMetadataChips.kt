@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.info.components
 
-import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
+import cx.aswin.boxlore.core.designsystem.links.openLink
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.rememberGoogleSansFamily
@@ -435,8 +435,8 @@ private fun openPersonLink(
     context: android.content.Context,
     person: Person,
 ) {
-    if (person.href.isNullOrBlank()) return
-    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(person.href)))
+    val href = person.href?.takeIf { it.isNotBlank() } ?: return
+    context.openLink(Uri.parse(href))
 }
 
 private fun LazyListScope.podcastIdentityChips(
@@ -486,8 +486,7 @@ private fun LazyListScope.fundingChip(
         FundingChip(
             fundingMessage = podcast.fundingMessage,
             onClick = {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(podcast.fundingUrl))
-                context.startActivity(intent)
+                podcast.fundingUrl?.let { context.openLink(Uri.parse(it)) }
             },
         )
     }

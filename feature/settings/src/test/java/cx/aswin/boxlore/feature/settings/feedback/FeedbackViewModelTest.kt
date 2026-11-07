@@ -8,8 +8,8 @@ import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.FeedbackDraft
 import cx.aswin.boxlore.core.support.OutgoingFeedback
 import cx.aswin.boxlore.core.support.PhotoUpload
-import cx.aswin.boxlore.core.support.SupportCategory
 import cx.aswin.boxlore.core.support.SendResult
+import cx.aswin.boxlore.core.support.SupportCategory
 import cx.aswin.boxlore.core.support.SupportMeta
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -48,6 +48,7 @@ class FeedbackViewModelTest {
         val uploads = mutableListOf<Int>()
         var result: SendResult = SendResult.Sent("t1")
         var photoIds: (Int) -> PhotoUpload = { PhotoUpload.Uploaded("p$it") }
+
         /** While set, send waits for it. */
         var sendGate: CompletableDeferred<Unit>? = null
         var refreshes = 0
@@ -239,8 +240,12 @@ class FeedbackViewModelTest {
         val saved = object : RetryKeyStore {
             var value: Pair<String, String>? = null
             override fun load() = value
-            override fun save(fingerprint: String, key: String) { value = fingerprint to key }
-            override fun clear() { value = null }
+            override fun save(fingerprint: String, key: String) {
+                value = fingerprint to key
+            }
+            override fun clear() {
+                value = null
+            }
         }
         val support = FakeSupport(SupportMeta.Offline.copy(photosEnabled = true, maxPhotos = 3, maxPhotoBytes = 100)).apply { result = SendResult.Failed }
         val first = FeedbackViewModel(support.asSupport(), prefs, context, ioDispatcher = testDispatcher, readPhoto = { ByteArray(10) }, retryKeys = RetryKeys(store = saved))

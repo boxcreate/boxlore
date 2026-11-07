@@ -12,6 +12,7 @@ import android.provider.Settings
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import cx.aswin.boxlore.core.designsystem.links.startFirstAvailable
 
 /**
  * The "turn on notifications" ask after sending feedback. Same rules as the show page and import
@@ -37,7 +38,8 @@ internal fun canAskForNotifications(context: Context, askedBefore: Boolean): Boo
     val granted = sdk >= Build.VERSION_CODES.TIRAMISU &&
         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
     val activity = context.findActivity()
-    val rationale = activity != null && sdk >= Build.VERSION_CODES.TIRAMISU &&
+    val rationale = activity != null &&
+        sdk >= Build.VERSION_CODES.TIRAMISU &&
         ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.POST_NOTIFICATIONS)
     return canAskForNotifications(sdk, granted, askedBefore, rationale)
 }
@@ -46,14 +48,11 @@ internal fun openAppNotificationSettings(context: Context) {
     val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
         .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    try {
-        context.startActivity(intent)
-    } catch (_: android.content.ActivityNotFoundException) {
-        context.startActivity(
-            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-        )
-    }
+    context.startFirstAvailable(
+        intent,
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+    )
 }
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {

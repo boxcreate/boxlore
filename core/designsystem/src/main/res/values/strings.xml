@@ -5,4 +5,6 @@
     <string name="repair_progress_body">Please keep boxlore open until this finishes.</string>
     <string name="feed_media_new">New</string>
     <string name="share_listen_on">Listen on</string>
+    <!-- Shown briefly when no app on the phone can open a link (no browser, say). -->
+    <string name="link_unavailable">No app could open this link</string>
 </resources>

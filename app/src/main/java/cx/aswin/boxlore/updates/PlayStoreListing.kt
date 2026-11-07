@@ -1,9 +1,9 @@
 package cx.aswin.boxlore.updates
 
-import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import cx.aswin.boxlore.core.designsystem.links.startFirstAvailable
 
 private const val PLAY_STORE_PACKAGE = "com.android.vending"
 
@@ -18,9 +18,5 @@ internal fun playStoreWebUri(packageName: String): Uri = Uri.parse("https://play
  */
 internal fun openPlayListing(context: Context) {
     val app = Intent(Intent.ACTION_VIEW, playStoreAppUri(context.packageName)).setPackage(PLAY_STORE_PACKAGE)
-    try {
-        context.startActivity(app)
-    } catch (_: ActivityNotFoundException) {
-        context.startActivity(Intent(Intent.ACTION_VIEW, playStoreWebUri(context.packageName)))
-    }
+    context.startFirstAvailable(app, Intent(Intent.ACTION_VIEW, playStoreWebUri(context.packageName)))
 }

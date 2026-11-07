@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.updates
 
-import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -57,6 +56,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreDialog as Dialog
+import cx.aswin.boxlore.core.designsystem.links.openLink
 import cx.aswin.boxlore.ui.NativeDialogSystemBars
 
 @Composable
@@ -213,7 +213,7 @@ private fun ReleaseNotes(manifest: UpdateManifest) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.updates_notes), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-            IconButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(manifest.notesUrl))) }) {
+            IconButton(onClick = { context.openLink(Uri.parse(manifest.notesUrl)) }) {
                 Icon(Icons.Rounded.OpenInNew, stringResource(R.string.updates_read_notes), Modifier.size(20.dp))
             }
         }

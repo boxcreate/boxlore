@@ -61,7 +61,13 @@ class SupportRepositoryTest {
         val meta = repo.refresh()
         assertEquals(
             SupportMeta(
-                true, "Slow this week", true, 5, 5_242_880, 4000, listOf("support_ab", "support_cd"),
+                true,
+                "Slow this week",
+                true,
+                5,
+                5_242_880,
+                4000,
+                listOf("support_ab", "support_cd"),
                 listOf(SupportCategory("bug", "Bug report"), SupportCategory("account", "Account and sync")),
             ),
             meta,

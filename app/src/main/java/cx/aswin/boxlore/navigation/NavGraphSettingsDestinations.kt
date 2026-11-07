@@ -397,7 +397,13 @@ private fun androidx.navigation.NavGraphBuilder.addFeedbackRoute(w: NavGraphWiri
     // `feedback?thread=<id>` opens one conversation (a reply notification's tap); plain `feedback` still works.
     composable(
         route = "feedback?thread={thread}",
-        arguments = listOf(navArgument("thread") { type = NavType.StringType; nullable = true; defaultValue = null }),
+        arguments = listOf(
+            navArgument("thread") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+        ),
     ) { entry ->
         cx.aswin.boxlore.feature.settings.feedback.FeedbackScreen(
             supportRepository = container.supportRepository,

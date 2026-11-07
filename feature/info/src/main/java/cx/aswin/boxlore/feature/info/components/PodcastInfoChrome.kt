@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.links.startFirstAvailable
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
@@ -666,5 +667,10 @@ internal fun openAppNotificationSettings(context: android.content.Context) {
             }
             flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
         }
-    context.startActivity(intent)
+    // Some ROMs drop the per-app notification page: fall back to the app's details, else do nothing.
+    val details = android.content.Intent(
+        android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+        android.net.Uri.fromParts("package", context.packageName, null),
+    )
+    context.startFirstAvailable(intent, details)
 }
