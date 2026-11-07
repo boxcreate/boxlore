@@ -111,7 +111,7 @@ class ScreenViewCoverageTest {
                 "info:feature/info/components/EpisodeOptionsSheet.kt#EpisodeOptionsSheet" to UNUSED,
                 "onboarding:feature/onboarding/AiChatOnboardingScreen.kt#AiChatOnboardingScreen" to UNUSED,
                 "onboarding:feature/onboarding/ImportOnboardingScreen.kt#ImportOnboardingScreen" to UNUSED,
-                "info:feature/info/branded/conspiracy/ConspiracyHeader.kt#PaperTab" to "a Showcase page decoration, not a destination",
+                "info:feature/info/branded/conspiracy/ConspiracySpotlight.kt#FolderTab" to "the manila folder's tab drawn on a Showcase card, not a destination",
                 "library:feature/library/DownloadedEpisodesScreen.kt#DownloadedEpisodesScreen" to WRAPPER,
                 "library:feature/library/DownloadedEpisodesScreen.kt#DownloadedShowEpisodesScreen" to WRAPPER,
                 "library:feature/library/subscriptions/SubscriptionFolderPages.kt#OpenFolderPage" to WRAPPER,
