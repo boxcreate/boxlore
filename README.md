@@ -63,6 +63,15 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 ### Upcoming
 
 <!-- release-upcoming:start -->
+<b>🆕 New:</b>
+<ul align="left">
+<li>The Rest Is History, Darknet Diaries and Serial have show pages in their own style: a gallery wall hung with the latest episodes, the show's flag-bearer with the flag waving, and Serial's stack of cards dealt from its seasons. Each has its own moment when you subscribe.</li>
+</ul>
+<b>⚡ Improved:</b>
+<ul align="left">
+<li>Conspiracy Theories' show page is now an evidence board, with the latest episodes pinned up and tied together with red yarn, on white paper by day and black by night.</li>
+<li>Show pages in a show's own style carry a "The best of boxlore" seal in place of the "Made for" tag. Tap it to find out what the page is.</li>
+</ul>
 <b>🐛 Fixed:</b>
 <ul align="left">
 <li>On show pages, Select all selects every episode of the show instead of stopping at 100, and while you search it selects your search results. A selected episode on a show's own-style page now stays readable.</li>
