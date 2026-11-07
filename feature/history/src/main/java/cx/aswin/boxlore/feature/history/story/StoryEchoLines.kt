@@ -91,7 +91,11 @@ internal object StoryEchoLines {
     /** [line] with each `{name}` replaced from [values]; a name without a value stays as it is. */
     fun fill(line: String, values: Map<String, String>): String = PLACEHOLDER.replace(line) { match -> values[match.groupValues[1]] ?: match.value }
 
-    private val PLACEHOLDER = Regex("""\{(\w+)}""")
+    /**
+     * `{name}`, both braces escaped: Android's regex engine (ICU) rejects a bare `}` that closes no
+     * repeat count, though the JVM's accepts it, and that stopped the story opening at all.
+     */
+    internal val PLACEHOLDER = Regex("""\{(\w+)\}""")
 
     /** A situation: its lines, whether it speaks over the others, and when it fits. */
     private class Situation(@ArrayRes val lines: Int, val special: Boolean, val fits: (MonthStory) -> Boolean)

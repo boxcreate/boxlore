@@ -123,6 +123,18 @@ class StoryEchoLinesTest {
     }
 
     @Test
+    fun placeholderPatternEscapesEveryBraceSoAndroidCanCompileIt() {
+        // Regression: Android's regex engine (ICU) threw on the bare "}" of """\{(\w+)}""" as the story
+        // opened, crashing the app; the JVM these tests run on accepts it, so check the braces directly.
+        val pattern = StoryEchoLines.PLACEHOLDER.pattern
+        pattern.forEachIndexed { i, c ->
+            if (c == '{' || c == '}') assertTrue(i > 0 && pattern[i - 1] == '\\', "Unescaped '$c' at $i in $pattern")
+        }
+        assertEquals("Waveform, 3 times", StoryEchoLines.fill("{show}, {count} times", mapOf("show" to "Waveform", "count" to "3")))
+        assertEquals("{a b} {}", StoryEchoLines.fill("{a b} {}", mapOf("a" to "x")))
+    }
+
+    @Test
     fun placeholdersFillAndASeedLandsEachCardOnItsOwnLine() {
         assertEquals("10 days of listening. I took notes.", StoryEchoLines.fill("{days} days of listening. I took notes.", mapOf("days" to "10")))
         assertEquals("{unknown} stays", StoryEchoLines.fill("{unknown} stays", emptyMap()))

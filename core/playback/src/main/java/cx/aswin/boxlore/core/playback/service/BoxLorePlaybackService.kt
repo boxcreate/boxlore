@@ -1,12 +1,18 @@
 package cx.aswin.boxlore.core.playback.service
 
+import android.annotation.SuppressLint
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import androidx.annotation.VisibleForTesting
+import androidx.core.app.NotificationManagerCompat
 import androidx.media3.common.DeviceInfo
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaLibraryService
+import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
 import cx.aswin.boxlore.core.catalog.content.CuratedMoods
 import cx.aswin.boxlore.core.database.episodeListenerStore
@@ -44,6 +50,7 @@ open class BoxLorePlaybackService :
 
     override var mediaSession: MediaLibrarySession? = null
         protected set
+    private val mainThread = Handler(Looper.getMainLooper())
     private var localExoPlayer: ExoPlayer? = null
     internal var playbackPlayer: Player? = null
     private var pausedIdleTeardownJob: Job? = null
@@ -261,6 +268,14 @@ open class BoxLorePlaybackService :
     @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
     override fun onCreate() {
         super.onCreate()
+        // Before any session exists, so Media3 builds its notifications through the guarded provider.
+        setMediaNotificationProvider(
+            ForegroundSafeNotificationProvider(
+                delegate = DefaultMediaNotificationProvider.Builder(applicationContext).build(),
+                runOnMain = { work -> mainThread.post(work) },
+                onRefused = ::showNotificationWithoutForeground,
+            ),
+        )
 
         val localPlayer =
             try {
@@ -946,6 +961,19 @@ open class BoxLorePlaybackService :
         }
         playbackPlayer = null
         localExoPlayer = null
+    }
+
+    /**
+     * Android refused to start playback in the foreground from the background (a late notification
+     * update, see [ForegroundSafeNotificationProvider]): post the playback notification as an
+     * ordinary one, so the listener keeps their controls instead of the app crashing. Media
+     * session notifications need no notification permission.
+     */
+    @SuppressLint("MissingPermission")
+    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+    private fun showNotificationWithoutForeground(notification: MediaNotification) {
+        runCatching { NotificationManagerCompat.from(this).notify(notification.notificationId, notification.notification) }
+            .onFailure { android.util.Log.w("BoxLorePlaybackService", "Could not show the playback notification", it) }
     }
 
     override fun onDestroy() {
