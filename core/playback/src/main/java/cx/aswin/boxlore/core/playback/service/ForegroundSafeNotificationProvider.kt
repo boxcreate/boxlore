@@ -17,6 +17,9 @@ import com.google.common.collect.ImmutableList
  * its first update is guarded. In the background that crashed the app. Here the late callback runs
  * on the main thread ([runOnMain]), where Media3 handles it straight away, so a refused start is
  * caught and the notification goes to [onRefused] instead.
+ *
+ * [onRefused] must not throw: it runs inside the task posted to the main thread, where nothing
+ * catches it. The service's handler wraps its work in `runCatching` for that reason.
  */
 @androidx.annotation.OptIn(UnstableApi::class)
 internal class ForegroundSafeNotificationProvider(
