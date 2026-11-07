@@ -14,7 +14,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** The NPS survey's install-only history: launches, when it last appeared, and the one-time carry-over. */
+/** The NPS survey's install-only history: launches, when it last appeared, the last finish, and the one-time carry-over. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class NpsSurveyStoreTest {
@@ -45,30 +45,101 @@ class NpsSurveyStoreTest {
     }
 
     @Test
-    fun anUpdatedInstallThatShowedTheOldSurveyWaitsFromTheUpdate() = runTest {
-        store.carryOverLegacy(legacyShown = true, updatedInstall = true, nowMs = now)
+    fun keepsTheLatestFinishAcrossRestarts() = runTest {
+        store.recordFinish(now - day, nowMs = now)
+        store.recordFinish(now, nowMs = now)
+        store.recordFinish(now - 2 * day, nowMs = now)
+        assertEquals(now, NpsSurveyStore(context).record().lastFinishedAtMs)
+    }
+
+    @Test
+    fun aFinishKeptFromTheFutureIsReplacedByTheNextRealOne() = runTest {
+        // A clock set ahead, then put right: the kept finish must not outrank every real one after it.
+        store.recordFinish(now + 30 * day, nowMs = now + 30 * day)
+        store.recordFinish(now, nowMs = now)
+        assertEquals(now, store.record().lastFinishedAtMs)
+    }
+
+    @Test
+    fun aFinishFromTheFutureNeverReplacesAKeptOne() = runTest {
+        // The clock stepped back between the finish and its save: the earlier real finish must stay.
+        store.recordFinish(now - 60_000, nowMs = now)
+        store.recordFinish(now + day, nowMs = now)
+        assertEquals(now - 60_000, store.record().lastFinishedAtMs)
+    }
+
+    @Test
+    fun anUpdatedInstallWhoseListenerAnsweredTheOldSurveyWaitsFromTheUpdate() = runTest {
+        carry(legacyShown = true, legacyAnswered = true)
         assertEquals(now, store.record().lastShownAtMs)
     }
+
+    @Test
+    fun anUpdatedInstallThatOnlyShowedTheOldSurveyIsAskedLikeANewOne() = runTest {
+        // Regression: seen, dismissed, or marked shown before it ever appeared, it waited 90 days too.
+        carry(legacyShown = true, legacyAnswered = false)
+        assertNull(store.record().lastShownAtMs)
+    }
+
+    @Test
+    fun theRevisionLiftsVersion30sWaitWhereTheListenerNeverAnswered() = runTest {
+        legacyCheckedLikeVersion30(lastShownAt = now - 5 * day)
+        carry(legacyShown = true, legacyAnswered = false, lastPromptAt = now - 40 * day)
+        assertNull(store.record().lastShownAtMs)
+        // It runs once.
+        store.markShown(now)
+        carry(legacyShown = true, legacyAnswered = false, nowMs = now + day)
+        assertEquals(now, store.record().lastShownAtMs)
+    }
+
+    @Test
+    fun theRevisionKeepsVersion30sWaitForAnAnswerAndARealShowing() = runTest {
+        legacyCheckedLikeVersion30(lastShownAt = now - 5 * day)
+        carry(legacyShown = true, legacyAnswered = true)
+        assertEquals(now - 5 * day, store.record().lastShownAtMs)
+
+        context.npsSurveyDataStore.edit { it.clear() }
+        // Shown on 0.0.30 and dismissed: the shared prompt time was written with it.
+        legacyCheckedLikeVersion30(lastShownAt = now - 5 * day)
+        carry(legacyShown = true, legacyAnswered = false, lastPromptAt = now - 5 * day + 200)
+        assertEquals(now - 5 * day, store.record().lastShownAtMs)
+    }
+
+    /** What 0.0.30 left on an updated phone: the carry-over done once, and its wait. */
+    private suspend fun legacyCheckedLikeVersion30(lastShownAt: Long) {
+        context.npsSurveyDataStore.edit { prefs ->
+            prefs[androidx.datastore.preferences.core.booleanPreferencesKey("legacy_checked")] = true
+            prefs[androidx.datastore.preferences.core.longPreferencesKey("last_shown_at")] = lastShownAt
+        }
+    }
+
+    private suspend fun carry(
+        legacyShown: Boolean,
+        legacyAnswered: Boolean = false,
+        updatedInstall: Boolean = true,
+        lastPromptAt: Long? = null,
+        nowMs: Long = now,
+    ) = store.carryOverLegacy(legacyShown, legacyAnswered, updatedInstall, lastPromptAt, nowMs)
 
     @Test
     fun aRestoredPhoneIgnoresTheBackedUpFlagHoweverLateItFirstOpens() = runTest {
         // Installed fresh (never updated) with the old flag from a backup, first opened days later:
         // regression, the old 24-hour guess counted this as an updated install and waited 90 days.
-        store.carryOverLegacy(legacyShown = true, updatedInstall = false, nowMs = now + 2 * day)
+        carry(legacyShown = true, legacyAnswered = true, updatedInstall = false, nowMs = now + 2 * day)
         assertNull(store.record().lastShownAtMs)
     }
 
     @Test
     fun theCarryOverRunsOnce() = runTest {
-        store.carryOverLegacy(legacyShown = false, updatedInstall = true, nowMs = now)
-        store.carryOverLegacy(legacyShown = true, updatedInstall = true, nowMs = now + day)
+        carry(legacyShown = false)
+        carry(legacyShown = true, legacyAnswered = true, nowMs = now + day)
         assertNull(store.record().lastShownAtMs)
     }
 
     @Test
     fun theCarryOverNeverMovesARealShowing() = runTest {
         store.markShown(now - 10 * day)
-        store.carryOverLegacy(legacyShown = true, updatedInstall = true, nowMs = now)
+        carry(legacyShown = true, legacyAnswered = true)
         assertEquals(now - 10 * day, store.record().lastShownAtMs)
     }
 

@@ -187,6 +187,8 @@ class BoxLoreApplication :
         )
         engagementPromptCoordinator =
             EngagementPromptCoordinator(userPreferencesRepository, cx.aswin.boxlore.core.prefs.NpsSurveyStore(this))
+        // Each finish is also kept on disk, so the NPS survey's moment outlives a restart.
+        cx.aswin.boxlore.core.playback.PlaybackFinishes.onRecorded = engagementPromptCoordinator::recordFinish
         applicationScope.launch {
             // Updated after installing: this install ran an older version (a fresh or restored install has not).
             val updatedInstall =

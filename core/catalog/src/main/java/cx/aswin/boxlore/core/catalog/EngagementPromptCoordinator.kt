@@ -15,13 +15,12 @@ import kotlinx.coroutines.launch
 
 /**
  * Coordinates proactive engagement prompts (NPS survey, Play review) so only one surfaces per
- * session, and only at a finish moment: an episode finished since boxlore started
- * ([processStartedAtMs], when this coordinator is made at startup), never on an open alone.
+ * session, and only at a finish moment: shortly after the player here played an episode to the end
+ * ([NpsSurveySchedule.isFinishMoment]; the finish is kept across restarts), never on an open alone.
  */
 class EngagementPromptCoordinator(
     private val userPrefs: UserPreferencesRepository,
     private val surveyStore: NpsSurveyStore,
-    private val processStartedAtMs: Long = System.currentTimeMillis(),
     private val scope: CoroutineScope =
         CoroutineScope(
             SupervisorJob() +
@@ -62,18 +61,36 @@ class EngagementPromptCoordinator(
         }
     }
 
-    /** An episode finished in this run of boxlore, recently: the only time a prompt may appear. */
+    /** An episode finished here recently: the only time a prompt may appear. */
     fun isFinishMoment(lastFinishedAtMs: Long?, nowMs: Long = System.currentTimeMillis()): Boolean =
-        NpsSurveySchedule.isFinishMoment(lastFinishedAtMs, processStartedAtMs, nowMs)
+        NpsSurveySchedule.isFinishMoment(lastFinishedAtMs, nowMs)
+
+    /** Keeps the player's finish at [atMs] on disk (from `PlaybackFinishes`), so the moment outlives a restart. */
+    fun recordFinish(atMs: Long) {
+        launchSafely("Failed to keep the finish") { surveyStore.recordFinish(atMs) }
+    }
 
     /**
-     * Counts this start of boxlore and, once per install, carries over an older version's survey
-     * ([NpsSurveyStore.carryOverLegacy]; [updatedInstall] when Android updated boxlore after installing
-     * it). Called once at startup.
+     * The latest finish here: [inThisRunAtMs] (the player's own, this run) or the one kept from before a
+     * restart. A finish later than [nowMs] is left out, so a clock that ran ahead can't hide a real one.
+     */
+    suspend fun lastFinishedAtMs(inThisRunAtMs: Long?, nowMs: Long = System.currentTimeMillis()): Long? =
+        listOfNotNull(inThisRunAtMs, surveyStore.record().lastFinishedAtMs).filter { it <= nowMs }.maxOrNull()
+
+    /**
+     * Counts this start of boxlore and, once per install, carries over an older version's survey for a
+     * listener who answered it ([NpsSurveyStore.carryOverLegacy]; [updatedInstall] when Android updated
+     * boxlore after installing it). Called once at startup.
      */
     suspend fun onAppLaunched(updatedInstall: Boolean, nowMs: Long = System.currentTimeMillis()) {
         surveyStore.recordLaunch()
-        surveyStore.carryOverLegacy(userPrefs.hasNpsSurveyFired(), updatedInstall, nowMs)
+        surveyStore.carryOverLegacy(
+            legacyShown = userPrefs.hasNpsSurveyFired(),
+            legacyAnswered = userPrefs.npsLastScore() != null,
+            updatedInstall = updatedInstall,
+            lastPromptAtMs = userPrefs.lastEngagementPromptAtMs(),
+            nowMs = nowMs,
+        )
     }
 
     /** Whether the NPS survey should appear now, by [NpsSurveySchedule] with nothing playing and no prompt yet this session. */
@@ -92,7 +109,6 @@ class EngagementPromptCoordinator(
                 installedAtMs = installedAtMs,
                 finishedSinceInstall = finishedSinceInstall,
                 lastFinishedAtMs = lastFinishedAtMs,
-                processStartedAtMs = processStartedAtMs,
                 record = surveyStore.record(),
                 inQuietDays = userPrefs.isInReviewQuietPeriod(installedAtMs, nowMs),
                 cooldownElapsed = userPrefs.isEngagementCooldownElapsed(),
@@ -111,7 +127,6 @@ class EngagementPromptCoordinator(
                 installedAtMs = installedAtMs,
                 finishedSinceInstall = finishedSinceInstall,
                 lastFinishedAtMs = nowMs,
-                processStartedAtMs = processStartedAtMs,
                 record = surveyStore.record(),
                 inQuietDays = userPrefs.isInReviewQuietPeriod(installedAtMs, nowMs),
                 cooldownElapsed = userPrefs.isEngagementCooldownElapsed(),

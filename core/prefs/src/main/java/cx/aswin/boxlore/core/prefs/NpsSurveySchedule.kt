@@ -6,9 +6,8 @@ data class NpsSurveyMoment(
     val installedAtMs: Long,
     /** Episodes played to the end in boxlore since it was installed here. */
     val finishedSinceInstall: Int,
-    /** When the player on this phone last played an episode to the end in this run; null when it hasn't. */
+    /** When the player on this phone last played an episode to the end, kept across restarts; null when it hasn't. */
     val lastFinishedAtMs: Long?,
-    val processStartedAtMs: Long,
     val record: NpsSurveyRecord,
     /** The quiet days after installing, onboarding, an import or a first sign-in. */
     val inQuietDays: Boolean,
@@ -20,22 +19,27 @@ data class NpsSurveyMoment(
 enum class NpsSurveyRule { FinishMoment, FinishedEpisodes, DaysInstalled, FirstRun, QuietDays, Cooldown, AskAgainGap }
 
 /**
- * When the NPS survey may appear: right after an episode finishes in this run of boxlore (never on an
- * open alone), once 3 episodes have finished here and boxlore has been installed for a week, never in
- * the first run, never in the quiet days, and again only 90 days after it last appeared. Playback and
- * other sheets are checked by the caller.
+ * When the NPS survey may appear: within [FINISH_MOMENT_WINDOW_MS] of the player here playing an
+ * episode to the end (never on an open alone; the finish is kept across restarts, so a listener who
+ * closes boxlore after an episode is still asked when they come back), once 3 episodes have finished
+ * here and boxlore has been installed for a week, never in the first run, never in the quiet days, and
+ * again only 90 days after it last appeared. Playback and other sheets are checked by the caller.
  */
 object NpsSurveySchedule {
     const val MIN_FINISHED_EPISODES = 3
     const val MIN_DAYS_INSTALLED = 7
     const val ASK_AGAIN_DAYS = 90
 
-    /** How long after an episode finishes Home still counts it as the moment to ask. */
-    const val FINISH_MOMENT_WINDOW_MS = 2L * 60 * 60 * 1000
+    /**
+     * How long after an episode finishes Home still counts it as the moment to ask. Six hours: the
+     * next episode often plays straight on, and a listener often closes boxlore after one (with two
+     * hours, in this run only, almost nobody was ever asked).
+     */
+    const val FINISH_MOMENT_WINDOW_MS = 6L * 60 * 60 * 1000
 
-    /** An episode finished since this run of boxlore started, within the window and not in the future. */
-    fun isFinishMoment(lastFinishedAtMs: Long?, processStartedAtMs: Long, nowMs: Long,): Boolean =
-        lastFinishedAtMs != null && lastFinishedAtMs >= processStartedAtMs && nowMs - lastFinishedAtMs in 0L..FINISH_MOMENT_WINDOW_MS
+    /** An episode finished here within the window, and not in the future. */
+    fun isFinishMoment(lastFinishedAtMs: Long?, nowMs: Long,): Boolean =
+        lastFinishedAtMs != null && nowMs - lastFinishedAtMs in 0L..FINISH_MOMENT_WINDOW_MS
 
     fun isDue(moment: NpsSurveyMoment): Boolean = unmet(moment).isEmpty()
 
@@ -45,7 +49,7 @@ object NpsSurveySchedule {
     private fun isMet(rule: NpsSurveyRule, moment: NpsSurveyMoment): Boolean {
         val now = moment.nowMs
         return when (rule) {
-            NpsSurveyRule.FinishMoment -> isFinishMoment(moment.lastFinishedAtMs, moment.processStartedAtMs, now)
+            NpsSurveyRule.FinishMoment -> isFinishMoment(moment.lastFinishedAtMs, now)
             NpsSurveyRule.FinishedEpisodes -> moment.finishedSinceInstall >= MIN_FINISHED_EPISODES
             NpsSurveyRule.DaysInstalled -> moment.installedAtMs > 0L && now - moment.installedAtMs >= MIN_DAYS_INSTALLED * DAY_MS
             NpsSurveyRule.FirstRun -> moment.record.launches >= 2
