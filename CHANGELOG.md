@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.31] - 2026-11-07
+
 ### Added
 - Showcase pages for The Rest Is History (`history/`), Darknet Diaries (`darknet/`) and Serial (`serial/`), each with its own header, latest-episode card and subscribe moment. ([#1238](https://github.com/boxcreate/boxlore/pull/1238)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `BrandedSeal`, the "The best of boxlore" Showcase seal, in place of `BrandedTag`. ([#1238](https://github.com/boxcreate/boxlore/pull/1238)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -30,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Links, Play Store pages and settings shortcuts start through `startFirstAvailable` / `openLink` (`:core:designsystem`), and `MainActivity` provides `SafeUriHandler` as `LocalUriHandler`, so no app to open one no longer throws `ActivityNotFoundException` or Compose's `IllegalArgumentException`. ([#1236](https://github.com/boxcreate/boxlore/pull/1236)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `ForegroundSafeNotificationProvider` delivers Media3's late notification updates on the main thread inside a try/catch, so a `ForegroundServiceStartNotAllowedException` from `MediaNotificationManager.startForeground` posts the notification as an ordinary one instead of crashing the playback service. ([#1237](https://github.com/boxcreate/boxlore/pull/1237)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - The NPS survey's 90-day carry-over from the old survey applies only when it was answered (`nps_last_score`); a one-time revision lifts 0.0.30's wait for the rest. The finish moment is 6 hours and survives restarts: `PlaybackFinishes.onRecorded` → `EngagementPromptCoordinator.recordFinish` → `NpsSurveyStore`. ([#1239](https://github.com/boxcreate/boxlore/pull/1239)) <!-- impact:user-impact-low --> <!-- copy:locked -->
+
 ## [v0.0.30] - 2026-11-01
 
 ### Added
