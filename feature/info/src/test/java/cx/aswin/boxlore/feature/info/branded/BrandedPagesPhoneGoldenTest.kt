@@ -102,7 +102,17 @@ class BrandedPagesPhoneGoldenTest(private val show: String, private val dark: Bo
 
     private fun theme() = if (dark) "dark" else "light"
 
-    private fun fixture(): Pair<Podcast, List<Episode>> = cardVariant() ?: when (show) {
+    private fun fixture(): Pair<Podcast, List<Episode>> = cardVariant() ?: newerPage() ?: firstPage()
+
+    /** The pages added after the first ten; [firstPage] has the rest. */
+    private fun newerPage(): Pair<Podcast, List<Episode>>? = when (show) {
+        "sherlock" -> sherlock(longTitle = false)
+        "sherlock-long" -> sherlock(longTitle = true)
+        "desicrime" -> desiCrime()
+        else -> null
+    }
+
+    private fun firstPage(): Pair<Podcast, List<Episode>> = when (show) {
         "conspiracy" -> conspiracy()
         "history" -> history()
         "darknet" -> darknet()
@@ -285,6 +295,68 @@ class BrandedPagesPhoneGoldenTest(private val show: String, private val dark: Bo
         )
         val episodes = titles.mapIndexed { i, (title, notes) ->
             episode(podcast, "darknet-$i", title, (39 + i * 7) * 60, now - 4 * 86_400L - i * 14L * 86_400, notes).copy(episodeNumber = 182 - i)
+        }
+        return podcast to episodes
+    }
+
+    /** Weekly on Thursdays, like the show: The Sign of Four in parts, then A Study in Scarlet; or a long story name on top. */
+    private fun sherlock(longTitle: Boolean): Pair<Podcast, List<Episode>> {
+        val podcast = TestFixtures.podcast(id = "7131280", title = "Sherlock Holmes Short Stories", artist = "Noiser", imageUrl = ART, genre = "Fiction")
+            .copy(
+                notificationsEnabled = true,
+                autoDownloadEnabled = true,
+                description = "Sherlock Holmes Short Stories narrated by Hugh Bonneville. A woman struck dead after hearing a haunting whistle. " +
+                    "A series of child-like drawings scrawled throughout a country estate. A prize horse wandering the moors without an owner.",
+            )
+        val now = System.currentTimeMillis() / 1000
+        val credits = "\n\nPart three of seven.&amp;nbsp;\n\nA&amp;nbsp;Noiser&amp;nbsp;podcast production."
+        val latest = if (longTitle) {
+            "The Adventure of the Bruce-Partington Plans: Part Three" to "As a thick fog settles over London, Holmes and Watson break into a spy’s home " +
+                "on a quiet street in Kensington. There, they discover a series of cryptic messages, and the true nature of the conspiracy comes to light."
+        } else {
+            "The Sign of Four: Part Three" to "The police arrive at Pondicherry Lodge… and promptly begin arresting the wrong suspects.&amp;nbsp;"
+        }
+        val titles = listOf(latest.first) + listOf(
+            "The Sign of Four: Part Two", "The Sign of Four: Part One", "A Study in Scarlet: Part Seven", "A Study in Scarlet: Part Six",
+            "A Study in Scarlet: Part One", "The Adventure of the Three Garridebs: Part Two", "The Adventure of the Three Garridebs: Part One",
+            "The Adventure of the Missing Three-Quarter: Part One", "The Adventure of Shoscombe Old Place", "The Adventure of the Golden Pince-Nez",
+            "The Adventure of the Priory School: Part One", "The Adventure of the Sussex Vampire", "The Adventure of the Empty House",
+        )
+        val prefix = if (longTitle) "sherlocklong" else "sherlock"
+        val episodes = titles.mapIndexed { i, title ->
+            episode(podcast, "$prefix-$i", title, (43 - i % 5 * 4) * 60, now - 2 * 86_400L - i * 7L * 86_400, if (i == 0) latest.second + credits else "Holmes takes the case.")
+        }
+        return podcast to episodes
+    }
+
+    /** Weekly, like the show: case 212 (its picture is the show's cover), a Chai & Chithi, then earlier cases with their own pictures. */
+    private fun desiCrime(): Pair<Podcast, List<Episode>> {
+        val podcast = TestFixtures.podcast(id = "7976624", title = "The Desi Crime Podcast", artist = "Desi Studios", imageUrl = ART, genre = "True Crime")
+            .copy(
+                notificationsEnabled = true,
+                autoDownloadEnabled = true,
+                description = "Desi Killers, Desi Kidnappers, Desi Criminals - find them here. Brought to you by Aryaan Misra and Aishwarya Singh, " +
+                    "powered by The Desi Studios. We are your one stop shop for all things Desi, and all things Crazy.",
+            )
+        val now = System.currentTimeMillis() / 1000
+        val titles = listOf(
+            "212. The Most Hated Indian Killer In America",
+            "Chai & Chithi 36 | Ghost On A Roller Coaster",
+            "211. The Trial of Ajmal Kasab | Ft. Ujjwal Nikam",
+            "210. The Burning Car Murder | Mundill Mahil & Gagandip Singh",
+            "209. Murder in Room 1701 | Wendy Albano",
+            "208. Murder at DuPont Plaza Hotel | Krishna Maharaj",
+            "207. The Chameli Bagh Murders | Oishee Rahman",
+            "206. A Werewolf in Virginia | Pankaj Bhasin",
+            "205. Murder Trial Of The Century | Ananda Sathasivam Case",
+            "204. Murder in Monte Sereno | Raveesh Kumra",
+            "203. The Orkut Murder | Adnan Patrawala",
+            "202. The Gangster and the Juror | Peter Gill & Gillian Guess",
+        )
+        val episodes = titles.mapIndexed { i, title ->
+            episode(podcast, "desicrime-$i", title, (47 - i % 4 * 5) * 60, now - 6 * 86_400L - i * 4L * 86_400, "A case from the board.")
+                // The newest case and the Chai & Chithi carry the show's cover as their picture.
+                .let { if (i < 2) it.copy(imageUrl = ART) else it }
         }
         return podcast to episodes
     }
@@ -489,9 +561,9 @@ class BrandedPagesPhoneGoldenTest(private val show: String, private val dark: Bo
     companion object {
         private const val ART = "https://images.example.invalid/art.jpg"
 
-        private val Openings = setOf("history", "darknet", "conspiracy", "serial")
+        private val Openings = setOf("history", "darknet", "conspiracy", "serial", "sherlock", "desicrime")
 
-        private val Moments = setOf("vergecast", "conspiracy", "history", "darknet", "serial", "waveform", "crimejunkie", "jre", "jre-nopic", "rottenmango", "rottenmango-long", "daily")
+        private val Moments = setOf("vergecast", "conspiracy", "history", "darknet", "serial", "waveform", "crimejunkie", "jre", "jre-nopic", "rottenmango", "rottenmango-long", "daily", "sherlock", "sherlock-long", "desicrime")
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}-dark={1}")

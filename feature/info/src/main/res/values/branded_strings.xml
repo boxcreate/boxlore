@@ -8,6 +8,9 @@
     <string name="branded_latest_episode">Latest episode</string>
     <string name="branded_copyright_button">Copyright information</string>
     <string name="branded_copyright_title">Artwork and logos</string>
+    <!-- What screen readers hear for a Showcase page's description, which opens and closes on tap. -->
+    <string name="branded_description_expanded">Expanded</string>
+    <string name="branded_description_collapsed">Collapsed</string>
     <string name="branded_copyright_note">Made by boxlore, in the show\'s own style.</string>
     <string name="vergecast_wordmark_description">The Vergecast</string>
     <string name="vergecast_publisher_description">The Verge</string>
@@ -56,4 +59,23 @@
     <string name="serial_season_episode">%1$s · Episode %2$d</string>
     <string name="serial_episode">Episode %1$d</string>
     <string name="serial_copyright">© The New York Times Company. Serial is a podcast from Serial Productions and The New York Times. The cards show each season\'s own cover art.</string>
+    <!-- Sherlock Holmes Short Stories, as The Strand Magazine -->
+    <string name="sherlock_wordmark_description">Sherlock Holmes Short Stories</string>
+    <!-- Under the latest story's title, in period italic: who reads it. -->
+    <string name="sherlock_read_by">Read by Hugh Bonneville.</string>
+    <!-- The same line with the story's part in Roman numerals: "Part III.  Read by Hugh Bonneville." -->
+    <string name="sherlock_part_read_by">Part %1$s.  Read by Hugh Bonneville.</string>
+    <string name="sherlock_copyright">© Noiser. Sherlock Holmes Short Stories is a Noiser podcast. The 1891 Strand Magazine cover by George Charles Haité and Sidney Paget\'s 1893 drawing are in the public domain.</string>
+    <!-- The Desi Crime Podcast, as the hosts' crime board -->
+    <string name="desicrime_wordmark_description">The Desi Crime Podcast</string>
+    <string name="desicrime_hosts">Aryaan Misra &amp; Aishwarya Singh</string>
+    <string name="desicrime_hosts_description">Aishwarya Singh and Aryaan Misra</string>
+    <!-- Above the latest episode's title on its sticky note, handwritten: "#212 · newest case". -->
+    <string name="desicrime_newest_case">#%1$d · newest case</string>
+    <!-- The same, for a latest episode without a case number. -->
+    <string name="desicrime_newest">newest episode</string>
+    <string name="desicrime_copyright">© Desi Studios. The Desi Crime Podcast is a Desi Studios podcast. The prints show each case\'s own episode art, and Aryaan and Aishwarya are from the show\'s cover art.</string>
+    <!-- Notes stuck on the hosts' board: part of its art, in their handwriting. -->
+    <string name="desicrime_note_show" translatable="false">DESI\nCRIME</string>
+    <string name="desicrime_note_who" translatable="false">kaun\ntha?</string>
 </resources>
