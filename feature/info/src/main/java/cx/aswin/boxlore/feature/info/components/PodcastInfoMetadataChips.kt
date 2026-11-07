@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.info.components
 
-import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement

@@ -38,7 +38,8 @@ internal fun canAskForNotifications(context: Context, askedBefore: Boolean): Boo
     val granted = sdk >= Build.VERSION_CODES.TIRAMISU &&
         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
     val activity = context.findActivity()
-    val rationale = activity != null && sdk >= Build.VERSION_CODES.TIRAMISU &&
+    val rationale = activity != null &&
+        sdk >= Build.VERSION_CODES.TIRAMISU &&
         ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.POST_NOTIFICATIONS)
     return canAskForNotifications(sdk, granted, askedBefore, rationale)
 }
