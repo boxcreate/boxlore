@@ -67,6 +67,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <ul align="left">
 <li>On show pages, Select all selects every episode of the show instead of stopping at 100, and while you search it selects your search results. A selected episode on a show's own-style page now stays readable.</li>
 <li>Your monthly story with Echo opens again from Listening history instead of closing the app. Echo now lands smoothly between cards, the story fills the status and navigation bars, and its card's title no longer runs under the show covers.</li>
+<li>Tapping a link no app on your phone can open, like a host's page or a funding link, now says so instead of closing boxlore.</li>
 <li>Playback controls on the lock screen, in notifications and in Samsung's Now Bar show rewind, play and forward in that order, even when nothing is queued next, with a Next episode button beside them when there is.</li>
 <li>Fixed a crash that could close boxlore in the background while the player notification loaded an episode's artwork.</li>
 </ul>
