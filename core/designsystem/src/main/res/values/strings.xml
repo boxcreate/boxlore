@@ -7,4 +7,16 @@
     <string name="share_listen_on">Listen on</string>
     <!-- Shown briefly when no app on the phone can open a link (no browser, say). -->
     <string name="link_unavailable">No app could open this link</string>
+    <!-- The late-night sleep timer prompt, shown once a night when playback starts after 10:30 PM. -->
+    <string name="sleep_prompt_title">Late night listening?</string>
+    <string name="sleep_prompt_body">Set a sleep timer so episodes don\'t keep playing overnight.</string>
+    <string name="sleep_prompt_dismiss">Dismiss</string>
+    <!-- After a time is picked: when playback will pause. -->
+    <string name="sleep_prompt_pausing_minutes">Pausing in %1$d min</string>
+    <string name="sleep_prompt_pausing_hours">Pausing in %1$d hr</string>
+    <string name="sleep_prompt_pausing_episode">Pausing after this episode</string>
+    <string name="sleep_prompt_good_night">Good night.</string>
+    <!-- Under the number on the picked time's badge: "45" over "min", "1" over "hr". -->
+    <string name="sleep_prompt_unit_minutes">min</string>
+    <string name="sleep_prompt_unit_hours">hr</string>
 </resources>
