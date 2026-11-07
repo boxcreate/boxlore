@@ -24,7 +24,6 @@ internal object JreColors {
     val OnOrange = Color(0xFF1A0B02)
     val Control = Color(0xFF241614)
     val ChipLine = Color(0xFF4D2E27)
-    val TagRing = Color(0xFF6B3A22)
     val Navigation = Color(0xFF1F1412)
     val NavigationText = Color(0xFFE9DDD5)
 

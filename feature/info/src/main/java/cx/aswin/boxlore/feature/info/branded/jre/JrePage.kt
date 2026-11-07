@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.branded.BrandedChipStyle
 import cx.aswin.boxlore.feature.info.branded.BrandedDescription
@@ -65,6 +66,7 @@ internal object JrePage : BrandedShowPage {
         )
         return BrandedPageStyle(
             colors = colors,
+            popup = c.Copyright,
             navigationColors = colors.copy(
                 surfaceContainerHigh = c.Navigation,
                 onSurfaceVariant = c.NavigationText,
@@ -103,11 +105,8 @@ internal object JrePage : BrandedShowPage {
     }
 
     @Composable
-    override fun Header(podcast: Podcast, description: BrandedDescription, chips: @Composable () -> Unit, modifier: Modifier) =
+    override fun Header(podcast: Podcast, feed: List<Episode>, description: BrandedDescription, chips: @Composable () -> Unit, modifier: Modifier) =
         JreHeader(podcast, description, chips, modifier)
-
-    @Composable
-    override fun Tag(modifier: Modifier) = JreTag(modifier)
 
     @Composable
     override fun Spotlight(spotlight: BrandedSpotlight, modifier: Modifier) = JreSpotlight(spotlight, modifier)

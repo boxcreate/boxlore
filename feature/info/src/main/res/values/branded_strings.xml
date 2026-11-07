@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Branded show pages: a boxlore pick shown in the show's own style. -->
-    <!-- The top-bar tag, after boxlore's mark; it reads on into the show's name below it. -->
-    <string name="branded_pick_tag">Made for:</string>
-    <string name="branded_tag_brand" translatable="false">boxlore</string>
+    <!-- The Showcase seal in the top bar ("The best of" around boxlore's mark) and the note it opens. -->
+    <string name="branded_seal_label">About this Showcase page</string>
+    <string name="branded_seal_title">A Showcase page</string>
+    <string name="branded_seal_body">A show boxlore picked, on a page made in its own style with its own art.</string>
     <string name="branded_latest_episode">Latest episode</string>
     <string name="branded_copyright_button">Copyright information</string>
     <string name="branded_copyright_title">Artwork and logos</string>
@@ -12,12 +13,8 @@
     <string name="vergecast_publisher_description">The Verge</string>
     <string name="vergecast_copyright">© Vox Media, LLC. The Vergecast and The Verge are trademarks of Vox Media.</string>
     <string name="conspiracy_wordmark_description">Conspiracy Theories</string>
-    <string name="conspiracy_case_file">Case file</string>
-    <string name="conspiracy_from">From</string>
     <string name="conspiracy_latest_filed">Latest · filed %1$s</string>
     <string name="conspiracy_new">New</string>
-    <string name="conspiracy_filed">Filed.</string>
-    <string name="conspiracy_left">%1$s left</string>
     <string name="conspiracy_copyright">© Spotify AB. Conspiracy Theories is a Spotify podcast from Spotify Studios.</string>
     <string name="waveform_subtitle">The MKBHD Podcast</string>
     <string name="waveform_publisher">MKBHD · Vox Media</string>
@@ -39,4 +36,24 @@
     <!-- The Daily -->
     <string name="daily_masthead_description">The New York Times</string>
     <string name="daily_copyright">© The New York Times Company. The Daily and The New York Times are trademarks of The New York Times Company.</string>
+    <string name="trih_logo_description">The Rest Is History</string>
+    <string name="trih_publisher_description">Goalhanger</string>
+    <!-- The nameplate under the latest episode's frame: its number in the show's feed. -->
+    <string name="trih_episode_number">No. %1$d</string>
+    <string name="trih_copyright">© Goalhanger. The Rest Is History is a Goalhanger podcast. The busts are from the show\'s cover art.</string>
+    <string name="darknet_wordmark_description">Darknet Diaries</string>
+    <!-- The latest episode's label: the show numbers every episode. -->
+    <string name="darknet_latest_number">Latest · Ep %1$d</string>
+    <string name="darknet_latest">Latest</string>
+    <string name="darknet_copyright">© Jack Rhysider. The flag-bearer and Jack\'s masked avatar are the show\'s own art.</string>
+    <!-- Serial -->
+    <string name="serial_wordmark_description">Serial</string>
+    <string name="serial_nyt_description">The New York Times</string>
+    <string name="serial_productions_description">Serial Productions</string>
+    <!-- A season's card in the deck before its name is known: "Season 19". -->
+    <string name="serial_season">Season %1$d</string>
+    <!-- Above the latest episode's title: the season's name and the episode's number, "METRO · Episode 3". -->
+    <string name="serial_season_episode">%1$s · Episode %2$d</string>
+    <string name="serial_episode">Episode %1$d</string>
+    <string name="serial_copyright">© The New York Times Company. Serial is a podcast from Serial Productions and The New York Times. The cards show each season\'s own cover art.</string>
 </resources>

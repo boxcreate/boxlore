@@ -39,7 +39,6 @@ internal object DailyColors {
         card = Color(0xFFEDE9DD),
         chipLine = Color(0xFF121212),
         kicker = Color(0xFF0054B7),
-        tagMark = Color(0xFF00C2EE),
         soft = Color(0xFFD8D2C2),
         navigation = Color(0xFFE7E2D5),
         navigationText = Color(0xFF2A2925),
@@ -69,7 +68,6 @@ internal object DailyColors {
         card = Color(0xFF232220),
         chipLine = Color(0xFF5C5850),
         kicker = Color(0xFF7CC3E6),
-        tagMark = Color(0xFF0054B7),
         soft = Color(0xFF353330),
         navigation = Color(0xFF262522),
         navigationText = Color(0xFFD8D3C8),
@@ -108,8 +106,6 @@ internal data class DailyPalette(
     val chipLine: Color,
     /** "Latest episode", and each card's release time. */
     val kicker: Color,
-    /** boxlore's mark in the top-bar tag: a blue from the dawn that holds up on the ink tag (or the cream one at night). */
-    val tagMark: Color,
     /** The fine rules around the lead story's buttons, and a day still to come in the week's boxes. */
     val soft: Color,
     val navigation: Color,

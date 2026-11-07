@@ -23,15 +23,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedCopyrightButton
-import cx.aswin.boxlore.feature.info.branded.BrandedTag
-import cx.aswin.boxlore.feature.info.branded.BrandedTagStyle
-import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
-import cx.aswin.boxlore.feature.info.branded.skewX
 
 /** Cover art beside The Vergecast wordmark, with The Verge's logo and the © button under it. */
 @Composable
@@ -67,21 +62,4 @@ internal fun VergecastIdentity(podcast: Podcast, modifier: Modifier) {
             }
         }
     }
-}
-
-/** The tag: a leaning lime label, like The Verge's stickers, with boxlore's mark in ultraviolet. */
-@Composable
-internal fun VergecastTag(modifier: Modifier) {
-    BrandedTag(
-        BrandedTagStyle(
-            fill = VergecastColors.Lime,
-            mark = VergecastColors.Ultraviolet,
-            text = VergecastColors.Ink,
-            textStyle = brandedSansStyle(14.sp, 16.sp, weight = 600),
-            height = 30.dp,
-            corner = 2.dp,
-            markHeight = 15.dp,
-        ),
-        modifier.skewX(-8f),
-    )
 }

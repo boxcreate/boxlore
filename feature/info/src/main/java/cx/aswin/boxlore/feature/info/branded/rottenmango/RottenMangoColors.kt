@@ -27,7 +27,6 @@ internal object RottenMangoColors {
 
     /** The episode cards in the list. */
     val Card = Color(0xFF1F0C0E)
-    val TagRing = Color(0xFF8A6830)
     val Mango = Color(0xFFD42A26)
 
     /** The latest episode's frame: the labels and title typed on the dark inside. */

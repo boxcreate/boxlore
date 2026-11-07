@@ -35,12 +35,6 @@ import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.info.PodcastInfoScreen
 import cx.aswin.boxlore.feature.info.PodcastInfoUiState
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
-import cx.aswin.boxlore.feature.info.branded.conspiracy.ConspiracyPage
-import cx.aswin.boxlore.feature.info.branded.crimejunkie.CrimeJunkiePage
-import cx.aswin.boxlore.feature.info.branded.daily.DailyPage
-import cx.aswin.boxlore.feature.info.branded.jre.JrePage
-import cx.aswin.boxlore.feature.info.branded.rottenmango.RottenMangoPage
-import cx.aswin.boxlore.feature.info.branded.vergecast.VergecastPage
 import cx.aswin.boxlore.feature.info.branded.waveform.WaveformPage
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPageShow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -96,7 +90,7 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
             assertTrue("The description stays open", descriptionOpen())
             popupShown()
             spotlightOnce()
-            fixture.compose.onNodeWithText("Made for:").assertExists()
+            fixture.compose.onNodeWithContentDescription(SEAL_LABEL).assertExists()
         }
         recreate(FOLD_TABLETOP)
         assertTrue("The description stays open after recreation", descriptionOpen())
@@ -106,7 +100,7 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
         // Back closes only the popup; the page stays.
         pressBackOnPopup()
         fixture.compose.onNodeWithText(COPYRIGHT_TITLE).assertDoesNotExist()
-        fixture.compose.onNodeWithText("Made for:").assertExists()
+        fixture.compose.onNodeWithContentDescription(SEAL_LABEL).assertExists()
 
         // A tap outside closes it too, on a compact and a tablet window.
         for (host in listOf(COMPACT, TABLET)) {
@@ -121,6 +115,20 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
         fixture.compose.runOnIdle { window.value = COMPACT }
         fixture.compose.waitForIdle()
         assertEquals(1, fixture.compose.onAllNodes(hasText("Episode 0")).fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun `the seal's note survives window changes and recreation, then closes on Back`() {
+        render()
+        fixture.compose.onNodeWithContentDescription(SEAL_LABEL).performClick()
+        fixture.compose.waitForIdle()
+        fixture.compose.onNodeWithText(SEAL_TITLE).assertExists()
+        acrossWindowChanges { fixture.compose.onNodeWithText(SEAL_TITLE).assertExists() }
+        recreate(FOLD_TABLETOP)
+        fixture.compose.onNodeWithText(SEAL_TITLE).assertExists()
+        pressBackOnPopup()
+        fixture.compose.onNodeWithText(SEAL_TITLE).assertDoesNotExist()
+        fixture.compose.onNodeWithContentDescription(SEAL_LABEL).assertExists()
     }
 
     private fun descriptionOpen(): Boolean {
@@ -226,6 +234,8 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
 
     companion object {
         private const val COPYRIGHT_TITLE = "Artwork and logos"
+        private const val SEAL_LABEL = "About this Showcase page"
+        private const val SEAL_TITLE = "A Showcase page"
         private val DESCRIPTION = List(12) { "A show about the things people make and why they matter." }.joinToString(" ")
         private val COMPACT = BoxloreWindowLayout(599f, 800f)
         private val TABLET = BoxloreWindowLayout(1_280f, 800f)
@@ -257,7 +267,7 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
-        fun pages(): List<Array<Any>> = listOf(VergecastPage, ConspiracyPage, WaveformPage, CrimeJunkiePage, JrePage, RottenMangoPage, DailyPage).map { arrayOf<Any>(it) }
+        fun pages(): List<Array<Any>> = BrandedShowPages.all.map { arrayOf<Any>(it) }
     }
 }
 

@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.info.branded
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -18,6 +19,8 @@ internal data class BrandedActionColors(
     val onChecked: Color,
     val play: Color,
     val onPlay: Color,
+    /** A ring round Play where its colour alone would sink into the card behind it. */
+    val playRing: BorderStroke? = null,
 )
 
 /**
@@ -39,7 +42,7 @@ internal fun BrandedEpisodeActions(spotlight: BrandedSpotlight, colors: BrandedA
     )
     MaterialTheme(colorScheme = scheme) {
         Column(modifier) {
-            PodcastEpisodeActions(spotlight.actions, spotlight.callbacks, scheme.primary)
+            PodcastEpisodeActions(spotlight.actions, spotlight.callbacks, scheme.primary, colors.playRing)
             if (showProgress) spotlight.progress?.let { PodcastEpisodeProgress(it, spotlight.timeLeft, scheme.primary) }
         }
     }

@@ -43,8 +43,6 @@ import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedCopyrightButton
 import cx.aswin.boxlore.feature.info.branded.BrandedDescription
 import cx.aswin.boxlore.feature.info.branded.BrandedDescriptionExtras
-import cx.aswin.boxlore.feature.info.branded.BrandedTag
-import cx.aswin.boxlore.feature.info.branded.BrandedTagStyle
 import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
 import java.util.Locale
@@ -143,22 +141,5 @@ private fun WaveformDescription(description: BrandedDescription) {
             .fillMaxWidth()
             .animateContentSize(spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow))
             .expressiveClickable(shape = RoundedCornerShape(8.dp)) { description.onToggle() },
-    )
-}
-
-/** The tag: black with a fine ring, boxlore's mark in the logo's red. */
-@Composable
-internal fun WaveformTag(modifier: Modifier) {
-    BrandedTag(
-        BrandedTagStyle(
-            fill = WaveformColors.Page,
-            mark = WaveformColors.Red,
-            text = WaveformColors.Text,
-            textStyle = brandedSansStyle(13.sp, 16.sp, weight = 500),
-            corner = 14.dp,
-            endPadding = 13.dp,
-            ring = WaveformColors.TagBorder,
-        ),
-        modifier,
     )
 }

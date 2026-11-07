@@ -40,8 +40,6 @@ import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedCopyrightButton
 import cx.aswin.boxlore.feature.info.branded.BrandedDescription
 import cx.aswin.boxlore.feature.info.branded.BrandedDescriptionExtras
-import cx.aswin.boxlore.feature.info.branded.BrandedTag
-import cx.aswin.boxlore.feature.info.branded.BrandedTagStyle
 import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
 import java.util.Locale
 
@@ -133,21 +131,5 @@ private fun CrimeJunkieDescription(description: BrandedDescription, palette: Cri
             .fillMaxWidth()
             .animateContentSize(spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow))
             .expressiveClickable(shape = RoundedCornerShape(8.dp)) { description.onToggle() },
-    )
-}
-
-/** The tag: ink, with boxlore's mark in the splatter's magenta. */
-@Composable
-internal fun CrimeJunkieTag(modifier: Modifier) {
-    val palette = crimeJunkiePalette()
-    BrandedTag(
-        BrandedTagStyle(
-            fill = palette.tag,
-            mark = CrimeJunkieColors.SplatMagenta,
-            text = palette.onTag,
-            textStyle = brandedSansStyle(13.sp, 16.sp, weight = 600),
-            corner = 14.dp,
-        ),
-        modifier,
     )
 }

@@ -37,6 +37,10 @@ internal data class BrandedSpotlight(
 internal fun brandedSpotlightEpisode(episodes: List<Episode>, sort: EpisodeSort, searching: Boolean, hiddenIds: Set<String> = emptySet()): Episode? =
     if (sort != EpisodeSort.NEWEST || searching) null else episodes.firstOrNull { !it.isTrailer }?.takeUnless { it.id in hiddenIds }
 
+/** The show's episodes newest first, without trailers unless [keepTrailers]: what a header may draw from the feed. */
+internal fun brandedFeed(episodes: List<Episode>, keepTrailers: Boolean = false): List<Episode> =
+    (if (keepTrailers) episodes else episodes.filterNot { it.isTrailer }).sortedByDescending { it.publishedDate }
+
 /**
  * The spotlight's list key is its episode's ID, the key that episode has in the list, so Select
  * visible counts it. The list below leaves that episode out, so the key is never used twice.

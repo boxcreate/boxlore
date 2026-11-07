@@ -45,9 +45,6 @@ import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedCopyrightButton
 import cx.aswin.boxlore.feature.info.branded.BrandedDescription
 import cx.aswin.boxlore.feature.info.branded.BrandedDescriptionExtras
-import cx.aswin.boxlore.feature.info.branded.BrandedTag
-import cx.aswin.boxlore.feature.info.branded.BrandedTagStyle
-import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
 import java.time.Duration
 import java.time.LocalDate
@@ -154,24 +151,5 @@ private fun DailyDescription(description: BrandedDescription) {
             .fillMaxWidth()
             .animateContentSize(spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow))
             .expressiveClickable(shape = RoundedCornerShape(2.dp)) { description.onToggle() },
-    )
-}
-
-/** The tag: a sharp ink label, boxlore's mark in a blue from the show's dawn. */
-@Composable
-internal fun DailyTag(modifier: Modifier) {
-    val p = DailyColors.current
-    BrandedTag(
-        BrandedTagStyle(
-            fill = p.ink,
-            mark = p.tagMark,
-            text = p.page,
-            textStyle = brandedSansStyle(13.sp, 16.sp, weight = 600),
-            height = 26.dp,
-            corner = 2.dp,
-            endPadding = 11.dp,
-            markHeight = 13.dp,
-        ),
-        modifier,
     )
 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -106,8 +107,26 @@ internal fun BrandedCopyrightButton(style: BrandedCopyrightStyle, copyright: Str
 
 @Composable
 private fun CopyrightPopup(style: BrandedCopyrightStyle, copyright: String, onDismiss: () -> Unit) {
+    BrandedPopup(style, onDismiss) {
+        Text(stringResource(R.string.branded_copyright_title), style = brandedSansStyle(14.sp, 18.sp, weight = 500), color = style.title)
+        Text(copyright, style = brandedSansStyle(13.sp, 18.sp), color = style.body, modifier = Modifier.padding(top = 4.dp))
+        Text(
+            stringResource(R.string.branded_copyright_note),
+            style = brandedSansStyle(12.sp, 16.sp),
+            color = style.note,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+    }
+}
+
+/**
+ * A small card in a branded page's popup colours, its caret pointing at the element it opens from:
+ * under it, or above it when a short window has no room below. Back or a tap outside closes it.
+ */
+@Composable
+internal fun BrandedPopup(style: BrandedCopyrightStyle, onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     val density = LocalDensity.current
-    // Where the card went: under the ©, or above it when a short window has no room below.
+    // Where the card went: under the anchor, or above it when a short window has no room below.
     var above by remember { mutableStateOf(false) }
     val position = remember(density, style) { CopyrightPopupPosition(density, style) { above = it } }
     // Unclipped, so the shadow may run past the screen edge without Android moving the card; the
@@ -133,16 +152,8 @@ private fun CopyrightPopup(style: BrandedCopyrightStyle, copyright: String, onDi
                     .border(1.dp, style.ring, RoundedCornerShape(14.dp))
                     .padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 14.dp)
                     .semantics(mergeDescendants = true) {},
-            ) {
-                Text(stringResource(R.string.branded_copyright_title), style = brandedSansStyle(14.sp, 18.sp, weight = 500), color = style.title)
-                Text(copyright, style = brandedSansStyle(13.sp, 18.sp), color = style.body, modifier = Modifier.padding(top = 4.dp))
-                Text(
-                    stringResource(R.string.branded_copyright_note),
-                    style = brandedSansStyle(12.sp, 16.sp),
-                    color = style.note,
-                    modifier = Modifier.padding(top = 6.dp),
-                )
-            }
+                content = content,
+            )
         }
     }
 }
@@ -153,7 +164,7 @@ private val PopupBottomRoom = PopupShadowRoom + 10.dp
 private val PopupMargin = 8.dp
 
 /**
- * Puts the caret's centre under the ©, [BrandedCopyrightStyle.gap] below it. In windows too narrow
+ * Puts the caret's centre under the anchor (the ©, or the seal), [BrandedCopyrightStyle.gap] below it. In windows too narrow
  * for that, the card keeps an 8dp margin from the right edge instead; in windows too short for the
  * card below the ©, it goes above it, its caret pointing down ([onPlaced] says which).
  */

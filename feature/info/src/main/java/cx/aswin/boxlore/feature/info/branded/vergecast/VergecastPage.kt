@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.branded.BrandedChipStyle
 import cx.aswin.boxlore.feature.info.branded.BrandedDescription
@@ -62,6 +63,7 @@ internal object VergecastPage : BrandedShowPage {
         )
         return BrandedPageStyle(
             colors = colors,
+            popup = c.copyright,
             navigationColors = colors.copy(
                 surfaceContainerHigh = c.navigation,
                 onSurfaceVariant = c.navigationText,
@@ -102,16 +104,13 @@ internal object VergecastPage : BrandedShowPage {
     override fun headerToButtons(description: BrandedDescription) = if (description.isVisible) 16.dp else 14.dp
 
     @Composable
-    override fun Header(podcast: Podcast, description: BrandedDescription, chips: @Composable () -> Unit, modifier: Modifier) {
+    override fun Header(podcast: Podcast, feed: List<Episode>, description: BrandedDescription, chips: @Composable () -> Unit, modifier: Modifier) {
         Column(modifier) {
             VergecastIdentity(podcast, Modifier.fillMaxWidth().padding(horizontal = 16.dp))
             chips()
             if (description.isVisible) VergecastDescription(description, Modifier.fillMaxWidth().padding(horizontal = 16.dp))
         }
     }
-
-    @Composable
-    override fun Tag(modifier: Modifier) = VergecastTag(modifier)
 
     @Composable
     override fun Spotlight(spotlight: BrandedSpotlight, modifier: Modifier) = VergecastSpotlight(spotlight, modifier)

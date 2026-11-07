@@ -59,9 +59,8 @@ class CrimeJunkiePageTest {
     }
 
     @Test
-    fun `the tag and the copyright popup are readable`() {
+    fun `the copyright popup and the card buttons are readable`() {
         for (p in listOf(CrimeJunkieColors.Light, CrimeJunkieColors.Dark)) {
-            assertReadable(p.onTag, p.tag)
             assertReadable(p.copyright.body, p.copyright.popup)
             assertReadable(p.copyright.note, p.copyright.popup)
             assertReadable(p.ink, p.toggle)

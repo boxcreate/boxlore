@@ -3,200 +3,89 @@ package cx.aswin.boxlore.feature.info.branded.conspiracy
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedCopyrightButton
 import cx.aswin.boxlore.feature.info.branded.BrandedDescription
 import cx.aswin.boxlore.feature.info.branded.BrandedDescriptionExtras
-import cx.aswin.boxlore.feature.info.branded.BrandedTag
-import cx.aswin.boxlore.feature.info.branded.BrandedTagShadow
-import cx.aswin.boxlore.feature.info.branded.BrandedTagStyle
-import cx.aswin.boxlore.feature.info.branded.boxShadow
 import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
 import java.util.Locale
 
-private val FileShape = RoundedCornerShape(topStart = 0.dp, topEnd = 20.dp, bottomEnd = 20.dp, bottomStart = 20.dp)
-private val TabShape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp)
-
 /**
- * A case file on mustard paper: a tab, the cover clipped on like a photo, the stamped wordmark,
- * who it is from with the © beside it, and the show's description typed on a strip that opens on
- * tap. The usual chips follow below the file.
+ * The evidence board ([EvidenceBoard]) with the publisher typed across its foot and the © beside it,
+ * then the description, centred, which opens on tap. The usual chips follow.
  */
 @Composable
-internal fun ConspiracyHeader(podcast: Podcast, description: BrandedDescription, chips: @Composable () -> Unit, modifier: Modifier) {
+internal fun ConspiracyHeader(podcast: Podcast, feed: List<Episode>, description: BrandedDescription, chips: @Composable () -> Unit, modifier: Modifier) {
     val palette = conspiracyPalette()
     val fonts = rememberConspiracyFonts()
+    val clues = remember(feed) { boardClues(feed.map(Episode::title)) }
     Column(modifier) {
-        Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-            PaperTab(stringResource(R.string.conspiracy_case_file), fonts, Modifier.size(width = 132.dp, height = 25.dp))
-            // The file overlaps the tab's last 2dp, so the two read as one folder.
-            Box(
-                Modifier
-                    .padding(top = 23.dp)
-                    .fillMaxWidth()
-                    .heightIn(min = 130.dp)
-                    .boxShadow(fill = ConspiracyColors.Mustard, color = palette.fileShadow, offsetY = 10.dp, blur = 24.dp, cornerRadius = 20.dp)
-                    .clip(FileShape),
-            ) {
-                Image(painterResource(R.drawable.conspiracy_paper), null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
-                ClippedCover(podcast, palette)
-                Image(
-                    painter = painterResource(R.drawable.conspiracy_wordmark),
-                    contentDescription = stringResource(R.string.conspiracy_wordmark_description),
-                    contentScale = ContentScale.FillBounds,
-                    modifier = Modifier.offset(x = 136.dp, y = 16.dp).size(width = 182.dp, height = 57.dp).semantics { heading() },
-                )
-                FromLine(podcast, palette, fonts, Modifier.padding(start = 140.dp, top = 82.dp, end = 14.dp))
-                if (description.text.isNotEmpty()) CaseNotes(description, fonts, Modifier.padding(start = 14.dp, end = 14.dp, top = 130.dp, bottom = 10.dp))
-            }
+        Box(Modifier.fillMaxWidth()) {
+            EvidenceBoard(clues, stringResource(R.string.conspiracy_wordmark_description), palette, fonts)
+            PublisherLine(podcast, palette, fonts, Modifier.align(Alignment.BottomCenter))
         }
-        // The locked-feed notice and recommended shows open below the file, on the page.
+        if (description.text.isNotEmpty()) {
+            Text(
+                description.text,
+                style = brandedSansStyle(14.5.sp, 21.sp),
+                color = palette.textMuted,
+                textAlign = TextAlign.Center,
+                maxLines = if (description.expanded) Int.MAX_VALUE else 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .padding(start = 28.dp, end = 28.dp, top = 8.dp)
+                    .fillMaxWidth()
+                    .animateContentSize(spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow))
+                    .expressiveClickable(shape = RoundedCornerShape(8.dp)) { description.onToggle() },
+            )
+        }
         Column(Modifier.padding(horizontal = 16.dp)) { BrandedDescriptionExtras(description) }
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(if (description.text.isNotEmpty()) 18.dp else 14.dp))
         chips()
     }
 }
 
-/** A paper tab with its label typed in spaced capitals. */
+/** The publisher typed in spaced capitals, the © beside it. */
 @Composable
-internal fun PaperTab(label: String, fonts: ConspiracyFonts, modifier: Modifier, grain: Boolean = false) {
-    Box(modifier.clip(TabShape), contentAlignment = Alignment.Center) {
-        Image(
-            painterResource(if (grain) R.drawable.conspiracy_paper_grain else R.drawable.conspiracy_paper),
-            null,
-            Modifier.matchParentSize(),
-            contentScale = ContentScale.Crop,
-        )
-        Text(
-            label.uppercase(Locale.getDefault()),
-            style = brandedTextStyle(fonts.courier, 11.sp, 13.sp, letterSpacing = 1.5.sp).copy(fontWeight = FontWeight.Bold),
-            color = ConspiracyColors.Ink,
-            maxLines = 1,
-        )
-    }
-}
-
-/** The cover as a photo clipped to the file: a white-bordered print, tilted, with a paperclip. */
-@Composable
-private fun ClippedCover(podcast: Podcast, palette: ConspiracyPalette) {
-    Box(
-        Modifier
-            .offset(x = 18.dp, y = 16.dp)
-            .size(104.dp)
-            .rotate(-3f)
-            .boxShadow(fill = ConspiracyColors.Polaroid, color = palette.polaroidShadow, offsetY = 6.dp, blur = 14.dp, cornerRadius = 0.dp)
-            .padding(4.dp),
+private fun PublisherLine(podcast: Podcast, palette: ConspiracyPalette, fonts: ConspiracyFonts, modifier: Modifier) {
+    Row(
+        modifier.padding(horizontal = 28.dp).height(26.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        OptimizedImage(
-            url = podcast.imageUrl,
-            fallbackUrls = listOf(podcast.fallbackImageUrl, podcast.latestEpisode?.imageUrl),
-            proxyWidth = 300,
-            contentDescription = podcast.title,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.size(96.dp),
+        Text(
+            podcast.artist.uppercase(Locale.getDefault()),
+            style = brandedTextStyle(fonts.courier, 11.sp, 14.sp, letterSpacing = 1.6.sp).copy(fontWeight = FontWeight.Bold),
+            color = palette.textMuted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            // A long name gives way, so the © keeps its place at the end.
+            modifier = Modifier.weight(1f, fill = false),
         )
-    }
-    Image(
-        painter = painterResource(R.drawable.conspiracy_paperclip),
-        contentDescription = null,
-        modifier = Modifier.offset(x = 34.dp, y = 2.dp).size(width = 18.dp, height = 44.dp).rotate(-3f),
-    )
-}
-
-/** "From" over the publisher, typed, with the © hanging just below the line. */
-@Composable
-private fun FromLine(podcast: Podcast, palette: ConspiracyPalette, fonts: ConspiracyFonts, modifier: Modifier) {
-    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-        Column(Modifier.weight(1f, fill = false)) {
-            Text(
-                stringResource(R.string.conspiracy_from).uppercase(Locale.getDefault()),
-                style = brandedTextStyle(fonts.courier, 10.sp, 12.sp, letterSpacing = 1.6.sp).copy(fontWeight = FontWeight.Bold),
-                color = ConspiracyColors.FromLabel,
-            )
-            Text(
-                podcast.artist,
-                style = brandedTextStyle(fonts.typewriter, 15.sp, 19.sp),
-                color = ConspiracyColors.Ink,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Spacer(Modifier.width(2.dp))
         BrandedCopyrightButton(palette.copyright, stringResource(R.string.conspiracy_copyright))
     }
-}
-
-/** The description typed on a lighter strip; tapping it opens the full text. */
-@Composable
-private fun CaseNotes(description: BrandedDescription, fonts: ConspiracyFonts, modifier: Modifier) {
-    Box(
-        modifier
-            .fillMaxWidth()
-            .boxShadow(fill = ConspiracyColors.Strip, color = StripShadow, offsetY = 1.dp, blur = 2.dp, cornerRadius = 2.dp)
-            .clip(RoundedCornerShape(2.dp))
-            .animateContentSize(spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow))
-            .expressiveClickable(shape = RoundedCornerShape(2.dp)) { description.onToggle() }
-            .padding(horizontal = 10.dp, vertical = 7.dp),
-    ) {
-        Text(
-            description.text,
-            style = brandedTextStyle(fonts.courier, 12.5.sp, 17.sp),
-            color = ConspiracyColors.StripText,
-            maxLines = if (description.expanded) Int.MAX_VALUE else 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-private val StripShadow = Color(0x33000000)
-
-/** The tag: a mustard label stuck on at a slight angle, with boxlore's mark in the stamp's red. */
-@Composable
-internal fun ConspiracyTag(modifier: Modifier) {
-    val palette = conspiracyPalette()
-    BrandedTag(
-        BrandedTagStyle(
-            fill = ConspiracyColors.Mustard,
-            mark = ConspiracyColors.Stamp,
-            text = ConspiracyColors.Ink,
-            textStyle = brandedSansStyle(14.sp, 16.sp, weight = 600),
-            corner = 2.dp,
-            markHeight = 15.dp,
-            shadow = BrandedTagShadow(palette.tagShadow, offsetY = 3.dp, blur = 8.dp),
-        ),
-        modifier.rotate(-2f),
-    )
 }

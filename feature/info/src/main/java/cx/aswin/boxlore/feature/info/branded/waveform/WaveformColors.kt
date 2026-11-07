@@ -35,7 +35,6 @@ internal object WaveformColors {
     val CardBorder = Color(0xFF1E1E1E)
     val CardControl = Color(0xFF1C1C1C)
     val Placeholder = Color(0xFF1A1A1A)
-    val TagBorder = Color(0xFF2E2E2E)
     val NavigationBorder = Color(0xFF222222)
     val NavigationText = Color(0xFFCFCFCF)
 

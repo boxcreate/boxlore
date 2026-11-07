@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.info.components
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
@@ -74,7 +75,7 @@ internal data class PodcastEpisodeActionsCallbacks(
 )
 
 @Composable
-internal fun PodcastEpisodeActions(state: PodcastEpisodeActionsState, callbacks: PodcastEpisodeActionsCallbacks, accentColor: Color) {
+internal fun PodcastEpisodeActions(state: PodcastEpisodeActionsState, callbacks: PodcastEpisodeActionsCallbacks, accentColor: Color, playBorder: BorderStroke? = null) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
         Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
             PodcastEpisodeToggle(
@@ -98,7 +99,7 @@ internal fun PodcastEpisodeActions(state: PodcastEpisodeActionsState, callbacks:
                 onClick = callbacks.onQueue,
             )
         }
-        PodcastEpisodePlayButton(state, callbacks.onPlay, accentColor, Modifier.weight(1f))
+        PodcastEpisodePlayButton(state, callbacks.onPlay, accentColor, playBorder, Modifier.weight(1f))
     }
 }
 
@@ -146,7 +147,7 @@ private fun PodcastEpisodeToggle(active: Boolean, icon: ImageVector, label: Stri
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun PodcastEpisodePlayButton(state: PodcastEpisodeActionsState, onClick: () -> Unit, accentColor: Color, modifier: Modifier) {
+private fun PodcastEpisodePlayButton(state: PodcastEpisodeActionsState, onClick: () -> Unit, accentColor: Color, border: BorderStroke?, modifier: Modifier) {
     val label = stringResource(
         when {
             state.isPlaying -> R.string.episode_info_pause
@@ -167,6 +168,7 @@ private fun PodcastEpisodePlayButton(state: PodcastEpisodeActionsState, onClick:
             ),
             // The page accent is the theme's primary, so its paired foreground is contrast-checked with it.
             colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = contentColorFor(accentColor)),
+            border = border,
             contentPadding = PaddingValues(horizontal = 8.dp),
             modifier = Modifier.fillMaxWidth().height(48.dp).semantics { contentDescription = label },
         ) {
