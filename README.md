@@ -79,6 +79,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>Tapping a link no app on your phone can open, like a host's page or a funding link, now says so instead of closing boxlore.</li>
 <li>Playback controls on the lock screen, in notifications and in Samsung's Now Bar show rewind, play and forward in that order, even when nothing is queued next, with a Next episode button beside them when there is.</li>
 <li>Fixed a crash that could close boxlore in the background while the player notification loaded an episode's artwork.</li>
+<li>Echo's occasional question about how likely you are to recommend boxlore reaches listeners it had been skipping since the last update. It can now also ask when you come back within a few hours of finishing an episode.</li>
 </ul>
 <!-- release-upcoming:end -->
 
