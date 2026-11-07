@@ -132,6 +132,11 @@ internal object StoryEchoStage {
  * Echo on the story frame. Arriving from another card ([from] is that card's box) it plays its hop
  * clip through, moving to the new spot only while airborne, then plays the card's act and rests with
  * live eyes; on the first card it acts straight away. [clock] is the card's clock.
+ *
+ * The hop and the act are two Echoes, each in its own frame: their clips frame Echo at different
+ * scales, and one player switching clips would show the hop's last frame at the act's scale and fade
+ * it out over the act. The act's Echo loads its first frame while the hop plays, hidden, and fades in
+ * over the landed hop ([StoryEchoHandoff]); the hop's Echo stays, paused and hidden, between hops.
  */
 @Composable
 internal fun StoryEcho(
@@ -143,38 +148,72 @@ internal fun StoryEcho(
     modifier: Modifier = Modifier,
 ) {
     val from = moment.from
-    // Read through derivedStateOf: Echo changes once, when the hop ends, not on every frame of the card's clock.
-    val hopping by remember(from, clock) { derivedStateOf { from != null && !clock.motionOff && clock.elapsed < StoryMotion.HOP_PHASE_MS } }
-    val sequence = if (hopping) StoryEchoStage.HOP else cast.sequence
-    val target = StoryEchoStage.square(spec, sequence, cast.box) ?: return
-    val start = from?.let { StoryEchoStage.square(spec, sequence, it) }
-    Box(
-        modifier
-            .offset(target.left.dp, target.top.dp)
-            // Echo's frame is often bigger than the story frame's width (its clips reach far): lay it out whole.
-            .wrapContentSize(Alignment.TopStart, unbounded = true)
-            .size(target.side.dp)
-            .graphicsLayer {
-                if (start == null || !hopping) return@graphicsLayer
+    val hops = from != null && !clock.motionOff
+    // Read through derivedStateOf: these change once a card, not on every frame of its clock.
+    val hopShown by remember(from, clock) { derivedStateOf { hops && StoryEchoHandoff.hopShown(clock.elapsed) } }
+    val act = StoryEchoStage.square(spec, cast.sequence, cast.box) ?: return
+    val hopTarget = StoryEchoStage.square(spec, StoryEchoStage.HOP, cast.box)
+    val hopStart = from?.let { StoryEchoStage.square(spec, StoryEchoStage.HOP, it) }
+    if (hopTarget != null) {
+        EchoFrame(
+            hopTarget,
+            modifier.graphicsLayer {
+                alpha = if (hops && StoryEchoHandoff.hopShown(clock.elapsed)) 1f else 0f
+                if (hopStart == null || !hops) return@graphicsLayer
                 val p = clock.at(StoryMotion.HOP_TAKEOFF_MS, StoryMotion.HOP_LAND_MS - StoryMotion.HOP_TAKEOFF_MS, StoryMotion.Standard)
-                val side = start.side + (target.side - start.side) * p
+                val side = hopStart.side + (hopTarget.side - hopStart.side) * p
                 transformOrigin = TransformOrigin(0f, 0f)
-                translationX = (start.left + (target.left - start.left) * p - target.left).dp.toPx()
-                translationY = (start.top + (target.top - start.top) * p - target.top).dp.toPx()
-                scaleX = side / target.side
-                scaleY = side / target.side
+                translationX = (hopStart.left + (hopTarget.left - hopStart.left) * p - hopTarget.left).dp.toPx()
+                translationY = (hopStart.top + (hopTarget.top - hopStart.top) * p - hopTarget.top).dp.toPx()
+                scaleX = side / hopTarget.side
+                scaleY = side / hopTarget.side
             },
-    ) {
+        ) {
+            EchoCharacter(
+                sequence = StoryEchoStage.HOP,
+                modifier = Modifier.fillMaxSize(),
+                playbackKey = moment.playKey,
+                // Between hops it rests where it landed, its clock stopped.
+                paused = moment.paused || !hopShown,
+                accents = cast.accents,
+            )
+        }
+    }
+    EchoFrame(act, modifier.graphicsLayer { alpha = if (hops) StoryEchoHandoff.actAlpha(clock.elapsed) else 1f }) {
         EchoCharacter(
-            sequence = sequence,
+            sequence = cast.sequence,
             modifier = Modifier.fillMaxSize(),
-            playbackKey = moment.playKey to hopping,
+            playbackKey = moment.playKey,
             paused = moment.paused,
+            // After a hop the act starts as the hop ends; until then it shows (hidden) its first frame, decoded ahead.
+            startDelayMillis = if (hops) StoryMotion.HOP_PHASE_MS else 0L,
             idle = cast.idle,
             prefetch = prefetch,
             accents = cast.accents,
         )
     }
+}
+
+/** Echo's square [frame] on the story frame, laid out whole even where it reaches past the frame's edges. */
+@Composable
+private fun EchoFrame(frame: StoryEchoSquare, modifier: Modifier, content: @Composable () -> Unit) {
+    Box(
+        Modifier
+            .offset(frame.left.dp, frame.top.dp)
+            // Echo's frame is often bigger than the story frame's width (its clips reach far): lay it out whole.
+            .wrapContentSize(Alignment.TopStart, unbounded = true)
+            .size(frame.side.dp)
+            .then(modifier),
+    ) { content() }
+}
+
+/** When each Echo shows on a card Echo hopped onto, [elapsed] milliseconds in. */
+internal object StoryEchoHandoff {
+    /** The hop's Echo: from the card's start until the act has faded in over it. */
+    fun hopShown(elapsed: Long): Boolean = elapsed < StoryMotion.HOP_PHASE_MS + StoryMotion.HANDOFF_MS
+
+    /** The act's Echo: hidden through the hop, then fading in over [StoryMotion.HANDOFF_MS] as the hop ends. */
+    fun actAlpha(elapsed: Long): Float = ((elapsed - StoryMotion.HOP_PHASE_MS).toFloat() / StoryMotion.HANDOFF_MS).coerceIn(0f, 1f)
 }
 
 /**

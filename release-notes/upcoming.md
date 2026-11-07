@@ -28,4 +28,5 @@ Announcement title:
 
 ## Fixed
 
+- Your monthly story with Echo opens again from Listening history instead of closing the app. Echo now lands smoothly between cards, the story fills the status and navigation bars, and its card's title no longer runs under the show covers.
 - Playback controls on the lock screen, in notifications and in Samsung's Now Bar show rewind, play and forward in that order, even when nothing is queued next, with a Next episode button beside them when there is.
