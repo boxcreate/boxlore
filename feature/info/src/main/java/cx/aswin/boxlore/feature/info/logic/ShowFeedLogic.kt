@@ -102,6 +102,13 @@ internal object ShowFeedLogic {
         artist = podcast.artist,
     )
 
+    /**
+     * Whether a range selection reads the whole show once the archive read is done: always from the
+     * server's list ([readsFeed] false, the page fell back), and from the feed copy only when it holds
+     * the whole archive.
+     */
+    fun selectionReadsWholeShow(readsFeed: Boolean, archiveComplete: Boolean): Boolean = !readsFeed || archiveComplete
+
     enum class ArchiveAction { SEARCH, SORT_OLDEST, SELECT_RANGE, LOAD_MORE }
 
     private const val SERIAL = "serial"

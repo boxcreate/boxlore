@@ -8,6 +8,7 @@ import cx.aswin.boxlore.feature.info.PodcastInfoPageState.Companion.pageSizeFor
 import cx.aswin.boxlore.feature.info.PodcastInfoPageState.Companion.sortParamFor
 import cx.aswin.boxlore.feature.info.logic.ShowFeedLogic
 import cx.aswin.boxlore.feature.info.logic.podcastSearchResponseIsCurrent
+import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -233,7 +234,14 @@ internal class PodcastInfoEpisodePaging(
         val feedId = pageState.currentPodcastId
         val state = uiState.value as? PodcastInfoUiState.Success
         val needsArchive = ShowFeedLogic.needsArchive(feedFirst.archiveComplete, ShowFeedLogic.ArchiveAction.SELECT_RANGE)
-        if (state != null && needsArchive && feedFirst.readsFeed(feedId)) feedFirst.completeArchive(scope, state.podcast)
+        if (state != null && needsArchive && feedFirst.readsFeed(feedId)) {
+            feedFirst.completeArchive(scope, state.podcast)
+            // Offline, or the read failed: the copy still holds only the newest items, so the window
+            // would be part of the show. Fail instead; a page that fell back pages the server's list.
+            if (!ShowFeedLogic.selectionReadsWholeShow(feedFirst.readsFeed(feedId), feedFirst.archiveComplete)) {
+                throw IOException("The show's feed could not be read in full")
+            }
+        }
         return loadPodcastEpisodeSelectionWindow(uiState.value as? PodcastInfoUiState.Success, sort) { limit, offset, sortParam ->
             repository.getShowPageEpisodes(feedId = feedId, limit = limit, offset = offset, sort = sortParam)
         }
