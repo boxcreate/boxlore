@@ -43,6 +43,14 @@ private fun Window.fillScreen() {
         setFitInsetsSides(0)
         layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
     }
+    // Without this flag the system paints its own opaque (black) bars over the window: with it and
+    // clear bar colours, the card's colour shows under the status bar and behind the navigation pill.
+    addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+    clearFlags(
+        WindowManager.LayoutParams.FLAG_DIM_BEHIND or
+            WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS or
+            WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION,
+    )
     setDimAmount(0f)
     statusBarColor = android.graphics.Color.TRANSPARENT
     navigationBarColor = android.graphics.Color.TRANSPARENT

@@ -92,6 +92,26 @@ internal object StoryEchoStage {
         return StoryEchoSquare(left, top, side)
     }
 
+    /**
+     * How tall the landed hop's Echo stands beside the act's at rest, as a scale for the act (the hop's
+     * clip is framed with room to jump, so its Echo lands a little smaller): the act grows in from this.
+     */
+    fun handoffScale(spec: EchoCharacterSpec, cast: StoryEchoCast): Float {
+        val hop = square(spec, HOP, cast.box) ?: return 1f
+        val act = square(spec, cast.sequence, cast.box) ?: return 1f
+        val hopRest = restReach(spec, HOP) ?: return 1f
+        val actRest = restReach(spec, cast.sequence) ?: return 1f
+        val ratio = (hopRest.bottom - hopRest.top) * hop.side / ((actRest.bottom - actRest.top) * act.side)
+        return ratio.coerceIn(MIN_HANDOFF_SCALE, MAX_HANDOFF_SCALE)
+    }
+
+    /** Where the act's Echo stands in its frame (its rest outline's bottom middle), to grow from its feet. */
+    fun feet(spec: EchoCharacterSpec, sequence: String): TransformOrigin =
+        restReach(spec, sequence)?.let { TransformOrigin((it.left + it.right) / 2f, it.bottom) } ?: TransformOrigin(0.5f, 1f)
+
+    private const val MIN_HANDOFF_SCALE = 0.8f
+    private const val MAX_HANDOFF_SCALE = 1.25f
+
     /** Echo's outline at rest on its card (the act's rest pose), left to right, in frame dp; null until the manifest loads. */
     fun bounds(spec: EchoCharacterSpec, cast: StoryEchoCast): StoryEchoBounds? {
         val square = square(spec, cast.sequence, cast.box) ?: return null
@@ -152,6 +172,8 @@ internal fun StoryEcho(
     // Read through derivedStateOf: these change once a card, not on every frame of its clock.
     val hopShown by remember(from, clock) { derivedStateOf { hops && StoryEchoHandoff.hopShown(clock.elapsed) } }
     val act = StoryEchoStage.square(spec, cast.sequence, cast.box) ?: return
+    val grownFrom = remember(spec, cast) { StoryEchoStage.handoffScale(spec, cast) }
+    val feet = remember(spec, cast.sequence) { StoryEchoStage.feet(spec, cast.sequence) }
     val hopTarget = StoryEchoStage.square(spec, StoryEchoStage.HOP, cast.box)
     val hopStart = from?.let { StoryEchoStage.square(spec, StoryEchoStage.HOP, it) }
     if (hopTarget != null) {
@@ -179,7 +201,18 @@ internal fun StoryEcho(
             )
         }
     }
-    EchoFrame(act, modifier.graphicsLayer { alpha = if (hops) StoryEchoHandoff.actAlpha(clock.elapsed) else 1f }) {
+    EchoFrame(
+        act,
+        modifier.graphicsLayer {
+            if (!hops) return@graphicsLayer
+            // Fades in at the landed hop's size, then grows to its own from its feet.
+            alpha = StoryEchoHandoff.actAlpha(clock.elapsed)
+            val scale = StoryEchoHandoff.actScale(clock.elapsed, grownFrom)
+            transformOrigin = feet
+            scaleX = scale
+            scaleY = scale
+        },
+    ) {
         EchoCharacter(
             sequence = cast.sequence,
             modifier = Modifier.fillMaxSize(),
@@ -214,6 +247,15 @@ internal object StoryEchoHandoff {
 
     /** The act's Echo: hidden through the hop, then fading in over [StoryMotion.HANDOFF_MS] as the hop ends. */
     fun actAlpha(elapsed: Long): Float = ((elapsed - StoryMotion.HOP_PHASE_MS).toFloat() / StoryMotion.HANDOFF_MS).coerceIn(0f, 1f)
+
+    /**
+     * The act's Echo's scale: the landed hop's size ([from]) as it starts to fade in, easing to its own
+     * over [StoryMotion.HANDOFF_GROW_MS], so it never jumps in size.
+     */
+    fun actScale(elapsed: Long, from: Float): Float {
+        val p = ((elapsed - StoryMotion.HOP_PHASE_MS).toFloat() / StoryMotion.HANDOFF_GROW_MS).coerceIn(0f, 1f)
+        return from + (1f - from) * StoryMotion.Standard.transform(p)
+    }
 }
 
 /**
