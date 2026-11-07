@@ -225,6 +225,8 @@ class MainActivity : ComponentActivity() {
             androidx.compose.runtime.CompositionLocalProvider(
                 cx.aswin.boxlore.updates.LocalPlayUpdateAction provides { playAppUpdateHelper.startUpdate() },
                 cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout provides windowLayout,
+                // Every openUri in the app: no app to open a link shows a note instead of crashing.
+                androidx.compose.ui.platform.LocalUriHandler provides androidx.compose.runtime.remember { cx.aswin.boxlore.core.designsystem.links.SafeUriHandler(this@MainActivity) },
             ) {
             cx.aswin.boxlore.ui.TabletAlphaStartupGate(
                 pending = tabletAlphaNoticePending,

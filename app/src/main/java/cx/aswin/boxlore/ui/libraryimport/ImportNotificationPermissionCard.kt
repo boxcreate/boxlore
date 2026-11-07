@@ -38,6 +38,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.designsystem.links.startFirstAvailable
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 internal fun areAppNotificationsEnabled(context: Context): Boolean {
@@ -69,15 +70,11 @@ internal fun openAppNotificationSettings(context: Context) {
         }
         flags = Intent.FLAG_ACTIVITY_NEW_TASK
     }
-    try {
-        context.startActivity(intent)
-    } catch (_: Exception) {
-        val fallback = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-            data = Uri.fromParts("package", context.packageName, null)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-        context.startActivity(fallback)
+    val fallback = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+        data = Uri.fromParts("package", context.packageName, null)
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK
     }
+    context.startFirstAvailable(intent, fallback)
 }
 
 /** After a backup restore: shows with alerts or auto-downloads need notifications, one tap to allow them. */

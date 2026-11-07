@@ -48,6 +48,7 @@ import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedChipRowHeight
 import cx.aswin.boxlore.feature.info.branded.BrandedChipStyle
 import cx.aswin.boxlore.feature.info.branded.LocalBrandedPage
+import cx.aswin.boxlore.core.designsystem.links.openLink
 
 internal fun calculateUpdateFrequencyData(
     podcast: Podcast,
@@ -435,8 +436,8 @@ private fun openPersonLink(
     context: android.content.Context,
     person: Person,
 ) {
-    if (person.href.isNullOrBlank()) return
-    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(person.href)))
+    val href = person.href?.takeIf { it.isNotBlank() } ?: return
+    context.openLink(Uri.parse(href))
 }
 
 private fun LazyListScope.podcastIdentityChips(
@@ -486,8 +487,7 @@ private fun LazyListScope.fundingChip(
         FundingChip(
             fundingMessage = podcast.fundingMessage,
             onClick = {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(podcast.fundingUrl))
-                context.startActivity(intent)
+                podcast.fundingUrl?.let { context.openLink(Uri.parse(it)) }
             },
         )
     }

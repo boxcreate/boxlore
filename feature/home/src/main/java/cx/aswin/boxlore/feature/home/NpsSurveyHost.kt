@@ -13,6 +13,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.feature.home.components.NpsSurveySheet
+import cx.aswin.boxlore.core.designsystem.links.startFirstAvailable
 
 /**
  * Shows [controller]'s survey over Home. A decided survey is checked again as it appears: it waits while
@@ -50,9 +51,8 @@ internal fun NpsSurveyHost(controller: NpsSurveyController, isPlaying: Boolean, 
 /** boxlore's Play Store page: the Play app, or the web page when Play isn't there. */
 internal fun openPlayStorePage(context: Context) {
     val pkgName = context.packageName
-    try {
-        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$pkgName")))
-    } catch (e: android.content.ActivityNotFoundException) {
-        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$pkgName")))
-    }
+    context.startFirstAvailable(
+        Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$pkgName")),
+        Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$pkgName")),
+    )
 }

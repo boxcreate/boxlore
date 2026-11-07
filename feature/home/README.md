@@ -76,6 +76,7 @@ src/main/java/cx/aswin/boxlore/feature/home/
 ```
 
 Main Kotlin files should remain below 1000 lines; extracted Home feed, ViewModel, section-row, and logic files keep UI assembly and behavior testable.
+- The Play Store page (review prompts and the post-review sheet) opens through `:core:designsystem`'s `startFirstAvailable`: the Play app, else the web page, else nothing, never a crash.
 
 ## Dependencies
 

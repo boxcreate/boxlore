@@ -81,6 +81,7 @@ import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
 import cx.aswin.boxlore.feature.info.logic.canPromptNotificationPermission
 import cx.aswin.boxlore.feature.info.logic.resolveAutoDownloadToggleWarning
 import cx.aswin.boxlore.feature.info.logic.resolveNotificationToggleAction
+import cx.aswin.boxlore.core.designsystem.links.startFirstAvailable
 
 internal tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
@@ -666,5 +667,10 @@ internal fun openAppNotificationSettings(context: android.content.Context) {
             }
             flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
         }
-    context.startActivity(intent)
+    // Some ROMs drop the per-app notification page: fall back to the app's details, else do nothing.
+    val details = android.content.Intent(
+        android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+        android.net.Uri.fromParts("package", context.packageName, null),
+    )
+    context.startFirstAvailable(intent, details)
 }

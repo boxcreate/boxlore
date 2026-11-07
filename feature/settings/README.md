@@ -140,6 +140,7 @@ src/main/java/cx/aswin/boxlore/feature/settings/
       SupportEntryImpression.kt                  # Settings Support-entry impression
     SyncAndBackupsPage.kt
 ```
+- The app's notification settings (feedback's ask) open through `:core:designsystem`'s `startFirstAvailable`: the per-app page, else the app's details, else nothing, never a crash.
 
 ## Dependencies
 

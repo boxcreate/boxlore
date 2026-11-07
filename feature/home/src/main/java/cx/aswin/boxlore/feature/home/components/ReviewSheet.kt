@@ -21,6 +21,7 @@ import cx.aswin.boxlore.core.designsystem.components.EngagementBottomSheetScaffo
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import kotlinx.coroutines.launch
+import cx.aswin.boxlore.core.designsystem.links.startFirstAvailable
 
 /**
  * Milestone review prompt — M3 Expressive bottom sheet.
@@ -255,21 +256,10 @@ fun PostReviewSheet(
                     cx.aswin.boxlore.core.analytics.AnalyticsHelper
                         .trackStoreReviewOpened(method = "store_page", source = "post_review")
                     val pkgName = context.packageName
-                    try {
-                        context.startActivity(
-                            android.content.Intent(
-                                android.content.Intent.ACTION_VIEW,
-                                android.net.Uri.parse("market://details?id=$pkgName"),
-                            ),
-                        )
-                    } catch (e: Exception) {
-                        context.startActivity(
-                            android.content.Intent(
-                                android.content.Intent.ACTION_VIEW,
-                                android.net.Uri.parse("https://play.google.com/store/apps/details?id=$pkgName"),
-                            ),
-                        )
-                    }
+                    context.startFirstAvailable(
+                        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=$pkgName")),
+                        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://play.google.com/store/apps/details?id=$pkgName")),
+                    )
                 },
                 modifier =
                 Modifier
