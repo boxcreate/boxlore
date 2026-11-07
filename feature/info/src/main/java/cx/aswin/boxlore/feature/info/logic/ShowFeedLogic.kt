@@ -46,13 +46,14 @@ internal object ShowFeedLogic {
     fun openingStatus(opened: ShowPageFeedState): ShowFeedStatus = if (opened.cached) ShowFeedStatus.CACHED else ShowFeedStatus.NONE
 
     /**
-     * Whether an action must wait for the whole archive: in-show search, the oldest-first sort, and
-     * a page that ran past the stored newest items ([pageSize] asked, [pageCount] came back).
+     * Whether an action must wait for the whole archive: in-show search, the oldest-first sort,
+     * selecting a range of episodes (Select all / older / newer), and a page that ran past the
+     * stored newest items ([pageSize] asked, [pageCount] came back).
      */
     fun needsArchive(archiveComplete: Boolean, action: ArchiveAction, pageSize: Int = 0, pageCount: Int = 0): Boolean {
         if (archiveComplete) return false
         return when (action) {
-            ArchiveAction.SEARCH, ArchiveAction.SORT_OLDEST -> true
+            ArchiveAction.SEARCH, ArchiveAction.SORT_OLDEST, ArchiveAction.SELECT_RANGE -> true
             ArchiveAction.LOAD_MORE -> pageCount < pageSize
         }
     }
@@ -101,7 +102,7 @@ internal object ShowFeedLogic {
         artist = podcast.artist,
     )
 
-    enum class ArchiveAction { SEARCH, SORT_OLDEST, LOAD_MORE }
+    enum class ArchiveAction { SEARCH, SORT_OLDEST, SELECT_RANGE, LOAD_MORE }
 
     private const val SERIAL = "serial"
 

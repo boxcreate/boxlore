@@ -1,10 +1,13 @@
 package cx.aswin.boxlore.feature.info
 
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.testing.TestFixtures
+import java.io.IOException
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -21,38 +24,80 @@ class PodcastEpisodeSelectionWindowTest {
         currentSort = sort,
     )
 
-    @Test
-    fun `the first page comes first, then loaded episodes it doesn't list, without repeats`() = runTest {
-        val requests = mutableListOf<Pair<Int, String>>()
-        val window =
-            loadPodcastEpisodeSelectionWindow(page(listOf("e2", "e9")), sort = null) { limit, sort ->
-                requests += limit to sort
-                PodcastRepository.EpisodePage(episodes("e1", "e2", "e3"), hasMore = false)
-            }
+    /** A show of [count] episodes, newest first, served [SELECTION_PAGE_SIZE] at a time. */
+    private fun show(count: Int): List<Episode> = (count downTo 1).map { TestFixtures.episode(id = "e$it", publishedDate = it.toLong()) }
 
-        assertEquals(listOf(MAX_SELECTION_EPISODES to "newest"), requests)
-        assertEquals(listOf("e1", "e2", "e3", "e9"), window.episodes.map { it.id })
-        assertTrue(window.newestFirst)
-        assertFalse(window.isTruncated)
+    private fun served(show: List<Episode>, requests: MutableList<Int>? = null): suspend (Int, Int, String) -> PodcastRepository.EpisodePage = { limit, offset, _ ->
+        requests?.add(offset)
+        val slice = show.drop(offset).take(limit)
+        PodcastRepository.EpisodePage(slice, hasMore = offset + slice.size < show.size)
     }
 
     @Test
-    fun `the window stops at the cap and says when the show has more`() = runTest {
-        val many = (1..MAX_SELECTION_EPISODES).map { "e$it" }.toTypedArray()
+    fun `the pages come first, then loaded episodes they don't list, without repeats`() = runTest {
+        val requests = mutableListOf<Triple<Int, Int, String>>()
         val window =
-            loadPodcastEpisodeSelectionWindow(page(listOf("loaded")), sort = null) { _, _ ->
-                PodcastRepository.EpisodePage(episodes(*many), hasMore = true)
+            loadPodcastEpisodeSelectionWindow(page(listOf("e2", "e9")), sort = null) { limit, offset, sort ->
+                requests += Triple(limit, offset, sort)
+                PodcastRepository.EpisodePage(episodes("e1", "e2", "e3"), hasMore = false)
             }
 
-        assertEquals(MAX_SELECTION_EPISODES, window.episodes.size)
-        assertFalse(window.episodes.any { it.id == "loaded" })
-        assertTrue(window.isTruncated)
+        assertEquals(listOf(Triple(SELECTION_PAGE_SIZE, 0, "newest")), requests)
+        assertEquals(listOf("e1", "e2", "e3", "e9"), window.episodes.map { it.id })
+        assertTrue(window.newestFirst)
+    }
+
+    @Test
+    fun `select all reaches every episode of a long show, with no cap`() = runTest {
+        // Reported: Select all stopped at the newest 100 (and said 1,000), so older episodes stayed unselected.
+        val requests = mutableListOf<Int>()
+        val window = loadPodcastEpisodeSelectionWindow(page(listOf("e1234")), sort = null, served(show(1_234), requests))
+
+        assertEquals(1_234, window.episodes.size)
+        assertEquals("e1234", window.episodes.first().id)
+        assertEquals("e1", window.episodes.last().id)
+        assertEquals((0 until 1_234 step SELECTION_PAGE_SIZE).toList(), requests)
+    }
+
+    @Test
+    fun `episodes are in date order, oldest first when sorted so`() = runTest {
+        val oldestFirst = show(250).reversed()
+        val window = loadPodcastEpisodeSelectionWindow(page(emptyList(), EpisodeSort.OLDEST), sort = null, served(oldestFirst))
+
+        assertFalse(window.newestFirst)
+        assertEquals(oldestFirst.map(Episode::id), window.episodes.map(Episode::id))
+    }
+
+    @Test
+    fun `a source that keeps saying there is more stops once it adds nothing new`() = runTest {
+        var reads = 0
+        val window =
+            loadPodcastEpisodeSelectionWindow(page(emptyList()), sort = null) { _, _, _ ->
+                reads++
+                PodcastRepository.EpisodePage(episodes("e1", "e2"), hasMore = true)
+            }
+
+        assertEquals(listOf("e1", "e2"), window.episodes.map(Episode::id))
+        assertEquals(2, reads)
+    }
+
+    @Test
+    fun `a page that fails fails the whole window, so a part is never taken for all`() = runTest {
+        val show = show(250)
+        val failing: suspend (Int, Int, String) -> PodcastRepository.EpisodePage = { limit, offset, sort ->
+            if (offset >= SELECTION_PAGE_SIZE) throw IOException("offline")
+            served(show)(limit, offset, sort)
+        }
+
+        assertThrows(IOException::class.java) {
+            kotlinx.coroutines.runBlocking { loadPodcastEpisodeSelectionWindow(page(emptyList()), sort = null, failing) }
+        }
     }
 
     @Test
     fun `a saved sort wins over the page's current sort`() = runTest {
         val sorts = mutableListOf<String>()
-        val loadPage: suspend (Int, String) -> PodcastRepository.EpisodePage = { _, sort ->
+        val loadPage: suspend (Int, Int, String) -> PodcastRepository.EpisodePage = { _, _, sort ->
             sorts += sort
             PodcastRepository.EpisodePage(emptyList(), hasMore = false)
         }
@@ -69,12 +114,12 @@ class PodcastEpisodeSelectionWindowTest {
     fun `without a loaded page the window is empty and nothing is read`() = runTest {
         var reads = 0
         val window =
-            loadPodcastEpisodeSelectionWindow(state = null, sort = EpisodeSort.OLDEST) { _, _ ->
+            loadPodcastEpisodeSelectionWindow(state = null, sort = EpisodeSort.OLDEST) { _, _, _ ->
                 reads++
                 PodcastRepository.EpisodePage(emptyList(), hasMore = true)
             }
 
-        assertEquals(PodcastEpisodeSelectionWindow(emptyList(), newestFirst = false, isTruncated = false), window)
+        assertEquals(PodcastEpisodeSelectionWindow(emptyList(), newestFirst = false), window)
         assertEquals(0, reads)
     }
 }

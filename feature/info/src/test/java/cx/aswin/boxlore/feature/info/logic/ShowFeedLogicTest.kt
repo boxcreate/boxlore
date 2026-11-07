@@ -77,6 +77,8 @@ class ShowFeedLogicTest {
     fun `search, the oldest sort and scrolling past the stored newest wait for the archive`() {
         assertTrue(ShowFeedLogic.needsArchive(false, ShowFeedLogic.ArchiveAction.SEARCH))
         assertTrue(ShowFeedLogic.needsArchive(false, ShowFeedLogic.ArchiveAction.SORT_OLDEST))
+        assertTrue(ShowFeedLogic.needsArchive(false, ShowFeedLogic.ArchiveAction.SELECT_RANGE))
+        assertFalse(ShowFeedLogic.needsArchive(true, ShowFeedLogic.ArchiveAction.SELECT_RANGE))
         assertTrue(ShowFeedLogic.needsArchive(false, ShowFeedLogic.ArchiveAction.LOAD_MORE, pageSize = 20, pageCount = 0))
         assertFalse(ShowFeedLogic.needsArchive(false, ShowFeedLogic.ArchiveAction.LOAD_MORE, pageSize = 20, pageCount = 20))
         assertFalse(ShowFeedLogic.needsArchive(true, ShowFeedLogic.ArchiveAction.SEARCH))

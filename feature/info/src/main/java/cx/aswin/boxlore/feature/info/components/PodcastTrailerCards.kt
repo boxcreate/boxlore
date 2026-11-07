@@ -100,6 +100,7 @@ private fun SingleTrailerContent(
     modifier: Modifier,
 ) {
     val isSelected = episode.id in selection.selectedEpisodeIds
+    val selected = episodeSelectionColors()
     Surface(
         modifier =
         modifier
@@ -113,7 +114,8 @@ private fun SingleTrailerContent(
                 },
             ),
         shape = RoundedCornerShape(24.dp),
-        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+        color = if (isSelected) selected.container else MaterialTheme.colorScheme.surfaceContainerLow,
+        contentColor = if (isSelected) selected.content else MaterialTheme.colorScheme.onSurface,
         border = trailerBorder(isSelected),
     ) {
         Row(
@@ -280,7 +282,7 @@ private fun TrailerStackRow(
             modifier =
             Modifier
                 .fillMaxWidth()
-                .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
+                .background(if (isSelected) episodeSelectionColors().container else Color.Transparent)
                 .expressiveClickable(
                     shape = RoundedCornerShape(24.dp),
                     onLongClickLabel = "Select episode",

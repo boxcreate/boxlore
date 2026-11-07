@@ -224,16 +224,20 @@ internal class PodcastInfoEpisodePaging(
         return feedFirst.readsFeed(feedId) && repository.showPageSource(feedId) == ShowPageSource.FEED
     }
 
-    /** The range-selection window ([loadPodcastEpisodeSelectionWindow]) for the page's show, in [sort] or the page's sort. */
-    suspend fun selectionWindow(sort: EpisodeSort?): PodcastEpisodeSelectionWindow =
-        loadPodcastEpisodeSelectionWindow(uiState.value as? PodcastInfoUiState.Success, sort) { limit, sortParam ->
-            repository.getShowPageEpisodes(
-                feedId = pageState.currentPodcastId,
-                limit = limit,
-                offset = 0,
-                sort = sortParam,
-            )
+    /**
+     * Every episode of the page's show for range selection ([loadPodcastEpisodeSelectionWindow]), in
+     * [sort] or the page's sort. A feed-first page whose copy holds only the newest items reads the
+     * rest of the feed first, as search does, so the selection reaches the show's first episode.
+     */
+    suspend fun selectionWindow(sort: EpisodeSort?): PodcastEpisodeSelectionWindow {
+        val feedId = pageState.currentPodcastId
+        val state = uiState.value as? PodcastInfoUiState.Success
+        val needsArchive = ShowFeedLogic.needsArchive(feedFirst.archiveComplete, ShowFeedLogic.ArchiveAction.SELECT_RANGE)
+        if (state != null && needsArchive && feedFirst.readsFeed(feedId)) feedFirst.completeArchive(scope, state.podcast)
+        return loadPodcastEpisodeSelectionWindow(uiState.value as? PodcastInfoUiState.Success, sort) { limit, offset, sortParam ->
+            repository.getShowPageEpisodes(feedId = feedId, limit = limit, offset = offset, sort = sortParam)
         }
+    }
 
     private companion object {
         const val SEARCH_DEBOUNCE_MS = 500L

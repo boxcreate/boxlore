@@ -28,4 +28,5 @@ Announcement title:
 
 ## Fixed
 
+- On show pages, Select all selects every episode of the show instead of stopping at 100, and while you search it selects your search results. A selected episode on a show's own-style page now stays readable.
 - Playback controls on the lock screen, in notifications and in Samsung's Now Bar show rewind, play and forward in that order, even when nothing is queued next, with a Next episode button beside them when there is.
