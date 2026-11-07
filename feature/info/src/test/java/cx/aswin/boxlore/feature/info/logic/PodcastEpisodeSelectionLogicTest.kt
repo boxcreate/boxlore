@@ -55,7 +55,7 @@ class PodcastEpisodeSelectionLogicTest {
     }
 
     @Test
-    fun `select all replaces prior ids with complete fetched window`() {
+    fun `select all adds every episode and keeps earlier picks`() {
         val selected =
             PodcastEpisodeSelectionLogic.addRange(
                 selectedIds = setOf("hidden"),
@@ -65,7 +65,19 @@ class PodcastEpisodeSelectionLogicTest {
                 newestFirst = true,
             )
 
-        assertEquals(setOf("a", "b"), selected)
+        // An earlier pick the window doesn't hold (a search result, a hidden completed episode) stays.
+        assertEquals(setOf("hidden", "a", "b"), selected)
+    }
+
+    @Test
+    fun `while searching a range covers the results, newest first, once each`() {
+        val older = episode("older").copy(publishedDate = 10)
+        val newer = episode("newer").copy(publishedDate = 30)
+        val middle = episode("middle").copy(publishedDate = 20)
+        assertEquals(
+            listOf("newer", "middle", "older"),
+            PodcastEpisodeSelectionLogic.searchRangeEpisodes(listOf(older, newer, middle, older)).map { it.id },
+        )
     }
 
     @Test

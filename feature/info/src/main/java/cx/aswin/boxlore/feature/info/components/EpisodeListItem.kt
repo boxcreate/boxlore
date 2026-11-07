@@ -85,6 +85,7 @@ fun EpisodeListItem(
     val markPlayedClick = rememberPodcastEpisodeControlClick(onMarkPlayedClick)
     val markPlayedLabel = stringResource(if (isCompleted) R.string.episode_info_mark_unplayed else R.string.episode_info_mark_played)
     val selectLabel = stringResource(R.string.podcast_episode_select)
+    val selected = episodeSelectionColors()
     Surface(
         modifier = modifier.fillMaxWidth().expressiveClickable(
             shape = RoundedCornerShape(24.dp),
@@ -93,7 +94,8 @@ fun EpisodeListItem(
             onClick = onClick,
         ),
         shape = RoundedCornerShape(24.dp),
-        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+        color = if (isSelected) selected.container else MaterialTheme.colorScheme.surfaceContainerLow,
+        contentColor = if (isSelected) selected.content else MaterialTheme.colorScheme.onSurface,
         border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
     ) {
         Column(

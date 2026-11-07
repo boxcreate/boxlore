@@ -272,6 +272,43 @@ class PodcastInfoAdaptiveTransitionTest {
     }
 
     @Test
+    fun `select all while searching selects the results on screen and reads nothing`() {
+        var reads = 0
+        selectionWindow = {
+            reads++
+            newestWindow(50)
+        }
+        render()
+        fixture.compose.onNodeWithContentDescription("Search episodes").performClick()
+        searchField().performTextInput("Episode 1")
+        fixture.compose.onNodeWithTag(LIST_TAG).performScrollToIndex(RESULT_ROW + 1)
+        fixture.compose.onNodeWithText("Episode 10").performSemanticsAction(SemanticsActions.OnLongClick)
+        selectionCount("1")
+        fixture.compose.onNodeWithContentDescription("More selection options").performClick()
+        fixture.compose.onNodeWithText("Select all episodes").performClick()
+
+        // "Episode 1" and "Episode 10" to "Episode 19": every result, not the show's newest episodes.
+        selectionCount("11")
+        assertEquals(0, reads)
+        acrossWindowChanges { selectionCount("11") }
+        fixture.compose.onNodeWithContentDescription("Play selected episodes").performClick()
+        assertEquals((listOf(1) + (10..19)).map { "e$it" }.toSet(), playedIds().single().toSet())
+    }
+
+    @Test
+    fun `a range that cannot load leaves the selection as it was and says so`() {
+        selectionWindow = { throw java.io.IOException("offline") }
+        render()
+        fixture.compose.onNodeWithText("Episode 0").performTouchInput { longClick() }
+        fixture.compose.onNodeWithContentDescription("More selection options").performClick()
+        fixture.compose.onNodeWithText("Select all episodes").performClick()
+
+        selectionCount("1")
+        fixture.compose.onNodeWithText("Couldn’t load every episode. Check your connection and try again.").assertExists()
+        selectionActionsEnabled(true)
+    }
+
+    @Test
     fun `a full range selection is rebuilt from its ids after the page is recreated`() {
         render()
         selectAll()
@@ -294,7 +331,7 @@ class PodcastInfoAdaptiveTransitionTest {
         val oldestFirst = episodes.reversed()
         selectionWindow = { sort ->
             val ordered = if (sort == EpisodeSort.OLDEST) oldestFirst else episodes
-            PodcastEpisodeSelectionWindow(ordered.take(50), newestFirst = sort != EpisodeSort.OLDEST, isTruncated = true)
+            PodcastEpisodeSelectionWindow(ordered.take(50), newestFirst = sort != EpisodeSort.OLDEST)
         }
         uiState.value = success(episodes = oldestFirst.take(20), sort = EpisodeSort.OLDEST, isSubscribed = false)
         render()
@@ -731,7 +768,7 @@ class PodcastInfoAdaptiveTransitionTest {
     /** The local placeholder a new page model shows first: no episodes, still loading, default sort. */
     private fun placeholder() = PodcastInfoUiState.Success(podcast, emptyList(), isSubscribed = true, isLoadingMore = true)
 
-    private fun newestWindow(size: Int) = PodcastEpisodeSelectionWindow(episodes.take(size), newestFirst = true, isTruncated = false)
+    private fun newestWindow(size: Int) = PodcastEpisodeSelectionWindow(episodes.take(size), newestFirst = true)
 
     private fun searchField(): SemanticsNodeInteraction = fixture.compose.onNodeWithContentDescription("Search episodes in Curious world")
 
