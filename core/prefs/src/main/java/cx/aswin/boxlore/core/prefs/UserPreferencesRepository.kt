@@ -650,6 +650,8 @@ class UserPreferencesRepository(context: Context,) {
 
     suspend fun npsLastScore(): Int? = engagement.npsLastScore()
 
+    suspend fun lastEngagementPromptAtMs(): Long? = engagement.lastEngagementPromptAtMs()
+
     suspend fun hasNpsSurveyFired(): Boolean = engagement.hasNpsSurveyFired()
 
     suspend fun markNpsSurveyFired() = engagement.markNpsSurveyFired()

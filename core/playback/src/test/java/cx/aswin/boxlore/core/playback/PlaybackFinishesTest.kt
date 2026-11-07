@@ -9,6 +9,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -41,6 +42,7 @@ class PlaybackFinishesTest {
     fun tearDown() {
         database.close()
         PlaybackFinishes.resetForTest()
+        PlaybackFinishes.onRecorded = null
     }
 
     @Test
@@ -60,6 +62,21 @@ class PlaybackFinishesTest {
         progress.saveProgressSnapshot(snapshot(positionMs = 1_799_500L, sequence = 3L))
         assertNotNull(PlaybackFinishes.lastAtMs)
         assertTrue(database.listeningHistoryDao().getHistoryItem(ID)!!.finishedAt == first)
+    }
+
+    @Test
+    fun everyFinishIsHandedOnToBeKeptAcrossRestarts() = runTest(testDispatcher) {
+        // Regression: the finish lived in memory only, so closing boxlore after an episode lost the
+        // moment the NPS survey waits for.
+        val kept = mutableListOf<Long>()
+        PlaybackFinishes.onRecorded = { kept += it }
+        database.listeningHistoryDao().upsert(history())
+        val progress = progressCoordinator()
+
+        progress.saveProgressSnapshot(snapshot(positionMs = 60_000L, sequence = 1L))
+        assertTrue("progress mid-episode hands nothing on", kept.isEmpty())
+        progress.saveProgressSnapshot(snapshot(positionMs = 1_799_000L, sequence = 2L))
+        assertEquals(listOf(PlaybackFinishes.lastAtMs), kept)
     }
 
     private fun progressCoordinator() = PlaybackProgressCoordinator(

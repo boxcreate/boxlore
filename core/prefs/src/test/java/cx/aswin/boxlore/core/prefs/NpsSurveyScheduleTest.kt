@@ -9,7 +9,6 @@ import org.junit.Test
 class NpsSurveyScheduleTest {
     private val day = 24L * 60 * 60 * 1000
     private val now = 1_800_000_000_000L
-    private val processStart = now - 30 * 60 * 1000
 
     private fun moment(
         finished: Int = 3,
@@ -24,7 +23,6 @@ class NpsSurveyScheduleTest {
         installedAtMs = installedAt,
         finishedSinceInstall = finished,
         lastFinishedAtMs = lastFinishedAt,
-        processStartedAtMs = processStart,
         record = NpsSurveyRecord(lastShownAtMs = lastShownAt, launches = launches),
         inQuietDays = quiet,
         cooldownElapsed = cooldown,
@@ -36,10 +34,16 @@ class NpsSurveyScheduleTest {
     }
 
     @Test
-    fun neverOnAnOpenWithoutAFinishInThisRun() {
-        // Finished before boxlore started this time: opening the app is not the moment.
-        assertFalse(NpsSurveySchedule.isDue(moment(lastFinishedAt = processStart - 1)))
+    fun neverOnAnOpenWithoutARecentFinish() {
         assertFalse(NpsSurveySchedule.isDue(moment(lastFinishedAt = null)))
+    }
+
+    @Test
+    fun aFinishBeforeARestartStillMakesTheMoment() {
+        // Regression: the moment needed a finish in this run, within 2 hours. The next episode often
+        // plays straight on and listeners close boxlore after one, so almost nobody was ever asked.
+        assertTrue(NpsSurveySchedule.isDue(moment(lastFinishedAt = now - 5 * 60 * 60 * 1000)))
+        assertTrue(NpsSurveySchedule.isFinishMoment(now - NpsSurveySchedule.FINISH_MOMENT_WINDOW_MS, now))
     }
 
     @Test
@@ -49,9 +53,8 @@ class NpsSurveyScheduleTest {
     }
 
     @Test
-    fun aFinishLongAgoInThisRunIsNotTheMoment() {
-        val longRun = moment(lastFinishedAt = now - NpsSurveySchedule.FINISH_MOMENT_WINDOW_MS - 1)
-        assertFalse(NpsSurveySchedule.isDue(longRun.copy(processStartedAtMs = now - 10 * day)))
+    fun aFinishLongerAgoThanTheWindowIsNotTheMoment() {
+        assertFalse(NpsSurveySchedule.isDue(moment(lastFinishedAt = now - NpsSurveySchedule.FINISH_MOMENT_WINDOW_MS - 1)))
     }
 
     @Test

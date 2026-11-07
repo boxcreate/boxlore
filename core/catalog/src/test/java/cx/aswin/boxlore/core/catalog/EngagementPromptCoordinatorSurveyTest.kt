@@ -21,8 +21,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The coordinator asks the NPS survey only at a finish moment in this run, with nothing playing and no
- * prompt yet this session; once it was on screen it waits 90 days, and the review prompt may follow.
+ * The coordinator asks the NPS survey only at a finish moment (kept across restarts), with nothing
+ * playing and no prompt yet this session; once it was on screen it waits 90 days, and the review
+ * prompt may follow.
  * (One story in one test: the survey's install-only store lives for the whole test run.)
  */
 @RunWith(RobolectricTestRunner::class)
@@ -37,9 +38,8 @@ class EngagementPromptCoordinatorSurveyTest {
         val prefs = UserPreferencesRepository(context)
         val store = NpsSurveyStore(context)
         val now = System.currentTimeMillis()
-        val processStart = now - 10 * 60 * 1000
         val scope = CoroutineScope(SupervisorJob())
-        val coordinator = EngagementPromptCoordinator(prefs, store, processStartedAtMs = processStart, scope = scope)
+        val coordinator = EngagementPromptCoordinator(prefs, store, scope = scope)
         suspend fun settle() = scope.coroutineContext[Job]!!.children.forEach { it.join() }
         suspend fun due(lastFinishedAt: Long?, playing: Boolean = false) =
             coordinator.shouldShowNpsSurvey(playing, installedAtMs = now - 30 * day, finishedSinceInstall = 5, lastFinishedAtMs = lastFinishedAt, nowMs = now)
@@ -49,7 +49,8 @@ class EngagementPromptCoordinatorSurveyTest {
         // A restored or older install that never showed the old survey starts with no history.
         assertNull(store.record().lastShownAtMs)
 
-        assertFalse("an open alone is not the moment", due(lastFinishedAt = processStart - 1))
+        assertFalse("an open alone is not the moment", due(lastFinishedAt = null))
+        assertFalse("nor a finish long ago", due(lastFinishedAt = now - day))
         assertFalse("never during playback", due(lastFinishedAt = now - 60_000, playing = true))
         assertTrue(due(lastFinishedAt = now - 60_000))
         assertTrue(coordinator.isFinishMoment(now - 60_000, now))
@@ -64,7 +65,12 @@ class EngagementPromptCoordinatorSurveyTest {
         assertTrue("the review prompt may follow later", prefs.hasNpsSurveyFired())
         assertEquals(9, prefs.npsLastScore())
 
-        val nextRun = EngagementPromptCoordinator(prefs, store, processStartedAtMs = now, scope = scope)
+        // A finish kept on disk is still the moment after a restart (regression: it lived in memory only).
+        coordinator.recordFinish(now - 60_000)
+        settle()
+        val nextRun = EngagementPromptCoordinator(prefs, store, scope = scope)
+        assertEquals(now - 60_000, nextRun.lastFinishedAtMs(inThisRunAtMs = null))
+        assertEquals(now + 1, nextRun.lastFinishedAtMs(inThisRunAtMs = now + 1))
         assertFalse(
             "not again within 90 days",
             nextRun.shouldShowNpsSurvey(false, now - 30 * day, 6, lastFinishedAtMs = now + 1, nowMs = now + 2),

@@ -276,6 +276,9 @@ internal class EngagementPreferences(private val dataStore: DataStore<Preference
     /** True when at least [EngagementPromptConstants.ENGAGEMENT_COOLDOWN_DAYS] have passed since the last prompt. */
     suspend fun isEngagementCooldownElapsed(): Boolean = isEngagementCooldownElapsed(dataStore.data.first())
 
+    /** When the last proactive prompt (the NPS survey or the review prompt) appeared; null when none has. */
+    suspend fun lastEngagementPromptAtMs(): Long? = dataStore.data.first()[AnalyticsKeys.ENGAGEMENT_LAST_PROMPT_AT]
+
     /** Debug: forgets the last proactive prompt, so the shared cooldown has passed. */
     suspend fun clearEngagementCooldown() {
         dataStore.edit { it.remove(AnalyticsKeys.ENGAGEMENT_LAST_PROMPT_AT) }
