@@ -25,7 +25,6 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -35,6 +34,7 @@ import cx.aswin.boxlore.feature.info.branded.BrandedSubscribeLabels
 import cx.aswin.boxlore.feature.info.branded.BrandedSubscribeMoment
 import cx.aswin.boxlore.feature.info.branded.BrandedToolbarStyle
 import cx.aswin.boxlore.feature.info.branded.MomentHaptic
+import cx.aswin.boxlore.feature.info.branded.brandedArtNow
 import cx.aswin.boxlore.feature.info.components.SubscriptionLabel
 
 /**
@@ -55,9 +55,9 @@ internal object DarknetMaskedHost : BrandedSubscribeMoment {
     @Composable
     override fun Overlay(elapsedMillis: () -> Float, labels: BrandedSubscribeLabels, style: BrandedToolbarStyle, shape: Shape, modifier: Modifier) {
         MomentHaptic(elapsedMillis, FLASH_AT)
-        val jack = ImageBitmap.imageResource(R.drawable.darknet_jack)
-        val burst = ImageBitmap.imageResource(R.drawable.darknet_burst)
-        val grain = ImageBitmap.imageResource(R.drawable.darknet_grain)
+        val jack = brandedArtNow(R.drawable.darknet_jack)
+        val burst = brandedArtNow(R.drawable.darknet_burst)
+        val grain = brandedArtNow(R.drawable.darknet_grain)
         Box(modifier.clip(shape), contentAlignment = Alignment.Center) {
             Spacer(
                 Modifier.fillMaxSize().drawWithCache {

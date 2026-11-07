@@ -7,6 +7,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -25,8 +26,21 @@ internal fun rememberBrandedArt(@DrawableRes vararg ids: Int): State<List<ImageB
     val key = ids.toList()
     val cached = key.map { BrandedArtCache.get(it) }.takeIf { pictures -> pictures.all { it != null } }?.filterNotNull()
     return produceState(initialValue = cached, key) {
-        if (value == null) value = withContext(Dispatchers.Default) { key.map { BrandedArtCache.decode(resources, it) } }
+        // A new set of pictures starts from the cache or empty, never showing the last set's.
+        value = cached
+        if (cached == null) value = withContext(Dispatchers.Default) { key.map { BrandedArtCache.decode(resources, it) } }
     }
+}
+
+/**
+ * A picture needed on the frame it first appears, such as a subscribe moment's. It comes from
+ * [BrandedArtCache] when the page has already decoded it off the main thread ([rememberBrandedArt]
+ * warms it when the page opens), and is decoded here only when it hasn't.
+ */
+@Composable
+internal fun brandedArtNow(@DrawableRes id: Int): ImageBitmap {
+    val resources = LocalContext.current.resources
+    return remember(id) { BrandedArtCache.decode(resources, id) }
 }
 
 /** Decoded page art, shared by every visit; a few pages' worth, so it stays small. */

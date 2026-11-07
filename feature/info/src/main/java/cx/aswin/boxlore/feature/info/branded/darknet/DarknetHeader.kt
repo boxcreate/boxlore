@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -117,7 +118,7 @@ internal fun DarknetHeader(podcast: Podcast, description: BrandedDescription, ch
 @Composable
 private fun HostLine(podcast: Podcast, modifier: Modifier) {
     Row(
-        modifier.padding(horizontal = 28.dp).height(26.dp),
+        modifier.padding(horizontal = 28.dp).heightIn(min = 26.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -136,6 +137,8 @@ private fun HostLine(podcast: Podcast, modifier: Modifier) {
 @Composable
 private fun InkedFlag() {
     val art by rememberBrandedArt(R.drawable.darknet_flag, R.drawable.darknet_flag_amp, R.drawable.darknet_flag_shade, R.drawable.darknet_grit)
+    // The subscribe moment's art, decoded now so a tap starts on its first frame.
+    rememberBrandedArt(R.drawable.darknet_jack, R.drawable.darknet_burst, R.drawable.darknet_grain)
     val rays by rememberRays()
     val motion = rememberInkMotion(ready = art != null && rays != null)
     val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()

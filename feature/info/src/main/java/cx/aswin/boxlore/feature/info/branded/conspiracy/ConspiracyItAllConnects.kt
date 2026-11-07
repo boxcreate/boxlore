@@ -30,7 +30,6 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -41,6 +40,7 @@ import cx.aswin.boxlore.feature.info.branded.BrandedSubscribeLabels
 import cx.aswin.boxlore.feature.info.branded.BrandedSubscribeMoment
 import cx.aswin.boxlore.feature.info.branded.BrandedToolbarStyle
 import cx.aswin.boxlore.feature.info.branded.MomentHaptic
+import cx.aswin.boxlore.feature.info.branded.brandedArtNow
 import cx.aswin.boxlore.feature.info.components.SubscriptionLabel
 
 /**
@@ -62,8 +62,8 @@ internal object ConspiracyItAllConnects : BrandedSubscribeMoment {
     override fun Overlay(elapsedMillis: () -> Float, labels: BrandedSubscribeLabels, style: BrandedToolbarStyle, shape: Shape, modifier: Modifier) {
         MomentHaptic(elapsedMillis, EYE_AT)
         val dark = LocalEffectiveDarkTheme.current
-        val paper = ImageBitmap.imageResource(if (dark) R.drawable.conspiracy_board_black else R.drawable.conspiracy_board_white)
-        val scrap = ImageBitmap.imageResource(R.drawable.conspiracy_scrap)
+        val paper = brandedArtNow(if (dark) R.drawable.conspiracy_board_black else R.drawable.conspiracy_board_white)
+        val scrap = brandedArtNow(R.drawable.conspiracy_scrap)
         Box(modifier.clip(shape), contentAlignment = Alignment.Center) {
             Spacer(
                 Modifier.fillMaxSize().drawWithCache {

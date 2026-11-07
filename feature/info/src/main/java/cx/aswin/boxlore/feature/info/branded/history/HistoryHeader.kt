@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -81,7 +82,7 @@ internal fun HistoryHeader(podcast: Podcast, feed: List<Episode>, description: B
 /** The publisher's logo with the © beside it, at the foot of the wall. */
 @Composable
 internal fun PublisherLine(modifier: Modifier) {
-    Row(modifier.height(26.dp), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier.heightIn(min = 26.dp), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
         Image(
             painterResource(R.drawable.trih_goalhanger),
             stringResource(R.string.trih_publisher_description),

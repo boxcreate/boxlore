@@ -97,7 +97,13 @@ internal object ConspiracyBoardLayout {
         return "M${a.x} ${a.y} C ${a.x + dx * 0.22f} ${low + k * 1.05f}, ${a.x + dx * 0.74f} ${low + k * 0.9f}, ${b.x} ${b.y}"
     }
 
-    /** How far right [anchor] moves on a window [width] dp wide. */
+    /**
+     * The width the board is laid out on in a window [window] dp wide: the window's own, or the
+     * design's when the window is narrower, and the board's clues then shrink to fit it.
+     */
+    fun boardWidth(window: Float): Float = maxOf(window, WIDTH)
+
+    /** How far right [anchor] moves on a board [width] dp wide. */
     fun shift(anchor: Anchor, width: Float): Float = when (anchor) {
         Anchor.CENTRE -> (width - WIDTH) / 2f
         Anchor.LEFT -> 0f

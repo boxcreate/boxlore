@@ -31,7 +31,6 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -42,6 +41,7 @@ import cx.aswin.boxlore.feature.info.branded.BrandedSubscribeMoment
 import cx.aswin.boxlore.feature.info.branded.BrandedToolbarStyle
 import cx.aswin.boxlore.feature.info.branded.LocalBrandedHeaderMotion
 import cx.aswin.boxlore.feature.info.branded.MomentHaptic
+import cx.aswin.boxlore.feature.info.branded.brandedArtNow
 import cx.aswin.boxlore.feature.info.components.SubscriptionLabel
 
 /**
@@ -80,7 +80,7 @@ internal object HistoryThroughTheAges : BrandedSubscribeMoment {
     @Composable
     override fun Overlay(elapsedMillis: () -> Float, labels: BrandedSubscribeLabels, style: BrandedToolbarStyle, shape: Shape, modifier: Modifier) {
         MomentHaptic(elapsedMillis, LIGHT_AT)
-        val velvet = ImageBitmap.imageResource(R.drawable.trih_velvet)
+        val velvet = brandedArtNow(R.drawable.trih_velvet)
         // The header's frames, newest first; the strip runs oldest to newest.
         val pictures = (LocalBrandedHeaderMotion.current?.pictures ?: emptyList()).ifEmpty { listOf(null) }.reversed()
         BoxWithConstraints(modifier.clip(shape), contentAlignment = Alignment.Center) {

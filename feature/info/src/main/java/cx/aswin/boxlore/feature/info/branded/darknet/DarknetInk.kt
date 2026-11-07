@@ -224,7 +224,14 @@ internal class FlagShade(mask: Bitmap) {
     private val maskShader = BitmapShader(mask, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
     private val matrix = Matrix()
     private val maskWidth = mask.width.toFloat()
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { blendMode = BlendMode.SOFT_LIGHT }
+
+    /** One wavelength of stripes from x 0 to 1, stretched and moved by [stripeMatrix] each frame, so the wave allocates nothing. */
+    private val stripes = LinearGradient(0f, 0f, 1f, 0f, StripeColors, StripeStops, Shader.TileMode.REPEAT)
+    private val stripeMatrix = Matrix()
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        blendMode = BlendMode.SOFT_LIGHT
+        shader = ComposeShader(maskShader, stripes, PorterDuff.Mode.SRC_IN)
+    }
 
     fun draw(canvas: android.graphics.Canvas, left: Float, top: Float, size: Float, seconds: Float, alpha: Float) {
         matrix.setScale(size / maskWidth, size / maskWidth)
@@ -232,8 +239,9 @@ internal class FlagShade(mask: Bitmap) {
         maskShader.setLocalMatrix(matrix)
         val period = size * DarknetFlagWave.WAVELENGTH / DarknetFlagWave.UNITS
         val shift = left + period * (seconds / DarknetFlagWave.PERIOD_SECONDS)
-        val stripes = LinearGradient(shift, 0f, shift + period, 0f, StripeColors, StripeStops, Shader.TileMode.REPEAT)
-        paint.shader = ComposeShader(maskShader, stripes, PorterDuff.Mode.SRC_IN)
+        stripeMatrix.setScale(period, 1f)
+        stripeMatrix.postTranslate(shift, 0f)
+        stripes.setLocalMatrix(stripeMatrix)
         paint.alpha = (alpha * 255).toInt()
         canvas.drawRect(left, top, left + size, top + size, paint)
     }

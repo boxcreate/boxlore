@@ -21,6 +21,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -71,7 +72,8 @@ import kotlinx.coroutines.withTimeoutOrNull
 internal fun GalleryWall(pictures: List<String?>, cover: String?) {
     val art by rememberBrandedArt(R.drawable.trih_velvet, R.drawable.trih_david, R.drawable.trih_churchill, R.drawable.trih_logo)
     val shown = pictures.size.coerceAtMost(HistoryWall.Frames.size)
-    val loaded = remember(pictures) { List(shown) { false }.toMutableStateList() }
+    // A frame with nothing to hang (no picture and no cover) counts as loaded, so the lights never wait for it.
+    val loaded = remember(pictures, cover) { List(shown) { (pictures[it] ?: cover) == null }.toMutableStateList() }
     val clock = rememberLightsClock(ready = art != null, loaded)
     val dark = LocalEffectiveDarkTheme.current
     val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -84,7 +86,8 @@ internal fun GalleryWall(pictures: List<String?>, cover: String?) {
             },
         )
         HistoryWall.Frames.forEachIndexed { i, frame ->
-            val picture = pictures.getOrNull(i) ?: return@forEachIndexed
+            // An episode without its own picture hangs the show's cover.
+            val picture = (if (i < shown) pictures[i] ?: cover else null) ?: return@forEachIndexed
             BronzeFrame(
                 picture = picture,
                 fallback = cover,
@@ -121,10 +124,12 @@ private fun rememberLightsClock(ready: Boolean, loaded: SnapshotStateList<Boolea
     var played by rememberSaveable { mutableStateOf(false) }
     val animate = remember { !played && ValueAnimator.areAnimatorsEnabled() }
     val clock = remember { Animatable(if (animate) 0f else HistoryWall.LIT) }
+    // The pictures can change before the lights start; the wait follows whichever are hung now.
+    val current by rememberUpdatedState(loaded)
     LaunchedEffect(ready, animate) {
         if (!ready || !animate) return@LaunchedEffect
         awaitPageSettled()
-        withTimeoutOrNull(HistoryWall.PICTURE_WAIT_MILLIS) { snapshotFlow { loaded.all { it } }.first { it } }
+        withTimeoutOrNull(HistoryWall.PICTURE_WAIT_MILLIS) { snapshotFlow { current.all { it } }.first { it } }
         played = true
         delay(HistoryWall.DARK_BEAT_MILLIS)
         clock.animateTo(HistoryWall.LIT, tween(HistoryWall.LIT.toInt(), easing = LinearEasing))

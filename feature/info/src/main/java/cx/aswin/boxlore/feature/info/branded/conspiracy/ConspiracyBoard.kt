@@ -39,13 +39,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -61,6 +60,7 @@ import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.boxShadow
+import cx.aswin.boxlore.feature.info.branded.brandedArtNow
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
 import cx.aswin.boxlore.feature.info.branded.conspiracy.ConspiracyBoardLayout.Piece
 
@@ -70,26 +70,45 @@ import cx.aswin.boxlore.feature.info.branded.conspiracy.ConspiracyBoardLayout.Pi
  * by their headlines ([boardClues]), with more peeking in from the window's edges, tied together with
  * red yarn that runs only over empty board. When the page opens the scraps drop in, the pins go in,
  * the yarn draws on and a red marker circles the newest clue; the yarn sways twice, then rests.
+ * On a window narrower than the design's board (a cover screen, a split window) the clues, pins and
+ * yarn shrink to fit it, so none is cut off at its edges; the paper still fills the window.
  */
 @Composable
 internal fun EvidenceBoard(clues: BoardClues, title: String, palette: ConspiracyPalette, fonts: ConspiracyFonts, modifier: Modifier = Modifier) {
     val clock = rememberBoardClock()
     val dark = LocalEffectiveDarkTheme.current
-    val paper = ImageBitmap.imageResource(if (dark) R.drawable.conspiracy_board_black else R.drawable.conspiracy_board_white)
+    val paper = brandedArtNow(if (dark) R.drawable.conspiracy_board_black else R.drawable.conspiracy_board_white)
     val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     BoxWithConstraints(modifier.fillMaxWidth().height((ConspiracyBoardLayout.BOTTOM - ConspiracyBoardLayout.STATUS_BAR).dp)) {
-        val width = maxWidth.value
+        val width = ConspiracyBoardLayout.boardWidth(maxWidth.value)
+        val fit = maxWidth.value / width
         Spacer(Modifier.matchParentSize().drawBehind { drawPaper(paper, statusBar, dark, palette) })
         val peeks = ConspiracyBoardLayout.Peeks
-        clues.peeks.getOrNull(0)?.let { BoardIndexCard(it, peeks[0], width, clock, fonts) }
-        clues.peeks.getOrNull(1)?.let { BoardClipping(it, peeks[1], width, clock, fonts, peek = true) }
-        clues.peeks.getOrNull(2)?.let { BoardIndexCard(it, peeks[2], width, clock, fonts) }
+        Box(Modifier.matchParentSize().fitBoard(fit)) {
+            clues.peeks.getOrNull(0)?.let { BoardIndexCard(it, peeks[0], width, clock, fonts) }
+            clues.peeks.getOrNull(1)?.let { BoardClipping(it, peeks[1], width, clock, fonts, peek = true) }
+            clues.peeks.getOrNull(2)?.let { BoardIndexCard(it, peeks[2], width, clock, fonts) }
+        }
         Spacer(Modifier.matchParentSize().drawBehind { drawTopFade(statusBar, palette.boardTopFade) })
-        BoardScrap(title, width, clock)
-        clues.clipping?.let { BoardClipping(it, ConspiracyBoardLayout.Clipping, width, clock, fonts, peek = false) }
-        clues.indexCard?.let { BoardIndexCard(it, ConspiracyBoardLayout.IndexCard, width, clock, fonts) }
-        clues.sticky?.let { BoardSticky(it, width, clock, fonts) }
-        BoardThreads(clues, width, clock, palette)
+        Box(Modifier.matchParentSize().fitBoard(fit)) {
+            BoardScrap(title, width, clock)
+            clues.clipping?.let { BoardClipping(it, ConspiracyBoardLayout.Clipping, width, clock, fonts, peek = false) }
+            clues.indexCard?.let { BoardIndexCard(it, ConspiracyBoardLayout.IndexCard, width, clock, fonts) }
+            clues.sticky?.let { BoardSticky(it, width, clock, fonts) }
+            BoardThreads(clues, width, clock, palette)
+        }
+        Spacer(Modifier.matchParentSize().drawBehind { drawBoardFade(palette.page) })
+    }
+}
+
+/** Shrinks the board's clues to [fit] of their size from its top left; at full size it adds no layer. */
+private fun Modifier.fitBoard(fit: Float): Modifier = if (fit >= 1f) {
+    this
+} else {
+    graphicsLayer {
+        scaleX = fit
+        scaleY = fit
+        transformOrigin = TransformOrigin(0f, 0f)
     }
 }
 

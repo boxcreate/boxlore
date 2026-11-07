@@ -11,10 +11,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LinearProgressIndicator
@@ -63,7 +63,7 @@ internal fun ConspiracySpotlight(spotlight: BrandedSpotlight, modifier: Modifier
     val filed = remember(episode.publishedDate) { filedDate(episode.publishedDate) }
     // The card is drawn 2dp up over its tab, so the column ends 2dp short and the list keeps its gap.
     Column(modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-        FolderTab(stringResource(R.string.conspiracy_latest_filed, filed), fonts, Modifier.size(width = 214.dp, height = 25.dp))
+        FolderTab(stringResource(R.string.conspiracy_latest_filed, filed), fonts, Modifier.widthIn(min = 214.dp).heightIn(min = 25.dp))
         val selectLabel = stringResource(R.string.podcast_episode_select)
         Box(
             Modifier
@@ -104,7 +104,7 @@ internal fun ConspiracySpotlight(spotlight: BrandedSpotlight, modifier: Modifier
     }
 }
 
-/** The folder's tab with its label typed in spaced capitals. */
+/** The folder's tab with its label typed in spaced capitals; it widens for large text, up to the card's width. */
 @Composable
 private fun FolderTab(label: String, fonts: ConspiracyFonts, modifier: Modifier) {
     Box(modifier.clip(TabShape), contentAlignment = Alignment.Center) {
@@ -114,6 +114,8 @@ private fun FolderTab(label: String, fonts: ConspiracyFonts, modifier: Modifier)
             style = brandedTextStyle(fonts.courier, 11.sp, 13.sp, letterSpacing = 1.5.sp).copy(fontWeight = FontWeight.Bold),
             color = ConspiracyColors.Ink,
             maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
         )
     }
 }
@@ -148,7 +150,7 @@ private fun Stamp(label: String, color: Color, fonts: ConspiracyFonts) {
     Box(
         Modifier
             .rotate(-4f)
-            .height(22.dp)
+            .heightIn(min = 22.dp)
             .border(2.dp, color, RoundedCornerShape(3.dp))
             .padding(horizontal = 7.dp),
         contentAlignment = Alignment.Center,

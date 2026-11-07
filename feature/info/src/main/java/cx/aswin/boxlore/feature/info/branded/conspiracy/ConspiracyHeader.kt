@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -73,7 +74,7 @@ internal fun ConspiracyHeader(podcast: Podcast, feed: List<Episode>, description
 @Composable
 private fun PublisherLine(podcast: Podcast, palette: ConspiracyPalette, fonts: ConspiracyFonts, modifier: Modifier) {
     Row(
-        modifier.padding(horizontal = 28.dp).height(26.dp),
+        modifier.padding(horizontal = 28.dp).heightIn(min = 26.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {

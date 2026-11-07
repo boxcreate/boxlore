@@ -88,6 +88,13 @@ private fun pictureAddress(url: String): String {
 }
 
 /** An episode's length as a card types it: "45 min" or "1 hr 5 min"; empty under a minute. */
+/**
+ * A Showcase card's details: when the episode came out and how long it is, or that you played it once
+ * it is finished ("2d ago · 55 min", "2d ago · Played"). [played] is the localized "Played".
+ */
+internal fun brandedDetails(age: String, durationSeconds: Int, completed: Boolean, played: String): String =
+    listOf(age, if (completed) played else brandedLength(durationSeconds)).filter(String::isNotBlank).joinToString(" · ")
+
 internal fun brandedLength(durationSeconds: Int): String {
     val hours = durationSeconds / 3600
     val minutes = (durationSeconds % 3600) / 60

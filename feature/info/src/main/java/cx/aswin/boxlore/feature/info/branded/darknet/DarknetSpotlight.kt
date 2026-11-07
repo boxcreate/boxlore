@@ -50,7 +50,7 @@ import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedEpisodeActions
 import cx.aswin.boxlore.feature.info.branded.BrandedSpotlight
 import cx.aswin.boxlore.feature.info.branded.boxShadow
-import cx.aswin.boxlore.feature.info.branded.brandedLength
+import cx.aswin.boxlore.feature.info.branded.brandedDetails
 import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
 import cx.aswin.boxlore.feature.info.components.formatEpisodeRelativeDate
@@ -124,9 +124,7 @@ internal fun DarknetSpotlight(spotlight: BrandedSpotlight, modifier: Modifier) {
                     modifier = Modifier.padding(top = 3.dp).clearAndSetSemantics { text = AnnotatedString(episode.title) },
                 )
                 Text(
-                    listOf(formatEpisodeRelativeDate(episode.publishedDate), brandedLength(episode.duration))
-                        .filter(String::isNotBlank)
-                        .joinToString(" · ")
+                    brandedDetails(formatEpisodeRelativeDate(episode.publishedDate), episode.duration, spotlight.isCompleted, stringResource(R.string.episode_info_played))
                         .uppercase(Locale.getDefault()),
                     style = brandedTextStyle(fonts.bold, 10.sp, 13.sp, letterSpacing = 1.sp),
                     color = DarknetColors.Muted,

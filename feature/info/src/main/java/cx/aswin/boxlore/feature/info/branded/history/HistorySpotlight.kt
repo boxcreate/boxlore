@@ -48,7 +48,7 @@ import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedActionColors
 import cx.aswin.boxlore.feature.info.branded.BrandedEpisodeActions
 import cx.aswin.boxlore.feature.info.branded.BrandedSpotlight
-import cx.aswin.boxlore.feature.info.branded.brandedLength
+import cx.aswin.boxlore.feature.info.branded.brandedDetails
 import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
 import cx.aswin.boxlore.feature.info.components.formatEpisodeRelativeDate
@@ -142,7 +142,7 @@ internal fun HistorySpotlight(spotlight: BrandedSpotlight, modifier: Modifier) {
                 }
                 Spacer(Modifier.weight(1f))
                 Text(
-                    listOf(formatEpisodeRelativeDate(episode.publishedDate), brandedLength(episode.duration)).filter(String::isNotBlank).joinToString(" · "),
+                    brandedDetails(formatEpisodeRelativeDate(episode.publishedDate), episode.duration, spotlight.isCompleted, stringResource(R.string.episode_info_played)),
                     style = brandedSansStyle(12.sp, 14.sp),
                     color = HistoryColors.CardText,
                     maxLines = 1,

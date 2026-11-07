@@ -26,6 +26,21 @@ import org.junit.jupiter.params.provider.ValueSource
 
 class ConspiracyPageTest {
     @Test
+    fun `on a narrow window every clue on the board stays inside it`() {
+        // Regression: below the design's 369dp (a cover screen, a split window) the centred clues ran
+        // off both edges and their headlines were cut.
+        listOf(300f, 320f, 344f, 360f, 369f, 411f, 600f, 840f).forEach { window ->
+            val board = ConspiracyBoardLayout.boardWidth(window)
+            val fit = window / board
+            listOf(ConspiracyBoardLayout.Scrap, ConspiracyBoardLayout.Clipping, ConspiracyBoardLayout.IndexCard, ConspiracyBoardLayout.Sticky).forEach { piece ->
+                val left = (piece.x + ConspiracyBoardLayout.shift(piece.anchor, board)) * fit
+                val right = left + piece.width * fit
+                assertTrue(left >= 0f && right <= window, "$piece on a ${window}dp window spans $left..$right")
+            }
+        }
+    }
+
+    @Test
     fun `Conspiracy Theories gets its evidence board page`() {
         assertSame(ConspiracyPage, brandedShowPageFor(TestFixtures.podcast(id = "9926")))
         assertSame(ConspiracyPage, brandedShowPageFor(TestFixtures.podcast(id = "x").copy(feedUrl = "https://feeds.megaphone.fm/END5064265457")))

@@ -87,7 +87,7 @@ internal fun DrawScope.drawTopFade(statusBar: Dp, colour: Color) {
     )
 }
 
-/** The yarn, the pins and the marker loop over the pieces, then the board fading into the page. */
+/** The yarn, the pins and the marker loop over the pieces. */
 @Composable
 internal fun BoardThreads(clues: BoardClues, width: Float, clock: State<Float>, palette: ConspiracyPalette) {
     val shown = remember(clues) { pinnedPieces(clues) }
@@ -123,14 +123,18 @@ internal fun BoardThreads(clues: BoardClues, width: Float, clock: State<Float>, 
                     val at = Offset((p.at.x + ConspiracyBoardLayout.shift(p.anchor, width)) * unit, (p.at.y + origin) * unit)
                     drawPin(pin, at, progress(t, p.pushAt, ConspiracyBoardLayout.PUSH_MILLIS), unit)
                 }
-                val fadeTop = (ConspiracyBoardLayout.FADE_TOP + origin) * unit
-                drawRect(
-                    Brush.verticalGradient(0f to palette.page.copy(alpha = 0f), 1f to palette.page, startY = fadeTop, endY = size.height),
-                    topLeft = Offset(0f, fadeTop),
-                    size = Size(size.width, size.height - fadeTop),
-                )
             }
         },
+    )
+}
+
+/** The board fading into the page at its foot, over everything on it. */
+internal fun DrawScope.drawBoardFade(page: Color) {
+    val fadeTop = (ConspiracyBoardLayout.FADE_TOP - ConspiracyBoardLayout.STATUS_BAR) * 1.dp.toPx()
+    drawRect(
+        Brush.verticalGradient(0f to page.copy(alpha = 0f), 1f to page, startY = fadeTop, endY = size.height),
+        topLeft = Offset(0f, fadeTop),
+        size = Size(size.width, size.height - fadeTop),
     )
 }
 
