@@ -71,6 +71,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <ul align="left">
 <li>Conspiracy Theories' show page is now an evidence board, with the latest episodes pinned up and tied together with red yarn, on white paper by day and black by night.</li>
 <li>Show pages in a show's own style carry a "The best of boxlore" seal in place of the "Made for" tag. Tap it to find out what the page is.</li>
+<li>The late-night sleep timer prompt has a new look in your theme's colours: a night sky with a turning moon, and once you pick a time it shows when playback will pause.</li>
 </ul>
 <b>🐛 Fixed:</b>
 <ul align="left">
