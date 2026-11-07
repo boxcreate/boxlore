@@ -61,6 +61,14 @@ class NpsSurveyStoreTest {
     }
 
     @Test
+    fun aFinishFromTheFutureNeverReplacesAKeptOne() = runTest {
+        // The clock stepped back between the finish and its save: the earlier real finish must stay.
+        store.recordFinish(now - 60_000, nowMs = now)
+        store.recordFinish(now + day, nowMs = now)
+        assertEquals(now - 60_000, store.record().lastFinishedAtMs)
+    }
+
+    @Test
     fun anUpdatedInstallWhoseListenerAnsweredTheOldSurveyWaitsFromTheUpdate() = runTest {
         carry(legacyShown = true, legacyAnswered = true)
         assertEquals(now, store.record().lastShownAtMs)

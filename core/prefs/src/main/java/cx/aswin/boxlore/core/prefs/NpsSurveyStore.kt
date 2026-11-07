@@ -32,11 +32,12 @@ class NpsSurveyStore internal constructor(private val dataStore: DataStore<Prefe
 
     /**
      * The player here played an episode to the end at [atMs]; keeps the latest, so the finish outlives a
-     * restart. A kept finish later than [nowMs] (the clock was set ahead, then put right) is replaced,
-     * so it can never hold the moment back.
+     * restart. A finish later than [nowMs] is never kept, and a kept one later than [nowMs] (the clock
+     * was set ahead, then put right) is replaced, so neither can hold the moment back.
      */
     suspend fun recordFinish(atMs: Long, nowMs: Long = System.currentTimeMillis()) {
         dataStore.edit { prefs ->
+            if (atMs > nowMs) return@edit
             val kept = prefs[LAST_FINISHED_AT]
             if (kept == null || atMs > kept || kept > nowMs) prefs[LAST_FINISHED_AT] = atMs
         }
