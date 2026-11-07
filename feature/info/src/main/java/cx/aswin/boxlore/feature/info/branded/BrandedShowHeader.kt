@@ -42,8 +42,10 @@ internal fun BrandedShowHeader(
         onToggle = { onDescExpandedChange(!isDescExpanded) },
         onPodcastClick = onPodcastClick,
     )
+    val feed = remember(state.episodes, page) { brandedFeed(state.episodes, keepTrailers = page.headerKeepsTrailers) }
     page.Header(
         podcast = state.podcast,
+        feed = feed,
         description = description,
         chips = {
             // Chips keep 48dp touch targets; the row takes only the drawn chips' height in the layout.

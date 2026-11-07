@@ -12,7 +12,7 @@ import cx.aswin.boxlore.feature.info.branded.BrandedCopyrightStyle
 
 /** Fingerprint: Crime Junkie's ink splatter colours on a white or near-black page, from the approved design boards. */
 internal object CrimeJunkieColors {
-    /** The splatter's magenta, violet and blue, used for the fingerprint, the tag's dot and the ink in the flashlight. */
+    /** The splatter's magenta, violet and blue, used for the fingerprint and the ink in the flashlight. */
     val SplatMagenta = Color(0xFFC719D9)
     val SplatViolet = Color(0xFF6B14C8)
     val SplatBlue = Color(0xFF2A2FB0)
@@ -36,8 +36,6 @@ internal object CrimeJunkieColors {
         toggle = Color(0xFFE8E1F5),
         navigation = Color(0xFFF0EBF8),
         navigationText = Color(0xFF2B2338),
-        tag = Color(0xFF140F1C),
-        onTag = Color.White,
         mark = R.drawable.crimejunkie_mark,
         fingerprintAlpha = 0.42f,
         copyright = copyrightStyle(
@@ -65,8 +63,6 @@ internal object CrimeJunkieColors {
         toggle = Color(0xFF2A2139),
         navigation = Color(0xFF1E1729),
         navigationText = Color(0xFFDDD6EA),
-        tag = Color(0xFFF4F1FA),
-        onTag = Color(0xFF140F1C),
         mark = R.drawable.crimejunkie_mark_dark,
         fingerprintAlpha = 0.55f,
         copyright = copyrightStyle(
@@ -122,8 +118,6 @@ internal data class CrimeJunkiePalette(
     val toggle: Color,
     val navigation: Color,
     val navigationText: Color,
-    val tag: Color,
-    val onTag: Color,
     /** The splatter mark drawn for this theme: black outlines on white, white outlines on the dark page. */
     @DrawableRes val mark: Int,
     val fingerprintAlpha: Float,

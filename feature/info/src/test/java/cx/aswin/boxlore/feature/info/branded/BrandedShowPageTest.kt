@@ -4,6 +4,7 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.testing.TestFixtures
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -68,10 +69,7 @@ class BrandedShowPageTest {
         override fun style(base: ColorScheme, dark: Boolean): BrandedPageStyle = error("unused")
 
         @Composable
-        override fun Header(podcast: Podcast, description: BrandedDescription, chips: @Composable () -> Unit, modifier: Modifier) = Unit
-
-        @Composable
-        override fun Tag(modifier: Modifier) = Unit
+        override fun Header(podcast: Podcast, feed: List<Episode>, description: BrandedDescription, chips: @Composable () -> Unit, modifier: Modifier) = Unit
 
         @Composable
         override fun Spotlight(spotlight: BrandedSpotlight, modifier: Modifier) = Unit

@@ -5,9 +5,11 @@ import cx.aswin.boxlore.feature.info.EpisodeSort
 import cx.aswin.boxlore.feature.info.logic.FeedItem
 import cx.aswin.boxlore.feature.info.logic.PodcastEpisodeSelectionLogic
 import cx.aswin.boxlore.feature.info.logic.groupEpisodes
+import java.io.File
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class BrandedSpotlightTest {
@@ -124,5 +126,22 @@ class BrandedSpotlightTest {
         val noCover = TestFixtures.podcast(id = "1", imageUrl = "").copy(fallbackImageUrl = "https://art/episode.jpg")
         assertEquals("https://art/episode.jpg", brandedShowPicture(noCover))
         assertNull(brandedShowPicture(noCover.copy(fallbackImageUrl = " ")))
+    }
+
+    @Test
+    fun `a finished episode's details say Played instead of its length`() {
+        assertEquals("2d ago · 55 min", brandedDetails("2d ago", 55 * 60, completed = false, played = "Played"))
+        assertEquals("2d ago · Played", brandedDetails("2d ago", 55 * 60, completed = true, played = "Played"))
+        assertEquals("Played", brandedDetails("", 55 * 60, completed = true, played = "Played"))
+    }
+
+    @Test
+    fun `every Showcase card says when its episode was played`() {
+        // Regression: the Darknet Diaries, Rest Is History and Serial cards never said Played.
+        val branded = File("src/main/java/cx/aswin/boxlore/feature/info/branded").takeIf(File::isDirectory)
+            ?: File("feature/info/src/main/java/cx/aswin/boxlore/feature/info/branded")
+        val cards = branded.listFiles(File::isDirectory)!!.flatMap { pack -> pack.listFiles { file -> file.name.endsWith("Spotlight.kt") }!!.toList() }
+        assertTrue(cards.size >= 10, "found ${cards.map { it.name }}")
+        assertEquals(emptyList<String>(), cards.filterNot { "isCompleted" in it.readText() }.map { it.name })
     }
 }

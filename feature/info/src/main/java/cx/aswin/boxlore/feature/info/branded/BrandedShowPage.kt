@@ -18,15 +18,17 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.PodrollItem
 import cx.aswin.boxlore.core.model.listenerShowIds
 import kotlinx.coroutines.flow.first
 
 /**
- * A show picked by boxlore, drawn in its own style. A pack owns the identity block above the chips,
- * the tag in the top bar and the latest-episode spotlight. The chips, buttons and episode list
- * keep their usual layout and take only the pack's shapes and colours.
+ * A show picked by boxlore, drawn in its own style. A pack owns the identity block above the chips
+ * and the latest-episode spotlight; every pack shares the Showcase seal in the top bar
+ * ([BrandedSeal]). The chips, buttons and episode list keep their usual layout and take only the
+ * pack's shapes and colours.
  */
 internal interface BrandedShowPage {
     val ids: BrandedShowIds
@@ -43,6 +45,9 @@ internal interface BrandedShowPage {
     /** A show whose identity is dark only keeps its dark page, status bar and navbar in light mode too. */
     val darkOnly: Boolean get() = false
 
+    /** A header that draws from the show's trailers too gets them in [Header]'s feed: Serial shows each season's trailer picture. */
+    val headerKeepsTrailers: Boolean get() = false
+
     /** Page colours, and the shapes and colours of the shared controls, for one theme. */
     fun style(base: ColorScheme, dark: Boolean): BrandedPageStyle
 
@@ -51,14 +56,11 @@ internal interface BrandedShowPage {
      * logos and copyright button; the usual [chips] row, placed as it comes (any number of chips,
      * scrolling sideways, from the page margin to the screen edge); and the [description] when it
      * [BrandedDescription.isVisible]. Tapping the description shows the full text and, as on every
-     * show page, [BrandedDescriptionExtras].
+     * show page, [BrandedDescriptionExtras]. [feed] is the show's episodes loaded so far, newest
+     * first and without trailers ([brandedFeed]) unless [headerKeepsTrailers], for a header that draws from them.
      */
     @Composable
-    fun Header(podcast: Podcast, description: BrandedDescription, chips: @Composable () -> Unit, modifier: Modifier)
-
-    /** The "Made for:" tag centred in the top bar ([BrandedTag]). */
-    @Composable
-    fun Tag(modifier: Modifier)
+    fun Header(podcast: Podcast, feed: List<Episode>, description: BrandedDescription, chips: @Composable () -> Unit, modifier: Modifier)
 
     /** The latest episode's card, with its heading. */
     @Composable
@@ -135,12 +137,20 @@ internal fun brandedShowPageFor(podcast: Podcast?, pages: List<BrandedShowPage> 
 @Immutable
 internal data class BrandedPageStyle(
     val colors: ColorScheme,
+    /** The page's popups: the © note and the seal's note open in these colours. */
+    val popup: BrandedCopyrightStyle,
     /** The bottom bar's colours while this page is open. */
     val navigationColors: ColorScheme,
     val chips: BrandedChipStyle,
     val toolbar: BrandedToolbarStyle,
     /** The release time in each episode card's details line. */
     val episodeTimeColor: Color,
+    /**
+     * The top bar's icons over a header that stays dark in a light theme, or null to use the page's
+     * own. They turn to the page's colour as the bar fills, and the status bar's icons stay light
+     * while the header is under them.
+     */
+    val headerContent: Color? = null,
 )
 
 @Immutable
@@ -193,6 +203,9 @@ internal class BrandedHeaderMotion {
 
     /** Milliseconds into the subscribe moment while it plays, otherwise null. Read it while drawing. */
     var subscribeMomentMillis: (() -> Float)? by mutableStateOf(null)
+
+    /** Pictures the header shows that the subscribe moment may reuse, newest first: The Rest Is History's frames. */
+    var pictures: List<String?> by mutableStateOf(emptyList())
 }
 
 internal val LocalBrandedHeaderMotion = staticCompositionLocalOf<BrandedHeaderMotion?> { null }

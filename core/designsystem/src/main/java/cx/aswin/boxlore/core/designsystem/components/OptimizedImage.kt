@@ -14,6 +14,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,7 +32,10 @@ import cx.aswin.boxlore.core.model.artworkUrls
 import java.io.IOException
 import kotlinx.coroutines.delay
 
-/** Ordered artwork fallback with bounded recovery; existing URL/size cache keys are retained. */
+/**
+ * Ordered artwork fallback with bounded recovery; existing URL/size cache keys are retained.
+ * [onLoaded] runs once a picture has loaded, for a page that waits for its pictures before animating.
+ */
 @Composable
 @Suppress("LongParameterList") // Retain source compatibility while adding an optional fallback chain.
 fun OptimizedImage(
@@ -45,7 +49,9 @@ fun OptimizedImage(
     fallbackUrls: List<String?> = emptyList(),
     adaptToLayout: Boolean = true,
     showLoadingPlaceholder: Boolean = true,
+    onLoaded: (() -> Unit)? = null,
 ) {
+    val loaded by rememberUpdatedState(onLoaded)
     val sources = remember(url, fallbackUrls) { artworkUrls(url, *fallbackUrls.toTypedArray()) }
     val sizing = artworkLayoutSizing(proxyWidth, modifier, adaptToLayout)
     val width = sizing.width
@@ -82,6 +88,7 @@ fun OptimizedImage(
             ArtworkAttemptImage(attempt, width, contentScale, colorFilter) { error ->
                 if (error == null) {
                     ArtworkLoadPolicy.Shared.recordSuccess(attempt.url, attempt.source, width)
+                    loaded?.invoke()
                 } else {
                     if (error is java.util.concurrent.CancellationException) return@ArtworkAttemptImage
                     if (attempt.url != attempt.source && !attempt.recovery) trackProxyFallback(attempt.source, width)

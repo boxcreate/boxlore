@@ -72,6 +72,19 @@ class BrandedPagesPhoneGoldenTest(private val show: String, private val dark: Bo
         capture("$show-tablet-${theme()}", model.first)
     }
 
+    /** A header's opening, from the page's first frame, every 50ms: lights coming on, art arriving. */
+    @Test fun headerOpening() {
+        assumeTrue("Only headers with an opening", show in Openings)
+        val (model, _) = setUp(subscribed = true)
+        render(model, settle = 0)
+        var elapsed = 0L
+        for (frame in 0L..3_000L step 50L) {
+            compose.mainClock.advanceTimeBy(frame - elapsed)
+            elapsed = frame
+            save("$show-opening-${theme()}-$frame")
+        }
+    }
+
     /** The subscribe moment from the tap, every frame, so a one-frame flash cannot hide. */
     @Test fun subscribeMoment() {
         assumeTrue("The card variants share the main page's moment", show in Moments)
@@ -91,6 +104,9 @@ class BrandedPagesPhoneGoldenTest(private val show: String, private val dark: Bo
 
     private fun fixture(): Pair<Podcast, List<Episode>> = cardVariant() ?: when (show) {
         "conspiracy" -> conspiracy()
+        "history" -> history()
+        "darknet" -> darknet()
+        "serial" -> serial()
         "waveform" -> waveform()
         "crimejunkie" -> crimeJunkie()
         "jre" -> jre(withPicture = true)
@@ -134,7 +150,12 @@ class BrandedPagesPhoneGoldenTest(private val show: String, private val dark: Bo
                         if (show == "jre-fail" && chain.request.data.toString().contains("jre-0")) {
                             ErrorResult(null, chain.request, java.io.IOException("Picture unavailable"))
                         } else {
-                            SuccessResult(BitmapDrawable(activity.resources, artwork), chain.request, DataSource.MEMORY_CACHE)
+                            // An episode's own picture when one is copied in as build/branded-fixtures/<episode id>.jpg.
+                            val address = java.net.URLDecoder.decode(chain.request.data.toString(), "UTF-8")
+                            val name = Regex("""[A-Za-z0-9-]+\.jpg""").findAll(address).lastOrNull()?.value.orEmpty()
+                            val own = File(root, "build/branded-fixtures/$name")
+                            val picture = if (name.isNotEmpty() && own.isFile && own.name != art.name) BitmapFactory.decodeFile(own.absolutePath) else artwork
+                            SuccessResult(BitmapDrawable(activity.resources, picture), chain.request, DataSource.MEMORY_CACHE)
                         }
                     },
                 )
@@ -197,17 +218,97 @@ class BrandedPagesPhoneGoldenTest(private val show: String, private val dark: Bo
             while (get(java.util.Calendar.DAY_OF_WEEK) != java.util.Calendar.WEDNESDAY) add(java.util.Calendar.DAY_OF_MONTH, -1)
         }
         val latestWednesday = calendar.timeInMillis / 1000
+        // The real feed's latest twelve; Spotify marks two other shows' episodes as trailers.
         val titles = listOf(
+            "The Donner Party Villain: How Did Lewis Keseberg Survive?" to "It’s been over 175 years since the last few surviving members of the Donner Party were rescued.",
             "Was Jack the Ripper a Freemason?" to "In 1888, Jack the Ripper stalked the streets of Whitechapel, England. Officially, he killed five women.",
-            "Winchester Mystery House: Ghosts, Legends, and Hoaxes" to "Sarah Winchester built a house with stairs to nowhere. Was she hiding from ghosts?",
-            "The Dyatlov Pass Incident" to "Nine hikers died in the Ural Mountains in 1959. What happened that night?",
-            "Did the CIA Make Up the Moon Landing?" to "Some say the footage was shot in a studio. Here is what the evidence says.",
-            "The Mothman of Point Pleasant" to "A winged creature, a collapsed bridge and a town that never forgot.",
+            "Winchester Mystery House: Ghosts, Legends, and Hoaxes" to "Sarah Winchester built a house with stairs to nowhere.",
+            "The Possessed Nuns of Loudun" to "trailer",
+            "Panic in the Streets: The War of the Worlds Radio Broadcast" to "A radio play, and a country that believed it.",
+            "Did a Psych Experiment Turn Ted Kaczynski into the Unabomber?" to "Harvard, 1959.",
+            "Did Andy Kaufman Fake His Own Death?" to "trailer",
+            "Missing Heiress: The Disappearance of Juanita Nielsen" to "Sydney, 1975.",
+            "The Chupacabra: Puerto Rico’s Vampire Cryptid" to "Livestock drained of blood.",
+            "Chuck Barris: Game Show Host and CIA Assassin?" to "He said so himself.",
         )
         val episodes = titles.mapIndexed { i, (title, notes) ->
-            episode(podcast, "conspiracy-$i", title, (55 - i * 3) * 60, latestWednesday - i * 7L * 86_400, notes)
-        } + episode(podcast, "conspiracy-trailer", "Introducing Conspiracy Theories", 2 * 60, latestWednesday - 400L * 86_400, "Welcome to the case file.")
-            .copy(episodeType = "trailer")
+            val episode = episode(podcast, "conspiracy-$i", title, (55 - i * 3) * 60, latestWednesday - i * 7L * 86_400, notes)
+            if (notes == "trailer") episode.copy(episodeType = "trailer") else episode
+        }
+        return podcast to episodes
+    }
+
+    /** Twice a week, like the show: the real feed's latest titles, numbered, each with its own picture. */
+    private fun history(): Pair<Podcast, List<Episode>> {
+        val podcast = TestFixtures.podcast(id = "1365765", title = "The Rest Is History", artist = "Goalhanger", imageUrl = ART, genre = "History")
+            .copy(
+                notificationsEnabled = true,
+                autoDownloadEnabled = true,
+                description = "Take a deep dive into History’s biggest moments with Tom Holland & Dominic Sandbrook. Explore the stories of " +
+                    "History’s most brutal rulers, deadly battles, and world-changing events.",
+            )
+        val now = System.currentTimeMillis() / 1000
+        val titles = listOf(
+            "720. Revolution in the Soviet Empire: Revenge of the Red Army (Part 2) ",
+            "719. Revolution in the Soviet Empire: The Hungarian Uprising (Part 1)",
+            "718. The Suez Crisis: Britain's Shattered Empire (Part 2)",
+            "717. The Suez Crisis: Anarchy in the Middle East (Part 1)",
+            "716. King Arthur: The Truth Behind the Legend (Part 4)",
+            "715. King Arthur: The Mysteries of Merlin (Part 3)",
+            "714. King Arthur: Lancelot and the Round Table (Part 2)",
+            "713. King Arthur: The Once & Future King (Part 1)",
+            "712. The Terror: The Fall of Robespierre (Part 6)",
+            "711. The Terror: Killing God (Part 5)",
+        )
+        val episodes = titles.mapIndexed { i, title ->
+            episode(podcast, "trih-$i", title, (71 - i) * 60, now - 86_400L - i * 3L * 86_400, "Tom and Dominic on the story.")
+                .copy(episodeNumber = 720 - i)
+        }
+        return podcast to episodes
+    }
+
+    /** Every other Tuesday, like the show: the real feed's latest, each with its own illustration. */
+    private fun darknet(): Pair<Podcast, List<Episode>> {
+        val podcast = TestFixtures.podcast(id = "577105", title = "Darknet Diaries", artist = "Jack Rhysider", imageUrl = ART, genre = "Technology")
+            .copy(
+                notificationsEnabled = true,
+                autoDownloadEnabled = true,
+                description = "Explore true stories of the dark side of the Internet with host Jack Rhysider as he takes you on a journey " +
+                    "through the chilling world of hacking, data breaches, and cyber crime.",
+            )
+        val now = System.currentTimeMillis() / 1000
+        val titles = listOf(
+            "182: Blackshades" to "What if you got infected by a friend who wanted to spy on you? This is the story of how BlackShades " +
+                "spread to more than half a million machines, and 97 people got arrested.",
+            "181: Pegasus" to "Spyware that needs no click.",
+            "180: The Hunt for the Darkweb" to "Inside the takedown of a market.",
+        )
+        val episodes = titles.mapIndexed { i, (title, notes) ->
+            episode(podcast, "darknet-$i", title, (39 + i * 7) * 60, now - 4 * 86_400L - i * 14L * 86_400, notes).copy(episodeNumber = 182 - i)
+        }
+        return podcast to episodes
+    }
+
+    /** Serial's feed as it stands: METRO's three episodes, then The Last 12 Weeks. */
+    private fun serial(): Pair<Podcast, List<Episode>> {
+        val podcast = TestFixtures.podcast(id = "745392", title = "Serial", artist = "Serial Productions & The New York Times", imageUrl = ART, genre = "News")
+            .copy(
+                notificationsEnabled = true,
+                autoDownloadEnabled = true,
+                description = "Serial Productions makes narrative podcasts that have transformed the medium. Sign up for our newsletter at " +
+                    "nytimes.com/serialnewsletter to find out about new shows, get behind the scenes stories, and see photos and videos.",
+            )
+        val now = System.currentTimeMillis() / 1000
+        val titles = listOf(
+            Triple("METRO - Heavy is the Head that Refuses to Share the Crown", 18, 3),
+            Triple("METRO - Karat and Schtick", 18, 2),
+            Triple("Special Preview: METRO with Sarah Koenig - Ep. 1", 18, 1),
+            Triple("The Last 12 Weeks - Ep. 5", 17, 5),
+        )
+        val episodes = titles.mapIndexed { i, (title, season, number) ->
+            episode(podcast, "serial-$i", title, (49 - i * 3) * 60, now - 2 * 86_400L - i * 7L * 86_400, "In New York, the competition is famously brutal.")
+                .copy(seasonNumber = season, episodeNumber = number)
+        }
         return podcast to episodes
     }
 
@@ -355,7 +456,7 @@ class BrandedPagesPhoneGoldenTest(private val show: String, private val dark: Bo
         description = notes,
     )
 
-    private fun render(model: PodcastInfoViewModel) {
+    private fun render(model: PodcastInfoViewModel, settle: Long = 3_500) {
         val activity = compose.activity
         compose.mainClock.autoAdvance = false
         compose.setContent {
@@ -366,8 +467,11 @@ class BrandedPagesPhoneGoldenTest(private val show: String, private val dark: Bo
         // The phone's status bar: 140px at 3.25x is 43dp.
         val insets = WindowInsetsCompat.Builder().setInsets(WindowInsetsCompat.Type.statusBars(), Insets.of(0, 86, 0, 0)).build()
         compose.runOnUiThread { ViewCompat.dispatchApplyWindowInsets(activity.window.decorView, insets) }
-        compose.mainClock.advanceTimeBy(2_000)
-        compose.waitForIdle()
+        // Long enough for a header's lights or intro, which wait for the page to settle, to finish.
+        if (settle > 0) {
+            compose.mainClock.advanceTimeBy(settle)
+            compose.waitForIdle()
+        }
     }
 
     private fun capture(name: String, model: PodcastInfoViewModel) {
@@ -385,7 +489,9 @@ class BrandedPagesPhoneGoldenTest(private val show: String, private val dark: Bo
     companion object {
         private const val ART = "https://images.example.invalid/art.jpg"
 
-        private val Moments = setOf("vergecast", "conspiracy", "waveform", "crimejunkie", "jre", "jre-nopic", "rottenmango", "rottenmango-long", "daily")
+        private val Openings = setOf("history", "darknet", "conspiracy", "serial")
+
+        private val Moments = setOf("vergecast", "conspiracy", "history", "darknet", "serial", "waveform", "crimejunkie", "jre", "jre-nopic", "rottenmango", "rottenmango-long", "daily")
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}-dark={1}")

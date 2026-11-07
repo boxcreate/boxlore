@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.branded.BrandedChipStyle
 import cx.aswin.boxlore.feature.info.branded.BrandedDescription
@@ -60,6 +61,7 @@ internal object CrimeJunkiePage : BrandedShowPage {
         )
         return BrandedPageStyle(
             colors = colors,
+            popup = c.copyright,
             navigationColors = colors.copy(
                 surfaceContainerHigh = c.navigation,
                 onSurfaceVariant = c.navigationText,
@@ -99,11 +101,8 @@ internal object CrimeJunkiePage : BrandedShowPage {
     }
 
     @Composable
-    override fun Header(podcast: Podcast, description: BrandedDescription, chips: @Composable () -> Unit, modifier: Modifier) =
+    override fun Header(podcast: Podcast, feed: List<Episode>, description: BrandedDescription, chips: @Composable () -> Unit, modifier: Modifier) =
         CrimeJunkieHeader(podcast, description, chips, modifier)
-
-    @Composable
-    override fun Tag(modifier: Modifier) = CrimeJunkieTag(modifier)
 
     @Composable
     override fun Spotlight(spotlight: BrandedSpotlight, modifier: Modifier) = CrimeJunkieSpotlight(spotlight, modifier)

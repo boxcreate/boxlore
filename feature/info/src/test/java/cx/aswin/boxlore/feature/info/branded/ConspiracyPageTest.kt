@@ -6,9 +6,13 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import cx.aswin.boxlore.core.testing.TestFixtures
+import cx.aswin.boxlore.feature.info.branded.conspiracy.BoardClues
+import cx.aswin.boxlore.feature.info.branded.conspiracy.ConspiracyBoardLayout
 import cx.aswin.boxlore.feature.info.branded.conspiracy.ConspiracyColors
+import cx.aswin.boxlore.feature.info.branded.conspiracy.ConspiracyItAllConnects
 import cx.aswin.boxlore.feature.info.branded.conspiracy.ConspiracyPage
-import cx.aswin.boxlore.feature.info.branded.conspiracy.ConspiracyTypedAndFiled
+import cx.aswin.boxlore.feature.info.branded.conspiracy.boardClues
+import cx.aswin.boxlore.feature.info.branded.conspiracy.boardHeadline
 import cx.aswin.boxlore.feature.info.branded.conspiracy.filedDate
 import cx.aswin.boxlore.feature.info.branded.conspiracy.typedDetails
 import java.util.Locale
@@ -22,7 +26,22 @@ import org.junit.jupiter.params.provider.ValueSource
 
 class ConspiracyPageTest {
     @Test
-    fun `Conspiracy Theories gets its case file page`() {
+    fun `on a narrow window every clue on the board stays inside it`() {
+        // Regression: below the design's 369dp (a cover screen, a split window) the centred clues ran
+        // off both edges and their headlines were cut.
+        listOf(300f, 320f, 344f, 360f, 369f, 411f, 600f, 840f).forEach { window ->
+            val board = ConspiracyBoardLayout.boardWidth(window)
+            val fit = window / board
+            listOf(ConspiracyBoardLayout.Scrap, ConspiracyBoardLayout.Clipping, ConspiracyBoardLayout.IndexCard, ConspiracyBoardLayout.Sticky).forEach { piece ->
+                val left = (piece.x + ConspiracyBoardLayout.shift(piece.anchor, board)) * fit
+                val right = left + piece.width * fit
+                assertTrue(left >= 0f && right <= window, "$piece on a ${window}dp window spans $left..$right")
+            }
+        }
+    }
+
+    @Test
+    fun `Conspiracy Theories gets its evidence board page`() {
         assertSame(ConspiracyPage, brandedShowPageFor(TestFixtures.podcast(id = "9926")))
         assertSame(ConspiracyPage, brandedShowPageFor(TestFixtures.podcast(id = "x").copy(feedUrl = "https://feeds.megaphone.fm/END5064265457")))
     }
@@ -51,11 +70,62 @@ class ConspiracyPageTest {
 
     @Test
     fun `the paper's type is readable`() {
-        assertReadable(ConspiracyColors.Ink, ConspiracyColors.Mustard)
-        assertReadable(ConspiracyColors.StripText, ConspiracyColors.Strip)
-        assertReadable(ConspiracyColors.CardText, ConspiracyColors.Mustard)
+        assertReadable(ConspiracyColors.Ink, ConspiracyColors.Manila)
+        assertReadable(ConspiracyColors.ManilaBody, ConspiracyColors.Manila)
+        assertReadable(ConspiracyColors.Ink, ConspiracyColors.ManilaToggle)
         assertReadable(ConspiracyColors.PaperYellow, ConspiracyColors.Ink)
-        assertReadable(ConspiracyColors.Stamp, ConspiracyColors.Mustard, minimum = 3f)
+        assertReadable(ConspiracyColors.Stamp, ConspiracyColors.Manila, minimum = 3f)
+        assertReadable(ConspiracyColors.ClippingInk, ConspiracyColors.Clipping)
+        assertReadable(ConspiracyColors.Ink, ConspiracyColors.IndexCard)
+        assertReadable(ConspiracyColors.Ink, ConspiracyColors.Sticky)
+        assertReadable(ConspiracyColors.OnYellow, ConspiracyColors.Yellow)
+        for (p in listOf(ConspiracyColors.Light, ConspiracyColors.Dark)) {
+            assertReadable(p.textMuted, p.page)
+            assertReadable(p.copyright.icon, p.page, minimum = 3f)
+            assertReadable(p.copyright.body, p.copyright.popup)
+            assertReadable(p.copyright.note, p.copyright.popup)
+        }
+    }
+
+    @Test
+    fun `each scrap shows the headline before the colon`() {
+        assertEquals("Priests vs. Presidents", boardHeadline("Priests vs. Presidents: Who Really Orchestrated the Plot?"))
+        assertEquals("The Donner Party Villain", boardHeadline("The Donner Party Villain: How Did Lewis Keseberg Become a Monster?"))
+        // A label before the colon gives way to what follows it.
+        assertEquals("The Year in Cover-Ups", boardHeadline("BEST OF 2025: The Year in Cover-Ups"))
+        assertEquals("Roswell", boardHeadline("Pt: Roswell"))
+        assertEquals("Was Jack the Ripper a Freemason?", boardHeadline("  Was Jack the Ripper a Freemason?  "))
+        assertEquals("Panic", boardHeadline("Panic:"))
+    }
+
+    @Test
+    fun `the board pins the newest episodes and the shortest of the next four`() {
+        val titles = listOf(
+            "The Donner Party Villain: How Did Lewis Keseberg Become a Monster?",
+            "Was Jack the Ripper a Freemason?",
+            "The Possessed Nuns of Loudun",
+            "Panic in the Streets: The 1938 War of the Worlds",
+            "Did a CIA Experiment Turn Ted Kaczynski Into the Unabomber?",
+            "The Dyatlov Pass Incident",
+            "Roswell",
+            "The Mothman of Point Pleasant",
+        )
+        val clues = boardClues(titles)
+        assertEquals("The Donner Party Villain", clues.clipping)
+        assertEquals("Was Jack the Ripper a Freemason?", clues.indexCard)
+        assertEquals("Panic in the Streets", clues.sticky)
+        assertEquals(listOf("The Possessed Nuns of Loudun", "Did a CIA Experiment Turn Ted Kaczynski Into the Unabomber?", "The Dyatlov Pass Incident"), clues.peeks)
+        // A new show fills what it can.
+        assertEquals(BoardClues("One", null, null, emptyList()), boardClues(listOf("One")))
+        assertEquals(BoardClues(null, null, null, emptyList()), boardClues(emptyList()))
+    }
+
+    @Test
+    fun `the board's intro settles and its yarn rests`() {
+        assertTrue(ConspiracyBoardLayout.MARKER_AT + ConspiracyBoardLayout.MARKER_MILLIS < ConspiracyBoardLayout.SWAY_AT + 400f)
+        assertTrue(ConspiracyBoardLayout.END <= 9_000f)
+        // Every length of yarn needs a piece that is pinned at both of its ends on the board.
+        ConspiracyBoardLayout.Yarns.forEach { yarn -> assertTrue(ConspiracyBoardLayout.Pins.any { it.holds == yarn.needs }) }
     }
 
     @Test
@@ -79,14 +149,13 @@ class ConspiracyPageTest {
     }
 
     @Test
-    fun `each strike jolts the button, then it is still`() {
-        assertEquals(0f, ConspiracyTypedAndFiled.nudge(100f).offsetY.value, 0.01f)
-        assertEquals(1.5f, ConspiracyTypedAndFiled.nudge(150f + 35f).offsetY.value, 0.05f)
-        assertEquals(1.5f, ConspiracyTypedAndFiled.nudge(525f + 35f).offsetY.value, 0.05f)
-        assertEquals(0f, ConspiracyTypedAndFiled.nudge(700f).offsetY.value, 0.01f)
-        assertTrue(ConspiracyTypedAndFiled.revealDelayMillis < ConspiracyTypedAndFiled.durationMillis)
-        // "Subscribed" finishes sliding in at 1,160ms, just before the button takes over.
-        assertTrue(ConspiracyTypedAndFiled.durationMillis >= 1_160)
+    fun `it all connects before the button settles`() {
+        val moment = ConspiracyItAllConnects
+        assertEquals(0f, moment.nudge(500f).offsetY.value, 0.01f)
+        assertTrue(moment.EYE_AT < moment.revealDelayMillis)
+        assertTrue(moment.revealDelayMillis < moment.durationMillis)
+        // Subscribed lands from 1,060ms over 180ms, by the time the button takes over.
+        assertTrue(moment.durationMillis >= 1_240)
     }
 
     private fun assertReadable(foreground: Color, background: Color, minimum: Float = 4.5f) {

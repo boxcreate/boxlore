@@ -37,6 +37,10 @@ internal data class BrandedSpotlight(
 internal fun brandedSpotlightEpisode(episodes: List<Episode>, sort: EpisodeSort, searching: Boolean, hiddenIds: Set<String> = emptySet()): Episode? =
     if (sort != EpisodeSort.NEWEST || searching) null else episodes.firstOrNull { !it.isTrailer }?.takeUnless { it.id in hiddenIds }
 
+/** The show's episodes newest first, without trailers unless [keepTrailers]: what a header may draw from the feed. */
+internal fun brandedFeed(episodes: List<Episode>, keepTrailers: Boolean = false): List<Episode> =
+    (if (keepTrailers) episodes else episodes.filterNot { it.isTrailer }).sortedByDescending { it.publishedDate }
+
 /**
  * The spotlight's list key is its episode's ID, the key that episode has in the list, so Select
  * visible counts it. The list below leaves that episode out, so the key is never used twice.
@@ -84,6 +88,13 @@ private fun pictureAddress(url: String): String {
 }
 
 /** An episode's length as a card types it: "45 min" or "1 hr 5 min"; empty under a minute. */
+/**
+ * A Showcase card's details: when the episode came out and how long it is, or that you played it once
+ * it is finished ("2d ago · 55 min", "2d ago · Played"). [played] is the localized "Played".
+ */
+internal fun brandedDetails(age: String, durationSeconds: Int, completed: Boolean, played: String): String =
+    listOf(age, if (completed) played else brandedLength(durationSeconds)).filter(String::isNotBlank).joinToString(" · ")
+
 internal fun brandedLength(durationSeconds: Int): String {
     val hours = durationSeconds / 3600
     val minutes = (durationSeconds % 3600) / 60

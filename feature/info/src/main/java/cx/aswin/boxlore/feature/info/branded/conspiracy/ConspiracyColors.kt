@@ -13,93 +13,97 @@ import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedActionColors
 import cx.aswin.boxlore.feature.info.branded.BrandedCopyrightStyle
 
-/** The case file's colours, from the approved design boards. Paper stays paper in both themes. */
+/**
+ * The evidence board's colours, from the approved design boards: white paper by day, black by night,
+ * the show's yellow only as an accent. The pinned scraps keep their paper colours in both themes.
+ */
 internal object ConspiracyColors {
-    val Mustard = Color(0xFFDEC100)
+    /** The show's yellow: Subscribe, the genre chip, switched-on alerts and the navbar's selected tab. */
+    val Yellow = Color(0xFFE8C91C)
+    val OnYellow = Color(0xFF231D02)
     val Ink = Color(0xFF2B2620)
     val PaperYellow = Color(0xFFF1D42A)
-    val FromLabel = Color(0xFF4D4100)
-    val Strip = Color(0xFFF5ECC2)
-    val StripText = Color(0xFF231D02)
-    val CardText = Color(0xFF3A3000)
     val Stamp = Color(0xFFA71F17)
-    val Polaroid = Color(0xFFF4EFE0)
-    val CopyrightOnPaper = Color(0xFF5A4D05)
 
-    /** The file's buttons: a shade of ink on the mustard paper, ink once switched on, and ink Play. */
-    val ButtonTint = Color(0xFFC5AB05)
-    val Actions = BrandedActionColors(toggle = ButtonTint, onToggle = Ink, checked = Ink, onChecked = PaperYellow, play = Ink, onPlay = PaperYellow)
+    /** The newspaper clipping, the typed index card and the sticky note pinned to the board. */
+    val Clipping = Color(0xFFF1EDDE)
+    val ClippingInk = Color(0xFF1F1C17)
+    val IndexCard = Color(0xFFFBF8F1)
+    val IndexCardRule = Color(0xFFC9483E)
+    val IndexCardLine = Color(0x40466EAA)
+    val Sticky = PaperYellow
+
+    /** The red marker circled round the newest clue. */
+    val Marker = Color(0xFFD32A1E)
+
+    /** The latest episode's manila folder: grain, buttons, notes and the typed ink. */
+    val Manila = Color(0xFFD3C39C)
+    val ManilaToggle = Color(0xFFD3C49E)
+    val ManilaBody = Color(0xFF4A4234)
+    val Actions = BrandedActionColors(toggle = ManilaToggle, onToggle = Ink, checked = Ink, onChecked = PaperYellow, play = Ink, onPlay = PaperYellow)
 
     val Dark = ConspiracyPalette(
-        page = Color(0xFF12100A),
-        text = Color(0xFFF3ECD0),
-        textMuted = Color(0xFFBDB495),
-        accent = Mustard,
-        onAccent = Ink,
-        accentOnPage = Color(0xFFE8C91C),
-        chip = Color(0xFF26221A),
-        chipText = Color(0xFFF3ECD0),
-        genreChip = Mustard,
-        onGenreChip = Ink,
-        control = Color(0xFF29251A),
-        card = Color(0xFF1D1A11),
-        cardControl = Color(0xFF2E2A1F),
-        placeholder = Color(0xFF24201A),
-        bar = Color(0xFF1D1A11),
-        divider = Color(0xFF2E2A1F),
-        navigation = Color(0xFF27231A),
-        navigationText = Color(0xFFE3DBBB),
-        tagShadow = Color(0x73000000),
-        fileShadow = Color(0x80000000),
-        polaroidShadow = Color(0x59000000),
-        cardShadow = Color(0x73000000),
+        page = Color(0xFF131210),
+        text = Color(0xFFF0ECE2),
+        textMuted = Color(0xFFB3AC9E),
+        accentOnPage = Yellow,
+        chipLine = Color(0xFF3C3832),
+        control = Color(0xFF26231F),
+        onControl = Color(0xFFEDE7DA),
+        card = Color(0xFF1E1C19),
+        cardControl = Color(0xFF2B2824),
+        placeholder = Color(0xFF221F1C),
+        bar = Color(0xFF1E1C19),
+        divider = Color(0xFF2B2824),
+        navigation = Color(0xFF1E1C19),
+        navigationText = Color(0xFFE3DDD0),
+        boardTopFade = Color(0xB30A0908),
+        yarnShadow = Color(0x99000000),
+        cardShadow = Color(0x8C000000),
         copyright = copyrightStyle(
-            popup = Color(0xFF2E2A1F),
-            title = Color(0xFFF3ECD0),
-            body = Color(0xFFD9D0AC),
-            note = Color(0xFFA69D7C),
+            icon = Color(0xFFB3AC9E),
+            popup = Color(0xFF26231F),
+            title = Color(0xFFF0ECE2),
+            body = Color(0xFFD6D0C4),
+            note = Color(0xFFA9A295),
             shadow = Color(0x8C000000),
             ring = Color.Transparent,
         ),
     )
 
     val Light = ConspiracyPalette(
-        page = Color(0xFFFBF8EC),
-        text = Ink,
-        textMuted = Color(0xFF5C5440),
-        accent = Ink,
-        onAccent = PaperYellow,
+        page = Color(0xFFF3F1EC),
+        text = Color(0xFF1E1B16),
+        textMuted = Color(0xFF57524A),
         accentOnPage = Color(0xFF7A6500),
-        chip = Color(0xFFEFE9D2),
-        chipText = Ink,
-        genreChip = Ink,
-        onGenreChip = PaperYellow,
-        control = Color(0xFFEFE9D2),
-        card = Color(0xFFF1ECD6),
-        cardControl = Color(0xFFE6DFC4),
-        placeholder = Color(0xFFE9E3CC),
-        bar = Color(0xFFF3EEDB),
-        divider = Color(0xFFE2DBC2),
-        navigation = Color(0xFFECE5CA),
-        navigationText = Color(0xFF3D3624),
-        tagShadow = Color(0x473C2D00),
-        fileShadow = Color(0x38503C00),
-        polaroidShadow = Color(0x4D000000),
-        cardShadow = Color(0x33503C00),
+        chipLine = Color(0xFFCFC8BA),
+        control = Color(0xFFE6E2D9),
+        onControl = Ink,
+        card = Color(0xFFE9E5DC),
+        cardControl = Color(0xFFDCD7CC),
+        placeholder = Color(0xFFE2DED4),
+        bar = Color(0xFFE9E5DC),
+        divider = Color(0xFFDCD7CC),
+        navigation = Color(0xFFE9E5DC),
+        navigationText = Ink,
+        boardTopFade = Color(0xB3FFFFFF),
+        yarnShadow = Color(0x52281409),
+        cardShadow = Color(0x38000000),
         copyright = copyrightStyle(
+            icon = Color(0xFF57524A),
             popup = Color.White,
-            title = Ink,
-            body = Color(0xFF3D3624),
-            note = Color(0xFF6B6248),
-            shadow = Color(0x403C2D00),
-            ring = Color(0x143C2D00),
+            title = Color(0xFF1E1B16),
+            body = Color(0xFF3D3832),
+            note = Color(0xFF6B655B),
+            shadow = Color(0x40281E0A),
+            ring = Color(0x14281E0A),
         ),
     )
 }
 
-/** The © popup: 241dp wide, its caret 194dp in under the ©; the button hangs 6dp below the "From" line. */
-private fun copyrightStyle(popup: Color, title: Color, body: Color, note: Color, shadow: Color, ring: Color) = BrandedCopyrightStyle(
-    icon = ConspiracyColors.CopyrightOnPaper,
+/** The © popup: 241dp wide, its caret 194dp in, under the © at the end of the publisher line. */
+private fun copyrightStyle(icon: Color, popup: Color, title: Color, body: Color, note: Color, shadow: Color, ring: Color) = BrandedCopyrightStyle(
+    icon = icon,
     popup = popup,
     title = title,
     body = body,
@@ -108,9 +112,10 @@ private fun copyrightStyle(popup: Color, title: Color, body: Color, note: Color,
     ring = ring,
     popupWidth = 241.dp,
     caretCentre = 194.dp,
-    gap = 6.dp,
-    overhangTop = 0.dp,
-    overhangBottom = 6.dp,
+    gap = 2.dp,
+    overhangTop = 2.dp,
+    overhangBottom = 2.dp,
+    iconSize = 15.dp,
 )
 
 /** The palette for the theme the page is drawn in. */
@@ -118,14 +123,19 @@ private fun copyrightStyle(popup: Color, title: Color, body: Color, note: Color,
 @ReadOnlyComposable
 internal fun conspiracyPalette(): ConspiracyPalette = if (LocalEffectiveDarkTheme.current) ConspiracyColors.Dark else ConspiracyColors.Light
 
-/** The show's two typewriter faces: Special Elite for typed headings, Courier Prime for case notes. */
-internal class ConspiracyFonts(val typewriter: FontFamily, val courier: FontFamily)
+/**
+ * The board's faces: Special Elite for anything typed, Courier Prime for the folder's labels and
+ * notes, Old Standard for the newspaper clipping and Caveat for the handwritten sticky note.
+ */
+internal class ConspiracyFonts(val typewriter: FontFamily, val courier: FontFamily, val newsprint: FontFamily, val handwriting: FontFamily)
 
 @Composable
 internal fun rememberConspiracyFonts(): ConspiracyFonts = remember {
     ConspiracyFonts(
         typewriter = FontFamily(Font(R.font.branded_special_elite)),
         courier = FontFamily(Font(R.font.conspiracy_courier_prime, FontWeight.Normal), Font(R.font.conspiracy_courier_prime_bold, FontWeight.Bold)),
+        newsprint = FontFamily(Font(R.font.conspiracy_old_standard_bold, FontWeight.Bold)),
+        handwriting = FontFamily(Font(R.font.conspiracy_caveat_bold, FontWeight.Bold)),
     )
 }
 
@@ -133,16 +143,12 @@ internal data class ConspiracyPalette(
     val page: Color,
     val text: Color,
     val textMuted: Color,
-    /** Filled controls: Subscribe, switched-on alerts and auto-download, the navbar's selected tab. */
-    val accent: Color,
-    val onAccent: Color,
-    /** Accent text and icons on the page itself. */
+    /** Accent text and icons on the page itself: the chips' icons and each card's release time. */
     val accentOnPage: Color,
-    val chip: Color,
-    val chipText: Color,
-    val genreChip: Color,
-    val onGenreChip: Color,
+    val chipLine: Color,
+    /** Sort, search, Subscribed and the switched-off alerts. */
     val control: Color,
+    val onControl: Color,
     val card: Color,
     /** Buttons inside episode cards, a step off the card colour. */
     val cardControl: Color,
@@ -152,9 +158,9 @@ internal data class ConspiracyPalette(
     val divider: Color,
     val navigation: Color,
     val navigationText: Color,
-    val tagShadow: Color,
-    val fileShadow: Color,
-    val polaroidShadow: Color,
+    /** The board darkens (or brightens) towards the top bar, so its icons stay clear. */
+    val boardTopFade: Color,
+    val yarnShadow: Color,
     val cardShadow: Color,
     val copyright: BrandedCopyrightStyle,
 )

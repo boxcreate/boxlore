@@ -48,15 +48,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -65,16 +69,19 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.links.startFirstAvailable
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.feature.info.DirectFeedChipState
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
 import cx.aswin.boxlore.feature.info.R
+import cx.aswin.boxlore.feature.info.branded.BrandedSeal
 import cx.aswin.boxlore.feature.info.branded.LocalBrandedPage
 import cx.aswin.boxlore.feature.info.logic.FeedItem
 import cx.aswin.boxlore.feature.info.logic.NotificationToggleAction
@@ -318,6 +325,9 @@ internal data class MissingEpisodesChip(
     val onClick: () -> Unit = {},
 )
 
+/** How a branded page dresses the top bar: the seal's fade, and its icons' colour over a dark header (null for the page's own). */
+internal data class PodcastInfoTopBarLook(val sealAlpha: Float = 0f, val iconTint: Color? = null)
+
 @Composable
 internal fun PodcastInfoTopOverlay(
     podcast: Podcast,
@@ -326,8 +336,10 @@ internal fun PodcastInfoTopOverlay(
     hideCompleted: Boolean,
     actions: PodcastInfoTopOverlayActions,
     missingEpisodesChip: MissingEpisodesChip = MissingEpisodesChip(),
-    tagAlpha: Float = 0f,
+    look: PodcastInfoTopBarLook = PodcastInfoTopBarLook(),
 ) {
+    val sealAlpha = look.sealAlpha
+    val iconTint = look.iconTint ?: MaterialTheme.colorScheme.onSurface
     val context = LocalContext.current
     Box(
         modifier =
@@ -337,9 +349,9 @@ internal fun PodcastInfoTopOverlay(
             .background(headerColor)
             .statusBarsPadding(),
     ) {
-        val brandedPage = LocalBrandedPage.current?.page
-        if (brandedPage != null && tagAlpha > 0f) {
-            brandedPage.Tag(Modifier.align(Alignment.Center).graphicsLayer { alpha = tagAlpha })
+        val brandedPage = LocalBrandedPage.current
+        if (brandedPage != null && sealAlpha > 0f) {
+            BrandedSeal(brandedPage.style.popup, Modifier.align(Alignment.Center).graphicsLayer { alpha = sealAlpha })
         }
         IconButton(
             onClick = actions.onBack,
@@ -348,7 +360,7 @@ internal fun PodcastInfoTopOverlay(
             Icon(
                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                 contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.onSurface,
+                tint = iconTint,
             )
         }
 
@@ -359,6 +371,7 @@ internal fun PodcastInfoTopOverlay(
             context = context,
             actions = actions,
             missingEpisodesChip = missingEpisodesChip,
+            iconTint = iconTint,
             modifier = Modifier.align(Alignment.CenterEnd).padding(end = 4.dp),
         )
     }
@@ -371,6 +384,7 @@ private fun PodcastInfoHeaderOverflow(
     context: android.content.Context,
     actions: PodcastInfoTopOverlayActions,
     missingEpisodesChip: MissingEpisodesChip,
+    iconTint: Color,
     modifier: Modifier = Modifier,
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -384,7 +398,7 @@ private fun PodcastInfoHeaderOverflow(
                 Icon(
                     imageVector = Icons.Rounded.Share,
                     contentDescription = "Share Podcast",
-                    tint = MaterialTheme.colorScheme.onSurface,
+                    tint = iconTint,
                 )
             }
             IconButton(
@@ -393,7 +407,7 @@ private fun PodcastInfoHeaderOverflow(
                 Icon(
                     imageVector = Icons.Rounded.MoreVert,
                     contentDescription = "More Options",
-                    tint = MaterialTheme.colorScheme.onSurface,
+                    tint = iconTint,
                 )
             }
         }
@@ -673,4 +687,21 @@ internal fun openAppNotificationSettings(context: android.content.Context) {
         android.net.Uri.fromParts("package", context.packageName, null),
     )
     context.startFirstAvailable(intent, details)
+}
+
+/**
+ * Light status bar icons while a branded page's dark header is under the status bar in a light
+ * theme ([lightIcons]); the theme's own icons once the bar fills, and again when the page leaves.
+ */
+@Composable
+internal fun BrandedHeaderStatusBar(lightIcons: Boolean) {
+    val view = LocalView.current
+    val window = (view.context as? Activity)?.window ?: return
+    val controller = WindowCompat.getInsetsController(window, view)
+    val themeLight = !LocalEffectiveDarkTheme.current
+    val restore by rememberUpdatedState(themeLight)
+    DisposableEffect(view) {
+        onDispose { controller.isAppearanceLightStatusBars = restore }
+    }
+    SideEffect { controller.isAppearanceLightStatusBars = themeLight && !lightIcons }
 }

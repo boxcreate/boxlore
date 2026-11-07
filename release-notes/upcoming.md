@@ -24,7 +24,12 @@ Announcement title:
 
 ## New
 
+- The Rest Is History, Darknet Diaries and Serial have show pages in their own style: a gallery wall hung with the latest episodes, the show's flag-bearer with the flag waving, and Serial's stack of cards dealt from its seasons. Each has its own moment when you subscribe.
+
 ## Improved
+
+- Conspiracy Theories' show page is now an evidence board, with the latest episodes pinned up and tied together with red yarn, on white paper by day and black by night.
+- Show pages in a show's own style carry a "The best of boxlore" seal in place of the "Made for" tag. Tap it to find out what the page is.
 
 ## Fixed
 

@@ -70,6 +70,7 @@ import cx.aswin.boxlore.feature.info.branded.LocalBrandedPage
 import cx.aswin.boxlore.feature.info.branded.brandedShowPageFor
 import cx.aswin.boxlore.feature.info.branded.brandedSpotlightEpisode
 import cx.aswin.boxlore.feature.info.branded.feedItemsWithoutSpotlight
+import cx.aswin.boxlore.feature.info.components.BrandedHeaderStatusBar
 import cx.aswin.boxlore.feature.info.components.EpisodeListIndicators
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbar
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbarActions
@@ -81,6 +82,7 @@ import cx.aswin.boxlore.feature.info.components.PodcastGenreEditSheet
 import cx.aswin.boxlore.feature.info.components.PodcastInfoJumpPillOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoLoadError
 import cx.aswin.boxlore.feature.info.components.PodcastInfoMarkDialogs
+import cx.aswin.boxlore.feature.info.components.PodcastInfoTopBarLook
 import cx.aswin.boxlore.feature.info.components.PodcastInfoTopOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoTopOverlayActions
 import cx.aswin.boxlore.feature.info.components.ShowPageSkeleton
@@ -686,7 +688,11 @@ fun PodcastInfoScreen(
                 // missing-episodes offer, which asks for a choice, replaces it; passing feed-check
                 // statuses are left to the list's status line.
                 val topBarChip = if (brandedPage != null && state.directFeedChip != DirectFeedChipState.Offer) DirectFeedChipState.Hidden else state.directFeedChip
-                val tagShown by animateFloatAsState(if (topBarChip == DirectFeedChipState.Hidden) 1f else 0f, label = "brandedTagShown")
+                val sealShown by animateFloatAsState(if (topBarChip == DirectFeedChipState.Hidden) 1f else 0f, label = "brandedSealShown")
+                // A header that stays dark in a light theme keeps light icons over it until the bar fills.
+                val headerContent = LocalBrandedPage.current?.style?.headerContent
+                val headerIconTint = headerContent?.let { androidx.compose.ui.graphics.lerp(it, MaterialTheme.colorScheme.onSurface, titleMotion.scrollFraction) }
+                if (headerContent != null) BrandedHeaderStatusBar(lightIcons = titleMotion.scrollFraction < 0.5f)
                 PodcastInfoTopOverlay(
                     podcast = state.podcast,
                     headerColor = titleMotion.headerColor,
@@ -704,7 +710,10 @@ fun PodcastInfoScreen(
                         onToggleHomePin = viewModel::toggleHomePin,
                         onEditGenre = handleEditGenreClick,
                     ),
-                    tagAlpha = if (brandedPage == null) 0f else tagShown * (1f - (titleMotion.scrollFraction / 0.5f).coerceIn(0f, 1f)),
+                    look = PodcastInfoTopBarLook(
+                        sealAlpha = if (brandedPage == null) 0f else sealShown * (1f - (titleMotion.scrollFraction / 0.5f).coerceIn(0f, 1f)),
+                        iconTint = headerIconTint,
+                    ),
                     missingEpisodesChip =
                     MissingEpisodesChip(
                         visible = titleMotion.scrollFraction < 0.5f,

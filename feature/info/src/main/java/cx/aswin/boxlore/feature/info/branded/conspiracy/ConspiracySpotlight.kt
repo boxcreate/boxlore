@@ -11,10 +11,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LinearProgressIndicator
@@ -49,11 +49,12 @@ import java.util.Date
 import java.util.Locale
 
 private val CardShape = RoundedCornerShape(topStart = 0.dp, topEnd = 20.dp, bottomEnd = 20.dp, bottomStart = 20.dp)
+private val TabShape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp)
 
 /** How long an unplayed latest episode keeps its NEW stamp. */
 private const val NEW_FOR_SECONDS = 7L * 24 * 3600
 
-/** The latest episode filed in its own folder: a dated tab, a stamp, typed title and notes. */
+/** The latest episode filed in its own manila folder: a dated tab, a stamp, typed title and notes. */
 @Composable
 internal fun ConspiracySpotlight(spotlight: BrandedSpotlight, modifier: Modifier) {
     val palette = conspiracyPalette()
@@ -62,23 +63,18 @@ internal fun ConspiracySpotlight(spotlight: BrandedSpotlight, modifier: Modifier
     val filed = remember(episode.publishedDate) { filedDate(episode.publishedDate) }
     // The card is drawn 2dp up over its tab, so the column ends 2dp short and the list keeps its gap.
     Column(modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-        PaperTab(
-            stringResource(R.string.conspiracy_latest_filed, filed),
-            fonts,
-            Modifier.size(width = 214.dp, height = 25.dp),
-            grain = true,
-        )
+        FolderTab(stringResource(R.string.conspiracy_latest_filed, filed), fonts, Modifier.widthIn(min = 214.dp).heightIn(min = 25.dp))
         val selectLabel = stringResource(R.string.podcast_episode_select)
         Box(
             Modifier
                 .offset(y = (-2).dp)
                 .fillMaxWidth()
-                .boxShadow(fill = ConspiracyColors.Mustard, color = palette.cardShadow, offsetY = 8.dp, blur = 20.dp, cornerRadius = 20.dp)
+                .boxShadow(fill = ConspiracyColors.Manila, color = palette.cardShadow, offsetY = 8.dp, blur = 20.dp, cornerRadius = 20.dp)
                 .clip(CardShape)
                 .then(if (spotlight.isSelected) Modifier.border(BorderStroke(3.dp, ConspiracyColors.Ink), CardShape) else Modifier)
                 .expressiveClickable(shape = CardShape, onLongClickLabel = selectLabel, onLongClick = spotlight.onLongPress, onClick = spotlight.onOpen),
         ) {
-            Image(painterResource(R.drawable.conspiracy_paper_grain), null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
+            Image(painterResource(R.drawable.conspiracy_grain_manila), null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
             Column(Modifier.padding(16.dp)) {
                 StampLine(spotlight, fonts)
                 Text(
@@ -94,7 +90,7 @@ internal fun ConspiracySpotlight(spotlight: BrandedSpotlight, modifier: Modifier
                     Text(
                         notes,
                         style = brandedTextStyle(fonts.courier, 13.sp, 18.sp),
-                        color = ConspiracyColors.CardText,
+                        color = ConspiracyColors.ManilaBody,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 6.dp),
@@ -105,6 +101,22 @@ internal fun ConspiracySpotlight(spotlight: BrandedSpotlight, modifier: Modifier
                 BrandedEpisodeActions(spotlight, ConspiracyColors.Actions)
             }
         }
+    }
+}
+
+/** The folder's tab with its label typed in spaced capitals; it widens for large text, up to the card's width. */
+@Composable
+private fun FolderTab(label: String, fonts: ConspiracyFonts, modifier: Modifier) {
+    Box(modifier.clip(TabShape), contentAlignment = Alignment.Center) {
+        Image(painterResource(R.drawable.conspiracy_grain_manila), null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
+        Text(
+            label.uppercase(Locale.getDefault()),
+            style = brandedTextStyle(fonts.courier, 11.sp, 13.sp, letterSpacing = 1.5.sp).copy(fontWeight = FontWeight.Bold),
+            color = ConspiracyColors.Ink,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+        )
     }
 }
 
@@ -138,7 +150,7 @@ private fun Stamp(label: String, color: Color, fonts: ConspiracyFonts) {
     Box(
         Modifier
             .rotate(-4f)
-            .height(22.dp)
+            .heightIn(min = 22.dp)
             .border(2.dp, color, RoundedCornerShape(3.dp))
             .padding(horizontal = 7.dp),
         contentAlignment = Alignment.Center,

@@ -42,8 +42,6 @@ import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedCopyrightButton
 import cx.aswin.boxlore.feature.info.branded.BrandedDescription
 import cx.aswin.boxlore.feature.info.branded.BrandedDescriptionExtras
-import cx.aswin.boxlore.feature.info.branded.BrandedTag
-import cx.aswin.boxlore.feature.info.branded.BrandedTagStyle
 import cx.aswin.boxlore.feature.info.branded.LocalBrandedHeaderMotion
 import cx.aswin.boxlore.feature.info.branded.boxShadow
 import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
@@ -157,21 +155,5 @@ private fun JreDescription(description: BrandedDescription) {
             .fillMaxWidth()
             .animateContentSize(spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow))
             .expressiveClickable(shape = RoundedCornerShape(8.dp)) { description.onToggle() },
-    )
-}
-
-/** The tag: dark with a warm ring, boxlore's mark in the badge's orange. */
-@Composable
-internal fun JreTag(modifier: Modifier) {
-    BrandedTag(
-        BrandedTagStyle(
-            fill = JreColors.Page,
-            mark = JreColors.Orange,
-            text = JreColors.Ink,
-            textStyle = brandedSansStyle(13.sp, 16.sp, weight = 600),
-            corner = 14.dp,
-            ring = JreColors.TagRing,
-        ),
-        modifier,
     )
 }

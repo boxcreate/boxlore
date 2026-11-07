@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.branded.BrandedChipStyle
 import cx.aswin.boxlore.feature.info.branded.BrandedDescription
@@ -65,6 +66,7 @@ internal object WaveformPage : BrandedShowPage {
         )
         return BrandedPageStyle(
             colors = colors,
+            popup = WaveformColors.Copyright,
             navigationColors = colors.copy(
                 surfaceContainerHigh = WaveformColors.Control,
                 onSurfaceVariant = WaveformColors.NavigationText,
@@ -103,11 +105,8 @@ internal object WaveformPage : BrandedShowPage {
     }
 
     @Composable
-    override fun Header(podcast: Podcast, description: BrandedDescription, chips: @Composable () -> Unit, modifier: Modifier) =
+    override fun Header(podcast: Podcast, feed: List<Episode>, description: BrandedDescription, chips: @Composable () -> Unit, modifier: Modifier) =
         WaveformHeader(podcast, description, chips, modifier)
-
-    @Composable
-    override fun Tag(modifier: Modifier) = WaveformTag(modifier)
 
     @Composable
     override fun Spotlight(spotlight: BrandedSpotlight, modifier: Modifier) = WaveformSpotlight(spotlight, modifier)
