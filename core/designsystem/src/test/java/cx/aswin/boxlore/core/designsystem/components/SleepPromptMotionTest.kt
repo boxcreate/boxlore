@@ -54,7 +54,8 @@ class SleepPromptMotionTest {
                 assertTrue(glow.scale in 0.75f..1f)
             }
         }
-        val phase = 0.5f
+        // At 0.1 the three stars sit at clearly different points of the cycle.
+        val phase = 0.1f
         val brightness = SleepPromptMotion.Stars.indices.map { SleepPromptMotion.twinkle(phase, it).alpha }
         assertTrue(brightness.distinct().size == brightness.size)
     }

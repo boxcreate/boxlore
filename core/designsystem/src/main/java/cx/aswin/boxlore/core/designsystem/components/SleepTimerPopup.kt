@@ -117,6 +117,7 @@ fun SleepTimerPopup(
 ) {
     val dismiss by rememberUpdatedState(onDismiss)
     val select by rememberUpdatedState(onSelectDuration)
+    val shown by rememberUpdatedState(visible)
 
     AnimatedVisibility(
         visible = visible,
@@ -134,7 +135,8 @@ fun SleepTimerPopup(
         LaunchedEffect(picked) {
             if (picked == null) {
                 delay(autoHideMillis)
-                if (visible) dismiss(SleepTimerPopupDismissReason.Timeout)
+                // Read now, not when the timer started: a prompt already on its way out times out silently.
+                if (shown) dismiss(SleepTimerPopupDismissReason.Timeout)
             } else if (!confirmed) {
                 delay(SleepPromptMotion.CONFIRM_HOLD_MILLIS)
                 confirmed = true
@@ -158,7 +160,16 @@ fun SleepTimerPopup(
                     select(minutes)
                 }
             },
-            onDismiss = { dismiss(SleepTimerPopupDismissReason.Manual) },
+            onDismiss = {
+                // Before a pick it is a dismissal; after one it only ends the confirmation early.
+                when {
+                    picked == null -> dismiss(SleepTimerPopupDismissReason.Manual)
+                    !confirmed -> {
+                        confirmed = true
+                        dismiss(SleepTimerPopupDismissReason.Confirmation)
+                    }
+                }
+            },
         )
     }
 }
@@ -170,13 +181,18 @@ private class SleepPromptClocks(val enter: State<Float>, val confirm: State<Floa
 private fun rememberSleepPromptClocks(picked: Int?): SleepPromptClocks {
     val still = remember { !ValueAnimator.areAnimatorsEnabled() }
     val enter = remember { Animatable(if (still) SleepPromptMotion.ENTER_MILLIS else 0f) }
-    val confirm = remember { Animatable(if (still || picked != null) SleepPromptMotion.CONFIRM_MILLIS else 0f) }
+    // Nothing to confirm until a pick: the clock starts at 0 even with animations off.
+    val confirm = remember { Animatable(if (picked != null) SleepPromptMotion.CONFIRM_MILLIS else 0f) }
     LaunchedEffect(Unit) {
         if (!still) enter.animateTo(SleepPromptMotion.ENTER_MILLIS, tween(SleepPromptMotion.ENTER_MILLIS.toInt(), easing = LinearEasing))
     }
     LaunchedEffect(picked) {
-        if (picked == null || still || confirm.value >= SleepPromptMotion.CONFIRM_MILLIS) return@LaunchedEffect
-        confirm.animateTo(SleepPromptMotion.CONFIRM_MILLIS, tween(SleepPromptMotion.CONFIRM_MILLIS.toInt(), easing = LinearEasing))
+        if (picked == null || confirm.value >= SleepPromptMotion.CONFIRM_MILLIS) return@LaunchedEffect
+        if (still) {
+            confirm.snapTo(SleepPromptMotion.CONFIRM_MILLIS)
+        } else {
+            confirm.animateTo(SleepPromptMotion.CONFIRM_MILLIS, tween(SleepPromptMotion.CONFIRM_MILLIS.toInt(), easing = LinearEasing))
+        }
     }
     return remember(enter, confirm) { SleepPromptClocks(enter.asState(), confirm.asState(), still) }
 }
@@ -276,7 +292,9 @@ private fun NightBand(picked: Int?, clocks: SleepPromptClocks, onDismiss: () -> 
         Column(
             Modifier
                 .padding(start = 92.dp, end = 48.dp, top = 16.dp, bottom = 16.dp)
-                .graphicsLayer { alpha = SleepPromptMotion.questionAlpha(clocks.confirm.value) },
+                .graphicsLayer { alpha = SleepPromptMotion.questionAlpha(clocks.confirm.value) }
+                // Faded out after a pick: screen readers hear the answer only.
+                .then(if (picked != null) Modifier.clearAndSetSemantics {} else Modifier),
         ) {
             Text(
                 stringResource(R.string.sleep_prompt_title),
@@ -348,7 +366,12 @@ private fun TimeBadge(minutes: Int, cookie: androidx.compose.ui.graphics.Shape, 
 private fun SleepPromptChoices(options: List<SleepTimerOption>, picked: Int?, clocks: SleepPromptClocks, onPick: (Int) -> Unit, modifier: Modifier) {
     val times = options.filterNot { it.minutes == SleepTimerConstants.END_OF_EPISODE_MINUTES }
     val endOfEpisode = options.firstOrNull { it.minutes == SleepTimerConstants.END_OF_EPISODE_MINUTES }
-    Column(modifier.graphicsLayer { alpha = SleepPromptMotion.choicesAlpha(clocks.confirm.value) }) {
+    Column(
+        modifier
+            .graphicsLayer { alpha = SleepPromptMotion.choicesAlpha(clocks.confirm.value) }
+            // Folded away after a pick: the old times are no longer reachable.
+            .then(if (picked != null) Modifier.clearAndSetSemantics {} else Modifier),
+    ) {
         Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)) {
             times.forEachIndexed { index, option ->

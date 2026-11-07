@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.designsystem.components
 
+import android.animation.ValueAnimator
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -26,6 +27,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import org.robolectric.util.ReflectionHelpers
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], qualifiers = "w900dp-h900dp-mdpi")
@@ -105,6 +107,57 @@ class SleepTimerPopupTest {
     }
 
     @Test
+    fun `Dismiss after a pick only ends the confirmation, reported once`() {
+        show()
+        compose.onNodeWithText("30m").performClick()
+        compose.mainClock.advanceTimeBy(400L)
+        compose.onNodeWithContentDescription("Dismiss").performClick()
+        assertEquals(listOf(SleepTimerPopupDismissReason.Confirmation), dismissed)
+        toggle(false)
+        compose.mainClock.advanceTimeBy(4_000L)
+        assertEquals(listOf(30), picked)
+        assertEquals(listOf(SleepTimerPopupDismissReason.Confirmation), dismissed)
+    }
+
+    @Test
+    fun `a prompt dismissed just before it would time out does not also time out`() {
+        show()
+        // 7.9 seconds into the 8-second auto-hide.
+        compose.mainClock.advanceTimeBy(6_700L)
+        compose.onNodeWithContentDescription("Dismiss").performClick()
+        toggle(false)
+        compose.mainClock.advanceTimeBy(1_000L)
+        assertEquals(listOf(SleepTimerPopupDismissReason.Manual), dismissed)
+    }
+
+    @Test
+    fun `after a pick screen readers reach the answer, not the faded question or the old times`() {
+        show()
+        compose.onNodeWithText("2h").performClick()
+        compose.mainClock.advanceTimeBy(100L)
+        compose.onNodeWithText("Late night listening?").assertDoesNotExist()
+        compose.onNodeWithText("30m").assertDoesNotExist()
+        compose.onNodeWithText("Pausing in 2 hr").assertExists()
+    }
+
+    @Test
+    fun `with system animations off every step is at its final state at once`() {
+        setAnimatorScale(0f)
+        try {
+            show()
+            val open = promptHeight()
+            compose.onNodeWithText("45m").performClick()
+            // One frame: the choices are already folded away and the answer is there.
+            compose.mainClock.advanceTimeBy(16L)
+            compose.onNodeWithText("Pausing in 45 min").assertExists()
+            assertTrue("The choices fold away at once", promptHeight() < open - 80f)
+            assertEquals(listOf(45), picked)
+        } finally {
+            setAnimatorScale(1f)
+        }
+    }
+
+    @Test
     fun `whole hours and the end of the episode read as such`() {
         show()
         compose.onNodeWithText("End of episode").performClick()
@@ -154,6 +207,20 @@ class SleepTimerPopupTest {
     private fun toggle(value: Boolean) {
         shown = value
         compose.waitForIdle()
+    }
+
+    /** The system animator duration scale, as Settings sets it: 0 turns animations off. */
+    private fun setAnimatorScale(scale: Float) {
+        ReflectionHelpers.callStaticMethod<Unit>(
+            ValueAnimator::class.java,
+            "setDurationScale",
+            ReflectionHelpers.ClassParameter.from(Float::class.javaPrimitiveType, scale),
+        )
+    }
+
+    private fun promptHeight(): Float {
+        val bounds = compose.onNodeWithTag(PROMPT).getUnclippedBoundsInRoot()
+        return (bounds.bottom - bounds.top).value
     }
 
     private fun assertWidth(expected: Dp) {
