@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -231,7 +232,10 @@ private fun NewestPrint(board: DesiCrimeBoard, intro: BrandedIntroClock, modifie
                 scaleY = pose.scale
                 alpha = pose.alpha
             }
-            .drawBehind { drawTornShadow(NewestMotion.lift(intro.millis())) },
+            .drawWithCache {
+                val shadow = TornShadow()
+                onDrawBehind { drawTornShadow(shadow, NewestMotion.lift(intro.millis())) }
+            },
     ) {
         OptimizedImage(
             url = picture,

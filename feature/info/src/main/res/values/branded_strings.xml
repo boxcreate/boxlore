@@ -8,6 +8,9 @@
     <string name="branded_latest_episode">Latest episode</string>
     <string name="branded_copyright_button">Copyright information</string>
     <string name="branded_copyright_title">Artwork and logos</string>
+    <!-- What screen readers hear for a Showcase page's description, which opens and closes on tap. -->
+    <string name="branded_description_expanded">Expanded</string>
+    <string name="branded_description_collapsed">Collapsed</string>
     <string name="branded_copyright_note">Made by boxlore, in the show\'s own style.</string>
     <string name="vergecast_wordmark_description">The Vergecast</string>
     <string name="vergecast_publisher_description">The Verge</string>

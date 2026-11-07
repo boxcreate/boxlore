@@ -16,6 +16,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,6 +51,7 @@ internal fun SherlockHeader(podcast: Podcast, feed: List<Episode>, description: 
             )
         }
         if (description.text.isNotEmpty()) {
+            val toggleState = stringResource(if (description.expanded) R.string.branded_description_expanded else R.string.branded_description_collapsed)
             Text(
                 description.text,
                 style = brandedSansStyle(14.5.sp, 21.sp),
@@ -58,7 +63,11 @@ internal fun SherlockHeader(podcast: Podcast, feed: List<Episode>, description: 
                     .padding(start = 28.dp, end = 28.dp, top = 2.dp)
                     .fillMaxWidth()
                     .animateContentSize(spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow))
-                    .expressiveClickable(shape = RoundedCornerShape(8.dp)) { description.onToggle() },
+                    .expressiveClickable(shape = RoundedCornerShape(8.dp)) { description.onToggle() }
+                    .semantics {
+                        role = Role.Button
+                        stateDescription = toggleState
+                    },
             )
         }
         Column(Modifier.padding(horizontal = 16.dp)) { BrandedDescriptionExtras(description) }

@@ -63,8 +63,11 @@ class DesiCrimePageTest {
             assertReadable(DesiCrimeColors.RedPen, sticky)
             assertReadable(DesiCrimeColors.NoteDetails, sticky)
         }
-        assertReadable(DesiCrimeColors.PrintInk, Color(0xFFE3DCCC))
-        assertReadable(DesiCrimeColors.CaseNumber, Color(0xFFF3EFE5), minimum = 3f)
+        // The print paper runs from cream to a darker tan; its small text reads on both ends.
+        for (paper in listOf(Color(0xFFF3EFE5), Color(0xFFE3DCCC))) {
+            assertReadable(DesiCrimeColors.PrintInk, paper)
+            assertReadable(DesiCrimeColors.CaseNumber, paper)
+        }
     }
 
     @Test

@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -115,7 +116,13 @@ private fun Issue(cover: ImageBitmap, insideCover: ImageBitmap, page: ImageBitma
                 translationX = (1f - slide) * StrandArt.SLIDE_FROM.dp.toPx()
                 rotationZ = StrandArt.TILT_FROM + (StrandArt.TILT - StrandArt.TILT_FROM) * slide
             }
-            .drawBehind { drawIssueShadows(StrandMotion.leftShadow(intro.millis())) },
+            .drawWithCache {
+                val shadow = android.graphics.Paint().apply {
+                    color = Color.Black.toArgb()
+                    maskFilter = BlurMaskFilter(StrandArt.SHADOW_BLUR * density, BlurMaskFilter.Blur.NORMAL)
+                }
+                onDrawBehind { drawIssueShadows(shadow, StrandMotion.leftShadow(intro.millis())) }
+            },
     ) {
         Spacer(
             Modifier
@@ -299,12 +306,8 @@ private fun DrawScope.drawDesk(desk: ImageBitmap?, statusBar: Float) {
 }
 
 /** The soft shadows the issue casts on the desk: under the right-hand pages, and under the cover once it lies open on the left. */
-private fun DrawScope.drawIssueShadows(left: Float) {
+private fun DrawScope.drawIssueShadows(paint: android.graphics.Paint, left: Float) {
     val unit = 1.dp.toPx()
-    val paint = android.graphics.Paint().apply {
-        color = Color.Black.toArgb()
-        maskFilter = BlurMaskFilter(StrandArt.SHADOW_BLUR * unit, BlurMaskFilter.Blur.NORMAL)
-    }
     val width = (StrandArt.PAGE + StrandArt.SHADOW_SPREAD) * unit
     val height = (StrandArt.ISSUE_HEIGHT + StrandArt.SHADOW_DROP) * unit
     val top = StrandArt.SHADOW_DROP * unit

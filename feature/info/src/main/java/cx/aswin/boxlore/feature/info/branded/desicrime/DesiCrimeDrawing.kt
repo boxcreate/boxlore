@@ -29,15 +29,10 @@ import kotlin.math.roundToInt
 // The crime board's drawing: the cork, the studio light, the hosts, pins, tape and the torn print's edge and shadow.
 
 /** The torn print's shadow on the cork: high and soft while it drops, close and darker once it lands. */
-internal fun DrawScope.drawTornShadow(lift: Float) {
+internal fun DrawScope.drawTornShadow(shadow: TornShadow, lift: Float) {
     val unit = 1.dp.toPx()
     val drop = (22f - 17f * lift) * unit
-    val blur = (16f - 10f * lift) * unit
-    val paint = android.graphics.Paint().apply {
-        color = DesiCrimeColors.Shadow.toArgb()
-        alpha = ((0.45f + 0.15f * lift) * 255).roundToInt()
-        maskFilter = BlurMaskFilter(blur * 0.75f, BlurMaskFilter.Blur.NORMAL)
-    }
+    val paint = shadow.paint(blur = (16f - 10f * lift) * unit * 0.75f, alpha = 0.45f + 0.15f * lift)
     drawContext.canvas.nativeCanvas.apply {
         save()
         translate(0f, drop)
@@ -168,3 +163,22 @@ private val PinShadow = Color(0x990A0400)
 private val PinRing = Color(0xB3462806)
 private val PinDot = Color(0xA65A370A)
 private val LampEase = CubicBezierEasing(0f, 0f, 0.58f, 1f)
+
+/**
+ * The torn print's shadow paint, made once per board: its blur filter is replaced only when the
+ * blur reaches a new whole pixel, so the drop allocates a handful of filters, not one per frame.
+ */
+internal class TornShadow {
+    private val paint = android.graphics.Paint().apply { color = DesiCrimeColors.Shadow.toArgb() }
+    private var radius = -1f
+
+    fun paint(blur: Float, alpha: Float): android.graphics.Paint {
+        val whole = blur.roundToInt().coerceAtLeast(1).toFloat()
+        if (whole != radius) {
+            radius = whole
+            paint.maskFilter = BlurMaskFilter(whole, BlurMaskFilter.Blur.NORMAL)
+        }
+        paint.alpha = (alpha * 255).roundToInt()
+        return paint
+    }
+}

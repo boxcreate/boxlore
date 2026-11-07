@@ -34,7 +34,7 @@ internal object DesiCrimeColors {
     /** Ink on the sticky notes and the prints. */
     val NoteInk = Color(0xFF2A2016)
     val PrintInk = Color(0xFF2E2418)
-    val CaseNumber = Color(0xFFB5520A)
+    val CaseNumber = Color(0xFF9A4408)
 
     /** The sticky's "#212 · newest case": a red pen. */
     val RedPen = Color(0xFF98300A)
