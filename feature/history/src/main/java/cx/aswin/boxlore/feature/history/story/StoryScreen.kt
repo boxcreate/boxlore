@@ -142,6 +142,8 @@ fun StoryPlayer(story: MonthStory, startCard: StoryCard, onClose: () -> Unit, on
     val (background, content) = card.colors(story, palette)
     val bg by animateColorAsState(background, tween(StoryMotion.RISE_MS, easing = StoryMotion.Standard), label = "storyBackground")
     val fg by animateColorAsState(content, tween(StoryMotion.RISE_MS, easing = StoryMotion.Standard), label = "storyContent")
+    // In its dialog the story covers the system bars too, in the card's colour, with icons that read on it.
+    StoryWindowBars(bg)
     val frame = rememberGraphicsLayer()
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current

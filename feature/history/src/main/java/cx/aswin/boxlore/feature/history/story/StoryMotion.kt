@@ -117,6 +117,12 @@ internal object StoryMotion {
     const val HOP_TAKEOFF_MS = 375
     const val HOP_LAND_MS = 1_250
 
+    /** How long the card's act takes to fade in over the landed hop, once the hop has played out. */
+    const val HANDOFF_MS = 180L
+
+    /** How long the act's Echo takes to grow from the landed hop's size to its own. */
+    const val HANDOFF_GROW_MS = 320L
+
     /** Echo's line pops in once he has landed and started his act, after the card's stats. */
     const val ECHO_LINE_MS = 2_000
 

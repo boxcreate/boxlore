@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.history.story
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -47,6 +48,9 @@ import cx.aswin.boxlore.feature.history.R
 import cx.aswin.boxlore.feature.history.timeline.TimelineType
 import cx.aswin.boxlore.feature.history.timeline.currentLocale
 import cx.aswin.boxlore.feature.history.timeline.durationText
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.sin
 
 /**
  * The Insights tab's story card (S0): 214dp, 28dp corners, in the story's primary. "Your September
@@ -59,7 +63,7 @@ internal fun StoryEntryCard(month: StoryMonth, isNew: Boolean, onOpen: () -> Uni
     val name = StoryText.monthName(month.month, currentLocale())
     val label = stringResource(R.string.history_story_watch, name)
     val shape = RoundedCornerShape(28.dp)
-    Box(
+    BoxWithConstraints(
         modifier
             .fillMaxWidth()
             .height(214.dp)
@@ -75,14 +79,18 @@ internal fun StoryEntryCard(month: StoryMonth, isNew: Boolean, onOpen: () -> Uni
                 }
             },
     ) {
+        // A narrow card (a split screen, a small window) drops covers until the title has room.
+        val covers = StoryEntryLayout.coversShown(maxWidth.value, month.covers)
         Box(Modifier.align(Alignment.TopEnd).offset(40.dp, (-50).dp).size(210.dp).graphicsLayer { rotationZ = -8f }.clip(StoryBlobShape.Entry).background(palette.podium))
         EntryCovers.forEach { spot ->
-            val url = month.covers.getOrNull(spot.rank) ?: return@forEach
+            val url = covers.getOrNull(spot.rank) ?: return@forEach
             Box(Modifier.align(Alignment.TopEnd).offset(-spot.end.dp, spot.top.dp).size(spot.size.dp).graphicsLayer { rotationZ = spot.rotation }) {
                 StoryCover(url, StoryCoverSpot(0f, 0f, spot.size, spot.size * 0.26f, shadow = 6f))
             }
         }
-        Column(Modifier.padding(start = 20.dp, top = 18.dp).widthIn(max = 200.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        // The title stops short of the covers fanned at the top right, wrapping to a second line instead of running under them.
+        val titleEnd = StoryEntryLayout.titleEnd(covers)
+        Column(Modifier.padding(start = 20.dp, top = 18.dp, end = titleEnd.dp).widthIn(max = 200.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (isNew) {
                     Box(Modifier.height(22.dp).clip(RoundedCornerShape(11.dp)).background(palette.onPrimary).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
@@ -91,7 +99,13 @@ internal fun StoryEntryCard(month: StoryMonth, isNew: Boolean, onOpen: () -> Uni
                 }
                 Text(stringResource(R.string.history_story_entry_meta, month.cards), style = StoryType.of(12f, 16f, GoogleSansWeight.semiBold), color = palette.onPrimary)
             }
-            Text(stringResource(R.string.history_story_entry_title, name), style = StoryType.of(22f, 28f, GoogleSansWeight.semiBold), color = palette.onPrimary)
+            Text(
+                stringResource(R.string.history_story_entry_title, name),
+                style = StoryType.of(22f, 28f, GoogleSansWeight.semiBold),
+                color = palette.onPrimary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
         Column(Modifier.align(Alignment.BottomStart).padding(start = 20.dp, bottom = 18.dp, end = 150.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(durationText(month.totalMs), style = StoryType.of(36f, 40f, GoogleSansWeight.semiBold, -0.4f), color = palette.onPrimary, maxLines = 1)
@@ -122,7 +136,44 @@ private fun EntryEcho(palette: StoryPalette, modifier: Modifier) {
     }
 }
 
-private data class EntryCover(val rank: Int, val end: Float, val top: Float, val size: Float, val rotation: Float)
+private data class EntryCover(val rank: Int, val end: Float, val top: Float, val size: Float, val rotation: Float) {
+    /** How far the turned cover reaches in from the card's right edge, its shadow included. */
+    val reach: Float
+        get() {
+            val turn = Math.toRadians(rotation.toDouble())
+            val half = size / 2f * (abs(cos(turn)) + abs(sin(turn))).toFloat()
+            return end + size / 2f + half + COVER_SHADOW
+        }
+}
+
+/** Where the story card's title may run: up to the covers it shows, with a gap. */
+internal object StoryEntryLayout {
+    private const val TITLE_GAP = 10f
+
+    /** The title's end padding in dp, clear of the furthest in of the [covers] fanned at the top right (a missing one isn't drawn). */
+    fun titleEnd(covers: List<String?>): Float =
+        EntryCovers.filter { covers.getOrNull(it.rank) != null }.maxOfOrNull { it.reach + TITLE_GAP } ?: TITLE_START
+
+    const val TITLE_START = 20f
+
+    /** The narrowest the title may get beside the covers: a month's name at the card's 22sp, on its own line. */
+    const val MIN_TITLE_WIDTH = 130f
+
+    /**
+     * The covers a card [cardWidth] dp wide shows: all of [covers] while the title keeps
+     * [MIN_TITLE_WIDTH] beside them, else without the second (the furthest in), else none, so a narrow
+     * window never squeezes the month out of the title.
+     */
+    fun coversShown(cardWidth: Float, covers: List<String?>): List<String?> {
+        val withoutSecond = covers.mapIndexed { rank, url -> url.takeUnless { rank == 1 } }
+        return listOf(covers, withoutSecond, emptyList()).first { titleWidth(cardWidth, it) >= MIN_TITLE_WIDTH || it.isEmpty() }
+    }
+
+    /** The title's width on a card [cardWidth] dp wide with [covers] beside it. */
+    fun titleWidth(cardWidth: Float, covers: List<String?>): Float = cardWidth - TITLE_START - titleEnd(covers)
+}
+
+private const val COVER_SHADOW = 6f
 
 /** Two covers behind at an angle, the top show in front: right edges and tops in dp from the card's top right. */
 private val EntryCovers = listOf(
