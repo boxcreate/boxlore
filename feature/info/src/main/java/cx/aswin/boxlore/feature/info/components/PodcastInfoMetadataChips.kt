@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
+import cx.aswin.boxlore.core.designsystem.links.openLink
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.rememberGoogleSansFamily
@@ -48,7 +49,6 @@ import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedChipRowHeight
 import cx.aswin.boxlore.feature.info.branded.BrandedChipStyle
 import cx.aswin.boxlore.feature.info.branded.LocalBrandedPage
-import cx.aswin.boxlore.core.designsystem.links.openLink
 
 internal fun calculateUpdateFrequencyData(
     podcast: Podcast,

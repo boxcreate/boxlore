@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.links.startFirstAvailable
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
@@ -81,7 +82,6 @@ import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
 import cx.aswin.boxlore.feature.info.logic.canPromptNotificationPermission
 import cx.aswin.boxlore.feature.info.logic.resolveAutoDownloadToggleWarning
 import cx.aswin.boxlore.feature.info.logic.resolveNotificationToggleAction
-import cx.aswin.boxlore.core.designsystem.links.startFirstAvailable
 
 internal tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this

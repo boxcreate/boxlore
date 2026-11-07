@@ -12,8 +12,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
-import cx.aswin.boxlore.feature.home.components.NpsSurveySheet
 import cx.aswin.boxlore.core.designsystem.links.startFirstAvailable
+import cx.aswin.boxlore.feature.home.components.NpsSurveySheet
 
 /**
  * Shows [controller]'s survey over Home. A decided survey is checked again as it appears: it waits while
