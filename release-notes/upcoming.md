@@ -28,4 +28,5 @@ Announcement title:
 
 ## Fixed
 
+- Fixed a crash that could close boxlore in the background while the player notification loaded an episode's artwork.
 - Playback controls on the lock screen, in notifications and in Samsung's Now Bar show rewind, play and forward in that order, even when nothing is queued next, with a Next episode button beside them when there is.
