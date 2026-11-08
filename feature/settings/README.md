@@ -2,199 +2,142 @@
 
 ## Purpose
 
-Owns the unified Settings hub, category pages (Account, Sync & Backups, Appearance, Playback, Privacy, Library, Downloads, About, Support), dialogs (Add RSS, Reset analytics), authentication credential management (Google One Tap, Magic Link, Password), and download preference screens (`AutoDownloadSettingsScreen`, `SmartDownloadsSettingsScreen`). It presents data from injected core dependencies and does not own catalog engines, ranking persistence, playback services, download workers, or Room schemas.
+Owns the Settings hub and its pages, sign-in, the Smart and automatic download screens, and Feedback with its support conversations. It presents data from injected core dependencies and does not own catalog engines, ranking persistence, playback services, download workers, preference storage or Room schemas.
 
 ## Public API
 
-- Appearance → Player → **Player style** selects Standard (default) or **bunpod**. App wiring persists the choice through `:core:prefs`; settings never constructs a playback repository. The section links to BunPod and credits Kamran Bekirov for the design inspiration. Both layouts keep the same miniplayer and artwork-derived colors; video uses Standard.
+- `SettingsScreen`: the hub and every page, on the app's `settings?page=…` route. It takes `SettingsScreenConfig`, `SettingsRepositories`, `RegionSettings`, `AppearanceSettings`, `PlaybackSettings`, `LibraryBackupWriters` and `DownloadsNavigation`.
+- `SettingsScreenConfig.initialPage` opens a page directly (`account`, `sync`, `library`, `recommendations`, `appearance`, `theme`, `playback`, `downloads`, `privacy`, `about`, `support`); anything else opens the hub. `isOnboarding` makes Back leave Settings at once.
+- Shell callbacks on `SettingsScreenConfig`: `onSendFeedback`, `onCheckForUpdates` (the shell owns release checks and installation), and `onSupportPageVisibilityChanged` / `onAccountPageVisibilityChanged`, used to hide player chrome.
+- `SettingsViewModel`, built by `SettingsViewModelAssembler` (`create` / `factory`): the Add RSS flow and Reset recommendations.
+- `AppearanceUiState`, `AppearanceActions` and `AppearanceHeroPreview`; `PlaybackUiState` and `PlaybackActions`; `LibraryDiscoveryPreferences` and `SavedShowsControl`. App wiring persists every value through `:core:prefs`.
+- `FeedbackScreen(supportRepository, boxcastPrefs, onBack, bottomContentPadding, openThreadId)` on the app's `feedback?thread=<id>` route, plus `FeedbackViewModel`, `DiagnosticCollector`, `LogcatCollector` and `SharedPrefsRetryKeyStore`.
+- `AutoDownloadSettingsScreen` and `SmartDownloadsSettingsScreen`, each taking `UserPreferencesRepository` and `onBack`.
+- `LogsPreviewDialog` (in `feedback/FeedbackDialogs.kt`).
 
-- Settings cards, rows and expandable help text use the shared steady Material feedback rather than scaling their whole contents. Existing native controls and connected selectors retain their own feedback. The custom support CTA keeps its 3% response with a critically damped spring and draw-phase scale reads; avatar animations and settings behavior are unchanged.
+## Navigation and tablet split
 
-- Settings and About expose **Check for updates** through an optional app-shell callback. The shell owns availability, the full-screen result, release notes and installation; Settings does not fetch releases or request APK installation itself.
+- `ProfileSettingsDestination` lists every page; its `parent` is where Back goes (Appearance's pages → Appearance, the custom theme editor → Theme & colors, LeaveMeAlone → Library). `resolveSettingsBackAction` decides Back; a page opened directly leaves Settings.
+- On tablet windows `AdaptiveSettingsLayout` puts a category list beside the page, highlighting its top-level category (`settingsCategoryOf`; Account sits under Cloud Sync). Onboarding and Support stay full-page.
+- Window gates and state retention follow [`ARCHITECTURE.md#adaptive-ui-and-state`](../../ARCHITECTURE.md#adaptive-ui-and-state).
 
-- Custom theme creation is a nested full-page destination under Theme & colors. Back discards the draft and returns to Theme & colors; Save applies and remembers the custom palette without changing display mode. A compact light/dark preview stays visible while the controls scroll, and moves beside them in wide windows. Very short windows use a background/accent strip so color entry remains reachable with the keyboard or enlarged text. Primary/Secondary/Tertiary selectors wrap for larger text; each explains where its accent is used. Quick swatches and gradient hue/saturation sliders are immediately available. Brightness and labelled hex entry expand under **Fine-tune**. Invalid or incomplete hex input keeps the last valid palette visible and disables Save, including after saved-state restoration. Draft colors affect only the preview until Save; the editor chrome keeps the current app palette.
-- The custom editor suppresses the press ripple throughout its controls while preserving selection colors, native shape responses, focus indicators and accessibility actions. The color-role selectors also clip to their own rounded shape. Other Settings pages retain normal Material feedback.
+## Appearance
 
-- Add RSS uses a single localizable instruction to paste the podcast’s RSS feed link and add it to the library. The feed-link publication warning appears only in Podcast Info when notifications are enabled. Subscription creation enables normal foreground refresh for all supported feeds, including those without HEAD validators.
+- The overview shows Display mode, then one row per page with its current choice (`appearanceSummary`): **Theme & colors**, **Home**, **Player**, **Navigation** and **Text**.
+- Theme & colors offers four looks (boxlore classic, Pure, Material 3, Custom), **Use artwork colors** (on by default) and **Widgets**. Legacy palettes show as Custom without changing stored values (`ThemeSettingsLogic.kt`).
+- The custom theme editor is a full page. Drafts change only its preview; Save applies the palette in one write, and Back discards it.
+- Home holds the hero card style and its colour choice, with live previews drawn by the app through `AppearanceHeroPreview`. Hero styles are described in [`feature/home/README.md`](../home/README.md).
+- Player holds **Player style** (Standard or bunpod) and the miniplayer's **Seek buttons** (off by default). The bunpod option credits Kamran Bekirov's BunPod design. Video always uses Standard.
+- Navigation holds the bar style, **Blur behind the bar** (Floating bar only) and **Start page & tabs** (**Explore opens to** hides while Picked for you is off). Text holds the letter shape with a preview.
+- Visual choices are `SettingsPictureTile` radio tiles in `SettingsPictureGrid` or the sideways `SettingsPictureRow`.
 
-- `SettingsScreen`, `SettingsViewModel`, `SettingsViewModelAssembler`, and `ProfileSettingsDestination` for the settings hub and sub-pages.
-- Shared `SettingsScaffold` headers use a smaller 36sp expanded title and naturally wrap to two lines when needed, including Cloud Sync & Backups. The expanded title smoothly reduces to 22sp on scroll; the separate compact row always uses 22sp and retains two-line support for narrow screens and larger system fonts. Material's two-row app bar measures the title height, so a hidden expanded title cannot inflate the navigation row or force a single-line ellipsis.
-- `SettingsScreenConfig` includes `isOnboarding: Boolean` (used by app navigation to keep onboarding mode active and bypass the hub on return), `onSendFeedback: (() -> Unit)?` to route to feedback, and `resolveSettingsBackAction` for deterministic back-handler actions.
-- `FeedbackScreen`, `FeedbackViewModel`, `DiagnosticCollector`, and `LogcatCollector` under `feedback/` for sticky draft feedback submissions, in-process sanitized logcat extraction, device diagnostics, and GitHub issue reporting. `FeedbackScreen(supportRepository, boxcastPrefs, onBack, bottomContentPadding)` takes `SupportRepository` from `:core:support` (app wiring passes the mini player clearance). Feedback keeps the player compact, so every pane (the form, a conversation, the sent screen and the buttons under the list) gives back the room the compact player frees as it docks beside the Floating navigation bar, never going below what the bar alone needs (`feedbackBottomSpace`, `feedbackChromePadding`, measured in layout so the docking animation doesn't recompose the page); Classic navigation and tablets keep the full clearance. The list's tail padding stays as passed, so it doesn't move while the player docks.
-- **Feedback, redesigned 2026-11-02 (support conversations, phase 2).** "Share your thoughts" opens straight on the form: bold circular type pills (`FeedbackTypePills`), a roomy message card that takes the free height, photos (only while the server's `meta.photos` switch is on; picked with the system photo picker, no storage permission, downscaled to 1600 px JPEG by `PhotoPrep`; the row scrolls sideways so every photo and its Remove stay reachable on narrow phones), an Include device diagnostics row, **Send feedback** at the bottom and a **How we handle feedback** link to the privacy page. The pills are the server's `meta.categories` (id and label, shown as sent); the app's own four (Feature idea, Bug report, Audio / Stream, General) are the offline list and give icons and hints for the ids they share (`FeedbackChoice`), and an id the server stops offering falls back to its first. The message limit is the server's `maxBody` as is; typing stops there, and an older draft past it (its steps now join the message) is kept whole and can only get shorter, with the counter in red and "This is over the …-character limit. Shorten it to send." until it fits (`limitedMessage`). The phone model goes only with diagnostics on. While a message is sending its draft is locked (field read-only, pills, switch and photos disabled), so what was sent is what gets cleared. Windows shorter than 600dp scroll with a 220dp message card. While typing (message focused and the keyboard up) the pills fold into one pill in the header and a slim bar with photos, diagnostics and **Send** rides on the keyboard, which replaces the bottom chrome padding (`isTypingLayout`, `feedbackBottomPadding`). It is one layout throughout: the keyboard or a height change only changes what sits around the message field, so the field keeps its focus, cursor and the text being composed. The top-bar menu has Preview diagnostics, Rate on Play, Report on GitHub and Discard draft. The email and steps fields are gone. Send is disabled while the server pauses new messages (`canStartNew`), with the server's notice or `PAUSED_NOTICE`; a refusal (today's limit) shows the server's words and keeps the draft. Each send carries a retry key (`RetryKeys`): sending the same message again reuses it, an edited message gets a new one, so a send whose answer was lost isn't saved twice. The key is kept in `boxlore_feedback_retry` (`SharedPrefsRetryKeyStore`, a fingerprint of the content and the key) until the message is saved or discarded, so it survives the screen closing or the app being killed; photos already uploaded for the message are reused on a retry. When support can't take photos (it is unavailable), the message goes without them. After sending, `FeedbackSentScreen` shows Echo's `feedback-sent` sequence (magnifier, then rest), "Feedback sent" and, when the message became a conversation and notifications are off, a **Know when the team replies** card (`canAskForNotifications`: Android's prompt while it will still show, otherwise the app's notification settings; re-checked on resume, **Not now** hides it). A message that fell back to the old one-way form (`SendResult.SentByEmailForm`) gets neither the reply promise nor the card, and left-out photos are mentioned (`feedbackSentBody`).
-- **Feedback conversations (support conversations, phase 3).** `FeedbackScreen(..., openThreadId)` opens on one conversation for a reply notification (`feedback?thread=<id>`), on the list once the phone has conversations, and on "Share your thoughts" otherwise (`initialFeedbackPane`; the pane is saved with `FeedbackPaneSaver`). The list (`FeedbackListScreen`) shows "Your feedback" in one card, newest first: an unread dot and bold title for a new reply, the server's status label with its time ("11:02", "Yesterday", "28 Oct"; `feedbackListTime`), a check for Solved and a lock with a dimmed title for Closed. Rate on Play, Report on GitHub and **Send feedback** are pinned at the bottom with the list scrolling behind them; each **Send feedback** opens a fresh form (a new view-model key; the saved draft still comes back). After sending, the list refreshes at once (so the phone joins its reply-push topic before a reply can come), and Done goes to the list when the message became a conversation. A conversation (`FeedbackThreadScreen`, `FeedbackThreadViewModel`) shows the listener's messages in outlined cards and the team's in a primary-container card ("boxlore team"), with photos fetched through the support API into a small cache (12, one fetch per photo at a time, a failed one fetched again later) in a row that scrolls sideways, and "Diagnostics included" on its own line; **Show earlier messages** pages back. The conversation loads fresh each time it shows (its view model may be kept from earlier in the visit), reloads when a reply push arrives for it, and is marked read only once it is on screen, up to the newest message shown, so a reply that came after stays unread; that clears the list's dot and Home's indicator, and the list then refreshes its statuses. A failed refresh keeps what is shown with a "Couldn't refresh" line and Try again; a conversation that is gone clears. **Reply** opens a reply box that rides on the keyboard (the server's message limit, a retry key per reply, the draft kept on failure; the draft, whether the box is open and the retry key live in the view model's saved state, so they survive the process being killed); a "closed" answer shows its ending at once; **Mark solved** shows once the team has answered an open conversation. The server's ending card closes it: Solved (tertiary container, check, the server's words, Reply) or Closed (lock, the server's words, **Send new feedback**). Back walks conversation → list → out, and a new message goes back to the list when there is one (`feedbackBack`). On a landscape tablet with at least 840dp for Feedback (`feedbackUsesSplit`) the list (400dp) and the conversation sit side by side: the picked conversation, else the newest, else a new message, which then becomes the selection, so narrowing the window keeps it open; Back then leaves. The list and the conversation keep their places in one row in every window (`FeedbackPanesLayout`), so crossing the gate never rebuilds them: the conversation's scroll and the reply box's text, cursor and focus stay, and the host keeps the list's scroll position while it is hidden. A reply push refreshes the list while Feedback is open. A send that finishes after another form saved a new draft leaves that draft alone, and clears only its own retry key.
-- `AutoDownloadSettingsScreen` and `SmartDownloadsSettingsScreen` under `downloads/` for download management.
-- `AccountSettingsPage`, `SyncAndBackupsPage`, `AppearanceSettingsPage`, `PlaybackSettingsPage`, `PrivacySettingsPage`, `LibrarySettingsPage`, `DownloadsSettingsPage`, `AboutSettingsPage`, `SupportDevelopmentPage`.
-- Sync & Backups export copy names only what the JSON backup writes: subscriptions, folders, history, likes and settings (`FULL_LIBRARY_EXPORT_SUMMARY`, covered by `SyncAndBackupsPageTest`). Settings copy spells the product name boxlore in lowercase, including sentence starts.
-- **Sync status, redesigned 2026-10-16.** One solid panel (`AccountSyncPanel`) says where sync stands in a word: **Sync is on**, **Syncing your library** (primary colours with an indeterminate bar, never completed by an animation), **Up to date** with when it last synced (`formatRelativeSyncTime`), or **Couldn’t sync** in error colours with “Your library is still on this phone.” A full-width **Sync now** (**Try again** after a failure) is always there except while syncing; its label fills the button so large text wraps instead of clipping. Backend error text is never shown. In Settings, Echo stands beside the status on a tone-on-tone stage.
-- **Account & sync, redesigned 2026-10-16 (design C).** Signed out, both routes open on “Your library, on every device” with Echo on its stage, three tiles for what syncs (Shows, Queue, Progress) and three sign-in cards: **Continue with Google**, **Email me a sign-in link** and **Use email and password**. Picking one swaps the cards for that method’s form card in the same place; **Other ways to sign in** and Back return to the cards (`AccountAuthState.methodChosen`, saved with the rest of the sign-in state). After an email goes out, **Check your email** / **Confirm your email** (`AccountCheckEmailContent`) shows one card with the address and a way to change it, **Open email app** (**Open Gmail** for Gmail addresses), resending (with its cooldown) and a single spam hint; confirming a new password account is checked again whenever the listener returns to boxlore. From onboarding (Welcome → Import library → In my boxlore account, `fromImport=true`) the page has no title and offers **Not now** in the top bar. Once signed in it shows “You’re signed in” beside Echo and, while the library syncs, a **No need to wait** note right under it (“Continue whenever you like…”), so the way on isn’t missed below the fold; then Shows, Queue and Progress tiles. While syncing, each tile’s icon turns inside a wavy ring and the tile glows, a beat apart; when sync finishes they turn done one after another (filled, with a check), while the Syncing / Done label changes at once for screen readers. A failed sync shows the error panel with Try again. **Continue** is pinned at the bottom. From Settings it has the **Account & sync** title and, signed in, the sync panel, an **Account** group (who is signed in and how, **Reset password** for password accounts, **Sign out**, **Delete account**) and quiet **Privacy Policy** / **How deletion works** links. Google, email-link, password, verification and deletion flows behave as before. Copy lives in `res/values/account.xml`.
-- **Opening a sign-in link (2026-10-18).** The app opens Account & sync for each new link (`AccountEmailLinkUi` carries `EmailLinkSignInStatus` and retry/dismiss from `SettingsRepositories.emailLinkSignIn`). While the link is checked the page shows **Signing you in** (“Checking your link. Your library syncs right after.”) with a progress bar and Echo working, and onboarding hides **Not now**; once signed in, the usual signed-in page shows the first sync in its sync panel. A used or expired link shows **This link has expired** with **Send a new link** to the same address (the page then moves on to Check your email); any other failure shows **Couldn’t sign you in** with **Try again**. **Other ways to sign in** returns to the sign-in cards. `accountPageMode` puts signed in first, then signing in, then the failure, then pending emails. `AccountPageAdaptiveTest` keeps both states through phone, tablet and split windows in both directions and across recreation.
-- `onAccountPageVisibilityChanged` reports the actual nested Account destination to the app shell, including Settings-hub and Sync & Backups entry. The shell hides player chrome throughout Account and onboarding without stopping audio or changing restored playback. Account content no longer reserves a mini-player-sized bottom gap; regular Settings retains navigation clearance.
-- **Echo on the Account page** (`AccountEcho`) is the shared `EchoCharacter` from `:core:designsystem` on its stage: holding the sync cloud, or hugging it while a sync runs (`account-syncing`). Tapping it tries on its genre outfits in turn (`AccountEchoOutfits`, saved across rotation and resizing; not while syncing), with no highlight painted around the transparent artwork and the action kept for screen readers. Its eyes follow `AccountEchoIdle`. The old atlas (`EchoAvatar`, `EchoAnimation`, `assets/echo`, about 2.9 MB) is gone; the account stills add about 130 KB to the shared Echo assets. Status text stays accessible on its own; Echo is decorative.
-- Appearance → Player → Miniplayer exposes **Seek buttons**, default off. `AppearanceUiState` and `AppearanceActions` carry its value and callback; app wiring owns persistence through `:core:prefs`. The existing Playback seek-duration sliders apply to the optional larger miniplayer buttons too.
-- Appearance is an overview plus five pages (`ProfileSettingsDestination` `Theme`, `AppearanceHome`, `AppearancePlayer`, `AppearanceNavigation`, `AppearanceText`; each `parent` is Appearance, and Back returns there unless the page was opened directly). The overview shows **Display mode** (also at the top of Theme & colors), then one row per page with its current choice (`appearanceSummary`); hero card previews (`AppearanceHeroPreview`, supplied by the app from Home; without it the Home page shows the choices without previews) appear only on the Home page. **Theme & colors** holds Display mode, the four looks (boxlore classic, Pure, Material 3, Custom) as a two-column picture grid with light and dark previews, the custom theme editor, **Use artwork colors** and **Widgets**. **Home** holds a **Hero card preview** (headed, non-interactive), the hero cards, their colours (Cover's shade, Duotone's colours, or the card color of Tide and Halo) and the top bar shortcuts. **Player** holds the player style and the miniplayer's seek buttons. **Navigation** holds the bar style, its blur and **Start page & tabs** (start page, Explore and Subscriptions landing tabs, Subscriptions tab position). **Text** holds the letter shape and an always-visible preview. Every visual choice uses `SettingsPictureTile` (a picture, the name and a check; the tile is one radio button, picked tiles on the primary container with a primary outline) in `SettingsPictureGrid`, or for the hero cards `SettingsPictureRow`, a sideways-scrolling row of wide tiles sized to the row (`settingsPictureRowTileWidth`, redesigned 2026-10-17 because the old 2.35-up tiles were too narrow: the fewest whole tiles that stay within 320dp plus 45% of the next, so one wide tile and about half the next on phones, two and a part on wide windows, never a whole number), so the cut-off tile always shows there is more; a fling settles on a tile's start (`settingsPictureRowSnapOffset`), and the row opens with the picked one in view. Hero pictures keep the Home card's shape as the tile widens (`heroPickerPictureHeight`: 0.78 of the picture width, 150–240dp); short lists keep connected buttons. Previews are drawn through `SettingsPicture`, which keeps their buttons from reacting while the tile still takes the tap and hides their contents from accessibility services. Material 3 uses wallpaper colors; Pure retains white/true-black backgrounds. The `theme` entry point opens Theme & colors. Legacy presets, named accents, custom hex colors and locked modes remain readable and appear as Custom without changing persisted values. Leaving Custom remembers all its original inputs atomically so it can be restored later.
-- **Use artwork colors** defaults on and scopes artwork-derived palettes to podcast/episode details and the navbar’s accents and subtly tinted surfaces. Pure retains neutral black/white backgrounds. Palette changes ease in after artwork loads; turning the option off restores the app palette. The full-page custom editor keeps its Material component preview pinned, using a compact sample on short screens, with larger text or while the keyboard is open. It has Light/Dark selection, primary/secondary/tertiary pickers, optional suggested supporting colors, hex entry, labelled sliders, and Tinted/Neutral/Pure backgrounds. Existing preset backgrounds remain available as Saved while comparing other background styles. Color roles, swatches and background options have explicit selection semantics, controls retain 48dp touch targets, and decorative preview controls do not expose fake accessibility actions. Save applies coordinated Material Color Utilities roles in one transaction; Back leaves app colors untouched. Text and container colors are derived for readability. Widgets still resolve the same saved app scheme independently of artwork.
-- **Blur behind the bar** (Appearance > Navigation, shown only with the Floating bar) picks Off / Soft / Medium / Strong, Soft by default. The page softens into a progressive blur as it scrolls under the floating bar and mini player; the bar itself stays solid. Changes are tracked as `navigation_blur_changed`.
-- **Hero cards** (Appearance > Home) picks Block (the solid colour card), Cover (the cover fills the card and fades into a shade behind the text; selected until a listener picks another style), Tide (the whole cover above a wavy panel with a round Play button), Duotone (the cover redrawn in two tones of one colour, with the words straight on it) Halo (a cookie-shaped cover in a progress ring on a card tinted from it) or Marquee (a full-width cover under the top bar, with the next cards beside Play) from a sideways-scrolling row of picture tiles drawn from the real cards. Right under the row, one card headed after the picked style ("Tide look", `AppearanceHeroLookCard`, 2026-10-17, because the options used to float in separate cards after the row and looked unrelated) holds a live preview of its single and Jump back in cards with that style's own options beneath (`AppearanceLookChoice`: connected choices and a line on what they do), so each change shows at once. With Cover, **Shade behind text** picks Dark, Artwork (a deep shade of each cover's colour) or App theme (a deep shade of the accent colour); with Duotone the same choice is **Duotone colors** (Dark redraws covers in black and white), with Tide and Halo **Card color**, and with Marquee **Cover colors**, where Dark is named **Full color** because Marquee keeps covers as they are (`heroColorsCopy`). Block shows the same choice as **Card color** (since 2026-10-17; it keeps the app theme until a colour is picked, `HeroCoverShade.forStyle`), and the overview names the choice for every style (for example "Duotone hero cards, artwork tones" or "Block hero cards, app theme color"). Tide also gets **Progress ring**: Wavy (the default) or Circle for the ring round its Play disc (`HeroTideProgress`, tracked as `hero_tide_progress_changed`); the previews draw the picked ring. The previews receive the stored colours unpicked, so each style's tile shows its own default. On tablets Home shows Cover instead of Marquee, so Marquee's tile says so ("A full-width cover on phones. Tablets show Cover cards instead.") and the larger preview shows Cover; `TabletSettingsCaptureTest` includes the Home page. Ordering, playback and details actions are the same. Changes are tracked as `hero_card_style_changed` and `hero_cover_shade_changed`, and each pick that changes the look also sends `home_hero_style_selected` with the full look: `trackedForAnalytics` reads the current `AppearanceUiState` at the moment of the pick (`rememberUpdatedState`), so a style pick carries the current colors and a color pick the current style. `AppearanceActionsTrackedTest` checks both callbacks are forwarded and that picks report the full look while re-picks report nothing; `AppearancePagesTest` covers the scrolling tiles, the colour picker on every style including Block, Tide's Progress ring and the summaries; `SettingsPictureRowTest` (one wide tile and part of the next on phones, a fractional last tile on every wider row, the 160dp floor, fling and end-of-row snapping, hero picture shape) checks the third tile is cut off on phone widths.
+## Account and sync
 
-- **Support worlds experiment.**
-  - `SupportPageHost` is the Support destination. Once per visit it reads the PostHog `support-world` flag through `AnalyticsHelper.supportWorldVariant(knownVariants)`, which records an exposure only for one of the six known worlds.
-  - It shows the assigned world: `control` (today's power-cell `SupportDevelopmentPage`), `neon`, `orbit`, `alchemy`, `abyss` or `sky`. A missing or unknown flag shows the control and reports `assignment_source=fallback`, so it never counts as an exposure.
-  - Every world is today's page: `SupportDevelopmentPage` takes a `SupportPageStyle` (`ControlSupportPageStyle` or `supportWorldPageStyle(skin)`), so the stage, tier info, picker, button, mission card and their spacing are identical in all six. A world swaps only its backdrop, platform and particles (`SupportWorldPlatform`), tier names, art and codenames, display and title fonts, featured chip, button verb and icon, mission noun and payments-off notice. Prices, server time, energy segments and tier colours stay the control's, and the five store-agnostic `SUPPORT_OFFERS` mirror them. `productId` is reserved for Play Billing. Only the power cells have lore, so a world's stage is not tappable.
-  - Payments are off (`SUPPORT_PAYMENTS_LIVE`). Every pay tap, including the control's, opens `SupportPaymentNotice`. It closes from its button, an outside tap or Back, and states that nothing was charged.
-  - `SupportPageSession` reports one view per visit with the world, assignment, entry point, local hour and weekday. It also reports tier picks, pay taps (`amount_usd`, `payments_live=false`) and one `support_page_left` with dwell, tiers viewed and pay intent. Rotation, resizing and folding restore the session rather than counting a second view.
-  - `SupportEntryImpression` reports `support_entry_viewed` (`surface=settings_top_bar` on the phone hub, `settings_category_list` on the tablet list) once each time Settings shows the Support entry. A configuration restore never repeats it. This is the top of the funnel: Settings opened → Support entry seen → Support page viewed → pay tapped.
-  - The Support page never scrolls (`SupportPageBody`). Windows with room for the full page (about 645dp of content height at 100% text) keep today's stacked layout: flexible gaps on phones, fixed 20dp gaps on tablets. Wider-than-tall windows without that room put the stage beside the picker and button, and narrow ones drop the mission card first. Codenames are measured and shrink only when a line would overflow; `SupportWorldFont.overhang` keeps swash faces clear of the edge. The payments-off notice drops its artwork below a 520dp window height. Tier picks are reported when the pager settles, so a tap across several tiers counts once.
-  - Debug builds (`FLAG_DEBUGGABLE`) add a top-bar world switcher whose choice lasts for the process.
-  - `SupportPageEnvironment` holds the flag reader, analytics sink, clock and configuration-change check, so tests can replace them.
-  - World copy lives in Kotlin like the original Support page. Move the winning world's strings into resources when it graduates.
+- `AccountSettingsPage` serves Settings and onboarding. `accountPageMode` picks one state: signed in, signing in with a link, link failed, confirm email, check email, or signed out.
+- Signed out offers Google, an emailed sign-in link and email with password; the chosen method's form replaces the cards (`AccountAuthState.methodChosen`, kept in saved state).
+- Opening a sign-in link shows its progress or failure through `AccountEmailLinkUi`, fed by `SettingsRepositories.emailLinkSignIn`.
+- Signed in from Settings shows the sync panel (`AccountSyncPanel`) and the account group (sign out, reset password for password accounts, delete account). Backend error text is never shown.
+- Echo (`AccountEcho`, the shared `EchoCharacter`) is decorative; tapping it cycles outfits (`AccountEchoOutfits`), except while syncing.
+- Cloud Sync & Backups exports and imports a full JSON backup or subscriptions only (OPML) through `LibraryBackupWriters`; its copy names exactly what the JSON holds (`FULL_LIBRARY_EXPORT_SUMMARY`).
+- Account copy lives in `res/values/account.xml`.
 
-- Dialogs: `AddRssFeedDialog`, `ResetAnalyticsDialog`, `LogsPreviewDialog`.
+## Feedback and support conversations
 
-- Automatic downloads uses the shared two-line settings header and solid grouped surfaces for Downloads, Storage, and While boxlore is closed. A connected 1/2/3/5 selector replaces scrolling quota chips; a short introduction explains per-show activation. **Backup background checks** is explicitly described as optional recovery when show notifications are off or do not arrive; notifications can already trigger downloads while closed. Its network/charging controls appear only when the off-by-default switch is enabled, retaining their preferences when hidden. Concise state-dependent copy explains foreground/push discovery or battery/data costs and Android delays; the header help dialog holds the full network, consent, discovery and retention explanation. Per-show auto-download never enables background checking.
-- **Privacy page:** the opening card says analytics never includes the listener's name or email, and that an account is optional, only backs up and syncs the library, and is never linked to analytics (1 Nov 2026; it used to say there was no account).
-- **Page views** (`TrackScreenView`, `:core:designsystem`): `settings` sends `settings_interaction` `screen_viewed` through the helper; every page sends `screen_viewed` (`account` with `mode`, `sync_and_backups`, `library_settings`, `recommendations_settings`, `appearance` and its `appearance_theme`/`_home`/`_player`/`_navigation`/`_text`, `playback_settings`, `downloads_settings`, `smart_downloads_settings`, `auto_download_settings`, `privacy`, `about`, `feedback` for "Share your thoughts", `feedback_list`, `feedback_thread` and `feedback_sent`), as do its dialogs. `support` keeps `support_page_viewed`. Account actions send `settings_interaction`: `account_sign_in_email_link`, `account_sign_in_google`, `account_sign_out`, `account_sync_now`, `account_delete_confirmed`.
+- `FeedbackScreen` opens on the `openThreadId` conversation, else the list once conversations exist, else the form (`initialFeedbackPane`). Back walks conversation → list → out (`feedbackBack`).
+- Categories, message limit, photos and the pause notice come from the server's support metadata; built-in categories are the offline fallback (`FeedbackChoice`). The server can refuse a send, and the draft stays.
+- Drafts persist through `BoxcastPrefs` and lock while sending. The phone model goes only with diagnostics on.
+- Each send carries a retry key (`RetryKeys`), so a resend after a lost answer is saved once; an edited message gets a new key.
+- `FeedbackSentScreen` offers a notifications prompt only when the message became a conversation and notifications are off (`canAskForNotifications`).
+- A conversation (`FeedbackThreadScreen`, `FeedbackThreadViewModel`) loads fresh each time it shows, reloads on a reply push, and is marked read only once on screen. Replies keep their draft and retry key in saved state.
+- Wide landscape windows show the list beside the conversation (`feedbackUsesSplit`); `FeedbackPanesLayout` keeps both composed, so crossing the gate keeps scroll, text and focus.
+- Feedback keeps the player compact and reclaims the room it frees (`feedbackBottomSpace`, `feedbackChromePadding`).
+
+## Support page
+
+- `SupportPageHost` is the Support destination. Once per visit it reads the `support-world` experiment flag and shows one of six worlds: `control` (the original page), `neon`, `orbit`, `alchemy`, `abyss` or `sky`.
+- A missing or unknown flag shows the control and is reported as a fallback, never as an exposure. Debug builds add a world switcher that lasts for the process.
+- Every world is `SupportDevelopmentPage` with a `SupportPageStyle`; a world changes only art, fonts and wording. Prices and tiers come from `SUPPORT_OFFERS` in every world.
+- Payments are off (`SUPPORT_PAYMENTS_LIVE`): every pay tap opens `SupportPaymentNotice`, which says nothing was charged.
+- `SupportPageSession` reports one view and one exit per visit, surviving configuration changes. `SupportEntryImpression` reports each time Settings shows the Support entry.
+- The page never scrolls; `SupportPageLayout.kt` drops or rearranges parts to fit the window.
+- `SupportPageEnvironment` holds the flag reader, analytics sink, clock and configuration-change check so tests can replace them.
+
+## Library and LeaveMeAlone
+
+- Library holds Charts › Country (`ContentRegionPickerSheet`), Recommendations › Languages with Include English (`ContentLanguagesSheet`), Add podcast by RSS feed, and Storage › Clear saved shows.
+- Clear saved shows counts unfollowed shows with saved episode lists through `SavedShowsControl` (wired by the app); `ClearSavedShowsDialog` confirms that history, downloads and queue stay.
+- LeaveMeAlone (`ProfileSettingsDestination.Recommendations`, entry `recommendations`) holds every switchable section, saved through `trackedDiscoverySectionSetter`. Appearance › Home links to it and becomes its Back target. The sections are described in [`feature/home/README.md`](../home/README.md).
+
+## Playback, downloads and privacy
+
+- Playback holds trimming, seek lengths (also used by the miniplayer's seek buttons), skip behaviour, restarting forgotten episodes, Smart queue and where completed episodes hide.
+- Automatic downloads offers 1, 2, 3 or 5 episodes per show. Backup background checks are off by default; their network and charging controls show only when on and keep their values while hidden.
+- Privacy explains analytics and offers Reset recommendations, the analytics ID (copy or start a new one) and a request to delete analytics data.
 
 ## Internal structure
 
 ```text
 src/main/java/cx/aswin/boxlore/feature/settings/
-  SettingsScreen.kt
-  SettingsBackNavigation.kt
-  SettingsExternalActions.kt
-  SettingsViewModel.kt
-  SettingsViewModelAssembler.kt
-  ProfileSettingsDestination.kt
-  components/
-    SettingsRows.kt
-    SettingsScaffold.kt (shared column or lazy-list content)
-    ThemeLookCard.kt
-    InlineAccentPicker.kt
-    AccentSwatchGrid.kt
-  dialogs/
-    AddRssFeedDialog.kt
-    ResetAnalyticsDialog.kt
-  downloads/
-    AutoDownloadSettingsScreen.kt
-    SmartDownloadsSettingsScreen.kt
-  feedback/
-    DiagnosticCollector.kt
-    FeedbackDialogs.kt
-    FeedbackComposeParts.kt        # type pills, message card, photo row, typing bar
-    FeedbackListScreen.kt          # "Your feedback" list and its pinned buttons
-    FeedbackPanes.kt               # which pane shows, Back, the split rule, times
-    FeedbackNotificationAsk.kt     # notifications on/off, Android prompt or settings
-    FeedbackScreen.kt              # compose screen, typing layout, FeedbackContent switch
-    FeedbackSentScreen.kt          # Echo, thanks, notifications card, Done
-    FeedbackThreadScreen.kt        # one conversation, its ending, the reply box
-    FeedbackThreadViewModel.kt     # loads, pages, replies, marks read and solved
-    FeedbackViewModel.kt
-    LogcatCollector.kt
+  SettingsScreen.kt              # SettingsScreen, config types, analytics wrappers
+  SettingsBackNavigation.kt, ProfileSettingsDestination.kt, TabletSettingsLayout.kt
+  SettingsViewModel.kt, SettingsViewModelAssembler.kt, SettingsExternalActions.kt
+  components/                    # SettingsRows, SettingsScaffold, SettingsHeaderTitle,
+                                 #   SettingsPictureTile, ThemeLookPicture
+  dialogs/                       # AddRssFeedDialog, ClearSavedShowsDialog, ResetAnalyticsDialog
+  downloads/                     # AutoDownload* and SmartDownloadsSettingsScreen
+  feedback/                      # FeedbackScreen, panes, list, thread, sent screen,
+                                 #   view models, diagnostics and logcat collectors
   pages/
-    AboutSettingsPage.kt
-    AccountAuthHelpers.kt
-    AccountAuthUiComponents.kt
-    AccountSettingsDialogs.kt
-    AccountSettingsPage.kt
-    AccountPageContent.kt          # scaffold, header with Echo, sync tiles, signed-in layouts
-    AccountSignedOutContent.kt     # sign-in cards and the chosen method's form card
-    AccountCheckEmailContent.kt    # check / confirm your email
-    AccountCloudSyncComponents.kt  # sync panel, account group, footer links
-    AccountEcho.kt                 # Echo, its outfits and eye idle
-    AnimatedBlobAvatar.kt
-    BlobAvatarAccessories.kt
-    BlobAvatarCharacter.kt
-    BlobAvatarEnvironments.kt
-    BlobAvatarGeometry.kt
-    BlobAvatarGenreMood.kt
-    AppearanceSettingsPage.kt
-    ThemeSettingsPage.kt
-    AppearanceThemePage.kt, AppearanceHomePage.kt, AppearancePlayerPage.kt, AppearanceNavigationPage.kt, AppearanceTextPage.kt, AppearancePictures.kt
-    CustomThemeEditor.kt
-    CustomThemeEditorOptions.kt
-    CustomThemeColorControls.kt
-    CustomThemePreview.kt
-    ThemeSettingsLogic.kt
-    DownloadsSettingsPage.kt
-    EmailVerificationPendingSection.kt
-    LibrarySettingsPage.kt
-    PlaybackSettingsPage.kt
-    PrivacySettingsPage.kt
-    SettingsHub.kt
-    SupportAtmosphere.kt
-    SupportCtaSection.kt
-    SupportDevelopmentPage.kt                    # the Support page for every world
-    SupportPageLayout.kt                         # no-scroll arrangement, background, codename fit
-    SupportPageStyle.kt                          # control and world styles, mission copy
-    SupportPageHost.kt                           # flag read, world routing, visit analytics
-    SupportTierModels.kt
-    supportworlds/
-      SupportWorld.kt                            # variants, assignment, offers
-      SupportWorldSkins.kt                       # five skins
-      SupportWorldStage.kt                       # world platform, backdrop, notice copy
-      SupportPaymentNotice.kt                    # payments-off notice (worlds + control)
-      SupportControlNotice.kt                    # control notice copy, session local, tier tracking
-      SupportPageSession.kt                      # visit analytics + saver
-      SupportWorldMotion.kt                      # reduced motion, loops, debug check
-      SupportWorldDebugMenu.kt                   # debug-only world switcher
-      SupportEntryImpression.kt                  # Settings Support-entry impression
-    SyncAndBackupsPage.kt
+    SettingsHub.kt, *SettingsPage.kt, SyncAndBackupsPage.kt, RecommendationsSettingsPage.kt
+    Account*.kt                  # Account & sync: auth state, sign-in, email link, sync panel, Echo
+    Appearance*Page.kt, AppearancePictures.kt
+    CustomTheme*.kt, ThemeSettingsLogic.kt
+    Support*.kt                  # host, page, layout, style, tiers, platform, atmosphere
+    supportworlds/               # worlds, skins, stage, notices, session, entry impression, debug menu
 ```
-- The app's notification settings (feedback's ask) open through `:core:designsystem`'s `startFirstAvailable`: the per-app page, else the app's details, else nothing, never a crash.
 
 ## Dependencies
 
-- Project dependencies: `:core:model`, `:core:domain`, `:core:catalog`, `:core:downloads`, `:core:network`, `:core:prefs`, `:core:designsystem`, `:core:analytics`, `:core:ranking`, `:core:rss`, and `:core:support`.
-- Libraries: Compose, Navigation, lifecycle ViewModel/runtime, Coil, Kotlin serialization, AndroidX Credentials, Google ID, Roborazzi.
-- Bundled Support world assets: 31 WebP drawables in `res/drawable-nodpi/support_*` (about 1 MB) and six display fonts in `res/font/support_*` (about 680 KB): Press Start 2P (neon), Michroma (orbit), Cinzel Decorative and Cinzel (alchemy), Rubik Microbe (abyss codenames only, bundled as a Latin subset) and Uncial Antiqua (sky). Each font's SIL Open Font License is in `licenses/`. Press Start 2P and Uncial Antiqua have Reserved Font Names, so they ship unmodified.
-- Reverse-edge rule: feature modules must not depend on other feature modules.
+- → `:core:model`, `:core:domain`, `:core:catalog`, `:core:downloads`, `:core:network`, `:core:auth`, `:core:prefs`, `:core:designsystem`, `:core:analytics`, `:core:ranking`, `:core:rss`, `:core:support`.
+- Libraries: Compose, Material 3, Navigation, lifecycle, Coil, Lottie, Kotlin serialization, AndroidX Credentials and Google ID; tests add JUnit 5, Turbine, Robolectric, Roborazzi and Mockito.
+- Support worlds bundle art (`res/drawable-nodpi/support_*`) and SIL Open Font License fonts (`res/font/support_*`); licences are in `licenses/`, and Reserved Font Name fonts ship unmodified.
+- Feature modules never depend on other features, and never call PostHog directly; analytics go through `:core:analytics`.
 
 ## Threading / lifecycle
 
-- ViewModels are scoped by app navigation or Activity owners.
-- Repositories, ports, and preferences dependencies are application-scoped instances supplied by app wiring.
-- Settings surfaces emit glossary analytics through `:core:analytics` (no PostHog direct in the feature).
-- UI state is exposed through flows and collected by Compose on the main thread.
-- Network and database operations run through injected suspend APIs.
+- ViewModels are scoped to their navigation entry; repositories, auth, support and preferences are application-scoped instances from app wiring.
+- `FeedbackViewModel` reads logs and photos on an injected IO dispatcher; conversation photos decode on `Dispatchers.Default`.
+- Network, auth and database work goes through injected suspend APIs; UI state is exposed as flows and collected by Compose on the main thread.
+- The Support visit ends only on a real exit, not on a configuration change.
 
 ## Persistence & identity
 
-- **Library → Charts and Recommendations** (29 Oct, D9): one thing per row. Charts › Country opens `ContentRegionPickerSheet`; Recommendations › Languages (summary such as "English, Hindi", `languagesSummary`) opens `ContentLanguagesSheet` with "Include English". Both sheets' open state is `rememberSaveable`, so an open sheet stays through rotation, folds, resizes and recreation (`LibraryLanguagesAdaptiveTest`: phone, tablet single pane, split, the short-height gate, both ways). `RegionSettings` / `LibraryDiscoveryPreferences` carry `englishOff` and `onSetEnglishOff`; analytics `content_english_off_changed`. Manual acceptance: on a phone and a tablet, pick India → Languages shows "Stays on with Hindi"; pick Germany, German only → switch English off → Home, search and vibes show German shows (English ones only where German runs thin); fold or rotate with the sheet open and it stays.
-- **Library → Storage → Clear saved shows** (P4 PR 20, D10): the row counts unfollowed shows with saved episode lists ("Episode lists of 12 shows you don’t follow", "Nothing saved…" opens nothing) through `SavedShowsControl` (`RegionSettings.savedShows`, wired in `:app` to `ShowPageFeedPort.unfollowedCount` / `clearUnfollowed`); a confirmation (`ClearSavedShowsDialog`, test tags `settings_clear_saved_shows_*`) says history, downloads and queue stay. The open confirmation saves the count it opened with (`rememberSaveable`), so after recreation it still names that count instead of 0 while the row counts again (`ClearSavedShowsAdaptiveTest`: phone, tablet, split and short windows, recreation, one clear per confirm); analytics `saved_shows_cleared`. Manual acceptance: open two shows you don't follow, then Library › Storage shows 2; clear on a phone and a tablet; the row reads "Nothing saved…", the shows load again when opened, and your history and downloads are unchanged.
-- **Library → LeaveMeAlone** (`ProfileSettingsDestination.Recommendations`, titled LeaveMeAlone, parent Library, deep link `recommendations`) holds every switchable section: On Home (The Brief, Picked for you, Because you like, Time-of-day picks) and On episode pages (Try these episodes). Library opens it from its own card below Discovery (subtext "Turn off recommendations across the app", also used on the Appearance → Home link), and Appearance → Home links to it with `onOpenRecommendationsFromHome`, which records Appearance → Home as the Back target. The page reads `RegionSettings.discoverySections` and saves through `trackedDiscoverySectionSetter`, which sends `recommendation_section_toggled` (source `settings`). In the tablet split it highlights Library and keeps its Back arrow; the rows hold no local state, so resizing shows the stored values. `AppearanceUiState.discoverySections` is read-only: Navigation hides **Explore opens to** while Picked for you is off, since Explore then has only Top. Covered by `AppearancePagesTest`, `AppearanceActionsTrackedTest`, `SettingsBackNavigationTest` and `TabletSettingsLayoutTest`.
-- Settings read and write DataStore and `BoxcastPrefs` through `:core:prefs` APIs.
-- The Support world assignment comes from the PostHog flag `support-world` (variants `control`, `neon`, `orbit`, `alchemy`, `abyss`, `sky`). Nothing about it is persisted locally; the debug override lives only in memory.
-- Stable Compose test tags include `settings_add_rss_*`, `settings_downloads_smart`, `settings_downloads_auto`, `settings_reset_analytics_confirm`, and `settings_reset_analytics_cancel`.
+- `boxlore_feedback_retry` (SharedPreferences, keys `fingerprint` and `request_id`): the pending feedback retry key, kept until the message is saved or discarded so it survives the app being killed. Do not rename.
+- Everything else Settings changes is stored by `:core:prefs` (`UserPreferencesRepository`, `BoxcastPrefs`).
+- The Support world comes only from the `support-world` flag; nothing is stored locally, and the debug override lives in memory.
+- `initialPage` keys above are deep-link contracts.
+- Stable Compose test tags: `settings_add_rss_url`, `settings_add_rss_confirm`, `settings_add_rss_cancel` (used by Maestro), `settings_downloads_smart`, `settings_downloads_auto`, `settings_reset_analytics_confirm`, `settings_reset_analytics_cancel`, `settings_clear_saved_shows_confirm`, `settings_clear_saved_shows_cancel`.
+- Analytics: every page sends `screen_viewed` through `TrackScreenView`; controls send `settings_interaction` only when a value changes. Events are listed in [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md).
 
 ## Testing notes
 
-- Settings analytics: a control sends `settings_interaction` only when its value changes (`trackedForAnalytics` reads the current `AppearanceUiState`; `trackDownloadSetting` for Smart Downloads and automatic downloads, which now report each control as `smart_downloads_*` and `auto_download_*`; the playback lengths compare with the saved value). Player appearance reports `mini_player_seek_buttons_toggled` and `full_player_style_changed`. A sent feedback message sends `feedback_sent` (category with audio counted as bug, `with_email` always false now that there is no email field, with diagnostics; never the text) only once the server or the old form accepted it, and the Feedback screen's rate button sends `store_review_opened`. `AppearanceActionsTrackedTest` and `AutoDownloadSettingsActionsTest` cover re-picks reporting nothing.
-- Tablet top bars align with their bounded content column and keep a flat surface. Footer clearance follows actual mini-player visibility. RSS match confirmation remains scrollable in short viewports; the Support page fits without scrolling instead (see Support worlds). Phone spacing remains unchanged.
+Hermetic JVM tests live in `feature/settings/src/test`, using fakes from [`:core:testing`](../../core/testing/README.md) and the Robolectric Compose host for UI.
 
-- Tablet settings use the shared Utility cap (720dp), including Smart Downloads, Feedback and Support outside the ordinary settings scaffold. Existing account/editor caps remain smaller or bound each editor column. Phone constraints are unchanged.
+| Area | Tests |
+| :--- | :--- |
+| Hub, Back and tablet split | `SettingsBackNavigationTest`, `TabletSettingsLayoutTest`, `TabletSettingsDialogTest`, `TabletSettingsCaptureTest`, `SettingsHeaderTitleTest` |
+| RSS and reset dialogs | `SettingsViewModelTest`, `SettingsViewModelDialogTest`, `SettingsGoldenRoborazziTest` |
+| Appearance | `AppearancePagesTest`, `AppearanceActionsTrackedTest`, `SettingsPictureRowTest`, `PlayerStyleSectionTest` |
+| Themes | `CustomThemeEditorTest`, `CustomThemeEditorOptionsTest`, `ThemeEditorPressFeedbackTest`, `ThemeSettingsLogicTest`, `ThemePresetResolutionTest`, `AccentSwatchLayoutTest` |
+| Account and sync | `AccountPagePresentationTest`, `AccountPageAdaptiveTest`, `AccountSettingsPageTest`, `AccountAuthHelpersTest`, `AccountLinkFailedContentTest`, `SyncAndBackupsPageTest` |
+| Library | `LibraryLanguagesAdaptiveTest`, `ClearSavedShowsAdaptiveTest` |
+| Downloads | `AutoDownloadSettingsActionsTest` |
+| Feedback | `FeedbackViewModelTest`, `FeedbackLayoutPolicyTest`, `FeedbackAdaptiveTransitionTest`, `FeedbackNotificationSettingsTest`, `DiagnosticCollectorTest`, `LogcatCollectorTest` |
+| Conversations | `FeedbackPanesTest`, `FeedbackThreadViewModelTest`, `FeedbackConversationsAdaptiveTest` |
+| Support page | `SupportWorldsModelTest`, `SupportPageHostTest`, `SupportPageLayoutTest`, `SupportPageSessionTest`, `SupportEntryImpressionTest`, `SupportDevelopmentPageTest` |
 
-- `SettingsPhoneGoldenTest` captures the Settings hub at both portrait phone sizes and short landscape in light/dark. Local captures use `-PphoneGoldens=verify --tests '*PhoneGoldenTest'`; recording never overwrites existing phone baselines. The older dialog/download Roborazzi tests also live in this module. See [capture instructions](../../docs/screenshots/README.md).
-
-- `PlayerStyleSectionTest` checks both selections, the exact design-credit link and large-text RTL accessibility. `AppearanceActionsTrackedTest` verifies that the player-style callback survives the analytics wrapper without toggling the miniplayer.
-
-- Support worlds:
-  - `SupportWorldsModelTest` covers flag mapping and fallback, debug override precedence, offer parity with today's page, skin completeness, payments-off copy in every arm, that each world style keeps the control's prices, times, segments and colours, codename shrinking and mission copy.
-  - `SupportPageSessionTest` covers one view and one exit per visit, ignoring events outside a visit, saved-state restore without a second view, and the production event properties.
-  - `SupportPageHostTest` (Robolectric) keeps the selected tier and an open notice through compact↔tablet transitions on both sides of the 600dp width, 480dp height and 840dp split gates. It also covers Back and outside-tap dismissal, a configuration restore without a second view, the control fallback and its notice, a single exit event, and the debug world switch.
-  - `SupportPageLayoutTest` covers the arrangement thresholds (full stacked page, side by side, mission card cut-off, larger text) and renders the control and every world in 392×800 and 360×600 portrait and 800×392 landscape windows with no scrollable node, the pay button and tier info fully on screen, and the mission card shown only when it fits.
-  - `SupportEntryImpressionTest` covers one impression per view, none for a configuration restore, a new one after returning, and the real Settings hub's top-bar surface.
-  - Not covered by JVM tests: rendering quality on real devices and fold postures. Those need a phone, tablet or foldable check.
-- Feedback: `FeedbackViewModelTest` covers draft restore (old steps joined), a draft past the limit kept whole until shortened, a server limit above 2,000, a conversation send (body trimmed, diagnostics, analytics without the text), the phone model only with diagnostics, the server's categories (an unknown id falls back, a new one is sent as is and counts as other in analytics), the old-form fallback without the reply promise, refusal and failure keeping the draft with a retry, blank messages, the draft locked while sending, photos ignored while switched off, de-duplicated picks up to the limit uploaded in order before the message, a failed or oversized photo sending nothing, photos left out when support can't take them, paused sending, retry keys (kept for a resend, new after an edit or a success, the same after the screen is rebuilt, with photos uploaded once), and Discard draft. `FeedbackLayoutPolicyTest` covers the typing-layout and keyboard-clearance rules, the bottom space once the compact player has docked (Floating, not docked yet, nothing playing, Classic, a rail), `limitedMessage`, when Android's notification prompt can still show, and the sent-screen copy. `FeedbackAdaptiveTransitionTest` (Robolectric) holds the view model outside composition, as the navigation entry does in the app, so it covers the screen's own state rather than the view model's lifetime. It keeps one live screen while the window crosses the 600dp width, 480dp height and 840dp split gates in both directions, portrait/landscape tablets, a short 800×360 window that scrolls, and a fold going flat → tabletop → flat, then recreates it (`StateRestorationTester`): the typed message, the picked type and a reachable, enabled Send survive, Send goes out once, and the sent screen keeps Done and the notifications card (or its dismissal) through the same walk; an old-form send never shows the card. With the keyboard played by passing its height in, the message field stays focused with its text as the keyboard opens and closes twice and the window goes short and tall, and typing continues where it was. On a 360dp phone all five photos and their Remove buttons are reachable. Not covered by JVM tests: a real keyboard's animation and composition, the photo picker, and Echo's motion; those need a phone and tablet check. Manual acceptance: on a phone, a tablet and a foldable, write a message, rotate and fold with the keyboard up and down, then send; the draft stays, the cursor stays in the field, Send stays reachable above the keyboard, and the sent screen offers notifications only while they are off.
-- Feedback conversations: `FeedbackPanesTest` covers the opening pane, Back, the split gate (839/840dp, portrait, short), the saved pane and the times. `FeedbackThreadViewModelTest` covers marking an unread conversation read only once it shows and up to the newest message, gone and failed loads with a retry, earlier pages going first, a failed reply keeping its text and retry key, a refusal, a closed answer showing its ending at once even when the reload fails, gone clearing the screen, a push for this conversation reloading it (and one for another not), the reply draft outliving the view model through saved state, Mark solved, the reply limit, and a failed photo fetched again while a kept one isn't. `FeedbackConversationsAdaptiveTest` (Robolectric, the real `FeedbackScreen` on a fake support API) keeps the open conversation through phone ↔ split both ways across the 840dp gate, a portrait tablet, a short window and a foldable-sized window (no hinge data), and through recreation; a reply being written keeps its text and focus across the split gate both ways, and a conversation shown side by side stays open after narrowing; Back goes to the list, then out; side by side the newest conversation shows until another is picked and an unread one is marked read; a notification's id opens its conversation; and a phone without conversations opens on Share your thoughts. Not covered by JVM tests: real photos, the reply keyboard on a device, and push delivery.
-- Unit tests live under `feature/settings/src/test`.
-- `AccountPagePresentationTest` covers the onboarding and Settings layouts, picking each sign-in method and getting back to the cards, the check-email and confirm-email screens (resend cooldown), every sync state with its action, the Sync now label at 200% text in RTL, password-only Reset password, Echo press feedback, and that every Echo pose the page uses ships in the Echo manifest with a stage reach. `AccountPageAdaptiveTest` keeps one live page while the window moves phone → 599/600dp → tablet split → 479/480dp tall → portrait tablet → phone and checks that the chosen method, the typed email and the password mode survive, in both directions, and across activity recreation (`StateRestorationTester`). It also keeps a live syncing onboarding page across the same windows: the No need to wait note stays on screen above the tiles with Continue reachable, and finishing sync mid-resize turns all three tiles done and removes the note. Tests hold Echo on its resting pose with `LocalEchoMotion provides false` so the screen can go idle. App navigation tests cover hiding restored playback during Account and onboarding and restoring normal player presentation afterward.
-- `AutoDownloadSettingsActionsTest` exercises the same action callbacks and background presentation used by the screen: all four episode limits, invalid-limit rejection, help opening/dismissal, both background-control visibility states, and retaining all network/charging combinations when checks are disabled and re-enabled. No device or screenshot automation is required.
-- `SettingsHeaderTitleTest` covers reduced expanded typography, two-line support throughout collapse, constant compact-row size, monotonic expanded size/line-height changes and invalid scroll fractions without rendering or device automation.
-- Existing coverage includes Settings ViewModel tests, Account auth helper validation, Appearance actions tracking, back navigation action resolution tests (`SettingsBackNavigationTest`), and Roborazzi golden captures for dialogs.
-- `AppearanceActionsTrackedTest` also verifies the miniplayer seek callback is forwarded in both directions through the appearance action wrapper.
-- `CustomThemeEditorTest` covers live preview updates, incomplete/invalid hex validation and restoration, suggested-color stability across light/dark previews, atomic color/background saving, Back cancellation, editor-open events, and independently scrollable controls in narrow/large-text RTL and landscape windows. Local preview images can be exported by setting `BOXLORE_UI_TEST_ARTIFACTS` to an existing directory; CI needs no image output or device.
-- `ThemePresetResolutionTest` retains coverage for complete legacy palettes and app/widget/preview agreement. `ThemeSettingsLogicTest` covers the four-choice picker, legacy classification without resets, accurate locked modes, cohesive selection, remembering/restoring Custom, and harmless reselection. `AppearanceActionsTrackedTest` covers artwork-toggle and cohesive-theme callbacks. Back-navigation tests cover the old Theme entry point opening Appearance. Shared designsystem tests cover color encoding, contrast, artwork seed selection and entry-scoped navbar ownership; prefs tests cover cache restoration and atomic persistence. These are hermetic JVM checks without device automation.
-
+- `SettingsPhoneGoldenTest` is an opt-in phone golden; see [`docs/TESTING.md`](../../docs/TESTING.md).
+- Tests hold Echo still with `LocalEchoMotion provides false` so screens can go idle.
 
 ```bash
 ./gradlew :feature:settings:testDebugUnitTest
@@ -203,18 +146,17 @@ src/main/java/cx/aswin/boxlore/feature/settings/
 
 ## CI relevance
 
-- `unit-tests.yml` runs Settings JVM tests and includes the module in merged coverage verification (`kover`).
+- `unit-tests.yml` runs Settings JVM tests in the features-b shard and includes the module in merged coverage verification.
+- `scripts/ci/check-feature-no-posthog.sh` and `scripts/ci/check-feature-no-boxlore-database.sh` guard feature modules.
 
 ## See also
 
 - [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
 - [`docs/TESTING.md`](../../docs/TESTING.md)
+- [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md)
+- [`:app` README](../../app/README.md)
 - [`:feature:home` README](../home/README.md)
 - [`:feature:library` README](../library/README.md)
-- [`:app` README](../../app/README.md)
-
-Custom tablet avatar/stage controls show visible hover and keyboard focus while retaining syncing/disabled guards. Existing settings/account column limits and phone geometry are preserved.
-
-Tablet Settings uses a persistent category/detail split at 672dp of actual available width. Detail pages retain their composition owner through window resize, use a fixed header and clip transitions within their pane. Lateral category selection clears nested Back history; root Back exits the split, while Account and every page with a `parent` (Appearance's pages, Theme & colors, the custom theme editor) keep a Back arrow and return to their parent, and the list highlights the top-level category (`settingsCategoryOf`; `TabletSettingsLayoutTest` covers both). Onboarding and Support remain full-page. Category lists reserve actual playback clearance; ordinary detail/Account width caps remain 720/600dp. Offline local captures cover category pages and standalone download/feedback screens in portrait/landscape and both themes.
-
-Short folded alerts keep RSS fields/errors, analytics explanations and account-deletion information in a scrollable body while native action buttons remain visible. `TabletSettingsDialogTest` checks these actual dialogs at a synthetic tabletop fold with enlarged text, without performing account or network operations.
+- [`:core:prefs` README](../../core/prefs/README.md)
+- [`:core:support` README](../../core/support/README.md)
+- [`:core:auth` README](../../core/auth/README.md)
