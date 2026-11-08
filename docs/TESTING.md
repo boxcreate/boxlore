@@ -108,6 +108,7 @@ Run `node --test .github/scripts/test_announcement_admin.cjs` and the Python sui
 | Kover per-module | **≥ 70%** on logic-heavy modules (ratchet as suites land) | module verify |
 | Architecture | ARCHITECTURE.md boundaries | scripts + `ArchitectureGuardTest` + dependencyGuard |
 | New code | `*ViewModel` / `*Repository` need matching `*Test.kt` (allowlists for stubs / Media3 / hard AndroidViewModels) | `ArchitectureGuardTest` |
+| `ModuleReadmeBudgetTest` | Module READMEs stay under 2,000 words with no dates, plan labels or text after "See also"; older READMEs may only shrink (`core/testing/src/test/resources/module-readme-budget.txt`) |
 
 ### Current Kover floor
 

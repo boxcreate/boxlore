@@ -9,6 +9,23 @@ Copy into `<module>/README.md` when creating or updating a Gradle module.
 - A change that creates or moves module ownership must update this README in the same change.
 - Root `README.md` / CHANGELOG are not substitutes for module READMEs.
 - Cross-cutting maps: [`ARCHITECTURE.md`](../ARCHITECTURE.md), [`docs/TESTING.md`](TESTING.md).
+- Describe the module as it is now. Update the README only when something it documents changes
+  (purpose, public API, structure, dependencies, threading, stable names and IDs), and rewrite the
+  affected lines instead of adding new ones.
+- Keep it short: 500–2,000 words, one idea per bullet, nothing after "See also". Link to the one
+  place a shared topic is described (episode IDs, adaptive layouts, analytics events) instead of
+  repeating it. `ModuleReadmeBudgetTest` in `:core:testing` checks the length and the patterns below.
+
+## What doesn't belong
+
+| Instead of… | Put it in… |
+| :--- | :--- |
+| History: "used to", "redesigned on", dates, versions it changed in | The PR description and git history |
+| Plan, phase, PR or decision labels | Nowhere public |
+| Exact sizes, colours, timings, copy | The code (KDoc for the reason) |
+| One bullet per test | A short table: area → test class |
+| Manual acceptance steps | The PR's test plan |
+| Server, proxy, anti-abuse or operations detail | Private maintainer notes |
 
 ---
 
