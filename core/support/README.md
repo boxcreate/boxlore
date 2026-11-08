@@ -6,7 +6,7 @@ Listener feedback as support conversations with the boxlore API (`/support/...`)
 server allows (switches, limits, the push topics), sending a new message, and uploading photos.
 Wording, statuses and limits come from the server, so they change without an app update.
 
-It does not own any UI (the screens live in `:feature:settings`) and does not talk to Telegram or
+It does not own any UI (the screens live in `:feature:settings`) and does not answer messages or
 send pushes; that is the API's job.
 
 ## Public API
@@ -54,16 +54,14 @@ Features use it; it never depends on a feature, the design system or the catalog
 
 ## Persistence & identity
 
-- Nothing stored on the phone. The API knows the install from the API session the shared client
-  attaches (`X-Boxlore-Session`) together with the device key that session registered: every
-  support request carries `X-Request-Proof`, the device key's signature over the session, method
-  and path (`RequestProofInterceptor` in `:core:network`, added by `NetworkModule.createSupportApi`).
-  The app never sends an id of its own. Without a device key or proof the API answers 401 and the
-  message goes through the old form.
+- Messages live on the server; the phone keeps only what `SupportLocalStore` remembers between
+  launches. The API knows the install from its API session and the support client's request proof
+  (see `:core:network`); the app never sends an id of its own. When the API refuses a request for
+  a missing proof, the message goes through the old form.
 - `OutgoingFeedback.requestId` is the retry key: the screen sends the same key when the same message
   is sent again, so a send whose answer was lost isn't saved twice.
-- Fallback: when support isn't there but the old `POST /feedback` form can still deliver (404, 503
-  `support_unavailable`, or 401 `device_key_required` / `proof_required`), the message goes through it
+- Fallback: when support isn't there but the old `POST /feedback` form can still deliver (not found,
+  support unavailable, or a refused proof), the message goes through it
   (`legacySubmit`). The old form needs the API session too, so a 401 for a missing or refused session
   is a failure: the screen keeps the draft to send later. The old form knows only feature, bug and
   other (audio goes as bug, anything newer as other) and has no photos. A refresh that finds support

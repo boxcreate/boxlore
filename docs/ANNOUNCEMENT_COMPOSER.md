@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The static composer creates legacy-compatible FCM announcement drafts, previews the native app's visual design, and requires explicit review before a workflow request. The existing Google/password/TOTP gateway and its encrypted configuration remain local and unchanged. The composer never stores or reads sender credentials beyond the gateway's existing in-memory session.
+The static composer creates legacy-compatible FCM announcement drafts, previews the native app's visual design, and requires explicit review before a workflow request. The admin gateway and its configuration stay local and unchanged. The composer never stores or reads sender credentials beyond the gateway's existing in-memory session.
 
 ## Behavior
 
