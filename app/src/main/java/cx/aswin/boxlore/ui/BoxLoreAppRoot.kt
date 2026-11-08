@@ -240,8 +240,9 @@ fun BoxLoreAppRoot(
         FcmTopicHelper.reconcileAfterRestoreIfNeeded(activity, subscriptionRepository)
     }
 
+    // One instance for every onboarding flow, held by the activity so it is cleared when the activity finishes.
     val onboardingViewModel =
-        remember {
+        rememberOnboardingViewModel(owner = activity) {
             cx.aswin.boxlore.feature.onboarding.OnboardingViewModel(
                 application,
                 podcastRepository,
