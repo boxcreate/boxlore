@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import cx.aswin.boxlore.feature.home.SelectedShowStatus
 import cx.aswin.boxlore.feature.home.StableEpisodeList
 
 internal object YourShowsMotion {
@@ -43,6 +44,7 @@ internal data class SelectedShowPresentation(
     val episodes: StableEpisodeList,
     val loading: Boolean,
     val refreshing: Boolean,
+    val status: SelectedShowStatus = SelectedShowStatus(),
 )
 
 /** An exiting show's content retains its last displayed frame instead of adopting the next show. */

@@ -44,6 +44,7 @@ internal data class PodcastFeedContent(
     val gridItems: StablePodcastList,
     val recommendations: StableEpisodeList,
     val selectedPodcastEpisodes: StableEpisodeList,
+    val selectedShowStatus: SelectedShowStatus = SelectedShowStatus(),
 )
 
 @androidx.compose.runtime.Stable

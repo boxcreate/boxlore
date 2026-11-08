@@ -80,6 +80,8 @@ private fun YourShowsFeedContent(
                 isSelectedPodcastLoading = loadingState.isSelectedPodcastLoading,
                 isSelectedRssRefreshing = loadingState.isSelectedRssRefreshing,
                 episodePlaybackState = playback.episodePlaybackState,
+                selectedShowStatus = content.selectedShowStatus,
+                onRetrySelectedShow = callbacks.onRetrySelectedShow,
                 softExpireProgressEpisodeIds = playback.softExpireProgressEpisodeIds,
                 currentPlayingEpisodeId = playback.player.currentPlayingEpisodeId,
                 isPlaying = playback.player.isPlaying,

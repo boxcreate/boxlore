@@ -26,4 +26,8 @@ Announcement title:
 
 ## Improved
 
+- On Home, a show you listen to oldest first now picks up exactly where you left off, even deep into a long series, and skips trailers. Daily mix suggests the same next episode.
+
 ## Fixed
+
+- On Home, a show you've heard every episode of now lists its latest episodes instead of an empty list, and a show whose episodes can't load lets you try again.

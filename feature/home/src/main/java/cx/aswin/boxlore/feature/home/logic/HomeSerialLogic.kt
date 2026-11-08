@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.home.logic
 
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.listenerShowIds
 import cx.aswin.boxlore.feature.home.HomeListeningHistoryItem
 
 internal data class SerialProgressIds(
@@ -61,12 +62,23 @@ internal object HomeSerialLogic {
         return ids + episodes.filter { (tokens[it.id] ?: it.id) in wanted }.map { it.id }
     }
 
+    /**
+     * What a show's next episode depends on: the listener's place and the show's newest episode. A show
+     * found to have nothing left at a key isn't checked again until the key changes, so playback
+     * progress can't reload a finished series on every update.
+     */
+    fun resolveKey(
+        pod: Podcast,
+        allHistory: List<HomeListeningHistoryItem>,
+    ): String = "${HomeShowEpisodesLogic.placeHistoryId(allHistory, pod.listenerShowIds)}|${pod.latestEpisode?.id}"
+
     fun findPendingSerialPodcasts(
         subs: List<Podcast>,
         allHistory: List<HomeListeningHistoryItem>,
         completedEpisodeIds: Set<String>,
         resolvedSerial: Map<String, Episode>,
         inFlightResolutions: Set<String>,
+        caughtUpKeys: Map<String, String> = emptyMap(),
     ): List<Podcast> {
         val progress = progressIds(allHistory, completedEpisodeIds)
         return subs.filter { (it.preferredSort ?: "newest") == "oldest" }.filter { pod ->
@@ -75,7 +87,8 @@ internal object HomeSerialLogic {
                 currentResolved == null ||
                     currentResolved.id in progress.completed ||
                     currentResolved.id in progress.inProgress
-            needsResolve && pod.id !in inFlightResolutions
+            val caughtUpHere = currentResolved == null && caughtUpKeys[pod.id]?.let { it == resolveKey(pod, allHistory) } == true
+            needsResolve && !caughtUpHere && pod.id !in inFlightResolutions
         }
     }
 }

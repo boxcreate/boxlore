@@ -145,6 +145,7 @@ data class HomeFeedCallbacks(
     val onFeedbackClick: () -> Unit,
     val onToggleHomePin: (String) -> Unit = {},
     val onDismissFeaturedVideoShowcaseForever: () -> Unit = {},
+    val onRetrySelectedShow: () -> Unit = {},
 )
 
 @androidx.compose.runtime.Stable
@@ -346,6 +347,7 @@ fun HomeRoute(
                     onFeedbackClick = onFeedbackClick ?: viewModel::triggerFeedback,
                     onToggleHomePin = viewModel::toggleHomePin,
                     onDismissFeaturedVideoShowcaseForever = viewModel::dismissFeaturedVideoShowcaseForever,
+                    onRetrySelectedShow = viewModel::retrySelectedShow,
                 ),
                 onNavigateToSettings = onNavigateToSettings,
                 onForceReviewPrompt = viewModel::forceReviewPrompt,
@@ -440,6 +442,7 @@ private fun HomeScreenFeedContent(
             gridItems = StablePodcastList(uiState.discoverPodcasts),
             recommendations = StableEpisodeList(uiState.recommendations),
             selectedPodcastEpisodes = StableEpisodeList(uiState.selectedPodcastEpisodes),
+            selectedShowStatus = uiState.selectedShowStatus,
         ),
         feedState =
         PodcastFeedUiState(

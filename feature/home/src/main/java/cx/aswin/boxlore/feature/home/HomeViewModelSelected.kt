@@ -6,101 +6,73 @@ import cx.aswin.boxlore.core.playback.completedEpisodeIds
 import cx.aswin.boxlore.core.playback.episodeGroupTokens
 import cx.aswin.boxlore.feature.home.logic.HomeForegroundSyncLogic
 import cx.aswin.boxlore.feature.home.logic.HomeSelectedPodcastLogic
-import cx.aswin.boxlore.feature.home.logic.HomeSerialLogic
+import cx.aswin.boxlore.feature.home.logic.HomeShowEpisodesLogic
 import cx.aswin.boxlore.feature.home.logic.HomeYourShowsSignals
+import cx.aswin.boxlore.feature.home.logic.SeriesEpisodesLoader
+import cx.aswin.boxlore.feature.home.logic.ShowEpisodesList
+import cx.aswin.boxlore.feature.home.logic.ShowEpisodesPool
 import cx.aswin.boxlore.feature.home.logic.settledCatalogChanges
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 internal fun HomeViewModel.observeSelectedPodcast() {
     viewModelScope.launch {
-        val historySignal =
+        val signal =
             combine(
                 _selectedPodcastId,
                 allHomeHistory,
                 subscriptionRepository.subscribedPodcasts,
                 _rssRefreshVersion,
-            ) { podcastId, allHistory, subs, rssRefreshVersion ->
+                _selectedShowRetryVersion,
+            ) { podcastId, allHistory, subs, rssRefreshVersion, retryVersion ->
                 HomeSelectedPodcastLogic.buildSignal(
                     podcastId = podcastId,
                     allHistory = allHistory,
                     subs = subs,
                     rssRefreshVersion = rssRefreshVersion,
+                    retryVersion = retryVersion,
                 )
             }.distinctUntilChanged()
 
         var previouslyLoadedPodcastId: String? = null
-        historySignal.collectLatest { info ->
+        signal.collectLatest { info ->
             if (info == null) {
-                android.util.Log.d("HomeViewModelFilteredView", "historySignal collected: null (clearing selected podcast episodes)")
-                _selectedPodcastEpisodes.value = emptyList()
+                _selectedShowPool.value = null
                 _isSelectedPodcastLoading.value = false
+                _selectedShowLoadFailed.value = false
                 previouslyLoadedPodcastId = null
-            } else {
-                val (podcastId, lastPlayedEpisodeId, sort) = info
-                android.util.Log.d(
-                    "HomeViewModelFilteredView",
-                    "historySignal collected: podcastId=$podcastId, lastPlayedEpisodeId=$lastPlayedEpisodeId, sort=$sort",
+                return@collectLatest
+            }
+            val switchingPodcast = info.podcastId != previouslyLoadedPodcastId
+            if (switchingPodcast) {
+                _selectedShowPool.value = null
+                previouslyLoadedPodcastId = info.podcastId
+            }
+            val showLoading =
+                HomeSelectedPodcastLogic.shouldShowLoading(
+                    switchingPodcast = switchingPodcast,
+                    listEmpty = _selectedShowPool.value == null,
                 )
-                val switchingPodcast = podcastId != previouslyLoadedPodcastId
-                if (switchingPodcast) {
-                    _selectedPodcastEpisodes.value = emptyList()
-                    previouslyLoadedPodcastId = podcastId
-                }
-                val showLoading =
-                    HomeSelectedPodcastLogic.shouldShowLoading(
-                        switchingPodcast = switchingPodcast,
-                        listEmpty = _selectedPodcastEpisodes.value.isEmpty(),
-                    )
-                _isSelectedPodcastLoading.value = showLoading
-                try {
-                    if (sort == "oldest") {
-                        val page =
-                            podcastRepository.getEpisodesPaginated(
-                                podcastId,
-                                limit = 100,
-                                offset = 0,
-                                sort = "oldest",
-                            )
-                        // History keeps an episode under its owner ID; find it under the ID the list uses.
-                        val tokens = playbackRepository.episodeGroupTokens(page.episodes.map { it.id } + listOfNotNull(lastPlayedEpisodeId))
-                        val selectedRaw =
-                            HomeSelectedPodcastLogic.oldestSortWindow(
-                                allEpisodes = page.episodes,
-                                lastPlayedEpisodeId = HomeSerialLogic.idInList(lastPlayedEpisodeId, page.episodes, tokens),
-                            )
-                        android.util.Log.d(
-                            "HomeViewModelFilteredView",
-                            "Oldest sort resolution for podcastId=$podcastId: " +
-                                "totalEpisodesFetched=${page.episodes.size}, " +
-                                "rawEpisodesSelectedCount=${selectedRaw.size}",
-                        )
-                        _selectedPodcastEpisodes.value = selectedRaw
-                    } else {
-                        val page =
-                            podcastRepository.getEpisodesPaginated(
-                                podcastId,
-                                limit = 25,
-                                offset = 0,
-                                sort = "newest",
-                            )
-                        _selectedPodcastEpisodes.value = page.episodes
-                    }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    android.util.Log.e("HomeViewModelFilteredView", "Failed to fetch episodes for filter: $podcastId", e)
-                    if (showLoading) {
-                        _selectedPodcastEpisodes.value = emptyList()
-                    }
-                } finally {
-                    _isSelectedPodcastLoading.value = false
-                }
+            _isSelectedPodcastLoading.value = showLoading
+            if (showLoading) _selectedShowLoadFailed.value = false
+            try {
+                _selectedShowPool.value = loadSelectedShowPool(info)
+                _selectedShowLoadFailed.value = false
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.e("HomeViewModelFilteredView", "Failed to fetch episodes for filter: ${info.podcastId}", e)
+                // A refresh that fails keeps the list on screen; only a show with nothing to show says it failed.
+                if (_selectedShowPool.value == null) _selectedShowLoadFailed.value = true
+            } finally {
+                _isSelectedPodcastLoading.value = false
             }
         }
     }
@@ -118,31 +90,105 @@ internal fun HomeViewModel.observeSelectedPodcast() {
     }
 
     viewModelScope.launch {
+        val frame =
+            combine(
+                _selectedPodcastId,
+                _selectedShowPool,
+                _isSelectedPodcastLoading,
+                _selectedShowLoadFailed,
+            ) { id, pool, loading, failed ->
+                // A pool still held from the previous show never pairs with the new one.
+                SelectedShowFrame(id, pool?.takeIf { it.podcastId == id }, loading, failed)
+            }
         combine(
-            _selectedPodcastId,
-            _selectedPodcastEpisodes,
-            _isSelectedPodcastLoading,
+            frame,
             userPrefs.hideCompletedInHomeStream,
             playbackRepository.completedEpisodeIds,
-        ) { id, eps, loading, hideCompleted, completedIds ->
-            val filteredEps =
-                HomeSelectedPodcastLogic.filterCompletedIfNeeded(
-                    episodes = eps,
-                    hideCompleted = hideCompleted,
-                    completedIds = completedIds,
-                )
-            Triple(id, filteredEps, loading)
-        }.collect { (id, eps, loading) ->
-            _uiState.update {
-                it.copy(
-                    selectedPodcastId = id,
-                    selectedPodcastEpisodes = eps,
-                    isSelectedPodcastLoading = loading,
-                )
+        ) { current, hideCompleted, completedIds ->
+            val list =
+                current.pool?.let { HomeShowEpisodesLogic.build(it, completedIds, hideCompleted) }
+                    ?: ShowEpisodesList(emptyList())
+            current to list
+        }.distinctUntilChanged()
+            .flowOn(Dispatchers.Default)
+            .collect { (current, list) ->
+                _uiState.update {
+                    it.copy(
+                        selectedPodcastId = current.podcastId,
+                        selectedPodcastEpisodes = list.episodes,
+                        selectedShowStatus =
+                        SelectedShowStatus(
+                            caughtUp = list.caughtUp,
+                            loadFailed = current.loadFailed && list.episodes.isEmpty(),
+                            newestEpisodeIds = list.newestIds,
+                        ),
+                        isSelectedPodcastLoading = current.loading,
+                    )
+                }
             }
-        }
     }
 }
+
+private data class SelectedShowFrame(
+    val podcastId: String?,
+    val pool: ShowEpisodesPool?,
+    val loading: Boolean,
+    val loadFailed: Boolean,
+)
+
+/** The selected show's episodes to build Home's list from: from the listener's place for a show listened to in order, else its newest. */
+private suspend fun HomeViewModel.loadSelectedShowPool(info: SelectedPodcastSignal): ShowEpisodesPool {
+    if (!info.inOrder) {
+        val newest =
+            podcastRepository.getEpisodesPaginated(
+                info.podcastId,
+                limit = HomeShowEpisodesLogic.NEWEST_POOL_SIZE,
+                offset = 0,
+                sort = "newest",
+            ).episodes
+        return ShowEpisodesPool(podcastId = info.podcastId, inOrder = false, episodes = newest)
+    }
+    val completedIds = playbackRepository.completedEpisodeIds.first()
+    val loaded = seriesEpisodesLoader(info.podcastId).load(info.placeHistoryId, completedIds)
+    val newest =
+        try {
+            podcastRepository.getEpisodesPaginated(
+                info.podcastId,
+                limit = HomeShowEpisodesLogic.NEWEST_FOR_IN_ORDER,
+                offset = 0,
+                sort = "newest",
+            ).episodes
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Only the NEW tags and the caught-up list use these; the list itself still stands.
+            android.util.Log.w("HomeViewModelFilteredView", "Newest episodes failed for ${info.podcastId}", e)
+            emptyList()
+        }
+    return ShowEpisodesPool(
+        podcastId = info.podcastId,
+        inOrder = true,
+        episodes = loaded.episodes,
+        placeId = loaded.placeId,
+        newest = newest,
+    )
+}
+
+/** Reads a show listened to in order from the listener's place on; shared by the selected-show list and Daily mix. */
+internal fun HomeViewModel.seriesEpisodesLoader(podcastId: String): SeriesEpisodesLoader = SeriesEpisodesLoader(
+    window = { aroundId -> podcastRepository.getEpisodeWindow(podcastId, aroundEpisodeId = aroundId, sort = "oldest") },
+    oldestPage = { offset ->
+        val page =
+            podcastRepository.getEpisodesPaginated(
+                podcastId,
+                limit = SeriesEpisodesLoader.PAGE_SIZE,
+                offset = offset,
+                sort = "oldest",
+            )
+        SeriesEpisodesLoader.Page(page.episodes, hasMore = page.hasMore, advance = page.sourceCount)
+    },
+    groupTokens = { ids -> playbackRepository.episodeGroupTokens(ids) },
+)
 
 internal fun HomeViewModel.observeDirectFeedRefresh() {
     viewModelScope.launch {

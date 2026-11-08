@@ -8,12 +8,17 @@ import cx.aswin.boxlore.core.model.Podcast
 
 internal data class SelectedPodcastSignal(
     val podcastId: String,
-    val lastPlayedEpisodeId: String?,
+    /** Shows listened to in order: the listener's place (history ID); null for newest-first shows. */
+    val placeHistoryId: String?,
     val sort: String,
     val rssRefreshVersion: Long,
     val latestEpisodeId: String? = null,
     val rssHasNewEpisodes: Boolean = false,
-)
+    /** Bumped by Try again after a failed load. */
+    val retryVersion: Long = 0L,
+) {
+    val inOrder: Boolean get() = sort == "oldest"
+}
 
 data class HomeDataWrapper(
     val trending: List<Podcast>,

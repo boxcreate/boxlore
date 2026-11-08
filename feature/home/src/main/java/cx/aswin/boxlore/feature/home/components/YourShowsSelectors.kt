@@ -198,6 +198,7 @@ private val TitlePressInset = 6.dp
 internal fun SelectedShowHeader(
     podcast: Podcast,
     canClear: Boolean,
+    showsNextEpisodes: Boolean = true,
     onOpenShow: () -> Unit,
     onClear: () -> Unit,
 ) {
@@ -223,8 +224,9 @@ internal fun SelectedShowHeader(
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 SelectedShowTitle(podcast.title, podcast.isRss || podcast.id.startsWith("rss:"), maxLines = 2, style = YourShowsText.title())
-                // Newest first is the default and needs no label; serial shows say they continue in order.
-                if (podcast.preferredSort == "oldest") {
+                // Newest first is the default and needs no label; serial shows say they continue in order,
+                // except once caught up, when the list holds the latest episodes instead.
+                if (podcast.preferredSort == "oldest" && showsNextEpisodes) {
                     Text(
                         text = stringResource(R.string.home_shows_next_episodes),
                         style = YourShowsText.subtitle(),

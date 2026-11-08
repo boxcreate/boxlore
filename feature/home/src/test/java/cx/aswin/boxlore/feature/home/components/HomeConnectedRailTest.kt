@@ -44,6 +44,7 @@ import cx.aswin.boxlore.core.downloads.CompletedDownloadItem
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.core.testing.TestFixtures
+import cx.aswin.boxlore.feature.home.SelectedShowStatus
 import cx.aswin.boxlore.feature.home.StableCompletedDownloadList
 import cx.aswin.boxlore.feature.home.StableEpisodeList
 import cx.aswin.boxlore.feature.home.StablePlaybackStateMap
@@ -63,13 +64,14 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class HomeConnectedRailTest {
     @get:Rule val composeRule = createComposeRule()
-    private data class Scenario(val count: Int = 3, val selected: String? = null, val width: Int = 353, val scale: Float = 1f, val rtl: Boolean = false, val empty: Boolean = false, val mode: HomeMixMode = HomeMixMode.DAILY, val progressed: Boolean = true, val distinctEpisodes: Boolean = false, val episodeCount: Int = 1, val parentScrollHost: Boolean = false, val tablet: Boolean = false, val densityMultiplier: Float = 1f, val paneWidth: Int? = null)
+    private data class Scenario(val count: Int = 3, val selected: String? = null, val width: Int = 353, val scale: Float = 1f, val rtl: Boolean = false, val empty: Boolean = false, val mode: HomeMixMode = HomeMixMode.DAILY, val progressed: Boolean = true, val distinctEpisodes: Boolean = false, val episodeCount: Int = 1, val parentScrollHost: Boolean = false, val tablet: Boolean = false, val densityMultiplier: Float = 1f, val paneWidth: Int? = null, val status: SelectedShowStatus = SelectedShowStatus())
     private val state = mutableStateOf(Scenario())
     private val parentScroll = ScrollState(0)
     private var infoClicks = 0
     private var plays = 0
     private var episodeClicks = 0
     private val selectedLoading = mutableStateOf(false)
+    private var retries = 0
     private val showEvents = mutableListOf<String>()
     private val episodeEvents = mutableListOf<Triple<String, String, String>>()
     private val playEvents = mutableListOf<Triple<String, String, PlaybackEntryPoint>>()
@@ -469,23 +471,60 @@ class HomeConnectedRailTest {
         state.value = Scenario(count = 3, selected = "show-0", width = 1_200, tablet = true, episodeCount = 0)
         selectedLoading.value = true
         render()
-        composeRule.onNodeWithText("No episodes available").assertDoesNotExist()
+        composeRule.onNodeWithText("No episodes yet").assertDoesNotExist()
         composeRule.onNodeWithTag("home_filtered_episodes").assertDoesNotExist()
         composeRule.onNodeWithTag("home_filtered_see_all").assertDoesNotExist()
 
         selectedLoading.value = false
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("No episodes available").assertExists()
-        composeRule.onNodeWithTag("home_filtered_see_all").assertDoesNotExist()
+        composeRule.onNodeWithText("No episodes yet").assertExists()
+        // An empty show still leads to its page.
+        composeRule.onNodeWithTag("home_filtered_see_all").performClick()
+        assertEquals(listOf("show-0"), showEvents)
+        showEvents.clear()
 
         state.value = state.value.copy(episodeCount = 3)
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("No episodes available").assertDoesNotExist()
+        composeRule.onNodeWithText("No episodes yet").assertDoesNotExist()
         composeRule.onNodeWithTag("home_filtered_episodes").assertExists()
         composeRule.onNodeWithTag("home_mix_play_episode", useUnmergedTree = true).performClick()
         composeRule.onNodeWithTag("home_filtered_see_all").performClick()
         assertEquals(listOf(Triple("episode", "show-0", PlaybackEntryPoint.GENERIC)), playEvents)
         assertEquals(listOf("show-0"), showEvents)
+    }
+
+    @Test fun `failed and caught-up show states keep their actions across phone and tablet widths`() {
+        state.value = Scenario(count = 3, selected = "show-0", episodeCount = 0, status = SelectedShowStatus(loadFailed = true))
+        render()
+        composeRule.onNodeWithText("Couldn’t load episodes").assertExists()
+        composeRule.onNodeWithText("No episodes yet").assertDoesNotExist()
+        composeRule.onNodeWithTag("home_filtered_retry").performClick()
+        assertEquals(1, retries)
+        // Widening to the tablet sidebar keeps the failure, its Try again and the way to the show page.
+        state.value = state.value.copy(width = 1_200, tablet = true)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home_filtered_retry").performClick()
+        assertEquals(2, retries)
+        composeRule.onNodeWithTag("home_filtered_see_all").performClick()
+        assertEquals(listOf("show-0"), showEvents)
+
+        // Caught up: the latest episodes, the line saying so, and no "Next episodes" promise.
+        state.value = state.value.copy(episodeCount = 2, status = SelectedShowStatus(caughtUp = true))
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home_filtered_caught_up").assertExists()
+        composeRule.onNodeWithTag("home_filtered_episodes").assertExists()
+        composeRule.onNodeWithTag("home_filtered_retry").assertDoesNotExist()
+        state.value = state.value.copy(width = 353, tablet = false)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home_filtered_caught_up").assertExists()
+        composeRule.onNodeWithTag("home_filtered_see_all").performClick()
+        assertEquals(listOf("show-0", "show-0"), showEvents)
+
+        // Back to episodes left to hear: the line goes.
+        state.value = state.value.copy(status = SelectedShowStatus())
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home_filtered_caught_up").assertDoesNotExist()
+        composeRule.onNodeWithTag("home_filtered_episodes").assertExists()
     }
 
     private fun render() {
@@ -521,6 +560,8 @@ class HomeConnectedRailTest {
                                 isSelectedPodcastLoading = selectedLoading.value,
                                 isSelectedRssRefreshing = false,
                                 episodePlaybackState = StablePlaybackStateMap(emptyMap()),
+                                selectedShowStatus = scenario.status,
+                                onRetrySelectedShow = { retries++ },
                                 onPodcastSelected = { state.value = state.value.copy(selected = it) },
                                 onPodcastClick = { podcast ->
                                     infoClicks++
