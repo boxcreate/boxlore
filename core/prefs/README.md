@@ -2,109 +2,124 @@
 
 ## Purpose
 
-Owns user preference persistence and migration helpers: DataStore-backed user preferences, theme fast-cache preferences, the `BoxcastPrefs` facade over app preferences, and SharedPreferences file migration. It does not own analytics event storage, playback session behavior, ranking model storage, catalog cache contents, or feature UI.
+Owns user preference storage: the `user_preferences` DataStore behind `UserPreferencesRepository`, the theme fast cache for cold-start and non-Compose readers, the `BoxcastPrefs` facade over the `boxlore_prefs` file, a few separate stores that must stay out of backups, and SharedPreferences file migration.
+
+It does not own analytics event storage, playback behaviour, ranking storage, catalog cache contents, colour tokens or feature UI. It decides nothing about when prompts appear beyond the pure rules it stores; the prompt coordinator lives in [`:core:catalog`](../catalog/README.md).
 
 ## Public API
 
-- `FullPlayerStyle`, `fullPlayerStyleStream`, `cachedFullPlayerStyle` and `setFullPlayerStyle` persist `full_player_style` (`standard` default / `bunpod`) independently of miniplayer preferences and global seeks. The same DataStore and theme fast cache are used; restoration hydrates only a missing key, and an existing DataStore choice wins. Unknown values fall back to Standard.
-
-- `briefingDefaultEdition` / `setBriefingDefaultEdition` persist `briefing_default_edition` independently of discovery. `BriefingEdition` resolves Follow app region (default), Global, India, US and UK, normalizes aliases, and prioritizes explicit entry regions. Merely opening another edition does not persist it.
-
-- `miniPlayerSeekButtonsEnabledStream` / `setMiniPlayerSeekButtonsEnabled` persist the opt-in `mini_player_seek_buttons_enabled` flag (default off) in `user_preferences`. It only controls regular miniplayer button visibility; global seek durations and full-player controls remain available.
-- `ThemeSelection` is an opaque brand/surface/wallpaper input bundle. `setThemeSelection` applies it atomically and optionally remembers Custom in `custom_theme_brand`, `custom_theme_surface`, and `custom_theme_dynamic`; existing theme/storage keys remain intact. `customThemeStream` and `cachedCustomTheme` restore the saved selection after switching defaults. `artworkColorsEnabledStream` / `setArtworkColorsEnabled` persist `artwork_colors_enabled` (default on). Theme fast-cache and restore hydration include both new preferences, with existing DataStore values taking precedence.
-- `NavigationBlurPreferences` stores how strongly the page blurs behind the floating navigation bar (`NavigationBlurLevel`: off / soft / medium / strong, `navigation_blur_level`, soft by default, unknown values fall back to soft), with the usual fast cache and DataStore hydration; `UserPreferencesRepository` exposes `cachedNavigationBlurLevel`, `navigationBlurLevelStream` and `setNavigationBlurLevel`.
-- `HeroCardStylePreferences` stores the Home hero card style (`HeroCardStyle`: Block / Cover / Tide / Duotone / Halo / Marquee, `home_hero_card_style`, Cover by default as `HeroCardStyle.DEFAULT`) the colours every style shares (`HeroCoverShade`: dark / artwork / theme, `home_hero_cover_shade`) and the ring round Tide's Play disc (`HeroTideProgress`: wavy / circle, `home_hero_tide_progress`, wavy by default, added 2026-10-17) in DataStore with fast-cache copies, so Home draws the chosen cards on its first frame. The stored style values predate the names: Block is stored as `standard` and Cover, which replaced the Classic cards, as `classic`, so saved choices carry over; Tide, Duotone, Halo and Marquee are stored as `tide`, `duotone`, `halo` and `marquee`. `HeroCardStyle.usesArtworkColors` is true for every style but Block, since each draws its cards from the cover. The colours stream reads `HeroCoverShade.UNSET` until a colour is picked (2026-10-17, when Block gained the choice): `HeroCoverShade.sanitize` treats it as artwork, and `HeroCoverShade.forStyle(style, value)` gives each style its own default, the app theme for Block (what Block always showed) and artwork for the rest, so existing Block listeners see no change until they pick. Unknown values fall back to the defaults. Only a picked value is written to the fast cache or copied into DataStore by backup-restore hydration, so listeners who never picked follow the current default (they moved from Block to Cover with this change). `HeroCardStylePreferencesTest` covers defaults (an unpicked colour reading as artwork for Cover and the app theme for Block), the Tide ring's default, persistence and unknown values, the stored `standard`/`classic`/`tide`/`duotone`/`halo`/`marquee` values, unknown shades, and that reading and hydrating never save an unpicked default while a cached pick is still restored.
-- `setThemePreset` atomically writes a ready-made theme's opaque key to existing `surface_style` and `theme_brand` preferences and disables wallpaper colors, including one matching fast-cache update. It preserves theme mode, lettering, navigation and all unrelated preferences. Palette definitions stay in designsystem; prefs owns no color tokens or catalog dependency.
-- `UserPreferencesRepository` exposes DataStore-backed settings such as theme, lettering roundness (`font_roundness`: `crisp` / `soft` / `round`, default `round`), navigation style (`navigation_style`: `floating` / `classic`), cold-start landing (`open_app_to`: `home` / `subscriptions` / `downloads`, default `home`; Back from launch-Subscriptions or launch-Downloads goes to Home), Explore default tab (`explore_default_tab`: `for_you` / `top`, default `for_you`), Subscriptions default tab (`subscriptions_default_tab`: `shows` / `new_episodes`, default `shows`; omitted `tab` on the Subscriptions route uses this), content region (11 chart storefronts), `content_languages` (max 4, English first; since 29 Oct (D9) a country change keeps the listener's picks and a listener with none gets the country's set) and `content_english_off` (`contentEnglishOffStream` / `setContentEnglishOff`: English switched off, honoured only while every pick is in `ContentRegions.ENGLISH_OFF_LANGUAGES`; `contentLanguagesStream` then leaves English out, and picks that no longer allow it switch it back on), skip durations, smart downloads, playback preferences, `restart_forgotten_episodes` (default on — soft-expires mid-episode seek for implicit plays after 7 days; see `:core:playback` `PlaybackSkipPolicy`), `same_show_queue_only` (default off — Settings → Playback **Smart queue** stays on; when the switch is off, Smart Queue continues the current show only), `home_shortcuts_in_library` (default off — Settings → Appearance **Cleaner Home**; when on, Settings and Feedback sit on Library instead of Home), `widget_appearance` (`app` / `system`, default `app` — Settings → Appearance **Widgets**; App theme paints home-screen widgets from Theme / Background / Colors, System keeps launcher light/dark and wallpaper accents), `subscription_sort` (including `Manual`), `subscriptions_grid_view` (default on — Subscriptions Shows tab grid, off for list), `auto_organize_folders_enabled` (default off), `auto_organize_folder_size` (the look auto-organize gives genre folders, a `FolderDisplaySize` name; absent lets boxlore choose by size) and `auto_organize_tile_covers` (default on — tile genre folders show covers rather than their icon), `subscription_folder_sort`, `subscription_intra_folder_sort`, `subscription_manual_order` (ordered podcast ids, unit-separator encoded so `rss:` URLs can contain commas), `subscription_folder_manual_order` (ordered folder ids for manual folder inter-sort), `home_pinned_podcast_ids` (max 5; lead Your Shows), and `home_mix_mode` (`daily` / `offline`, default `daily`). `theme_brand` may be a named palette, `#RRGGBB` Material 3 seed, or `exact:#RRGGBB` (pins primary as-is). Theme fast-cache (`boxlore_theme_fast_cache`) mirrors `theme_config`, `surface_style`, `theme_brand`, `use_dynamic_color`, `font_roundness`, `navigation_style`, `open_app_to`, `widget_appearance`, `explore_default_tab`, and `subscriptions_default_tab` for cold-start / non-Compose readers. After Google Backup, `hydrateMissingDataStoreFromFastCache` copies those cache values into any missing DataStore keys so appearance streams do not reset to defaults.
-- The legacy RSS repair APIs persist a version gate plus one pending old→new podcast-id journal. Finishing the journal rewrites Manual order, Home pins, recommendation override, and per-show last-seen keys in one DataStore transaction.
-- `HomePinnedShows` sanitizes pin lists (distinct, max 5) and toggle results (`Pinned` / `Unpinned` / `AtCapacity`). `UserPreferencesRepository.toggleHomePinnedPodcastId` sanitizes, toggles, and persists inside one DataStore write; at capacity the stored list is unchanged.
-- `PreferenceIdList` encodes ordered id lists for DataStore string prefs.
-- `FontRoundnessAxis` centralizes lettering preset keys and ROND axis values for prefs, playback (Android Auto collage badges), and other non-Compose readers.
-- `WidgetAppearance` sanitizes home-screen widget chrome (`app` default vs `system`) and reads it from theme fast-cache for RemoteViews.
-- `ExploreDefaultTab` / `SubscriptionsDefaultTab` sanitize Appearance **Default tabs** (`for_you`/`top`, `shows`/`new_episodes`) and resolve the pager index when a route does not already pick a tab.
-- `SubscriptionsTabStyle` defines and sanitizes Subscriptions tab layout choices: `top` (default) vs `floating` (FAB style).
-- `BoxcastPrefs` stores the permanent Home video-showcase dismissal in the canonical `boxlore_prefs` file (`featured_video_showcase_dismissed`). The showcase asks for confirmation before writing it and does not reappear afterward.
-- `BoxcastPrefs.hasAcknowledgedTabletAlphaNotice()` / `acknowledgeTabletAlphaNotice()` store the one-time tablet startup acknowledgment in the same canonical file (`tablet_ui_alpha_notice_acknowledged`). It defaults to false, is written only after OK and never changes onboarding completion.
-- `Announcement` persists the existing title/body/route/image/action/category plus optional compact/fullscreen presentation, accent/image roles, release/Play/test flags, release code and GitHub release URL. Missing keys keep legacy compact defaults and category-based release detection; clearing removes all fields in one transaction. Rendering and delivery policy belong to app.
-- `Context.userPreferencesDataStore` defines the `user_preferences` DataStore delegate.
-- `BoxcastPrefs` is the typed facade for `boxlore_prefs` values such as onboarding, genres, recommendation caches, time-of-day rotation slot keys (`cached_byl_slot`), Learn history, learner-log gates, pending magic link authentication email (`pending_auth_email`), sticky feedback drafts (`FeedbackDraft` via `getFeedbackDraft()`, `saveFeedbackDraft()`, and `clearFeedbackDraft()`), the stable sync installation ID (`sync_device_id` via `getOrCreateSyncDeviceId()`), sync cursor state (`sync_last_timestamp`, `sync_last_user_id`, `sync_metadata_version`, and the listening pull mark `sync_listening_pulled_until` and the listening-date backfill's place `sync_listening_dates_sent_after` / `sync_listening_dates_sent`, which start over on an account switch or a deleted cloud copy, and `sync_listening_totals_sent` (`areListeningTotalsSent()` / `setListeningTotalsSent()`: every day went up once more after a server first said it stores the days' richer totals) and `sync_listening_release_known_sent` (`areListeningReleaseKnownSent()` / `setListeningReleaseKnownSent()`: set once a server first says it stores the days' time with a known release date, Room v42, when the days that know it are marked to go up again; it records that the resend was started, not that it was delivered); `sync_listening_pushed_until` from unreleased v40 builds is no longer read), the per-installation listening device ID (`getOrCreateListeningDeviceId()`, the file `boxlore_listening_device_id` in `noBackupFilesDir`, so Android backup and device transfer never copy it, unlike `sync_device_id`; written to a temporary file and renamed, and an ID that couldn't be saved stays the process's ID until it is), the legacy listening origin (`getListeningLegacyOrigin()`: `legacy-` plus the sync device ID, so copies of one database claim listening stored before v40 under one origin), and the notification-permission prompt gate (`has_requested_notification_permission`). `clearBylCacheIfPodcastId` invalidates a Because-you-like cache (including its cached slot key) when its seed show adopts a new catalog id.
-- `resolveLearnerLogEnabled(isDebugBuild)`: debug defaults on when unset; **release is always off** unless the user explicitly persisted `true` via the debug-screen toggle.
-- `UserPreferenceKeys` centralizes DataStore preference keys.
-- `PrefsFileMigrator` opens canonical SharedPreferences files and migrates from legacy file names.
-- `PlaybackSkipBounds` and `EngagementPromptConstants` provide shared preference-related bounds and thresholds.
-
-- `AutoDownloadBackgroundSettings` is installation-local consent in a separate `auto_download_background` DataStore, excluded from Android backup/device transfer and absent from library/cloud settings. Defaults: disabled, unmetered-only, charging optional. Only the explicit settings setter enables checks; existing auto-download preferences and per-show flags do not grant consent.
+- `UserPreferencesRepository`: the one entry point for DataStore settings, as Flows plus `suspend` setters. It delegates to internal same-package helpers that share the one DataStore.
+- `Context.userPreferencesDataStore`: the `user_preferences` DataStore delegate.
+- `BoxcastPrefs`: typed facade for `boxlore_prefs` (onboarding, genres, recommendation caches, feedback drafts, sync cursors, device IDs, one-time notices).
+- `PrefsFileMigrator`: opens canonical SharedPreferences files and reads through to their legacy `boxcast_*` names.
+- `ThemeSelection`: opaque brand, surface and wallpaper-colour inputs; `setThemeSelection` and `setThemePreset` write them in one update, DataStore and fast cache together.
+- `FontRoundnessAxis`: lettering preset keys and ROND axis values for non-Compose readers, plus the `boxlore_theme_fast_cache` file name.
+- `WidgetAppearance`: sanitizes widget chrome (`app` or `system`) and reads it from the fast cache for RemoteViews.
+- `FullPlayerStyle`, `NavigationBlurLevel`, `SubscriptionsTabStyle`: stored values and sanitizers for the full player, navigation blur and Subscriptions tab layout.
+- `HeroCardStyle`, `HeroCoverShade`, `HeroTideProgress`: Home hero card style, shared colour choice and Tide ring, with per-style defaults (`HeroCoverShade.forStyle`).
+- `ExploreDefaultTab`, `SubscriptionsDefaultTab`: sanitize default tabs and resolve the pager index when a route names no tab.
+- `BriefingEdition`: Brief edition values (follow app region, Global, India, US, UK) and alias normalization.
+- `DiscoverySection`, `DiscoverySections`: switchable discovery sections; `collectDiscoverySection` loads a section while it is on and cancels or clears it when off.
+- `HomePinnedShows`: sanitizes Home pins (distinct, at most `MAX`) and returns a `ToggleResult` (`Pinned`, `Unpinned`, `AtCapacity`).
+- `PreferenceIdList`: encodes ordered ID lists in one string, safe for `rss:` URLs containing commas.
+- `AutoDownloadBackgroundSettings`: installation-local consent for background auto-download checks (off, unmetered-only, charging optional by default).
+- `NpsSurveySchedule`, `NpsSurveyRule`, `NpsSurveyStore`: pure survey timing rules and their backup-excluded store.
+- `PlaybackSkipBounds`, `EngagementPromptConstants`: shared bounds and thresholds.
+- `BoxcastPrefs.resolveLearnerLogEnabled(isDebugBuild)`: on by default in debug; off in release unless explicitly stored as `true`.
 
 ## Internal structure
 
-`UserPreferencesRepository` delegates appearance/fast-cache, library ordering and RSS repair, engagement prompts/tips, and announcement storage to same-package helpers. They share the original DataStore; the repository API, nested `Announcement` type, file names, preference keys and defaults remain unchanged.
+`UserPreferencesRepository` delegates to internal helpers (appearance and fast cache, library ordering and RSS repair, engagement and review prompts, announcements, hero, full player, navigation blur, discovery sections). They share one DataStore; the repository API, file names and keys stay where they are.
 
 ```text
 src/main/java/cx/aswin/boxlore/core/prefs/
-  AnnouncementPreferences.kt
-  AppearancePreferences.kt
-  BoxcastPrefs.kt
-  DefaultLandingTabs.kt
-  EngagementPreferences.kt
+  UserPreferencesRepository.kt       # public repository, user_preferences delegate
+  UserPreferenceKeys.kt              # internal Keys object
+  AppearancePreferences.kt           # theme, lettering, navigation, landing; fast cache and hydration
+  ThemeSelection.kt, FontRoundnessAxis.kt, WidgetAppearance.kt
+  FullPlayerStyle.kt, FullPlayerPreferences.kt
+  NavigationBlurLevel.kt, NavigationBlurPreferences.kt
+  HeroCardStyle.kt, HeroCoverShade.kt, HeroTideProgress.kt, HeroCardStylePreferences.kt
+  DefaultLandingTabs.kt              # ExploreDefaultTab, SubscriptionsDefaultTab
+  SubscriptionsTabStyle.kt, SubscriptionsLayoutPreferences.kt
+  LibraryPreferences.kt              # sorting, manual order, pins, legacy RSS repair journal
+  HomePinnedShows.kt, PreferenceIdList.kt
+  DiscoverySections.kt, DiscoverySectionPreferences.kt, DiscoverySectionLoader.kt
+  BriefingEdition.kt
+  EngagementPreferences.kt           # tips, review prompt, engagement timing
   EngagementPromptConstants.kt
-  FontRoundnessAxis.kt
-  HomePinnedShows.kt
-  LibraryPreferences.kt
-  NpsSurveySchedule.kt
-  NpsSurveyStore.kt
+  NpsSurveySchedule.kt, NpsSurveyStore.kt
+  AnnouncementPreferences.kt
+  AutoDownloadBackgroundSettings.kt
   PlaybackSkipBounds.kt
-  PreferenceIdList.kt
-  PrefsFileMigrator.kt
-  SubscriptionsLayoutPreferences.kt
-  SubscriptionsTabStyle.kt
-  UserPreferenceKeys.kt
-  UserPreferencesRepository.kt
-  WidgetAppearance.kt
+  BoxcastPrefs.kt
+  PrefsFileMigrator.kt               # file names, legacy reads, DualReadSharedPreferences
 ```
 
 ## Dependencies
 
-- Project dependencies: `:core:model`.
-- Libraries: AndroidX core, DataStore Preferences, and coroutines.
-- Reverse-edge rule: prefs must not depend on catalog, playback, downloads, analytics, designsystem, or feature modules.
+- `api`: `:core:model`.
+- `implementation`: AndroidX core, DataStore Preferences, coroutines.
+- Forbidden: catalog, playback, downloads, analytics, designsystem or feature modules. Palette definitions stay in designsystem; prefs stores only opaque keys.
 
 ## Threading / lifecycle
 
-- DataStore flows are cold streams collected by repositories, ViewModels, or app wiring.
-- Preference reads and writes should use the repository or facade APIs instead of raw file access from feature modules.
-- `PrefsFileMigrator` performs file migration during SharedPreferences open paths.
+- DataStore streams are cold Flows; repositories, ViewModels and app wiring collect them. Setters are `suspend`.
+- Multi-key changes (theme selections and presets, pin toggles, the RSS repair journal, clearing an announcement) happen inside one DataStore `edit`.
+- The theme fast cache is a SharedPreferences mirror read synchronously at cold start; DataStore values win once loaded.
+- Features use the repository or facade APIs, never raw file access.
+- `PrefsFileMigrator` migrates on the SharedPreferences open path.
 
 ## Persistence & identity
 
-- `DiscoverySections` / `DiscoverySection` (`discoverySectionsStream`, `setDiscoverySection`): switchable discovery sections, all on by default. The Brief reuses `briefing_dismissed_forever` inverted, so the Brief card's Always hide and Settings stay one choice; turning it on also clears `briefing_dismissed_date`. Picked for you, Because you like, time-of-day rows and More like this use `discovery_picked_for_you`, `discovery_because_you_like`, `discovery_curated_rows` and `discovery_more_like_this`. Picked for you is mirrored in the theme fast cache (`cachedPickedForYou`) so Explore picks its first tab before DataStore loads. `collectDiscoverySection` is the shared loader gate: it loads per key while a section is on, clears it with no request while off, and cancels a load in flight when switched off. `DiscoverySectionPreferencesTest` and `DiscoverySectionLoaderTest` cover persistence, defaults, the Brief mapping and the gate.
-- DataStore name `user_preferences` must remain stable.
-- Canonical SharedPreferences files include `boxlore_prefs` and `boxlore_theme_fast_cache`.
-- Legacy file names beginning with `boxcast_` are migrated through `PrefsFileMigrator`.
-- Preference keys defined in `UserPreferenceKeys` and `BoxcastPrefs` are persisted user identity and must not be renamed casually.
-- `subscription_manual_order` and `home_pinned_podcast_ids` live in the same `user_preferences` DataStore (do not rename the file). Unsubscribe drops that id from both lists.
-- `seen_listening_story` (`seenListeningStoryStream` / `setSeenListeningStory`, added 2026-10-31): the last monthly listening story opened, as `yyyy-MM`, so Listening history stops calling it New. Local to the phone.
-- Review prompt (`EngagementPreferences`): a milestone (5, 15 or 30 episodes finished in boxlore on this install; Home counts them) is stored as `review_milestone_pending` and, once a prompt shows, as `review_milestone_consumed`, so the same milestone never asks again. `shouldShowReviewPrompt` and `isInReviewQuietPeriod` take Android's install time (a backup doesn't carry it) and keep a 2-day quiet period (`REVIEW_QUIET_DAYS`) after it and after `library_imported_at` (`markLibraryImported`). `review_first_launch_at` (the old lazily set install day) is no longer read. The pending milestone follows the count, so one a backup brought onto a phone with no listening behind it is dropped; on the first sync after updating, an install already prompted counts milestone 5 (or the one it has reached) as used (`ReviewPromptPreferencesTest`). `has_logged_first_play` is read only so an updated install doesn't send `first_episode_played` again; the player claims it now. `UserPreferencesRepositoryTest` covers the quiet days after install and import and a used milestone never coming back.
-- NPS survey: `NpsSurveySchedule` decides when it may appear: within 6 hours of the player on this phone playing an episode to the end (`FINISH_MOMENT_WINDOW_MS`; never in the future; never on an open alone, a sync or a mark-played; the finish is kept in `NpsSurveyStore` across restarts, because the next episode often plays straight on and listeners often close boxlore after one, and with a 2-hour, this-run-only moment almost nobody was asked), with 3 episodes finished here, a week since install, not in the first run, outside the quiet days and the shared 14-day cooldown, and 90 days after it last appeared. `NpsSurveyStore` keeps when it last appeared, how many times boxlore has started and the last finish (`recordFinish`, the latest kept) in its own file, `boxlore_nps_survey`, which backups leave out, so a restored phone is asked afresh. Once per install `carryOverLegacy` makes an install that Android updated from an older version wait 90 days from the update only when its listener answered the old popover survey (`nps_last_score` kept); one that only showed it, had it dismissed, or marked it shown before it ever appeared (`nps_survey_fired`) is asked like a new install. 0.0.30 carried the wait over for every `nps_survey_fired` phone, which kept most regular listeners from being asked; a one-time revision (`legacy_revised`) lifts that wait where the listener never answered, and keeps a real 0.0.30 showing (it wrote the shared prompt time at the same moment). A fresh install, restored from a backup or not and however late it first opens, ignores the copied flags. `nps_survey_fired` and `nps_last_score` stay in `user_preferences`, because the milestone review prompt waits for the survey and skips low scores; the old pending and Play hand-off keys are no longer used. `unmet` names the rules a moment misses, for the debug screen, and `resetSchedule` (debug) forgets the last showing. `NpsSurveyScheduleTest` and `NpsSurveyStoreTest` cover each rule, the finish kept across restarts and the carry-over and its revision. `lastEngagementPromptAtMs` reads the shared prompt time.
-- `legacy_rss_repair_*` keys are a crash-recovery contract; keep them until every shipping build that can begin the repair has aged out.
+Storage identities are listed in [`ARCHITECTURE.md`](../../ARCHITECTURE.md#identity-and-storage). Names and keys here are stable and never renamed.
+
+Files:
+
+| Name | Kind | Holds |
+| :--- | :--- | :--- |
+| `user_preferences` | DataStore | Settings keyed in `UserPreferenceKeys.kt` (`Keys`), review and engagement keys, announcements, discovery sections |
+| `boxlore_theme_fast_cache` | SharedPreferences | Cold-start mirror of appearance and landing choices |
+| `boxlore_prefs` | SharedPreferences | `BoxcastPrefs` values |
+| `boxlore_player`, `boxlore_api_config`, `boxlore_referrer_prefs`, `boxlore_analytics_prefs` | SharedPreferences | Canonical names opened through `PrefsFileMigrator` for other modules |
+| `auto_download_background` | DataStore | Background auto-download consent; excluded from backup and device transfer |
+| `boxlore_nps_survey` | DataStore | Survey last shown, launches, last finish, legacy carry-over flags; excluded from backup |
+| `boxlore_listening_device_id` | File in `noBackupFilesDir` | Per-installation listening device ID |
+
+Contracts:
+
+- Legacy `boxcast_*` files are read through `PrefsFileMigrator`; the canonical `boxlore_*` file wins.
+- The fast cache mirrors `theme_config`, `surface_style`, `theme_brand`, `use_dynamic_color`, `font_roundness`, `navigation_style`, `open_app_to`, `widget_appearance`, `explore_default_tab`, `subscriptions_default_tab`, plus the full player, navigation blur, hero, artwork-colour, custom theme and Picked for you choices.
+- After an Android backup restore, `hydrateMissingDataStoreFromFastCache` copies cached values only into missing DataStore keys; an existing DataStore choice always wins.
+- Hero choices are cached and hydrated only once picked, so listeners who never picked follow the current default.
+- `theme_brand` holds a named palette, a `#RRGGBB` Material 3 seed, or `exact:#RRGGBB` (primary used as is).
+- `HeroCardStyle` stores Block as `standard` and Cover as `classic`; Tide, Duotone, Halo and Marquee as `tide`, `duotone`, `halo`, `marquee`. `HeroCoverShade.UNSET` means not yet picked.
+- `subscription_manual_order`, `subscription_folder_manual_order` and `home_pinned_podcast_ids` are `PreferenceIdList` strings in `user_preferences`.
+- `content_languages` holds at most four languages, English first; `content_english_off` applies only while every pick is in `ContentRegions.ENGLISH_OFF_LANGUAGES` ([`:core:model`](../model/README.md)).
+- The Brief discovery section reuses `briefing_dismissed_forever` inverted; turning it on clears `briefing_dismissed_date`. Other sections use `discovery_picked_for_you`, `discovery_because_you_like`, `discovery_curated_rows`, `discovery_more_like_this`.
+- `legacy_rss_repair_version`, `legacy_rss_repair_pending_old_id` and `legacy_rss_repair_pending_new_id` are a crash-recovery journal; finishing it rewrites manual order, pins, `overridden_rec_podcast_id` and `last_seen_episode_id_*` in one transaction.
+- Review prompt keys: `review_milestone_pending`, `review_milestone_consumed`, `review_prompt_count`, `review_last_prompt_at`, `review_has_reviewed`, `library_imported_at`, `engagement_last_prompt_at`.
+- Survey keys kept in `user_preferences`: `nps_survey_fired`, `nps_last_score`; `has_logged_first_play` is read only.
+- `seen_listening_story` stores the last monthly listening story opened as `yyyy-MM`, local to the phone.
+- `sync_device_id` is backed up with `boxlore_prefs`; the listening device ID is not, so two phones restored from one backup stay distinct. `getListeningLegacyOrigin()` is `legacy-` plus the sync device ID.
+- Sync cursors in `boxlore_prefs`: `sync_last_timestamp`, `sync_last_user_id`, `sync_metadata_version`, `sync_listening_pulled_until`, `sync_listening_dates_sent_after`, `sync_listening_dates_sent`, `sync_listening_totals_sent`, `sync_listening_release_known_sent`.
+- Other `boxlore_prefs` keys include `onboarding_completed`, `user_genres`, `cached_byl_*`, `pending_auth_email`, `feedback_draft_*`, `featured_video_showcase_dismissed`, `tablet_ui_alpha_notice_acknowledged`, `has_requested_notification_permission`, `learner_log_enabled`.
+- `AutoDownloadBackgroundSettings` is enabled only by its explicit setter; auto-download preferences and per-show flags never grant consent.
 
 ## Testing notes
 
-- `UserPreferencesRepositoryTest` verifies full-player style sanitization, persistence/recreation, fast-cache hydration and existing-choice precedence without changing miniplayer or global seek settings.
+Tests live in `core/prefs/src/test` (JUnit 5, Robolectric for DataStore and SharedPreferences).
 
-- `BriefingEditionTest` covers saved/default/explicit region precedence and aliases. `UserPreferencesRepositoryTest` verifies the saved edition survives repository recreation without changing discovery region.
-- `AnnouncementPreferencesTest` round-trips rich presentation/release fields and clears them, while retaining legacy defaults and blank-title behavior.
-- Unit tests live under `core/prefs/src/test`.
-- `ThemeSelectionPreferencesTest` covers artwork-color defaults, saved custom themes, atomic theme selection and fast-cache restoration.
-- `BoxcastPrefsTest` covers facade behavior, including targeted Because-you-like cache invalidation, time-of-day rotation slot persistence, permanent featured-video showcase dismissal, sync state cursors, the listening device ID staying out of the backed-up preferences and staying the same when it can't be saved, and the legacy origin.
-- `PrefsFileMigratorTest` covers legacy-to-canonical file migration behavior.
-- `PreferenceIdListTest` and `HomePinnedShowsTest` cover id-list encoding, pin cap/toggle, and the at-capacity snackbar copy.
-- `UserPreferencesRepositoryTest` round-trips Manual order and Home pins, including atomic pin toggle, unsubscribe cleanup, and journaled podcast-id replacement.
-- Preference tests also verify miniplayer seeks default off, survive repository recreation, and preserve global seek durations when toggled.
-- `UserPreferencesRepositoryTest` verifies complete preset persistence/fast-cache restoration, repeated preset selection, later accent customisation and preservation of mode, lettering and navigation.
-- `UserPreferencesRestoreHydrationTest` covers Google Backup restore: appearance streams keep theme fast-cache when DataStore is empty, and `hydrateMissingDataStoreFromFastCache` writes those values into DataStore. Concurrent readers retain fast-cache appearance while application hydration runs in the background, and existing DataStore choices, including false boolean values, survive repeated missing-key restoration.
-- `SubscriptionsGridViewPreferenceTest` covers the Subscriptions grid/list choice defaulting to grid and surviving a fresh repository (the app closed from recents).
-- `AutoOrganizeLookPreferenceTest` covers the auto-organize look defaulting to "let boxlore choose" with covers, a chosen look surviving a fresh repository, and choosing again clearing the fixed size.
-- `DefaultLandingTabsTest` covers Explore / Subscriptions default-tab sanitize and pager-index resolution (nav tab and genre win over the preference).
+| Area | Test classes |
+| :--- | :--- |
+| Repository, presets, full player | `UserPreferencesRepositoryTest`, `ThemeSelectionPreferencesTest` |
+| Backup restore hydration | `UserPreferencesRestoreHydrationTest` |
+| Appearance values | `HeroCardStylePreferencesTest`, `NavigationBlurPreferencesTest`, `NavigationStylePreferenceTest`, `FontRoundnessAxisTest`, `WidgetAppearanceTest` |
+| Landing and tabs | `OpenAppToPreferenceTest`, `DefaultLandingTabsTest`, `SubscriptionsTabStylePreferenceTest`, `SubscriptionsGridViewPreferenceTest` |
+| Library and folders | `HomePinnedShowsTest`, `PreferenceIdListTest`, `AutoOrganizeLookPreferenceTest` |
+| Content and discovery | `ContentLanguagePreferencesTest`, `BriefingEditionTest`, `DiscoverySectionPreferencesTest`, `DiscoverySectionLoaderTest` |
+| Prompts and survey | `ReviewPromptPreferencesTest`, `NpsSurveyScheduleTest`, `NpsSurveyStoreTest`, `AnnouncementPreferencesTest` |
+| Files and facade | `BoxcastPrefsTest`, `PrefsFileMigratorTest`, `AutoDownloadBackgroundSettingsTest` |
 
 ```bash
 ./gradlew :core:prefs:testDebugUnitTest
@@ -112,8 +127,8 @@ src/main/java/cx/aswin/boxlore/core/prefs/
 
 ## CI relevance
 
-- `unit-tests.yml` runs prefs JVM tests.
-- App and feature tests depend on this module for stable preference behavior.
+- `unit-tests.yml` runs these tests with the project suite.
+- App, catalog, playback and feature tests rely on these keys and defaults.
 
 ## See also
 
@@ -121,3 +136,4 @@ src/main/java/cx/aswin/boxlore/core/prefs/
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`:core:catalog` README](../catalog/README.md)
 - [`:core:analytics` README](../analytics/README.md)
+- [`:core:model` README](../model/README.md)

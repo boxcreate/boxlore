@@ -2,141 +2,128 @@
 
 ## Purpose
 
-Owns player presentation: mini player, full player sheet, queue screen UI, control deck, seekbar, chapters, transcript surfaces, and pure UI logic. Playback engines, queue persistence, Media3 services, and media ID policy live in `:core:playback`.
+Owns player presentation: the mini player, the full player sheet in its Standard and bunpod styles, the tablet player layouts, the queue, chapters and transcript surfaces, the Cast picker and the video overlay, plus the pure layout and control logic behind them.
+
+It does not own playback engines, queue persistence, Media3 services, Smart Queue refill or media ID policy; those live in [`:core:playback`](../../core/playback/README.md). Routes, browsing chrome and the window shell belong to `:app`.
 
 ## Public API
 
-- `FullPlayerV2` also supports Appearance → **Player style** → **bunpod** for audio. Its original Compose layout is inspired by BunPod: show/title, remaining time, thin seekbar and five transport controls, with no displayed artwork. The title block is vertically centered above transport. Episode titles adapt from 28–40sp within four lines; show names adapt from 12–16sp within two. Remaining time fits one line at 32–64sp. This canvas uses crisp Google Sans Flex independently of Appearance lettering and caps its height to the visible window, keeping controls and the queue arrow above system navigation even though the shared sheet's animation canvas is taller. The existing artwork-derived palette, sheet anchors, predictive Back, global seek durations, analytics and miniplayer remain unchanged. Playback morphs its square into a circle, sleep into a four-sided cookie and custom speed into a six-sided cookie. Each seek direction has distinct transient press geometry. State/enablement changes reset press tracking so interrupted or repeated taps cannot leave Pause with the pressed square silhouette. Buffering uses the shared circular wavy loader. Long titles open in full on tap, and short windows scroll rather than covering controls.
-- Episode titles use Android's full, dictionary-based hyphenation and high-quality line breaks through a scoped native text view within the existing four-line/adaptive-size bounds; show names and the full-title dialog keep their normal wrapping. The Compose node retains the original title and full-title accessibility action. Play/Pause keeps the artwork-derived primary accent; active sleep/speed controls use the artwork palette's own tertiary container and corresponding foreground, distinguishing them by tone rather than generating a new hue. Inactive small controls remain neutral. This hierarchy affects only the bunpod controls.
-- The arrow labelled **Up next** for accessibility and an upward swipe at the end of the player open the unchanged `PlayerQueueSheet`, preserving reorder, remove/Undo, source labels, queue index mapping, show navigation, Same Show continuation and Smart Queue recovery. Speed/sleep controls use the existing modal sheets. Video retains the standard player.
+Used by `:app`:
 
-- Player, mini-player, Up next and Queue retain episode/show artwork alternatives. Full-player chapter art falls through to episode then show artwork; next-episode art has its own chain. Chapter tiles use the shared loader. Playback, queue advancement and artwork geometry are unchanged.
+- `v2.PlayerSheetScaffold`: the mini/full player overlay the app shell composes. It takes the app's one UI-scoped `PlaybackRepository`, `DownloadRepository` and `UserPreferencesRepository`; it never creates its own `PlaybackRepository`.
+- `PlayerSheetLayout`: placement from the shell: collapsed position, navigation style, the floating-navigation compact morph (`compactProgress`, `compactTargetY`), the optional mini-player seek buttons and fold-safe side insets.
+- `PlayerSheetActions`: episode and show navigation, `onSheetInteractionChanged` (full player visible, sheet dragging or fullscreen video, so the shell can pause browsing-driven morphs) and `onOpenRequest` (lets the host open the player elsewhere instead of expanding the sheet).
+- `v2.FullPlayerV2` with `FullPlayerDependencies`, `FullPlayerDisplay` and `FullPlayerActions`: the full player, also hosted directly by the tablet shell as a pane or docked player.
+- `v2.MiniPlayerV2` with `MiniPlayerContent`, `MiniPlayerColors` and `MiniPlayerActions`: the collapsed bar.
+- `RetainedPlayerPresentation(tabletLayout)` and `playerPresentationController()`: an app-owned scope that keeps supporting tabs, transient controls and expanded state while the same episode moves between pane, docked and sheet presentations.
+- `PlayerFullscreenOverlay` and `LocalPlayerFullscreenRequest`: let the tablet shell own full-window video and transcript overlays.
+- `rememberPlayerColors` / `PlayerColors`: the artwork-derived player scheme and mini-bar colours.
+- `QueueSheetContent`, `QueueSheetActions`, `ChaptersSheetContent`, `TranscriptView`, `FullscreenTranscriptScreen`, `PlayerControls`, `SeekDurationIcon` and `formatTime`: shared sub-surfaces and helpers.
 
-- Queue rows use steady Material feedback; custom mini-player and Up Next controls opt into the shared 3% non-bouncy press response. The full-player connected transport animation, drag/seek interactions and playback callbacks are unchanged. Mini-player Play/Seek and Up Next backgrounds sit inside their press layer so the complete coloured control contracts with its content.
+## Player styles
 
-- `v2.PlayerSheetScaffold` is composed by `:app` as the mini/full player overlay.
-- The collapsed v2 mini player follows Appearance → Navigation: Floating is a 64dp capsule with 32dp corners; Classic keeps the 72dp shape with 26dp top and 14dp bottom corners. Both clips use the selected navigation's corner metrics. The solid artwork-tinted surface holds 48dp cookie-shaped artwork, title/show metadata, and a 48dp circular play/pause control inside one bar. `PlayerSheetLayout.miniPlayerSeekButtonsEnabled` defaults off; opting in adds 40dp back/forward controls around play/pause using global seek durations. The title and show/Cast label each get their own line. A rounded progress line beneath them smooths position updates and gently waves while playing; its quiet remaining track has an open gap after the played segment. Pause/loading flatten the wave, and compactness, expansion, and stopped lifecycle suspend motion.
-- The mini bar is a connected split pill (`MiniPlayerSplit.kt`): an info segment and a 72dp Play end joined by a see-through 3dp gap with 8dp inner corners; the outer ends keep the navigation-driven clip. The info segment shows the played share as a solid sweep one tone deeper (lighter in dark mode), and the 40dp cookie cover sits inside the same revolving scalloped progress ring as the compact cookie (its own clock while playing in the bar). The title is one line and the second line reads show · time left (`miniPlayerTimeLeft`). Optional seek buttons sit in the info segment before the Play end. As the bar starts shrinking to the compact cookie, the split merges into one surface (`miniSplitAmount`) and the bar ring fades as the compact ring fades in. The sheet backing behind the collapsed bar stays transparent so the gap is see-through, and fills in as the mini player fades into the full player. The previous wavy line (`MiniPlayerProgress`) is no longer shown. `MiniPlayerSplitTest` covers time left and the split merge.
-- The sheet's shadow is cast by its own layer behind the sheet (`PlayerSheetShadow`), with the sheet's outline, elevation and cookie fade, and moves as far as the bar when the bar is swiped aside to Dismiss (`MiniPlayerSwipe.offsetPx`, `miniPlayerShadowOffset`), covering only the part of the bar still inside the sheet (`miniPlayerShadowSpan`), since the sheet cuts the bar off at its edge. Before, the still sheet cast it and a swipe left the shadow's outline behind; casting it from the bar instead clipped it to a flat dark patch showing through the split's gap. `MiniPlayerSplitTest` checks the offset and the span.
-- Floating navigation can supply a shared `PlayerSheetLayout.compactProgress` and `compactTargetY` to morph that same mini-player surface and artwork into a 52dp scalloped cookie in the trailing navigation action slot. The nine shallow lobes grow during descent; `MiniPlayerShape` supplies matching surface, artwork, and progress contours. The app shell owns browsing scroll detection and eligibility; Classic ignores compactness. The compact player opens the full player on tap or swipe up and shows progress, loading, and Cast status without a pause badge or duplicate transport controls; its spoken state still reports Playing/Paused. The optional seek preference only affects the regular bar. Metadata, controls, and paused swipe-dismiss confirmation lose interaction/focus during compactness. Its measured hit bounds follow the visible surface, including RTL placement.
-- Compact playback progress uses a 3.5dp scalloped ring outside the 40dp artwork, with an open gap, a solid neutral track, and a primary played arc with a rounded end. The compact backdrop and shadow fade away to expose that gap. The track stays visible while paused, loading, or awaiting duration; playback milliseconds take precedence over the episode's seconds fallback. A small central loading indicator leaves the progress ring visible. Spoken progress uses the same duration resolution.
-- `MiniPlayerMorph` shares compactness, sheet expansion, cookie depth, and a drawing-only rotation state. While playback is active and the player is fully compact, `MiniPlayerMotion` moves the surface, artwork clip, and progress contour together at up to 30fps, completing one lobe cycle every 2.4 seconds. The image stays upright and the progress origin stays at twelve o'clock. Pause/buffering, sheet expansion, and stopped lifecycle freeze the phase; resume continues it. The motion does not change layout or draggable anchors.
-- Mini/full expansion uses the existing interruptible, critically damped sheet spring and one reversible fade-through choreography derived from the sheet fraction (`PlayerSheetRevealLogic`): the mini content fades out by 20%, then the full player fades in from 95% scale and a 40dp rise once the sheet can hold it (16–56% from the bar, 32–78% from the compact cookie, so it never appears cramped in a small box); the two never double-expose. Corners keep their collapsed rounding through the first half and square off over the second (`playerCornerHold`), and width leads height with an ease-out (`playerSheetWiden`) so the bar opens into a sheet while the height follows the finger exactly. The sheet backing is clear behind the resting split bar and fills within 2% of opening (`miniPlayerBackingFill`). Collapse runs the same path in reverse. `PlayerSheetRevealLogicTest`, `AdaptivePlayerBoundsLogicTest` and `MiniPlayerSplitTest` cover the windows, continuity, reversibility, corners, widening and backing fill.
-- `PlayerSheetActions.onSheetInteractionChanged` reports full-player visibility, active sheet drag/animation, and fullscreen video so the shell can freeze browsing-driven morphs; disposal reports false. The shared browse animation first eases the bar into a compact shape above navigation, then eases it into its action slot; both phases have zero slope at their endpoints, and Lore finishes joining the navbar before descent. Floating feature controls follow that same eased descent; reversing lifts the circle before widening the bar so intermediate bounds cannot cover navigation. Browse compactness changes only visual bounds, preserving the fixed mini/full draggable anchors, predictive Back, and existing full-player nested-scroll handoff. Playback and queue ownership are unchanged.
-- `v2.FullPlayerV2`, `FullPlayerV2Content`, `FullPlayerV2Sheets`, `ControlDeck`, and `ControlDeckQuickActions` provide full-player presentation pieces. `SecondaryAvailabilityState` enables chapters and transcript quick controls seamlessly when offline by checking local downloaded files, active playback state, and timestamped show notes description chapters. Tapping download on an already-downloaded episode prompts with `RemoveDownloadConfirmationDialog` before removing local audio.
-- The expanded-player transport group gives play/pause and both seek controls the same brief, coordinated width feedback when pressed or tapped.
-- The expanded-player top bar keeps symmetric Cast/share circular actions at its edges, adapting icon tinting to dark/light theme surfaces (`colorScheme.onSurface`) and highlighting active Cast sessions (`colorScheme.primary`); the bare collapse chevron sits below the centered **Now playing** label. Cast discovery uses a boxlore-styled Material 3 device sheet rather than MediaRouter's legacy dialog and actively scans only while that sheet is open. On Android 17 (API 37) the sheet's scan needs local network access, so tapping Cast first asks for `ACCESS_LOCAL_NETWORK` (Android's nearby devices permission) when it isn't granted; if it's declined, now or earlier, the button opens Android's own output picker (`SystemOutputSwitcherDialogController`), which lists Cast receivers without the permission, and falls back to the sheet only when that picker can't open. Android 16 and older open the sheet directly (`castButtonAction`, `castActionAfterLocalNetworkRequest`). The full player holds one `CastPickerState` above its phone and tablet layouts (`LocalCastPicker`), shared by both Cast buttons and the Cast card's change-device action, so the sheet and a permission answer survive a fold, unfold or resize that swaps the layout mid-request. Selecting a receiver keeps the sheet visible with a named connection state and Material 3 circular wavy loader until the chosen route is selected and the Cast session is active; framework session state closes the sheet even when MediaRouter's connection flag lags behind the TV. While casting, an artwork/Cast toggle swaps the fixed-size hero between artwork and receiver controls without pushing the rest of the sheet; the Cast view avoids repeating the episode title, uses the same artwork-derived color scheme as the surrounding player, and keeps its discrete TV-volume strip plus device/next/stop icon rail within that fixed artwork slot without overlap. Remote video swaps to artwork, exits local fullscreen, and hides local video-mode controls instead of leaving a frozen surface. The mini player replaces its podcast subtitle with a compact Cast-device indicator.
-- Nested scroll in the expanded sheet stops at the content top; collapsing to the mini player takes a new downward swipe from that rest position.
-- The Standard tile tray uses outlined Material icons for speed, sleep (bedtime), queue, chapters (bulleted list) and transcript (subtitles); Up next's View queue matches. The top bar reads **Now playing** in sentence case.
-- `QueueScreen`, `PlayerControls`, `ChaptersSheet`, and `TranscriptView` support player sub-surfaces. The queue sheet empty state stays “Queue is empty”; if Settings → Playback **Smart queue** is off, it adds a one-line note and a **Turn on** text action. When recommendation playback skipped same-show continuation, a solid Material 3 card (`SameShowContinuationBanner`) appears directly above the Up Next list, featuring an accordion preview of the upcoming episodes and offering a one-tap action to add the next available forward episodes from that show, or dismiss the banner.
-- The player sheet's container runs past the screen's foot (by the navigation bar and 50dp, set by the app shell) so it can be dragged. `PlayerSheetScaffold` passes the visible height alongside it (`PlayerSheetSize`, `FullPlayerDisplay.visibleHeight`), and the full-screen transcript fits that height (`Modifier.fitVisibleHeight`), so its seek bar and play controls stay on screen above the navigation bar. `FullscreenTranscriptLayoutTest` covers the controls inside a container 100dp taller than the screen, with and without the visible height.
-- `v2.logic.*` contains JVM-testable layout, control, queue-label, transcript-dialog, mini-player, and seekbar logic.
-- Player UI uses centralized Google Sans Flex weight tokens from `:core:designsystem`.
-- **Page views** (`TrackScreenView`, `:core:designsystem`): while the sheet is expanded the full player is `player_full` in the screen trail (its view stays `player_chrome_interaction` `expanded`), so its sheets and plays name it. `player_queue`, `player_chapters`, `player_speed` (sheet or inline selector), `player_sleep_timer` (sheet or inline), `player_cast`, `player_share` and `player_transcript_fullscreen` send `screen_viewed`. The transcript summary counts the names the player logs (`PlayerSessionAggregator.TRANSCRIPT_OPENED`/`TRANSCRIPT_HIDDEN`), so `transcript_view_toggles` no longer reads 0, and adds `transcript_opens`.
+- Appearance → **Player style** stores `FullPlayerStyle` (`standard` or `bunpod`) in `:core:prefs`. `useMinimalPlayer` picks the bunpod layout for audio only; video always uses Standard.
+- **Standard** (`FullPlayerV2`, `ControlDeck`): artwork or Cast hero, seekbar, transport and a quick-action tray (speed, sleep, queue, chapters, transcript), with Up next and show notes below.
+- **bunpod** (`Minimal*.kt`): show, title, remaining time, a thin seekbar and five controls, without artwork. The **Up next** arrow or an upward swipe at the end opens the queue sheet once per gesture (`MinimalQueueSwipe`).
+- Chapter and transcript quick actions stay available offline when a downloaded file, live playback state or timestamped show notes provide them (`SecondaryAvailabilityState`).
+- Tapping download on an already downloaded episode asks before removing it (`RemoveDownloadConfirmationDialog` from `:core:designsystem`).
+
+## Mini player and sheet
+
+- The bar is a split pill (`MiniPlayerSplit.kt`): an info segment with cover, title and show · time left, and a Play end. Its outer shape follows Appearance → Navigation (Floating or Classic).
+- With Floating navigation the shell can shrink the bar into a cookie-shaped compact player in the navigation action slot. `MiniPlayerShape`, `MiniPlayerMorph` and `MiniPlayerMotion` keep surface, artwork and progress ring in step; the ring turns only while playing and visible. Classic ignores compactness.
+- Compactness changes visual bounds only; draggable anchors and predictive Back stay fixed, and controls take no input while compact.
+- Expansion follows the sheet fraction both ways (`PlayerSheetRevealLogic`): the mini content fades out before the full player fades in, and the two never show together.
+- Scrolling the full player's content stops at its top; collapsing takes a new downward swipe (`PlayerSheetNestedScrollLogic`).
+- A paused bar can be swiped sideways to dismiss after a confirmation (`MiniPlayerDismissLogic`).
+- The sheet runs past the screen's foot; `FullPlayerDisplay.visibleHeight` and `Modifier.fitVisibleHeight` keep full-screen transcript controls on screen.
+
+## Queue and Cast
+
+- `PlayerQueueSheet` wraps `QueueSheetContent`: reorder, remove with Undo, source labels and show navigation. With an empty queue and Smart queue off, it offers **Turn on**.
+- `SameShowContinuationBanner` appears above Up next when recommendation playback skipped same-show continuation, and adds the show's next episodes in one tap.
+- The Cast button opens a boxlore device sheet that scans only while open. On Android 17 it first asks for local network access; if that is declined, it opens Android's own output picker instead (`castButtonAction`, `castActionAfterLocalNetworkRequest`).
+- One `CastPickerState` (`LocalCastPicker`) sits above the phone and tablet layouts, so an open sheet or a pending permission answer survives a fold, unfold or resize.
+- While casting, the hero toggles between artwork and receiver controls (`FullPlayerCastHero`, `FullPlayerCastControls`), and the mini bar shows the Cast device.
+
+## Tablets and foldables
+
+- `TabletPlayerBody`, `TabletPlayerSupport` and `TabletPlayerLayoutLogic` arrange the player as stacked, columns or around a horizontal or vertical fold, keeping regions off the hinge.
+- Up next, Chapters, Transcript and Notes become supporting tabs (`PlayerSupportingTab`) that survive recreation and window changes through `FullPlayerUiStateSaver` and `RetainedPlayerPresentation`.
+- A phone keeps its own player state until the first tablet frame, which continues it. Window gates and transition rules are in [adaptive UI and state](../../ARCHITECTURE.md#adaptive-ui-and-state).
 
 ## Internal structure
 
 ```text
 src/main/java/cx/aswin/boxlore/feature/player/
-  ChaptersSheet.kt
-  PlayerControls.kt
-  PlayerUtils.kt
-  QueueScreen.kt
-  SeekDurationIcon.kt
-  TranscriptView.kt
+  ChaptersSheet.kt, PlayerControls.kt, PlayerUtils.kt, QueueScreen.kt,
+  SeekDurationIcon.kt, TranscriptView.kt     shared sub-surfaces
   v2/
-    ControlDeck.kt
-    ControlDeckQuickActions.kt
-    FullPlayerCastHero.kt
-    FullPlayerV2.kt
-    FullPlayerCastControls.kt
-    FullPlayerV2Content.kt
-    FullPlayerV2Sheets.kt
-    InlineTranscriptHero.kt
-    MiniPlayerV2.kt
-    MiniPlayerControls.kt
-    MiniPlayerProgress.kt
-    MiniPlayerCompactStatus.kt
-    MiniPlayerShape.kt
-    MiniPlayerMotion.kt
-    PlayerHero.kt
-    PlayerSeekbar.kt
-    PlayerSheetScaffold.kt
-    PlayerTranscriptAction.kt
-    PlayerTheme.kt
-    logic/
+    PlayerSheetScaffold.kt                   mini/full sheet
+    FullPlayer*.kt, ControlDeck*.kt          Standard player, top bar, Cast hero, video
+    PlayerHero.kt, PlayerSeekbar.kt, InlineTranscriptHero.kt,
+    PlayerTranscriptAction.kt, UpNextCard.kt, NotesPreviewCard.kt
+    Minimal*.kt                              bunpod style
+    MiniPlayer*.kt                           mini and compact player
+    Cast*.kt                                 Cast picker state and logic
+    Tablet*.kt, RetainedPlayerPresentation.kt, PlayerFullscreenRequest.kt
+    PlayerTheme.kt                           artwork-derived colours
+    logic/                                   pure layout, control, queue, seek, reveal logic
+src/main/res/                                strings, plurals, video texture layout
 ```
-
-Main Kotlin files should remain below 1000 lines; extracted full-player content, sheets, and quick-action files keep the player sheet maintainable.
 
 ## Dependencies
 
-- Project dependencies: `:core:model`, `:core:catalog`, `:core:downloads`, `:core:playback`, `:core:prefs`, `:core:network`, `:core:designsystem`, and `:core:analytics`.
-- Libraries: Compose, Navigation, lifecycle ViewModel/runtime, Media3 ExoPlayer/Session/UI/Cast, AndroidX Graphics Shapes, AndroidX MediaRouter, Google Cast framework, Coil, Palette, smooth corner rect, reorderable, coroutines, JUnit, and Turbine.
-- Reverse-edge rule: feature modules must not depend on other feature modules or construct a second `PlaybackRepository`.
+- Project: `:core:model`, `:core:catalog`, `:core:downloads`, `:core:playback`, `:core:prefs`, `:core:network`, `:core:designsystem`, `:core:analytics`.
+- Libraries: Compose Material 3, AndroidX Graphics Shapes, Navigation, lifecycle, Media3 (ExoPlayer, Session, UI, Cast), MediaRouter, Google Cast framework, Coil, smooth corner rect, reorderable, coroutines. Tests add `:core:testing`, JUnit 5, Turbine, Robolectric and Compose UI test.
+- No feature → feature edges, no direct PostHog calls, and no second `PlaybackRepository`. See [`ARCHITECTURE.md`](../../ARCHITECTURE.md#dependency-direction).
 
 ## Threading / lifecycle
 
-- The player overlay lives with Activity composition rather than a navigation destination.
-- Playback and queue state come from application-scoped core dependencies supplied by app wiring.
-- Player colours (`rememberPlayerColors`) come from the cover's seed, read by the shared `:core:designsystem` artwork picker (`loadArtworkPalette`) that podcast and episode pages and Home's hero cards use: the full player is the brand scheme built from that seed (`artworkPlayerColorScheme`), and the mini bar is its primary container with a primary Play end (`ArtworkMiniPlayerColors.fromScheme`). Covers with no meaningful colour keep the app theme. Control tiles sit on surface and primary tints (quiet transport buttons on a translucent surface, the secondary rail on a 12% primary tray, chips and utility actions on the high surface container). The full-player background (`playerCanvas`) is a vertical gradient of the primary container over the surface with a soft primary glow behind the artwork. A cover already read (by a page or earlier playback) colours the player from the first frame, and light/dark switches rebuild the scheme without reading the art again. Art loads through Coil with its disk cache from the resolved episode→podcast artwork URL, so process death does not leave the sheet on the default theme. The scheme follows the saved surface style, so Pure black/white styles keep their grounds.
-- UI runs on the main thread; playback operations delegate to core repositories and Media3 session APIs.
-- The video overlay hides and shows only the status and navigation bars. `systemBars()` also includes system overlays, which androidx.core maps through an API 34 method some devices reporting API 34 lack.
+- The player overlay lives in Activity composition, not in a navigation destination.
+- Playback, queue, downloads and prefs are application-scoped instances from app wiring; the player only observes their flows and calls their APIs. Playback contracts are in [`core/playback/README.md`](../../core/playback/README.md).
+- UI runs on the main thread. The sheet separates position updates from other player state so ticks don't recompose the whole sheet.
+- Colours come from the cover through `:core:designsystem`'s shared artwork palette loader; a cover already read colours the player from the first frame.
+- Compact motion runs only while playing and visible, and stops when the lifecycle stops.
+- The video overlay hides only the status and navigation bars (`videoOverlayBarTypes`).
 
 ## Persistence & identity
 
-- This module owns no storage files or stable keys.
-- Player session flags, queue rows, and media ID prefixes are owned by `:core:playback` and related core modules.
-- UI state should treat media IDs as opaque strings from playback APIs.
+- This module owns no storage files. Keys it reads live in `:core:prefs`: `full_player_style` and `mini_player_seek_buttons_enabled`.
+- Queue rows, session flags and media ID prefixes belong to `:core:playback`; the player treats media IDs as opaque strings.
+- Stable test tags used by `:app` tests: `tablet_player_artwork_region`, `tablet_player_controls_region`, `tablet_player_support_region`, `tablet_player_support`, `tablet_player_scroll`. `minimalEpisodeTitle` is used by this module's tests.
+- Page views (`TrackScreenView`): the expanded sheet is `player_full`; its sheets report `player_queue`, `player_chapters`, `player_speed`, `player_sleep_timer`, `player_cast`, `player_share` and `player_transcript_fullscreen`. See [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md).
 
 ## Testing notes
 
-- `CastRoutePickerLogicTest` covers the Cast button on Android 16 and older (sheet, no prompt) and on Android 17 (ask for local network access first; open the system picker when it's declined). `CastPickerReflowTest` delivers the permission answer after the phone/tablet layout swaps and checks the system picker (declined) or the sheet (allowed) still opens.
+Hermetic JVM tests live in `feature/player/src/test`, logic on plain JVM and UI on Robolectric. `PlayerPhoneGoldenTest` is a local-only phone golden; see [`docs/TESTING.md`](../../docs/TESTING.md#screenshots).
 
-- The player's share sheet passes the playing episode to `ShareBottomSheet`, so Copy link names it the way artwork shares do (its recipe ID and show for a Podcast Index show); the sheet itself is unchanged.
-
-- `PlayerTranscriptActionTest` covers the shared transcript quick action: phone inline visibility, tablet supporting-tab toggles, empty-transcript no-op, and migration between presentations with the same UI state owner.
-
-- Tablet Standard player measures actual title/control height before allocating artwork, leaving complete utility controls above safe drawing insets. Context metadata wraps beside a smaller cover; stacked/tabletop controls and supporting tabs flow through a finite scroll layout. Up next continuation and empty recovery share the queue scroller, with banner-aware reorder indices. The shell promotes video/transcript overlays to the whole window and restores their originating context/dock/immersive owner. Transcript expansion keeps its tab/sync state; video exit restores the tablet orientation. Phone defaults and metadata geometry remain unchanged.
-
-- Tablet players reuse the existing transport and supporting-content callbacks within bounded, fold-safe regions. Up next, Chapters, Transcript and Notes share saved tabs; a horizontal half-open fold puts artwork/title above the hinge and transport/support below. Context-pane presentation exposes an owner-supplied full-screen action and does not change system-bar appearance. Standard phone and BunPod paths remain separate.
-- `RetainedPlayerPresentation(tabletLayout)` is an optional app-owned UI scope for moving the same episode between pane and docked presentations. Retention starts with the first tablet-layout composition and lasts for the saved scope. It then retains supporting tabs and transient controls, restores them after recreation, and resets them for a different opaque episode ID. Until a tablet layout appears, phones keep each player's local saved state exactly as before; the scope only remembers that state so the first tablet frame continues it. Without the scope, callers keep their local saved state.
-- The retained scope also remembers the settled expanded/collapsed presentation; a phone-only scope never reopens the sheet expanded. `PlayerSheetActions.onOpenRequest` lets the host open the player elsewhere instead of expanding the sheet (the app returns a docked tablet player to its pane). On tablet layouts, `FullPlayerV2` and the sheet start from the current playback state instead of an empty first frame; phones keep their original start. Optional physical left/right docking insets keep the mini bar within a fold-safe browsing pane while its existing reveal motion opens into the full window. Zero-inset phone geometry retains its original values.
-- `TabletPlayerContentTest` also checks that a phone session keeps local state and collapsed reentry until the first tablet frame, which continues the same state across the 600dp gate. `TabletPlayerLayoutLogicTest`, `TabletPlayerContentTest` and `FullPlayerUiStateSaverTest` cover physical hinge bounds, global pane coordinates, posture changes, chapter seeking, BunPod tabletop layout, immersive callbacks, and saved tabs. Compact transcript, Chapters and queue surfaces return after tablet round trips; actual tablet selections transfer back while the default Up next tab and Notes do not open unsolicited compact sheets. State recreation preserves this intent and legacy saved expansion flags. Live production-host coverage crosses the 599/600dp width and 479/480dp height gates and returns from tabletop with the same transcript owner.
-
-- Up next, Notes and queue contents use shared tablet family bounds (720dp), preserving their existing internal layouts and phone modifiers. The shared local golden fixtures can also capture the player at the tablet/foldable matrix using `-PtabletCaptures=before|after`. These synthetic JVM renders are distinct from live device checks.
-
-- `PlayerPhoneGoldenTest` captures the Standard full player at both portrait phone sizes and short landscape in light/dark. Fixed player/download/preference flows start no media service. Captures are local only, enabled with `-PphoneGoldens=verify --tests '*PhoneGoldenTest'`; see [capture instructions](../../docs/screenshots/README.md).
-
-- `MinimalPlayerLogicTest` covers style fallback/video handling, bounded remaining time and one queue opening per upward gesture. `MinimalPlayerContentTest` exercises the real controls, accessibility seeking/queue access, title expansion, adaptive short/long text, title-only full hyphenation, centered metadata, scoped crisp typography, oversized sheet/window bounds, large-text RTL, buffering, short landscape windows and swipe-to-queue with local callbacks; it sends no media or network requests. `MinimalPlayerControlsTest` checks distinct active silhouettes, separate main/auxiliary control accents in both themes, rapid taps and a press interrupted by buffering. `MinimalControlAccentTest` checks related hues, tone separation and foreground contrast across artwork seeds in both modes. Optional local render exports use `BOXLORE_UI_TEST_ARTIFACTS`.
-
-- Unit tests live under `feature/player/src/test`.
-- Existing coverage includes time formatting and v2 logic for controls, layout, nested-scroll collapse handoff, seekbar, queue labels, queue podcast display, transcript dialogs, mini-player dismissal, and chapter art flow.
-- Adaptive-player JVM coverage verifies normal/circle/full endpoints, coordinated intermediate bounds, RTL, constrained widths, invalid progress, Classic/fullscreen preservation, stable logical anchors, and interaction gating.
-- Player descent and floating feature-control placement use designsystem's same docking phase. A regression test checks that controls maintain clearance above the player and navigation throughout the morph at multiple densities.
-- Shape coverage checks nine-lobe bounds and matching artwork/progress contours. Seekbar regression coverage fits the thumb to temporarily narrow or zero-width tracks during player expansion, avoiding an empty clamp range reported in device fatal logs.
-- Regular and compact artwork share the same nine-lobe cookie silhouette at 48dp and 40dp, maintaining its normalized contour throughout contraction; the outer Floating/Classic bar shapes still follow navigation metrics.
-- Progress geometry tests verify fixed wave endpoints, bounded amplitude on short tracks, phase movement, flat paused geometry, and safe invalid input. The regular progress line smooths position updates, separates the remaining track with a small gap, and animates only during active, visible playback.
-- Reveal coverage verifies continuous forward/reverse handoff, complementary opacity, eased boundaries, scale endpoints, safe invalid input, and regular sheet clipping before full content appears.
-- Layout coverage preserves Floating's full capsule and Classic's distinct top/bottom corners through expansion. The shared `calculateAdaptivePlayerCornerRadius` helper keeps corner interpolation out of surface composition; regression tests cover regular/compact endpoints, Classic's intermediate asymmetry, expansion and square fullscreen-video corners.
-- Compose UI test tags for player controls should remain stable when added or expanded.
+| Area | Test classes |
+| :--- | :--- |
+| Sheet reveal, bounds and scroll handoff | `PlayerSheetRevealLogicTest`, `AdaptivePlayerBoundsLogicTest`, `PlayerSheetNestedScrollLogicTest`, `PlayerLayoutLogicTest` |
+| Mini and compact player | `MiniPlayerSplitTest`, `MiniPlayerShapeTest`, `MiniPlayerMotionTest`, `MiniPlayerCompactStatusTest`, `MiniPlayerProgressLogicTest`, `MiniPlayerDismissLogicTest` |
+| Controls and seekbar | `PlayerControlLogicTest`, `SeekbarLogicTest`, `PlayerMetadataStylingLogicTest`, `FormatTimeTest` |
+| bunpod style | `MinimalPlayerLogicTest`, `MinimalPlayerContentTest`, `MinimalPlayerControlsTest`, `MinimalControlAccentTest` |
+| Queue and continuation | `QueueLabelLogicTest`, `QueuePodcastLogicTest`, `SameShowContinuationBannerTest`, `TabletQueueIndexTest`, `TabletQueueViewportTest` |
+| Chapters and transcript | `ChapterArtFlowTest`, `PlayerTranscriptActionTest`, `FullscreenTranscriptLayoutTest` |
+| Cast | `CastRoutePickerLogicTest`, `CastPickerReflowTest` |
+| Tablets, folds and saved state | `TabletPlayerLayoutLogicTest`, `TabletPlayerContentTest`, `TabletPlayerInsetsTest`, `FullPlayerUiStateSaverTest` |
+| Video overlay | `VideoOverlayBarTypesTest` |
 
 ```bash
 ./gradlew :feature:player:testDebugUnitTest
 ```
-- `VideoOverlayBarTypesTest` checks the overlay never includes system overlays.
 
 ## CI relevance
 
-- `unit-tests.yml` runs player JVM tests with the project suite.
+- `unit-tests.yml` runs this module's JVM tests in the features-a shard and includes it in merged coverage; phone goldens stay out of it.
+- `scripts/ci/check-feature-no-posthog.sh` guards direct PostHog use.
 
 ## See also
 
 - [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
 - [`docs/TESTING.md`](../../docs/TESTING.md)
+- [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md)
 - [`:core:playback` README](../../core/playback/README.md)
+- [`:core:designsystem` README](../../core/designsystem/README.md)
 - [`:app` README](../../app/README.md)
-
-Player phone geometry now reads the shell-provided legacy configuration dimensions, with preview/test fallbacks. Tablet secondary controls use the shared bounded modals and input feedback; the existing mini-player drag source remains separate from its expansion click source.
-
-The tabletop Standard player measures title/show metadata with artwork above the hinge, keeping transport and a visible supporting-tab row below it. Enlarged content retains its scroll fallback without crossing the physical hinge.

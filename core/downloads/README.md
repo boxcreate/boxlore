@@ -2,100 +2,145 @@
 
 ## Purpose
 
-Owns offline download orchestration: Media3 offline cache access, download database synchronization, smart-download scheduling, bandwidth throttling, and WorkManager workers. It does not own playback session services, preferences storage, catalog retrieval, ranking model storage, or feature UI.
+Owns offline downloads: Media3 offline cache access, Room download state, manual downloads, Smart Downloads, per-show auto-downloads, bandwidth throttling, offline chapters and transcripts, and the WorkManager workers behind them.
+
+It does not own the playback or download services, preference storage, catalog retrieval, ranking storage or feature UI.
 
 ## Public API
 
-- Pure RSS subscriptions share catalog-show auto-download eligibility, activation boundaries, cached release claims, worker resolution, quotas and transfer policies. Activating seeds both episode stores quietly, so existing imports do not download their archive. Smart Downloads refreshes RSS metadata through the same cadence; headless Smart Downloads suppresses the ordinary auto-download callback. RSS notifications are optional and independent of auto-download. No periodic notification polling is added on-device.
+Downloads:
 
-- `DownloadRepository` coordinates Media3 `DownloadManager`, cache helpers, and Room download state. Its `completedDownloadItems` flow maps every completed row to listener-facing `Episode` + `Podcast` metadata, orders by release time with download-time fallback, and exposes only local playback paths. Background downloads directly invoke `DownloadManager.addDownload` rather than starting `DownloadService`, preventing `ForegroundServiceStartNotAllowedException` on Android 14+ (API 34+). In `removeDownload`, cache removal directly falls back to `DownloadManager.removeDownload` if background service commands fail, preventing silent disk leaks. `awaitDownloadCompletion` allows background workers to suspend while holding WorkManager execution until downloads finish or timeout. `reconcileDownloadStatus` and `reconcileStaleDownloads` clear or reset orphaned rows stuck in downloading state. Download completed/failed analytics omit `file_size_mb` when Media3 length is unknown and omit `source` when Room provenance is missing (never invent `0` / `"manual"`). Briefing downloads use `EpisodeMediaCacheKey` (audio `v=`) so offline keys match playback after same-day regenerations.
-- `DownloadRepository.relinkDownloadCache` reports whether cached spans reached a replacement episode id and recognizes an already-populated destination on retry after process death. RSS/catalog identity repair changes the Room download row only after that success; a missing/failed move or conflicting incomplete destination keeps the legacy completed-download row and bytes intact. Only the orphan rematch calls it, and it moves only phone-minted IDs with no alias or an unresolved one. Switching a Podcast Index show to its RSS feed no longer moves or relinks downloads: the RSS show's episode plays the completed download of the old ID through its alias (`:core:rss` `ListenerStateMoves`). Otherwise an episode stored under several IDs keeps its download where it is, and playback reads it through the ID that holds it ([`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md) §5).
-- **Downloads across an episode's IDs** (decision D8): `completedDownloadIds`, `downloadingEpisodeIds`, `isDownloaded` and `isDownloading` count a download held under any trusted ID of the episode (`EpisodeListenerStore.withAllAliasesFlow`, `memberIdsFlow`), so the show and episode pages of a show switched to its feed read the old ID's download as the episode's, and their toggle asks to remove it instead of starting a second copy. `addDownload` and `addAutoDownload` start nothing when another ID of the episode already holds a completed, running or queued download, and `removeDownload` also removes the download of every other ID of the episode that holds one. Automatic clean-ups (Smart Downloads recycling and failed attempts, the auto-download limit per show, the smart-download purge) pass `acrossAliases = false` and remove only the row they picked, so they never remove a download another ID of the episode holds, such as a manual one. An episode stored under one ID behaves as before.
-- `CompletedDownloadItem` is the feature-safe model for completed offline content; filtering and deterministic ordering stay owned by this module rather than feature code.
-- `DownloadAnalyticsMapping` is the pure helper for those property decisions (including allowlisted download failure codes).
-- `SmartDownloadManager` selects and schedules automatic downloads; downloads run sequentially with strict cumulative and per-episode time budgets to prevent WorkManager 10-minute timeouts. Oldest serial episode resolution queries catalog episodes with a safe page limit of 100 to prevent heap pressure on large feeds. `smart_download_sync.completed_count` is completed-only (`STATUS_COMPLETED`), while the download loop still budgets against active+queued counts. Its history and completed-episode filters read `:core:database` `EpisodeListenerStore` projections, so an episode stored under several IDs counts once and is completed under all of them or none; a candidate finds its history under any of its IDs, isn't downloaded again when another of its IDs already holds a completed, running or queued download, and keeps that download when recycling. The oldest-first next episode reads the listening of every show in `listenerShowIds` (a show switched to its feed reads its old Podcast Index show's rows) and finds the ongoing or last finished episode in the show's list under any of its IDs (`groupTokens`). `SmartDownloadSyncGate` serializes cadence admission and reconciliation, so overlapping launch catch-up and WorkManager calls cannot both recycle downloads. Automatic runs share the persisted last-success time and admit at most one sync per 24-hour cadence; future/restored timestamps fail open, while explicit manual refresh bypasses cadence but remains serialized. `reconcileScheduleWithPreferences` aligns the DataStore toggle with the periodic `SmartDownloadSync` WorkManager job after restore (restored work turns the toggle back on; a stored-on toggle reschedules missing work). Disabled sync never runs except from an explicit manual refresh.
-- `DownloadArtworkUrls` drops missing local artwork paths after backup restore and falls back to the subscribed show's remote image. New downloads persist a remote URL when the local artwork copy fails.
-- `DownloadChaptersTranscriptsHelper` downloads and persists offline chapter JSON (remote URL or description timestamp parsing fallback) and transcripts (SRT/VTT) when an episode is downloaded, updates Room entity paths, and cleans up files when the download is removed.
-- `SmartDownloadWorker`, `AutoDownloadWorker`, and `PurgeSmartDownloadsWorker` perform background download work. `AutoDownloadWorker` reconciles stale states, invokes background-safe direct enqueueing, and suspends on download completion. Its per-show limit counts the auto-downloads of every show in `PodcastEntity.listenerShowIds`, so a show switched to its feed also prunes those its old Podcast Index show holds.
-- `DownloadsDependencies` and `DownloadsDependenciesHolder` expose application-scoped download dependencies to workers.
-- `DownloadSpeedLimiter`, `ThrottlingDataSource`, and `SmartDownloadCandidateLogic` support download I/O and candidate filtering (excluding shows with auto-download enabled from mixtape candidate pools to avoid work duplication).
-- `DownloadTogglePolicy` resolves the deterministic action (`CONFIRM_REMOVAL`, `CANCEL_DOWNLOAD`, or `START_DOWNLOAD`) when toggling episode downloads across surfaces, ensuring downloaded media requires explicit confirmation before removal.
-- `ports.DownloadServiceLauncher` and `DownloadServiceLauncherHolder` let `:app` provide the Media3 service class without a downloads-to-playback Gradle edge.
+- `DownloadRepository`: application-scoped coordinator of Media3 `DownloadManager`, the cache and Room download rows.
+- `DownloadRepository.addDownload`, `addAutoDownload`, `removeDownload`: start and remove downloads; background starts enqueue straight on `DownloadManager`.
+- `DownloadRepository.completedDownloadItems`: completed downloads as `CompletedDownloadItem` (`Episode`, `Podcast`, download time), newest release first, with local playback paths only.
+- `DownloadRepository.completedDownloadIds`, `downloadingEpisodeIds`, `isDownloaded`, `isDownloading`: count a download held under any trusted ID of the episode.
+- `DownloadRepository.awaitDownloadCompletion`: lets a worker suspend until a download finishes or times out.
+- `DownloadRepository.reconcileDownloadStatus`, `reconcileStaleDownloads`: reset or clear rows stuck in downloading.
+- `DownloadRepository.relinkDownloadCache`: moves cached spans to a replacement episode ID and reports success; only the orphan rematch calls it.
+- `DownloadTogglePolicy`, `DownloadToggleAction`: the toggle action on every surface (`CONFIRM_REMOVAL`, `CANCEL_DOWNLOAD`, `START_DOWNLOAD`); removing a finished download always asks first.
+- `DownloadAnalyticsMapping`: download event properties; unknown size or source stays null and failures map to allowlisted codes.
+- `DownloadSpeedLimiter`, `ThrottlingDataSource`: bandwidth throttling for download I/O.
 
-- `AutoDownloadCoordinator`, `AutoDownloadDiscoveryWorker`, and `AutoDownloadScheduling` use publisher RSS/Room for release discovery. A missing address the coordinator recovers is saved through `saveFeedUrl`, the app's one feed address writer (`SubscriptionRepository.ensureHttpsFeedUrl`; `AutoDownloadCoordinatorTest.aRecoveredAddressIsSavedThroughTheAppsAddressWriter`). Discovery refreshes the catalog without a Podcast Index list, so a new release of a Podcast Index show is queued under its recipe ID. Push-triggered and foreground-discovered downloads remain available without polling consent. Additional background discovery is explicitly opt-in, defaults off, and runs about every six hours; per-show auto-download flags cannot enable it. `AutoDownloadBackgroundGate` fails closed on missing consent, unknown/unvalidated connectivity, low/unknown battery, metered networks when restricted, or missing charging when required. WorkManager constraints and a live consent/network/battery watcher protect both discovery and its tagged transfers; admission is rechecked before fetch slots, persistence and enqueue. Forced metadata recovery from a background transfer also rechecks consent and suppresses the ordinary ingest callback. Disabling cancels background work. Background audio obeys both the check network restriction and the normal auto-download network policy. Durable activation boundaries, pending claims, canonical unique work, resumable eight-minute slices, provenance-safe retention and manual-download protection remain in force.
+Smart Downloads and auto-downloads:
 
-- Foreground and push admission supersede unfinished background-gated or legacy transfers under the existing episode work name. Repeated background admission and repeated ordinary admission keep the current request; background cancellation cannot remove its ordinary replacement. Enqueue decisions are serialized separately from the transfer lock.
+- `SmartDownloadManager`: picks and schedules Smart Downloads within cumulative and per-episode time budgets, and keeps the periodic job in line with the stored toggle (`reconcileScheduleWithPreferences`).
+- `AutoDownloadCoordinator`: per-show auto-download. It syncs subscriptions, discovers releases from publisher RSS and Room, claims releases and enqueues transfers.
+- `AutoDownloadScheduling`: unique work names, tags and constraints for discovery and transfers; `enqueueEpisode` and `reconcile` are the only entry points.
+- `SmartDownloadWorker`, `AutoDownloadWorker`, `PurgeSmartDownloadsWorker`, `AutoDownloadDiscoveryWorker`: the background workers.
+
+Wiring:
+
+- `DownloadsDependencies`, `DownloadsDependenciesHolder`: application-scoped dependencies for workers (`require()`).
+- `ports.DownloadServiceLauncher`, `DownloadServiceLauncherHolder`: `:app` supplies the Media3 download service class, so downloads never depends on playback.
 
 ## Internal structure
 
 ```text
 src/main/java/cx/aswin/boxlore/core/
   downloads/
-    AutoDownloadWorker.kt
+    DownloadRepository.kt              # repository, completion observer, direct enqueue
     CompletedDownloadItem.kt
-    DownloadRepository.kt
-    DownloadsDependencies.kt
-    DownloadSpeedLimiter.kt
     DownloadTogglePolicy.kt
-    PurgeSmartDownloadsWorker.kt
-    SmartDownloadCandidateLogic.kt
+    DownloadAnalyticsMapping.kt
+    DownloadArtworkUrls.kt             # drops missing local artwork, falls back to the show's image
+    DownloadAudioUri.kt                # episodes without an audio URL are never downloaded
+    DownloadChaptersTranscriptsHelper.kt
+    ThrottlingDataSource.kt            # ThrottlingDataSource, DownloadSpeedLimiter
     SmartDownloadManager.kt
-    SmartDownloadSyncGate.kt
+    SmartDownloadCandidateLogic.kt
+    SmartDownloadScheduleLogic.kt      # cadence and unique work name
+    SmartDownloadSyncGate.kt           # serializes automatic and manual runs
     SmartDownloadWorker.kt
-    ThrottlingDataSource.kt
-    ports/
-      DownloadServiceLauncher.kt
-  data/
+    PurgeSmartDownloadsWorker.kt
+    AutoDownloadCoordinator.kt
+    AutoDownloadScheduling.kt
+    AutoDownloadBackgroundGate.kt      # consent, network and battery admission
+    AutoDownloadDiscoveryWorker.kt
+    AutoDownloadTransfer.kt            # per-episode transfer locks, DownloadManager thread helpers
+    AutoDownloadWorker.kt              # worker and AutoDownloadRetention
+    DownloadsDependencies.kt
+    ports/DownloadServiceLauncher.kt
+  data/                                # permanent stubs for older worker class names
+    SmartDownloadWorker.kt
     AutoDownloadWorker.kt
     PurgeSmartDownloadsWorker.kt
-    SmartDownloadWorker.kt
 ```
-
-Files under `core/data` are compatibility stubs for previously scheduled WorkManager class names.
 
 ## Dependencies
 
-- Project dependencies: `:core:catalog`, `:core:database`, `:core:domain`, `:core:model`, `:core:ranking`, and `:core:analytics`.
-- Libraries: Media3 ExoPlayer offline/cache APIs, WorkManager, coroutines, AndroidX core, Robolectric and WorkManager testing for JVM tests.
-- Reverse-edge rule: downloads must not depend on playback; service launch is supplied through `DownloadServiceLauncherHolder`.
+- `api`: `:core:catalog`, which brings the repositories, `UserPreferencesRepository` and the database.
+- `implementation`: `:core:database`, `:core:domain`, `:core:model`, `:core:ranking`, `:core:analytics`, Media3 ExoPlayer (offline and cache), WorkManager, coroutines (with Guava interop), AndroidX core.
+- Forbidden: `:core:playback` and feature modules; the service class comes through `DownloadServiceLauncherHolder`.
 
 ## Threading / lifecycle
 
-- `DownloadRepository` and `SmartDownloadManager` are application-scoped through `AppContainer`.
-- Workers resolve dependencies through `DownloadsDependenciesHolder.require()`.
+- `DownloadRepository` and `SmartDownloadManager` are application-scoped through `AppContainer`; workers reach them through `DownloadsDependenciesHolder.require()`.
 - Media3 download work and cache I/O run off the main thread.
-- Periodic smart-download work is scheduled and cancelled through WorkManager APIs.
-- Removing a download never starts `MediaDownloadService`; removal goes straight to `DownloadManager`. Starting the service from the background (for example after playback finished) crashed with `ForegroundServiceStartNotAllowedException` whenever a download was running. Episodes without an audio URL are never downloaded (`DownloadAudioUri`).
+- Background work never starts the download service: starts and removals go straight to `DownloadManager`, because a background service start throws `ForegroundServiceStartNotAllowedException`.
+- `SmartDownloadSyncGate` serializes cadence admission and reconciliation, so a launch catch-up and a WorkManager run never both recycle downloads.
+- Automatic Smart Downloads run at most once per 24-hour cadence from the stored last-success time; a timestamp in the future fails open. A manual refresh skips the cadence but stays serialized.
+- Smart Downloads never run while disabled, except from an explicit manual refresh.
+- `AutoDownloadScheduling.enqueueEpisode` serializes enqueue decisions under its own lock, separate from the transfer lock.
+- Auto-download transfers run in resumable slices of `AutoDownloadWorker.WORK_SLICE_MS` (eight minutes) to stay inside WorkManager's limit.
+- Push-triggered and foreground-discovered auto-downloads need no background consent.
+- Background discovery is opt-in through `AutoDownloadBackgroundSettings`, off by default, and runs about every six hours; per-show auto-download flags never enable it.
+- `AutoDownloadBackgroundGate` fails closed on missing consent, unknown connectivity, low or unknown battery, a metered network when restricted, or no charger when required. It is rechecked before fetches, writes and enqueues, and a live watcher cancels work when the policy stops permitting it.
+- Turning background checks off cancels discovery and every background-tagged transfer.
+- Foreground and push admission replace an unfinished background or legacy transfer for the same episode; repeated admissions of the same kind keep the current request.
 
 ## Persistence & identity
 
-- Worker class names are persisted by WorkManager; current and legacy names must remain bridgeable.
-- Download cache locations and Room download rows are user data and should not be renamed casually.
-- The foreground download service identity is owned by `:core:playback` and provided by `:app`.
+Worker identities ([`ARCHITECTURE.md`](../../ARCHITECTURE.md#workers)) are persisted by WorkManager and never renamed:
+
+- Worker classes: `cx.aswin.boxlore.core.downloads.SmartDownloadWorker`, `AutoDownloadWorker`, `PurgeSmartDownloadsWorker`, `AutoDownloadDiscoveryWorker`; the `cx.aswin.boxlore.core.data.*` stubs and older `boxcast` names stay loadable through `LegacyWorkerFactory`.
+- Unique work: `SmartDownloadSync` (periodic Smart Downloads), `PurgeSmartDownloads`, `auto-download-discovery` (periodic background discovery), `auto-download-episode-<episodeId>` (one transfer per episode).
+- Tags: `auto-download-transfer`, `auto-download-policy-v2`, `auto-download-background-transfer`, `auto-download-show-<podcastId>`. A transfer without the policy tag is legacy and is superseded.
+- Worker input keys: `episode_id`, `podcast_id`, `background_check`.
+
+Download data:
+
+- Download rows (`downloaded_episodes`, `auto_download_shows`, `auto_download_releases`) belong to [`:core:database`](../database/README.md); cache locations and rows are user data.
+- An episode stored under several IDs keeps its download under the ID that holds it; playback reads it through that ID. Rules: [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md#5-aliases-on-the-phone).
+- `addDownload` and `addAutoDownload` start nothing while another ID of the episode holds a completed, running or queued download.
+- `removeDownload` also removes the downloads other IDs of the episode hold.
+- Automatic clean-ups (Smart Downloads recycling, failed attempts, the per-show limit, the purge) pass `acrossAliases = false`, so they never remove another ID's download, such as a manual one.
+- `relinkDownloadCache` changes the Room row only after the cache move succeeds; a failed or conflicting move keeps the old completed row and bytes. It moves only phone-minted IDs with no alias or an unresolved one.
+- Switching a show to its RSS feed moves no downloads; the RSS episode plays the old ID's download through its alias.
+- Smart Downloads read history through `EpisodeListenerStore`, so an episode counts once across its IDs; per-show reads and the auto-download limit cover every show in `listenerShowIds`.
+- Each auto-download show stores its activation time; only releases published after it are downloaded, so turning auto-download on never fetches the archive.
+- A recovered feed address is saved only through `saveFeedUrl`, the app's one feed address writer.
+- An unfollowed show's stored copy never schedules, claims or enqueues auto-downloads.
+- Brief downloads use `EpisodeMediaCacheKey`, so offline keys match playback.
+- The download service identity is owned by [`:core:playback`](../playback/README.md) and supplied by `:app`.
 
 ## Testing notes
 
-- `DownloadRepositoryTest` checks that removing an active download never starts the download service.
-- Unit tests live under `core/downloads/src/test`.
-- Existing coverage includes worker behavior, dependency-holder behavior, smart-download candidate logic, and `DownloadAnalyticsMapping` size/source/failure mapping. `SmartDownloadManagerTest` also checks that an episode whose other stored ID holds a download isn't downloaded again, while an episode stored under one ID downloads as before, and that an oldest-first show switched to its feed continues after the episode its old show was playing. `DownloadRepositoryTest` checks that a feed ID whose episode another ID downloaded reads as downloaded (or downloading), starts no second copy and removes the old ID's download, and that an automatic removal of one ID's download leaves the download another ID of the episode holds.
-- Robolectric and WorkManager testing are enabled for worker tests.
+Tests live in `core/downloads/src/test` (JUnit 5, Robolectric, WorkManager testing); `DownloadTestLooper` is a shared helper.
+
+| Area | Test classes |
+| :--- | :--- |
+| Repository and toggles | `DownloadRepositoryTest`, `CompletedDownloadItemsTest`, `DownloadTogglePolicyTest`, `DownloadAudioUriTest` |
+| Offline extras and artwork | `DownloadChaptersTranscriptsHelperTest`, `DownloadArtworkUrlsTest` |
+| Analytics | `DownloadAnalyticsMappingTest` |
+| Smart Downloads | `SmartDownloadManagerTest`, `SmartDownloadCandidateLogicTest`, `SmartDownloadScheduleLogicTest`, `SmartDownloadSyncGateTest`, `SmartDownloadWorkerTest` |
+| Auto-downloads | `AutoDownloadCoordinatorTest`, `AutoDownloadSchedulingTest`, `AutoDownloadBackgroundGateTest`, `AutoDownloadWorkerTest`, `AutoDownloadRetentionTest` |
+| Wiring | `DownloadsDependenciesHolderTest` |
 
 ```bash
 ./gradlew :core:downloads:testDebugUnitTest
 ```
-- `DownloadAudioUriTest` covers episodes whose audio URL is null or blank.
-- `AutoDownloadCoordinatorTest.anUnfollowedCachedShowNeverAutoDownloads`: a show page's stored copy of an unfollowed show (P4 PR 16) schedules no post-write work, claims no release and enqueues nothing, even with auto-download left on from when it was followed.
 
 ## CI relevance
 
-- `unit-tests.yml` runs downloads JVM tests.
-- The root Kover merged verification includes this module.
-- App assembly validates the download service launcher wiring through the production graph.
+- `unit-tests.yml` runs these tests and includes the module in the coverage gate.
+- App assembly checks the download service launcher wiring through the production graph.
 
 ## See also
 
 - [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
+- [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md)
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`:core:catalog` README](../catalog/README.md)
+- [`:core:database` README](../database/README.md)
 - [`:core:playback` README](../playback/README.md)
 - [`:app` README](../../app/README.md)

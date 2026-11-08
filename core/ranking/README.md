@@ -2,20 +2,24 @@
 
 ## Purpose
 
-Owns adaptive recommendation and candidate scoring: Bayesian facet preferences, online linear models, diversity re-ranking, exposure tracking, reward handling, runtime controls, diagnostics, and the ranking Room database. It does not own the main catalog database, Podcast Index networking, content retrieval orchestration, playback services, or feature UI.
+Owns adaptive recommendation and candidate scoring: Bayesian facet preferences, online linear models, diversity re-ranking, exposure tracking, rewards, runtime controls, diagnostics and ranking's own Room database.
+
+It does not own the main database, Podcast Index networking, content retrieval, playback services or feature UI. Listening and freshness signals (`PodcastScoring`, `ScorablePodcast`) come from [`:core:database`](../database/README.md).
 
 ## Public API
 
-- `AdaptiveCandidateScorer` scores podcasts and episodes for home, explore, queue, and downloads. `YOUR_SHOWS` has one canonical deterministic path on every surface: `YourShowsScorer` log-normalizes listening/freshness/preference signals with legacy subscription recency disabled, then applies one bounded subscribe-recency floor. The floor stays near the top for three days and decays with a 48-hour time constant afterward, letting listening habits take over quickly without a hard cliff. Home, Library Smart, widgets, and Auto therefore share one score without exposure-training volatility or double-counting subscription age.
-- Ranking counts an episode stored under several IDs once ([`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md) §5). `AdaptiveCandidateScorer.create` takes `episodeTokens` (production: `:core:database` `EpisodeListenerStore.groupTokens`, wired in `AppContainer`); `RankingHistory` collapses rows sharing a token to the most recently played one and finds a candidate's history under any of its IDs. `PodcastScoring.calculateScores` and `YourShowsScorer` take the matching `episodeKey`. Without tokens (or with one ID per episode, as for every show today) scores are unchanged.
-- A show the listener switched to its feed keeps its listening under its old Podcast Index show's IDs (decision D8). Show scores count those rows through `ScorablePodcast.listenerShowIds`, and a show's latest-episode history is looked up with `RankingHistory.forShowEpisode` against the show's `listenerShowIds` (a row of an unrelated show that shares the ID never counts), in `scorePodcasts` and `rankPodcasts`.
-- `AdaptiveRankingRepository` owns ranking state, exposure recording, facet affinities, backup, restore, and exact old→new show-facet migration for catalog identity repairs.
-- `RankingFeedbackRepository` records user actions and implements `RankingResetPort`.
-- `RankingRuntimeControls` exposes runtime toggles for ranking surfaces.
-- `RankingObjective`, `RankingSurface`, and `CandidateSource` define scoring context.
-- `RankingAction`, `RankingOutcome`, and `RankingReward` define feedback and reward semantics.
-- `DiversityPolicy` and `DiversityReranker` shape scored candidate lists.
-- `AdaptiveRankingBackup`, `LearningEventLog`, and `RankingShadowDiagnostics` support backup and diagnostics.
+- `AdaptiveCandidateScorer`: scores shows and episodes for Home, Explore, the queue and downloads (`scorePodcasts`, `rankPodcasts`, `scoreEpisodes`); built with `AdaptiveCandidateScorer.create`.
+- `YourShowsScorer`: the one deterministic `YOUR_SHOWS` path on every surface; log-normalized listening, freshness and preference signals plus a single subscribe-recency floor, with no exposure training.
+- `YourShowsSubscriptionRecency`: the bounded floor for newly followed shows, high for a short window and then decaying, so listening habits take over without a cliff.
+- `RankingHistory`: listening history with each episode counted once across its IDs; `forShowEpisode` finds a show's latest-episode history within its `listenerShowIds`.
+- `AdaptiveRankingRepository`: ranking state, exposure recording, facet affinities, `exportBackup` / `restoreBackup`, and `migrateShowFacet` for show ID repairs.
+- `RankingFeedbackRepository`: records listener actions and implements `RankingResetPort`.
+- `RankingRuntimeControls`: runtime switches for ranking surfaces.
+- `RankingObjective`, `RankingSurface`, `CandidateSource`: scoring context.
+- `RankingAction`, `RankingOutcome`, `RankingReward`: feedback and reward semantics.
+- `DiversityPolicy`, `DiversityReranker`: reshape scored lists for variety.
+- `AdaptiveRankingBackup`: the backup model of models, facets and exposures.
+- `LearningEventLog`, `RankingShadowDiagnostics`: in-process learning log and diagnostics.
 
 ## Internal structure
 
@@ -23,13 +27,12 @@ Owns adaptive recommendation and candidate scoring: Bayesian facet preferences, 
 src/main/java/cx/aswin/boxlore/core/ranking/
   AdaptiveCandidateScorer.kt
   AdaptiveLinearModel.kt
-  AdaptiveRankingRepository.kt
+  AdaptiveRankingRepository.kt       # repository and AdaptiveRankingBackup
   BayesianPreferenceFacet.kt
-  DiversityReranker.kt
   LearningEventLog.kt
   RankingFeedbackRepository.kt
-  RankingModels.kt
-  RankingHistory.kt               # history with each episode counted once across its IDs
+  RankingModels.kt                   # objectives, surfaces, sources, DiversityPolicy, DiversityReranker
+  RankingHistory.kt
   RankingReward.kt
   RankingRuntimeControls.kt
   RankingSerialization.kt
@@ -44,35 +47,36 @@ src/main/java/cx/aswin/boxlore/core/ranking/
 
 ## Dependencies
 
-- Project dependencies: `:core:model`, `:core:database`, `:core:domain`, and `:core:prefs`.
-- Libraries: Room runtime, Room KTX, Room compiler through KSP, AndroidX core, coroutines, and Gson in tests.
-- Reverse-edge rule: ranking must not depend on catalog, playback, downloads, designsystem, analytics, or feature modules.
+- `implementation`: `:core:model`, `:core:database`, `:core:domain`, `:core:prefs`, Room runtime and KTX (compiler through KSP), AndroidX core, coroutines.
+- Forbidden: catalog, playback, downloads, designsystem, analytics or feature modules.
 
 ## Threading / lifecycle
 
-- Production ranking instances are application-scoped and installed from `AppContainer`.
-- Room and model updates use background dispatchers through suspend APIs.
-- Scorers may be called from UI, service, or worker paths; keep scoring APIs suspend where they touch persisted state.
-- `LearningEventLog` is process/session state and is not a durable event log. Capture is gated at app start via `BoxcastPrefs.resolveLearnerLogEnabled`: on by default in debug; **always off in release** unless the user explicitly opts in on the debug screen.
+- Production instances are application-scoped and created in `AppContainer`.
+- Room and model updates run through `suspend` APIs on background dispatchers.
+- Scorers are called from UI, service and worker paths; APIs that touch stored state stay `suspend`.
+- `LearningEventLog` is process state, not a durable log. `BoxLoreApplication` gates it with `BoxcastPrefs.resolveLearnerLogEnabled` (off in release unless explicitly turned on).
 
 ## Persistence & identity
 
-- Room filename `adaptive_ranking_database` stores ranking models, facets, and exposures.
+- Room file `adaptive_ranking_database` stores models, preference facets and exposures. It exports no schema and rebuilds empty on a version downgrade (`fallbackToDestructiveMigrationOnDowngrade`); ranking relearns or restores from a backup.
 - SharedPreferences file `adaptive_ranking_runtime` stores runtime control values.
-- Package root is `cx.aswin.boxlore.core.ranking`.
-- App backup rules exclude the adaptive database from automatic platform backup; explicit encrypted backup support is handled through ranking backup models.
-- Show facet keys follow the active podcast id; legacy RSS repair merges evidence into the PI key atomically.
-- The ranking database rebuilds on a version downgrade (`fallbackToDestructiveMigrationOnDowngrade`) so moving from a newer beta back to production never crashes on open; ranking state is relearned or restored from an explicit backup.
+- The database is included in Android backup with the other databases, and `AdaptiveRankingBackup` travels in `:core:catalog`'s library backup.
+- Show facet keys follow the active show ID; `migrateShowFacet` moves or merges evidence to the new key in one transaction.
+- An episode stored under several IDs counts once: `AdaptiveCandidateScorer.create` takes `episodeTokens` (`EpisodeListenerStore.groupTokens`, wired in `AppContainer`). Rules: [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md#5-aliases-on-the-phone).
+- A show switched to its feed keeps listening under its old Podcast Index show; show scores count those rows through `ScorablePodcast.listenerShowIds`, and a row of an unrelated show sharing an ID never counts.
+- Package root `cx.aswin.boxlore.core.ranking` is stable. Storage identities: [`ARCHITECTURE.md`](../../ARCHITECTURE.md#identity-and-storage).
 
 ## Testing notes
 
-- `AdaptiveRankingDatabaseDowngradeTest` opens a newer on-disk schema and checks the database recreates its tables instead of crashing.
-- Unit tests live under `core/ranking/src/test`.
-- `AdaptiveRankingTest` covers cold-start blending, objective behavior, and opposite-outcome learning.
-- `YourShowsScorerTest` covers normalized deterministic ordering and single recency application, while `YourShowsSubscriptionRecencyTest` covers the bounded three-day floor and faster post-window decay. `AdaptiveCandidateScorerTest` verifies Home and Library receive identical Your Shows scores even when an adaptive model exists.
-- `RankingHistoryTest` covers collapsing an episode's rows and finding them under either ID; `AdaptiveCandidateScorerTest.anEpisodeStoredUnderTwoIdsCountsOnceInShowScores` checks Your Shows and legacy show scores equal the one-ID scores when the episode's history and latest episode use different IDs; `anEpisodeCandidateFindsItsHistoryUnderItsOtherId` checks the same for episode candidates (`scoreEpisodes`); `aSwitchedShowReadsItsOldShowsListeningForItsLatestEpisode` checks a switched show's scores equal those of a show whose rows had moved; `RankingHistoryTest.aSwitchedShowFindsItsLatestEpisodeInTheRowsItsOldShowKeeps` checks the show-scoped lookup.
-- `ShowFacetMigrationLogicTest` covers preserving, merging, and retargeting evidence during a podcast-id repair. `AdaptiveRankingRepositoryTest` covers transactional `migrateShowFacet` into an existing target facet.
-- Recommendation reset behavior is exercised through `RankingResetPort` fakes in feature tests.
+Tests live in `core/ranking/src/test` (JUnit 5, Robolectric Room). Feature tests exercise reset through `RankingResetPort` fakes.
+
+| Area | Test classes |
+| :--- | :--- |
+| Adaptive learning | `AdaptiveRankingTest`, `RankingFeedbackRepositoryTest`, `RankingRuntimeControlsTest` |
+| Candidate scoring and episode IDs | `AdaptiveCandidateScorerTest`, `RankingHistoryTest` |
+| Your Shows | `YourShowsScorerTest`, `YourShowsSubscriptionRecencyTest` |
+| Storage, backup and facet repair | `AdaptiveRankingRepositoryTest`, `ShowFacetMigrationLogicTest`, `AdaptiveRankingDatabaseDowngradeTest` |
 
 ```bash
 ./gradlew :core:ranking:testDebugUnitTest
@@ -80,17 +84,15 @@ src/main/java/cx/aswin/boxlore/core/ranking/
 
 ## CI relevance
 
-- `unit-tests.yml` runs ranking JVM tests.
-- Ranking participates in app and feature test compilation anywhere scoring or diagnostics are wired.
+- `unit-tests.yml` runs these tests; app and feature tests compile against ranking wherever scoring is wired.
+- Release keeps the `AdaptiveRankingBackup` JSON graph and the generated Room database constructor; `release-contracts.yml` checks the optimized build.
 
 ## See also
 
 - [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`docs/recommendation-system.md`](../../docs/recommendation-system.md)
+- [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md)
 - [`:core:catalog` README](../catalog/README.md)
+- [`:core:database` README](../database/README.md)
 - [`:core:domain` README](../domain/README.md)
-
-### Release optimization
-
-Release preserves explicit JSON backup fields/default constructors for `AdaptiveRankingBackup` and its three entity graphs while allowing ranking implementations to be optimized. The artifact gate checks that graph and the generated ranking Room database constructor.

@@ -2,73 +2,110 @@
 
 ## Purpose
 
-Listening history: an Insights tab (it opens on it), a Timeline tab, and the monthly story with Echo. It reads the whole history and every phone's timed listening through `ListeningHistoryPort`; it does not own storage, sync, playback or the history's analytics, which stay in `:core:playback`, `:core:database` and `:core:catalog`.
+Owns Listening history on the app's `library/history` route: an Insights tab (where it opens), a Timeline tab, and the monthly story with Echo. It reads the whole history and the timed listening per day through `ListeningHistoryPort` (`:core:domain`); it does not own history storage, sync, playback or listening analytics, which stay in `:core:playback`, `:core:database` and `:core:catalog`.
 
 ## Public API
 
-- `HistoryScreen(viewModel, onBack, onEpisodeClick, onExploreClick, onPlayEpisode, onOpenShow)` with `HistoryViewModel(port, zoneId, now, storySeen, markStorySeen)`. The app wires the port to `PlaybackRepository` and the story's seen month to `UserPreferencesRepository.seenListeningStoryStream` / `setSeenListeningStory`.
+- `HistoryScreen(viewModel, onBack, onEpisodeClick, onExploreClick, onPlayEpisode, onOpenShow)`: the screen with its Insights | Timeline switcher and the story dialog.
+- `HistoryViewModel(port, zoneId, now, storySeen, markStorySeen)`. The app wires the port to `PlaybackRepository` and the story's seen month to `UserPreferencesRepository.seenListeningStoryStream` / `setSeenListeningStory`.
 - `HistoryTab` (`INSIGHTS`, `TIMELINE`), `TimelineUiState`, `InsightsUiState` (with its `StoryShelf`) and `StoryUiState`.
-- `story.StoryPlayer` / `story.StoryDialog`: the monthly story, built from a `story.MonthStory` (`story.StoryLogic.build`). In its dialog the story's window reaches under the status and navigation bars (`StoryWindowBars`), so the card's colour fills them rather than the page below showing through, with bar icons dark on a light card and light on a dark one (`StoryWindowLogic`); its frame keeps clear of the bars with safe-drawing padding. The window claims the bar backgrounds (`FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS`, clear bar colours, no dim): without it the system painted opaque black bars over the dialog.
-- `timeline.JumpToDayContent` / `JumpToDayHandle` / `JumpToDayState`, public so captures can draw the sheet's content (modal windows don't draw offline).
-- **Page views** (`TrackScreenView`, `:core:designsystem`): `listening_history` sends `library_destination_viewed` (history) through the helper; `history_insights`, `history_timeline` (sent by `HistoryScreen` for the tab, so an empty Timeline counts too), `history_jump_to_day`, `clear_listening_history_confirmation`, `listening_story` and each `listening_story_card` (with `card` and `month`) send `screen_viewed`. Sharing the story's card sends `share_content` (`content_type=listening_story`).
+- `story.StoryPlayer` / `story.StoryDialog`: the monthly story, built from a `story.MonthStory`.
+- `timeline.JumpToDayContent`, `JumpToDayHandle` and `JumpToDayState`: public so review captures can draw the Jump to a day sheet's content.
+
+## Timeline
+
+- `HistoryTimelineLogic` builds months of days or shows from the whole history and the listening per day, with search and filters.
+- Rows play from their cover or open the episode; their menu opens the show or removes the row with Undo.
+- Jump to a day is a calendar of listened days. A day goes to its own place in the Timeline, else the nearest later one.
+- Scroll requests (`TimelineScrollTarget`: a day, or the In progress filter) go through `followTimelineScrolls`; a newer request replaces one still waiting.
+
+## Insights
+
+- `InsightsLogic` and `InsightsParts` turn the selected period's listening into cards: time, listening type, top shows, the listening clock, weekdays, records, genres and milestones.
+- Where you listen and New or catching up come from each day's details (`InsightsDetails`). Each shows only once half the period's listening, and at least 30 minutes of it, has the details it needs.
+- New or catching up is a share of the listening whose release date is known (`InsightsDetails.newShare`); an episode without a date counts as neither new nor older.
+- With few timed days, Insights falls back to what the episode history alone can say.
+
+## Monthly story
+
+- From the first of a month, the month before gets a story when it has timed listening. `StoryLogic.months` lists them, `StoryLogic.build` makes one, and `StoryLogic.cards` leaves out cards without their data (`StoryCard`).
+- Insights opens last month's story from an entry card that says New until opened; older months come from Earlier stories; Share your listening opens the latest at its share card.
+- Echo says one line a card (`StoryEchoLines`, `res/values/story_echo_lines.xml`). Special situations speak when they fit; otherwise a seed picked when the story opens chooses among the situations that fit. Facts the cards don't keep come in `StoryEchoFacts`.
+- Lines fill facts through `StoryEchoLines.PLACEHOLDER`, which escapes both braces because Android's ICU regex rejects a bare `}`. A line naming a missing fact, or too long once filled, gives way to the next.
+- The story is a fixed frame scaled to fit the window, with a minimum scale below which it scrolls. On a spanned foldable it keeps to one side of the hinge (`boxloreFoldSafeViewport`).
+- Cards advance on a timer; tapping moves back or forward and holding pauses. With TalkBack on, cards wait to be moved on; with animations off, each card shows its final state.
+- The story dialog draws under the system bars (`StoryWindowBars`), choosing bar icon colours that read on the card (`StoryWindowLogic`).
+- `StoryPalette` turns the story's colours to the current theme's hue; Echo's accents come from `EchoAccents`.
+- `StoryEcho` hops Echo between cards and plays each card's act; the hop and the act are separate players and `StoryEchoHandoff` swaps them so Echo never jumps in size.
+- Sharing renders the share card and sends it through `ShareManager.shareImage`. The story has no sound.
+
+## Adaptive layouts
+
+Window gates and state retention follow [`ARCHITECTURE.md#adaptive-ui-and-state`](../../ARCHITECTURE.md#adaptive-ui-and-state). Both tabs share the Reading card column on wide windows, each tab keeps its scroll position while the other is open, the open story lives in the ViewModel, and the story frame keeps its card through resizing and rotation.
 
 ## Internal structure
 
 ```text
-src/main/java/.../history/
-  HistoryScreen.kt          # large collapsing title, Insights | Timeline switcher, the story dialog
-  HistoryViewModel.kt       # tabs, filter, grouping, search, period, stories; each tab works only while open
-  HistoryText.kt            # historyTextStyle: Google Sans at a real weight (see Testing notes)
-  timeline/                 # A1–A3: search, Jump back in, filters, days or shows, Jump to a day, fast scroller
-  insights/                 # A4–A6: time, listening type, top shows, clock, where you listen, weekdays, month mosaic, records, genres, new or catching up, milestones
-  story/                    # A7–A14: the monthly story, its Echo, palette, motion, share card, entry card and earlier stories
+src/main/java/cx/aswin/boxlore/feature/history/
+  HistoryScreen.kt, HistoryScreenEffects.kt  # screen, tab switcher, screen effects and Timeline scrolls
+  HistoryViewModel.kt                        # tabs, filter, grouping, search, period, stories
+  HistoryDialogs.kt, HistoryEmptyState.kt
+  HistoryText.kt                             # historyTextStyle
+  timeline/                                  # Timeline tab, rows, show cards, Jump to a day, fast scroller
+  insights/                                  # Insights tab, logic, details, cards, wording
+  story/                                     # monthly story: logic, cards, Echo lines and motion,
+                                             #   palette, window, entry card
+src/main/res/values/story_echo_lines.xml
 ```
-
-- Each tab keeps its place while the other is open: Insights' list position and Earlier stories' folding are held by the screen, as Timeline's are (`HistoryTabsStateTest`).
-- Timeline (boards A1–A3): `HistoryTimelineLogic` builds months of days or shows from the whole history and the listening per day; rows play from their cover or open the episode, and their ⋮ menu goes to the show or removes the row (Undo). Jump to a day is a calendar of listened days (darker is longer) that scrolls in short windows; a day goes to its own day in the Timeline, else the nearest later one (an episode heard that day shows on the day it was last played). Jump back in shows only by day with no search, but stays a list entry while it has episodes and folds away or opens (`timelineShowsJumpBackIn`), so switching Days|Shows slides the toggle under it instead of moving the page by the whole row in one frame. **All N** (and Insights' Review in-progress episodes) sets In progress and asks the screen to scroll smoothly to the filter chips (`TimelineScrollTarget.InProgress`), like Jump to a day (`TimelineScrollTarget.Day`), so the tap visibly lands on the in-progress episodes. `followTimelineScrolls` waits for each request's reset and a newer request replaces one still waiting, so a grouping change before the reset arrives cannot hold back a later Jump to a day (`TimelineScrollFollowTest`).
-- The Insights | Timeline switcher is the floating one Explore uses: centred 16dp above the navigation bar and mini player (`adaptivePlayerOverlayOffset`), with both tabs' lists padded to scroll past it.
-- Insights (A4–A6): `InsightsLogic` / `InsightsParts` turn the period's listening into stories, not stat tiles. Two cards come from each day's details (`InsightsDetails`, `InsightsDetailCards`): Where you listen (time by output: headphones, Bluetooth, car, phone speaker, Cast) after When you listen, and New or catching up (episodes out a week or less, and what Lore and Smart queue started) after the genres. Listening from before details were recorded has none, so both show only once half the period's listening, and at least 30 minutes of it, was recorded with details (that time, not the whole of a day that has some: the time on a known output, or more where a known release date, new releases, Lore or Smart queue account for more); Where you listen's shares are of the time on a known output, Lore's and Smart queue's of the time with details. New or catching up is a share of the time whose episode release date is known (`ListeningDayEpisode.releaseKnownMs`, kept in summaries since Room v42; `InsightsDetails.newShare`): an episode without a date is neither new nor older, and a summary from before v42 counts as neither. Its card shows only once half the period's listening, and at least 30 minutes of it, has a known release date (`ListeningSources.newShare` is null until then). When you listen says "Mostly evenings" only with half the listening or more, "Evenings lead" from 35% (`InsightsWording.partLead`), else "All through the day". A longest sitting is left out of the records when a day whose sitting isn't known (summed by an older build) holds more listening than it, so could hide a longer one (`InsightsParts.longestSitting`). With fewer than five timed days, what history alone can say (A6), with a "Limited insights for now" note (when listening time began; check back after a few days of listening) only when the episode history goes back before the listening time does.
-- Monthly story (A7–A12, refreshed on the S0–S8 boards on 2026-10-31, with A14's motion and A13's Echo actions): from the 1st of a month, the month before gets a story when it has timed listening. `StoryLogic.months` lists them and `StoryLogic.build` makes one: hello (the month's name as large as fits, then listened time, days, episodes and finished episodes counting up, and the top three covers), time listened (counting up, against the month before as two bars, a bar a day with Echo on the biggest and that day's chip on the side away from it), top show (share and time counting up, finishes, Resume, and the next two shows), how you listened (time by output, new or catching up, and what Lore and Smart queue started; only when the month has those details and an output, and new or catching up only once half the month's listening has a known release date; the entry card counts it by the same test), listening type (with the listening clock and how many episodes were finished; only with half an hour timed by part of the day, and finisher or sampler only across three episodes or more; the share card names the type only when the story has this card), records (best run counting up against the best ever, biggest day, longest sitting, most episodes of a show in a day, busiest weekday) and a share card. Cards without their data are left out (`StoryLogic.cards`). The Insights tab opens last month's story from a card that says New until it is opened (its card count, total, top show, covers and a small Echo; the title stops short of the covers it shows and wraps to a second line rather than running under them, `StoryEntryLayout.titleEnd`; a narrow card, in a split screen or a small window, drops the second cover and then all of them while the title would get under 130dp, `StoryEntryLayout.coversShown`), older months from Earlier stories (two rows of three, then Show all N stories / Show fewer stories, kept through rotation and resizing), and Share your listening (top bar) opens the latest at its share card.
-  - Echo says one line a card (`StoryEchoLines`, `res/values/story_echo_lines.xml`, 81 situations of twelve lines). A special situation speaks whenever it fits (the first month on record, a month after a gap, a single episode or day, a tie at the top, a tie on the listening clock, a new or tied best run, December and January wraps); otherwise the seed picked when the story opens chooses among the situations that fit (more or less than the month before, by how much, more or fewer days, the top show's genre (`lineGenre`, stricter than Echo's outfits: an education show isn't science, a books show isn't fiction), a dominant show or a wide mix, the top three's genres, a genre change, the output with most of the listening, a close mix of outputs, new or catching up, Lore, Smart queue, the time of day, finishing or sampling, runs against last month and the best, sittings, a binge, the busiest weekday), and then one of its lines. Facts the cards' builders don't keep come with the story (`StoryEchoFacts`: the month before's days, run and biggest day, the best run before the month, ties, genres, how much of the month has details). Lines fill in facts (`{show}`, `{diff}`, `{run}`…) through `StoryEchoLines.PLACEHOLDER`, whose braces are both escaped: Android's regex engine (ICU) rejects a bare `}` that the JVM's accepts, and that once stopped every story from opening; a line naming a fact the month lacks, a count under two, or running past 70 characters once filled gives way to the next, then to the card's usual lines.
-  - The story is the boards' 400 × 890 frame, scaled as a whole to fit the window, with the card's colour filling around it. It never shrinks below 0.8 (its buttons stay near touch size): in a short window (a phone on its side) it scrolls instead. On a spanned foldable it keeps to one side of the hinge (`boxloreFoldSafeViewport`). Its type is artwork and doesn't follow the font scale. A card every 8 seconds; tap the left 30% for the previous, the rest for the next; hold to pause (letting go of a hold resumes the same card). With TalkBack on, cards wait to be moved on, following TalkBack being turned on or off mid-story; with animations off, each card shows its final state and Echo its rest pose.
-  - Echo on the story entry card and the Earlier stories tiles is a still: drawn once, with no frame clock; each row of tiles is its own list item.
-  - `StoryPalette` keeps the boards' colours on boxlore's own theme and turns them to any other theme's hue, each colour keeping its tone. Echo keeps its own indigo where it suits the card, deep purple on the blue time card and seafoam on the green top-show card (`EchoAccents`).
-  - `StoryEcho` places Echo as the boards do (its outline plus 3% in the board's box, smaller than before so the facts lead), hops it from card to card (the hop clip plays whole, 1.7s, and Echo moves only while airborne), then plays the card's act (a genre or time-of-day outfit) and rests with scripted eyes (`EchoIdles`). The hop and the act are two Echoes, each in its own frame, because their clips frame Echo at different scales: the act's Echo decodes its first frame while the hop plays, hidden, then fades in over the landed hop in 180ms while growing from the landed hop's size to its own from its feet (`StoryEchoHandoff`, `StoryEchoStage.handoffScale`, `StoryMotion.HANDOFF_MS` and `HANDOFF_GROW_MS`), so Echo never jumps in size, and the hop's Echo stays paused and hidden until the next hop. One player switching clips once showed the hop's last frame at the act's scale for a moment and faded it out over the act. Its line pops in 2s into the card, after the facts have counted up.
-  - Share renders the share card as drawn (Echo included) and sends it through `ShareManager.shareImage`.
-- The story ships silent: no music or sound button.
 
 ## Dependencies
 
-- → `:core:model`, `:core:domain`, `:core:designsystem`, `:core:analytics`
-- Material Color Utilities (story palette turns), Coil (artwork through `OptimizedImage`).
-- No feature → feature edges; nothing here touches PostHog directly.
+- → `:core:model`, `:core:domain`, `:core:designsystem`, `:core:analytics`.
+- Libraries: Compose, Material 3, lifecycle, Material Color Utilities (story palette), Coil through `OptimizedImage`.
+- Feature modules never depend on other features, and never call PostHog directly; analytics go through `:core:analytics`.
 
 ## Threading / lifecycle
 
-- `HistoryViewModel` builds each tab off the main thread (`Dispatchers.Default`) and only while that tab is open (`whileOpen`); `PlaybackHistoryStore` throttles whole-history reads to one a second, so playback ticks don't rebuild the screen.
+- `HistoryViewModel` is scoped to the History navigation entry. It builds each tab on `Dispatchers.Default` and only while that tab is open (`whileOpen`).
+- The port's whole-history reads are throttled in `:core:playback`, so playback progress does not rebuild the screen on every tick.
 - A story is built once when it opens, from the history as it is then.
-- Story motion runs on one clock per card that stops once the card has settled; Echo's own clock pauses with the story and in the background.
+- Story motion runs on one clock per card that stops once the card settles; Echo's clock pauses with the story and in the background.
 
 ## Persistence & identity
 
-- `seen_listening_story` (`UserPreferencesRepository`, `:core:prefs`): the last story month opened, as `yyyy-MM`.
-- Echo sequence ids called by name from `assets/echo-character/manifest.json` (`:core:designsystem`): `story-hello`, `story-hop`, `story-entry`, `story-<outfit>` and `story-<outfit>-still` (`EchoOutfit`); `StoryEchoAssetsTest` checks they ship.
-- Episode playback from the history uses entry point `library_history`.
+- `seen_listening_story` (`:core:prefs`): the last story month opened, as `yyyy-MM`.
+- Echo sequence ids read by name from `assets/echo-character/manifest.json` (`:core:designsystem`): `story-hello`, `story-hop`, `story-entry`, `story-<outfit>` and `story-<outfit>-still` (`EchoOutfit`).
+- Episodes played from the history use entry point `library_history`.
+- Analytics: the screen sends `library_destination_viewed`; tabs, Jump to a day, the clear confirmation, the story and each story card send `screen_viewed`; sharing sends `share_content`. Events are listed in [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md).
 
 ## Testing notes
 
-- JVM tests: `HistoryTimelineLogicTest`, `TimelinePiecesTest`, `InsightsLogicTest` (including when Where you listen and New or catching up show, and their shares: new of only the time with a known release date, undated episodes and summaries from before v42 counted as neither), `StoryLogicTest` (months, Earlier stories folding to two rows, the story's facts, records, runners-up, finishes, outputs, new or catching up left out without known release dates, the entry card's teaser, outfits, card list, palette on boxlore's and another theme, Echo placement, the time chart), `StoryEchoLinesTest` (the placeholder pattern escaping every brace, special situations first, the seed choosing among the rest, time changes large, small and level, genres and ties, new and tied records, lines giving way, and every situation twelve short lines with known placeholders and usual lines naming only facts every month has), `StoryEchoAssetsTest`, `StoryEntryLayoutTest` (the story card's title clear of the covers it shows, and narrow cards dropping covers before the title loses the month), `StoryEchoHandoffTest` (the act hidden through the hop, then fading in over the landed hop and growing from its size, every outfit's grow-in starting near the landed hop's size, and bar icons reading on light and dark cards), and `HistoryViewModelTest` (selections survive recreation, tabs work only while open, stories are New until opened, Share your listening opens the share card).
-- `HistoryTimelineGroupingTest` (`:app`, JVM Compose/Robolectric on the real History screen) samples the Days|Shows toggle frame by frame at phone and tablet sizes and through live 599/600dp and 479/480dp resizing in both directions, and checks that All N scrolls the filters to the list's top over several frames and keeps them there while resizing.
-- Captures for side-by-side review with the boards: `./gradlew :app:testDebugUnitTest --tests 'cx.aswin.boxlore.ui.HistoryTabletAuditCaptureTest' -PtabletCaptures=after` writes the Timeline (days, shows), Jump to a day, empty, Insights (full and little data) and every story card to `build/reports/tablet-captures/after/` at 400dp phone, 1280 × 800 tablet and 840 × 1280 unfolded sizes.
-- Text uses `historyTextStyle`: the theme's styles carry their weight in their font, so copying a style with another `fontWeight` keeps the old weight. One-line story headlines sit in a box of the board's line height (`storyLine`), since a single line keeps its natural height.
-- Adaptive: the tabs share the 720dp Reading column on tablets and unfolded phones; the story frame scales to any window and keeps the card on show through resizing and rotation (`rememberSaveable`), and the open story lives in the ViewModel. New or catching up (and the story's new-or-older split) is shown or left out by the listening's data alone (`InsightsDetails.newShare`), in the same list at every width, so it holds no window state and a resize never changes it. To check it by hand: Listening history › Insights on a period with listening of episodes without a release date; the card's shares are of the dated listening only, and the card is absent while under half the period's listening (or under 30 minutes) has a date. Its layout at phone, tablet and unfolded sizes is what the captures above show; JVM tests cover the shares and when the card shows (`InsightsLogicTest`, `StoryLogicTest`).
+Hermetic JVM tests live in `feature/history/src/test`, using fakes from [`:core:testing`](../../core/testing/README.md).
+
+| Area | Tests |
+| :--- | :--- |
+| ViewModel, tabs and stories shelf | `HistoryViewModelTest` |
+| Timeline | `HistoryTimelineLogicTest`, `TimelinePiecesTest`, `TimelineScrollFollowTest` |
+| Insights | `InsightsLogicTest` |
+| Story content and entry card | `StoryLogicTest`, `StoryEntryLayoutTest` |
+| Echo lines, assets and handoff | `StoryEchoLinesTest`, `StoryEchoAssetsTest`, `StoryEchoHandoffTest` |
+| Screen in the app shell (`:app`) | `HistoryTabsStateTest`, `HistoryTimelineGroupingTest` |
+
+Text uses `historyTextStyle`, because copying a theme style with another `fontWeight` keeps the font's own weight. `HistoryTabletAuditCaptureTest` in `:app` writes local review captures; see [`docs/TESTING.md#screenshots`](../../docs/TESTING.md#screenshots).
+
+```bash
+./gradlew :feature:history:testDebugUnitTest
+```
 
 ## CI relevance
 
-- General CI pipeline (unit tests, detekt, Kover, lint).
+- `unit-tests.yml` runs History JVM tests in the features shard and includes the module in merged coverage verification; the `:app` History tests run in the app shard.
 
 ## See also
 
 - [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
-- [`core/designsystem/README.md`](../../core/designsystem/README.md) (Echo, `DiscoveryTabSwitcher`, `ShareManager`)
-- [`core/playback/README.md`](../../core/playback/README.md) (the history and listening the screen reads)
+- [`docs/TESTING.md`](../../docs/TESTING.md)
+- [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md)
+- [`:feature:library` README](../library/README.md)
+- [`:core:designsystem` README](../../core/designsystem/README.md)
+- [`:core:playback` README](../../core/playback/README.md)

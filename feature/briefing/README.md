@@ -2,79 +2,78 @@
 
 ## Purpose
 
-Owns the Daily Briefing presentation flow: region-aware briefing content, story pager UI, transcript and chapter presentation, and playback actions delegated to injected core dependencies. It does not own catalog retrieval, queue persistence, playback services, or navigation registration.
+Owns the Brief page: loading a regional edition, the cover and headline, story paging with related episodes and sources, the edition and default-edition preferences, and Brief playback actions. Catalog retrieval, chapter fetching, queue and playback services, preference storage, the Brief's bundled artwork and strings, and route registration belong to core modules and `:app`.
 
 ## Public API
 
-- Related episode artwork retains show-art alternatives through the shared loader. Brief cover and player artwork are bundled resources, with no image network request.
+- `BriefingRoute`: the destination `:app` registers on `briefing?region={region}`. It builds `BriefingViewModel` through a `viewModel` factory from injected `PodcastRepository`, `PlaybackRepository`, `QueueManager` and `UserPreferencesRepository`.
+- `BriefingScreen`: the stateless page, driven by `BriefingUiState` and callbacks for edition, play/pause, seek, episode, feedback and default edition.
+- `BriefingViewModel`: exposes `uiState`, `selectedRegion` and `defaultEdition`, with `selectRegion`, `setDefaultEdition`, `togglePlayPause` and `seekTo`.
+- `BriefingUiState`: the sealed page state (`Loading` carries the edition being loaded).
+- Everything else (`BriefingLoader`, `BriefingIdentity`, `BriefingPlaybackLogic`, story and loading composables) is `internal`.
 
-- Briefing cards and source rows stay still with shape-clipped Material feedback. Story play and retry controls use the shared restrained control response; native buttons keep their own indications and playback callbacks.
+## Editions and loading
 
-- `BriefingScreen` is the route-level composable used by `:app`.
-- Section headers in briefing UI use `rememberSectionHeaderFontFamily()` from `:core:designsystem` so lettering roundness follows Appearance settings.
-- Briefing emphasis uses centralized Google Sans Flex weight tokens from `:core:designsystem`.
-- `BriefingViewModel` exposes briefing state and actions using injected catalog, playback, queue, and preference dependencies. It resolves the saved default edition before fetching; explicit route regions win. Temporary edition changes never write the default. Selecting a default in Brief preferences persists it and opens that edition. Retrying the same failed edition starts a new request; cancelled older requests cannot publish stale results.
-- Brief playback hands the shared `briefingShowPodcast` show from `:core:designsystem` to the queue, and saved sessions use the same masthead title, so the player and Android Auto show "The boxlore brief" by boxlore.
-- Daily edition uses a crisp edge-to-edge weekday cover behind the status bar, clipped at its lower corners. The masthead stays in the reserved left area with a soft local dark scrim for contrast; Back and Brief preferences sit at the upper right. Below the cover, the page uses the listener’s solid Material 3 background, with opaque themed story and reporting panels. No artwork wash, image fade or glass layer continues behind the article. System icons stay white over the cover and follow the selected theme after scrolling past it or leaving the page. Headline, metadata, edition selection, playback, story paging, related episodes and sources retain their behavior. Player artwork remains the fixed branded regional square.
-- Briefing audio start tags `entry_point=briefing` on the play source bundle (glossary value) so
-  `playback_*` can attribute Brief listening without changing `daily_briefing_action`.
-- Playback uses a thin 3 dp wavy seek track with a small round handle and remaining time on the same row. The wave moves only during playback; native Slider tap, drag, RTL and accessibility seeking remain available with a full touch target. Unknown duration hides the seek row.
-- `BriefingUiState` models screen state.
-- `BriefingIdentity` contains pure identity helpers for tests and UI mapping.
-- When a briefing answer carries no chapters or transcript link, `BriefingViewModel` builds it with `:core:catalog` `BriefingLinks`: chapters on `/v2/briefings/chapters/<region>` while v2 discovery is on (related episodes come back under the IDs this phone holds), transcript on `/briefings/transcript/<region>`. The answer's own signed links are always preferred. No layout or state changes, so phone, tablet, foldable and resized windows behave as before.
-- Episode id stays `briefing_{region}_{date}` for session continuity; Media3 audio cache keys include the signed URL `v=` hash (see `EpisodeMediaCacheKey`) so same-day regenerations do not replay stale bytes.
-- Briefing markets: `us`, `in`, `gb`, `global` (ISO `gb` for the UK).
-- `BriefingPlaybackLogic` resolves whether a briefing interaction pauses, resumes, starts, or seeks; choosing another story seeks directly instead of pausing.
-- `BriefingStoriesPager` and `BriefingStoryComponents` provide extracted story-presentation pieces.
-- Story cards share one height: the pager measures every card at the page width and current text size and takes the tallest, capped at 70% of the screen height so a card stays a comfortable read. Stories longer than the cap scroll inside their text area, and the last line fades while more text is below; shorter stories keep related episodes and Play pinned to the bottom. In a window shorter than 480dp (a phone on its side, a split screen) the whole card scrolls instead (`storyCardScrollsAsOne`), so the heading, story, related episodes and Play all stay reachable. Measured copies are never placed and are hidden from accessibility. Story text uses body-large type in the full on-surface colour.
-- While an edition loads, the page shows its own layout (`BriefingLoadingContent`): the bundled cover for the chosen edition at once, with shimmering placeholders for the date line, headline, Listen button and first story in their final places, so the edition settles in place rather than replacing a spinner. The status bar treats the loading cover like the edition's.
-- **Page views** (`TrackScreenView`, `:core:designsystem`): `daily_briefing` keeps `daily_briefing_action` `screen_viewed` as its view and only moves the screen trail; `briefing_preferences` and `briefing_sources` send `screen_viewed` once per visit.
+- Editions are `global`, `in`, `us` and `gb`, resolved by `BriefingEdition` in `:core:prefs` (it maps aliases such as `uk`). An explicit route region wins over the saved default, which wins over the app region.
+- Changing the edition on the page never writes the default; choosing a default in Brief preferences saves it and opens that edition.
+- `BriefingLoader` cancels the previous request on every load, so retrying the same edition starts fresh and a cancelled response never publishes. A choice made while preferences are still loading wins over initialization.
+- While loading, `BriefingLoadingContent` shows the edition's bundled cover with placeholders in their final places.
+- When an answer carries no chapters or transcript link, the ViewModel builds one with `BriefingLinks` from `:core:catalog`; the answer's own signed links are always preferred.
+
+## Stories and playback
+
+- `BriefingStoriesPager` gives every story card the height of the tallest, capped, so long stories scroll inside their text. In short windows `storyCardScrollsAsOne` makes the whole card scroll instead, keeping the heading and actions reachable.
+- `resolveBriefingPlaybackAction` (`BriefingPlaybackLogic.kt`) decides whether a tap pauses, resumes, starts or seeks; choosing another story seeks instead of pausing.
+- Playback hands the shared `briefingShowPodcast` show from `:core:designsystem` to `QueueManager.playEpisode`, so the player and Android Auto show the Brief under one title.
+- Brief playback tags its play source bundle with `entry_point=briefing`, so `playback_*` events attribute Brief listening without changing `daily_briefing_action`.
+- Layout across phone, tablet, foldable and resized windows follows the [adaptive UI and state contract](../../ARCHITECTURE.md#adaptive-ui-and-state).
 
 ## Internal structure
 
 ```text
 src/main/java/cx/aswin/boxlore/feature/briefing/
-  BriefingIdentity.kt
-  BriefingScreen.kt
-  BriefingStoriesPager.kt
-  BriefingStoryComponents.kt
-  BriefingPlaybackLogic.kt
-  BriefingUiState.kt
+  BriefingScreen.kt              # BriefingRoute, BriefingScreen, preferences and sources sheets
   BriefingViewModel.kt
-  BriefingLoader.kt
+  BriefingLoader.kt              # edition resolution, cancellable loads
+  BriefingLoading.kt             # loading layout
+  BriefingUiState.kt
+  BriefingIdentity.kt            # episode ID and cover mapping
+  BriefingPlaybackLogic.kt
+  BriefingStoriesPager.kt, BriefingStoryCard.kt, BriefingStoryText.kt, BriefingStoryComponents.kt
+  BriefingRelatedEpisodes.kt
 ```
 
 ## Dependencies
 
-- Project dependencies: `:core:designsystem`, `:core:catalog`, `:core:playback`, `:core:model`, `:core:network`, `:core:analytics`, and `:core:prefs`.
-- Libraries: Compose, Navigation, Coil, lifecycle ViewModel/runtime Compose, Palette, and Material icons.
-- Reverse-edge rule: feature modules must not depend on other feature modules or construct playback/catalog graphs.
+- → `:core:designsystem`, `:core:catalog`, `:core:playback`, `:core:model`, `:core:network`, `:core:analytics`, `:core:prefs`.
+- Libraries: Compose, Material 3, Material icons, Navigation, Coil, lifecycle runtime and ViewModel Compose, Palette; tests add JUnit 5, coroutines-test and Robolectric.
+- Feature modules never depend on other features, never call PostHog directly, and never construct playback or catalog graphs.
 
 ## Threading / lifecycle
 
-- `BriefingViewModel` is scoped to the route or navigation owner that creates it.
-- Catalog, playback, and queue objects are application-scoped instances supplied by app wiring.
-- Compose UI runs on the main thread; repository calls use suspend APIs from injected dependencies.
+- `BriefingViewModel` is scoped to the `briefing` back-stack entry; its loader runs in `viewModelScope`.
+- Repositories, `PlaybackRepository` and `QueueManager` are application-scoped instances from app wiring; the ViewModel observes `playerState` and never owns a player.
+- Compose runs on the main thread; network work goes through injected suspend APIs.
 
 ## Persistence & identity
 
-- This module owns no storage files or stable keys.
-- Briefing episode and podcast identity comes from catalog/network models.
-- Playback session identity is owned by `:core:playback`.
+- This module owns no storage files. The default edition is read and written through `UserPreferencesRepository` (`briefingDefaultEdition`).
+- Brief episode IDs are `briefing_<region>_<date>` (`BriefingIdentity.episodeId`) and the show ID is `briefing_<region>`; saved sessions depend on both.
+- Same-day regenerations change only the signed audio URL's `v=` value; `EpisodeMediaCacheKey` in `:core:model` puts it in the Media3 cache key.
+- Page views: `daily_briefing` moves only the screen trail (its view is `daily_briefing_action`), while `briefing_preferences` and `briefing_sources` send `screen_viewed`. Events are listed in [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md).
+- Stable test tags include `briefing_reading_frame` and `briefingBack`.
 
 ## Testing notes
 
-- Tablet editions and loading covers share a centered 720dp reading frame, including page actions and cover-height/status-bar tracking. Home owns its separately adapted horizontal Brief card; story, source, edition and playback callbacks remain unchanged.
+Hermetic JVM tests live in `feature/briefing/src/test`, using suspend fakes and Robolectric with native graphics for Compose.
 
-- Tablet story pages use a bounded 720dp reading width, exposing additional pages in wider viewports. Height measurement uses that same page width; loading and reporting panels share the cap. Phone paging and story content stay unchanged.
-
-- Unit tests live under `feature/briefing/src/test`.
-- `BriefingViewModelLoadingTest` exercises the ViewModel's production `BriefingLoader` with suspend fakes: saved/explicit/follow-app initialization, delayed preferences versus user selection, retries, missing metadata, chapter failures, progress restoration, and noncooperative cancelled metadata/chapter responses. The loader remains route-scope owned and constructs no repositories or media services.
-- `BriefingScreenTest` checks phone-sized cover/logo/navigation geometry, light/dark status-bar transitions and restoration, enlarged RTL controls, playback, story navigation and sources. Set `BOXLORE_UI_TEST_ARTIFACTS` to an existing local folder to export native JVM renders for visual inspection.
-- `BriefingIdentityTest` covers region aliases and briefing identity helpers.
-- `BriefingShowTest` (Robolectric) checks the shared Brief show title, author, id and player square against real resources.
-- `BriefingScreenTest` uses native Robolectric graphics for playback, story paging, source-sheet actions, default-edition selection and error recovery at phone width, including dark mode, RTL and doubled text size. It uses JVM tests without emulator or device automation.
-- Manual smoke should verify briefing launch, story paging, accurate duration metadata once available, and switching stories without interrupting playback.
+| Area | Tests |
+| :--- | :--- |
+| Loading, editions, cancellation | `BriefingViewModelLoadingTest` |
+| Page, sheets, status bar, RTL and large text | `BriefingScreenTest` |
+| Story cards and text | `BriefingStoryCardLayoutTest`, `BriefingStoryTextTest` |
+| Playback decisions | `BriefingPlaybackLogicTest` |
+| Identity and the shared Brief show | `BriefingIdentityTest`, `BriefingShowTest` |
 
 ```bash
 ./gradlew :feature:briefing:testDebugUnitTest
@@ -82,13 +81,13 @@ src/main/java/cx/aswin/boxlore/feature/briefing/
 
 ## CI relevance
 
-- `unit-tests.yml` compiles and runs briefing JVM tests with the project suite.
+- `unit-tests.yml` runs these tests in the `features-a` shard and includes the module in merged coverage.
+- `:core:testing` architecture guards check this README, page-view coverage and the dependency rules.
 
 ## See also
 
 - [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
 - [`docs/TESTING.md`](../../docs/TESTING.md)
-- [`:core:playback` README](../../core/playback/README.md)
-- [`:app` README](../../app/README.md)
-
-Tablet story height follows the supplied content pane, and edition/source sheets use the shared expanded dialog adapter. Phone configuration tiers and source actions are preserved.
+- [`core/playback/README.md`](../../core/playback/README.md)
+- [`core/catalog/README.md`](../../core/catalog/README.md)
+- [`app/README.md`](../../app/README.md)

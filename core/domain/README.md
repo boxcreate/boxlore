@@ -2,27 +2,39 @@
 
 ## Purpose
 
-Owns thin domain ports and small result types used by ViewModels, repositories, workers, and tests without pulling in production repository graphs. It does not own Room entities, Retrofit DTOs beyond existing edge types, ranking engines, Compose UI, managers, or production implementations.
+Owns thin domain ports and small result types that ViewModels, repositories, workers and tests depend on without pulling in production repository graphs.
+
+It does not own Room entities, network DTOs, ranking engines, Compose UI, managers or production implementations; those live in the modules that implement the ports and are wired in `AppContainer`.
 
 ## Public API
 
-- `LocalEpisodeCatalogPort` also serves source-aware subscription automation through `SubscribedEpisodeCatalog` and `RssEpisodeCatalog`. The existing `RefreshRequest.podcastIndexId` field carries the canonical show ID, including `rss:` for that adapter. Subscription creation and PI extras remain separate ports. A catalog refresh never reads a Podcast Index list: new episodes of Podcast Index shows take recipe IDs.
+Catalog and feeds:
 
-- `RssSubscriptionPort` and `RssSubscriptionResult`.
-- `EpisodeSupplementPort` and `EpisodeSupplementOutcome` (PI show feed extras; not an RSS subscription). `NewestTipRequest` / `FeedItemMatch` bundle the lighter tip-refresh path used as an FCM payload match fallback. `RefreshFromFeedRequest` optionally loads the PI list the extras are compared with, in parallel with the feed GET, via `loadBaseline` (legacy launch sync, restore and FCM hydration paths without a local catalog). If that loader throws (strict PI HTTP failure), production `refreshFromFeed` returns `Failure` and does not replace stored supplement rows. `isPublisherFeedUnchanged` defaults to false (always refresh). `listDirectFeedOptIns` / `restoreDirectFeedOptIn` default to empty / no-op so fakes stay small; production restores Missing episodes? after library JSON import.
-- `RankingResetPort`.
-- `PodcastCatalogPort`.
-- `HistoryRecommendationSource`.
-- `LocalCatalogPort` for local podcast lookup and subscribed podcast upsert.
-- `LocalEpisodeCatalogPort` for the first-class subscribed-PI episode catalog (ready gate, paged windows, sticky refresh). Creation is separate from RSS subscription catalog reads and Missing-episodes extras.
-- `EpisodeOfflineLookupPort` and `OfflineEpisodeSnapshot` for episode-detail download/history hydration.
-- `ConnectivityStatusPort` and connectivity status types.
-- `ListeningHistoryPort` for Listening history: the screens' recent rows (`observeHistoryTimeline`), the whole history (`observeFullHistoryTimeline`), every phone's timed listening per day and episode (`observeListeningByDay`), the shows played with their genres (`observePlayedShows`), period insights, and removing, restoring and clearing history.
-- `DeviceIdentityPort` for cross-device sync attribution.
-- `FeedTelemetryPort` reports feed reads (`feedFetched`) and saved-address swaps (`feedUrlCorrected`) without a dependency on `:core:analytics`; `AppContainer` wires the analytics-backed one and `NONE` reports nothing. Implementations must not throw.
-- `ShowPageFeedPort` is the feed-first show page's stored feed copy of a Podcast Index show, followed or not (P4 PR 16): `cached` (episode count, whether it is the whole archive, when it was read, oldest-first), `read` (`NEWEST` or `ARCHIVE` of an HTTPS address; `Stored`, `NotModified` or `Failed` with the `/v2/feed-report` status, never a throw), `readTransport` (an http-only feed through boxlore's transport: the caller's fetch gets the copy's ETag and answers `Transported` `Document`, `NotModified`, `ReadDirect` or `Failed`; it runs under the read's lock and download gate), `search` (bounded in the query), `markOpened` and `cleanUp` (unfollowed copies not opened in 30 days, then a size cap; never history, downloads, the queue or aliases), and since P4 PR 20 `unfollowedCount` / `clearUnfollowed` for Settings › Clear saved shows (every unfollowed copy, whatever its age and including one still under its unsubscribe TTL; the same rows as `cleanUp`, and a show followed meanwhile keeps its copy; both default to 0). Pages of the copy go through `LocalEpisodeCatalogPort.getPage`. `:core:rss` implements it (`LocalEpisodeCatalogRepository.showPages`).
+- `PodcastCatalogPort`: show details, one episode, and a show's episodes from the catalog.
+- `LocalCatalogPort`: local show lookup, the subscribed RSS show linked to a Podcast Index show, and subscribed show upsert.
+- `LocalEpisodeCatalogPort`: the subscribed-show episode catalog (ready gate, pages and windows, search, newest, refresh, unsubscribe TTL). Production composes catalog and RSS adapters in `:core:catalog`'s `SubscribedEpisodeCatalog`.
+- `LocalEpisodeCatalogPort.RefreshRequest`: `podcastIndexId` carries the canonical show ID, including `rss:`; `reason` is a `RefreshReason` (`NORMAL`, `AUTO_DOWNLOAD`, `NEW_RELEASE`, `MANUAL`).
+- `RefreshRequest.canProceed` rechecks authorization before network and storage work; `runPostPersistCallback = false` keeps background recovery from running post-write callbacks.
+- `RefreshRequest.detectMove` asks for a confirmed new HTTPS address in `RefreshOutcome.Success.movedTo`; `serverEpNs` is only compared with the stored namespace and never changes an ID.
+- `LocalEpisodeCatalogPort.RefreshOutcome`: `Success`, `Unchanged` or `Failure`; `Failure.addressGone` marks a dead address and `reportStatus` uses the `/v2/feed-report` status words.
+- `ShowPageFeedPort`: the stored feed copy behind a Podcast Index show's page, followed or not; implemented by `:core:rss` (`LocalEpisodeCatalogRepository.showPages`).
+- `ShowPageFeedPort.read` and `readTransport`: read the `NEWEST` or `ARCHIVE` scope and return `Stored`, `NotModified` or `Failed`, never throwing; `readTransport` routes an http-only feed through boxlore's transport.
+- `ShowPageFeedPort.cleanUp`, `unfollowedCount`, `clearUnfollowed`: remove unfollowed copies (stale ones, then over a size cap; or all for Settings); history, downloads, the queue and aliases always stay.
+- `EpisodeSupplementPort`, `EpisodeSupplementOutcome`: feed-only extras of a Podcast Index show (not an RSS subscription), including the newest-tip lookup (`NewestTipRequest`, `FeedItemMatch`) and direct-feed opt-ins.
+- `RefreshFromFeedRequest.loadBaseline`: loads the Podcast Index list in parallel with the feed; if it throws, the refresh returns `Failure` and keeps stored extras.
+- `RssSubscriptionPort`, `RssSubscriptionResult`: subscribing by feed address, with any likely Podcast Index match.
 
-- `LocalEpisodeCatalogPort.RefreshRequest.reason` defaults to `NORMAL`; automatic refresh and `AUTO_DOWNLOAD` share the persisted six-hour freshness gate. `MANUAL` and `NEW_RELEASE` bypass quiet/HEAD shortcuts. `canProceed` rechecks authorization before network/persistence, `runPostPersistCallback` prevents background metadata recovery from invoking ungated ingest callbacks, and `isRefreshDue` supports bounded foreground batches. `RefreshOutcome.Failure.addressGone` says the saved address looks dead rather than temporarily failing, and `RefreshOutcome.Failure.reportStatus` says what the read saw in the words `/v2/feed-report` takes (`http_404`, `timeout`, `dns`, `tls`, `parse`, `network`, `other`; null when no read happened); with `RefreshRequest.detectMove` (and a `PodcastMeta.title` to compare), `RefreshOutcome.Success.movedTo` carries a confirmed new HTTPS address. `RefreshRequest.serverEpNs` passes the episode namespace the server reported for the show; it is only compared with the stored one and never changes an ID. Publisher RSS and Room remain the source of subscribed episodes.
+Other ports:
+
+- `ListeningHistoryPort`: history timelines, listening by day and episode, played shows, period insights, and removing, restoring and clearing history.
+- `EpisodeOfflineLookupPort`, `OfflineEpisodeSnapshot`: episode details from a download or history row when offline.
+- `HistoryRecommendationSource`: recent history for recommendations.
+- `RankingResetPort`: resets the ranking model.
+- `ConnectivityStatusPort`, `AlwaysOnlineConnectivity`: online checks.
+- `DeviceIdentityPort`: device ID for sync attribution.
+- `FeedTelemetryPort`: reports feed reads, saved-address swaps and upgrade repair results without depending on `:core:analytics`; `NONE` reports nothing and implementations must not throw.
+
+Default methods (`isRefreshDue`, `isPublisherFeedUnchanged`, `listDirectFeedOptIns`, `restoreDirectFeedOptIn`, `unfollowedCount`, `clearUnfollowed`) keep fakes small.
 
 ## Internal structure
 
@@ -31,39 +43,47 @@ src/main/java/cx/aswin/boxlore/core/domain/
   RssSubscriptionResult.kt
   ports/
     ConnectivityStatusPort.kt
+    DeviceIdentityPort.kt
     EpisodeOfflineLookupPort.kt
     EpisodeSupplementPort.kt
     FeedTelemetryPort.kt
     HistoryRecommendationSource.kt
+    ListeningHistoryPort.kt
     LocalCatalogPort.kt
     LocalEpisodeCatalogPort.kt
     PodcastCatalogPort.kt
     RankingResetPort.kt
     RssSubscriptionPort.kt
+    ShowPageFeedPort.kt
 ```
 
 ## Dependencies
 
-- Project dependencies: `:core:model`, `:core:network`.
-- Libraries: coroutines.
-- Reverse-edge rule: domain must not depend on catalog, database, playback, downloads, designsystem, or feature modules.
+- `api`: `:core:model`, `:core:network`.
+- `implementation`: coroutines.
+- Forbidden: catalog, database, rss, playback, downloads, designsystem or feature modules.
 
 ## Threading / lifecycle
 
-- Ports expose suspend functions or flows; implementations choose dispatchers.
-- No application-scoped objects are created in this module.
-- Production implementations are wired from `AppContainer` in owning data modules.
+- Ports expose `suspend` functions or Flows; implementations choose dispatchers.
+- This module creates no application-scoped objects.
+- Production implementations are wired from `AppContainer` in the owning data modules.
 
 ## Persistence & identity
 
-- No persistence is owned here.
-- Port contracts may carry stable IDs such as `rss:` podcast IDs or episode IDs, but those schemes are owned by RSS, database, and playback modules.
+- This module owns no storage.
+- Ports carry stable IDs (`rss:` show IDs, episode and recipe IDs) whose schemes are owned elsewhere: [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md) and [`ARCHITECTURE.md`](../../ARCHITECTURE.md#identity-and-storage).
+- A catalog refresh never reads a Podcast Index episode list; new episodes of Podcast Index shows take recipe IDs.
+- A show page read never makes an unfollowed show's copy the followed live list (`isReady` stays false) and never runs followed-show post-write work.
 
 ## Testing notes
 
-- Unit tests live under `core/domain/src/test`.
-- Existing tests cover subscription results and port contract behavior.
-- Use constructor-injected fakes or helpers from `:core:testing` when testing callers.
+Tests live in `core/domain/src/test` (JUnit 5). Callers should use constructor-injected fakes or helpers from [`:core:testing`](../testing/README.md).
+
+| Area | Test classes |
+| :--- | :--- |
+| Subscription results | `RssSubscriptionResultTest` |
+| Port contracts and defaults | `ConnectivityStatusPortTest`, `EpisodeOfflineLookupPortTest`, `FeedTelemetryPortTest`, `HistoryRecommendationSourceTest`, `LocalCatalogPortTest`, `RankingResetPortTest` |
 
 ```bash
 ./gradlew :core:domain:testDebugUnitTest
@@ -71,8 +91,7 @@ src/main/java/cx/aswin/boxlore/core/domain/
 
 ## CI relevance
 
-- `unit-tests.yml` runs domain JVM tests.
-- The root Kover merged verification includes this module.
+- `unit-tests.yml` runs these tests and includes the module in the coverage gate.
 
 ## See also
 

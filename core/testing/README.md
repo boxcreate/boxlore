@@ -2,19 +2,19 @@
 
 ## Purpose
 
-Owns shared JVM test fixtures, dispatcher helpers, and architecture guards used by core and feature modules. It is a test-support module and is not shipped in the app APK.
+Owns shared JVM test support for core and feature modules: fixtures, fakes for `:core:domain` ports, the main-dispatcher extension, the local phone-golden and tablet-capture rule, and the architecture guards that check the whole project. It is test-only and never ships in the app.
 
 ## Public API
 
-- `MainDispatcherExtension` installs a test main dispatcher for a test scope.
-- `TestFixtures` provides minimal podcast and episode builders.
-- `PhoneGoldenRule` and `PhoneGoldenConfiguration` provide the local, six-configuration phone capture matrix. Roborazzi writes actual renders; verification compares dimensions and every ARGB pixel. Recording refuses to overwrite an existing phone baseline.
-- The same fixtures support `-PtabletCaptures=before|after`: 600×960, 840×1280, 1280×800, 1600×1000 and 673×841 flat/tabletop, in light/dark. `setContent` supplies the shared window model for tablet after captures; before captures select the preserved legacy presentation. Phone captures retain their original composition and animation start frame. These review images are separate from immutable phone baselines. Standalone feature captures can opt into the same fold-safe viewport selection used by hidden-navigation shell routes; the full player retains its separate art/control regions. The phone branch still passes the original content directly to Compose.
-- A single private constant owns the existing `boxlore.tabletCaptures` JVM property key across matrix selection, content setup, and output routing; its values and capture behavior remain unchanged.
-- `fakes.FakeLocalEpisodeCatalogPort` pages/sorts/searches in memory and returns null from `findByCatalogKey` when guid and enclosure are both blank. `refreshOutcome`, `publisherFeedUnchanged` and `lastRefreshRequest` let a test drive and inspect `refresh`.
-- `fakes.FakeDeviceIdentityPort` provides a deterministic or mutable device ID fake for sync tests.
-- Test dependencies such as JUnit Jupiter, coroutines-test, Turbine, and MockWebServer are exposed for modules that declare `testImplementation(projects.core.testing)`.
-- Architecture guards under `src/test` validate project structure and dependency rules.
+- `MainDispatcherExtension`: a JUnit 5 extension that installs a test main dispatcher for each test.
+- `TestFixtures`: small builders for podcasts, RSS podcasts, episodes, RSS episodes and history items with stable IDs.
+- `fakes.FakeLocalEpisodeCatalogPort`: pages, sorts and searches episodes in memory; `findByCatalogKey` returns null when guid and enclosure are both blank. `refreshOutcome`, `publisherFeedUnchanged` and `lastRefreshRequest` drive and inspect `refresh`.
+- `fakes.FakeLocalCatalogPort`, `FakePodcastCatalogPort`, `FakeEpisodeOfflineLookup`, `FakeRssSubscriptionPort`, `FakeRankingResetPort`, `FakeHistoryRecommendationSource` and `FakeConnectivityStatusPort`: in-memory fakes for the matching ports.
+- `fakes.FakeDeviceIdentityPort`: a fixed or mutable device ID for sync tests.
+- `PhoneGoldenRule` and `PhoneGoldenConfiguration`: the local capture rule and its matrix. Phone runs cover three sizes in light and dark; `-PtabletCaptures=before|after` switches to tablet, landscape and flat/tabletop fold sizes.
+- Phone verification compares dimensions and every ARGB pixel against `screenshots/baselines/phone`; recording refuses to overwrite an existing baseline. Tablet captures are review images only. How to run them: [`docs/TESTING.md`](../../docs/TESTING.md#screenshots).
+- `PhoneGoldenRule.setContent` composes phone captures unchanged; tablet "after" captures get the shared window model, and `foldSafeViewport` places standalone screens in the shell's fold-safe region.
+- Modules that declare `testImplementation(projects.core.testing)` also get its test libraries (see Dependencies).
 
 ## Internal structure
 
@@ -22,37 +22,49 @@ Owns shared JVM test fixtures, dispatcher helpers, and architecture guards used 
 src/main/java/cx/aswin/boxlore/core/testing/
   MainDispatcherExtension.kt
   TestFixtures.kt
+  PhoneGoldenRule.kt               # PhoneGoldenConfiguration and PhoneGoldenRule
+  GoldenFoldSafeViewport.kt        # fold-safe region for standalone tablet captures
   fakes/FakePorts.kt
-src/test/java/cx/aswin/boxlore/core/testing/architecture/
-  ArchitectureGuardTest.kt
-  GlossaryCoverageGuardTest.kt   # CSV ↔ AnalyticsGlossary ↔ emission inventory
-  BrandNameGuardTest.kt          # listener-facing text spells boxlore in lowercase
+src/test/java/cx/aswin/boxlore/core/testing/
+  architecture/
+    ArchitectureGuardTest.kt       # module graph, imports, DI ban, READMEs, singleton allowlist
+    GlossaryCoverageGuardTest.kt   # event glossary CSV, AnalyticsGlossary and emission inventory
+    BrandNameGuardTest.kt          # listener-facing text spells boxlore in lowercase
+    ModuleReadmeBudgetTest.kt      # README length, history markers, nothing after See also
+    ScreenViewCoverageTest.kt      # every screen, page, sheet, dialog and tab sends a page view
+  fakes/FakePortsTest.kt
+src/test/resources/module-readme-budget.txt   # allowances for READMEs not yet rewritten
 ```
 
 ## Dependencies
 
-- Project dependencies: `:core:model`, `:core:domain`, and `:core:designsystem` for the test-only adaptive capture provider.
-- Libraries exposed for tests: JUnit Jupiter/Vintage-compatible JUnit 4, coroutines-test, Turbine, MockWebServer, Mockito, Robolectric, Compose UI testing and Roborazzi. These dependencies remain outside production configurations.
-- Test-only libraries: Konsist.
-- Reverse-edge rule: production modules may use this only from test configurations.
+- `api`: `:core:model`, `:core:domain`, `:core:designsystem` (window and fold models, theme for captures).
+- Test libraries exposed through `api`: JUnit Jupiter and JUnit 4, coroutines-test, Turbine, MockWebServer, Mockito, Robolectric, Compose UI testing, activity-compose, Roborazzi and Coil.
+- `implementation`: core-ktx and Material 3 (capture backdrop). Konsist is used only by this module's own tests.
+- Production modules use this module only from test configurations.
+- Never add `:core:analytics` here: `:core:analytics` already uses this module in its tests, so the edge would form a cycle. Emission suites live in `:core:analytics`.
 
 ## Threading / lifecycle
 
-- `MainDispatcherExtension` swaps `Dispatchers.Main` for the duration of each test and restores it afterward.
-- The screenshot rule owns a test Activity for one test only; it never starts the production Application or constructs its dependency graph.
+- `MainDispatcherExtension` swaps `Dispatchers.Main` before each test and restores it afterwards.
+- `PhoneGoldenRule` owns a test Activity for one test; it never starts the production Application or builds its dependency graph, and it restores the global Coil image loader after the test.
 
 ## Persistence & identity
 
 - No app persistence is owned here.
-- Architecture tests read project files such as `settings.gradle.kts` and module README locations but do not define app storage identity.
+- Architecture guards read project files (`settings.gradle.kts`, build files, sources, module READMEs, `docs/analytics/*.csv`) and define no app storage.
+- System properties: `boxlore.projectRoot`, `boxlore.phoneGoldens` (`record` / `verify`) and `boxlore.tabletCaptures` (`before` / `after`), set by the root build from `-PphoneGoldens` and `-PtabletCaptures`.
 
 ## Testing notes
 
-- Run this module to execute architecture guards.
-- Guards cover feature isolation, selected singleton allowlists (including Android framework entry points such as `MediaRouter`), catalog-to-designsystem boundaries, direct database access restrictions, and README presence for included app/core/feature modules.
-- `GlossaryCoverageGuardTest` asserts every `docs/analytics/event_glossary.csv` name (snake case, or PostHog's spaced survey names such as `survey sent`) is in `AnalyticsGlossary`, and every name has a row in `docs/analytics/glossary_emission_coverage.csv` with mode `emission:*`, `sdk_backed:*`, or `person_props_only` (opens/installs must not be dual-counted as custom emits).
-- `BrandNameGuardTest` scans `src/main` string resources, manifest labels and Kotlin string literals in `app`, `core` and `feature` for `BoxLore`, `Boxlore`, `BOXLORE` and the retired BoxCast name. Word boundaries skip identifiers, log tags and constants; lowercase `boxcast` deep links and legacy migration names stay allowed in Kotlin. HTTP User-Agent product tokens are allowlisted by file because podcast hosts identify the app by them.
-- Do **not** add `api(projects.core.analytics)` here — `:core:analytics` already `testImplementation`s this module (cycle risk). Emission suites live in `:core:analytics`.
+| Area | Tests |
+| :--- | :--- |
+| Feature isolation, catalog boundaries, DI ban, package names, README presence, `getInstance` allowlist (Room, WorkManager, MediaRouter, Firebase and others), matching test suites | `ArchitectureGuardTest` |
+| Analytics glossary parity and emission inventory modes (`emission:*`, `sdk_backed:*`, `person_props_only`) | `GlossaryCoverageGuardTest` |
+| Lowercase boxlore in resources, manifest labels and Kotlin literals; User-Agent tokens allowlisted by file | `BrandNameGuardTest` |
+| Module README budget and template rules | `ModuleReadmeBudgetTest` |
+| Page views on every named screen | `ScreenViewCoverageTest` |
+| Fakes and fixtures | `FakePortsTest` |
 
 ```bash
 ./gradlew :core:testing:testDebugUnitTest
@@ -60,13 +72,13 @@ src/test/java/cx/aswin/boxlore/core/testing/architecture/
 
 ## CI relevance
 
-- `unit-tests.yml` runs the architecture guards with the root JVM suite.
-- The guards complement shell-based architecture checks under `scripts/ci`.
+- `unit-tests.yml` runs these guards in the `core` shard.
+- The guards complement the shell checks under `scripts/ci`.
+- `*PhoneGoldenTest` classes are excluded from every test run unless `-PphoneGoldens` is set, so phone goldens stay local.
 
 ## See also
 
 - [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
 - [`docs/TESTING.md`](../../docs/TESTING.md)
-- [`:core:model` README](../model/README.md)
-
-Standalone tablet capture frames use an outer matching light/dark theme and solid surface for unused fold regions. The optional native fixture support depends on Material 3 for that backdrop; this adds no application release dependency. Phone capture composition bypasses the tablet frame.
+- [`docs/MODULE_README_TEMPLATE.md`](../../docs/MODULE_README_TEMPLATE.md)
+- [`core/model/README.md`](../model/README.md)

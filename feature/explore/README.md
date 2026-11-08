@@ -2,104 +2,108 @@
 
 ## Purpose
 
-Owns Explore discovery and the Learn tab presentation: browse/search discovery, Learn curiosity cards, Learn history, and local UI state for those surfaces. It does not own recommendation engines, network clients, preference storage, playback services, or other feature screens.
+Owns the Explore tab (For You and Top browse, genre and mood topics, show and episode search) and the Lore tab (the curiosity card deck and its history), with their local UI state.
+
+It does not own recommendation engines, ranking models, network clients, preference storage, playback services or other feature screens; those come from core modules through app wiring. Routes belong to `:app`.
 
 ## Public API
 
-- Discovery/search cards pass available show/episode fallbacks through shared feed cards. LORE cards retain every available artwork source for actual failure handling; retry/cooldown behavior stays in the shared loader. Ranking, search and navigation are unchanged.
+Used by `:app` navigation:
 
-- Browse cards use native Material card feedback; Lore history rows use steady feedback clipped to their surface. Existing tab-selection motion and Lore control feedback remain independent; ranking, search and navigation callbacks are unchanged.
+- `ExploreScreen` / `ExploreViewModel`: the `explore` route. The ViewModel takes the initial `category` and `tab` route arguments.
+- `ExploreScreen.searchRequested` / `onSearchRequestHandled`: set by the shell when the Explore tab is tapped again on Explore. Search opens focused (closing an open topic first; an open search keeps its query and mode), and the request is handled once.
+- `LearnScreen` / `LearnViewModel`: the Lore deck on the `learn` route. The screen receives the app's shared `PlaybackRepository` and an `onQueueEpisode` callback; it never creates playback objects.
+- `LearnHistoryScreen` / `LearnHistoryViewModel`: Lore history on `learn/history`, with restore, remove and clear all.
+- `LearnCuriosityHistoryStore`: Lore history and dismissed IDs, stored through `BoxcastPrefs`. The app creates it per route and passes it to `LearnViewModel`.
+- `LearnCuriosityCard`: the curiosity card UI model, mapped from network DTOs and history entries.
 
-- `ExploreScreen` takes `searchRequested` / `onSearchRequestHandled` from the app shell, set when the Explore tab is tapped again on the Explore page. It opens search with the field focused and the keyboard shown, as the topic Search button does: an open topic closes first, and an open search keeps its query and mode. The request is handled once and cleared, and the open search keeps its rememberSaveable state across resizing.
-- `ExploreScreen` and `ExploreViewModel` for the Explore route. The initial pager tab is For You unless Appearance **Default tabs** is Top, a genre category is present (always Top), or the route already names `tab` (`trending` / `top` / `for_you`).
-- Explore hero/browse headers use `rememberSectionHeaderFontFamily()` from `:core:designsystem` for section titles tied to Appearance lettering roundness; Explore and Learn use centralized Google Sans Flex weight tokens. Trending “All” uses the **Top charts** header with a leaderboard icon (genre filters still use “Top in {genre}”).
-- Explore list and selector-FAB clearance uses designsystem’s shared navigation-style / mini-player padding contract. Its edge-to-edge layout explicitly passes the bottom system inset for both Classic and Floating navigation, keeping controls and the list tail above the player when Android uses gestures or navigation buttons. Shared player/selector gap regression coverage lives in designsystem's `NavigationChromePlacementTest`.
-- Browse supports native horizontal paging in visual order For You → Top, keeping product tab IDs `1` / `0`. Tab taps animate the same pager, and settled swipes use the existing selection callback without changing ranking/filtering. Each browse tab and search keep separate saved grid positions. The header chips sit outside the pager, so horizontal chip scrolling cannot switch tabs; search and mood results retain their existing single-feed interaction.
-- For You/Top and search tabs use the designsystem `DiscoveryTabSwitcher`, also used by Subscriptions. The shared control owns presentation and selection semantics only; page-owned callbacks and tab order are unchanged. Search mode insets its complete capsule from the rounded header edges, including bottom clearance, so the parent does not cut its ends. Its 48dp minimum height grows with text scaling, and bottom content clearance uses the same measurement.
-- The floating tab selector follows the adaptive player's shared docking clock through a placement-only offset. It lowers above Floating navigation when playback becomes compact and rises again as it expands; the grid's bottom padding stays fixed during the morph. Explore initializes player visibility from the current playback snapshot so entering with an already-compact player does not briefly use the no-player spacing.
-- Top genre row (`ExploreGenreSelector`) matches Home Explore’s native Material 3 `FilterChip` tokens: solid surface-container fill, primary-container selected state, borderless stadium shape, 18dp icons and 48dp minimum height with All + top genres + **More** opening the existing Browse Genres bottom sheet.
-- For You and Top browse use Home's shared `ExpressiveFeatured` / `ExpressivePoster` discovery cards, with title-only three-line feet and matching font-scaled skeletons. Curated topic destinations use the same poster cards without genre overlays or artist subtitles. Find-a-show results use the same expressive poster cards, including Matches and Also found sections; generic “Podcast” genre chips are hidden in both sections, while specific genres and video badges retain their existing conditions. Ask-anything retains its compact 104dp Related shows rail and eight-show cap, while episode results use one expressive featured card followed by title-only posters with solid duration badges. The first result, source order, callbacks, impression/tap analytics, ranking, deduplication and pagination remain unchanged.
-- Explore has no app-logo header. Search and selectors share a rounded tonal backing at rest. Consumed vertical feed scroll progressively clips/fades the selectors and backing, leaving the search pill floating over the feed; the For You/Top switcher stays visible above playback/navigation. Horizontal chip viewports meet the rounded backing edge, with search inset separately so chips do not disappear at an inner rectangular boundary. Upward scroll reveals controls, and reaching the top or changing browse/search mode expands them. The grid reserves the measured expanded header inset rather than changing padding on every scroll frame. Search/mood-result controls remain expanded.
-- For You mood row (`ExploreVibeChipRow`) shares the collapsing header slot with genres (matched 8dp spacing). Connected tonal topic buttons use 2dp gaps, curved outer ends, tight inner corners and larger standalone primary icons. Existing mood titles can wrap to two lines with font-scaled height; they navigate rather than remain selected. Titles come from shared `CuratedMoods` (same as Home daypart rails). Topic destinations have separate floating Back to Explore and small icon-only Search pills without a shared backing and a scrollable, font-scaled topic heading/subtitle with a native expressive shape. Matching poster skeletons replace the large blocking loader; an empty result offers Back to Explore without inventing a retry or error cause. A topic uses its own grid position, starts at its heading, and returns to the saved browse position through either toolbar or system Back; predictive Back slides the topic with gesture progress over the real saved Explore pane, cancellation restores it, and toolbar/system Back finish the same 350ms slide before leaving. Repeated Back is consumed during completion; parent navigation resumes after the topic closes. Preview panes retain scroll state but suppress interaction, accessibility actions, pagination and selection callbacks. Topic rendering is independent of the last search-tab choice.
-- Explore search chips: **Find a show** (search icon; typeahead + hybrid **Also found**, 300ms debounce) and **Ask anything** (sparkle icon; podcasts and episodes by meaning via `GET /search/semantic`, 1000ms debounce before embed; loader while waiting). Find-a-show pins the grid to the top via shared `ProgressiveSearchScrollLogic` when progressive catalog hits prepend over local substring matches or a Matches header appears; Ask anything is unchanged (one complete result set behind a loader). Search-field placeholder follows the selected chip. Example queries were checked live against `/search/semantic`. Ask-anything results: **Related shows** rail + **Episodes** header above the hero/bento feed. Discovery rails and staggered grid sections protect items against duplicate key collisions using `LazyListKeyPolicy`.
-- Search landing uses the shared fixed tonal mode capsule, centered text-only headings and compact suggestions. The collections heading is **Explore collections**, without a subtitle. Other titles and hints share a center axis; hints have a narrower reading width and wrap with system text size, without an offset decorative icon. Find-a-show topics use solid low-container cards with one primary icon accent and a font-scaled two-line title slot; all topics share the same accent hierarchy. With no topics, the landing still explains how to search. Ask-anything keeps its four original query strings and order in connected tonal rows with distinct subject icons, 64dp minimum targets and expanding text geometry. Idle/recovery headings and hints are resources; empty browsing and empty searching give guidance for their respective controls. Search loading uses a compact labelled, politely announced status rather than a large blank loader panel. Query dispatch, debounce, ranking and pagination are unchanged by the presentation work.
-- `LearnScreen` and `LearnViewModel` for the Learn route (curiosity cards, queue/play actions). Lore shares a ViewModel-owned artwork colour cache between the active card, stacked cards and page: the next four artwork keys are prepared with at most two loads at once, so promoting a prepared card does not restart extraction. The page halos and logo share a swipe-linked colour clock: dragging blends toward the next prepared card, cancellation reverses that blend, and promotion retains the destination without an old-colour flash. Palette endpoints stay frozen through an interrupted gesture; button changes and late palettes ease over 300ms. Cards retain their own artwork colours. Pointer updates are synchronous, disposed motions cannot apply actions, and exits keep their endpoint until deck replacement. Empty episode artwork falls back to a nonblank show image, including history and episode mappings.
-- Lore cards keep the complete question, explanation and podcast title, without line limits or a scrolling reading area. Actual font measurement reclaims spacing before reducing headings from 28sp to a 24sp floor; body text stays 16sp/24sp and system font scaling remains active. Narrow/short windows use wider cards and smaller outer header gaps. The card's ground is a solid deep shade of its cover accent at Material tone 18 that keeps the hue and much of its chroma (`loreCardColor`, via designsystem `artworkDeepShade`), so cards read as their show's colour rather than black, with two soft accent glows; button segments use the same colour at tone 28 (`loreSegmentColor`); the cover is no longer blurred behind a black scrim, which also keeps four-card swipes cheap to draw. Both control rows are connected Material 3 button groups (round outer ends, 8dp inner joins, 3dp gaps, 52dp tall; 48dp on narrow/short windows). The top group shows where the curiosity comes from: a wide segment with the show cover (concentric corners) and show and episode names, which opens the podcast, joined to a square **Details** segment. The bottom group follows the swipe directions: an icon-only **Skip** end, Play/Pause filling the rest of the bar (filled with the cover accent, black or white ink, whichever contrasts more: `loreOnAccent`, short Play/Resume/Pause label), then an icon-only **Add to queue** end. Every segment announces its full description (Skip, Play episode, Add to queue). Together the two rows take no more height than the old top actions and footer. The action bar is taller than the source row (60dp; 52dp on narrow windows) and sits 10dp (6dp) higher when the full text has room to spare; when the text needs that room the bar stays at the bottom (`LoreCardTextWithFooter`, decided in one layout pass from the text's measured height). Loading uses designsystem's shared Material 3 circular wavy indicator in the Play segment, while the loading label and disabled action remain intact. `LoreCardColorsTest` checks the Play glyph contrast and the dark ground on any accent. Touching the reading surface no longer scales the whole card: only a deliberate horizontal drag moves it. Controls use a small 3% press response over 120ms without a spring overshoot, including when a swipe cancels a press.
-- A deliberate card swipe reveals the **Skip** icon from the physical left edge or **Add to queue** from the right. Both cues use the same solid 72dp artwork-tinted circle and 36dp white icon, matching the play control's tonal fill. The cue slides in, fades and grows with the same drag distance, reaching full size at the existing action threshold; cancelling or reversing retreats immediately. Minor travel stays quiet, only one direction is visible, and the cue consumes no reading space or input. Decorative overlay semantics leave the existing labelled, accessible controls as the action targets. Two smaller accent spots enrich the page's upper-right and lower-left background alongside its existing drifting halos; all use the shared swipe-linked artwork colour.
-- Deck motion (`LoreDeckMotion.kt`): each card behind the active one moves from its resting pose to the exact pose of the card in front as the active card is swiped, and a hidden fourth card fades into third place, so advancing the deck never snaps or pops. When a card is released, the swipe cue keeps its size and fades out in 140 ms instead of riding the card's fly-out. Skip and Add to queue buttons send the card out the same way as a swipe (with the page colour blend), and their cue stays hidden. `LoreDeckMotionTest` covers pose continuity, the waiting card's fade and the cue's exit.
-- `LearnHistoryScreen` and `LearnHistoryViewModel` for Learn history.
-- `LearnCuriosityHistoryStore` for Learn history persistence through prefs APIs.
-- `LearnCuriosityCard` as the feature UI model for curiosity cards.
-- **Page views** (`TrackScreenView`, `:core:designsystem`): `explore` sends `explore_screen_viewed` and `learn` sends `learn_screen_viewed` through the helper, once per visit (no longer again on remount); their leaving summaries are `screen_left`. Inside Explore, `explore_top`, `explore_for_you`, `explore_search_shows`, `explore_search_episodes` and `explore_topic` (with `topic`) send `screen_viewed` when they show; only the active pane counts, not the browse pane kept behind a topic. `learn_history` and its `learn_history_clear_confirmation` send `screen_viewed`.
+## Browse
+
+- Browse pages in visual order For You → Top, keeping tab IDs `1` / `0` (`ExploreTabPagerLogic`). Swipes and tab taps drive the same pager, and each tab keeps its own grid position.
+- The first tab is For You unless Appearance **Default tabs** says Top, a genre category is given (always Top), or the route names `tab` (`trending`, `top`, `for_you`). `ExploreDefaultTab.resolveIndex` in `:core:prefs` decides.
+- With the **Picked for you** switch off (`DiscoverySections.pickedForYou`), Explore shows Top alone with no switcher and makes no recommendations request; a fetch already running cannot publish.
+- For You reads the same recommendations payload as Home: it hydrates from the shared `BoxcastPrefs` cache, refreshes through `PodcastRepository.getHomeRecommendations` with region and content languages, and writes the cache back. A failed request keeps the picks already shown.
+- Top shows charts (**Top charts**) or a genre's top shows. The genre row (`ExploreGenreSelector`) shows All and the top genres, with **More** opening the full list.
+- Mood topics (`ExploreVibeChipRow`, titles from `CuratedMoods`) open a topic destination loaded with `getCuratedPodcasts` for the listener's region and languages. Back, toolbar or predictive, returns to the saved browse position.
+- The header collapses as the feed scrolls down and returns on upward scroll, at the top or on a mode change (`ExploreChromeScrollLogic`); the For You / Top switcher stays visible.
+- Cards are the shared discovery cards from `:core:designsystem`; list keys go through `LazyListKeyPolicy` so duplicates never collide.
+
+## Search
+
+- **Find a show** searches show titles as you type after a short debounce. Catalog matches arriving later are prepended, and the grid stays pinned to the top (`ProgressiveSearchScrollLogic` in `:core:designsystem`); results split into **Matches** and **Also found**.
+- **Ask anything** searches shows and episodes by meaning. It waits longer before sending, so partial queries are not sent, and shows one complete result set behind a loader: a **Related shows** rail, then episodes.
+- The search landing lists **Explore collections** for Find a show and fixed example questions for Ask anything (`ConceptSearchIdleLogic`). Empty and no-match states explain what to try.
+- Search mode and open search state survive resizing across the tablet gates.
+
+## Lore
+
+- `LearnViewModel` loads curiosity pages through `PodcastRepository.getCuratedCuriosity`, skipping dismissed IDs, and shows `LearnUiState.CaughtUp` when the pages run out.
+- Swiping left skips a card; swiping right adds its episode to the queue. Both are recorded in history (`LearnHistoryAction.DISMISS` / `QUEUE`).
+- Ranking feedback records each card shown, every queue, and a skip only after the card stayed on screen long enough to be read.
+- Card buttons mirror the swipes: the source row opens the show or details; the bottom row has Skip, Play/Pause and Add to queue. Play starts the episode with the `LEARN` entry point, or toggles it when it is already playing.
+- Cards show their full question, explanation and show name; `LoreCardText` shrinks spacing first, then headings to a floor, and never clips.
+- Card and page colours come from the cover. `LoreArtworkAccentStore`, owned by the ViewModel, prepares upcoming cards' colours ahead, and `LoreAccentTransition` blends the page colour with the swipe.
+- Cards behind the active one move toward the next pose as it is swiped, so advancing the deck never snaps (`LoreDeckMotion`). Swipe cues (`LoreSwipeFeedback`) are decorative; the labelled buttons remain the accessible actions.
+- Restoring a history entry puts the card back into the deck the next time Lore resumes.
 
 ## Internal structure
 
 ```text
 src/main/java/cx/aswin/boxlore/feature/explore/
-  ExploreScreen.kt
-  ExploreViewModel.kt
-  LearnCuriosityCard.kt
-  LearnCuriosityHistoryStore.kt
-  LearnHistoryScreen.kt
-  LearnHistoryViewModel.kt
-  LearnScreen.kt
-  LearnViewModel.kt
-  LoreArtworkAccents.kt
-  LoreArtworkAccentLoader.kt
-  components/
-  logic/
+  ExploreScreen.kt, ExploreViewModel.kt   Explore route
+  ExploreFeaturedRows.kt                  featured rows on browse and search
+  LearnScreen.kt, LearnViewModel.kt, LearnPagination.kt
+  LearnHistoryScreen.kt, LearnHistoryViewModel.kt
+  LearnCuriosityCard.kt, LearnCuriosityHistoryStore.kt
+  CuriosityCardStack.kt, SwipeableCardState.kt
+  Lore*.kt                                card text, colours, deck motion, swipe cues,
+                                          control feedback, player clearance
+  components/   browse headers, cards, genre and tab selectors, search results and
+                suggestions, topic results and transition, skeletons, empty states
+  logic/        pure decisions: browse, tab pager, header scroll, shared recommendations,
+                search landing examples, Lore deck shuffle
+src/main/res/values/strings.xml
 ```
 
 ## Dependencies
 
-- Project dependencies: `:core:designsystem`, `:core:catalog`, `:core:playback`, `:core:model`, `:core:network`, `:core:analytics`, `:core:ranking`, and `:core:prefs`.
-- Libraries: Compose, Activity Compose (topic predictive Back), Navigation, Coil, lifecycle runtime/ViewModel Compose, Palette, kotlinx.serialization.json, Turbine and coroutines-test for tests.
-- Reverse-edge rule: feature modules must not depend on other feature modules.
+- Project: `:core:designsystem`, `:core:catalog`, `:core:playback`, `:core:model`, `:core:network`, `:core:analytics`, `:core:ranking`, `:core:prefs`.
+- Libraries: Compose Material 3, Activity Compose (predictive Back), Navigation, lifecycle, Coil, AndroidX Palette, kotlinx serialization. Tests add `:core:testing`, JUnit 5, Turbine, coroutines-test, Robolectric and Compose UI test.
+- No feature → feature edges. Analytics go through `:core:analytics` (`AnalyticsHelper`), never PostHog directly. See [`ARCHITECTURE.md`](../../ARCHITECTURE.md#dependency-direction).
 
 ## Threading / lifecycle
 
-- ViewModels are scoped by app navigation.
-- Remembered Lore swipe state reads the latest drag and completion callbacks explicitly from Compose state, retaining callback freshness when an unchanged deck recomposes. Page gradients and accent spots use a dedicated draw-cache modifier, separate from the animated halo layout; the palette values and shared color clock are unchanged.
-- Lore's playback action uses a same-file helper to keep play/pause branching out of the screen layout. It reuses the injected playback repository and the screen coroutine scope, retaining current-episode toggling and single-episode Lore queue playback.
-- Catalog, playback, ranking, and prefs access come through injected application-scoped dependencies.
-- Analytics: Explore/Learn ViewModels and screens call `:core:analytics` façades for glossary search / Learn exhaustion events (no PostHog direct).
-- UI runs on the main thread; search, recommendation, and history work use suspend APIs. Lore palette requests share the card backing's optimized URL, decode at 96px into software bitmaps, and try optimized → original → show artwork with bounded request waits. Palette quantization runs on Default; saturated artwork swatches outrank neutral logo backgrounds without promoting tiny colour specks. Cache/job bookkeeping stays on the ViewModel/main scope, retains up to 64 successful palettes across screen recreation, deduplicates in-flight work, and cancels obsolete deck requests. Cancellation cannot publish a stale palette or clear the current card's colour; failed requests remain retryable. Missing/neutral artwork uses the same theme accent for page and card. Lore halos follow `LocalEffectiveDarkTheme` (including Appearance overrides); colour is read in draw caches, and pulse/drift plus deck transforms are read in graphics layers rather than recomposing the deck each frame. Lore alone reclaims the Floating miniplayer row through the shared docking clock during measurement; its card viewport keeps system navigation insets and the baseline safety gap.
+- ViewModels are scoped to their navigation entries; repositories, playback, ranking feedback and prefs are application-scoped instances from app wiring.
+- UI runs on the main thread; search, recommendations and Lore pages use suspend APIs. Reading the shared recommendations cache runs on `Dispatchers.IO`.
+- Search queries are debounced in the ViewModel, so only the latest query in each mode is sent.
+- Lore palette extraction runs on `Dispatchers.Default`. The palette cache and its jobs stay on the ViewModel scope: requests are deduplicated, obsolete ones cancelled, and a cancelled request never publishes a stale colour.
+- Lore motion and colour are read in draw and graphics layers, so swipes don't recompose the deck each frame.
+- Explore and Lore follow the window shell's pane on tablets and foldables; see [adaptive UI and state](../../ARCHITECTURE.md#adaptive-ui-and-state).
 
 ## Persistence & identity
 
-- **Picked for you switch** (`DiscoverySections.pickedForYou` in `:core:prefs`): off removes the For you tab. Explore then shows Top alone with no pager or For you / Top switcher, skips the shared-cache hydrate and makes no recommendations request; a fetch already running cannot publish. `ExploreDefaultTab.resolveIndex(forYouAvailable = false)` and `cachedPickedForYou` open Top on the first frame. Turning it back on restores both tabs on Top. `ExploreTabPagerTest` covers Top alone, switching off while For you is open and back on, and resizing across the 600dp / 480dp tablet gates in both directions.
-- This module owns no raw storage files.
-- Learn history and recommendation caches are accessed through `BoxcastPrefs` in `:core:prefs`.
-- Explore For You uses the **same** Home bootstrap recommendations payload: hydrate from `BoxcastPrefs` shared cache, refresh via `PodcastRepository.getHomeRecommendations` (country + content languages; the bootstrap request asks for recommendations only), and write that cache back (taste or popular-in-region fallback). It does not call the standalone empty-seed `getPersonalizedRecommendations` path. A failed request with no last good picks (`HomeRecommendations.failed`, `ExploreSharedRecommendationsLogic.freshRecommendations` returns null) keeps the picks For you shows and leaves the shared cache as it is, on every window size.
-- Explore vibe picks call `getCuratedPodcasts` with the user's content region and languages (same as Home daypart rails).
-- Network DTOs map to feature UI models before entering UI state.
+- This module owns no storage files. Through `:core:prefs` it uses `BoxcastPrefs` keys `cached_recommendations` (shared with Home), `learn_curiosity_history` and `dismissed_curiosities`, and DataStore keys `explore_default_tab` and `discovery_picked_for_you`.
+- Network DTOs map to feature UI models before entering UI state; episode and show IDs come from core modules.
+- Pager tab IDs `0` (Top) and `1` (For You) and the route's `tab` values are stable.
+- Compose test tags used by JVM tests: `explore_browse_pager`, `explore_feed_<tab>`, `explore_header_container`, `explore_search_switcher`, `explore_search_loading`, `explore_topic_toolbar`, `explore_topic_back`, `explore_topic_search`, `lore_active_card`.
+- Page views (`TrackScreenView`): `explore` and `learn`, then `explore_top`, `explore_for_you`, `explore_search_shows`, `explore_search_episodes`, `explore_topic`, `learn_history` and `learn_history_clear_confirmation`. For You impressions and taps are separate events. See [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md).
 
 ## Testing notes
 
-- The For You rail being shown sends `explore_surface_impression`; `explore_recommendation_tapped` is taps only (it used to carry the impressions too, 94% of its rows).
-- `LoreTabletPaneSizeTest` covers pane sizing, missing-pane fallback, and width/height threshold transitions. Lore retains configuration-based phone geometry while tablet spacing follows the current shell-owned pane.
+Hermetic JVM tests live in `feature/explore/src/test`, logic on plain JVM and screens on Robolectric with offline fixtures. `ExplorePhoneGoldenTest` and `ExploreTabletAuditCaptureTest` are local-only captures; see [`docs/TESTING.md`](../../docs/TESTING.md#screenshots).
 
-- `ExploreGridResizeTest` scrolls the production search and topic grids before live compact/tablet width and height transitions, including changing tablet column counts, then verifies the same result remains visible and its original tap rank is retained. Every poster stays an independently keyed lazy item so the saved scroll anchor does not turn into a row index when resizing.
-
-- Tablet featured results occupy the left two poster columns, with the next ranked results alongside them. For You, Top charts and semantic episode search preserve their original list projections, keys, absolute click positions and lazy tail items. Loading uses the same leading row; compact layouts remain unchanged. Lore enforces its 520dp deck cap before fill constraints, with a 640dp tablet stage limit; history heading and rows share a reading frame.
-
-- Tablet discovery grids pack by the shared Poster minimum while existing cards/skeletons use family maxima. Legacy hero and topic cards retain their internal designs. Local phone/tablet captures share fixed fixtures through `PhoneGoldenRule`.
-
-- `ExplorePhoneGoldenTest` captures Explore and Lore at both portrait phone sizes and short landscape in light/dark. Supplied data and mocked screen dependencies keep the local-only captures offline. Enable with `-PphoneGoldens=verify --tests '*PhoneGoldenTest'`; [capture instructions](../../docs/screenshots/README.md) describe immutable baselines and exact pixel comparison.
-
-- Unit tests live under `feature/explore/src/test`.
-- `LoreCardTextTest` uses production Google Sans font measurement with real long card text at narrow portrait widths and 130% system text (including the larger play control's footer budget), checks space-first fitting, and preserves the typography floor for impossible content. It uses JVM native text layout, without screenshots or device automation.
-- `LoreMotionTest` covers bounded control feedback and interrupted press release, both swipe directions, cancellation, frozen palettes, promotion without rollback, interrupted colour transitions, synchronous pointer movement, exactly-once actions, obsolete-motion cancellation, and Floating-only card clearance.
-- `LoreSwipeFeedbackTest` covers the matching side, directional slide, deliberate-travel onset, cancellation/reversal, bounded growth through exit, and invalid gesture values. Feedback reads motion in graphics layers; the added background spots use draw-cache gradients, without extra animation clocks or blur layers.
-- `ExploreTabPagerLogicTest` covers existing tab-ID mapping, settled selection deduplication and search/mood exclusion; `ExploreTabPagerTest` uses the actual Explore composition under JVM Compose/Robolectric for swipes, tab taps, chip isolation, scroll retention and externally selected Top. No emulator/device automation is required.
-- `ExploreTopicResultsTest` exercises the actual topic shortcut, ordered tap analytics, title-only cards, search-mode retention/focus, matching loading geometry, empty recovery, browse scroll restoration, system-back interception, predictive peek/cancel/commit from both edges, interrupted/repeated Back, subsequent parent navigation, and enlarged RTL title layout under JVM Compose/Robolectric.
-- `ExploreSearchRequestTest` covers the repeat-tab search request from browse, a topic and an open search, handled once, and the opened search through live 599/600dp width and 479/480dp height changes in both directions, followed by another request.
-- `ExploreSearchLandingTest` checks opening search, empty-topic guidance, distinct browse/search recovery, mode switching, topic destinations, exact question queries, no-match recovery, bounded accessible loading states, centered title/hint geometry, fully rendered capsule edges inside the rounded header at normal and enlarged narrow RTL sizes, and connected-row geometry/callbacks with enlarged RTL text.
-- `ExploreSearchResultsTest` checks ordered catalog/additional-show tap contracts, distinct compact-show/featured-episode geometry, episode navigation context, duration/zero-duration states (positive sub-minute episodes display at least 1 min), retained results during refresh, and long-title interaction with enlarged RTL text.
-- `ExploreChromeScrollLogicTest` covers progressive down/up reveal, clamped flings, unconsumed scroll, zero-height/search expansion, invalid deltas. Phone visual checks remain necessary for drag feel, clipping, focus, enlarged text and player clearance.
-- Existing coverage includes Learn pagination, Learn deck logic, Explore browse logic, and shared recommendation cache helpers (`ExploreSharedRecommendationsLogicTest`, including a failed request keeping the shown picks). Find-a-show pin-to-top is covered in `:core:designsystem` (`ProgressiveSearchScrollLogicTest`).
-- `LoreArtworkAccentsTest` covers blank/show fallbacks, proxy/raw failures, cancellation propagation, shared prefetch and reuse, late obsolete work, retryability, bounded cache retention, and meaningful colour selection. These are JVM logic checks without screenshots or device automation.
-- Prefer fakes for repository and prefs dependencies when expanding ViewModel coverage.
+| Area | Test classes |
+| :--- | :--- |
+| Browse tabs, pager and Picked for you | `ExploreTabPagerTest`, `ExploreTabPagerLogicTest`, `ExploreBrowseLogicTest` |
+| Shared recommendations | `ExploreSharedRecommendationsLogicTest` |
+| Header scroll | `ExploreChromeScrollLogicTest` |
+| Topics | `ExploreTopicResultsTest` |
+| Search | `ExploreSearchRequestTest`, `ExploreSearchLandingTest`, `ExploreSearchResultsTest`, `ConceptSearchIdleLogicTest` |
+| Tablet grids and resizing | `ExploreGridResizeTest`, `ExploreTabletFeaturedTest` |
+| Lore deck and history | `LearnDeckLogicTest`, `LearnPaginationTest`, `LearnCuriosityHistoryStoreTest`, `LearnHistoryActionTest` |
+| Lore cards and motion | `LoreCardTextTest`, `LoreCardColorsTest`, `LoreDeckMotionTest`, `LoreMotionTest`, `LoreSwipeFeedbackTest` |
+| Lore colours | `LoreArtworkAccentsTest` |
+| Lore on tablets | `LoreTabletPaneSizeTest`, `TabletLoreLayoutTest` |
 
 ```bash
 ./gradlew :feature:explore:testDebugUnitTest
@@ -107,19 +111,15 @@ src/main/java/cx/aswin/boxlore/feature/explore/
 
 ## CI relevance
 
-- `unit-tests.yml` runs Explore JVM tests with the project suite.
+- `unit-tests.yml` runs this module's JVM tests in the features-b shard and includes it in merged coverage; local captures stay out of it.
+- `scripts/ci/check-feature-no-posthog.sh` guards direct PostHog use.
 
 ## See also
 
 - [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
 - [`docs/TESTING.md`](../../docs/TESTING.md)
+- [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md)
 - [`:app` README](../../app/README.md)
 - [`:core:prefs` README](../../core/prefs/README.md)
-
-Lore uses the shell model and supplied pane for compact spacing; tablet custom controls show hover/focus. The genre menu becomes a bounded expanded dialog with scrollable finite content. Phone geometry and Lore callbacks are preserved.
-
-Tablet featured discovery cards match the natural height of adjacent posters, including full-height artwork. Genre selection measures real chip widths at the bounded pane root, retains the selected genre inline, and puts only remaining genres in More. Widening reveals additional chips; an all-fit row omits More. The compact shortlist and full compact menu retain their existing behavior.
-
-ExploreTabletAuditCaptureTest adds optional offline portrait/landscape captures for show search, episode search, topic results and empty/loading topics. It uses fixed fixtures without catalog requests or phone-baseline writes.
-
-Tablet poster results keep individual lazy keys and indices across compact/tablet column changes; cards retain their fixed title slots and absolute callback/rank indices. The tablet leading featured row retains its existing geometry. Tablet search inputs fill their visible capsule so Clear follows its trailing edge.
+- [`:core:designsystem` README](../../core/designsystem/README.md)
+- [`:feature:home` README](../home/README.md)

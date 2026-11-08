@@ -2,96 +2,108 @@
 
 ## Purpose
 
-Owns shared domain models, enums, and pure value helpers used across network, data, playback, and UI modules. It does not own network DTOs, Room entities, Compose UI, repositories, or Android lifecycle behavior.
+Owns the shared domain models, enums and pure value helpers used by network, data, playback and UI modules: podcasts, episodes, briefings, Podcasting 2.0 types, listening history, folders, share links, content regions and feed telemetry values.
+
+It does not own network DTOs, Room entities, Compose UI, repositories or Android lifecycle behaviour.
 
 ## Public API
 
-- `ArtworkUrls.kt` provides ordered, deduplicated episode-first and show-first sources. It ignores blank, malformed and unsupported values, retains local artwork URIs and signed query parameters, and upgrades HTTP to HTTPS. `ArtworkUrlsTest` covers these contracts. The player's Android Auto / media controls links (`content://<app>.collage/...`) are excluded: `isPlaybackArtworkLink` detects them and `persistableArtworkUrl` turns them into null, so they are never saved, synced or shown as a card's image (they point into an in-app registry that is cleared with downloads and app data).
-- `BriefingArtwork` owns stable square-player resource names and supported region aliases. UI and legacy database-artwork repair use the same named URI contract, independent of build-specific Android resource numbers.
+Models:
 
-- `Podcast.RSS_REFRESH_AUTOMATIC` describes publisher subscriptions refreshed via conditional GET or cooldown-gated GET, including feeds without HEAD validators. Legacy capability strings remain readable for in-place upgrade repair.
+- `Podcast`, `Episode`, `Briefing`: core show, episode and Brief types shared across modules.
+- `Person`, `Transcript`, `Chapter`, `PodrollItem` (`Podcast2Types.kt`): Podcasting 2.0 tag values.
+- `ShowNotes`, `EpisodeLink`, `EpisodeLinkKind`: parsed plain text, publisher HTML, chapters and labelled links, with no UI or parser-library dependency.
+- `SubscriptionFolder`, `FolderDisplaySize`: custom library folders and their tile sizes; `isPinnedToTop` and `placementLabel` separate grid-movable from top-pinned sizes.
+- `BoxLoreUser`: the signed-in account (UID, email, display name, verification, anonymous flag, provider).
+- `CrossPromotionResult`, `ResolvedCrossPromotion`, `CrossPromotionConfidence`, `CrossPromotionIndicator`: cross-promotion results; `DISTINCT_ARTWORK` marks an episode whose cover differs from its show's. Indicators live only in UI state.
+- `AutoTranscriptState`, `ShareTarget`, `SleepTimerConstants`: small shared enums and constants.
 
-- Podcast, episode, briefing, chapter, person, transcript, and playback-adjacent model types.
-- `EpisodeRecipeId`: boxlore's own episode IDs for numeric shows. A SHA-256 handle over (show ID, catalog key) in `[2^52, 2^53 - 1]`, so it never overlaps Podcast Index IDs or negative RSS IDs. `catalogKey` trims an explicit character set equal to Kotlin's `trim()` on Android (which, unlike the desktop JVM, also trims U+180E). `forNamespace(epNs, key)` mints with a show's stored episode namespace, which today equals its show ID. `showIdOrNull` parses a stored podcast ID exactly as the scripts copy does: ASCII digits only, no sign, leading zero or whitespace, and at most `2^53 - 1`; `rss:` IDs return null. It is a pure function with no storage of its own, kept here so `:core:database` and `:core:rss` share one copy. The full rules are in [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md).
-- `EpisodeMediaCacheKey`: Media3 `customCacheKey` helper — briefing keys append audio URL `v=` so same-day regenerations bust the local audio cache.
-- `ContentRegion` / `ContentRegions`: 11 chart storefronts, language allowlist/normalize/expand (`id`→`id,in`), off-market soft-warn helpers, and briefing market mapping that preserves the explicit `global` briefing tab.
-- `ContentLanguageSelection`: pure language-chip toggle rules (English has its own switch, max languages with English's slot free when it is off, BCP47 normalization) and `englishSwitch` (the "Include English" state: on, allowed, and the picks that keep it on).
-- English off (D9, 29 Oct): `ContentRegions.ENGLISH_OFF_LANGUAGES` (fr, de, es, pt, ru, nl; chosen from catalog pool sizes, kept aligned with the API), `canSwitchEnglishOff`, and `normalizeLanguages(…, englishOff)`, which leaves English out only when allowed.
-- `ContentLanguageSelection.normalizeKeepingEnglishChoice` (30 Oct) re-normalizes a list that is already the listener's choice without adding English back when it was left out; request builders use it so English off reaches the server.
-- `PlaybackEntryPoint`, `ShareTarget`, and `ShareLinkBuilder`. Episode links can name their show (`episode(…, showId)` adds `&show=` before `t` or the clip range); `forTarget` builds the link for an `EpisodeShareTarget` (`Episode(id, showId)`, or `Show(showId)`, which is the show's link).
-- `EpisodeShareIds.choose(localId, podcastId, recipeId)` picks the ID a share link carries: for a Podcast Index show its recipe ID (or its own recipe-range or Podcast Index ID) with the show; never a phone-only negative or reserved ID (the show's link instead); a show added by its feed address (`rss:`) keeps the episode's own ID with no show. `EpisodeShareTargetSource` is the seam the app fills with alias reads and registration (`FROM_EPISODE` uses the episode's fields only).
-- `PlaybackEntryPoint` coarse values: `GENERIC`, `HOME_MIXTAPE`, `LEARN`, `BRIEFING`
-  (Brief audio play synthesizes glossary `entry_point=briefing` for `playback_*`).
-- `AutoTranscriptState`.
-- `ListeningHistoryRemoval` holds what removing an episode from history took away, for Undo: the chosen row, its sessions and daily totals, and for an episode stored under several IDs every removed row exactly as stored (`ListeningHistoryRowSnapshot`, with like and completion times and how it was completed) and its shared settings (`ListeningGroupStateSnapshot`), so Undo puts the episode back unchanged. `ListeningDayEpisode` also carries each day's time by output, by source (Lore, Smart queue) and of new releases (0 when not known; `outputKnownMs` is the part with known details), and the time of episodes with a known release date (`releaseKnownMs`, Room v42; `newOfReleaseKnownMs` is the new-release time counted against it, none while it isn't known). `ListeningRollupSnapshot` keeps a summary's totals, that time included, for Undo. `ListeningHistoryItem` carries the episode's `firstPlayedAt` and `finishedAt` (null: not known yet; 0: before boxlore recorded them; else epoch ms), and the session and daily-total snapshots carry the phone, listening time at speed, play source, output and release date, and the daily totals' richer totals (Room v41: longest session, time by output and by source), so Undo keeps them too.
-- `PodcastGenres` and `RankingAggregateTelemetry`.
-- `Episode.isTrailer` and `Episode.effectiveEpisodeType`: an episode counts as a trailer only when its feed tags it `trailer` (any case) and it runs at most `TRAILER_MAX_DURATION_SECONDS` (15 minutes). A longer episode the feed mislabels as a trailer is a full episode, and `effectiveEpisodeType` reports it as `full`. An unknown duration is stored as 0, so a tagged episode with no length stays a trailer. Show pages, Showcase pages and Smart Queue all read this one rule (`EpisodeTrailerTest`).
-- `Episode.recipeId` (boxlore's own episode ID) and `Episode.catalogKey` (trimmed GUID, else enclosure URL) are optional and null until a source fills them; `id` stays the local ID. Unset values are not written to JSON, and JSON without them still decodes (`EpisodeIdentityFieldsTest`).
-- `FeedTelemetry.kt`: values for the feed analytics events. `FeedFetchReport.ShowPage` (one show-page read) and `FeedFetchReport.BackgroundPass` (one summary per pass and source, with `showsCount`, `passResult` and `namespaceMismatchCount`), `FeedFetchSource`, `FeedFetchOutcome`, `FeedFetchCompleteness`, `FeedPassResult`, and `FeedUrlCorrection` with its `FeedUrlCorrectionReason` and `FeedUrlCorrectionStep`. Each enum's `wireName` is its glossary value. None of them holds an address (`FeedTelemetryTest`).
-- Cross-promotion model types: `CrossPromotionResult` / `ResolvedCrossPromotion`, `CrossPromotionConfidence` and `CrossPromotionIndicator`, whose `DISTINCT_ARTWORK` marks an episode whose own cover differs from its show's (evidence `:core:catalog`'s detector uses for trailers of another show). Indicators live only in UI state.
-- `ShowNotes`, `EpisodeLink`, and `EpisodeLinkKind` carry locally parsed plain text, publisher HTML, chapters, resource purpose, destination, and publisher labels without UI or parser-library dependencies.
-- `Podcast.isLatestEpisodeNew`: shared NEW badge. Room `rssHasNewEpisodes` is true for true-RSS freshness **and** for Podcast Index direct-feed tip promotions (`updateLatestEpisode(..., markAsNew = true)`). Opening the show clears the flag. Otherwise the 48h window / last-seen id rules apply.
-- `Podcast.listenerShowIds` (`ListenerShows.idsOf` for plain fields): the shows whose history, downloads and queue rows count as a show's own. For an RSS show the listener switched to from a Podcast Index show (`isRss` with `linkedPodcastIndexId`) that is the RSS show and the Podcast Index show, because the switch keeps every row under its stored show ([`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md) §5); for any other show, the show alone. Per-show reads (show scores, Most listened, serial next-up, auto-download limits) match rows by it.
-- `Podcast.effectiveGenre`: resolves user `customGenre` override when non-blank, falling back to default catalog `genre`. Companion `customGenreIcon` stores the icon identifier for custom tags.
-- `PodcastGenres.tokenMatches`: whether a show's genre token belongs to a genre (same name, Tech/Technology, or names `canonicalize` treats as one, such as Culture and Society & Culture). Genre folders fill by it (`RoomFolderRepository`) and New folder previews with it.
-- `PodcastGenres.isPlaceholder`: true for "Podcast" / "Podcasts", the genre a show with no category gets; auto-organize and its preview give such shows no folder.
-- `Podcast.recommendationGenre`: resolves canonicalized `customGenre` via `PodcastGenres.canonicalize` so valid standard reclassifications adapt personalized recommendations and Smart Queue, falling back to `genre` when the tag is arbitrary.
-- `FolderDisplaySize`: display sizing enum (`COMPACT 1×1`, `WIDE 2×1`, `FEATURED 2×2`, `LARGE 2×3`, `SHELF 3×1`, `PANEL 3×2`, `SHOWCASE 3×3` max) for library subscription folders, with placement properties (`isPinnedToTop`, `placementLabel`) distinguishing grid-movable (`1×1 COMPACT`) from top-pinned display sizes.
-- `SubscriptionFolder`: domain model representing a custom folder organizing subscribed podcasts with optional icon, display size, `showPodcastGrid` toggle for 1×1 covers, and linked genre auto-syncing.
-- `BoxLoreUser`: domain model representing an authenticated user account (UID, email, display name, email verification flag, anonymous status, provider ID).
+Listening history:
 
-- `ListeningDayEpisode` is one day's timed listening of an episode (local day, show, listening time, sessions, last listened), with that time by part of the day (morning, afternoon, evening, night) and the longest sitting when the day had one session (0 when not known); `ListeningPlayedShow` is a show from the listening history with its name, artwork, genre and first and last plays. Listening history's Insights and monthly story read both.
+- `ListeningHistoryItem`: a history row with `firstPlayedAt` and `finishedAt` (null: not yet; 0: before boxlore recorded them; else epoch ms).
+- `ListeningDayEpisode`: one day's timed listening of an episode, with time by part of day, output, source and new releases, and `releaseKnownMs`.
+- `ListeningPlayedShow`: a show from history with its first and last plays.
+- `ListeningPeriod`, `ListeningInsightSummary`: the periods and summaries behind Listening history's insights.
+- `ListeningHistoryRemoval`: everything removing an episode took away, so Undo restores it unchanged; built from `ListeningHistoryRowSnapshot`, `ListeningGroupStateSnapshot` and `ListeningRollupSnapshot`.
+
+Rules and helpers:
+
+- `Episode.isTrailer`, `Episode.effectiveEpisodeType`: an episode is a trailer only when tagged `trailer` (any case) and at most `TRAILER_MAX_DURATION_SECONDS` long; unknown duration (0) stays a trailer. Show pages, Showcase and Smart Queue share this rule.
+- `Episode.recipeId`, `Episode.catalogKey`: optional identity fields, null until a source fills them and omitted from JSON when unset; `id` stays the local ID.
+- `EpisodeRecipeId`: boxlore's own episode IDs for numeric shows (`forNamespace`, `catalogKey`, `showIdOrNull`). Rules: [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md).
+- `Podcast.listenerShowIds` (`ListenerShows.idsOf`): the shows whose history, downloads and queue rows count as this show's own, covering RSS shows switched from Podcast Index ([rules](../../docs/EPISODE_IDS.md)).
+- `Podcast.isLatestEpisodeNew`: the shared NEW badge rule.
+- `Podcast.effectiveGenre`: the listener's `customGenre` when set, else `genre`; `recommendationGenre` uses it only when it canonicalizes to a standard genre.
+- `Podcast.RSS_REFRESH_AUTOMATIC`: the refresh capability for publisher subscriptions; legacy capability strings stay readable.
+- `PodcastGenres`: genre canonicalization, `tokenMatches` for genre folders, and `isPlaceholder` for "Podcast"/"Podcasts".
+- `artworkUrls`, `isPlaybackArtworkLink`, `persistableArtworkUrl` (`ArtworkUrls.kt`): ordered, deduplicated, HTTPS artwork sources; the player's in-app collage links are never saved, synced or shown.
+- `BriefingArtwork`: stable Brief artwork resource names and region aliases, shared by UI and the database artwork repair.
+- `EpisodeMediaCacheKey`: Media3 `customCacheKey` helper; Brief keys include the audio URL's `v=` so regenerated Briefs are not served from cache.
+- `ContentRegion`, `ContentRegions`: the 11 chart storefronts, language allowlist and normalization, and Brief market mapping.
+- `ContentRegions.ENGLISH_OFF_LANGUAGES`, `canSwitchEnglishOff`: the languages that allow English off; the set stays aligned with the API.
+- `ContentLanguageSelection`: language chip toggle rules, `englishSwitch`, and `normalizeKeepingEnglishChoice` for request builders so English off reaches the server.
+- `ShareLinkBuilder`: share links on `https://boxlore.in/share`; episode links can name their show (`&show=`); `forTarget` builds from an `EpisodeShareTarget`.
+- `EpisodeShareIds.choose`: picks the ID a share link carries, never a phone-only negative or reserved ID. `EpisodeShareTargetSource` is the seam the app fills with alias reads (`FROM_EPISODE` uses the episode's fields only).
+- `PlaybackEntryPoint`: coarse play origins (`GENERIC`, `HOME_MIXTAPE`, `LEARN`, `BRIEFING`).
+- `FeedFetchReport`, `FeedFetchSource`, `FeedFetchOutcome`, `FeedFetchCompleteness`, `FeedPassResult`, `FeedUrlCorrection` (`FeedTelemetry.kt`): feed analytics values whose `wireName` is the glossary value; none holds an address.
+- `RankingAggregateTelemetry`: aggregate ranking analytics values.
 
 ## Internal structure
 
 ```text
 src/main/java/cx/aswin/boxlore/core/model/
-  Briefing.kt
-  Chapter.kt
-  CrossPromotion.kt
+  Podcast.kt                   # Podcast, ListenerShows
   Episode.kt
-  EpisodeMediaCacheKey.kt
-  EpisodeRecipeId.kt
-  FeedTelemetry.kt
-  Podcast.kt
-  PodcastGenres.kt
-  RankingAggregateTelemetry.kt
-  ShareLinkBuilder.kt
-  EpisodeShareTarget.kt
+  Podcast2Types.kt             # Person, Transcript, Chapter, PodrollItem
+  Briefing.kt, BriefingArtwork.kt
   ShowNotes.kt
-  SleepTimerConstants.kt
-  Transcript.kt
-  ContentRegion.kt
-  ContentLanguageSelection.kt
-  ...
+  ListeningHistoryModels.kt
+  SubscriptionFolder.kt, FolderDisplaySize.kt
+  PodcastGenres.kt
+  ArtworkUrls.kt
+  EpisodeRecipeId.kt, EpisodeMediaCacheKey.kt
+  ShareLinkBuilder.kt, ShareTarget.kt, EpisodeShareTarget.kt
+  ContentRegion.kt, ContentLanguageSelection.kt
+  CrossPromotion.kt
+  FeedTelemetry.kt, RankingAggregateTelemetry.kt
+  PlaybackEntryPoint.kt, AutoTranscriptState.kt, SleepTimerConstants.kt
+  BoxLoreUser.kt
 ```
 
 ## Dependencies
 
-- Project dependencies: none.
-- Libraries: Kotlinx serialization. `EpisodeRecipeId` uses the JDK's `java.security.MessageDigest` (SHA-256), not an Android API.
-- Reverse-edge rule: Android framework, Room, Retrofit implementation details, repositories, and Compose UI must stay out of this module.
+- No project dependencies.
+- `implementation`: kotlinx serialization JSON. `EpisodeRecipeId` uses the JDK's `MessageDigest` (SHA-256).
+- Forbidden: Android framework types, Room, Retrofit, repositories and Compose UI.
 
 ## Threading / lifecycle
 
-- Types are immutable or treated as immutable value data.
-- No lifecycle owners, singletons, dispatchers, or background work are created here.
+- Types are immutable value data or treated as such.
+- No lifecycle owners, singletons, dispatchers or background work live here.
 
 ## Persistence & identity
 
-- This module owns no persistence files or storage keys.
-- ID schemes carried by model fields are owned by their source modules, such as RSS podcast IDs and playback media IDs.
-- The recipe ID scheme is the exception: `EpisodeRecipeId` defines it here, and it is fixed. Never change the recipe tag, trim set or hash; a new recipe needs a new tag and range ([`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md)).
+- This module owns no files or storage keys.
+- ID schemes carried by model fields (RSS podcast IDs, media IDs) are owned by their source modules; see [`ARCHITECTURE.md`](../../ARCHITECTURE.md#identity-and-storage).
+- `EpisodeRecipeId` is the exception: it defines the recipe scheme here and it is fixed. Never change the tag, trim set or hash; a new recipe needs a new tag and range ([`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md)).
+- Serialized field names of `Episode`, `Podcast` and other stored or synced models are stable; renaming one loses saved data.
+- Share links use `https://boxlore.in/share`; the app still opens older `aswin.cx` links.
 
 ## Testing notes
 
-- Unit tests live under `core/model/src/test`.
-- `ShareLinkBuilderTest` covers `&show=` with and without a timestamp or clip and `forTarget`; `EpisodeShareIdsTest` covers recipe, Podcast Index, phone-only, reserved and `rss:` IDs and non-canonical shows.
-- `EpisodeRecipeIdNamespaceTest` covers the show ID parse (it rejects `0123`, `+5`, ` 5`, `9007199254740992`, non-ASCII digits and the empty string) and the namespace entry point. The shared recipe fixture and its test stay in `core/rss/src/test` (`EpisodeRecipeIdTest`), where the scripts copy reads the same file; run `:core:rss:testDebugUnitTest` after any change to the recipe.
-- `Podcast.listenerShowIds` is covered with the readers that use it, in `:core:database` `SwitchedShowListeningTest`.
-- `EpisodeTrailerTest` covers the trailer rule: short and unknown-length tagged trailers, a long mislabelled one, the 15-minute boundary, and untagged episodes.
-- `ShareLinkBuilderTest` covers share URL invariants. Share links use `https://boxlore.in/share`; the app still opens the older `aswin.cx` share links.
-- Prefer pure JVM tests for additional formatters or value helpers.
+Tests live in `core/model/src/test` (pure JVM).
+
+| Area | Test classes |
+| :--- | :--- |
+| Episodes and identity | `EpisodeIdentityFieldsTest`, `EpisodeRecipeIdNamespaceTest`, `EpisodeTrailerTest`, `EpisodeMediaCacheKeyTest` |
+| Sharing | `ShareLinkBuilderTest`, `EpisodeShareIdsTest` |
+| Podcasts, genres, folders | `PodcastLatestEpisodeNewTest`, `PodcastGenresTest`, `SubscriptionFolderTest` |
+| Artwork and Brief | `ArtworkUrlsTest`, `BriefingArtworkTest` |
+| Regions and languages | `ContentRegionsTest`, `ContentLanguageSelectionTest` |
+| Telemetry and account | `FeedTelemetryTest`, `BoxLoreUserTest` |
+
+- The shared recipe fixture and `EpisodeRecipeIdTest` live in `core/rss/src/test`, where the scripts copy reads the same file; run `:core:rss:testDebugUnitTest` after any recipe change.
+- `Podcast.listenerShowIds` is covered with its readers in `:core:database`'s `SwitchedShowListeningTest`.
 
 ```bash
 ./gradlew :core:model:testDebugUnitTest
@@ -99,16 +111,13 @@ src/main/java/cx/aswin/boxlore/core/model/
 
 ## CI relevance
 
-- `unit-tests.yml` compiles this module for nearly every test target.
-- No module-specific CI job is required beyond JVM tests.
+- `unit-tests.yml` runs these tests and compiles this module for nearly every test target.
+- Release keeps the JSON field names and default constructors of reflectively read models; `release-contracts.yml` checks the optimized build.
 
 ## See also
 
 - [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
+- [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md)
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`:core:network` README](../network/README.md)
 - [`:core:database` README](../database/README.md)
-
-### Release optimization
-
-Gson-backed models retain JSON field names and default constructors in release. The optimized-artifact gate checks their nested field graph; compiler-generated serializers use the library consumer rules.

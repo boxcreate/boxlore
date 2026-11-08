@@ -2,93 +2,129 @@
 
 ## Purpose
 
-Owns the Retrofit API boundary, OkHttp/Retrofit construction, request and response DTOs, and network serialization contracts for boxlore's HTTP API. It does not own repositories, RSS feed parsing, Room persistence, Compose UI, or feature workflows.
+Owns boxlore's HTTP API boundary: the Retrofit services, OkHttp and Retrofit construction, request and response DTOs, JSON serialization, and the client side of API sessions and request proofs.
+
+It does not own repositories ([`:core:catalog`](../catalog/README.md)), RSS parsing ([`:core:rss`](../rss/README.md)), Room, Compose UI or feature workflows. Firebase is not a dependency: App Check and other attestation reach it through ports.
 
 ## Public API
 
-- `BoxLoreApi` defines the Retrofit service surface, including additive `GET search/typeahead` (show typeahead), cloud sync endpoints (`POST user/sync/push`, `POST user/sync/pull`, `DELETE user/sync/account`), and legacy routes. Legacy `GET search` and `POST sync` are unchanged. `GET episodes/match` (up to 1,000 newest episodes, match fields only) serves only the comparison list of a Podcast Index show's feed-only extras; followed shows' catalogs never call it, because new feed items take recipe IDs instead of being matched against a Podcast Index list.
-- `BoxLoreApiV2` is the `/v2` surface for builds that use boxlore's own episode IDs. Paths are relative (`v2/...`) and there is no app-key parameter. It covers show details and addresses (`getPodcast`, `getShowFeeds` for the daily check of up to 500 shows, `getFeed` for an http-only show's feed document, `reportFeed`), episodes (`getEpisode`, `getEpisodes` as the last-resort list, `registerEpisode` before sharing, `getSimilarEpisodes`), search (`search`, `searchSemantic`) and discovery (trending, home bootstrap POST and GET, recommendations, because-you-like, curated vibe and curiosity, briefing metadata and `getBriefingResource`). Discovery routes answer in the v1 response shapes.
-  - On `/v2`, an episode's `id` is its recipe ID. `EpisodeItem` carries the optional `servedId` (the ID older builds were given) and `catalogKey`, both absent on v1. `EpisodeItem.v2Identity()` returns recipe ID, show ID, catalog key and served ID (as a decimal string), or null when `id` is outside the recipe range or the show is missing. Use it only on `/v2` answers.
-  - `V2EpisodeIds` holds the range checks: recipe IDs in `[2^52, 2^53 − 1]`, show IDs and namespaces in `1..2^53 − 1`, `isEpisodeShowId` for the episode routes (`/v2/episode`, `/v2/episodes` and registration take only shows below 2^52), a strict `parseShowId` for stored show IDs (canonical digits only; `rss:` shows return null) and `isLookupEpisodeId` (never a negative local ID). Legacy episode IDs stay strings. `V2EpisodesPaging.isValid` mirrors the `/v2/episodes` bounds (show below 2^52, `limit` 1–1000, `offset` 0–10000). The routes answer 400 outside these rules, which is permanent, so check before calling and never retry it.
-  - Show answers (`V2PodcastResponse`, `V2ShowAddress (with `mergedInto`, the show Podcast Index merged it into)`, `V2FeedReportResponse`, `V2EpisodeReply.NeedsFeed`) share `V2FeedAddress`: `fetchUrl` (null means keep the saved address), `fetchVia` (`direct` or `proxy`), `transportUrl` and `feedSource`. `readTarget(showId)` says how to read the document: `V2FeedReadTarget.Direct(url)` on `fetchUrl`, or `V2FeedReadTarget.ViaApi(showId)` for a proxied show, which is read only with `getFeed(showId)`. `transportUrl` is an API URL that needs the session: the RSS client never fetches it, and it is never saved as the show's address. `validEpNs` and `V2EpisodeRegisterResponse.validRecipeId` return null outside their ranges.
-  - `getEpisode` decodes its 200 answer into the sealed `V2EpisodeReply`: `Found` (the episode) or `NeedsFeed` (read the show's feed and match by recipe ID). A 404 is an error response.
-  - `getFeed` streams the document. It sends `Cache-Control: no-store`, so the shared HTTP cache never stores feeds, and takes an optional `If-None-Match`. A 304 is not a successful Retrofit response, so callers check `code()`.
-  - Request models validate on construction: `V2ShowsFeedsRequest` holds 1–500 show IDs, `V2FeedReportRequest` takes a `V2FeedReportStatus` value (`http_NNN`, `timeout`, `dns`, `tls`, `parse`, `network`, `other`), and `V2EpisodeRegisterRequest` needs a show below 2^52 and a catalog key (the trimmed GUID, else the trimmed enclosure URL) of at most 2,048 characters, as the route does. A null field is left out of the JSON.
-  - `V2BriefingRoute.url(baseUrl, region, date, version)` builds `/v2/briefings/<route>/<region>` links with `d` and `v`.
-  - `getHomeBootstrap` takes `V2BootstrapRequest`: like `BootstrapRequest`, but its `recommendationsRequest` is the current recommendation body (`RecommendationsV2Request`), because `/v2` reads seeds and exclusions as recipe IDs and refuses the older `history` body. `country` and `vibeIds` are always sent.
-- `RecommendationsV2Request.contractVersion` has no default: the client never encodes defaults and the API answers 400 without the field, so callers pass `RecommendationsV2Request.CONTRACT_VERSION` (2). This applies to v1 `recommendations/v2`, `/v2/recommendations` and the `/v2` bootstrap's recommendations part.
-- `FirebaseAuthAuthenticator` provides an OkHttp `Authenticator` handling HTTP 401 Unauthorized responses with Kotlin `Mutex` refresh serialization to prevent token refresh stampedes (consuming `AuthRepository` from `:core:auth`).
-- `NetworkModule` creates OkHttp, Retrofit, and related network clients. `createCachedClient(context)` builds the shared client with the 50 MiB HTTP cache; build `BoxLoreApi` and `BoxLoreApiV2` on that one client (`createBoxLoreApi(baseUrl, client)`, `createBoxLoreApiV2(baseUrl, client)`), because two caches must never share a directory. There is no context-based `createBoxLoreApi` shortcut, so nothing can open a second cache on the same directory; tests pass their own client. The clients come with automatic header redaction for `Authorization`, `X-App-Key`, `X-Firebase-AppCheck`, `X-Boxlore-Session`, `X-Session-Renew` and `X-Session-Proof`. Every request carries `X-App-Version` and `X-App-Channel` (`play` or `github`) when the app sets `appVersion` / `appChannel`. `createSessionExchangeClient()` is the plain client for `POST /auth/session` (no session interceptor, no Firebase authenticator, no cache).
-- **English off.** `EnglishOffInterceptor` (first on the API client) adds `englishOff` to any request whose languages leave English out, which happens only when the listener switched it off: `englishOff=1` on a `languages` query, `"englishOff": true` in a JSON body with a `languages` array. Requests with English, without languages or that already say pass through byte for byte (`EnglishOffInterceptorTest`).
-- **API sessions (`session/`).** Requests are authenticated with API session tickets; the bundled app key is never sent (`ApiSessionInterceptor` strips `X-App-Key`). `NetworkModule.sessionManager` is set by the app at startup. `ApiSessionManager` owns the install's session: it gets one at launch, attaches it to requests, renews it with the install's device key (`AndroidKeystoreDeviceKey`, non-exportable) and backs off after failures. `ApiSessionScheduler` keeps the session fresh in the background, `ApiSessionStepUp` handles the API's extra verification for AI routes, `ApiErrorCodes` reads the API's error codes, and `ApiSessionListener` reports session outcomes, which the app forwards to `:core:analytics`. Attestation comes in through ports (`ApiSessionPorts.kt`).
-- **Support requests.** The support client (`NetworkModule.createSupportApi`) proves requests for an install's private data come from that install (`RequestProofSigner`, `RequestProofInterceptor`) and carries the signed-in account's Firebase ID token (`AccountTokenInterceptor`, fed by `NetworkModule.accountToken`).
-- `FirebaseAuthAuthenticator` ignores 401s carrying shield codes (`ApiErrorCodes.SHIELD_CODES`): those belong to the session interceptor, and a Firebase token can't fix them.
-- `StreamingJsonConverterFactory` streams response deserialization directly from OkHttp's `ResponseBody.byteStream()` via `Json.decodeFromStream` without monolithic string buffering.
-- DTOs under `cx.aswin.boxlore.core.network.model`, including recommendation, bootstrap, content catalog/v3, history, sync, user cloud sync (`UserSyncModels.kt` with `feedUrl` support on `UserSubscriptionSyncDto`), and request payload models.
-- Cloud sync episode identity (`UserSyncModels.kt`): `ListeningHistorySyncDto` and `QueueItemSyncDto` carry optional `recipeId` (a JSON number) and `catalogKey`; `QueueSyncDto.recentRemovedEpisodes` is the rich removal list (`QueueRemovalSyncDto`: `id`, `recipeId`, `show`, `catalogKey`) beside the plain `recentRemovedEpisodeIds`; `SyncPullRequest.richRemovals` asks the server for the rich list. With `encodeDefaults` off, unknown identity fields are not sent (the server keeps what it stored, as for older builds), a rich list is sent whenever it is set (an empty list too, because the server replaces its list with the one sent), and `richRemovals` must be set to true explicitly. A pull answer without the rich list decodes it as null. `SyncEpisodeIdentityFields` reads the fields from the wire: a recipe ID outside `[2^52, 2^53 − 1]` or a blank key (or one over 2,048 characters) counts as unknown. Legacy episode IDs stay opaque strings. Listening (Room v40): `ListeningHistorySyncDto.firstPlayedAt` and `finishedAt` (null unknown, 0 before recording, else epoch ms); `SyncPushRequest.listeningDays` (`ListeningDaySyncDto`, one installation's listening of one episode on one local day, under its listening device ID; all zero when that installation no longer holds the day) and `playedShows` (`PlayedShowSyncDto`), left out when empty; `SyncPushResponse.listeningAccepted` (only a server that stores listening sets it); each `ListeningDaySyncDto` also carries the summary's richer totals (Room v41: `longestSessionMs`, `speakerMs`, `headphonesMs`, `bluetoothMs`, `carMs`, `castMs`, `loreMs`, `smartQueueMs`, `newReleaseMs`; 0 not known) and, since Room v42, `releaseKnownMs` (the time of episodes with a known release date; 0 not known), `SyncPushRequest.listeningTotals` says the push's days carry them (0 included) and `SyncPushRequest.listeningReleaseKnown` that they carry `releaseKnownMs`, and `SyncPushResponse.listeningTotals` / `SyncPullResponse.listeningTotals` say the server stores them (false from an older server), and `listeningReleaseKnown` on both that it stores `releaseKnownMs`; `SyncPullRequest.listening` and `listeningSince` (nullable, so 0 is sent; the server falls back to `since`); `SyncPullResponse.listeningDays` and `playedShows`, null from an older server. Onboarding curriculum / genre-synth / similar-shows requests accept optional `languages` (chip codes; the API defaults them from the country). `BecauseYouLikeRequest` also carries optional `languages` (omitted when null), so English off reaches the because-you-like route.
-- Next-turn onboarding requests may opt into `guided_v1`. `GuidedOnboardingTurn` adds separate response/question text, choices, action IDs and an explicit kind/intent alongside the legacy message/options/search fields. `OnboardingNextTurnRequest` also carries optional `features` (the app sends `finish_hint`), `country` and `languages`, all omitted when null; `GuidedOnboardingTurn.finish` (`hidden` / `available` / `prominent`) is decoded when the API sends it. Its absence remains compatible with older responses; synthesis requests do not implicitly opt in. Response interpretation belongs to onboarding rather than the HTTP layer.
-- `getOnboardingProbeDeck` (`POST onboarding/probe-deck`) returns `OnboardingProbeDeckResponse` (2-4 `OnboardingProbeCard`s or none; preview fields optional). `OnboardingNextTurnRequest.probeReactions` (`OnboardingProbeReaction`: id, title, `listen` / `like` / `dislike` / `unknown`) is omitted when null and is sent with next-turn, synthesize and probe-deck requests. `OnboardingProbeCard.toPodcast()` maps a card to the app's podcast model.
-- Onboarding synthesis, curriculum, genre and similar-show DTOs accept optional `recommendationFormat`. The updated flow explicitly sends `discovery_v2` to permit up to six recommendation rows; defaults omit the field, preserving older request behavior. Curriculum decoding preserves the API's row and show order and forwards opaque search queries unchanged. No response/storage migration is required.
-- App version, channel, session manager and device-header hooks used by application wiring. The bundled public key is still passed to `BoxLoreApi` methods for source compatibility, but the interceptor removes it before any request leaves.
+### Services and clients
+
+- `BoxLoreApi`: the v1 service (search and typeahead, trending, recommendations, bootstrap, onboarding, content catalog, `/sync`, cloud sync push, pull and delete, feedback). `GET episodes/match` serves only the comparison list for a Podcast Index show's feed-only extras.
+- `BoxLoreApiV2`: the `/v2` service for boxlore's own episode IDs (shows and feed addresses, episodes, registration, search, discovery, briefings). Paths are relative and carry no app key; discovery routes answer in the v1 shapes.
+- `SupportApi`: the support conversation routes used by [`:core:support`](../support/README.md); nothing it returns enters the HTTP cache.
+- `NetworkModule.createCachedClient(context)`: the one shared OkHttp client with the HTTP cache. Build every service on it (`createBoxLoreApi`, `createBoxLoreApiV2`, `createSupportApi`); two caches must never share a directory, so there is no context-based shortcut.
+- `NetworkModule.createSessionExchangeClient()`: the plain client for session exchanges (no session interceptor, no authenticator, no cache).
+- `NetworkModule.appVersion` / `appChannel` are sent as `X-App-Version` and `X-App-Channel`; `sessionManager`, `authenticator` and `accountToken` are set by the app at startup.
+- Debug logging redacts every credential, App Check, session and proof header; release builds log nothing.
+- `StreamingJsonConverterFactory`: decodes responses straight from the body stream, without buffering a whole string.
+- `EnglishOffInterceptor` (first on the API client): adds `englishOff` to requests whose `languages` leave English out; every other request passes through unchanged.
+- `FirebaseAuthAuthenticator`: refreshes the Firebase ID token on a 401, one refresh at a time (`Mutex`), using `AuthRepository` from [`:core:auth`](../auth/README.md). It ignores 401s carrying `ApiErrorCodes.SHIELD_CODES`, which belong to the session layer.
+- `AccountTokenInterceptor`: adds the signed-in account's ID token to support requests.
+
+### API sessions and request proofs (`session/`)
+
+- `ApiSessionManager`: owns this install's API session (obtaining it, attaching it to requests and keeping it valid). The bundled app key is never sent.
+- `ApiSessionInterceptor`: the OkHttp side of the session; it removes the bundled app key from every request.
+- `ApiSessionPorts.kt`: the ports for attestation tokens, the device key (`DeviceKeySigner`), storage (`ApiSessionStore`), the exchange (`SessionExchanger`) and outcomes (`ApiSessionListener`, which the app forwards to [`:core:analytics`](../analytics/README.md)).
+- `OkHttpSessionExchanger`, `AndroidKeystoreDeviceKey` (non-exportable Keystore key) and `DataStoreApiSessionStore`: the production adapters for those ports.
+- `ApiErrorCodes`: reads the API's error codes; callers branch on its constants instead of string literals.
+- `RequestProofSigner` and `RequestProofInterceptor`: prove that support requests for an install's private data come from that install.
+
+### `/v2` models (`model/V2Models.kt`)
+
+- `V2EpisodeIds`: the range checks for recipe IDs, show IDs and lookup IDs, and strict `parseShowId` (`rss:` shows return null). Check before calling: the routes refuse IDs outside these ranges permanently, so never retry them.
+- `V2EpisodesPaging.isValid` mirrors the `/v2/episodes` bounds.
+- `EpisodeItem.v2Identity()`: recipe ID, show ID, catalog key and served ID from a `/v2` episode, or null; use it only on `/v2` answers.
+- `V2FeedAddress` (on `V2PodcastResponse`, `V2ShowAddress`, `V2FeedReportResponse` and `V2EpisodeReply.NeedsFeed`): `readTarget(showId)` returns `V2FeedReadTarget.Direct(url)` or `ViaApi(showId)`. A proxied show is read only with `getFeed`; its transport URL is never fetched by the RSS client or saved as an address.
+- `V2EpisodeReply`: `getEpisode` decodes a 200 into `Found` or `NeedsFeed` (read the feed and match by recipe ID); a 404 is an error response.
+- `getFeed` streams the document with `Cache-Control: no-store` and an optional `If-None-Match`; a 304 is not a successful Retrofit response, so callers check `code()`.
+- Request models validate on construction: `V2ShowsFeedsRequest`, `V2FeedReportRequest` (a `V2FeedReportStatus` value) and `V2EpisodeRegisterRequest`.
+- `V2BriefingRoute.url(...)` builds briefing resource links.
+- `V2BootstrapRequest` carries the current recommendation body (`RecommendationsV2Request`), because `/v2` reads seeds and exclusions as recipe IDs.
+
+### Other DTOs (`model/`)
+
+- `RecommendationsV2Request.contractVersion` has no default; pass `RecommendationsV2Request.CONTRACT_VERSION` on every recommendations request, v1 and `/v2`.
+- `BootstrapRequest.include` lists the reply parts the app uses (`INCLUDE_*`); null means every part.
+- Cloud sync (`UserSyncModels.kt`): `SyncPushRequest`, `SyncPullRequest` and their responses, with optional episode identity (`recipeId`, `catalogKey`, rich queue removals) and listening days. `SyncEpisodeIdentityFields` treats out-of-range values as unknown. Semantics: [listening and cloud sync](../catalog/README.md#cloud-sync).
+- Onboarding (`OnboardingModels.kt`): opt-in fields (`responseFormat` for `GuidedOnboardingTurn` answers, `features`, `languages`, `recommendationFormat`, `probeReactions`) are omitted when null, so older request shapes are unchanged. `OnboardingProbeCard.toPodcast()` maps a show-deck card.
+- `SupportModels.kt`, `SyncModels.kt`, `PodcastIndexModels.kt`, `CuratedCuriosityModels.kt` and `ITunesResponse.kt` hold the remaining wire models.
 
 ## Internal structure
 
 ```text
 src/main/java/cx/aswin/boxlore/core/network/
+  BoxLoreApi.kt                  # v1 routes
+  BoxLoreApiV2.kt                # /v2 routes, V2BriefingRoute
+  SupportApi.kt                  # support conversation routes
+  NetworkModule.kt               # clients, cache, service factories
+  EnglishOffInterceptor.kt
+  AccountTokenInterceptor.kt
   FirebaseAuthAuthenticator.kt
-  BoxLoreApi.kt
-  BoxLoreApiV2.kt              # /v2 routes, V2BriefingRoute
-  NetworkModule.kt
   StreamingJsonConverterFactory.kt
   model/
-    UserSyncModels.kt
-    V2Models.kt                # /v2 request and response models, V2EpisodeIds range checks
+    V2Models.kt                  # /v2 models and range checks
+    UserSyncModels.kt            # cloud sync push and pull
+    SyncModels.kt                # recommendations, bootstrap, /sync
+    OnboardingModels.kt
+    SupportModels.kt
+    PodcastIndexModels.kt
+    CuratedCuriosityModels.kt
+    ITunesResponse.kt
   session/
-    ApiSessionManager.kt       # shared exchange, request headers, renewals, rejections
-    ApiSessionBook.kt          # the manager's state (token, clock offset, backoffs, proof cache)
-    ApiSessionScheduler.kt     # foreground upkeep: App Check retries, refreshes
-    ApiSessionStepUp.kt        # Turnstile step-up with cooldown
-    ApiSessionPolicy.kt        # pure timing rules
-    ApiSessionInterceptor.kt   # OkHttp: attach, renew, retry once; strips X-App-Key
-    ApiSessionToken.kt         # bls1 token claims
-    ApiSessionPorts.kt         # App Check, Turnstile, device key, store, listener ports
+    ApiSessionManager.kt         # owns the install's session
+    ApiSessionBook.kt            # the manager's in-memory state
+    ApiSessionScheduler.kt       # background session upkeep
+    ApiSessionStepUp.kt          # extra verification for AI routes
+    ApiSessionPolicy.kt          # pure session rules
+    ApiSessionInterceptor.kt
+    ApiSessionToken.kt           # reads session claims
+    ApiSessionPorts.kt
     ApiErrorCodes.kt
-    OkHttpSessionExchanger.kt  # POST /auth/session
+    OkHttpSessionExchanger.kt
     AndroidKeystoreDeviceKey.kt
     DataStoreApiSessionStore.kt
+    RequestProofSigner.kt
+    RequestProofInterceptor.kt
 ```
 
 ## Dependencies
 
-- Project dependencies: `:core:model`, `:core:auth`.
-- Libraries: Retrofit, Kotlinx serialization, OkHttp, OkHttp logging interceptor, Gson, AndroidX annotation, AndroidX DataStore Preferences (the session store), and coroutines. No Firebase: App Check and Turnstile come in through ports.
-- Reverse-edge rule: network must not depend on catalog, database, playback, downloads, designsystem, or feature modules.
+- `implementation`: `:core:model`, `:core:auth`.
+- Libraries: Retrofit, OkHttp and its logging interceptor, kotlinx-serialization-json, Gson, coroutines, AndroidX annotation and DataStore Preferences (the session store).
+- Forbidden: catalog, database, playback, downloads, designsystem or feature modules; no Firebase SDK.
 
 ## Threading / lifecycle
 
-- OkHttp uses its own dispatcher threads.
-- Retrofit suspend functions must be called from coroutines, normally from repository IO paths.
-- Production clients are process-scoped when created by application wiring. `PodcastRepository` owns both API versions and builds them on one cached client.
-- `ApiSessionManager` runs on the application scope (IO). The interceptor calls it on OkHttp threads and blocks only while waiting for a missing session, a one-time recovery, or a step-up on an AI route. Persistence is asynchronous and serialized. Listener callbacks arrive off the main thread.
+- Retrofit services are `suspend` and called from repository IO paths; OkHttp runs on its own dispatcher threads.
+- Clients are process-scoped. `PodcastRepository` builds both API versions and the support service on the one cached client.
+- `ApiSessionManager` runs on the application scope it is given. The interceptor calls it on OkHttp threads and may block a request briefly while a session is obtained.
+- Session persistence is asynchronous and serialized; `ApiSessionListener` callbacks arrive off the main thread.
 
 ## Persistence & identity
 
-- `BootstrapRequest.include` lists the reply parts the app uses (`INCLUDE_BRIEFING`, `INCLUDE_TRENDING`, `INCLUDE_CURATED_VIBES`, `INCLUDE_RECOMMENDATIONS`). It is omitted when null, which the API treats as every part.
-- No user data is persisted by this module.
-- API session state lives in the DataStore file `boxlore_api_session` (keys `session_token`, `install_id`, `clock_offset_seconds`, `app_check_failures`, `next_app_check_at_ms`). The install id is random (16 bytes, base64url) and separate from the analytics and sync device ids. The device key is the Keystore alias `boxlore_api_session_device_key`. Keep both names stable: renaming signs every install out of its session. The app's backup rules exclude the file, because a restored token could never renew without this phone's Keystore key.
-- Base URL, public key, app version, App Check tokens, and device identifiers are supplied at runtime by app or repository wiring.
-- API path and payload shape changes should be tested as contract changes.
-- `/v2` identity rules: recipe IDs are safe integers in `[2^52, 2^53 − 1]`; show IDs never change and are the same numbers as on v1; legacy episode IDs (including negative `rss:` IDs) stay opaque decimal strings and negative ones are never sent.
+Never rename these:
+
+- DataStore file `boxlore_api_session` (`DataStoreApiSessionStore.FILE_NAME`) and its keys; the app's backup rules exclude it because it is bound to this phone's Keystore key.
+- Keystore alias `boxlore_api_session_device_key` (`AndroidKeystoreDeviceKey.DEFAULT_ALIAS`). Renaming either signs every install out of its session.
+- The install ID inside the session store is random and separate from the analytics and sync device IDs.
+- Recipe IDs, show IDs and legacy episode IDs on the wire follow [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md); negative `rss:` IDs are never sent.
+- No other user data is stored here. Base URL, app version, attestation tokens and device identifiers come from app wiring at runtime.
 
 ## Testing notes
 
-- Unit tests live under `core/network/src/test`.
-- `BoxLoreApiContractTest` uses MockWebServer fixtures for endpoint contracts.
-- Prefer MockWebServer over live backend calls.
-- `session/` tests (`ApiSessionInterceptorTest`, `ApiSessionSchedulerTest`, `ApiSessionPolicyTest`, `RequestProofTest`, `OkHttpSessionExchangerTest`) cover the session lifecycle with MockWebServer and virtual time; `FirebaseAuthAuthenticatorTest` checks the authenticator leaves the API's own 401s alone.
-- `BoxLoreApiV2ContractTest` (MockWebServer) checks every `/v2` path (also under a base URL with a path prefix) and that no request carries `X-App-Key`; the exact request JSON of shows/feeds, feed reports, registration, recommendations (with `contractVersion: 2`), bootstrap (with and without its current-algorithm recommendations part), similar episodes (a recipe ID `id`, `limit` left at its default is not sent) and because-you-like (with and without `excludePodcastId` and `country`) (defaults are not encoded, so only explicitly set fields go out); decoding of show addresses (including `fetchUrl: null` and proxied shows), that a proxied show is read with `getFeed` on the base URL and never at the server's `transportUrl`, `needsFeed` with and without an address, a known episode with its identity, the fallback list, a 404 and a 304; that feed documents never enter the HTTP cache; and briefing URLs. `model/V2ModelsTest` covers the range checks (including the episode-route show limit and `/v2/episodes` paging bounds), strict show ID parsing, request validation (including the 2,048-character catalog key) and read targets.
-- `BoxLoreApiSyncContractTest` (MockWebServer) checks the push and pull JSON: each row's `recipeId` and `catalogKey` are sent only when set, the rich removals are sent (an empty list too) and left out only when unset, a pull sends `richRemovals: true` only when asked and sends nothing for the defaults, and a pull answer recorded in the sync API's shape decodes (recipe fields as numbers or null, the rich removals present or absent), plus the range checks of `SyncEpisodeIdentityFields`.
-- `OnboardingGuidedContractTest` checks legacy decoding, request-specific opt-in and structured recovery action decoding, including unknown additive fields, and the finish-hint opt-in (features, country, languages omitted by default; `finish` decoded), plus show deck cards with and without a preview and opt-in reactions.
+Tests live in `core/network/src/test` (JUnit 5, MockWebServer, virtual time); recorded answers are in `src/test/resources/fixtures`. Treat a path or payload change as a contract change and cover it here.
+
+| Area | Test classes |
+| :--- | :--- |
+| v1 routes | `BoxLoreApiContractTest` |
+| `/v2` routes and models | `BoxLoreApiV2ContractTest`, `model/V2ModelsTest` |
+| Cloud sync payloads | `BoxLoreApiSyncContractTest` |
+| Onboarding payloads | `OnboardingGuidedContractTest` |
+| Interceptors, converter | `EnglishOffInterceptorTest`, `StreamingJsonConverterFactoryTest` |
+| Token refresh, auth types | `FirebaseAuthAuthenticatorTest`, `AuthExceptionsTest` |
+| Sessions and proofs | `session/ApiSessionInterceptorTest`, `ApiSessionSchedulerTest`, `ApiSessionPolicyTest`, `OkHttpSessionExchangerTest`, `RequestProofTest` |
 
 ```bash
 ./gradlew :core:network:testDebugUnitTest
@@ -96,16 +132,16 @@ src/main/java/cx/aswin/boxlore/core/network/
 
 ## CI relevance
 
-- `unit-tests.yml` runs network JVM contract tests.
-- Network DTO compile failures block catalog and feature modules that map API responses.
+- `unit-tests.yml` runs these tests and merges their Kover coverage.
+- DTO compile failures block catalog, support and the feature modules that map API responses.
+- Release keeps both Retrofit services and their JSON DTOs; `release-contracts.yml` verifies every API method and serializer in the optimized build, which JVM tests cannot prove.
 
 ## See also
 
 - [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
+- [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md)
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`:core:catalog` README](../catalog/README.md)
 - [`:core:rss` README](../rss/README.md)
-
-### Release optimization
-
-Release keeps both Retrofit APIs (`BoxLoreApi`, `BoxLoreApiV2`), generic `Call`/`Response` types and JSON DTO contracts, while optimizing HTTP/runtime implementations using library consumer rules. The artifact gate verifies every API method and nested dynamic serializer after R8; JVM tests alone do not establish release reflection safety.
+- [`:core:support` README](../support/README.md)
+- [`:core:auth` README](../auth/README.md)
