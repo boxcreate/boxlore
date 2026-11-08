@@ -34,7 +34,7 @@ Use [docs/TESTING.md](docs/TESTING.md) to select relevant checks and distinguish
 
 For Android UI/behavior changes, report the affected phone/tablet/foldable states and transition coverage. Separate source inspection, JVM test results, and device evidence; tests at separate static sizes do not prove state survives resizing. Documentation-only changes do not require unrelated adaptive tests.
 
-Follow [the PR template](.github/PULL_REQUEST_TEMPLATE.md) for Conventional Commit titles, exactly one user-impact label, release copy, and review requirements. Before an authorized squash merge, required checks must be green by default, every CodeRabbit finding addressed and thread resolved, and SonarCloud must have zero new-code issues. A maintainer may explicitly authorize bypassing required status checks for a specific PR; general merge authorization does not authorize a bypass. Report the remaining checks and known risks before using that exception. Review requirements still apply, and agents must not dismiss requested-change reviews.
+Follow [the pull request guide](docs/PULL_REQUESTS.md) for Conventional Commit titles, exactly one user-impact label, the description, release copy, and review requirements; fill in [the PR template](.github/PULL_REQUEST_TEMPLATE.md)'s sections and leave none of its prompts behind. Before an authorized squash merge, required checks must be green by default, every CodeRabbit finding addressed and thread resolved, and SonarCloud must have zero new-code issues. A maintainer may explicitly authorize bypassing required status checks for a specific PR; general merge authorization does not authorize a bypass. Report the remaining checks and known risks before using that exception. Review requirements still apply, and agents must not dismiss requested-change reviews.
 
 ## Documentation map
 
@@ -46,6 +46,6 @@ Follow [the PR template](.github/PULL_REQUEST_TEMPLATE.md) for Conventional Comm
 | Commands, test selection, coverage, CI | [docs/TESTING.md](docs/TESTING.md) |
 | Script responsibilities and development checks | [scripts/README.md](scripts/README.md) |
 | Module documentation format | [docs/MODULE_README_TEMPLATE.md](docs/MODULE_README_TEMPLATE.md) |
-| PR labels, release copy, review and merge process | [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md) |
+| PR titles, labels, description, release copy, review and merge process | [docs/PULL_REQUESTS.md](docs/PULL_REQUESTS.md) |
 
 `AGENTS.internal.md` supplements these public contracts with local authorization, skills, environment setup, and operations. It is intentionally absent from public clones and must remain untracked.
