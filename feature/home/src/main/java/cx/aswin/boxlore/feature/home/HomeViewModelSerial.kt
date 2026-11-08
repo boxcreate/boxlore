@@ -1,12 +1,13 @@
 package cx.aswin.boxlore.feature.home
 
 import androidx.lifecycle.viewModelScope
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.listenerShowIds
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
 import cx.aswin.boxlore.core.playback.episodeGroupTokens
 import cx.aswin.boxlore.feature.home.logic.HomeSerialLogic
-import cx.aswin.boxlore.feature.home.logic.resolveNextSerialEpisode
+import cx.aswin.boxlore.feature.home.logic.HomeShowEpisodesLogic
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -43,37 +44,25 @@ internal fun HomeViewModel.startOldestSortResolution() {
                                     resolutionLimiter.resolve {
                                         try {
                                             // A show switched to its feed reads its old show's listening.
-                                            val ongoingId =
-                                                HomeSerialLogic.ongoingEpisodeId(allHistory, pod.listenerShowIds)
-                                            val lastCompletedId =
-                                                HomeSerialLogic.lastCompletedEpisodeId(allHistory, pod.listenerShowIds)
-
+                                            val place = HomeShowEpisodesLogic.placeHistoryId(allHistory, pod.listenerShowIds)
                                             android.util.Log.d(
                                                 "HomeViewModelResolve",
-                                                "Resolving pod=${pod.title} id=${pod.id} ongoingId=$ongoingId lastCompletedId=$lastCompletedId",
+                                                "Resolving pod=${pod.title} id=${pod.id} place=$place",
                                             )
-
-                                            val page =
-                                                podcastRepository.getEpisodesPaginated(
-                                                    pod.id,
-                                                    limit = 100,
-                                                    offset = 0,
-                                                    sort = "oldest",
-                                                )
+                                            val loaded = seriesEpisodesLoader(pod.id).load(place, progress.completed)
                                             // History keeps an episode under its owner ID; find it under the ID the list uses.
                                             val tokens =
                                                 playbackRepository.episodeGroupTokens(
-                                                    page.episodes.map { it.id } + listOfNotNull(ongoingId, lastCompletedId) + progress.inProgress,
+                                                    loaded.episodes.map { it.id } + progress.inProgress,
                                                 )
                                             val nextEp =
-                                                resolveNextSerialEpisode(
-                                                    allEpisodes = page.episodes,
-                                                    ongoingId = HomeSerialLogic.idInList(ongoingId, page.episodes, tokens),
-                                                    lastCompletedId = HomeSerialLogic.idInList(lastCompletedId, page.episodes, tokens),
-                                                    completedEpIdsForResolve = progress.completed,
-                                                    inProgressEpIdsForResolve = HomeSerialLogic.idsInList(progress.inProgress, page.episodes, tokens),
+                                                HomeShowEpisodesLogic.nextUp(
+                                                    episodes = loaded.episodes,
+                                                    placeId = loaded.placeId,
+                                                    completedIds = progress.completed,
+                                                    inProgressIds = HomeSerialLogic.idsInList(progress.inProgress, loaded.episodes, tokens),
                                                 )
-                                            if (nextEp != null) pod.id to nextEp else null
+                                            SerialResolution(pod.id, nextEp, HomeSerialLogic.resolveKey(pod, allHistory))
                                         } catch (e: CancellationException) {
                                             throw e
                                         } catch (e: Exception) {
@@ -89,8 +78,16 @@ internal fun HomeViewModel.startOldestSortResolution() {
                             }
 
                         val results = deferredList.awaitAll().filterNotNull()
+                        results.forEach { result ->
+                            if (result.next == null) serialCaughtUpKeys[result.podcastId] = result.key else serialCaughtUpKeys.remove(result.podcastId)
+                        }
                         if (results.isNotEmpty()) {
-                            _resolvedSerialEpisodes.update { current -> current + results }
+                            // A show with nothing left drops its old suggestion; Daily mix then falls back to its newest episode.
+                            _resolvedSerialEpisodes.update { current ->
+                                results.fold(current) { acc, result ->
+                                    if (result.next != null) acc + (result.podcastId to result.next) else acc - result.podcastId
+                                }
+                            }
                         }
                     } finally {
                         serialPodsToResolve.forEach { inFlightResolutions.remove(it.id) }
@@ -111,4 +108,8 @@ internal fun HomeViewModel.findPendingSerialPodcasts(
     completedEpisodeIds = completedEpisodeIds,
     resolvedSerial = _resolvedSerialEpisodes.value,
     inFlightResolutions = inFlightResolutions,
+    caughtUpKeys = serialCaughtUpKeys,
 )
+
+/** One show's resolution: its next episode, or null when it has nothing left, at the [key] it was checked at. */
+private data class SerialResolution(val podcastId: String, val next: Episode?, val key: String)

@@ -41,6 +41,31 @@ class HomeSerialLogicTest {
     }
 
     @Test
+    fun `a series with nothing left isn't checked again until the place or its newest episode changes`() {
+        val series = TestFixtures.podcast(id = "old").copy(preferredSort = "oldest", latestEpisode = TestFixtures.episode(id = "ep-9"))
+        val history = listOf(item("ep-9", completed = true, progressMs = 0L, podcastId = "old"))
+        val caughtUp = mapOf("old" to HomeSerialLogic.resolveKey(series, history))
+
+        fun pending(
+            pod: cx.aswin.boxlore.core.model.Podcast,
+            rows: List<HomeListeningHistoryItem>,
+        ) = HomeSerialLogic.findPendingSerialPodcasts(
+            subs = listOf(pod),
+            allHistory = rows,
+            completedEpisodeIds = emptySet(),
+            resolvedSerial = emptyMap(),
+            inFlightResolutions = emptySet(),
+            caughtUpKeys = caughtUp,
+        )
+
+        // Playback updates with the same place and newest episode: nothing to load.
+        assertEquals(emptyList<String>(), pending(series, history).map { it.id })
+        // A new episode arrives, or the listener plays another one: check again.
+        assertEquals(listOf("old"), pending(series.copy(latestEpisode = TestFixtures.episode(id = "ep-10")), history).map { it.id })
+        assertEquals(listOf("old"), pending(series, history + item("ep-3", completed = false, progressMs = 5L, podcastId = "old", lastPlayedAt = 9L)).map { it.id })
+    }
+
+    @Test
     fun `ongoing and last completed pick latest by lastPlayedAt`() {
         val history =
             listOf(
@@ -74,12 +99,11 @@ class HomeSerialLogicTest {
         assertEquals("-2", HomeSerialLogic.idInList(ongoing, episodes, tokens))
         assertEquals("-1", HomeSerialLogic.idInList(lastCompleted, episodes, tokens))
         val next =
-            resolveNextSerialEpisode(
-                allEpisodes = episodes,
-                ongoingId = HomeSerialLogic.idInList(ongoing, episodes, tokens),
-                lastCompletedId = HomeSerialLogic.idInList(lastCompleted, episodes, tokens),
-                completedEpIdsForResolve = emptySet(),
-                inProgressEpIdsForResolve = HomeSerialLogic.idsInList(setOf("pi-2"), episodes, tokens),
+            HomeShowEpisodesLogic.nextUp(
+                episodes = episodes,
+                placeId = HomeSerialLogic.idInList(HomeShowEpisodesLogic.placeHistoryId(history, feedShow.listenerShowIds), episodes, tokens),
+                completedIds = HomeSerialLogic.idsInList(setOf("pi-1"), episodes, tokens),
+                inProgressIds = HomeSerialLogic.idsInList(setOf("pi-2"), episodes, tokens),
             )
         assertEquals("-3", next?.id)
         // Without the old show's rows the show would start over at its first episode.

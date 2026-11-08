@@ -29,6 +29,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -54,6 +55,7 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.R
+import cx.aswin.boxlore.feature.home.SelectedShowStatus
 import cx.aswin.boxlore.feature.home.StableCompletedDownloadList
 import cx.aswin.boxlore.feature.home.StableEpisodeList
 import cx.aswin.boxlore.feature.home.StablePlaybackStateMap
@@ -73,6 +75,8 @@ fun YourShowsSection(
     isSelectedPodcastLoading: Boolean,
     isSelectedRssRefreshing: Boolean,
     episodePlaybackState: StablePlaybackStateMap,
+    selectedShowStatus: SelectedShowStatus = SelectedShowStatus(),
+    onRetrySelectedShow: () -> Unit = {},
     softExpireProgressEpisodeIds: Set<String> = emptySet(),
     currentPlayingEpisodeId: String? = null,
     isPlaying: Boolean = false,
@@ -215,7 +219,13 @@ fun YourShowsSection(
                     }
                     val frame = retainExitingShowsFrame(
                         active = activeId == contentTarget,
-                        current = SelectedShowPresentation(selectedPodcastEpisodes, isSelectedPodcastLoading, isSelectedRssRefreshing),
+                        current =
+                        SelectedShowPresentation(
+                            selectedPodcastEpisodes,
+                            isSelectedPodcastLoading,
+                            isSelectedRssRefreshing,
+                            selectedShowStatus,
+                        ),
                     )
                     val selectedPodcast = subscribedPodcasts.list.find { it.id == activeId }
 
@@ -241,6 +251,7 @@ fun YourShowsSection(
                         ) {
                             SelectedShowHeader(
                                 podcast = selectedPodcast,
+                                showsNextEpisodes = !frame.status.caughtUp,
                                 canClear = subscribedPodcasts.list.size > 1,
                                 onOpenShow = { onPodcastClick(selectedPodcast) },
                                 onClear = { onPodcastSelected(null) },
@@ -251,7 +262,7 @@ fun YourShowsSection(
                                 selectedPodcast = selectedPodcast,
                                 frame = frame,
                                 playback = SelectedShowPlayback(episodePlaybackState, currentPlayingEpisodeId, isPlaying),
-                                actions = SelectedShowActions(onPodcastClick, onEpisodeClick, onPlayEpisode),
+                                actions = SelectedShowActions(onPodcastClick, onEpisodeClick, onPlayEpisode, onRetrySelectedShow),
                                 layout = SelectedShowLayout(tablet, sidebar),
                                 scrollState = filteredScrollState,
                                 scrollConnection = filteredScrollConnection,
@@ -277,6 +288,7 @@ private data class SelectedShowActions(
     val onPodcastClick: (Podcast) -> Unit,
     val onEpisodeClick: (Episode, Podcast, String) -> Unit,
     val onPlayEpisode: (Episode, Podcast, PlaybackEntryPoint) -> Unit,
+    val onRetry: () -> Unit,
 )
 
 @androidx.compose.runtime.Immutable
@@ -305,20 +317,20 @@ private fun SelectedShowEpisodes(
             BoxLoreLoader.Expressive(size = 48.dp)
         }
     } else if (frame.episodes.list.isEmpty()) {
-        Box(
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 24.dp),
-            contentAlignment = Alignment.Center,
-        ) {
+        SelectedShowMessage(
+            failed = frame.status.loadFailed,
+            onRetry = actions.onRetry,
+            onSeeAll = { actions.onPodcastClick(selectedPodcast) },
+        )
+    } else {
+        if (frame.status.caughtUp) {
             Text(
-                text = stringResource(R.string.home_shows_no_episodes),
-                style = MaterialTheme.typography.bodyMedium,
+                text = stringResource(R.string.home_shows_caught_up),
+                style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp).testTag("home_filtered_caught_up"),
             )
         }
-    } else {
         Column(
             modifier =
             Modifier
@@ -338,14 +350,6 @@ private fun SelectedShowEpisodes(
                 )
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp))
             }
-            val latestTwoIds =
-                remember(frame.episodes) {
-                    frame.episodes.list
-                        .sortedByDescending { it.publishedDate }
-                        .take(2)
-                        .map { it.id }
-                        .toSet()
-                }
             val visible = frame.episodes.list.take(8)
             // The rows and the See all footer form one connected list.
             val segments = visible.size + 1
@@ -374,7 +378,7 @@ private fun SelectedShowEpisodes(
                         currentPlayingEpisodeId = playback.currentPlayingEpisodeId,
                         isPlaying = playback.isPlaying,
                     ),
-                    isEligibleForNewTag = episode.id in latestTwoIds,
+                    isEligibleForNewTag = episode.id in frame.status.newestEpisodeIds,
                 )
             }
             if (!layout.tablet) SeeAllEpisodesRow(shape = yourShowsListShape(segments - 1, segments)) { actions.onPodcastClick(selectedPodcast) }
@@ -383,6 +387,33 @@ private fun SelectedShowEpisodes(
             Spacer(Modifier.height(2.dp))
             SeeAllEpisodesRow(shape = yourShowsListShape(1, 2)) { actions.onPodcastClick(selectedPodcast) }
         }
+    }
+}
+
+/** A selected show with no rows: why, Try again after a failed load, and the way to the show page. */
+@Composable
+private fun SelectedShowMessage(
+    failed: Boolean,
+    onRetry: () -> Unit,
+    onSeeAll: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth().testTag("home_filtered_message")) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = stringResource(if (failed) R.string.home_shows_load_failed else R.string.home_shows_no_episodes),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (failed) {
+                TextButton(onClick = onRetry, modifier = Modifier.testTag("home_filtered_retry")) {
+                    Text(stringResource(R.string.home_shows_try_again))
+                }
+            }
+        }
+        SeeAllEpisodesRow(shape = yourShowsListShape(0, 1), onClick = onSeeAll)
     }
 }
 

@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.home.logic
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.home.HomeListeningHistoryItem
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
@@ -20,7 +21,7 @@ class HomeSelectedPodcastLogicTest {
     }
 
     @Test
-    fun `build signal uses last played episode and preferred sort`() {
+    fun `build signal of a show listened to in order carries the place and preferred sort`() {
         val subs = listOf(TestFixtures.podcast(id = "pod-1").copy(preferredSort = "oldest"))
         val history =
             listOf(
@@ -57,7 +58,8 @@ class HomeSelectedPodcastLogicTest {
             )
 
         assertEquals("pod-1", signal?.podcastId)
-        assertEquals("ep-2", signal?.lastPlayedEpisodeId)
+        // Both are in progress; the place is the one played last.
+        assertEquals("ep-2", signal?.placeHistoryId)
         assertEquals("oldest", signal?.sort)
         assertEquals(3L, signal?.rssRefreshVersion)
         assertEquals(subs[0].latestEpisode?.id, signal?.latestEpisodeId)
@@ -71,9 +73,9 @@ class HomeSelectedPodcastLogicTest {
 
         val signal = HomeSelectedPodcastLogic.buildSignal(podcastId = "rss:feed", allHistory = listOf(played), subs = listOf(feedShow), rssRefreshVersion = 0L)
 
-        assertEquals("pi-2", signal?.lastPlayedEpisodeId)
+        assertEquals("pi-2", signal?.placeHistoryId)
         // Another show's rows never count.
-        assertNull(HomeSelectedPodcastLogic.buildSignal(podcastId = "rss:feed", allHistory = listOf(played.copy(podcastId = "other")), subs = listOf(feedShow), rssRefreshVersion = 0L)?.lastPlayedEpisodeId)
+        assertNull(HomeSelectedPodcastLogic.buildSignal(podcastId = "rss:feed", allHistory = listOf(played.copy(podcastId = "other")), subs = listOf(feedShow), rssRefreshVersion = 0L)?.placeHistoryId)
     }
 
     @Test
@@ -98,34 +100,24 @@ class HomeSelectedPodcastLogicTest {
     }
 
     @Test
-    fun `oldest sort window centers near last played with lookback`() {
-        val episodes = (0..9).map { TestFixtures.episode(id = "ep-$it") }
-        val window =
-            HomeSelectedPodcastLogic.oldestSortWindow(
-                allEpisodes = episodes,
-                lastPlayedEpisodeId = "ep-5",
-                windowSize = 4,
-                lookback = 2,
-            )
+    fun `newest-first shows don't reload when another episode is played`() {
+        val subs = listOf(TestFixtures.podcast(id = "pod-1").copy(preferredSort = "newest"))
+        val history = listOf(HomeListeningHistoryItem("ep-1", "pod-1", "Show", null, 1L, 10L, false, false, 5L))
 
-        assertEquals(listOf("ep-3", "ep-4", "ep-5", "ep-6"), window.map { it.id })
+        val signal = HomeSelectedPodcastLogic.buildSignal(podcastId = "pod-1", allHistory = history, subs = subs, rssRefreshVersion = 0L)
+
+        assertNull(signal?.placeHistoryId)
+        assertEquals(false, signal?.inOrder)
     }
 
     @Test
-    fun `filter completed if needed removes completed ids`() {
-        val episodes = listOf(TestFixtures.episode(id = "a"), TestFixtures.episode(id = "b"))
-        assertEquals(
-            listOf("a"),
-            HomeSelectedPodcastLogic
-                .filterCompletedIfNeeded(episodes, hideCompleted = true, completedIds = setOf("b"))
-                .map { it.id },
-        )
-        assertEquals(
-            listOf("a", "b"),
-            HomeSelectedPodcastLogic
-                .filterCompletedIfNeeded(episodes, hideCompleted = false, completedIds = setOf("b"))
-                .map { it.id },
-        )
+    fun `try again changes the signal so the show loads again`() {
+        val subs = listOf(TestFixtures.podcast(id = "pod-1"))
+
+        val first = HomeSelectedPodcastLogic.buildSignal("pod-1", emptyList(), subs, rssRefreshVersion = 0L, retryVersion = 0L)
+        val retried = HomeSelectedPodcastLogic.buildSignal("pod-1", emptyList(), subs, rssRefreshVersion = 0L, retryVersion = 1L)
+
+        assertNotEquals(first, retried)
     }
 
     @Test

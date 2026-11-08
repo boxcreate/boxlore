@@ -21,6 +21,17 @@ data class SmartHeroItem(
 
 enum class HeroType { RESUME, RESUME_GRID, JUMP_BACK_IN, NEW_EPISODES_GRID, SPOTLIGHT }
 
+/** How the selected show's episode list on Home stands, beside its episodes. */
+@Immutable
+data class SelectedShowStatus(
+    /** Nothing is left to hear, so the list holds the show's latest episodes. */
+    val caughtUp: Boolean = false,
+    /** The last load failed with nothing to show. */
+    val loadFailed: Boolean = false,
+    /** The show's two newest episodes, the only ones that can carry the NEW tag. */
+    val newestEpisodeIds: Set<String> = emptySet(),
+)
+
 enum class HomeEditorialIcon {
     HEADLINES,
     UPLIFTING,
@@ -62,6 +73,7 @@ data class HomeUiState(
     val isError: Boolean = false,
     val selectedPodcastId: String? = null,
     val selectedPodcastEpisodes: List<Episode> = emptyList(),
+    val selectedShowStatus: SelectedShowStatus = SelectedShowStatus(),
     val isSelectedPodcastLoading: Boolean = false,
     val isSelectedRssRefreshing: Boolean = false,
     val episodePlaybackState: Map<String, Pair<EpisodeStatus, Float>> = emptyMap(),

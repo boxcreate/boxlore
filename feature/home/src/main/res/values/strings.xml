@@ -83,7 +83,10 @@
     <string name="home_shows_clear_filter">Clear show filter</string>
     <string name="home_shows_open_show">Show info</string>
     <string name="home_shows_see_all_episodes">See all episodes</string>
-    <string name="home_shows_no_episodes">No episodes available</string>
+    <string name="home_shows_no_episodes">No episodes yet</string>
+    <string name="home_shows_caught_up">You’re all caught up</string>
+    <string name="home_shows_load_failed">Couldn’t load episodes</string>
+    <string name="home_shows_try_again">Try again</string>
     <string name="home_shows_refreshing_rss">Refreshing RSS episodes…</string>
     <string name="home_shows_pin">Pin show</string>
     <string name="home_shows_unpin">Unpin show</string>

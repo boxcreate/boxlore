@@ -348,8 +348,10 @@ class HomeViewModel(
     internal var activeRegion = "us"
 
     internal val _selectedPodcastId = MutableStateFlow<String?>(null)
-    internal val _selectedPodcastEpisodes = MutableStateFlow<List<Episode>>(emptyList())
+    internal val _selectedShowPool = MutableStateFlow<cx.aswin.boxlore.feature.home.logic.ShowEpisodesPool?>(null)
     internal val _isSelectedPodcastLoading = MutableStateFlow(false)
+    internal val _selectedShowLoadFailed = MutableStateFlow(false)
+    internal val _selectedShowRetryVersion = MutableStateFlow(0L)
     internal val _isSelectedRssRefreshing = MutableStateFlow(false)
     internal val _rssRefreshVersion = MutableStateFlow(0L)
     internal val rssFeedsRefreshedThisSession =
@@ -358,6 +360,9 @@ class HomeViewModel(
     internal val _resolvedSerialEpisodes = MutableStateFlow<Map<String, Episode>>(emptyMap())
     internal val inFlightResolutions = java.util.Collections.synchronizedSet(mutableSetOf<String>())
 
+    /** Shows listened to in order that have nothing left to suggest, by the place and newest episode they were checked at. */
+    internal val serialCaughtUpKeys = java.util.concurrent.ConcurrentHashMap<String, String>()
+
     // True when the current filter selection was applied automatically (single-show state)
     // rather than by an explicit user tap. Used to decide whether to fall back to the mix
     // when the subscription set grows past one show.
@@ -365,6 +370,11 @@ class HomeViewModel(
 
     fun selectPodcast(podcastId: String?) {
         applySelection(podcastId, isAuto = false)
+    }
+
+    /** Try again after the selected show's episodes failed to load. */
+    fun retrySelectedShow() {
+        _selectedShowRetryVersion.value += 1L
     }
 
     private fun applySelection(

@@ -19,6 +19,7 @@ internal fun HomeUiState.withCurrentCategoryDiscovery(previous: HomeUiState): Ho
 internal fun HomeUiState.withSelectedShowFrom(previous: HomeUiState): HomeUiState = copy(
     selectedPodcastId = previous.selectedPodcastId,
     selectedPodcastEpisodes = previous.selectedPodcastEpisodes,
+    selectedShowStatus = previous.selectedShowStatus,
     isSelectedPodcastLoading = previous.isSelectedPodcastLoading,
     isSelectedRssRefreshing = previous.isSelectedRssRefreshing,
 )
