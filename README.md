@@ -63,7 +63,14 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 ### Upcoming
 
 <!-- release-upcoming:start -->
-New features and improvements for the next release are currently in development.
+<b>⚡ Improved:</b>
+<ul align="left">
+<li>On Home, a show you listen to oldest first now picks up exactly where you left off, even deep into a long series, and skips trailers. Daily mix suggests the same next episode.</li>
+</ul>
+<b>🐛 Fixed:</b>
+<ul align="left">
+<li>On Home, a show you've heard every episode of now lists its latest episodes instead of an empty list, and a show whose episodes can't load lets you try again.</li>
+</ul>
 <!-- release-upcoming:end -->
 
 

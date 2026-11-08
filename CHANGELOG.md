@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Home's selected-show list and Daily mix share `HomeShowEpisodesLogic`: in-order shows list from the listener's place (in progress, else after the furthest finished episode, trailers skipped) via `SeriesEpisodesLoader` instead of the first 100 episodes; newest-first shows check the newest 50. ([#1243](https://github.com/boxcreate/boxlore/pull/1243)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- A show with nothing left lists its latest episodes as caught up instead of an empty state; a failed load offers Try again; the NEW tag only marks the show's two newest episodes. ([#1243](https://github.com/boxcreate/boxlore/pull/1243)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Daily mix stops re-resolving a finished in-order show on every history update (`HomeSerialLogic.resolveKey`). ([#1243](https://github.com/boxcreate/boxlore/pull/1243)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 ## [v0.0.31] - 2026-11-07
 
 ### Added
