@@ -72,7 +72,7 @@ src/main/res/values/                   # echo_onboarding.xml, onboarding_suggest
 
 ## Threading / lifecycle
 
-- `OnboardingViewModel` is constructed directly in the app root's composition (`remember`), not through a `ViewModelStore`, so it outlives the onboarding route. Its `onCleared` cancels Echo and deck requests, releases the clip pool and records abandonment.
+- `OnboardingViewModel` is one instance per activity, kept in the activity's `ViewModelStore` by `:app` (`rememberOnboardingViewModel`). Every onboarding flow shares it (search, Echo, genres, the import sheet, Home's AI entry), so picks carry over between them. Its `onCleared` runs when the activity finishes: it cancels Echo and deck requests, releases the clip pool and reports an unfinished onboarding as abandoned.
 - Echo turn, synthesis, deck and similar-shows jobs cancel on Back, Search, the topic fallback, restart and skip. Cancelled work never replaces a restored question or shows an error; cancellation is rethrown, not reported.
 - Genre synthesis runs `async` on `Dispatchers.IO` and catches failure inside the child (`orFallbackOnFailure`), because an exception escaping an `async` child fails its parent.
 - Subscribing a show asks the application-scoped `subscriptionForegroundSync` for a catalog ingest, so leaving onboarding cannot cancel it.
