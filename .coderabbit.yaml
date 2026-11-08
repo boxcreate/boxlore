@@ -51,11 +51,14 @@ reviews:
 
     ## Module README (must enforce)
 
-    - If the PR changes any production Kotlin under app/, core/<module>/, or feature/<module>/
-      (paths containing src/main), the matching module README.md must be updated in the same PR
-      (see docs/MODULE_README_TEMPLATE.md). No exceptions for "internal-only", formatting-adjacent,
-      or "behavior unchanged" claims when production sources in that module changed.
-    - Flag missing module README updates whenever production Kotlin in that module changed.
+    - Ask for a module README update only when the PR changes something the README documents:
+      module ownership or purpose, public API types other modules use, package structure, Gradle
+      dependencies, threading/lifecycle, or persisted names and IDs (prefs keys, database and
+      worker/service names, deep links, ID schemes). Bug fixes, UI tweaks and refactors need none.
+    - Flag README edits that add change history or dates, plan/PR/decision labels, exact sizes,
+      colours or timings, lists of individual tests, manual test steps, or server and security
+      details, or that push a module README past about 2,000 words (see
+      docs/MODULE_README_TEMPLATE.md). Prefer rewriting an existing line over adding a new one.
     - Do not require hand-edits to root CHANGELOG.md or README Upcoming (changelog-on-merge owns those).
 
     ## Unit tests (must enforce)
@@ -108,16 +111,16 @@ reviews:
         Feature module rules:
         - Must not import other feature packages or PostHog.
         - Jetpack Compose: unstable params, heavy work in composition, keyed lazy items.
-        - If any production Kotlin under feature/<name>/src/main/ changed, require
-          feature/<name>/README.md updated in the same PR (unconditional).
+        - Module README updates follow the "Module README" rules above (only when documented
+          contracts change).
         - Require matching JVM src/test coverage for new/changed logic helpers and ViewModel logic.
     - path: "core/**/*.kt"
       instructions: |
         Core module rules:
         - Respect module ownership in ARCHITECTURE.md (catalog vs playback vs downloads, etc.).
         - DAO/repository/network must not block the main thread.
-        - If any production Kotlin under core/<name>/src/main/ changed, require
-          core/<name>/README.md updated in the same PR (unconditional).
+        - Module README updates follow the "Module README" rules above (only when documented
+          contracts change).
         - Require hermetic JVM tests for new/changed engines, DAOs math, and pure helpers.
     - path: "core/network/**"
       instructions: |
@@ -127,8 +130,8 @@ reviews:
       instructions: |
         App shell: AppContainer is the only composition root. No second graph.
         NavHost lifecycle-aware collection.
-        If any production Kotlin under app/src/main/ changed, require app/README.md updated
-        in the same PR (unconditional).
+        Module README updates follow the "Module README" rules above (only when documented
+        contracts change).
         Prefer JVM tests for pure helpers; do not demand androidTest.
     - path: "**/src/main/**/*.kt"
       instructions: |
@@ -136,9 +139,10 @@ reviews:
         *Test.kt under src/test for that behavior. Flag gaps explicitly.
     - path: "**/README.md"
       instructions: |
-        Module READMEs must match MODULE_README_TEMPLATE sections.
-        Whenever production Kotlin in the same module changed in the PR, the README must also
-        change in the PR (unconditional).
+        Module READMEs must match MODULE_README_TEMPLATE sections and its "What doesn't belong"
+        list. They describe the module as it is now: flag history, dates, plan or PR labels,
+        design measurements, test-by-test lists, server or security details, text after
+        "See also", and growth past about 2,000 words.
         Flag READMEs that claim androidTest/Espresso/instrumented suites (removed).
 
   auto_review:
@@ -160,8 +164,8 @@ reviews:
         enabled: true
         instructions: |
           Do NOT manually edit CHANGELOG.md or README Upcoming Changes on PRs — the changelog-on-merge workflow handles both after merge.
-          If reviewing a PR, ensure the PR title/body clearly describes user-visible and technical changes for Groq to summarize.
-          CHANGELOG uses developer/Keep a Changelog tone; README uses listener-friendly plain English.
+          Developer wording goes in the PR template's changelog region; a listener-facing change edits release-notes/upcoming.md.
+          CHANGELOG uses developer/Keep a Changelog tone; listener notes use plain listener English.
 
   pre_merge_checks:
     title:
@@ -185,15 +189,17 @@ reviews:
           Hilt/Koin/Dagger/MockK; a second PlaybackRepository or AppContainer graph;
           catalog depending on designsystem or playback; broken identity/storage contracts
           without migration. Request changes with a concrete fix pointing at ARCHITECTURE.md.
-      - name: Module README updated
+      - name: Module README kept true
         mode: error
         instructions: |
-          Fail whenever the PR changes any production Kotlin under app/src/main/,
-          core/<module>/src/main/, or feature/<module>/src/main/ unless the matching
-          module README.md is also modified in the same PR (see docs/MODULE_README_TEMPLATE.md).
-          This is unconditional — do not exempt "internal-only", "no API change", or
-          "behavior unchanged" claims. Pure test-only PRs (no src/main production Kotlin
-          changes) may pass. Do not require CHANGELOG.md edits.
+          Fail if the PR changes a contract a module README documents (module ownership or
+          purpose, public API types other modules use, package structure, Gradle dependencies,
+          threading/lifecycle, or persisted names and IDs such as prefs keys, database and
+          worker/service names, deep links and ID schemes) without updating that module's
+          README.md. Do not fail for bug fixes, UI tweaks or refactors that leave those
+          contracts unchanged. Also fail if a module README edit adds change history or dates,
+          plan/PR/decision labels, or server and security details
+          (see docs/MODULE_README_TEMPLATE.md). Do not require CHANGELOG.md edits.
       - name: JVM tests for changed logic
         mode: error
         instructions: |
