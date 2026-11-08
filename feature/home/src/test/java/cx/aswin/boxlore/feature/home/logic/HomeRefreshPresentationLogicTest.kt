@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.home.logic
 
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.home.HomeUiState
+import cx.aswin.boxlore.feature.home.SelectedShowStatus
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -69,6 +70,17 @@ class HomeRefreshPresentationLogicTest {
             assertEquals(filtered, tick.selectedPodcastEpisodes)
             assertFalse(tick.isSelectedPodcastLoading)
         }
+    }
+
+    @Test
+    fun `base Home updates keep the selected show's caught-up, failed and NEW-tag status`() {
+        val status = SelectedShowStatus(caughtUp = true, loadFailed = true, newestEpisodeIds = setOf("ep-9", "ep-8"))
+        val previous = HomeUiState(heroItems = emptyList(), discoverPodcasts = emptyList(), selectedPodcastId = "show", selectedShowStatus = status)
+
+        // A playback-driven rebuild starts from the default status; the collector's status must win.
+        val tick = HomeUiState(heroItems = emptyList(), discoverPodcasts = emptyList(), selectedPodcastId = "show").withSelectedShowFrom(previous)
+
+        assertEquals(status, tick.selectedShowStatus)
     }
 
     @Test

@@ -8,6 +8,8 @@ import cx.aswin.boxlore.feature.home.logic.HomeForegroundSyncLogic
 import cx.aswin.boxlore.feature.home.logic.HomeSelectedPodcastLogic
 import cx.aswin.boxlore.feature.home.logic.HomeShowEpisodesLogic
 import cx.aswin.boxlore.feature.home.logic.HomeYourShowsSignals
+import cx.aswin.boxlore.feature.home.logic.SelectedShowLoadState
+import cx.aswin.boxlore.feature.home.logic.SelectedShowLoadTransitions
 import cx.aswin.boxlore.feature.home.logic.SeriesEpisodesLoader
 import cx.aswin.boxlore.feature.home.logic.ShowEpisodesList
 import cx.aswin.boxlore.feature.home.logic.ShowEpisodesPool
@@ -42,37 +44,29 @@ internal fun HomeViewModel.observeSelectedPodcast() {
             }.distinctUntilChanged()
 
         var previouslyLoadedPodcastId: String? = null
+        var state = SelectedShowLoadTransitions.cleared
+        fun publish(next: SelectedShowLoadState) {
+            state = next
+            _selectedShowPool.value = next.pool
+            _isSelectedPodcastLoading.value = next.loading
+            _selectedShowLoadFailed.value = next.failed
+        }
         signal.collectLatest { info ->
             if (info == null) {
-                _selectedShowPool.value = null
-                _isSelectedPodcastLoading.value = false
-                _selectedShowLoadFailed.value = false
+                publish(SelectedShowLoadTransitions.cleared)
                 previouslyLoadedPodcastId = null
                 return@collectLatest
             }
             val switchingPodcast = info.podcastId != previouslyLoadedPodcastId
-            if (switchingPodcast) {
-                _selectedShowPool.value = null
-                previouslyLoadedPodcastId = info.podcastId
-            }
-            val showLoading =
-                HomeSelectedPodcastLogic.shouldShowLoading(
-                    switchingPodcast = switchingPodcast,
-                    listEmpty = _selectedShowPool.value == null,
-                )
-            _isSelectedPodcastLoading.value = showLoading
-            if (showLoading) _selectedShowLoadFailed.value = false
+            previouslyLoadedPodcastId = info.podcastId
+            publish(SelectedShowLoadTransitions.started(state, switchingPodcast))
             try {
-                _selectedShowPool.value = loadSelectedShowPool(info)
-                _selectedShowLoadFailed.value = false
+                publish(SelectedShowLoadTransitions.succeeded(loadSelectedShowPool(info)))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 android.util.Log.e("HomeViewModelFilteredView", "Failed to fetch episodes for filter: ${info.podcastId}", e)
-                // A refresh that fails keeps the list on screen; only a show with nothing to show says it failed.
-                if (_selectedShowPool.value == null) _selectedShowLoadFailed.value = true
-            } finally {
-                _isSelectedPodcastLoading.value = false
+                publish(SelectedShowLoadTransitions.failed(state))
             }
         }
     }

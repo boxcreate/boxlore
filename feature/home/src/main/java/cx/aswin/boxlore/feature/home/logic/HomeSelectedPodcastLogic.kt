@@ -40,3 +40,33 @@ internal object HomeSelectedPodcastLogic {
         listEmpty: Boolean,
     ): Boolean = switchingPodcast || listEmpty
 }
+
+/** The selected show's load state: the episodes loaded for it, whether the list shows a skeleton, and whether the last load failed with nothing to show. */
+internal data class SelectedShowLoadState(
+    val pool: ShowEpisodesPool? = null,
+    val loading: Boolean = false,
+    val failed: Boolean = false,
+)
+
+/** How the selected show's load state moves as loads start, succeed and fail. */
+internal object SelectedShowLoadTransitions {
+    val cleared = SelectedShowLoadState()
+
+    /**
+     * A load starts. Switching shows drops the old show's episodes. The skeleton shows only when
+     * nothing is on screen, and then an earlier failure is cleared, so Try again shows the skeleton.
+     */
+    fun started(
+        state: SelectedShowLoadState,
+        switchingPodcast: Boolean,
+    ): SelectedShowLoadState {
+        val pool = if (switchingPodcast) null else state.pool
+        val loading = HomeSelectedPodcastLogic.shouldShowLoading(switchingPodcast, listEmpty = pool == null)
+        return SelectedShowLoadState(pool = pool, loading = loading, failed = state.failed && !loading)
+    }
+
+    fun succeeded(pool: ShowEpisodesPool): SelectedShowLoadState = SelectedShowLoadState(pool = pool)
+
+    /** A failed refresh keeps the list on screen; only a show with nothing to show says it failed. */
+    fun failed(state: SelectedShowLoadState): SelectedShowLoadState = state.copy(loading = false, failed = state.pool == null)
+}
