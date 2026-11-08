@@ -426,7 +426,7 @@ The API is documented **by path and payload shape only**. How it retrieves or ra
 | `GET /search/semantic` | Explore natural-language search (`country` + optional `languages`; oversample + `startsWith`; conditional ≤2 eps/show) |
 | `GET /trending` | Charts / Discover / queue tiers |
 
-**Auth (client view):** app key on requests; optional App Check JWT when enforced; device UUID scopes per-device caches; app version for analytics slicing.
+**Auth (client view):** requests carry an API session (see `core/network/README.md`); device UUID scopes per-device caches; app version for analytics slicing.
 
 ## Recommendations v2 vs legacy v1
 
@@ -513,7 +513,7 @@ Negative rewards + SHOW facet drop → future Home/Queue priors and learned scor
 
 ### E — Explore semantic search
 
-API oversamples Qdrant (no exact `language` match), keeps hits whose language starts with
+The API keeps hits whose language starts with
 the resolved prefixes (so `en-us` matches `en`), applies a per-show episode cap only when
 ≥3 distinct shows are in the pool, and returns relevance-ordered hits → client lightly
 re-ranks inside tie windows with `DISCOVERY`.

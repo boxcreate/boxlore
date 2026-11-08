@@ -1,5 +1,3 @@
-<!-- Maintainer checkouts: read the PR rules in AGENTS.internal.md before filling or editing this template. -->
-
 ## Title (required)
 
 Use Conventional Commits. Examples from this repo:

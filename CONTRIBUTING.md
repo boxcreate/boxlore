@@ -77,7 +77,7 @@ BOXLORE_PUBLIC_KEY=demo-placeholder-key
 
 Rebuild after changing these values. The placeholder has a valid URL format but supplies no backend: search, recommendations, and briefing cannot retrieve live results.
 
-Against a real backend, the app signs requests with an API session from `POST /auth/session`, not with `BOXLORE_PUBLIC_KEY` (it is still a build field but is never sent). Debug builds attest with the Firebase App Check debug provider. Without a registered debug token they get a limited session, which works except for AI onboarding. To give every debug install the same registered token, add an optional `BOXLORE_APPCHECK_DEBUG_SECRET=<uuid>` to `local.properties` and register that UUID as an App Check debug token in the Firebase console. Keep it out of Git like the rest of the file. Use local library, downloads, and RSS/OPML flows for checks that do not need the API. Working backend and Firebase services require separately provisioned configuration.
+Against a real backend, the app signs requests with an API session from `POST /auth/session`, not with `BOXLORE_PUBLIC_KEY` (it is still a build field but is never sent). Debug builds use the Firebase App Check debug provider. Use local library, downloads, and RSS/OPML flows for checks that do not need the API. Working backend and Firebase services require separately provisioned configuration.
 
 Connect a device or start an emulator, then install and launch:
 
@@ -87,4 +87,4 @@ adb devices
 adb shell am start -n cx.aswin.boxlore/.MainActivity
 ```
 
-Use the [test selection guide](docs/TESTING.md#choose-checks-for-a-change) for validation commands and [architecture guide](ARCHITECTURE.md) for module ownership. Local maintainer environments also use root `AGENTS.internal.md` for private workflow and operational instructions.
+Use the [test selection guide](docs/TESTING.md#choose-checks-for-a-change) for validation commands and [architecture guide](ARCHITECTURE.md) for module ownership.
