@@ -293,13 +293,14 @@ internal fun widgetGalleryRows(widgets: List<AddableWidget>): List<List<AddableW
     var index = 0
     while (index < widgets.size) {
         val widget = widgets[index]
-        val next = widgets.getOrNull(index + 1)
-        val pair = widget.previewWidthDp <= SMALL_WIDGET_MAX_WIDTH_DP && next != null && next.previewWidthDp <= SMALL_WIDGET_MAX_WIDTH_DP
-        rows += if (pair) listOf(widget, next!!) else listOf(widget)
-        index += if (pair) 2 else 1
+        val partner = widgets.getOrNull(index + 1)?.takeIf { widget.isSmall && it.isSmall }
+        rows += listOfNotNull(widget, partner)
+        index += if (partner != null) 2 else 1
     }
     return rows
 }
+
+private val AddableWidget.isSmall: Boolean get() = previewWidthDp <= SMALL_WIDGET_MAX_WIDTH_DP
 
 private const val SMALL_WIDGET_MAX_WIDTH_DP = 200
 

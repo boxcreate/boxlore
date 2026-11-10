@@ -58,8 +58,10 @@ internal class LibraryWidgetRemoteViewsFactory(
 
     override fun onCreate() = Unit
 
+    private fun savedSnapshot(): LibraryWidgetSnapshot = LibraryWidgetSnapshotStore(context).read() ?: LibraryWidgetSnapshot()
+
     override fun onDataSetChanged() {
-        val snapshot = preset ?: LibraryWidgetSnapshotStore(context).read() ?: LibraryWidgetSnapshot()
+        val snapshot = preset ?: savedSnapshot()
         shows = snapshot.subscriptions
         episodes = snapshot.newEpisodes
         chrome = WidgetChrome.resolve(context)
