@@ -387,6 +387,7 @@ class AutoBrowseLibraryCallbackTest {
         val car = controllerFrom("com.google.android.projection.gearhead")
         runBlocking {
             `when`(treeBuilder.getNewEpisodesChildren()).thenReturn(listOf(episodeItem("1"), episodeItem("2"), episodeItem("3")))
+            `when`(mediaResolver.resolveMediaItem(mockAny())).thenAnswer { it.arguments[0] }
         }
         callback.onGetChildren(session, car, AutoBrowseContract.HOME_NEW_EPISODES_ID, 0, 50, null).get()
 
@@ -394,6 +395,27 @@ class AutoBrowseLibraryCallbackTest {
 
         assertEquals(listOf("episode:2", "episode:3"), played.map { it.mediaId })
         assertEquals("android_auto_new_episodes", cx.aswin.boxlore.core.analytics.PendingEntryPoint.consume()?.get("entry_point"))
+        // Each row goes through the resolver, which is what points a downloaded episode at its saved file.
+        runBlocking { verify(mediaResolver, Mockito.times(2)).resolveMediaItem(mockAny()) }
+    }
+
+    @Test
+    fun `a list browsed by another controller never becomes the car's list`() {
+        // The tracker is shared: a Bluetooth or system browse of Downloads must not relabel or redirect a car tap.
+        val session = mock(MediaLibrarySession::class.java)
+        val car = controllerFrom("com.google.android.projection.gearhead")
+        val other = controllerFrom("com.android.bluetooth")
+        runBlocking {
+            `when`(treeBuilder.getNewEpisodesChildren()).thenReturn(listOf(episodeItem("1"), episodeItem("2")))
+            `when`(treeBuilder.getDownloadsChildren()).thenReturn(listOf(episodeItem("1"), episodeItem("9")))
+            `when`(mediaResolver.resolveMediaItem(mockAny())).thenAnswer { it.arguments[0] }
+        }
+        callback.onGetChildren(session, car, AutoBrowseContract.HOME_NEW_EPISODES_ID, 0, 50, null).get()
+        callback.onGetChildren(session, other, AutoBrowseContract.DOWNLOADS_ID, 0, 50, null).get()
+
+        val played = callback.onAddMediaItems(session, car, mutableListOf(MediaItem.Builder().setMediaId("episode:1").build())).get()
+
+        assertEquals(listOf("episode:1", "episode:2"), played.map { it.mediaId })
     }
 
     @Test
@@ -402,6 +424,7 @@ class AutoBrowseLibraryCallbackTest {
         val car = controllerFrom("com.google.android.projection.gearhead")
         runBlocking {
             `when`(treeBuilder.getDownloadsChildren()).thenReturn(listOf(episodeItem("a"), episodeItem("b")))
+            `when`(mediaResolver.resolveMediaItem(mockAny())).thenAnswer { it.arguments[0] }
         }
         callback.onGetChildren(session, car, AutoBrowseContract.OPEN_PREFIX + AutoBrowseContract.DOWNLOADS_ID, 0, 50, null).get()
 
@@ -525,6 +548,25 @@ class AutoBrowseLibraryCallbackTest {
         verify(player).setMediaItems(last.mediaItems, 0, 42_000L)
         verify(player).prepare()
         verify(player, Mockito.never()).play()
+    }
+
+    @Test
+    fun `the last episode still loads when the car signal arrives a moment after Android Auto connects`() {
+        // Regression: seen on a real head unit. Android Auto connected first and reported the car a moment later.
+        val player = mock(Player::class.java)
+        val session = carSessionWith(player)
+        val last = MediaSession.MediaItemsWithStartPosition(listOf(episodeItem("last")), 0, 0L)
+        runBlocking { `when`(resumptionHandler.resolveResumption(session)).thenReturn(last) }
+        val uiMode = context.getSystemService(android.app.UiModeManager::class.java)
+
+        callback.onConnect(session, controllerFrom("com.google.android.projection.gearhead"))
+        verify(player, Mockito.never()).prepare()
+        uiMode.enableCarMode(0)
+        try {
+            verify(player, Mockito.timeout(5_000)).prepare()
+        } finally {
+            uiMode.disableCarMode(0)
+        }
     }
 
     @Test

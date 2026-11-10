@@ -22,6 +22,7 @@ internal object AutoArtworkSourceStore {
     private const val COMMIT_WAIT_MS = 500L
     private const val MAX_SAVED_SOURCES = 4_000
     private val pruneScheduled = AtomicBoolean(false)
+    private val pruneLock = Any()
 
     private val memory = ConcurrentHashMap<String, String>()
     private val persistExecutor =
@@ -75,25 +76,33 @@ internal object AutoArtworkSourceStore {
 
     /**
      * Sources are never removed one by one, so once the file is far larger than any car session
-     * needs it is emptied; lists put their sources back as they are next built. Runs before the
-     * first save of a process, when the car holds no link from this run yet.
+     * needs it is cut back to the sources this run has used; lists put the rest back as they are
+     * next built. Holding [pruneLock] with [get] keeps a read from bringing back, in memory only, a
+     * source the prune is dropping: a later equal [put] would then skip the save it needs.
      */
     private fun pruneIfOversized(appContext: Context) {
         runCatching {
             val prefs = appContext.getSharedPreferences(SOURCE_PREFS, Context.MODE_PRIVATE)
-            if (prefs.all.size > MAX_SAVED_SOURCES) prefs.edit().clear().commit()
+            synchronized(pruneLock) {
+                if (prefs.all.size <= MAX_SAVED_SOURCES) return
+                val editor = prefs.edit().clear()
+                memory.forEach { (key, value) -> editor.putString(key, value) }
+                if (!editor.commit()) Log.w(TAG, "Artwork source prune was not saved")
+            }
         }.onFailure { Log.w(TAG, "Unable to prune artwork sources", it) }
     }
 
     fun get(context: Context, key: String,): String? {
         memory[key]?.let { return it }
-        val persisted =
-            context
-                .getSharedPreferences(SOURCE_PREFS, Context.MODE_PRIVATE)
-                .getString(key, null)
-                ?: return null
-        memory[key] = persisted
-        return persisted
+        synchronized(pruneLock) {
+            val persisted =
+                context
+                    .getSharedPreferences(SOURCE_PREFS, Context.MODE_PRIVATE)
+                    .getString(key, null)
+                    ?: return null
+            memory[key] = persisted
+            return persisted
+        }
     }
 
     /** Test-only: clear in-memory overlay without wiping SharedPreferences. */

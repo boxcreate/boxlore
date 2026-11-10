@@ -88,12 +88,6 @@ internal object AutoBrowseContract {
         playable = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
     )
 
-    /** Home: every block is a tile, the playable Continue block included. */
-    fun blockChildrenExtras(): Bundle = contentStyleExtras(
-        browsable = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
-        playable = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
-    )
-
     /** The node a browse request is really for: a Home block's `open:` ID maps to the list it opens. */
     fun targetNode(parentId: String): String = parentId.removePrefix(OPEN_PREFIX)
 

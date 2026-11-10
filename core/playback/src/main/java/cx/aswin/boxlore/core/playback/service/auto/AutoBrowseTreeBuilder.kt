@@ -187,12 +187,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
                 source = AutoBrowseContract.SOURCE_QUEUE,
                 artworkUri = rowArt(episode.imageUrl, episode.podcastImageUrl ?: played?.podcastImageUrl, episode.podcastId),
                 podcastTitle = episode.podcastTitle,
-                mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX,
-                groupTitle = groupTitle,
-                isDownloaded = episode.id in downloaded,
-                subtitle = episodeSubtitle(episode.podcastTitle, episode, played, withDate = false),
-                progress = played?.progressFraction(),
-                isCompleted = played?.isCompleted == true,
+                row = AutoEpisodeRow(mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX, groupTitle = groupTitle, isDownloaded = episode.id in downloaded, subtitle = episodeSubtitle(episode.podcastTitle, episode, played, withDate = false), progress = played?.progressFraction(), isCompleted = played?.isCompleted == true),
             )
         }
     }
@@ -211,9 +206,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
                 source = AutoBrowseContract.SOURCE_NEW,
                 artworkUri = rowArt(episode.imageUrl, podcast.imageUrl, podcast.podcastId),
                 podcastTitle = podcast.title,
-                isDownloaded = episode.id in downloaded,
-                subtitle = episodeSubtitle(podcast.title, episode, played, withDate = true),
-                progress = played?.progressFraction(),
+                row = AutoEpisodeRow(isDownloaded = episode.id in downloaded, subtitle = episodeSubtitle(podcast.title, episode, played, withDate = true), progress = played?.progressFraction()),
             )
         }
     }
@@ -292,11 +285,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
                 source = AutoBrowseContract.SOURCE_SHOW,
                 artworkUri = rowArt(episode.imageUrl, podcastEntity?.imageUrl ?: episode.podcastImageUrl, podcastId),
                 podcastTitle = showTitle,
-                groupTitle = groupTitle,
-                isDownloaded = episode.id in downloaded,
-                subtitle = episodeSubtitle(null, episode, played, withDate = true),
-                progress = played?.progressFraction(),
-                isCompleted = played?.isCompleted == true,
+                row = AutoEpisodeRow(groupTitle = groupTitle, isDownloaded = episode.id in downloaded, subtitle = episodeSubtitle(null, episode, played, withDate = true), progress = played?.progressFraction(), isCompleted = played?.isCompleted == true),
             )
         }
         return rows(started, host.getString(R.string.auto_group_continue).takeIf { titled }) +
@@ -381,9 +370,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
                         source = AutoBrowseContract.SOURCE_MIXTAPE,
                         artworkUri = rowArt(episode.imageUrl, episode.podcastImageUrl ?: podcast.imageUrl, podcast.id),
                         podcastTitle = podcast.title,
-                        isDownloaded = episode.id in downloaded,
-                        subtitle = episodeSubtitle(podcast.title, episode, history, withDate = false),
-                        progress = history?.progressFraction(),
+                        row = AutoEpisodeRow(isDownloaded = episode.id in downloaded, subtitle = episodeSubtitle(podcast.title, episode, history, withDate = false), progress = history?.progressFraction()),
                     )
                 }
         lastMixtape = items
@@ -606,9 +593,11 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
      */
     private fun episodeSubtitle(showTitle: String?, episode: Episode, played: ListeningHistoryEntity?, withDate: Boolean): String {
         val durationMs = episode.duration.toLong() * 1_000L
-        val started = played != null && !played.isCompleted && played.progressMs > 0
-        val length = if (started && played != null) {
-            AutoMediaItemFactory.formatTimeLeft(played.progressMs, played.durationMs.takeIf { it > 0 } ?: durationMs)
+        val started = played?.takeIf { !it.isCompleted && it.progressMs > 0 }
+        val totalMs = started?.durationMs?.takeIf { it > 0 } ?: durationMs
+        // With no known length there is no time left to state; the row then says nothing rather than "Almost done".
+        val length = if (started != null && totalMs > 0) {
+            AutoMediaItemFactory.formatTimeLeft(started.progressMs, totalMs)
         } else {
             AutoMediaItemFactory.formatDuration(durationMs)
         }

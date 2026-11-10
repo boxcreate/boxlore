@@ -170,6 +170,17 @@ class AutoBrowseTreeBuilderTest {
     }
 
     @Test
+    fun aStartedEpisodeOfUnknownLengthDoesNotClaimToBeAlmostDone() = runBlocking {
+        // Regression: with no length on the episode or its history row, the time left came out as zero.
+        database.podcastDao().upsertRow(show("1", latest = episode("e1", publishedSeconds = 0L, durationSeconds = 0)))
+        database.listeningHistoryDao().upsertAll(listOf(history("e1", progressMs = 60_000L, playedAt = 5L).copy(durationMs = 0L)))
+
+        val row = treeBuilder.getNewEpisodesChildren().single()
+
+        assertEquals("Show 1", row.mediaMetadata.subtitle.toString())
+    }
+
+    @Test
     fun aShowWithAFreshUnplayedEpisodeSaysSoOnItsTile() = runBlocking {
         `when`(host.getString(R.string.auto_new_today)).thenReturn("New today")
         database.podcastDao().upsertRow(show("1", latest = episode("fresh", publishedSeconds = nowSeconds)))

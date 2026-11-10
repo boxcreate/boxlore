@@ -30,6 +30,16 @@ internal data class AutoPlayableSpec(
     val supportedCommands: List<String>? = null,
 )
 
+/** How an episode's row is shown, beyond the episode itself. */
+internal data class AutoEpisodeRow(
+    val groupTitle: String? = null,
+    val mediaIdPrefix: String = "episode:",
+    val isDownloaded: Boolean = false,
+    val subtitle: String? = null,
+    val progress: Double? = null,
+    val isCompleted: Boolean = false,
+)
+
 @OptIn(UnstableApi::class)
 internal object AutoMediaItemFactory {
     private val episodeCommands =
@@ -161,32 +171,26 @@ internal object AutoMediaItemFactory {
         )
     }
 
-    @Suppress("LongParameterList")
     fun fromEpisode(
         episode: Episode,
         source: String,
         artworkUri: Uri?,
         podcastTitle: String? = episode.podcastTitle,
-        groupTitle: String? = null,
-        mediaIdPrefix: String = "episode:",
-        isDownloaded: Boolean = false,
-        subtitle: String? = null,
-        progress: Double? = null,
-        isCompleted: Boolean = false,
+        row: AutoEpisodeRow = AutoEpisodeRow(),
     ): MediaItem = playable(
         AutoPlayableSpec(
-            mediaId = "$mediaIdPrefix${episode.id}",
+            mediaId = "${row.mediaIdPrefix}${episode.id}",
             title = episode.title,
             podcastTitle = podcastTitle,
-            subtitle = subtitle ?: buildDurationSubtitle(podcastTitle, episode.duration.toLong() * 1_000L),
+            subtitle = row.subtitle ?: buildDurationSubtitle(podcastTitle, episode.duration.toLong() * 1_000L),
             artworkUri = artworkUri,
             uri = episode.audioUrl,
             durationMs = episode.duration.toLong() * 1_000L,
             source = source,
-            groupTitle = groupTitle,
-            progress = progress,
-            isCompleted = isCompleted,
-            isDownloaded = isDownloaded,
+            groupTitle = row.groupTitle,
+            progress = row.progress,
+            isCompleted = row.isCompleted,
+            isDownloaded = row.isDownloaded,
             customCacheKey = EpisodeMediaCacheKey.of(episode.id, episode.audioUrl),
         ),
     ).let { item ->

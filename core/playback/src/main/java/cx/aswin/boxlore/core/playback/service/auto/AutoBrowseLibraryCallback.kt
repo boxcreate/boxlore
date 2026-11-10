@@ -88,15 +88,15 @@ internal class AutoBrowseLibraryCallback(
         AutoBrowseControllerMatcher.isAndroidAuto(session, controller)
 
     override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult {
-        // Android Auto's app also connects without a car (to list media apps); count only real car connections.
-        if (isAndroidAuto(session, controller) && CarConnectionState.isInCar(host.asContext())) {
-            connectedAtMs[controller] = System.currentTimeMillis()
-            AnalyticsHelper.trackAndroidAutoConnected(sessionId = controller.packageName)
-            preloadLastEpisode(session)
-        }
         if (isAndroidAuto(session, controller)) {
             carBrowsers.add(controller)
             phoneChanges.start()
+            // Android Auto's app also connects without a car (to list media apps); only a real drive counts.
+            onceInCar(controller) {
+                connectedAtMs[controller] = System.currentTimeMillis()
+                AnalyticsHelper.trackAndroidAutoConnected(sessionId = controller.packageName)
+                preloadLastEpisode(session)
+            }
         }
         val defaultResult = super.onConnect(session, controller)
         val sessionCommands =
@@ -126,6 +126,29 @@ internal class AutoBrowseLibraryCallback(
     }
 
     /**
+     * Runs [action] once the phone is really in a car. Android Auto connects to the player a moment
+     * before it reports that it is projecting to a screen, so the answer at connect time can be a
+     * false "no"; this keeps asking for a short while, and stops when the controller goes away.
+     */
+    private fun onceInCar(controller: MediaSession.ControllerInfo, action: suspend () -> Unit) {
+        host.serviceScope.launch {
+            try {
+                var waitedMs = 0L
+                while (!CarConnectionState.isInCar(host.asContext())) {
+                    if (waitedMs >= IN_CAR_WAIT_MS || controller !in carBrowsers) return@launch
+                    kotlinx.coroutines.delay(IN_CAR_POLL_MS)
+                    waitedMs += IN_CAR_POLL_MS
+                }
+                if (controller in carBrowsers) action()
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                android.util.Log.w("AutoBrowse", "Unable to act on the car connecting", error)
+            }
+        }
+    }
+
+    /**
      * Loads the last episode, paused, when a car connects and nothing is loaded.
      *
      * Until the player holds an item the car has nothing to show: its card reads "Tap to open" with
@@ -133,22 +156,20 @@ internal class AutoBrowseLibraryCallback(
      * This runs the same lookup ([AutoPlaybackResumptionHandler.resolveResumption]) up front, so the
      * card shows the episode and one tap resumes it. Nothing starts playing.
      */
-    private fun preloadLastEpisode(session: MediaSession) {
-        host.serviceScope.launch {
-            try {
-                val player = session.player
-                if (player.mediaItemCount > 0) return@launch
-                val last = resumptionHandler.resolveResumption(session)
-                // Anything that started while the episode was being looked up keeps the player.
-                if (player.mediaItemCount > 0 || last.mediaItems.isEmpty()) return@launch
-                player.setMediaItems(last.mediaItems, last.startIndex, last.startPositionMs)
-                player.prepare()
-            } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                throw cancelled
-            } catch (error: Exception) {
-                // Nothing to resume (a new listener, or everything finished): the card stays as it was.
-                android.util.Log.d("AutoBrowse", "No episode to load for the car: ${error.message}")
-            }
+    private suspend fun preloadLastEpisode(session: MediaSession) {
+        try {
+            val player = session.player
+            if (player.mediaItemCount > 0) return
+            val last = resumptionHandler.resolveResumption(session)
+            // Anything that started while the episode was being looked up keeps the player.
+            if (player.mediaItemCount > 0 || last.mediaItems.isEmpty()) return
+            player.setMediaItems(last.mediaItems, last.startIndex, last.startPositionMs)
+            player.prepare()
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            // Nothing to resume (a new listener, or everything finished): the card stays as it was.
+            android.util.Log.d("AutoBrowse", "No episode to load for the car: ${error.message}")
         }
     }
 
@@ -348,7 +369,7 @@ internal class AutoBrowseLibraryCallback(
                         host.asContext(),
                         episode.imageUrl ?: episode.podcastImageUrl,
                     ),
-                    mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX,
+                    row = AutoEpisodeRow(mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX),
                 ),
             )
         }
@@ -461,7 +482,8 @@ internal class AutoBrowseLibraryCallback(
             try {
                 val node = AutoBrowseContract.targetNode(parentId)
                 val items = childrenOf(node, browser)
-                if (page == 0) rememberForPlay(node, items)
+                // Only what the car was shown counts: another controller's browse must not replace the car's list.
+                if (page == 0 && isAndroidAuto(session, browser)) rememberForPlay(node, items)
                 LibraryResult.ofItemList(
                     ImmutableList.copyOf(treeBuilder.slicePage(items, page, pageSize)),
                     params,
@@ -576,7 +598,9 @@ internal class AutoBrowseLibraryCallback(
                         ?: voiceSearch.buildSearchResults(query).also {
                             synchronized(searchCache) { searchCache[query] = it }
                         }
-                if (page == 0) playContext.record(SEARCH_NODE, AutoBrowseContract.SOURCE_SEARCH, continues = false, items = results)
+                if (page == 0 && isAndroidAuto(session, browser)) {
+                    playContext.record(SEARCH_NODE, AutoBrowseContract.SOURCE_SEARCH, continues = false, items = results)
+                }
                 LibraryResult.ofItemList(
                     ImmutableList.copyOf(treeBuilder.slicePage(results, page, pageSize)),
                     params,
@@ -787,10 +811,7 @@ internal class AutoBrowseLibraryCallback(
         // The phone's own plays come through here too and must never be matched to a car list.
         val tapped = if (fromCar) playContext.find(selectedItem.mediaId.stripEpisodePrefix()) else null
         restOfList(tapped, fromCar)?.let { return it }
-        val source =
-            tapped?.source
-                ?: selectedItem.mediaMetadata.extras?.getString(AutoBrowseContract.EXTRA_SOURCE)
-                ?: AutoBrowseContract.SOURCE_DISCOVER
+        val source = tapped?.source ?: sourceInExtras(selectedItem)
         if (source == AutoBrowseContract.SOURCE_MIXTAPE) {
             return voiceSearch.handlePlayFromMixtape(selectedItem.mediaId.stripEpisodePrefix(), fromCar)
         }
@@ -800,11 +821,16 @@ internal class AutoBrowseLibraryCallback(
     }
 
     /** The tapped episode and the rest of its list, for the lists that play on; null for any other tap. */
-    private fun restOfList(tapped: AutoPlayContextTracker.Match?, fromCar: Boolean): MutableList<MediaItem>? {
+    private suspend fun restOfList(tapped: AutoPlayContextTracker.Match?, fromCar: Boolean): MutableList<MediaItem>? {
         if (tapped == null || !tapped.continues || tapped.itemsFromHere.size <= 1) return null
         labelCarPlay(fromCar, carEntryPoint(tapped.source))
-        return tapped.itemsFromHere.mapTo(mutableListOf()) { it.forPlayback() }
+        // Resolved like any other play, so a row downloaded under another of its IDs plays the saved file.
+        return tapped.itemsFromHere.mapTo(mutableListOf()) { mediaResolver.resolveMediaItem(it).forPlayback() }
     }
+
+    /** The source a play request carries itself, for the phone's own controller; the car sends none. */
+    private fun sourceInExtras(item: MediaItem): String =
+        item.mediaMetadata.extras?.getString(AutoBrowseContract.EXTRA_SOURCE).orEmpty().ifEmpty { AutoBrowseContract.SOURCE_DISCOVER }
 
     /**
      * An episode resumed from Continue listening, followed by the saved queue. The car has no queue
@@ -872,6 +898,10 @@ internal class AutoBrowseLibraryCallback(
         /** Media3 wants an item count with a change notice; the car reloads the list whatever the number. */
         const val CHANGED_ITEM_COUNT = 50
         const val SEARCH_NODE = "search"
+
+        /** How long to keep asking whether a connected Android Auto is in a car, and how often. */
+        const val IN_CAR_WAIT_MS = 15_000L
+        const val IN_CAR_POLL_MS = 1_000L
 
         /** What a tap means in each list: the source it is labelled with, and whether playback carries on down the list. */
         val PLAY_CONTEXT_BY_NODE: Map<String, Pair<String, Boolean>> = mapOf(

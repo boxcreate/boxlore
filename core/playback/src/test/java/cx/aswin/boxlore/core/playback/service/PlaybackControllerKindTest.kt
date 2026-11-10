@@ -29,10 +29,12 @@ class PlaybackControllerKindTest {
     }
 
     @Test
-    fun `a car counts only in car mode or on Android Automotive`() {
+    fun `a car counts in car mode, on Android Automotive, or while Android Auto projects to a screen`() {
         assertFalse(CarConnectionState.isInCar(isCarMode = false, isAutomotive = false))
         assertTrue(CarConnectionState.isInCar(isCarMode = true, isAutomotive = false))
         assertTrue(CarConnectionState.isInCar(isCarMode = false, isAutomotive = true))
+        // Regression: current Android Auto projects without car mode, so those drives were not counted as a car.
+        assertTrue(CarConnectionState.isInCar(isCarMode = false, isAutomotive = false, isProjecting = true))
     }
 
     @Test

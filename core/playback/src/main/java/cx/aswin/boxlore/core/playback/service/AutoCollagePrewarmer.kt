@@ -134,7 +134,9 @@ internal class AutoCollagePrewarmer(
         mediaSessionProvider()?.notifyChildrenChanged(AutoBrowseContract.HOME_ID, HOME_BLOCK_COUNT, null)
     }
 
-    private data class PrewarmSnapshot(
+    /** What the collages are drawn from; [buildFolderInputs] picks each folder's covers. */
+    @androidx.annotation.VisibleForTesting
+    internal data class PrewarmSnapshot(
         val history: List<ListeningHistoryEntity>,
         val resumeItems: List<ListeningHistoryEntity>,
         val liked: List<ListeningHistoryEntity>,

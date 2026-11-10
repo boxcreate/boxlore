@@ -185,7 +185,7 @@ internal class AutoPlaybackResumptionHandler(
                         host.asContext(),
                         episode.imageUrl ?: episode.podcastImageUrl,
                     ),
-                    mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX,
+                    row = AutoEpisodeRow(mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX),
                 )
                 mediaResolver.resolveMediaItem(ungrounded)
             }

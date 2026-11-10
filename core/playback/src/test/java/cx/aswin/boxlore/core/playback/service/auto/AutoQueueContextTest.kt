@@ -14,7 +14,7 @@ import org.robolectric.annotation.Config
 class AutoQueueContextTest {
     @Test fun restoredQueueCarriesContextThroughAutoMediaFactory() {
         val episode = PlaybackQueueContext.episodes(listOf(Episode("rss:1", "Episode", "", "https://example.com/1.mp3"))).single()
-        val item = AutoMediaItemFactory.fromEpisode(episode, AutoBrowseContract.SOURCE_QUEUE, null, mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX)
+        val item = AutoMediaItemFactory.fromEpisode(episode, AutoBrowseContract.SOURCE_QUEUE, null, row = AutoEpisodeRow(mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX))
         assertEquals("queue:rss:1", item.mediaId)
         assertTrue(PlaybackQueueContext.isContextItem(item))
     }

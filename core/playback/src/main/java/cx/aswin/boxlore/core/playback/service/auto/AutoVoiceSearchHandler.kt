@@ -308,7 +308,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
             episode.imageUrl ?: episode.podcastImageUrl ?: podcastImageUrl,
         ),
         podcastTitle = podcastTitle,
-        groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_search),
+        row = AutoEpisodeRow(groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_search)),
     )
 
     private fun voiceHistoryItem(history: cx.aswin.boxlore.core.database.ListeningHistoryEntity): MediaItem = AutoMediaItemFactory.fromHistory(
@@ -421,7 +421,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
         episode = episode,
         source = AutoBrowseContract.SOURCE_QUEUE,
         artworkUri = AutoArtworkRepository.remoteUri(host.asContext(), episode.imageUrl, episode.podcastImageUrl),
-        mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX,
+        row = AutoEpisodeRow(mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX),
     )
 
     suspend fun handlePlayFromQueue(episodeId: String, fromCar: Boolean): MutableList<MediaItem> {
@@ -443,8 +443,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
                         host.asContext(),
                         episode.imageUrl ?: episode.podcastImageUrl,
                     ),
-                    mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX,
-                    groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_queue),
+                    row = AutoEpisodeRow(mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX, groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_queue)),
                 )
             }.toMutableList()
     }
