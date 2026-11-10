@@ -94,7 +94,7 @@ src/main/java/cx/aswin/boxlore/
                   AdaptivePlayerChrome, announcement/, libraryimport/, logic/
   updates/        AppUpdates, UpdateChecker, direct and Play sources, AppUpdatesPanel
   util/           InstallSource
-  widgets/        HomeScreenWidgetsInstaller and widget adapters
+  widgets/        HomeScreenWidgetsInstaller, widget adapters and HomeScreenWidgetPreview (Settings' widget pictures)
 src/direct/       APK downloader and installer (debug, release, updateTest)
 src/playRelease/  Play stub installer
 src/debug/        App Check debug provider, ADB-only notification preview receiver

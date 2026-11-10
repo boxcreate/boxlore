@@ -19,12 +19,13 @@ Owns boxlore's home-screen widgets, built with `AppWidgetProvider` and `RemoteVi
 - The play button is a circle at rest and the scalloped cookie while playing. Seek icons show the listener's own seek lengths.
 - When playback is dismissed, every playback widget becomes a launch surface ("Ready when you are") that opens boxlore, never disabled transport.
 - Library lists are capped at `LibraryWidgetLogic.MAX_ROWS`; the header badge counts the whole library through `WidgetLibraryCounts`. Row and tile taps open the deep link `:app` supplies; the header and its arrow open `boxlore://library/subscriptions?tab=0` or `?tab=1`.
-- Your Shows draws whole covers as rounded squares, or cuts them into mixed shapes when the `WidgetShowsArtwork` preference says so.
+- Your Shows draws whole covers as rounded squares, or cuts them into mixed shapes when the listener chooses that in Appearance › Widgets (`WidgetShowsArtwork`).
 - Missing or unreadable artwork falls back to show or episode candidates, then to a tinted placeholder with the boxlore mark, cut to the same shape.
 
 ## Public API
 
 - The six receivers above: picker-visible providers.
+- `HomeScreenWidgets`: the six widgets under their picker names, each one's live preview as `RemoteViews` with the size it is drawn for (`preview`), whether the current home screen app can add a widget on request (`canAdd`), and the request itself (`requestAdd`). Settings shows and offers them through `:app`.
 - `WidgetControlReceiver`: one explicit, non-exported action endpoint shared by the playback widgets.
 - `WidgetActionIntents`: builds broadcast, open-app and deep-link `PendingIntent`s with `SecurityException` guards. `cancelAll(context, appWidgetId)` and `LibraryWidgetRenderer.cancelAll` cancel a deleted widget's intents so the app never exhausts the system's `PendingIntent` quota.
 - `NowPlayingWidgetDependencies`, `configureNowPlayingWidget(...)` and `WidgetPlaybackSource`: the playback port. `refreshPosition()` asks the player for its position, which the app only tracks while it is on screen.
@@ -42,7 +43,7 @@ Owns boxlore's home-screen widgets, built with `AppWidgetProvider` and `RemoteVi
 - Library covers load a few at a time and each batch is shown as it lands. The list service also fetches a missing cover itself, so covers appear while the app is closed; a tile shows its placeholder until then.
 - Every colour is a tint, never baked into a bitmap. Widget chrome follows the in-app Appearance theme by default: `WidgetChrome` sends one ARGB value for a fixed Light or Dark display mode, and a light and dark pair when the display mode follows the system, so the launcher switches with the phone while the app is not running. Appearance › Widgets can switch to System, which uses the system's dynamic colour resources.
 - `WidgetThemeSync` re-pushes widgets on configuration changes; `:app` refreshes them when the theme or widget preferences change.
-- Picker previews (`widget_preview_*.xml`) are static layouts in resource colours.
+- Picker previews: from Android 15, `WidgetPickerPreviews` publishes previews drawn by the live renderers with sample content, in the listener's own widget colours, again whenever that look changes. Older versions show the static `widget_preview_*.xml` layouts in resource colours.
 
 ## Design provenance
 
@@ -56,8 +57,8 @@ src/main/java/cx/aswin/boxlore/feature/widgets/
   LibraryWidget*.kt             # receivers, dependencies, coordinator, renderer, snapshot store,
                                 #   RemoteViewsService for the lists
   WidgetArtworkLoader.kt, WidgetBitmapCache.kt, WidgetChrome.kt, WidgetPalette.kt,
-  WidgetRemoteViewsColors.kt, WidgetShapes.kt, WidgetSeekIcon.kt,
-  WidgetThemeSync.kt, WidgetHostPresence.kt, WidgetUpdates.kt
+  WidgetRemoteViewsColors.kt, WidgetShapes.kt, WidgetSeekIcon.kt, WidgetPickerPreviews.kt,
+  WidgetThemeSync.kt, WidgetHostPresence.kt, WidgetUpdates.kt, HomeScreenWidgets.kt
   actions/                      # WidgetActionIntents, WidgetActionHandler, WidgetControlReceiver
   logic/                        # NowPlayingWidgetLogic, LibraryWidgetLogic, WidgetPresentation, WidgetSizes,
                                 #   WidgetProgress, WidgetProgressPoller
@@ -87,7 +88,7 @@ src/main/res/
 
 | Concern | Contract |
 | :--- | :--- |
-| SharedPreferences files | `boxlore_now_playing_widget`, `boxlore_library_widget` |
+| SharedPreferences files | `boxlore_now_playing_widget`, `boxlore_library_widget`, `boxlore_widget_picker_previews` (the look each published preview was drawn for) |
 | Snapshot key | `snapshot` (JSON) |
 | Artwork cache | `{cacheDir}/widget_artwork/` |
 | Receiver FQCNs | the six receivers above, under `cx.aswin.boxlore.feature.widgets` |
@@ -107,7 +108,7 @@ Hermetic JVM tests live in `feature/widgets/src/test`, using Robolectric and fak
 | Library widgets | `LibraryWidgetRemoteViewsTest`, `LibraryWidgetLogicTest` |
 | Snapshots and dependency holders | `NowPlayingWidgetSnapshotStoreTest`, `NowPlayingWidgetDependenciesHolderTest` |
 | Startup and updates | `WidgetStartupTest`, `WidgetUpdatesTest` |
-| Theming | `WidgetChromeTest`, `WidgetRemoteViewsColorsTest` |
+| Theming, picker previews and adding from the app | `WidgetChromeTest`, `WidgetRemoteViewsColorsTest`, `WidgetPickerPreviewsTest`, `HomeScreenWidgetsTest` |
 | Intents | `WidgetActionIntentsTest` |
 
 ```bash

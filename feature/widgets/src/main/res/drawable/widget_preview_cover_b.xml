@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="@color/widget_secondary_container" />
-</shape>
+<!-- Picker previews only: a sample cover (stripes). A picture, so its colours are fixed on purpose. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path
+        android:fillColor="#FF1F5C4A"
+        android:pathData="M0,0h100v100h-100z" />
+    <path
+        android:fillColor="#FFF4EFE1"
+        android:pathData="M6,0h9v100h-9zM31,0h9v100h-9zM56,0h9v100h-9zM81,0h9v100h-9z" />
+</vector>
