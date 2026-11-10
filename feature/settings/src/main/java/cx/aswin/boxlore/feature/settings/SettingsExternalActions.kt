@@ -5,7 +5,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.provider.Settings
 import android.widget.Toast
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 
@@ -57,17 +56,4 @@ internal fun openChangelog(context: Context) {
             ),
         )
     }
-}
-
-/**
- * Opens the phone's permissions for boxlore, where some phones keep the switch that lets an app add
- * to the home screen. Phones with their own permission editor open it directly; the rest open the
- * app's system settings page.
- */
-internal fun openAppPermissionSettings(context: Context) {
-    AnalyticsHelper.trackSettingsInteraction("app_permission_settings_opened")
-    val vendorEditor = Intent("miui.intent.action.APP_PERM_EDITOR").putExtra("extra_pkgname", context.packageName)
-    val appDetails = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
-    runCatching { context.startActivity(vendorEditor) }
-        .recoverCatching { context.startActivity(appDetails) }
 }

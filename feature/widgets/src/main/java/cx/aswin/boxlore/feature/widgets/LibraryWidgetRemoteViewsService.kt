@@ -47,8 +47,6 @@ class LibraryWidgetRemoteViewsService : RemoteViewsService() {
 internal class LibraryWidgetRemoteViewsFactory(
     private val context: Context,
     private val kind: LibraryWidgetKind,
-    /** Rows to show instead of the saved snapshot: the sample content of a picker preview. */
-    private val preset: LibraryWidgetSnapshot? = null,
 ) : RemoteViewsService.RemoteViewsFactory {
     private var shows: List<WidgetShowRow> = emptyList()
     private var episodes: List<WidgetEpisodeRow> = emptyList()
@@ -59,7 +57,7 @@ internal class LibraryWidgetRemoteViewsFactory(
     override fun onCreate() = Unit
 
     override fun onDataSetChanged() {
-        val snapshot = preset ?: LibraryWidgetSnapshotStore(context).read() ?: LibraryWidgetSnapshot()
+        val snapshot = LibraryWidgetSnapshotStore(context).read() ?: LibraryWidgetSnapshot()
         shows = snapshot.subscriptions
         episodes = snapshot.newEpisodes
         chrome = WidgetChrome.resolve(context)
@@ -184,8 +182,7 @@ internal class LibraryWidgetRemoteViewsFactory(
      */
     private fun artworkPath(cachePath: String?, url: String?, fallbackUrls: List<String>): String? {
         cachePath?.takeIf { it.isNotBlank() && File(it).exists() }?.let { return it }
-        // Sample rows of a picker preview have no address to fetch from.
-        if (preset != null || cx.aswin.boxlore.core.model.artworkUrls(url, *fallbackUrls.toTypedArray()).isEmpty()) return null
+        if (cx.aswin.boxlore.core.model.artworkUrls(url, *fallbackUrls.toTypedArray()).isEmpty()) return null
         artworkLoader.resolveCachedPath(url)?.let { return it }
         return runCatching {
             runBlocking { withTimeoutOrNull(ARTWORK_TIMEOUT_MS) { artworkLoader.load(url, fallbackUrls) } }

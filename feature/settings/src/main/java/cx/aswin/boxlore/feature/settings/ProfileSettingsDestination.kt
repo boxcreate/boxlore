@@ -15,7 +15,6 @@ internal enum class ProfileSettingsDestination(
     AppearancePlayer("Player"),
     AppearanceNavigation("Navigation"),
     AppearanceText("Text"),
-    AppearanceWidgets("Widgets"),
     Playback("Playback"),
     Downloads("Downloads"),
     Privacy("Privacy"),
@@ -29,7 +28,7 @@ internal enum class ProfileSettingsDestination(
      */
     val parent: ProfileSettingsDestination?
         get() = when (this) {
-            Theme, AppearanceHome, AppearancePlayer, AppearanceNavigation, AppearanceText, AppearanceWidgets -> Appearance
+            Theme, AppearanceHome, AppearancePlayer, AppearanceNavigation, AppearanceText -> Appearance
             CustomTheme -> Theme
             Recommendations -> Library
             else -> null

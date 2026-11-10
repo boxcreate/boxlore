@@ -9,7 +9,6 @@ import cx.aswin.boxlore.feature.widgets.LibraryWidgetCoordinator
 import cx.aswin.boxlore.feature.widgets.LibraryWidgetDependencies
 import cx.aswin.boxlore.feature.widgets.NowPlayingWidgetCoordinator
 import cx.aswin.boxlore.feature.widgets.NowPlayingWidgetDependencies
-import cx.aswin.boxlore.feature.widgets.WidgetPickerPreviews
 import cx.aswin.boxlore.feature.widgets.configureLibraryWidgets
 import cx.aswin.boxlore.feature.widgets.configureNowPlayingWidget
 import kotlinx.coroutines.CoroutineScope
@@ -71,8 +70,6 @@ object HomeScreenWidgetsInstaller {
             ) { _, _, _ -> Unit }.collect {
                 NowPlayingWidgetCoordinator.requestRefresh(context)
                 LibraryWidgetCoordinator.requestRefresh(context)
-                // The widget picker shows the same look the placed widgets now have.
-                WidgetPickerPreviews.refresh(context)
             }
         }
     }

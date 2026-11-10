@@ -112,7 +112,6 @@ class SettingsBackNavigationTest {
             ProfileSettingsDestination.AppearancePlayer,
             ProfileSettingsDestination.AppearanceNavigation,
             ProfileSettingsDestination.AppearanceText,
-            ProfileSettingsDestination.AppearanceWidgets,
         ).forEach { page ->
             assertEquals(
                 SettingsBackAction.NavigateTo(ProfileSettingsDestination.Appearance),

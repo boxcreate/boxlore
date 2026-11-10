@@ -1,117 +1,109 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  Picker preview: a still of the live widget in resource colours, for Android versions that cannot
-  show the live previews from WidgetPickerPreviews. The launcher inflates widget layouts without
-  AppCompat, so tints must be android:tint; app:tint would be ignored.
--->
+<!-- Picker preview for 2×2 playback controls — mirrors live grid + rounded art. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="170dp"
-    android:layout_height="170dp"
-    android:theme="@android:style/Theme.DeviceDefault.DayNight"
-    tools:ignore="UseAppTint,RtlHardcoded">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:theme="@android:style/Theme.DeviceDefault.DayNight">
 
-    <FrameLayout
-        android:layout_width="170dp"
-        android:layout_height="170dp"
-        android:layout_gravity="center">
+    <LinearLayout
+        android:layout_width="126dp"
+        android:layout_height="126dp"
+        android:layout_gravity="center"
+        android:background="@drawable/widget_preview_surface"
+        android:clipToOutline="true"
+        android:orientation="vertical"
+        android:padding="16dp">
 
-        <ImageView
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:contentDescription="@null"
-            android:scaleType="fitXY"
-            android:src="@drawable/widget_circle"
-            android:tint="@color/widget_primary_container" />
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
 
-        <ImageView
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@drawable/widget_art_tile_shape"
+                android:clipToOutline="true">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/widget_preview_cover_a" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/widget_preview_button_primary" />
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_widget_pause" />
+            </FrameLayout>
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:contentDescription="@null"
-            android:scaleType="fitXY"
-            android:src="@drawable/widget_preview_ring" />
+            android:layout_height="0dp"
+            android:layout_marginTop="6dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
 
-        <ImageView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_margin="10dp"
-            android:contentDescription="@null"
-            android:scaleType="fitXY"
-            android:src="@drawable/widget_preview_disc_a" />
-
-        <FrameLayout
-            android:layout_width="42dp"
-            android:layout_height="42dp"
-            android:layout_gravity="top|left"
-            android:layout_marginLeft="13dp"
-            android:layout_marginTop="79dp">
-
-            <ImageView
-                android:layout_width="match_parent"
+            <FrameLayout
+                android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:contentDescription="@null"
-                android:scaleType="fitXY"
-                android:src="@drawable/widget_circle"
-                android:tint="@color/widget_surface" />
+                android:layout_weight="1">
 
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_gravity="center"
-                android:contentDescription="@null"
-                android:scaleType="fitCenter"
-                android:src="@drawable/ic_widget_skip_back"
-                android:tint="@color/widget_on_surface" />
-        </FrameLayout>
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/widget_preview_button_secondary" />
 
-        <FrameLayout
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:layout_gravity="top|left"
-            android:layout_marginLeft="53dp"
-            android:layout_marginTop="92dp">
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_widget_skip_back" />
+            </FrameLayout>
 
-            <ImageView
-                android:layout_width="match_parent"
+            <FrameLayout
+                android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:contentDescription="@null"
-                android:scaleType="fitXY"
-                android:src="@drawable/widget_cookie"
-                android:tint="@color/widget_primary" />
+                android:layout_marginStart="6dp"
+                android:layout_weight="1">
 
-            <ImageView
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_gravity="center"
-                android:contentDescription="@null"
-                android:scaleType="fitCenter"
-                android:src="@drawable/ic_widget_pause"
-                android:tint="@color/widget_on_primary" />
-        </FrameLayout>
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/widget_preview_button_secondary" />
 
-        <FrameLayout
-            android:layout_width="42dp"
-            android:layout_height="42dp"
-            android:layout_gravity="top|right"
-            android:layout_marginRight="13dp"
-            android:layout_marginTop="79dp">
-
-            <ImageView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:contentDescription="@null"
-                android:scaleType="fitXY"
-                android:src="@drawable/widget_circle"
-                android:tint="@color/widget_surface" />
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_gravity="center"
-                android:contentDescription="@null"
-                android:scaleType="fitCenter"
-                android:src="@drawable/ic_widget_skip_fwd"
-                android:tint="@color/widget_on_surface" />
-        </FrameLayout>
-    </FrameLayout>
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_widget_skip_fwd" />
+            </FrameLayout>
+        </LinearLayout>
+    </LinearLayout>
 </FrameLayout>

@@ -147,7 +147,6 @@ data class NavSettingsState(
     val sameShowQueueOnly: Boolean,
     val homeShortcutsInLibrary: Boolean,
     val widgetAppearance: String,
-    val widgetShowsArtwork: String,
     val exploreDefaultTab: String,
     val subscriptionsDefaultTab: String,
     val subscriptionsTabStyle: String = cx.aswin.boxlore.core.prefs.SubscriptionsTabStyle.TOP,

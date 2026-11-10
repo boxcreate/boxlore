@@ -55,8 +55,6 @@ import cx.aswin.boxlore.feature.settings.pages.AppearanceSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceTextPage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceThemePage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceUiState
-import cx.aswin.boxlore.feature.settings.pages.AppearanceWidgetPreview
-import cx.aswin.boxlore.feature.settings.pages.AppearanceWidgetsPage
 import cx.aswin.boxlore.feature.settings.pages.CustomThemeEditor
 import cx.aswin.boxlore.feature.settings.pages.DownloadsSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.LibraryBackupActions
@@ -146,8 +144,6 @@ data class AppearanceSettings(
     val actions: AppearanceActions = AppearanceActions({}, {}, {}, {}, {}),
     /** Home's hero cards for the Appearance previews; null shows the choices without previews. */
     val heroPreview: AppearanceHeroPreview? = null,
-    /** The home screen widgets as they really look, for Appearance › Widgets; null lists them by name only. */
-    val widgetPreview: AppearanceWidgetPreview? = null,
 )
 
 /** Playback sub-page state paired with its actions, so [SettingsScreen] can pass both as one. */
@@ -488,7 +484,6 @@ private fun SettingsDestinationContent(
         ProfileSettingsDestination.AppearancePlayer,
         ProfileSettingsDestination.AppearanceNavigation,
         ProfileSettingsDestination.AppearanceText,
-        ProfileSettingsDestination.AppearanceWidgets,
         -> AppearanceDestinationContent(destination, contentBundle.appearanceSettings, actions)
 
         ProfileSettingsDestination.CustomTheme ->
@@ -687,12 +682,8 @@ private fun trackedLibraryBackupActions(
  */
 internal fun AppearanceActions.trackedForAnalytics(currentState: () -> AppearanceUiState? = { null }): AppearanceActions {
     fun <T : Any> report(key: String, value: T, current: (AppearanceUiState) -> T) {
-        if (currentState()?.let(current) != value) AnalyticsHelper.trackSettingsInteraction(key, value.toString())
-    }
-
-    fun <T : Any> tracked(key: String, current: (AppearanceUiState) -> T, action: (T) -> Unit): (T) -> Unit = {
-        report(key, it, current)
-        action(it)
+        val state = currentState()
+        if (state == null || current(state) != value) AnalyticsHelper.trackSettingsInteraction(key, value.toString())
     }
     return AppearanceActions(
         onSetThemeConfig = {
@@ -731,11 +722,10 @@ internal fun AppearanceActions.trackedForAnalytics(currentState: () -> Appearanc
             report("home_shortcuts_in_library_toggled", it) { state -> state.homeShortcutsInLibrary }
             onSetHomeShortcutsInLibrary(it)
         },
-        onSetWidgetAppearance = tracked("widget_appearance_changed", { it.currentWidgetAppearance }, onSetWidgetAppearance),
-        onSetWidgetShowsArtwork = tracked("widget_shows_artwork_changed", { it.currentWidgetShowsArtwork }, onSetWidgetShowsArtwork),
-        canAddWidgets = canAddWidgets,
-        // Every request is reported: there is no current value a repeat could match.
-        onAddWidget = tracked("widget_add_requested", { "" }, onAddWidget),
+        onSetWidgetAppearance = {
+            report("widget_appearance_changed", it) { state -> state.currentWidgetAppearance }
+            onSetWidgetAppearance(it)
+        },
         onSetExploreDefaultTab = {
             report("explore_default_tab_changed", it) { state -> state.currentExploreDefaultTab }
             onSetExploreDefaultTab(it)
@@ -844,7 +834,6 @@ private fun AppearanceDestinationContent(
         ProfileSettingsDestination.AppearancePlayer -> AppearancePlayerPage(state, tracked, onBack = actions.onReturnToHub)
         ProfileSettingsDestination.AppearanceNavigation -> AppearanceNavigationPage(state, tracked, onBack = actions.onReturnToHub)
         ProfileSettingsDestination.AppearanceText -> AppearanceTextPage(state, tracked, onBack = actions.onReturnToHub)
-        ProfileSettingsDestination.AppearanceWidgets -> AppearanceWidgetsPage(state, tracked, onBack = actions.onReturnToHub, preview = appearance.widgetPreview)
         else ->
             AppearanceSettingsPage(
                 state = state,
@@ -858,7 +847,6 @@ private fun AppearanceDestinationContent(
                             AppearanceSection.Player -> ProfileSettingsDestination.AppearancePlayer
                             AppearanceSection.Navigation -> ProfileSettingsDestination.AppearanceNavigation
                             AppearanceSection.Text -> ProfileSettingsDestination.AppearanceText
-                            AppearanceSection.Widgets -> ProfileSettingsDestination.AppearanceWidgets
                         },
                     )
                 },

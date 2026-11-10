@@ -433,9 +433,6 @@ fun BoxLoreAppRoot(
     val widgetAppearance by userPrefs.widgetAppearanceStream.collectAsState(
         initial = remember { userPrefs.cachedWidgetAppearance },
     )
-    val widgetShowsArtwork by userPrefs.widgetShowsArtworkStream.collectAsState(
-        initial = remember { userPrefs.cachedWidgetShowsArtwork },
-    )
     val exploreDefaultTab by userPrefs.exploreDefaultTabStream.collectAsState(
         initial = remember { userPrefs.cachedExploreDefaultTab },
     )
@@ -713,7 +710,6 @@ fun BoxLoreAppRoot(
                     homeShortcutsInLibrary = homeShortcutsInLibrary,
                     discoverySections = discoverySections,
                     widgetAppearance = widgetAppearance,
-                    widgetShowsArtwork = widgetShowsArtwork,
                     exploreDefaultTab = exploreDefaultTab,
                     subscriptionsDefaultTab = subscriptionsDefaultTab,
                     subscriptionsTabStyle = subscriptionsTabStyle,

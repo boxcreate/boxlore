@@ -21,8 +21,6 @@ import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.core.prefs.HeroCoverShade
 import cx.aswin.boxlore.core.prefs.HeroTideProgress
 import cx.aswin.boxlore.core.prefs.OpenAppTo
-import cx.aswin.boxlore.core.prefs.WidgetAppearance
-import cx.aswin.boxlore.core.prefs.WidgetShowsArtwork
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -168,11 +166,6 @@ class AppearancePagesTest {
         assertEquals("Block hero cards, artwork color", appearanceSummary(baseState.copy(heroCoverShade = HeroCoverShade.ARTWORK)).home)
         assertEquals("bunpod · seek buttons on", summary.player)
         assertEquals("Crisp letters", summary.text)
-        assertEquals("App theme colors · whole covers", summary.widgets)
-        assertEquals(
-            "System colors · shapes",
-            appearanceSummary(baseState.copy(currentWidgetAppearance = WidgetAppearance.SYSTEM, currentWidgetShowsArtwork = WidgetShowsArtwork.SHAPES)).widgets,
-        )
         assertEquals("boxlore classic · artwork colors on", appearanceSummary(baseState).theme)
         // Listeners who never picked see Cover on the Artwork shade.
         val unpicked = AppearanceUiState(currentThemeConfig = "system", isDynamicColorEnabled = false, currentThemeBrand = "violet", currentSurfaceStyle = "classic_dynamic")

@@ -23,7 +23,6 @@ import cx.aswin.boxlore.feature.settings.pages.AppearanceNavigationPage
 import cx.aswin.boxlore.feature.settings.pages.AppearancePlayerPage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceTextPage
-import cx.aswin.boxlore.feature.settings.pages.AppearanceWidgetsPage
 import cx.aswin.boxlore.feature.settings.pages.CustomThemeEditor
 import cx.aswin.boxlore.feature.settings.pages.DownloadsSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.LibraryBackupActions
@@ -112,7 +111,6 @@ private fun CaptureSettingsPage(destination: ProfileSettingsDestination) {
         ProfileSettingsDestination.AppearancePlayer,
         ProfileSettingsDestination.AppearanceNavigation,
         ProfileSettingsDestination.AppearanceText,
-        ProfileSettingsDestination.AppearanceWidgets,
         -> CaptureAppearanceSubpage(destination, appearance)
         ProfileSettingsDestination.CustomTheme -> CustomThemeEditor(appearance.state, {}, {})
         ProfileSettingsDestination.Playback -> PlaybackSettingsPage(playback.state, playback.actions, {})
@@ -131,7 +129,6 @@ private fun CaptureAppearanceSubpage(destination: ProfileSettingsDestination, ap
         ProfileSettingsDestination.AppearanceHome -> AppearanceHomePage(appearance.state, appearance.actions, null, {})
         ProfileSettingsDestination.AppearancePlayer -> AppearancePlayerPage(appearance.state, appearance.actions, {})
         ProfileSettingsDestination.AppearanceNavigation -> AppearanceNavigationPage(appearance.state, appearance.actions, {})
-        ProfileSettingsDestination.AppearanceWidgets -> AppearanceWidgetsPage(appearance.state, appearance.actions, {})
         else -> AppearanceTextPage(appearance.state, appearance.actions, {})
     }
 }

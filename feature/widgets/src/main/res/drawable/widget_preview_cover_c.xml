@@ -1,14 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Picker previews only: a sample cover (a rising arc). A picture, so its colours are fixed on purpose. -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="48dp"
-    android:height="48dp"
-    android:viewportWidth="100"
-    android:viewportHeight="100">
-    <path
-        android:fillColor="#FFF5B8C8"
-        android:pathData="M0,0h100v100h-100z" />
-    <path
-        android:fillColor="#FF22306B"
-        android:pathData="M50,100m-52,0a52,52 0,1 1,104 0a52,52 0,1 1,-104 0" />
-</vector>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/widget_primary_container" />
+</shape>

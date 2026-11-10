@@ -8,6 +8,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
+import cx.aswin.boxlore.core.prefs.WidgetAppearance
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
@@ -21,8 +23,8 @@ import cx.aswin.boxlore.feature.settings.components.ThemeLookPicture
 
 /**
  * Theme & colors: display mode, the four looks as picture tiles (each in light and dark), the
- * custom theme editor, artwork colors for episode and podcast pages, the widgets, which follow these
- * colors, and how the Your Shows widget draws covers.
+ * custom theme editor, artwork colors for episode and podcast pages, and the widgets, which follow
+ * these colors.
  */
 @Composable
 internal fun AppearanceThemePage(state: AppearanceUiState, actions: AppearanceActions, onBack: () -> Unit, onEditCustomTheme: () -> Unit) {
@@ -48,6 +50,18 @@ internal fun AppearanceThemePage(state: AppearanceUiState, actions: AppearanceAc
                 onCheckedChange = actions.onSetArtworkColorsEnabled,
                 icon = Icons.Rounded.AutoAwesome,
             )
+        }
+        SettingsGroup(
+            title = "Widgets",
+            footer = "App theme matches your chosen colors and mode. System follows your phone’s mode and wallpaper colors.",
+        ) {
+            SettingsContent {
+                ConnectedOptionSelector(
+                    options = listOf(WidgetAppearance.APP to "App theme", WidgetAppearance.SYSTEM to "System"),
+                    selected = WidgetAppearance.sanitize(state.currentWidgetAppearance),
+                    onSelect = actions.onSetWidgetAppearance,
+                )
+            }
         }
     }
 }

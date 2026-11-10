@@ -10,7 +10,7 @@ Owns the Settings hub and its pages, sign-in, the Smart and automatic download s
 - `SettingsScreenConfig.initialPage` opens a page directly (`account`, `sync`, `library`, `recommendations`, `appearance`, `theme`, `playback`, `downloads`, `privacy`, `about`, `support`); anything else opens the hub. `isOnboarding` makes Back leave Settings at once.
 - Shell callbacks on `SettingsScreenConfig`: `onSendFeedback`, `onCheckForUpdates` (the shell owns release checks and installation), and `onSupportPageVisibilityChanged` / `onAccountPageVisibilityChanged`, used to hide player chrome.
 - `SettingsViewModel`, built by `SettingsViewModelAssembler` (`create` / `factory`): the Add RSS flow and Reset recommendations.
-- `AppearanceUiState`, `AppearanceActions`, `AddableWidget`, `AppearanceHeroPreview` and `AppearanceWidgetPreview`; `PlaybackUiState` and `PlaybackActions`; `LibraryDiscoveryPreferences` and `SavedShowsControl`. App wiring persists every value through `:core:prefs`.
+- `AppearanceUiState`, `AppearanceActions` and `AppearanceHeroPreview`; `PlaybackUiState` and `PlaybackActions`; `LibraryDiscoveryPreferences` and `SavedShowsControl`. App wiring persists every value through `:core:prefs`.
 - `FeedbackScreen(supportRepository, boxcastPrefs, onBack, bottomContentPadding, openThreadId)` on the app's `feedback?thread=<id>` route, plus `FeedbackViewModel`, `DiagnosticCollector`, `LogcatCollector` and `SharedPrefsRetryKeyStore`.
 - `AutoDownloadSettingsScreen` and `SmartDownloadsSettingsScreen`, each taking `UserPreferencesRepository` and `onBack`.
 - `LogsPreviewDialog` (in `feedback/FeedbackDialogs.kt`).
@@ -23,10 +23,9 @@ Owns the Settings hub and its pages, sign-in, the Smart and automatic download s
 
 ## Appearance
 
-- The overview shows Display mode, then one row per page with its current choice (`appearanceSummary`): **Theme & colors**, **Home**, **Player**, **Navigation**, **Text** and **Widgets**.
-- Theme & colors offers four looks (boxlore classic, Pure, Material 3, Custom) and **Use artwork colors** (on by default). Legacy palettes show as Custom without changing stored values (`ThemeSettingsLogic.kt`).
+- The overview shows Display mode, then one row per page with its current choice (`appearanceSummary`): **Theme & colors**, **Home**, **Player**, **Navigation** and **Text**.
+- Theme & colors offers four looks (boxlore classic, Pure, Material 3, Custom), **Use artwork colors** (on by default) and **Widgets**. Legacy palettes show as Custom without changing stored values (`ThemeSettingsLogic.kt`).
 - The custom theme editor is a full page. Drafts change only its preview; Save applies the palette in one write, and Back discards it.
-- Widgets holds the home screen widgets' colours (App theme or System) and every widget (`AddableWidget`, supplied by the app) as a card: its real look drawn by the app through `AppearanceWidgetPreview`, scaled to fit and never enlarged, its name, and an Add button that asks the home screen app to add it. The two round players share a row, and the Your Shows card carries the cover choice (whole covers or shapes) under its picture. A request the phone leaves unanswered (the app is not paused within `ADD_WIDGET_ANSWER_MS`) is explained in that card, with a way to the app's permission settings. When the home screen app cannot add widgets (`AppearanceActions.canAddWidgets`), the cards stay without buttons, with the steps for adding one by hand.
 - Home holds the hero card style and its colour choice, with live previews drawn by the app through `AppearanceHeroPreview`. Hero styles are described in [`feature/home/README.md`](../home/README.md).
 - Player holds **Player style** (Standard or bunpod) and the miniplayer's **Seek buttons** (off by default). The bunpod option credits Kamran Bekirov's BunPod design. Video always uses Standard.
 - Navigation holds the bar style, **Blur behind the bar** (Floating bar only) and **Start page & tabs** (**Explore opens to** hides while Picked for you is off). Text holds the letter shape with a preview.
@@ -128,7 +127,7 @@ Hermetic JVM tests live in `feature/settings/src/test`, using fakes from [`:core
 | :--- | :--- |
 | Hub, Back and tablet split | `SettingsBackNavigationTest`, `TabletSettingsLayoutTest`, `TabletSettingsDialogTest`, `TabletSettingsCaptureTest`, `SettingsHeaderTitleTest` |
 | RSS and reset dialogs | `SettingsViewModelTest`, `SettingsViewModelDialogTest`, `SettingsGoldenRoborazziTest` |
-| Appearance | `AppearancePagesTest`, `AppearanceActionsTrackedTest`, `SettingsPictureRowTest`, `PlayerStyleSectionTest`, `AppearanceWidgetsPageTest` |
+| Appearance | `AppearancePagesTest`, `AppearanceActionsTrackedTest`, `SettingsPictureRowTest`, `PlayerStyleSectionTest` |
 | Themes | `CustomThemeEditorTest`, `CustomThemeEditorOptionsTest`, `ThemeEditorPressFeedbackTest`, `ThemeSettingsLogicTest`, `ThemePresetResolutionTest`, `AccentSwatchLayoutTest` |
 | Account and sync | `AccountPagePresentationTest`, `AccountPageAdaptiveTest`, `AccountSettingsPageTest`, `AccountAuthHelpersTest`, `AccountLinkFailedContentTest`, `SyncAndBackupsPageTest` |
 | Library | `LibraryLanguagesAdaptiveTest`, `ClearSavedShowsAdaptiveTest` |

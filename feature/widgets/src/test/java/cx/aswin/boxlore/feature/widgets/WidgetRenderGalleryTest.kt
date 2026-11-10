@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.widgets
 
-import android.appwidget.AppWidgetHostView
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.graphics.Bitmap
@@ -163,31 +162,6 @@ class WidgetRenderGalleryTest {
 
     private class LibraryLook(val kind: LibraryWidgetKind, val artwork: String, val name: String)
 
-    @Test
-    fun pickerPreviewsDrawBothLiveAndStatic() {
-        val picker =
-            mapOf(
-                "full" to (R.layout.widget_preview_control_4x2 to Size("picker", 350, 182)),
-                "compact" to (R.layout.widget_preview_bar_4x1 to Size("picker", 350, 86)),
-                "round" to (R.layout.widget_preview_grid_2x2 to Size("picker", 170, 170)),
-                "round_next" to (R.layout.widget_preview_grid_next_2x2 to Size("picker", 170, 170)),
-                "shows" to (R.layout.widget_preview_subscriptions to Size("picker", 350, 278)),
-                "new_episodes" to (R.layout.widget_preview_new_episodes to Size("picker", 350, 278)),
-            )
-        for (dark in listOf(false, true)) {
-            useAppTheme(dark)
-            setShowsArtwork(WidgetShowsArtwork.ROUNDED)
-            for (preview in WidgetPickerPreviews.previews()) {
-                val (staticLayout, size) = picker.getValue(preview.key)
-                // Live: what Android 15 and later show, drawn by the widget's own renderer.
-                // Drawn in a real widget host: rows a preview carries with it are only shown inside one.
-                save(draw(preview.build(context), size, dark, host = AppWidgetHostView(context)), "picker-live-${preview.key}-${themeName(dark)}")
-                // Static: the fallback layout older versions inflate.
-                save(draw(RemoteViews(context.packageName, staticLayout), size, dark), "picker-static-${preview.key}-${themeName(dark)}")
-            }
-        }
-    }
-
     private fun drawLibrary(kind: LibraryWidgetKind, snapshot: LibraryWidgetSnapshot, size: Size, dark: Boolean): Bitmap {
         LibraryWidgetSnapshotStore(context).write(snapshot)
         val views = LibraryWidgetRenderer.build(context, appWidgetId = 9, snapshot = snapshot, kind = kind)
@@ -209,15 +183,10 @@ class WidgetRenderGalleryTest {
         }
     }
 
-    private fun draw(
-        views: RemoteViews,
-        size: Size,
-        dark: Boolean,
-        host: FrameLayout = FrameLayout(context),
-        prepare: (View) -> Unit = {},
-    ): Bitmap {
+    private fun draw(views: RemoteViews, size: Size, dark: Boolean, prepare: (View) -> Unit = {}): Bitmap {
         val width = (size.widthDp * density).roundToInt()
         val height = (size.heightDp * density).roundToInt()
+        val host = FrameLayout(context)
         val root = views.apply(context, host)
         host.addView(root, FrameLayout.LayoutParams(width, height))
         prepare(root)

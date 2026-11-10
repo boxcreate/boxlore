@@ -27,8 +27,7 @@ Announcement title:
 ## Improved
 
 - Home screen widgets have a new look with rounder shapes. The players now show how far you are and how much time is left, and the skip buttons show your own skip lengths.
-- The Your Shows widget is now a grid of artwork. Choose whole covers or shapes in Settings › Appearance › Widgets.
-- See every boxlore widget and add it to your home screen from Settings › Appearance › Widgets.
+- The Your Shows widget is now a grid of artwork.
 - On Home, a show you listen to oldest first now picks up exactly where you left off, even deep into a long series, and skips trailers. Daily mix suggests the same next episode.
 
 ## Fixed

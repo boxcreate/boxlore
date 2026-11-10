@@ -79,7 +79,6 @@ object LibraryWidgetRenderer {
         appWidgetId: Int,
         snapshot: LibraryWidgetSnapshot,
         kind: LibraryWidgetKind,
-        collection: RemoteViews.RemoteCollectionItems? = null,
     ): RemoteViews {
         val layout =
             when (kind) {
@@ -126,15 +125,10 @@ object LibraryWidgetRenderer {
                 LibraryWidgetKind.SUBSCRIPTIONS -> snapshot.subscriptions.size
                 LibraryWidgetKind.NEW_EPISODES -> snapshot.newEpisodes.size
             }
-        if (collection != null) {
-            // A picker preview carries its rows with it; a placed widget binds the list service.
-            views.setRemoteAdapter(R.id.widget_list_view, collection)
-        } else {
-            views.setRemoteAdapter(
-                R.id.widget_list_view,
-                LibraryWidgetRemoteViewsService.adapterIntent(context, appWidgetId, kind),
-            )
-        }
+        views.setRemoteAdapter(
+            R.id.widget_list_view,
+            LibraryWidgetRemoteViewsService.adapterIntent(context, appWidgetId, kind),
+        )
         views.setEmptyView(R.id.widget_list_view, R.id.widget_empty_container)
         val template = collectionClickTemplate(context, appWidgetId)
         if (template != null) {
