@@ -181,6 +181,7 @@ internal fun addableWidgets(context: android.content.Context): List<AddableWidge
         description = context.getString(widget.description),
         previewWidthDp = widget.previewWidthDp,
         previewHeightDp = widget.previewHeightDp,
+        usesShowsCoverStyle = widget.usesShowsCoverStyle,
     )
 }
 

@@ -19,14 +19,27 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -40,6 +53,9 @@ import cx.aswin.boxlore.feature.settings.components.SettingsInfoTip
 import cx.aswin.boxlore.feature.settings.components.SettingsPicture
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
 import cx.aswin.boxlore.feature.settings.components.SettingsTileSection
+import cx.aswin.boxlore.feature.settings.openAppPermissionSettings
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Widgets: the colours every home screen widget takes, how Your Shows cuts its covers, then every
@@ -67,23 +83,21 @@ internal fun AppearanceWidgetsPage(
                 )
             }
         }
-        SettingsGroup(
-            title = "Your Shows covers",
-            footer = "Whole covers shows each cover uncropped. Shapes cuts covers into circles, arches and scallops.",
-        ) {
-            SettingsContent {
-                ConnectedOptionSelector(
-                    options = listOf(WidgetShowsArtwork.ROUNDED to "Whole covers", WidgetShowsArtwork.SHAPES to "Shapes"),
-                    selected = WidgetShowsArtwork.sanitize(state.currentWidgetShowsArtwork),
-                    onSelect = actions.onSetWidgetShowsArtwork,
-                )
+        // With pictures, the cover choice sits in the Your Shows card, right under the picture it changes.
+        val coverChoiceInGallery = preview != null && state.addableWidgets.any { it.usesShowsCoverStyle }
+        if (!coverChoiceInGallery) {
+            SettingsGroup(
+                title = "Your Shows covers",
+                footer = "Whole covers shows each cover uncropped. Shapes cuts covers into circles, arches and scallops.",
+            ) {
+                SettingsContent { ShowsCoverChoice(state, actions) }
             }
         }
         if (state.addableWidgets.isNotEmpty()) {
             // The home screen app is asked once, when the page opens: it only changes when the listener switches it.
             val canAdd = remember(actions.canAddWidgets) { actions.canAddWidgets() }
             when {
-                preview != null -> WidgetGallery(state.addableWidgets, canAdd, actions.onAddWidget, preview)
+                preview != null -> WidgetGallery(state, actions, canAdd, preview)
                 canAdd -> WidgetRows(state.addableWidgets, actions.onAddWidget)
                 else -> SettingsInfoTip(ADD_WIDGETS_BY_HAND)
             }
@@ -91,26 +105,44 @@ internal fun AppearanceWidgetsPage(
     }
 }
 
-/** Every widget as a picture with its name. The Add buttons are there only when the home screen app can add. */
+@Composable
+private fun ShowsCoverChoice(state: AppearanceUiState, actions: AppearanceActions) {
+    ConnectedOptionSelector(
+        options = listOf(WidgetShowsArtwork.ROUNDED to "Whole covers", WidgetShowsArtwork.SHAPES to "Shapes"),
+        selected = WidgetShowsArtwork.sanitize(state.currentWidgetShowsArtwork),
+        onSelect = actions.onSetWidgetShowsArtwork,
+    )
+}
+
+/**
+ * Every widget as a picture with its name. The Add buttons are there only when the home screen app
+ * can add; a request the phone turns down without a word is answered in that widget's card.
+ */
 @Composable
 private fun WidgetGallery(
-    widgets: List<AddableWidget>,
+    state: AppearanceUiState,
+    actions: AppearanceActions,
     canAdd: Boolean,
-    onAdd: (String) -> Unit,
     preview: AppearanceWidgetPreview,
 ) {
+    val add = rememberAddWidgetRequest(actions.onAddWidget)
     SettingsTileSection(
         title = if (canAdd) "Add to home screen" else "boxlore widgets",
         footer = if (canAdd) ADD_WIDGETS_CONFIRM else null,
     ) {
         if (!canAdd) SettingsInfoTip(ADD_WIDGETS_BY_HAND)
-        for (row in widgetGalleryRows(widgets)) {
-            if (row.size == 1) {
-                WidgetCard(row.single(), sideBySide = false, onAdd = onAdd.takeIf { canAdd }, preview = preview)
-            } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    row.forEach { widget ->
-                        WidgetCard(widget, sideBySide = true, onAdd = onAdd.takeIf { canAdd }, preview = preview, modifier = Modifier.weight(1f))
+        for (row in widgetGalleryRows(state.addableWidgets)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                row.forEach { widget ->
+                    WidgetCard(
+                        widget = widget,
+                        sideBySide = row.size > 1,
+                        onAdd = add.request.takeIf { canAdd },
+                        unanswered = add.unansweredKey == widget.key,
+                        preview = preview,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        if (widget.usesShowsCoverStyle) ShowsCoverChoice(state, actions)
                     }
                 }
             }
@@ -118,18 +150,55 @@ private fun WidgetGallery(
     }
 }
 
+/** Asks for a widget to be added, and knows which request the phone left unanswered. */
+private class AddWidgetRequest(val request: (String) -> Unit, val unansweredKey: String?)
+
 /**
- * One widget: its picture on a tonal stage that stands in for the wallpaper, then its name, what it
- * shows and the Add button. Wide widgets put the button beside the text; a small widget sharing its
- * row with another puts it underneath, where it still has room at large text sizes.
+ * The home screen app answers a request by opening its confirmation over the app, which pauses it.
+ * Some phones turn the request down without showing anything. So when the app has not been paused
+ * [ADD_WIDGET_ANSWER_MS] after a request, that request counts as unanswered, until another one is
+ * answered.
+ */
+@Composable
+private fun rememberAddWidgetRequest(onAdd: (String) -> Unit): AddWidgetRequest {
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val scope = rememberCoroutineScope()
+    var unansweredKey by rememberSaveable { mutableStateOf<String?>(null) }
+    val pausedSinceRequest = remember { mutableStateOf(false) }
+    DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_PAUSE) pausedSinceRequest.value = true }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
+    val request: (String) -> Unit =
+        remember(onAdd) {
+            { key ->
+                pausedSinceRequest.value = false
+                onAdd(key)
+                scope.launch {
+                    delay(ADD_WIDGET_ANSWER_MS)
+                    unansweredKey = key.takeUnless { pausedSinceRequest.value }
+                }
+            }
+        }
+    return AddWidgetRequest(request, unansweredKey)
+}
+
+/**
+ * One widget: its picture on a tonal stage that stands in for the wallpaper, any [options] that
+ * change that picture, then its name, what it shows and the Add button. Wide widgets put the button
+ * beside the text; a small widget sharing its row with another puts it underneath, where it still
+ * has room at large text sizes. An [unanswered] request explains itself under the button.
  */
 @Composable
 private fun WidgetCard(
     widget: AddableWidget,
     sideBySide: Boolean,
     onAdd: ((String) -> Unit)?,
+    unanswered: Boolean,
     preview: AppearanceWidgetPreview,
     modifier: Modifier = Modifier,
+    options: @Composable () -> Unit = {},
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -146,6 +215,7 @@ private fun WidgetCard(
                     preview(widget, Modifier.matchParentSize())
                 }
             }
+            options()
             if (sideBySide) {
                 Column(Modifier.padding(horizontal = 4.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     WidgetCardText(widget)
@@ -157,6 +227,22 @@ private fun WidgetCard(
                     if (onAdd != null) AddWidgetButton(widget, onAdd)
                 }
             }
+            if (unanswered) AddWidgetUnanswered()
+        }
+    }
+}
+
+/** What to do when the phone did not open its confirmation: allow it in the phone's settings, or add by hand. */
+@Composable
+private fun AddWidgetUnanswered() {
+    val context = LocalContext.current
+    Column(
+        modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        SettingsInfoTip(ADD_WIDGET_UNANSWERED)
+        TextButton(onClick = { openAppPermissionSettings(context) }, modifier = Modifier.align(Alignment.End)) {
+            Text("Open app settings")
         }
     }
 }
@@ -216,6 +302,13 @@ internal fun widgetGalleryRows(widgets: List<AddableWidget>): List<List<AddableW
 }
 
 private const val SMALL_WIDGET_MAX_WIDTH_DP = 200
+
+/** How long the home screen app has to open its confirmation before a request counts as unanswered. */
+internal const val ADD_WIDGET_ANSWER_MS = 1_500L
+
+internal const val ADD_WIDGET_UNANSWERED =
+    "Your phone didn’t let boxlore add it. Turn on Home screen shortcuts for boxlore in your phone’s app settings, then try again. " +
+        "Or touch and hold an empty spot on your home screen and choose Widgets."
 
 internal const val ADD_WIDGETS_CONFIRM = "Your home screen app asks you to confirm."
 

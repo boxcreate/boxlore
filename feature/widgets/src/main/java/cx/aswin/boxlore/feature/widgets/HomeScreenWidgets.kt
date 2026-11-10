@@ -19,6 +19,8 @@ object HomeScreenWidgets {
         @param:StringRes val description: Int,
         val previewWidthDp: Int,
         val previewHeightDp: Int,
+        /** Whether this widget draws show covers the way the Your Shows cover setting says. */
+        val usesShowsCoverStyle: Boolean,
         internal val receiver: Class<out AppWidgetProvider>,
     )
 
@@ -28,7 +30,7 @@ object HomeScreenWidgets {
             entry("compact", R.string.now_playing_bar_widget_label, R.string.now_playing_bar_widget_description),
             entry("round", R.string.playback_controls_widget_label, R.string.playback_controls_widget_description),
             entry("round_next", R.string.playback_next_controls_widget_label, R.string.playback_next_controls_widget_description),
-            entry("shows", R.string.subscriptions_widget_label, R.string.subscriptions_widget_description),
+            entry("shows", R.string.subscriptions_widget_label, R.string.subscriptions_widget_description, usesShowsCoverStyle = true),
             entry("new_episodes", R.string.new_episodes_widget_label, R.string.new_episodes_widget_description),
         )
 
@@ -58,9 +60,14 @@ object HomeScreenWidgets {
         return runCatching { preview.build(context.applicationContext) }.getOrNull()
     }
 
-    private fun entry(key: String, @StringRes label: Int, @StringRes description: Int): Entry {
+    private fun entry(
+        key: String,
+        @StringRes label: Int,
+        @StringRes description: Int,
+        usesShowsCoverStyle: Boolean = false,
+    ): Entry {
         val preview = WidgetPickerPreviews.previews().first { it.key == key }
-        return Entry(key, label, description, preview.size.widthDp, preview.size.heightDp, preview.receiver)
+        return Entry(key, label, description, preview.size.widthDp, preview.size.heightDp, usesShowsCoverStyle, preview.receiver)
     }
 
     private fun manager(context: Context): AppWidgetManager? = context.applicationContext.getSystemService(AppWidgetManager::class.java)

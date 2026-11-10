@@ -62,6 +62,8 @@ data class AddableWidget(
     val description: String,
     val previewWidthDp: Int = 320,
     val previewHeightDp: Int = 170,
+    /** Whether this widget follows the Your Shows cover setting, so its card carries that choice. */
+    val usesShowsCoverStyle: Boolean = false,
 )
 
 /**

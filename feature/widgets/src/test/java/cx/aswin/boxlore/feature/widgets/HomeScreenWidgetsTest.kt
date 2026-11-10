@@ -55,5 +55,7 @@ class HomeScreenWidgetsTest {
             views!!.apply(context, android.appwidget.AppWidgetHostView(context))
         }
         assertEquals(null, HomeScreenWidgets.preview(context, "no-such-widget"))
+        // Only Your Shows follows the cover setting, so only it carries that choice in Settings.
+        assertEquals(listOf("shows"), HomeScreenWidgets.all.filter { it.usesShowsCoverStyle }.map { it.key })
     }
 }
