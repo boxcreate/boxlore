@@ -44,6 +44,9 @@ class LibraryWidgetRemoteViewsService : RemoteViewsService() {
     }
 }
 
+/** The rows last saved for the library widgets, or none before the first save. */
+private fun savedSnapshot(context: Context): LibraryWidgetSnapshot = LibraryWidgetSnapshotStore(context).read() ?: LibraryWidgetSnapshot()
+
 internal class LibraryWidgetRemoteViewsFactory(
     private val context: Context,
     private val kind: LibraryWidgetKind,
@@ -58,10 +61,8 @@ internal class LibraryWidgetRemoteViewsFactory(
 
     override fun onCreate() = Unit
 
-    private fun savedSnapshot(): LibraryWidgetSnapshot = LibraryWidgetSnapshotStore(context).read() ?: LibraryWidgetSnapshot()
-
     override fun onDataSetChanged() {
-        val snapshot = preset ?: savedSnapshot()
+        val snapshot = preset ?: savedSnapshot(context)
         shows = snapshot.subscriptions
         episodes = snapshot.newEpisodes
         chrome = WidgetChrome.resolve(context)
