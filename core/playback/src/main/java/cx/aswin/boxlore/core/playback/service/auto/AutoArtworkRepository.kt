@@ -6,8 +6,12 @@ import java.io.File
 import java.security.MessageDigest
 
 internal object AutoArtworkRepository {
-    fun remoteUri(context: Context, remoteUrl: String?,): Uri? {
-        val source = remoteUrl?.takeIf { it.isNotBlank() } ?: return null
+    /**
+     * A link the car can load [remoteUrl] from. [fallbackUrl] (usually the show's cover) is served
+     * instead when the first address fails, so a broken episode image never leaves an empty tile.
+     */
+    fun remoteUri(context: Context, remoteUrl: String?, fallbackUrl: String? = null,): Uri? {
+        val source = remoteUrl?.takeIf { it.isNotBlank() } ?: fallbackUrl?.takeIf { it.isNotBlank() } ?: return null
         val localFile =
             when {
                 source.startsWith("file://") -> Uri.parse(source).path?.let(::File)
@@ -16,10 +20,11 @@ internal object AutoArtworkRepository {
             }
         if (localFile != null) return localUri(context, localFile)
 
-        val normalized = source.replaceFirst("http://", "https://")
-        if (!normalized.startsWith("https://")) return null
-        val key = normalized.sha256()
-        if (!AutoArtworkSourceStore.put(context, key, normalized)) return null
+        val normalized = source.toHttps() ?: return null
+        val fallback = fallbackUrl?.takeIf { it.isNotBlank() }?.toHttps()?.takeIf { it != normalized }
+        val sources = listOfNotNull(normalized, fallback).joinToString(SOURCE_SEPARATOR)
+        val key = sources.sha256()
+        if (!AutoArtworkSourceStore.put(context, key, sources)) return null
         return Uri
             .Builder()
             .scheme("content")
@@ -28,6 +33,13 @@ internal object AutoArtworkRepository {
             .appendPath(key)
             .build()
     }
+
+    /** The addresses saved for an artwork key, in the order to try them. */
+    fun sourcesOf(saved: String): List<String> = saved.split(SOURCE_SEPARATOR).filter { it.isNotBlank() }
+
+    private fun String.toHttps(): String? = replaceFirst("http://", "https://").takeIf { it.startsWith("https://") }
+
+    private const val SOURCE_SEPARATOR = "\n"
 
     private fun localUri(context: Context, file: File,): Uri? {
         val canonicalFile = runCatching(file::getCanonicalFile).getOrNull() ?: return null

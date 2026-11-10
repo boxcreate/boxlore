@@ -103,15 +103,17 @@ object AutoCollageGenerator {
 
         val built = createCollageBitmap(context, urls, folderId) ?: return null
         val loaded = built.loadedImageCount
+        keptCollage(context, safeName, storedSignature ?: provisionalSignature, cachedMeta, expected, outFile.takeIf { loaded == 0 })?.let {
+            built.bitmap.recycle()
+            return it
+        }
         val signature =
             AutoCollageFreshnessLogic.buildSignature(
                 contentKeysOrUrls = signatureValues,
                 loadedImageCount = loaded,
                 expectedImageCount = expected,
             )
-        FileOutputStream(outFile).use { out ->
-            built.bitmap.compress(Bitmap.CompressFormat.PNG, 90, out)
-        }
+        writeCollage(built.bitmap, outFile)
         runCatching { signatureFile.writeText(signature) }
         runCatching { metaFile.writeText("$loaded\n$expected") }
         built.bitmap.recycle()
@@ -122,6 +124,40 @@ object AutoCollageGenerator {
             loadedImageCount = loaded,
             expectedImageCount = expected,
         )
+    }
+
+    /**
+     * The collage already on disk, kept when none of the new covers could be loaded ([unloadedFile]
+     * is set): offline, a saved collage beats a blank placeholder.
+     */
+    @Suppress("LongParameterList")
+    private fun keptCollage(
+        context: Context,
+        safeName: String,
+        signature: String,
+        cachedMeta: Pair<Int, Int>?,
+        expected: Int,
+        unloadedFile: File?,
+    ): CollageResult? {
+        if (unloadedFile == null || expected <= 0 || !unloadedFile.exists()) return null
+        return CollageResult(
+            uri = AutoCollageProvider.getUri(context, "$safeName.png", signature),
+            signature = signature,
+            loadedImageCount = cachedMeta?.first ?: 0,
+            expectedImageCount = cachedMeta?.second ?: expected,
+        )
+    }
+
+    /** Written beside the file and moved into place, so the car never reads a half-written collage. */
+    private fun writeCollage(bitmap: Bitmap, outFile: File) {
+        val staging = File(outFile.parentFile, "${outFile.name}.tmp")
+        FileOutputStream(staging).use { out ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 90, out)
+        }
+        if (!staging.renameTo(outFile)) {
+            staging.copyTo(outFile, overwrite = true)
+            staging.delete()
+        }
     }
 
     private fun readMeta(metaFile: File): Pair<Int, Int>? {

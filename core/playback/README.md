@@ -66,10 +66,14 @@ It does not own the Room schema ([`:core:database`](../database/README.md)), pre
 ### Android Auto
 
 - `service.auto.AutoBrowseLibraryCallback`, `AutoBrowseTreeBuilder`, `AutoMediaItemFactory` and `AutoBrowseContract`: browse tree, media IDs and custom commands.
+- Tabs: Home, Continue, New, Shows. Home's blocks open lists through `open:<node>` IDs; a resumed episode is followed by the saved queue.
+- `AutoPlayContextTracker` matches a car play (a media ID alone) to the list last sent, so it is labelled and continues down that list; phone plays are never matched.
+- `AutoBrowseChangeNotifier` reloads car lists on phone changes while a car is connected.
 - `AutoMediaResolver`, `AutoPlaybackResumptionHandler` and `AutoVoiceSearchHandler`, each with a pure policy or logic object: playable items, `onPlaybackResumption` and voice search.
 - `AutoBrowseControllerMatcher` tells car controllers from Bluetooth AVRCP and system UI; connection events count only in car mode or on Android Automotive (`CarConnectionState`).
 - `labelCarPlay` names a play `android_auto_*` only when Auto's controller asked for it.
 - `service.AutoCollageProvider` serves `content://` artwork and collages (`AutoCollagePrewarmer`, `AutoCollageGenerator`, `AutoCollageLayouts`), fetched through `AutoArtworkDownloader` with validated HTTPS redirects.
+- `AutoArtworkScaler` caches covers at the car's size; a failed episode image falls back to the show's cover.
 - Collage links are display-only; saved artwork always comes from `PlaybackArtworkMetadata.savedArtworkUrl`.
 - The browse root title is `:core:catalog`'s `auto_app_name`; the generic tile spells `boxlore` in lowercase.
 
@@ -133,7 +137,7 @@ src/main/java/cx/aswin/boxlore/core/data/service/   # stubs for legacy service n
 Never rename these:
 
 - `BoxLorePlaybackService`, `MediaDownloadService` and `AutoCollageProvider` in `cx.aswin.boxlore.core.playback.service`, and their stubs in `cx.aswin.boxlore.core.data.service` ([`ARCHITECTURE.md`](../../ARCHITECTURE.md#services--providers)).
-- Media ID prefixes `episode:`, `queue:` and `learn:` (`QueueMath`, `AutoBrowseContract`), and Auto browse prefixes `subscription:`, `discover_genre:` and `discover_curated_`.
+- Media ID prefixes `episode:`, `queue:` and `learn:` (`QueueMath`, `AutoBrowseContract`), and Auto browse prefixes `subscription:`, `discover_genre:`, `discover_curated_` and `open:`.
 - Media item extras `boxlore_podcast_id` and `boxlore_artwork_sources`.
 - `customCacheKey` is the episode ID of the download holder (`EpisodeMediaCacheKey`); briefing audio adds its `v=` version. Briefing episode IDs stay `briefing_*`.
 - SharedPreferences `boxlore_player` (copied from legacy `boxcast_player` by `PrefsFileMigrator`): `player_dismissed`, `last_sleep_prompt_window_id` and `device_uuid`, which is never logged raw.

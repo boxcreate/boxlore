@@ -49,6 +49,23 @@ class AutoArtworkRepositoryTest {
     }
 
     @Test
+    fun aShowCoverIsSavedBehindTheEpisodeImageToStandInWhenItFails() {
+        val uri = AutoArtworkRepository.remoteUri(context, "https://cdn.example/episode.jpg", "http://cdn.example/show.jpg")!!
+
+        val saved = AutoArtworkSourceStore.get(context, uri.pathSegments.last())!!
+
+        assertEquals(listOf("https://cdn.example/episode.jpg", "https://cdn.example/show.jpg"), AutoArtworkRepository.sourcesOf(saved))
+    }
+
+    @Test
+    fun withoutAnEpisodeImageTheShowCoverIsTheArtworkAndItsLinkIsUnchanged() {
+        val showOnly = AutoArtworkRepository.remoteUri(context, "https://cdn.example/show.jpg")!!
+
+        assertEquals(showOnly, AutoArtworkRepository.remoteUri(context, null, "https://cdn.example/show.jpg"))
+        assertEquals(showOnly, AutoArtworkRepository.remoteUri(context, "https://cdn.example/show.jpg", "https://cdn.example/show.jpg"))
+    }
+
+    @Test
     fun remoteUriRejectsNonHttpSchemes() {
         assertNull(AutoArtworkRepository.remoteUri(context, "ftp://cdn.example/x.jpg"))
     }

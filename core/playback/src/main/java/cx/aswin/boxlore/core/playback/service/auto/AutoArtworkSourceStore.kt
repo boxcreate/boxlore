@@ -20,6 +20,8 @@ internal object AutoArtworkSourceStore {
     const val SOURCE_PREFS = "android_auto_artwork_sources"
     private const val TAG = "AutoArtworkSources"
     private const val COMMIT_WAIT_MS = 500L
+    private const val MAX_SAVED_SOURCES = 4_000
+    private val pruneScheduled = AtomicBoolean(false)
 
     private val memory = ConcurrentHashMap<String, String>()
     private val persistExecutor =
@@ -32,8 +34,12 @@ internal object AutoArtworkSourceStore {
      * within [COMMIT_WAIT_MS].
      */
     fun put(context: Context, key: String, value: String,): Boolean {
+        // Already saved: nothing to wait for. Lists are rebuilt on the main thread, and without this
+        // every row of every reload waited on a disk write for artwork the car already knew.
+        if (get(context, key) == value) return true
         memory[key] = value
         val appContext = context.applicationContext
+        if (pruneScheduled.compareAndSet(false, true)) persistExecutor.execute { pruneIfOversized(appContext) }
         val committed = AtomicBoolean(false)
         val done = CountDownLatch(1)
         persistExecutor.execute {
@@ -65,6 +71,18 @@ internal object AutoArtworkSourceStore {
             return false
         }
         return true
+    }
+
+    /**
+     * Sources are never removed one by one, so once the file is far larger than any car session
+     * needs it is emptied; lists put their sources back as they are next built. Runs before the
+     * first save of a process, when the car holds no link from this run yet.
+     */
+    private fun pruneIfOversized(appContext: Context) {
+        runCatching {
+            val prefs = appContext.getSharedPreferences(SOURCE_PREFS, Context.MODE_PRIVATE)
+            if (prefs.all.size > MAX_SAVED_SOURCES) prefs.edit().clear().commit()
+        }.onFailure { Log.w(TAG, "Unable to prune artwork sources", it) }
     }
 
     fun get(context: Context, key: String,): String? {

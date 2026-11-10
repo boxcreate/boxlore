@@ -67,7 +67,7 @@ internal class AutoCollagePrewarmer(
                     folderContentKeys = folders.mapValues { AutoCollageFolderLogic.keysOf(it.value) },
                 )
             onCollagesReady(uris)
-            notifyBrowseTree(snapshot.subscriptions.size, snapshot.resumeItems.size)
+            notifyBrowseTree()
         } catch (error: Exception) {
             Log.w("AutoBrowse", "Unable to prewarm Android Auto artwork", error)
         }
@@ -79,11 +79,13 @@ internal class AutoCollagePrewarmer(
         val history = listenerStore.projectRows(database.listeningHistoryDao().getRecentHistoryList(300))
         val resumeItems = listenerStore.projectRows(database.listeningHistoryDao().getResumeItemsList()) { !it.isCompleted && it.progressMs > 0 }
         val subscriptions = database.podcastDao().getSubscribedPodcastsList()
+        val liked = listenerStore.projectRows(database.listeningHistoryDao().getLikedEpisodesList(8)) { it.isLiked }
         val downloads = database.downloadedEpisodeDao().getCompletedDownloads(8)
         val queue = queueRepository.getQueueEpisodeSnapshot()
         return PrewarmSnapshot(
             history = history,
             resumeItems = resumeItems,
+            liked = liked,
             subscriptions = subscriptions,
             downloads = downloads,
             queue = queue,
@@ -127,22 +129,15 @@ internal class AutoCollagePrewarmer(
         )
     }
 
-    private fun notifyBrowseTree(subscriptionCount: Int, resumeCount: Int,) {
-        val session = mediaSessionProvider()
-        session?.notifyChildrenChanged(AutoBrowseContract.ROOT_ID, 4, null)
-        session?.notifyChildrenChanged(AutoBrowseContract.HOME_ID, 3, null)
-        session?.notifyChildrenChanged(
-            AutoBrowseContract.LIBRARY_ID,
-            subscriptionCount + 2,
-            null,
-        )
-        session?.notifyChildrenChanged(AutoBrowseContract.DISCOVER_ID, 3, null)
-        session?.notifyChildrenChanged(AutoBrowseContract.HOME_CONTINUE_ID, resumeCount, null)
+    /** Collages are the artwork of Home's blocks, so Home is the only screen to redraw when they change. */
+    private fun notifyBrowseTree() {
+        mediaSessionProvider()?.notifyChildrenChanged(AutoBrowseContract.HOME_ID, HOME_BLOCK_COUNT, null)
     }
 
     private data class PrewarmSnapshot(
         val history: List<ListeningHistoryEntity>,
         val resumeItems: List<ListeningHistoryEntity>,
+        val liked: List<ListeningHistoryEntity>,
         val subscriptions: List<PodcastEntity>,
         val downloads: List<DownloadedEpisodeEntity>,
         val queue: List<Episode>,
@@ -157,6 +152,13 @@ internal class AutoCollagePrewarmer(
                 }
             val resumePairs =
                 resumeItems.mapNotNull {
+                    AutoCollageFolderLogic.pairOrNull(
+                        it.episodeId,
+                        it.episodeImageUrl ?: it.podcastImageUrl,
+                    )
+                }
+            val likedPairs =
+                liked.mapNotNull {
                     AutoCollageFolderLogic.pairOrNull(
                         it.episodeId,
                         it.episodeImageUrl ?: it.podcastImageUrl,
@@ -203,7 +205,9 @@ internal class AutoCollagePrewarmer(
                 AutoBrowseContract.DISCOVER_ID to
                     AutoCollageFolderLogic.takeAligned(subscriptionPairs.asReversed()),
                 AutoBrowseContract.HOME_CONTINUE_ID to AutoCollageFolderLogic.takeAligned(resumePairs),
-                AutoBrowseContract.HOME_QUEUE_ID to AutoCollageFolderLogic.takeAligned(queuePairs),
+                AutoBrowseContract.LIBRARY_LIKED_ID to AutoCollageFolderLogic.takeAligned(likedPairs),
+                AutoBrowseContract.LIBRARY_HISTORY_ID to AutoCollageFolderLogic.takeAligned(historyPairs),
+                AutoBrowseContract.HOME_QUEUE_ID to AutoCollageFolderLogic.takeAligned((resumePairs + queuePairs).distinctBy { it.contentKey }),
                 AutoBrowseContract.HOME_NEW_EPISODES_ID to
                     AutoCollageFolderLogic.takeAligned(newEpisodePairs),
                 AutoBrowseContract.HOME_DRIVE_MIX_ID to AutoCollageFolderLogic.takeAligned(mixtapePairs),
@@ -212,5 +216,10 @@ internal class AutoCollagePrewarmer(
                 AutoBrowseContract.DISCOVER_GENRES_ID to emptyList(),
             )
         }
+    }
+
+    private companion object {
+        /** Media3 wants an item count with a change notice; the car reloads Home whatever the number. */
+        const val HOME_BLOCK_COUNT = 10
     }
 }

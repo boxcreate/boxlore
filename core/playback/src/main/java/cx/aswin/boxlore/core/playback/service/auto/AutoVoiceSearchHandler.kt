@@ -411,6 +411,19 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
         return mixtape.drop(selectedIndex).toMutableList()
     }
 
+    /** The saved queue as player items, leaving out [episodeId] and anything queued ahead of it. */
+    suspend fun queueAfter(episodeId: String): List<MediaItem> {
+        val queue = host.queueRepository.getQueueEpisodeSnapshot()
+        return queue.drop(queue.indexOfFirst { it.id == episodeId } + 1).map(::queueItem)
+    }
+
+    private fun queueItem(episode: cx.aswin.boxlore.core.model.Episode): MediaItem = AutoMediaItemFactory.fromEpisode(
+        episode = episode,
+        source = AutoBrowseContract.SOURCE_QUEUE,
+        artworkUri = AutoArtworkRepository.remoteUri(host.asContext(), episode.imageUrl, episode.podcastImageUrl),
+        mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX,
+    )
+
     suspend fun handlePlayFromQueue(episodeId: String, fromCar: Boolean): MutableList<MediaItem> {
         val queue = host.queueRepository.getQueueEpisodeSnapshot()
         val selectedIndex = queue.indexOfFirst { it.id == episodeId }

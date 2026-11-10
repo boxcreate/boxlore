@@ -69,6 +69,9 @@ internal object AutoMediaItemFactory {
                 MediaMetadata
                     .Builder()
                     .setTitle(title)
+                    // With a display title set, the car shows the subtitle as the second line; without
+                    // one it shows the artist there and the subtitle is never seen.
+                    .setDisplayTitle(title)
                     .setSubtitle(subtitle)
                     .setArtist(subtitle)
                     .setArtworkUri(artworkUri)
@@ -106,6 +109,9 @@ internal object AutoMediaItemFactory {
                 MediaMetadata
                     .Builder()
                     .setTitle(spec.title)
+                    // With a display title set, the car shows the subtitle ("Today · 28 min", "35 min
+                    // left") as the second line; without one it shows the artist there instead.
+                    .setDisplayTitle(spec.title)
                     .setSubtitle(spec.subtitle)
                     .setArtist(spec.podcastTitle)
                     .setAlbumTitle(spec.podcastTitle)
@@ -120,7 +126,15 @@ internal object AutoMediaItemFactory {
             ).build()
     }
 
-    fun fromHistory(history: ListeningHistoryEntity, source: String, artworkUri: Uri?, subtitle: String, groupTitle: String,): MediaItem {
+    fun fromHistory(
+        history: ListeningHistoryEntity,
+        source: String,
+        artworkUri: Uri?,
+        subtitle: String,
+        groupTitle: String?,
+        title: CharSequence = history.episodeTitle,
+        isDownloaded: Boolean = false,
+    ): MediaItem {
         val progress =
             if (history.durationMs > 0) {
                 history.progressMs.toDouble() / history.durationMs.toDouble()
@@ -130,7 +144,7 @@ internal object AutoMediaItemFactory {
         return playable(
             AutoPlayableSpec(
                 mediaId = "episode:${history.episodeId}",
-                title = history.episodeTitle,
+                title = title,
                 podcastTitle = history.podcastName,
                 subtitle = subtitle,
                 artworkUri = artworkUri,
@@ -140,12 +154,14 @@ internal object AutoMediaItemFactory {
                 groupTitle = groupTitle,
                 progress = progress,
                 isCompleted = history.isCompleted,
+                isDownloaded = isDownloaded,
                 customCacheKey =
                 EpisodeMediaCacheKey.of(history.episodeId, history.episodeAudioUrl),
             ),
         )
     }
 
+    @Suppress("LongParameterList")
     fun fromEpisode(
         episode: Episode,
         source: String,
@@ -154,17 +170,22 @@ internal object AutoMediaItemFactory {
         groupTitle: String? = null,
         mediaIdPrefix: String = "episode:",
         isDownloaded: Boolean = false,
+        subtitle: String? = null,
+        progress: Double? = null,
+        isCompleted: Boolean = false,
     ): MediaItem = playable(
         AutoPlayableSpec(
             mediaId = "$mediaIdPrefix${episode.id}",
             title = episode.title,
             podcastTitle = podcastTitle,
-            subtitle = buildDurationSubtitle(podcastTitle, episode.duration.toLong() * 1_000L),
+            subtitle = subtitle ?: buildDurationSubtitle(podcastTitle, episode.duration.toLong() * 1_000L),
             artworkUri = artworkUri,
             uri = episode.audioUrl,
             durationMs = episode.duration.toLong() * 1_000L,
             source = source,
             groupTitle = groupTitle,
+            progress = progress,
+            isCompleted = isCompleted,
             isDownloaded = isDownloaded,
             customCacheKey = EpisodeMediaCacheKey.of(episode.id, episode.audioUrl),
         ),
@@ -176,7 +197,7 @@ internal object AutoMediaItemFactory {
         ).build()
     }
 
-    fun fromDownload(download: DownloadedEpisodeEntity, artworkUri: Uri?, uri: String?, groupTitle: String,): MediaItem = playable(
+    fun fromDownload(download: DownloadedEpisodeEntity, artworkUri: Uri?, uri: String?, groupTitle: String?,): MediaItem = playable(
         AutoPlayableSpec(
             mediaId = "episode:${download.episodeId}",
             title = download.episodeTitle,
@@ -198,6 +219,19 @@ internal object AutoMediaItemFactory {
             podcastTitle?.takeIf(String::isNotBlank),
             duration.takeIf(String::isNotBlank),
         ).joinToString(" · ")
+    }
+
+    /** Joins the parts of a row's second line, leaving out blank ones. */
+    fun joinSubtitle(vararg parts: String?): String = parts.filterNot { it.isNullOrBlank() }.joinToString(" · ")
+
+    /** "35 min left", "1h 5m left" or "Almost done" for an episode that has been started. */
+    fun formatTimeLeft(progressMs: Long, durationMs: Long): String {
+        val remainingMin = (durationMs - progressMs).coerceAtLeast(0) / 60_000L
+        return when {
+            remainingMin > 60 -> "${remainingMin / 60}h ${remainingMin % 60}m left"
+            remainingMin > 0 -> "$remainingMin min left"
+            else -> "Almost done"
+        }
     }
 
     fun formatDuration(durationMs: Long): String {
