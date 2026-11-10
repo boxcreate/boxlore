@@ -2,7 +2,6 @@ package cx.aswin.boxlore.core.playback.service.auto
 
 import android.content.SharedPreferences
 import androidx.annotation.OptIn
-import androidx.annotation.VisibleForTesting
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaSession
@@ -65,7 +64,7 @@ internal class AutoPlaybackResumptionHandler(
         }
     }
 
-    @VisibleForTesting
+    /** The items a resume would play and where it would start. Also run when a car connects, to load them paused. */
     internal suspend fun resolveResumption(
         mediaSession: MediaSession,
     ): MediaSession.MediaItemsWithStartPosition {

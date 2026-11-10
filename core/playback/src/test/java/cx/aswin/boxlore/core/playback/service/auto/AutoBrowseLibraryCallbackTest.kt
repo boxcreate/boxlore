@@ -494,4 +494,73 @@ class AutoBrowseLibraryCallbackTest {
         assertEquals(listOf("episode:resume", "queue:next"), played.map { it.mediaId })
         assertEquals("android_auto_continue", cx.aswin.boxlore.core.analytics.PendingEntryPoint.consume()?.get("entry_point"))
     }
+
+    private fun carSessionWith(player: Player): MediaSession {
+        val session = mock(MediaSession::class.java)
+        `when`(player.availableCommands).thenReturn(Player.Commands.EMPTY)
+        `when`(session.player).thenReturn(player)
+        return session
+    }
+
+    private fun inCarMode(block: () -> Unit) {
+        val uiMode = context.getSystemService(android.app.UiModeManager::class.java)
+        uiMode.enableCarMode(0)
+        try {
+            block()
+        } finally {
+            uiMode.disableCarMode(0)
+        }
+    }
+
+    @Test
+    fun `a car connecting to an empty player gets the last episode loaded and paused`() {
+        // Regression: the car's card read "Tap to open" with a disabled play button until something was played.
+        val player = mock(Player::class.java)
+        val session = carSessionWith(player)
+        val last = MediaSession.MediaItemsWithStartPosition(listOf(episodeItem("last"), episodeItem("queued")), 0, 42_000L)
+        runBlocking { `when`(resumptionHandler.resolveResumption(session)).thenReturn(last) }
+
+        inCarMode { callback.onConnect(session, controllerFrom("com.google.android.projection.gearhead")) }
+
+        verify(player).setMediaItems(last.mediaItems, 0, 42_000L)
+        verify(player).prepare()
+        verify(player, Mockito.never()).play()
+    }
+
+    @Test
+    fun `a car connecting while something is loaded leaves the player alone`() {
+        val player = mock(Player::class.java)
+        `when`(player.mediaItemCount).thenReturn(1)
+        val session = carSessionWith(player)
+
+        inCarMode { callback.onConnect(session, controllerFrom("com.google.android.projection.gearhead")) }
+
+        verify(player, Mockito.never()).prepare()
+        runBlocking { verify(resumptionHandler, Mockito.never()).resolveResumption(session) }
+    }
+
+    @Test
+    fun `Android Auto connecting without a car, or a phone controller, loads nothing`() {
+        val player = mock(Player::class.java)
+        val session = carSessionWith(player)
+
+        // Android Auto's own app connects in the background to list media apps.
+        callback.onConnect(session, controllerFrom("com.google.android.projection.gearhead"))
+        inCarMode { callback.onConnect(session, controllerFrom("com.android.systemui")) }
+
+        verify(player, Mockito.never()).prepare()
+    }
+
+    @Test
+    fun `a car connecting with nothing to resume changes nothing`() {
+        val player = mock(Player::class.java)
+        val session = carSessionWith(player)
+        runBlocking {
+            `when`(resumptionHandler.resolveResumption(session)).thenThrow(UnsupportedOperationException("No playback resumption items available"))
+        }
+
+        inCarMode { callback.onConnect(session, controllerFrom("com.google.android.projection.gearhead")) }
+
+        verify(player, Mockito.never()).prepare()
+    }
 }

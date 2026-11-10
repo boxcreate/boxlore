@@ -92,6 +92,7 @@ internal class AutoBrowseLibraryCallback(
         if (isAndroidAuto(session, controller) && CarConnectionState.isInCar(host.asContext())) {
             connectedAtMs[controller] = System.currentTimeMillis()
             AnalyticsHelper.trackAndroidAutoConnected(sessionId = controller.packageName)
+            preloadLastEpisode(session)
         }
         if (isAndroidAuto(session, controller)) {
             carBrowsers.add(controller)
@@ -122,6 +123,33 @@ internal class AutoBrowseLibraryCallback(
                 ),
             )
             .build()
+    }
+
+    /**
+     * Loads the last episode, paused, when a car connects and nothing is loaded.
+     *
+     * Until the player holds an item the car has nothing to show: its card reads "Tap to open" with
+     * a disabled play button, and the last episode is only looked up once a play command arrives.
+     * This runs the same lookup ([AutoPlaybackResumptionHandler.resolveResumption]) up front, so the
+     * card shows the episode and one tap resumes it. Nothing starts playing.
+     */
+    private fun preloadLastEpisode(session: MediaSession) {
+        host.serviceScope.launch {
+            try {
+                val player = session.player
+                if (player.mediaItemCount > 0) return@launch
+                val last = resumptionHandler.resolveResumption(session)
+                // Anything that started while the episode was being looked up keeps the player.
+                if (player.mediaItemCount > 0 || last.mediaItems.isEmpty()) return@launch
+                player.setMediaItems(last.mediaItems, last.startIndex, last.startPositionMs)
+                player.prepare()
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                // Nothing to resume (a new listener, or everything finished): the card stays as it was.
+                android.util.Log.d("AutoBrowse", "No episode to load for the car: ${error.message}")
+            }
+        }
     }
 
     override fun onDisconnected(session: MediaSession, controller: MediaSession.ControllerInfo) {

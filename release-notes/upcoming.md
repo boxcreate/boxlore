@@ -30,6 +30,7 @@ Announcement title:
 - Android Auto has a new layout. Home shows what you're midway through, then large blocks for New episodes, Your shows, Daily mix, Downloads and more, with Continue, New and Shows one tap away as tabs.
 - In Android Auto, tapping an episode in New episodes, Daily mix, Downloads, Liked or Drive picks keeps playing down that list, and an episode you resume is followed by your queue.
 - Android Auto lists now update when you queue, download, like or follow something on your phone.
+- In Android Auto, your last episode is ready on the car's screen as soon as you connect, so one tap resumes it.
 
 ## Fixed
 
