@@ -30,13 +30,30 @@ data class WidgetEpisodeRow(
     val deepLinkUri: String,
 )
 
+/**
+ * How many shows and latest episodes the library holds in all. The lists a widget scrolls are capped,
+ * so the header badge counts from here to match what the app shows.
+ */
+@Serializable
+data class WidgetLibraryCounts(
+    val subscriptions: Int = 0,
+    val newEpisodes: Int = 0,
+)
+
 /** Combined library-widget snapshot persisted for cold updates. */
 @Serializable
 data class LibraryWidgetSnapshot(
     val subscriptions: List<WidgetShowRow> = emptyList(),
     val newEpisodes: List<WidgetEpisodeRow> = emptyList(),
     val updatedAtMs: Long = 0L,
-)
+    val counts: WidgetLibraryCounts = WidgetLibraryCounts(),
+) {
+    /** The badge number: the library's total, never less than the rows the widget holds. */
+    fun count(kind: LibraryWidgetKind): Int = when (kind) {
+        LibraryWidgetKind.SUBSCRIPTIONS -> maxOf(counts.subscriptions, subscriptions.size)
+        LibraryWidgetKind.NEW_EPISODES -> maxOf(counts.newEpisodes, newEpisodes.size)
+    }
+}
 
 enum class LibraryWidgetKind {
     SUBSCRIPTIONS,
@@ -51,6 +68,9 @@ interface WidgetLibrarySource {
     val subscriptions: Flow<List<WidgetShowRow>>
 
     val newEpisodes: Flow<List<WidgetEpisodeRow>>
+
+    /** Totals before the lists were capped. */
+    val counts: Flow<WidgetLibraryCounts>
 }
 
 interface LibraryWidgetDependencies {

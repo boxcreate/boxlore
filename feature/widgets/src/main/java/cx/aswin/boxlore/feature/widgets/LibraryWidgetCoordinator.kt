@@ -36,15 +36,15 @@ object LibraryWidgetCoordinator {
                         renderAll(context, cached)
                     }
 
-                    combine(deps.library.subscriptions, deps.library.newEpisodes) { shows, episodes ->
-                        shows to episodes
-                    }.collectLatest { (shows, episodes) ->
+                    combine(deps.library.subscriptions, deps.library.newEpisodes, deps.library.counts) { shows, episodes, counts ->
+                        Triple(shows, episodes, counts)
+                    }.collectLatest { (shows, episodes, counts) ->
                         val previous = store.read()
                         val withDiskCacheShows =
                             shows.map { row ->
                                 row.copy(
                                     artworkCachePath =
-                                    row.artworkCachePath
+                                    row.artworkCachePath.ifOnDisk()
                                         ?: artworkLoader.resolveCachedPath(row.artworkUrl),
                                 )
                             }
@@ -52,7 +52,7 @@ object LibraryWidgetCoordinator {
                             episodes.map { row ->
                                 row.copy(
                                     artworkCachePath =
-                                    row.artworkCachePath
+                                    row.artworkCachePath.ifOnDisk()
                                         ?: artworkLoader.resolveCachedPath(row.artworkUrl),
                                 )
                             }
@@ -71,6 +71,7 @@ object LibraryWidgetCoordinator {
                                 subscriptions = mergedShows,
                                 newEpisodes = mergedEpisodes,
                                 updatedAtMs = System.currentTimeMillis(),
+                                counts = counts,
                             )
                         store.write(snapshot)
                         renderAll(context, snapshot)
@@ -108,6 +109,11 @@ object LibraryWidgetCoordinator {
         }
     }
 
+    /**
+     * Fetches covers the widgets do not have yet and shows them as they arrive, a few at a time.
+     * Waiting for the whole library first left a widget without covers whenever the app was closed
+     * before the last one came in.
+     */
     private fun loadMissingArtwork(
         context: Context,
         snapshot: LibraryWidgetSnapshot,
@@ -118,41 +124,49 @@ object LibraryWidgetCoordinator {
         artworkJob.getAndSet(null)?.cancel()
         artworkJob.set(
             deps.scope.launch {
-                var shows = snapshot.subscriptions
-                var episodes = snapshot.newEpisodes
-                var changed = false
+                var current = snapshot
+                var unpublished = 0
 
-                shows =
-                    shows.map { row ->
-                        if (!row.artworkCachePath.isNullOrBlank() || cx.aswin.boxlore.core.model.artworkUrls(row.artworkUrl, *row.fallbackArtworkUrls.toTypedArray()).isEmpty()) {
-                            row
-                        } else {
-                            val path = artworkLoader.load(row.artworkUrl, row.fallbackArtworkUrls) ?: return@map row
-                            changed = true
-                            row.copy(artworkCachePath = path)
-                        }
-                    }
-                episodes =
-                    episodes.map { row ->
-                        if (!row.artworkCachePath.isNullOrBlank() || cx.aswin.boxlore.core.model.artworkUrls(row.artworkUrl, *row.fallbackArtworkUrls.toTypedArray()).isEmpty()) {
-                            row
-                        } else {
-                            val path = artworkLoader.load(row.artworkUrl, row.fallbackArtworkUrls) ?: return@map row
-                            changed = true
-                            row.copy(artworkCachePath = path)
-                        }
-                    }
+                fun publish() {
+                    store.write(current.copy(updatedAtMs = System.currentTimeMillis()))
+                    notifyRowsChanged(context.applicationContext)
+                    unpublished = 0
+                }
 
-                if (!changed) return@launch
-                val withArt =
-                    LibraryWidgetSnapshot(
-                        subscriptions = shows,
-                        newEpisodes = episodes,
-                        updatedAtMs = System.currentTimeMillis(),
-                    )
-                store.write(withArt)
-                renderAll(context.applicationContext, withArt)
+                snapshot.subscriptions.forEachIndexed { index, row ->
+                    if (!row.needsArtwork()) return@forEachIndexed
+                    val path = artworkLoader.load(row.artworkUrl, row.fallbackArtworkUrls) ?: return@forEachIndexed
+                    current = current.copy(subscriptions = current.subscriptions.toMutableList().also { it[index] = row.copy(artworkCachePath = path) })
+                    if (++unpublished >= PUBLISH_EVERY) publish()
+                }
+                snapshot.newEpisodes.forEachIndexed { index, row ->
+                    if (!row.needsArtwork()) return@forEachIndexed
+                    val path = artworkLoader.load(row.artworkUrl, row.fallbackArtworkUrls) ?: return@forEachIndexed
+                    current = current.copy(newEpisodes = current.newEpisodes.toMutableList().also { it[index] = row.copy(artworkCachePath = path) })
+                    if (++unpublished >= PUBLISH_EVERY) publish()
+                }
+                if (unpublished > 0) publish()
             },
         )
     }
+
+    /** Tells the placed library widgets to redraw their rows; the frame around them stays as it is. */
+    private fun notifyRowsChanged(context: Context) {
+        val manager = context.getSystemService(AppWidgetManager::class.java) ?: return
+        LibraryWidgetProviders.all.forEach { provider ->
+            val ids = manager.getAppWidgetIds(ComponentName(context, provider.receiverClass))
+            if (ids.isNotEmpty()) manager.notifyAppWidgetViewDataChanged(ids, R.id.widget_list_view)
+        }
+    }
+
+    private fun WidgetShowRow.needsArtwork(): Boolean = artworkCachePath.isNullOrBlank() &&
+        cx.aswin.boxlore.core.model.artworkUrls(artworkUrl, *fallbackArtworkUrls.toTypedArray()).isNotEmpty()
+
+    private fun WidgetEpisodeRow.needsArtwork(): Boolean = artworkCachePath.isNullOrBlank() &&
+        cx.aswin.boxlore.core.model.artworkUrls(artworkUrl, *fallbackArtworkUrls.toTypedArray()).isNotEmpty()
+
+    /** The system may clear the artwork cache, so a remembered path only counts while its file is there. */
+    private fun String?.ifOnDisk(): String? = this?.takeIf { it.isNotBlank() && java.io.File(it).exists() }
+
+    private const val PUBLISH_EVERY = 4
 }

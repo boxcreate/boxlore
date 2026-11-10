@@ -16,6 +16,7 @@ import cx.aswin.boxlore.core.ranking.EpisodeRankingInput
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
 import cx.aswin.boxlore.feature.widgets.WidgetEpisodeRow
+import cx.aswin.boxlore.feature.widgets.WidgetLibraryCounts
 import cx.aswin.boxlore.feature.widgets.WidgetLibrarySource
 import cx.aswin.boxlore.feature.widgets.WidgetShowRow
 import cx.aswin.boxlore.feature.widgets.logic.LibraryWidgetLogic
@@ -43,7 +44,11 @@ class WidgetLibrarySourceAdapter(
     private val adaptiveScorer: AdaptiveCandidateScorer,
     scope: CoroutineScope,
 ) : WidgetLibrarySource {
-    private data class Projection(val subscriptions: List<WidgetShowRow>, val newEpisodes: List<WidgetEpisodeRow>,)
+    private data class Projection(
+        val subscriptions: List<WidgetShowRow>,
+        val newEpisodes: List<WidgetEpisodeRow>,
+        val counts: WidgetLibraryCounts = WidgetLibraryCounts(),
+    )
 
     private val projection: Flow<Projection> =
         combine(
@@ -107,7 +112,11 @@ class WidgetLibrarySourceAdapter(
                         )
                     },
                 )
-            Projection(showRows, episodeRows)
+            Projection(
+                subscriptions = showRows,
+                newEpisodes = episodeRows,
+                counts = WidgetLibraryCounts(subscriptions = sortedShows.size, newEpisodes = sortedLatest.size),
+            )
         }.stateIn(
             scope = scope,
             started = SharingStarted.Eagerly,
@@ -117,6 +126,7 @@ class WidgetLibrarySourceAdapter(
     override val subscriptions: Flow<List<WidgetShowRow>> = projection.map { it.subscriptions }
 
     override val newEpisodes: Flow<List<WidgetEpisodeRow>> = projection.map { it.newEpisodes }
+    override val counts: Flow<WidgetLibraryCounts> = projection.map { it.counts }
 
     private data class Inputs(
         val podcasts: List<Podcast>,

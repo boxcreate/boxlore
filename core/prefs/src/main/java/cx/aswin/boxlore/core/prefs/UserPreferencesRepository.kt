@@ -797,6 +797,13 @@ class UserPreferencesRepository(context: Context,) {
 
     suspend fun setWidgetAppearance(appearance: String) = this.appearance.setWidgetAppearance(appearance)
 
+    val cachedWidgetShowsArtwork: String
+        get() = appearance.widgetShowsArtwork.cachedStyle
+
+    val widgetShowsArtworkStream: Flow<String> = appearance.widgetShowsArtwork.style
+
+    suspend fun setWidgetShowsArtwork(style: String) = appearance.widgetShowsArtwork.setStyle(style)
+
     val overriddenRecPodcastIdStream: Flow<String?> = library.overriddenRecPodcastIdStream
 
     suspend fun setOverriddenRecPodcastId(podcastId: String?) = library.setOverriddenRecPodcastId(podcastId)

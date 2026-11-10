@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- One New Episodes row: a pill with round artwork. The bottom padding is the gap between rows. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_row_root"
     android:layout_width="match_parent"
@@ -11,69 +12,88 @@
         android:layout_height="match_parent"
         android:contentDescription="@null"
         android:scaleType="fitXY"
-        android:src="@drawable/widget_list_row_chip" />
+        android:src="@drawable/widget_pill" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center_vertical"
+        android:baselineAligned="false"
         android:orientation="horizontal"
-        android:paddingHorizontal="8dp">
+        android:paddingStart="6dp"
+        android:paddingEnd="22dp">
 
         <FrameLayout
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="@drawable/widget_list_art_frame"
-            android:clipToOutline="true">
+            android:layout_width="46dp"
+            android:layout_height="46dp">
+
+            <ImageView
+                android:id="@+id/widget_row_art_placeholder"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:scaleType="fitXY"
+                android:src="@drawable/widget_circle"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/widget_row_art_mark"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_boxlore_app_mark"
+                android:visibility="gone" />
 
             <ImageView
                 android:id="@+id/widget_row_art"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:contentDescription="@null"
-                android:scaleType="centerCrop"
-                android:src="@drawable/widget_art_placeholder" />
+                android:scaleType="fitXY" />
         </FrameLayout>
 
         <LinearLayout
             android:id="@+id/widget_row_metadata"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="12dp"
             android:layout_weight="1"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingVertical="7dp">
 
             <TextView
                 android:id="@+id/widget_row_title"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
+                android:layout_weight="13"
+                android:autoSizeMaxTextSize="14sp"
+                android:autoSizeMinTextSize="11sp"
+                android:autoSizeStepGranularity="0.5sp"
+                android:autoSizeTextType="uniform"
                 android:ellipsize="end"
                 android:fontFamily="sans-serif-medium"
+                android:gravity="bottom|start"
                 android:includeFontPadding="false"
                 android:maxLines="2"
-                android:textColor="@color/widget_on_secondary_container"
-                android:textSize="14sp" />
+                android:textColor="@color/widget_on_surface" />
 
             <TextView
                 android:id="@+id/widget_row_subtitle"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
+                android:layout_height="0dp"
+                android:layout_weight="6"
+                android:autoSizeMaxTextSize="12sp"
+                android:autoSizeMinTextSize="10sp"
+                android:autoSizeStepGranularity="0.5sp"
+                android:autoSizeTextType="uniform"
                 android:ellipsize="end"
                 android:fontFamily="sans-serif"
+                android:gravity="top|start"
                 android:includeFontPadding="false"
                 android:maxLines="1"
-                android:textColor="@color/widget_on_surface_variant"
-                android:textSize="12sp" />
+                android:textColor="@color/widget_on_surface_variant" />
         </LinearLayout>
-
-        <ImageView
-            android:id="@+id/widget_row_new_dot"
-            android:layout_width="8dp"
-            android:layout_height="8dp"
-            android:layout_marginStart="8dp"
-            android:contentDescription="@null"
-            android:src="@drawable/widget_new_dot"
-            android:visibility="gone" />
     </LinearLayout>
 </FrameLayout>

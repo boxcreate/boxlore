@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Picker previews only: a sample cover (four squares). A picture, so its colours are fixed on purpose. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path
+        android:fillColor="#FF2EC4B6"
+        android:pathData="M0,0h100v100h-100z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M22,22h22v22h-22zM56,22h22v22h-22zM22,56h22v22h-22z" />
+    <path
+        android:fillColor="#FF0B3954"
+        android:pathData="M56,56h22v22h-22z" />
+</vector>

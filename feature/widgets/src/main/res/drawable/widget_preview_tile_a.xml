@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Picker previews only: sample cover A cut to the rounded square Your Shows uses by default. The cut is part of the picture, so it shows wherever the preview is drawn. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <group>
+        <clip-path android:pathData="M22,0h56a22,22 0,0 1,22 22v56a22,22 0,0 1,-22 22h-56a22,22 0,0 1,-22 -22v-56a22,22 0,0 1,22 -22z" />
+        <path
+            android:fillColor="#FFD8492A"
+            android:pathData="M0,0h100v100h-100z" />
+        <path
+            android:fillColor="#FFFFE2A8"
+            android:pathData="M66,36m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0" />
+    </group>
+</vector>

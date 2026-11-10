@@ -9,6 +9,7 @@ import cx.aswin.boxlore.feature.widgets.LibraryWidgetCoordinator
 import cx.aswin.boxlore.feature.widgets.LibraryWidgetDependencies
 import cx.aswin.boxlore.feature.widgets.NowPlayingWidgetCoordinator
 import cx.aswin.boxlore.feature.widgets.NowPlayingWidgetDependencies
+import cx.aswin.boxlore.feature.widgets.WidgetPickerPreviews
 import cx.aswin.boxlore.feature.widgets.configureLibraryWidgets
 import cx.aswin.boxlore.feature.widgets.configureNowPlayingWidget
 import kotlinx.coroutines.CoroutineScope
@@ -55,7 +56,7 @@ object HomeScreenWidgetsInstaller {
                 }
             },
         )
-        // Re-render when widget chrome source, Appearance theme, or lettering changes.
+        // Re-render when widget chrome source, Appearance theme, lettering, or the Your Shows artwork style changes.
         scope.launch {
             combine(
                 combine(
@@ -66,9 +67,12 @@ object HomeScreenWidgetsInstaller {
                     userPreferencesRepository.surfaceStyleStream,
                 ) { _, _, _, _, _ -> Unit },
                 userPreferencesRepository.fontRoundnessStream,
-            ) { _, _ -> Unit }.collect {
+                userPreferencesRepository.widgetShowsArtworkStream,
+            ) { _, _, _ -> Unit }.collect {
                 NowPlayingWidgetCoordinator.requestRefresh(context)
                 LibraryWidgetCoordinator.requestRefresh(context)
+                // The widget picker shows the same look the placed widgets now have.
+                WidgetPickerPreviews.refresh(context)
             }
         }
     }

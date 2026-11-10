@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Draws nothing. Its shape keeps the taller Full Controls widget from growing taller than 80% of its width. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <size
+        android:width="50dp"
+        android:height="40dp" />
+    <solid android:color="@android:color/transparent" />
+</shape>

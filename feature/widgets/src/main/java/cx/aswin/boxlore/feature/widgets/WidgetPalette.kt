@@ -24,4 +24,12 @@ internal object WidgetPalette {
     @ColorRes val primaryContainer: Int = R.color.widget_primary_container
 
     @ColorRes val onPrimaryContainer: Int = R.color.widget_on_primary_container
+
+    @ColorRes val tertiary: Int = R.color.widget_tertiary
+
+    @ColorRes val onTertiary: Int = R.color.widget_on_tertiary
+
+    @ColorRes val tertiaryContainer: Int = R.color.widget_tertiary_container
+
+    @ColorRes val onTertiaryContainer: Int = R.color.widget_on_tertiary_container
 }

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Picker previews only: a sample cover (a crescent moon). A picture, so its colours are fixed on purpose. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path
+        android:fillColor="#FF1B2A52"
+        android:pathData="M0,0h100v100h-100z" />
+    <path
+        android:fillColor="#FFFCA311"
+        android:pathData="M50,46m-24,0a24,24 0,1 1,48 0a24,24 0,1 1,-48 0" />
+    <path
+        android:fillColor="#FF1B2A52"
+        android:pathData="M60,40m-20,0a20,20 0,1 1,40 0a20,20 0,1 1,-40 0" />
+</vector>

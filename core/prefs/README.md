@@ -15,6 +15,7 @@ It does not own analytics event storage, playback behaviour, ranking storage, ca
 - `ThemeSelection`: opaque brand, surface and wallpaper-colour inputs; `setThemeSelection` and `setThemePreset` write them in one update, DataStore and fast cache together.
 - `FontRoundnessAxis`: lettering preset keys and ROND axis values for non-Compose readers, plus the `boxlore_theme_fast_cache` file name.
 - `WidgetAppearance`: sanitizes widget chrome (`app` or `system`) and reads it from the fast cache for RemoteViews.
+- `WidgetShowsArtwork`: how the Your Shows widget draws covers (`rounded`, the default, or `shapes`), read from the fast cache by the widget's list factory.
 - `FullPlayerStyle`, `NavigationBlurLevel`, `SubscriptionsTabStyle`: stored values and sanitizers for the full player, navigation blur and Subscriptions tab layout.
 - `HeroCardStyle`, `HeroCoverShade`, `HeroTideProgress`: Home hero card style, shared colour choice and Tide ring, with per-style defaults (`HeroCoverShade.forStyle`).
 - `ExploreDefaultTab`, `SubscriptionsDefaultTab`: sanitize default tabs and resolve the pager index when a route names no tab.
@@ -36,7 +37,7 @@ src/main/java/cx/aswin/boxlore/core/prefs/
   UserPreferencesRepository.kt       # public repository, user_preferences delegate
   UserPreferenceKeys.kt              # internal Keys object
   AppearancePreferences.kt           # theme, lettering, navigation, landing; fast cache and hydration
-  ThemeSelection.kt, FontRoundnessAxis.kt, WidgetAppearance.kt
+  ThemeSelection.kt, FontRoundnessAxis.kt, WidgetAppearance.kt, WidgetShowsArtworkPreferences.kt
   FullPlayerStyle.kt, FullPlayerPreferences.kt
   NavigationBlurLevel.kt, NavigationBlurPreferences.kt
   HeroCardStyle.kt, HeroCoverShade.kt, HeroTideProgress.kt, HeroCardStylePreferences.kt
@@ -89,7 +90,7 @@ Files:
 Contracts:
 
 - Legacy `boxcast_*` files are read through `PrefsFileMigrator`; the canonical `boxlore_*` file wins.
-- The fast cache mirrors `theme_config`, `surface_style`, `theme_brand`, `use_dynamic_color`, `font_roundness`, `navigation_style`, `open_app_to`, `widget_appearance`, `explore_default_tab`, `subscriptions_default_tab`, plus the full player, navigation blur, hero, artwork-colour, custom theme and Picked for you choices.
+- The fast cache mirrors `theme_config`, `surface_style`, `theme_brand`, `use_dynamic_color`, `font_roundness`, `navigation_style`, `open_app_to`, `widget_appearance`, `widget_shows_artwork`, `explore_default_tab`, `subscriptions_default_tab`, plus the full player, navigation blur, hero, artwork-colour, custom theme and Picked for you choices.
 - After an Android backup restore, `hydrateMissingDataStoreFromFastCache` copies cached values only into missing DataStore keys; an existing DataStore choice always wins.
 - Hero choices are cached and hydrated only once picked, so listeners who never picked follow the current default.
 - `theme_brand` holds a named palette, a `#RRGGBB` Material 3 seed, or `exact:#RRGGBB` (primary used as is).

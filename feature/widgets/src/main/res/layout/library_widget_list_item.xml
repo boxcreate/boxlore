@@ -1,78 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  One Your Shows tile. The artwork (or its placeholder) is a square bitmap already cut to its shape,
+  and adjustViewBounds makes the tile as tall as the column is wide. The dot marks a new episode.
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_row_root"
     android:layout_width="match_parent"
-    android:layout_height="56dp"
-    android:paddingBottom="6dp">
+    android:layout_height="wrap_content"
+    android:padding="4dp">
 
-    <ImageView
-        android:id="@+id/widget_row_bg"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:contentDescription="@null"
-        android:scaleType="fitXY"
-        android:src="@drawable/widget_list_row_chip" />
+        android:layout_height="wrap_content">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="8dp">
-
-        <FrameLayout
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@drawable/widget_list_art_frame"
-            android:clipToOutline="true">
-
-            <ImageView
-                android:id="@+id/widget_row_art"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:contentDescription="@null"
-                android:scaleType="centerCrop"
-                android:src="@drawable/widget_art_placeholder" />
-        </FrameLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
+        <ImageView
+            android:id="@+id/widget_row_art_placeholder"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:adjustViewBounds="true"
+            android:contentDescription="@null"
+            android:scaleType="fitXY"
+            android:visibility="gone" />
 
-            <TextView
-                android:id="@+id/widget_row_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:fontFamily="sans-serif-medium"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:textColor="@color/widget_on_secondary_container"
-                android:textSize="14sp" />
+        <ImageView
+            android:id="@+id/widget_row_art_mark"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_gravity="center"
+            android:contentDescription="@null"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_boxlore_app_mark"
+            android:visibility="gone" />
 
-            <TextView
-                android:id="@+id/widget_row_subtitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:ellipsize="end"
-                android:fontFamily="sans-serif"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:textColor="@color/widget_on_surface_variant"
-                android:textSize="12sp" />
-        </LinearLayout>
+        <ImageView
+            android:id="@+id/widget_row_art"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:contentDescription="@null"
+            android:scaleType="fitXY" />
+
+        <ImageView
+            android:id="@+id/widget_row_new_dot_ring"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_gravity="top|end"
+            android:contentDescription="@null"
+            android:src="@drawable/widget_circle"
+            android:visibility="gone" />
 
         <ImageView
             android:id="@+id/widget_row_new_dot"
-            android:layout_width="8dp"
-            android:layout_height="8dp"
-            android:layout_marginStart="8dp"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="3dp"
+            android:layout_marginEnd="3dp"
             android:contentDescription="@null"
-            android:src="@drawable/widget_new_dot"
+            android:src="@drawable/widget_circle"
             android:visibility="gone" />
-    </LinearLayout>
+    </FrameLayout>
 </FrameLayout>

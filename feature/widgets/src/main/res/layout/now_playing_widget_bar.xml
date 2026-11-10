@@ -1,221 +1,423 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The 48dp card matches the provider minimum so launchers cannot clip its controls.
-  Host root stays match_parent in the launcher cell; the card is wrap_content + centered.
-  Surface ImageView is match_parent inside a wrap_content FrameLayout so it paints the
-  card only — not the full cell (RelativeLayout match_parent was expanding into the host).
+  Now Playing · Compact: one pill. Every part takes its size from the pill's height, and the title
+  takes the width that is left. The pill is never taller than a quarter of its width and sits in the
+  middle of the cell, so it keeps its shape in a tall cell and always leaves room for the title.
+  Transport controls keep their sides in right-to-left layouts, so they use left and right on purpose.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:theme="@android:style/Theme.DeviceDefault.DayNight">
+    android:theme="@android:style/Theme.DeviceDefault.DayNight"
+    tools:ignore="RtlHardcoded,NestedWeights,UselessLeaf">
 
-    <FrameLayout
-        android:id="@+id/widget_playing_container"
+    <RelativeLayout
+        android:id="@+id/widget_frame"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:clipToOutline="true"
-        android:visibility="gone">
+        android:layout_height="match_parent">
 
         <ImageView
-            android:id="@+id/widget_surface_background"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:contentDescription="@null"
-            android:scaleType="fitXY"
-            android:src="@drawable/widget_surface" />
-
-        <RelativeLayout
+            android:id="@+id/widget_frame_sizer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingHorizontal="10dp"
-            android:paddingVertical="4dp">
+            android:layout_centerVertical="true"
+            android:adjustViewBounds="true"
+            android:contentDescription="@null"
+            android:src="@drawable/widget_sizer_frame_bar" />
+
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_alignStart="@id/widget_frame_sizer"
+            android:layout_alignTop="@id/widget_frame_sizer"
+            android:layout_alignEnd="@id/widget_frame_sizer"
+            android:layout_alignBottom="@id/widget_frame_sizer">
 
             <FrameLayout
-                android:id="@+id/widget_artwork_frame"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true"
-                android:background="@drawable/widget_art_tile_shape"
-                android:clipToOutline="true">
+                android:id="@+id/widget_playing_container"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone">
 
                 <ImageView
-                    android:id="@+id/widget_artwork"
+                    android:id="@+id/widget_surface_background"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:contentDescription="@null"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/widget_art_placeholder" />
+                    android:scaleType="fitXY"
+                    android:src="@drawable/widget_pill" />
+
+                <LinearLayout
+                    android:id="@+id/widget_info_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal"
+                    android:paddingStart="4dp"
+                    android:paddingTop="4dp"
+                    android:paddingEnd="10dp"
+                    android:paddingBottom="4dp">
+
+                    <RelativeLayout
+                        android:id="@+id/widget_disc"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent">
+
+                        <ImageView
+                            android:id="@+id/widget_disc_sizer"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:adjustViewBounds="true"
+                            android:contentDescription="@null"
+                            android:src="@drawable/widget_sizer_square" />
+
+                        <ImageView
+                            android:id="@+id/widget_progress_track"
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:layout_alignStart="@id/widget_disc_sizer"
+                            android:layout_alignTop="@id/widget_disc_sizer"
+                            android:layout_alignEnd="@id/widget_disc_sizer"
+                            android:layout_alignBottom="@id/widget_disc_sizer"
+                            android:contentDescription="@null"
+                            android:scaleType="fitXY" />
+
+                        <ImageView
+                            android:id="@+id/widget_progress"
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:layout_alignStart="@id/widget_disc_sizer"
+                            android:layout_alignTop="@id/widget_disc_sizer"
+                            android:layout_alignEnd="@id/widget_disc_sizer"
+                            android:layout_alignBottom="@id/widget_disc_sizer"
+                            android:contentDescription="@null"
+                            android:scaleType="fitXY" />
+
+                        <ImageView
+                            android:id="@+id/widget_artwork_placeholder"
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:layout_alignStart="@id/widget_disc_sizer"
+                            android:layout_alignTop="@id/widget_disc_sizer"
+                            android:layout_alignEnd="@id/widget_disc_sizer"
+                            android:layout_alignBottom="@id/widget_disc_sizer"
+                            android:contentDescription="@null"
+                            android:scaleType="fitXY"
+                            android:visibility="gone" />
+
+                        <ImageView
+                            android:id="@+id/widget_artwork_mark"
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:layout_alignStart="@id/widget_disc_sizer"
+                            android:layout_alignTop="@id/widget_disc_sizer"
+                            android:layout_alignEnd="@id/widget_disc_sizer"
+                            android:layout_alignBottom="@id/widget_disc_sizer"
+                            android:contentDescription="@null"
+                            android:scaleX="0.42"
+                            android:scaleY="0.42"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_boxlore_app_mark"
+                            android:visibility="gone" />
+
+                        <ImageView
+                            android:id="@+id/widget_artwork"
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:layout_alignStart="@id/widget_disc_sizer"
+                            android:layout_alignTop="@id/widget_disc_sizer"
+                            android:layout_alignEnd="@id/widget_disc_sizer"
+                            android:layout_alignBottom="@id/widget_disc_sizer"
+                            android:contentDescription="@null"
+                            android:scaleType="fitXY" />
+                    </RelativeLayout>
+
+                    <LinearLayout
+                        android:id="@+id/widget_metadata_container"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="10dp"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:paddingVertical="4dp">
+
+                        <TextView
+                            android:id="@+id/widget_episode_title"
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="3"
+                            android:autoSizeMaxTextSize="14sp"
+                            android:autoSizeMinTextSize="11sp"
+                            android:autoSizeStepGranularity="0.5sp"
+                            android:autoSizeTextType="uniform"
+                            android:ellipsize="end"
+                            android:fontFamily="sans-serif-medium"
+                            android:gravity="bottom|start"
+                            android:includeFontPadding="false"
+                            android:maxLines="2"
+                            android:textColor="@color/widget_on_primary_container" />
+
+                        <TextView
+                            android:id="@+id/widget_podcast_title"
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="2"
+                            android:autoSizeMaxTextSize="12sp"
+                            android:autoSizeMinTextSize="9.5sp"
+                            android:autoSizeStepGranularity="0.5sp"
+                            android:autoSizeTextType="uniform"
+                            android:ellipsize="end"
+                            android:fontFamily="sans-serif"
+                            android:gravity="top|start"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
+                            android:paddingTop="1dp"
+                            android:textColor="@color/widget_on_primary_container" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/widget_controls"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:baselineAligned="false"
+                        android:layoutDirection="ltr"
+                        android:orientation="horizontal">
+
+                        <RelativeLayout
+                            android:id="@+id/widget_skip_back"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent">
+
+                            <ImageView
+                                android:id="@+id/widget_skip_back_sizer"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:adjustViewBounds="true"
+                                android:contentDescription="@null"
+                                android:src="@drawable/widget_sizer_mini" />
+
+                            <ImageView
+                                android:id="@+id/widget_skip_back_background"
+                                android:layout_width="0dp"
+                                android:layout_height="0dp"
+                                android:layout_alignStart="@id/widget_skip_back_sizer"
+                                android:layout_alignTop="@id/widget_skip_back_sizer"
+                                android:layout_alignEnd="@id/widget_skip_back_sizer"
+                                android:layout_alignBottom="@id/widget_skip_back_sizer"
+                                android:contentDescription="@null"
+                                android:scaleX="0.95"
+                                android:scaleY="0.95"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/widget_circle" />
+
+                            <ImageView
+                                android:id="@+id/widget_skip_back_icon"
+                                android:layout_width="0dp"
+                                android:layout_height="0dp"
+                                android:layout_alignStart="@id/widget_skip_back_sizer"
+                                android:layout_alignTop="@id/widget_skip_back_sizer"
+                                android:layout_alignEnd="@id/widget_skip_back_sizer"
+                                android:layout_alignBottom="@id/widget_skip_back_sizer"
+                                android:contentDescription="@string/widget_skip_back"
+                                android:scaleX="0.55"
+                                android:scaleY="0.55"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/ic_widget_skip_back" />
+                        </RelativeLayout>
+
+                        <RelativeLayout
+                            android:id="@+id/widget_play_pause"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent">
+
+                            <ImageView
+                                android:id="@+id/widget_play_pause_sizer"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:adjustViewBounds="true"
+                                android:contentDescription="@null"
+                                android:src="@drawable/widget_sizer_bar_play" />
+
+                            <ImageView
+                                android:id="@+id/widget_play_pause_background"
+                                android:layout_width="0dp"
+                                android:layout_height="0dp"
+                                android:layout_alignStart="@id/widget_play_pause_sizer"
+                                android:layout_alignTop="@id/widget_play_pause_sizer"
+                                android:layout_alignEnd="@id/widget_play_pause_sizer"
+                                android:layout_alignBottom="@id/widget_play_pause_sizer"
+                                android:contentDescription="@null"
+                                android:scaleX="0.97"
+                                android:scaleY="0.97"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/widget_cookie" />
+
+                            <ImageView
+                                android:id="@+id/widget_play_pause_icon"
+                                android:layout_width="0dp"
+                                android:layout_height="0dp"
+                                android:layout_alignStart="@id/widget_play_pause_sizer"
+                                android:layout_alignTop="@id/widget_play_pause_sizer"
+                                android:layout_alignEnd="@id/widget_play_pause_sizer"
+                                android:layout_alignBottom="@id/widget_play_pause_sizer"
+                                android:contentDescription="@string/widget_play"
+                                android:scaleX="0.5"
+                                android:scaleY="0.5"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/ic_widget_play" />
+                        </RelativeLayout>
+
+                        <RelativeLayout
+                            android:id="@+id/widget_skip_forward"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent">
+
+                            <ImageView
+                                android:id="@+id/widget_skip_forward_sizer"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:adjustViewBounds="true"
+                                android:contentDescription="@null"
+                                android:src="@drawable/widget_sizer_mini" />
+
+                            <ImageView
+                                android:id="@+id/widget_skip_forward_background"
+                                android:layout_width="0dp"
+                                android:layout_height="0dp"
+                                android:layout_alignStart="@id/widget_skip_forward_sizer"
+                                android:layout_alignTop="@id/widget_skip_forward_sizer"
+                                android:layout_alignEnd="@id/widget_skip_forward_sizer"
+                                android:layout_alignBottom="@id/widget_skip_forward_sizer"
+                                android:contentDescription="@null"
+                                android:scaleX="0.95"
+                                android:scaleY="0.95"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/widget_circle" />
+
+                            <ImageView
+                                android:id="@+id/widget_skip_forward_icon"
+                                android:layout_width="0dp"
+                                android:layout_height="0dp"
+                                android:layout_alignStart="@id/widget_skip_forward_sizer"
+                                android:layout_alignTop="@id/widget_skip_forward_sizer"
+                                android:layout_alignEnd="@id/widget_skip_forward_sizer"
+                                android:layout_alignBottom="@id/widget_skip_forward_sizer"
+                                android:contentDescription="@string/widget_skip_forward"
+                                android:scaleX="0.55"
+                                android:scaleY="0.55"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/ic_widget_skip_fwd" />
+                        </RelativeLayout>
+                    </LinearLayout>
+                </LinearLayout>
             </FrameLayout>
-
-            <LinearLayout
-                android:id="@+id/widget_controls"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <FrameLayout
-                    android:id="@+id/widget_skip_back"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp">
-
-                    <ImageView
-                        android:id="@+id/widget_skip_back_background"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:contentDescription="@null"
-                        android:scaleType="fitXY"
-                        android:src="@drawable/widget_button_secondary" />
-
-                    <ImageView
-                        android:id="@+id/widget_skip_back_icon"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@string/widget_skip_back"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/ic_widget_skip_back" />
-                </FrameLayout>
-
-                <FrameLayout
-                    android:id="@+id/widget_play_pause"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:layout_marginStart="4dp">
-
-                    <ImageView
-                        android:id="@+id/widget_play_pause_background"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:contentDescription="@null"
-                        android:scaleType="fitXY"
-                        android:src="@drawable/widget_button_play" />
-
-                    <ImageView
-                        android:id="@+id/widget_play_pause_icon"
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@string/widget_play"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/ic_widget_play" />
-                </FrameLayout>
-
-                <FrameLayout
-                    android:id="@+id/widget_skip_forward"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:layout_marginStart="4dp">
-
-                    <ImageView
-                        android:id="@+id/widget_skip_forward_background"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:contentDescription="@null"
-                        android:scaleType="fitXY"
-                        android:src="@drawable/widget_button_secondary" />
-
-                    <ImageView
-                        android:id="@+id/widget_skip_forward_icon"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@string/widget_skip_forward"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/ic_widget_skip_fwd" />
-                </FrameLayout>
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/widget_metadata_container"
-                android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:layout_centerVertical="true"
-                android:layout_marginStart="6dp"
-                android:layout_marginEnd="6dp"
-                android:layout_toStartOf="@id/widget_controls"
-                android:layout_toEndOf="@id/widget_artwork_frame"
-                android:gravity="center_vertical"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/widget_episode_title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:fontFamily="sans-serif-medium"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:textColor="@color/widget_on_surface"
-                    android:textSize="13sp" />
-
-                <TextView
-                    android:id="@+id/widget_podcast_title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="1dp"
-                    android:ellipsize="end"
-                    android:fontFamily="sans-serif"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:textColor="@color/widget_on_surface_variant"
-                    android:textSize="11sp" />
-            </LinearLayout>
-        </RelativeLayout>
-    </FrameLayout>
-
-    <FrameLayout
-        android:id="@+id/widget_empty_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:clipToOutline="true"
-        android:visibility="visible">
-
-        <ImageView
-            android:id="@+id/widget_empty_surface_background"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:contentDescription="@null"
-            android:scaleType="fitXY"
-            android:src="@drawable/widget_surface" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingHorizontal="10dp"
-            android:paddingVertical="4dp">
-
-            <ImageView
-                android:id="@+id/widget_empty_icon"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:contentDescription="@null"
-                android:scaleType="fitCenter"
-                android:src="@drawable/ic_widget_play" />
 
             <FrameLayout
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="10dp"
-                android:layout_weight="1">
+                android:id="@+id/widget_empty_container"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="visible">
 
                 <ImageView
-                    android:id="@+id/widget_empty_title"
+                    android:id="@+id/widget_empty_surface_background"
                     android:layout_width="match_parent"
-                    android:layout_height="24dp"
-                    android:layout_gravity="center_vertical"
+                    android:layout_height="match_parent"
                     android:contentDescription="@null"
-                    android:scaleType="fitCenter" />
+                    android:scaleType="fitXY"
+                    android:src="@drawable/widget_pill" />
+
+                <LinearLayout
+                    android:id="@+id/widget_empty_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal"
+                    android:paddingStart="2dp"
+                    android:paddingEnd="16dp">
+
+                    <FrameLayout
+                        android:id="@+id/widget_empty_mark"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="24">
+
+                        <ImageView
+                            android:id="@+id/widget_empty_mark_background"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@null"
+                            android:scaleX="0.82"
+                            android:scaleY="0.82"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/widget_cookie" />
+
+                        <ImageView
+                            android:id="@+id/widget_empty_icon"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@null"
+                            android:scaleX="0.36"
+                            android:scaleY="0.36"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_widget_play" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:id="@+id/widget_empty_text"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="76"
+                        android:orientation="vertical">
+
+                        <FrameLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="2" />
+
+                        <TextView
+                            android:id="@+id/widget_empty_title"
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="3"
+                            android:autoSizeMaxTextSize="18sp"
+                            android:autoSizeMinTextSize="11sp"
+                            android:autoSizeStepGranularity="0.5sp"
+                            android:autoSizeTextType="uniform"
+                            android:ellipsize="end"
+                            android:fontFamily="sans-serif-medium"
+                            android:gravity="bottom|start"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
+                            android:textColor="@color/widget_on_primary_container" />
+
+                        <TextView
+                            android:id="@+id/widget_empty_subtitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="2"
+                            android:autoSizeMaxTextSize="12.5sp"
+                            android:autoSizeMinTextSize="9.5sp"
+                            android:autoSizeStepGranularity="0.5sp"
+                            android:autoSizeTextType="uniform"
+                            android:ellipsize="end"
+                            android:fontFamily="sans-serif"
+                            android:gravity="top|start"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
+                            android:paddingTop="2dp"
+                            android:textColor="@color/widget_on_primary_container" />
+
+                        <FrameLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="2" />
+                    </LinearLayout>
+                </LinearLayout>
             </FrameLayout>
-        </LinearLayout>
-    </FrameLayout>
+        </FrameLayout>
+    </RelativeLayout>
 </FrameLayout>

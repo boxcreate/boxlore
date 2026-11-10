@@ -540,6 +540,21 @@ class PlaybackRepository internal constructor(
         }
     }
 
+    /**
+     * Reads the player's position once and publishes it. Home-screen widgets call this while the app
+     * is in the background, where [startProgressTicker] is stopped to save power.
+     */
+    fun refreshProgressOnce() {
+        runOnMainThread {
+            val controller = mediaHandle.controller ?: return@runOnMainThread
+            playerStateFlow.value =
+                PlaybackControllerStatePolicy.mergeProgress(
+                    previous = playerStateFlow.value,
+                    snapshot = controller.progressSnapshot(),
+                )
+        }
+    }
+
     private fun startProgressTicker() {
         stopProgressTicker()
         if (!PlaybackUiVisibility.isForeground.value) return

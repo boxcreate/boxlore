@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="@color/widget_primary" />
-</shape>
+<!-- Picker previews only: a sample cover (a sun). A picture, so its colours are fixed on purpose. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path
+        android:fillColor="#FFD8492A"
+        android:pathData="M0,0h100v100h-100z" />
+    <path
+        android:fillColor="#FFFFE2A8"
+        android:pathData="M66,36m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0" />
+</vector>

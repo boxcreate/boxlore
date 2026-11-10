@@ -77,6 +77,12 @@ class NowPlayingWidgetPlaybackAdapter(
         }
     }
 
+    override suspend fun refreshPosition() {
+        withWidgetPlaybackDispatcher(playbackDispatcher) {
+            playbackRepository.refreshProgressOnce()
+        }
+    }
+
     private suspend fun restoreIfNeeded() {
         withWidgetPlaybackDispatcher(playbackDispatcher) {
             if (playbackRepository.playerState.value.currentEpisode == null) {

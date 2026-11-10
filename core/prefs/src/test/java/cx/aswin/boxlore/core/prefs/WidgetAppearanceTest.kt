@@ -20,4 +20,14 @@ class WidgetAppearanceTest {
         assertTrue(WidgetAppearance.followsAppTheme(WidgetAppearance.APP))
         assertFalse(WidgetAppearance.followsAppTheme(WidgetAppearance.SYSTEM))
     }
+
+    @Test
+    fun showsArtworkDefaultsToWholeCoversAndShapesAreOptIn() {
+        assertEquals(WidgetShowsArtwork.ROUNDED, WidgetShowsArtwork.sanitize(null))
+        assertEquals(WidgetShowsArtwork.ROUNDED, WidgetShowsArtwork.sanitize("unknown"))
+        assertEquals(WidgetShowsArtwork.SHAPES, WidgetShowsArtwork.sanitize(" Shapes "))
+        assertFalse(WidgetShowsArtwork.usesShapes(null))
+        assertFalse(WidgetShowsArtwork.usesShapes(WidgetShowsArtwork.ROUNDED))
+        assertTrue(WidgetShowsArtwork.usesShapes(WidgetShowsArtwork.SHAPES))
+    }
 }
