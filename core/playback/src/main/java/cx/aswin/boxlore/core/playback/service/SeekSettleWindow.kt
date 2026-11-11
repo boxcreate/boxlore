@@ -19,10 +19,18 @@ internal class SeekSettleWindow(
 ) {
     private var settlingUntilMs = 0L
 
-    /** Call just before a seek within the current episode; [wasPlaying] is whether audio was actually running. */
+    /**
+     * Call just before a seek within the current episode; [wasPlaying] is whether audio was actually
+     * running. A press that lands while an earlier one is still settling belongs to the same seek:
+     * the audio has stopped for the moment, but only because of that seek.
+     */
     fun onSeek(wasPlaying: Boolean) {
-        settlingUntilMs = if (wasPlaying) now() + SETTLE_MS else 0L
-        if (wasPlaying) onSettling()
+        if (!wasPlaying && now() >= settlingUntilMs) {
+            settlingUntilMs = 0L
+            return
+        }
+        settlingUntilMs = now() + SETTLE_MS
+        onSettling()
     }
 
     /** What the session reports while the player's real state is [state]. */

@@ -47,8 +47,23 @@ class SeekSettleWindowTest {
         assertEquals(Player.STATE_BUFFERING, window.reported(Player.STATE_BUFFERING))
 
         window.onSeek(wasPlaying = true)
+        nowMs += SeekSettleWindow.SETTLE_MS
         window.onSeek(wasPlaying = false)
 
+        assertEquals(Player.STATE_BUFFERING, window.reported(Player.STATE_BUFFERING))
+    }
+
+    @Test
+    fun pressingSeekAgainWhileTheFirstSettlesKeepsReportingPlaying() {
+        window.onSeek(wasPlaying = true)
+        nowMs += 200
+        // The first seek has stopped the audio for the moment, so the player no longer says "playing".
+        window.onSeek(wasPlaying = false)
+        nowMs += SeekSettleWindow.SETTLE_MS - 1
+
+        assertEquals(Player.STATE_READY, window.reported(Player.STATE_BUFFERING))
+        assertEquals(2, settling)
+        nowMs += 1
         assertEquals(Player.STATE_BUFFERING, window.reported(Player.STATE_BUFFERING))
     }
 
