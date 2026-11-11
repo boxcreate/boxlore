@@ -100,6 +100,7 @@ Never rename these:
 
 - SharedPreferences file `boxlore_analytics_prefs` (`PrefsFileMigrator.Files.ANALYTICS`, migrated from `boxcast_analytics_prefs`).
 - Keys `is_first_launch`, `analytics_sample_bucket` (this install's sample bucket, kept across a PostHog reset) and `analytics_policy` (the last remote switch with its app version). `AnalyticsPolicy.Store` is the storage seam.
+- Install attribution keys (`InstallAttribution.Store`): `not_play_attributed` (set once PostHog has taken `not_play`), and `pending_install_channel` with `pending_referrer_raw` (Play's referrer, kept until the installer is known; cleared once its capture is sent, or for an install not from Play).
 - Event and property names are contracts with the glossary and its CSV ([`docs/analytics/event_glossary.csv`](../../docs/analytics/event_glossary.csv)) and the coverage inventory ([`docs/analytics/glossary_emission_coverage.csv`](../../docs/analytics/glossary_emission_coverage.csv)).
 
 ## Testing notes
