@@ -204,7 +204,7 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 | user_intent | onboarding complete | `casual_browser` (skip) / `ai_guided_listener` (AI chat) / `targeted_listener` (search) / `selective_curator` (manual genres) / `migrating_power_user` (import) |
 | favorite_genres | onboarding complete (AI chat, manual genres) | genre list |
 | listener_profile / genre_breadth / genre_enthusiasm | onboarding complete (manual genres) | derived from the picked genres (`GenrePersonaLogic`) |
-| install_channel | first open | `not_play` for any install not from the Play Store |
+| install_channel | first open | `not_play` for any install not from the Play Store, saved at launch without waiting for Play's referrer |
 | referrer_raw / utm_source / share_token | first open, with the install referrer | `$set_once`, only when present and only for Play Store installs |
 | notifications_enabled | permission decide | |
 | initial_podcasts_subscribed | onboarding complete | |

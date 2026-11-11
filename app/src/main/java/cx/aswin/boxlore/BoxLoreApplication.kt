@@ -398,10 +398,15 @@ class BoxLoreApplication :
         // Calls made before it finishes are queued by PostHogStartup and replayed in order.
         cx.aswin.boxlore.core.analytics.PostHogStartup.start {
             // Read before setup, so `Application Installed` and `Application Updated` carry it too.
-            val environment = buildEnvironment + PostHogWiring.installTags(BuildConfig.BOXLORE_DIRECT_UPDATES, installOrigin())
+            val origin = installOrigin()
+            val environment = buildEnvironment + PostHogWiring.installTags(BuildConfig.BOXLORE_DIRECT_UPDATES, origin)
             PostHogAndroid.setup(this, postHogConfig(environment))
             // Registered before queued calls replay so early events keep the internal tag.
             environment.forEach { (key, value) -> PostHog.register(key, value) }
+            // Play's referrer service may never answer a non-Play install, so its channel doesn't wait for it.
+            if (PostHogWiring.isConfirmedNonPlay(origin)) {
+                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackNonPlayInstallOnce(this)
+            }
         }
         // A listen the last run left unfinished because Android ended the app (queued until setup ends).
         cx.aswin.boxlore.core.playback.ListenInterruptions

@@ -11,16 +11,19 @@ private const val TAG = "InstallSource"
  * ([initiator]). Null when Android records none: an install from a computer has no installer and
  * `com.android.shell` as initiator.
  */
-data class InstallOrigin(val installer: String?, val initiator: String?)
+data class InstallOrigin(val installer: String?, val initiator: String?) {
+    /** Whether the Play Store installed this copy. */
+    val fromPlayStore: Boolean get() = installer == PLAY_STORE_PACKAGE
+}
 
-/** Reads [InstallOrigin] over binder: call it off the main thread. Unknown when Android can't answer. */
-fun Context.installOrigin(): InstallOrigin = try {
+/** Reads [InstallOrigin] over binder: call it off the main thread. Null when Android can't answer. */
+fun Context.installOrigin(): InstallOrigin? = try {
     val info = packageManager.getInstallSourceInfo(packageName)
     InstallOrigin(installer = info.installingPackageName, initiator = info.initiatingPackageName)
 } catch (e: Exception) {
     Log.w(TAG, "Failed to resolve install source", e)
-    InstallOrigin(installer = null, initiator = null)
+    null
 }
 
-/** True when this app install was delivered by the Google Play Store. */
-fun Context.isInstalledFromPlayStore(): Boolean = installOrigin().installer == PLAY_STORE_PACKAGE
+/** True when this app install was delivered by the Google Play Store; false when it wasn't or Android can't say. */
+fun Context.isInstalledFromPlayStore(): Boolean = installOrigin()?.fromPlayStore == true

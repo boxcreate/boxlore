@@ -2,8 +2,11 @@ package cx.aswin.boxlore.analytics
 
 import cx.aswin.boxlore.util.InstallOrigin
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PostHogWiringTest {
@@ -132,16 +135,34 @@ class PostHogWiringTest {
     fun aPlayInstallKeepsPlaysReferrer() {
         assertEquals(
             "share" to "type=episode&id=1",
-            PostHogWiring.installAttribution(playInstall = true, channel = "share", referrerRaw = "type=episode&id=1"),
+            PostHogWiring.installAttribution(InstallOrigin("com.android.vending", null), channel = "share", referrerRaw = "type=episode&id=1"),
         )
     }
 
     @Test
     fun anyOtherInstallIsNotPlayAndDropsTheReferrer() {
         // Play answers "google-play organic" for a GitHub install too.
+        val origin = InstallOrigin("com.google.android.packageinstaller", "com.google.android.packageinstaller")
         assertEquals(
             "not_play" to null,
-            PostHogWiring.installAttribution(playInstall = false, channel = "organic", referrerRaw = "utm_source=google-play&utm_medium=organic"),
+            PostHogWiring.installAttribution(origin, channel = "organic", referrerRaw = "utm_source=google-play&utm_medium=organic"),
         )
+    }
+
+    @Test
+    fun whenAndroidCantSayWhoInstalledItNothingIsSaved() {
+        assertNull(PostHogWiring.installAttribution(origin = null, channel = "organic", referrerRaw = "utm_source=google-play&utm_medium=organic"))
+        assertFalse(PostHogWiring.isConfirmedNonPlay(null))
+        assertEquals(
+            mapOf("build_channel" to "github", "install_source" to "unknown", "installer_package" to "none"),
+            PostHogWiring.installTags(directUpdatesBuild = true, origin = null),
+        )
+    }
+
+    @Test
+    fun onlyAConfirmedNonPlayInstallIsSavedAsNotPlayAtStartUp() {
+        assertTrue(PostHogWiring.isConfirmedNonPlay(InstallOrigin("dev.imranr.obtainium", null)))
+        assertTrue(PostHogWiring.isConfirmedNonPlay(InstallOrigin(null, "com.android.shell")))
+        assertFalse(PostHogWiring.isConfirmedNonPlay(InstallOrigin("com.android.vending", "com.android.vending")))
     }
 }
