@@ -40,6 +40,15 @@ class AutoArtworkRepositoryTest {
     }
 
     @Test
+    fun aCoverBundledWithTheAppOrServedByItIsUsedAsItIs() {
+        val bundled = "android.resource://${context.packageName}/drawable/daily_briefing_india"
+        val served = "content://${context.packageName}.collage/collage/home.png"
+
+        assertEquals(bundled, AutoArtworkRepository.remoteUri(context, bundled).toString())
+        assertEquals(served, AutoArtworkRepository.remoteUri(context, null, served).toString())
+    }
+
+    @Test
     fun remoteUriUpgradesHttpToHttpsAndStoresMapping() {
         val httpsUri = AutoArtworkRepository.remoteUri(context, "https://cdn.example/x.jpg")!!
         val httpUri = AutoArtworkRepository.remoteUri(context, "http://cdn.example/x.jpg")!!

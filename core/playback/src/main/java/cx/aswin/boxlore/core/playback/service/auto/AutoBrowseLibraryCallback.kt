@@ -860,13 +860,6 @@ internal class AutoBrowseLibraryCallback(
         else -> null
     }
 
-    /**
-     * A list row as the player should show it: the second line names the show, not the row's
-     * "Today · 28 min" or "35 min left", which would sit there unchanged for the whole episode.
-     */
-    private fun MediaItem.forPlayback(): MediaItem =
-        buildUpon().setMediaMetadata(mediaMetadata.buildUpon().setSubtitle(mediaMetadata.artist).build()).build()
-
     private suspend fun handleSingleMediaItemSelection(
         mediaSession: MediaSession,
         selectedItem: MediaItem,

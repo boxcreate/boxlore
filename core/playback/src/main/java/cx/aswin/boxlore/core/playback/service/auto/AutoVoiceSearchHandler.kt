@@ -428,7 +428,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
             source = AutoBrowseContract.SOURCE_QUEUE,
             artworkUri = treeBuilder.queueArt(episode),
             row = AutoEpisodeRow(mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX, groupTitle = groupTitle),
-        ),
+        ).forPlayback(),
     )
 
     suspend fun handlePlayFromQueue(episodeId: String, fromCar: Boolean): MutableList<MediaItem> {

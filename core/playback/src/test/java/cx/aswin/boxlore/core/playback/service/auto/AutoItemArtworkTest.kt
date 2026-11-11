@@ -96,6 +96,16 @@ class AutoItemArtworkTest {
     }
 
     @Test
+    fun aPlayerItemNamesItsShowUnderTheTitle() {
+        val row = MediaItem.Builder().setMediaId("42").setMediaMetadata(
+            MediaMetadata.Builder().setTitle("Episode").setArtist("Cyber Hack").setSubtitle("Cyber Hack · 36 min").build(),
+        ).build()
+
+        assertEquals("Cyber Hack", row.forPlayback().mediaMetadata.subtitle)
+        assertEquals("42", row.forPlayback().mediaId)
+    }
+
+    @Test
     fun anInAppCoverLinkGetsItsRealAddressesSaved() {
         val link = AutoArtworkRepository.remoteUri(context, "https://cdn.example/episode.jpg", "https://cdn.example/show.jpg")
 

@@ -187,7 +187,7 @@ internal class AutoPlaybackResumptionHandler(
                     ),
                     row = AutoEpisodeRow(mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX),
                 )
-                mediaResolver.resolveMediaItem(ungrounded)
+                mediaResolver.resolveMediaItem(ungrounded.forPlayback())
             }
         } else {
             val singleItem = mediaResolver.resolveMediaItem(

@@ -40,6 +40,13 @@ internal data class AutoEpisodeRow(
     val isCompleted: Boolean = false,
 )
 
+/**
+ * This item as the player shows it: under the title goes the show's name, not the list row's
+ * second line ("Show · 36 min", "35 min left"), which the player's own progress bar already says.
+ */
+internal fun MediaItem.forPlayback(): MediaItem =
+    buildUpon().setMediaMetadata(mediaMetadata.buildUpon().setSubtitle(mediaMetadata.artist).build()).build()
+
 @OptIn(UnstableApi::class)
 internal object AutoMediaItemFactory {
     private val episodeCommands =

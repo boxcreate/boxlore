@@ -12,6 +12,8 @@ internal object AutoArtworkRepository {
      */
     fun remoteUri(context: Context, remoteUrl: String?, fallbackUrl: String? = null,): Uri? {
         val source = remoteUrl?.takeIf { it.isNotBlank() } ?: fallbackUrl?.takeIf { it.isNotBlank() } ?: return null
+        // A cover bundled with the app (The boxlore brief's) or already served by it needs no fetching.
+        if (CAR_READY_PREFIXES.any(source::startsWith)) return Uri.parse(source)
         val localFile =
             when {
                 source.startsWith("file://") -> Uri.parse(source).path?.let(::File)
@@ -48,6 +50,7 @@ internal object AutoArtworkRepository {
     private fun String.toHttps(): String? = replaceFirst("http://", "https://").takeIf { it.startsWith("https://") }
 
     private const val SOURCE_SEPARATOR = "\n"
+    private val CAR_READY_PREFIXES = listOf("android.resource://", "content://")
 
     private fun localUri(context: Context, file: File,): Uri? {
         val canonicalFile = runCatching(file::getCanonicalFile).getOrNull() ?: return null
