@@ -9,7 +9,7 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 ### Theme and colour
 
 - `BoxLoreTheme`: the app theme, applied by `:app` and feature roots from the saved Appearance choices.
-- `resolveBoxLoreColorScheme`, `resolveBoxLoreChromeColors`, `resolveFixedThemeColorScheme`: the same scheme for widgets and Appearance previews.
+- `resolveBoxLoreColorScheme`, `resolveBoxLoreChromeColors`, `resolveFixedThemeColorScheme`: the same scheme for widgets and Appearance previews. `BoxLoreChromeColors` carries the surface, primary, secondary-container and tertiary roles widgets tint with.
 - `ThemePresets`: the sixteen authored light and dark themes, selected by stable `preset:*` keys.
 - `CustomThemeSeeds`, `generatePersonalColorScheme`: custom accent seeds and the tonal scheme built from them.
 - `ClassicBrandColors`, `BrandSeeds`, `SurfaceStyles`: the boxlore classic palette, named seeds and surface-style keys, including Pure.

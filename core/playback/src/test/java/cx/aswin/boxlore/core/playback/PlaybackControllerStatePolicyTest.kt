@@ -113,4 +113,39 @@ class PlaybackControllerStatePolicyTest {
             ),
         )
     }
+
+    @Test
+    fun `progress read once is published for the episode the state names`() {
+        val state = restoredState.copy(currentEpisode = episode("ep-1"))
+
+        val merged =
+            PlaybackControllerStatePolicy.mergeProgressForCurrentItem(
+                previous = state,
+                snapshot = PlaybackControllerStatePolicy.Snapshot(hasMedia = true, positionMs = 90_000L, bufferedPositionMs = 120_000L, durationMs = 1_800_000L),
+                playerEpisodeId = "ep-1",
+            )
+
+        assertEquals(90_000L, merged.position)
+        assertEquals(1_800_000L, merged.duration)
+    }
+
+    @Test
+    fun `progress of the player's next item is not paired with the previous episode`() {
+        val state = restoredState.copy(currentEpisode = episode("ep-1"))
+        val nextItemProgress = PlaybackControllerStatePolicy.Snapshot(hasMedia = true, positionMs = 4_000L, bufferedPositionMs = 9_000L, durationMs = 2_400_000L)
+
+        // The player moved on while the state still names the previous episode.
+        assertEquals(state, PlaybackControllerStatePolicy.mergeProgressForCurrentItem(state, nextItemProgress, playerEpisodeId = "ep-2"))
+        // Without a known item, or without an episode in the state, there is nothing to pair it with.
+        assertEquals(state, PlaybackControllerStatePolicy.mergeProgressForCurrentItem(state, nextItemProgress, playerEpisodeId = null))
+        assertEquals(restoredState, PlaybackControllerStatePolicy.mergeProgressForCurrentItem(restoredState, nextItemProgress, playerEpisodeId = "ep-2"))
+    }
+
+    private fun episode(id: String) = cx.aswin.boxlore.core.model.Episode(
+        id = id,
+        title = "Episode $id",
+        description = "",
+        audioUrl = "https://example.com/$id.mp3",
+        publishedDate = 1_700_000_000L,
+    )
 }

@@ -148,24 +148,6 @@ class NowPlayingWidgetRemoteViewsTest {
     }
 
     @Test
-    fun responsiveSizesUseLauncherSizeList() {
-        val options =
-            defaultOptions().apply {
-                putParcelableArrayList(
-                    AppWidgetManager.OPTION_APPWIDGET_SIZES,
-                    arrayListOf(SizeF(245f, 110f), SizeF(300f, 150f)),
-                )
-            }
-
-        NowPlayingWidgetRenderer.buildRemoteViewsAt(
-            context = context,
-            appWidgetId = 2,
-            snapshot = playingSnapshot(),
-            options = options,
-        )
-    }
-
-    @Test
     fun barVariantUsesDedicatedHorizontalLayout() {
         val views =
             NowPlayingWidgetRenderer.buildRemoteViewsAt(

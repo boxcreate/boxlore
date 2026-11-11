@@ -4,11 +4,13 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.SystemClock
 import android.view.View
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
 import androidx.core.net.toUri
 import cx.aswin.boxlore.core.prefs.WidgetShowsArtwork
+import cx.aswin.boxlore.feature.widgets.logic.ArtworkTimeoutCooldown
 import java.io.File
 import kotlin.math.roundToInt
 import kotlinx.coroutines.runBlocking
@@ -184,10 +186,14 @@ internal class LibraryWidgetRemoteViewsFactory(
         cachePath?.takeIf { it.isNotBlank() && File(it).exists() }?.let { return it }
         if (cx.aswin.boxlore.core.model.artworkUrls(url, *fallbackUrls.toTypedArray()).isEmpty()) return null
         artworkLoader.resolveCachedPath(url)?.let { return it }
-        return runCatching {
-            runBlocking { withTimeoutOrNull(ARTWORK_TIMEOUT_MS) { artworkLoader.load(url, fallbackUrls) } }
-        }.getOrNull()
+        if (timeouts.isCoolingDown(url, fallbackUrls)) return null
+        // A null answer is a finished load that found nothing; no answer at all means it ran out of time.
+        val answer = runCatching { runBlocking { withTimeoutOrNull(ARTWORK_TIMEOUT_MS) { LoadAnswer(artworkLoader.load(url, fallbackUrls)) } } }.getOrElse { return null }
+        if (answer == null) timeouts.recordTimeout(url, fallbackUrls)
+        return answer?.path
     }
+
+    private class LoadAnswer(val path: String?)
 
     private fun px(dp: Int): Int = (dp * context.resources.displayMetrics.density).roundToInt().coerceIn(1, MAX_ART_PX)
 
@@ -199,5 +205,8 @@ internal class LibraryWidgetRemoteViewsFactory(
         private const val ROW_ART_DP = 46
         private const val MAX_ART_PX = 288
         private const val ARTWORK_TIMEOUT_MS = 6_000L
+
+        // Shared by both library widgets and kept across redraws, which make a new factory each time.
+        private val timeouts = ArtworkTimeoutCooldown(nowMs = SystemClock::elapsedRealtime)
     }
 }
