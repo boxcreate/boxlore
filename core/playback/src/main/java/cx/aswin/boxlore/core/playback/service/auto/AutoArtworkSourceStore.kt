@@ -28,6 +28,13 @@ internal object AutoArtworkSourceStore {
 
     /** What is known to be on disk: read from it, or written by a commit that succeeded. */
     private val saved = ConcurrentHashMap<String, String>()
+
+    /**
+     * Keys this process has tried to save. Preferences show a value from the moment its save
+     * starts, before it is on disk and even when the save then fails, so for these keys only
+     * [saved] says what the disk holds.
+     */
+    private val attempted: MutableSet<String> = ConcurrentHashMap.newKeySet()
     private val persistExecutor =
         Executors.newSingleThreadExecutor { runnable ->
             Thread(runnable, "auto-artwork-prefs").apply { isDaemon = true }
@@ -43,6 +50,8 @@ internal object AutoArtworkSourceStore {
         // another call is still saving does not count: if that save fails, this call must not have
         // vouched for it.
         if (savedValue(context, key) == value) return true
+        // Marked under the lock savedValue reads under, so no read can take this save's value for one already on disk.
+        synchronized(pruneLock) { attempted += key }
         memory[key] = value
         val appContext = context.applicationContext
         if (pruneScheduled.compareAndSet(false, true)) persistExecutor.execute { pruneIfOversized(appContext) }
@@ -113,6 +122,8 @@ internal object AutoArtworkSourceStore {
     private fun savedValue(context: Context, key: String): String? {
         saved[key]?.let { return it }
         synchronized(pruneLock) {
+            saved[key]?.let { return it }
+            if (key in attempted) return null
             val persisted =
                 context
                     .getSharedPreferences(SOURCE_PREFS, Context.MODE_PRIVATE)
@@ -128,6 +139,7 @@ internal object AutoArtworkSourceStore {
     internal fun clearMemoryForTests() {
         memory.clear()
         saved.clear()
+        attempted.clear()
     }
 
     /** Test-only: wait for queued prefs commits to finish. */

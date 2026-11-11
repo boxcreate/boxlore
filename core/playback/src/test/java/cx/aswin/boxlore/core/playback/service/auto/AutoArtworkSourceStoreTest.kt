@@ -83,17 +83,28 @@ class AutoArtworkSourceStoreTest {
 
     private fun savedOnDisk(): Map<String, *> = context.getSharedPreferences(AutoArtworkSourceStore.SOURCE_PREFS, Context.MODE_PRIVATE).all
 
-    /** A store whose disk holds nothing and refuses every save, once [release] lets the save finish. */
-    private fun contextWhoseSavesFail(started: CountDownLatch, release: CountDownLatch): Context {
+    /**
+     * A store that refuses every save, once [release] lets the save finish. Like Android's own
+     * preferences, it shows a value from the moment its save starts, and goes on showing it after
+     * the save has failed.
+     */
+    private fun contextWhoseSavesFail(started: CountDownLatch, release: CountDownLatch, onDisk: Map<String, String> = emptyMap()): Context {
+        val staged = java.util.concurrent.ConcurrentHashMap<String, String>()
+        val shown = java.util.concurrent.ConcurrentHashMap(onDisk)
         val editor = mock(SharedPreferences.Editor::class.java)
-        `when`(editor.putString(Mockito.anyString(), Mockito.anyString())).thenReturn(editor)
+        `when`(editor.putString(Mockito.anyString(), Mockito.anyString())).thenAnswer { call ->
+            staged[call.getArgument(0)] = call.getArgument(1)
+            editor
+        }
         `when`(editor.commit()).thenAnswer {
+            shown.putAll(staged)
             started.countDown()
             release.await(2, TimeUnit.SECONDS)
             false
         }
         val prefs = mock(SharedPreferences::class.java)
         `when`(prefs.edit()).thenReturn(editor)
+        `when`(prefs.getString(Mockito.anyString(), Mockito.isNull())).thenAnswer { call -> shown[call.getArgument<String>(0)] }
         return object : ContextWrapper(context) {
             override fun getApplicationContext(): Context = this
 
@@ -103,9 +114,10 @@ class AutoArtworkSourceStoreTest {
 
     @Test
     fun aSourceStillBeingSavedIsNotVouchedForByASecondCall() {
-        // Regression: the second call found the source in memory and reported it saved while the
-        // first call's save was still pending. When that save failed, the car had been given a link
-        // whose source was gone after a restart.
+        // Regression: the second call found the source already showing (in memory, and in the
+        // preferences, which show a value before it is on disk) and reported it saved while the first
+        // call's save was still pending. When that save failed, the car had been given a link whose
+        // source was gone after a restart.
         val started = CountDownLatch(1)
         val release = CountDownLatch(1)
         val failing = contextWhoseSavesFail(started, release)
@@ -124,9 +136,22 @@ class AutoArtworkSourceStoreTest {
         assertFalse(first)
         assertFalse(second)
         assertNull(AutoArtworkSourceStore.get(failing, "racing"))
+        // The preferences still show the value whose save failed; a later call must save it itself.
+        assertFalse(AutoArtworkSourceStore.put(failing, "racing", "https://cdn.example/a.jpg"))
         // After a restart nothing is left either: memory is gone and the disk never had it.
         AutoArtworkSourceStore.clearMemoryForTests()
         assertNull(AutoArtworkSourceStore.get(context, "racing"))
+    }
+
+    @Test
+    fun aSourceSavedByAnEarlierRunNeedsNoSecondSave() {
+        // Every save fails here, so a true answer can only come from what the disk already holds.
+        val saveStarted = CountDownLatch(1)
+        val earlierRun = contextWhoseSavesFail(saveStarted, CountDownLatch(0), onDisk = mapOf("earlier" to "https://cdn.example/earlier.jpg"))
+
+        assertTrue(AutoArtworkSourceStore.put(earlierRun, "earlier", "https://cdn.example/earlier.jpg"))
+
+        assertEquals(1L, saveStarted.count)
     }
 
     @Test
