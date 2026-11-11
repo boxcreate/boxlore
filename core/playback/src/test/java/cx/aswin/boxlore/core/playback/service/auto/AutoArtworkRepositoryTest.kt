@@ -40,12 +40,38 @@ class AutoArtworkRepositoryTest {
     }
 
     @Test
+    fun aCoverBundledWithTheAppOrServedByItIsUsedAsItIs() {
+        val bundled = "android.resource://${context.packageName}/drawable/daily_briefing_india"
+        val served = "content://${context.packageName}.collage/collage/home.png"
+
+        assertEquals(bundled, AutoArtworkRepository.remoteUri(context, bundled).toString())
+        assertEquals(served, AutoArtworkRepository.remoteUri(context, null, served).toString())
+    }
+
+    @Test
     fun remoteUriUpgradesHttpToHttpsAndStoresMapping() {
         val httpsUri = AutoArtworkRepository.remoteUri(context, "https://cdn.example/x.jpg")!!
         val httpUri = AutoArtworkRepository.remoteUri(context, "http://cdn.example/x.jpg")!!
 
         // http:// normalizes to https://, producing the same sha256 key/path.
         assertEquals(httpsUri.pathSegments.last(), httpUri.pathSegments.last())
+    }
+
+    @Test
+    fun aShowCoverIsSavedBehindTheEpisodeImageToStandInWhenItFails() {
+        val uri = AutoArtworkRepository.remoteUri(context, "https://cdn.example/episode.jpg", "http://cdn.example/show.jpg")!!
+
+        val saved = AutoArtworkSourceStore.get(context, uri.pathSegments.last())!!
+
+        assertEquals(listOf("https://cdn.example/episode.jpg", "https://cdn.example/show.jpg"), AutoArtworkRepository.sourcesOf(saved))
+    }
+
+    @Test
+    fun withoutAnEpisodeImageTheShowCoverIsTheArtworkAndItsLinkIsUnchanged() {
+        val showOnly = AutoArtworkRepository.remoteUri(context, "https://cdn.example/show.jpg")!!
+
+        assertEquals(showOnly, AutoArtworkRepository.remoteUri(context, null, "https://cdn.example/show.jpg"))
+        assertEquals(showOnly, AutoArtworkRepository.remoteUri(context, "https://cdn.example/show.jpg", "https://cdn.example/show.jpg"))
     }
 
     @Test

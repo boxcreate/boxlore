@@ -30,9 +30,16 @@ Announcement title:
 - The Your Shows widget is now a grid of artwork. Choose whole covers or shapes in Settings › Appearance › Widgets.
 - See every boxlore widget and add it to your home screen from Settings › Appearance › Widgets.
 - On Home, a show you listen to oldest first now picks up exactly where you left off, even deep into a long series, and skips trailers. Daily mix suggests the same next episode.
+- Android Auto has a new layout. Home shows what you're midway through, then large blocks for New episodes, Your shows, Daily mix, Downloads and more, with Continue, New and Shows one tap away as tabs.
+- In Android Auto, tapping an episode in New episodes, Daily mix, Downloads, Liked or Drive picks keeps playing down that list, and an episode you resume is followed by your queue.
+- Android Auto lists now update when you queue, download, like or follow something on your phone.
+- In Android Auto, your last episode is ready on the car's screen as soon as you connect, so one tap resumes it.
 
 ## Fixed
 
 - Widgets that follow your phone's light and dark mode now switch with it, even when boxlore isn't open.
 - The Your Shows and New Episodes widgets now count your whole library instead of stopping at 50.
 - On Home, a show you've heard every episode of now lists its latest episodes instead of an empty list, and a show whose episodes can't load lets you try again.
+- In Android Auto, artwork loads faster, and every episode has a picture, in lists and in the queue: one with no image of its own shows its show's cover.
+- In Android Auto, tapping something that can't be played no longer stops what you're listening to.
+- In Android Auto, skipping forward or back no longer sends the list you're browsing back to the top.

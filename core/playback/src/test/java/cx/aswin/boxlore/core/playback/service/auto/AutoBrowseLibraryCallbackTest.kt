@@ -369,4 +369,305 @@ class AutoBrowseLibraryCallbackTest {
         callback.onCustomCommand(session, controller, SessionCommand(AutoBrowseContract.COMMAND_SKIP_NEXT, Bundle.EMPTY), Bundle.EMPTY)
         verify(player).seekToNext()
     }
+
+    private fun episodeItem(id: String): MediaItem = AutoMediaItemFactory.playable(
+        AutoPlayableSpec(mediaId = "episode:$id", title = "Episode $id", podcastTitle = "Show", source = "any", uri = "https://example.com/$id.mp3"),
+    )
+
+    private fun controllerFrom(packageName: String): MediaSession.ControllerInfo {
+        val controller = mock(MediaSession.ControllerInfo::class.java)
+        `when`(controller.packageName).thenReturn(packageName)
+        return controller
+    }
+
+    @Test
+    fun `an episode tapped in the car's New episodes list plays on through the list`() {
+        // Regression: the car sends only the media ID, so every tap was a single play labelled "discover".
+        val session = mock(MediaLibrarySession::class.java)
+        val car = controllerFrom("com.google.android.projection.gearhead")
+        runBlocking {
+            `when`(treeBuilder.getNewEpisodesChildren()).thenReturn(listOf(episodeItem("1"), episodeItem("2"), episodeItem("3")))
+            `when`(mediaResolver.resolveMediaItem(mockAny())).thenAnswer { it.arguments[0] }
+        }
+        callback.onGetChildren(session, car, AutoBrowseContract.HOME_NEW_EPISODES_ID, 0, 50, null).get()
+
+        val played = callback.onAddMediaItems(session, car, mutableListOf(MediaItem.Builder().setMediaId("episode:2").build())).get()
+
+        assertEquals(listOf("episode:2", "episode:3"), played.map { it.mediaId })
+        assertEquals("android_auto_new_episodes", cx.aswin.boxlore.core.analytics.PendingEntryPoint.consume()?.get("entry_point"))
+        // Each row goes through the resolver, which is what points a downloaded episode at its saved file.
+        runBlocking { verify(mediaResolver, Mockito.times(2)).resolveMediaItem(mockAny()) }
+    }
+
+    @Test
+    fun `a list browsed by another controller never becomes the car's list`() {
+        // The tracker is shared: a Bluetooth or system browse of Downloads must not relabel or redirect a car tap.
+        val session = mock(MediaLibrarySession::class.java)
+        val car = controllerFrom("com.google.android.projection.gearhead")
+        val other = controllerFrom("com.android.bluetooth")
+        runBlocking {
+            `when`(treeBuilder.getNewEpisodesChildren()).thenReturn(listOf(episodeItem("1"), episodeItem("2")))
+            `when`(treeBuilder.getDownloadsChildren()).thenReturn(listOf(episodeItem("1"), episodeItem("9")))
+            `when`(mediaResolver.resolveMediaItem(mockAny())).thenAnswer { it.arguments[0] }
+        }
+        callback.onGetChildren(session, car, AutoBrowseContract.HOME_NEW_EPISODES_ID, 0, 50, null).get()
+        callback.onGetChildren(session, other, AutoBrowseContract.DOWNLOADS_ID, 0, 50, null).get()
+
+        val played = callback.onAddMediaItems(session, car, mutableListOf(MediaItem.Builder().setMediaId("episode:1").build())).get()
+
+        assertEquals(listOf("episode:1", "episode:2"), played.map { it.mediaId })
+    }
+
+    @Test
+    fun `a list opened from a Home block is the same list, and continues the same way`() {
+        val session = mock(MediaLibrarySession::class.java)
+        val car = controllerFrom("com.google.android.projection.gearhead")
+        runBlocking {
+            `when`(treeBuilder.getDownloadsChildren()).thenReturn(listOf(episodeItem("a"), episodeItem("b")))
+            `when`(mediaResolver.resolveMediaItem(mockAny())).thenAnswer { it.arguments[0] }
+        }
+        callback.onGetChildren(session, car, AutoBrowseContract.OPEN_PREFIX + AutoBrowseContract.DOWNLOADS_ID, 0, 50, null).get()
+
+        val played = callback.onAddMediaItems(session, car, mutableListOf(MediaItem.Builder().setMediaId("episode:a").build())).get()
+
+        assertEquals(listOf("episode:a", "episode:b"), played.map { it.mediaId })
+        assertEquals("android_auto_downloads", cx.aswin.boxlore.core.analytics.PendingEntryPoint.consume()?.get("entry_point"))
+    }
+
+    @Test
+    fun `a play from the phone is never turned into a car list`() {
+        val session = mock(MediaLibrarySession::class.java)
+        val car = controllerFrom("com.google.android.projection.gearhead")
+        val phone = controllerFrom("cx.aswin.boxlore")
+        val resolved = episodeItem("2")
+        runBlocking {
+            `when`(treeBuilder.getNewEpisodesChildren()).thenReturn(listOf(episodeItem("1"), episodeItem("2"), episodeItem("3")))
+            `when`(mediaResolver.resolveMediaItem(mockAny())).thenReturn(resolved)
+        }
+        callback.onGetChildren(session, car, AutoBrowseContract.HOME_NEW_EPISODES_ID, 0, 50, null).get()
+
+        val played = callback.onAddMediaItems(session, phone, mutableListOf(MediaItem.Builder().setMediaId("episode:2").build())).get()
+
+        assertEquals(listOf("episode:2"), played.map { it.mediaId })
+    }
+
+    @Test
+    fun `an episode tapped on a show's page plays alone and is labelled as a show play`() {
+        val session = mock(MediaLibrarySession::class.java)
+        val car = controllerFrom("com.google.android.projection.gearhead")
+        val resolved = episodeItem("s2")
+        runBlocking {
+            `when`(treeBuilder.getPodcastEpisodes("77")).thenReturn(listOf(episodeItem("s1"), episodeItem("s2")))
+            `when`(mediaResolver.resolveMediaItem(mockAny())).thenReturn(resolved)
+        }
+        callback.onGetChildren(session, car, "subscription:77", 0, 50, null).get()
+
+        val played = callback.onAddMediaItems(session, car, mutableListOf(MediaItem.Builder().setMediaId("episode:s2").build())).get()
+
+        assertEquals(listOf("episode:s2"), played.map { it.mediaId })
+        assertEquals("android_auto_show", cx.aswin.boxlore.core.analytics.PendingEntryPoint.consume()?.get("entry_point"))
+    }
+
+    @Test
+    fun `a car tap that finds nothing playable fails instead of clearing what is playing`() {
+        // Regression: an empty answer made the player drop its current episode and go silent.
+        val session = mock(MediaLibrarySession::class.java)
+        val car = controllerFrom("com.google.android.projection.gearhead")
+        val unresolved = MediaItem.Builder().setMediaId("episode:gone").build()
+        runBlocking { `when`(mediaResolver.resolveMediaItem(mockAny())).thenReturn(unresolved) }
+
+        val request = callback.onAddMediaItems(session, car, mutableListOf(MediaItem.Builder().setMediaId("episode:gone").build()))
+
+        val failure = runCatching { request.get() }.exceptionOrNull()
+        assertTrue(failure is java.util.concurrent.ExecutionException)
+        assertEquals(null, cx.aswin.boxlore.core.analytics.PendingEntryPoint.consume()?.get("entry_point"))
+    }
+
+    @Test
+    fun `opening a list in the car does not rebuild the other screens first`() {
+        // Regression: each subscription went through onGetItem, which rebuilt Home, Library and Explore.
+        val session = mock(MediaLibrarySession::class.java)
+        val car = controllerFrom("com.google.android.projection.gearhead")
+
+        val result = callback.onSubscribe(session, car, AutoBrowseContract.OPEN_PREFIX + AutoBrowseContract.DOWNLOADS_ID, null).get()
+
+        assertEquals(androidx.media3.session.LibraryResult.RESULT_SUCCESS, result.resultCode)
+        runBlocking { verify(treeBuilder, Mockito.never()).getHomeChildren() }
+        verify(treeBuilder, Mockito.never()).getDiscoverChildren()
+    }
+
+    @Test
+    fun `an episode resumed from Continue listening is followed by the saved queue`() {
+        // The car has no queue screen of its own, so the queue has to be in the player.
+        val session = mock(MediaLibrarySession::class.java)
+        val car = controllerFrom("com.google.android.projection.gearhead")
+        val queueRepository = mock(cx.aswin.boxlore.core.playback.QueueRepository::class.java)
+        val queued = cx.aswin.boxlore.core.model.Episode("next", "Next", "", "https://example.com/next.mp3")
+        `when`(host.queueRepository).thenReturn(queueRepository)
+        val resolved = episodeItem("resume")
+        runBlocking {
+            `when`(treeBuilder.getContinueListeningChildren()).thenReturn(listOf(episodeItem("resume")))
+            `when`(queueRepository.getQueueEpisodeSnapshot()).thenReturn(listOf(queued))
+            `when`(mediaResolver.resolveMediaItem(mockAny())).thenReturn(resolved)
+        }
+        callback.onGetChildren(session, car, AutoBrowseContract.CONTINUE_ID, 0, 50, null).get()
+
+        val played = callback.onAddMediaItems(session, car, mutableListOf(MediaItem.Builder().setMediaId("episode:resume").build())).get()
+
+        assertEquals(listOf("episode:resume", "queue:next"), played.map { it.mediaId })
+        assertEquals("android_auto_continue", cx.aswin.boxlore.core.analytics.PendingEntryPoint.consume()?.get("entry_point"))
+    }
+
+    private fun carSessionWith(player: Player): MediaSession {
+        val session = mock(MediaSession::class.java)
+        `when`(player.availableCommands).thenReturn(Player.Commands.EMPTY)
+        `when`(session.player).thenReturn(player)
+        return session
+    }
+
+    private fun inCarMode(block: () -> Unit) {
+        val uiMode = context.getSystemService(android.app.UiModeManager::class.java)
+        uiMode.enableCarMode(0)
+        try {
+            block()
+        } finally {
+            uiMode.disableCarMode(0)
+        }
+    }
+
+    @Test
+    fun `a car connecting to an empty player gets the last episode loaded and paused`() {
+        // Regression: the car's card read "Tap to open" with a disabled play button until something was played.
+        val player = mock(Player::class.java)
+        val session = carSessionWith(player)
+        val last = MediaSession.MediaItemsWithStartPosition(listOf(episodeItem("last"), episodeItem("queued")), 0, 42_000L)
+        runBlocking { `when`(resumptionHandler.resolveResumption(session)).thenReturn(last) }
+
+        inCarMode { callback.onConnect(session, controllerFrom("com.google.android.projection.gearhead")) }
+
+        verify(player).setMediaItems(last.mediaItems, 0, 42_000L)
+        verify(player).prepare()
+        verify(player, Mockito.never()).play()
+    }
+
+    @Test
+    fun `the last episode still loads when the car signal arrives a moment after Android Auto connects`() {
+        // Regression: seen on a real head unit. Android Auto connected first and reported the car a moment later.
+        val player = mock(Player::class.java)
+        val session = carSessionWith(player)
+        val last = MediaSession.MediaItemsWithStartPosition(listOf(episodeItem("last")), 0, 0L)
+        runBlocking { `when`(resumptionHandler.resolveResumption(session)).thenReturn(last) }
+        val uiMode = context.getSystemService(android.app.UiModeManager::class.java)
+
+        callback.onConnect(session, controllerFrom("com.google.android.projection.gearhead"))
+        verify(player, Mockito.never()).prepare()
+        uiMode.enableCarMode(0)
+        try {
+            verify(player, Mockito.timeout(5_000)).prepare()
+        } finally {
+            uiMode.disableCarMode(0)
+        }
+    }
+
+    @Test
+    fun `a car connecting while something is loaded leaves the player alone`() {
+        val player = mock(Player::class.java)
+        `when`(player.mediaItemCount).thenReturn(1)
+        val session = carSessionWith(player)
+
+        inCarMode { callback.onConnect(session, controllerFrom("com.google.android.projection.gearhead")) }
+
+        verify(player, Mockito.never()).prepare()
+        runBlocking { verify(resumptionHandler, Mockito.never()).resolveResumption(session) }
+    }
+
+    @Test
+    fun `Android Auto connecting without a car, or a phone controller, loads nothing`() {
+        val player = mock(Player::class.java)
+        val session = carSessionWith(player)
+
+        // Android Auto's own app connects in the background to list media apps.
+        callback.onConnect(session, controllerFrom("com.google.android.projection.gearhead"))
+        inCarMode { callback.onConnect(session, controllerFrom("com.android.systemui")) }
+
+        verify(player, Mockito.never()).prepare()
+    }
+
+    @Test
+    fun `a car connecting with nothing to resume changes nothing`() {
+        val player = mock(Player::class.java)
+        val session = carSessionWith(player)
+        runBlocking {
+            `when`(resumptionHandler.resolveResumption(session)).thenThrow(UnsupportedOperationException("No playback resumption items available"))
+        }
+
+        inCarMode { callback.onConnect(session, controllerFrom("com.google.android.projection.gearhead")) }
+
+        verify(player, Mockito.never()).prepare()
+    }
+
+    private fun librarySessionWith(player: Player): androidx.media3.session.MediaLibraryService.MediaLibrarySession {
+        val session = mock(androidx.media3.session.MediaLibraryService.MediaLibrarySession::class.java)
+        `when`(player.availableCommands).thenReturn(Player.Commands.EMPTY)
+        `when`(session.player).thenReturn(player)
+        `when`(host.mediaSession).thenReturn(session)
+        return session
+    }
+
+    /** Android Auto announces every change of its car connection. */
+    private fun announceCarConnectionChange() {
+        context.sendBroadcast(android.content.Intent(cx.aswin.boxlore.core.playback.service.CarConnectionWatcher.ACTION_CAR_CONNECTION_UPDATED))
+        org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+    }
+
+    private fun events(name: String): Int = recordedEvents.count { it.first == name }
+
+    @Test
+    fun `a car arriving while Android Auto is already connected starts the drive`() {
+        // Android Auto's app stays connected with no car; the drive must not depend on a new connection.
+        val player = mock(Player::class.java)
+        val session = librarySessionWith(player)
+        val last = MediaSession.MediaItemsWithStartPosition(listOf(episodeItem("last")), 0, 0L)
+        runBlocking { `when`(resumptionHandler.resolveResumption(session)).thenReturn(last) }
+        callback.onConnect(session, controllerFrom("com.google.android.projection.gearhead"))
+        verify(player, Mockito.never()).prepare()
+
+        inCarMode {
+            announceCarConnectionChange()
+
+            // Straight away: the check made at connect time only looks again a second later.
+            verify(player).prepare()
+            assertEquals(1, events("android_auto_connected"))
+        }
+    }
+
+    @Test
+    fun `a car leaving while Android Auto stays connected ends the drive, and a new one starts afresh`() {
+        val player = mock(Player::class.java)
+        `when`(player.mediaItemCount).thenReturn(1)
+        val session = librarySessionWith(player)
+        inCarMode { callback.onConnect(session, controllerFrom("com.google.android.projection.gearhead")) }
+        assertEquals(1, events("android_auto_connected"))
+
+        announceCarConnectionChange()
+        assertEquals(1, events("android_auto_disconnected"))
+        verify(player).removeListener(mockAny())
+
+        inCarMode { announceCarConnectionChange() }
+        assertEquals(2, events("android_auto_connected"))
+    }
+
+    @Test
+    fun `a change in the car connection means nothing once Android Auto has disconnected`() {
+        val player = mock(Player::class.java)
+        val session = librarySessionWith(player)
+        val gearhead = controllerFrom("com.google.android.projection.gearhead")
+        callback.onConnect(session, gearhead)
+        callback.onDisconnected(session, gearhead)
+
+        inCarMode { announceCarConnectionChange() }
+
+        verify(player, Mockito.never()).prepare()
+        assertEquals(0, events("android_auto_connected"))
+    }
 }

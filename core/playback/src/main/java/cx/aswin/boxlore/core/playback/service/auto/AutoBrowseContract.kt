@@ -15,6 +15,8 @@ internal object AutoBrowseContract {
     const val DISCOVER_ID = "discover"
     const val LEGACY_EXPLORE_ID = "explore"
 
+    /** The Continue tab. A new ID: the old Resume folder's is told to reload every few seconds during playback. */
+    const val CONTINUE_ID = "continue_listening"
     const val HOME_CONTINUE_ID = "home_continue_listening"
     const val HOME_QUEUE_ID = "home_queue"
     const val HOME_NEW_EPISODES_ID = "home_new_episodes"
@@ -27,6 +29,12 @@ internal object AutoBrowseContract {
     const val DISCOVER_DRIVE_PICKS_ID = "discover_drive_picks"
     const val DISCOVER_TIME_PICKS_ID = "discover_time_picks"
     const val DISCOVER_GENRES_ID = "discover_genres"
+
+    /**
+     * Home blocks open another node's list under their own ID (`open:<node>`), so a block never
+     * shares a media ID with the tab that shows the same list.
+     */
+    const val OPEN_PREFIX = "open:"
 
     const val PLAY_ALL_NEW_ID = "play_all_new_episodes"
     const val PLAY_ALL_LIKED_ID = "play_all_liked_episodes"
@@ -58,6 +66,7 @@ internal object AutoBrowseContract {
     const val SOURCE_MIXTAPE = "mixtape"
     const val SOURCE_DISCOVER = "discover"
     const val SOURCE_SEARCH = "search"
+    const val SOURCE_SHOW = "show"
 
     const val COMMAND_TOGGLE_LIKE = "AUTO_TOGGLE_LIKE"
     const val COMMAND_ADD_TO_QUEUE = "AUTO_ADD_TO_QUEUE"
@@ -78,6 +87,9 @@ internal object AutoBrowseContract {
         browsable = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_CATEGORY_GRID_ITEM,
         playable = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
     )
+
+    /** The node a browse request is really for: a Home block's `open:` ID maps to the list it opens. */
+    fun targetNode(parentId: String): String = parentId.removePrefix(OPEN_PREFIX)
 
     fun itemExtras(
         source: String,

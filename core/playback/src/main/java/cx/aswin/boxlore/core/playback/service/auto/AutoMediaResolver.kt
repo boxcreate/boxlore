@@ -141,13 +141,15 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
             enriched.subtitle?.let { metadataBuilder.setSubtitle(it) }
         }
 
-        return item
+        val resolved = item
             .buildUpon()
             .setUri(uri)
             .setMediaMetadata(metadataBuilder.build())
             .setCustomCacheKey(
                 PlaybackMediaIdPolicy.customCacheKey(cacheId, uri.toString()),
             ).build()
+        // A browse row's cover is an in-app link; the phone's media controls need its real address.
+        return AutoItemArtwork.withSources(host.asContext(), resolved)
     }
 
     private suspend fun resolvePodcastNameFallback(episodeId: String, cacheId: String,): String? =

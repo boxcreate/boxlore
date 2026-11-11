@@ -20,8 +20,21 @@ internal object AutoArtworkSourceStore {
     const val SOURCE_PREFS = "android_auto_artwork_sources"
     private const val TAG = "AutoArtworkSources"
     private const val COMMIT_WAIT_MS = 500L
+    private const val MAX_SAVED_SOURCES = 4_000
+    private val pruneScheduled = AtomicBoolean(false)
+    private val pruneLock = Any()
 
     private val memory = ConcurrentHashMap<String, String>()
+
+    /** What is known to be on disk: read from it, or written by a commit that succeeded. */
+    private val saved = ConcurrentHashMap<String, String>()
+
+    /**
+     * Keys this process has tried to save. Preferences show a value from the moment its save
+     * starts, before it is on disk and even when the save then fails, so for these keys only
+     * [saved] says what the disk holds.
+     */
+    private val attempted: MutableSet<String> = ConcurrentHashMap.newKeySet()
     private val persistExecutor =
         Executors.newSingleThreadExecutor { runnable ->
             Thread(runnable, "auto-artwork-prefs").apply { isDaemon = true }
@@ -32,8 +45,16 @@ internal object AutoArtworkSourceStore {
      * within [COMMIT_WAIT_MS].
      */
     fun put(context: Context, key: String, value: String,): Boolean {
+        // Already saved: nothing to wait for. Lists are rebuilt on the main thread, and without this
+        // every row of every reload waited on a disk write for artwork the car already knew. A source
+        // another call is still saving does not count: if that save fails, this call must not have
+        // vouched for it.
+        if (savedValue(context, key) == value) return true
+        // Marked under the lock savedValue reads under, so no read can take this save's value for one already on disk.
+        synchronized(pruneLock) { attempted += key }
         memory[key] = value
         val appContext = context.applicationContext
+        if (pruneScheduled.compareAndSet(false, true)) persistExecutor.execute { pruneIfOversized(appContext) }
         val committed = AtomicBoolean(false)
         val done = CountDownLatch(1)
         persistExecutor.execute {
@@ -45,6 +66,7 @@ internal object AutoArtworkSourceStore {
                         .putString(key, value)
                         .commit(),
                 )
+                if (committed.get()) saved[key] = value
             } finally {
                 done.countDown()
             }
@@ -67,20 +89,57 @@ internal object AutoArtworkSourceStore {
         return true
     }
 
-    fun get(context: Context, key: String,): String? {
-        memory[key]?.let { return it }
-        val persisted =
-            context
-                .getSharedPreferences(SOURCE_PREFS, Context.MODE_PRIVATE)
-                .getString(key, null)
-                ?: return null
-        memory[key] = persisted
-        return persisted
+    /**
+     * Sources are never removed one by one, so once the file holds more than [maxSaved] (far more
+     * than any car session needs) it is cut back to the sources this run has used; lists put the
+     * rest back as they are next built. Holding [pruneLock] with [savedValue] keeps a read from
+     * bringing back, as saved, a source the prune is dropping: a later equal [put] would then skip
+     * the save it needs.
+     */
+    @androidx.annotation.VisibleForTesting
+    internal fun pruneIfOversized(appContext: Context, maxSaved: Int = MAX_SAVED_SOURCES) {
+        runCatching {
+            val prefs = appContext.getSharedPreferences(SOURCE_PREFS, Context.MODE_PRIVATE)
+            synchronized(pruneLock) {
+                if (prefs.all.size <= maxSaved) return
+                val kept = HashMap(memory)
+                val editor = prefs.edit().clear()
+                kept.forEach { (key, value) -> editor.putString(key, value) }
+                if (editor.commit()) {
+                    saved.clear()
+                    saved.putAll(kept)
+                } else {
+                    Log.w(TAG, "Artwork source prune was not saved")
+                }
+            }
+        }.onFailure { Log.w(TAG, "Unable to prune artwork sources", it) }
+    }
+
+    /** The source for [key]: one being saved right now is visible at once, ahead of what is on disk. */
+    fun get(context: Context, key: String,): String? = memory[key] ?: savedValue(context, key)
+
+    /** The source for [key] that is on disk, so that it survives a restart. */
+    private fun savedValue(context: Context, key: String): String? {
+        saved[key]?.let { return it }
+        synchronized(pruneLock) {
+            saved[key]?.let { return it }
+            if (key in attempted) return null
+            val persisted =
+                context
+                    .getSharedPreferences(SOURCE_PREFS, Context.MODE_PRIVATE)
+                    .getString(key, null)
+                    ?: return null
+            saved[key] = persisted
+            memory.putIfAbsent(key, persisted)
+            return persisted
+        }
     }
 
     /** Test-only: clear in-memory overlay without wiping SharedPreferences. */
     internal fun clearMemoryForTests() {
         memory.clear()
+        saved.clear()
+        attempted.clear()
     }
 
     /** Test-only: wait for queued prefs commits to finish. */

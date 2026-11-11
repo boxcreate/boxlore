@@ -6,6 +6,7 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import cx.aswin.boxlore.core.playback.AutoArtworkFetchLogic
+import cx.aswin.boxlore.core.playback.service.auto.AutoArtworkRepository
 import cx.aswin.boxlore.core.playback.service.auto.AutoArtworkSourceStore
 import java.io.File
 import java.net.URL
@@ -112,18 +113,19 @@ open class AutoCollageProvider : ContentProvider() {
         val source =
             AutoArtworkSourceStore.get(context, key)
                 ?: return null
-        val sourceUrl =
-            AutoArtworkDownloader
-                .parseHttpsUrl(source)
-                ?.takeIf(AutoArtworkDownloader::isPublicHttpsUrl)
-                ?: return null
+        val sourceUrls =
+            AutoArtworkRepository
+                .sourcesOf(source)
+                .mapNotNull { AutoArtworkDownloader.parseHttpsUrl(it)?.takeIf(AutoArtworkDownloader::isPublicHttpsUrl) }
+        val primary = sourceUrls.firstOrNull() ?: return null
         val lock = artworkLocks.getOrPut(key) { Any() }
         return synchronized(lock) {
             cachedRemoteArtwork(context, key)?.let { return@synchronized it }
-            // One retry covers flaky CDNs / brief Auto host pipe races.
+            // One retry covers flaky CDNs / brief Auto host pipe races; then the show's cover stands in.
             // Keep the lock stripe resident so concurrent openers share the same monitor.
-            fetchRemoteArtwork(sourceUrl, cacheDir, target)
-                ?: fetchRemoteArtwork(sourceUrl, cacheDir, target)
+            fetchRemoteArtwork(primary, cacheDir, target)
+                ?: fetchRemoteArtwork(primary, cacheDir, target)
+                ?: sourceUrls.drop(1).firstNotNullOfOrNull { fetchRemoteArtwork(it, cacheDir, target) }
         }
     }
 
@@ -134,7 +136,8 @@ open class AutoCollageProvider : ContentProvider() {
             if (!AutoArtworkFetchLogic.looksLikeImage(bytes.copyOf(minOf(12, bytes.size)))) {
                 return null
             }
-            temp.outputStream().use { it.write(bytes) }
+            // Podcast covers are often several megabytes; the car shows them a few hundred pixels wide.
+            temp.outputStream().use { it.write(AutoArtworkScaler.scaleForCar(bytes)) }
             if (temp.length() <= 0L) return null
 
             if (!temp.renameTo(target)) {

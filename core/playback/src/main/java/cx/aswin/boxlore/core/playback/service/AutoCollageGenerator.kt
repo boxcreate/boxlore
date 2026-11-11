@@ -26,6 +26,9 @@ object AutoCollageGenerator {
     private const val TAG = "AutoCollage"
     private const val COLLAGE_SIZE = 512 // px, square
 
+    /** After a rebuild in which no cover loaded, how long the saved collage stands before the covers are fetched again. */
+    private const val RETRY_AFTER_FAILURE_MS = 5 * 60_000L
+
     data class CollageResult(val uri: Uri, val signature: String, val loadedImageCount: Int, val expectedImageCount: Int,)
 
     /**
@@ -101,7 +104,9 @@ object AutoCollageGenerator {
             )
         }
 
-        val built = createCollageBitmap(context, urls, folderId) ?: return null
+        val retryMarker = File(cacheDir, "$safeName.retry")
+        val built = buildUnlessKept(context, urls, folderId, outFile, retryMarker)
+            ?: return keptCollage(context, safeName, storedSignature ?: provisionalSignature, cachedMeta, expected, outFile)
         val loaded = built.loadedImageCount
         val signature =
             AutoCollageFreshnessLogic.buildSignature(
@@ -109,9 +114,8 @@ object AutoCollageGenerator {
                 loadedImageCount = loaded,
                 expectedImageCount = expected,
             )
-        FileOutputStream(outFile).use { out ->
-            built.bitmap.compress(Bitmap.CompressFormat.PNG, 90, out)
-        }
+        writeCollage(built.bitmap, outFile)
+        discard(retryMarker)
         runCatching { signatureFile.writeText(signature) }
         runCatching { metaFile.writeText("$loaded\n$expected") }
         built.bitmap.recycle()
@@ -122,6 +126,50 @@ object AutoCollageGenerator {
             loadedImageCount = loaded,
             expectedImageCount = expected,
         )
+    }
+
+    /**
+     * The new collage, or null when the one on disk should stay: none of the covers could be loaded
+     * (offline, a saved collage beats a blank placeholder), or that happened a moment ago and it is
+     * too soon to download them all again.
+     */
+    private suspend fun buildUnlessKept(context: Context, urls: List<String>, folderId: String, outFile: File, retryMarker: File,): BuiltCollage? {
+        val hasCollage = outFile.exists()
+        if (hasCollage && System.currentTimeMillis() - retryMarker.lastModified() < RETRY_AFTER_FAILURE_MS) return null
+        val built = createCollageBitmap(context, urls, folderId) ?: return null
+        if (hasCollage && urls.isNotEmpty() && built.loadedImageCount == 0) {
+            built.bitmap.recycle()
+            runCatching { retryMarker.writeText("") }
+            return null
+        }
+        return built
+    }
+
+    /** The collage already on disk as a result, or null when there is none to keep. */
+    private fun keptCollage(context: Context, safeName: String, signature: String, cachedMeta: Pair<Int, Int>?, expected: Int, outFile: File,): CollageResult? {
+        if (!outFile.exists()) return null
+        return CollageResult(
+            uri = AutoCollageProvider.getUri(context, "$safeName.png", signature),
+            signature = signature,
+            loadedImageCount = cachedMeta?.first ?: 0,
+            expectedImageCount = cachedMeta?.second ?: expected,
+        )
+    }
+
+    /** Written beside the file and moved into place, so the car never reads a half-written collage. */
+    private fun writeCollage(bitmap: Bitmap, outFile: File) {
+        val staging = File(outFile.parentFile, "${outFile.name}.tmp")
+        FileOutputStream(staging).use { out ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 90, out)
+        }
+        if (!staging.renameTo(outFile)) {
+            staging.copyTo(outFile, overwrite = true)
+            discard(staging)
+        }
+    }
+
+    private fun discard(file: File) {
+        if (file.exists() && !file.delete()) Log.w(TAG, "Unable to delete ${file.name}")
     }
 
     private fun readMeta(metaFile: File): Pair<Int, Int>? {

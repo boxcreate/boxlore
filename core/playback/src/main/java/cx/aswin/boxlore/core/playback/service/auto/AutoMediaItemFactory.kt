@@ -30,6 +30,23 @@ internal data class AutoPlayableSpec(
     val supportedCommands: List<String>? = null,
 )
 
+/** How an episode's row is shown, beyond the episode itself. */
+internal data class AutoEpisodeRow(
+    val groupTitle: String? = null,
+    val mediaIdPrefix: String = "episode:",
+    val isDownloaded: Boolean = false,
+    val subtitle: String? = null,
+    val progress: Double? = null,
+    val isCompleted: Boolean = false,
+)
+
+/**
+ * This item as the player shows it: under the title goes the show's name, not the list row's
+ * second line ("Show · 36 min", "35 min left"), which the player's own progress bar already says.
+ */
+internal fun MediaItem.forPlayback(): MediaItem =
+    buildUpon().setMediaMetadata(mediaMetadata.buildUpon().setSubtitle(mediaMetadata.artist).build()).build()
+
 @OptIn(UnstableApi::class)
 internal object AutoMediaItemFactory {
     private val episodeCommands =
@@ -69,6 +86,9 @@ internal object AutoMediaItemFactory {
                 MediaMetadata
                     .Builder()
                     .setTitle(title)
+                    // With a display title set, the car shows the subtitle as the second line; without
+                    // one it shows the artist there and the subtitle is never seen.
+                    .setDisplayTitle(title)
                     .setSubtitle(subtitle)
                     .setArtist(subtitle)
                     .setArtworkUri(artworkUri)
@@ -106,6 +126,9 @@ internal object AutoMediaItemFactory {
                 MediaMetadata
                     .Builder()
                     .setTitle(spec.title)
+                    // With a display title set, the car shows the subtitle ("Today · 28 min", "35 min
+                    // left") as the second line; without one it shows the artist there instead.
+                    .setDisplayTitle(spec.title)
                     .setSubtitle(spec.subtitle)
                     .setArtist(spec.podcastTitle)
                     .setAlbumTitle(spec.podcastTitle)
@@ -120,7 +143,15 @@ internal object AutoMediaItemFactory {
             ).build()
     }
 
-    fun fromHistory(history: ListeningHistoryEntity, source: String, artworkUri: Uri?, subtitle: String, groupTitle: String,): MediaItem {
+    fun fromHistory(
+        history: ListeningHistoryEntity,
+        source: String,
+        artworkUri: Uri?,
+        subtitle: String,
+        groupTitle: String?,
+        title: CharSequence = history.episodeTitle,
+        isDownloaded: Boolean = false,
+    ): MediaItem {
         val progress =
             if (history.durationMs > 0) {
                 history.progressMs.toDouble() / history.durationMs.toDouble()
@@ -130,7 +161,7 @@ internal object AutoMediaItemFactory {
         return playable(
             AutoPlayableSpec(
                 mediaId = "episode:${history.episodeId}",
-                title = history.episodeTitle,
+                title = title,
                 podcastTitle = history.podcastName,
                 subtitle = subtitle,
                 artworkUri = artworkUri,
@@ -140,6 +171,7 @@ internal object AutoMediaItemFactory {
                 groupTitle = groupTitle,
                 progress = progress,
                 isCompleted = history.isCompleted,
+                isDownloaded = isDownloaded,
                 customCacheKey =
                 EpisodeMediaCacheKey.of(history.episodeId, history.episodeAudioUrl),
             ),
@@ -151,21 +183,21 @@ internal object AutoMediaItemFactory {
         source: String,
         artworkUri: Uri?,
         podcastTitle: String? = episode.podcastTitle,
-        groupTitle: String? = null,
-        mediaIdPrefix: String = "episode:",
-        isDownloaded: Boolean = false,
+        row: AutoEpisodeRow = AutoEpisodeRow(),
     ): MediaItem = playable(
         AutoPlayableSpec(
-            mediaId = "$mediaIdPrefix${episode.id}",
+            mediaId = "${row.mediaIdPrefix}${episode.id}",
             title = episode.title,
             podcastTitle = podcastTitle,
-            subtitle = buildDurationSubtitle(podcastTitle, episode.duration.toLong() * 1_000L),
+            subtitle = row.subtitle ?: buildDurationSubtitle(podcastTitle, episode.duration.toLong() * 1_000L),
             artworkUri = artworkUri,
             uri = episode.audioUrl,
             durationMs = episode.duration.toLong() * 1_000L,
             source = source,
-            groupTitle = groupTitle,
-            isDownloaded = isDownloaded,
+            groupTitle = row.groupTitle,
+            progress = row.progress,
+            isCompleted = row.isCompleted,
+            isDownloaded = row.isDownloaded,
             customCacheKey = EpisodeMediaCacheKey.of(episode.id, episode.audioUrl),
         ),
     ).let { item ->
@@ -176,7 +208,7 @@ internal object AutoMediaItemFactory {
         ).build()
     }
 
-    fun fromDownload(download: DownloadedEpisodeEntity, artworkUri: Uri?, uri: String?, groupTitle: String,): MediaItem = playable(
+    fun fromDownload(download: DownloadedEpisodeEntity, artworkUri: Uri?, uri: String?, groupTitle: String?,): MediaItem = playable(
         AutoPlayableSpec(
             mediaId = "episode:${download.episodeId}",
             title = download.episodeTitle,
@@ -198,6 +230,19 @@ internal object AutoMediaItemFactory {
             podcastTitle?.takeIf(String::isNotBlank),
             duration.takeIf(String::isNotBlank),
         ).joinToString(" · ")
+    }
+
+    /** Joins the parts of a row's second line, leaving out blank ones. */
+    fun joinSubtitle(vararg parts: String?): String = parts.filterNot { it.isNullOrBlank() }.joinToString(" · ")
+
+    /** "35 min left", "1h 5m left" or "Almost done" for an episode that has been started. */
+    fun formatTimeLeft(progressMs: Long, durationMs: Long): String {
+        val remainingMin = (durationMs - progressMs).coerceAtLeast(0) / 60_000L
+        return when {
+            remainingMin > 60 -> "${remainingMin / 60}h ${remainingMin % 60}m left"
+            remainingMin > 0 -> "$remainingMin min left"
+            else -> "Almost done"
+        }
     }
 
     fun formatDuration(durationMs: Long): String {

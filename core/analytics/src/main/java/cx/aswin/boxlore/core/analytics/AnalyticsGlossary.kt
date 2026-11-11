@@ -285,6 +285,7 @@ object AnalyticsGlossary {
             "android_auto_liked",
             "android_auto_history",
             "android_auto_discover",
+            "android_auto_show",
             "android_auto_voice",
             "android_auto_play_all",
             "mini_player",

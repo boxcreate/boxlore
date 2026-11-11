@@ -308,7 +308,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
             episode.imageUrl ?: episode.podcastImageUrl ?: podcastImageUrl,
         ),
         podcastTitle = podcastTitle,
-        groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_search),
+        row = AutoEpisodeRow(groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_search)),
     )
 
     private fun voiceHistoryItem(history: cx.aswin.boxlore.core.database.ListeningHistoryEntity): MediaItem = AutoMediaItemFactory.fromHistory(
@@ -411,6 +411,26 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
         return mixtape.drop(selectedIndex).toMutableList()
     }
 
+    /** The saved queue as player items, leaving out [episodeId] and anything queued ahead of it. */
+    suspend fun queueAfter(episodeId: String): List<MediaItem> {
+        val queue = host.queueRepository.getQueueEpisodeSnapshot()
+        return queue.drop(queue.indexOfFirst { it.id == episodeId } + 1).map { queueItem(it) }
+    }
+
+    /**
+     * A saved queue entry as a player item. Its cover falls back to the show's, and the cover's
+     * real address is saved on it for the phone's media controls.
+     */
+    private suspend fun queueItem(episode: cx.aswin.boxlore.core.model.Episode, groupTitle: String? = null): MediaItem = AutoItemArtwork.withSources(
+        host.asContext(),
+        AutoMediaItemFactory.fromEpisode(
+            episode = episode,
+            source = AutoBrowseContract.SOURCE_QUEUE,
+            artworkUri = treeBuilder.queueArt(episode),
+            row = AutoEpisodeRow(mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX, groupTitle = groupTitle),
+        ).forPlayback(),
+    )
+
     suspend fun handlePlayFromQueue(episodeId: String, fromCar: Boolean): MutableList<MediaItem> {
         val queue = host.queueRepository.getQueueEpisodeSnapshot()
         val selectedIndex = queue.indexOfFirst { it.id == episodeId }
@@ -419,20 +439,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
             return mutableListOf()
         }
         labelCarPlay(fromCar, "android_auto_queue")
-        return queue
-            .drop(selectedIndex)
-            .map { episode ->
-                AutoMediaItemFactory.fromEpisode(
-                    episode = episode,
-                    source = AutoBrowseContract.SOURCE_QUEUE,
-                    artworkUri =
-                    AutoArtworkRepository.remoteUri(
-                        host.asContext(),
-                        episode.imageUrl ?: episode.podcastImageUrl,
-                    ),
-                    mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX,
-                    groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_queue),
-                )
-            }.toMutableList()
+        val groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_queue)
+        return queue.drop(selectedIndex).mapTo(mutableListOf()) { queueItem(it, groupTitle) }
     }
 }

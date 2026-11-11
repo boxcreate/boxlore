@@ -1,7 +1,10 @@
 package cx.aswin.boxlore.core.playback.service.auto
 
+import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
+import androidx.annotation.DrawableRes
+import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
 import androidx.media3.common.Player
 import androidx.media3.session.CommandButton
@@ -39,6 +42,21 @@ interface AutoBrowseLibraryHost {
     fun requestAutoCollageRefresh(force: Boolean = false)
 
     fun getString(@StringRes id: Int, vararg formatArgs: Any,): String
+
+    /** A count in words, e.g. "5 episodes". */
+    fun getQuantityString(@PluralsRes id: Int, quantity: Int): String = asContext().resources.getQuantityString(id, quantity, quantity)
+
+    /** An `android.resource://` link to a drawable: the form Android Auto loads tab and category icons from. */
+    fun drawableUri(@DrawableRes id: Int): Uri {
+        val resources = asContext().resources
+        return Uri
+            .Builder()
+            .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
+            .authority(resources.getResourcePackageName(id))
+            .appendPath(resources.getResourceTypeName(id))
+            .appendPath(resources.getResourceEntryName(id))
+            .build()
+    }
 
     fun observeManualCompletion(episodeId: String)
 

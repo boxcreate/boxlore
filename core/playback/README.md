@@ -66,12 +66,15 @@ It does not own the Room schema ([`:core:database`](../database/README.md)), pre
 ### Android Auto
 
 - `service.auto.AutoBrowseLibraryCallback`, `AutoBrowseTreeBuilder`, `AutoMediaItemFactory` and `AutoBrowseContract`: browse tree, media IDs and custom commands.
-- `AutoMediaResolver`, `AutoPlaybackResumptionHandler` and `AutoVoiceSearchHandler`, each with a pure policy or logic object: playable items, `onPlaybackResumption` and voice search.
-- `AutoBrowseControllerMatcher` tells car controllers from Bluetooth AVRCP and system UI; connection events count only in car mode or on Android Automotive (`CarConnectionState`).
-- `labelCarPlay` names a play `android_auto_*` only when Auto's controller asked for it.
-- `service.AutoCollageProvider` serves `content://` artwork and collages (`AutoCollagePrewarmer`, `AutoCollageGenerator`, `AutoCollageLayouts`), fetched through `AutoArtworkDownloader` with validated HTTPS redirects.
-- Collage links are display-only; saved artwork always comes from `PlaybackArtworkMetadata.savedArtworkUrl`.
-- The browse root title is `:core:catalog`'s `auto_app_name`; the generic tile spells `boxlore` in lowercase.
+- Tabs: Home, Continue, New, Shows; Home's blocks open lists through `open:<node>` IDs.
+- `AutoPlayContextTracker` matches a car play (an ID alone) to the list last sent and continues it.
+- In a car, `AutoBrowseChangeNotifier` reloads lists on phone changes and `AutoQueueArtworkSync` makes queued covers loadable.
+- `service.SeekSettleWindow` hides a seek's buffering, which resets Android Auto's scroll.
+- `AutoMediaResolver`, `AutoPlaybackResumptionHandler` and `AutoVoiceSearchHandler`, each with a policy object: playable items, resumption, voice search.
+- `AutoBrowseControllerMatcher` tells car controllers from Bluetooth AVRCP and system UI; connection events count only in a car (`CarConnectionState`, `CarConnectionWatcher`), and `labelCarPlay` names a play `android_auto_*` only when Auto's controller asked.
+- `service.AutoCollageProvider` serves `content://` covers and collages (`AutoCollagePrewarmer`, `AutoCollageGenerator`, `AutoCollageLayouts`), fetched by `AutoArtworkDownloader` over validated HTTPS, cached at car size (`AutoArtworkScaler`).
+- The show's cover replaces a failed episode image; saved artwork is `PlaybackArtworkMetadata.savedArtworkUrl`, never a collage link.
+- Browse root title: `:core:catalog`'s `auto_app_name`; the generic tile spells `boxlore` lowercase.
 
 ### Cast
 
@@ -133,7 +136,7 @@ src/main/java/cx/aswin/boxlore/core/data/service/   # stubs for legacy service n
 Never rename these:
 
 - `BoxLorePlaybackService`, `MediaDownloadService` and `AutoCollageProvider` in `cx.aswin.boxlore.core.playback.service`, and their stubs in `cx.aswin.boxlore.core.data.service` ([`ARCHITECTURE.md`](../../ARCHITECTURE.md#services--providers)).
-- Media ID prefixes `episode:`, `queue:` and `learn:` (`QueueMath`, `AutoBrowseContract`), and Auto browse prefixes `subscription:`, `discover_genre:` and `discover_curated_`.
+- Media ID prefixes `episode:`, `queue:` and `learn:` (`QueueMath`, `AutoBrowseContract`), and Auto browse prefixes `subscription:`, `discover_genre:`, `discover_curated_` and `open:`.
 - Media item extras `boxlore_podcast_id` and `boxlore_artwork_sources`.
 - `customCacheKey` is the episode ID of the download holder (`EpisodeMediaCacheKey`); briefing audio adds its `v=` version. Briefing episode IDs stay `briefing_*`.
 - SharedPreferences `boxlore_player` (copied from legacy `boxcast_player` by `PrefsFileMigrator`): `player_dismissed`, `last_sleep_prompt_window_id` and `device_uuid`, which is never logged raw.
