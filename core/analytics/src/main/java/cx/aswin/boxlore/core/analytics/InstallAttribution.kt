@@ -11,7 +11,8 @@ import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
  *   kept ([keepPending]) and saved at a later launch ([onInstallerKnown]).
  * - A copy the Play Store didn't install is saved as [CHANNEL_NOT_PLAY], once.
  *
- * Every value is set once on the person, so the first channel saved stays.
+ * Every value is set once on the person, so the first channel saved stays, and sending it again after
+ * an interrupted launch is harmless.
  */
 object InstallAttribution {
     /** `install_channel` for any install the Play Store didn't make. */
@@ -40,14 +41,26 @@ object InstallAttribution {
     /** Play's referrer answered but Android couldn't say who installed this copy: keeps the answer for [onInstallerKnown]. */
     fun keepPending(context: Context, channel: String, referrerRaw: String?) = prefsStore(context).keep(channel, referrerRaw)
 
-    internal fun onInstallerKnown(store: Store, fromPlayStore: Boolean) {
+    /**
+     * [afterHandOff] runs a step once the capture queued before it has reached PostHog, in queue order.
+     * The store changes only then, so a launch that ends before setup finishes tries again next time.
+     */
+    internal fun onInstallerKnown(
+        store: Store,
+        fromPlayStore: Boolean,
+        afterHandOff: (() -> Unit) -> Unit = PostHogStartup::runWhenReady,
+    ) {
         store.pending()?.let { (channel, referrerRaw) ->
-            if (fromPlayStore) GrowthSessionAnalyticsTracks.trackInstallChannelAttributed(channel, referrerRaw)
-            store.clearPending()
+            if (fromPlayStore) {
+                GrowthSessionAnalyticsTracks.trackInstallChannelAttributed(channel, referrerRaw)
+                afterHandOff(store::clearPending)
+            } else {
+                store.clearPending()
+            }
         }
         if (!fromPlayStore && !store.notPlaySaved()) {
             GrowthSessionAnalyticsTracks.trackInstallChannelAttributed(CHANNEL_NOT_PLAY)
-            store.markNotPlaySaved()
+            afterHandOff(store::markNotPlaySaved)
         }
     }
 
