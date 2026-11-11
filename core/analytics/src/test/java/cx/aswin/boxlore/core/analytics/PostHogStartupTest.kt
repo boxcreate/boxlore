@@ -76,4 +76,29 @@ class PostHogStartupTest {
         PostHogStartup.runWhenReady { calls += "later" }
         assertTrue(calls.isEmpty(), "Got $calls")
     }
+
+    @Test
+    fun `a set-once capture reports sent only once PostHog has taken it`() {
+        var sent = false
+        AnalyticsEmit.personSetOnce(mapOf("install_channel" to "not_play")) { sent = true }
+        assertFalse(sent)
+
+        PostHogStartup.markReady()
+
+        assertTrue(sent)
+    }
+
+    @Test
+    fun `a set-once capture never reports sent when the queue drops it or setup fails`() {
+        var sent = 0
+        AnalyticsEmit.personSetOnce(mapOf("install_channel" to "not_play")) { sent++ }
+        repeat(PostHogStartup.MAX_PENDING) { PostHogStartup.runWhenReady {} }
+        PostHogStartup.markReady()
+        assertEquals(0, sent)
+
+        PostHogStartup.resetForTest()
+        AnalyticsEmit.personSetOnce(mapOf("install_channel" to "not_play")) { sent++ }
+        PostHogStartup.finishSetup(setup = { error("setup failed") }, onFailure = {})
+        assertEquals(0, sent)
+    }
 }

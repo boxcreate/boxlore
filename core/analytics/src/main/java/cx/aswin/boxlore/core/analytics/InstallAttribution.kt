@@ -41,26 +41,17 @@ object InstallAttribution {
     /** Play's referrer answered but Android couldn't say who installed this copy: keeps the answer for [onInstallerKnown]. */
     fun keepPending(context: Context, channel: String, referrerRaw: String?) = prefsStore(context).keep(channel, referrerRaw)
 
-    /**
-     * [afterHandOff] runs a step once the capture queued before it has reached PostHog, in queue order.
-     * The store changes only then, so a launch that ends before setup finishes tries again next time.
-     */
-    internal fun onInstallerKnown(
-        store: Store,
-        fromPlayStore: Boolean,
-        afterHandOff: (() -> Unit) -> Unit = PostHogStartup::runWhenReady,
-    ) {
+    /** The store changes only once PostHog has taken the capture, so a launch where it doesn't tries again next time. */
+    internal fun onInstallerKnown(store: Store, fromPlayStore: Boolean) {
         store.pending()?.let { (channel, referrerRaw) ->
             if (fromPlayStore) {
-                GrowthSessionAnalyticsTracks.trackInstallChannelAttributed(channel, referrerRaw)
-                afterHandOff(store::clearPending)
+                GrowthSessionAnalyticsTracks.trackInstallChannelAttributed(channel, referrerRaw, onSent = store::clearPending)
             } else {
                 store.clearPending()
             }
         }
         if (!fromPlayStore && !store.notPlaySaved()) {
-            GrowthSessionAnalyticsTracks.trackInstallChannelAttributed(CHANNEL_NOT_PLAY)
-            afterHandOff(store::markNotPlaySaved)
+            GrowthSessionAnalyticsTracks.trackInstallChannelAttributed(CHANNEL_NOT_PLAY, onSent = store::markNotPlaySaved)
         }
     }
 

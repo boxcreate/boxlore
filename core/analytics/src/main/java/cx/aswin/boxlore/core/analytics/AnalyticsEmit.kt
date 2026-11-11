@@ -28,11 +28,14 @@ internal object AnalyticsEmit {
     /**
      * Person properties PostHog keeps from the first time they arrive. They go in the SDK's own
      * set-once slot: nested under [personSetSink] they'd land as one property named `$set_once`.
+     * The second argument runs once the SDK has taken the capture, and never when it is dropped
+     * (setup failed, or the startup queue overflowed) or throws.
      */
     @Volatile
-    var personSetOnceSink: (Map<String, Any>) -> Unit = { userProperties ->
+    var personSetOnceSink: (Map<String, Any>, () -> Unit) -> Unit = { userProperties, onSent ->
         PostHogStartup.runWhenReady {
             PostHog.capture(event = AnalyticsGlossary.PERSON_SET_EVENT, userPropertiesSetOnce = userProperties)
+            onSent()
         }
     }
 
@@ -58,7 +61,10 @@ internal object AnalyticsEmit {
         val previousLevels = this.applyLevels
         eventSink = { event, props -> recorder.add(event to props) }
         personSetSink = { props -> recorder.add(AnalyticsGlossary.PERSON_SET_EVENT to props) }
-        personSetOnceSink = { props -> recorder.add(AnalyticsGlossary.PERSON_SET_EVENT to mapOf(SET_ONCE_KEY to props)) }
+        personSetOnceSink = { props, onSent ->
+            recorder.add(AnalyticsGlossary.PERSON_SET_EVENT to mapOf(SET_ONCE_KEY to props))
+            onSent()
+        }
         exceptionSink = { _, props -> recorder.add(EXCEPTION_EVENT to props) }
         this.applyLevels = applyLevels
         return {
@@ -84,8 +90,9 @@ internal object AnalyticsEmit {
     }
 
     /** Sets person properties only where the person doesn't have them yet. */
-    fun personSetOnce(properties: Map<String, Any>) {
-        if (properties.isNotEmpty()) personSetOnceSink(properties)
+    /** [onSent] runs once PostHog has taken the capture; never for empty [properties]. */
+    fun personSetOnce(properties: Map<String, Any>, onSent: () -> Unit = {}) {
+        if (properties.isNotEmpty()) personSetOnceSink(properties, onSent)
     }
 
     /** Sends a redacted copy of [error] to error tracking: no links or signed tokens in any message. */
