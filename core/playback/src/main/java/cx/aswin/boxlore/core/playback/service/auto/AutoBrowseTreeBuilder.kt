@@ -621,6 +621,9 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
         return episodeArt(episodeImage, cover) ?: iconUri(R.drawable.ic_auto_episode)
     }
 
+    /** A queue entry's cover for the player: the episode's image, else its show's cover, looked up when the entry has none. */
+    internal suspend fun queueArt(episode: Episode): Uri? = episodeArt(episode.imageUrl, episode.podcastImageUrl?.takeIf { it.isNotBlank() } ?: showCover(episode.podcastId))
+
     private suspend fun showCover(podcastId: String?): String? {
         val id = podcastId?.takeIf { it.isNotBlank() } ?: return null
         showCovers[id]?.let { return it.ifBlank { null } }

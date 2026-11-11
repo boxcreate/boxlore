@@ -37,6 +37,14 @@ internal object AutoArtworkRepository {
     /** The addresses saved for an artwork key, in the order to try them. */
     fun sourcesOf(saved: String): List<String> = saved.split(SOURCE_SEPARATOR).filter { it.isNotBlank() }
 
+    /** The real addresses behind [link] when it is one of this app's cover links, in the order to try them. */
+    fun originalsOf(context: Context, link: Uri?): List<String> {
+        if (link?.scheme != "content" || link.authority != "${context.packageName}.collage") return emptyList()
+        val segments = link.pathSegments
+        if (segments.size != 2 || segments[0] != "art") return emptyList()
+        return sourcesOf(AutoArtworkSourceStore.get(context, segments[1]).orEmpty())
+    }
+
     private fun String.toHttps(): String? = replaceFirst("http://", "https://").takeIf { it.startsWith("https://") }
 
     private const val SOURCE_SEPARATOR = "\n"

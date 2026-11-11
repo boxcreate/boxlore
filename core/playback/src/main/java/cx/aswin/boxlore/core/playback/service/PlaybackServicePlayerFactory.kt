@@ -48,6 +48,8 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
         val seekButtons: SeekButtons,
         /** A play request reached the session's player; reads which controller sent it. */
         val onPlayRequested: () -> Unit = {},
+        /** A seek started while playing; its brief buffering is being kept from the session. */
+        val onSeekSettling: () -> Unit = {},
     )
 
     fun createExoPlayer(): ExoPlayer {
@@ -127,7 +129,18 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
         onSeekByConfiguredIncrement: (Player, Long, String) -> Unit,
         onSkipNext: () -> Unit,
         onPlayRequested: () -> Unit = {},
+        seekSettle: SeekSettleWindow = SeekSettleWindow(),
     ): ForwardingPlayer = object : ForwardingPlayer(player) {
+        /** Marks a seek within the playing episode, so the split-second buffering it causes isn't reported. */
+        private fun noteSeek() = seekSettle.onSeek(wasPlaying = player.isPlaying)
+
+        override fun getPlaybackState(): Int = seekSettle.reported(super.getPlaybackState())
+
+        override fun seekTo(positionMs: Long) {
+            noteSeek()
+            super.seekTo(positionMs)
+        }
+
         override fun play() {
             onPlayRequested()
             super.play()
@@ -143,10 +156,12 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
         override fun getSeekBackIncrement(): Long = seekBackMs()
 
         override fun seekForward() {
+            noteSeek()
             onSeekByConfiguredIncrement(player, seekForwardMs(), "seek_forward")
         }
 
         override fun seekBack() {
+            noteSeek()
             onSeekByConfiguredIncrement(player, -seekBackMs(), "seek_backward")
         }
 
@@ -310,6 +325,7 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
                 onSeekByConfiguredIncrement = config.onSeekByConfiguredIncrement,
                 onSkipNext = config.onSkipNext,
                 onPlayRequested = config.onPlayRequested,
+                seekSettle = SeekSettleWindow(onSettling = config.onSeekSettling),
             )
         val customActions = buildCustomActions()
         val pendingIntent = createPlayerSessionActivityIntent()

@@ -54,6 +54,7 @@ open class BoxLorePlaybackService :
     private var localExoPlayer: ExoPlayer? = null
     internal var playbackPlayer: Player? = null
     private var pausedIdleTeardownJob: Job? = null
+    private var seekSettleJob: Job? = null
     private val manualCompletionPersistenceJobs = mutableSetOf<Job>()
     override lateinit var seekBackAction: androidx.media3.session.CommandButton
         protected set
@@ -626,6 +627,7 @@ open class BoxLorePlaybackService :
                     onSeekByConfiguredIncrement = ::seekByConfiguredIncrement,
                     onSkipNext = ::handleSkipNext,
                     onPlayRequested = ::notePlayController,
+                    onSeekSettling = ::reportBufferingThatOutlastsSeek,
                     callback = AutoBrowseLibraryCallback(this),
                     seekButtons = buttons,
                 )
@@ -690,6 +692,20 @@ open class BoxLorePlaybackService :
         mediaSession?.setMediaButtonPreferences(
             playbackButtonPreferences(seekBackAction, seekForwardAction, markCompleteAction, skipNextAction.takeIf { hasNext }),
         )
+    }
+
+    /**
+     * A seek's brief buffering is kept from the session ([SeekSettleWindow]). When the player is
+     * still buffering once that window has passed, the wait is real: publishing the buttons again
+     * makes the session report the player's state afresh.
+     */
+    private fun reportBufferingThatOutlastsSeek() {
+        seekSettleJob?.cancel()
+        seekSettleJob =
+            serviceScope.launch {
+                delay(SeekSettleWindow.SETTLE_MS)
+                if (playbackPlayer?.playbackState == Player.STATE_BUFFERING) publishMediaButtons()
+            }
     }
 
     private fun seekByConfiguredIncrement(player: Player, deltaMs: Long, source: String,) {

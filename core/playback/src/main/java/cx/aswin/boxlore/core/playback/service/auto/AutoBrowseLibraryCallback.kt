@@ -35,6 +35,7 @@ internal class AutoBrowseLibraryCallback(
 
     private val playContext = AutoPlayContextTracker()
     private val phoneChanges = AutoBrowseChangeNotifier(host)
+    private val queueArtwork = AutoQueueArtworkSync(host)
     private val carBrowsers = java.util.concurrent.ConcurrentHashMap.newKeySet<MediaSession.ControllerInfo>()
 
     private val connectedAtMs =
@@ -95,6 +96,7 @@ internal class AutoBrowseLibraryCallback(
             onceInCar(controller) {
                 connectedAtMs[controller] = System.currentTimeMillis()
                 AnalyticsHelper.trackAndroidAutoConnected(sessionId = controller.packageName)
+                queueArtwork.start(session.player)
                 preloadLastEpisode(session)
             }
         }
@@ -184,7 +186,10 @@ internal class AutoBrowseLibraryCallback(
             )
         }
         rootChildLimits.remove(controller)
-        if (carBrowsers.remove(controller) && carBrowsers.isEmpty()) phoneChanges.stop()
+        if (carBrowsers.remove(controller) && carBrowsers.isEmpty()) {
+            phoneChanges.stop()
+            queueArtwork.stop()
+        }
         super.onDisconnected(session, controller)
     }
 

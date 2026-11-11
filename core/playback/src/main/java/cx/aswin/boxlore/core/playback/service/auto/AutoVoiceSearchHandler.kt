@@ -414,14 +414,21 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
     /** The saved queue as player items, leaving out [episodeId] and anything queued ahead of it. */
     suspend fun queueAfter(episodeId: String): List<MediaItem> {
         val queue = host.queueRepository.getQueueEpisodeSnapshot()
-        return queue.drop(queue.indexOfFirst { it.id == episodeId } + 1).map(::queueItem)
+        return queue.drop(queue.indexOfFirst { it.id == episodeId } + 1).map { queueItem(it) }
     }
 
-    private fun queueItem(episode: cx.aswin.boxlore.core.model.Episode): MediaItem = AutoMediaItemFactory.fromEpisode(
-        episode = episode,
-        source = AutoBrowseContract.SOURCE_QUEUE,
-        artworkUri = AutoArtworkRepository.remoteUri(host.asContext(), episode.imageUrl, episode.podcastImageUrl),
-        row = AutoEpisodeRow(mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX),
+    /**
+     * A saved queue entry as a player item. Its cover falls back to the show's, and the cover's
+     * real address is saved on it for the phone's media controls.
+     */
+    private suspend fun queueItem(episode: cx.aswin.boxlore.core.model.Episode, groupTitle: String? = null): MediaItem = AutoItemArtwork.withSources(
+        host.asContext(),
+        AutoMediaItemFactory.fromEpisode(
+            episode = episode,
+            source = AutoBrowseContract.SOURCE_QUEUE,
+            artworkUri = treeBuilder.queueArt(episode),
+            row = AutoEpisodeRow(mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX, groupTitle = groupTitle),
+        ),
     )
 
     suspend fun handlePlayFromQueue(episodeId: String, fromCar: Boolean): MutableList<MediaItem> {
@@ -432,19 +439,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
             return mutableListOf()
         }
         labelCarPlay(fromCar, "android_auto_queue")
-        return queue
-            .drop(selectedIndex)
-            .map { episode ->
-                AutoMediaItemFactory.fromEpisode(
-                    episode = episode,
-                    source = AutoBrowseContract.SOURCE_QUEUE,
-                    artworkUri =
-                    AutoArtworkRepository.remoteUri(
-                        host.asContext(),
-                        episode.imageUrl ?: episode.podcastImageUrl,
-                    ),
-                    row = AutoEpisodeRow(mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX, groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_queue)),
-                )
-            }.toMutableList()
+        val groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_queue)
+        return queue.drop(selectedIndex).mapTo(mutableListOf()) { queueItem(it, groupTitle) }
     }
 }
