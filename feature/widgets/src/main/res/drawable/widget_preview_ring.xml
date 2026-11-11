@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Picker previews only: the progress ring at 40%, in resource colours. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="78dp"
+    android:height="78dp"
+    android:viewportWidth="78"
+    android:viewportHeight="78">
+    <path
+        android:pathData="M54.7,69.7A34.5,34.5 0,1 1,33.6 4.9"
+        android:strokeAlpha="0.22"
+        android:strokeColor="@color/widget_on_primary_container"
+        android:strokeLineCap="round"
+        android:strokeWidth="3" />
+    <path
+        android:pathData="M39,4.5A34.5,34.5 0,0 1,59.3 66.9"
+        android:strokeColor="@color/widget_primary"
+        android:strokeLineCap="round"
+        android:strokeWidth="3.4" />
+</vector>

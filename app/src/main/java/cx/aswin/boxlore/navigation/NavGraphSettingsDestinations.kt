@@ -6,6 +6,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
@@ -24,11 +26,15 @@ import cx.aswin.boxlore.feature.settings.SettingsScreen
 import cx.aswin.boxlore.feature.settings.SettingsScreenConfig
 import cx.aswin.boxlore.feature.settings.downloads.AutoDownloadSettingsScreen
 import cx.aswin.boxlore.feature.settings.downloads.SmartDownloadsSettingsScreen
+import cx.aswin.boxlore.feature.settings.pages.AddableWidget
 import cx.aswin.boxlore.feature.settings.pages.AppearanceActions
 import cx.aswin.boxlore.feature.settings.pages.AppearanceUiState
+import cx.aswin.boxlore.feature.settings.pages.AppearanceWidgetPreview
 import cx.aswin.boxlore.feature.settings.pages.PlaybackActions
 import cx.aswin.boxlore.feature.settings.pages.PlaybackUiState
+import cx.aswin.boxlore.feature.widgets.HomeScreenWidgets
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportState
+import cx.aswin.boxlore.widgets.HomeScreenWidgetPreview
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -167,6 +173,35 @@ private fun resetSettingsAnalytics() {
     }
 }
 
+/** Every boxlore widget under its picker name, for Appearance › Widgets. Reads strings only. */
+internal fun addableWidgets(context: android.content.Context): List<AddableWidget> = HomeScreenWidgets.all.map { widget ->
+    AddableWidget(
+        key = widget.key,
+        name = context.getString(widget.label),
+        description = context.getString(widget.description),
+        previewWidthDp = widget.previewWidthDp,
+        previewHeightDp = widget.previewHeightDp,
+        usesShowsCoverStyle = widget.usesShowsCoverStyle,
+    )
+}
+
+/** Appearance › Widgets draws the real widgets, again whenever a setting changes how they look. */
+private fun widgetPreview(w: NavGraphWiring): AppearanceWidgetPreview = { widget, modifier ->
+    val settings = w.settingsState
+    val look =
+        listOf(
+            settings.widgetAppearance,
+            settings.widgetShowsArtwork,
+            settings.themeConfig,
+            settings.themeBrand,
+            settings.surfaceStyle,
+            settings.useDynamicColor,
+            settings.fontRoundness,
+            settings.savedCustomTheme,
+        )
+    HomeScreenWidgetPreview(widget.key, DpSize(widget.previewWidthDp.dp, widget.previewHeightDp.dp), look, modifier)
+}
+
 private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
     val scope = w.scope
     val userPrefs = w.userPrefs
@@ -183,6 +218,8 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
             currentOpenAppTo = settingsState.openAppTo,
             homeShortcutsInLibrary = settingsState.homeShortcutsInLibrary,
             currentWidgetAppearance = settingsState.widgetAppearance,
+            currentWidgetShowsArtwork = settingsState.widgetShowsArtwork,
+            addableWidgets = addableWidgets(w.context),
             currentExploreDefaultTab = settingsState.exploreDefaultTab,
             currentSubscriptionsDefaultTab = settingsState.subscriptionsDefaultTab,
             currentSubscriptionsTabStyle = settingsState.subscriptionsTabStyle,
@@ -225,6 +262,12 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
             onSetWidgetAppearance = { appearance ->
                 scope.launch { userPrefs.setWidgetAppearance(appearance) }
             },
+            onSetWidgetShowsArtwork = { style ->
+                scope.launch { userPrefs.setWidgetShowsArtwork(style) }
+            },
+            canAddWidgets = { HomeScreenWidgets.canAdd(w.context) },
+            onAddWidget = { key -> HomeScreenWidgets.requestAdd(w.context, key) },
+            addedWidgets = HomeScreenWidgets.added,
             onSetExploreDefaultTab = { tab ->
                 scope.launch { userPrefs.setExploreDefaultTab(tab) }
             },
@@ -246,6 +289,7 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
             val sessions by w.playbackRepository.resumeSessions.collectAsState(initial = emptyList())
             HeroStylePreview(style, coverShade, collection, sessions, modifier, tideProgress = settingsState.heroTideProgress)
         },
+        widgetPreview = widgetPreview(w),
     )
 }
 

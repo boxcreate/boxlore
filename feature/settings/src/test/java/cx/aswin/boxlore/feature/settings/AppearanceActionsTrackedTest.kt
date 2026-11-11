@@ -29,6 +29,36 @@ class AppearanceActionsTrackedTest {
     }
 
     @Test
+    fun `Your Shows widget artwork choice survives the appearance wrapper`() {
+        val styles = mutableListOf<String>()
+        var widgetColourChanges = 0
+        val tracked = AppearanceActions(
+            {},
+            {},
+            {},
+            {},
+            onSetWidgetAppearance = { widgetColourChanges++ },
+            onSetWidgetShowsArtwork = { styles.add(it) },
+        ).trackedForAnalytics()
+        tracked.onSetWidgetShowsArtwork(cx.aswin.boxlore.core.prefs.WidgetShowsArtwork.SHAPES)
+        tracked.onSetWidgetShowsArtwork(cx.aswin.boxlore.core.prefs.WidgetShowsArtwork.ROUNDED)
+        assertEquals(listOf("shapes", "rounded"), styles)
+        assertEquals(0, widgetColourChanges)
+    }
+
+    @Test
+    fun `adding a widget survives the appearance wrapper, every time it is asked`() {
+        val asked = mutableListOf<String>()
+        val tracked = AppearanceActions({}, {}, {}, {}, canAddWidgets = { true }, onAddWidget = { asked.add(it) }).trackedForAnalytics()
+        tracked.onAddWidget("compact")
+        tracked.onAddWidget("compact")
+        assertEquals(listOf("compact", "compact"), asked)
+        assertEquals(true, tracked.canAddWidgets())
+        // What the home screen reports back reaches the page through the same wrapper.
+        assertEquals(kotlinx.coroutines.flow.emptyFlow<String>(), tracked.addedWidgets)
+    }
+
+    @Test
     fun `LeaveMeAlone switches reach the setter with their section and value`() {
         val calls = mutableListOf<Pair<cx.aswin.boxlore.core.prefs.DiscoverySection, Boolean>>()
         val tracked = trackedDiscoverySectionSetter(cx.aswin.boxlore.core.prefs.DiscoverySections()) { section, on -> calls.add(section to on) }

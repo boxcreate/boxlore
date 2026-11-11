@@ -96,6 +96,10 @@
         <receiver
             android:name=".actions.WidgetControlReceiver"
             android:exported="false" />
+
+        <receiver
+            android:name=".WidgetAddedReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

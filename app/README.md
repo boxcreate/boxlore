@@ -20,7 +20,7 @@
 - The one `PlaybackRepository` is built lazily. Cast state waits in `DeferredCastSessionState` until it exists, so widget, worker and notification starts never build playback on the main thread.
 - The container gives core modules ports instead of reverse dependencies: `feedTelemetry` for feed events, `rolloutSwitches`, and a `DownloadServiceLauncherHolder` that starts `MediaDownloadService`.
 - `onCreate` order: API sessions first, then the Coil image loader (before widgets and services), Media3 Cast from `BoxLoreCastOptionsProvider`, the shared `UserPreferencesRepository`, the container and its holders. PostHog starts later on a background thread through `PostHogStartup`, after `AnalyticsHelper.initPolicy`.
-- `StartupWorkGate` holds optional work until the first screen commits: cloud sync, Smart Downloads reconciliation, feed address repair scheduling, foreground subscription sync and legacy RSS repair. Initializers run one at a time.
+- `StartupWorkGate` holds optional work until the first screen commits: cloud sync, Smart Downloads reconciliation, feed address repair scheduling, foreground subscription sync, legacy RSS repair and the first publish of the widget picker previews. Initializers run one at a time.
 - Home releases the gate after loaded content and two frames, other start routes after two frames, and a headless worker or widget launch at the first idle main queue. An Activity stopping early also releases it; configuration recreation does not.
 - Missing DataStore appearance keys are filled from the theme fast cache off the main thread; existing choices are never overwritten.
 - `TabletAlphaStartupGate` shows a one-time notice on tablet windows of tablet-sized displays before the app root composes; update and survey prompts wait behind it.
@@ -94,7 +94,7 @@ src/main/java/cx/aswin/boxlore/
                   AdaptivePlayerChrome, announcement/, libraryimport/, logic/
   updates/        AppUpdates, UpdateChecker, direct and Play sources, AppUpdatesPanel
   util/           InstallSource
-  widgets/        HomeScreenWidgetsInstaller and widget adapters
+  widgets/        HomeScreenWidgetsInstaller, widget adapters and HomeScreenWidgetPreview (Settings' widget pictures)
 src/direct/       APK downloader and installer (debug, release, updateTest)
 src/playRelease/  Play stub installer
 src/debug/        App Check debug provider, ADB-only notification preview receiver

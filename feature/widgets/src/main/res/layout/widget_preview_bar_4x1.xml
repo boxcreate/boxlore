@@ -1,138 +1,154 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Picker preview for 4×1 now-playing bar — mirrors live chrome + mock content. -->
+<!--
+  Picker preview: a still of the live widget in resource colours, for Android versions that cannot
+  show the live previews from WidgetPickerPreviews. The launcher inflates widget layouts without
+  AppCompat, so tints must be android:tint; app:tint would be ignored.
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:theme="@android:style/Theme.DeviceDefault.DayNight">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="350dp"
+    android:layout_height="86dp"
+    android:theme="@android:style/Theme.DeviceDefault.DayNight"
+    tools:ignore="UseAppTint">
 
-    <RelativeLayout
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:background="@drawable/widget_preview_surface"
-        android:clipToOutline="true"
-        android:paddingHorizontal="10dp"
-        android:paddingVertical="4dp">
+        android:layout_height="match_parent">
 
-        <FrameLayout
-            android:id="@+id/preview_artwork"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_alignParentStart="true"
-            android:layout_centerVertical="true"
-            android:background="@drawable/widget_art_tile_shape"
-            android:clipToOutline="true">
-
-            <ImageView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:contentDescription="@null"
-                android:scaleType="centerCrop"
-                android:src="@drawable/widget_preview_cover_a" />
-        </FrameLayout>
-
-        <LinearLayout
-            android:id="@+id/preview_controls"
-            android:layout_width="wrap_content"
-            android:layout_height="36dp"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <FrameLayout
-                android:layout_width="36dp"
-                android:layout_height="36dp">
-
-                <ImageView
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:contentDescription="@null"
-                    android:scaleType="fitXY"
-                    android:src="@drawable/widget_preview_button_secondary" />
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_gravity="center"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_widget_skip_back" />
-            </FrameLayout>
-
-            <FrameLayout
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_marginStart="4dp">
-
-                <ImageView
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:contentDescription="@null"
-                    android:scaleType="fitXY"
-                    android:src="@drawable/widget_preview_button_primary" />
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_gravity="center"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_widget_pause" />
-            </FrameLayout>
-
-            <FrameLayout
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_marginStart="4dp">
-
-                <ImageView
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:contentDescription="@null"
-                    android:scaleType="fitXY"
-                    android:src="@drawable/widget_preview_button_secondary" />
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_gravity="center"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_widget_skip_fwd" />
-            </FrameLayout>
-        </LinearLayout>
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@null"
+            android:scaleType="fitXY"
+            android:src="@drawable/widget_pill"
+            android:tint="@color/widget_primary_container" />
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:layout_centerVertical="true"
-            android:layout_marginStart="6dp"
-            android:layout_marginEnd="6dp"
-            android:layout_toStartOf="@id/preview_controls"
-            android:layout_toEndOf="@id/preview_artwork"
+            android:layout_height="match_parent"
+            android:baselineAligned="false"
             android:gravity="center_vertical"
-            android:orientation="vertical">
+            android:layoutDirection="ltr"
+            android:orientation="horizontal"
+            android:paddingStart="4dp"
+            android:paddingEnd="14dp">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:fontFamily="sans-serif-medium"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:text="@string/widget_preview_episode"
-                android:textColor="@color/widget_on_surface"
-                android:textSize="13sp" />
+            <FrameLayout
+                android:layout_width="78dp"
+                android:layout_height="78dp">
 
-            <TextView
-                android:layout_width="match_parent"
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/widget_preview_ring" />
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_margin="8dp"
+                    android:contentDescription="@null"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/widget_preview_disc_a" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="1dp"
-                android:ellipsize="end"
-                android:fontFamily="sans-serif"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:text="@string/widget_preview_podcast"
-                android:textColor="@color/widget_on_surface_variant"
-                android:textSize="11sp" />
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="sans-serif-medium"
+                    android:includeFontPadding="false"
+                    android:maxLines="2"
+                    android:text="@string/widget_preview_episode"
+                    android:textColor="@color/widget_on_primary_container"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="@string/widget_preview_time_left"
+                    android:textColor="@color/widget_on_primary_container"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <FrameLayout
+                android:layout_width="38dp"
+                android:layout_height="38dp">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/widget_circle"
+                    android:tint="@color/widget_surface" />
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_widget_skip_back"
+                    android:tint="@color/widget_on_surface" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_marginHorizontal="3dp">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/widget_cookie"
+                    android:tint="@color/widget_primary" />
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_widget_pause"
+                    android:tint="@color/widget_on_primary" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="38dp"
+                android:layout_height="38dp">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/widget_circle"
+                    android:tint="@color/widget_surface" />
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_widget_skip_fwd"
+                    android:tint="@color/widget_on_surface" />
+            </FrameLayout>
         </LinearLayout>
-    </RelativeLayout>
+    </FrameLayout>
 </FrameLayout>
