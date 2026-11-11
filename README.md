@@ -259,6 +259,12 @@ Yes. Import a subscription file (OPML) when you start, or later from Settings. Y
 </details>
 
 <details>
+<summary><b>Why can't I see boxlore in Android Auto?</b></summary>
+<br/>
+If you installed boxlore from GitHub or Obtainium, Android Auto hides it until you turn on one setting, Unknown sources. <a href="docs/ANDROID_AUTO.md">Use boxlore with Android Auto</a> shows each step. The Google Play version shows up in your car without it.
+</details>
+
+<details>
 <summary><b>Is boxlore open source?</b></summary>
 <br/>
 The Android app is source-available under the <a href="LICENSE">PolyForm Strict License 1.0.0</a>: you can read the code and run it for personal, noncommercial use, but not redistribute it. The servers behind search and recommendations are private.
@@ -275,6 +281,8 @@ The Android app is source-available under the <a href="LICENSE">PolyForm Strict 
 - **[Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/boxcreate/boxlore)** adds boxlore with automatic update tracking.
 
 Android may ask you to allow installation from your browser or file manager when sideloading. boxlore needs Android 12 or later.
+
+Using Android Auto with the GitHub or Obtainium version? Turn on one setting first: [Use boxlore with Android Auto](docs/ANDROID_AUTO.md).
 
 ## Project
 
