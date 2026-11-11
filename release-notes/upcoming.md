@@ -35,5 +35,6 @@ Announcement title:
 ## Fixed
 
 - On Home, a show you've heard every episode of now lists its latest episodes instead of an empty list, and a show whose episodes can't load lets you try again.
-- In Android Auto, artwork loads faster, and every episode has a picture: one with no image of its own shows its show's cover.
+- In Android Auto, artwork loads faster, and every episode has a picture, in lists and in the queue: one with no image of its own shows its show's cover.
 - In Android Auto, tapping something that can't be played no longer stops what you're listening to.
+- In Android Auto, skipping forward or back no longer sends the list you're browsing back to the top.
