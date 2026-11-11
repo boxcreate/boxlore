@@ -56,4 +56,21 @@ class AutoArtworkScalerImageTest {
 
         assertArrayEquals(original, AutoArtworkScaler.scaleForCar(original))
     }
+
+    @Test
+    fun aCoverThatWouldNotGetSmallerIsLeftAsItIs() {
+        // Just over the car's size, noisy and saved at a very low quality: writing it again at the
+        // scaler's quality gives a bigger file, so the original is the one to keep.
+        val side = AutoArtworkScaler.targetPx + 8
+        val noise = java.util.Random(7)
+        val bitmap = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
+        bitmap.setPixels(IntArray(side * side) { Color.rgb(noise.nextInt(256), noise.nextInt(256), noise.nextInt(256)) }, 0, side, 0, 0, side, side)
+        bitmap.setHasAlpha(false)
+        val original = ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.JPEG, 1, it) }.toByteArray()
+        val shrunk = Bitmap.createScaledBitmap(BitmapFactory.decodeByteArray(original, 0, original.size), AutoArtworkScaler.targetPx, AutoArtworkScaler.targetPx, true)
+        val rewritten = ByteArrayOutputStream().also { shrunk.compress(Bitmap.CompressFormat.JPEG, 88, it) }.toByteArray()
+        assertTrue("the rewritten cover must not be smaller for this case to be the one under test", rewritten.size >= original.size)
+
+        assertArrayEquals(original, AutoArtworkScaler.scaleForCar(original))
+    }
 }

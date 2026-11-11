@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito
@@ -143,6 +144,8 @@ class AutoBrowseChangeNotifierFlowTest {
         `when`(history.completedEpisodeCountFlow()).thenReturn(flow { throw IllegalStateException("database closed") })
         notifier.start()
         advanceTimeBy(5_000)
+        val warnings = org.robolectric.shadows.ShadowLog.getLogsForTag("AutoBrowse").filter { it.type == android.util.Log.WARN }
+        assertEquals(listOf("database closed"), warnings.map { it.throwable?.message })
 
         `when`(history.completedEpisodeCountFlow()).thenReturn(completed)
         notifier.start()
