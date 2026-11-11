@@ -126,4 +126,14 @@ class AndroidAutoTipTest {
         assertEquals(1, h.alerts)
         assertTrue(h.store.shown)
     }
+
+    @Test
+    fun aTurnedOffAnnouncementsCategoryIsNotADeliveredNotification() {
+        // Regression: only boxlore's notifications switch was checked, so a post into a turned-off category
+        // counted as shown although nothing appeared.
+        assertTrue(AndroidAutoTip.canNotify(appNotificationsOn = true, channelImportance = android.app.NotificationManager.IMPORTANCE_DEFAULT))
+        assertFalse(AndroidAutoTip.canNotify(appNotificationsOn = true, channelImportance = android.app.NotificationManager.IMPORTANCE_NONE))
+        assertFalse(AndroidAutoTip.canNotify(appNotificationsOn = true, channelImportance = null))
+        assertFalse(AndroidAutoTip.canNotify(appNotificationsOn = false, channelImportance = android.app.NotificationManager.IMPORTANCE_DEFAULT))
+    }
 }

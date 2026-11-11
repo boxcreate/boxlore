@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.ui.announcement
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -115,36 +116,49 @@ internal class AndroidAutoTip(
             presentation = "fullscreen",
         )
 
-        /** Posts the notification that opens the guide; false when notifications are off or posting fails. */
-        private fun postNotification(context: Context): Boolean = try {
-            val manager = context.getSystemService(NotificationManager::class.java)
-            if (manager == null || !manager.areNotificationsEnabled()) {
+        /**
+         * Posts the notification that opens the guide; false when it can't reach the listener: notifications
+         * off for boxlore, the Announcements category turned off, or posting failed.
+         */
+        private fun postNotification(context: Context): Boolean {
+            val manager = context.getSystemService(NotificationManager::class.java) ?: return false
+            return try {
+                val appNotificationsOn = manager.areNotificationsEnabled()
+                if (appNotificationsOn) ensureChannel(context, manager)
+                if (canNotify(appNotificationsOn, manager.getNotificationChannel(CHANNEL_ID)?.importance)) {
+                    manager.notify(NOTIFICATION_ID, notification(context))
+                    true
+                } else {
+                    false
+                }
+            } catch (e: RuntimeException) {
+                Log.w(TAG, "Unable to post the Android Auto tip", e)
                 false
-            } else {
-                ensureChannel(context, manager)
-                val open =
-                    PendingIntent.getActivity(
-                        context,
-                        NOTIFICATION_ID,
-                        Intent(Intent.ACTION_VIEW, Uri.parse(GUIDE_URL)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                    )
-                val notification =
-                    NotificationCompat
-                        .Builder(context, CHANNEL_ID)
-                        .setSmallIcon(R.drawable.ic_notification_custom)
-                        .setContentTitle(context.getString(R.string.android_auto_tip_notification_title))
-                        .setContentText(context.getString(R.string.android_auto_tip_notification_text))
-                        .setStyle(NotificationCompat.BigTextStyle().bigText(context.getString(R.string.android_auto_tip_notification_text)))
-                        .setContentIntent(open)
-                        .setAutoCancel(true)
-                        .build()
-                manager.notify(NOTIFICATION_ID, notification)
-                true
             }
-        } catch (e: RuntimeException) {
-            Log.w(TAG, "Unable to post the Android Auto tip", e)
-            false
+        }
+
+        /** Whether a notification on the Announcements channel shows: [channelImportance] is null when it doesn't exist. */
+        internal fun canNotify(appNotificationsOn: Boolean, channelImportance: Int?): Boolean =
+            appNotificationsOn && channelImportance != null && channelImportance != NotificationManager.IMPORTANCE_NONE
+
+        private fun notification(context: Context): Notification {
+            val open =
+                PendingIntent.getActivity(
+                    context,
+                    NOTIFICATION_ID,
+                    Intent(Intent.ACTION_VIEW, Uri.parse(GUIDE_URL)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+            val text = context.getString(R.string.android_auto_tip_notification_text)
+            return NotificationCompat
+                .Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_notification_custom)
+                .setContentTitle(context.getString(R.string.android_auto_tip_notification_title))
+                .setContentText(text)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+                .setContentIntent(open)
+                .setAutoCancel(true)
+                .build()
         }
 
         /** The Announcements channel, created as boxlore's push announcements create it when they haven't yet. */

@@ -72,7 +72,7 @@ It does not own the Room schema ([`:core:database`](../database/README.md)), pre
 - `service.SeekSettleWindow` hides a seek's buffering, which resets Android Auto's scroll.
 - `AutoMediaResolver`, `AutoPlaybackResumptionHandler` and `AutoVoiceSearchHandler`, each with a policy object: playable items, resumption, voice search.
 - `AutoBrowseControllerMatcher` tells car controllers from Bluetooth AVRCP and system UI; connection events count only in a car (`CarConnectionState`, `CarConnectionWatcher`), and `labelCarPlay` names a play `android_auto_*` only when Auto's controller asked.
-- `CarSignals` tells `:app` when a drive starts while the player runs (`service.DriveStartWatcher`) and when Auto first browses boxlore in a car.
+- `CarSignals` tells `:app` when a drive starts while the player service runs (`service.DriveStartWatcher`) and when Auto first browses during a drive.
 - `service.AutoCollageProvider` serves `content://` covers and collages (`AutoCollagePrewarmer`, `AutoCollageGenerator`, `AutoCollageLayouts`), fetched by `AutoArtworkDownloader` over validated HTTPS, cached at car size (`AutoArtworkScaler`).
 - The show's cover replaces a failed episode image; saved artwork is `PlaybackArtworkMetadata.savedArtworkUrl`, never a collage link.
 - Browse root title: `:core:catalog`'s `auto_app_name`; the generic tile spells `boxlore` lowercase.

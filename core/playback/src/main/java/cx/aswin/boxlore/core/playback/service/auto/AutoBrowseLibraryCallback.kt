@@ -29,6 +29,7 @@ internal class AutoBrowseLibraryCallback(
     mediaResolver: AutoMediaResolver? = null,
     resumptionHandler: AutoPlaybackResumptionHandler? = null,
     treeBuilder: AutoBrowseTreeBuilder? = null,
+    private val io: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.IO,
 ) : MediaLibrarySession.Callback {
     private val mediaResolver = mediaResolver ?: AutoMediaResolver(host)
     private val treeBuilder = treeBuilder ?: AutoBrowseTreeBuilder(host, this.mediaResolver)
@@ -220,9 +221,9 @@ internal class AutoBrowseLibraryCallback(
         if (carScreensReported.get()) return
         host.serviceScope.launch {
             val context = host.asContext()
-            val inCar = runCatching { withContext(Dispatchers.IO) { CarConnectionState.isInCar(context) } }.getOrDefault(false)
+            val inCar = runCatching { withContext(io) { CarConnectionState.isInCar(context) } }.getOrDefault(false)
             if (inCar && carScreensReported.compareAndSet(false, true)) {
-                withContext(Dispatchers.IO) { runCatching { CarSignals.onCarScreensOpened?.invoke(context.applicationContext) } }
+                withContext(io) { runCatching { CarSignals.onCarScreensOpened?.invoke(context.applicationContext) } }
             }
         }
     }

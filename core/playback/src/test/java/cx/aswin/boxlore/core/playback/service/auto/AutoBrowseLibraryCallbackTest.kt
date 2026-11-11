@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.playback.service.auto
 
+import android.app.UiModeManager
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
@@ -14,6 +15,7 @@ import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.PodcastEntity
+import cx.aswin.boxlore.core.playback.CarSignals
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -348,6 +350,30 @@ class AutoBrowseLibraryCallbackTest {
 
         callback.onGetChildren(session, controller, AutoBrowseContract.ROOT_ID, 0, 10, null)
         assertTrue(recordedEvents.any { it.first == "android_auto_browse" })
+    }
+
+    @Test
+    fun `only the first Android Auto browse in a car reports boxlore on the car's screen`() {
+        val reports = java.util.concurrent.atomic.AtomicInteger()
+        val previous = CarSignals.onCarScreensOpened
+        CarSignals.onCarScreensOpened = { reports.incrementAndGet() }
+        try {
+            // The car check runs in place, so each browse has finished it before the next line.
+            val carCallback = AutoBrowseLibraryCallback(host, mediaResolver, resumptionHandler, treeBuilder, io = Dispatchers.Unconfined)
+            val session = mock(MediaLibrarySession::class.java)
+            val auto = mock(MediaSession.ControllerInfo::class.java)
+            `when`(auto.packageName).thenReturn("com.google.android.projection.gearhead")
+
+            // Android Auto also lists media apps with no car connected.
+            carCallback.onGetChildren(session, auto, AutoBrowseContract.ROOT_ID, 0, 10, null)
+            assertEquals(0, reports.get())
+
+            context.getSystemService(UiModeManager::class.java).enableCarMode(0)
+            repeat(3) { carCallback.onGetChildren(session, auto, AutoBrowseContract.ROOT_ID, 0, 10, null) }
+            assertEquals(1, reports.get())
+        } finally {
+            CarSignals.onCarScreensOpened = previous
+        }
     }
 
     @Test

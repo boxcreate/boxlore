@@ -55,7 +55,7 @@ open class BoxLorePlaybackService :
     internal var playbackPlayer: Player? = null
     private var pausedIdleTeardownJob: Job? = null
 
-    /** Tells `:app` when a drive starts while the player runs ([cx.aswin.boxlore.core.playback.CarSignals]). */
+    /** Tells `:app` when a drive starts while this service runs, playing or paused ([cx.aswin.boxlore.core.playback.CarSignals]). */
     private var driveStartWatcher: DriveStartWatcher? = null
     private var seekSettleJob: Job? = null
     private val manualCompletionPersistenceJobs = mutableSetOf<Job>()
