@@ -36,6 +36,7 @@ class AutoBrowseChangeNotifierFlowTest {
     private val dispatcher = StandardTestDispatcher()
     private val scope = TestScope(dispatcher)
     private val completed = MutableStateFlow(0)
+    private val queued = MutableStateFlow(emptyList<EpisodeItem>())
     private val session = mock(MediaLibrarySession::class.java)
     private val host = mock(AutoBrowseLibraryHost::class.java)
     private val history = mock(ListeningHistoryDao::class.java)
@@ -52,7 +53,7 @@ class AutoBrowseChangeNotifierFlowTest {
         `when`(database.listeningHistoryDao()).thenReturn(history)
         `when`(database.podcastDao()).thenReturn(podcasts)
         `when`(database.downloadedEpisodeDao()).thenReturn(downloads)
-        `when`(queue.queue).thenReturn(MutableStateFlow(emptyList<EpisodeItem>()))
+        `when`(queue.queue).thenReturn(queued)
         `when`(podcasts.getSubscribedPodcasts()).thenReturn(MutableStateFlow(emptyList<PodcastEntity>()))
         `when`(downloads.getAllDownloads()).thenReturn(MutableStateFlow(emptyList<DownloadedEpisodeEntity>()))
         `when`(history.getLikedEpisodes()).thenReturn(MutableStateFlow(emptyList<ListeningHistoryEntity>()))
@@ -89,7 +90,23 @@ class AutoBrowseChangeNotifierFlowTest {
 
         reloadsOf(AutoBrowseContract.CONTINUE_ID, times = 1)
         reloadsOf(AutoBrowseContract.OPEN_PREFIX + AutoBrowseContract.LIBRARY_HISTORY_ID, times = 1)
-        verify(host).requestAutoCollageRefresh(false)
+        // Rebuilt at once: left to its own pause, a block's artwork could stay stale.
+        verify(host).requestAutoCollageRefresh(true)
+        notifier.stop()
+    }
+
+    @Test
+    fun aQueueChangeRebuildsNoArtwork() = scope.runTest {
+        // The queue has no block on Home, and rebuilding its artwork reloads Home.
+        val notifier = notifier()
+        notifier.start()
+        runCurrent()
+
+        queued.value = listOf(mock(EpisodeItem::class.java))
+        advanceTimeBy(2_000)
+
+        reloadsOf(AutoBrowseContract.HOME_QUEUE_ID, times = 1)
+        verify(host, Mockito.never()).requestAutoCollageRefresh(Mockito.anyBoolean())
         notifier.stop()
     }
 

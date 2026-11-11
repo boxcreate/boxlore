@@ -36,6 +36,9 @@ internal class AutoBrowseLibraryCallback(
     private val playContext = AutoPlayContextTracker()
     private val phoneChanges = AutoBrowseChangeNotifier(host)
     private val queueArtwork = AutoQueueArtworkSync(host)
+    private val carConnection by lazy {
+        cx.aswin.boxlore.core.playback.service.CarConnectionWatcher(host.asContext()) { host.serviceScope.launch { onCarConnectionChanged() } }
+    }
     private val carBrowsers = java.util.concurrent.ConcurrentHashMap.newKeySet<MediaSession.ControllerInfo>()
 
     private val connectedAtMs =
@@ -91,14 +94,9 @@ internal class AutoBrowseLibraryCallback(
     override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult {
         if (isAndroidAuto(session, controller)) {
             carBrowsers.add(controller)
-            phoneChanges.start()
             // Android Auto's app also connects without a car (to list media apps); only a real drive counts.
-            onceInCar(controller) {
-                connectedAtMs[controller] = System.currentTimeMillis()
-                AnalyticsHelper.trackAndroidAutoConnected(sessionId = controller.packageName)
-                queueArtwork.start(session.player)
-                preloadLastEpisode(session)
-            }
+            carConnection.start()
+            onceInCar(controller) { onCarConnected(session, controller) }
         }
         val defaultResult = super.onConnect(session, controller)
         val sessionCommands =
@@ -175,21 +173,45 @@ internal class AutoBrowseLibraryCallback(
         }
     }
 
-    override fun onDisconnected(session: MediaSession, controller: MediaSession.ControllerInfo) {
-        val started = connectedAtMs.remove(controller)
-        if (started != null) {
-            val durationSeconds =
-                ((System.currentTimeMillis() - started) / 1000L).toInt().coerceAtLeast(0)
-            AnalyticsHelper.trackAndroidAutoDisconnected(
-                sessionId = controller.packageName,
-                durationSeconds = durationSeconds,
-            )
-        }
-        rootChildLimits.remove(controller)
-        if (carBrowsers.remove(controller) && carBrowsers.isEmpty()) {
+    /**
+     * Starts what only a drive needs, once for each Android Auto controller: the count of the
+     * drive, live list updates, queue covers and the last episode on the car's screen.
+     */
+    private suspend fun onCarConnected(session: MediaSession, controller: MediaSession.ControllerInfo) {
+        if (connectedAtMs.putIfAbsent(controller, System.currentTimeMillis()) != null) return
+        AnalyticsHelper.trackAndroidAutoConnected(sessionId = controller.packageName)
+        phoneChanges.start()
+        queueArtwork.start(session.player)
+        preloadLastEpisode(session)
+    }
+
+    /** Ends [controller]'s drive, if it was on one. */
+    private fun onCarGone(controller: MediaSession.ControllerInfo) {
+        val started = connectedAtMs.remove(controller) ?: return
+        val durationSeconds = ((System.currentTimeMillis() - started) / 1000L).toInt().coerceAtLeast(0)
+        AnalyticsHelper.trackAndroidAutoDisconnected(sessionId = controller.packageName, durationSeconds = durationSeconds)
+        if (connectedAtMs.isEmpty()) {
             phoneChanges.stop()
             queueArtwork.stop()
         }
+    }
+
+    /**
+     * Android Auto reported a change in its car connection. A controller that connected with no
+     * car present starts its drive now; one whose car has gone ends it, though it stays connected.
+     */
+    private suspend fun onCarConnectionChanged() {
+        val session = host.mediaSession ?: return
+        val inCar = CarConnectionState.isInCar(host.asContext())
+        carBrowsers.toList().forEach { controller ->
+            if (inCar) onCarConnected(session, controller) else onCarGone(controller)
+        }
+    }
+
+    override fun onDisconnected(session: MediaSession, controller: MediaSession.ControllerInfo) {
+        onCarGone(controller)
+        rootChildLimits.remove(controller)
+        if (carBrowsers.remove(controller) && carBrowsers.isEmpty()) carConnection.stop()
         super.onDisconnected(session, controller)
     }
 

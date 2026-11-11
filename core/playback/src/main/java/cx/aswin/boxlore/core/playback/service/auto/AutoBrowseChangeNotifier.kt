@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
  *
  * Queueing an episode, following a show, finishing a download or liking an episode on the phone
  * changed nothing in the car until its screen was reopened. This watches those four things and
- * tells the car which lists to reload. It runs only while a car browser is connected, and waits
+ * tells the car which lists to reload. It runs only during a drive, and waits
  * for changes to settle so a burst (a sync, "mark all played") reloads each list once.
  */
 internal class AutoBrowseChangeNotifier(private val host: AutoBrowseLibraryHost) {
@@ -69,8 +69,9 @@ internal class AutoBrowseChangeNotifier(private val host: AutoBrowseLibraryHost)
             session.notifyChildrenChanged(node, CHANGED_ITEM_COUNT, null)
             session.notifyChildrenChanged(AutoBrowseContract.OPEN_PREFIX + node, CHANGED_ITEM_COUNT, null)
         }
-        // Home's blocks draw their artwork from these lists.
-        host.requestAutoCollageRefresh()
+        // Home's blocks draw their artwork from these lists, so they are rebuilt now rather than
+        // when the refresh's own pause allows. The queue has no block: it lives in the player.
+        if (change != Change.QUEUE) host.requestAutoCollageRefresh(force = true)
     }
 
     companion object {

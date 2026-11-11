@@ -605,4 +605,69 @@ class AutoBrowseLibraryCallbackTest {
 
         verify(player, Mockito.never()).prepare()
     }
+
+    private fun librarySessionWith(player: Player): androidx.media3.session.MediaLibraryService.MediaLibrarySession {
+        val session = mock(androidx.media3.session.MediaLibraryService.MediaLibrarySession::class.java)
+        `when`(player.availableCommands).thenReturn(Player.Commands.EMPTY)
+        `when`(session.player).thenReturn(player)
+        `when`(host.mediaSession).thenReturn(session)
+        return session
+    }
+
+    /** Android Auto announces every change of its car connection. */
+    private fun announceCarConnectionChange() {
+        context.sendBroadcast(android.content.Intent(cx.aswin.boxlore.core.playback.service.CarConnectionWatcher.ACTION_CAR_CONNECTION_UPDATED))
+        org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+    }
+
+    private fun events(name: String): Int = recordedEvents.count { it.first == name }
+
+    @Test
+    fun `a car arriving while Android Auto is already connected starts the drive`() {
+        // Android Auto's app stays connected with no car; the drive must not depend on a new connection.
+        val player = mock(Player::class.java)
+        val session = librarySessionWith(player)
+        val last = MediaSession.MediaItemsWithStartPosition(listOf(episodeItem("last")), 0, 0L)
+        runBlocking { `when`(resumptionHandler.resolveResumption(session)).thenReturn(last) }
+        callback.onConnect(session, controllerFrom("com.google.android.projection.gearhead"))
+        verify(player, Mockito.never()).prepare()
+
+        inCarMode {
+            announceCarConnectionChange()
+
+            // Straight away: the check made at connect time only looks again a second later.
+            verify(player).prepare()
+            assertEquals(1, events("android_auto_connected"))
+        }
+    }
+
+    @Test
+    fun `a car leaving while Android Auto stays connected ends the drive, and a new one starts afresh`() {
+        val player = mock(Player::class.java)
+        `when`(player.mediaItemCount).thenReturn(1)
+        val session = librarySessionWith(player)
+        inCarMode { callback.onConnect(session, controllerFrom("com.google.android.projection.gearhead")) }
+        assertEquals(1, events("android_auto_connected"))
+
+        announceCarConnectionChange()
+        assertEquals(1, events("android_auto_disconnected"))
+        verify(player).removeListener(mockAny())
+
+        inCarMode { announceCarConnectionChange() }
+        assertEquals(2, events("android_auto_connected"))
+    }
+
+    @Test
+    fun `a change in the car connection means nothing once Android Auto has disconnected`() {
+        val player = mock(Player::class.java)
+        val session = librarySessionWith(player)
+        val gearhead = controllerFrom("com.google.android.projection.gearhead")
+        callback.onConnect(session, gearhead)
+        callback.onDisconnected(session, gearhead)
+
+        inCarMode { announceCarConnectionChange() }
+
+        verify(player, Mockito.never()).prepare()
+        assertEquals(0, events("android_auto_connected"))
+    }
 }
