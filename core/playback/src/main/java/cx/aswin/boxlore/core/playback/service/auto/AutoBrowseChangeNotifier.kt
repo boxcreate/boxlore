@@ -69,9 +69,10 @@ internal class AutoBrowseChangeNotifier(private val host: AutoBrowseLibraryHost)
             session.notifyChildrenChanged(node, CHANGED_ITEM_COUNT, null)
             session.notifyChildrenChanged(AutoBrowseContract.OPEN_PREFIX + node, CHANGED_ITEM_COUNT, null)
         }
-        // Home's blocks draw their artwork from these lists, so they are rebuilt now rather than
-        // when the refresh's own pause allows. The queue has no block: it lives in the player.
-        if (change != Change.QUEUE) host.requestAutoCollageRefresh(force = true)
+        // Home's blocks draw their artwork from these lists (Drive picks from the queue too), so
+        // it is rebuilt now rather than when the refresh's own pause allows. Home itself is only
+        // reloaded if a block's artwork comes out different.
+        host.requestAutoCollageRefresh(force = true)
     }
 
     companion object {

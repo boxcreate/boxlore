@@ -97,8 +97,8 @@ class AutoBrowseChangeNotifierFlowTest {
     }
 
     @Test
-    fun aQueueChangeRebuildsNoArtwork() = scope.runTest {
-        // The queue has no block on Home, and rebuilding its artwork reloads Home.
+    fun aQueueChangeRebuildsArtworkToo() = scope.runTest {
+        // Regression: Home's Drive picks block draws on the queue, so skipping the rebuild left it stale.
         val notifier = notifier()
         notifier.start()
         runCurrent()
@@ -107,7 +107,8 @@ class AutoBrowseChangeNotifierFlowTest {
         advanceTimeBy(2_000)
 
         reloadsOf(AutoBrowseContract.HOME_QUEUE_ID, times = 1)
-        verify(host, Mockito.never()).requestAutoCollageRefresh(Mockito.anyBoolean())
+        reloadsOf(AutoBrowseContract.HOME_ID, times = 0)
+        verify(host).requestAutoCollageRefresh(true)
         notifier.stop()
     }
 

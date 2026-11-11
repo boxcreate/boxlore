@@ -38,6 +38,7 @@ internal class AutoCollagePrewarmer(
     private val onCollagesReady: (Map<String, Uri>) -> Unit,
 ) {
     private val mutex = Mutex()
+    private val announced = CollageAnnouncements<Uri>()
     private val lastPrewarmAtMs = AtomicLong(0L)
 
     suspend fun prewarm(force: Boolean = false) {
@@ -67,7 +68,7 @@ internal class AutoCollagePrewarmer(
                     folderContentKeys = folders.mapValues { AutoCollageFolderLogic.keysOf(it.value) },
                 )
             onCollagesReady(uris)
-            notifyBrowseTree()
+            if (announced.isNews(uris)) notifyBrowseTree()
         } catch (error: Exception) {
             Log.w("AutoBrowse", "Unable to prewarm Android Auto artwork", error)
         }
@@ -129,7 +130,10 @@ internal class AutoCollagePrewarmer(
         )
     }
 
-    /** Collages are the artwork of Home's blocks, so Home is the only screen to redraw when they change. */
+    /**
+     * Collages are the artwork of Home's blocks, so Home is the only screen to redraw, and only
+     * when one of them changed: a reload sends the car's Home back to the top.
+     */
     private fun notifyBrowseTree() {
         mediaSessionProvider()?.notifyChildrenChanged(AutoBrowseContract.HOME_ID, HOME_BLOCK_COUNT, null)
     }
@@ -223,5 +227,21 @@ internal class AutoCollagePrewarmer(
     private companion object {
         /** Media3 wants an item count with a change notice; the car reloads Home whatever the number. */
         const val HOME_BLOCK_COUNT = 10
+    }
+}
+
+/**
+ * Remembers the collage links the car was last told about. A link carries its collage's content
+ * signature, so the same links mean the same artwork and nothing worth reloading Home for.
+ */
+internal class CollageAnnouncements<T> {
+    private var last: Map<String, T>? = null
+
+    /** True the first time, and whenever [links] differ from the ones last announced. */
+    @Synchronized
+    fun isNews(links: Map<String, T>): Boolean {
+        if (links == last) return false
+        last = links
+        return true
     }
 }

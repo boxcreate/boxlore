@@ -62,4 +62,24 @@ class AutoCollagePrewarmerTest {
 
         assertEquals(4, folders[AutoBrowseContract.LIBRARY_HISTORY_ID]?.size)
     }
+
+    @Test
+    fun `the Drive picks block draws on the queue`() {
+        // Why a queue change has to rebuild Home's artwork.
+        val folders = inputs(queue = listOf(queued("q1"), queued("q2")))
+
+        assertEquals(listOf("q1", "q2"), folders[AutoBrowseContract.DISCOVER_DRIVE_PICKS_ID])
+    }
+
+    @Test
+    fun `Home is told about artwork only when a block's artwork changed`() {
+        val announced = CollageAnnouncements<String>()
+
+        assertEquals(true, announced.isNews(mapOf("drive" to "drive.png?v=1", "liked" to "liked.png?v=1")))
+        // A rebuild that came out the same: reloading Home would only send it back to the top.
+        assertEquals(false, announced.isNews(mapOf("drive" to "drive.png?v=1", "liked" to "liked.png?v=1")))
+        assertEquals(true, announced.isNews(mapOf("drive" to "drive.png?v=2", "liked" to "liked.png?v=1")))
+        assertEquals(true, announced.isNews(mapOf("liked" to "liked.png?v=1")))
+        assertEquals(false, announced.isNews(mapOf("liked" to "liked.png?v=1")))
+    }
 }
