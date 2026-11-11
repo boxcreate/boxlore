@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,6 +56,7 @@ import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
 import cx.aswin.boxlore.feature.settings.components.SettingsTileSection
 import cx.aswin.boxlore.feature.settings.openAppPermissionSettings
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
 /**
@@ -125,7 +127,7 @@ private fun WidgetGallery(
     canAdd: Boolean,
     preview: AppearanceWidgetPreview,
 ) {
-    val add = rememberAddWidgetRequest(actions.onAddWidget)
+    val add = rememberAddWidgetRequest(actions.onAddWidget, actions.addedWidgets)
     SettingsTileSection(
         title = if (canAdd) "Add to home screen" else "boxlore widgets",
         footer = if (canAdd) ADD_WIDGETS_CONFIRM else null,
@@ -150,34 +152,45 @@ private fun WidgetGallery(
     }
 }
 
-/** Asks for a widget to be added, and knows which request the phone left unanswered. */
+/** Asks for a widget to be added, and knows which request the phone seems to have left unanswered. */
 private class AddWidgetRequest(val request: (String) -> Unit, val unansweredKey: String?)
 
 /**
- * The home screen app answers a request by opening its confirmation over the app, which pauses it.
- * Some phones turn the request down without showing anything. So when the app has not been paused
- * [ADD_WIDGET_ANSWER_MS] after a request, that request counts as unanswered, until another one is
- * answered.
+ * The home screen app answers a request by opening its confirmation over the app, which pauses it,
+ * or by adding the widget and saying so ([added]). Some phones turn the request down without showing
+ * anything. So when neither has happened [ADD_WIDGET_ANSWER_MS] after a request, its card offers
+ * help; that is a guess, so the help goes away as soon as an answer does arrive. Only the latest
+ * request is watched: an earlier one's wait ends without effect once the next has begun.
  */
 @Composable
-private fun rememberAddWidgetRequest(onAdd: (String) -> Unit): AddWidgetRequest {
+private fun rememberAddWidgetRequest(onAdd: (String) -> Unit, added: Flow<String>): AddWidgetRequest {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
     var unansweredKey by rememberSaveable { mutableStateOf<String?>(null) }
-    val pausedSinceRequest = remember { mutableStateOf(false) }
+    val answered = remember { mutableStateOf(false) }
+    // Counts requests, so a wait that ends after a newer request began knows it is no longer the latest.
+    val latestRequest = remember { intArrayOf(0) }
+
+    fun onAnswer() {
+        answered.value = true
+        unansweredKey = null
+    }
     DisposableEffect(lifecycle) {
-        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_PAUSE) pausedSinceRequest.value = true }
+        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_PAUSE) onAnswer() }
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
     }
+    LaunchedEffect(added) { added.collect { onAnswer() } }
     val request: (String) -> Unit =
         remember(onAdd) {
             { key ->
-                pausedSinceRequest.value = false
+                val thisRequest = ++latestRequest[0]
+                answered.value = false
+                unansweredKey = null
                 onAdd(key)
                 scope.launch {
                     delay(ADD_WIDGET_ANSWER_MS)
-                    unansweredKey = key.takeUnless { pausedSinceRequest.value }
+                    if (thisRequest == latestRequest[0] && !answered.value) unansweredKey = key
                 }
             }
         }
@@ -188,7 +201,7 @@ private fun rememberAddWidgetRequest(onAdd: (String) -> Unit): AddWidgetRequest 
  * One widget: its picture on a tonal stage that stands in for the wallpaper, any [options] that
  * change that picture, then its name, what it shows and the Add button. Wide widgets put the button
  * beside the text; a small widget sharing its row with another puts it underneath, where it still
- * has room at large text sizes. An [unanswered] request explains itself under the button.
+ * has room at large text sizes. A request that seems [unanswered] offers help under the button.
  */
 @Composable
 private fun WidgetCard(
@@ -232,7 +245,7 @@ private fun WidgetCard(
     }
 }
 
-/** What to do when the phone did not open its confirmation: allow it in the phone's settings, or add by hand. */
+/** Help for a request nothing answered: how to allow it in the phone's settings, or add the widget by hand. */
 @Composable
 private fun AddWidgetUnanswered() {
     val context = LocalContext.current
@@ -308,7 +321,7 @@ private const val SMALL_WIDGET_MAX_WIDTH_DP = 200
 internal const val ADD_WIDGET_ANSWER_MS = 1_500L
 
 internal const val ADD_WIDGET_UNANSWERED =
-    "Your phone didn’t let boxlore add it. Turn on Home screen shortcuts for boxlore in your phone’s app settings, then try again. " +
+    "Nothing opened? Your phone may be blocking this. Turn on Home screen shortcuts for boxlore in your phone’s app settings, then try again. " +
         "Or touch and hold an empty spot on your home screen and choose Widgets."
 
 internal const val ADD_WIDGETS_CONFIRM = "Your home screen app asks you to confirm."

@@ -1,13 +1,18 @@
 package cx.aswin.boxlore.feature.widgets
 
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.widget.FrameLayout
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.prefs.FontRoundnessAxis
 import cx.aswin.boxlore.core.prefs.WidgetAppearance
 import cx.aswin.boxlore.core.prefs.WidgetShowsArtwork
 import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -50,6 +55,22 @@ class WidgetPickerPreviewsTest {
         assertTrue(library.subscriptions.any { it.isNew } && library.subscriptions.any { !it.isNew })
         // The badge shows the library's size, not the handful of sample tiles.
         assertTrue(library.count(LibraryWidgetKind.SUBSCRIPTIONS) > library.subscriptions.size)
+    }
+
+    @Test
+    fun sampleCoversBuiltByManyPreviewsAtOnceAreWholeFilesWithNothingLeftHalfWritten() = runTest {
+        val covers = File(context.cacheDir, WidgetArtworkLoader.CACHE_DIR_NAME)
+        covers.deleteRecursively()
+
+        // Settings draws every preview at the same time, and they share covers.
+        withContext(Dispatchers.Default) {
+            List(12) { async { WidgetPickerPreviews.samplePlayback(context) to WidgetPickerPreviews.sampleLibrary(context) } }.awaitAll()
+        }
+
+        val files = covers.listFiles().orEmpty()
+        assertTrue("covers were written", files.isNotEmpty())
+        assertTrue("no unfinished file is left behind: ${files.map { it.name }}", files.none { it.name.endsWith(".tmp") })
+        assertTrue("every cover decodes", files.all { BitmapFactory.decodeFile(it.absolutePath) != null })
     }
 
     @Test

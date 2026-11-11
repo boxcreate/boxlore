@@ -54,6 +54,8 @@ class AppearanceActionsTrackedTest {
         tracked.onAddWidget("compact")
         assertEquals(listOf("compact", "compact"), asked)
         assertEquals(true, tracked.canAddWidgets())
+        // What the home screen reports back reaches the page through the same wrapper.
+        assertEquals(kotlinx.coroutines.flow.emptyFlow<String>(), tracked.addedWidgets)
     }
 
     @Test

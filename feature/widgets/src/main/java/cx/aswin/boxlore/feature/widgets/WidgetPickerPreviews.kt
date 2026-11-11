@@ -205,7 +205,14 @@ object WidgetPickerPreviews {
             val bitmap = createBitmap(SAMPLE_COVER_PX, SAMPLE_COVER_PX)
             drawable.setBounds(0, 0, SAMPLE_COVER_PX, SAMPLE_COVER_PX)
             drawable.draw(Canvas(bitmap))
-            file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, PNG_QUALITY, it) }
+            // Several previews are built at once and share covers: write beside the file, then move it into
+            // place, so a reader never finds half a picture and a write cut short leaves nothing behind.
+            val unfinished = File(directory, "${file.name}.${System.nanoTime()}.tmp")
+            unfinished.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, PNG_QUALITY, it) }
+            if (!unfinished.renameTo(file)) {
+                unfinished.delete()
+                if (!file.exists()) return null
+            }
             file.absolutePath
         }.getOrNull()
     }

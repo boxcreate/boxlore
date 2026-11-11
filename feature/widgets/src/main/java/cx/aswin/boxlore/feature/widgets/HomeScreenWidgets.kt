@@ -6,6 +6,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.widget.RemoteViews
 import androidx.annotation.StringRes
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 
 /**
  * The widgets a listener can see and add to the home screen from inside the app. The home screen app
@@ -43,10 +45,23 @@ object HomeScreenWidgets {
      */
     fun requestAdd(context: Context, key: String): Boolean {
         val entry = all.firstOrNull { it.key == key } ?: return false
+        val app = context.applicationContext
         return runCatching {
-            manager(context)?.requestPinAppWidget(ComponentName(context.applicationContext, entry.receiver), null, null) == true
+            manager(app)?.requestPinAppWidget(ComponentName(app, entry.receiver), null, WidgetAddedReceiver.callback(app, key)) == true
         }.getOrDefault(false)
     }
+
+    /**
+     * The key of each widget the home screen app has just added after a [requestAdd]. A request that is
+     * turned down, or left unanswered, sends nothing.
+     */
+    val added: SharedFlow<String> get() = addedKeys
+
+    internal fun onAdded(key: String) {
+        addedKeys.tryEmit(key)
+    }
+
+    private val addedKeys = MutableSharedFlow<String>(extraBufferCapacity = 8)
 
     /**
      * The widget with this [key] as its own renderer draws it, with sample content and in the

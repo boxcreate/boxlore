@@ -2,7 +2,11 @@ package cx.aswin.boxlore.feature.widgets
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
+import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -57,5 +61,21 @@ class HomeScreenWidgetsTest {
         assertEquals(null, HomeScreenWidgets.preview(context, "no-such-widget"))
         // Only Your Shows follows the cover setting, so only it carries that choice in Settings.
         assertEquals(listOf("shows"), HomeScreenWidgets.all.filter { it.usesShowsCoverStyle }.map { it.key })
+    }
+
+    @Test
+    fun theHomeScreenSayingAWidgetWasAddedIsPassedOnWithThatWidgetsKey() = runTest(UnconfinedTestDispatcher()) {
+        val added = mutableListOf<String>()
+        val collecting = launch { HomeScreenWidgets.added.collect { added += it } }
+
+        val callback = WidgetAddedReceiver.callback(context, "compact")
+        assertTrue("a request carries a callback", callback != null)
+        WidgetAddedReceiver().onReceive(context, Intent(context, WidgetAddedReceiver::class.java).setAction(WidgetAddedReceiver.ACTION_ADDED).putExtra(WidgetAddedReceiver.EXTRA_KEY, "compact"))
+        // Anything else sent to the receiver says nothing about a widget.
+        WidgetAddedReceiver().onReceive(context, Intent(context, WidgetAddedReceiver::class.java).setAction("something.else").putExtra(WidgetAddedReceiver.EXTRA_KEY, "full"))
+        WidgetAddedReceiver().onReceive(context, Intent(context, WidgetAddedReceiver::class.java).setAction(WidgetAddedReceiver.ACTION_ADDED))
+
+        assertEquals(listOf("compact"), added)
+        collecting.cancel()
     }
 }

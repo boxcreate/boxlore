@@ -267,6 +267,7 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
             },
             canAddWidgets = { HomeScreenWidgets.canAdd(w.context) },
             onAddWidget = { key -> HomeScreenWidgets.requestAdd(w.context, key) },
+            addedWidgets = HomeScreenWidgets.added,
             onSetExploreDefaultTab = { tab ->
                 scope.launch { userPrefs.setExploreDefaultTab(tab) }
             },

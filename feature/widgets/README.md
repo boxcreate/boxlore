@@ -25,7 +25,7 @@ Owns boxlore's home-screen widgets, built with `AppWidgetProvider` and `RemoteVi
 ## Public API
 
 - The six receivers above: picker-visible providers.
-- `HomeScreenWidgets`: the six widgets under their picker names, each one's live preview as `RemoteViews` with the size it is drawn for (`preview`), whether the current home screen app can add a widget on request (`canAdd`), and the request itself (`requestAdd`). Settings shows and offers them through `:app`.
+- `HomeScreenWidgets`: the six widgets under their picker names, each one's live preview as `RemoteViews` with the size it is drawn for (`preview`), whether the current home screen app can add a widget on request (`canAdd`), the request itself (`requestAdd`) and the keys of widgets the home screen app then added (`added`). Settings shows and offers them through `:app`.
 - `WidgetControlReceiver`: one explicit, non-exported action endpoint shared by the playback widgets.
 - `WidgetActionIntents`: builds broadcast, open-app and deep-link `PendingIntent`s with `SecurityException` guards. `cancelAll(context, appWidgetId)` and `LibraryWidgetRenderer.cancelAll` cancel a deleted widget's intents so the app never exhausts the system's `PendingIntent` quota.
 - `NowPlayingWidgetDependencies`, `configureNowPlayingWidget(...)` and `WidgetPlaybackSource`: the playback port. `refreshPosition()` asks the player for its position, which the app only tracks while it is on screen.
@@ -94,6 +94,7 @@ src/main/res/
 | Artwork cache | `{cacheDir}/widget_artwork/` |
 | Receiver FQCNs | the six receivers above, under `cx.aswin.boxlore.feature.widgets` |
 | Action receiver | `cx.aswin.boxlore.feature.widgets.actions.WidgetControlReceiver` (not exported) |
+| Added-widget receiver | `cx.aswin.boxlore.feature.widgets.WidgetAddedReceiver` (not exported), action `cx.aswin.boxlore.feature.widgets.action.WIDGET_ADDED` |
 | RemoteViewsService | `LibraryWidgetRemoteViewsService` (not exported; `BIND_REMOTEVIEWS`) |
 | Provider info | every provider uses `updatePeriodMillis=0` |
 

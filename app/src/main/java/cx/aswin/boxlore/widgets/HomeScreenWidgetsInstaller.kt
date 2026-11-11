@@ -13,6 +13,8 @@ import cx.aswin.boxlore.feature.widgets.WidgetPickerPreviews
 import cx.aswin.boxlore.feature.widgets.configureLibraryWidgets
 import cx.aswin.boxlore.feature.widgets.configureNowPlayingWidget
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
@@ -28,6 +30,7 @@ object HomeScreenWidgetsInstaller {
         subscriptionRepository: () -> SubscriptionRepository,
         userPreferencesRepository: UserPreferencesRepository,
         adaptiveScorer: () -> AdaptiveCandidateScorer,
+        awaitStartupReady: suspend () -> Unit = {},
     ) {
         configureNowPlayingWidget(
             object : NowPlayingWidgetDependencies {
@@ -56,8 +59,9 @@ object HomeScreenWidgetsInstaller {
                 }
             },
         )
-        // Re-render when widget chrome source, Appearance theme, lettering, or the Your Shows artwork style changes.
-        scope.launch {
+        // Everything that changes how a widget looks: widget chrome source, Appearance theme, lettering
+        // and the Your Shows artwork style.
+        val widgetLook =
             combine(
                 combine(
                     userPreferencesRepository.widgetAppearanceStream,
@@ -68,12 +72,25 @@ object HomeScreenWidgetsInstaller {
                 ) { _, _, _, _, _ -> Unit },
                 userPreferencesRepository.fontRoundnessStream,
                 userPreferencesRepository.widgetShowsArtworkStream,
-            ) { _, _, _ -> Unit }.collect {
+            ) { _, _, _ -> Unit }
+        scope.launch {
+            widgetLook.collect {
                 NowPlayingWidgetCoordinator.requestRefresh(context)
                 LibraryWidgetCoordinator.requestRefresh(context)
-                // The widget picker shows the same look the placed widgets now have.
-                WidgetPickerPreviews.refresh(context)
             }
         }
+        // The widget picker shows the same look the placed widgets have.
+        scope.launch { publishWhenStartupReady(widgetLook, awaitStartupReady) { WidgetPickerPreviews.refresh(context) } }
+    }
+
+    /**
+     * Runs [publish] for the current look and again for every later one. Picker previews are optional
+     * work, so the first run waits for [awaitStartupReady] and never competes with the first screen;
+     * once the app is up, a changed look is published at once. A newer look replaces one still being
+     * published.
+     */
+    internal suspend fun publishWhenStartupReady(looks: Flow<Unit>, awaitStartupReady: suspend () -> Unit, publish: suspend () -> Unit) {
+        awaitStartupReady()
+        looks.collectLatest { publish() }
     }
 }

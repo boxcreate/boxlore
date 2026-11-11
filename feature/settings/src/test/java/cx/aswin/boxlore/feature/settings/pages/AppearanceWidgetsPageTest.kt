@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.prefs.WidgetShowsArtwork
+import kotlinx.coroutines.flow.MutableSharedFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -31,6 +32,7 @@ class AppearanceWidgetsPageTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private val added = mutableListOf<String>()
     private val coverChoices = mutableListOf<String>()
+    private val addedByHomeScreen = MutableSharedFlow<String>(extraBufferCapacity = 4)
     private val widgets =
         listOf(
             AddableWidget("full", "Now Playing · Full Controls", "The full player", 320, 170),
@@ -50,7 +52,16 @@ class AppearanceWidgetsPageTest {
 
     private fun render(canAdd: Boolean, state: AppearanceUiState = this.state, preview: AppearanceWidgetPreview? = picture) {
         val actions =
-            AppearanceActions({}, {}, {}, {}, canAddWidgets = { canAdd }, onAddWidget = { added.add(it) }, onSetWidgetShowsArtwork = { coverChoices.add(it) })
+            AppearanceActions(
+                {},
+                {},
+                {},
+                {},
+                canAddWidgets = { canAdd },
+                onAddWidget = { added.add(it) },
+                addedWidgets = addedByHomeScreen,
+                onSetWidgetShowsArtwork = { coverChoices.add(it) },
+            )
         compose.setContent { BoxLoreTheme { AppearanceWidgetsPage(state, actions, onBack = {}, preview = preview) } }
     }
 
@@ -153,6 +164,53 @@ class AppearanceWidgetsPageTest {
         compose.mainClock.advanceTimeBy(100)
         compose.onNodeWithText(ADD_WIDGET_UNANSWERED).assertDoesNotExist()
         assertEquals(listOf("full", "full"), added)
+    }
+
+    @Test
+    fun `a widget the home screen adds without asking is not reported as unanswered`() {
+        render(canAdd = true)
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithContentDescription("Add Now Playing · Full Controls to home screen").performScrollTo().performClick()
+        // No confirmation covered the app, but the home screen says the widget is there.
+        addedByHomeScreen.tryEmit("full")
+        compose.mainClock.advanceTimeBy(ADD_WIDGET_ANSWER_MS + 100)
+        compose.onNodeWithText(ADD_WIDGET_UNANSWERED).assertDoesNotExist()
+    }
+
+    @Test
+    fun `help for an unanswered request goes away when an answer arrives late`() {
+        render(canAdd = true)
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithContentDescription("Add Now Playing · Full Controls to home screen").performScrollTo().performClick()
+        compose.mainClock.advanceTimeBy(ADD_WIDGET_ANSWER_MS + 100)
+        compose.onNodeWithText(ADD_WIDGET_UNANSWERED).assertExists()
+
+        // The confirmation opens after all, a little late.
+        compose.activityRule.scenario.moveToState(Lifecycle.State.STARTED)
+        compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        compose.mainClock.advanceTimeBy(100)
+        compose.onNodeWithText(ADD_WIDGET_UNANSWERED).assertDoesNotExist()
+    }
+
+    @Test
+    fun `only the latest request is watched, so an earlier card is never blamed for it`() {
+        render(canAdd = true)
+        // The two round players sit side by side: bring both into view before the clock is held.
+        compose.onNodeWithContentDescription("Add Now Playing · Round with Next to home screen").performScrollTo()
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithContentDescription("Add Now Playing · Round to home screen").performClick()
+        compose.mainClock.advanceTimeBy(800)
+        compose.onNodeWithContentDescription("Add Now Playing · Round with Next to home screen").performClick()
+
+        // The first request's wait ends here; it no longer counts once the second has begun.
+        compose.mainClock.advanceTimeBy(800)
+        compose.onNodeWithText(ADD_WIDGET_UNANSWERED).assertDoesNotExist()
+
+        compose.mainClock.advanceTimeBy(800)
+        val help = compose.onNodeWithText(ADD_WIDGET_UNANSWERED).getUnclippedBoundsInRoot()
+        val firstCardPicture = compose.onNodeWithTag("picture-round", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertTrue("the help is in the second card, the one asked last", help.left > firstCardPicture.right)
+        assertEquals(listOf("round", "round_next"), added)
     }
 
     @Test

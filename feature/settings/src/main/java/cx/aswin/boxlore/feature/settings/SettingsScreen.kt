@@ -734,6 +734,7 @@ internal fun AppearanceActions.trackedForAnalytics(currentState: () -> Appearanc
         onSetWidgetAppearance = tracked("widget_appearance_changed", { it.currentWidgetAppearance }, onSetWidgetAppearance),
         onSetWidgetShowsArtwork = tracked("widget_shows_artwork_changed", { it.currentWidgetShowsArtwork }, onSetWidgetShowsArtwork),
         canAddWidgets = canAddWidgets,
+        addedWidgets = addedWidgets,
         // Every request is reported: there is no current value a repeat could match.
         onAddWidget = tracked("widget_add_requested", { "" }, onAddWidget),
         onSetExploreDefaultTab = {

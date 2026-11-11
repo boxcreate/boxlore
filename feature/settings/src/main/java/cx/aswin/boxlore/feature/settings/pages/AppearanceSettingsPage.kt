@@ -51,6 +51,8 @@ import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsNavigationRow
 import cx.aswin.boxlore.feature.settings.components.SettingsPicture
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 /**
  * A home screen widget the listener can add from Appearance › Widgets, named as the widget picker
@@ -123,6 +125,8 @@ data class AppearanceActions(
     val canAddWidgets: () -> Boolean = { false },
     /** Asks the home screen app to add the widget with this key; it confirms with the listener itself. */
     val onAddWidget: (String) -> Unit = {},
+    /** The key of each widget the home screen app has just added after such a request. */
+    val addedWidgets: Flow<String> = emptyFlow(),
     val onSetExploreDefaultTab: (String) -> Unit = {},
     val onSetSubscriptionsDefaultTab: (String) -> Unit = {},
     val onSetSubscriptionsTabStyle: (String) -> Unit = {},

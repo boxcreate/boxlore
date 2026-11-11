@@ -184,6 +184,7 @@ class BoxLoreApplication :
             subscriptionRepository = { container.subscriptionRepository },
             userPreferencesRepository = userPreferencesRepository,
             adaptiveScorer = { container.adaptiveCandidateScorer },
+            awaitStartupReady = { startupWorkGate.awaitReady() },
         )
         engagementPromptCoordinator =
             EngagementPromptCoordinator(userPreferencesRepository, cx.aswin.boxlore.core.prefs.NpsSurveyStore(this))
