@@ -121,7 +121,7 @@ src/main/java/cx/aswin/boxlore/core/data/service/   # stubs for legacy service n
 
 - `AppContainer` builds the graph once: DB → `PodcastRepository` → `QueueRepository` → `PlaybackRepository` → `QueueManager`.
 - Player and controller callbacks run on the main thread. `restoreLastSession` and transport calls hop to `PlaybackThreadPolicy.mainDispatcher`; database, artwork and recommendation work runs on background dispatchers.
-- `PlaybackRepository` polls the controller position only while app UI is in the foreground; `refreshProgressOnce()` publishes it once on request, which home-screen widgets use while an episode plays in the background. The service alone saves active-session progress and telemetry.
+- `PlaybackRepository` polls the controller position only while app UI is in the foreground; `refreshProgressOnce()` publishes it once on request, and only while the player still holds the episode the state names, which home-screen widgets use while an episode plays in the background. The service alone saves active-session progress and telemetry.
 - `PlaybackMediaControllerHandle.awaitController()` returns null on a rejected connection and reconnects with growing delays, at most `MediaControllerReconnectPolicy.MAX_ATTEMPTS` times.
 - `BoxLorePlaybackService` resolves shared dependencies lazily after app start; its players are service-scoped, so playback and transfers continue without an Activity.
 - Idle handoff: a local session paused in the background for `PlaybackPowerPolicy.PAUSED_IDLE_TIMEOUT_MS` saves progress, rechecks eligibility and stops the service. Playback, buffering intent, foreground UI and Cast skip that teardown.

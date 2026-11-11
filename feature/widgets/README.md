@@ -40,7 +40,7 @@ Owns boxlore's home-screen widgets, built with `AppWidgetProvider` and `RemoteVi
 - While an episode plays and a playback widget is placed, `WidgetProgressPoller` asks the port for the position every `PROGRESS_POLL_MS`. `WidgetUpdatePolicy` repaints only when the ring or the time-left label would change, about once a minute.
 - Both renderers push through `pushWidgetUpdate`. From Android 17, an update over the launcher's bitmap cap throws; the guard catches it, retries once with a lighter update where one exists, and otherwise waits for the next update, so the player service never crashes.
 - Artwork is decoded to fit the widget and cut to its shape (`WidgetShapes`), keeping updates under that cap. `WidgetBitmapCache` keeps cut artwork, rings, masks and seek icons in memory, so a tap redraws without decoding anything again.
-- Library covers load a few at a time and each batch is shown as it lands. The list service also fetches a missing cover itself, so covers appear while the app is closed; a tile shows its placeholder until then.
+- Library covers load a few at a time and each batch is shown as it lands (`LibraryArtworkBatches`); a newer library waits for the older load to stop before it saves. The list service also fetches a missing cover itself, so covers appear while the app is closed; a tile shows its placeholder until then, and a cover that ran out of time is left alone for a while (`ArtworkTimeoutCooldown`).
 - Every colour is a tint, never baked into a bitmap. Widget chrome follows the in-app Appearance theme by default: `WidgetChrome` sends one ARGB value for a fixed Light or Dark display mode, and a light and dark pair when the display mode follows the system, so the launcher switches with the phone while the app is not running. Appearance › Widgets can switch to System, which uses the system's dynamic colour resources.
 - `WidgetThemeSync` re-pushes widgets on configuration changes; `:app` refreshes them when the theme or widget preferences change.
 - Picker previews: from Android 15, `WidgetPickerPreviews` publishes previews drawn by the live renderers with sample content, in the listener's own widget colours, again whenever that look changes. Older versions show the static `widget_preview_*.xml` layouts in resource colours.
@@ -61,7 +61,8 @@ src/main/java/cx/aswin/boxlore/feature/widgets/
   WidgetThemeSync.kt, WidgetHostPresence.kt, WidgetUpdates.kt, HomeScreenWidgets.kt
   actions/                      # WidgetActionIntents, WidgetActionHandler, WidgetControlReceiver
   logic/                        # NowPlayingWidgetLogic, LibraryWidgetLogic, WidgetPresentation, WidgetSizes,
-                                #   WidgetProgress, WidgetProgressPoller
+                                #   WidgetProgress, WidgetProgressPoller, LibraryArtworkBatches,
+                                #   ArtworkTimeoutCooldown
 src/main/res/
   layout/                       # live layouts and picker previews
   xml/*_widget_info.xml         # provider info
@@ -102,10 +103,10 @@ Hermetic JVM tests live in `feature/widgets/src/test`, using Robolectric and fak
 
 | Area | Tests |
 | :--- | :--- |
-| Playback widgets | `NowPlayingWidgetRemoteViewsTest`, `NowPlayingWidgetCoordinatorTest`, `NowPlayingWidgetLogicTest`, `WidgetOptimisticActionTest` |
+| Playback widgets | `NowPlayingWidgetRemoteViewsTest`, `NowPlayingWidgetCoordinatorTest`, `NowPlayingWidgetLogicTest`, `WidgetOptimisticActionTest`, `WidgetActionHandlerTest` |
 | Sizing, resizing and progress | `WidgetPresentationTest`, `WidgetSizesTest`, `WidgetProgressTest`, `WidgetProgressPollerTest`, `WidgetShapesTest` |
 | Every widget, state and size applied and drawn | `WidgetRenderGalleryTest` (set `BOXLORE_WIDGET_RENDERS=1` to save the drawings under `build/reports/widget-renders/`) |
-| Library widgets | `LibraryWidgetRemoteViewsTest`, `LibraryWidgetLogicTest` |
+| Library widgets | `LibraryWidgetRemoteViewsTest`, `LibraryWidgetLogicTest`, `LibraryArtworkBatchesTest`, `ArtworkTimeoutCooldownTest` |
 | Snapshots and dependency holders | `NowPlayingWidgetSnapshotStoreTest`, `NowPlayingWidgetDependenciesHolderTest` |
 | Startup and updates | `WidgetStartupTest`, `WidgetUpdatesTest` |
 | Theming, picker previews and adding from the app | `WidgetChromeTest`, `WidgetRemoteViewsColorsTest`, `WidgetPickerPreviewsTest`, `HomeScreenWidgetsTest` |

@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.widgets
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
+import cx.aswin.boxlore.feature.widgets.logic.LibraryArtworkBatches
 import cx.aswin.boxlore.feature.widgets.logic.LibraryWidgetLogic
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.Job
@@ -12,7 +13,6 @@ import kotlinx.coroutines.launch
 
 object LibraryWidgetCoordinator {
     private val collectJob = AtomicReference<Job?>(null)
-    private val artworkJob = AtomicReference<Job?>(null)
 
     @Volatile
     private var dependencies: LibraryWidgetDependencies? = null
@@ -23,7 +23,6 @@ object LibraryWidgetCoordinator {
             if (current?.isActive == true && dependencies === deps) return
             dependencies = deps
             current?.cancel()
-            artworkJob.getAndSet(null)?.cancel()
 
             val context = deps.context.applicationContext
             val store = LibraryWidgetSnapshotStore(context)
@@ -110,44 +109,20 @@ object LibraryWidgetCoordinator {
     }
 
     /**
-     * Fetches covers the widgets do not have yet and shows them as they arrive, a few at a time.
-     * Waiting for the whole library first left a widget without covers whenever the app was closed
-     * before the last one came in.
+     * Fetches covers the widgets do not have yet and shows them as they arrive. It runs inside the
+     * collector's own block: a newer library cancels it and waits for it to stop before writing its own
+     * snapshot, so an older snapshot can never be saved over a newer one.
      */
-    private fun loadMissingArtwork(
+    private suspend fun loadMissingArtwork(
         context: Context,
         snapshot: LibraryWidgetSnapshot,
         artworkLoader: WidgetArtworkLoader,
         store: LibraryWidgetSnapshotStore,
     ) {
-        val deps = dependencies ?: return
-        artworkJob.getAndSet(null)?.cancel()
-        artworkJob.set(
-            deps.scope.launch {
-                var current = snapshot
-                var unpublished = 0
-
-                fun publish() {
-                    store.write(current.copy(updatedAtMs = System.currentTimeMillis()))
-                    notifyRowsChanged(context.applicationContext)
-                    unpublished = 0
-                }
-
-                snapshot.subscriptions.forEachIndexed { index, row ->
-                    if (!row.needsArtwork()) return@forEachIndexed
-                    val path = artworkLoader.load(row.artworkUrl, row.fallbackArtworkUrls) ?: return@forEachIndexed
-                    current = current.copy(subscriptions = current.subscriptions.toMutableList().also { it[index] = row.copy(artworkCachePath = path) })
-                    if (++unpublished >= PUBLISH_EVERY) publish()
-                }
-                snapshot.newEpisodes.forEachIndexed { index, row ->
-                    if (!row.needsArtwork()) return@forEachIndexed
-                    val path = artworkLoader.load(row.artworkUrl, row.fallbackArtworkUrls) ?: return@forEachIndexed
-                    current = current.copy(newEpisodes = current.newEpisodes.toMutableList().also { it[index] = row.copy(artworkCachePath = path) })
-                    if (++unpublished >= PUBLISH_EVERY) publish()
-                }
-                if (unpublished > 0) publish()
-            },
-        )
+        LibraryArtworkBatches.load(snapshot, load = { url, fallbackUrls -> artworkLoader.load(url, fallbackUrls) }) { withCovers ->
+            store.write(withCovers.copy(updatedAtMs = System.currentTimeMillis()))
+            notifyRowsChanged(context.applicationContext)
+        }
     }
 
     /** Tells the placed library widgets to redraw their rows; the frame around them stays as it is. */
@@ -159,14 +134,6 @@ object LibraryWidgetCoordinator {
         }
     }
 
-    private fun WidgetShowRow.needsArtwork(): Boolean = artworkCachePath.isNullOrBlank() &&
-        cx.aswin.boxlore.core.model.artworkUrls(artworkUrl, *fallbackArtworkUrls.toTypedArray()).isNotEmpty()
-
-    private fun WidgetEpisodeRow.needsArtwork(): Boolean = artworkCachePath.isNullOrBlank() &&
-        cx.aswin.boxlore.core.model.artworkUrls(artworkUrl, *fallbackArtworkUrls.toTypedArray()).isNotEmpty()
-
     /** The system may clear the artwork cache, so a remembered path only counts while its file is there. */
     private fun String?.ifOnDisk(): String? = this?.takeIf { it.isNotBlank() && java.io.File(it).exists() }
-
-    private const val PUBLISH_EVERY = 4
 }

@@ -542,15 +542,17 @@ class PlaybackRepository internal constructor(
 
     /**
      * Reads the player's position once and publishes it. Home-screen widgets call this while the app
-     * is in the background, where [startProgressTicker] is stopped to save power.
+     * is in the background, where [startProgressTicker] is stopped to save power. Nothing is published
+     * while the player is already on another item than the episode the state names.
      */
     fun refreshProgressOnce() {
         runOnMainThread {
             val controller = mediaHandle.controller ?: return@runOnMainThread
             playerStateFlow.value =
-                PlaybackControllerStatePolicy.mergeProgress(
+                PlaybackControllerStatePolicy.mergeProgressForCurrentItem(
                     previous = playerStateFlow.value,
                     snapshot = controller.progressSnapshot(),
+                    playerEpisodeId = controller.currentMediaItem?.mediaId?.let(PlaybackMediaIdPolicy::stripMediaIdPrefixes),
                 )
         }
     }

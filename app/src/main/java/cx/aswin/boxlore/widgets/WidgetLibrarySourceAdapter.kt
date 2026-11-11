@@ -89,14 +89,7 @@ class WidgetLibrarySourceAdapter(
                     },
                 )
 
-            val withLatest = enriched.filter { it.latestEpisode != null }
-            val latestPool =
-                if (inputs.hideCompleted) {
-                    withLatest.filter { it.episodeStatus != EpisodeStatus.COMPLETED }
-                } else {
-                    withLatest
-                }
-            val sortedLatest = sortLatest(latestPool, inputs.history, inputs.useSmart)
+            val sortedLatest = sortLatest(latestEpisodePool(enriched, inputs.hideCompleted), inputs.history, inputs.useSmart)
             val episodeRows =
                 LibraryWidgetLogic.truncateEpisodes(
                     sortedLatest.mapNotNull { podcast ->
@@ -115,7 +108,7 @@ class WidgetLibrarySourceAdapter(
             Projection(
                 subscriptions = showRows,
                 newEpisodes = episodeRows,
-                counts = WidgetLibraryCounts(subscriptions = sortedShows.size, newEpisodes = sortedLatest.size),
+                counts = libraryCounts(sortedShows, sortedLatest),
             )
         }.stateIn(
             scope = scope,
@@ -209,6 +202,15 @@ class WidgetLibrarySourceAdapter(
     private fun parseSort(name: String): ShowSort = runCatching { ShowSort.valueOf(name) }.getOrDefault(ShowSort.SmartRank)
 
     companion object {
+        /** The shows whose latest episode New Episodes lists: all of them, or only the unfinished ones. */
+        fun latestEpisodePool(enriched: List<Podcast>, hideCompleted: Boolean): List<Podcast> {
+            val withLatest = enriched.filter { it.latestEpisode != null }
+            return if (hideCompleted) withLatest.filter { it.episodeStatus != EpisodeStatus.COMPLETED } else withLatest
+        }
+
+        /** The whole library's sizes, taken from the full lists before the widget's rows are capped. */
+        fun libraryCounts(shows: List<Podcast>, latest: List<Podcast>): WidgetLibraryCounts = WidgetLibraryCounts(subscriptions = shows.size, newEpisodes = latest.size)
+
         fun enrichWithHistory(podcasts: List<Podcast>, allHistory: List<ListeningHistoryEntity>,): List<Podcast> = podcasts.map { podcast ->
             val episode = podcast.latestEpisode ?: return@map podcast
             val history = allHistory.find { it.episodeId == episode.id }
