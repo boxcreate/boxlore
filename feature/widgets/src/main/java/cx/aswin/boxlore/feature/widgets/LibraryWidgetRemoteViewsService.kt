@@ -187,13 +187,19 @@ internal class LibraryWidgetRemoteViewsFactory(
         if (cx.aswin.boxlore.core.model.artworkUrls(url, *fallbackUrls.toTypedArray()).isEmpty()) return null
         artworkLoader.resolveCachedPath(url)?.let { return it }
         if (timeouts.isCoolingDown(url, fallbackUrls)) return null
-        // A null answer is a finished load that found nothing; no answer at all means it ran out of time.
-        val answer = runCatching { runBlocking { withTimeoutOrNull(ARTWORK_TIMEOUT_MS) { LoadAnswer(artworkLoader.load(url, fallbackUrls)) } } }.getOrElse { return null }
-        if (answer == null) timeouts.recordTimeout(url, fallbackUrls)
-        return answer?.path
+        // A load that finishes, with a cover or without, or fails, has answered. Only one cut off by the
+        // timeout has not, and that is the one worth not waiting for again.
+        var answered = false
+        val path =
+            runCatching {
+                runBlocking { withTimeoutOrNull(ARTWORK_TIMEOUT_MS) { artworkLoader.load(url, fallbackUrls).also { answered = true } } }
+            }.getOrElse {
+                answered = true
+                null
+            }
+        if (!answered) timeouts.recordTimeout(url, fallbackUrls)
+        return path
     }
-
-    private class LoadAnswer(val path: String?)
 
     private fun px(dp: Int): Int = (dp * context.resources.displayMetrics.density).roundToInt().coerceIn(1, MAX_ART_PX)
 
