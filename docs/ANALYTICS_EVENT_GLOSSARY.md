@@ -78,7 +78,10 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 
 - playback_mode: `stream` | `download` | `unknown` (see Listen record)
 - client_surface: `phone` | `car` (`car` only when the car controls the listen)
-- install_channel: `organic` | `share` | `utm` | `unknown` (Play's `(not set)` referrer is `unknown`); set once on the person
+- install_channel: `organic` | `share` | `utm` | `unknown` (Play's `(not set)` referrer is `unknown`) for Play Store installs, `not_play` for any other install (Play's referrer also answers for those, so it is dropped); set once on the person
+- build_channel: `github` | `play`; on every event. Which build runs: the direct APK (GitHub, Obtainium and debug builds) or the Play bundle
+- install_source: `play_store` | `package_installer` | `boxlore_updater` | `obtainium` | `aurora_store` | `galaxy_store` | `fdroid` | `adb` | `other_store` | `unknown`; on every event. The app Android says installed this copy. A downloaded file opened by hand and boxlore's own updater both go through Android's installer, so both are `package_installer`
+- installer_package: the installer's package as Android reports it, or `none`; on every event
 - first_onboarding_method / first_user_intent / initial_podcasts_subscribed: set once at the first setup; `onboarding_method` and `user_intent` follow the latest route
 - search_mode: `show_keyword` | `episode_semantic`
 - mix_mode: `daily` | `offline`
@@ -201,8 +204,8 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 | user_intent | onboarding complete | `casual_browser` (skip) / `ai_guided_listener` (AI chat) / `targeted_listener` (search) / `selective_curator` (manual genres) / `migrating_power_user` (import) |
 | favorite_genres | onboarding complete (AI chat, manual genres) | genre list |
 | listener_profile / genre_breadth / genre_enthusiasm | onboarding complete (manual genres) | derived from the picked genres (`GenrePersonaLogic`) |
-| install_channel | first open | |
-| referrer_raw / utm_source / share_token | first open, with the install referrer | `$set_once`, only when present |
+| install_channel | first open | `not_play` for any install not from the Play Store |
+| referrer_raw / utm_source / share_token | first open, with the install referrer | `$set_once`, only when present and only for Play Store installs |
 | notifications_enabled | permission decide | |
 | initial_podcasts_subscribed | onboarding complete | |
 | first_play_at | first episode played | `$set_once`, with `first_episode_played_logged=true` |

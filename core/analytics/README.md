@@ -20,7 +20,7 @@ It does not configure the PostHog SDK (`:app` does, and installs `AnalyticsBefor
 
 - `AnalyticsPolicy` and `AnalyticsLevel`: each event is always sent, sampled or off. Defaults are `AnalyticsPolicy.DEFAULT_LEVELS`; the `analytics-policy-v1` flag overrides them without a release (payload shape in the `AnalyticsPolicy` KDoc).
 - `AnalyticsEmit`: the one path app events take. It applies levels, adds `recipe_id` where known, and sends set-once person properties through `personSetOnce`, never nested under `personSet`.
-- `AnalyticsBeforeSend`: the PostHog `beforeSend` hook. It applies levels to everything PostHog captures, SDK events included, and stamps this build's environment tags (`is_internal`, `app_environment`).
+- `AnalyticsBeforeSend`: the PostHog `beforeSend` hook. It applies levels to everything PostHog captures, SDK events included, and stamps the tags `:app` gives it on every event: the build's environment (`is_internal`, `app_environment`) and where this copy came from (`build_channel`, `install_source`, `installer_package`).
 - `AnalyticsPolicy.ALWAYS_SENT` identity events ignore the switch; `admitCaptured` keeps a queued app event's original sample decision.
 - `AnalyticsHelper.refreshAnalyticsPolicy` applies the flag whenever PostHog reports loaded flags; `initPolicy` restores the last switch at launch, for the same app version only.
 - `AnalyticsHelper.reloadFeatureFlags` is the only caller of PostHog's flag reload, so every reload applies the switch.
