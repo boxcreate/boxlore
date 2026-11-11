@@ -1,7 +1,7 @@
 package cx.aswin.boxlore.analytics
 
 import com.posthog.PostHogOnFeatureFlags
-import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.analytics.InstallAttribution
 import cx.aswin.boxlore.util.InstallOrigin
 
 /** PostHog wiring for `BoxLoreApplication.startPostHog`, kept here so JVM tests can check it. */
@@ -42,18 +42,27 @@ internal object PostHogWiring {
     }
 
     /**
-     * The install channel to save with the referrer: Play's referrer only describes a Play install,
-     * so any other install is saved as `not_play`, without the referrer. Null when Android couldn't
-     * say who installed this copy: nothing is saved.
+     * Whether the Play Store installed this copy, or null when Android can't say: the lookup failed,
+     * or it named neither an installer nor a computer install.
      */
-    fun installAttribution(origin: InstallOrigin?, channel: String, referrerRaw: String?): Pair<String, String?>? = when {
+    fun playInstall(origin: InstallOrigin?): Boolean? = when {
         origin == null -> null
-        origin.fromPlayStore -> channel to referrerRaw
-        else -> AnalyticsHelper.INSTALL_CHANNEL_NOT_PLAY to null
+        origin.fromPlayStore -> true
+        origin.installer != null || origin.initiator == SHELL_PACKAGE -> false
+        else -> null
     }
 
-    /** True when Android confirms the Play Store didn't install this copy. */
-    fun isConfirmedNonPlay(origin: InstallOrigin?): Boolean = origin != null && !origin.fromPlayStore
+    /**
+     * The install channel to save with the referrer: Play's referrer only describes a Play install,
+     * so any other install is saved as `not_play`, without the referrer. Null when Android can't say
+     * who installed this copy: the referrer's answer is kept for a later launch instead.
+     */
+    fun installAttribution(origin: InstallOrigin?, channel: String, referrerRaw: String?): Pair<String, String?>? =
+        when (playInstall(origin)) {
+            true -> channel to referrerRaw
+            false -> InstallAttribution.CHANNEL_NOT_PLAY to null
+            null -> null
+        }
 
     private const val SHELL_PACKAGE = "com.android.shell"
 

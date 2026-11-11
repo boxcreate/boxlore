@@ -39,17 +39,6 @@ class PersonSetOnceTest {
     }
 
     @Test
-    fun `a non-Play install is saved as not_play once`() {
-        var marked = 0
-        AnalyticsHelper.attributeNonPlayInstallOnce(done = false) { marked++ }
-        AnalyticsHelper.attributeNonPlayInstallOnce(done = true) { marked++ }
-
-        assertEquals(listOf(mapOf("install_channel" to "not_play")), setOnce)
-        assertEquals(1, marked)
-        assertTrue(set.isEmpty(), "got \$set $set")
-    }
-
-    @Test
     fun `a later import keeps the first setup route`() {
         AnalyticsHelper.trackOnboardingSearchDone(
             entryPoint = "welcome_screen",

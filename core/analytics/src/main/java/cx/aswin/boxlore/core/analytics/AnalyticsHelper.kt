@@ -46,10 +46,6 @@ object AnalyticsHelper : Analytics {
 
     private const val PREFS_NAME = PrefsFileMigrator.Files.ANALYTICS
     private const val KEY_FIRST_LAUNCH = "is_first_launch"
-    private const val KEY_NOT_PLAY_ATTRIBUTED = "not_play_attributed"
-
-    /** `install_channel` for any install the Play Store didn't make. */
-    const val INSTALL_CHANNEL_NOT_PLAY = "not_play"
     private const val KEY_SAMPLE_BUCKET = "analytics_sample_bucket"
     private const val KEY_POLICY = "analytics_policy"
 
@@ -150,24 +146,6 @@ object AnalyticsHelper : Analytics {
         }
         // Open/background volume is SDK-backed (Application Opened / Backgrounded).
         // Do not emit glossary app_open / app_background here.
-    }
-
-    /**
-     * Saves `install_channel=not_play` once for an install the Play Store didn't make, without waiting
-     * for Play's referrer service, which may never answer. Set once, so a channel saved earlier stays.
-     */
-    fun trackNonPlayInstallOnce(context: Context) {
-        val prefs = analyticsPrefs(context)
-        attributeNonPlayInstallOnce(
-            done = prefs.getBoolean(KEY_NOT_PLAY_ATTRIBUTED, false),
-            markDone = { prefs.edit().putBoolean(KEY_NOT_PLAY_ATTRIBUTED, true).apply() },
-        )
-    }
-
-    internal fun attributeNonPlayInstallOnce(done: Boolean, markDone: () -> Unit) {
-        if (done) return
-        trackInstallChannelAttributed(installChannel = INSTALL_CHANNEL_NOT_PLAY)
-        markDone()
     }
 
     /** Person `$set_once` install_channel only — never emit install_attributed volume event. */

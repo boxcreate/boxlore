@@ -2,11 +2,9 @@ package cx.aswin.boxlore.analytics
 
 import cx.aswin.boxlore.util.InstallOrigin
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PostHogWiringTest {
@@ -150,9 +148,9 @@ class PostHogWiringTest {
     }
 
     @Test
-    fun whenAndroidCantSayWhoInstalledItNothingIsSaved() {
+    fun whenTheLookupFailsNothingIsSavedYet() {
+        assertNull(PostHogWiring.playInstall(null))
         assertNull(PostHogWiring.installAttribution(origin = null, channel = "organic", referrerRaw = "utm_source=google-play&utm_medium=organic"))
-        assertFalse(PostHogWiring.isConfirmedNonPlay(null))
         assertEquals(
             mapOf("build_channel" to "github", "install_source" to "unknown", "installer_package" to "none"),
             PostHogWiring.installTags(directUpdatesBuild = true, origin = null),
@@ -160,9 +158,17 @@ class PostHogWiringTest {
     }
 
     @Test
-    fun onlyAConfirmedNonPlayInstallIsSavedAsNotPlayAtStartUp() {
-        assertTrue(PostHogWiring.isConfirmedNonPlay(InstallOrigin("dev.imranr.obtainium", null)))
-        assertTrue(PostHogWiring.isConfirmedNonPlay(InstallOrigin(null, "com.android.shell")))
-        assertFalse(PostHogWiring.isConfirmedNonPlay(InstallOrigin("com.android.vending", "com.android.vending")))
+    fun noInstallerAndNoInitiatorIsNotProofOfANonPlayInstall() {
+        // Regression: it used to be saved as not_play, set once and never corrected.
+        val origin = InstallOrigin(null, null)
+        assertNull(PostHogWiring.playInstall(origin))
+        assertNull(PostHogWiring.installAttribution(origin, channel = "organic", referrerRaw = "utm_source=google-play&utm_medium=organic"))
+    }
+
+    @Test
+    fun aNamedNonPlayInstallerOrAComputerInstallIsNotPlay() {
+        assertEquals(false, PostHogWiring.playInstall(InstallOrigin("dev.imranr.obtainium", null)))
+        assertEquals(false, PostHogWiring.playInstall(InstallOrigin(null, "com.android.shell")))
+        assertEquals(true, PostHogWiring.playInstall(InstallOrigin("com.android.vending", "com.android.vending")))
     }
 }

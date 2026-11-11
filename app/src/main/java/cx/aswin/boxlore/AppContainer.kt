@@ -666,18 +666,21 @@ class AppContainer(
             manager.onInstallReferrerResolved = { channel, raw ->
                 // Play's referrer also answers for GitHub installs; the installer is read over binder, so off the main thread.
                 syncScope.launch {
-                    // Null when Android can't say who installed this copy: a non-Play install is still
-                    // saved at a later launch (BoxLoreApplication), and nothing wrong is saved now.
-                    val (installChannel, referrerRaw) =
+                    val attribution =
                         cx.aswin.boxlore.analytics.PostHogWiring.installAttribution(
                             origin = appContext.installOrigin(),
                             channel = channel,
                             referrerRaw = raw,
-                        ) ?: return@launch
-                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackInstallChannelAttributed(
-                        installChannel = installChannel,
-                        referrerRaw = referrerRaw,
-                    )
+                        )
+                    if (attribution == null) {
+                        // Android can't say who installed this copy yet: a later launch decides (BoxLoreApplication).
+                        cx.aswin.boxlore.core.analytics.InstallAttribution.keepPending(appContext, channel, raw)
+                    } else {
+                        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackInstallChannelAttributed(
+                            installChannel = attribution.first,
+                            referrerRaw = attribution.second,
+                        )
+                    }
                 }
             }
         }
