@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Draws nothing. Larger than any widget, so a view showing it shrinks to the biggest square that fits. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <size
+        android:width="2000dp"
+        android:height="2000dp" />
+    <solid android:color="@android:color/transparent" />
+</shape>

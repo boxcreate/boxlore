@@ -17,6 +17,7 @@ import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.PlayCircle
 import androidx.compose.material.icons.rounded.TextFields
 import androidx.compose.material.icons.rounded.ViewDay
+import androidx.compose.material.icons.rounded.Widgets
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -43,12 +44,36 @@ import cx.aswin.boxlore.core.prefs.SubscriptionsDefaultTab
 import cx.aswin.boxlore.core.prefs.SubscriptionsTabStyle
 import cx.aswin.boxlore.core.prefs.ThemeSelection
 import cx.aswin.boxlore.core.prefs.WidgetAppearance
+import cx.aswin.boxlore.core.prefs.WidgetShowsArtwork
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsNavigationRow
 import cx.aswin.boxlore.feature.settings.components.SettingsPicture
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+
+/**
+ * A home screen widget the listener can add from Appearance › Widgets, named as the widget picker
+ * names it, with the size its preview is drawn for.
+ */
+data class AddableWidget(
+    val key: String,
+    val name: String,
+    val description: String,
+    val previewWidthDp: Int = 320,
+    val previewHeightDp: Int = 170,
+    /** Whether this widget follows the Your Shows cover setting, so its card carries that choice. */
+    val usesShowsCoverStyle: Boolean = false,
+)
+
+/**
+ * Draws a home screen widget as it looks on the home screen, fitted into the modifier's bounds. The
+ * app supplies it from the widgets feature, so Appearance shows the real widgets without depending
+ * on it; without it the Widgets page lists them by name only.
+ */
+typealias AppearanceWidgetPreview = @Composable (widget: AddableWidget, modifier: Modifier) -> Unit
 
 /** Current values shown on [AppearanceSettingsPage]. Also used by [cx.aswin.boxlore.feature.settings.SettingsScreen]. */
 data class AppearanceUiState(
@@ -61,6 +86,9 @@ data class AppearanceUiState(
     val currentOpenAppTo: String = OpenAppTo.HOME,
     val homeShortcutsInLibrary: Boolean = false,
     val currentWidgetAppearance: String = WidgetAppearance.APP,
+    val currentWidgetShowsArtwork: String = WidgetShowsArtwork.ROUNDED,
+    /** Every widget the app offers. Whether the home screen app can add them is asked when the page opens. */
+    val addableWidgets: List<AddableWidget> = emptyList(),
     val currentExploreDefaultTab: String = ExploreDefaultTab.FOR_YOU,
     val currentSubscriptionsDefaultTab: String = SubscriptionsDefaultTab.SHOWS,
     val currentSubscriptionsTabStyle: String = SubscriptionsTabStyle.TOP,
@@ -92,6 +120,13 @@ data class AppearanceActions(
     val onSetOpenAppTo: (String) -> Unit = {},
     val onSetHomeShortcutsInLibrary: (Boolean) -> Unit = {},
     val onSetWidgetAppearance: (String) -> Unit = {},
+    val onSetWidgetShowsArtwork: (String) -> Unit = {},
+    /** Whether the current home screen app adds a widget when asked. Asked once when the Widgets page opens. */
+    val canAddWidgets: () -> Boolean = { false },
+    /** Asks the home screen app to add the widget with this key; it confirms with the listener itself. */
+    val onAddWidget: (String) -> Unit = {},
+    /** The key of each widget the home screen app has just added after such a request. */
+    val addedWidgets: Flow<String> = emptyFlow(),
     val onSetExploreDefaultTab: (String) -> Unit = {},
     val onSetSubscriptionsDefaultTab: (String) -> Unit = {},
     val onSetSubscriptionsTabStyle: (String) -> Unit = {},
@@ -116,7 +151,7 @@ data class AppearanceActions(
 typealias AppearanceHeroPreview = @Composable (style: String, coverShade: String, collection: Boolean, modifier: Modifier) -> Unit
 
 /** Where each Appearance row leads, so the page needs no navigation types of its own. */
-internal enum class AppearanceSection { Theme, Home, Player, Navigation, Text }
+internal enum class AppearanceSection { Theme, Home, Player, Navigation, Text, Widgets }
 
 /**
  * The Appearance overview: Display mode (the setting people change most, also on Theme & colors),
@@ -145,12 +180,21 @@ internal fun AppearanceSettingsPage(
             SettingsNavigationRow(title = "Navigation", supportingText = summary.navigation, icon = Icons.Rounded.ViewDay, onClick = { onOpenSection(AppearanceSection.Navigation) })
             SettingsDivider()
             SettingsNavigationRow(title = "Text", supportingText = summary.text, icon = Icons.Rounded.TextFields, onClick = { onOpenSection(AppearanceSection.Text) })
+            SettingsDivider()
+            SettingsNavigationRow(title = "Widgets", supportingText = summary.widgets, icon = Icons.Rounded.Widgets, onClick = { onOpenSection(AppearanceSection.Widgets) })
         }
     }
 }
 
 /** What each Appearance row shows under its title. */
-internal data class AppearanceSummary(val theme: String, val home: String, val player: String, val navigation: String, val text: String)
+internal data class AppearanceSummary(
+    val theme: String,
+    val home: String,
+    val player: String,
+    val navigation: String,
+    val text: String,
+    val widgets: String,
+)
 
 internal fun appearanceSummary(state: AppearanceUiState): AppearanceSummary {
     val look = themeLookOptions().firstOrNull { it.key == state.selectedLookKey() }?.name ?: "Custom"
@@ -167,7 +211,15 @@ internal fun appearanceSummary(state: AppearanceUiState): AppearanceSummary {
         player = if (state.miniPlayerSeekButtonsEnabled) "$player · seek buttons on" else player,
         navigation = "${NavigationStyle.fromKey(state.currentNavigationStyle).label} bar · starts on $start",
         text = "$letters letters",
+        widgets = widgetsSummary(state),
     )
+}
+
+/** The widgets' colour source, then how Your Shows cuts its covers. */
+private fun widgetsSummary(state: AppearanceUiState): String {
+    val colors = if (WidgetAppearance.sanitize(state.currentWidgetAppearance) == WidgetAppearance.SYSTEM) "System colors" else "App theme colors"
+    val covers = if (WidgetShowsArtwork.usesShapes(state.currentWidgetShowsArtwork)) "shapes" else "whole covers"
+    return "$colors · $covers"
 }
 
 /** The hero card style's name as Settings shows it. */

@@ -24,6 +24,12 @@ interface WidgetPlaybackSource {
     suspend fun skipForward()
 
     suspend fun skipBackward()
+
+    /**
+     * Publishes the player's current position through [state]. The app only tracks the position while
+     * it is on screen, so widgets ask for it while an episode plays in the background.
+     */
+    suspend fun refreshPosition()
 }
 
 interface NowPlayingWidgetDependencies {

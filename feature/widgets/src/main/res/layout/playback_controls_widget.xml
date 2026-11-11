@@ -1,174 +1,308 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Now Playing · Round: a circle as wide as the shorter side of its cell. The first image only gives
+  the circle its size: it is a large square that shrinks to fit both ways, and every other part is
+  pinned to it. The artwork fills the circle inside its progress ring, and the three controls sit
+  along the bottom, each placed and sized by weights so they scale with the circle. Controls keep
+  their sides in right-to-left layouts.
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:theme="@android:style/Theme.DeviceDefault.DayNight">
+    android:theme="@android:style/Theme.DeviceDefault.DayNight"
+    tools:ignore="NestedWeights,UselessLeaf">
 
-    <FrameLayout
+    <RelativeLayout
         android:id="@+id/widget_grid_card"
-        android:layout_width="110dp"
-        android:layout_height="110dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_gravity="center">
 
         <ImageView
+            android:id="@+id/widget_grid_card_sizer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:contentDescription="@null"
+            android:src="@drawable/widget_sizer_fill" />
+
+        <ImageView
             android:id="@+id/widget_surface_background"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_alignStart="@id/widget_grid_card_sizer"
+            android:layout_alignTop="@id/widget_grid_card_sizer"
+            android:layout_alignEnd="@id/widget_grid_card_sizer"
+            android:layout_alignBottom="@id/widget_grid_card_sizer"
             android:contentDescription="@null"
             android:scaleType="fitXY"
-            android:src="@drawable/widget_grid_surface" />
-
-        <LinearLayout
-            android:id="@+id/widget_playing_container"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:padding="16dp"
-            android:visibility="gone">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:orientation="horizontal">
-
-                <FrameLayout
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:background="@drawable/widget_art_tile_shape"
-                    android:clipToOutline="true">
-
-                    <ImageView
-                        android:id="@+id/widget_artwork"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:contentDescription="@null"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/widget_art_placeholder" />
-                </FrameLayout>
-
-                <FrameLayout
-                    android:id="@+id/widget_play_pause"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1">
-
-                    <ImageView
-                        android:id="@+id/widget_play_pause_background"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:contentDescription="@null"
-                        android:scaleType="fitXY"
-                        android:src="@drawable/widget_button_pause" />
-
-                    <ImageView
-                        android:id="@+id/widget_play_pause_icon"
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@string/widget_play"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/ic_widget_play" />
-                </FrameLayout>
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_marginTop="6dp"
-                android:layout_weight="1"
-                android:orientation="horizontal">
-
-                <FrameLayout
-                    android:id="@+id/widget_skip_back"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1">
-
-                    <ImageView
-                        android:id="@+id/widget_skip_back_background"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:contentDescription="@null"
-                        android:scaleType="fitXY"
-                        android:src="@drawable/widget_button_secondary" />
-
-                    <ImageView
-                        android:id="@+id/widget_skip_back_icon"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@string/widget_skip_back"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/ic_widget_skip_back" />
-                </FrameLayout>
-
-                <FrameLayout
-                    android:id="@+id/widget_skip_forward"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1">
-
-                    <ImageView
-                        android:id="@+id/widget_skip_forward_background"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:contentDescription="@null"
-                        android:scaleType="fitXY"
-                        android:src="@drawable/widget_button_secondary" />
-
-                    <ImageView
-                        android:id="@+id/widget_skip_forward_icon"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@string/widget_skip_forward"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/ic_widget_skip_fwd" />
-                </FrameLayout>
-            </LinearLayout>
-        </LinearLayout>
+            android:src="@drawable/widget_circle" />
 
         <FrameLayout
-            android:id="@+id/widget_empty_container"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="visible">
+            android:id="@+id/widget_playing_container"
+        android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_alignStart="@id/widget_grid_card_sizer"
+            android:layout_alignTop="@id/widget_grid_card_sizer"
+            android:layout_alignEnd="@id/widget_grid_card_sizer"
+            android:layout_alignBottom="@id/widget_grid_card_sizer"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/widget_progress_track"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:scaleType="fitXY" />
+
+            <ImageView
+                android:id="@+id/widget_progress"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:scaleType="fitXY" />
+
+            <ImageView
+                android:id="@+id/widget_artwork_placeholder"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:scaleType="fitXY"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/widget_artwork_mark"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:scaleX="0.36"
+                android:scaleY="0.36"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_boxlore_app_mark"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/widget_artwork"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:scaleType="fitXY" />
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:paddingHorizontal="10dp">
-
-                <ImageView
-                    android:id="@+id/widget_empty_icon"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:contentDescription="@null"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_widget_play" />
+                android:layout_height="match_parent"
+                android:orientation="vertical">
 
                 <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="28dp"
-                    android:layout_marginTop="4dp">
+                    android:layout_height="0dp"
+                    android:layout_weight="79" />
 
-                    <ImageView
-                        android:id="@+id/widget_empty_title"
-                        android:layout_width="match_parent"
-                        android:layout_height="28dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@null"
-                        android:scaleType="fitCenter" />
-                </FrameLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="42"
+                    android:baselineAligned="false"
+                    android:layoutDirection="ltr"
+                    android:orientation="horizontal">
+
+                    <FrameLayout
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="13" />
+
+                    <FrameLayout
+                        android:id="@+id/widget_skip_back"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="42">
+
+                        <ImageView
+                            android:id="@+id/widget_skip_back_background"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@null"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/widget_circle" />
+
+                        <ImageView
+                            android:id="@+id/widget_skip_back_icon"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@string/widget_skip_back"
+                            android:scaleX="0.56"
+                            android:scaleY="0.56"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_widget_skip_back" />
+                    </FrameLayout>
+
+                    <FrameLayout
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="60" />
+
+                    <FrameLayout
+                        android:id="@+id/widget_skip_forward"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="42">
+
+                        <ImageView
+                            android:id="@+id/widget_skip_forward_background"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@null"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/widget_circle" />
+
+                        <ImageView
+                            android:id="@+id/widget_skip_forward_icon"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@string/widget_skip_forward"
+                            android:scaleX="0.56"
+                            android:scaleY="0.56"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_widget_skip_fwd" />
+                    </FrameLayout>
+
+                    <FrameLayout
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="13" />
+                </LinearLayout>
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="49" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="92" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="64"
+                    android:baselineAligned="false"
+                    android:layoutDirection="ltr"
+                    android:orientation="horizontal">
+
+                    <FrameLayout
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="53" />
+
+                    <FrameLayout
+                        android:id="@+id/widget_play_pause"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="64">
+
+                        <ImageView
+                            android:id="@+id/widget_play_pause_background"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@null"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/widget_cookie" />
+
+                        <ImageView
+                            android:id="@+id/widget_play_pause_icon"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@string/widget_play"
+                            android:scaleX="0.5"
+                            android:scaleY="0.5"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_widget_play" />
+                    </FrameLayout>
+
+                    <FrameLayout
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="53" />
+                </LinearLayout>
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="14" />
             </LinearLayout>
         </FrameLayout>
-    </FrameLayout>
+
+        <LinearLayout
+            android:id="@+id/widget_empty_container"
+        android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_alignStart="@id/widget_grid_card_sizer"
+            android:layout_alignTop="@id/widget_grid_card_sizer"
+            android:layout_alignEnd="@id/widget_grid_card_sizer"
+            android:layout_alignBottom="@id/widget_grid_card_sizer"
+            android:orientation="vertical"
+            android:visibility="visible">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="17" />
+
+            <FrameLayout
+                android:id="@+id/widget_empty_mark"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="46">
+
+                <ImageView
+                    android:id="@+id/widget_empty_mark_background"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/widget_cookie" />
+
+                <ImageView
+                    android:id="@+id/widget_empty_icon"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:scaleX="0.44"
+                    android:scaleY="0.44"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_widget_play" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/widget_empty_title"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="22"
+                android:autoSizeMaxTextSize="15sp"
+                android:autoSizeMinTextSize="10sp"
+                android:autoSizeStepGranularity="0.5sp"
+                android:autoSizeTextType="uniform"
+                android:ellipsize="end"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="2"
+                android:paddingHorizontal="16dp"
+                android:textColor="@color/widget_on_primary_container" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="15" />
+        </LinearLayout>
+    </RelativeLayout>
 </FrameLayout>

@@ -16,6 +16,7 @@ import cx.aswin.boxlore.core.ranking.EpisodeRankingInput
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
 import cx.aswin.boxlore.feature.widgets.WidgetEpisodeRow
+import cx.aswin.boxlore.feature.widgets.WidgetLibraryCounts
 import cx.aswin.boxlore.feature.widgets.WidgetLibrarySource
 import cx.aswin.boxlore.feature.widgets.WidgetShowRow
 import cx.aswin.boxlore.feature.widgets.logic.LibraryWidgetLogic
@@ -43,7 +44,11 @@ class WidgetLibrarySourceAdapter(
     private val adaptiveScorer: AdaptiveCandidateScorer,
     scope: CoroutineScope,
 ) : WidgetLibrarySource {
-    private data class Projection(val subscriptions: List<WidgetShowRow>, val newEpisodes: List<WidgetEpisodeRow>,)
+    private data class Projection(
+        val subscriptions: List<WidgetShowRow>,
+        val newEpisodes: List<WidgetEpisodeRow>,
+        val counts: WidgetLibraryCounts = WidgetLibraryCounts(),
+    )
 
     private val projection: Flow<Projection> =
         combine(
@@ -84,14 +89,7 @@ class WidgetLibrarySourceAdapter(
                     },
                 )
 
-            val withLatest = enriched.filter { it.latestEpisode != null }
-            val latestPool =
-                if (inputs.hideCompleted) {
-                    withLatest.filter { it.episodeStatus != EpisodeStatus.COMPLETED }
-                } else {
-                    withLatest
-                }
-            val sortedLatest = sortLatest(latestPool, inputs.history, inputs.useSmart)
+            val sortedLatest = sortLatest(latestEpisodePool(enriched, inputs.hideCompleted), inputs.history, inputs.useSmart)
             val episodeRows =
                 LibraryWidgetLogic.truncateEpisodes(
                     sortedLatest.mapNotNull { podcast ->
@@ -107,7 +105,11 @@ class WidgetLibrarySourceAdapter(
                         )
                     },
                 )
-            Projection(showRows, episodeRows)
+            Projection(
+                subscriptions = showRows,
+                newEpisodes = episodeRows,
+                counts = libraryCounts(sortedShows, sortedLatest),
+            )
         }.stateIn(
             scope = scope,
             started = SharingStarted.Eagerly,
@@ -117,6 +119,7 @@ class WidgetLibrarySourceAdapter(
     override val subscriptions: Flow<List<WidgetShowRow>> = projection.map { it.subscriptions }
 
     override val newEpisodes: Flow<List<WidgetEpisodeRow>> = projection.map { it.newEpisodes }
+    override val counts: Flow<WidgetLibraryCounts> = projection.map { it.counts }
 
     private data class Inputs(
         val podcasts: List<Podcast>,
@@ -199,6 +202,15 @@ class WidgetLibrarySourceAdapter(
     private fun parseSort(name: String): ShowSort = runCatching { ShowSort.valueOf(name) }.getOrDefault(ShowSort.SmartRank)
 
     companion object {
+        /** The shows whose latest episode New Episodes lists: all of them, or only the unfinished ones. */
+        fun latestEpisodePool(enriched: List<Podcast>, hideCompleted: Boolean): List<Podcast> {
+            val withLatest = enriched.filter { it.latestEpisode != null }
+            return if (hideCompleted) withLatest.filter { it.episodeStatus != EpisodeStatus.COMPLETED } else withLatest
+        }
+
+        /** The whole library's sizes, taken from the full lists before the widget's rows are capped. */
+        fun libraryCounts(shows: List<Podcast>, latest: List<Podcast>): WidgetLibraryCounts = WidgetLibraryCounts(subscriptions = shows.size, newEpisodes = latest.size)
+
         fun enrichWithHistory(podcasts: List<Podcast>, allHistory: List<ListeningHistoryEntity>,): List<Podcast> = podcasts.map { podcast ->
             val episode = podcast.latestEpisode ?: return@map podcast
             val history = allHistory.find { it.episodeId == episode.id }

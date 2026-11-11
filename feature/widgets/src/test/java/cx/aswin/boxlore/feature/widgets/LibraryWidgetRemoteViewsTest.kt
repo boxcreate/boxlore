@@ -81,7 +81,7 @@ class LibraryWidgetRemoteViewsTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
 
     @Test
-    fun subscriptionsEmptyUsesListLayout() {
+    fun subscriptionsEmptyUsesGridLayout() {
         val views =
             LibraryWidgetRenderer.build(
                 context = context,
@@ -89,7 +89,7 @@ class LibraryWidgetRemoteViewsTest {
                 snapshot = LibraryWidgetSnapshot(),
                 kind = LibraryWidgetKind.SUBSCRIPTIONS,
             )
-        assertEquals(R.layout.library_widget_list, views.layoutId)
+        assertEquals(R.layout.library_widget_grid, views.layoutId)
         views.apply(context, FrameLayout(context))
     }
 
@@ -116,6 +116,58 @@ class LibraryWidgetRemoteViewsTest {
             )
         assertEquals(R.layout.library_widget_list, views.layoutId)
         views.apply(context, FrameLayout(context))
+    }
+
+    @Test
+    fun badgeCountsTheWholeLibraryNotJustTheRowsTheWidgetHolds() {
+        val snapshot =
+            LibraryWidgetSnapshot(
+                subscriptions = listOf(WidgetShowRow(podcastId = "p1", title = "Show", deepLinkUri = "boxlore://podcast/p1")),
+                counts = WidgetLibraryCounts(subscriptions = 84, newEpisodes = 0),
+            )
+        assertEquals(84, snapshot.count(LibraryWidgetKind.SUBSCRIPTIONS))
+        // An older saved snapshot has no totals: fall back to the rows it holds.
+        assertEquals(1, snapshot.copy(counts = WidgetLibraryCounts()).count(LibraryWidgetKind.SUBSCRIPTIONS))
+
+        val root = LibraryWidgetRenderer.build(context, 5, snapshot, LibraryWidgetKind.SUBSCRIPTIONS).apply(context, FrameLayout(context))
+        assertEquals("84", root.findViewById<TextView>(R.id.widget_count_chip_text).text.toString())
+        assertEquals(View.VISIBLE, root.findViewById<View>(R.id.widget_open_list).visibility)
+    }
+
+    @Test
+    fun restingLibraryWidgetHidesTheBadgeAndArrow() {
+        val root = LibraryWidgetRenderer.build(context, 6, LibraryWidgetSnapshot(), LibraryWidgetKind.NEW_EPISODES).apply(context, FrameLayout(context))
+        assertEquals(View.GONE, root.findViewById<View>(R.id.widget_count_chip).visibility)
+        assertEquals(View.GONE, root.findViewById<View>(R.id.widget_open_list).visibility)
+        assertEquals(View.VISIBLE, root.findViewById<View>(R.id.widget_empty_container).visibility)
+        assertEquals(
+            context.getString(R.string.new_episodes_widget_empty_title),
+            root.findViewById<TextView>(R.id.widget_empty_title).text.toString(),
+        )
+    }
+
+    @Test
+    fun headerBadgeAndArrowStayInsideANarrowWidget() {
+        val snapshot =
+            LibraryWidgetSnapshot(
+                subscriptions = listOf(WidgetShowRow(podcastId = "p1", title = "Show", deepLinkUri = "boxlore://podcast/p1")),
+                counts = WidgetLibraryCounts(subscriptions = 128),
+            )
+        val root = LibraryWidgetRenderer.build(context, 7, snapshot, LibraryWidgetKind.SUBSCRIPTIONS).apply(context, FrameLayout(context))
+        val density = context.resources.displayMetrics.density
+        root.measure(
+            View.MeasureSpec.makeMeasureSpec((200 * density).toInt(), View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec((180 * density).toInt(), View.MeasureSpec.EXACTLY),
+        )
+        root.layout(0, 0, root.measuredWidth, root.measuredHeight)
+
+        val header = root.findViewById<TextView>(R.id.widget_list_header)
+        val arrow = root.findViewById<View>(R.id.widget_open_list)
+        val row = root.findViewById<View>(R.id.widget_header_row)
+        // The title shrinks to the room it has rather than pushing the arrow out or being cut off.
+        assertTrue("header keeps some width", header.width > 0)
+        assertTrue("arrow stays inside the header row", arrow.right <= row.width)
+        assertTrue("title is not ellipsized", header.layout.getEllipsisCount(0) == 0)
     }
 
     @Test
@@ -155,7 +207,7 @@ class LibraryWidgetRemoteViewsTest {
     }
 
     @Test
-    fun newEpisodeRowsAllowTwoTitleLinesWithoutChangingSubscriptionRows() {
+    fun newEpisodeRowsAllowTwoTitleLinesAndShowTilesNameTheirShow() {
         val store = LibraryWidgetSnapshotStore(context)
         store.write(
             LibraryWidgetSnapshot(
@@ -211,7 +263,11 @@ class LibraryWidgetRemoteViewsTest {
         val subscriptionViews = subscriptionFactory.getViewAt(0)
         val subscriptionRoot = subscriptionViews.apply(context, FrameLayout(context))
         assertEquals(R.layout.library_widget_list_item, subscriptionViews.layoutId)
-        assertEquals(1, subscriptionRoot.findViewById<TextView>(R.id.widget_row_title).maxLines)
+        // A show tile is artwork only, so its name is what a screen reader announces.
+        assertEquals(
+            "A subscription title that remains on one line",
+            subscriptionRoot.findViewById<View>(R.id.widget_row_root).contentDescription,
+        )
 
         episodeFactory.onDestroy()
         subscriptionFactory.onDestroy()

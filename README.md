@@ -65,10 +65,15 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <!-- release-upcoming:start -->
 <b>⚡ Improved:</b>
 <ul align="left">
+<li>Home screen widgets have a new look with rounder shapes. The players now show how far you are and how much time is left, and the skip buttons show your own skip lengths.</li>
+<li>The Your Shows widget is now a grid of artwork. Choose whole covers or shapes in Settings › Appearance › Widgets.</li>
+<li>See every boxlore widget and add it to your home screen from Settings › Appearance › Widgets.</li>
 <li>On Home, a show you listen to oldest first now picks up exactly where you left off, even deep into a long series, and skips trailers. Daily mix suggests the same next episode.</li>
 </ul>
 <b>🐛 Fixed:</b>
 <ul align="left">
+<li>Widgets that follow your phone's light and dark mode now switch with it, even when boxlore isn't open.</li>
+<li>The Your Shows and New Episodes widgets now count your whole library instead of stopping at 50.</li>
 <li>On Home, a show you've heard every episode of now lists its latest episodes instead of an empty list, and a show whose episodes can't load lets you try again.</li>
 </ul>
 <!-- release-upcoming:end -->

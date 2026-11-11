@@ -40,7 +40,22 @@ object WidgetUpdatePolicy {
         previous.isLoading != next.isLoading ||
         previous.artworkCachePath != next.artworkCachePath ||
         previous.episodeTitle != next.episodeTitle ||
-        previous.podcastTitle != next.podcastTitle
+        previous.podcastTitle != next.podcastTitle ||
+        hasProgressChange(previous, next) ||
+        previous.seekBackwardMs != next.seekBackwardMs ||
+        previous.seekForwardMs != next.seekForwardMs
+
+    /**
+     * The position moves many times a second, but the ring and the time-left label only change now and
+     * then. Repainting on those steps keeps a playing widget to about one update a minute.
+     */
+    private fun hasProgressChange(
+        previous: NowPlayingWidgetSnapshot,
+        next: NowPlayingWidgetSnapshot,
+    ): Boolean = WidgetProgress.ringStep(previous.positionMs, previous.durationMs) !=
+        WidgetProgress.ringStep(next.positionMs, next.durationMs) ||
+        WidgetProgress.minutesLeft(previous.positionMs, previous.durationMs) !=
+        WidgetProgress.minutesLeft(next.positionMs, next.durationMs)
 }
 
 object WidgetOptimisticAction {
@@ -85,6 +100,9 @@ object WidgetSemantics {
                 append(snapshot.podcastTitle)
             }
             append(if (snapshot.isPlaying) ", playing" else ", paused")
+            WidgetProgress.minutesLeft(snapshot.positionMs, snapshot.durationMs)
+                ?.takeIf { it > 0 }
+                ?.let { minutes -> append(if (minutes == 1) ", 1 minute left" else ", $minutes minutes left") }
         }
     }
 }

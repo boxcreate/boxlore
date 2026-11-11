@@ -15,6 +15,10 @@ data class BoxLoreChromeColors(
     @ColorInt val onPrimaryContainer: Int,
     @ColorInt val secondaryContainer: Int,
     @ColorInt val onSecondaryContainer: Int,
+    @ColorInt val tertiary: Int,
+    @ColorInt val onTertiary: Int,
+    @ColorInt val tertiaryContainer: Int,
+    @ColorInt val onTertiaryContainer: Int,
 )
 
 fun resolveBoxLoreChromeColors(
@@ -42,5 +46,9 @@ fun resolveBoxLoreChromeColors(
         onPrimaryContainer = scheme.onPrimaryContainer.toArgb(),
         secondaryContainer = scheme.secondaryContainer.toArgb(),
         onSecondaryContainer = scheme.onSecondaryContainer.toArgb(),
+        tertiary = scheme.tertiary.toArgb(),
+        onTertiary = scheme.onTertiary.toArgb(),
+        tertiaryContainer = scheme.tertiaryContainer.toArgb(),
+        onTertiaryContainer = scheme.onTertiaryContainer.toArgb(),
     )
 }

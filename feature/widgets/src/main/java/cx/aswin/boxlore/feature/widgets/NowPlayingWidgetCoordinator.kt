@@ -4,15 +4,21 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import cx.aswin.boxlore.feature.widgets.logic.NowPlayingWidgetMapper
+import cx.aswin.boxlore.feature.widgets.logic.WidgetProgressPoller
 import cx.aswin.boxlore.feature.widgets.logic.WidgetUpdatePolicy
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 object NowPlayingWidgetCoordinator {
     private val collectJob = AtomicReference<Job?>(null)
     private val artworkJob = AtomicReference<Job?>(null)
+    private val progressJob = AtomicReference<Job?>(null)
+
+    /** How often a playing widget asks the player where it is. Repaints are rarer: see [WidgetUpdatePolicy]. */
+    internal const val PROGRESS_POLL_MS = 20_000L
 
     @Volatile
     private var artworkLoadingUrl: String? = null
@@ -30,6 +36,7 @@ object NowPlayingWidgetCoordinator {
             artworkLoadingUrl = null
 
             val context = deps.context.applicationContext
+            progressJob.getAndSet(pollProgressWhilePlaying(context, deps))?.cancel()
             val store = NowPlayingWidgetSnapshotStore(context)
             val artworkLoader = WidgetArtworkLoader(context)
 
@@ -43,11 +50,13 @@ object NowPlayingWidgetCoordinator {
 
                     deps.playback.state.collectLatest { playback ->
                         val previous = store.read()
+                        // The system may clear the artwork cache, so a remembered path only counts while its file is there.
                         val cachedPath =
                             artworkLoader.resolveCachedPath(playback.artworkUrl)
                                 ?: previous
                                     ?.takeIf { it.episodeId == playback.episodeId }
                                     ?.artworkCachePath
+                                    ?.takeIf { java.io.File(it).exists() }
                         val snapshot =
                             NowPlayingWidgetMapper.fromPlayback(
                                 state = playback,
@@ -62,6 +71,23 @@ object NowPlayingWidgetCoordinator {
                 },
             )
         }
+    }
+
+    /**
+     * The app stops tracking the position once it leaves the screen, which is when widgets are looked
+     * at. While an episode plays and a playback widget is placed, ask the player for it now and then
+     * so the progress ring and the time left keep moving.
+     */
+    private fun pollProgressWhilePlaying(
+        context: Context,
+        deps: NowPlayingWidgetDependencies,
+    ): Job = deps.scope.launch {
+        WidgetProgressPoller.run(
+            playing = deps.playback.state.map { it.isPlaying && it.hasEpisode },
+            intervalMs = PROGRESS_POLL_MS,
+            hasWidgets = { hasInstalledWidgets(context, WidgetProviders.all.map { it.receiverClass }) },
+            refresh = { deps.playback.refreshPosition() },
+        )
     }
 
     fun requestRefresh(context: Context) {

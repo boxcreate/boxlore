@@ -97,4 +97,55 @@ class NowPlayingWidgetLogicTest {
         assertEquals(25_000L, back.positionMs)
         assertEquals(70_000L, forward.positionMs)
     }
+
+    @Test
+    fun `update policy repaints when the ring or the time left moves, not on every tick`() {
+        val minute = 60_000L
+        val base =
+            NowPlayingWidgetSnapshot(
+                episodeId = "ep-1",
+                episodeTitle = "Episode",
+                podcastTitle = "Show",
+                isPlaying = true,
+                positionMs = 10 * minute,
+                durationMs = 60 * minute,
+            )
+
+        // Half a second later nothing a listener can see has changed.
+        assertFalse(WidgetUpdatePolicy.shouldRender(base, base.copy(positionMs = base.positionMs + 500L)))
+        // A minute later the label counts down.
+        assertTrue(WidgetUpdatePolicy.shouldRender(base, base.copy(positionMs = base.positionMs + minute)))
+        // Seeking back repaints too.
+        assertTrue(WidgetUpdatePolicy.shouldRender(base, base.copy(positionMs = base.positionMs - 2 * minute)))
+        // The length arriving late turns the ring on.
+        assertTrue(WidgetUpdatePolicy.shouldRender(base.copy(durationMs = 0L), base))
+    }
+
+    @Test
+    fun `update policy repaints when the seek lengths change, since the icons show them`() {
+        val base = NowPlayingWidgetSnapshot(episodeId = "ep-1", seekForwardMs = 30_000L, seekBackwardMs = 10_000L)
+        assertTrue(WidgetUpdatePolicy.shouldRender(base, base.copy(seekForwardMs = 45_000L)))
+        assertTrue(WidgetUpdatePolicy.shouldRender(base, base.copy(seekBackwardMs = 15_000L)))
+        assertFalse(WidgetUpdatePolicy.shouldRender(base, base.copy()))
+    }
+
+    @Test
+    fun `content description says how long is left`() {
+        val minute = 60_000L
+        val snapshot =
+            NowPlayingWidgetSnapshot(
+                episodeId = "ep-1",
+                episodeTitle = "Episode",
+                podcastTitle = "Show",
+                isPlaying = true,
+                positionMs = 24 * minute,
+                durationMs = 60 * minute,
+            )
+        assertEquals("Episode from Show, playing, 36 minutes left", WidgetSemantics.contentDescription(snapshot))
+        assertEquals(
+            "Episode from Show, paused, 1 minute left",
+            WidgetSemantics.contentDescription(snapshot.copy(isPlaying = false, positionMs = 59 * minute + 30_000L)),
+        )
+        assertEquals("Episode from Show, playing", WidgetSemantics.contentDescription(snapshot.copy(durationMs = 0L)))
+    }
 }

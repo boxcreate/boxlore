@@ -85,6 +85,7 @@ internal object Keys {
         androidx.datastore.preferences.core
             .booleanPreferencesKey("home_shortcuts_in_library")
     val WIDGET_APPEARANCE = stringPreferencesKey("widget_appearance")
+    val WIDGET_SHOWS_ARTWORK = stringPreferencesKey("widget_shows_artwork")
     val AUTO_ORGANIZE_FOLDERS_ENABLED =
         androidx.datastore.preferences.core
             .booleanPreferencesKey("auto_organize_folders_enabled")

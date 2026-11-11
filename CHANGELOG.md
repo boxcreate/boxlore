@@ -9,7 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `WidgetShowsArtwork` preference (`widget_shows_artwork`): whole covers or mixed shapes for the Your Shows widget. ([#1248](https://github.com/boxcreate/boxlore/pull/1248)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- `PlaybackRepository.refreshProgressOnce()` and `WidgetProgressPoller`: playback widgets track the position while the app is not on screen. ([#1248](https://github.com/boxcreate/boxlore/pull/1248)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Appearance › Widgets page (`AppearanceWidgetsPage`): widget colours, a card per widget with a live preview (`AppearanceWidgetPreview`, `HomeScreenWidgetPreview`) and an Add to home screen request (`HomeScreenWidgets.requestAdd`), and the Your Shows cover choice (`WidgetShowsArtwork`). ([#1249](https://github.com/boxcreate/boxlore/pull/1249)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- `WidgetPickerPreviews`: generated widget picker previews on Android 15 and later. ([#1249](https://github.com/boxcreate/boxlore/pull/1249)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- `HomeScreenWidgets`: the widgets' picker names, live previews and add requests for the app. ([#1249](https://github.com/boxcreate/boxlore/pull/1249)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+### Changed
+- All six home screen widgets are redrawn as Material 3 Expressive shapes with a progress ring, time left and the listener's seek lengths. ([#1248](https://github.com/boxcreate/boxlore/pull/1248)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Playback widget layouts scale themselves, and each update carries one layout per `WidgetPresentation` size step for the launcher to pick from; `WidgetGeometry` and `WidgetTextBitmapRenderer` are removed. ([#1248](https://github.com/boxcreate/boxlore/pull/1248)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Widget picker labels are grouped as "Now Playing · …" and "Library · …"; the round widgets no longer have a wide pill variant. ([#1248](https://github.com/boxcreate/boxlore/pull/1248)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- `WidgetBitmapCache` keeps widget pictures in memory, and library covers load in batches and on demand in `LibraryWidgetRemoteViewsService`. ([#1248](https://github.com/boxcreate/boxlore/pull/1248)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Static widget picker previews are redrawn in the new widget shapes, with the cover cuts baked into the sample cover vectors. ([#1249](https://github.com/boxcreate/boxlore/pull/1249)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- The widget colour choice moves from Theme & colors to Appearance › Widgets. ([#1249](https://github.com/boxcreate/boxlore/pull/1249)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 ### Fixed
+- Widgets using the app theme with a System display mode now switch between light and dark while the app process is gone (`WidgetChrome` sends a day and night colour pair). ([#1248](https://github.com/boxcreate/boxlore/pull/1248)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Library widget badges count the whole library through `WidgetLibraryCounts` instead of the capped rows. ([#1248](https://github.com/boxcreate/boxlore/pull/1248)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Seek taps on a widget are previewed from the player's live position instead of the last painted one. ([#1248](https://github.com/boxcreate/boxlore/pull/1248)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Home's selected-show list and Daily mix share `HomeShowEpisodesLogic`: in-order shows list from the listener's place (in progress, else after the furthest finished episode, trailers skipped) via `SeriesEpisodesLoader` instead of the first 100 episodes; newest-first shows check the newest 50. ([#1243](https://github.com/boxcreate/boxlore/pull/1243)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - A show with nothing left lists its latest episodes as caught up instead of an empty state; a failed load offers Try again; the NEW tag only marks the show's two newest episodes. ([#1243](https://github.com/boxcreate/boxlore/pull/1243)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Daily mix stops re-resolving a finished in-order show on every history update (`HomeSerialLogic.resolveKey`). ([#1243](https://github.com/boxcreate/boxlore/pull/1243)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
