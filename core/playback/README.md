@@ -66,17 +66,15 @@ It does not own the Room schema ([`:core:database`](../database/README.md)), pre
 ### Android Auto
 
 - `service.auto.AutoBrowseLibraryCallback`, `AutoBrowseTreeBuilder`, `AutoMediaItemFactory` and `AutoBrowseContract`: browse tree, media IDs and custom commands.
-- Tabs: Home, Continue, New, Shows. Home's blocks open lists through `open:<node>` IDs; the saved queue follows a resumed episode.
-- `AutoPlayContextTracker` matches a car play (a media ID alone) to the list last sent, to label it and continue that list.
-- With a car connected, `AutoBrowseChangeNotifier` reloads lists on phone changes and `AutoQueueArtworkSync` gives queued episodes loadable covers (`AutoItemArtwork`).
-- `service.SeekSettleWindow` hides a seek's brief buffering from the session; Android Auto resets scroll on it.
-- `AutoMediaResolver`, `AutoPlaybackResumptionHandler` and `AutoVoiceSearchHandler`, each with a pure policy or logic object: playable items, `onPlaybackResumption` and voice search.
-- `AutoBrowseControllerMatcher` tells car controllers from Bluetooth AVRCP and system UI; connection events count only in a car (`CarConnectionState`).
-- `labelCarPlay` names a play `android_auto_*` only when Auto's controller asked.
-- `service.AutoCollageProvider` serves `content://` artwork and collages (`AutoCollagePrewarmer`, `AutoCollageGenerator`, `AutoCollageLayouts`), fetched through `AutoArtworkDownloader` with validated HTTPS redirects.
-- `AutoArtworkScaler` caches covers at car size; the show's cover replaces a failed episode image.
-- Collage links are display-only; saved artwork comes from `PlaybackArtworkMetadata.savedArtworkUrl`.
-- The browse root title is `:core:catalog`'s `auto_app_name`; the generic tile spells `boxlore` lowercase.
+- Tabs: Home, Continue, New, Shows; Home's blocks open lists through `open:<node>` IDs.
+- `AutoPlayContextTracker` matches a car play (an ID alone) to the list last sent and continues it.
+- In a car, `AutoBrowseChangeNotifier` reloads lists on phone changes and `AutoQueueArtworkSync` makes queued covers loadable.
+- `service.SeekSettleWindow` hides a seek's buffering, which resets Android Auto's scroll.
+- `AutoMediaResolver`, `AutoPlaybackResumptionHandler` and `AutoVoiceSearchHandler`, each with a policy object: playable items, resumption, voice search.
+- `AutoBrowseControllerMatcher` tells car controllers from Bluetooth AVRCP and system UI; connection events count only in a car (`CarConnectionState`), and `labelCarPlay` names a play `android_auto_*` only when Auto's controller asked.
+- `service.AutoCollageProvider` serves `content://` covers and collages (`AutoCollagePrewarmer`, `AutoCollageGenerator`, `AutoCollageLayouts`), fetched by `AutoArtworkDownloader` over validated HTTPS and cached at car size (`AutoArtworkScaler`).
+- The show's cover replaces a failed episode image; saved artwork is `PlaybackArtworkMetadata.savedArtworkUrl`, never a collage link.
+- Browse root title: `:core:catalog`'s `auto_app_name`; the generic tile spells `boxlore` lowercase.
 
 ### Cast
 
