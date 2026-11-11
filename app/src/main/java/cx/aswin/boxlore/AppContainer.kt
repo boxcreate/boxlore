@@ -661,6 +661,9 @@ class AppContainer(
         }
     }
 
+    /** The one-time Android Auto tip for installs that didn't come from Google Play. */
+    internal val androidAutoTip by lazy { cx.aswin.boxlore.ui.announcement.AndroidAutoTip.create(appContext, userPreferencesRepository) }
+
     val installReferrerManager: InstallReferrerManager by lazy {
         InstallReferrerManager(appContext).also { manager ->
             manager.onInstallReferrerResolved = { channel, raw ->

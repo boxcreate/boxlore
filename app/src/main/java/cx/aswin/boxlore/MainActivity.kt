@@ -13,11 +13,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
 import com.posthog.PostHog
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.ui.BoxLoreAppRoot
 import cx.aswin.boxlore.updates.PlayAppUpdateHelper
+import kotlinx.coroutines.launch
 
 /**
  * Activity shell: splash, edge-to-edge, Play updates, NPS triggers,
@@ -161,6 +163,11 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         playbackRepositoryRef?.setUiForeground(true)
+        // Opened on the phone during a drive: an install Android Auto hides gets its tip now.
+        val androidAutoTip = (application as BoxLoreApplication).container.androidAutoTip
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            androidAutoTip.maybeShow(cx.aswin.boxlore.ui.announcement.AndroidAutoTip.Trigger.APP_OPENED)
+        }
     }
 
     override fun onStop() {

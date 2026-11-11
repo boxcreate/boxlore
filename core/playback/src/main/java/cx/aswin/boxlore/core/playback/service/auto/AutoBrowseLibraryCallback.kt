@@ -14,10 +14,13 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.database.episodeListenerStore
+import cx.aswin.boxlore.core.playback.CarSignals
 import cx.aswin.boxlore.core.playback.service.CarConnectionState
 import cx.aswin.boxlore.core.playback.service.playbackButtonPreferences
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Suppress("LargeClass")
@@ -40,6 +43,7 @@ internal class AutoBrowseLibraryCallback(
         cx.aswin.boxlore.core.playback.service.CarConnectionWatcher(host.asContext()) { host.serviceScope.launch { onCarConnectionChanged() } }
     }
     private val carBrowsers = java.util.concurrent.ConcurrentHashMap.newKeySet<MediaSession.ControllerInfo>()
+    private val carScreensReported = java.util.concurrent.atomic.AtomicBoolean(false)
 
     private val connectedAtMs =
         java.util.concurrent.ConcurrentHashMap<MediaSession.ControllerInfo, Long>()
@@ -205,6 +209,21 @@ internal class AutoBrowseLibraryCallback(
         val inCar = CarConnectionState.isInCar(host.asContext())
         carBrowsers.toList().forEach { controller ->
             if (inCar) onCarConnected(session, controller) else onCarGone(controller)
+        }
+    }
+
+    /**
+     * Tells `:app` once that Android Auto asked for boxlore's lists during a drive, so boxlore is on
+     * the car's screen ([CarSignals.onCarScreensOpened]). A browse with no car present doesn't count.
+     */
+    private fun reportCarScreensOpened() {
+        if (carScreensReported.get()) return
+        host.serviceScope.launch {
+            val context = host.asContext()
+            val inCar = runCatching { withContext(Dispatchers.IO) { CarConnectionState.isInCar(context) } }.getOrDefault(false)
+            if (inCar && carScreensReported.compareAndSet(false, true)) {
+                withContext(Dispatchers.IO) { runCatching { CarSignals.onCarScreensOpened?.invoke(context.applicationContext) } }
+            }
         }
     }
 
@@ -503,6 +522,7 @@ internal class AutoBrowseLibraryCallback(
         android.util.Log.d("AutoBrowse", "onGetChildren: parentId=$parentId, page=$page")
         if (isAndroidAuto(session, browser)) {
             AnalyticsHelper.trackAndroidAutoBrowse(node = parentId, action = "get_children")
+            reportCarScreensOpened()
         }
 
         return host.serviceScope.future {

@@ -54,6 +54,9 @@ open class BoxLorePlaybackService :
     private var localExoPlayer: ExoPlayer? = null
     internal var playbackPlayer: Player? = null
     private var pausedIdleTeardownJob: Job? = null
+
+    /** Tells `:app` when a drive starts while the player runs ([cx.aswin.boxlore.core.playback.CarSignals]). */
+    private var driveStartWatcher: DriveStartWatcher? = null
     private var seekSettleJob: Job? = null
     private val manualCompletionPersistenceJobs = mutableSetOf<Job>()
     override lateinit var seekBackAction: androidx.media3.session.CommandButton
@@ -291,6 +294,7 @@ open class BoxLorePlaybackService :
         val player = getPlayerFactory().createCastPlayer(localPlayer)
         localExoPlayer = localPlayer
         playbackPlayer = player
+        driveStartWatcher = DriveStartWatcher(this, serviceScope).also(DriveStartWatcher::start)
         serviceScope.launch {
             PlaybackUiVisibility.isForeground.collectLatest {
                 reconcilePausedIdleTeardown(player)
@@ -993,6 +997,8 @@ open class BoxLorePlaybackService :
     }
 
     override fun onDestroy() {
+        driveStartWatcher?.stop()
+        driveStartWatcher = null
         pausedIdleTeardownJob?.cancel()
         pausedIdleTeardownJob = null
         telemetrySession.end(forceCompleted = false, reason = cx.aswin.boxlore.core.analytics.PlaybackListenValues.END_APP_CLOSED)

@@ -72,6 +72,7 @@ It does not own the Room schema ([`:core:database`](../database/README.md)), pre
 - `service.SeekSettleWindow` hides a seek's buffering, which resets Android Auto's scroll.
 - `AutoMediaResolver`, `AutoPlaybackResumptionHandler` and `AutoVoiceSearchHandler`, each with a policy object: playable items, resumption, voice search.
 - `AutoBrowseControllerMatcher` tells car controllers from Bluetooth AVRCP and system UI; connection events count only in a car (`CarConnectionState`, `CarConnectionWatcher`), and `labelCarPlay` names a play `android_auto_*` only when Auto's controller asked.
+- `CarSignals` tells `:app` when a drive starts while the player runs (`service.DriveStartWatcher`) and when Auto first browses boxlore in a car.
 - `service.AutoCollageProvider` serves `content://` covers and collages (`AutoCollagePrewarmer`, `AutoCollageGenerator`, `AutoCollageLayouts`), fetched by `AutoArtworkDownloader` over validated HTTPS, cached at car size (`AutoArtworkScaler`).
 - The show's cover replaces a failed episode image; saved artwork is `PlaybackArtworkMetadata.savedArtworkUrl`, never a collage link.
 - Browse root title: `:core:catalog`'s `auto_app_name`; the generic tile spells `boxlore` lowercase.
@@ -124,12 +125,12 @@ src/main/java/cx/aswin/boxlore/core/data/service/   # stubs for legacy service n
 
 - `AppContainer` builds the graph once: DB → `PodcastRepository` → `QueueRepository` → `PlaybackRepository` → `QueueManager`.
 - Player and controller callbacks run on the main thread. `restoreLastSession` and transport calls hop to `PlaybackThreadPolicy.mainDispatcher`; database, artwork and recommendation work runs on background dispatchers.
-- `PlaybackRepository` polls the controller position only while app UI is in the foreground; `refreshProgressOnce()` publishes it once on request, and only while the player still holds the episode the state names, which home-screen widgets use while an episode plays in the background. The service alone saves active-session progress and telemetry.
+- `PlaybackRepository` polls the controller position only while app UI is in the foreground; widgets call `refreshProgressOnce()`, which publishes it once while the player still holds the named episode. The service alone saves active-session progress and telemetry.
 - `PlaybackMediaControllerHandle.awaitController()` returns null on a rejected connection and reconnects with growing delays, at most `MediaControllerReconnectPolicy.MAX_ATTEMPTS` times.
-- `BoxLorePlaybackService` resolves shared dependencies lazily after app start; its players are service-scoped, so playback and transfers continue without an Activity.
+- `BoxLorePlaybackService` resolves shared dependencies lazily; its service-scoped players keep playback and transfers going without an Activity.
 - Idle handoff: a local session paused in the background for `PlaybackPowerPolicy.PAUSED_IDLE_TIMEOUT_MS` saves progress, rechecks eligibility and stops the service. Playback, buffering intent, foreground UI and Cast skip that teardown.
 - The local player keeps `WAKE_MODE_NETWORK` for screen-off streaming and enables audio offload only where playback speed still works.
-- Natural completion is event-driven; outro polling runs only during active playback with a real trim.
+- Natural completion is event-driven; outro polling runs only while playing with a real trim.
 
 ## Persistence & identity
 
@@ -147,7 +148,7 @@ Never rename these:
 
 ## Testing notes
 
-Tests live in `core/playback/src/test` (JUnit 5, Robolectric for Room and SharedPreferences, Mockito, no MockK); `EpisodeAliasFixtures` builds episodes under several IDs. Install the shared dependency holders before exercising service code.
+Tests live in `core/playback/src/test` (JUnit 5, Robolectric for Room and SharedPreferences, Mockito, no MockK); `EpisodeAliasFixtures` builds episodes under several IDs. Install the shared dependency holders before testing service code.
 
 | Area | Test classes |
 | :--- | :--- |
@@ -170,7 +171,7 @@ Robolectric can't read the system session's actions, so Media3's slot handling n
 
 ## CI relevance
 
-- `unit-tests.yml` runs these tests, merges their Kover coverage and checks `:core:playback:dependencyGuard` against `core/playback/dependencies/`.
+- `unit-tests.yml` runs these tests, merges Kover coverage and checks `:core:playback:dependencyGuard`.
 - `:core:testing` architecture guards check this README and the dependency rules.
 - Service, notification, Cast and Android Auto behaviour beyond these tests needs a device check.
 

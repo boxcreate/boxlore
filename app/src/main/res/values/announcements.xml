@@ -6,4 +6,10 @@
     <string name="announcement_github">View on GitHub</string>
     <string name="announcement_play">Update on Google Play</string>
     <string name="updates_test_build">Update test build. Updates come from this phone’s local test feed.</string>
+    <!-- Android Auto tip for installs that didn't come from Google Play -->
+    <string name="android_auto_tip_title">Use boxlore in your car</string>
+    <string name="android_auto_tip_body">boxlore works with Android Auto. If you installed it from GitHub or another store, Android Auto hides it until you turn on one setting:\n- Open your phone’s **Settings** and search for **Android Auto**\n- Scroll to the bottom and tap **Version** about 10 times, then tap **OK**\n- Tap the **⋮** menu and open **Developer settings**\n- Turn on **Unknown sources**, then reconnect your car</string>
+    <string name="android_auto_tip_action">Show me how</string>
+    <string name="android_auto_tip_notification_title">Want boxlore in your car?</string>
+    <string name="android_auto_tip_notification_text">Android Auto hides boxlore until you turn on one setting. Tap to see how.</string>
 </resources>

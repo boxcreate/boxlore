@@ -34,6 +34,7 @@ Announcement title:
 - In Android Auto, tapping an episode in New episodes, Daily mix, Downloads, Liked or Drive picks keeps playing down that list, and an episode you resume is followed by your queue.
 - Android Auto lists now update when you queue, download, like or follow something on your phone.
 - In Android Auto, your last episode is ready on the car's screen as soon as you connect, so one tap resumes it.
+- If you installed boxlore from GitHub or another store, it now shows you the one Android Auto setting that puts it on your car's screen, the first time you use it in the car.
 
 ## Fixed
 
