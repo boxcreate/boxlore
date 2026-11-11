@@ -24,3 +24,27 @@ object WidgetAppearance {
         return sanitize(prefs.getString(PREF_KEY, null))
     }
 }
+
+/**
+ * How the Your Shows widget draws artwork: whole covers as rounded squares (default), or covers cut
+ * into mixed Material shapes.
+ */
+object WidgetShowsArtwork {
+    const val ROUNDED = "rounded"
+    const val SHAPES = "shapes"
+
+    const val PREF_KEY = "widget_shows_artwork"
+
+    fun sanitize(value: String?): String {
+        val normalized = value?.trim()?.lowercase()
+        return if (normalized == SHAPES) SHAPES else ROUNDED
+    }
+
+    fun usesShapes(value: String?): Boolean = sanitize(value) == SHAPES
+
+    fun cached(context: Context): String {
+        val prefs =
+            context.getSharedPreferences(FontRoundnessAxis.THEME_FAST_CACHE, Context.MODE_PRIVATE)
+        return sanitize(prefs.getString(PREF_KEY, null))
+    }
+}

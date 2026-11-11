@@ -9,4 +9,8 @@
     <color name="widget_on_primary_container">#FFEADDFF</color>
     <color name="widget_secondary_container">#FF4A4458</color>
     <color name="widget_on_secondary_container">#FFE8DEF8</color>
+    <color name="widget_tertiary">#FFEFB8C8</color>
+    <color name="widget_on_tertiary">#FF492532</color>
+    <color name="widget_tertiary_container">#FF633B48</color>
+    <color name="widget_on_tertiary_container">#FFFFD8E4</color>
 </resources>

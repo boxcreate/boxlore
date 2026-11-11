@@ -48,6 +48,7 @@ internal class AppearancePreferences(
     val fullPlayer = FullPlayerPreferences(dataStore, syncPrefs)
     val navigationBlur = NavigationBlurPreferences(dataStore, syncPrefs)
     val heroCard = HeroCardStylePreferences(dataStore, syncPrefs)
+    val widgetShowsArtwork = WidgetShowsArtworkPreferences(dataStore, syncPrefs)
 
     val cachedThemeBrand: String
         get() = syncPrefs.getString("theme_brand", null) ?: "violet"
@@ -355,6 +356,7 @@ internal class AppearancePreferences(
             navigationBlur.hydrate(preferences)
             heroCard.hydrate(preferences)
             preferences[Keys.WIDGET_APPEARANCE] = preferences[Keys.WIDGET_APPEARANCE] ?: cachedWidgetAppearance
+            widgetShowsArtwork.hydrate(preferences)
         }
     }
 

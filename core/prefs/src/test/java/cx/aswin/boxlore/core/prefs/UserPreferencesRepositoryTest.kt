@@ -605,6 +605,19 @@ class UserPreferencesRepositoryTest {
     }
 
     @Test
+    fun widgetShowsArtworkDefaultsToWholeCoversAndPersists() = runTest {
+        assertEquals(WidgetShowsArtwork.ROUNDED, repository.widgetShowsArtworkStream.first())
+        assertEquals(WidgetShowsArtwork.ROUNDED, repository.cachedWidgetShowsArtwork)
+        repository.setWidgetShowsArtwork(WidgetShowsArtwork.SHAPES)
+        assertEquals(WidgetShowsArtwork.SHAPES, repository.widgetShowsArtworkStream.first())
+        // The widget's list factory reads the cache, so it must change with the setting.
+        assertEquals(WidgetShowsArtwork.SHAPES, repository.cachedWidgetShowsArtwork)
+        repository.setWidgetShowsArtwork("unknown")
+        assertEquals(WidgetShowsArtwork.ROUNDED, repository.widgetShowsArtworkStream.first())
+        assertEquals(WidgetShowsArtwork.ROUNDED, repository.cachedWidgetShowsArtwork)
+    }
+
+    @Test
     fun overriddenRecPodcastIdSetAndClear() = runTest {
         assertNull(repository.overriddenRecPodcastIdStream.first())
         repository.setOverriddenRecPodcastId("pod-1")

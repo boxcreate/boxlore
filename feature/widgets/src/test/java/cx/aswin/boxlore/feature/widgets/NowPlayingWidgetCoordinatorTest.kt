@@ -46,6 +46,8 @@ class NowPlayingWidgetCoordinatorTest {
                 override suspend fun skipForward() = Unit
 
                 override suspend fun skipBackward() = Unit
+
+                override suspend fun refreshPosition() = Unit
             }
         val deps =
             object : NowPlayingWidgetDependencies {
