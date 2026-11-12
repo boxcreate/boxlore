@@ -90,6 +90,7 @@ import cx.aswin.boxlore.sync.FeedFirstSwitch
 import cx.aswin.boxlore.sync.FeedFixSwitches
 import cx.aswin.boxlore.sync.RolloutFlagMemory
 import cx.aswin.boxlore.sync.SavedKillSwitch
+import cx.aswin.boxlore.util.installOrigin
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -663,10 +664,24 @@ class AppContainer(
     val installReferrerManager: InstallReferrerManager by lazy {
         InstallReferrerManager(appContext).also { manager ->
             manager.onInstallReferrerResolved = { channel, raw ->
-                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackInstallChannelAttributed(
-                    installChannel = channel,
-                    referrerRaw = raw,
-                )
+                // Play's referrer also answers for GitHub installs; the installer is read over binder, so off the main thread.
+                syncScope.launch {
+                    val attribution =
+                        cx.aswin.boxlore.analytics.PostHogWiring.installAttribution(
+                            origin = appContext.installOrigin(),
+                            channel = channel,
+                            referrerRaw = raw,
+                        )
+                    if (attribution == null) {
+                        // Android can't say who installed this copy yet: a later launch decides (BoxLoreApplication).
+                        cx.aswin.boxlore.core.analytics.InstallAttribution.keepPending(appContext, channel, raw)
+                    } else {
+                        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackInstallChannelAttributed(
+                            installChannel = attribution.first,
+                            referrerRaw = attribution.second,
+                        )
+                    }
+                }
             }
         }
     }

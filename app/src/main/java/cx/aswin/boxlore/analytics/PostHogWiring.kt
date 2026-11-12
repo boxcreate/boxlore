@@ -1,6 +1,8 @@
 package cx.aswin.boxlore.analytics
 
 import com.posthog.PostHogOnFeatureFlags
+import cx.aswin.boxlore.core.analytics.InstallAttribution
+import cx.aswin.boxlore.util.InstallOrigin
 
 /** PostHog wiring for `BoxLoreApplication.startPostHog`, kept here so JVM tests can check it. */
 internal object PostHogWiring {
@@ -14,6 +16,72 @@ internal object PostHogWiring {
         } else {
             mapOf("is_internal" to false, "app_environment" to "production")
         }
+
+    /**
+     * Where this copy came from, also on every event:
+     * - `build_channel`: `github` for the direct-update APK (GitHub, Obtainium, debug builds), `play` for the Play bundle.
+     * - `install_source`: which app installed it, from [installSource].
+     * - `installer_package`: the installer's package as Android reports it, or `none`.
+     *
+     * Play's install referrer can't tell these apart: it answers for GitHub installs too.
+     */
+    fun installTags(directUpdatesBuild: Boolean, origin: InstallOrigin?): Map<String, Any> =
+        mapOf(
+            "build_channel" to if (directUpdatesBuild) "github" else "play",
+            "install_source" to (origin?.let(::installSource) ?: "unknown"),
+            "installer_package" to (origin?.installer ?: "none"),
+        )
+
+    /**
+     * Names the app that installed this copy. A downloaded file opened by hand and boxlore's own
+     * updater both go through Android's package installer, so they share `package_installer`.
+     */
+    fun installSource(origin: InstallOrigin): String {
+        val installer = origin.installer ?: return if (origin.initiator == SHELL_PACKAGE) "adb" else "unknown"
+        return INSTALL_SOURCES.entries.firstOrNull { (_, packages) -> installer in packages }?.key ?: "other_store"
+    }
+
+    /**
+     * Whether the Play Store installed this copy, or null when Android can't say: the lookup failed,
+     * or it named neither an installer nor a computer install.
+     */
+    fun playInstall(origin: InstallOrigin?): Boolean? = when {
+        origin == null -> null
+        origin.fromPlayStore -> true
+        origin.installer != null || origin.initiator == SHELL_PACKAGE -> false
+        else -> null
+    }
+
+    /**
+     * The install channel to save with the referrer: Play's referrer only describes a Play install,
+     * so any other install is saved as `not_play`, without the referrer. Null when Android can't say
+     * who installed this copy: the referrer's answer is kept for a later launch instead.
+     */
+    fun installAttribution(origin: InstallOrigin?, channel: String, referrerRaw: String?): Pair<String, String?>? =
+        when (playInstall(origin)) {
+            true -> channel to referrerRaw
+            false -> InstallAttribution.CHANNEL_NOT_PLAY to null
+            null -> null
+        }
+
+    private const val SHELL_PACKAGE = "com.android.shell"
+
+    private val INSTALL_SOURCES: Map<String, Set<String>> =
+        mapOf(
+            "play_store" to setOf("com.android.vending"),
+            "package_installer" to
+                setOf(
+                    "com.google.android.packageinstaller",
+                    "com.android.packageinstaller",
+                    "com.miui.packageinstaller",
+                    "com.samsung.android.packageinstaller",
+                ),
+            "boxlore_updater" to setOf("cx.aswin.boxlore"),
+            "obtainium" to setOf("dev.imranr.obtainium", "dev.imranr.obtainium.fdroid"),
+            "aurora_store" to setOf("com.aurora.store", "com.aurora.store.nightly"),
+            "galaxy_store" to setOf("com.sec.android.app.samsungapps"),
+            "fdroid" to setOf("org.fdroid.fdroid", "org.fdroid.basic", "com.looker.droidify", "com.machiav3lli.fdroid"),
+        )
 
     /**
      * One flags-loaded callback that runs [steps] in order. A step that throws doesn't stop the rest;

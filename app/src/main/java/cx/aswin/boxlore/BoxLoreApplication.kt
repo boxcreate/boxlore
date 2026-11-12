@@ -27,6 +27,7 @@ import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.LearningEventLog
 import cx.aswin.boxlore.sync.CloudSyncWorker
 import cx.aswin.boxlore.ui.StartupWorkGate
+import cx.aswin.boxlore.util.installOrigin
 import cx.aswin.boxlore.widgets.HomeScreenWidgetsInstaller
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -392,36 +393,20 @@ class BoxLoreApplication :
     private fun startPostHog() {
         // Event levels: this install's sample bucket and the last remote switch, before any capture.
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.initPolicy(this, BuildConfig.VERSION_NAME)
-        val environment = PostHogWiring.environment(debug = BuildConfig.DEBUG, isolatedTests = BuildConfig.BOXLORE_ISOLATED_TESTS)
-        val config =
-            PostHogAndroidConfig(
-                projectToken = BuildConfig.POSTHOG_API_KEY,
-                host = BuildConfig.POSTHOG_HOST,
-            ).apply {
-                captureApplicationLifecycleEvents = true
-                captureScreenViews = false
-                captureDeepLinks = false
-                debug = BuildConfig.DEBUG
-                // The NPS survey is boxlore's own sheet (Home), reporting to an API survey; PostHog draws none.
-                surveys = false
-                // boxlore doesn't use PostHog push: never send it the FCM token or notification opens (on by default since 3.7x).
-                capturePushNotificationSubscriptions = false
-                capturePushNotificationOpened = false
-                onFeatureFlags =
-                    PostHogWiring.onFlagsLoaded(
-                        // LEGACY(own-ids): staged feed-first rollout; remove at S7 with rememberRolloutAnswers.
-                        { rememberRolloutAnswers() },
-                        { cx.aswin.boxlore.core.analytics.AnalyticsHelper.refreshAnalyticsPolicy() },
-                    )
-                // Drops events this install doesn't send and tags every event, SDK lifecycle ones included.
-                addBeforeSend(cx.aswin.boxlore.core.analytics.AnalyticsBeforeSend(environment))
-            }
-        // Off the main thread: setup reads package info over binder (startup ANR). Calls made
-        // before it finishes are queued by PostHogStartup and replayed in order.
+        val buildEnvironment = PostHogWiring.environment(debug = BuildConfig.DEBUG, isolatedTests = BuildConfig.BOXLORE_ISOLATED_TESTS)
+        // Off the main thread: setup and the install source read package info over binder (startup ANR).
+        // Calls made before it finishes are queued by PostHogStartup and replayed in order.
         cx.aswin.boxlore.core.analytics.PostHogStartup.start {
-            PostHogAndroid.setup(this, config)
+            // Read before setup, so `Application Installed` and `Application Updated` carry it too.
+            val origin = installOrigin()
+            val environment = buildEnvironment + PostHogWiring.installTags(BuildConfig.BOXLORE_DIRECT_UPDATES, origin)
+            PostHogAndroid.setup(this, postHogConfig(environment))
             // Registered before queued calls replay so early events keep the internal tag.
             environment.forEach { (key, value) -> PostHog.register(key, value) }
+            // Install channel without waiting on Play's referrer service, which may never answer a non-Play install.
+            PostHogWiring.playInstall(origin)?.let { fromPlayStore ->
+                cx.aswin.boxlore.core.analytics.InstallAttribution.onInstallerKnown(this, fromPlayStore)
+            }
         }
         // A listen the last run left unfinished because Android ended the app (queued until setup ends).
         cx.aswin.boxlore.core.playback.ListenInterruptions
@@ -429,6 +414,31 @@ class BoxLoreApplication :
         // Reads package info over binder, so off the main thread.
         applicationScope.launch { cx.aswin.boxlore.core.playback.FirstPlayInstallOrigin.note(this@BoxLoreApplication) }
     }
+
+    /** The PostHog SDK settings; [environment] tags every event, SDK lifecycle ones included. */
+    private fun postHogConfig(environment: Map<String, Any>): PostHogAndroidConfig =
+        PostHogAndroidConfig(
+            projectToken = BuildConfig.POSTHOG_API_KEY,
+            host = BuildConfig.POSTHOG_HOST,
+        ).apply {
+            captureApplicationLifecycleEvents = true
+            captureScreenViews = false
+            captureDeepLinks = false
+            debug = BuildConfig.DEBUG
+            // The NPS survey is boxlore's own sheet (Home), reporting to an API survey; PostHog draws none.
+            surveys = false
+            // boxlore doesn't use PostHog push: never send it the FCM token or notification opens (on by default since 3.7x).
+            capturePushNotificationSubscriptions = false
+            capturePushNotificationOpened = false
+            onFeatureFlags =
+                PostHogWiring.onFlagsLoaded(
+                    // LEGACY(own-ids): staged feed-first rollout; remove at S7 with rememberRolloutAnswers.
+                    { rememberRolloutAnswers() },
+                    { cx.aswin.boxlore.core.analytics.AnalyticsHelper.refreshAnalyticsPolicy() },
+                )
+            // Drops events this install doesn't send and tags every event, SDK lifecycle ones included.
+            addBeforeSend(cx.aswin.boxlore.core.analytics.AnalyticsBeforeSend(environment))
+        }
 
     /**
      * Saves each loaded `feed_first` and v2 kill-switch answer for the next process; this process

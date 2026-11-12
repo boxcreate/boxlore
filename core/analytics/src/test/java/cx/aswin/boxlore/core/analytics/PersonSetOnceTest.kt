@@ -12,14 +12,14 @@ class PersonSetOnceTest {
     private val set = mutableListOf<Map<String, Any>>()
     private val setOnce = mutableListOf<Map<String, Any>>()
     private lateinit var previousSet: (Map<String, Any>) -> Unit
-    private lateinit var previousSetOnce: (Map<String, Any>) -> Unit
+    private lateinit var previousSetOnce: (Map<String, Any>, () -> Unit) -> Unit
 
     @BeforeEach
     fun setUp() {
         previousSet = AnalyticsEmit.personSetSink
         previousSetOnce = AnalyticsEmit.personSetOnceSink
         AnalyticsEmit.personSetSink = { set += it }
-        AnalyticsEmit.personSetOnceSink = { setOnce += it }
+        AnalyticsEmit.personSetOnceSink = { props, _ -> setOnce += props }
     }
 
     @AfterEach

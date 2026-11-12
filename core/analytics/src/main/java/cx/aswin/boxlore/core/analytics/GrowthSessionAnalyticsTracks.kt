@@ -8,12 +8,16 @@ package cx.aswin.boxlore.core.analytics
  * Install channel is person `$set_once` only — never a second install-count event.
  */
 internal object GrowthSessionAnalyticsTracks {
-    /** Person props only — do not emit `install_attributed` (avoids double-counting installs). */
+    /**
+     * Person props only — do not emit `install_attributed` (avoids double-counting installs).
+     * [onSent] runs once PostHog has taken the capture.
+     */
     fun trackInstallChannelAttributed(
         installChannel: String,
         referrerRaw: String? = null,
         utmSource: String? = null,
         shareToken: String? = null,
+        onSent: () -> Unit = {},
     ) {
         AnalyticsEmit.personSetOnce(
             buildMap {
@@ -22,6 +26,7 @@ internal object GrowthSessionAnalyticsTracks {
                 utmSource?.takeIf { it.isNotBlank() }?.let { put("utm_source", it) }
                 shareToken?.takeIf { it.isNotBlank() }?.let { put("share_token", it) }
             },
+            onSent,
         )
     }
 

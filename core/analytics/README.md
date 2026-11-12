@@ -20,7 +20,7 @@ It does not configure the PostHog SDK (`:app` does, and installs `AnalyticsBefor
 
 - `AnalyticsPolicy` and `AnalyticsLevel`: each event is always sent, sampled or off. Defaults are `AnalyticsPolicy.DEFAULT_LEVELS`; the `analytics-policy-v1` flag overrides them without a release (payload shape in the `AnalyticsPolicy` KDoc).
 - `AnalyticsEmit`: the one path app events take. It applies levels, adds `recipe_id` where known, and sends set-once person properties through `personSetOnce`, never nested under `personSet`.
-- `AnalyticsBeforeSend`: the PostHog `beforeSend` hook. It applies levels to everything PostHog captures, SDK events included, and stamps this build's environment tags (`is_internal`, `app_environment`).
+- `AnalyticsBeforeSend`: the PostHog `beforeSend` hook. It applies levels to everything PostHog captures, SDK events included, and stamps the tags `:app` gives it on every event: the build's environment (`is_internal`, `app_environment`) and where this copy came from (`build_channel`, `install_source`, `installer_package`).
 - `AnalyticsPolicy.ALWAYS_SENT` identity events ignore the switch; `admitCaptured` keeps a queued app event's original sample decision.
 - `AnalyticsHelper.refreshAnalyticsPolicy` applies the flag whenever PostHog reports loaded flags; `initPolicy` restores the last switch at launch, for the same app version only.
 - `AnalyticsHelper.reloadFeatureFlags` is the only caller of PostHog's flag reload, so every reload applies the switch.
@@ -54,6 +54,7 @@ It does not configure the PostHog SDK (`:app` does, and installs `AnalyticsBefor
 - Surveys (`SurveyAnalyticsTracks`): PostHog's standard survey events for boxlore's own NPS card; `surveyCopyOverrides` reads survey wording from a flag payload.
 - Support (`SupportAnalyticsTracks`, `SupportWorldContext`): `supportWorldVariant` reads the support experiment flag once per visit and records an exposure only for a known variant.
 - Onboarding, growth, discovery, library, queue and playback façades live in their matching `*AnalyticsTracks.kt` files; `GenrePersonaLogic` derives onboarding's genre persona properties.
+- `InstallAttribution` saves `install_channel` once `:app` knows whether the Play Store installed the copy: Play's referrer only for Play installs, kept when the installer is still unknown, `not_play` otherwise.
 
 ## Internal structure
 
@@ -99,6 +100,7 @@ Never rename these:
 
 - SharedPreferences file `boxlore_analytics_prefs` (`PrefsFileMigrator.Files.ANALYTICS`, migrated from `boxcast_analytics_prefs`).
 - Keys `is_first_launch`, `analytics_sample_bucket` (this install's sample bucket, kept across a PostHog reset) and `analytics_policy` (the last remote switch with its app version). `AnalyticsPolicy.Store` is the storage seam.
+- Install attribution keys (`InstallAttribution.Store`): `not_play_attributed` (set once PostHog has taken `not_play`), and `pending_install_channel` with `pending_referrer_raw` (Play's referrer, kept until the installer is known; cleared once its capture is sent, or for an install not from Play).
 - Event and property names are contracts with the glossary and its CSV ([`docs/analytics/event_glossary.csv`](../../docs/analytics/event_glossary.csv)) and the coverage inventory ([`docs/analytics/glossary_emission_coverage.csv`](../../docs/analytics/glossary_emission_coverage.csv)).
 
 ## Testing notes
