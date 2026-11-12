@@ -590,10 +590,15 @@ internal class AutoBrowseLibraryCallback(
      * means: which list it is labelled with, and whether playback carries on down the list.
      */
     private fun rememberForPlay(node: String, items: List<MediaItem>) {
-        val (source, continues) = PLAY_CONTEXT_BY_NODE[node]
-            ?: (AutoBrowseContract.SOURCE_SHOW to false).takeIf { node.startsWith(SUBSCRIPTION_PREFIX) }
-            ?: return
+        val (source, continues) = playContextFor(node) ?: return
         playContext.record(node, source, continues, items)
+    }
+
+    /** What a tap in [node] means: the list's own label, a show's episodes one at a time, or nothing for other lists. */
+    internal fun playContextFor(node: String): Pair<String, Boolean>? = when {
+        node in PLAY_CONTEXT_BY_NODE -> PLAY_CONTEXT_BY_NODE.getValue(node)
+        node.startsWith(SUBSCRIPTION_PREFIX) -> AutoBrowseContract.SOURCE_SHOW to false
+        else -> null
     }
 
     /**
