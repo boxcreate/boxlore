@@ -178,6 +178,7 @@ class BoxLoreApplication :
             }
         }
         cx.aswin.boxlore.lifecycle.AutoDownloadLifecycle(this, container, applicationScope).start()
+        connectAndroidAutoTip()
         HomeScreenWidgetsInstaller.install(
             context = this,
             scope = applicationScope,
@@ -387,6 +388,14 @@ class BoxLoreApplication :
                 syncCastSession(isActive = isConnected)
             }
         }
+    }
+
+    /** The Android Auto tip hears about drives from the player, which can't depend on :app. */
+    private fun connectAndroidAutoTip() {
+        cx.aswin.boxlore.core.playback.CarSignals.onDriveStarted = {
+            applicationScope.launch { container.androidAutoTip.maybeShow(cx.aswin.boxlore.ui.announcement.AndroidAutoTip.Trigger.DRIVE_STARTED) }
+        }
+        cx.aswin.boxlore.core.playback.CarSignals.onCarScreensOpened = { container.androidAutoTip.carScreensOpened() }
     }
 
     /** PostHog setup: event levels first, then the SDK off the main thread. */

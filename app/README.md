@@ -47,6 +47,7 @@
 - `dispatchPushAction` routes push actions on cold and warm launches: allowlisted routes navigate, registered links use Navigation, update targets open the updater, and other web links open externally with boxlore excluded from the chooser.
 - An `rss:` push shows only if it matches the saved feed URL and local consent; `RssNotificationSyncWorker` reconciles registrations and topics.
 - Announcements are native Compose surfaces with a Markdown subset; payload HTML stays text. Only release alerts are filtered by install channel and version.
+- `AndroidAutoTip` shows an install that didn't come from the Play Store, once, how to put boxlore on the car's screen: a full-screen `TIP` announcement when boxlore opens during a drive, plus a notification when a drive starts while its player service runs, playing or paused. It never shows once Android Auto has opened boxlore's lists in a car, and its record (`boxlore_android_auto_tip`) stays out of backups.
 - `SupportPushTopicSync` keeps support topics in step with each conversation refresh. A reply push opens `feedback?thread=<id>`, closing an open tablet detail first.
 - `ShareManager.episodeShareTargets` comes from `AppContainer.episodeSharePreparer`; `EpisodeShareRegistrationWorker` retries a registration that misses its short wait.
 

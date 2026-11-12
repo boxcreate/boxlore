@@ -19,6 +19,7 @@
         <exclude domain="sharedpref" path="boxlore_listen_note.xml" />
         <!-- This install's own first play; a restored copy would hide the new phone's first play. -->
         <exclude domain="sharedpref" path="boxlore_install_milestones.xml" />
+        <exclude domain="sharedpref" path="boxlore_android_auto_tip.xml" />
         <exclude domain="database" path="androidx.work.workdb" />
         <exclude domain="database" path="androidx.work.workdb-journal" />
         <exclude domain="database" path="androidx.work.workdb-wal" />
@@ -43,6 +44,7 @@
         <exclude domain="sharedpref" path="boxlore_listen_note.xml" />
         <!-- This install's own first play; a restored copy would hide the new phone's first play. -->
         <exclude domain="sharedpref" path="boxlore_install_milestones.xml" />
+        <exclude domain="sharedpref" path="boxlore_android_auto_tip.xml" />
         <exclude domain="database" path="androidx.work.workdb" />
         <exclude domain="database" path="androidx.work.workdb-journal" />
         <exclude domain="database" path="androidx.work.workdb-wal" />
