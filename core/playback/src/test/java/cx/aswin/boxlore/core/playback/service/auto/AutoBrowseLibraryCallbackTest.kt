@@ -23,6 +23,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -695,5 +696,12 @@ class AutoBrowseLibraryCallbackTest {
 
         verify(player, Mockito.never()).prepare()
         assertEquals(0, events("android_auto_connected"))
+    }
+
+    @Test
+    fun `a tap is labelled by its fixed list or its show and otherwise not at all`() {
+        assertEquals(AutoBrowseContract.SOURCE_NEW to true, callback.playContextFor(AutoBrowseContract.HOME_NEW_EPISODES_ID))
+        assertEquals(AutoBrowseContract.SOURCE_SHOW to false, callback.playContextFor(AutoBrowseContract.SUBSCRIPTION_PREFIX + "123"))
+        assertNull(callback.playContextFor(AutoBrowseContract.GENRE_PREFIX + "news"))
     }
 }
