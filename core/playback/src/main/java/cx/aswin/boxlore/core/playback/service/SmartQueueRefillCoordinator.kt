@@ -91,7 +91,8 @@ class SmartQueueRefillCoordinator(
         val appended = withContext(mainDispatcher) {
             if (!isCurrent()) return@withContext false
             // One mutation avoids asynchronous Cast receiver sequence-number races.
-            player.addMediaItems(entries.map { refillMediaItem(it, cacheIds[it.episode.id.toString()]) })
+            val items = CastQueueGuard.castable(player, entries.map { refillMediaItem(it, cacheIds[it.episode.id.toString()]) })
+            if (items.isNotEmpty()) player.addMediaItems(items)
             true
         }
         if (!appended) return false

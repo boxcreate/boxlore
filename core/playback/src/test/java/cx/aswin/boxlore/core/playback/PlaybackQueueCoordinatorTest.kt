@@ -11,12 +11,14 @@ import cx.aswin.boxlore.core.network.NetworkModule
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -55,8 +57,13 @@ class PlaybackQueueCoordinatorTest {
 
     private val playerStateFlow = MutableStateFlow(PlayerState())
 
+    private val originalMainDispatcher = PlaybackThreadPolicy.mainDispatcher
+
     @Before
     fun setUp() {
+        // Room resumes these tests on its own thread while the test blocks the main looper, so the
+        // controller work runs on the test dispatcher instead of waiting for that looper.
+        PlaybackThreadPolicy.mainDispatcher = testDispatcher
         val context = ApplicationProvider.getApplicationContext<Context>()
         database =
             Room
@@ -108,6 +115,7 @@ class PlaybackQueueCoordinatorTest {
 
     @After
     fun tearDown() {
+        PlaybackThreadPolicy.mainDispatcher = originalMainDispatcher
         database.close()
         RssPodcastRepository.clearInstanceForTests()
     }
@@ -218,6 +226,47 @@ class PlaybackQueueCoordinatorTest {
         advanceUntilIdle()
 
         assertEquals(3, queueStarts)
+    }
+
+    @Test
+    fun startingAQueueFromABackgroundThreadTalksToTheControllerOnTheMainDispatcher() = runTest(testDispatcher) {
+        // Regression: a caller on a background dispatcher crashed with "MediaController method is
+        // called from a wrong thread".
+        val mainExecutor = java.util.concurrent.Executors.newSingleThreadExecutor { Thread(it, "fake-main") }
+        val backgroundExecutor = java.util.concurrent.Executors.newSingleThreadExecutor { Thread(it, "background") }
+        val controller = checkNotNull(mediaHandle.controller)
+        val threads = java.util.Collections.synchronizedList(mutableListOf<String>())
+        val record = org.mockito.stubbing.Answer<Any?> {
+            threads += "${it.method.name}@${Thread.currentThread().name}"
+            null
+        }
+        `when`(controller.playbackParameters).thenAnswer {
+            threads += "getPlaybackParameters@${Thread.currentThread().name}"
+            androidx.media3.common.PlaybackParameters.DEFAULT
+        }
+        org.mockito.Mockito.doAnswer(record).`when`(controller).setMediaItems(
+            org.mockito.ArgumentMatchers.anyList(),
+            org.mockito.ArgumentMatchers.anyInt(),
+            org.mockito.ArgumentMatchers.anyLong(),
+        )
+        org.mockito.Mockito.doAnswer(record).`when`(controller).prepare()
+        org.mockito.Mockito.doAnswer(record).`when`(controller).play()
+        val podcast = cx.aswin.boxlore.core.model.Podcast("pod-1", "Show", "Host", "https://example.com/a.jpg")
+        PlaybackThreadPolicy.mainDispatcher = mainExecutor.asCoroutineDispatcher()
+        try {
+            withContext(backgroundExecutor.asCoroutineDispatcher()) {
+                queueCoordinator.playQueue(listOf(testEpisode("1", "pod-1")), podcast)
+            }
+        } finally {
+            mainExecutor.shutdown()
+            backgroundExecutor.shutdown()
+        }
+
+        assertEquals(
+            listOf("getPlaybackParameters@fake-main", "setMediaItems@fake-main", "prepare@fake-main", "play@fake-main"),
+            threads.toList(),
+        )
+        assertEquals(listOf("1"), queueRepository.getQueueEpisodeSnapshot().map { it.id })
     }
 
     private fun testEpisode(id: String, podcastId: String) = Episode(

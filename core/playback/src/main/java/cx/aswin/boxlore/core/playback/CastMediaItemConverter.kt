@@ -60,12 +60,37 @@ internal class BoxLoreCastMediaItemConverter : MediaItemConverter {
     }
 
     override fun toMediaItem(mediaQueueItem: MediaQueueItem): MediaItem {
+        // The receiver can report queue rows before their media details arrive, or without the
+        // data Media3 stores on them. Media3's default converter throws on both.
+        if (mediaQueueItem.media?.customData == null) return placeholder(mediaQueueItem)
         val item = delegate.toMediaItem(mediaQueueItem)
         if (mediaQueueItem.customData?.optString(contextKey) != PlaybackQueueContext.NEW_EPISODES) return item
         val extras = Bundle(item.mediaMetadata.extras ?: Bundle()).apply {
             putString("source_entry_point", PlaybackQueueContext.NEW_EPISODES)
         }
         return item.buildUpon().setMediaMetadata(item.mediaMetadata.buildUpon().setExtras(extras).build()).build()
+    }
+
+    /** Stands in for a queue row that cannot be rebuilt; it only gets a URI when Cast could stream it. */
+    private fun placeholder(mediaQueueItem: MediaQueueItem): MediaItem {
+        val media = mediaQueueItem.media
+        val builder = MediaItem.Builder().setMediaId("$PLACEHOLDER_ID_PREFIX${mediaQueueItem.itemId}")
+        val uri = listOf(media?.contentUrl, media?.contentId).firstOrNull(CastMediaEligibility::isCastable)
+        if (uri != null) builder.setUri(uri)
+        val title = media?.metadata?.getString(com.google.android.gms.cast.MediaMetadata.KEY_TITLE)
+        if (!title.isNullOrBlank()) {
+            builder.setMediaMetadata(
+                androidx.media3.common.MediaMetadata
+                    .Builder()
+                    .setTitle(title)
+                    .build(),
+            )
+        }
+        return builder.build()
+    }
+
+    internal companion object {
+        const val PLACEHOLDER_ID_PREFIX = "cast-placeholder:"
     }
 }
 

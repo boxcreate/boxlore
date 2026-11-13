@@ -20,6 +20,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Queue play / mutate / reconcile APIs for [cx.aswin.boxlore.core.playback.PlaybackRepository].
@@ -310,73 +311,78 @@ internal class PlaybackQueueCoordinator(
 
         prefs.edit().putBoolean(playerDismissedKey, false).apply()
 
-        mediaHandle.awaitController()
+        mediaHandle.awaitController() ?: return
 
-        mediaHandle.controller?.let { controller ->
-            // A rich source bundle (e.g. "episode_info_screen", "home_hero_*") always wins.
-            // Otherwise fall back to a bundle derived from the coarse enum. Note the key must
-            // be "entry_point" — the playback service only reads that key.
-            val entryPointContext =
-                sourceContext?.takeIf { it.getString("entry_point") != null }
-                    ?: if (entryPoint != PlaybackEntryPoint.GENERIC) {
-                        android.os.Bundle().apply {
-                            putString("entry_point", entryPoint.name.lowercase())
-                        }
-                    } else {
-                        null
+        // A rich source bundle (e.g. "episode_info_screen", "home_hero_*") always wins.
+        // Otherwise fall back to a bundle derived from the coarse enum. Note the key must
+        // be "entry_point" — the playback service only reads that key.
+        val entryPointContext =
+            sourceContext?.takeIf { it.getString("entry_point") != null }
+                ?: if (entryPoint != PlaybackEntryPoint.GENERIC) {
+                    android.os.Bundle().apply {
+                        putString("entry_point", entryPoint.name.lowercase())
                     }
-            val episodesWithSource =
-                enrichWithContextSourceId(uniqueEpisodes, entryPoint, sourceContext)
-                    .let { list -> if (isNewQueue) list.map { QueueShowPolicy.withShow(it, podcast) } else list }
-            val mediaItems =
-                buildMediaItems(episodesWithSource, podcast, entryPointContext, downloadHolders(episodesWithSource.map { it.id }))
-
-            val startEpisodeId = episodesWithSource.getOrNull(uniqueStartIndex)?.id
-            val (startPosMs, initialLikeState) = checkSavedProgress(startEpisodeId, initialPositionMs, entryPoint, entryPointContext)
-
-            val currentEp = episodesWithSource.getOrNull(uniqueStartIndex)
-            if (currentEp != null) {
-                // playQueue optimistically flips isPlaying=true here, ahead of the real
-                // MediaController callback, so the onIsPlayingChanged edge-trigger below
-                // won't see a false->true transition for this path. Trigger explicitly.
-                val wasPlaying = playerStateFlow.value.isPlaying
-                val baseState =
-                    playerStateFlow.value.copy(
-                        currentEpisode = currentEp,
-                        // A mixed list started under a placeholder (All Downloads) starts under its first episode's show.
-                        currentPodcast = QueueShowPolicy.startShow(currentEp, podcast),
-                        isPlaying = true,
-                        position = startPosMs,
-                        duration = currentEp.duration.toLong() * 1000,
-                        queue = episodesWithSource,
-                        isLiked = initialLikeState,
-                    )
-                playerStateFlow.value =
-                    PlaybackControlSync.withSyncedPlaybackSpeed(
-                        baseState,
-                        controllerSpeed = controller.playbackParameters.speed,
-                    )
-                if (!wasPlaying) {
-                    onPlaybackStarted()
+                } else {
+                    null
                 }
+        val episodesWithSource =
+            enrichWithContextSourceId(uniqueEpisodes, entryPoint, sourceContext)
+                .let { list -> if (isNewQueue) list.map { QueueShowPolicy.withShow(it, podcast) } else list }
+        val mediaItems =
+            buildMediaItems(episodesWithSource, podcast, entryPointContext, downloadHolders(episodesWithSource.map { it.id }))
+
+        val startEpisodeId = episodesWithSource.getOrNull(uniqueStartIndex)?.id
+        val (startPosMs, initialLikeState) = checkSavedProgress(startEpisodeId, initialPositionMs, entryPoint, entryPointContext)
+        val currentEp = episodesWithSource.getOrNull(uniqueStartIndex)
+
+        // MediaController only accepts calls on the main thread, whichever dispatcher the caller is on.
+        val started =
+            withContext(PlaybackThreadPolicy.mainDispatcher) {
+                val controller = mediaHandle.controller ?: return@withContext false
+                if (currentEp != null) {
+                    // playQueue optimistically flips isPlaying=true here, ahead of the real
+                    // MediaController callback, so the onIsPlayingChanged edge-trigger below
+                    // won't see a false->true transition for this path. Trigger explicitly.
+                    val wasPlaying = playerStateFlow.value.isPlaying
+                    val baseState =
+                        playerStateFlow.value.copy(
+                            currentEpisode = currentEp,
+                            // A mixed list started under a placeholder (All Downloads) starts under its first episode's show.
+                            currentPodcast = QueueShowPolicy.startShow(currentEp, podcast),
+                            isPlaying = true,
+                            position = startPosMs,
+                            duration = currentEp.duration.toLong() * 1000,
+                            queue = episodesWithSource,
+                            isLiked = initialLikeState,
+                        )
+                    playerStateFlow.value =
+                        PlaybackControlSync.withSyncedPlaybackSpeed(
+                            baseState,
+                            controllerSpeed = controller.playbackParameters.speed,
+                        )
+                    if (!wasPlaying) {
+                        onPlaybackStarted()
+                    }
+                }
+
+                if (startPosMs > 0L) {
+                    cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                        .setSeekSource("resume")
+                } else if (startEpisodeId != null) {
+                    PlaybackLifecycleSignals.markPendingZeroStart(startEpisodeId)
+                }
+                recordActivationRequest(startEpisodeId, startPosMs, initialPositionMs == null)
+                controller.setMediaItems(mediaItems, uniqueStartIndex, startPosMs)
+                controller.prepare()
+
+                storePendingEntryPoint(entryPointContext)
+
+                controller.play()
+                true
             }
-
-            if (startPosMs > 0L) {
-                cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                    .setSeekSource("resume")
-            } else if (startEpisodeId != null) {
-                PlaybackLifecycleSignals.markPendingZeroStart(startEpisodeId)
-            }
-            recordActivationRequest(startEpisodeId, startPosMs, initialPositionMs == null)
-            controller.setMediaItems(mediaItems, uniqueStartIndex, startPosMs)
-            controller.prepare()
-
-            storePendingEntryPoint(entryPointContext)
-
-            controller.play()
-            syncQueueToDb()
-            ensureCurrentHistoryRow()
-        }
+        if (!started) return
+        syncQueueToDb()
+        ensureCurrentHistoryRow()
     }
 
     private fun recordActivationRequest(episodeId: String?, positionMs: Long, implicit: Boolean) {

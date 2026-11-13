@@ -96,6 +96,7 @@ class SmartQueueRefillCoordinatorTest {
             `when`(player.currentMediaItem).thenAnswer { items[index] }
             `when`(player.currentMediaItemIndex).thenAnswer { index }
             `when`(player.mediaItemCount).thenAnswer { items.size }
+            `when`(player.deviceInfo).thenReturn(androidx.media3.common.DeviceInfo.UNKNOWN)
             `when`(player.getMediaItemAt(anyInt())).thenAnswer { items[it.getArgument<Int>(0)] }
             doAnswer {
                 items.addAll(it.getArgument<List<MediaItem>>(0))
