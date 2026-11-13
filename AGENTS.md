@@ -2,8 +2,6 @@
 
 Before planning or editing, check for `AGENTS.internal.md` in the repository root and load it when present. Report missing internal guidance. Do not perform production deployments or repository-administration operations without the relevant internal instructions. In a configured maintainer environment, missing internal guidance restricts work to read-only investigation until restored.
 
-When installed and trusted, local Codex hooks load the internal document at session/subagent start and after compaction. Verify loading rather than assuming that a file's presence enables it. The tracked `.worktreeinclude` copies ignored local instructions and hooks into new local Codex-managed worktrees; ordinary Git worktrees and cloud environments require separate provisioning.
-
 ## Project context
 
 boxlore is a Kotlin Android app with `:app`, `:core:*`, and `:feature:*` modules. `AppContainer` owns dependency wiring. The external backend is not part of this repository; build and launch setup is described in [CONTRIBUTING.md](CONTRIBUTING.md).
