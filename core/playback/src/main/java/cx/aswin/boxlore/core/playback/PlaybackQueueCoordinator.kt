@@ -340,38 +340,9 @@ internal class PlaybackQueueCoordinator(
             withContext(PlaybackThreadPolicy.mainDispatcher) {
                 val controller = mediaHandle.controller ?: return@withContext false
                 if (currentEp != null) {
-                    // playQueue optimistically flips isPlaying=true here, ahead of the real
-                    // MediaController callback, so the onIsPlayingChanged edge-trigger below
-                    // won't see a false->true transition for this path. Trigger explicitly.
-                    val wasPlaying = playerStateFlow.value.isPlaying
-                    val baseState =
-                        playerStateFlow.value.copy(
-                            currentEpisode = currentEp,
-                            // A mixed list started under a placeholder (All Downloads) starts under its first episode's show.
-                            currentPodcast = QueueShowPolicy.startShow(currentEp, podcast),
-                            isPlaying = true,
-                            position = startPosMs,
-                            duration = currentEp.duration.toLong() * 1000,
-                            queue = episodesWithSource,
-                            isLiked = initialLikeState,
-                        )
-                    playerStateFlow.value =
-                        PlaybackControlSync.withSyncedPlaybackSpeed(
-                            baseState,
-                            controllerSpeed = controller.playbackParameters.speed,
-                        )
-                    if (!wasPlaying) {
-                        onPlaybackStarted()
-                    }
+                    publishOptimisticStart(controller, currentEp, podcast, startPosMs, episodesWithSource, initialLikeState)
                 }
-
-                if (startPosMs > 0L) {
-                    cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                        .setSeekSource("resume")
-                } else if (startEpisodeId != null) {
-                    PlaybackLifecycleSignals.markPendingZeroStart(startEpisodeId)
-                }
-                recordActivationRequest(startEpisodeId, startPosMs, initialPositionMs == null)
+                markStartSignals(startEpisodeId, startPosMs, initialPositionMs)
                 controller.setMediaItems(mediaItems, uniqueStartIndex, startPosMs)
                 controller.prepare()
 
@@ -383,6 +354,52 @@ internal class PlaybackQueueCoordinator(
         if (!started) return
         syncQueueToDb()
         ensureCurrentHistoryRow()
+    }
+
+    /**
+     * Shows [currentEp] as playing before the real MediaController callback arrives. Because isPlaying
+     * flips to true here, the onIsPlayingChanged edge-trigger won't see a false->true transition for
+     * this path, so playback start is signalled explicitly. Runs on the main thread ([controller]).
+     */
+    private fun publishOptimisticStart(
+        controller: Player,
+        currentEp: Episode,
+        podcast: Podcast,
+        startPosMs: Long,
+        queue: List<Episode>,
+        isLiked: Boolean,
+    ) {
+        val wasPlaying = playerStateFlow.value.isPlaying
+        val baseState =
+            playerStateFlow.value.copy(
+                currentEpisode = currentEp,
+                // A mixed list started under a placeholder (All Downloads) starts under its first episode's show.
+                currentPodcast = QueueShowPolicy.startShow(currentEp, podcast),
+                isPlaying = true,
+                position = startPosMs,
+                duration = currentEp.duration.toLong() * 1000,
+                queue = queue,
+                isLiked = isLiked,
+            )
+        playerStateFlow.value =
+            PlaybackControlSync.withSyncedPlaybackSpeed(
+                baseState,
+                controllerSpeed = controller.playbackParameters.speed,
+            )
+        if (!wasPlaying) {
+            onPlaybackStarted()
+        }
+    }
+
+    /** Labels how the start episode begins: a resume seek, or a pending start from zero. */
+    private fun markStartSignals(startEpisodeId: String?, startPosMs: Long, initialPositionMs: Long?) {
+        if (startPosMs > 0L) {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                .setSeekSource("resume")
+        } else if (startEpisodeId != null) {
+            PlaybackLifecycleSignals.markPendingZeroStart(startEpisodeId)
+        }
+        recordActivationRequest(startEpisodeId, startPosMs, initialPositionMs == null)
     }
 
     private fun recordActivationRequest(episodeId: String?, positionMs: Long, implicit: Boolean) {
