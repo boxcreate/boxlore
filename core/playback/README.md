@@ -81,7 +81,7 @@ It does not own the Room schema ([`:core:database`](../database/README.md)), pre
 
 - `BoxLorePlaybackService` keeps one Media3 `CastPlayer` over the local `ExoPlayer`, so queue, sleep, refill, notification, widgets and Auto follow the active route without a second playback graph.
 - `CastMediaEligibility` admits public HTTP(S) sources only; `BoxLoreCastMediaItemConverter` swaps local download URIs for the stream URL.
-- `CastQueueSnapshotPolicy` keeps the app queue through a brief partial receiver snapshot; `service.BoxLoreCastTransferCallback` drops URI-less placeholders before a transfer back.
+- Cast gets fetchable episodes (`service.CastTransferPolicy`); the saved queue keeps the rest (`CastSkippedEpisodes`) and outlasts partial receiver snapshots (`CastQueueSnapshotPolicy`).
 - `stopCasting` clears the route at once and stops remote playback before ending the receiver session.
 
 ### Artwork decoding

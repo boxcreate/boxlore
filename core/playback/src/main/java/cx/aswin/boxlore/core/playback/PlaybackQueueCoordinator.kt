@@ -49,6 +49,9 @@ internal class PlaybackQueueCoordinator(
     private val downloadHolders: suspend (List<String>) -> Map<String, String> = { emptyMap() },
 ) {
     private val castQueueSnapshotPolicy = CastQueueSnapshotPolicy()
+
+    /** Saved-queue episodes kept while casting that the Cast queue left out; they go back into the phone's player. */
+    private val castSkippedIds = mutableSetOf<String>()
     private var castQueueRecheckJob: Job? = null
 
     suspend fun syncQueueToDb() {
@@ -135,10 +138,13 @@ internal class PlaybackQueueCoordinator(
         val idsNow = controllerNow.upcomingEpisodeIds()
         val latestQueue = playerStateFlow.value.queue
         if (idsNow == latestQueue.map { it.id }) return
+        val skipped = castSkipped(controllerNow, latestQueue, idsNow) ?: return
+        val localIds = latestQueue.map(Episode::id) - skipped.mapTo(HashSet(), Episode::id)
+        if (idsNow == localIds) return
         if (
             castQueueSnapshotPolicy.shouldPreserveLocalQueue(
                 remoteIds = idsNow,
-                localIds = latestQueue.map(Episode::id),
+                localIds = localIds,
                 nowMs = android.os.SystemClock.elapsedRealtime(),
             )
         ) {
@@ -157,7 +163,7 @@ internal class PlaybackQueueCoordinator(
         }
 
         val known = latestQueue.associateBy { it.id }
-        val newQueue =
+        val fromPlayer =
             idsNow
                 .mapIndexedNotNull { offset, id ->
                     val currentEpisode = known[id]
@@ -165,12 +171,38 @@ internal class PlaybackQueueCoordinator(
                     when {
                         currentEpisode != null -> currentEpisode
                         persistedEpisode != null -> persistedEpisode
-                        else -> buildEpisodeFromMediaItem(controllerNow.getMediaItemAt(startNow + offset), id)
+                        else -> ReconciledQueueEpisode.fromMediaItem(controllerNow.getMediaItemAt(startNow + offset), id)
                     }
                 }.distinctBy { it.id }
+        val newQueue = CastSkippedEpisodes.withSkipped(fromPlayer, latestQueue, skipped)
         android.util.Log.d("PlaybackRepo", "reconcileQueueWithController: ${latestQueue.size} -> ${newQueue.size} items")
         playerStateFlow.value = playerStateFlow.value.copy(queue = newQueue)
         syncQueueToDb()
+    }
+
+    /**
+     * While casting: the saved-queue episodes the Cast queue leaves out because no receiver can fetch
+     * them, which stay saved and are remembered. On the phone: none, or null when this put remembered
+     * ones back into the player, which the next reconcile then sees.
+     */
+    private suspend fun castSkipped(controller: Player, latestQueue: List<Episode>, idsNow: List<String>): List<Episode>? {
+        if (!CastSkippedEpisodes.isCasting(controller)) return if (restoreCastSkipped(controller, latestQueue)) null else emptyList()
+        return CastSkippedEpisodes.skipped(latestQueue, idsNow).also { skipped -> castSkippedIds += skipped.map(Episode::id) }
+    }
+
+    /** Puts the episodes the Cast queue left out back into the phone's player; true when it changed the player. */
+    private suspend fun restoreCastSkipped(controller: Player, latestQueue: List<Episode>): Boolean {
+        if (castSkippedIds.isEmpty()) return false
+        val playerIds = (0 until controller.mediaItemCount).map { QueueMath.stripMediaIdPrefixes(controller.getMediaItemAt(it).mediaId) }
+        val missing = castSkippedIds.filterTo(HashSet()) { it !in playerIds }
+        castSkippedIds.clear()
+        val plan = CastSkippedEpisodes.insertions(latestQueue, playerIds, controller.currentMediaItemIndex, missing)
+        if (plan.isEmpty()) return false
+        val episodes = plan.map { it.second }
+        val podcast = playerStateFlow.value.currentPodcast ?: Podcast(id = "", title = "", artist = "", imageUrl = "")
+        val items = buildMediaItems(episodes, podcast, null, downloadHolders(episodes.map(Episode::id)))
+        plan.zip(items).forEach { (step, item) -> controller.addMediaItem(step.first, item) }
+        return true
     }
 
     suspend fun loadPersistedQueueById(fallback: Map<String, Episode> = emptyMap()): Map<String, Episode> =
@@ -182,34 +214,6 @@ internal class PlaybackQueueCoordinator(
             android.util.Log.w("PlaybackRepo", "Unable to read persisted queue snapshot", exception)
             fallback
         }
-
-    /**
-     * A queue entry for a player [item] the UI holds no entry for, or null without a title. Its show
-     * comes from the item: the show ID extra and [QueueShowPolicy.showTitle].
-     */
-    fun buildEpisodeFromMediaItem(
-        item: MediaItem,
-        episodeId: String,
-    ): Episode? {
-        val metadata = item.mediaMetadata
-        val title = CastMediaMetadata.queueTitle(metadata.title) ?: return null
-        return Episode(
-            id = episodeId,
-            title = title,
-            description = "",
-            audioUrl = item.localConfiguration?.uri?.toString() ?: "",
-            imageUrl = PlaybackArtworkMetadata.savedArtworkUrl(metadata),
-            podcastImageUrl = PlaybackArtworkMetadata.savedArtworkUrl(metadata),
-            podcastTitle = QueueShowPolicy.showTitle(metadata),
-            podcastId = QueueShowPolicy.showId(metadata),
-            podcastArtist = metadata.artist?.toString(),
-            podcastGenre = metadata.genre?.toString(),
-            duration = 0,
-            publishedDate = 0L,
-            // Items we didn't add locally were appended by the service refill path.
-            contextType = "AUTO_FILL",
-        )
-    }
 
     /**
      * Media items for [episodes]. [cacheIds] maps an episode ID to the ID whose downloaded bytes
@@ -339,10 +343,13 @@ internal class PlaybackQueueCoordinator(
         val started =
             withContext(PlaybackThreadPolicy.mainDispatcher) {
                 val controller = mediaHandle.controller ?: return@withContext false
+                // While casting, an episode no receiver can fetch can't start: the Cast queue plays on, untouched.
+                if (!CastSkippedEpisodes.canStart(controller, mediaItems.getOrNull(uniqueStartIndex))) return@withContext false
                 if (currentEp != null) {
-                    publishOptimisticStart(controller, currentEp, podcast, startPosMs, episodesWithSource, initialLikeState)
+                    val speed = controller.playbackParameters.speed
+                    publishOptimisticStart { QueueStartState.optimistic(it, currentEp, podcast, startPosMs, episodesWithSource, initialLikeState, speed) }
                 }
-                markStartSignals(startEpisodeId, startPosMs, initialPositionMs)
+                QueueStartState.markStartSignals(startEpisodeId, startPosMs, initialPositionMs)
                 controller.setMediaItems(mediaItems, uniqueStartIndex, startPosMs)
                 controller.prepare()
 
@@ -357,53 +364,13 @@ internal class PlaybackQueueCoordinator(
     }
 
     /**
-     * Shows [currentEp] as playing before the real MediaController callback arrives. Because isPlaying
-     * flips to true here, the onIsPlayingChanged edge-trigger won't see a false->true transition for
-     * this path, so playback start is signalled explicitly. Runs on the main thread ([controller]).
+     * Publishes [started] ahead of the real MediaController callback. Because isPlaying flips to true
+     * here, the onIsPlayingChanged edge-trigger won't see a false->true transition, so the start is signalled explicitly.
      */
-    private fun publishOptimisticStart(
-        controller: Player,
-        currentEp: Episode,
-        podcast: Podcast,
-        startPosMs: Long,
-        queue: List<Episode>,
-        isLiked: Boolean,
-    ) {
+    private fun publishOptimisticStart(started: (PlayerState) -> PlayerState) {
         val wasPlaying = playerStateFlow.value.isPlaying
-        val baseState =
-            playerStateFlow.value.copy(
-                currentEpisode = currentEp,
-                // A mixed list started under a placeholder (All Downloads) starts under its first episode's show.
-                currentPodcast = QueueShowPolicy.startShow(currentEp, podcast),
-                isPlaying = true,
-                position = startPosMs,
-                duration = currentEp.duration.toLong() * 1000,
-                queue = queue,
-                isLiked = isLiked,
-            )
-        playerStateFlow.value =
-            PlaybackControlSync.withSyncedPlaybackSpeed(
-                baseState,
-                controllerSpeed = controller.playbackParameters.speed,
-            )
-        if (!wasPlaying) {
-            onPlaybackStarted()
-        }
-    }
-
-    /** Labels how the start episode begins: a resume seek, or a pending start from zero. */
-    private fun markStartSignals(startEpisodeId: String?, startPosMs: Long, initialPositionMs: Long?) {
-        if (startPosMs > 0L) {
-            cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                .setSeekSource("resume")
-        } else if (startEpisodeId != null) {
-            PlaybackLifecycleSignals.markPendingZeroStart(startEpisodeId)
-        }
-        recordActivationRequest(startEpisodeId, startPosMs, initialPositionMs == null)
-    }
-
-    private fun recordActivationRequest(episodeId: String?, positionMs: Long, implicit: Boolean) {
-        if (episodeId != null) PlaybackActivationRequest.set(episodeId, positionMs, applyIntroTrim = implicit && positionMs == 0L)
+        playerStateFlow.value = started(playerStateFlow.value)
+        if (!wasPlaying) onPlaybackStarted()
     }
 
     private fun enrichWithContextSourceId(

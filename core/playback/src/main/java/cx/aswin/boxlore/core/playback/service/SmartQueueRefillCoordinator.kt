@@ -82,21 +82,25 @@ class SmartQueueRefillCoordinator(
         val entries = withContext(ioDispatcher) { oncePerEpisode(candidates, snapshot.ids) }.take(room)
         if (entries.isEmpty()) return false
         val cacheIds = withContext(ioDispatcher) { listenerStore.downloadHolders(entries.map { it.episode.id.toString() }) }
+        // While casting, only picks a receiver can fetch join the queue, saved and played alike.
+        val picks = entries.map { it to refillMediaItem(it, cacheIds[it.episode.id.toString()]) }
+            .filter { (_, item) -> !snapshot.casting || CastTransferPolicy.isCastable(item) }
+        if (picks.isEmpty()) return false
 
         // Room rolls back the entire batch if a new transport request or queue edit wins.
-        val persisted = queueRepository.addRefillEntriesIfUnchanged(entries, expectedQueueIds, episodeId) {
+        val persisted = queueRepository.addRefillEntriesIfUnchanged(picks.map { it.first }, expectedQueueIds, episodeId) {
             withContext(mainDispatcher) { isCurrent() }
         }
         if (!persisted) return false
         val appended = withContext(mainDispatcher) {
             if (!isCurrent()) return@withContext false
             // One mutation avoids asynchronous Cast receiver sequence-number races.
-            val items = CastQueueGuard.castable(player, entries.map { refillMediaItem(it, cacheIds[it.episode.id.toString()]) })
+            val items = CastQueueGuard.castable(player, picks.map { it.second })
             if (items.isNotEmpty()) player.addMediaItems(items)
             true
         }
         if (!appended) return false
-        trackRefill(episodeId, podcast, entries)
+        trackRefill(episodeId, podcast, picks.map { it.first })
         return true
     }
 
@@ -104,7 +108,7 @@ class SmartQueueRefillCoordinator(
         if (!isCurrentSession()) return@withContext null
         val item = player.currentMediaItem ?: return@withContext null
         if (PlaybackQueueContext.isContextItem(item) && !contextExhausted) return@withContext null
-        RefillSnapshot(item, player.currentMediaItemIndex, playerIds(player))
+        RefillSnapshot(item, player.currentMediaItemIndex, playerIds(player), CastQueueGuard.isRemote(player))
     }
 
     private fun playerIds(player: Player): List<String> = (0 until player.mediaItemCount).map { mediaIdPrefixStripper(player.getMediaItemAt(it).mediaId) }
@@ -169,7 +173,7 @@ class SmartQueueRefillCoordinator(
         )
     }
 
-    private data class RefillSnapshot(val item: MediaItem, val index: Int, val ids: List<String>)
+    private data class RefillSnapshot(val item: MediaItem, val index: Int, val ids: List<String>, val casting: Boolean)
 }
 
 /**

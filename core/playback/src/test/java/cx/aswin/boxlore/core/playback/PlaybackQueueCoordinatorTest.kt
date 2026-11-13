@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.playback
 
 import android.content.Context
+import androidx.media3.common.MediaItem
 import androidx.media3.session.MediaController
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -87,6 +88,7 @@ class PlaybackQueueCoordinatorTest {
         val mockController = mock(MediaController::class.java)
         `when`(mockController.mediaItemCount).thenReturn(0)
         `when`(mockController.playbackParameters).thenReturn(androidx.media3.common.PlaybackParameters.DEFAULT)
+        `when`(mockController.deviceInfo).thenReturn(androidx.media3.common.DeviceInfo.UNKNOWN)
         mediaHandle = PlaybackMediaControllerHandle()
         mediaHandle.controller = mockController
 
@@ -268,6 +270,55 @@ class PlaybackQueueCoordinatorTest {
         )
         assertEquals(listOf("1"), queueRepository.getQueueEpisodeSnapshot().map { it.id })
     }
+
+    @Test
+    fun whileCastingAnEpisodeNoReceiverCanFetchDoesNotStartOrReplaceTheQueue() = runTest(testDispatcher) {
+        // Regression: the service ignored the request but the app still showed it as playing, resumed
+        // the Cast episode and saved the new queue.
+        val controller = checkNotNull(mediaHandle.controller)
+        `when`(controller.deviceInfo).thenReturn(castDevice)
+        val saved = listOf(testEpisode("1", "pod-1"))
+        queueRepository.replaceQueue(saved)
+        playerStateFlow.value = playerStateFlow.value.copy(currentEpisode = saved.first(), queue = saved)
+        val podcast = cx.aswin.boxlore.core.model.Podcast("pod-1", "Show", "Host", "")
+
+        queueCoordinator.playQueue(listOf(testEpisode("2", "pod-1").copy(audioUrl = "http://192.168.1.5/2.mp3")), podcast)
+
+        org.mockito.Mockito.verify(controller, org.mockito.Mockito.never()).prepare()
+        org.mockito.Mockito.verify(controller, org.mockito.Mockito.never()).play()
+        assertEquals("1", playerStateFlow.value.currentEpisode?.id)
+        assertEquals(listOf("1"), queueRepository.getQueueEpisodeSnapshot().map { it.id })
+    }
+
+    @Test
+    fun anEpisodeTheCastQueueLeftOutStaysSavedAndGoesBackToThePhone() = runTest(testDispatcher) {
+        // Regression: the Cast queue's reconcile deleted it from the saved queue for good.
+        val homeOnly = testEpisode("2", "pod-1").copy(audioUrl = "http://192.168.1.5/2.mp3")
+        val saved = listOf(testEpisode("1", "pod-1"), homeOnly, testEpisode("3", "pod-1"))
+        queueRepository.replaceQueue(saved)
+        playerStateFlow.value = playerStateFlow.value.copy(currentEpisode = saved.first(), queue = saved)
+        val controller = checkNotNull(mediaHandle.controller)
+        val playerItems = mutableListOf("1", "3").map { MediaItem.Builder().setMediaId(it).build() }.toMutableList()
+        `when`(controller.mediaItemCount).thenAnswer { playerItems.size }
+        `when`(controller.currentMediaItemIndex).thenReturn(0)
+        `when`(controller.getMediaItemAt(org.mockito.ArgumentMatchers.anyInt())).thenAnswer { playerItems[it.getArgument(0)] }
+        org.mockito.Mockito.doAnswer {
+            playerItems.add(it.getArgument(0), it.getArgument(1))
+            null
+        }.`when`(controller).addMediaItem(org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.any(MediaItem::class.java))
+
+        `when`(controller.deviceInfo).thenReturn(castDevice)
+        queueCoordinator.reconcileQueueSnapshot(listOf("1", "3"))
+        assertEquals(listOf("1", "2", "3"), playerStateFlow.value.queue.map { it.id })
+        assertEquals(listOf("1", "2", "3"), queueRepository.getQueueEpisodeSnapshot().map { it.id })
+
+        `when`(controller.deviceInfo).thenReturn(androidx.media3.common.DeviceInfo.UNKNOWN)
+        queueCoordinator.reconcileQueueSnapshot(listOf("1", "3"))
+        assertEquals(listOf("1", "2", "3"), playerItems.map { it.mediaId })
+        assertEquals("http://192.168.1.5/2.mp3", playerItems[1].localConfiguration?.uri?.toString())
+    }
+
+    private val castDevice = androidx.media3.common.DeviceInfo.Builder(androidx.media3.common.DeviceInfo.PLAYBACK_TYPE_REMOTE).build()
 
     private fun testEpisode(id: String, podcastId: String) = Episode(
         id = id,

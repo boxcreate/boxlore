@@ -89,6 +89,18 @@ class CastMediaItemConverterTest {
     }
 
     @Test
+    fun aRowAnotherSenderLoadedBecomesAStandInInsteadOfCrashing() {
+        // Regression: a row with its own custom data but no Media3 payload made Media3's converter throw.
+        val url = "https://cdn.example.com/other.mp3"
+        val media = MediaInfo.Builder(url).setContentUrl(url).setCustomData(org.json.JSONObject().put("sender", "other")).build()
+
+        val item = converter.toMediaItem(MediaQueueItem.Builder(media).build())
+
+        assertTrue(item.mediaId.startsWith(BoxLoreCastMediaItemConverter.PLACEHOLDER_ID_PREFIX))
+        assertEquals(url, item.localConfiguration?.uri?.toString())
+    }
+
+    @Test
     fun aStandInNeverTakesAnAddressCastCouldNotStream() {
         val row = MediaQueueItem.Builder(MediaInfo.Builder("content://downloads/episode").build()).build()
 

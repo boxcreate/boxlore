@@ -4,7 +4,6 @@ import android.net.Uri
 import androidx.media3.cast.CastPlayer
 import androidx.media3.cast.RemoteCastPlayer
 import androidx.media3.common.C
-import androidx.media3.common.DeviceInfo
 import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -12,6 +11,7 @@ import androidx.media3.common.PlayerTransferState
 import cx.aswin.boxlore.core.playback.BoxLoreCastMediaItemConverter
 import cx.aswin.boxlore.core.playback.CastMediaEligibility
 import cx.aswin.boxlore.core.playback.CastMediaMetadata
+import cx.aswin.boxlore.core.playback.CastSkippedEpisodes
 
 /**
  * Backports Media3's null-URI filtering for Cast transfers.
@@ -97,7 +97,7 @@ internal object CastTransferPolicy {
  */
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 internal object CastQueueGuard {
-    fun isRemote(player: Player): Boolean = player is RemoteCastPlayer || player.deviceInfo.playbackType == DeviceInfo.PLAYBACK_TYPE_REMOTE
+    fun isRemote(player: Player): Boolean = player is RemoteCastPlayer || CastSkippedEpisodes.isCasting(player)
 
     /** [mediaItems] unchanged for local playback; only the castable ones while casting. */
     fun castable(player: Player, mediaItems: List<MediaItem>,): List<MediaItem> = if (isRemote(player)) mediaItems.filter(CastTransferPolicy::isCastable) else mediaItems
