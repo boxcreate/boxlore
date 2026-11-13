@@ -130,7 +130,7 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
         onSkipNext: () -> Unit,
         onPlayRequested: () -> Unit = {},
         seekSettle: SeekSettleWindow = SeekSettleWindow(),
-    ): ForwardingPlayer = object : ForwardingPlayer(player) {
+    ): ForwardingPlayer = object : CastQueueGuardPlayer(player) {
         /** Marks a seek within the playing episode, so the split-second buffering it causes isn't reported. */
         private fun noteSeek() = seekSettle.onSeek(wasPlaying = player.isPlaying)
 

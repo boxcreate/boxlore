@@ -86,7 +86,7 @@ class SmartQueueRefillCoordinatorTest {
         return SmartQueueRefillCoordinator(database, catalog, repository, engine, prefs, dispatcher, dispatcher, { "show" }, 50, SmartQueueRefillPolicy::stripQueuePrefixes)
     }
 
-    private class Playlist(episodes: List<Episode>, initialIndex: Int) {
+    private class Playlist(episodes: List<Episode>, initialIndex: Int, deviceInfo: androidx.media3.common.DeviceInfo = androidx.media3.common.DeviceInfo.UNKNOWN) {
         val items = episodes.map { episode ->
             MediaItem.Builder().setMediaId(episode.id).setUri(episode.audioUrl)
                 .setMediaMetadata(MediaMetadata.Builder().setTitle(episode.title).setExtras(PlaybackQueueContext.extras(episode, null)).build()).build()
@@ -96,6 +96,7 @@ class SmartQueueRefillCoordinatorTest {
             `when`(player.currentMediaItem).thenAnswer { items[index] }
             `when`(player.currentMediaItemIndex).thenAnswer { index }
             `when`(player.mediaItemCount).thenAnswer { items.size }
+            `when`(player.deviceInfo).thenReturn(deviceInfo)
             `when`(player.getMediaItemAt(anyInt())).thenAnswer { items[it.getArgument<Int>(0)] }
             doAnswer {
                 items.addAll(it.getArgument<List<MediaItem>>(0))
@@ -207,6 +208,28 @@ class SmartQueueRefillCoordinatorTest {
                 }
             },
         )
+    }
+
+    private val castDevice = androidx.media3.common.DeviceInfo.Builder(androidx.media3.common.DeviceInfo.PLAYBACK_TYPE_REMOTE).build()
+    private fun homeOnlyCandidate() = QueueEntry(EpisodeItem(id = 101L, title = "Home only", enclosureUrl = "http://192.168.1.5/101.mp3"), podcast, SmartQueueEngine.SOURCE_RESUME)
+
+    @Test fun `while casting a refill saves and plays only the picks a receiver can fetch`() = runTest {
+        val episodes = listOf(episode(1))
+        repository.replaceQueue(episodes)
+        val playlist = Playlist(episodes, 0, castDevice)
+        assertTrue(coordinator { listOf(candidate(), homeOnlyCandidate()) }.refillQueue(playlist.player))
+        assertEquals(listOf("1", "100"), playlist.items.map { it.mediaId })
+        assertEquals(listOf("1", "100"), repository.getQueueEpisodeSnapshot().map { it.id })
+    }
+
+    @Test fun `while casting a refill with no pick a receiver can fetch changes nothing`() = runTest {
+        val episodes = listOf(episode(1))
+        repository.replaceQueue(episodes)
+        val playlist = Playlist(episodes, 0, castDevice)
+        assertFalse(coordinator { listOf(homeOnlyCandidate()) }.refillQueue(playlist.player))
+        org.mockito.Mockito.verify(playlist.player, org.mockito.Mockito.never()).addMediaItems(anyList())
+        assertEquals(listOf("1"), playlist.items.map { it.mediaId })
+        assertEquals(listOf("1"), repository.getQueueEpisodeSnapshot().map { it.id })
     }
 
     private fun download(id: String) = DownloadedEpisodeEntity(

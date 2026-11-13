@@ -3,7 +3,10 @@ package cx.aswin.boxlore.core.playback
 import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import com.google.android.gms.cast.MediaInfo
+import com.google.android.gms.cast.MediaQueueItem
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -60,6 +63,48 @@ class CastMediaItemConverterTest {
                 .setUri("http://[::1]/private.mp3")
                 .build(),
         )
+    }
+
+    @Test
+    fun turnsAQueueRowWithoutMediaIntoAStandInInsteadOfCrashing() {
+        // Regression: the receiver reported a row with no media and Media3's converter threw.
+        val row = org.mockito.Mockito.mock(MediaQueueItem::class.java)
+        org.mockito.Mockito.`when`(row.itemId).thenReturn(7)
+
+        val item = converter.toMediaItem(row)
+
+        assertEquals("${BoxLoreCastMediaItemConverter.PLACEHOLDER_ID_PREFIX}7", item.mediaId)
+        assertNull(item.localConfiguration)
+    }
+
+    @Test
+    fun turnsAQueueRowWithoutMedia3DataIntoAStandInThatKeepsItsPublicAddress() {
+        val url = "https://cdn.example.com/episode.mp3"
+        val row = MediaQueueItem.Builder(MediaInfo.Builder(url).setContentUrl(url).build()).build()
+
+        val item = converter.toMediaItem(row)
+
+        assertTrue(item.mediaId.startsWith(BoxLoreCastMediaItemConverter.PLACEHOLDER_ID_PREFIX))
+        assertEquals(url, item.localConfiguration?.uri?.toString())
+    }
+
+    @Test
+    fun aRowAnotherSenderLoadedBecomesAStandInInsteadOfCrashing() {
+        // Regression: a row with its own custom data but no Media3 payload made Media3's converter throw.
+        val url = "https://cdn.example.com/other.mp3"
+        val media = MediaInfo.Builder(url).setContentUrl(url).setCustomData(org.json.JSONObject().put("sender", "other")).build()
+
+        val item = converter.toMediaItem(MediaQueueItem.Builder(media).build())
+
+        assertTrue(item.mediaId.startsWith(BoxLoreCastMediaItemConverter.PLACEHOLDER_ID_PREFIX))
+        assertEquals(url, item.localConfiguration?.uri?.toString())
+    }
+
+    @Test
+    fun aStandInNeverTakesAnAddressCastCouldNotStream() {
+        val row = MediaQueueItem.Builder(MediaInfo.Builder("content://downloads/episode").build()).build()
+
+        assertNull(converter.toMediaItem(row).localConfiguration)
     }
 
     @Test

@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.playback
 
 import android.content.Context
+import androidx.media3.common.MediaItem
 import androidx.media3.session.MediaController
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -11,12 +12,14 @@ import cx.aswin.boxlore.core.network.NetworkModule
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -55,8 +58,13 @@ class PlaybackQueueCoordinatorTest {
 
     private val playerStateFlow = MutableStateFlow(PlayerState())
 
+    private val originalMainDispatcher = PlaybackThreadPolicy.mainDispatcher
+
     @Before
     fun setUp() {
+        // Room resumes these tests on its own thread while the test blocks the main looper, so the
+        // controller work runs on the test dispatcher instead of waiting for that looper.
+        PlaybackThreadPolicy.mainDispatcher = testDispatcher
         val context = ApplicationProvider.getApplicationContext<Context>()
         database =
             Room
@@ -80,6 +88,7 @@ class PlaybackQueueCoordinatorTest {
         val mockController = mock(MediaController::class.java)
         `when`(mockController.mediaItemCount).thenReturn(0)
         `when`(mockController.playbackParameters).thenReturn(androidx.media3.common.PlaybackParameters.DEFAULT)
+        `when`(mockController.deviceInfo).thenReturn(androidx.media3.common.DeviceInfo.UNKNOWN)
         mediaHandle = PlaybackMediaControllerHandle()
         mediaHandle.controller = mockController
 
@@ -108,6 +117,7 @@ class PlaybackQueueCoordinatorTest {
 
     @After
     fun tearDown() {
+        PlaybackThreadPolicy.mainDispatcher = originalMainDispatcher
         database.close()
         RssPodcastRepository.clearInstanceForTests()
     }
@@ -219,6 +229,96 @@ class PlaybackQueueCoordinatorTest {
 
         assertEquals(3, queueStarts)
     }
+
+    @Test
+    fun startingAQueueFromABackgroundThreadTalksToTheControllerOnTheMainDispatcher() = runTest(testDispatcher) {
+        // Regression: a caller on a background dispatcher crashed with "MediaController method is
+        // called from a wrong thread".
+        val mainExecutor = java.util.concurrent.Executors.newSingleThreadExecutor { Thread(it, "fake-main") }
+        val backgroundExecutor = java.util.concurrent.Executors.newSingleThreadExecutor { Thread(it, "background") }
+        val controller = checkNotNull(mediaHandle.controller)
+        val threads = java.util.Collections.synchronizedList(mutableListOf<String>())
+        val record = org.mockito.stubbing.Answer<Any?> {
+            threads += "${it.method.name}@${Thread.currentThread().name}"
+            null
+        }
+        `when`(controller.playbackParameters).thenAnswer {
+            threads += "getPlaybackParameters@${Thread.currentThread().name}"
+            androidx.media3.common.PlaybackParameters.DEFAULT
+        }
+        org.mockito.Mockito.doAnswer(record).`when`(controller).setMediaItems(
+            org.mockito.ArgumentMatchers.anyList(),
+            org.mockito.ArgumentMatchers.anyInt(),
+            org.mockito.ArgumentMatchers.anyLong(),
+        )
+        org.mockito.Mockito.doAnswer(record).`when`(controller).prepare()
+        org.mockito.Mockito.doAnswer(record).`when`(controller).play()
+        val podcast = cx.aswin.boxlore.core.model.Podcast("pod-1", "Show", "Host", "https://example.com/a.jpg")
+        PlaybackThreadPolicy.mainDispatcher = mainExecutor.asCoroutineDispatcher()
+        try {
+            withContext(backgroundExecutor.asCoroutineDispatcher()) {
+                queueCoordinator.playQueue(listOf(testEpisode("1", "pod-1")), podcast)
+            }
+        } finally {
+            mainExecutor.shutdown()
+            backgroundExecutor.shutdown()
+        }
+
+        assertEquals(
+            listOf("getPlaybackParameters@fake-main", "setMediaItems@fake-main", "prepare@fake-main", "play@fake-main"),
+            threads.toList(),
+        )
+        assertEquals(listOf("1"), queueRepository.getQueueEpisodeSnapshot().map { it.id })
+    }
+
+    @Test
+    fun whileCastingAnEpisodeNoReceiverCanFetchDoesNotStartOrReplaceTheQueue() = runTest(testDispatcher) {
+        // Regression: the service ignored the request but the app still showed it as playing, resumed
+        // the Cast episode and saved the new queue.
+        val controller = checkNotNull(mediaHandle.controller)
+        `when`(controller.deviceInfo).thenReturn(castDevice)
+        val saved = listOf(testEpisode("1", "pod-1"))
+        queueRepository.replaceQueue(saved)
+        playerStateFlow.value = playerStateFlow.value.copy(currentEpisode = saved.first(), queue = saved)
+        val podcast = cx.aswin.boxlore.core.model.Podcast("pod-1", "Show", "Host", "")
+
+        queueCoordinator.playQueue(listOf(testEpisode("2", "pod-1").copy(audioUrl = "http://192.168.1.5/2.mp3")), podcast)
+
+        org.mockito.Mockito.verify(controller, org.mockito.Mockito.never()).prepare()
+        org.mockito.Mockito.verify(controller, org.mockito.Mockito.never()).play()
+        assertEquals("1", playerStateFlow.value.currentEpisode?.id)
+        assertEquals(listOf("1"), queueRepository.getQueueEpisodeSnapshot().map { it.id })
+    }
+
+    @Test
+    fun anEpisodeTheCastQueueLeftOutStaysSavedAndGoesBackToThePhone() = runTest(testDispatcher) {
+        // Regression: the Cast queue's reconcile deleted it from the saved queue for good.
+        val homeOnly = testEpisode("2", "pod-1").copy(audioUrl = "http://192.168.1.5/2.mp3")
+        val saved = listOf(testEpisode("1", "pod-1"), homeOnly, testEpisode("3", "pod-1"))
+        queueRepository.replaceQueue(saved)
+        playerStateFlow.value = playerStateFlow.value.copy(currentEpisode = saved.first(), queue = saved)
+        val controller = checkNotNull(mediaHandle.controller)
+        val playerItems = mutableListOf("1", "3").map { MediaItem.Builder().setMediaId(it).build() }.toMutableList()
+        `when`(controller.mediaItemCount).thenAnswer { playerItems.size }
+        `when`(controller.currentMediaItemIndex).thenReturn(0)
+        `when`(controller.getMediaItemAt(org.mockito.ArgumentMatchers.anyInt())).thenAnswer { playerItems[it.getArgument(0)] }
+        org.mockito.Mockito.doAnswer {
+            playerItems.add(it.getArgument(0), it.getArgument(1))
+            null
+        }.`when`(controller).addMediaItem(org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.any(MediaItem::class.java))
+
+        `when`(controller.deviceInfo).thenReturn(castDevice)
+        queueCoordinator.reconcileQueueSnapshot(listOf("1", "3"))
+        assertEquals(listOf("1", "2", "3"), playerStateFlow.value.queue.map { it.id })
+        assertEquals(listOf("1", "2", "3"), queueRepository.getQueueEpisodeSnapshot().map { it.id })
+
+        `when`(controller.deviceInfo).thenReturn(androidx.media3.common.DeviceInfo.UNKNOWN)
+        queueCoordinator.reconcileQueueSnapshot(listOf("1", "3"))
+        assertEquals(listOf("1", "2", "3"), playerItems.map { it.mediaId })
+        assertEquals("http://192.168.1.5/2.mp3", playerItems[1].localConfiguration?.uri?.toString())
+    }
+
+    private val castDevice = androidx.media3.common.DeviceInfo.Builder(androidx.media3.common.DeviceInfo.PLAYBACK_TYPE_REMOTE).build()
 
     private fun testEpisode(id: String, podcastId: String) = Episode(
         id = id,
