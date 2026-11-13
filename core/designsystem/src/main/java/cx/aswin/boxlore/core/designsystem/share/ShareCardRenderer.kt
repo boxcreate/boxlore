@@ -1,401 +1,245 @@
-@file:Suppress("LongParameterList", "TooManyFunctions", "kotlin:S107")
+@file:Suppress("TooManyFunctions")
 
 package cx.aswin.boxlore.core.designsystem.share
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.Rect
+import android.graphics.RectF
+import android.graphics.Typeface
+import android.text.Layout
+import android.text.StaticLayout
+import android.text.TextPaint
+import android.text.TextUtils
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.withClip
+import androidx.core.graphics.withTranslation
+import cx.aswin.boxlore.core.designsystem.R
+import cx.aswin.boxlore.core.designsystem.components.BoxLoreLogoAspectRatio
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansTypefaces
 import cx.aswin.boxlore.core.model.ShareTarget
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.floor
+import kotlin.math.sin
 
-internal data class ShareBrandingLayout(
-    val contentGap: Float,
-    val labelSize: Float,
-    val logoWidth: Int,
-    val inline: Boolean,
-)
-
-internal fun shareBrandingLayout(isStory: Boolean): ShareBrandingLayout = if (isStory) {
-    ShareBrandingLayout(
-        contentGap = 80f,
-        labelSize = 36f,
-        logoWidth = 280,
-        inline = false,
-    )
-} else {
-    ShareBrandingLayout(
-        contentGap = 48f,
-        labelSize = 40f,
-        logoWidth = 280,
-        inline = true,
-    )
-}
-
-internal fun shareBrandingTop(isStory: Boolean, contentBottom: Float, brandingHeight: Float): Float {
-    val preferredTop = if (isStory) 1_440f else 1_200f - 96f - brandingHeight
-    return maxOf(preferredTop, contentBottom + shareBrandingLayout(isStory).contentGap)
-}
-
-/** Bitmap card composition for [ShareManager] share sheets / Instagram stories. */
+/**
+ * Draws the share card: the show or episode as a boxlore player, in colours taken from its artwork.
+ * The artwork is shown whole with rounded corners; nothing is cut into a shape.
+ */
 internal object ShareCardRenderer {
+    /**
+     * [seed] is the artwork's colour, or null for boxlore indigo; [progress] places the slider's
+     * thumb (0–1). [scale] draws a smaller copy, for the share sheet's preview.
+     */
+    @Suppress("LongParameterList")
     fun createShareCard(
         context: Context,
-        artwork: android.graphics.Bitmap,
-        title: String,
-        subtitle: String,
+        artwork: Bitmap,
+        seed: Int?,
+        text: ShareCardText,
+        progress: Float,
         target: ShareTarget,
-    ): android.graphics.Bitmap {
-        val isStory = target == ShareTarget.INSTAGRAM_STORY
-        val width = if (isStory) 1080 else 1200
-        val height = if (isStory) 1920 else 1200
-        val output =
-            android.graphics.Bitmap.createBitmap(
-                width,
-                height,
-                android.graphics.Bitmap.Config.ARGB_8888,
-            )
-        val canvas = android.graphics.Canvas(output)
-        canvas.drawColor(android.graphics.Color.parseColor("#2E2DD0"))
-        drawShareCardShapes(
-            canvas = canvas,
-            width = width.toFloat(),
-            height = height.toFloat(),
-            isStory = isStory,
+        scale: Float = 1f,
+    ): Bitmap {
+        val layout = shareCardLayout(target)
+        val colors = shareCardColors(seed)
+        val output = createBitmap(
+            (layout.width * scale).toInt().coerceAtLeast(1),
+            (layout.height * scale).toInt().coerceAtLeast(1),
         )
-
-        val artworkSize = if (isStory) 760f else 680f
-        val artworkTop = if (isStory) 290f else 55f
-        val artworkRect =
-            android.graphics.RectF(
-                (width - artworkSize) / 2f,
-                artworkTop,
-                (width + artworkSize) / 2f,
-                artworkTop + artworkSize,
-            )
-        drawRoundedArtwork(
-            canvas = canvas,
-            artwork = artwork,
-            destination = artworkRect,
-            cornerRadius = 72f,
-        )
-
-        val brandingLayout = shareBrandingLayout(isStory)
-        if (isStory) {
-            val textBottom =
-                drawShareText(
-                    context = context,
-                    canvas = canvas,
-                    canvasWidth = width,
-                    title = title,
-                    subtitle = subtitle,
-                    titleTop = 1_110f,
-                    titleWidth = 860,
-                    titleSize = 60f,
-                    subtitleSize = 44f,
-                    blockSpacing = 13f,
-                )
-            drawShareBranding(
-                context = context,
-                canvas = canvas,
-                canvasWidth = width,
-                contentBottom = textBottom,
-                isStory = true,
-                layout = brandingLayout,
-            )
-        } else {
-            val textBottom =
-                drawShareText(
-                    context = context,
-                    canvas = canvas,
-                    canvasWidth = width,
-                    title = title,
-                    subtitle = subtitle,
-                    titleTop = 785f,
-                    titleWidth = 960,
-                    titleSize = 48f,
-                    subtitleSize = 36f,
-                    blockSpacing = 8f,
-                )
-            drawShareBranding(
-                context = context,
-                canvas = canvas,
-                canvasWidth = width,
-                contentBottom = textBottom,
-                isStory = false,
-                layout = brandingLayout,
-            )
-        }
-
+        val canvas = Canvas(output)
+        canvas.scale(scale, scale)
+        canvas.drawColor(colors.ground)
+        drawPanel(canvas, layout.card, top = layout.cardTopRadius, bottom = layout.joinRadius, color = colors.card)
+        drawArtwork(canvas, artwork, layout.artwork, layout.artworkRadius)
+        drawText(context, canvas, layout, colors, text)
+        drawSlider(canvas, layout.slider, progress, colors)
+        drawPlayButton(canvas, layout.play, colors)
+        drawPanel(canvas, layout.bar, top = layout.joinRadius, bottom = layout.barBottomRadius, color = colors.accent)
+        drawBranding(context, canvas, layout, colors)
         return output
     }
 
-    @Suppress("CyclomaticComplexMethod")
-    private fun drawShareCardShapes(canvas: android.graphics.Canvas, width: Float, height: Float, isStory: Boolean,) {
-        val paint =
-            android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-                color = android.graphics.Color.parseColor("#5B5BDF")
-                alpha = 185
-                style = android.graphics.Paint.Style.FILL
-            }
+    private fun paint(color: Int) = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
 
-        drawExpressiveShape(
-            canvas = canvas,
-            type = cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes.DecorativeType.Puffy,
-            left = width - if (isStory) 345f else 315f,
-            top = if (isStory) -145f else -165f,
-            size = if (isStory) 500f else 455f,
-            rotation = 14f,
-            paint = paint,
-        )
-        drawExpressiveShape(
-            canvas = canvas,
-            type = cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes.DecorativeType.PuffyDiamond,
-            left = if (isStory) -195f else -155f,
-            top = if (isStory) 710f else height * 0.35f,
-            size = if (isStory) 390f else 320f,
-            rotation = -18f,
-            paint = paint.apply { alpha = 155 },
-        )
-        drawExpressiveShape(
-            canvas = canvas,
-            type = cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes.DecorativeType.Cookie4,
-            left = if (isStory) -120f else -100f,
-            top = if (isStory) 35f else -20f,
-            size = if (isStory) 390f else 325f,
-            rotation = -24f,
-            paint = paint.apply { alpha = 130 },
-        )
-        drawExpressiveShape(
-            canvas = canvas,
-            type = cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes.DecorativeType.SoftBurst,
-            left = width - if (isStory) 230f else 195f,
-            top = if (isStory) 710f else 530f,
-            size = if (isStory) 430f else 370f,
-            rotation = 20f,
-            paint = paint.apply { alpha = 180 },
-        )
+    /** A rounded panel with different top and bottom corners. */
+    private fun drawPanel(canvas: Canvas, box: ShareBox, top: Float, bottom: Float, color: Int) {
+        val radii = floatArrayOf(top, top, top, top, bottom, bottom, bottom, bottom)
+        val path = Path().apply { addRoundRect(box.rect(), radii, Path.Direction.CW) }
+        canvas.drawPath(path, paint(color))
     }
 
-    private fun drawExpressiveShape(
-        canvas: android.graphics.Canvas,
-        type: cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes.DecorativeType,
-        left: Float,
-        top: Float,
-        size: Float,
-        rotation: Float,
-        paint: android.graphics.Paint,
-    ) {
-        val path =
-            cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes.androidPath(
-                type = type,
-                width = size,
-                height = size,
-            )
-        canvas.save()
-        canvas.translate(left, top)
-        canvas.rotate(rotation, size / 2f, size / 2f)
-        canvas.drawPath(path, paint)
-        canvas.restore()
-    }
-
-    private fun drawShareBranding(
-        context: Context,
-        canvas: android.graphics.Canvas,
-        canvasWidth: Int,
-        contentBottom: Float,
-        isStory: Boolean,
-        layout: ShareBrandingLayout,
-    ) {
-        val textPaint =
-            android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-                color = android.graphics.Color.WHITE
-                textSize = layout.labelSize
-                typeface = googleSansTypeface(context, android.graphics.Typeface.NORMAL)
-                textAlign = if (layout.inline) android.graphics.Paint.Align.LEFT else android.graphics.Paint.Align.CENTER
-            }
-        val label = context.getString(cx.aswin.boxlore.core.designsystem.R.string.share_listen_on)
-        val labelHeight = textPaint.fontMetrics.descent - textPaint.fontMetrics.ascent
-        val logoHeight = layout.logoWidth / cx.aswin.boxlore.core.designsystem.components.BoxLoreLogoAspectRatio
-        val brandingHeight = if (layout.inline) maxOf(labelHeight, logoHeight) else labelHeight + 12f + logoHeight
-        val brandingTop = shareBrandingTop(isStory, contentBottom, brandingHeight)
-        val labelWidth = textPaint.measureText(label)
-        val rowLeft = (canvasWidth - labelWidth - 18f - layout.logoWidth) / 2f
-        val labelX = if (layout.inline) rowLeft else canvasWidth / 2f
-        val labelTop = if (layout.inline) brandingTop + (brandingHeight - labelHeight) / 2f else brandingTop
-        canvas.drawText(label, labelX, labelTop - textPaint.fontMetrics.ascent, textPaint)
-
-        val logoTop =
-            if (layout.inline) {
-                brandingTop + (brandingHeight - logoHeight) / 2f
-            } else {
-                brandingTop + labelHeight + 12f
-            }
-        val logoLeft = if (layout.inline) rowLeft + labelWidth + 18f else (canvasWidth - layout.logoWidth) / 2f
-        androidx.core.content.ContextCompat
-            .getDrawable(
-                context,
-                cx.aswin.boxlore.core.designsystem.R.drawable.ic_boxlore_logo,
-            )?.mutate()
-            ?.apply {
-                setTint(android.graphics.Color.WHITE)
-                setBounds(
-                    logoLeft.toInt(),
-                    logoTop.toInt(),
-                    (logoLeft + layout.logoWidth).toInt(),
-                    (logoTop + logoHeight).toInt(),
-                )
-                draw(canvas)
-            }
-    }
-
-    private fun drawShareText(
-        context: Context,
-        canvas: android.graphics.Canvas,
-        canvasWidth: Int,
-        title: String,
-        subtitle: String,
-        titleTop: Float,
-        titleWidth: Int,
-        titleSize: Float,
-        subtitleSize: Float,
-        blockSpacing: Float,
-    ): Float {
-        val titleHeight =
-            drawCenteredTextBlock(
-                canvas = canvas,
-                canvasWidth = canvasWidth,
-                text = title,
-                top = titleTop,
-                width = titleWidth,
-                textSize = titleSize,
-                maxLines = 2,
-                color = android.graphics.Color.WHITE,
-                typeface = googleSansTypeface(context, android.graphics.Typeface.BOLD),
-            )
-        var nextTop = titleTop + titleHeight
-        if (subtitle.isNotBlank()) {
-            val bySize = subtitleSize * 0.78f
-            val byTop = nextTop + blockSpacing
-            val byHeight =
-                drawCenteredTextBlock(
-                    canvas = canvas,
-                    canvasWidth = canvasWidth,
-                    text = "by",
-                    top = byTop,
-                    width = titleWidth,
-                    textSize = bySize,
-                    maxLines = 1,
-                    color = android.graphics.Color.parseColor("#BEBEE8"),
-                    typeface = googleSansTypeface(context, android.graphics.Typeface.NORMAL),
-                )
-            val subtitleTop = byTop + byHeight + blockSpacing * 0.5f
-            val subtitleHeight =
-                drawCenteredTextBlock(
-                    canvas = canvas,
-                    canvasWidth = canvasWidth,
-                    text = subtitle,
-                    top = subtitleTop,
-                    width = titleWidth,
-                    textSize = subtitleSize,
-                    maxLines = 1,
-                    color = android.graphics.Color.parseColor("#DCDCF8"),
-                    typeface = googleSansTypeface(context, android.graphics.Typeface.NORMAL),
-                )
-            nextTop = subtitleTop + subtitleHeight
+    private fun drawArtwork(canvas: Canvas, artwork: Bitmap, box: ShareBox, radius: Float) {
+        val side = minOf(artwork.width, artwork.height)
+        val source = Rect((artwork.width - side) / 2, (artwork.height - side) / 2, (artwork.width + side) / 2, (artwork.height + side) / 2)
+        val destination = box.rect()
+        canvas.withClip(Path().apply { addRoundRect(destination, radius, radius, Path.Direction.CW) }) {
+            drawBitmap(artwork, source, destination, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
         }
-        return nextTop
+        // A faint light edge keeps dark covers from melting into the card.
+        val edge = paint(android.graphics.Color.argb(46, 255, 255, 255)).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 2f
+        }
+        canvas.drawRoundRect(RectF(destination).apply { inset(1f, 1f) }, radius - 1f, radius - 1f, edge)
     }
 
-    private fun drawCenteredTextBlock(
-        canvas: android.graphics.Canvas,
-        canvasWidth: Int,
-        text: String,
-        top: Float,
-        width: Int,
-        textSize: Float,
-        maxLines: Int,
-        color: Int,
-        typeface: android.graphics.Typeface,
-    ): Int {
-        val textPaint =
-            android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-                this.color = color
-                this.textSize = textSize
-                this.typeface = typeface
+    private fun drawText(context: Context, canvas: Canvas, layout: ShareCardLayout, colors: ShareCardColors, text: ShareCardText) {
+        val box = layout.text
+        val width = box.width.toInt()
+        val subtitle = text.subtitle.takeIf(String::isNotBlank)?.let {
+            textLayout(it, width, layout.subtitleSize, typeface(context, Typeface.NORMAL), colors.subtitle, maxLines = 1)
+        }
+        val moment = text.moment?.let {
+            textLayout(it, width, layout.momentSize, typeface(context, Typeface.BOLD), colors.accent, maxLines = 1)
+        }
+        val subtitleGap = layout.subtitleSize * 0.4f
+        val momentGap = layout.momentSize * 0.6f
+        val belowTitle = (subtitle?.let { it.height + subtitleGap } ?: 0f) + (moment?.let { it.height + momentGap } ?: 0f)
+        val titleRoom = box.height - belowTitle
+        val bold = typeface(context, Typeface.BOLD)
+
+        fun titleAt(size: Float): StaticLayout {
+            // A line is the font's ascent plus descent (about 1.2× its size), times the spacing.
+            val lineHeight = size * LineHeightFactor * TitleLineSpacing
+            val lines = floor(titleRoom / lineHeight).toInt().coerceIn(1, layout.titleMaxLines)
+            return textLayout(text.title, width, size, bold, colors.title, maxLines = lines, spacing = TitleLineSpacing)
+        }
+        val size = fitTitleSize(layout.titleSizes) { candidate ->
+            val laidOut = titleAt(candidate)
+            laidOut.getEllipsisCount(laidOut.lineCount - 1) == 0 && laidOut.height <= titleRoom
+        }
+        val title = titleAt(size)
+        val blockHeight = title.height + belowTitle
+        var y = if (layout.textBeside) box.top + (box.height - blockHeight) / 2f else box.top
+        y = drawLayout(canvas, title, box.left, y)
+        subtitle?.let { y = drawLayout(canvas, it, box.left, y + subtitleGap) }
+        moment?.let { drawLayout(canvas, it, box.left, y + momentGap) }
+    }
+
+    private fun drawLayout(canvas: Canvas, layout: StaticLayout, left: Float, top: Float): Float {
+        canvas.withTranslation(left, top) { layout.draw(this) }
+        return top + layout.height
+    }
+
+    @Suppress("LongParameterList")
+    private fun textLayout(text: String, width: Int, size: Float, typeface: Typeface, color: Int, maxLines: Int, spacing: Float = 1.15f): StaticLayout {
+        val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.color = color
+            textSize = size
+            this.typeface = typeface
+        }
+        return StaticLayout.Builder.obtain(text, 0, text.length, paint, width)
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+            .setIncludePad(false)
+            .setLineSpacing(0f, spacing)
+            .setMaxLines(maxLines)
+            .setEllipsize(TextUtils.TruncateAt.END)
+            .build()
+    }
+
+    /** The player's slider: a wavy played part, a tall thumb, then a flat track. */
+    private fun drawSlider(canvas: Canvas, box: ShareBox, progress: Float, colors: ShareCardColors) {
+        val centre = box.top + box.height / 2f
+        val thumbX = box.left + box.width * progress.coerceIn(0f, 1f)
+        val gap = 14f
+        val waveEnd = thumbX - gap
+        if (waveEnd > box.left + WaveHalfPeriod) {
+            val wave = Path().apply {
+                moveTo(box.left, centre)
+                var x = box.left
+                while (x < waveEnd) {
+                    x = minOf(x + 3f, waveEnd)
+                    lineTo(x, centre - WaveAmplitude * sin((x - box.left) / WaveHalfPeriod * PI.toFloat()))
+                }
             }
-        val layout =
-            android.text.StaticLayout.Builder
-                .obtain(
-                    text,
-                    0,
-                    text.length,
-                    textPaint,
-                    width,
-                ).setAlignment(android.text.Layout.Alignment.ALIGN_CENTER)
-                .setIncludePad(false)
-                .setLineSpacing(0f, 1.02f)
-                .setMaxLines(maxLines)
-                .setEllipsize(android.text.TextUtils.TruncateAt.END)
-                .build()
-
-        canvas.save()
-        canvas.translate((canvasWidth - width) / 2f, top)
-        layout.draw(canvas)
-        canvas.restore()
-        return layout.height
-    }
-
-    private fun googleSansTypeface(context: Context, style: Int,): android.graphics.Typeface = cx.aswin.boxlore.core.designsystem.theme.GoogleSansTypefaces.create(
-        context = context,
-        style = style,
-        roundness =
-        cx.aswin.boxlore.core.designsystem.theme.GoogleSansTypefaces
-            .cachedRoundness(context),
-    )
-
-    private fun drawRoundedArtwork(
-        canvas: android.graphics.Canvas,
-        artwork: android.graphics.Bitmap,
-        destination: android.graphics.RectF,
-        cornerRadius: Float,
-    ) {
-        val sourceSide = minOf(artwork.width, artwork.height)
-        val sourceLeft = (artwork.width - sourceSide) / 2
-        val sourceTop = (artwork.height - sourceSide) / 2
-        val source =
-            android.graphics.Rect(
-                sourceLeft,
-                sourceTop,
-                sourceLeft + sourceSide,
-                sourceTop + sourceSide,
+            canvas.drawPath(
+                wave,
+                paint(colors.subtitle).apply {
+                style = Paint.Style.STROKE
+                strokeWidth = 10f
+                strokeCap = Paint.Cap.ROUND
+                strokeJoin = Paint.Join.ROUND
+            }
             )
-        val clipPath =
-            android.graphics.Path().apply {
-                addRoundRect(
-                    destination,
-                    cornerRadius,
-                    cornerRadius,
-                    android.graphics.Path.Direction.CW,
-                )
-            }
-        canvas.save()
-        canvas.clipPath(clipPath)
-        canvas.drawBitmap(
-            artwork,
-            source,
-            destination,
-            android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-                isFilterBitmap = true
-            },
-        )
-        canvas.restore()
+        }
+        canvas.drawRoundRect(RectF(thumbX - 6f, box.top, thumbX + 6f, box.bottom), 6f, 6f, paint(colors.thumb))
+        val trackStart = thumbX + 6f + gap
+        if (trackStart < box.right) {
+            canvas.drawRoundRect(RectF(trackStart, centre - 7f, box.right, centre + 7f), 7f, 7f, paint(colors.track))
+        }
+    }
 
-        canvas.drawRoundRect(
-            destination,
-            cornerRadius,
-            cornerRadius,
-            android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-                color = android.graphics.Color.argb(52, 255, 255, 255)
-                style = android.graphics.Paint.Style.STROKE
-                strokeWidth = 2f
-            },
+    /** The scalloped play button the player uses, with a rounded play triangle. */
+    private fun drawPlayButton(canvas: Canvas, box: ShareBox, colors: ShareCardColors) {
+        val cx = box.left + box.width / 2f
+        val cy = box.top + box.height / 2f
+        val radius = box.width / 2f
+        val scallop = Path()
+        val points = 240
+        for (i in 0..points) {
+            val angle = i.toDouble() / points * 2 * PI
+            val r = radius * (1 - ScallopDepth + ScallopDepth * cos(ScallopLobes * angle)).toFloat()
+            val x = cx + r * cos(angle).toFloat()
+            val y = cy + r * sin(angle).toFloat()
+            if (i == 0) scallop.moveTo(x, y) else scallop.lineTo(x, y)
+        }
+        scallop.close()
+        canvas.drawPath(scallop, paint(colors.accent))
+        val side = box.width * 0.34f
+        val left = cx - side * 0.4f
+        val triangle = Path().apply {
+            moveTo(left, cy - side / 2f)
+            lineTo(left + side * 0.9f, cy)
+            lineTo(left, cy + side / 2f)
+            close()
+        }
+        canvas.drawPath(
+            triangle,
+            paint(colors.onAccent).apply {
+            pathEffect = android.graphics.CornerPathEffect(side * 0.14f)
+        }
         )
     }
+
+    private fun drawBranding(context: Context, canvas: Canvas, layout: ShareCardLayout, colors: ShareCardColors) {
+        val label = context.getString(R.string.share_listen_on)
+        val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = colors.onAccent
+            textSize = layout.labelSize
+            typeface = typeface(context, Typeface.NORMAL)
+        }
+        val gap = layout.labelSize * 0.45f
+        val labelWidth = textPaint.measureText(label)
+        val logoHeight = layout.logoWidth / BoxLoreLogoAspectRatio
+        val bar = layout.bar
+        val left = bar.left + (bar.width - labelWidth - gap - layout.logoWidth) / 2f
+        val centre = bar.top + bar.height / 2f
+        val metrics = textPaint.fontMetrics
+        canvas.drawText(label, left, centre - (metrics.ascent + metrics.descent) / 2f, textPaint)
+        ContextCompat.getDrawable(context, R.drawable.ic_boxlore_logo)?.mutate()?.apply {
+            setTint(colors.onAccent)
+            val logoLeft = (left + labelWidth + gap).toInt()
+            val logoTop = (centre - logoHeight / 2f).toInt()
+            setBounds(logoLeft, logoTop, (logoLeft + layout.logoWidth).toInt(), (logoTop + logoHeight).toInt())
+            draw(canvas)
+        }
+    }
+
+    private fun typeface(context: Context, style: Int): Typeface =
+        GoogleSansTypefaces.create(context = context, style = style, roundness = GoogleSansTypefaces.cachedRoundness(context))
+
+    private fun ShareBox.rect() = RectF(left, top, right, bottom)
+
+    private const val TitleLineSpacing = 1.06f
+    private const val LineHeightFactor = 1.2f
+    private const val WaveAmplitude = 13f
+    private const val WaveHalfPeriod = 24f
+    private const val ScallopLobes = 12
+    private const val ScallopDepth = 0.035
 }
