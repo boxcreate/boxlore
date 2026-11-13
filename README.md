@@ -83,6 +83,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>In Android Auto, artwork loads faster, and every episode has a picture, in lists and in the queue: one with no image of its own shows its show's cover.</li>
 <li>In Android Auto, tapping something that can't be played no longer stops what you're listening to.</li>
 <li>In Android Auto, skipping forward or back no longer sends the list you're browsing back to the top.</li>
+<li>Casting no longer closes boxlore when your queue has an episode your Cast device can't stream, such as one from a feed on your home network. Those episodes stay in your queue but are skipped on the Cast device.</li>
 </ul>
 <!-- release-upcoming:end -->
 
