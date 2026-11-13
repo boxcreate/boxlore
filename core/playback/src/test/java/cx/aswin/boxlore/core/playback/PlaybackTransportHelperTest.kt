@@ -102,6 +102,22 @@ class PlaybackTransportHelperTest {
         assertEquals(listOf("handed-over", "old-first", "old-second"), items.map { it.mediaId })
     }
 
+    @Test fun `resume does not queue an episode twice when the queue holds it under another ID`() = runTest {
+        val shown = episode("recipe-id")
+        val state =
+            PlayerState(
+                currentEpisode = shown,
+                currentPodcast = Podcast(id = "1", title = "Show", artist = "", imageUrl = ""),
+                position = 340_000L,
+                queue = listOf(episode("first"), episode("feed-id").copy(audioUrl = shown.audioUrl)),
+            )
+
+        val (items, index) = resumed(state)
+
+        assertEquals(1, index)
+        assertEquals(listOf("first", "feed-id"), items.map { it.mediaId })
+    }
+
     @Test fun `resume keeps a saved queue that holds the shown episode and starts at it`() = runTest {
         val state =
             PlayerState(

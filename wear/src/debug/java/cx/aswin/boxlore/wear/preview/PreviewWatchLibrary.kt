@@ -116,6 +116,8 @@ internal class PreviewWatchPlayback(private val library: PreviewWatchLibrary) : 
 
     override fun togglePlayPause() = state.update { it?.copy(isPlaying = !it.isPlaying) }
 
+    override fun pause() = state.update { it?.copy(isPlaying = false) }
+
     override fun seekBack() = seek { it.progress - it.seekBackSeconds / seconds(it) }
 
     override fun seekForward() = seek { it.progress + it.seekForwardSeconds / seconds(it) }

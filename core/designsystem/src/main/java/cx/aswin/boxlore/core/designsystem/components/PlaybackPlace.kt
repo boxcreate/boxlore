@@ -102,7 +102,7 @@ fun PlayingOnPill(offer: WatchPlayOffer, colorScheme: ColorScheme, modifier: Mod
                     contentDescription = description
                     role = Role.Button
                 }
-                .padding(start = if (quiet) 12.dp else 16.dp, end = if (quiet) 8.dp else 8.dp),
+                .padding(start = if (quiet) 12.dp else 16.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
         ) {

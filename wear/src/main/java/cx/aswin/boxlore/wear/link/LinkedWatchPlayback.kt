@@ -11,7 +11,6 @@ import cx.aswin.boxlore.wear.data.handOver
 import cx.aswin.boxlore.wear.data.takeOver
 import cx.aswin.boxlore.wear.model.NowPlaying
 import cx.aswin.boxlore.wear.model.PlaybackPlace
-import cx.aswin.boxlore.wear.model.SleepTimerChoice
 import cx.aswin.boxlore.wear.model.WatchEpisode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -93,7 +92,7 @@ class LinkedWatchPlayback(
     /** The player's own thread: what happens after a command is lost runs here, never on the link's. */
     private val scope: CoroutineScope,
     private val clock: () -> Long = System::currentTimeMillis,
-) : WatchPlayback {
+) : WatchPlayback by watch {
     override val nowPlaying: StateFlow<NowPlaying?> =
         combine(watch.nowPlaying, link.phoneNowPlaying, ticksWhilePlaying(link.phoneNowPlaying)) { mine, phone, _ ->
             // The watch's own copy carries the ID its lists use, so the playing row is marked there too.
@@ -103,8 +102,6 @@ class LinkedWatchPlayback(
 
     override val phoneUpNext: StateFlow<List<WatchEpisode>?> =
         combine(nowPlaying, link.phoneNowPlaying, store.state, PlaceRules::phoneQueue).stateIn(scope, SharingStarted.Eagerly, null)
-
-    override val hasDailyMix: Boolean get() = watch.hasDailyMix
 
     override val canSwitchPlace: Boolean
         get() = nowPlaying.value != null && PlaceRules.canSwitch(onPhone, link.phoneReachable.value)
@@ -130,7 +127,7 @@ class LinkedWatchPlayback(
         val command = WearLinkCodec.decode<WearLinkCommand>(bytes) ?: return
         scope.launch {
             when (command.action) {
-                WearLinkCommand.PAUSE -> if (watch.nowPlaying.value?.isPlaying == true) watch.togglePlayPause()
+                WearLinkCommand.PAUSE -> watch.pause()
                 WearLinkCommand.PLAY_EPISODE -> command.episode?.let { takeFromPhone(it, command.positionMs ?: 0L, command.upNext) }
             }
         }
@@ -152,8 +149,6 @@ class LinkedWatchPlayback(
         watch.play(episodeId)
     }
 
-    override fun playDailyMix() = watch.playDailyMix()
-
     override fun togglePlayPause() {
         if (!onPhone) return watch.togglePlayPause()
         val phonePlaying = link.phoneNowPlaying.value?.isPlaying == true
@@ -170,8 +165,6 @@ class LinkedWatchPlayback(
 
     override fun setSpeed(speed: Float) =
         if (onPhone) link.send(WearLinkCommand(WearLinkCommand.SET_SPEED, speed = speed)) else watch.setSpeed(speed)
-
-    override fun setSleepTimer(choice: SleepTimerChoice) = watch.setSleepTimer(choice)
 
     override fun switchPlace() = if (onPhone) moveToWatch() else moveToPhone()
 
@@ -194,7 +187,7 @@ class LinkedWatchPlayback(
     private fun moveToPhone() {
         val mine = watch.nowPlaying.value ?: return
         val wasPlaying = mine.isPlaying
-        if (wasPlaying) watch.togglePlayPause()
+        watch.pause()
         val state = store.state.value
         val episode = state.episodes[mine.episode.id] ?: mine.episode
         val command =

@@ -20,7 +20,8 @@ internal object ResumeQueuePolicy {
      * episode the listener did not ask for.
      */
     fun plan(queue: List<Episode>, shown: Episode): Pair<List<Episode>, Int> {
-        val index = queue.indexOfFirst { it.id == shown.id }
+        // An episode can be queued under another of its IDs; the same audio address is the same episode.
+        val index = queue.indexOfFirst { it.id == shown.id || (shown.audioUrl.isNotBlank() && it.audioUrl == shown.audioUrl) }
         return if (index >= 0) queue to index else (listOf(shown) + queue) to 0
     }
 }

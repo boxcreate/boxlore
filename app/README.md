@@ -91,7 +91,7 @@ src/main/java/cx/aswin/boxlore/
   share/          EpisodeShareRegistrationWorker
   sync/           CloudSyncWorker, CloudSyncTriggerCoordinator, UpgradeRepairWorker,
                   switches, AnalyticsFeedTelemetry
-  wearlink/       WearLinkListenerService, PhoneLinkAdapters, WearOsSettingsWiring, WatchCrossPlayWiring
+  wearlink/       WearLinkListenerService, PhoneLinkAdapters, wiring
   ui/             BoxLoreAppRoot, StartupWorkGate, TabletAppShell, TabletAppPlayer,
                   AdaptivePlayerChrome, announcement/, libraryimport/, logic/
   updates/        AppUpdates, UpdateChecker, direct and Play sources, AppUpdatesPanel

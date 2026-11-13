@@ -110,14 +110,14 @@ class FileWatchDownloads(
             fetch(episode, url)
             target(episode.id).length()
         } catch (cancelled: CancellationException) {
-            partial(episode.id).delete()
+            partial(episode.id).remove()
             throw cancelled
         } catch (refused: DownloadRefused) {
-            partial(episode.id).delete()
+            partial(episode.id).remove()
             refusals.tryEmit(refused.problem)
             null
         } catch (_: IOException) {
-            partial(episode.id).delete()
+            partial(episode.id).remove()
             null
         }
 
@@ -139,14 +139,19 @@ class FileWatchDownloads(
         val buffer = ByteArray(BUFFER_BYTES)
         var done = 0L
         var reported = 0f
+        var checkedAt = 0L
         while (true) {
             coroutineContext.ensureActive()
             val read = input.read(buffer)
             if (read < 0) break
             output.write(buffer, 0, read)
             done += read
-            // A host that gave no size is checked as the bytes arrive instead.
-            if (total == null && done > limits.limitBytes()) throw DownloadRefused(WatchDownloadProblem.OverLimit)
+            // A host that gave no size is checked as the bytes arrive instead: against the limit
+            // with everything else stored, and against the room left on the watch.
+            if (total == null && done - checkedAt >= UNKNOWN_SIZE_CHECK_BYTES) {
+                checkedAt = done
+                makeRoom(done, arriving = true)
+            }
             val fraction = if (total != null) done.toFloat() / total else 0f
             if (fraction - reported >= PROGRESS_STEP) {
                 reported = fraction
@@ -155,9 +160,18 @@ class FileWatchDownloads(
         }
     }
 
-    /** Clears older downloads for one of [bytes], or refuses it when the rules leave no room. */
-    private fun makeRoom(bytes: Long?) {
-        val room = StoragePolicy.room(bytes, store.state.value, limits.limitBytes(), limits.freeBytes(), limits.playingId())
+    /**
+     * Clears older downloads for one of [bytes], or refuses it when the rules leave no room.
+     * [arriving] is for a download of unknown size that has already written [bytes] to the watch.
+     */
+    private fun makeRoom(bytes: Long?, arriving: Boolean = false) {
+        val state = store.state.value
+        val room =
+            if (arriving) {
+                StoragePolicy.roomWhileArriving(bytes ?: 0L, state, limits.limitBytes(), limits.freeBytes(), limits.playingId())
+            } else {
+                StoragePolicy.room(bytes, state, limits.limitBytes(), limits.freeBytes(), limits.playingId())
+            }
         when (room) {
             is StorageRoom.Refused -> throw DownloadRefused(room.problem)
             is StorageRoom.Available -> room.evict.forEach(::discard)
@@ -165,15 +179,20 @@ class FileWatchDownloads(
     }
 
     private fun discard(episodeId: String) {
-        target(episodeId).delete()
-        partial(episodeId).delete()
+        target(episodeId).remove()
+        partial(episodeId).remove()
         store.update { state -> state.episodes[episodeId]?.let { state.download(it, WatchDownload.None) } ?: state }
     }
 
     /** Deletes files no saved download points to, such as ones left by an interrupted run. */
     private fun deleteStrays() {
         val known = store.state.value.downloads.map { safeName(it.id) }.toSet() + jobs.keys.map(::safeName)
-        directory.listFiles()?.filter { it.nameWithoutExtension !in known }?.forEach { it.delete() }
+        directory.listFiles()?.filter { it.nameWithoutExtension !in known }?.forEach { it.remove() }
+    }
+
+    /** Deletes the file; one that will not go now is left for the next clean-up of strays. */
+    private fun File.remove() {
+        if (exists() && !delete()) deleteOnExit()
     }
 
     private fun target(episodeId: String): File = File(directory, safeName(episodeId) + ".audio")
@@ -187,6 +206,9 @@ class FileWatchDownloads(
         const val DIRECTORY_NAME = "watch_downloads"
         private const val BUFFER_BYTES = 64 * 1024
         private const val PROGRESS_STEP = 0.02f
+
+        /** How often a download of unknown size is held against the storage rules. */
+        private const val UNKNOWN_SIZE_CHECK_BYTES = 4L * 1024 * 1024
 
         /** Episode IDs become file names; anything but letters, digits, dash and underscore is replaced. */
         fun safeName(episodeId: String): String = episodeId.replace(Regex("[^A-Za-z0-9_-]"), "_")

@@ -19,9 +19,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,7 +48,12 @@ import cx.aswin.boxlore.wear.model.WatchShow
 import cx.aswin.boxlore.wear.ui.components.Artwork
 import kotlin.math.min
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+/** How long the crown has to be still before the honeycomb snaps to the nearest show. */
+private const val CROWN_REST_MS = 140L
 
 private val SnapSpring = spring<Offset>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
 
@@ -62,6 +70,7 @@ internal fun HoneycombShows(
     val cells = remember(shows.size) { HoneycombMath.spiral(shows.size) }
     val pan = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
     val scope = rememberCoroutineScope()
+    var crownRest by remember { mutableStateOf<Job?>(null) }
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
@@ -90,7 +99,13 @@ internal fun HoneycombShows(
                     }
                     .onRotaryScrollEvent { event ->
                         moveBy(0f, -event.verticalScrollPixels)
-                        settle()
+                        // Snap only once the crown has come to rest, not after every small turn.
+                        crownRest?.cancel()
+                        crownRest =
+                            scope.launch {
+                                delay(CROWN_REST_MS)
+                                settle()
+                            }
                         true
                     }
                     .focusRequester(focusRequester)

@@ -75,6 +75,23 @@ internal object StoragePolicy {
         return if (left + needed > limitBytes) StorageRoom.Refused(WatchDownloadProblem.OverLimit) else StorageRoom.Available(evict)
     }
 
+    /**
+     * The same question for a download of unknown size while it arrives. Its [writtenBytes] are
+     * already on the watch, so the free space is judged as it stands, and the limit is held with
+     * everything else that is stored: without this, such a download could grow to the whole limit
+     * on top of what was already there.
+     */
+    fun roomWhileArriving(
+        writtenBytes: Long,
+        state: WatchLibraryState,
+        limitBytes: Long,
+        freeWatchBytes: Long,
+        playingId: String?,
+    ): StorageRoom {
+        if (freeWatchBytes < FREE_SPACE_FLOOR_BYTES) return StorageRoom.Refused(WatchDownloadProblem.WatchFull)
+        return room(writtenBytes, state, limitBytes, freeWatchBytes = Long.MAX_VALUE, playingId = playingId)
+    }
+
     /** The least recently used of [stored] to drop so the rest takes no more than [budgetBytes]. */
     private fun overflow(stored: List<WatchEpisode>, budgetBytes: Long): List<String> {
         var total = stored.sumOf(WatchEpisode::storedBytes)

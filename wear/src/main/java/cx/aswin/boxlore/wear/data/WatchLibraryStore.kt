@@ -59,10 +59,9 @@ class WatchLibraryStore(
         runCatching {
             val temp = File(file.parentFile, file.name + ".tmp")
             temp.writeText(json.encodeToString(WatchLibraryState.serializer(), state))
-            if (!temp.renameTo(file)) {
-                file.delete()
-                temp.renameTo(file)
-            }
+            // Some file systems will not rename over an existing file, so that one is removed first.
+            val swapped = temp.renameTo(file) || (file.delete() && temp.renameTo(file))
+            check(swapped) { "Could not replace the saved library" }
         }
     }
 

@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsInfoTip
@@ -74,6 +75,7 @@ internal fun WearOsSettingsPage(
     linked: WearOsSettings?,
     onBack: () -> Unit,
 ) {
+    TrackScreenView("wear_os")
     val settings = linked ?: WearOsSettings()
     val state = settings.state
     SettingsScaffold(title = "Wear OS", onBack = onBack) {

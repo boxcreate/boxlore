@@ -43,7 +43,9 @@ class LiveWatchPlayback(
     private val state = MutableStateFlow(restingState(store))
     private var controller: MediaController? = null
     private var connecting = false
-    private var whenConnected: ((MediaController) -> Unit)? = null
+
+    // Everything asked for while the player connects, in order: a second tap must not replace the first.
+    private val whenConnected = ArrayDeque<(MediaController) -> Unit>()
     private var current: WatchEpisode? = state.value?.episode
     private var sleepTimer = SleepTimerChoice.Off
     private var sleepJob: Job? = null
@@ -73,9 +75,6 @@ class LiveWatchPlayback(
         }
     }
 
-    /** The watch has no Daily Mix of its own; it arrives with the phone link. */
-    override fun playDailyMix() = Unit
-
     override fun togglePlayPause() {
         val episode = current ?: return
         withController { player ->
@@ -86,6 +85,8 @@ class LiveWatchPlayback(
             }
         }
     }
+
+    override fun pause() = withController { it.pause() }
 
     override fun seekBack() = withController { it.seekBack() }
 
@@ -107,16 +108,13 @@ class LiveWatchPlayback(
         controller?.let(::publish)
     }
 
-    /** Moving playback to the phone needs the phone link. */
-    override fun switchPlace() = Unit
-
     private fun withController(action: (MediaController) -> Unit) {
         val ready = controller
         if (ready != null) {
             action(ready)
             return
         }
-        whenConnected = action
+        whenConnected.addLast(action)
         if (connecting) return
         connecting = true
         val token = SessionToken(context, ComponentName(context, WatchPlaybackService::class.java))
@@ -124,11 +122,15 @@ class LiveWatchPlayback(
         future.addListener(
             {
                 connecting = false
-                val connected = runCatching { future.get() }.getOrNull() ?: return@addListener
+                val connected = runCatching { future.get() }.getOrNull()
+                if (connected == null) {
+                    // No player: what was asked for is dropped, and the next tap connects afresh.
+                    whenConnected.clear()
+                    return@addListener
+                }
                 controller = connected
                 connected.addListener(PlayerEvents(connected))
-                whenConnected?.invoke(connected)
-                whenConnected = null
+                while (whenConnected.isNotEmpty()) whenConnected.removeFirst().invoke(connected)
             },
             ContextCompat.getMainExecutor(context),
         )
@@ -181,10 +183,18 @@ class LiveWatchPlayback(
         if (downloads.file(finished.id) != null) downloads.remove(finished.id)
         val continues = PlaybackRules.continuesAfterEnd(sleepTimer)
         sleepTimer = SleepTimerChoice.Off
-        val next = store.state.value.takeNext().first
-        if (continues && next != null) {
-            store.update { it.takeNext().second }
-            play(next.id)
+        // Read and taken in one step, so a queue changed meanwhile cannot hand over the wrong episode.
+        var next: WatchEpisode? = null
+        if (continues) {
+            store.update { state ->
+                val (episode, rest) = state.takeNext()
+                next = episode
+                rest
+            }
+        }
+        val following = next
+        if (following != null) {
+            play(following.id)
         } else {
             publish(player)
         }
@@ -226,7 +236,7 @@ private fun restingState(store: WatchLibraryStore): NowPlaying? {
 
 /** Stored audio plays from the watch; anything else streams from the episode's own address. */
 private fun mediaItem(episode: WatchEpisode, downloads: WatchDownloads): MediaItem {
-    val uri = downloads.file(episode.id)?.let(Uri::fromFile) ?: Uri.parse(episode.audioUrl)
+    val uri = downloads.file(episode.id)?.let(Uri::fromFile) ?: episode.audioUrl?.let(Uri::parse) ?: Uri.EMPTY
     val metadata =
         MediaMetadata.Builder()
             .setTitle(episode.title)

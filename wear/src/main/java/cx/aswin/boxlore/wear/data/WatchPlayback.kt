@@ -35,10 +35,13 @@ interface WatchPlayback {
 
     fun play(episodeId: String)
 
-    /** Starts the listener's Daily Mix. */
-    fun playDailyMix()
+    /** Starts the listener's Daily Mix; does nothing where there is none. */
+    fun playDailyMix() = Unit
 
     fun togglePlayPause()
+
+    /** Stops playback; does nothing when it is already stopped. */
+    fun pause()
 
     fun seekBack()
 
@@ -48,8 +51,8 @@ interface WatchPlayback {
 
     fun setSleepTimer(choice: SleepTimerChoice)
 
-    /** Moves the current episode to the phone when it is on the watch, and the other way round. */
-    fun switchPlace()
+    /** Moves the current episode to the phone when it is on the watch, and the other way round. Needs the phone link. */
+    fun switchPlace() = Unit
 }
 
 /** Playback with nothing loaded and no way to start anything. */
@@ -60,9 +63,9 @@ class IdleWatchPlayback : WatchPlayback {
 
     override fun play(episodeId: String) = Unit
 
-    override fun playDailyMix() = Unit
-
     override fun togglePlayPause() = Unit
+
+    override fun pause() = Unit
 
     override fun seekBack() = Unit
 
@@ -71,6 +74,4 @@ class IdleWatchPlayback : WatchPlayback {
     override fun setSpeed(speed: Float) = Unit
 
     override fun setSleepTimer(choice: SleepTimerChoice) = Unit
-
-    override fun switchPlace() = Unit
 }

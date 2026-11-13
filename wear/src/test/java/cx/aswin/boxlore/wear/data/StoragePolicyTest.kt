@@ -113,6 +113,28 @@ class StoragePolicyTest {
         assertEquals(StorageRoom.Refused(WatchDownloadProblem.OverLimit), room)
     }
 
+    // Regression: a host that gives no size let one download grow to the whole limit on top of what was stored.
+    @Test
+    fun `a download of unknown size is held to the limit together with what is already stored`() {
+        val state = library(Triple("old", 200, 5), Triple("new", 200, 1))
+
+        // 60 MB in: everything still fits a 500 MB limit.
+        assertEquals(StorageRoom.Available(emptyList()), StoragePolicy.roomWhileArriving(60 * mb, state, 500 * mb, plenty, playingId = null))
+        // 150 MB in: the least recently used download makes way.
+        assertEquals(StorageRoom.Available(listOf("old")), StoragePolicy.roomWhileArriving(150 * mb, state, 500 * mb, plenty, playingId = null))
+        // Past the limit by itself: refused, whatever else could be removed.
+        assertEquals(StorageRoom.Refused(WatchDownloadProblem.OverLimit), StoragePolicy.roomWhileArriving(501 * mb, state, 500 * mb, plenty, playingId = null))
+    }
+
+    @Test
+    fun `a download of unknown size stops when the watch itself runs short of room`() {
+        val short = StoragePolicy.FREE_SPACE_FLOOR_BYTES - 1
+
+        assertEquals(StorageRoom.Refused(WatchDownloadProblem.WatchFull), StoragePolicy.roomWhileArriving(10 * mb, library(), 500 * mb, short, playingId = null))
+        // What it has written is already off the free space, so it is not counted against it twice.
+        assertEquals(StorageRoom.Available(emptyList()), StoragePolicy.roomWhileArriving(400 * mb, library(), 500 * mb, StoragePolicy.FREE_SPACE_FLOOR_BYTES + mb, playingId = null))
+    }
+
     @Test
     fun `a nearly full watch refuses a download whatever the limit`() {
         val free = StoragePolicy.FREE_SPACE_FLOOR_BYTES + 10 * mb
