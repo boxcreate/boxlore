@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `WidgetBitmapCache` keeps widget pictures in memory, and library covers load in batches and on demand in `LibraryWidgetRemoteViewsService`. ([#1248](https://github.com/boxcreate/boxlore/pull/1248)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Static widget picker previews are redrawn in the new widget shapes, with the cover cuts baked into the sample cover vectors. ([#1249](https://github.com/boxcreate/boxlore/pull/1249)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - The widget colour choice moves from Theme & colors to Appearance › Widgets. ([#1249](https://github.com/boxcreate/boxlore/pull/1249)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- `AutoBrowseLibraryCallback` picks a list's play context through `playContextFor` instead of a chained elvis. ([#1253](https://github.com/boxcreate/boxlore/pull/1253)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Fixed
 - Android Auto list rows show their subtitle (time left, date and length) through a display title instead of the artist. ([#1247](https://github.com/boxcreate/boxlore/pull/1247)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - A car play request with nothing playable fails instead of clearing the player; `onSubscribe` no longer rebuilds the tree through `onGetItem`. ([#1247](https://github.com/boxcreate/boxlore/pull/1247)) <!-- impact:user-impact-high --> <!-- copy:locked -->
