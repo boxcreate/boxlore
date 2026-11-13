@@ -45,3 +45,4 @@ Announcement title:
 - In Android Auto, tapping something that can't be played no longer stops what you're listening to.
 - In Android Auto, skipping forward or back no longer sends the list you're browsing back to the top.
 - Casting no longer closes boxlore when your queue has an episode your Cast device can't stream, such as one from a feed on your home network. Those episodes stay in your queue but are skipped on the Cast device.
+- After you listen on another device, Play on the mini player now starts the episode it shows, at the right spot, instead of an older one from your queue.
