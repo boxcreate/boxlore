@@ -19,4 +19,13 @@
     <!-- Under the number on the picked time's badge: "45" over "min", "1" over "hr". -->
     <string name="sleep_prompt_unit_minutes">min</string>
     <string name="sleep_prompt_unit_hours">hr</string>
+    <!-- Where the episode plays, at the top of the player while a watch with boxlore is in reach. A phone icon follows the label. -->
+    <string name="playing_on_label">Playing on</string>
+    <string name="playing_on_description">Playing on this phone. Change where it plays</string>
+    <string name="playing_on_this_phone">This phone</string>
+    <string name="play_on_watch">Play on watch</string>
+    <!-- Shown right after this phone started playing while the watch was playing. -->
+    <string name="watch_notice_title">Playing on this phone</string>
+    <string name="watch_notice_body">Your watch was paused.</string>
+    <string name="play_on_watch_instead">Play on watch instead</string>
 </resources>

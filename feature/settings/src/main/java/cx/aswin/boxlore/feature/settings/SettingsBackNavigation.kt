@@ -9,6 +9,7 @@ internal fun String?.toSettingsDestination(): ProfileSettingsDestination = when 
     "theme" -> ProfileSettingsDestination.Theme
     "playback" -> ProfileSettingsDestination.Playback
     "downloads" -> ProfileSettingsDestination.Downloads
+    "wear", "wear_os", "wear-os", "watch" -> ProfileSettingsDestination.WearOs
     "privacy" -> ProfileSettingsDestination.Privacy
     "about" -> ProfileSettingsDestination.About
     "support", "support_us", "support-us", "donate", "tips" -> ProfileSettingsDestination.Support

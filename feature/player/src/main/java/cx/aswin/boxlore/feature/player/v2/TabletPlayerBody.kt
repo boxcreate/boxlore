@@ -45,6 +45,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.LocalWatchPlayOffer
+import cx.aswin.boxlore.core.designsystem.components.PlayingOnPill
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
@@ -193,7 +195,14 @@ private fun TabletPlayerHeader(model: FullPlayerBodyModel, display: FullPlayerDi
             activeTint = display.colorScheme.primary,
             modifier = Modifier.size(48.dp),
         )
-        Text(stringResource(R.string.player_now_playing), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+        val watchOffer = LocalWatchPlayOffer.current
+        if (watchOffer != null) {
+            // The same control as on a phone, at the start of the header where the label was.
+            PlayingOnPill(offer = watchOffer, colorScheme = display.colorScheme)
+            Spacer(Modifier.weight(1f))
+        } else {
+            Text(stringResource(R.string.player_now_playing), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+        }
         if (display.isContextPane) {
             actions.onDockPlayer?.let { dock ->
                 IconButton(onClick = dock) { Icon(Icons.Rounded.KeyboardArrowDown, stringResource(R.string.minimal_collapse)) }

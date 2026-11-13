@@ -6,7 +6,25 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.network.model.HistoryItem
 import kotlinx.coroutines.flow.Flow
 
-/** History / like / completion [PlaybackRepository] API (non-port methods). */
+/** The loaded episode, the player's position in it and its length, in ms. The length is 0 while unknown. */
+data class PlaybackProgressNow(val episodeId: String, val positionMs: Long, val durationMs: Long)
+
+/**
+ * Where the player is right now, read from the player itself. [PlaybackRepository.playerState]
+ * only moves its position while the app is on screen, so anything that reports progress with the
+ * screen off asks here. Null when no episode is loaded. Call on the main thread.
+ */
+fun PlaybackRepository.progressNow(): PlaybackProgressNow? {
+    val mediaController = controller?.takeIf { it.isConnected && it.mediaItemCount > 0 } ?: return null
+    val mediaId = mediaController.currentMediaItem?.mediaId ?: return null
+    return PlaybackProgressNow(
+        episodeId = PlaybackMediaIdPolicy.stripMediaIdPrefixes(mediaId),
+        positionMs = mediaController.currentPosition.coerceAtLeast(0L),
+        durationMs = mediaController.duration.coerceAtLeast(0L),
+    )
+}
+
+/** History / like / completion / live progress [PlaybackRepository] API (non-port methods). */
 val PlaybackRepository.lastPlayedSession: Flow<PlaybackSession?>
     get() = historyStore.lastPlayedSession
 

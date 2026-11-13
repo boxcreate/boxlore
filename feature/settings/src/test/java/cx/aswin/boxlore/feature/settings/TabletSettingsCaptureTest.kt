@@ -35,6 +35,8 @@ import cx.aswin.boxlore.feature.settings.pages.PrivacySettingsPage
 import cx.aswin.boxlore.feature.settings.pages.RecommendationsSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.SupportDevelopmentPage
 import cx.aswin.boxlore.feature.settings.pages.SyncAndBackupsPage
+import cx.aswin.boxlore.feature.settings.pages.WearOsSettings
+import cx.aswin.boxlore.feature.settings.pages.WearOsSettingsPage
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
@@ -116,13 +118,18 @@ private fun CaptureSettingsPage(destination: ProfileSettingsDestination) {
         -> CaptureAppearanceSubpage(destination, appearance)
         ProfileSettingsDestination.CustomTheme -> CustomThemeEditor(appearance.state, {}, {})
         ProfileSettingsDestination.Playback -> PlaybackSettingsPage(playback.state, playback.actions, {})
-        ProfileSettingsDestination.Downloads -> DownloadsSettingsPage({}, {}, {})
+        ProfileSettingsDestination.Downloads, ProfileSettingsDestination.WearOs -> CaptureDownloadsOrWearOs(destination)
         ProfileSettingsDestination.Privacy -> PrivacySettingsPage("test-deletion-id", false, PrivacySettingsActions({}, {}, {}, {}, {}), {})
         ProfileSettingsDestination.About -> AboutSettingsPage(AppInfo("1.0", 1L, "cx.aswin.boxlore", "13", 33), {}, {}, onBack = {})
         ProfileSettingsDestination.Account -> AccountSettingsPage(authRepository = null, onBack = {})
         ProfileSettingsDestination.Support -> SupportDevelopmentPage({}, 42L)
         ProfileSettingsDestination.Hub -> error("Capture requires a category")
     }
+}
+
+@Composable
+private fun CaptureDownloadsOrWearOs(destination: ProfileSettingsDestination) {
+    if (destination == ProfileSettingsDestination.WearOs) WearOsSettingsPage(WearOsSettings(), {}) else DownloadsSettingsPage({}, {}, {})
 }
 
 @Composable

@@ -39,6 +39,15 @@ internal object PlaybackControllerStatePolicy {
         )
     }
 
+    /**
+     * [previous] after a seek inside the same episode. The progress ticker only runs while the app
+     * is on screen, so a skip made from the notification, headphones, a car or a watch would
+     * otherwise leave the old position in the state until the next start or stop. A move to another
+     * item is not handled here: the item transition brings its own position.
+     */
+    fun afterSeek(previous: PlayerState, isSeek: Boolean, sameItem: Boolean, positionMs: Long): PlayerState =
+        if (isSeek && sameItem) previous.copy(position = positionMs.coerceAtLeast(0L)) else previous
+
     fun resolveResumePositionMs(persistedPositionMs: Long?, restoredStatePositionMs: Long,): Long = persistedPositionMs
         ?.coerceAtLeast(0L)
         ?: restoredStatePositionMs.coerceAtLeast(0L)

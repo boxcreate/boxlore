@@ -86,7 +86,10 @@ data class SleepTimerOption(val label: String, val minutes: Int)
 enum class SleepTimerPopupDismissReason {
     Manual,
     Timeout,
-    Confirmation
+    Confirmation,
+
+    /** The listener took the offer to play on the watch instead, so this phone's timer no longer matters. */
+    PlayedOnWatch
 }
 
 val DefaultSleepTimerOptions = listOf(
@@ -105,6 +108,10 @@ val DefaultSleepTimerOptions = listOf(
  * rises in its place with the time picked, beside "Pausing in 45 min. Good night." Then the card
  * leaves. It hides itself after [autoHideMillis] untouched. With animations off every step shows
  * its final state.
+ *
+ * [onPlayOnWatch] is set when this phone has just taken over from a playing watch: the card then
+ * also says the watch was paused and offers it back, and waits five seconds longer, since it asks
+ * two things at once.
  */
 @Composable
 fun SleepTimerPopup(
@@ -112,6 +119,7 @@ fun SleepTimerPopup(
     modifier: Modifier = Modifier,
     options: List<SleepTimerOption> = DefaultSleepTimerOptions,
     autoHideMillis: Long = 8_000L,
+    onPlayOnWatch: (() -> Unit)? = null,
     onSelectDuration: (Int) -> Unit,
     onDismiss: (SleepTimerPopupDismissReason) -> Unit
 ) {
@@ -134,7 +142,7 @@ fun SleepTimerPopup(
         val clocks = rememberSleepPromptClocks(picked)
         LaunchedEffect(picked) {
             if (picked == null) {
-                delay(autoHideMillis)
+                delay(SleepPromptMotion.autoHideMillis(autoHideMillis, offersWatch = onPlayOnWatch != null))
                 // Read now, not when the timer started: a prompt already on its way out times out silently.
                 if (shown) dismiss(SleepTimerPopupDismissReason.Timeout)
             } else if (!confirmed) {
@@ -154,6 +162,14 @@ fun SleepTimerPopup(
             options = options,
             picked = picked,
             clocks = clocks,
+            onPlayOnWatch = onPlayOnWatch?.let { play ->
+                {
+                    if (picked == null) {
+                        play()
+                        dismiss(SleepTimerPopupDismissReason.PlayedOnWatch)
+                    }
+                }
+            },
             onPick = { minutes ->
                 if (picked == null) {
                     picked = minutes
@@ -202,6 +218,7 @@ private fun SleepPromptCard(
     options: List<SleepTimerOption>,
     picked: Int?,
     clocks: SleepPromptClocks,
+    onPlayOnWatch: (() -> Unit)?,
     onPick: (Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -229,6 +246,7 @@ private fun SleepPromptCard(
                 options = options,
                 picked = picked,
                 clocks = clocks,
+                onPlayOnWatch = onPlayOnWatch,
                 onPick = onPick,
                 modifier = Modifier.collapseBy { SleepPromptMotion.choicesHeight(clocks.confirm.value) },
             )
@@ -363,7 +381,14 @@ private fun TimeBadge(minutes: Int, cookie: androidx.compose.ui.graphics.Shape, 
 /** The times as a connected button group, End of episode under it; each pops in, and the picked one fills. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun SleepPromptChoices(options: List<SleepTimerOption>, picked: Int?, clocks: SleepPromptClocks, onPick: (Int) -> Unit, modifier: Modifier) {
+private fun SleepPromptChoices(
+    options: List<SleepTimerOption>,
+    picked: Int?,
+    clocks: SleepPromptClocks,
+    onPlayOnWatch: (() -> Unit)?,
+    onPick: (Int) -> Unit,
+    modifier: Modifier,
+) {
     val times = options.filterNot { it.minutes == SleepTimerConstants.END_OF_EPISODE_MINUTES }
     val endOfEpisode = options.firstOrNull { it.minutes == SleepTimerConstants.END_OF_EPISODE_MINUTES }
     Column(
@@ -411,6 +436,17 @@ private fun SleepPromptChoices(options: List<SleepTimerOption>, picked: Int?, cl
                 Spacer(Modifier.width(8.dp))
                 Text(endOfEpisode.label, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
+        }
+        if (onPlayOnWatch != null) {
+            // The phone has just taken over from the watch: the second thing this card asks.
+            Text(
+                stringResource(R.string.watch_notice_body),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 8.dp),
+            )
+            PlayOnWatchInsteadButton(onClick = onPlayOnWatch)
         }
     }
 }

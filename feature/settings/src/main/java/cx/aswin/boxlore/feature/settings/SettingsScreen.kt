@@ -71,6 +71,8 @@ import cx.aswin.boxlore.feature.settings.pages.RecommendationsSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.SettingsHub
 import cx.aswin.boxlore.feature.settings.pages.SupportPageHost
 import cx.aswin.boxlore.feature.settings.pages.SyncAndBackupsPage
+import cx.aswin.boxlore.feature.settings.pages.WearOsSettings
+import cx.aswin.boxlore.feature.settings.pages.WearOsSettingsPage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -131,6 +133,8 @@ data class SettingsScreenConfig(
     val onSupportPageVisibilityChanged: ((Boolean) -> Unit)? = null,
     val onAccountPageVisibilityChanged: ((Boolean) -> Unit)? = null,
     val onCheckForUpdates: (() -> Unit)? = null,
+    /** Set once boxlore on a watch has linked with this phone; null hides the Wear OS entry. */
+    val wearOs: WearOsSettings? = null,
 )
 
 /** Appearance sub-page state paired with its actions, so [SettingsScreen] can pass both as one. */
@@ -453,6 +457,7 @@ private fun SettingsDestinationContent(
                 onBack = config.onBack,
                 onNavigate = actions.onNavigate,
                 onCheckForUpdates = config.onCheckForUpdates,
+                showWearOs = config.wearOs != null,
             )
 
         ProfileSettingsDestination.Account ->
@@ -514,6 +519,9 @@ private fun SettingsDestinationContent(
                 onAutoDownloadsClick = contentBundle.downloadsNavigation.onNavigateToAutoDownloads,
                 onBack = actions.onReturnToHub,
             )
+
+        // A link that opens this page on a phone with no watch still shows the page, with its defaults.
+        ProfileSettingsDestination.WearOs -> WearOsSettingsPage(linked = config.wearOs, onBack = actions.onReturnToHub)
 
         ProfileSettingsDestination.Privacy ->
             PrivacySettingsPage(

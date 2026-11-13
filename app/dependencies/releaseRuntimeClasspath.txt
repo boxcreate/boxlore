@@ -194,6 +194,7 @@ com.google.android.gms:play-services-fido:21.0.0
 com.google.android.gms:play-services-flags:18.1.0
 com.google.android.gms:play-services-stats:17.0.2
 com.google.android.gms:play-services-tasks:18.4.0
+com.google.android.gms:play-services-wearable:20.0.1
 com.google.android.libraries.identity.googleid:googleid:1.1.1
 com.google.android.material:material:1.12.0
 com.google.android.play:app-update-ktx:2.1.0

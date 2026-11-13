@@ -174,6 +174,14 @@ interface ListeningHistoryDao {
     @Query("SELECT * FROM listening_history WHERE isCompleted = 0 ORDER BY lastPlayedAt DESC LIMIT 1")
     suspend fun getLastPlayedSession(): ListeningHistoryEntity?
 
+    /** The most recently played rows, finished or not: what a linked watch is told about. */
+    @Query("SELECT * FROM listening_history WHERE lastPlayedAt > 0 ORDER BY lastPlayedAt DESC LIMIT :limit")
+    suspend fun getMostRecentlyPlayed(limit: Int): List<ListeningHistoryEntity>
+
+    /** Marks rows merged from a linked watch, so the next cloud push carries them. */
+    @Query("UPDATE listening_history SET isDirty = 1 WHERE episodeId IN (:episodeIds)")
+    suspend fun markDirty(episodeIds: List<String>)
+
     // Get the most recent session regardless of completion (for miniplayer restore)
     @Query("SELECT * FROM listening_history ORDER BY lastPlayedAt DESC LIMIT 1")
     suspend fun getLastPlayedSessionAny(): ListeningHistoryEntity?

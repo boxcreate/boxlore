@@ -183,6 +183,8 @@ dependencies {
     implementation(libs.androidx.media3.session)
     implementation(projects.core.rss)
     implementation(projects.core.support)
+    implementation(projects.core.wearlink)
+    implementation(libs.play.services.wearable)
     implementation(projects.feature.home)
     implementation(projects.feature.settings)
     implementation(project(":feature:player"))

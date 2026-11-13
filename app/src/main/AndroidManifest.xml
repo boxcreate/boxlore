@@ -163,6 +163,27 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+        <!-- Receives what boxlore on a Wear OS watch publishes, sends and asks. -->
+        <service
+            android:name=".wearlink.WearLinkListenerService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/boxlore/watch"
+                    android:scheme="wear" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <action android:name="com.google.android.gms.wearable.REQUEST_RECEIVED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/boxlore/"
+                    android:scheme="wear" />
+            </intent-filter>
+        </service>
+
         <service
             android:name=".fcm.BoxLoreFcmService"
             android:exported="true">

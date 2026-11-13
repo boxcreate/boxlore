@@ -18,6 +18,7 @@ import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.PrivacyTip
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.Watch
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -88,10 +89,15 @@ private val settingsCategories = listOf(
     SettingsCategory(ProfileSettingsDestination.Appearance, "Appearance", Icons.Rounded.Palette),
     SettingsCategory(ProfileSettingsDestination.Playback, "Playback", Icons.Rounded.Tune),
     SettingsCategory(ProfileSettingsDestination.Downloads, "Downloads", Icons.Rounded.DownloadForOffline),
+    SettingsCategory(ProfileSettingsDestination.WearOs, "Wear OS", Icons.Rounded.Watch),
     SettingsCategory(ProfileSettingsDestination.Privacy, "Privacy", Icons.Rounded.PrivacyTip),
     SettingsCategory(ProfileSettingsDestination.About, "About", Icons.Rounded.Info),
     SettingsCategory(ProfileSettingsDestination.Support, "Support boxlore", Icons.Rounded.Favorite),
 )
+
+/** The categories the split lists; Wear OS appears only for a phone linked with a watch. */
+private fun settingsCategoriesFor(showWearOs: Boolean): List<SettingsCategory> =
+    if (showWearOs) settingsCategories else settingsCategories.filterNot { it.destination == ProfileSettingsDestination.WearOs }
 
 /** The category the split highlights for [destination]: its top-level parent, and Cloud Sync for Account. */
 internal fun settingsCategoryOf(destination: ProfileSettingsDestination): ProfileSettingsDestination =
@@ -114,7 +120,7 @@ private fun TabletSettingsCategories(destination: ProfileSettingsDestination, co
         },
     ) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 8.dp), contentPadding = PaddingValues(bottom = boxloreContentBottomPadding(24.dp))) {
-            settingsCategories.forEach { category ->
+            settingsCategoriesFor(showWearOs = config.wearOs != null).forEach { category ->
                 item(key = category.destination) {
                     if (category.destination == ProfileSettingsDestination.Support) {
                         SupportEntryImpression(SupportEntrySurface.SettingsCategoryList)

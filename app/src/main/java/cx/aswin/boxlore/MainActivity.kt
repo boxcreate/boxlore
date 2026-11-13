@@ -250,6 +250,9 @@ class MainActivity : ComponentActivity() {
                     )
                 },
             ) {
+            // The players offer the watch only while one with boxlore is in reach of this phone.
+            val watchPlayOffer = cx.aswin.boxlore.wearlink.rememberWatchPlayOffer((application as BoxLoreApplication).container.phoneWearLink)
+            androidx.compose.runtime.CompositionLocalProvider(cx.aswin.boxlore.core.designsystem.components.LocalWatchPlayOffer provides watchPlayOffer) {
             BoxLoreAppRoot(
                 activity = this@MainActivity,
                 application = application as BoxLoreApplication,
@@ -261,6 +264,7 @@ class MainActivity : ComponentActivity() {
                     it.setUiForeground(lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
                 },
             )
+            }
 
             pendingCrossDeviceAuthLink?.let { linkString ->
                 cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme {

@@ -739,6 +739,31 @@ class AppContainer(
         cx.aswin.boxlore.core.auth.EmailLinkSignIn(authRepository, syncScope)
     }
 
+    /** The scope the watch link's listener service hands its work to. */
+    val wearLinkScope: CoroutineScope get() = syncScope
+
+    /** The phone's end of the Wear OS link; it stays idle until boxlore on a watch makes contact. */
+    val phoneWearLink: cx.aswin.boxlore.core.wearlink.PhoneWearLink by lazy {
+        cx.aswin.boxlore.core.wearlink.PhoneWearLink(
+            transport =
+                cx.aswin.boxlore.core.wearlink.GmsWearLinkTransport(
+                    appContext,
+                    cx.aswin.boxlore.core.wearlink.WearLinkProtocol.CAPABILITY_WATCH,
+                    syncScope,
+                    localCapability = cx.aswin.boxlore.core.wearlink.WearLinkProtocol.CAPABILITY_PHONE,
+                ),
+            library =
+                cx.aswin.boxlore.wearlink.PhoneLibraryAdapter(
+                    podcasts = database.podcastDao(),
+                    sync = { userSyncCoordinator },
+                    savedEpisodes = { subscribedEpisodeCatalog },
+                ),
+            player = cx.aswin.boxlore.wearlink.PhonePlayerAdapter(playback = { playbackRepository }, shows = { podcastRepository }),
+            store = cx.aswin.boxlore.core.wearlink.SharedPreferencesPhoneLinkStore.create(appContext),
+            scope = syncScope,
+        )
+    }
+
     override val userSyncCoordinator: UserSyncCoordinator by lazy {
         val queuePort = queueRepository
         // Episode identity on the sync wire: recipe IDs and catalog keys out, aliases for pulled rows in (own-episode-IDs P4).

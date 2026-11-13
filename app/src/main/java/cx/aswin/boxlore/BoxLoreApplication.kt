@@ -289,6 +289,10 @@ class BoxLoreApplication :
             }
         }
         applicationScope.launch {
+            // Only a phone that boxlore on a watch has linked with starts the link; others skip it.
+            startupWorkGate.runWhenReady { container.phoneWearLink.start() }
+        }
+        applicationScope.launch {
             startupWorkGate.runWhenReady {
                 container.smartDownloadManager.reconcileScheduleWithPreferences()
             }
