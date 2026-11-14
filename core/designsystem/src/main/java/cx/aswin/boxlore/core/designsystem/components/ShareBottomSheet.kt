@@ -56,6 +56,7 @@ import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.share.ShareCardText
 import cx.aswin.boxlore.core.designsystem.share.ShareManager
 import cx.aswin.boxlore.core.designsystem.share.formatShareTime
+import cx.aswin.boxlore.core.designsystem.share.shareEpisodeDetails
 import cx.aswin.boxlore.core.designsystem.share.shareMoment
 import cx.aswin.boxlore.core.designsystem.share.sharePreviewSizeDp
 import cx.aswin.boxlore.core.designsystem.share.shareProgress
@@ -79,6 +80,11 @@ fun ShareBottomSheet(
     showTimestampOption: Boolean = false,
     /** The episode being shared; its copied link then names it the way [ShareManager] shares do. */
     episode: cx.aswin.boxlore.core.model.Episode? = null,
+    /**
+     * The card's details line ([sharePodcastDetails] for a show). For an episode it defaults to the
+     * episode's length and date, as [ShareManager.shareEpisode] draws it.
+     */
+    details: String? = episode?.let { shareEpisodeDetails(it.duration, it.publishedDate) },
     onShare: (
         id: String,
         type: String,
@@ -105,6 +111,7 @@ fun ShareBottomSheet(
             currentPositionMs = currentPositionMs,
             showTimestampOption = showTimestampOption,
             episode = episode,
+            details = details,
             onShare = onShare,
             onDismissRequest = onDismissRequest,
             renderPreview = { card, progress ->
@@ -137,6 +144,7 @@ internal fun ShareSheetBody(
     currentPositionMs: Long,
     showTimestampOption: Boolean,
     episode: cx.aswin.boxlore.core.model.Episode?,
+    details: String?,
     onShare: (id: String, type: String, timestampMs: Long?, target: ShareTarget) -> Unit,
     onDismissRequest: () -> Unit,
     renderPreview: suspend (ShareCardText, Float) -> ImageBitmap?,
@@ -192,7 +200,7 @@ internal fun ShareSheetBody(
         Spacer(modifier = Modifier.height(20.dp))
 
         val previewSize = sharePreviewSizeDp(LocalBoxloreWindowLayout.current.heightDp)
-        val preview by produceState<ImageBitmap?>(initialValue = null, title, subtitle, imageUrl, sharedStartMs, previewSize > 0) {
+        val preview by produceState<ImageBitmap?>(initialValue = null, title, subtitle, details, imageUrl, sharedStartMs, previewSize > 0) {
             value = null
             if (previewSize == 0) return@produceState
             val moment = shareMoment(
@@ -201,7 +209,7 @@ internal fun ShareSheetBody(
                 startMs = null,
                 endMs = null,
             )
-            val card = ShareCardText(title, subtitle, ShareManager.shareMomentLabel(context, moment))
+            val card = ShareCardText(title, subtitle, ShareManager.shareMomentLabel(context, moment), details)
             value = renderPreview(card, shareProgress(moment, (durationMs / 1000L).toInt()))
         }
         if (previewSize > 0) {

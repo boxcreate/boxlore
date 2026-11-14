@@ -32,7 +32,7 @@ Announcement title:
 
 ## Improved
 
-- Sharing a show or episode now sends a card that looks like the boxlore player, in colours from its artwork, and the share sheet shows the card before you send it. Episodes shared from a moment show where they start, and the message is now just the name and the link.
+- Sharing a show or episode now sends a card that looks like the boxlore player, in colours from its artwork, with the episode's length and date or how often the show posts, and the share sheet shows the card before you send it. Episodes shared from a moment show where they start, and the message is now just the name and the link.
 
 - Home screen widgets have a new look with rounder shapes. The players now show how far you are and how much time is left, and the skip buttons show your own skip lengths.
 - The Your Shows widget is now a grid of artwork. Choose whole covers or shapes in Settings › Appearance › Widgets.

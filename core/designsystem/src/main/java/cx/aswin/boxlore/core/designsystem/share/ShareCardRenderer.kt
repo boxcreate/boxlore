@@ -89,37 +89,53 @@ internal object ShareCardRenderer {
         canvas.drawRoundRect(RectF(destination).apply { inset(1f, 1f) }, radius - 1f, radius - 1f, edge)
     }
 
+    /**
+     * The words, top to bottom from the top of the text box: the title (largest size that fits),
+     * who it is by, the start time and the details line. The title's capitals sit level with the
+     * box's top edge, which lines up with the artwork.
+     */
     private fun drawText(context: Context, canvas: Canvas, layout: ShareCardLayout, colors: ShareCardColors, text: ShareCardText) {
         val box = layout.text
         val width = box.width.toInt()
-        val subtitle = text.subtitle.takeIf(String::isNotBlank)?.let {
-            textLayout(it, width, layout.subtitleSize, typeface(context, Typeface.NORMAL), colors.subtitle, maxLines = 1)
-        }
-        val moment = text.moment?.let {
-            textLayout(it, width, layout.momentSize, typeface(context, Typeface.BOLD), colors.accent, maxLines = 1)
-        }
+        val regular = typeface(context, Typeface.NORMAL)
+        val bold = typeface(context, Typeface.BOLD)
+        fun line(value: String?, size: Float, face: Typeface, color: Int, maxLines: Int = 1) =
+            value?.takeIf(String::isNotBlank)?.let { textLayout(it, width, size, face, color, maxLines) }
+        val subtitle = line(text.subtitle, layout.subtitleSize, regular, colors.subtitle)
+        val moment = line(text.moment, layout.momentSize, bold, colors.accent)
+        val details = line(text.details, layout.detailsSize, regular, colors.subtitle, layout.detailsMaxLines)
         val subtitleGap = layout.subtitleSize * 0.4f
         val momentGap = layout.momentSize * 0.6f
-        val belowTitle = (subtitle?.let { it.height + subtitleGap } ?: 0f) + (moment?.let { it.height + momentGap } ?: 0f)
-        val titleRoom = box.height - belowTitle
-        val bold = typeface(context, Typeface.BOLD)
+        // The details line follows the start time closely, as one group; alone it gets the full gap.
+        val detailsGap = if (moment != null) layout.detailsSize * 0.15f else layout.detailsSize * 0.6f
+        val belowTitle = listOf(subtitle to subtitleGap, moment to momentGap, details to detailsGap)
+            .sumOf { (laid, gap) -> laid?.let { (it.height + gap).toDouble() } ?: 0.0 }.toFloat()
 
         fun titleAt(size: Float): StaticLayout {
             // A line is the font's ascent plus descent (about 1.2× its size), times the spacing.
             val lineHeight = size * LineHeightFactor * TitleLineSpacing
-            val lines = floor(titleRoom / lineHeight).toInt().coerceIn(1, layout.titleMaxLines)
+            val room = box.height + capInset(size, bold) - belowTitle
+            val lines = floor(room / lineHeight).toInt().coerceIn(1, layout.titleMaxLines)
             return textLayout(text.title, width, size, bold, colors.title, maxLines = lines, spacing = TitleLineSpacing)
         }
         val size = fitTitleSize(layout.titleSizes) { candidate ->
             val laidOut = titleAt(candidate)
-            laidOut.getEllipsisCount(laidOut.lineCount - 1) == 0 && laidOut.height <= titleRoom
+            laidOut.getEllipsisCount(laidOut.lineCount - 1) == 0 && laidOut.height + belowTitle <= box.height + capInset(candidate, bold)
         }
-        val title = titleAt(size)
-        val blockHeight = title.height + belowTitle
-        var y = if (layout.textBeside) box.top + (box.height - blockHeight) / 2f else box.top
-        y = drawLayout(canvas, title, box.left, y)
+        var y = drawLayout(canvas, titleAt(size), box.left, box.top - capInset(size, bold))
         subtitle?.let { y = drawLayout(canvas, it, box.left, y + subtitleGap) }
-        moment?.let { drawLayout(canvas, it, box.left, y + momentGap) }
+        moment?.let { y = drawLayout(canvas, it, box.left, y + momentGap) }
+        details?.let { drawLayout(canvas, it, box.left, y + detailsGap) }
+    }
+
+    /** How far below a line's top its capitals start, so the title can be raised to sit level with the box's top. */
+    private fun capInset(size: Float, typeface: Typeface): Float {
+        val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = size
+            this.typeface = typeface
+        }
+        val capitals = Rect().also { paint.getTextBounds("H", 0, 1, it) }
+        return (-paint.fontMetricsInt.ascent + capitals.top).toFloat().coerceAtLeast(0f)
     }
 
     private fun drawLayout(canvas: Canvas, layout: StaticLayout, left: Float, top: Float): Float {

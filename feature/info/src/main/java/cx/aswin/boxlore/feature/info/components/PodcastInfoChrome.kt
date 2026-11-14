@@ -420,6 +420,7 @@ private fun PodcastInfoHeaderOverflow(
                 subtitle = podcast.artist,
                 imageUrl = podcast.imageUrl,
                 onDismissRequest = { showShareSheet = false },
+                details = cx.aswin.boxlore.core.designsystem.share.sharePodcastDetails(podcast.effectiveGenre, podcast.updateFrequency),
                 onShare = { _, _, _, target ->
                     cx.aswin.boxlore.core.designsystem.share.ShareManager.sharePodcast(
                         context = context,

@@ -94,7 +94,7 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 - `ShareManager`: share cards and the system share sheet; reports `share_content` through `:core:analytics`.
 - `ShareManager.episodeShareLink`, `copyEpisodeLink`: episode links resolved through the app-installed `EpisodeShareTargetSource`, falling back to the episode's own fields.
 - `ShareBottomSheet`: the share sheet, with a preview of the card it sends; short windows show a name row instead.
-- `ShareCardRenderer`, `shareCardColors`: the card bitmap, drawn as a boxlore player in tones of the artwork's seed colour (boxlore indigo when the cover has none). The artwork is shown whole with rounded corners.
+- `ShareCardRenderer`, `shareCardColors`: the card bitmap, drawn as a boxlore player in tones of the artwork's seed colour (boxlore indigo when the cover has none). The artwork is shown whole with rounded corners, and the words line up with its edges. `shareEpisodeDetails` and `sharePodcastDetails` give the card's details line: an episode's length and date, or a show's genre and how often it posts.
 - `startFirstAvailable`, `openLink`, `SafeUriHandler` (`links/`): open the first intent an installed app handles; never throw when none can.
 
 ### Analytics helper
@@ -126,7 +126,7 @@ src/main/java/cx/aswin/boxlore/core/designsystem/
   layout/       window, fold, pane and card specifications
   links/        safe link and intent launching
   list/         lazy-list keys, progressive search scrolling
-  share/        ShareManager, ShareCardRenderer, ShareCardModel
+  share/        ShareManager, ShareCardRenderer, ShareCardModel, ShareCardDetails
   theme/        theme, presets, artwork colour, typography, shapes, motion, shimmer, tablet input
 src/main/res/
   drawable/, drawable-nodpi/   brand vectors, placeholder covers, brief artwork
