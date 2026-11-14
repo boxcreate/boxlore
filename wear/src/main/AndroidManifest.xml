@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-feature android:name="android.hardware.type.watch" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:usesCleartextTraffic="false"
+        android:name=".WatchApplication"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/wear_app_name"
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.DeviceDefault">
+
+        <!-- The watch plays its own downloads, so it works with no phone app installed. -->
+        <meta-data
+            android:name="com.google.android.wearable.standalone"
+            android:value="true" />
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity="">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".link.WatchLinkListenerService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/boxlore/watch-command"
+                    android:scheme="wear" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".playback.WatchPlaybackService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>

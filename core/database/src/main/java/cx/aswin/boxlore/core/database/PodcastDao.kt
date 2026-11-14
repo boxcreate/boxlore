@@ -300,6 +300,10 @@ interface PodcastDao {
     @Query("UPDATE podcasts SET isDirty = 1 WHERE podcastId = :id AND isSubscribed = 1")
     suspend fun markFollowedDirty(id: String)
 
+    /** Marks a show a linked watch followed or unfollowed, so the next cloud push carries it. */
+    @Query("UPDATE podcasts SET isDirty = 1 WHERE podcastId = :id")
+    suspend fun markDirty(id: String)
+
     /**
      * [upsert] for a whole-row write built from a row read earlier (sync merges): when another writer
      * replaced the saved address since, that address, its bookkeeping and its pending push are kept

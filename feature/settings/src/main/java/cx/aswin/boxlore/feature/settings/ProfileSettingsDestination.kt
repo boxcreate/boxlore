@@ -18,6 +18,7 @@ internal enum class ProfileSettingsDestination(
     AppearanceWidgets("Widgets"),
     Playback("Playback"),
     Downloads("Downloads"),
+    WearOs("Wear OS"),
     Privacy("Privacy"),
     About("About boxlore"),
     Support("Support boxlore"),

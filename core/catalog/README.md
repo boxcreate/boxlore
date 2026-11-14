@@ -59,7 +59,7 @@ It does not own playback, download workers, Compose UI, the Room schema ([`:core
 
 ### Cloud sync
 
-- `sync.UserSyncCoordinator`: bounded dirty-row pushes, pulls, account-switch purge and `deleteCloudSyncData`; results are `SyncResult` and `CloudSyncUiStatus`.
+- `sync.UserSyncCoordinator`: bounded dirty-row pushes, pulls, account-switch purge and `deleteCloudSyncData`; results are `SyncResult` and `CloudSyncUiStatus`. For a linked watch, `linkedDeviceRows` gives the followed shows and newest history rows, and `applyLinkedDeviceChanges` merges the watch's changes by the pull rules and marks them for the next push.
 - `SubscriptionSyncResolver`, `HistorySyncResolver` (shields the playing episode) and `QueueSyncResolver` (one entry per episode) merge pulls; `QueueItemHydration` builds pulled queue rows.
 - `SyncEpisodeIdentity` carries identity beside each row's stored ID; a one-time catch-up runs after an upgrade or account switch, and `requestIdentityCatchUp()` asks again. Rules: [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md) §5.
 - `sync.ListeningSync`: listening syncs under this installation's listening device ID, never the sync device ID; days count as sent only once the server accepts them. Wire fields: [`core/network/README.md`](../network/README.md).

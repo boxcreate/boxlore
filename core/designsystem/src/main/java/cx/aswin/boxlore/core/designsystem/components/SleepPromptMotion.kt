@@ -16,6 +16,12 @@ internal object SleepPromptMotion {
     /** How long the confirmation stays after a pick before the prompt leaves. */
     const val CONFIRM_HOLD_MILLIS = 3_000L
     const val EXIT_MILLIS = 320
+
+    /** A prompt that also offers the watch back asks two things, so it waits this much longer. */
+    const val SECOND_CHOICE_MILLIS = 5_000L
+
+    /** How long the prompt waits untouched before it leaves. */
+    fun autoHideMillis(base: Long, offersWatch: Boolean): Long = if (offersWatch) base + SECOND_CHOICE_MILLIS else base
     const val SPIN_MILLIS = 24_000
 
     data class Pose(val alpha: Float = 1f, val scale: Float = 1f, val rotation: Float = 0f, val offsetDp: Float = 0f)

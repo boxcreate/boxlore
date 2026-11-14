@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wear_app_name" translatable="false">boxlore</string>
+
+    <!-- Home -->
+    <string name="wear_home_ready">Ready when you are</string>
+    <string name="wear_home_on_phone">On phone</string>
+    <!-- Where it is playing or that it is paused, then the time left: "On phone · 29 min left". -->
+    <string name="wear_home_state_and_time">%1$s · %2$s</string>
+    <string name="wear_home_paused">Paused</string>
+    <string name="wear_your_shows">Your shows</string>
+    <string name="wear_jump_back_in">Jump back in</string>
+    <string name="wear_new_episodes">New episodes</string>
+    <string name="wear_search">Search</string>
+    <string name="wear_daily_mix">Daily Mix</string>
+    <string name="wear_downloads">Downloads</string>
+    <string name="wear_settings">Settings</string>
+    <string name="wear_up_next">Up next</string>
+    <string name="wear_open_player">Open player</string>
+
+    <!-- Episode and show details -->
+    <string name="wear_minutes">%1$d min</string>
+    <string name="wear_minutes_left">%1$d min left</string>
+    <string name="wear_date_and_minutes">%1$s · %2$s</string>
+    <plurals name="wear_new_episode_count">
+        <item quantity="one">%1$d new episode</item>
+        <item quantity="other">%1$d new episodes</item>
+    </plurals>
+    <string name="wear_downloads_usage">On this watch · %1$s of %2$s</string>
+    <string name="wear_over_limit_title">Not enough space</string>
+    <string name="wear_over_limit_body">This episode is larger than your storage limit. Raise the limit in Settings.</string>
+    <string name="wear_watch_full_title">Watch storage is full</string>
+    <string name="wear_watch_full_body">Free up space on your watch, then try again.</string>
+    <string name="wear_downloaded">Downloaded</string>
+    <string name="wear_downloading">Downloading</string>
+    <string name="wear_subscribe">Subscribe</string>
+    <string name="wear_subscribed">Subscribed</string>
+    <string name="wear_play">Play</string>
+    <string name="wear_pause">Pause</string>
+    <string name="wear_resume">Resume</string>
+    <string name="wear_download">Download</string>
+    <string name="wear_percent">%1$d%%</string>
+    <string name="wear_downloading_percent">Downloading, %1$s. Stop and remove</string>
+    <string name="wear_downloaded_remove">Downloaded. Remove download</string>
+    <string name="wear_remove_download_title">Remove download?</string>
+    <string name="wear_remove_download_body">You can download it again later.</string>
+    <string name="wear_play_next">Play next</string>
+    <string name="wear_played">Played</string>
+    <string name="wear_mark_played">Mark played</string>
+
+    <!-- Player -->
+    <plurals name="wear_seek_back">
+        <item quantity="one">Back %1$d second</item>
+        <item quantity="other">Back %1$d seconds</item>
+    </plurals>
+    <plurals name="wear_seek_forward">
+        <item quantity="one">Forward %1$d second</item>
+        <item quantity="other">Forward %1$d seconds</item>
+    </plurals>
+    <string name="wear_volume">Volume</string>
+    <string name="wear_could_not_play">Couldn\'t play. Check your connection.</string>
+    <string name="wear_more_controls">More controls</string>
+    <string name="wear_playback_speed">Playback speed</string>
+    <string name="wear_speed_value">%1$s×</string>
+    <string name="wear_speed_slower">Slower</string>
+    <string name="wear_speed_faster">Faster</string>
+    <string name="wear_sleep_timer">Sleep timer</string>
+    <string name="wear_sleep_off">Off</string>
+    <string name="wear_sleep_minutes">%1$dm</string>
+    <string name="wear_sleep_hours">%1$dh</string>
+    <string name="wear_sleep_end_of_episode">End of episode</string>
+    <string name="wear_play_on_phone">Play on phone</string>
+    <string name="wear_play_on_watch">Play on watch</string>
+    <!-- Shown above the two choices when Play is pressed on the watch while the phone is playing. -->
+    <string name="wear_phone_is_playing">Your phone is playing</string>
+
+    <!-- Search -->
+    <string name="wear_search_title">Search podcasts</string>
+    <string name="wear_search_query">“%1$s”</string>
+    <string name="wear_search_no_results">No results</string>
+    <string name="wear_search_no_results_body">Try different words.</string>
+    <string name="wear_no_connection">No connection</string>
+    <string name="wear_no_connection_body">Search needs Wi-Fi or your phone nearby. Your downloads still play.</string>
+
+    <!-- Empty lists -->
+    <string name="wear_shows_empty">No shows yet</string>
+    <string name="wear_shows_empty_body">Subscribe on your phone, or search for a show here.</string>
+    <string name="wear_jump_back_in_empty">Nothing in progress</string>
+    <string name="wear_jump_back_in_empty_body">Episodes you start show up here.</string>
+    <string name="wear_new_episodes_empty">No new episodes</string>
+    <string name="wear_downloads_empty">No downloads yet</string>
+    <string name="wear_downloads_empty_body">Download an episode to play it without your phone.</string>
+    <string name="wear_up_next_empty">Nothing up next</string>
+    <string name="wear_episodes_empty">No episodes yet</string>
+
+    <!-- Settings -->
+    <string name="wear_shows_layout">Your shows layout</string>
+    <string name="wear_storage_limit">Storage limit</string>
+    <string name="wear_shows_layout_honeycomb">Honeycomb</string>
+    <string name="wear_shows_layout_list">List</string>
+</resources>

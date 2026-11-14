@@ -59,6 +59,50 @@ class SleepTimerPopupTest {
     }
 
     @Test
+    fun `with the watch just paused the same card offers it back, and waits five seconds longer`() {
+        var playedOnWatch = 0
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            BoxLoreTheme(darkTheme = true, dynamicColor = false) {
+                Box(Modifier.width(window)) {
+                    SleepTimerPopup(
+                        visible = shown,
+                        modifier = Modifier.padding(horizontal = 16.dp).testTag(PROMPT),
+                        onPlayOnWatch = { playedOnWatch++ },
+                        onSelectDuration = { picked += it },
+                        onDismiss = { dismissed += it },
+                    )
+                }
+            }
+        }
+        compose.mainClock.advanceTimeBy(1_200L)
+        // Both questions on one card.
+        compose.onNodeWithText("Late night listening?").assertExists()
+        compose.onNodeWithText("45m").assertExists()
+        compose.onNodeWithText("Your watch was paused.").assertExists()
+        compose.onNodeWithText("Play on watch instead").assertExists()
+        // Still there after the usual eight seconds; gone only after thirteen.
+        compose.mainClock.advanceTimeBy(8_000L)
+        assertTrue(dismissed.isEmpty())
+        compose.mainClock.advanceTimeBy(5_200L)
+        assertEquals(listOf(SleepTimerPopupDismissReason.Timeout), dismissed)
+        dismissed.clear()
+
+        compose.onNodeWithText("Play on watch instead").performClick()
+        assertEquals(1, playedOnWatch)
+        assertEquals(listOf(SleepTimerPopupDismissReason.PlayedOnWatch), dismissed)
+        assertTrue(picked.isEmpty())
+    }
+
+    @Test
+    fun `the prompt by itself still leaves after eight seconds and offers no watch`() {
+        show()
+        compose.onNodeWithText("Play on watch instead").assertDoesNotExist()
+        compose.mainClock.advanceTimeBy(7_200L)
+        assertEquals(listOf(SleepTimerPopupDismissReason.Timeout), dismissed)
+    }
+
+    @Test
     fun `picking a time sets it at once, confirms when playback will pause, then lets go`() {
         show()
         compose.onNodeWithText("Late night listening?").assertExists()

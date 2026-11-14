@@ -60,6 +60,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.components.LocalWatchPlayOffer
+import cx.aswin.boxlore.core.designsystem.components.PlayingOnPill
 import cx.aswin.boxlore.core.designsystem.layout.boxloreVisibleWindowSize
 import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -167,7 +169,14 @@ private fun MinimalPlayerHandle(colors: ColorScheme, onCollapse: () -> Unit) {
             .clickable(role = Role.Button, onClick = onCollapse),
         contentAlignment = Alignment.Center,
     ) {
-        Box(Modifier.size(28.dp, 3.dp).background(colors.onSurface.copy(alpha = 0.25f), RoundedCornerShape(50)))
+        // With a watch in reach the handle gives way to a quiet "where it plays" control; a tap
+        // beside it still collapses the player.
+        val watchOffer = LocalWatchPlayOffer.current
+        if (watchOffer != null) {
+            PlayingOnPill(offer = watchOffer, colorScheme = colors, quiet = true)
+        } else {
+            Box(Modifier.size(28.dp, 3.dp).background(colors.onSurface.copy(alpha = 0.25f), RoundedCornerShape(50)))
+        }
     }
 }
 

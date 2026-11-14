@@ -117,6 +117,7 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
                 onCheckForUpdates = { container.appUpdates.open(checkNow = true) },
                 onSupportPageVisibilityChanged = w.actions.onSupportPageVisibilityChanged,
                 onAccountPageVisibilityChanged = w.actions.onAccountPageVisibilityChanged,
+                wearOs = cx.aswin.boxlore.wearlink.rememberWearOsSettings(container.phoneWearLink),
             ),
             regionSettings = RegionSettings(
                 currentRegion = settingsState.currentRegion,

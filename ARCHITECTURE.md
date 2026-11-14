@@ -18,7 +18,7 @@ These values are part of the shipping product. Renames or recreations break upgr
 
 | Concern | Contract |
 | :--- | :--- |
-| `applicationId` | `cx.aswin.boxlore` |
+| `applicationId` | `cx.aswin.boxlore`, shared by `:app` and the Wear OS app `:wear`, which must also carry the same signature |
 | Code packages / Android namespaces | `cx.aswin.boxlore.*` |
 | SharedPreferences **files** | Opened as `boxlore_*`; `PrefsFileMigrator` copies from legacy `boxcast_*` when needed. **Key** strings inside those files stay stable. |
 | DataStore | File name `user_preferences`; the API session uses its own file `boxlore_api_session` (`:core:network`), excluded from backup and device transfer |
@@ -43,9 +43,10 @@ These values are part of the shipping product. Renames or recreations break upgr
 :app
 :core:model | :core:auth | :core:network | :core:domain | :core:database | :core:prefs
 :core:analytics | :core:catalog | :core:rss | :core:downloads | :core:playback | :core:ranking
-:core:designsystem | :core:testing | :core:support
+:core:designsystem | :core:testing | :core:support | :core:wearlink
 :feature:home | :feature:settings | :feature:history | :feature:player | :feature:info | :feature:explore
 :feature:library | :feature:onboarding | :feature:briefing | :feature:widgets
+:wear
 ```
 
 On disk, the folder path matches the Gradle id (`core/playback` → `:core:playback`).
@@ -58,6 +59,7 @@ On disk, the folder path matches the Gradle id (`core/playback` → `:core:playb
 | `:core:model` | Shared models and enums | [`core/model/README.md`](core/model/README.md) |
 | `:core:auth` | Authentication domain, `AuthRepository`, and Firebase Auth implementation | [`core/auth/README.md`](core/auth/README.md) |
 | `:core:support` | Support conversations with the API (`SupportRepository`): switches, sending, photo upload, old-form fallback | [`core/support/README.md`](core/support/README.md) |
+| `:core:wearlink` | The link between the phone app and boxlore on a Wear OS watch: exchanged values, packing, the connection, and the phone's end (`PhoneWearLink`). Used by `:app` and `:wear` | [`core/wearlink/README.md`](core/wearlink/README.md) |
 | `:core:network` | HTTP clients (`BoxLoreApi`, `BoxLoreApiV2` for `/v2` / `NetworkModule`) and network DTOs | [`core/network/README.md`](core/network/README.md) |
 | `:core:domain` | Thin ports and small result types (no Room or repositories) | [`core/domain/README.md`](core/domain/README.md) |
 | `:core:database` | Main Room database, entities, DAOs, migrations | [`core/database/README.md`](core/database/README.md) |
@@ -80,6 +82,7 @@ On disk, the folder path matches the Gradle id (`core/playback` → `:core:playb
 | `:feature:onboarding` | First-run flows (AI, genre, search, import) | [`feature/onboarding/README.md`](feature/onboarding/README.md) |
 | `:feature:briefing` | Daily briefing screen | [`feature/briefing/README.md`](feature/briefing/README.md) |
 | `:feature:widgets` | Home-screen Now Playing, compact bar, playback-control, subscriptions, and new-episodes widgets (RemoteViews) | [`feature/widgets/README.md`](feature/widgets/README.md) |
+| `:wear` | The Wear OS app: watch screens, the watch's own player, downloads, saved library and API session. A second application under the phone app's application ID; depends only on `:core:network`, `:core:rss`, `:core:model` and `:core:wearlink`, and nothing depends on it | [`wear/README.md`](wear/README.md) |
 
 ### Core package roots
 
@@ -94,6 +97,7 @@ On disk, the folder path matches the Gradle id (`core/playback` → `:core:playb
 | `:core:database` | `cx.aswin.boxlore.core.database` |
 | `:core:catalog` | `cx.aswin.boxlore.core.catalog` |
 | `:core:support` | `cx.aswin.boxlore.core.support` |
+| `:core:wearlink` | `cx.aswin.boxlore.core.wearlink` |
 
 ## Dependency direction
 
@@ -247,6 +251,7 @@ Historical FQCNs and preference file names remain reachable so upgrades from old
 | `cx.aswin.boxlore.core.data.service.BoxLorePlaybackService` | `cx.aswin.boxlore.core.playback.service.BoxLorePlaybackService` | Manifest + stub |
 | `cx.aswin.boxlore.core.data.service.MediaDownloadService` | `cx.aswin.boxlore.core.playback.service.MediaDownloadService` | Manifest + stub |
 | `cx.aswin.boxlore.core.data.service.AutoCollageProvider` | `cx.aswin.boxlore.core.playback.service.AutoCollageProvider` | Manifest + stub |
+| — | `cx.aswin.boxlore.wearlink.WearLinkListenerService` | Manifest (`:app`; receives what boxlore on a watch publishes; do not rename) |
 
 ### SharedPreferences files
 
@@ -264,6 +269,7 @@ Historical FQCNs and preference file names remain reachable so upgrades from old
 | — | `boxlore_notification_reregistrations` | `AppContainer` (`:core:catalog` `SharedPreferencesPendingNotificationRegistrations`; shows whose notifications wait to be registered again after an address change; do not rename) |
 | — | `boxlore_renumbered_shows` | `AppContainer` (`:core:rss` `SharedPreferencesRenumberedShows`; Podcast Index show IDs that now answer as another show ID, old ID → new ID; follows move to the new show and its catalog reads link the old show's listener rows, see [renumbered shows](docs/EPISODE_IDS.md#renumbered-shows); do not rename) |
 | — | `boxlore_upgrade_repair_report` | `AppContainer` (`:core:catalog` `SharedPreferencesUpgradeRepairTally`; runs and counts of the one-time upgrade repair and whether `own_ids_upgrade_completed` was sent, backed up with Room so a restored phone never sends it twice; do not rename) |
+| — | `boxlore_wear_link` | `AppContainer` (`:core:wearlink` `SharedPreferencesPhoneLinkStore`; whether a watch has linked, the watch settings, and what the phone has merged from each watch; do not rename) |
 | `boxcast_api_config` | `boxlore_api_config` | `BoxLoreAppRoot` |
 | `boxcast_referrer_prefs` | `boxlore_referrer_prefs` | `InstallReferrerManager` |
 

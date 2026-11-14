@@ -7,6 +7,12 @@ import org.junit.jupiter.api.Test
 
 class SleepPromptMotionTest {
     @Test
+    fun `a prompt that also offers the watch back waits five seconds longer, and only then`() {
+        assertEquals(8_000L, SleepPromptMotion.autoHideMillis(8_000L, offersWatch = false))
+        assertEquals(13_000L, SleepPromptMotion.autoHideMillis(8_000L, offersWatch = true))
+    }
+
+    @Test
     fun `the prompt drops in, the moon turns into place and the choices pop in after it`() {
         val start = SleepPromptMotion.card(0f)
         assertEquals(0f, start.alpha)

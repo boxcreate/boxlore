@@ -702,6 +702,37 @@ open class UserSyncCoordinator(
         }
     }
 
+    /**
+     * What a linked watch is told: every followed show, and the [historyLimit] most recently played
+     * history rows in the shape cloud sync sends them, identity fields included.
+     */
+    suspend fun linkedDeviceRows(historyLimit: Int): LinkedDeviceRows = withContext(ioDispatcher) {
+        val history = requireListeningHistoryDao.getMostRecentlyPlayed(historyLimit)
+        LinkedDeviceRows(shows = requirePodcastDao.getSubscribedPodcastsList(), history = buildHistoryDtos(history, now = 0L))
+    }
+
+    /**
+     * Merges follows, unfollows and listening done on a linked watch by the rules of a cloud pull:
+     * the newer change wins, the playing episode is left alone, and identities are recorded first
+     * so a row lands on the episode this phone already stores. The rows are then marked so the next
+     * cloud push carries them to the listener's other devices.
+     */
+    suspend fun applyLinkedDeviceChanges(subscriptions: List<UserSubscriptionSyncDto>, history: List<ListeningHistorySyncDto>,) = syncMutex.withLock {
+        withContext(ioDispatcher) {
+            for (change in subscriptions) {
+                requireSubscriptionSyncResolver.resolveSubscription(change, syncedAt = 0L)
+                requirePodcastDao.markDirty(change.podcastId)
+            }
+            episodeIdentity?.recordIncoming(history.map { SyncEpisodeIdentity.IncomingRow(it.episodeId, it.podcastId, it.recipeId, it.catalogKey) })
+            for (row in history) requireHistorySyncResolver.resolveHistoryItem(row, syncedAt = 0L)
+            if (history.isNotEmpty()) requireListeningHistoryDao.markDirty(history.map { it.episodeId })
+            handoffIdleMiniplayerIfNewer(history)
+        }
+    }
+
+    /** See [linkedDeviceRows]. */
+    class LinkedDeviceRows(val shows: List<PodcastEntity>, val history: List<ListeningHistorySyncDto>)
+
     private data class PendingPushBatch(
         val dirtyPodcasts: List<PodcastEntity>,
         val dirtyHistory: List<ListeningHistoryEntity>,

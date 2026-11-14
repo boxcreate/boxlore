@@ -74,6 +74,7 @@ Owns the Settings hub and its pages, sign-in, the Smart and automatic download s
 - Playback holds trimming, seek lengths (also used by the miniplayer's seek buttons), skip behaviour, restarting forgotten episodes, Smart queue and where completed episodes hide.
 - Automatic downloads offers 1, 2, 3 or 5 episodes per show. Backup background checks are off by default; their network and charging controls show only when on and keep their values while hidden.
 - Privacy explains analytics and offers Reset recommendations, the analytics ID (copy or start a new one) and a request to delete analytics data.
+- Wear OS (`ProfileSettingsDestination.WearOs`, entry `wear_os`) sets the watch's Your shows layout and download storage limit and shows what the watch last reported. The hub and the tablet split list it only when `SettingsScreenConfig.wearOs` is set, which the app does once boxlore on a watch has linked.
 
 ## Internal structure
 
@@ -90,6 +91,7 @@ src/main/java/cx/aswin/boxlore/feature/settings/
                                  #   view models, diagnostics and logcat collectors
   pages/
     SettingsHub.kt, *SettingsPage.kt, SyncAndBackupsPage.kt, RecommendationsSettingsPage.kt
+    WearOsSettingsPage.kt        # WearOsSettings, WearOsUiState, WearOsCopy, the page
     Account*.kt                  # Account & sync: auth state, sign-in, email link, sync panel, Echo
     Appearance*Page.kt, AppearancePictures.kt
     CustomTheme*.kt, ThemeSettingsLogic.kt
@@ -133,6 +135,7 @@ Hermetic JVM tests live in `feature/settings/src/test`, using fakes from [`:core
 | Account and sync | `AccountPagePresentationTest`, `AccountPageAdaptiveTest`, `AccountSettingsPageTest`, `AccountAuthHelpersTest`, `AccountLinkFailedContentTest`, `SyncAndBackupsPageTest` |
 | Library | `LibraryLanguagesAdaptiveTest`, `ClearSavedShowsAdaptiveTest` |
 | Downloads | `AutoDownloadSettingsActionsTest` |
+| Wear OS | `WearOsSettingsTest` |
 | Feedback | `FeedbackViewModelTest`, `FeedbackLayoutPolicyTest`, `FeedbackAdaptiveTransitionTest`, `FeedbackNotificationSettingsTest`, `DiagnosticCollectorTest`, `LogcatCollectorTest` |
 | Conversations | `FeedbackPanesTest`, `FeedbackThreadViewModelTest`, `FeedbackConversationsAdaptiveTest` |
 | Support page | `SupportWorldsModelTest`, `SupportPageHostTest`, `SupportPageLayoutTest`, `SupportPageSessionTest`, `SupportEntryImpressionTest`, `SupportDevelopmentPageTest` |

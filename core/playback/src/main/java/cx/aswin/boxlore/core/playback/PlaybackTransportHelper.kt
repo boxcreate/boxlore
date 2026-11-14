@@ -11,6 +11,21 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/** Which episodes a resume loads into an empty player, and which of them starts. */
+internal object ResumeQueuePolicy {
+    /**
+     * [shown] is the episode the mini player shows, and it is always the one that starts. A saved
+     * queue that does not hold it, as after another device's episode was handed over while this
+     * phone was idle, gets it in front; starting that queue's own first entry would play an
+     * episode the listener did not ask for.
+     */
+    fun plan(queue: List<Episode>, shown: Episode): Pair<List<Episode>, Int> {
+        // An episode can be queued under another of its IDs; the same audio address is the same episode.
+        val index = queue.indexOfFirst { it.id == shown.id || (shown.audioUrl.isNotBlank() && it.audioUrl == shown.audioUrl) }
+        return if (index >= 0) queue to index else (listOf(shown) + queue) to 0
+    }
+}
+
 /**
  * Resume / skip transport helpers for [cx.aswin.boxlore.core.playback.PlaybackRepository].
  */
@@ -83,11 +98,11 @@ internal class PlaybackTransportHelper(
                 val cacheIds = downloadHolders((queue.map { it.id } + currentEpisode.id).distinct())
                 if (queue.isNotEmpty() && podcast != null) {
                     // Find current episode in queue and reload from that point
-                    val startIndex = queue.indexOfFirst { it.id == currentEpisode.id }.coerceAtLeast(0)
+                    val (reloaded, startIndex) = ResumeQueuePolicy.plan(queue, currentEpisode)
                     Log.d("PlaybackRepo", "resume(): Reloading queue from index $startIndex with position=$savedPosition")
 
                     val mediaItems =
-                        queue.map { episode ->
+                        reloaded.map { episode ->
                             val metadata =
                                 androidx.media3.common.MediaMetadata
                                     .Builder()

@@ -142,6 +142,16 @@ internal class PlaybackMediaControllerBridge(
             )
     }
 
+    override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int) {
+        playerStateFlow.value =
+            PlaybackControllerStatePolicy.afterSeek(
+                previous = playerStateFlow.value,
+                isSeek = reason == Player.DISCONTINUITY_REASON_SEEK || reason == Player.DISCONTINUITY_REASON_SEEK_ADJUSTMENT,
+                sameItem = oldPosition.mediaItemIndex == newPosition.mediaItemIndex,
+                positionMs = newPosition.positionMs,
+            )
+    }
+
     override fun onPlaybackStateChanged(playbackState: Int) {
         val isLoading = playbackState == androidx.media3.common.Player.STATE_BUFFERING
         playerStateFlow.value = playerStateFlow.value.copy(isLoading = isLoading)

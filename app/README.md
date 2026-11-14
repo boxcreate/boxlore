@@ -91,6 +91,7 @@ src/main/java/cx/aswin/boxlore/
   share/          EpisodeShareRegistrationWorker
   sync/           CloudSyncWorker, CloudSyncTriggerCoordinator, UpgradeRepairWorker,
                   switches, AnalyticsFeedTelemetry
+  wearlink/       WearLinkListenerService, PhoneLinkAdapters, wiring
   ui/             BoxLoreAppRoot, StartupWorkGate, TabletAppShell, TabletAppPlayer,
                   AdaptivePlayerChrome, announcement/, libraryimport/, logic/
   updates/        AppUpdates, UpdateChecker, direct and Play sources, AppUpdatesPanel
@@ -118,7 +119,7 @@ src/debug/        App Check debug provider, ADB-only notification preview receiv
 
 Shared contracts (application ID, IDs, deep-link schemes, core-owned preference files, worker bridges, the share, re-registration and repair work names) are in [identity and storage](../ARCHITECTURE.md#identity-and-storage) and [upgrade failsafes](../ARCHITECTURE.md#upgrade-failsafes). App-owned names that must not change:
 
-- Manifest components: `.BoxLoreApplication`, `.MainActivity`, `.fcm.BoxLoreFcmService` and the `BoxLoreCastOptionsProvider` metadata.
+- Manifest components: `.BoxLoreApplication`, `.MainActivity`, `.fcm.BoxLoreFcmService`, `.wearlink.WearLinkListenerService` and the `BoxLoreCastOptionsProvider` metadata.
 - Worker classes: `CloudSyncWorker`, `UpgradeRepairWorker`, `PodcastNotificationRegistrationWorker`, `EpisodeShareRegistrationWorker`, `NewEpisodeDeliveryWorker`, `RssNotificationSyncWorker`.
 - Unique work: `boxlore_cloud_sync_periodic`, `boxlore_cloud_sync_flush`, `rss-notification-registration-sync`, `new-episode-delivery-<hash>`.
 - Notification channels: `boxlore_announcements_v2`, `boxlore_new_episodes_v1`, `boxlore_silent_v1`, `boxlore_feedback_replies_v1`.

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The phone link's capability is read only by the system, so resource shrinking must be told to keep it. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@array/android_wear_capabilities" />

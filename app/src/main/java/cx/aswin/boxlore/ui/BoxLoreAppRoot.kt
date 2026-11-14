@@ -837,6 +837,7 @@ fun BoxLoreAppRoot(
                         !isAccountActive &&
                         !legacyRssRepairInProgress,
                     playbackRepository = playbackRepository,
+                    watchTakeover = cx.aswin.boxlore.wearlink.rememberWatchTakeover(container.phoneWearLink),
                 )
 
                 if (!windowLayout.usesTabletLayout && !tabletNavigation.hasDetail && shouldShowPlayerChrome(isAccountActive, isFromOnboardingRoute, isSupportActive, isModeSwitching)) {

@@ -12,6 +12,20 @@ class PlaybackControllerStatePolicyTest {
         )
 
     @Test
+    fun `a skip inside the episode moves the position even with no ticker running`() {
+        val skipped = PlaybackControllerStatePolicy.afterSeek(restoredState, isSeek = true, sameItem = true, positionMs = 3_630_000L)
+
+        assertEquals(3_630_000L, skipped.position)
+        assertEquals(restoredState.duration, skipped.duration)
+    }
+
+    @Test
+    fun `a move to another item, or a change that is not a seek, leaves the position alone`() {
+        assertEquals(restoredState, PlaybackControllerStatePolicy.afterSeek(restoredState, isSeek = true, sameItem = false, positionMs = 0L))
+        assertEquals(restoredState, PlaybackControllerStatePolicy.afterSeek(restoredState, isSeek = false, sameItem = true, positionMs = 0L))
+    }
+
+    @Test
     fun `empty controller cannot erase Room restored progress`() {
         val merged =
             PlaybackControllerStatePolicy.mergeProgress(

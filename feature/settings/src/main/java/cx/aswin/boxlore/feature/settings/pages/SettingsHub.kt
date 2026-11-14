@@ -15,6 +15,7 @@ import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.PrivacyTip
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.Watch
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +37,7 @@ internal fun SettingsHub(
     onBack: () -> Unit,
     onNavigate: (ProfileSettingsDestination) -> Unit,
     onCheckForUpdates: (() -> Unit)? = null,
+    showWearOs: Boolean = false,
 ) {
     SupportEntryImpression(SupportEntrySurface.SettingsTopBar)
     SettingsScaffold(
@@ -100,6 +102,16 @@ internal fun SettingsHub(
             contentColor = MaterialTheme.colorScheme.onSurface,
             onClick = { onNavigate(ProfileSettingsDestination.Downloads) },
         )
+        if (showWearOs) {
+            SettingsCategoryCard(
+                title = "Wear OS",
+                description = "Your shows layout and download storage on your watch",
+                icon = Icons.Rounded.Watch,
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                onClick = { onNavigate(ProfileSettingsDestination.WearOs) },
+            )
+        }
         SettingsCategoryCard(
             title = "Privacy",
             description = "Analytics data and deletion requests",
