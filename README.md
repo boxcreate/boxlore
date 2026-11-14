@@ -65,6 +65,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <!-- release-upcoming:start -->
 <b>⚡ Improved:</b>
 <ul align="left">
+<li>Sharing a show or episode now sends a card that looks like the boxlore player, in colours from its artwork, and the share sheet shows the card before you send it. Episodes shared from a moment show where they start, and the message is now just the name and the link.</li>
 <li>Home screen widgets have a new look with rounder shapes. The players now show how far you are and how much time is left, and the skip buttons show your own skip lengths.</li>
 <li>The Your Shows widget is now a grid of artwork. Choose whole covers or shapes in Settings › Appearance › Widgets.</li>
 <li>See every boxlore widget and add it to your home screen from Settings › Appearance › Widgets.</li>
