@@ -98,6 +98,47 @@ class ExploreForYouRefresherTest {
     }
 
     @Test
+    fun `going back to a region after another region's last good picks replaced its picks asks again`() = runHarness { h ->
+        h.request = { key ->
+            delay(REQUEST_MS)
+            Picks(key, fresh = key.region != "gb")
+        }
+        h.refresher.onVisibilityChanged(true)
+        h.followed.emit(shows(3))
+        settle()
+        h.region.value = "gb"
+        settle()
+        assertEquals(listOf(key(shows(3)), key(shows(3), region = "gb")), h.published)
+
+        h.region.value = "us"
+        settle()
+
+        assertEquals(3, h.requests.size)
+        assertEquals(key(shows(3)), h.requests.last())
+        assertEquals(key(shows(3)), h.published.last())
+    }
+
+    @Test
+    fun `going back to a region after another region's request published nothing asks nothing`() = runHarness { h ->
+        h.request = { key ->
+            delay(REQUEST_MS)
+            if (key.region == "gb") null else Picks(key, fresh = true)
+        }
+        h.refresher.onVisibilityChanged(true)
+        h.followed.emit(shows(3))
+        settle()
+        h.region.value = "gb"
+        settle()
+        assertEquals(listOf(key(shows(3))), h.published)
+
+        h.region.value = "us"
+        settle()
+
+        assertEquals(2, h.requests.size)
+        assertEquals(listOf(key(shows(3))), h.published)
+    }
+
+    @Test
     fun `the same followed shows again asks nothing`() = runHarness { h ->
         h.refresher.onVisibilityChanged(true)
         h.followed.emit(shows(3))

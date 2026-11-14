@@ -103,9 +103,10 @@ class ExploreForYouRefreshPolicy(
 
     /**
      * The refresh [Action.Start] asked for ended; [fresh] when it brought a fresh answer (not a
-     * failure and not the last good picks kept from earlier).
+     * failure and not the last good picks kept from earlier), [published] when its picks were put
+     * on screen.
      */
-    fun onFinished(key: ExploreForYouRefreshKey, fresh: Boolean, nowMs: Long): Action {
+    fun onFinished(key: ExploreForYouRefreshKey, fresh: Boolean, published: Boolean, nowMs: Long): Action {
         if (running == key) running = null
         if (fresh) {
             refreshed = key
@@ -115,6 +116,9 @@ class ExploreForYouRefreshPolicy(
             failures = if (key == failed) failures + 1 else 1
             failed = key
             failedAtMs = nowMs
+            // The picks on screen now belong to this key, so going back to the last fresh key must
+            // ask again. A failure that published nothing leaves that key's picks showing.
+            if (published && refreshed != key) refreshed = null
         }
         return next(nowMs)
     }

@@ -107,7 +107,7 @@ class ExploreForYouRefresher<T : Any>(
         if (mine != generation) return
         refreshJob = null
         onLoadingChanged(false)
-        act(policy.onFinished(key, fresh = picks != null && isFresh(picks), nowMs = clockMs()))
+        act(policy.onFinished(key, fresh = picks != null && isFresh(picks), published = picks != null, nowMs = clockMs()))
     }
 
     private fun wakeAt(atMs: Long) {
