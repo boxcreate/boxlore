@@ -290,4 +290,37 @@ class WatchAccountTest {
             sync.syncNow()
             assertEquals((41..45).map(Int::toString), looked.take(5))
         }
+
+    @Test
+    fun `a fresh token sent with a sync answer replaces the one the watch used`() =
+        runTest {
+            val cloud = FakeCloud()
+            cloud.pullAnswer = CloudAnswer.Ok(SyncPullResponse(syncedAt = 500L), renewedToken = "fresh-token")
+            val tokens = WatchAccountStore.InMemory(token = "t", account = "me@example.org")
+            val sync = WatchCloudSync(cloud, tokens, store(), { null }, { null }, backgroundScope)
+
+            assertEquals(CloudSyncResult.Done, sync.syncNow())
+
+            assertEquals("fresh-token", tokens.token)
+            assertEquals("me@example.org", tokens.account)
+        }
+
+    @Test
+    fun `a fresh token for a session the watch has left is not kept`() =
+        runTest {
+            val tokens = WatchAccountStore.InMemory(token = "t", account = "me@example.org")
+            val cloud =
+                object : WatchCloudApi by FakeCloud() {
+                    override suspend fun pull(token: String, request: SyncPullRequest): CloudAnswer<SyncPullResponse> {
+                        // The listener signs out while the pull is on its way.
+                        tokens.clear()
+                        return CloudAnswer.Ok(SyncPullResponse(syncedAt = 500L), renewedToken = "fresh-token")
+                    }
+                }
+            val sync = WatchCloudSync(cloud, tokens, store(), { null }, { null }, backgroundScope)
+
+            sync.syncNow()
+
+            assertNull(tokens.token)
+        }
 }

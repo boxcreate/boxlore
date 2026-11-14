@@ -129,6 +129,21 @@ class WatchAccountApiContractTest {
     }
 
     @Test
+    fun `a sync answer can carry a fresh token in its renew header`() {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setHeader(WatchAccountApi.RENEW_HEADER, "fresh-token")
+                .setBody("""{"syncedAt":1}"""),
+        )
+        enqueueJson("""{"syncedAt":2}""")
+
+        assertEquals("fresh-token", api.syncPull("Bearer watch-token", SyncPullRequest()).execute().headers()[WatchAccountApi.RENEW_HEADER])
+        assertNull(api.syncPull("Bearer watch-token", SyncPullRequest()).execute().headers()[WatchAccountApi.RENEW_HEADER])
+    }
+
+    @Test
     fun `an unsuccessful answer comes back as one, with its body for the caller to read`() {
         enqueueJson("""{"error":"watch_token_invalid"}""", code = 401)
         enqueueJson("""{"error":"code_expired"}""", code = 400)
