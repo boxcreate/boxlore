@@ -105,6 +105,7 @@
     <string name="wear_account_signing_in">Signing in…</string>
     <string name="wear_account_sign_in_detail">Syncs shows and listening</string>
     <string name="wear_account_signed_in">Signed in</string>
+    <string name="wear_account_signed_out">Not signed in</string>
     <string name="wear_account_syncing">Syncing with your account</string>
     <string name="wear_account_sign_out">Sign out</string>
     <string name="wear_account_sign_out_detail">Your shows stay on this watch</string>

@@ -10,7 +10,6 @@ import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumnScope
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.FilledTonalButton
-import androidx.wear.compose.material3.ListSubHeader
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
@@ -28,8 +27,19 @@ internal class AccountSettings(
     val onSignOut: () -> Unit,
 )
 
+/** The account in one line: the signed-in [name] when the phone gave one, else the words of [label]. */
+internal data class AccountSummary(val name: String?, val label: Int)
+
 /** What the account rows say. */
 internal object AccountCopy {
+    /** What Settings' first screen says under Account. */
+    fun summary(state: WatchAccountState): AccountSummary =
+        when (state) {
+            is WatchAccountState.SignedIn -> AccountSummary(state.account?.takeIf { it.isNotBlank() }, R.string.wear_account_signed_in)
+            WatchAccountState.SigningIn -> AccountSummary(null, R.string.wear_account_signing_in)
+            WatchAccountState.SignedOut -> AccountSummary(null, R.string.wear_account_signed_out)
+        }
+
     /** The message under Sign in after a try that did not work. */
     fun problem(problem: SignInProblem): Int =
         when (problem) {
@@ -39,13 +49,8 @@ internal object AccountCopy {
         }
 }
 
-/** Settings' account rows: Sign in with the phone, or who is signed in and Sign out. */
+/** The account page's rows: Sign in with the phone, or who is signed in and Sign out. */
 internal fun TransformingLazyColumnScope.accountItems(account: AccountSettings, spec: TransformationSpec) {
-    item(key = "account-header") {
-        ListSubHeader(modifier = Modifier.transformedHeight(this, spec), transformation = SurfaceTransformation(spec)) {
-            Text(stringResource(R.string.wear_account))
-        }
-    }
     when (val state = account.state) {
         is WatchAccountState.SignedIn -> {
             item(key = "account-name") {

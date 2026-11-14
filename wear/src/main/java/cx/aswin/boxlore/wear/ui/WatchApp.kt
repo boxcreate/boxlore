@@ -48,7 +48,11 @@ import cx.aswin.boxlore.wear.ui.player.SpeedScreen
 import cx.aswin.boxlore.wear.ui.search.SearchResultsScreen
 import cx.aswin.boxlore.wear.ui.search.SearchScreen
 import cx.aswin.boxlore.wear.ui.settings.AccountSettings
+import cx.aswin.boxlore.wear.ui.settings.AccountSettingsScreen
+import cx.aswin.boxlore.wear.ui.settings.SettingsPage
 import cx.aswin.boxlore.wear.ui.settings.SettingsScreen
+import cx.aswin.boxlore.wear.ui.settings.ShowsLayoutSettingsScreen
+import cx.aswin.boxlore.wear.ui.settings.StorageLimitSettingsScreen
 import cx.aswin.boxlore.wear.ui.show.EpisodeActions
 import cx.aswin.boxlore.wear.ui.show.EpisodeScreen
 import cx.aswin.boxlore.wear.ui.show.ShowScreen
@@ -64,6 +68,9 @@ internal object WatchRoutes {
     const val DOWNLOADS = "downloads"
     const val SEARCH = "search"
     const val SETTINGS = "settings"
+    const val SETTINGS_ACCOUNT = "settings_account"
+    const val SETTINGS_SHOWS_LAYOUT = "settings_shows_layout"
+    const val SETTINGS_STORAGE_LIMIT = "settings_storage_limit"
     const val PLAYER = "player"
     const val PLAYER_MORE = "player_more"
     const val SLEEP_TIMER = "sleep_timer"
@@ -80,8 +87,17 @@ internal object WatchRoutes {
     /** Launch extra set by the tile and the watch-face shortcut: the ID of the episode to carry on with. */
     const val EXTRA_RESUME = "cx.aswin.boxlore.wear.extra.RESUME"
 
+    private val settingsPages =
+        mapOf(
+            SettingsPage.Account to SETTINGS_ACCOUNT,
+            SettingsPage.ShowsLayout to SETTINGS_SHOWS_LAYOUT,
+            SettingsPage.StorageLimit to SETTINGS_STORAGE_LIMIT,
+        )
+
+    fun forSettingsPage(page: SettingsPage): String = settingsPages.getValue(page)
+
     private val launchable =
-        setOf(SHOWS, JUMP_BACK_IN, NEW_EPISODES, UP_NEXT, DOWNLOADS, SEARCH, SETTINGS, PLAYER, PLAYER_MORE, SLEEP_TIMER, SPEED)
+        setOf(SHOWS, JUMP_BACK_IN, NEW_EPISODES, UP_NEXT, DOWNLOADS, SEARCH, SETTINGS, PLAYER, PLAYER_MORE, SLEEP_TIMER, SPEED) + settingsPages.values
 
     /** The route a launch [intent] asks for, or null for a plain launch or an unknown route. */
     fun fromLaunch(intent: Intent?): String? = launchRoute(intent?.getStringExtra(EXTRA_ROUTE))
@@ -176,14 +192,20 @@ private fun NavGraphBuilder.homeRoutes(
         val layout by container.settings.showsLayout.collectAsStateWithLifecycle()
         val limitMb by container.settings.storageLimitMb.collectAsStateWithLifecycle()
         val account by container.account.state.collectAsStateWithLifecycle()
+        SettingsScreen(account, layout, limitMb) { page -> navController.navigate(WatchRoutes.forSettingsPage(page)) }
+    }
+    composable(WatchRoutes.SETTINGS_ACCOUNT) {
+        val account by container.account.state.collectAsStateWithLifecycle()
         val problem by container.account.problem.collectAsStateWithLifecycle()
-        SettingsScreen(
-            showsLayout = layout,
-            onShowsLayout = container.settings::setShowsLayout,
-            storageLimitMb = limitMb,
-            onStorageLimitMb = container.settings::setStorageLimitMb,
-            account = AccountSettings(account, problem, container.account::signIn, container.account::signOut),
-        )
+        AccountSettingsScreen(AccountSettings(account, problem, container.account::signIn, container.account::signOut))
+    }
+    composable(WatchRoutes.SETTINGS_SHOWS_LAYOUT) {
+        val layout by container.settings.showsLayout.collectAsStateWithLifecycle()
+        ShowsLayoutSettingsScreen(layout, container.settings::setShowsLayout)
+    }
+    composable(WatchRoutes.SETTINGS_STORAGE_LIMIT) {
+        val limitMb by container.settings.storageLimitMb.collectAsStateWithLifecycle()
+        StorageLimitSettingsScreen(limitMb, container.settings::setStorageLimitMb)
     }
     composable(WatchRoutes.SEARCH) {
         SearchScreen(
