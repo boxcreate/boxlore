@@ -39,6 +39,9 @@ class ShareSheetBodyTest {
     private val drawn = mutableListOf<ShareCardText>()
     private val shared = mutableListOf<Pair<Long?, ShareTarget>>()
     private var dismissals = 0
+    private var position by mutableStateOf(65_000L)
+    private var linkOpensShow = false
+    private var cardDraws = true
 
     private fun show(restoration: StateRestorationTester? = null) {
         val content: @androidx.compose.runtime.Composable () -> Unit = {
@@ -52,15 +55,16 @@ class ShareSheetBodyTest {
                             subtitle = "Radiolab",
                             imageUrl = null,
                             durationMs = 3_600_000L,
-                            currentPositionMs = 65_000L,
+                            currentPositionMs = position,
                             showTimestampOption = true,
                             episode = null,
                             onShare = { _, _, timestampMs, target -> shared += timestampMs to target },
                             onDismissRequest = { dismissals++ },
                             renderPreview = { card, _ ->
                                 drawn += card
-                                ImageBitmap(8, 8)
+                                if (cardDraws) ImageBitmap(8, 8) else null
                             },
+                            opensShow = { linkOpensShow },
                         )
                     }
                 }
@@ -132,5 +136,38 @@ class ShareSheetBodyTest {
         compose.onNodeWithTag(SharePreviewTag).assertDoesNotExist()
         compose.onNodeWithText("Radiolab").assertExists()
         assertEquals(0, drawn.size)
+    }
+
+    @Test
+    fun `the start time is taken when the switch turns on, so the card and the share agree while playback goes on`() {
+        show()
+        compose.onNodeWithText("Start at 1:05").performClick()
+        compose.waitForIdle()
+        position = 125_000L
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Start at 1:05").assertExists()
+        assertEquals("Starts at 1:05", drawn.last().moment)
+        compose.onNodeWithText("Send artwork card").performClick()
+        assertEquals(listOf(65_000L to ShareTarget.MESSAGE), shared)
+    }
+
+    @Test
+    fun `an episode whose link opens its show gets no start time on the card`() {
+        linkOpensShow = true
+        show()
+        compose.onNodeWithText("Start at 1:05").performClick()
+        compose.waitForIdle()
+        assertEquals(2, drawn.size)
+        assertNull(drawn.last().moment)
+    }
+
+    @Test
+    fun `the sheet still names what is shared when the card can't be drawn`() {
+        cardDraws = false
+        show()
+        compose.onNodeWithTag(SharePreviewTag).assertExists()
+        compose.onNodeWithText("The Buried Bodies Case").assertExists()
+        compose.onNodeWithText("Radiolab").assertExists()
     }
 }

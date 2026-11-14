@@ -35,7 +35,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,8 +55,8 @@ import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.share.ShareCardText
 import cx.aswin.boxlore.core.designsystem.share.ShareManager
-import cx.aswin.boxlore.core.designsystem.share.ShareMoment
 import cx.aswin.boxlore.core.designsystem.share.formatShareTime
+import cx.aswin.boxlore.core.designsystem.share.shareMoment
 import cx.aswin.boxlore.core.designsystem.share.sharePreviewSizeDp
 import cx.aswin.boxlore.core.designsystem.share.shareProgress
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -111,6 +110,7 @@ fun ShareBottomSheet(
             renderPreview = { card, progress ->
                 ShareManager.renderPreview(context, card, progress, imageUrl, episode?.podcastImageUrl)?.asImageBitmap()
             },
+            opensShow = { episode != null && ShareManager.episodeShareLink(episode).opensShow },
         )
     }
 }
@@ -119,6 +119,11 @@ fun ShareBottomSheet(
  * The share sheet's content: a preview of the card, the start-time switch for episodes and the
  * share actions. [renderPreview] draws the card; it runs again only when the card's words change,
  * not when the window resizes, rotates or folds.
+ *
+ * The start time is the position when the switch turned on, so the preview, the message, the
+ * copied link and the story all name the same moment while playback carries on. [opensShow] says
+ * whether the episode's link opens its show instead, which can't start at a time; the preview then
+ * leaves the start time out, as the share does.
  */
 @Composable
 @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
@@ -135,12 +140,16 @@ internal fun ShareSheetBody(
     onShare: (id: String, type: String, timestampMs: Long?, target: ShareTarget) -> Unit,
     onDismissRequest: () -> Unit,
     renderPreview: suspend (ShareCardText, Float) -> ImageBitmap?,
+    opensShow: suspend () -> Boolean = { false },
 ) {
     val context = LocalContext.current
-    var includeTimestamp by rememberSaveable { mutableStateOf(false) }
+    // The position captured when the switch turned on; null while it is off.
+    var startsAtMs by rememberSaveable { mutableStateOf<Long?>(null) }
+    val includeTimestamp = startsAtMs != null
     val contentLabel = if (type == "podcast") "podcast" else "episode"
-    val latestPosition by rememberUpdatedState(currentPositionMs)
     val timestampOffered = type == "episode" && showTimestampOption && currentPositionMs > 1000L
+    val sharedStartMs = startsAtMs?.takeIf { timestampOffered }
+    val toggleTimestamp = { startsAtMs = if (startsAtMs == null) currentPositionMs else null }
 
     Column(
         modifier =
@@ -180,16 +189,26 @@ internal fun ShareSheetBody(
         Spacer(modifier = Modifier.height(20.dp))
 
         val previewSize = sharePreviewSizeDp(LocalBoxloreWindowLayout.current.heightDp)
-        val startsAt = includeTimestamp && timestampOffered
-        val preview by produceState<ImageBitmap?>(initialValue = null, title, subtitle, imageUrl, startsAt, previewSize > 0) {
+        val preview by produceState<ImageBitmap?>(initialValue = null, title, subtitle, imageUrl, sharedStartMs, previewSize > 0) {
             value = null
             if (previewSize == 0) return@produceState
-            val moment = if (startsAt) ShareMoment.StartsAt(latestPosition) else ShareMoment.Whole
+            val moment = shareMoment(
+                opensShow = sharedStartMs != null && opensShow(),
+                timestampMs = sharedStartMs,
+                startMs = null,
+                endMs = null,
+            )
             val card = ShareCardText(title, subtitle, ShareManager.shareMomentLabel(context, moment))
             value = renderPreview(card, shareProgress(moment, (durationMs / 1000L).toInt()))
         }
         if (previewSize > 0) {
-            SharePreview(preview = preview, sizeDp = previewSize, description = stringResource(R.string.share_preview_description, title))
+            SharePreview(
+                preview = preview,
+                sizeDp = previewSize,
+                title = title,
+                subtitle = subtitle,
+                description = stringResource(R.string.share_preview_description, title),
+            )
         } else {
             ShareSummaryRow(title = title, subtitle = subtitle, imageUrl = imageUrl)
         }
@@ -202,7 +221,7 @@ internal fun ShareSheetBody(
                     .fillMaxWidth()
                     .expressiveClickable(
                         shape = MaterialTheme.shapes.extraLarge,
-                        onClick = { includeTimestamp = !includeTimestamp },
+                        onClick = toggleTimestamp,
                     ),
                 shape = MaterialTheme.shapes.extraLarge,
                 color =
@@ -230,7 +249,7 @@ internal fun ShareSheetBody(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Start at ${formatShareTime(currentPositionMs)}",
+                            text = "Start at ${formatShareTime(startsAtMs ?: currentPositionMs)}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = GoogleSansWeight.bold,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -243,7 +262,7 @@ internal fun ShareSheetBody(
                     }
                     Switch(
                         checked = includeTimestamp,
-                        onCheckedChange = { includeTimestamp = it },
+                        onCheckedChange = { if (it != includeTimestamp) toggleTimestamp() },
                         colors =
                         SwitchDefaults.colors(
                             checkedTrackColor = MaterialTheme.colorScheme.primary,
@@ -267,13 +286,7 @@ internal fun ShareSheetBody(
             title = "Send artwork card",
             subtitle = "Artwork and link",
             onClick = {
-                val tMs =
-                    if (includeTimestamp && showTimestampOption) {
-                        currentPositionMs
-                    } else {
-                        null
-                    }
-                onShare(id, type, tMs, ShareTarget.MESSAGE)
+                onShare(id, type, sharedStartMs, ShareTarget.MESSAGE)
                 onDismissRequest()
             },
         )
@@ -287,7 +300,7 @@ internal fun ShareSheetBody(
                 title = "Copy link",
                 subtitle = "Link only",
                 onClick = {
-                    copyShareLink(context, id, type, episode, currentPositionMs.takeIf { includeTimestamp && showTimestampOption })
+                    copyShareLink(context, id, type, episode, sharedStartMs)
                     onDismissRequest()
                 },
                 modifier = Modifier.weight(1f),
@@ -297,13 +310,7 @@ internal fun ShareSheetBody(
                 title = "Instagram Story",
                 subtitle = "Artwork + copied link",
                 onClick = {
-                    val tMs =
-                        if (includeTimestamp && showTimestampOption) {
-                            currentPositionMs
-                        } else {
-                            null
-                        }
-                    onShare(id, type, tMs, ShareTarget.INSTAGRAM_STORY)
+                    onShare(id, type, sharedStartMs, ShareTarget.INSTAGRAM_STORY)
                     onDismissRequest()
                 },
                 modifier = Modifier.weight(1f),
@@ -443,7 +450,7 @@ private fun ShareSecondaryAction(
 
 /** The card as it will be sent, centred; a quiet placeholder of the same size while it draws. */
 @Composable
-private fun SharePreview(preview: ImageBitmap?, sizeDp: Int, description: String) {
+private fun SharePreview(preview: ImageBitmap?, sizeDp: Int, title: String, subtitle: String, description: String) {
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Surface(
             modifier = Modifier.size(sizeDp.dp).testTag(SharePreviewTag),
@@ -457,6 +464,33 @@ private fun SharePreview(preview: ImageBitmap?, sizeDp: Int, description: String
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit,
                 )
+            } else {
+                // While the card draws, or if it can't be drawn, the sheet still names what is shared.
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(20.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = GoogleSansWeight.bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (subtitle.isNotBlank()) {
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
             }
         }
     }
