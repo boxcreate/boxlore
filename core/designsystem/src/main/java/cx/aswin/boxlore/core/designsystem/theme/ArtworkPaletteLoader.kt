@@ -69,3 +69,9 @@ private fun Bitmap.averageColour(): Int {
     fun channel(shift: Int) = pixels.sumOf { (it shr shift) and 0xFF } / pixels.size
     return (0xFF shl 24) or (channel(16) shl 16) or (channel(8) shl 8) or channel(0)
 }
+
+/**
+ * The seed colour of an artwork bitmap already in hand (a share card's cover, say), read the same
+ * way as a page's palette. Null when the cover has no meaningful colour. The bitmap is left as is.
+ */
+internal fun artworkSeedOf(bitmap: Bitmap): Int? = readOnScreenPalette(bitmap)?.seed

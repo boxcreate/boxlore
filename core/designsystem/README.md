@@ -92,7 +92,8 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 
 - `ShareManager`: share cards and the system share sheet; reports `share_content` through `:core:analytics`.
 - `ShareManager.episodeShareLink`, `copyEpisodeLink`: episode links resolved through the app-installed `EpisodeShareTargetSource`, falling back to the episode's own fields.
-- `ShareBottomSheet`, `ShareCardRenderer`: the share sheet and card bitmaps.
+- `ShareBottomSheet`: the share sheet, with a preview of the card it sends; short windows show a name row instead.
+- `ShareCardRenderer`, `shareCardColors`: the card bitmap, drawn as a boxlore player in tones of the artwork's seed colour (boxlore indigo when the cover has none). The artwork is shown whole with rounded corners.
 - `startFirstAvailable`, `openLink`, `SafeUriHandler` (`links/`): open the first intent an installed app handles; never throw when none can.
 
 ### Analytics helper
@@ -108,7 +109,7 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 ### Upright brand wordmarks
 
 - Brand wordmarks and the LORE mark are upright; never slant or italicise them.
-- Share cards use the plain upright wordmark with a "Listen on" label, clear of story controls; artwork and title stay the focus.
+- Share cards use the plain upright wordmark with a "Listen on" label on the card's bar, clear of story controls; artwork and title stay the focus.
 - This README is the one place for these rules.
 
 ## Internal structure
@@ -124,7 +125,7 @@ src/main/java/cx/aswin/boxlore/core/designsystem/
   layout/       window, fold, pane and card specifications
   links/        safe link and intent launching
   list/         lazy-list keys, progressive search scrolling
-  share/        ShareManager, ShareCardRenderer
+  share/        ShareManager, ShareCardRenderer, ShareCardModel
   theme/        theme, presets, artwork colour, typography, shapes, motion, shimmer, tablet input
 src/main/res/
   drawable/, drawable-nodpi/   brand vectors, placeholder covers, brief artwork
@@ -172,7 +173,7 @@ Tests live in `src/test`; Compose tests use Robolectric. Some shared components 
 | Press feedback, top bar, cards, tabs | `ExpressivePressFeedbackTest`, `TopBarUtilityActionsTest`, `HomeDiscoveryCardTest`, `DiscoveryTabSwitcherTest` in `:feature:home` |
 | Sleep prompt, playing on a watch, languages | `SleepPromptMotionTest`, `SleepTimerPopupTest`, `PlaceMenuTest`, `ContentLanguagesSheetCopyTest` |
 | Echo, brief | `EchoCharacterModelTest`, `EchoMotionModelTest`, `BriefingArtworkTest`; `BriefingShowTest` in `:feature:briefing` |
-| Share, links, page views | `EpisodeShareLinkTest`, `ShareCardLayoutTest`, `SafeLinksTest`, `TrackScreenViewTest`; `ScreenViewCoverageTest` in `:core:testing` |
+| Share, links, page views | `EpisodeShareLinkTest`, `ShareCardModelTest`, `ShareSheetBodyTest`, `SafeLinksTest`, `TrackScreenViewTest`; `ScreenViewCoverageTest` in `:core:testing` |
 | Genres and lists | `GenreIconsTest`, `GenreSuggestionsTest`, `LazyListKeyPolicyTest`, `ProgressiveSearchScrollLogicTest` |
 
 ```bash
