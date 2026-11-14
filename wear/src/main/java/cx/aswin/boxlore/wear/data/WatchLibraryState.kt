@@ -79,13 +79,14 @@ data class WatchLibraryState(
     fun merged(episode: WatchEpisode): WatchEpisode {
         // The watch can hold an episode twice: under boxlore's own ID, and under an older ID the phone
         // still uses. Its downloads and its place live with the copy under the own ID, so that one
-        // wins, or the same episode would play from two places. The one exception: audio stored only
-        // under the older ID stays reachable, since the file is kept under the ID it was stored with.
+        // wins, or the same episode would play from two places. The one exception: finished audio
+        // stored only under the older ID stays reachable, since a file is kept under the ID it was
+        // stored with, and only a finished one can be played.
         val held = episodes[episode.id]
-        val heldHasAudio = held != null && held.download != WatchDownload.None
+        val heldCanPlay = held?.download == WatchDownload.Done
         val fromOlderId = !episode.hasOwnId
         val saved =
-            sameAudio(episode) { fromOlderId && it.hasOwnId && (it.download != WatchDownload.None || !heldHasAudio) }
+            sameAudio(episode) { fromOlderId && it.hasOwnId && (it.download == WatchDownload.Done || !heldCanPlay) }
                 ?: held
                 ?: sameAudio(episode)
         return when {

@@ -294,4 +294,20 @@ class WatchLibraryStateTest {
         // Once both copies hold audio, the own ID wins again.
         assertEquals(own.id, state.download(own, WatchDownload.Done).merged(phones).id)
     }
+
+    // A download still on its way cannot be played, so it must not take the place of a finished one.
+    @Test
+    fun `a finished download under the older ID wins over an unfinished one under the own ID`() {
+        val own = episode("5027634550352900").copy(audioUrl = "https://example.org/same.mp3")
+        val phones = episode("-368593920213691381").copy(audioUrl = "https://example.org/same.mp3")
+        val state = WatchLibraryState().download(phones, WatchDownload.Done).download(own, WatchDownload.InProgress(0.4f))
+
+        val fromPhone = state.merged(phones)
+
+        assertEquals(phones.id, fromPhone.id)
+        assertEquals(WatchDownload.Done, fromPhone.download)
+        // An unfinished download under the older ID gives no reason to leave the own ID.
+        val unfinished = WatchLibraryState().download(phones, WatchDownload.InProgress(0.4f)).progress(own, minute, 40 * minute)
+        assertEquals(own.id, unfinished.merged(phones).id)
+    }
 }

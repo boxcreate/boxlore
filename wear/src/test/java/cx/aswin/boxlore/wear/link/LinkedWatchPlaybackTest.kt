@@ -6,6 +6,7 @@ import cx.aswin.boxlore.core.wearlink.WearLinkEpisode
 import cx.aswin.boxlore.wear.data.IdleWatchPlayback
 import cx.aswin.boxlore.wear.data.WatchLibraryStore
 import cx.aswin.boxlore.wear.data.WatchPlayback
+import cx.aswin.boxlore.wear.model.WatchDownload
 import cx.aswin.boxlore.wear.model.WatchEpisode
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -88,6 +89,19 @@ class LinkedWatchPlaybackTest {
             setup.playback.play(OWN_ID)
 
             assertEquals(listOf(OWN_ID to 21 * minute), setup.player.started)
+        }
+
+    // The copy with the finished download keeps the phone's ID; asked for by the own ID, it is still the phone's episode.
+    @Test
+    fun `asked for under the own ID while the audio sits under the phone's ID, it still starts where the phone is`() =
+        runTest {
+            val setup = setup(onPhone(phones, playing = true, positionMs = 17 * minute, at = 1_000L), now = 1_000L + 4 * minute)
+            setup.store.update { it.download(WatchLinkRules.watchEpisode(phones), WatchDownload.Done) }
+
+            setup.playback.play(OWN_ID)
+
+            assertEquals(listOf(PHONE_ID to 21 * minute), setup.player.started)
+            assertEquals(listOf(WearLinkCommand.PAUSE), setup.link.sent)
         }
 
     @Test
