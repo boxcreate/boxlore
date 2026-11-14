@@ -276,4 +276,22 @@ class WatchLibraryStateTest {
         val olds = WatchLibraryState().progress(other, minute, 40 * minute).progress(twin, minute, 40 * minute)
         assertEquals("-8", olds.merged(twin).id)
     }
+
+    @Test
+    fun `audio stored only under the phone's older ID stays with that copy, so its file is still found`() {
+        val own = episode("5027634550352900").copy(audioUrl = "https://example.org/same.mp3")
+        val phones = episode("-368593920213691381").copy(audioUrl = "https://example.org/same.mp3")
+        val state =
+            WatchLibraryState()
+                .download(phones, WatchDownload.Done)
+                .progress(own, 10 * minute, 40 * minute)
+
+        val fromPhone = state.merged(phones)
+
+        // The stored file is named by the ID it was stored under; the copy the player gets must name that ID.
+        assertEquals(phones.id, fromPhone.id)
+        assertEquals(WatchDownload.Done, fromPhone.download)
+        // Once both copies hold audio, the own ID wins again.
+        assertEquals(own.id, state.download(own, WatchDownload.Done).merged(phones).id)
+    }
 }
