@@ -224,6 +224,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 
 - **Android Auto.** Browse Home, Library, Downloads and Discover in the car. Playback picks up when you reconnect.
 - **Google Cast.** Play on TVs and speakers, with the player in the app kept in sync.
+- **Wear OS (coming soon).** boxlore on your watch plays with or without your phone. [Take a first look](docs/WEAR_OS.md).
 - **Widgets.** Now Playing, playback controls, Your Shows and New Episodes.
 
 ### Sync and backup
@@ -305,6 +306,8 @@ The Android app is source-available under the <a href="LICENSE">PolyForm Strict 
 Android may ask you to allow installation from your browser or file manager when sideloading. boxlore needs Android 12 or later.
 
 Using Android Auto with the GitHub or Obtainium version? Turn on one setting first: [Use boxlore with Android Auto](docs/ANDROID_AUTO.md).
+
+A Wear OS watch app is on its way. [boxlore on Wear OS](docs/WEAR_OS.md) shows what it does and how you'll install it.
 
 ## Project
 

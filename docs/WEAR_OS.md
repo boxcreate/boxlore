@@ -1,6 +1,6 @@
 # boxlore on Wear OS: a first look
 
-boxlore is coming to Wear OS watches. This is an early look at the watch app while it is still being built. You can't install it yet, and details may change before release.
+boxlore is coming to Wear OS watches. This is an early look at the watch app before its first release. You can't install it yet; [how to install it](#how-to-install-it) covers the steps for when you can.
 
 <table>
   <tr>
@@ -29,14 +29,56 @@ boxlore is coming to Wear OS watches. This is an early look at the watch app whi
 
 - **Plays without your phone.** Stream episodes or download them to the watch, then leave your phone at home.
 - **Keeps your place.** With boxlore on your phone, your shows and listening progress carry over to the watch and back.
-- **Controls your phone's player.** When an episode is playing on your phone, pause it or skip from the watch.
+- **Syncs with your account.** Sign in on the watch with one tap from your phone, and your shows and progress sync even when the phone is away.
+- **Controls your phone's player.** When an episode is playing on your phone, pause it or skip from the watch, or move it to the watch and carry on from the same place.
+- **Send to watch.** Download an episode to the watch from its page on your phone.
+- **Tile and watch face.** Jump back into your last episode from a tile or a watch-face shortcut.
 - **Search and Subscribe.** Find a show by typing or speaking, and subscribe from the watch.
 - **Player extras.** Playback speed, a sleep timer and Up next.
 - **Made for round screens.** Home's top card follows the curve of the watch, on large and small watches.
 
 ## When can I get it?
 
-There is no date yet. The watch app is still being built and tested.
+There is no date yet. The watch app will arrive with a coming boxlore release.
+
+## How to install it
+
+These steps apply from the first release that includes the watch app. The watch needs Wear OS 4 or later. boxlore on your phone is optional: the watch app also works on its own.
+
+### Get both apps from the same place
+
+The watch app and the phone app link only when both come from the same place:
+
+| boxlore on your phone is from | Install the watch app from |
+| :--- | :--- |
+| Google Play | Google Play |
+| GitHub Releases or Obtainium | GitHub Releases |
+
+If the two don't match, each app still works on its own, but they can't share shows and progress, control each other's player, or sign the watch in.
+
+### From Google Play
+
+1. On your watch, open the Play Store and search for **boxlore**. Or, on your phone, open [boxlore on Google Play](https://play.google.com/store/apps/details?id=cx.aswin.boxlore) and choose your watch from the install menu.
+2. Install it, then open boxlore on the watch.
+
+### From GitHub Releases
+
+Wear OS has no file manager to install from, so this route uses a computer with `adb`, Android's developer tool.
+
+1. From the [latest release](https://github.com/boxcreate/boxlore/releases/latest), download the file named `boxlore-wear-` followed by the version, ending in `.apk`. It is the watch app that matches that release's phone app.
+2. On the watch, go to **Settings > System > About > Versions** and tap **Build number** seven times to turn on developer options.
+3. In **Settings > Developer options**, turn on **ADB debugging** and **Wireless debugging**, then pair your computer under **Wireless debugging > Pair new device**.
+4. On the computer, run `adb install` followed by the path to the downloaded file.
+5. Open boxlore on the watch. You can turn the debugging options off again.
+
+Menu names differ slightly between watch makers.
+
+### Set it up
+
+- **Link with your phone.** Open boxlore on both. With matching apps and the phone in reach, your shows and progress appear on the watch on their own.
+- **Sign in.** On the watch, open **Settings > Account > Sign in with phone**. You need to be signed in to boxlore on the phone, with the phone in reach.
+- **Add the tile.** Swipe to the end of your tiles, add one, and pick boxlore.
+- **Add the watch-face shortcut.** Customise your watch face and pick boxlore for one of its slots.
 
 Have an idea or a request for the watch app? [Open an issue](https://github.com/boxcreate/boxlore/issues).
 
