@@ -100,6 +100,12 @@ dependencies {
     implementation(libs.androidx.wear.compose.foundation)
     implementation(libs.androidx.wear.compose.navigation)
     implementation(libs.androidx.wear.input)
+    // The tile and the watch-face shortcut.
+    implementation(libs.androidx.wear.tiles)
+    implementation(libs.androidx.wear.protolayout)
+    implementation(libs.androidx.wear.protolayout.material3)
+    implementation(libs.androidx.wear.complications.datasource)
+    implementation(libs.androidx.concurrent.futures)
 
     implementation(projects.core.network)
     implementation(projects.core.model)

@@ -24,7 +24,12 @@ interface PhoneLibraryPort {
     suspend fun episodes(podcastId: String, limit: Int): List<WearLinkEpisode>
 }
 
-class PhoneLibraryRows(val shows: List<WearLinkShow>, val history: List<ListeningHistorySyncDto>)
+class PhoneLibraryRows(
+    val shows: List<WearLinkShow>,
+    val history: List<ListeningHistorySyncDto>,
+    val newEpisodes: List<WearLinkEpisode> = emptyList(),
+    val dailyMix: List<WearLinkEpisode> = emptyList(),
+)
 
 /** The phone's player as the watch link shows and controls it. */
 interface PhonePlayerPort {

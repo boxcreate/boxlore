@@ -35,6 +35,38 @@
             </intent-filter>
         </activity>
 
+        <!-- The tile: the episode to jump back into, with Resume. -->
+        <service
+            android:name=".glance.BoxloreTileService"
+            android:exported="true"
+            android:label="@string/wear_app_name"
+            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
+            </intent-filter>
+            <meta-data
+                android:name="androidx.wear.tiles.PREVIEW"
+                android:resource="@mipmap/ic_launcher" />
+        </service>
+
+        <!-- The watch-face shortcut. -->
+        <service
+            android:name=".glance.BoxloreComplicationService"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/wear_app_name"
+            android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
+            <intent-filter>
+                <action android:name="android.support.wearable.complications.ACTION_COMPLICATION_UPDATE_REQUEST" />
+            </intent-filter>
+            <meta-data
+                android:name="android.support.wearable.complications.SUPPORTED_TYPES"
+                android:value="LONG_TEXT,SHORT_TEXT,RANGED_VALUE,MONOCHROMATIC_IMAGE" />
+            <meta-data
+                android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
+                android:value="0" />
+        </service>
+
         <service
             android:name=".link.WatchLinkListenerService"
             android:exported="true">

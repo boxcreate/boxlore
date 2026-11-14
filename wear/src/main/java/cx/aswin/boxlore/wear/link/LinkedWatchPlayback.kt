@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -45,6 +46,14 @@ internal object PlaceRules {
      */
     fun phoneQueue(shown: NowPlaying?, phone: PhoneNowPlaying?, state: WatchLibraryState): List<WatchEpisode>? =
         if (shown?.place != PlaybackPlace.Phone) null else phone?.upNext.orEmpty().map { state.merged(WatchLinkRules.watchEpisode(it)) }
+
+    /**
+     * What the watch goes by of the phone's last report. A phone out of reach may have stopped
+     * since and cannot be told to, so its episode is held where it was when the phone was last
+     * heard ([lostAt]; 0 when that moment was not seen) and Play carries it on here.
+     */
+    fun heard(phone: PhoneNowPlaying?, reachable: Boolean, lostAt: Long): PhoneNowPlaying? =
+        if (phone == null || reachable || !phone.isPlaying) phone else phone.copy(isPlaying = false, positionMs = phone.positionAt(lostAt))
 
     /** Taking the phone's episode over needs only the watch; handing one to the phone needs the phone in reach. */
     fun canSwitch(onPhone: Boolean, phoneReachable: Boolean): Boolean = onPhone || phoneReachable
@@ -93,15 +102,26 @@ class LinkedWatchPlayback(
     private val scope: CoroutineScope,
     private val clock: () -> Long = System::currentTimeMillis,
 ) : WatchPlayback by watch {
+    /** When the phone went out of reach; 0 until that has been seen happen. */
+    private var lostAt = 0L
+    private var reached = false
+
+    /** The phone's player as far as the watch can rely on it; see [PlaceRules.heard]. */
+    private val phone: StateFlow<PhoneNowPlaying?> =
+        combine(link.phoneNowPlaying, link.phoneReachable.onEach(::noteReach)) { phone, reachable -> PlaceRules.heard(phone, reachable, lostAt) }
+            .stateIn(scope, SharingStarted.Eagerly, PlaceRules.heard(link.phoneNowPlaying.value, link.phoneReachable.value, lostAt = 0L))
+
     override val nowPlaying: StateFlow<NowPlaying?> =
-        combine(watch.nowPlaying, link.phoneNowPlaying, ticksWhilePlaying(link.phoneNowPlaying)) { mine, phone, _ ->
+        combine(watch.nowPlaying, phone, ticksWhilePlaying(phone)) { mine, phone, _ ->
             // The watch's own copy carries the ID its lists use, so the playing row is marked there too.
             val known = phone?.episode?.let { store.state.value.merged(WatchLinkRules.watchEpisode(it)) }
             PlaceRules.shown(mine, lastPlayedAt(mine), phone, clock(), known)
         }.stateIn(scope, SharingStarted.Eagerly, watch.nowPlaying.value)
 
     override val phoneUpNext: StateFlow<List<WatchEpisode>?> =
-        combine(nowPlaying, link.phoneNowPlaying, store.state, PlaceRules::phoneQueue).stateIn(scope, SharingStarted.Eagerly, null)
+        combine(nowPlaying, phone, store.state, PlaceRules::phoneQueue).stateIn(scope, SharingStarted.Eagerly, null)
+
+    override val hasDailyMix: Boolean get() = watch.hasDailyMix || store.state.value.dailyMix.isNotEmpty()
 
     override val canSwitchPlace: Boolean
         get() = nowPlaying.value != null && PlaceRules.canSwitch(onPhone, link.phoneReachable.value)
@@ -149,9 +169,17 @@ class LinkedWatchPlayback(
         watch.play(episodeId)
     }
 
+    override fun playDailyMix() {
+        val mix = store.state.value.dailyMix
+        val first = mix.firstOrNull() ?: return watch.playDailyMix()
+        // The rest of the mix waits in Up next, ahead of what was queued before.
+        store.update { it.takeOver(mix.drop(1), playingId = first.id) }
+        play(first.id)
+    }
+
     override fun togglePlayPause() {
         if (!onPhone) return watch.togglePlayPause()
-        val phonePlaying = link.phoneNowPlaying.value?.isPlaying == true
+        val phonePlaying = phone.value?.isPlaying == true
         when (PlaceRules.onToggle(phonePlaying, link.phoneReachable.value)) {
             PhoneTap.PlayHere -> moveToWatch()
             // The watch may not know yet that the phone is gone; a Play that never arrived starts here instead.
@@ -170,7 +198,7 @@ class LinkedWatchPlayback(
 
     /** Picks up on the watch where the phone is right now, with the phone's queue after it, and stops the phone. */
     private fun moveToWatch() {
-        val phone = link.phoneNowPlaying.value ?: return
+        val phone = phone.value ?: return
         val episode = phone.episode ?: return
         val now = clock()
         val mine = WatchLinkRules.watchEpisode(episode)
@@ -214,6 +242,11 @@ class LinkedWatchPlayback(
      * merged from the phone moves it, and the watch would then look like the device used last.
      */
     private fun lastPlayedAt(mine: NowPlaying?): Long = if (mine == null) 0L else store.state.value.playedHereAt
+
+    private fun noteReach(reachable: Boolean) {
+        if (!reachable && reached) lostAt = clock()
+        reached = reachable
+    }
 }
 
 private const val REDRAW_MS = 15_000L

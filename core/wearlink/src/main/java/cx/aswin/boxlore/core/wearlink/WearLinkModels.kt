@@ -81,6 +81,10 @@ data class PhoneLibrary(
     val acked: Map<String, Long> = emptyMap(),
     val showsTruncated: Boolean = false,
     val sentAt: Long = 0L,
+    /** The newest unplayed episode of each followed show, newest first. */
+    val newEpisodes: List<WearLinkEpisode> = emptyList(),
+    /** The phone's Daily Mix, in playing order. */
+    val dailyMix: List<WearLinkEpisode> = emptyList(),
 )
 
 /** A follow or unfollow made on the watch; [show] lets the phone list a show it has never seen. */
@@ -113,7 +117,13 @@ data class WatchChanges(
     val storedBytes: Long = 0L,
     val downloads: Int = 0,
     val sentAt: Long = 0L,
+    /** Every episode the watch stores or is downloading, so the phone can show which ones it has. */
+    val stored: List<WatchStoredEpisode> = emptyList(),
 )
+
+/** One episode's audio on the watch; [done] is false while it still downloads. */
+@Serializable
+data class WatchStoredEpisode(val episodeId: String, val audioUrl: String? = null, val done: Boolean = false)
 
 /** The phone's player as of [at]: enough for the watch to show it and to work out the position since. */
 @Serializable
@@ -177,6 +187,10 @@ data class WearLinkCommand(
         const val SEEK_BACK = "seek_back"
         const val SEEK_FORWARD = "seek_forward"
         const val SET_SPEED = "set_speed"
+
+        /** Phone to watch: store [episode]'s audio on the watch, or remove it again. */
+        const val DOWNLOAD_EPISODE = "download_episode"
+        const val REMOVE_DOWNLOAD = "remove_download"
 
         /** Start [episode] on the phone at [positionMs], with [upNext] queued after it. */
         const val PLAY_EPISODE = "play_episode"

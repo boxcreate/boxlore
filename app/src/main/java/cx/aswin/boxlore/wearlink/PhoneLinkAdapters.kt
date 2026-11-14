@@ -4,13 +4,17 @@ import cx.aswin.boxlore.core.catalog.EpisodeLinkResult
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.resolveEpisodeLink
 import cx.aswin.boxlore.core.catalog.sync.UserSyncCoordinator
+import cx.aswin.boxlore.core.catalog.toPodcast
+import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.PodcastDao
+import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeRecipeId
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.ListeningHistorySyncDto
 import cx.aswin.boxlore.core.network.model.UserSubscriptionSyncDto
+import cx.aswin.boxlore.core.playback.MixtapeEngine
 import cx.aswin.boxlore.core.playback.PlaybackProgressNow
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.addToQueue
@@ -49,12 +53,31 @@ internal fun Episode.toLink(showId: String?, showName: String? = null): WearLink
         recipeId = id.toLongOrNull()?.takeIf(EpisodeRecipeId::isRecipeId),
     )
 
+/** The two lists the phone works out for the watch's Home tiles. */
+internal object PhoneListRules {
+    const val MAX_NEW = 20
+
+    /** A Daily Mix is ranking work; it is rebuilt at most this often, however often the library is sent. */
+    const val MIX_TTL_MS = 30L * 60L * 1_000L
+
+    /** The newest unplayed episode of each followed show, newest first: what the phone's own New episodes lists. */
+    fun newEpisodes(latest: List<Episode>, completedIds: Set<String>): List<Episode> =
+        latest.filter { it.id !in completedIds }.sortedByDescending { it.publishedDate }.take(MAX_NEW)
+
+    fun mixIsFresh(builtAt: Long, now: Long): Boolean = builtAt > 0L && now - builtAt < MIX_TTL_MS
+}
+
 /** The phone's library for the watch link, over the same sync rows the cloud gets. */
 internal class PhoneLibraryAdapter(
     private val podcasts: PodcastDao,
     private val sync: () -> UserSyncCoordinator,
     private val savedEpisodes: () -> LocalEpisodeCatalogPort,
+    private val history: ListeningHistoryDao,
+    private val clock: () -> Long = System::currentTimeMillis,
 ) : PhoneLibraryPort {
+    private var mix: List<WearLinkEpisode> = emptyList()
+    private var mixBuiltAt = 0L
+
     override val showsChanged: Flow<Unit> =
         podcasts.getSubscribedPodcasts()
             .map { shows -> shows.map { Triple(it.podcastId, it.title, it.imageUrl) } }
@@ -64,7 +87,20 @@ internal class PhoneLibraryAdapter(
     override suspend fun library(historyLimit: Int): PhoneLibraryRows {
         val rows = sync().linkedDeviceRows(historyLimit)
         val shows = rows.shows.map { WearLinkShow(it.podcastId, it.title, it.author, it.imageUrl.takeIf(String::isNotBlank), it.feedUrl) }
-        return PhoneLibraryRows(shows, rows.history)
+        val completed = history.getCompletedEpisodeIds().toSet()
+        val latest = rows.shows.mapNotNull { show -> show.latestEpisode?.copy(podcastId = show.podcastId, podcastTitle = show.title, podcastImageUrl = show.imageUrl) }
+        val newEpisodes = PhoneListRules.newEpisodes(latest, completed).map { it.toLink(it.podcastId, it.podcastTitle) }
+        return PhoneLibraryRows(shows, rows.history, newEpisodes, dailyMix(rows.shows))
+    }
+
+    /** The Daily Mix as the phone would play it, kept for [PhoneListRules.MIX_TTL_MS]. */
+    private suspend fun dailyMix(shows: List<PodcastEntity>): List<WearLinkEpisode> {
+        val now = clock()
+        if (PhoneListRules.mixIsFresh(mixBuiltAt, now)) return mix
+        val built = MixtapeEngine.build(subscriptions = shows.map { it.toPodcast() }, history = history.getRecentHistoryList(MIX_HISTORY_WINDOW))
+        mix = built.episodes.map { it.toLink(it.podcastId, it.podcastTitle) }
+        mixBuiltAt = now
+        return mix
     }
 
     override suspend fun apply(subscriptions: List<UserSubscriptionSyncDto>, history: List<ListeningHistorySyncDto>) =
@@ -75,6 +111,9 @@ internal class PhoneLibraryAdapter(
 
     private companion object {
         const val NEWEST = "newest"
+
+        /** How much recent listening the mix looks at, as on the phone's other mixes. */
+        const val MIX_HISTORY_WINDOW = 200
     }
 }
 

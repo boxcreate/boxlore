@@ -6,8 +6,8 @@ The boxlore app for Wear OS watches: a second application module that installs u
 application ID and signature. It owns the watch screens, the watch's own player, its downloads and
 storage rules, its saved library, and its own connection to boxlore's API.
 
-It plays on its own, with no phone nearby. It does not sync with the phone or the cloud yet: a
-watch knows only what the listener did on that watch.
+It plays on its own, with no phone nearby. With the phone app linked it is one more device of
+the listener's library; it does not sync with the cloud yet.
 
 ## Public API
 
@@ -35,7 +35,8 @@ src/main/java/cx/aswin/boxlore/wear/
   net/          # WatchServer: the watch's own API session
   data/         # ports, the saved library, catalog, feed reader, downloads, storage rules
   playback/     # WatchPlaybackService (Media3), LiveWatchPlayback, PlaybackRules
-  link/         # the phone link: WatchLinkRules, LiveWatchLink, LinkedWatchPlayback, PlaceRules
+  link/         # the phone link: WatchLinkRules, LiveWatchLink, LinkedWatchPlayback, PlaceRules, PhoneOrders
+  glance/       # the tile and the watch-face shortcut: GlanceRules, TileRules, TileArtwork
   ui/
     WatchApp.kt             # routes and navigation
     theme/                  # boxlore's dark roles on black, Google Sans Flex
@@ -63,13 +64,20 @@ src/release/java/...         # release WatchContainerFactory
   (`pendingShows`, `pendingEpisodes`); `WatchLinkRules.changes` sends those, and
   `WatchLinkRules.withPhone` takes the phone's shows and newer listening while keeping
   unconfirmed watch changes on top. A phone in reach also answers a show's episodes from what it
-  has saved, before the watch reads a feed itself.
+  has saved, before the watch reads a feed itself. New episodes and Daily Mix are the phone's own
+  lists (`WatchLinkRules.withPhone`); Home hides them until a phone has linked (`HomeTiles`).
+  `PhoneOrders` downloads or removes an episode when the phone's Send to watch asks.
 - `LinkedWatchPlayback` shows whichever player is in use, the watch's or the phone's
   (`PlaceRules`), sends the buttons to that one, and moves playback between them with its position
   and queue. It tells the phone when the watch plays, and takes the phone's orders (pause, play
-  this here) through `WatchLinkListenerService`.
+  this here) through `WatchLinkListenerService`. A phone that went out of reach while playing is
+  shown paused where it was last heard (`PlaceRules.heard`), so Play carries on here.
 - `MainActivity` opens a named screen from the launch extra `WatchRoutes.EXTRA_ROUTE`; only the
-  routes in `WatchRoutes.launchRoute` are honoured.
+  routes in `WatchRoutes.launchRoute` are honoured. `WatchRoutes.EXTRA_RESUME` names an episode
+  to carry on with (`GlanceRules.onResume`).
+- The tile and the watch-face shortcut show the episode to jump back into (`WatchGlance`), read
+  from the saved library so they work with the app closed, and are redrawn when it or its time
+  left changes. The tile's artwork travels as pixels, named per episode (`TileRules`).
 - `ui.shows.HoneycombMath` is the honeycomb's geometry in screen-radius units; `HoneycombShows`
   only draws it.
 - Home's top block is a dome (`ui.components.DomeShape`, `ui.home.HomeDome`): it follows the top of
@@ -91,7 +99,8 @@ src/release/java/...         # release WatchContainerFactory
   on `:wear`.
 - Wear Compose Material 3, Foundation and Navigation, which bring a newer Compose than the phone
   modules use: keep `:wear` away from any module that carries Compose UI.
-- Media3 ExoPlayer and Session, OkHttp, kotlinx-serialization, Wear Input, Coil, Palette.
+- Media3 ExoPlayer and Session, OkHttp, kotlinx-serialization, Wear Input, Coil, Palette, Wear
+  Tiles with ProtoLayout Material 3, and the watch-face complication data source.
 - The Google Sans Flex font file is a copy of the one in `:core:designsystem`.
 
 ## Threading / lifecycle
@@ -113,6 +122,8 @@ src/release/java/...         # release WatchContainerFactory
 - Launcher activity `cx.aswin.boxlore.wear.MainActivity`; services
   `cx.aswin.boxlore.wear.playback.WatchPlaybackService` and
   `cx.aswin.boxlore.wear.link.WatchLinkListenerService`.
+- `cx.aswin.boxlore.wear.glance.BoxloreTileService` and `BoxloreComplicationService`: a tile or
+  shortcut the listener placed is tied to these names.
 - `files/boxlore_watch_library.json` (`WatchLibraryStore.FILE_NAME`): subscriptions, queue,
   progress, played episodes and download state.
 - `files/watch_downloads/` (`FileWatchDownloads.DIRECTORY_NAME`): stored audio, one
@@ -139,6 +150,8 @@ Tests live in `wear/src/test` (JUnit 5, plain JVM, fakes for the ports).
 | The moving now-playing bars | `ui/components/PlayingBarsMathTest` |
 | Phone link: what is sent, merged and confirmed | `link/WatchLinkRulesTest` |
 | Which player is shown, the watch's or the phone's | `link/PlaceRulesTest` |
+| Tile and watch-face shortcut: what they show, when they redraw, what Resume does | `glance/GlanceRulesTest` |
+| Home tiles with and without a linked phone | `ui/home/HomeTilesTest` |
 | Plain-http audio and the link capability | `WatchManifestTest` |
 | Player colours and contrast | `ui/player/PlayerPaletteTest` |
 | Speeds, sleep timer choices, text helpers, launch routes | `WatchModelsTest` |

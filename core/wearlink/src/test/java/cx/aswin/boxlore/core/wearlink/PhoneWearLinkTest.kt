@@ -31,7 +31,10 @@ class PhoneWearLinkTest {
         var failApply = false
         var saved = mapOf("1" to listOf(WearLinkEpisode("e1", "1", "Episode 1")))
 
-        override suspend fun library(historyLimit: Int) = PhoneLibraryRows(shows, history.take(historyLimit))
+        var newEpisodes = emptyList<WearLinkEpisode>()
+        var dailyMix = emptyList<WearLinkEpisode>()
+
+        override suspend fun library(historyLimit: Int) = PhoneLibraryRows(shows, history.take(historyLimit), newEpisodes, dailyMix)
 
         override suspend fun apply(subscriptions: List<UserSubscriptionSyncDto>, history: List<ListeningHistorySyncDto>) {
             check(!failApply) { "database is busy" }
@@ -174,6 +177,19 @@ class PhoneWearLinkTest {
 
         assertEquals(listOf("a", "fresh", "other"), library.applied.flatMap { it.second }.map { it.episodeId })
         assertEquals(mapOf("w" to 1L, "second" to 1L), store.acked())
+    }
+
+    @Test
+    fun `New episodes and the Daily Mix travel with the library`() = runTest {
+        val link = link()
+        library.newEpisodes = listOf(WearLinkEpisode("n1", "1", "New one"))
+        library.dailyMix = listOf(WearLinkEpisode("m1", "1", "Mix one"), WearLinkEpisode("m2", "1", "Mix two"))
+
+        link.hears(changes(0L))
+        settle()
+
+        assertEquals(listOf("n1"), publishedLibrary()!!.newEpisodes.map { it.episodeId })
+        assertEquals(listOf("m1", "m2"), publishedLibrary()!!.dailyMix.map { it.episodeId })
     }
 
     @Test

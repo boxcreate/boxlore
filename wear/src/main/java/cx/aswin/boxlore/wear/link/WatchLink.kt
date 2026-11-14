@@ -156,7 +156,7 @@ class LiveWatchLink(
 
     private suspend fun publishChanges() {
         store.state
-            .map { LinkKey(it.revision, it.pendingShows.size, it.pendingEpisodes.size, it.storedBytes) }
+            .map { LinkKey(it.revision, it.pendingShows.size, it.pendingEpisodes.size, it.storedBytes, it.downloads.size) }
             .distinctUntilChanged()
             .collectLatest {
                 delay(PublishPacing.waitMs(player().isPlaying, clock() - lastPublishedAt))
@@ -168,5 +168,5 @@ class LiveWatchLink(
     }
 
     /** The parts of the library whose change means the phone has something new to hear. */
-    private data class LinkKey(val revision: Long, val pendingShows: Int, val pendingEpisodes: Int, val storedBytes: Long)
+    private data class LinkKey(val revision: Long, val pendingShows: Int, val pendingEpisodes: Int, val storedBytes: Long, val downloads: Int)
 }

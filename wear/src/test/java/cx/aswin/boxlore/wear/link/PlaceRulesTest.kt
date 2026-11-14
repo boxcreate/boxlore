@@ -41,6 +41,25 @@ class PlaceRulesTest {
     }
 
     @Test
+    fun `a phone that went out of reach while playing is held where it was last heard`() {
+        val playing = onPhone(playing = true, at = 1_000L)
+
+        // In reach, its report stands; so does a paused one whether in reach or not.
+        assertEquals(playing, PlaceRules.heard(playing, reachable = true, lostAt = 0L))
+        assertEquals(onPhone(playing = false, at = 1_000L), PlaceRules.heard(onPhone(playing = false, at = 1_000L), reachable = false, lostAt = 9_000L))
+        assertNull(PlaceRules.heard(null, reachable = false, lostAt = 0L))
+
+        // Lost two minutes after its report: paused there, not still running on.
+        val lost = PlaceRules.heard(playing, reachable = false, lostAt = 1_000L + 2 * minute)!!
+        assertFalse(lost.isPlaying)
+        assertEquals(12 * minute, lost.positionMs)
+        assertEquals(12 * minute, lost.positionAt(now = 90 * minute))
+
+        // Out of reach from the start, the moment it was lost is unknown: the reported position stands.
+        assertEquals(10 * minute, PlaceRules.heard(playing, reachable = false, lostAt = 0L)!!.positionMs)
+    }
+
+    @Test
     fun `a playing watch is shown even while the phone plays too`() {
         val shown = PlaceRules.shown(onWatch(true), 0L, onPhone(playing = true, at = 900L), now = 1_000L)
 
