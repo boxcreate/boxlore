@@ -11,10 +11,11 @@ It does not own the watch's end (that is [`:wear`](../../wear/README.md)), the p
 ## Public API
 
 - `WearLinkProtocol`: the paths and capability names. They are stored by the system on both devices and never change.
-- Values (`WearLinkModels.kt`): `PhoneLibrary`, `WatchChanges`, `PhoneNowPlaying`, `WatchNowPlaying`, `WearLinkSettings`, `WearLinkCommand`, `EpisodeListRequest` / `EpisodeListReply`, `WearLinkShow`, `WearLinkEpisode`.
+- Values (`WearLinkModels.kt`): `PhoneLibrary`, `WatchChanges`, `PhoneNowPlaying`, `WatchNowPlaying`, `WearLinkSettings`, `WearLinkCommand`, `EpisodeListRequest` / `EpisodeListReply`, `WearLinkShow`, `WearLinkEpisode`, `WatchStoredEpisode`. `PhoneLibrary` also carries the phone's New episodes and Daily Mix.
 - `WearLinkCodec`: compressed JSON. Unknown fields are ignored and unreadable bytes decode to null; `encodeLibrary` cuts a library that would not fit one item.
 - `WearLinkTransport`: publish, read, follow changes, send and request. `GmsWearLinkTransport` is the real one; every failure answers "not available". `NoWearLinkTransport` and `RecordingWearLinkTransport` are for devices without the service and for tests.
 - `PhoneWearLink`: the phone's end, one per app. `start()` does nothing until a watch has made contact once. `onItem`, `onCommand` and `onRequest` take what the app's listener service receives. `status` and `settings` feed the Wear OS settings page; `setShowsLayout` and `setStorageLimitMb` change the watch's settings. `playOnWatch` moves the phone's episode, place and queue to the watch; `playOnWatchOffer` is true after the phone took over from a playing watch, until `dismissPlayOnWatchOffer`.
+- `PhoneWatchDownloads` (`PhoneWearLink.watchDownloads`): Send to watch. `send` and `remove` order one episode onto or off the watch; `WatchCopyRules.of` reads its state (`WatchCopy`) from what the watch reports it stores.
 - `PhoneLibraryPort`, `PhonePlayerPort`: what the app implements over its repositories.
 - `PhoneLinkStore` (`SharedPreferencesPhoneLinkStore`, `PhoneLinkStore.InMemory`): what the phone remembers about the link.
 
@@ -28,6 +29,7 @@ src/main/java/cx/aswin/boxlore/core/wearlink/
   GmsWearLinkTransport.kt   # the system's wearable service
   PhoneLinkPorts.kt         # ports the app implements, link status, the phone's store
   PhoneWearLink.kt          # the phone's end and its rules
+  PhoneWatchDownloads.kt    # Send to watch
 ```
 
 ## Dependencies
@@ -51,3 +53,4 @@ src/main/java/cx/aswin/boxlore/core/wearlink/
 | :--- | :--- |
 | `WearLinkCodecTest` | Every value survives packing, unreadable bytes, newer fields, the size rule, the phone's moving position |
 | `PhoneWearLinkTest` | Idle until a watch appears, merging and confirming watch changes, a watch that starts over, player reports with the queue, commands, taking over from a playing watch, handing playback to the watch, episode requests, settings |
+| `PhoneWatchDownloadsTest` | Sending and removing an episode, a watch out of reach, the state read from the watch's stored list |

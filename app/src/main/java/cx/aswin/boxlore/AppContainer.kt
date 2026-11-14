@@ -757,6 +757,7 @@ class AppContainer(
                     podcasts = database.podcastDao(),
                     sync = { userSyncCoordinator },
                     savedEpisodes = { subscribedEpisodeCatalog },
+                    history = database.listeningHistoryDao(),
                 ),
             player = cx.aswin.boxlore.wearlink.PhonePlayerAdapter(playback = { playbackRepository }, shows = { podcastRepository }),
             store = cx.aswin.boxlore.core.wearlink.SharedPreferencesPhoneLinkStore.create(appContext),

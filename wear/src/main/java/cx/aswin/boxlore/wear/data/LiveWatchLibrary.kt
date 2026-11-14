@@ -49,8 +49,10 @@ class LiveWatchLibrary(
     override val storedBytes: StateFlow<Long> = kept { it.storedBytes }
     override val downloadProblems: Flow<WatchDownloadProblem> = downloadManager.problems
 
-    /** Filled once the watch syncs subscriptions; a watch on its own cannot know what is new. */
-    override val newEpisodes: StateFlow<List<WatchEpisode>> = MutableStateFlow(emptyList())
+    /** Both lists come from a linked phone; a watch on its own cannot know what is new. */
+    override val newEpisodes: StateFlow<List<WatchEpisode>> = kept { it.newEpisodes }
+    override val dailyMix: StateFlow<List<WatchEpisode>> = kept { it.dailyMix }
+    override val phoneLinked: StateFlow<Boolean> = kept { it.phoneLinked }
 
     override fun show(showId: String): Flow<WatchShow?> =
         combine(fetchedShows, store.state) { fetched, state ->

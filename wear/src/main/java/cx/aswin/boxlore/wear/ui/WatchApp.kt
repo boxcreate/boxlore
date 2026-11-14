@@ -76,6 +76,9 @@ internal object WatchRoutes {
     /** Launch extra naming the screen to open on top of Home. Only [launchable] routes are honoured. */
     const val EXTRA_ROUTE = "cx.aswin.boxlore.wear.extra.ROUTE"
 
+    /** Launch extra set by the tile and the watch-face shortcut: the ID of the episode to carry on with. */
+    const val EXTRA_RESUME = "cx.aswin.boxlore.wear.extra.RESUME"
+
     private val launchable =
         setOf(SHOWS, JUMP_BACK_IN, NEW_EPISODES, UP_NEXT, DOWNLOADS, SEARCH, SETTINGS, PLAYER, PLAYER_MORE, SLEEP_TIMER, SPEED)
 
@@ -145,9 +148,12 @@ private fun NavGraphBuilder.homeRoutes(
 ) {
     composable(WatchRoutes.HOME) {
         val nowPlaying by container.playback.nowPlaying.collectAsStateWithLifecycle()
+        val phoneLinked by container.library.phoneLinked.collectAsStateWithLifecycle()
+        val dailyMix by container.library.dailyMix.collectAsStateWithLifecycle()
         HomeScreen(
             nowPlaying = nowPlaying,
-            hasDailyMix = container.playback.hasDailyMix,
+            phoneLinked = phoneLinked,
+            hasDailyMix = dailyMix.isNotEmpty() || container.playback.hasDailyMix,
             onOpenPlayer = { navController.navigate(WatchRoutes.PLAYER) },
             onOpen = { link ->
                 val route = WatchRoutes.forHomeLink(link)

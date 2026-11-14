@@ -22,6 +22,14 @@ interface WatchLibrary {
 
     val newEpisodes: StateFlow<List<WatchEpisode>>
 
+    /** The phone's Daily Mix in playing order; empty until a phone has sent one. */
+    val dailyMix: StateFlow<List<WatchEpisode>>
+        get() = NoEpisodes
+
+    /** Whether a phone has ever linked. New episodes only come from one, so Home hides the tile until then. */
+    val phoneLinked: StateFlow<Boolean>
+        get() = NeverLinked
+
     /** The queue that plays after the current episode. */
     val upNext: StateFlow<List<WatchEpisode>>
 
@@ -77,3 +85,6 @@ class EmptyWatchLibrary : WatchLibrary {
 
     override fun markPlayed(episodeId: String) = Unit
 }
+
+private val NoEpisodes: StateFlow<List<WatchEpisode>> = MutableStateFlow(emptyList())
+private val NeverLinked: StateFlow<Boolean> = MutableStateFlow(false)

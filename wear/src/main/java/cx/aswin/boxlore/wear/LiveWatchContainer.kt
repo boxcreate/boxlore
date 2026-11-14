@@ -14,8 +14,12 @@ import cx.aswin.boxlore.wear.data.WatchFeedReader
 import cx.aswin.boxlore.wear.data.WatchLibraryStore
 import cx.aswin.boxlore.wear.data.WatchSettings
 import cx.aswin.boxlore.wear.data.WatchStorageLimits
+import cx.aswin.boxlore.wear.glance.BoxloreComplicationService
+import cx.aswin.boxlore.wear.glance.BoxloreTileService
+import cx.aswin.boxlore.wear.glance.GlanceRules
 import cx.aswin.boxlore.wear.link.LinkedWatchPlayback
 import cx.aswin.boxlore.wear.link.LiveWatchLink
+import cx.aswin.boxlore.wear.link.PhoneOrders
 import cx.aswin.boxlore.wear.link.PlayerGlance
 import cx.aswin.boxlore.wear.link.WatchLinkRules
 import cx.aswin.boxlore.wear.net.WatchServer
@@ -72,6 +76,15 @@ internal object LiveWatchContainer {
         link.player = { PlayerGlance(watchPlayer.loadedEpisodeId, watchPlayer.nowPlaying.value?.isPlaying == true) }
         link.start()
         limits.playingId = { watchPlayer.nowPlaying.value?.episode?.id }
+        // The tile and the watch-face shortcut are redrawn when the episode to jump back into, or its time left, changes.
+        background.launch {
+            store.state.map { GlanceRules.key(GlanceRules.from(it)) }.distinctUntilChanged().collect {
+                runCatching {
+                    BoxloreTileService.requestUpdate(app)
+                    BoxloreComplicationService.requestUpdate(app)
+                }
+            }
+        }
         background.launch {
             watchPlayer.nowPlaying.map { (it?.isPlaying == true) to it?.episode?.id }.distinctUntilChanged().collect { (playing, id) ->
                 link.publishPlaying(playing, id)
@@ -79,6 +92,6 @@ internal object LiveWatchContainer {
         }
         // Runs once at start-up and again whenever the listener changes the limit.
         background.launch { settings.storageLimitMb.collect { downloads.enforceLimit() } }
-        return WatchContainer(library = library, playback = playback, settings = settings, onPhoneCommand = playback::fromPhone)
+        return WatchContainer(library = library, playback = playback, settings = settings, onPhoneCommand = PhoneOrders(store, downloads, playback::fromPhone)::take, glance = { GlanceRules.from(store.state.value) })
     }
 }

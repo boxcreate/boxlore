@@ -37,12 +37,25 @@ data class WatchLibraryState(
      * it, so it says which of the two devices was used last.
      */
     val playedHereAt: Long = 0L,
+    /** Whether a phone has ever sent its library. New episodes and the Daily Mix can only come from one. */
+    val phoneLinked: Boolean = false,
+    /** The phone's New episodes and Daily Mix, as episode IDs in the phone's order. */
+    val newFromPhone: List<String> = emptyList(),
+    val mixFromPhone: List<String> = emptyList(),
 ) {
     val jumpBackIn: List<WatchEpisode>
         get() = recent.mapNotNull(episodes::get).filter { (it.minutesLeft ?: 0) > 0 }
 
     val upNext: List<WatchEpisode>
         get() = queue.mapNotNull(episodes::get)
+
+    /** What the phone listed as new, minus anything finished on the watch since. */
+    val newEpisodes: List<WatchEpisode>
+        get() = newFromPhone.filterNot { it in played }.mapNotNull(episodes::get)
+
+    /** The phone's Daily Mix, minus anything finished on the watch since. */
+    val dailyMix: List<WatchEpisode>
+        get() = mixFromPhone.filterNot { it in played }.mapNotNull(episodes::get)
 
     val downloads: List<WatchEpisode>
         get() = episodes.values.filter { it.download != WatchDownload.None }
@@ -169,7 +182,7 @@ data class WatchLibraryState(
 
     /** Drops episodes that are no longer started, queued, stored or waiting to reach the phone. */
     internal fun forgetUnused(): WatchLibraryState {
-        val needed = queue.toSet() + recent + pendingEpisodes.keys
+        val needed = queue.toSet() + recent + pendingEpisodes.keys + newFromPhone + mixFromPhone
         return copy(episodes = episodes.filter { (id, episode) -> id in needed || episode.download != WatchDownload.None })
     }
 }

@@ -2,6 +2,7 @@ package cx.aswin.boxlore.wear.link
 
 import cx.aswin.boxlore.core.network.model.ListeningHistorySyncDto
 import cx.aswin.boxlore.core.wearlink.PhoneLibrary
+import cx.aswin.boxlore.core.wearlink.WearLinkEpisode
 import cx.aswin.boxlore.core.wearlink.WearLinkShow
 import cx.aswin.boxlore.wear.data.WatchLibraryState
 import cx.aswin.boxlore.wear.model.WatchDownload
@@ -185,6 +186,28 @@ class WatchLinkRulesTest {
 
         assertEquals(12 * minute, merged.positions["a"])
         assertEquals(1_000L, merged.playedHereAt)
+    }
+
+    @Test
+    fun `the phone's New episodes and Daily Mix fill the watch's lists, and finishing one takes it out`() {
+        fun named(id: String) = WearLinkEpisode(id, "1", "Episode $id", audioUrl = "https://example.org/$id.mp3", durationMs = 40 * minute)
+        val before = WatchLibraryState()
+        assertFalse(before.phoneLinked)
+
+        val linked = before.heard(PhoneLibrary(newEpisodes = listOf(named("n1"), named("n2")), dailyMix = listOf(named("m1"), named("n1"))))
+
+        assertTrue(linked.phoneLinked)
+        assertEquals(listOf("n1", "n2"), linked.newEpisodes.map { it.id })
+        assertEquals(listOf("m1", "n1"), linked.dailyMix.map { it.id })
+
+        val finished = linked.markPlayed(linked.episodes.getValue("n1"))
+        assertEquals(listOf("n2"), finished.newEpisodes.map { it.id })
+        assertEquals(listOf("m1"), finished.dailyMix.map { it.id })
+
+        // A phone that now lists nothing empties them, and stays linked.
+        val emptied = finished.heard(PhoneLibrary())
+        assertTrue(emptied.newEpisodes.isEmpty())
+        assertTrue(emptied.phoneLinked)
     }
 
     @Test

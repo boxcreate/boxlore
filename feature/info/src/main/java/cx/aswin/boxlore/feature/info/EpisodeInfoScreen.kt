@@ -99,6 +99,8 @@ fun EpisodeInfoScreen(
     }
     val context = LocalContext.current
     val density = LocalDensity.current
+    val watchActions = cx.aswin.boxlore.core.designsystem.components.LocalWatchEpisodeActions.current
+    var watchMessage by remember { mutableStateOf<Int?>(null) }
 
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -341,6 +343,16 @@ fun EpisodeInfoScreen(
                         modifier = Modifier.align(Alignment.CenterStart).padding(start = 16.dp),
                     )
 
+                    // Watch button: only while a watch has linked; it sits beside Share.
+                    watchActions?.let { actions ->
+                        cx.aswin.boxlore.feature.info.components.EpisodeWatchButton(
+                            episode = state.episode,
+                            actions = actions,
+                            onMessage = { watchMessage = it },
+                            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 16.dp + cx.aswin.boxlore.feature.info.components.EpisodeWatchHeader.ButtonSlot),
+                        )
+                    }
+
                     // Share Button
                     var showShareSheet by remember { mutableStateOf(false) }
                     cx.aswin.boxlore.feature.info.components.EpisodeInfoHeaderButton(
@@ -398,12 +410,25 @@ fun EpisodeInfoScreen(
                     modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = titleHorizontalPadding)
+                        // With the watch button in the bar the name stops before it, not under it.
+                        .padding(
+                            start = titleHorizontalPadding,
+                            end = titleHorizontalPadding + cx.aswin.boxlore.feature.info.components.EpisodeWatchHeader.titleEndExtra(watchActions != null),
+                        )
                         .graphicsLayer {
                             translationY = titleTranslationY
                             alpha = titleAlpha
                         },
                 )
+                // What just happened on the watch, right under the bar whose button was tapped, where
+                // the mini player and the navigation bar never cover it. It takes no touches.
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                    cx.aswin.boxlore.feature.info.components.EpisodeWatchMessage(
+                        message = watchMessage,
+                        onShown = { watchMessage = null },
+                        modifier = Modifier.padding(top = collapsedHeaderHeight + 8.dp),
+                    )
+                }
             }
         }
 

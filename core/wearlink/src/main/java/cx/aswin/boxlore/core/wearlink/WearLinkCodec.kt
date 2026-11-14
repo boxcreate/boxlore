@@ -49,6 +49,9 @@ object WearLinkCodec {
         while (bytes.size > maxBytes) {
             current =
                 when {
+                    // The lists that only fill a tile go first; follows and listening are what must arrive.
+                    current.dailyMix.isNotEmpty() -> current.copy(dailyMix = emptyList())
+                    current.newEpisodes.isNotEmpty() -> current.copy(newEpisodes = emptyList())
                     current.history.size > MIN_HISTORY -> current.copy(history = current.history.take(maxOf(MIN_HISTORY, current.history.size / 2)))
                     current.shows.size > 1 -> current.copy(shows = current.shows.take(current.shows.size * 3 / 4), showsTruncated = true)
                     else -> return bytes

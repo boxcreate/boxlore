@@ -6,6 +6,7 @@ import cx.aswin.boxlore.core.network.model.UserSubscriptionSyncDto
 import cx.aswin.boxlore.core.wearlink.PhoneLibrary
 import cx.aswin.boxlore.core.wearlink.WatchChanges
 import cx.aswin.boxlore.core.wearlink.WatchHistoryChange
+import cx.aswin.boxlore.core.wearlink.WatchStoredEpisode
 import cx.aswin.boxlore.core.wearlink.WatchSubscriptionChange
 import cx.aswin.boxlore.core.wearlink.WearLinkEpisode
 import cx.aswin.boxlore.core.wearlink.WearLinkShow
@@ -43,6 +44,7 @@ internal object WatchLinkRules {
             history = sent.mapNotNull { (id, revision) -> historyRow(state, id)?.let { WatchHistoryChange(revision, it) } },
             storedBytes = state.storedBytes,
             downloads = state.episodes.values.count { it.download == WatchDownload.Done },
+            stored = state.downloads.map { WatchStoredEpisode(it.id, it.audioUrl, done = it.download == WatchDownload.Done) },
         )
     }
 
@@ -59,8 +61,17 @@ internal object WatchLinkRules {
             )
         next = next.copy(shows = shows(next, library))
         for (row in library.history) next = withRow(next, row, playingId)
+        next = withLists(next, library)
         val recent = next.recent.sortedByDescending { next.episodes[it]?.lastPlayedAtMillis ?: 0L }.take(MAX_RECENT)
         return next.copy(recent = recent).forgetUnused()
+    }
+
+    /** The phone's New episodes and Daily Mix, each kept as the watch's own copy where it has one. */
+    private fun withLists(state: WatchLibraryState, library: PhoneLibrary): WatchLibraryState {
+        val fresh = library.newEpisodes.map { state.merged(watchEpisode(it)) }
+        val mix = library.dailyMix.map { state.merged(watchEpisode(it)) }
+        val kept = (fresh + mix).fold(state) { known, episode -> known.remember(episode) }
+        return kept.copy(phoneLinked = true, newFromPhone = fresh.map { it.id }, mixFromPhone = mix.map { it.id })
     }
 
     /** The phone's shows, with the watch's unconfirmed follows and unfollows applied on top. */

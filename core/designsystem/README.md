@@ -51,7 +51,8 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 - `ConnectedOptionSelector`, `PillFilterChip`, `RegionSegmentedSelector`, `ContentRegionPickerSheet`: option chips, genre pills and the content-region picker.
 - `ContentLanguagesSheet`: the content-languages sheet. English can be switched off only when `ContentRegions.canSwitchEnglishOff` allows it.
 - `BoxloreDialog`, `BoxloreModalBottomSheet`, `BoxloreAlertDialogOverride`, `EngagementBottomSheetScaffold`: phone dialogs and sheets that become bounded, fold-safe dialogs on tablets.
-- `RemoveDownloadConfirmationDialog`, `PrivacyConsentDialog`, `RepairProgressPopup`: shared confirmation, consent and repair-status UI; the caller owns visibility.
+- `RemoveDownloadConfirmationDialog`, `PrivacyConsentDialog`, `RepairProgressPopup`: shared confirmation, consent and repair-status UI; the caller owns visibility. `fromWatch` words the first for a copy on the watch.
+- `SendToWatchIcon`, `WatchEpisodeActions`, `LocalWatchEpisodeActions`: Send to watch for one episode and its state on the watch (`WatchEpisodeCopy`). The local is null without a linked watch, which hides the icon.
 - `SleepTimerPopup`: the late-night sleep timer prompt; reports `SleepTimerPopupDismissReason`. With `onPlayOnWatch` it also offers a just-paused watch back and waits longer.
 - `PlayingOnPill`, `PlaybackPlaceNotice`, `LocalWatchPlayOffer`: where an episode plays while a watch with boxlore is in reach of the phone, and the offer to hand playback to the watch. `LocalWatchPlayOffer` is null without one, which hides them.
 - `BoxLoreLoader`, `DownloadButton`, `ExpressivePlayButton`, `AdvancedPlayerControls`, `NewEpisodeBadge`, `HtmlText`: loaders, buttons, player controls and rich text.
@@ -170,7 +171,7 @@ Tests live in `src/test`; Compose tests use Robolectric. Some shared components 
 | Layout and tablet input | `BoxloreWindowLayoutTest`, `BoxloreCardSpecTest`, `EqualHeightPosterGridTest`, `OverflowPackingTest`, `TabletSecondaryClickGestureTest`; `TabletModalTest`, `TabletInputTest` in `:app` |
 | Navigation chrome | `FloatingNavigationChromeTest`, `NavigationIndicatorMotionTest`, `NavigationAccentColorsTest`, `NavigationChromePlacementTest`, `AdaptivePlayerOverlayOffsetTest`, `PredictiveBackPeekTest` |
 | Press feedback, top bar, cards, tabs | `ExpressivePressFeedbackTest`, `TopBarUtilityActionsTest`, `HomeDiscoveryCardTest`, `DiscoveryTabSwitcherTest` in `:feature:home` |
-| Sleep prompt, playing on a watch, languages | `SleepPromptMotionTest`, `SleepTimerPopupTest`, `PlaceMenuTest`, `ContentLanguagesSheetCopyTest` |
+| Sleep prompt, playing on a watch, languages | `SleepPromptMotionTest`, `SleepTimerPopupTest`, `PlaceMenuTest`, `RemoveDownloadCopyTest`, `ContentLanguagesSheetCopyTest` |
 | Echo, brief | `EchoCharacterModelTest`, `EchoMotionModelTest`, `BriefingArtworkTest`; `BriefingShowTest` in `:feature:briefing` |
 | Share, links, page views | `EpisodeShareLinkTest`, `ShareCardLayoutTest`, `SafeLinksTest`, `TrackScreenViewTest`; `ScreenViewCoverageTest` in `:core:testing` |
 | Genres and lists | `GenreIconsTest`, `GenreSuggestionsTest`, `LazyListKeyPolicyTest`, `ProgressiveSearchScrollLogicTest` |

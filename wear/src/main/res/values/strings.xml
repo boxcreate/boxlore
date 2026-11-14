@@ -38,6 +38,10 @@
     <string name="wear_play">Play</string>
     <string name="wear_pause">Pause</string>
     <string name="wear_resume">Resume</string>
+    <!-- The tile's button when nothing is in progress. -->
+    <string name="wear_tile_open">Open</string>
+    <!-- Read aloud for the watch-face shortcut: the episode, then its time left. -->
+    <string name="wear_complication_description">boxlore: %1$s, %2$s</string>
     <string name="wear_download">Download</string>
     <string name="wear_percent">%1$d%%</string>
     <string name="wear_downloading_percent">Downloading, %1$s. Stop and remove</string>

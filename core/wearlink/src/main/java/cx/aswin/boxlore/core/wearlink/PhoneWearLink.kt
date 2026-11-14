@@ -85,6 +85,9 @@ class PhoneWearLink(
      */
     val playOnWatchOffer: StateFlow<Boolean> = offer.asStateFlow()
 
+    /** What the watch stores, and the orders to download an episode there or remove it. */
+    val watchDownloads = PhoneWatchDownloads(transport, scope)
+
     val status: StateFlow<WearLinkStatus> = linkStatus.asStateFlow()
     val settings: StateFlow<WearLinkSettings> = watchSettings.asStateFlow()
 
@@ -174,6 +177,7 @@ class PhoneWearLink(
     private suspend fun onChanges(changes: WatchChanges) {
         store.watchKnown = true
         store.watchStatus = WatchStatus(changes.storedBytes, changes.downloads, clock())
+        watchDownloads.report(changes.stored)
         linkStatus.value = linkStatus.value.copy(watchKnown = true, watch = store.watchStatus)
         start()
         val merged =
@@ -214,7 +218,8 @@ class PhoneWearLink(
 
     private suspend fun publishLibrary() {
         val rows = attempt { library.library(HISTORY_LIMIT) } ?: return
-        val snapshot = PhoneLibrary(shows = rows.shows, history = rows.history, acked = store.acked())
+        val snapshot =
+            PhoneLibrary(shows = rows.shows, history = rows.history, acked = store.acked(), newEpisodes = rows.newEpisodes, dailyMix = rows.dailyMix)
         transport.publish(WearLinkProtocol.PATH_PHONE_LIBRARY, WearLinkCodec.encodeLibrary(snapshot))
     }
 
