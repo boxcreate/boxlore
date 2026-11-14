@@ -38,6 +38,10 @@
     <string name="wear_play">Play</string>
     <string name="wear_pause">Pause</string>
     <string name="wear_resume">Resume</string>
+    <!-- The tile's button when nothing is in progress. -->
+    <string name="wear_tile_open">Open</string>
+    <!-- Read aloud for the watch-face shortcut: the episode, then its time left. -->
+    <string name="wear_complication_description">boxlore: %1$s, %2$s</string>
     <string name="wear_download">Download</string>
     <string name="wear_percent">%1$d%%</string>
     <string name="wear_downloading_percent">Downloading, %1$s. Stop and remove</string>
@@ -96,6 +100,17 @@
     <!-- Settings -->
     <string name="wear_shows_layout">Your shows layout</string>
     <string name="wear_storage_limit">Storage limit</string>
+    <string name="wear_account">Account</string>
+    <string name="wear_account_sign_in">Sign in with phone</string>
+    <string name="wear_account_signing_in">Signing in…</string>
+    <string name="wear_account_sign_in_detail">Syncs shows and listening</string>
+    <string name="wear_account_signed_in">Signed in</string>
+    <string name="wear_account_syncing">Syncing with your account</string>
+    <string name="wear_account_sign_out">Sign out</string>
+    <string name="wear_account_sign_out_detail">Your shows stay on this watch</string>
+    <string name="wear_account_phone_away">Your phone isn\'t in reach. Bring it close and try again.</string>
+    <string name="wear_account_phone_signed_out">Sign in to boxlore on your phone first.</string>
+    <string name="wear_account_failed">Couldn\'t sign in. Try again.</string>
     <string name="wear_shows_layout_honeycomb">Honeycomb</string>
     <string name="wear_shows_layout_list">List</string>
 </resources>

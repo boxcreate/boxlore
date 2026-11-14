@@ -60,9 +60,29 @@ private val TileHeight = 52.dp
 private val LeftTile = RoundedCornerShape(topStart = 26.dp, bottomStart = 26.dp, topEnd = 10.dp, bottomEnd = 10.dp)
 private val RightTile = RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp, topEnd = 26.dp, bottomEnd = 26.dp)
 
+/** Which tiles Home shows, and how they pair up. */
+internal object HomeTiles {
+    /**
+     * The tiles in rows of two, in their fixed order; a last one left alone gets a row to itself.
+     * New episodes needs a phone that has linked, and Daily Mix needs a mix to play: without
+     * them the tile is left out rather than shown empty.
+     */
+    fun rows(phoneLinked: Boolean, hasDailyMix: Boolean): List<List<HomeLink>> =
+        listOfNotNull(
+            HomeLink.Shows,
+            HomeLink.JumpBackIn,
+            HomeLink.NewEpisodes.takeIf { phoneLinked },
+            HomeLink.Search,
+            HomeLink.DailyMix.takeIf { hasDailyMix },
+            HomeLink.Downloads,
+            HomeLink.Settings,
+        ).chunked(2)
+}
+
 @Composable
 internal fun HomeScreen(
     nowPlaying: NowPlaying?,
+    phoneLinked: Boolean,
     hasDailyMix: Boolean,
     onOpenPlayer: () -> Unit,
     onOpen: (HomeLink) -> Unit,
@@ -89,43 +109,21 @@ internal fun HomeScreen(
                 val modifier = if (round) Modifier else Modifier.padding(horizontal = side)
                 if (nowPlaying != null) NowPlayingDome(nowPlaying, onOpenPlayer, modifier) else ReadyDome(modifier)
             }
-            item {
-                TilePair(
-                    first = HomeLink.Shows,
-                    second = HomeLink.JumpBackIn,
-                    onOpen = onOpen,
-                    modifier = Modifier.padding(horizontal = side).transformedHeight(this, spec),
-                    transformation = SurfaceTransformation(spec),
-                )
-            }
-            item {
-                TilePair(
-                    first = HomeLink.NewEpisodes,
-                    second = HomeLink.Search,
-                    onOpen = onOpen,
-                    modifier = Modifier.padding(horizontal = side).transformedHeight(this, spec),
-                    transformation = SurfaceTransformation(spec),
-                )
-            }
-            item {
-                // Without a Daily Mix, Downloads and Settings share the last row.
-                TilePair(
-                    first = if (hasDailyMix) HomeLink.DailyMix else HomeLink.Downloads,
-                    second = if (hasDailyMix) HomeLink.Downloads else HomeLink.Settings,
-                    onOpen = onOpen,
-                    modifier = Modifier.padding(horizontal = side).transformedHeight(this, spec),
-                    transformation = SurfaceTransformation(spec),
-                )
-            }
-            if (hasDailyMix) {
+            // A tile with nothing behind it is left out, and the rest close up in rows of two.
+            HomeTiles.rows(phoneLinked, hasDailyMix).forEach { row ->
                 item {
-                    FilledTonalButton(
-                        onClick = { onOpen(HomeLink.Settings) },
-                        modifier = Modifier.padding(horizontal = side).transformedHeight(this, spec),
-                        transformation = SurfaceTransformation(spec),
-                        icon = { Icon(Icons.Rounded.Settings, contentDescription = null) },
-                        label = { Text(stringResource(R.string.wear_settings)) },
-                    )
+                    val modifier = Modifier.padding(horizontal = side).transformedHeight(this, spec)
+                    if (row.size == 2) {
+                        TilePair(first = row[0], second = row[1], onOpen = onOpen, modifier = modifier, transformation = SurfaceTransformation(spec))
+                    } else {
+                        FilledTonalButton(
+                            onClick = { onOpen(row[0]) },
+                            modifier = modifier,
+                            transformation = SurfaceTransformation(spec),
+                            icon = { Icon(row[0].icon(), contentDescription = null) },
+                            label = { Text(stringResource(row[0].label())) },
+                        )
+                    }
                 }
             }
         }

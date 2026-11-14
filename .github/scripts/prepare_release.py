@@ -96,6 +96,21 @@ class AppVersion:
     def aab_asset(self) -> str:
         return f"boxlore-{self.tag}.aab"
 
+    @property
+    def wear_apk_asset(self) -> str:
+        """The Wear OS app, for installing on a watch by hand."""
+        return f"boxlore-wear-{self.tag}.apk"
+
+    @property
+    def wear_aab_asset(self) -> str:
+        """The Wear OS app as a bundle, for Google Play's Wear OS track."""
+        return f"boxlore-wear-{self.tag}.aab"
+
+    @property
+    def built_assets(self) -> set[str]:
+        """Every file one build produces; a release holding all of them needs no second build."""
+        return {self.apk_asset, self.aab_asset, self.wear_apk_asset, self.wear_aab_asset, "SHA256SUMS"}
+
 
 def fail(message: str) -> None:
     raise ValueError(message)
@@ -1220,7 +1235,7 @@ def publication_plan(
             f"{version.tag}'s files were last built from {built_from[:12]}, not {build_sha[:12]}. "
             "To rebuild them from master, run refresh-latest-artifacts."
         )
-    if {version.apk_asset, version.aab_asset, "SHA256SUMS"} <= release_assets and built_from == build_sha:
+    if version.built_assets <= release_assets and built_from == build_sha:
         return {"build": "false", "release": "keep"}
     return {"build": "true", "release": "upload"}
 
@@ -1287,6 +1302,8 @@ def resolve_build(args: argparse.Namespace) -> None:
             "tag": current.tag,
             "apk_asset": current.apk_asset,
             "aab_asset": current.aab_asset,
+            "wear_apk_asset": current.wear_apk_asset,
+            "wear_aab_asset": current.wear_aab_asset,
             "merge_sha": merge_sha,
             "build_sha": build_sha,
             "skip_notify": "true" if skip_notify else "false",

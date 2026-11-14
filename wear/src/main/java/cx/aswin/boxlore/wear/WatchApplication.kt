@@ -1,9 +1,12 @@
 package cx.aswin.boxlore.wear
 
 import android.app.Application
+import cx.aswin.boxlore.wear.cloud.NoWatchAccount
+import cx.aswin.boxlore.wear.cloud.WatchAccount
 import cx.aswin.boxlore.wear.data.WatchLibrary
 import cx.aswin.boxlore.wear.data.WatchPlayback
 import cx.aswin.boxlore.wear.data.WatchSettings
+import cx.aswin.boxlore.wear.glance.WatchGlance
 
 /** The watch app's whole object graph. Built once by [WatchApplication]; nothing else creates one. */
 class WatchContainer(
@@ -12,6 +15,12 @@ class WatchContainer(
     val settings: WatchSettings,
     /** A player order the phone sent, as it arrived. A watch without a phone link ignores it. */
     val onPhoneCommand: (ByteArray) -> Unit = {},
+    /** The episode to jump back into, for the tile and the watch-face shortcut; null when nothing is in progress. */
+    val glance: () -> WatchGlance? = { null },
+    /** Returns once the watch knows what the phone last said, or after a short wait when it cannot. */
+    val phoneKnown: suspend () -> Unit = {},
+    /** The listener's account on this watch; a build without one stays signed out. */
+    val account: WatchAccount = NoWatchAccount,
 )
 
 class WatchApplication : Application() {

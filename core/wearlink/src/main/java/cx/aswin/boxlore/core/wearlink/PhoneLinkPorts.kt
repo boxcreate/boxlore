@@ -24,7 +24,23 @@ interface PhoneLibraryPort {
     suspend fun episodes(podcastId: String, limit: Int): List<WearLinkEpisode>
 }
 
-class PhoneLibraryRows(val shows: List<WearLinkShow>, val history: List<ListeningHistorySyncDto>)
+/** The listener's account on the phone, as far as signing the watch in needs it. */
+fun interface PhoneAccountPort {
+    /** A sign-in code for the watch with the account's name, or why there is none. */
+    suspend fun watchSignIn(): WatchSignInReply
+
+    companion object {
+        /** A phone with no accounts at all. */
+        val None = PhoneAccountPort { WatchSignInReply(WatchSignInReply.SIGNED_OUT) }
+    }
+}
+
+class PhoneLibraryRows(
+    val shows: List<WearLinkShow>,
+    val history: List<ListeningHistorySyncDto>,
+    val newEpisodes: List<WearLinkEpisode> = emptyList(),
+    val dailyMix: List<WearLinkEpisode> = emptyList(),
+)
 
 /** The phone's player as the watch link shows and controls it. */
 interface PhonePlayerPort {

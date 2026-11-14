@@ -757,10 +757,19 @@ class AppContainer(
                     podcasts = database.podcastDao(),
                     sync = { userSyncCoordinator },
                     savedEpisodes = { subscribedEpisodeCatalog },
+                    history = database.listeningHistoryDao(),
                 ),
             player = cx.aswin.boxlore.wearlink.PhonePlayerAdapter(playback = { playbackRepository }, shows = { podcastRepository }),
             store = cx.aswin.boxlore.core.wearlink.SharedPreferencesPhoneLinkStore.create(appContext),
             scope = syncScope,
+            account =
+                cx.aswin.boxlore.wearlink.PhoneAccountAdapter(
+                    auth = authRepository,
+                    api = {
+                        val network = cx.aswin.boxlore.core.network.NetworkModule
+                        network.createWatchAccountApi(apiBaseUrl, network.createCachedClient(appContext))
+                    },
+                ),
         )
     }
 

@@ -6,10 +6,12 @@ import cx.aswin.boxlore.core.network.model.UserSubscriptionSyncDto
 import cx.aswin.boxlore.core.wearlink.PhoneLibrary
 import cx.aswin.boxlore.core.wearlink.WatchChanges
 import cx.aswin.boxlore.core.wearlink.WatchHistoryChange
+import cx.aswin.boxlore.core.wearlink.WatchStoredEpisode
 import cx.aswin.boxlore.core.wearlink.WatchSubscriptionChange
 import cx.aswin.boxlore.core.wearlink.WearLinkEpisode
 import cx.aswin.boxlore.core.wearlink.WearLinkShow
 import cx.aswin.boxlore.wear.data.WatchLibraryState
+import cx.aswin.boxlore.wear.data.confirmed
 import cx.aswin.boxlore.wear.model.PendingShowChange
 import cx.aswin.boxlore.wear.model.WatchDownload
 import cx.aswin.boxlore.wear.model.WatchEpisode
@@ -32,17 +34,20 @@ internal object WatchLinkRules {
 
     /** What the phone still has to hear from this watch. */
     fun changes(state: WatchLibraryState, maxHistory: Int = MAX_HISTORY_CHANGES): WatchChanges {
-        val waiting = state.pendingEpisodes.entries.sortedBy { it.value }
+        // What the phone has confirmed may still be waiting here for the cloud; it is not sent again.
+        val waiting = state.pendingEpisodes.entries.filter { it.value > state.phoneAcked }.sortedBy { it.value }
         val sent = waiting.take(maxHistory)
         // With more waiting than fits, this message covers only up to the last row it carries.
         val covered = if (waiting.size > sent.size) sent.last().value else state.revision
         return WatchChanges(
             watchId = state.watchId,
             revision = covered,
-            subscriptions = state.pendingShows.values.filter { it.revision <= covered }.sortedBy { it.revision }.map { it.wire() },
+            subscriptions =
+                state.pendingShows.values.filter { it.revision > state.phoneAcked && it.revision <= covered }.sortedBy { it.revision }.map { it.wire() },
             history = sent.mapNotNull { (id, revision) -> historyRow(state, id)?.let { WatchHistoryChange(revision, it) } },
             storedBytes = state.storedBytes,
             downloads = state.episodes.values.count { it.download == WatchDownload.Done },
+            stored = state.downloads.map { WatchStoredEpisode(it.id, it.audioUrl, done = it.download == WatchDownload.Done) },
         )
     }
 
@@ -52,15 +57,35 @@ internal object WatchLinkRules {
      */
     fun withPhone(state: WatchLibraryState, library: PhoneLibrary, playingId: String?): WatchLibraryState {
         val acked = library.acked[state.watchId] ?: 0L
-        var next =
-            state.copy(
-                pendingShows = state.pendingShows.filterValues { it.revision > acked },
-                pendingEpisodes = state.pendingEpisodes.filterValues { it > acked },
-            )
+        // A phone has linked from here on, whatever its lists hold; its confirmation counts at once.
+        var next = state.copy(phoneLinked = true, phoneAcked = acked).confirmed()
         next = next.copy(shows = shows(next, library))
         for (row in library.history) next = withRow(next, row, playingId)
-        val recent = next.recent.sortedByDescending { next.episodes[it]?.lastPlayedAtMillis ?: 0L }.take(MAX_RECENT)
-        return next.copy(recent = recent).forgetUnused()
+        next = withLists(next, library)
+        return settled(next)
+    }
+
+    /** After listening was merged in: the most recently played first, and no more than the watch keeps. */
+    fun settled(state: WatchLibraryState): WatchLibraryState {
+        val recent = state.recent.sortedByDescending { state.episodes[it]?.lastPlayedAtMillis ?: 0L }.take(MAX_RECENT)
+        return state.copy(recent = recent).forgetUnused()
+    }
+
+    /** The phone's New episodes and Daily Mix, each kept as the watch's own copy where it has one. */
+    private fun withLists(state: WatchLibraryState, library: PhoneLibrary): WatchLibraryState {
+        // Each episode is looked up against what the ones before it left behind: the phone may name one
+        // episode under two IDs, and the watch keeps it once.
+        var known = state
+        val ids = { episodes: List<WearLinkEpisode> ->
+            episodes.map { named ->
+                val mine = known.merged(watchEpisode(named))
+                known = known.remember(mine)
+                mine.id
+            }.distinct()
+        }
+        val fresh = ids(library.newEpisodes)
+        val mix = ids(library.dailyMix)
+        return known.copy(phoneLinked = true, newFromPhone = fresh, mixFromPhone = mix)
     }
 
     /** The phone's shows, with the watch's unconfirmed follows and unfollows applied on top. */
@@ -70,7 +95,9 @@ internal object WatchLinkRules {
         val phoneIds = fromPhone.mapTo(HashSet(), WatchShow::id)
         // A cut list says nothing about the shows it leaves out, so those stay as they were.
         val base = if (library.showsTruncated) fromPhone + state.shows.filterNot { it.id in phoneIds } else fromPhone
-        return state.pendingShows.values.sortedBy { it.revision }.fold(base) { shows, change ->
+        // Only what the phone has not confirmed goes on top. A change it has confirmed may still wait
+        // here for the cloud, but the phone's list already says what became of it.
+        return state.pendingShows.values.filter { it.revision > state.phoneAcked }.sortedBy { it.revision }.fold(base) { shows, change ->
             when {
                 !change.subscribed -> shows.filterNot { it.id == change.show.id }
                 shows.any { it.id == change.show.id } -> shows
@@ -79,7 +106,8 @@ internal object WatchLinkRules {
         }
     }
 
-    private fun withRow(state: WatchLibraryState, row: ListeningHistorySyncDto, playingId: String?): WatchLibraryState {
+    /** One listening row from the phone or the cloud: it wins where it is newer, except over the episode playing here. */
+    fun withRow(state: WatchLibraryState, row: ListeningHistorySyncDto, playingId: String?): WatchLibraryState {
         val id = localId(state, row)
         val saved = state.episodes[id]
         val mine = saved?.lastPlayedAtMillis ?: 0L
@@ -140,8 +168,8 @@ internal object WatchLinkRules {
         return held ?: sameAudio ?: shared ?: row.episodeId
     }
 
-    /** The listening the watch holds for [id], as the row the phone merges. */
-    private fun historyRow(state: WatchLibraryState, id: String): ListeningHistorySyncDto? {
+    /** The listening the watch holds for [id], as the row the phone and the cloud merge. */
+    fun historyRow(state: WatchLibraryState, id: String): ListeningHistorySyncDto? {
         val episode = state.episodes[id] ?: return null
         val completed = id in state.played
         return ListeningHistorySyncDto(
@@ -201,18 +229,21 @@ internal object WatchLinkRules {
             newEpisodes = mine?.newEpisodes ?: 0,
             subscribed = true,
         )
-
-    private fun PendingShowChange.wire(): WatchSubscriptionChange =
-        WatchSubscriptionChange(
-            revision = revision,
-            change =
-                UserSubscriptionSyncDto(
-                    podcastId = show.id,
-                    isSubscribed = subscribed,
-                    subscribedAt = if (subscribed) atMillis else 0L,
-                    unsubscribedAt = if (subscribed) 0L else atMillis,
-                    updatedAt = atMillis,
-                ),
-            show = WearLinkShow(podcastId = show.id, title = show.title, author = show.publisher, imageUrl = show.artworkUrl),
-        )
 }
+
+/** A follow or unfollow made on the watch, as the row the phone and the cloud merge. */
+internal fun PendingShowChange.syncRow(): UserSubscriptionSyncDto =
+    UserSubscriptionSyncDto(
+        podcastId = show.id,
+        isSubscribed = subscribed,
+        subscribedAt = if (subscribed) atMillis else 0L,
+        unsubscribedAt = if (subscribed) 0L else atMillis,
+        updatedAt = atMillis,
+    )
+
+private fun PendingShowChange.wire(): WatchSubscriptionChange =
+    WatchSubscriptionChange(
+        revision = revision,
+        change = syncRow(),
+        show = WearLinkShow(podcastId = show.id, title = show.title, author = show.publisher, imageUrl = show.artworkUrl),
+    )

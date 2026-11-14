@@ -100,6 +100,25 @@ class WearLinkCodecTest {
     }
 
     @Test
+    fun `a library too large for one item loses the Daily Mix first, then New episodes, before any listening or show`() {
+        val episodes = List(40) { WearLinkEpisode("e$it", "s$it", "Episode number $it of a show", audioUrl = "https://example.org/audio/$it.mp3") }
+        val library = PhoneLibrary(shows = List(20, ::show), history = List(20, ::row), newEpisodes = episodes.take(20), dailyMix = episodes.drop(20))
+        val whole = WearLinkCodec.encode(library).size
+        val withoutMix = WearLinkCodec.encode(library.copy(dailyMix = emptyList())).size
+
+        val mixCut = WearLinkCodec.decode<PhoneLibrary>(WearLinkCodec.encodeLibrary(library, maxBytes = whole - 1))!!
+        assertTrue(mixCut.dailyMix.isEmpty())
+        assertEquals(library.newEpisodes, mixCut.newEpisodes)
+
+        val bothCut = WearLinkCodec.decode<PhoneLibrary>(WearLinkCodec.encodeLibrary(library, maxBytes = withoutMix - 1))!!
+        assertTrue(bothCut.dailyMix.isEmpty())
+        assertTrue(bothCut.newEpisodes.isEmpty())
+        assertEquals(library.history, bothCut.history)
+        assertEquals(library.shows, bothCut.shows)
+        assertFalse(bothCut.showsTruncated)
+    }
+
+    @Test
     fun `the phone's position moves on only while it plays`() {
         val episode = WearLinkEpisode("e", "s", "Title", durationMs = 100_000L)
 

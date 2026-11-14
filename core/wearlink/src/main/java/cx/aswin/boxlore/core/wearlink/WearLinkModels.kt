@@ -34,6 +34,9 @@ object WearLinkProtocol {
     /** The watch asking the phone for a show's episodes. */
     const val PATH_EPISODES = "/boxlore/episodes"
 
+    /** The watch asking the phone to sign it in to the listener's account. */
+    const val PATH_SIGN_IN = "/boxlore/sign-in"
+
     /** Declared in each app's `wear.xml`, so one side can find the other. */
     const val CAPABILITY_PHONE = "boxlore_phone"
     const val CAPABILITY_WATCH = "boxlore_watch"
@@ -81,6 +84,10 @@ data class PhoneLibrary(
     val acked: Map<String, Long> = emptyMap(),
     val showsTruncated: Boolean = false,
     val sentAt: Long = 0L,
+    /** The newest unplayed episode of each followed show, newest first. */
+    val newEpisodes: List<WearLinkEpisode> = emptyList(),
+    /** The phone's Daily Mix, in playing order. */
+    val dailyMix: List<WearLinkEpisode> = emptyList(),
 )
 
 /** A follow or unfollow made on the watch; [show] lets the phone list a show it has never seen. */
@@ -113,7 +120,13 @@ data class WatchChanges(
     val storedBytes: Long = 0L,
     val downloads: Int = 0,
     val sentAt: Long = 0L,
+    /** Every episode the watch stores or is downloading, so the phone can show which ones it has. */
+    val stored: List<WatchStoredEpisode> = emptyList(),
 )
+
+/** One episode's audio on the watch; [done] is false while it still downloads. */
+@Serializable
+data class WatchStoredEpisode(val episodeId: String, val audioUrl: String? = null, val done: Boolean = false)
 
 /** The phone's player as of [at]: enough for the watch to show it and to work out the position since. */
 @Serializable
@@ -178,6 +191,10 @@ data class WearLinkCommand(
         const val SEEK_FORWARD = "seek_forward"
         const val SET_SPEED = "set_speed"
 
+        /** Phone to watch: store [episode]'s audio on the watch, or remove it again. */
+        const val DOWNLOAD_EPISODE = "download_episode"
+        const val REMOVE_DOWNLOAD = "remove_download"
+
         /** Start [episode] on the phone at [positionMs], with [upNext] queued after it. */
         const val PLAY_EPISODE = "play_episode"
     }
@@ -190,6 +207,28 @@ data class EpisodeListRequest(
 ) {
     companion object {
         const val DEFAULT_LIMIT = 25
+    }
+}
+
+/**
+ * The phone's answer when the watch asks to be signed in. With [status] [OK] it carries a
+ * short-lived, single-use [code] for the API and the [account] name to show on the watch. It
+ * travels as a direct answer and is never stored on either device.
+ */
+@Serializable
+data class WatchSignInReply(
+    val status: String,
+    val code: String? = null,
+    val account: String? = null,
+) {
+    companion object {
+        const val OK = "ok"
+
+        /** The phone has no account signed in, or one that cannot sync yet. */
+        const val SIGNED_OUT = "signed_out"
+
+        /** The phone is signed in but could not get a code just now. */
+        const val FAILED = "failed"
     }
 }
 

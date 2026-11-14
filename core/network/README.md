@@ -12,8 +12,9 @@ It does not own repositories ([`:core:catalog`](../catalog/README.md)), RSS pars
 
 - `BoxLoreApi`: the v1 service (search and typeahead, trending, recommendations, bootstrap, onboarding, content catalog, `/sync`, cloud sync push, pull and delete, feedback). `GET episodes/match` serves only the comparison list for a Podcast Index show's feed-only extras.
 - `BoxLoreApiV2`: the `/v2` service for boxlore's own episode IDs (shows and feed addresses, episodes, registration, search, discovery, briefings). Paths are relative and carry no app key; discovery routes answer in the v1 shapes.
+- `WatchAccountApi`: signing boxlore on a watch in to the account through a signed-in phone, and the watch's own cloud sync push and pull.
 - `SupportApi`: the support conversation routes used by [`:core:support`](../support/README.md); nothing it returns enters the HTTP cache.
-- `NetworkModule.createCachedClient(context)`: the one shared OkHttp client with the HTTP cache. Build every service on it (`createBoxLoreApi`, `createBoxLoreApiV2`, `createSupportApi`); two caches must never share a directory, so there is no context-based shortcut.
+- `NetworkModule.createCachedClient(context)`: the one shared OkHttp client with the HTTP cache. Build every service on it (`createBoxLoreApi`, `createBoxLoreApiV2`, `createWatchAccountApi`, `createSupportApi`); two caches must never share a directory, so there is no context-based shortcut.
 - `NetworkModule.createSessionExchangeClient()`: the plain client for session exchanges (no session interceptor, no authenticator, no cache).
 - `NetworkModule.appVersion` / `appChannel` are sent as `X-App-Version` and `X-App-Channel`; `sessionManager`, `authenticator` and `accountToken` are set by the app at startup.
 - Debug logging redacts every credential, App Check, session and proof header; release builds log nothing.
@@ -57,6 +58,7 @@ It does not own repositories ([`:core:catalog`](../catalog/README.md)), RSS pars
 src/main/java/cx/aswin/boxlore/core/network/
   BoxLoreApi.kt                  # v1 routes
   BoxLoreApiV2.kt                # /v2 routes, V2BriefingRoute
+  WatchAccountApi.kt             # watch sign-in and the watch's cloud sync
   SupportApi.kt                  # support conversation routes
   NetworkModule.kt               # clients, cache, service factories
   EnglishOffInterceptor.kt

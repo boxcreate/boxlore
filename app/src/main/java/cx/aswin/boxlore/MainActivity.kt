@@ -252,7 +252,11 @@ class MainActivity : ComponentActivity() {
             ) {
             // The players offer the watch only while one with boxlore is in reach of this phone.
             val watchPlayOffer = cx.aswin.boxlore.wearlink.rememberWatchPlayOffer((application as BoxLoreApplication).container.phoneWearLink)
-            androidx.compose.runtime.CompositionLocalProvider(cx.aswin.boxlore.core.designsystem.components.LocalWatchPlayOffer provides watchPlayOffer) {
+            val watchEpisodeActions = cx.aswin.boxlore.wearlink.rememberWatchEpisodeActions((application as BoxLoreApplication).container.phoneWearLink)
+            androidx.compose.runtime.CompositionLocalProvider(
+                cx.aswin.boxlore.core.designsystem.components.LocalWatchPlayOffer provides watchPlayOffer,
+                cx.aswin.boxlore.core.designsystem.components.LocalWatchEpisodeActions provides watchEpisodeActions,
+            ) {
             BoxLoreAppRoot(
                 activity = this@MainActivity,
                 application = application as BoxLoreApplication,

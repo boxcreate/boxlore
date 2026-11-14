@@ -30,6 +30,9 @@ internal class PreviewWatchLibrary : WatchLibrary {
     override val shows: StateFlow<List<WatchShow>> = subscribedShows.asStateFlow()
     override val jumpBackIn: StateFlow<List<WatchEpisode>> = MutableStateFlow(pick(PreviewCatalog.jumpBackInIds))
     override val newEpisodes: StateFlow<List<WatchEpisode>> = MutableStateFlow(pick(PreviewCatalog.newEpisodeIds))
+
+    /** The sample library stands for a watch whose phone has linked, so every Home tile shows. */
+    override val phoneLinked: StateFlow<Boolean> = MutableStateFlow(true)
     override val upNext: StateFlow<List<WatchEpisode>> = queue.asStateFlow()
     private val stored = MutableStateFlow(storedEpisodes(PreviewCatalog.episodes))
     override val downloads: StateFlow<List<WatchEpisode>> = stored.asStateFlow()

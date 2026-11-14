@@ -2,6 +2,7 @@ package cx.aswin.boxlore.wear.link
 
 import cx.aswin.boxlore.core.network.model.ListeningHistorySyncDto
 import cx.aswin.boxlore.core.wearlink.PhoneLibrary
+import cx.aswin.boxlore.core.wearlink.WearLinkEpisode
 import cx.aswin.boxlore.core.wearlink.WearLinkShow
 import cx.aswin.boxlore.wear.data.WatchLibraryState
 import cx.aswin.boxlore.wear.model.WatchDownload
@@ -188,6 +189,28 @@ class WatchLinkRulesTest {
     }
 
     @Test
+    fun `the phone's New episodes and Daily Mix fill the watch's lists, and finishing one takes it out`() {
+        fun named(id: String) = WearLinkEpisode(id, "1", "Episode $id", audioUrl = "https://example.org/$id.mp3", durationMs = 40 * minute)
+        val before = WatchLibraryState()
+        assertFalse(before.phoneLinked)
+
+        val linked = before.heard(PhoneLibrary(newEpisodes = listOf(named("n1"), named("n2")), dailyMix = listOf(named("m1"), named("n1"))))
+
+        assertTrue(linked.phoneLinked)
+        assertEquals(listOf("n1", "n2"), linked.newEpisodes.map { it.id })
+        assertEquals(listOf("m1", "n1"), linked.dailyMix.map { it.id })
+
+        val finished = linked.markPlayed(linked.episodes.getValue("n1"))
+        assertEquals(listOf("n2"), finished.newEpisodes.map { it.id })
+        assertEquals(listOf("m1"), finished.dailyMix.map { it.id })
+
+        // A phone that now lists nothing empties them, and stays linked.
+        val emptied = finished.heard(PhoneLibrary())
+        assertTrue(emptied.newEpisodes.isEmpty())
+        assertTrue(emptied.phoneLinked)
+    }
+
+    @Test
     fun `listening on the phone lands in Jump back in with its place`() {
         val merged = WatchLibraryState().heard(PhoneLibrary(history = listOf(row("a", progressMs = 10 * minute, at = 500L))))
 
@@ -274,5 +297,18 @@ class WatchLinkRulesTest {
         assertEquals(PublishPacing.PLAYING_INTERVAL_MS, PublishPacing.waitMs(isPlaying = true, sinceLastMs = 0L))
         assertEquals(20_000L, PublishPacing.waitMs(isPlaying = true, sinceLastMs = 40_000L))
         assertEquals(PublishPacing.SETTLE_MS, PublishPacing.waitMs(isPlaying = true, sinceLastMs = 10 * minute))
+    }
+
+    // Regression: the phone named one episode under two IDs, and the watch kept two records of it.
+    @Test
+    fun `an episode the phone names twice, under two IDs, is one record in New episodes and Daily Mix`() {
+        fun named(id: String) = WearLinkEpisode(episodeId = id, podcastId = "1", title = "Same episode", audioUrl = "https://example.org/same.mp3")
+        val library = PhoneLibrary(newEpisodes = listOf(named("owner"), named("alias")), dailyMix = listOf(named("alias")))
+
+        val next = WatchLinkRules.withPhone(WatchLibraryState(watchId = "w"), library, playingId = null)
+
+        assertEquals(listOf("owner"), next.newFromPhone)
+        assertEquals(listOf("owner"), next.mixFromPhone)
+        assertEquals(setOf("owner"), next.episodes.keys)
     }
 }

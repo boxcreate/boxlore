@@ -9,6 +9,13 @@
     <string name="episode_info_not_found_body_no_show">It may have been removed, or this link may not open on this phone.</string>
     <string name="episode_info_back">Back</string>
     <string name="episode_info_share">Share episode</string>
+    <!-- The header's watch button, shown only once boxlore on a watch has linked with the phone. -->
+    <string name="episode_info_send_to_watch">Send to watch</string>
+    <string name="episode_info_downloading_on_watch">Downloading on your watch. Remove from watch</string>
+    <string name="episode_info_on_watch">On your watch. Remove from watch</string>
+    <string name="episode_info_watch_sending">Downloading on your watch</string>
+    <string name="episode_info_watch_removed">Removed from your watch</string>
+    <string name="episode_info_watch_out_of_reach">Your watch isn\'t in reach</string>
     <string name="episode_info_open_show">View %1$s</string>
     <string name="episode_info_full_title">Show full title</string>
     <string name="episode_info_show_less">Show less</string>

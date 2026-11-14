@@ -22,7 +22,13 @@ Announcement title:
 
 ## Highlights
 
+- boxlore is now on Wear OS. Play, stream and download episodes on your watch, with or without your phone. (#1256, #1258)
+
 ## New
+
+- Send to watch on an episode's page downloads it to your watch. (#1258)
+- A tile and a watch-face shortcut resume your last episode in one tap. (#1258)
+- Sign in on your watch with one tap from your phone. (#1258)
 
 ## Improved
 

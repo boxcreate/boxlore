@@ -62,6 +62,7 @@ class PhoneWearLink(
     private val player: PhonePlayerPort,
     private val store: PhoneLinkStore,
     private val scope: CoroutineScope,
+    private val account: PhoneAccountPort = PhoneAccountPort.None,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     private val started = AtomicBoolean(false)
@@ -84,6 +85,9 @@ class PhoneWearLink(
      * or [playOnWatch].
      */
     val playOnWatchOffer: StateFlow<Boolean> = offer.asStateFlow()
+
+    /** What the watch stores, and the orders to download an episode there or remove it. */
+    val watchDownloads = PhoneWatchDownloads(transport, scope)
 
     val status: StateFlow<WearLinkStatus> = linkStatus.asStateFlow()
     val settings: StateFlow<WearLinkSettings> = watchSettings.asStateFlow()
@@ -164,16 +168,23 @@ class PhoneWearLink(
     }
 
     /** A question the watch asked; null when it is not one this app answers. */
-    suspend fun onRequest(path: String, bytes: ByteArray): ByteArray? {
-        if (path != WearLinkProtocol.PATH_EPISODES) return null
-        val request = WearLinkCodec.decode<EpisodeListRequest>(bytes) ?: return null
-        val episodes = attempt { library.episodes(request.podcastId, request.limit.coerceIn(1, MAX_EPISODES)) }.orEmpty()
-        return WearLinkCodec.encode(EpisodeListReply(request.podcastId, episodes))
-    }
+    suspend fun onRequest(path: String, bytes: ByteArray): ByteArray? =
+        when (path) {
+            WearLinkProtocol.PATH_EPISODES ->
+                WearLinkCodec.decode<EpisodeListRequest>(bytes)?.let { request ->
+                    val episodes = attempt { library.episodes(request.podcastId, request.limit.coerceIn(1, MAX_EPISODES)) }.orEmpty()
+                    WearLinkCodec.encode(EpisodeListReply(request.podcastId, episodes))
+                }
+            // Only boxlore on the listener's own watch can ask: the system delivers these between the two apps alone.
+            WearLinkProtocol.PATH_SIGN_IN ->
+                WearLinkCodec.encode(attempt { account.watchSignIn() } ?: WatchSignInReply(WatchSignInReply.FAILED))
+            else -> null
+        }
 
     private suspend fun onChanges(changes: WatchChanges) {
         store.watchKnown = true
         store.watchStatus = WatchStatus(changes.storedBytes, changes.downloads, clock())
+        watchDownloads.report(changes.stored)
         linkStatus.value = linkStatus.value.copy(watchKnown = true, watch = store.watchStatus)
         start()
         val merged =
@@ -214,7 +225,8 @@ class PhoneWearLink(
 
     private suspend fun publishLibrary() {
         val rows = attempt { library.library(HISTORY_LIMIT) } ?: return
-        val snapshot = PhoneLibrary(shows = rows.shows, history = rows.history, acked = store.acked())
+        val snapshot =
+            PhoneLibrary(shows = rows.shows, history = rows.history, acked = store.acked(), newEpisodes = rows.newEpisodes, dailyMix = rows.dailyMix)
         transport.publish(WearLinkProtocol.PATH_PHONE_LIBRARY, WearLinkCodec.encodeLibrary(snapshot))
     }
 
