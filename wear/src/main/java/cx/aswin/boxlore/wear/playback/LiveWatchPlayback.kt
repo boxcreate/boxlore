@@ -156,7 +156,10 @@ class LiveWatchPlayback(
 
         override fun onPlayerError(error: PlaybackException) = publish(player)
 
-        override fun onPositionDiscontinuity(old: Player.PositionInfo, new: Player.PositionInfo, reason: Int) = publish(player)
+        override fun onPositionDiscontinuity(old: Player.PositionInfo, new: Player.PositionInfo, reason: Int) {
+            if (PlaybackRules.savesPlaceOnJump(reason == Player.DISCONTINUITY_REASON_SEEK, player.isPlaying)) saveProgress(player)
+            publish(player)
+        }
     }
 
     private fun startTicker(player: MediaController) {

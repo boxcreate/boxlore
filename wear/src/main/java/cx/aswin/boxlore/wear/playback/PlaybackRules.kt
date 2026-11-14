@@ -57,6 +57,13 @@ internal object PlaybackRules {
      */
     fun savesPlaceBeforeStart(loadedId: String?, startingId: String, isPlaying: Boolean): Boolean = isPlaying || loadedId != startingId
 
+    /**
+     * Whether a jump in the player's position is saved at once. A playing player saves as it goes.
+     * A still one saves nothing more, so a seek the listener made there would be lost the next
+     * time the episode starts from its saved place.
+     */
+    fun savesPlaceOnJump(isSeek: Boolean, isPlaying: Boolean): Boolean = isSeek && !isPlaying
+
     /** Whether the next queued episode should start when one ends. */
     fun continuesAfterEnd(choice: SleepTimerChoice): Boolean = choice != SleepTimerChoice.EndOfEpisode
 }

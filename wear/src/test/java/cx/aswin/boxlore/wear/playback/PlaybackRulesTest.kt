@@ -93,4 +93,13 @@ class PlaybackRulesTest {
         assertTrue(PlaybackRules.savesPlaceBeforeStart(loadedId = "a", startingId = "b", isPlaying = false))
         assertTrue(PlaybackRules.savesPlaceBeforeStart(loadedId = null, startingId = "a", isPlaying = false))
     }
+
+    // Regression: pause, seek, start the same episode again. The still player skips saving at the start, so the seek must be saved when made.
+    @Test
+    fun `a seek on a still player is saved at once, any other jump or a playing player is not`() {
+        assertTrue(PlaybackRules.savesPlaceOnJump(isSeek = true, isPlaying = false))
+        assertFalse(PlaybackRules.savesPlaceOnJump(isSeek = true, isPlaying = true))
+        // A new episode being loaded also moves the position; that is not the listener's place in it.
+        assertFalse(PlaybackRules.savesPlaceOnJump(isSeek = false, isPlaying = false))
+    }
 }
