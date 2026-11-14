@@ -58,6 +58,7 @@ class ShareSheetBodyTest {
                             currentPositionMs = position,
                             showTimestampOption = true,
                             episode = null,
+                            details = "49 min · 30 Oct",
                             onShare = { _, _, timestampMs, target -> shared += timestampMs to target },
                             onDismissRequest = { dismissals++ },
                             renderPreview = { card, _ ->
@@ -85,6 +86,7 @@ class ShareSheetBodyTest {
         compose.onNodeWithContentDescription("Share card for The Buried Bodies Case").assertExists()
         assertEquals(1, drawn.size)
         assertNull(drawn.single().moment)
+        assertEquals("49 min · 30 Oct", drawn.single().details)
 
         // Compact → tablet (600dp wide, 480dp+ tall), → split (840dp landscape), and back, either side of each gate.
         for ((w, h) in listOf(599f to 900f, 600f to 900f, 839f to 800f, 840f to 800f, 1280f to 800f, 600f to 800f, 412f to 900f)) {

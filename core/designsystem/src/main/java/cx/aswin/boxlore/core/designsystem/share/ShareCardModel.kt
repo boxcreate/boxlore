@@ -53,7 +53,8 @@ internal data class ShareBox(val left: Float, val top: Float, val width: Float, 
 
 /**
  * Where everything sits on one card size. The card's top corners sweep ([cardTopRadius]) and meet
- * the boxlore bar with small corners; the bar's bottom corners sweep again.
+ * the boxlore bar with small corners; the bar's bottom corners sweep again. The words start at the
+ * top of [text], the title's capitals level with the artwork's top edge.
  */
 internal data class ShareCardLayout(
     val width: Int,
@@ -63,13 +64,15 @@ internal data class ShareCardLayout(
     val joinRadius: Float,
     val artwork: ShareBox,
     val artworkRadius: Float,
+    /** The words: title, who it is by, the start time and the details line, top to bottom. */
     val text: ShareBox,
-    /** True when the text sits beside the artwork and is centred vertically in [text]. */
-    val textBeside: Boolean,
     val titleSizes: List<Float>,
     val titleMaxLines: Int,
     val subtitleSize: Float,
     val momentSize: Float,
+    val detailsSize: Float,
+    /** The square's narrow column lets the details line wrap once rather than cut the date. */
+    val detailsMaxLines: Int,
     val slider: ShareBox,
     val play: ShareBox,
     val bar: ShareBox,
@@ -82,52 +85,60 @@ internal data class ShareCardLayout(
 internal const val StorySafeBottom = 1_600f
 
 internal fun shareCardLayout(target: ShareTarget): ShareCardLayout = when (target) {
+    // Square: the words top the column beside the artwork and the play button closes it, level
+    // with the artwork's bottom edge; the slider runs the full width underneath.
     ShareTarget.MESSAGE -> ShareCardLayout(
         width = 1_200,
         height = 1_200,
         card = ShareBox(56f, 56f, 1_088f, 904f),
         cardTopRadius = 84f,
         joinRadius = 28f,
-        artwork = ShareBox(112f, 112f, 560f, 560f),
+        artwork = ShareBox(112f, 112f, 600f, 600f),
         artworkRadius = 56f,
-        text = ShareBox(720f, 112f, 368f, 560f),
-        textBeside = true,
+        text = ShareBox(760f, 112f, 328f, 376f),
         titleSizes = listOf(56f, 50f, 46f, 42f, 40f),
-        titleMaxLines = 6,
+        titleMaxLines = 4,
         subtitleSize = 32f,
-        momentSize = 30f,
-        slider = ShareBox(112f, 784f, 720f, 64f),
-        play = ShareBox(880f, 716f, 200f, 200f),
+        momentSize = 34f,
+        detailsSize = 32f,
+        detailsMaxLines = 2,
+        slider = ShareBox(112f, 772f, 976f, 64f),
+        play = ShareBox(888f, 512f, 200f, 200f),
         bar = ShareBox(56f, 976f, 1_088f, 168f),
         barBottomRadius = 84f,
         labelSize = 40f,
         logoWidth = 340f,
     )
+    // Story: one column from the artwork down to the play button, all above Instagram's controls.
     ShareTarget.INSTAGRAM_STORY -> ShareCardLayout(
         width = 1_080,
         height = 1_920,
-        card = ShareBox(60f, 160f, 960f, 1_260f),
+        card = ShareBox(60f, 120f, 960f, 1_356f),
         cardTopRadius = 104f,
         joinRadius = 32f,
-        artwork = ShareBox(200f, 236f, 680f, 680f),
-        artworkRadius = 60f,
-        text = ShareBox(150f, 952f, 780f, 264f),
-        textBeside = false,
+        artwork = ShareBox(180f, 210f, 720f, 720f),
+        artworkRadius = 64f,
+        text = ShareBox(180f, 970f, 720f, 290f),
         titleSizes = listOf(62f, 56f, 52f, 48f),
         titleMaxLines = 2,
         subtitleSize = 38f,
-        momentSize = 32f,
-        slider = ShareBox(150f, 1_283f, 570f, 64f),
-        play = ShareBox(760f, 1_230f, 170f, 170f),
-        bar = ShareBox(60f, 1_436f, 960f, 164f),
+        momentSize = 36f,
+        detailsSize = 34f,
+        detailsMaxLines = 1,
+        slider = ShareBox(180f, 1_313f, 540f, 64f),
+        play = ShareBox(750f, 1_270f, 150f, 150f),
+        bar = ShareBox(60f, 1_488f, 960f, 112f),
         barBottomRadius = 82f,
-        labelSize = 42f,
-        logoWidth = 350f,
+        labelSize = 38f,
+        logoWidth = 300f,
     )
 }
 
-/** The text on a card: the title, who it is by, and an optional start time or clip. */
-data class ShareCardText(val title: String, val subtitle: String, val moment: String? = null)
+/**
+ * The text on a card: the title, who it is by, an optional start time or clip, and an optional
+ * details line ([shareEpisodeDetails], [sharePodcastDetails]).
+ */
+data class ShareCardText(val title: String, val subtitle: String, val moment: String? = null, val details: String? = null)
 
 /**
  * A title size that fits: the largest of [sizes] whose text fits ([fits] gets the size and the

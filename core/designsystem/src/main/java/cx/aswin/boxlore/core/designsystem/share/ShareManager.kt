@@ -24,7 +24,11 @@ object ShareManager {
     fun sharePodcast(context: Context, podcast: Podcast, target: ShareTarget = ShareTarget.MESSAGE) {
         trackShare(contentType = "podcast", podcastId = podcast.id, target = target)
         val shareUrl = ShareLinkBuilder.podcast(podcast.id)
-        val text = ShareCardText(title = podcast.title, subtitle = podcast.artist)
+        val text = ShareCardText(
+            title = podcast.title,
+            subtitle = podcast.artist,
+            details = sharePodcastDetails(podcast.effectiveGenre, podcast.updateFrequency),
+        )
         shareWithCompositeImage(
             context = context,
             message = shareMessage(text.title, text.subtitle, moment = null, url = shareUrl),
@@ -56,7 +60,12 @@ object ShareManager {
         shareScope.launch {
             val link = episodeShareLink(episode, timestampMs, startMs, endMs)
             val moment = shareMoment(link.opensShow, timestampMs, startMs, endMs)
-            val text = ShareCardText(title = episode.title, subtitle = podcastTitle, moment = shareMomentLabel(context, moment))
+            val text = ShareCardText(
+                title = episode.title,
+                subtitle = podcastTitle,
+                moment = shareMomentLabel(context, moment),
+                details = shareEpisodeDetails(episode.duration, episode.publishedDate),
+            )
             shareWithCompositeImage(
                 context = context,
                 message = shareMessage(text.title, text.subtitle, text.moment, link.url),
