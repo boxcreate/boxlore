@@ -63,6 +63,16 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 ### Upcoming
 
 <!-- release-upcoming:start -->
+<b>✨ Highlights:</b>
+<ul align="left">
+<li>boxlore is now on Wear OS. Play, stream and download episodes on your watch, with or without your phone. <a href="https://github.com/boxcreate/boxlore/pull/1256"><img src="https://img.shields.io/badge/PR-1256-6750A4?style=flat-square" alt="PR #1256" height="18"/></a> <a href="https://github.com/boxcreate/boxlore/pull/1258"><img src="https://img.shields.io/badge/PR-1258-6750A4?style=flat-square" alt="PR #1258" height="18"/></a></li>
+</ul>
+<b>🆕 New:</b>
+<ul align="left">
+<li>Send to watch on an episode's page downloads it to your watch. <a href="https://github.com/boxcreate/boxlore/pull/1258"><img src="https://img.shields.io/badge/PR-1258-6750A4?style=flat-square" alt="PR #1258" height="18"/></a></li>
+<li>A tile and a watch-face shortcut resume your last episode in one tap. <a href="https://github.com/boxcreate/boxlore/pull/1258"><img src="https://img.shields.io/badge/PR-1258-6750A4?style=flat-square" alt="PR #1258" height="18"/></a></li>
+<li>Sign in on your watch with one tap from your phone. <a href="https://github.com/boxcreate/boxlore/pull/1258"><img src="https://img.shields.io/badge/PR-1258-6750A4?style=flat-square" alt="PR #1258" height="18"/></a></li>
+</ul>
 <b>⚡ Improved:</b>
 <ul align="left">
 <li>Sharing a show or episode now sends a card that looks like the boxlore player, in colours from its artwork, and the share sheet shows the card before you send it. Episodes shared from a moment show where they start, and the message is now just the name and the link.</li>
