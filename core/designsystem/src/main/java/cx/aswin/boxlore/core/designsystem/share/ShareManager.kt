@@ -2,7 +2,7 @@ package cx.aswin.boxlore.core.designsystem.share
 
 import android.content.Context
 import android.content.Intent
-import androidx.core.graphics.drawable.toBitmap
+import androidx.core.graphics.applyCanvas
 import cx.aswin.boxlore.core.designsystem.R
 import cx.aswin.boxlore.core.designsystem.theme.artworkSeedOf
 import cx.aswin.boxlore.core.model.Episode
@@ -113,10 +113,7 @@ object ShareManager {
             context,
             listOfNotNull(imageUrl, fallbackImageUrl),
             width = 800,
-        ) ?: androidx.core.content.ContextCompat.getDrawable(
-            context,
-            R.drawable.ic_boxlore_app_mark,
-        )?.toBitmap(800, 624)
+        ) ?: shareFallbackArtwork(context)
 
     /**
      * Copies [episode]'s share link ([episodeShareUrl]) and confirms with the sheet's "Link copied"
@@ -326,3 +323,27 @@ object ShareManager {
 
     private const val PreviewScale = 0.5f
 }
+
+/**
+ * The artwork when none loads: the boxlore mark centred on an indigo square, like the app icon.
+ * The card shows artwork square, so the wide mark is never stretched or cut at the sides.
+ */
+internal fun shareFallbackArtwork(context: Context): android.graphics.Bitmap? {
+    val mark = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.ic_boxlore_app_mark)?.mutate() ?: return null
+    val side = FallbackArtworkSide
+    val markWidth = side * FallbackMarkWidth
+    val markHeight = markWidth * mark.intrinsicHeight / mark.intrinsicWidth
+    return androidx.core.graphics.createBitmap(side, side).applyCanvas {
+        drawColor(ShareCardFallbackSeed)
+        mark.setBounds(
+            ((side - markWidth) / 2f).toInt(),
+            ((side - markHeight) / 2f).toInt(),
+            ((side + markWidth) / 2f).toInt(),
+            ((side + markHeight) / 2f).toInt(),
+        )
+        mark.draw(this)
+    }
+}
+
+private const val FallbackArtworkSide = 800
+private const val FallbackMarkWidth = 0.6f
