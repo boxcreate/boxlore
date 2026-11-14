@@ -1009,13 +1009,14 @@ class PodcastRepository(
                     isFallback = body.isRecommendationsFallback ?: true,
                 )
             } else {
-                HomeRecommendations()
+                // A failed request is not an answer with no picks: Home and Explore keep what they show.
+                HomeRecommendations(failed = true)
             }
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
             android.util.Log.e("PodcastRepository", "getHomeRecommendations failed", e)
-            HomeRecommendations()
+            HomeRecommendations(failed = true)
         }
     }
 

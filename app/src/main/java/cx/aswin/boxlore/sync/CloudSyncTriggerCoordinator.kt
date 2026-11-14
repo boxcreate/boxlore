@@ -17,6 +17,7 @@ import cx.aswin.boxlore.core.model.BoxLoreUser
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -68,8 +69,8 @@ class CloudSyncTriggerCoordinator(
     )
     val syncStatusFlow: StateFlow<CloudSyncUiStatus> = _syncStatusFlow.asStateFlow()
 
-    @Volatile
-    private var lastForegroundSyncTimestamp = 0L
+    /** When the last foreground sync was claimed or last succeeded; at most one per [FOREGROUND_THROTTLE_MS]. */
+    private val lastForegroundSyncTimestamp = AtomicLong(0L)
 
     private val coordinatorJob = kotlinx.coroutines.SupervisorJob()
 
@@ -106,16 +107,46 @@ class CloudSyncTriggerCoordinator(
     }
 
     override fun onStart(owner: LifecycleOwner) {
+        // Signed out: nothing to sync, so nothing is claimed and the status stays as it is.
+        if (!canSyncUser(authRepository.currentUser.value)) return
+        val claim = tryClaimForegroundSync() ?: return
+        applicationScope.launch(ioDispatcher) { runClaimedSync(claim) }
+    }
+
+    /**
+     * Claims the foreground sync when none was claimed or succeeded in the last
+     * [FOREGROUND_THROTTLE_MS], so a cold start (process start and first auth state together) syncs
+     * once; null when another one holds it.
+     */
+    private fun tryClaimForegroundSync(): ForegroundSyncClaim? {
         val now = clock()
-        if (now - lastForegroundSyncTimestamp >= FOREGROUND_THROTTLE_MS) {
-            lastForegroundSyncTimestamp = now
-            applicationScope.launch(ioDispatcher) {
-                if (canSyncUser(authRepository.currentUser.value)) {
-                    syncNowInternal()
-                }
-            }
+        while (true) {
+            val previous = lastForegroundSyncTimestamp.get()
+            if (now - previous < FOREGROUND_THROTTLE_MS) return null
+            if (lastForegroundSyncTimestamp.compareAndSet(previous, now)) return ForegroundSyncClaim(previous, now)
         }
     }
+
+    /**
+     * Runs a claimed sync. A failed one keeps the claim, so a failing server is asked at most once per
+     * [FOREGROUND_THROTTLE_MS]; one that made no request (offline, signed out, cancelled) gives it
+     * back so the next foreground tries again.
+     */
+    private suspend fun runClaimedSync(claim: ForegroundSyncClaim) {
+        val result = try {
+            syncNowInternal()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            releaseClaim(claim)
+            throw e
+        }
+        if (result is SyncResult.SkippedOffline || result is SyncResult.SkippedNoAuth) releaseClaim(claim)
+    }
+
+    private fun releaseClaim(claim: ForegroundSyncClaim) {
+        lastForegroundSyncTimestamp.compareAndSet(claim.claimedAt, claim.previous)
+    }
+
+    private class ForegroundSyncClaim(val previous: Long, val claimedAt: Long)
 
     override fun onStop(owner: LifecycleOwner) {
         if (!canSyncUser(authRepository.currentUser.value)) return
@@ -173,7 +204,7 @@ class CloudSyncTriggerCoordinator(
         }
         when (result) {
             is SyncResult.Success -> {
-                lastForegroundSyncTimestamp = clock()
+                lastForegroundSyncTimestamp.set(clock())
                 _syncStatusFlow.value = CloudSyncUiStatus.Success(result.syncedAt)
             }
             is SyncResult.Failure -> {
@@ -219,7 +250,7 @@ class CloudSyncTriggerCoordinator(
                     isFirstEmission = false
                     previousUser = currentUser
                     if (canSyncUser(currentUser)) {
-                        syncNowInternal()
+                        tryClaimForegroundSync()?.let { runClaimedSync(it) }
                     }
                     return@collect
                 }

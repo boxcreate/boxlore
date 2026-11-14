@@ -7,7 +7,12 @@ import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.model.Podcast
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -17,6 +22,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -626,4 +632,37 @@ class SubscriptionRepositoryTest {
         assertNull(piEntity.customGenre)
         assertNull(piEntity.customGenreIcon)
     }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun subscribedPodcastIdsSkipsIdenticalReEmissionsButKeepsChanges() = runTest {
+        val rows = MutableSharedFlow<List<PodcastEntity>>(replay = 1)
+        val dao = Mockito.mock(PodcastDao::class.java)
+        Mockito.`when`(dao.getSubscribedPodcasts()).thenReturn(rows)
+        val ids = SubscriptionRepository(dao).subscribedPodcastIds
+        val seen = mutableListOf<Set<String>>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { ids.toList(seen) }
+        val first = listOf(followedRow("a"), followedRow("b"))
+
+        repeat(50) { rows.emit(first.map { it.copy(lastRefreshed = it.lastRefreshed + 1) }) }
+        rows.emit(first + followedRow("c"))
+
+        assertEquals(listOf(setOf("a", "b"), setOf("a", "b", "c")), seen)
+
+        rows.emit(listOf(followedRow("a")))
+        rows.emit(listOf(followedRow("a")))
+
+        assertEquals(listOf(setOf("a", "b"), setOf("a", "b", "c"), setOf("a")), seen)
+    }
+
+    private fun followedRow(id: String) =
+        PodcastEntity(
+            podcastId = id,
+            title = "Show $id",
+            author = "Author",
+            imageUrl = "https://example.com/$id.jpg",
+            description = "desc",
+            isSubscribed = true,
+            subscribedAt = 1000L,
+        )
 }

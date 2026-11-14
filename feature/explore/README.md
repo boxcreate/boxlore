@@ -50,7 +50,7 @@ Used by `:app` navigation:
 
 ```text
 src/main/java/cx/aswin/boxlore/feature/explore/
-  ExploreScreen.kt, ExploreViewModel.kt   Explore route
+  ExploreScreen*.kt, ExploreViewModel.kt  Explore route
   ExploreFeaturedRows.kt                  featured rows on browse and search
   LearnScreen.kt, LearnViewModel.kt, LearnPagination.kt
   LearnHistoryScreen.kt, LearnHistoryViewModel.kt
@@ -61,7 +61,7 @@ src/main/java/cx/aswin/boxlore/feature/explore/
   components/   browse headers, cards, genre and tab selectors, search results and
                 suggestions, topic results and transition, skeletons, empty states
   logic/        pure decisions: browse, tab pager, header scroll, shared recommendations,
-                search landing examples, Lore deck shuffle
+                For You refresh, search landing examples, Lore deck shuffle
 src/main/res/values/strings.xml
 ```
 
@@ -74,7 +74,7 @@ src/main/res/values/strings.xml
 ## Threading / lifecycle
 
 - ViewModels are scoped to their navigation entries; repositories, playback, ranking feedback and prefs are application-scoped instances from app wiring.
-- UI runs on the main thread; search, recommendations and Lore pages use suspend APIs. Reading the shared recommendations cache runs on `Dispatchers.IO`.
+- UI runs on the main thread; search, recommendations and Lore pages use suspend APIs. Reading the shared recommendations cache runs on `Dispatchers.IO`. For You refreshes only while the screen is started (`ExploreForYouRefreshPolicy`), keyed on region, content languages, followed shows and the Picked for you setting. The first key, a region or language change and switching it on refresh at once; follow changes alone refresh at most every 30 seconds; picks over 30 minutes old refresh once on showing or while shown; an unchanged key asks nothing else. A failure, or an answer that only brings back the last good picks, retries after 1 minute, doubling up to 30 minutes, without showing the loading state again. A newer refresh cancels the older one, which never publishes.
 - Search queries are debounced in the ViewModel, so only the latest query in each mode is sent.
 - Lore palette extraction runs on `Dispatchers.Default`. The palette cache and its jobs stay on the ViewModel scope: requests are deduplicated, obsolete ones cancelled, and a cancelled request never publishes a stale colour.
 - Lore motion and colour are read in draw and graphics layers, so swipes don't recompose the deck each frame.
@@ -95,7 +95,7 @@ Hermetic JVM tests live in `feature/explore/src/test`, logic on plain JVM and sc
 | Area | Test classes |
 | :--- | :--- |
 | Browse tabs, pager and Picked for you | `ExploreTabPagerTest`, `ExploreTabPagerLogicTest`, `ExploreBrowseLogicTest` |
-| Shared recommendations | `ExploreSharedRecommendationsLogicTest` |
+| Shared recommendations, For You refresh | `ExploreSharedRecommendationsLogicTest`, `ExploreForYouRefresherTest` |
 | Header scroll | `ExploreChromeScrollLogicTest` |
 | Topics | `ExploreTopicResultsTest` |
 | Search | `ExploreSearchRequestTest`, `ExploreSearchLandingTest`, `ExploreSearchResultsTest`, `ConceptSearchIdleLogicTest` |

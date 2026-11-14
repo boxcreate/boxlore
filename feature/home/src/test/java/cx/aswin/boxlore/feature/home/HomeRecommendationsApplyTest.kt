@@ -39,6 +39,17 @@ class HomeRecommendationsApplyTest {
     }
 
     @Test
+    fun `the last good picks kept after a request with none are shown and saved like fresh ones`() = runTest {
+        val kept = listOf(episode("4", "Kept"))
+
+        val replaced = applyHomeRecommendations(HomeRecommendations(kept, isFallback = false, fromLastGood = true), picks, isFallback) { list, fallback -> saved += list to fallback }
+
+        assertTrue(replaced)
+        assertEquals(kept, picks.value)
+        assertEquals(listOf(kept to false), saved)
+    }
+
+    @Test
     fun `an answer with no picks that did not fail clears them`() = runTest {
         applyHomeRecommendations(HomeRecommendations(), picks, isFallback) { list, fallback -> saved += list to fallback }
 

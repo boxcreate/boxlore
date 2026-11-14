@@ -169,7 +169,7 @@ class SubscriptionSyncResolver(
                 if (local.notificationsEnabled) {
                     notificationSyncPort?.setNotificationTopicSubscribed(local.podcastId, false)
                 }
-            } else {
+            } else if (!local.isDirty) {
                 podcastDao.upsert(local.copy(isDirty = true))
             }
         } else if (remoteUnsubTime > local.unsubscribedAt) {
@@ -203,7 +203,7 @@ class SubscriptionSyncResolver(
         syncedAt: Long,
     ) {
         if (remoteSubTime <= local.unsubscribedAt) {
-            podcastDao.upsert(local.copy(isDirty = true))
+            if (!local.isDirty) podcastDao.upsert(local.copy(isDirty = true))
             return
         }
         val updated = local.copy(
@@ -250,7 +250,8 @@ class SubscriptionSyncResolver(
             isDirty = false,
             syncedAt = syncedAt,
         )
-        upsertMerged(updated)
+        // The linked-watch merge passes syncedAt 0 and always writes its row.
+        if (syncedAt == 0L || needsWrite(local, updated)) upsertMerged(updated)
         applyPulledAddress(local, remote)
         if (updated.notificationsEnabled != local.notificationsEnabled) {
             notificationSyncPort?.setNotificationTopicSubscribed(local.podcastId, updated.notificationsEnabled)
@@ -300,5 +301,12 @@ class SubscriptionSyncResolver(
 
     private companion object {
         const val TAG = "SubscriptionSyncResolver"
+
+        /**
+         * Whether a pulled clean row must be written: something besides its sync time changed, or it
+         * was never stamped. Readers only ask whether `syncedAt` is 0, so an unchanged clean row keeps
+         * its earlier sync time and the pull writes nothing.
+         */
+        fun needsWrite(local: PodcastEntity, updated: PodcastEntity): Boolean = updated.copy(syncedAt = local.syncedAt) != local || local.syncedAt == 0L
     }
 }

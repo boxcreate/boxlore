@@ -191,6 +191,7 @@ class PodcastRepositoryV2DiscoveryTest {
         // Picks for the listener's own seeds are personal, whatever the server's flag says (as on v1).
         assertFalse(first.isFallback)
         assertFalse(first.failed)
+        assertFalse(first.fromLastGood)
         val sent = parse(seen.single().body)
         assertEquals("POST", seen.single().method)
         val recs = sent.getAsJsonObject("recommendationsRequest")
@@ -203,7 +204,34 @@ class PodcastRepositoryV2DiscoveryTest {
         val failed = repository().getHomeRecommendations(country = "us", history = listeningHistory())
         assertEquals(first.items.map { it.id }, failed.items.map { it.id })
         assertFalse(failed.isFallback)
+        // Shown as before, but marked so a caller knows it is not a fresh answer.
+        assertTrue(failed.fromLastGood)
+        assertFalse(failed.failed)
         assertTrue(seen.none { it.path.startsWith("/home/bootstrap") })
+    }
+
+    @Test
+    fun aFailedV1HomeRequestIsMarkedFailedSoHomeAndExploreKeepWhatTheyShow() = runTest {
+        v2Discovery = false
+        val repository = repository()
+
+        answers["/home/bootstrap"] = { MockResponse().setResponseCode(503) }
+        val serverError = repository.getHomeRecommendations(country = "us", history = listeningHistory())
+        assertTrue(serverError.failed)
+        assertTrue(serverError.items.isEmpty())
+
+        // An answer that cannot be read throws inside the request.
+        answers["/home/bootstrap"] = { json("""{"recommendations":""") }
+        val unreadable = repository.getHomeRecommendations(country = "us", history = listeningHistory())
+        assertTrue(unreadable.failed)
+
+        // An answer with no picks is an answer, not a failure.
+        answers["/home/bootstrap"] = { json("""{"trending":[],"recommendations":[],"isRecommendationsFallback":false}""") }
+        val empty = repository.getHomeRecommendations(country = "us", history = listeningHistory())
+        assertFalse(empty.failed)
+        assertFalse(empty.fromLastGood)
+        assertTrue(empty.items.isEmpty())
+        assertTrue(seen.none { it.path.startsWith("/v2/") })
     }
 
     @Test

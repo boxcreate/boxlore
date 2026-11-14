@@ -79,7 +79,6 @@ import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.list.ProgressiveSearchScrollLogic
 import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
-import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.prefs.ExploreDefaultTab
@@ -134,10 +133,7 @@ fun ExploreScreen(
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackExploreScreenViewed(entryPoint)
     }
 
-    TrackScreenSession(
-        onSessionResume = viewModel::onScreenResume,
-        onSessionExit = viewModel::trackScreenExit
-    )
+    ExploreScreenEffects(viewModel)
 
     ExploreContent(
         uiState = uiState,

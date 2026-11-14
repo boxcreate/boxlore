@@ -1,8 +1,10 @@
 package cx.aswin.boxlore.core.catalog.sync
 
 import android.content.Context
+import androidx.room.InvalidationTracker
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import cx.aswin.boxlore.core.catalog.FeedAddressUpdater
 import cx.aswin.boxlore.core.catalog.ports.ActivePlaybackSyncPort
 import cx.aswin.boxlore.core.catalog.ports.QueueSyncPort
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
@@ -1009,5 +1011,61 @@ class UserSyncCoordinatorTest {
         // Ensure prefs are NOT wiped if the server deletion failed
         assertEquals("test-user-123", prefs.getLastSyncedUserId())
         assertEquals(12345L, prefs.getLastSyncTimestamp())
+    }
+
+    @Test
+    fun repeatedSyncWithTheSameFollows_leavesThePodcastsTableAlone() = runTest(testDispatcher) {
+        // Wired as the app wires it: pulled addresses go through the one address writer.
+        val coordinatorWithAddressWriter = UserSyncCoordinator(
+            boxLoreApi = fakeBoxLoreApi,
+            publicKey = "test-public-key",
+            authUserIdProvider = { currentUserId },
+            tokenProvider = { currentToken },
+            podcastDao = podcastDao,
+            listeningHistoryDao = listeningHistoryDao,
+            queueSyncPort = fakeQueueSyncPort,
+            subscriptionSyncResolver = SubscriptionSyncResolver(podcastDao = podcastDao, feedAddresses = FeedAddressUpdater(podcastDao)),
+            historySyncResolver = historySyncResolver,
+            queueSyncResolver = queueSyncResolver,
+            boxcastPrefs = prefs,
+            ioDispatcher = testDispatcher,
+            episodeIdentityDao = database.episodeIdentityDao(),
+        )
+        // The server returns every follow on every pull.
+        val follows = (1..25).map {
+            UserSubscriptionSyncDto(
+                podcastId = "pod-$it",
+                isSubscribed = true,
+                subscribedAt = 1000L + it,
+                feedUrl = "https://example.com/feed-$it.xml",
+                updatedAt = 1000L + it,
+            )
+        }
+        var pulledAt = 5000L
+        syncPushHandler = { _, _, _ -> FakeCall(Response.success(SyncPushResponse(status = "ok", syncedAt = pulledAt))) }
+        syncPullHandler = { _, _, _ ->
+            FakeCall(Response.success(SyncPullResponse(subscriptions = follows, history = emptyList(), queue = null, syncedAt = pulledAt)))
+        }
+        var invalidations = 0
+        val observer = object : InvalidationTracker.Observer("podcasts") {
+            override fun onInvalidated(tables: Set<String>) {
+                invalidations++
+            }
+        }
+        database.invalidationTracker.addObserver(observer)
+
+        assertTrue(coordinatorWithAddressWriter.syncNow() is SyncResult.Success)
+        database.invalidationTracker.refreshVersionsSync()
+        assertTrue("the first sync stores the follows", invalidations > 0)
+        assertEquals(25, podcastDao.getSubscribedPodcastsList().size)
+
+        invalidations = 0
+        pulledAt = 6000L
+        assertTrue(coordinatorWithAddressWriter.syncNow() is SyncResult.Success)
+        database.invalidationTracker.refreshVersionsSync()
+
+        assertEquals(0, invalidations)
+        assertTrue(podcastDao.getSubscribedPodcastsList().all { it.syncedAt == 5000L && !it.isDirty })
+        database.invalidationTracker.removeObserver(observer)
     }
 }
