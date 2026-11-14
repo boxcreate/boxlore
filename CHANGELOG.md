@@ -48,6 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ShareBottomSheet` shows a preview of the card through `ShareManager.renderPreview`; its body is `ShareSheetBody`, and the start-time switch is saved state. ([#1257](https://github.com/boxcreate/boxlore/pull/1257)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Share messages are the name, the start time and the link; share wording moved to string resources. ([#1257](https://github.com/boxcreate/boxlore/pull/1257)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `AutoBrowseLibraryCallback` picks a list's play context through `playContextFor` instead of a chained elvis. ([#1253](https://github.com/boxcreate/boxlore/pull/1253)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- `NetworkModule.createWatchAccountApi` signs every request with the device key (`RequestProofInterceptor`). ([#1259](https://github.com/boxcreate/boxlore/pull/1259)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- `WatchCloudSync` keeps the fresh account token a sync answer carries in `WatchAccountApi.RENEW_HEADER` (`CloudAnswer.Ok.renewedToken`). ([#1259](https://github.com/boxcreate/boxlore/pull/1259)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Fixed
 - `PlaybackTransportHelper.resume` started the saved queue's first entry when the shown episode was not in that queue; `ResumeQueuePolicy` now puts the shown episode in front. ([#1256](https://github.com/boxcreate/boxlore/pull/1256)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - Android Auto list rows show their subtitle (time left, date and length) through a display title instead of the artist. ([#1247](https://github.com/boxcreate/boxlore/pull/1247)) <!-- impact:user-impact-high --> <!-- copy:locked -->
@@ -79,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PlaybackQueueCoordinator.startQueue` calls the `MediaController` on the main dispatcher whichever dispatcher its caller uses. ([#1255](https://github.com/boxcreate/boxlore/pull/1255)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `OnboardingViewModel` lives in the activity's `ViewModelStore` (`rememberOnboardingViewModel`), so `onCleared` cancels Echo work and reports unfinished onboarding as `onboarding_abandoned`; every onboarding flow still shares the one instance. ([#1246](https://github.com/boxcreate/boxlore/pull/1246)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - Install referrer attribution applies only to Play Store installs: any other install saves `install_channel=not_play` without `referrer_raw` (`PostHogWiring.installAttribution`), because Play's referrer service also answers for GitHub installs. `InstallAttribution` saves non-Play installs once at launch and keeps the referrer's answer until the installer is known. ([#1250](https://github.com/boxcreate/boxlore/pull/1250)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- `LinkedWatchPlayback.play` carries the phone's current position and queue when the phone is playing the episode being started. ([#1259](https://github.com/boxcreate/boxlore/pull/1259)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ## [v0.0.31] - 2026-11-07
 
 ### Added
