@@ -78,17 +78,13 @@ data class WatchLibraryState(
     /** The saved copy of [episode] when the watch has one, so progress and downloads carry over. */
     fun merged(episode: WatchEpisode): WatchEpisode {
         // The watch can hold an episode twice: under boxlore's own ID, and under an older ID the phone
-        // still uses. Its downloads and its place live with the copy under the own ID, so that one
-        // wins, or the same episode would play from two places. The one exception: finished audio
-        // stored only under the older ID stays reachable, since a file is kept under the ID it was
-        // stored with, and only a finished one can be played.
-        val held = episodes[episode.id]
-        val heldCanPlay = held?.download == WatchDownload.Done
-        val fromOlderId = !episode.hasOwnId
+        // still uses. Whichever ID it comes under, it is one copy, or the same episode would play from
+        // two places. A copy with finished audio comes first: a file is kept under the ID it was
+        // stored with, and only a finished one can be played. Then the copy under the own ID, where
+        // the watch's own lists keep the place. Then the copy under the ID asked for.
         val saved =
-            sameAudio(episode) { fromOlderId && it.hasOwnId && (it.download == WatchDownload.Done || !heldCanPlay) }
-                ?: held
-                ?: sameAudio(episode)
+            (listOfNotNull(episodes[episode.id]) + sameAudio(episode))
+                .maxWithOrNull(compareBy({ it.download == WatchDownload.Done }, { it.hasOwnId }, { it.id == episode.id }))
         return when {
             saved != null ->
                 episode.copy(
@@ -106,10 +102,10 @@ data class WatchLibraryState(
         }
     }
 
-    /** A saved episode of the same show with the same audio address as [episode], under another ID. */
-    private fun sameAudio(episode: WatchEpisode, wanted: (WatchEpisode) -> Boolean = { true }): WatchEpisode? {
-        val audio = episode.audioUrl ?: return null
-        return episodes.values.firstOrNull { it.id != episode.id && it.showId == episode.showId && it.audioUrl == audio && wanted(it) }
+    /** The saved episodes of the same show with the same audio address as [episode], under other IDs. */
+    private fun sameAudio(episode: WatchEpisode): List<WatchEpisode> {
+        val audio = episode.audioUrl ?: return emptyList()
+        return episodes.values.filter { it.id != episode.id && it.showId == episode.showId && it.audioUrl == audio }
     }
 
     private val WatchEpisode.hasOwnId: Boolean get() = id.toLongOrNull()?.let(EpisodeRecipeId::isRecipeId) == true

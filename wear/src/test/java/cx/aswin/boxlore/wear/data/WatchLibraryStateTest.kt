@@ -310,4 +310,25 @@ class WatchLibraryStateTest {
         val unfinished = WatchLibraryState().download(phones, WatchDownload.InProgress(0.4f)).progress(own, minute, 40 * minute)
         assertEquals(own.id, unfinished.merged(phones).id)
     }
+
+    // The watch's own lists ask by the own ID. Audio finished under the older ID must be found from there too.
+    @Test
+    fun `asked for by its own ID, an episode whose finished audio sits under the older ID is that copy`() {
+        val own = episode("5027634550352900").copy(audioUrl = "https://example.org/same.mp3")
+        val phones = episode("-368593920213691381").copy(audioUrl = "https://example.org/same.mp3")
+        // Audio files are kept by the ID they were stored under.
+        val files = mapOf(phones.id to "stored audio")
+        val state = WatchLibraryState().download(phones, WatchDownload.Done).progress(own, 10 * minute, 40 * minute)
+
+        val fromOwn = state.merged(own)
+        val fromPhone = state.merged(phones)
+
+        assertEquals(WatchDownload.Done, fromOwn.download)
+        assertEquals("stored audio", files[fromOwn.id])
+        assertEquals("stored audio", files[fromPhone.id])
+        // Without finished audio anywhere, the own ID is the one copy from either side.
+        val plain = WatchLibraryState().progress(phones, minute, 40 * minute).progress(own, 10 * minute, 40 * minute)
+        assertEquals(own.id, plain.merged(own).id)
+        assertEquals(own.id, plain.merged(phones).id)
+    }
 }
