@@ -147,8 +147,11 @@ internal fun ShareSheetBody(
     var startsAtMs by rememberSaveable { mutableStateOf<Long?>(null) }
     val includeTimestamp = startsAtMs != null
     val contentLabel = if (type == "podcast") "podcast" else "episode"
-    val timestampOffered = type == "episode" && showTimestampOption && currentPositionMs > 1000L
-    val sharedStartMs = startsAtMs?.takeIf { timestampOffered }
+    val canStartAtTime = type == "episode" && showTimestampOption
+    // The position decides whether a start time can be picked; once picked, it stays even if
+    // playback goes back to the start.
+    val timestampOffered = canStartAtTime && (includeTimestamp || currentPositionMs > 1000L)
+    val sharedStartMs = startsAtMs?.takeIf { canStartAtTime }
     val toggleTimestamp = { startsAtMs = if (startsAtMs == null) currentPositionMs else null }
 
     Column(

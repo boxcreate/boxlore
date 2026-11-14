@@ -170,4 +170,18 @@ class ShareSheetBodyTest {
         compose.onNodeWithText("The Buried Bodies Case").assertExists()
         compose.onNodeWithText("Radiolab").assertExists()
     }
+
+    @Test
+    fun `a picked start time stays when playback goes back to the start`() {
+        show()
+        compose.onNodeWithText("Start at 1:05").performClick()
+        compose.waitForIdle()
+        position = 0L
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Start at 1:05").assertExists()
+        assertEquals("Starts at 1:05", drawn.last().moment)
+        compose.onNodeWithText("Instagram Story").performClick()
+        assertEquals(listOf(65_000L to ShareTarget.INSTAGRAM_STORY), shared)
+    }
 }
