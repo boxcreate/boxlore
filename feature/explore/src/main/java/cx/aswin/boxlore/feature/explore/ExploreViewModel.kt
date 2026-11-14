@@ -16,6 +16,8 @@ import cx.aswin.boxlore.core.ranking.PodcastRankingInput
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
 import cx.aswin.boxlore.feature.explore.logic.ExploreBrowseLogic
+import cx.aswin.boxlore.feature.explore.logic.ExploreForYouRefreshKey
+import cx.aswin.boxlore.feature.explore.logic.ExploreForYouRefresher
 import cx.aswin.boxlore.feature.explore.logic.ExploreSharedRecommendationsLogic
 import java.util.Calendar
 import kotlinx.coroutines.FlowPreview
@@ -90,6 +92,9 @@ private data class ExploreRecsSlice(
     val isRecommendationsFallback: Boolean,
     val hasForYou: Boolean = true,
 )
+
+/** For you picks from one refresh; not [fresh] when they are the last good picks kept from earlier. */
+private class ForYouPicks(val episodes: List<Episode>, val isFallback: Boolean, val fresh: Boolean)
 
 private data class ExploreSearchSlice(
     val searchTab: SearchTab,
@@ -214,6 +219,17 @@ class ExploreViewModel(
     // Active charts region (shown as a chip on the Trending header)
     private val _activeRegionCode = MutableStateFlow("us")
     val activeRegionCode: StateFlow<String> = _activeRegionCode.asStateFlow()
+
+    // Refreshes For you only while the screen is visible, at a bounded rate (ExploreForYouRefreshPolicy).
+    private val forYouRefresher =
+        ExploreForYouRefresher(
+            scope = viewModelScope,
+            clockMs = android.os.SystemClock::elapsedRealtime,
+            fetch = ::fetchForYouPicks,
+            publish = ::publishForYouPicks,
+            onLoadingChanged = { _isRecommendationsLoading.value = it },
+            isFresh = { it.fresh },
+        )
 
     init {
         // Preload subscriptions into _seenPodcasts cache to enable instant zero-latency filtering
@@ -368,13 +384,12 @@ class ExploreViewModel(
         }
 
         viewModelScope.launch {
-            combine(
-                userPrefs.regionStream,
-                subscriptionRepository.subscribedPodcastIds,
-                userPrefs.discoverySectionsStream.map { it.pickedForYou }.distinctUntilChanged(),
-            ) { _, _, on -> on }.collect { on ->
-                if (on) fetchPersonalizedRecommendations()
-            }
+            forYouRefresher.follow(
+                region = userPrefs.regionStream,
+                followedIds = subscriptionRepository.subscribedPodcastIds,
+                languages = userPrefs.contentLanguagesStream,
+                pickedForYou = userPrefs.discoverySectionsStream.map { it.pickedForYou },
+            )
         }
 
         // Keep active region label in sync for the charts header chip.
@@ -790,70 +805,76 @@ class ExploreViewModel(
         _selectedTab.value = tabIndex
     }
 
-    fun fetchPersonalizedRecommendations() {
-        if (!_hasForYou.value) return
-        viewModelScope.launch {
-            _isRecommendationsLoading.value = true
-            val prefs = BoxcastPrefs(getApplication())
-            try {
-                // Prefer shared cache if we already have rows (Home often populated it).
-                if (_recommendations.value.isEmpty()) {
-                    val cached = ExploreSharedRecommendationsLogic.decodeCachedRecommendationsJson(
-                        prefs.getCachedRecommendationsJson(),
-                    )
-                    if (cached.isNotEmpty()) {
-                        _recommendations.value = cached
-                        _isRecommendationsFallback.value = prefs.isRecommendationsFallback()
-                    }
+    /** Whether the Explore screen is visible (started); For you refreshes only while it is. */
+    fun onScreenVisibilityChanged(visible: Boolean) = forYouRefresher.onVisibilityChanged(visible)
+
+    /** Asks for For you picks for [key]; null when the request failed with no last good picks. */
+    private suspend fun fetchForYouPicks(key: ExploreForYouRefreshKey): ForYouPicks? {
+        val prefs = BoxcastPrefs(getApplication())
+        return try {
+            // Prefer shared cache if we already have rows (Home often populated it).
+            if (_recommendations.value.isEmpty()) {
+                val cached = ExploreSharedRecommendationsLogic.decodeCachedRecommendationsJson(
+                    prefs.getCachedRecommendationsJson(),
+                )
+                if (cached.isNotEmpty()) {
+                    _recommendations.value = cached
+                    _isRecommendationsFallback.value = prefs.isRecommendationsFallback()
                 }
-
-                val interests = prefs.getUserGenres().toList()
-                val history = playbackRepository.getHistoryForRecommendations(15)
-
-                val subscribedIds = subscriptionRepository.subscribedPodcastIds.first().toList()
-                val subscribedGenres = subscriptionRepository.subscribedPodcasts.first()
-                    .mapNotNull { it.genre }
-                    .distinct()
-
-                val region = userPrefs.regionStream.first()
-                val languages = userPrefs.contentLanguagesStream.first()
-
-                android.util.Log.d(
-                    "ExploreViewModel",
-                    "Refreshing shared bootstrap recommendations; history=${history.size}, interests=$interests, region=$region, langs=$languages, subscribed=${subscribedIds.size}",
-                )
-                // Same catalog path as Home For You — includes popular-in-region when taste seeds are empty.
-                val bootstrapData = podcastRepository.getHomeRecommendations(
-                    country = region,
-                    history = history,
-                    interests = interests,
-                    subscribedPodcastIds = subscribedIds,
-                    subscribedGenres = subscribedGenres,
-                    languages = languages,
-                )
-                // A failure with no last good picks keeps the picks For you shows.
-                val distinctRecs = ExploreSharedRecommendationsLogic.freshRecommendations(bootstrapData) ?: return@launch
-                android.util.Log.d(
-                    "ExploreViewModel",
-                    "Shared recommendations size=${distinctRecs.size}, fallback=${bootstrapData.isFallback}",
-                )
-                // Picked for you may have been switched off while this request ran.
-                if (!_hasForYou.value) return@launch
-                _recommendations.value = distinctRecs
-                _isRecommendationsFallback.value = bootstrapData.isFallback
-                try {
-                    prefs.saveRecommendationsCache(
-                        ExploreSharedRecommendationsLogic.encodeRecommendationsJson(distinctRecs),
-                        bootstrapData.isFallback,
-                    )
-                } catch (ce: Exception) {
-                    android.util.Log.e("ExploreViewModel", "Failed to write shared recommendations cache", ce)
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("ExploreViewModel", "Failed to fetch shared recommendations", e)
-            } finally {
-                _isRecommendationsLoading.value = false
             }
+
+            val interests = prefs.getUserGenres().toList()
+            val history = playbackRepository.getHistoryForRecommendations(15)
+
+            val subscribedIds = key.followedIds.toList()
+            val subscribedGenres = subscriptionRepository.subscribedPodcasts.first()
+                .mapNotNull { it.genre }
+                .distinct()
+
+            val region = key.region
+            val languages = key.languages
+
+            android.util.Log.d(
+                "ExploreViewModel",
+                "Refreshing shared bootstrap recommendations; history=${history.size}, interests=$interests, region=$region, langs=$languages, subscribed=${subscribedIds.size}",
+            )
+            // Same catalog path as Home For You — includes popular-in-region when taste seeds are empty.
+            val bootstrapData = podcastRepository.getHomeRecommendations(
+                country = region,
+                history = history,
+                interests = interests,
+                subscribedPodcastIds = subscribedIds,
+                subscribedGenres = subscribedGenres,
+                languages = languages,
+            )
+            // A failure with no last good picks keeps the picks For you shows.
+            val distinctRecs = ExploreSharedRecommendationsLogic.freshRecommendations(bootstrapData) ?: return null
+            android.util.Log.d(
+                "ExploreViewModel",
+                "Shared recommendations size=${distinctRecs.size}, fallback=${bootstrapData.isFallback}",
+            )
+            ForYouPicks(distinctRecs, bootstrapData.isFallback, fresh = !bootstrapData.fromLastGood)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            android.util.Log.e("ExploreViewModel", "Failed to fetch shared recommendations", e)
+            null
+        }
+    }
+
+    /** Shows [picks] and writes them back to the shared cache; the refresher checks the refresh is still current first. */
+    private fun publishForYouPicks(picks: ForYouPicks) {
+        // Picked for you may have been switched off while this request ran.
+        if (!_hasForYou.value) return
+        _recommendations.value = picks.episodes
+        _isRecommendationsFallback.value = picks.isFallback
+        try {
+            BoxcastPrefs(getApplication()).saveRecommendationsCache(
+                ExploreSharedRecommendationsLogic.encodeRecommendationsJson(picks.episodes),
+                picks.isFallback,
+            )
+        } catch (ce: Exception) {
+            android.util.Log.e("ExploreViewModel", "Failed to write shared recommendations cache", ce)
         }
     }
 

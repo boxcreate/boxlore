@@ -17,7 +17,7 @@ It does not own playback, download workers, Compose UI, the Room schema ([`:core
 - `loadPiEpisodesForSupplement`: the strict Podcast Index baseline that feed-only extras are compared with; when it fails the extras refresh stops.
 - Discovery uses `/v2` routes while the discovery switch is on, else v1. Show search, typeahead, onboarding, content catalog, feedback, `/sync` and OPML lookups stay on v1.
 - `DiscoveryEpisodeIds` (`RoomDiscoveryEpisodeIds` in production) maps recipe IDs in `/v2` answers to the phone's owner IDs before callers use them, and sends seeds and exclusions as recipe IDs.
-- A failed `/v2` request never falls back to v1. It keeps the last good answer (`V2DiscoveryLastGood`; `RecommendationsLastGood` keeps picks per country across restarts), else marks Home results `failed` so screens keep what they show.
+- A failed `/v2` request never falls back to v1. It keeps the last good answer (`V2DiscoveryLastGood`; `RecommendationsLastGood` keeps picks per country across restarts), marking kept Home picks `fromLastGood`, else marks Home results `failed` so screens keep what they show. A failed v1 Home picks request is marked `failed` too.
 - `/v2` answers are cached under `v2|` keys, apart from v1 answers.
 - `DiscoveryRouting` and `BriefingLinks` give code outside the repository the same switch and ID translation.
 - `RolloutSwitches`: feed-first show pages (off by default, fixed per process), the upgrade repair, the daily address check and `/v2` discovery (on by default). Off pauses a job without marking it done.

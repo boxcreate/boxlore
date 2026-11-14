@@ -3,8 +3,10 @@ package cx.aswin.boxlore.core.catalog.sync
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import cx.aswin.boxlore.core.catalog.FeedAddressUpdater
 import cx.aswin.boxlore.core.catalog.FolderRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.FeedAddressWrite
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.model.FolderDisplaySize
@@ -526,6 +528,202 @@ class SubscriptionSyncResolverTest {
 
         assertTrue(fakeNotificationPort.topicUpdates.isEmpty())
         assertFalse(podcastDao.getPodcast("rss:custom-feed")!!.notificationsEnabled)
+    }
+
+    @Test
+    fun unchangedPull_withAddressWriter_writesNothing() = runTest {
+        val dao = CountingPodcastDao(podcastDao)
+        val routed = SubscriptionSyncResolver(podcastDao = dao, notificationSyncPort = fakeNotificationPort, feedAddresses = FeedAddressUpdater(dao))
+        podcastDao.upsert(syncedFollow())
+
+        routed.resolveSubscription(samePull(), syncedAt = 3000L)
+
+        assertEquals(emptyList<String>(), dao.writes)
+        assertEquals(syncedFollow(), podcastDao.getPodcast("pod-1"))
+        assertTrue(fakeNotificationPort.topicUpdates.isEmpty())
+    }
+
+    @Test
+    fun unchangedPull_withoutAddressWriter_writesNothing() = runTest {
+        val dao = CountingPodcastDao(podcastDao)
+        val plain = SubscriptionSyncResolver(podcastDao = dao, notificationSyncPort = fakeNotificationPort)
+        podcastDao.upsert(syncedFollow())
+
+        plain.resolveSubscription(samePull(), syncedAt = 3000L)
+
+        assertEquals(emptyList<String>(), dao.writes)
+        assertEquals(1000L, podcastDao.getPodcast("pod-1")!!.syncedAt)
+    }
+
+    @Test
+    fun unchangedPull_stampsANeverSyncedRow() = runTest {
+        val dao = CountingPodcastDao(podcastDao)
+        val routed = SubscriptionSyncResolver(podcastDao = dao, feedAddresses = FeedAddressUpdater(dao))
+        podcastDao.upsert(syncedFollow().copy(syncedAt = 0L))
+
+        routed.resolveSubscription(samePull(), syncedAt = 3000L)
+
+        assertEquals(listOf("upsertKeepingFeedAddress"), dao.writes)
+        assertEquals(3000L, podcastDao.getPodcast("pod-1")!!.syncedAt)
+    }
+
+    @Test
+    fun pullWithANewerFollowTime_writesTheRow() = runTest {
+        val dao = CountingPodcastDao(podcastDao)
+        val routed = SubscriptionSyncResolver(podcastDao = dao, feedAddresses = FeedAddressUpdater(dao))
+        podcastDao.upsert(syncedFollow())
+
+        routed.resolveSubscription(samePull().copy(subscribedAt = 1500L), syncedAt = 3000L)
+
+        assertEquals(listOf("upsertKeepingFeedAddress"), dao.writes)
+        val row = podcastDao.getPodcast("pod-1")!!
+        assertEquals(1500L, row.subscribedAt)
+        assertEquals(3000L, row.syncedAt)
+    }
+
+    @Test
+    fun pullThatOnlyClearsAStaleGenreIcon_writesTheRow() = runTest {
+        val dao = CountingPodcastDao(podcastDao)
+        val plain = SubscriptionSyncResolver(podcastDao = dao)
+        podcastDao.upsert(syncedFollow().copy(customGenreIcon = "icon_tech"))
+
+        plain.resolveSubscription(samePull(), syncedAt = 3000L)
+
+        assertEquals(listOf("upsert"), dao.writes)
+        org.junit.Assert.assertNull(podcastDao.getPodcast("pod-1")!!.customGenreIcon)
+    }
+
+    @Test
+    fun pullThatTurnsNotificationsOn_writesTheRowAndRegistersTheTopic() = runTest {
+        val dao = CountingPodcastDao(podcastDao)
+        val routed = SubscriptionSyncResolver(podcastDao = dao, notificationSyncPort = fakeNotificationPort, feedAddresses = FeedAddressUpdater(dao))
+        podcastDao.upsert(syncedFollow())
+
+        routed.resolveSubscription(samePull().copy(notificationsEnabled = true), syncedAt = 3000L)
+
+        assertEquals(listOf("upsertKeepingFeedAddress"), dao.writes)
+        assertTrue(podcastDao.getPodcast("pod-1")!!.notificationsEnabled)
+        assertEquals(listOf("pod-1" to true), fakeNotificationPort.topicUpdates)
+    }
+
+    @Test
+    fun pullThatOnlyChangesTheAddress_appliesItThroughTheWriterWithoutARowWrite() = runTest {
+        val dao = CountingPodcastDao(podcastDao)
+        val routed = SubscriptionSyncResolver(podcastDao = dao, feedAddresses = FeedAddressUpdater(dao))
+        podcastDao.upsert(syncedFollow())
+
+        routed.resolveSubscription(samePull().copy(feedUrl = MOVED_FEED), syncedAt = 3000L)
+
+        assertEquals(listOf("replaceFeedAddress"), dao.writes)
+        assertEquals(MOVED_FEED, podcastDao.getPodcast("pod-1")!!.feedUrl)
+    }
+
+    @Test
+    fun olderTombstoneForADirtyFollow_writesNothing() = runTest {
+        val dao = CountingPodcastDao(podcastDao)
+        val plain = SubscriptionSyncResolver(podcastDao = dao)
+        podcastDao.upsert(syncedFollow().copy(subscribedAt = 2500L, isDirty = true))
+
+        plain.resolveSubscription(
+            UserSubscriptionSyncDto(podcastId = "pod-1", isSubscribed = false, subscribedAt = 1000L, unsubscribedAt = 2000L, updatedAt = 2000L),
+            syncedAt = 3000L,
+        )
+
+        assertEquals(emptyList<String>(), dao.writes)
+        assertTrue(podcastDao.getPodcast("pod-1")!!.isDirty)
+    }
+
+    @Test
+    fun olderFollowForADirtyUnfollow_writesNothing() = runTest {
+        val dao = CountingPodcastDao(podcastDao)
+        val plain = SubscriptionSyncResolver(podcastDao = dao)
+        podcastDao.upsert(
+            createPodcast(podcastId = "pod-1", isSubscribed = false, subscribedAt = 500L, unsubscribedAt = 2500L, isDirty = true, syncedAt = 1000L),
+        )
+
+        plain.resolveSubscription(samePull().copy(subscribedAt = 2000L, updatedAt = 2000L), syncedAt = 3000L)
+
+        assertEquals(emptyList<String>(), dao.writes)
+        val row = podcastDao.getPodcast("pod-1")!!
+        assertFalse(row.isSubscribed)
+        assertTrue(row.isDirty)
+    }
+
+    @Test
+    fun linkedWatchMerge_stillWritesAnUnchangedRow() = runTest {
+        val dao = CountingPodcastDao(podcastDao)
+        val routed = SubscriptionSyncResolver(podcastDao = dao, feedAddresses = FeedAddressUpdater(dao))
+        podcastDao.upsert(syncedFollow())
+
+        routed.resolveSubscription(samePull(), syncedAt = 0L)
+
+        assertEquals(listOf("upsertKeepingFeedAddress"), dao.writes)
+        assertEquals(syncedFollow().copy(syncedAt = 0L), podcastDao.getPodcast("pod-1"))
+    }
+
+    /** A clean followed show that a pull already stamped. */
+    private fun syncedFollow() =
+        createPodcast(
+            podcastId = "pod-1",
+            isSubscribed = true,
+            subscribedAt = 1000L,
+            syncedAt = 1000L,
+            feedUrl = SAVED_FEED,
+        )
+
+    /** The server's copy of [syncedFollow]: every pull returns it again. */
+    private fun samePull() =
+        UserSubscriptionSyncDto(
+            podcastId = "pod-1",
+            isSubscribed = true,
+            subscribedAt = 1000L,
+            feedUrl = SAVED_FEED,
+            updatedAt = 1000L,
+        )
+
+    /** Records each write to the podcasts table made through it. */
+    private class CountingPodcastDao(private val delegate: PodcastDao) : PodcastDao by delegate {
+        val writes = mutableListOf<String>()
+
+        override suspend fun upsert(podcast: PodcastEntity) {
+            writes += "upsert"
+            delegate.upsert(podcast)
+        }
+
+        override suspend fun upsertRow(podcast: PodcastEntity) {
+            writes += "upsertRow"
+            delegate.upsertRow(podcast)
+        }
+
+        override suspend fun upsertKeepingFeedAddress(podcast: PodcastEntity) {
+            writes += "upsertKeepingFeedAddress"
+            delegate.upsertKeepingFeedAddress(podcast)
+        }
+
+        override suspend fun replaceFeedAddress(write: FeedAddressWrite): Boolean {
+            writes += "replaceFeedAddress"
+            return delegate.replaceFeedAddress(write)
+        }
+
+        override suspend fun setNotificationsEnabled(id: String, enabled: Boolean) {
+            writes += "setNotificationsEnabled"
+            delegate.setNotificationsEnabled(id, enabled)
+        }
+
+        override suspend fun markDirty(id: String) {
+            writes += "markDirty"
+            delegate.markDirty(id)
+        }
+
+        override suspend fun markFollowedDirty(id: String) {
+            writes += "markFollowedDirty"
+            delegate.markFollowedDirty(id)
+        }
+    }
+
+    private companion object {
+        const val SAVED_FEED = "https://example.com/feed.xml"
+        const val MOVED_FEED = "https://example.com/moved.xml"
     }
 
     private class FakePodcastNotificationSyncPort : cx.aswin.boxlore.core.catalog.ports.PodcastNotificationSyncPort {

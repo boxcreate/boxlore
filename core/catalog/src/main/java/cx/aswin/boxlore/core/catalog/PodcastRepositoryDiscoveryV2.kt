@@ -209,8 +209,8 @@ internal suspend fun PodcastRepository.v2HomeBootstrapFast(country: String): Hom
  * the country's default interests ([countryDefaultRecommendationRequest]), so a new listener gets
  * popular picks as on v1. [HomeRecommendations.isFallback] follows v1: true only for that
  * country-default request. No picks (a failure, or none found) keeps the last good picks for
- * [country], translated again ([RecommendationsLastGood]); with none, the answer is marked
- * [HomeRecommendations.failed]. Episodes [history] holds are left out ([withoutHistory]).
+ * [country], translated again ([RecommendationsLastGood]) and marked
+ * [HomeRecommendations.fromLastGood]; with none, the answer is marked [HomeRecommendations.failed]. Episodes [history] holds are left out ([withoutHistory]).
  *
  * [languages] is the normalised list (at most four) the recommendation body carries; the bootstrap's
  * own `languages` field gets the expanded list, as on v1.
@@ -239,7 +239,11 @@ internal suspend fun PodcastRepository.v2HomeRecommendations(
     val items = body?.recommendations?.mapNotNull(::mapToEpisode).orEmpty()
     if (items.isEmpty()) {
         val lastGood = recommendationsLastGood.load(RecommendationsLastGood.Surface.HOME, country) ?: return HomeRecommendations(failed = true)
-        return HomeRecommendations(discoveryEpisodeIds.toLocalOwners(lastGood.episodes).withoutHistory(history), lastGood.isFallback)
+        return HomeRecommendations(
+            discoveryEpisodeIds.toLocalOwners(lastGood.episodes).withoutHistory(history),
+            lastGood.isFallback,
+            fromLastGood = true,
+        )
     }
     recommendationsLastGood.save(RecommendationsLastGood.Surface.HOME, country, RecommendationsLastGood.LastGoodPicks(items, isFallback))
     return HomeRecommendations(discoveryEpisodeIds.toLocalOwners(items).withoutHistory(history), isFallback)

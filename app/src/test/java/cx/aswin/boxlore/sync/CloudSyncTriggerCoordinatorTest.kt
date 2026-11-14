@@ -23,6 +23,7 @@ import cx.aswin.boxlore.core.model.BoxLoreUser
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -579,6 +580,113 @@ class CloudSyncTriggerCoordinatorTest {
         }
     }
 
+    @Test
+    fun coldStart_processAlreadyStartedAndSignedIn_syncsOnce() = runTest {
+        fakeAuthRepository.currentUser.value = testUser("user-1")
+        testLifecycleOwner.registry.currentState = Lifecycle.State.STARTED
+        val coordinator = createCoordinator(this)
+
+        coordinator.start()
+        advanceUntilIdle()
+
+        assertEquals(1, fakeCoordinator.syncNowCalls)
+    }
+
+    @Test
+    fun onStart_whileTheFirstSyncStillRuns_doesNotStartAnother() = runTest {
+        fakeAuthRepository.currentUser.value = testUser("user-1")
+        val gate = CompletableDeferred<Unit>()
+        fakeCoordinator.syncNowGate = gate
+        val coordinator = createCoordinator(this)
+        coordinator.start()
+        advanceUntilIdle()
+        assertEquals(1, fakeCoordinator.syncNowCalls)
+
+        currentTime += 1_000L
+        coordinator.onStart(testLifecycleOwner)
+        advanceUntilIdle()
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, fakeCoordinator.syncNowCalls)
+        assertTrue(coordinator.syncStatusFlow.value is CloudSyncUiStatus.Success)
+    }
+
+    @Test
+    fun coldStart_signedOutAtStartThenSignedInBeforeTheFirstAuthState_syncsOnce() = runTest {
+        testLifecycleOwner.registry.currentState = Lifecycle.State.STARTED
+        val coordinator = createCoordinator(this)
+
+        coordinator.start()
+        fakeAuthRepository.currentUser.value = testUser("user-1")
+        advanceUntilIdle()
+
+        assertEquals(1, fakeCoordinator.syncNowCalls)
+    }
+
+    @Test
+    fun onStart_afterTheClaimedSyncFailed_waits15Seconds() = runTest {
+        fakeAuthRepository.currentUser.value = testUser("user-1")
+        fakeCoordinator.syncNowResult = SyncResult.Failure(RuntimeException("server error"))
+        val coordinator = createCoordinator(this)
+        coordinator.start()
+        advanceUntilIdle()
+        assertEquals(1, fakeCoordinator.syncNowCalls)
+
+        // The request was made and failed: a foreground within 15 seconds does not ask again.
+        currentTime += 5_000L
+        coordinator.onStart(testLifecycleOwner)
+        advanceUntilIdle()
+        assertEquals(1, fakeCoordinator.syncNowCalls)
+
+        currentTime += 10_000L
+        coordinator.onStart(testLifecycleOwner)
+        advanceUntilIdle()
+        assertEquals(2, fakeCoordinator.syncNowCalls)
+    }
+
+    @Test
+    fun onStart_afterTheClaimedSyncWasSkippedOffline_retriesWithin15Seconds() = runTest {
+        fakeAuthRepository.currentUser.value = testUser("user-1")
+        fakeCoordinator.syncNowResult = SyncResult.SkippedOffline
+        val coordinator = createCoordinator(this)
+        coordinator.start()
+        advanceUntilIdle()
+        assertEquals(1, fakeCoordinator.syncNowCalls)
+
+        // No request was made, so the claim was given back.
+        currentTime += 5_000L
+        fakeCoordinator.syncNowResult = SyncResult.Success(0, 0, false, 0, 0, false, 12345L)
+        coordinator.onStart(testLifecycleOwner)
+        advanceUntilIdle()
+        assertEquals(2, fakeCoordinator.syncNowCalls)
+
+        // That one succeeded, so the next foreground within 15 seconds waits.
+        currentTime += 5_000L
+        coordinator.onStart(testLifecycleOwner)
+        advanceUntilIdle()
+        assertEquals(2, fakeCoordinator.syncNowCalls)
+    }
+
+    @Test
+    fun onStart_signedOut_leavesTheStatusAsItIsWithoutSyncing() = runTest {
+        prefs.setLastSyncTimestamp(55_000L)
+        val coordinator = createCoordinator(this)
+        assertEquals(CloudSyncUiStatus.Success(55_000L), coordinator.syncStatusFlow.value)
+
+        coordinator.onStart(testLifecycleOwner)
+        advanceUntilIdle()
+
+        assertEquals(CloudSyncUiStatus.Success(55_000L), coordinator.syncStatusFlow.value)
+        assertEquals(0, fakeCoordinator.syncNowCalls)
+
+        // Nothing was claimed, so the first sync after signing in still runs.
+        coordinator.start()
+        fakeAuthRepository.currentUser.value = testUser("user-1")
+        advanceUntilIdle()
+        assertEquals(1, fakeCoordinator.syncNowCalls)
+    }
+
     private fun createTestEpisode(id: String) = Episode(
         id = id,
         title = "Episode $id",
@@ -602,8 +710,12 @@ class CloudSyncTriggerCoordinatorTest {
         var syncNowResult: SyncResult = SyncResult.Success(0, 0, false, 0, 0, false, 12345L)
         var executePushResult: Result<PushBatchSummary> = Result.success(PushBatchSummary(0, 0, false, 77_000L))
 
+        /** When set, each sync waits for it, so a test can act while a sync is still running. */
+        var syncNowGate: CompletableDeferred<Unit>? = null
+
         override suspend fun syncNow(): SyncResult {
             syncNowCalls++
+            syncNowGate?.await()
             return syncNowResult
         }
 

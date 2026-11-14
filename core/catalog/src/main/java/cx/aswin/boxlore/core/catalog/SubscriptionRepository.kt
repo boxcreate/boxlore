@@ -16,6 +16,7 @@ import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import cx.aswin.boxlore.core.rss.MemoryRenumberedShows
 import cx.aswin.boxlore.core.rss.RenumberedShows
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
@@ -70,10 +71,14 @@ class SubscriptionRepository(
 
     private val notificationRegistrar by lazy { PodcastNotificationRegistrar(podcastDao) }
 
+    /**
+     * IDs of followed shows. Room re-emits after any write to the podcasts table, even when the
+     * followed set is the same, so only a changed set is passed on.
+     */
     val subscribedPodcastIds: Flow<Set<String>> =
         podcastDao
             .getSubscribedPodcasts()
-            .map { list -> list.map { it.podcastId }.toSet() }
+            .map { list -> list.map { it.podcastId }.toSet() }.distinctUntilChanged()
 
     fun getAllSubscribedPodcasts(): Flow<List<PodcastEntity>> = podcastDao.getSubscribedPodcasts()
 
