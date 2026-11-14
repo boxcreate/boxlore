@@ -5,6 +5,18 @@
     <string name="repair_progress_body">Please keep boxlore open until this finishes.</string>
     <string name="feed_media_new">New</string>
     <string name="share_listen_on">Listen on</string>
+    <!-- Titles of the system share sheet. -->
+    <string name="share_chooser_podcast">Share podcast</string>
+    <string name="share_chooser_episode">Share episode</string>
+    <!-- On share cards and in share messages: where a shared episode starts. %1$s is a time such as 12:34. -->
+    <string name="share_starts_at">Starts at %1$s</string>
+    <!-- On share cards and in share messages: a shared clip. %1$s and %2$s are times such as 1:02 and 2:30. -->
+    <string name="share_clip">Clip %1$s–%2$s</string>
+    <string name="share_link_copied">Link copied</string>
+    <string name="share_instagram_unavailable">Instagram isn\'t available. Choose another app.</string>
+    <string name="share_instagram_link_copied">Link copied. Add it to your story with Instagram\'s link sticker.</string>
+    <!-- Accessibility description of the share card preview. %1$s is the podcast or episode name. -->
+    <string name="share_preview_description">Share card for %1$s</string>
     <!-- Shown briefly when no app on the phone can open a link (no browser, say). -->
     <string name="link_unavailable">No app could open this link</string>
     <!-- The late-night sleep timer prompt, shown once a night when playback starts after 10:30 PM. -->

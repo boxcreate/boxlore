@@ -3,6 +3,8 @@ package cx.aswin.boxlore.core.designsystem.share
 import android.content.Context
 import android.content.Intent
 import androidx.core.graphics.drawable.toBitmap
+import cx.aswin.boxlore.core.designsystem.R
+import cx.aswin.boxlore.core.designsystem.theme.artworkSeedOf
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeShareTarget
 import cx.aswin.boxlore.core.model.EpisodeShareTargetSource
@@ -22,20 +24,17 @@ object ShareManager {
     fun sharePodcast(context: Context, podcast: Podcast, target: ShareTarget = ShareTarget.MESSAGE) {
         trackShare(contentType = "podcast", podcastId = podcast.id, target = target)
         val shareUrl = ShareLinkBuilder.podcast(podcast.id)
-        val creator = podcast.artist.takeIf { it.isNotBlank() }?.let { "\n$it" }.orEmpty()
-        val shareText = "I think you'll like this podcast:\n\n" +
-            "${podcast.title}$creator\n\nListen on boxlore:\n$shareUrl"
-
+        val text = ShareCardText(title = podcast.title, subtitle = podcast.artist)
         shareWithCompositeImage(
             context = context,
-            text = shareText,
+            message = shareMessage(text.title, text.subtitle, moment = null, url = shareUrl),
             shareUrl = shareUrl,
-            title = "Share Podcast",
-            cardTitle = podcast.title,
-            cardSubtitle = podcast.artist,
+            chooserTitle = context.getString(R.string.share_chooser_podcast),
+            card = text,
+            progress = DefaultShareProgress,
             imageUrl = podcast.imageUrl,
             fallbackImageUrl = podcast.fallbackImageUrl,
-            target = target
+            target = target,
         )
     }
 
@@ -56,39 +55,68 @@ object ShareManager {
         )
         shareScope.launch {
             val link = episodeShareLink(episode, timestampMs, startMs, endMs)
-            val shareUrl = link.url
-            val timeContext = when {
-                // A link to the show can't start at a time or play a clip.
-                link.opensShow -> null
-                startMs != null && endMs != null -> {
-                    "Clip ${formatTime(startMs)}–${formatTime(endMs)}"
-                }
-                timestampMs != null && timestampMs > 0 -> {
-                    "Start at ${formatTime(timestampMs)}"
-                }
-                else -> null
-            }
-
-            val contextLine = listOfNotNull(
-                podcastTitle.takeIf { it.isNotBlank() },
-                timeContext
-            ).joinToString(" • ")
-            val shareText = "This episode is worth a listen:\n\n" +
-                "“${episode.title}”\n$contextLine\n\nListen on boxlore:\n$shareUrl"
-
+            val moment = shareMoment(link.opensShow, timestampMs, startMs, endMs)
+            val text = ShareCardText(title = episode.title, subtitle = podcastTitle, moment = shareMomentLabel(context, moment))
             shareWithCompositeImage(
                 context = context,
-                text = shareText,
-                shareUrl = shareUrl,
-                title = "Share Episode",
-                cardTitle = episode.title,
-                cardSubtitle = podcastTitle,
+                message = shareMessage(text.title, text.subtitle, text.moment, link.url),
+                shareUrl = link.url,
+                chooserTitle = context.getString(R.string.share_chooser_episode),
+                card = text,
+                progress = shareProgress(moment, episode.duration),
                 imageUrl = episode.imageUrl,
                 fallbackImageUrl = episode.podcastImageUrl,
-                target = target
+                target = target,
             )
         }
     }
+
+    /** "Starts at 12:34" or "Clip 1:02–2:30"; null when the whole episode is shared. */
+    fun shareMomentLabel(context: Context, moment: ShareMoment): String? = when (moment) {
+        ShareMoment.Whole -> null
+        is ShareMoment.StartsAt -> context.getString(R.string.share_starts_at, formatShareTime(moment.ms))
+        is ShareMoment.Clip -> context.getString(R.string.share_clip, formatShareTime(moment.startMs), formatShareTime(moment.endMs))
+    }
+
+    /**
+     * A small copy of the card the share sheet's message share sends, for the sheet's preview.
+     * Null when nothing could be drawn. Runs off the main thread.
+     */
+    suspend fun renderPreview(
+        context: Context,
+        card: ShareCardText,
+        progress: Float,
+        imageUrl: String?,
+        fallbackImageUrl: String? = null,
+    ): android.graphics.Bitmap? = withContext(Dispatchers.Default) {
+        try {
+            val artwork = loadShareArtwork(context, imageUrl, fallbackImageUrl) ?: return@withContext null
+            ShareCardRenderer.createShareCard(
+                context = context,
+                artwork = artwork,
+                seed = artworkSeedOf(artwork),
+                text = card,
+                progress = progress,
+                target = ShareTarget.MESSAGE,
+                scale = PreviewScale,
+            )
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            android.util.Log.w("ShareManager", "Share preview failed", e)
+            null
+        }
+    }
+
+    private suspend fun loadShareArtwork(context: Context, imageUrl: String?, fallbackImageUrl: String?): android.graphics.Bitmap? =
+        cx.aswin.boxlore.core.designsystem.components.loadArtworkBitmap(
+            context,
+            listOfNotNull(imageUrl, fallbackImageUrl),
+            width = 800,
+        ) ?: androidx.core.content.ContextCompat.getDrawable(
+            context,
+            R.drawable.ic_boxlore_app_mark,
+        )?.toBitmap(800, 624)
 
     /**
      * Copies [episode]'s share link ([episodeShareUrl]) and confirms with the sheet's "Link copied"
@@ -103,7 +131,7 @@ object ShareManager {
             withContext(Dispatchers.Main) {
                 val clipboard = appContext.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                 clipboard.setPrimaryClip(android.content.ClipData.newPlainText("boxlore link", link))
-                android.widget.Toast.makeText(appContext, "Link copied", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(appContext, appContext.getString(R.string.share_link_copied), android.widget.Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -161,89 +189,59 @@ object ShareManager {
         )
     }
 
+    @Suppress("LongParameterList")
     private fun shareWithCompositeImage(
         context: Context,
-        text: String,
+        message: String,
         shareUrl: String,
-        title: String,
-        cardTitle: String,
-        cardSubtitle: String,
+        chooserTitle: String,
+        card: ShareCardText,
+        progress: Float,
         imageUrl: String?,
-        fallbackImageUrl: String? = null,
-        target: ShareTarget
+        fallbackImageUrl: String?,
+        target: ShareTarget,
     ) {
         shareScope.launch {
             var sharedUri: android.net.Uri? = null
             try {
-                    val originalBitmap = cx.aswin.boxlore.core.designsystem.components.loadArtworkBitmap(
-                        context,
-                        listOfNotNull(imageUrl, fallbackImageUrl),
-                        width = 800,
-                    ) ?: androidx.core.content.ContextCompat.getDrawable(
-                        context,
-                        cx.aswin.boxlore.core.designsystem.R.drawable.ic_boxlore_app_mark,
-                    )?.toBitmap(800, 624)
-
-                    if (originalBitmap != null) {
-                        val shareCard = ShareCardRenderer.createShareCard(
-                            context = context,
-                            artwork = originalBitmap,
-                            title = cardTitle,
-                            subtitle = cardSubtitle,
-                            target = target
-                        )
-                        clearExpiredShareCards(context)
-                        val formatName = if (target == ShareTarget.INSTAGRAM_STORY) {
-                            "story"
-                        } else {
-                            "message"
-                        }
-                        val cacheFile = java.io.File(
-                            context.cacheDir,
-                            "boxlore_share_${formatName}_${System.currentTimeMillis()}.png"
-                        )
-                        java.io.FileOutputStream(cacheFile).use { out ->
-                            shareCard.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
-                        }
-
-                        sharedUri = androidx.core.content.FileProvider.getUriForFile(
-                            context,
-                            "${context.packageName}.fileprovider",
-                            cacheFile
-                        )
+                val artwork = loadShareArtwork(context, imageUrl, fallbackImageUrl)
+                if (artwork != null) {
+                    val shareCard = ShareCardRenderer.createShareCard(
+                        context = context,
+                        artwork = artwork,
+                        seed = artworkSeedOf(artwork),
+                        text = card,
+                        progress = progress,
+                        target = target,
+                    )
+                    clearExpiredShareCards(context)
+                    val formatName = if (target == ShareTarget.INSTAGRAM_STORY) "story" else "message"
+                    val cacheFile = java.io.File(context.cacheDir, "boxlore_share_${formatName}_${System.currentTimeMillis()}.png")
+                    java.io.FileOutputStream(cacheFile).use { out ->
+                        shareCard.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
                     }
-                } catch (e: Exception) {
-                    android.util.Log.e("ShareManager", "Error generating composite image", e)
+                    sharedUri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", cacheFile)
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.e("ShareManager", "Error generating composite image", e)
+            }
 
             withContext(Dispatchers.Main) {
-                val openedInstagram = if (
-                    target == ShareTarget.INSTAGRAM_STORY &&
-                    sharedUri != null
-                ) {
-                    openInstagramStory(
-                        context = context,
-                        imageUri = sharedUri,
-                        shareUrl = shareUrl
-                    )
-                } else {
-                    false
-                }
+                val openedInstagram = target == ShareTarget.INSTAGRAM_STORY &&
+                    sharedUri != null &&
+                    openInstagramStory(context = context, imageUri = sharedUri, shareUrl = shareUrl)
 
                 if (!openedInstagram) {
                     if (target == ShareTarget.INSTAGRAM_STORY) {
                         android.widget.Toast.makeText(
                             context,
-                            "Instagram isn't available — choose another app",
-                            android.widget.Toast.LENGTH_SHORT
+                            context.getString(R.string.share_instagram_unavailable),
+                            android.widget.Toast.LENGTH_SHORT,
                         ).show()
                     }
-                    openShareSheet(
-                        context = context,
-                        imageUri = sharedUri,
-                        text = text,
-                        chooserTitle = title
-                    )
+                    openShareSheet(context = context, imageUri = sharedUri, text = message, chooserTitle = chooserTitle)
                 }
             }
         }
@@ -312,7 +310,7 @@ object ShareManager {
         )
         android.widget.Toast.makeText(
             context,
-            "Link copied — add it with Instagram's Link sticker",
+            context.getString(R.string.share_instagram_link_copied),
             android.widget.Toast.LENGTH_LONG
         ).show()
         context.startActivity(intent)
@@ -326,15 +324,5 @@ object ShareManager {
             ?.forEach { it.delete() }
     }
 
-    private fun formatTime(ms: Long): String {
-        val totalSecs = ms / 1000
-        val hours = totalSecs / 3600
-        val minutes = (totalSecs % 3600) / 60
-        val seconds = totalSecs % 60
-        return if (hours > 0) {
-            String.format("%d:%02d:%02d", hours, minutes, seconds)
-        } else {
-            String.format("%d:%02d", minutes, seconds)
-        }
-    }
+    private const val PreviewScale = 0.5f
 }
