@@ -252,4 +252,28 @@ class WatchLibraryStateTest {
         assertEquals(WatchDownload.None, state.episodes.getValue("a").download)
         assertEquals(WatchDownload.Done, state.episodes.getValue("b").download)
     }
+
+    // Regression: the watch held one episode twice, and the phone's older ID found the copy without the download or the place.
+    @Test
+    fun `an episode saved under both IDs is the copy under boxlore's own ID, whichever ID it comes under`() {
+        val own = episode("5027634550352900").copy(audioUrl = "https://example.org/same.mp3")
+        val phones = episode("-368593920213691381").copy(audioUrl = "https://example.org/same.mp3")
+        val state =
+            WatchLibraryState()
+                .progress(phones, 2 * minute, 40 * minute)
+                .download(own, WatchDownload.Done)
+                .progress(own, 10 * minute, 40 * minute)
+
+        val fromPhone = state.merged(phones)
+
+        assertEquals(own.id, fromPhone.id)
+        assertEquals(WatchDownload.Done, fromPhone.download)
+        assertEquals(30, fromPhone.minutesLeft)
+        assertEquals(own.id, state.merged(own).id)
+        // Two older IDs for one audio have no better copy: each keeps its own.
+        val other = episode("-7").copy(audioUrl = "https://example.org/old.mp3")
+        val twin = episode("-8").copy(audioUrl = "https://example.org/old.mp3")
+        val olds = WatchLibraryState().progress(other, minute, 40 * minute).progress(twin, minute, 40 * minute)
+        assertEquals("-8", olds.merged(twin).id)
+    }
 }

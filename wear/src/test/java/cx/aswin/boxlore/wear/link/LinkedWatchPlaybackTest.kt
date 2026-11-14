@@ -25,8 +25,8 @@ class LinkedWatchPlaybackTest {
     private val audio = "https://example.org/blackshades.mp3"
 
     /** The episode as the watch saved it, and the same audio as the phone names it, under another ID. */
-    private val mine = WatchEpisode("watch-id", "show", "Blackshades", "Darknet Diaries", artworkUrl = null, durationMinutes = 40, audioUrl = audio, durationMs = 40 * minute)
-    private val phones = WearLinkEpisode("phone-id", "show", "Blackshades", audioUrl = audio, durationMs = 40 * minute)
+    private val mine = WatchEpisode(OWN_ID, "show", "Blackshades", "Darknet Diaries", artworkUrl = null, durationMinutes = 40, audioUrl = audio, durationMs = 40 * minute)
+    private val phones = WearLinkEpisode(PHONE_ID, "show", "Blackshades", audioUrl = audio, durationMs = 40 * minute)
     private val queued = WearLinkEpisode("next-id", "show", "Next one", audioUrl = "https://example.org/next.mp3", durationMs = 30 * minute)
 
     private class FakeLink(playing: PhoneNowPlaying?, reachable: Boolean = true) : WatchLink {
@@ -71,11 +71,23 @@ class LinkedWatchPlaybackTest {
             // The phone said 17 minutes when it started, four minutes ago, and has played on since.
             val setup = setup(onPhone(phones, playing = true, positionMs = 17 * minute, at = 1_000L), now = 1_000L + 4 * minute)
 
-            setup.playback.play("watch-id")
+            setup.playback.play(OWN_ID)
 
-            assertEquals(listOf("watch-id" to 21 * minute), setup.player.started)
+            assertEquals(listOf(OWN_ID to 21 * minute), setup.player.started)
             assertEquals(listOf(WearLinkCommand.PAUSE), setup.link.sent)
             assertEquals(listOf("next-id"), setup.store.state.value.upNext.map(WatchEpisode::id))
+        }
+
+    // Regression: with a second copy saved under the phone's ID, the watch took the phone's episode for another one.
+    @Test
+    fun `a second copy under the phone's ID does not hide that the phone plays the same episode`() =
+        runTest {
+            val setup = setup(onPhone(phones, playing = true, positionMs = 17 * minute, at = 1_000L), now = 1_000L + 4 * minute)
+            setup.store.update { it.progress(WatchLinkRules.watchEpisode(phones), 2 * minute, phones.durationMs) }
+
+            setup.playback.play(OWN_ID)
+
+            assertEquals(listOf(OWN_ID to 21 * minute), setup.player.started)
         }
 
     @Test
@@ -83,9 +95,9 @@ class LinkedWatchPlaybackTest {
         runTest {
             val setup = setup(onPhone(queued, playing = true, positionMs = 5 * minute, at = 1_000L), now = 1_000L + 4 * minute)
 
-            setup.playback.play("watch-id")
+            setup.playback.play(OWN_ID)
 
-            assertEquals(listOf("watch-id" to 17 * minute), setup.player.started)
+            assertEquals(listOf(OWN_ID to 17 * minute), setup.player.started)
             assertEquals(listOf(WearLinkCommand.PAUSE), setup.link.sent)
         }
 
@@ -95,9 +107,15 @@ class LinkedWatchPlaybackTest {
             // The watch may have played on since the phone stopped; the phone's old place must not win.
             val setup = setup(onPhone(phones, playing = false, positionMs = 3 * minute, at = 1_000L), now = 1_000L + 4 * minute)
 
-            setup.playback.play("watch-id")
+            setup.playback.play(OWN_ID)
 
-            assertEquals(listOf("watch-id" to 17 * minute), setup.player.started)
+            assertEquals(listOf(OWN_ID to 17 * minute), setup.player.started)
             assertEquals(emptyList<String>(), setup.link.sent)
         }
+
+    private companion object {
+        /** One of boxlore's own episode IDs, as the watch's catalog gives them, and the phone's older ID for the same episode. */
+        const val OWN_ID = "5027634550352900"
+        const val PHONE_ID = "-368593920213691381"
+    }
 }

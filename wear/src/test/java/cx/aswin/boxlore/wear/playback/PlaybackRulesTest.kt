@@ -84,4 +84,13 @@ class PlaybackRulesTest {
         assertTrue(PlaybackRules.continuesAfterEnd(SleepTimerChoice.Off))
         assertTrue(PlaybackRules.continuesAfterEnd(SleepTimerChoice.Minutes30))
     }
+
+    // Regression: taking an episode back from the phone restarted it where the watch had stopped, not where the phone was.
+    @Test
+    fun `a still player does not save its old place when the same episode is started again`() {
+        assertFalse(PlaybackRules.savesPlaceBeforeStart(loadedId = "a", startingId = "a", isPlaying = false))
+        assertTrue(PlaybackRules.savesPlaceBeforeStart(loadedId = "a", startingId = "a", isPlaying = true))
+        assertTrue(PlaybackRules.savesPlaceBeforeStart(loadedId = "a", startingId = "b", isPlaying = false))
+        assertTrue(PlaybackRules.savesPlaceBeforeStart(loadedId = null, startingId = "a", isPlaying = false))
+    }
 }

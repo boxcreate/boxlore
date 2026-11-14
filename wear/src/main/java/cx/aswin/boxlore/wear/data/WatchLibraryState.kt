@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.wear.data
 
+import cx.aswin.boxlore.core.model.EpisodeRecipeId
 import cx.aswin.boxlore.wear.model.PendingShowChange
 import cx.aswin.boxlore.wear.model.WatchDownload
 import cx.aswin.boxlore.wear.model.WatchEpisode
@@ -76,7 +77,11 @@ data class WatchLibraryState(
 
     /** The saved copy of [episode] when the watch has one, so progress and downloads carry over. */
     fun merged(episode: WatchEpisode): WatchEpisode {
-        val saved = episodes[episode.id] ?: sameAudio(episode)
+        // The watch can hold an episode twice: under boxlore's own ID, and under an older ID the phone
+        // still uses. Its downloads and its place live with the copy under the own ID, so that one
+        // wins, or the same episode would play from two places.
+        val own = if (episode.hasOwnId) null else sameAudio(episode) { it.hasOwnId }
+        val saved = own ?: episodes[episode.id] ?: sameAudio(episode)
         return when {
             saved != null ->
                 episode.copy(
@@ -95,10 +100,12 @@ data class WatchLibraryState(
     }
 
     /** A saved episode of the same show with the same audio address as [episode], under another ID. */
-    private fun sameAudio(episode: WatchEpisode): WatchEpisode? {
+    private fun sameAudio(episode: WatchEpisode, wanted: (WatchEpisode) -> Boolean = { true }): WatchEpisode? {
         val audio = episode.audioUrl ?: return null
-        return episodes.values.firstOrNull { it.showId == episode.showId && it.audioUrl == audio }
+        return episodes.values.firstOrNull { it.id != episode.id && it.showId == episode.showId && it.audioUrl == audio && wanted(it) }
     }
+
+    private val WatchEpisode.hasOwnId: Boolean get() = id.toLongOrNull()?.let(EpisodeRecipeId::isRecipeId) == true
 
     fun subscribe(show: WatchShow, nowMs: Long = 0L): WatchLibraryState =
         if (isSubscribed(show.id)) {

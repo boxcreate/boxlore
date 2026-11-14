@@ -66,7 +66,7 @@ class LiveWatchPlayback(
         val episode = library.known(episodeId) ?: return
         if (episode.audioUrl == null && downloads.file(episodeId) == null) return
         withController { player ->
-            saveProgress(player)
+            if (PlaybackRules.savesPlaceBeforeStart(loadedEpisodeId, episode.id, player.isPlaying)) saveProgress(player)
             store.update { it.dequeue(episode.id) }
             current = episode
             loadedEpisodeId = episode.id
