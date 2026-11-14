@@ -14,7 +14,8 @@ import retrofit2.Call
 
 /** What the API said to a call made with the watch's account token. */
 internal sealed interface CloudAnswer<out T> {
-    class Ok<T>(val value: T) : CloudAnswer<T>
+    /** [renewedToken] is a fresh account token the API sent along, to keep in place of the one used. */
+    class Ok<T>(val value: T, val renewedToken: String? = null) : CloudAnswer<T>
 
     /** The API no longer takes this watch's token: the watch is signed out. */
     data object Refused : CloudAnswer<Nothing>
@@ -58,7 +59,7 @@ internal class RetrofitWatchCloudApi(
             val response = runCatching { request().execute() }.getOrNull() ?: return@withContext CloudAnswer.Unreachable
             val body = response.body()
             when {
-                response.isSuccessful && body != null -> CloudAnswer.Ok(body)
+                response.isSuccessful && body != null -> CloudAnswer.Ok(body, response.headers()[WatchAccountApi.RENEW_HEADER]?.takeIf { it.isNotBlank() })
                 refusesToken(response.code(), runCatching { response.errorBody()?.string() }.getOrNull()) -> CloudAnswer.Refused
                 else -> CloudAnswer.Unreachable
             }

@@ -164,6 +164,10 @@ class LinkedWatchPlayback(
     }
 
     override fun play(episodeId: String) {
+        // The phone is playing this very episode: the watch carries on from where the phone is now.
+        // Its own saved place is only where it last heard the phone was, often minutes behind.
+        val playing = phone.value?.takeIf { it.isPlaying }?.episode
+        if (playing != null && store.state.value.merged(WatchLinkRules.watchEpisode(playing)).id == episodeId) return moveToWatch()
         // Starting something on the watch takes over from the phone, so the two never play at once.
         if (link.phoneNowPlaying.value?.isPlaying == true) link.send(WearLinkCommand(WearLinkCommand.PAUSE))
         watch.play(episodeId)

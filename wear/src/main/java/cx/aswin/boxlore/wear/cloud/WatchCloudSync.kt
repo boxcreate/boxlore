@@ -74,8 +74,9 @@ internal class WatchCloudSync(
 
     private suspend fun push(token: String): CloudSyncResult {
         val push = WatchCloudRules.push(store.state.value, clock()) ?: return CloudSyncResult.Done
-        return when (api.push(token, push.request)) {
+        return when (val answer = api.push(token, push.request)) {
             is CloudAnswer.Ok -> {
+                keep(answer.renewedToken, used = token)
                 store.update { WatchCloudRules.pushed(it, push.covered) }
                 CloudSyncResult.Done
             }
@@ -87,6 +88,7 @@ internal class WatchCloudSync(
     private suspend fun pull(token: String): CloudSyncResult =
         when (val answer = api.pull(token, SyncPullRequest(since = store.state.value.cloudSince))) {
             is CloudAnswer.Ok -> {
+                keep(answer.renewedToken, used = token)
                 val unknown = WatchCloudRules.unknownShows(store.state.value, answer.value)
                 val tried = unknown.sortedBy { it in failed }.take(MAX_LOOKUPS)
                 val shows = tried.mapNotNull { id -> showOf(id)?.let { id to it } }.toMap()
@@ -101,6 +103,11 @@ internal class WatchCloudSync(
             CloudAnswer.Refused -> CloudSyncResult.SignedOut
             CloudAnswer.Unreachable -> CloudSyncResult.Unreachable
         }
+
+    /** Keeps a fresh token the API sent, unless the watch signed out or in again meanwhile. */
+    private fun keep(renewed: String?, used: String) {
+        if (renewed != null) tokens.replace(used, renewed)
+    }
 
     private fun ended(result: CloudSyncResult, token: String): CloudSyncResult {
         if (result == CloudSyncResult.SignedOut) onSignedOut(token)

@@ -22,7 +22,9 @@ import retrofit2.http.POST
  * sync routes, where the phone sends the account's ID token.
  *
  * Paths are relative, so they resolve under the configured base URL. Requests carry the API
- * session from the shared client. Build it with [NetworkModule.createWatchAccountApi].
+ * session from the shared client and the device key's signature. A sync answer may carry a
+ * fresh token in [RENEW_HEADER]; the watch keeps it in place of the one it sent. Build it with
+ * [NetworkModule.createWatchAccountApi].
  */
 interface WatchAccountApi {
     /** Phone: a code the watch can redeem once. [authorization] is `Bearer` and the account's ID token. */
@@ -44,4 +46,9 @@ interface WatchAccountApi {
     /** Watch: the same pull as the phone's, authorized by the watch's account token. */
     @POST("user/sync/pull")
     fun syncPull(@Header("Authorization") authorization: String, @Body request: SyncPullRequest): Call<SyncPullResponse>
+
+    companion object {
+        /** On a sync answer: a fresh token for a watch whose token is nearing its end. */
+        const val RENEW_HEADER = "X-Watch-Token-Renew"
+    }
 }

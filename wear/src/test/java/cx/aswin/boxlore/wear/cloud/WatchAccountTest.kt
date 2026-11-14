@@ -290,4 +290,57 @@ class WatchAccountTest {
             sync.syncNow()
             assertEquals((41..45).map(Int::toString), looked.take(5))
         }
+
+    @Test
+    fun `a fresh token sent with a sync answer replaces the one the watch used`() =
+        runTest {
+            val cloud = FakeCloud()
+            cloud.pullAnswer = CloudAnswer.Ok(SyncPullResponse(syncedAt = 500L), renewedToken = "fresh-token")
+            val tokens = WatchAccountStore.InMemory(token = "t", account = "me@example.org")
+            val sync = WatchCloudSync(cloud, tokens, store(), { null }, { null }, backgroundScope)
+
+            assertEquals(CloudSyncResult.Done, sync.syncNow())
+
+            assertEquals("fresh-token", tokens.token)
+            assertEquals("me@example.org", tokens.account)
+        }
+
+    @Test
+    fun `a fresh token for a session the watch has left is not kept`() =
+        runTest {
+            val tokens = WatchAccountStore.InMemory(token = "t", account = "me@example.org")
+            val cloud =
+                object : WatchCloudApi by FakeCloud() {
+                    override suspend fun pull(token: String, request: SyncPullRequest): CloudAnswer<SyncPullResponse> {
+                        // The listener signs out while the pull is on its way.
+                        tokens.clear()
+                        return CloudAnswer.Ok(SyncPullResponse(syncedAt = 500L), renewedToken = "fresh-token")
+                    }
+                }
+            val sync = WatchCloudSync(cloud, tokens, store(), { null }, { null }, backgroundScope)
+
+            sync.syncNow()
+
+            assertNull(tokens.token)
+        }
+
+    // Regression: a renewal arriving after a sign-out could write a live token back.
+    @Test
+    fun `a token is swapped only while it is still the stored one, in one step`() {
+        val store = WatchAccountStore.InMemory(token = "t", account = "me@example.org")
+
+        assertTrue(store.replace(used = "t", renewed = "fresh"))
+        assertEquals("fresh", store.token)
+        assertEquals("me@example.org", store.account)
+
+        // Signed out: nothing is written back.
+        store.clear()
+        assertFalse(store.replace(used = "fresh", renewed = "late"))
+        assertNull(store.token)
+
+        // Signed in afresh meanwhile: the newer session's token stands.
+        store.save("other", "me@example.org")
+        assertFalse(store.replace(used = "fresh", renewed = "late"))
+        assertEquals("other", store.token)
+    }
 }

@@ -61,26 +61,58 @@ internal interface WatchAccountStore {
 
     fun clear()
 
-    class InMemory(override var token: String? = null, override var account: String? = null) : WatchAccountStore {
+    /**
+     * Puts [renewed] in place of [used], keeping the account's name, and says whether it did. It
+     * does nothing when [used] is no longer the stored token: the check and the write are one
+     * step, so a sign-out in between cannot be undone by a late renewal.
+     */
+    fun replace(used: String, renewed: String): Boolean
+
+    class InMemory(token: String? = null, account: String? = null) : WatchAccountStore {
+        @get:Synchronized
+        override var token: String? = token
+            private set
+
+        @get:Synchronized
+        override var account: String? = account
+            private set
+
+        @Synchronized
         override fun save(token: String, account: String?) {
             this.token = token
             this.account = account
         }
 
+        @Synchronized
         override fun clear() {
             token = null
             account = null
+        }
+
+        @Synchronized
+        override fun replace(used: String, renewed: String): Boolean {
+            if (token != used) return false
+            token = renewed
+            return true
         }
     }
 }
 
 internal class SharedPreferencesWatchAccountStore(private val preferences: SharedPreferences) : WatchAccountStore {
-    override val token: String? get() = preferences.getString(KEY_TOKEN, null)?.takeIf { it.isNotBlank() }
-    override val account: String? get() = preferences.getString(KEY_ACCOUNT, null)
+    override val token: String? get() = synchronized(this) { preferences.getString(KEY_TOKEN, null)?.takeIf { it.isNotBlank() } }
+    override val account: String? get() = synchronized(this) { preferences.getString(KEY_ACCOUNT, null) }
 
-    override fun save(token: String, account: String?) = preferences.edit().putString(KEY_TOKEN, token).putString(KEY_ACCOUNT, account).apply()
+    // Every change goes through this object's lock, so a swap and a sign-out never interleave.
+    override fun save(token: String, account: String?) = synchronized(this) { preferences.edit().putString(KEY_TOKEN, token).putString(KEY_ACCOUNT, account).apply() }
 
-    override fun clear() = preferences.edit().clear().apply()
+    override fun clear() = synchronized(this) { preferences.edit().clear().apply() }
+
+    override fun replace(used: String, renewed: String): Boolean =
+        synchronized(this) {
+            if (preferences.getString(KEY_TOKEN, null) != used) return@synchronized false
+            preferences.edit().putString(KEY_TOKEN, renewed).apply()
+            true
+        }
 
     companion object {
         const val FILE_NAME = "boxlore_watch_account"
