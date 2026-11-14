@@ -106,7 +106,7 @@ internal class WatchCloudSync(
 
     /** Keeps a fresh token the API sent, unless the watch signed out or in again meanwhile. */
     private fun keep(renewed: String?, used: String) {
-        if (renewed != null && tokens.token == used) tokens.save(renewed, tokens.account)
+        if (renewed != null) tokens.replace(used, renewed)
     }
 
     private fun ended(result: CloudSyncResult, token: String): CloudSyncResult {

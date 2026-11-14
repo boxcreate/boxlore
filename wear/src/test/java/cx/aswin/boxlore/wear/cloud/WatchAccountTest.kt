@@ -323,4 +323,24 @@ class WatchAccountTest {
 
             assertNull(tokens.token)
         }
+
+    // Regression: a renewal arriving after a sign-out could write a live token back.
+    @Test
+    fun `a token is swapped only while it is still the stored one, in one step`() {
+        val store = WatchAccountStore.InMemory(token = "t", account = "me@example.org")
+
+        assertTrue(store.replace(used = "t", renewed = "fresh"))
+        assertEquals("fresh", store.token)
+        assertEquals("me@example.org", store.account)
+
+        // Signed out: nothing is written back.
+        store.clear()
+        assertFalse(store.replace(used = "fresh", renewed = "late"))
+        assertNull(store.token)
+
+        // Signed in afresh meanwhile: the newer session's token stands.
+        store.save("other", "me@example.org")
+        assertFalse(store.replace(used = "fresh", renewed = "late"))
+        assertEquals("other", store.token)
+    }
 }
