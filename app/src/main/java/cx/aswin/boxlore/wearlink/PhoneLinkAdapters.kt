@@ -65,6 +65,12 @@ internal object PhoneListRules {
         latest.filter { it.id !in completedIds }.sortedByDescending { it.publishedDate }.take(MAX_NEW)
 
     fun mixIsFresh(builtAt: Long, now: Long): Boolean = builtAt > 0L && now - builtAt < MIX_TTL_MS
+
+    /**
+     * Changes whenever the watch would be sent something new about the followed shows: a show
+     * came or went, was renamed or redrawn, or got a newer latest episode (the watch's New episodes).
+     */
+    fun showsKey(shows: List<PodcastEntity>): List<List<String?>> = shows.map { listOf(it.podcastId, it.title, it.imageUrl, it.latestEpisode?.id) }
 }
 
 /** The phone's library for the watch link, over the same sync rows the cloud gets. */
@@ -80,7 +86,7 @@ internal class PhoneLibraryAdapter(
 
     override val showsChanged: Flow<Unit> =
         podcasts.getSubscribedPodcasts()
-            .map { shows -> shows.map { Triple(it.podcastId, it.title, it.imageUrl) } }
+            .map(PhoneListRules::showsKey)
             .distinctUntilChanged()
             .map { }
 

@@ -106,6 +106,9 @@ class UpdateManifestTests(unittest.TestCase):
         self.assertIn("generate_update_manifest.py", job)
         self.assertIn('gh release upload "$TAG" "$RUNNER_TEMP/update.json"', job)
         self.assertIn(":app:bundlePlayRelease", workflow)
-        self.assertNotIn("bundleRelease", workflow)
+        # The phone's bundle is the Play build type; only the Wear OS app, which has one release type, bundles `release`.
+        self.assertNotIn(":app:bundleRelease", workflow)
+        self.assertEqual(1, workflow.count("bundleRelease"))
+        self.assertIn(":wear:bundleRelease", workflow)
 
 if __name__ == "__main__": unittest.main()

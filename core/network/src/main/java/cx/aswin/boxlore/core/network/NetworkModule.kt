@@ -137,6 +137,9 @@ object NetworkModule {
      */
     fun createBoxLoreApiV2(baseUrl: String, client: OkHttpClient): BoxLoreApiV2 = retrofit(baseUrl, client).create(BoxLoreApiV2::class.java)
 
+    /** Builds [WatchAccountApi] on [client], the same cached client as the other APIs. */
+    fun createWatchAccountApi(baseUrl: String, client: OkHttpClient): WatchAccountApi = retrofit(baseUrl, client).create(WatchAccountApi::class.java)
+
     /**
      * Builds [SupportApi] on [client] (production: the cached client from [createCachedClient]),
      * with every request signed by the device key, which the support routes require, and the

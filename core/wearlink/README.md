@@ -16,7 +16,7 @@ It does not own the watch's end (that is [`:wear`](../../wear/README.md)), the p
 - `WearLinkTransport`: publish, read, follow changes, send and request. `GmsWearLinkTransport` is the real one; every failure answers "not available". `NoWearLinkTransport` and `RecordingWearLinkTransport` are for devices without the service and for tests.
 - `PhoneWearLink`: the phone's end, one per app. `start()` does nothing until a watch has made contact once. `onItem`, `onCommand` and `onRequest` take what the app's listener service receives. `status` and `settings` feed the Wear OS settings page; `setShowsLayout` and `setStorageLimitMb` change the watch's settings. `playOnWatch` moves the phone's episode, place and queue to the watch; `playOnWatchOffer` is true after the phone took over from a playing watch, until `dismissPlayOnWatchOffer`.
 - `PhoneWatchDownloads` (`PhoneWearLink.watchDownloads`): Send to watch. `send` and `remove` order one episode onto or off the watch; `WatchCopyRules.of` reads its state (`WatchCopy`) from what the watch reports it stores.
-- `PhoneLibraryPort`, `PhonePlayerPort`: what the app implements over its repositories.
+- `PhoneLibraryPort`, `PhonePlayerPort`, `PhoneAccountPort`: what the app implements over its repositories and the account. `PhoneAccountPort` answers the watch's sign-in request with a one-time code (`WatchSignInReply`); the answer is never stored.
 - `PhoneLinkStore` (`SharedPreferencesPhoneLinkStore`, `PhoneLinkStore.InMemory`): what the phone remembers about the link.
 
 ## Internal structure
@@ -44,7 +44,7 @@ src/main/java/cx/aswin/boxlore/core/wearlink/
 
 ## Stable names
 
-- Paths under `/boxlore/phone`, `/boxlore/watch`, `/boxlore/command`, `/boxlore/watch-command`, `/boxlore/episodes`, and the capabilities `boxlore_phone` and `boxlore_watch`.
+- Paths under `/boxlore/phone`, `/boxlore/watch`, `/boxlore/command`, `/boxlore/watch-command`, `/boxlore/episodes`, `/boxlore/sign-in`, and the capabilities `boxlore_phone` and `boxlore_watch`.
 - Preferences file `boxlore_wear_link` and its keys (`SharedPreferencesPhoneLinkStore`).
 
 ## Tests

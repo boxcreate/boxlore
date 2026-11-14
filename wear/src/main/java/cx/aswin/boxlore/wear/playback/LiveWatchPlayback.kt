@@ -39,6 +39,8 @@ class LiveWatchPlayback(
     private val store: WatchLibraryStore,
     private val downloads: WatchDownloads,
     private val scope: CoroutineScope,
+    /** Holds a start back while there is nothing to listen through. */
+    private val output: AudioOutputGate = AudioOutputGate.Always,
 ) : WatchPlayback {
     private val state = MutableStateFlow(restingState(store))
     private var controller: MediaController? = null
@@ -70,7 +72,7 @@ class LiveWatchPlayback(
             loadedEpisodeId = episode.id
             player.setMediaItem(mediaItem(episode, downloads), store.state.value.positions[episode.id] ?: 0L)
             player.prepare()
-            player.play()
+            output.start { player.play() }
             publish(player)
         }
     }
@@ -81,7 +83,7 @@ class LiveWatchPlayback(
             when {
                 player.mediaItemCount == 0 -> play(episode.id)
                 player.isPlaying || player.playWhenReady -> player.pause()
-                else -> player.play()
+                else -> output.start { player.play() }
             }
         }
     }

@@ -7,7 +7,7 @@ application ID and signature. It owns the watch screens, the watch's own player,
 storage rules, its saved library, and its own connection to boxlore's API.
 
 It plays on its own, with no phone nearby. With the phone app linked it is one more device of
-the listener's library; it does not sync with the cloud yet.
+the listener's library, and once signed in it also syncs with the listener's account by itself.
 
 ## Public API
 
@@ -20,6 +20,7 @@ Nothing outside this module depends on it. Inside it, screens depend only on the
   speed, sleep timer, Daily Mix and phone/watch switch. `hasDailyMix` and `canSwitchPlace` say which
   of the last two a build can do.
 - `data.WatchSettings`: choices kept on the watch (Your shows layout, storage limit).
+- `cloud.WatchAccount`: whether the watch is signed in, Sign in (through the phone) and Sign out.
 - `WatchContainer`: the watch's whole object graph, built once by `WatchApplication` through
   `WatchContainerFactory`. Nothing else creates one.
 
@@ -36,6 +37,7 @@ src/main/java/cx/aswin/boxlore/wear/
   data/         # ports, the saved library, catalog, feed reader, downloads, storage rules
   playback/     # WatchPlaybackService (Media3), LiveWatchPlayback, PlaybackRules
   link/         # the phone link: WatchLinkRules, LiveWatchLink, LinkedWatchPlayback, PlaceRules, PhoneOrders
+  cloud/        # the account and its sync: WatchAccount, WatchCloudSync, WatchCloudRules
   glance/       # the tile and the watch-face shortcut: GlanceRules, TileRules, TileArtwork
   ui/
     WatchApp.kt             # routes and navigation
@@ -72,6 +74,14 @@ src/release/java/...         # release WatchContainerFactory
   and queue. It tells the phone when the watch plays, and takes the phone's orders (pause, play
   this here) through `WatchLinkListenerService`. A phone that went out of reach while playing is
   shown paused where it was last heard (`PlaceRules.heard`), so Play carries on here.
+- Signing in never shows a typing screen: the watch asks the phone over the link, the phone
+  answers with a one-time code, and the watch trades it for its own account token
+  (`LiveWatchAccount`). `WatchCloudSync` then pushes and pulls the cloud's sync rows. A change
+  made on the watch waits until everyone who needs it has confirmed it: the phone once one has
+  linked, the cloud while signed in (`WatchLibraryState.confirmed`). The cloud sends only what
+  changed, so `WatchCloudRules` applies its follows one by one and looks up shows it cannot name.
+- `AudioOutputGate` holds a start back while there is nothing to listen through, opens the
+  watch's Bluetooth settings and starts once headphones connect.
 - `MainActivity` opens a named screen from the launch extra `WatchRoutes.EXTRA_ROUTE`; only the
   routes in `WatchRoutes.launchRoute` are honoured. `WatchRoutes.EXTRA_RESUME` names an episode
   to carry on with (`GlanceRules.onResume`).
@@ -119,6 +129,8 @@ src/release/java/...         # release WatchContainerFactory
 
 - Application ID `cx.aswin.boxlore`, the same as the phone app; the release build signs with the
   phone app's key. Both are required for the watch and phone to talk to each other.
+- The version name is the phone app's and the version code is the phone's plus 1,000,000, both
+  read from `app/build.gradle.kts`; a release never edits this module.
 - Launcher activity `cx.aswin.boxlore.wear.MainActivity`; services
   `cx.aswin.boxlore.wear.playback.WatchPlaybackService` and
   `cx.aswin.boxlore.wear.link.WatchLinkListenerService`.
@@ -129,6 +141,7 @@ src/release/java/...         # release WatchContainerFactory
 - `files/watch_downloads/` (`FileWatchDownloads.DIRECTORY_NAME`): stored audio, one
   `<episode ID>.audio` per episode.
 - SharedPreferences `boxlore_watch_settings`: `shows_layout`, `storage_limit_mb`, `changed_at`.
+- SharedPreferences `boxlore_watch_account`: the account token and the account's name.
 - The capability `boxlore_watch` (`res/values/wear.xml`) is how the phone app finds this app.
 - The API session uses `:core:network`'s own file and Keystore alias, created fresh on the watch.
 - Install channel `wear` (`WatchServer.CHANNEL`).
@@ -152,6 +165,10 @@ Tests live in `wear/src/test` (JUnit 5, plain JVM, fakes for the ports).
 | Which player is shown, the watch's or the phone's | `link/PlaceRulesTest` |
 | Tile and watch-face shortcut: what they show, when they redraw, what Resume does | `glance/GlanceRulesTest` |
 | Home tiles with and without a linked phone | `ui/home/HomeTilesTest` |
+| Cloud sync rows, and changes waiting for the phone and the cloud | `cloud/WatchCloudRulesTest` |
+| Sign in, sign out, a sync run and a refused token | `cloud/WatchAccountTest` |
+| What counts as something to listen through | `playback/AudioOutputRulesTest` |
+| The version follows the phone app's | `WatchVersionTest` |
 | Plain-http audio and the link capability | `WatchManifestTest` |
 | Player colours and contrast | `ui/player/PlayerPaletteTest` |
 | Speeds, sleep timer choices, text helpers, launch routes | `WatchModelsTest` |

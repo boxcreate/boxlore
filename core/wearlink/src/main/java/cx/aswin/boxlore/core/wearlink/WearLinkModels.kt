@@ -34,6 +34,9 @@ object WearLinkProtocol {
     /** The watch asking the phone for a show's episodes. */
     const val PATH_EPISODES = "/boxlore/episodes"
 
+    /** The watch asking the phone to sign it in to the listener's account. */
+    const val PATH_SIGN_IN = "/boxlore/sign-in"
+
     /** Declared in each app's `wear.xml`, so one side can find the other. */
     const val CAPABILITY_PHONE = "boxlore_phone"
     const val CAPABILITY_WATCH = "boxlore_watch"
@@ -204,6 +207,28 @@ data class EpisodeListRequest(
 ) {
     companion object {
         const val DEFAULT_LIMIT = 25
+    }
+}
+
+/**
+ * The phone's answer when the watch asks to be signed in. With [status] [OK] it carries a
+ * short-lived, single-use [code] for the API and the [account] name to show on the watch. It
+ * travels as a direct answer and is never stored on either device.
+ */
+@Serializable
+data class WatchSignInReply(
+    val status: String,
+    val code: String? = null,
+    val account: String? = null,
+) {
+    companion object {
+        const val OK = "ok"
+
+        /** The phone has no account signed in, or one that cannot sync yet. */
+        const val SIGNED_OUT = "signed_out"
+
+        /** The phone is signed in but could not get a code just now. */
+        const val FAILED = "failed"
     }
 }
 

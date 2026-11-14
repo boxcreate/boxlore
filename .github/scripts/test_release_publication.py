@@ -22,7 +22,7 @@ from test_update_changelog_copy import MINIMAL_CHANGELOG
 V13 = pr.AppVersion("0.0.13", 13)
 SHA_A = "a" * 40
 SHA_B = "b" * 40
-PUBLISHED = {V13.apk_asset, V13.aab_asset, "SHA256SUMS", pr.BUILD_COMMIT_ASSET, "update.json"}
+PUBLISHED = V13.built_assets | {pr.BUILD_COMMIT_ASSET, "update.json"}
 
 
 class PublicationPlanTest(unittest.TestCase):
@@ -55,6 +55,13 @@ class PublicationPlanTest(unittest.TestCase):
         self.assertEqual(
             {"build": "true", "release": "upload"},
             self.plan(tag_target=SHA_A, release_assets={V13.apk_asset}),
+        )
+
+    def test_a_release_published_before_the_watch_files_existed_is_built_again(self):
+        self.assertEqual({"boxlore-wear-v0.0.13.apk", "boxlore-wear-v0.0.13.aab"}, {V13.wear_apk_asset, V13.wear_aab_asset})
+        self.assertEqual(
+            {"build": "true", "release": "upload"},
+            self.plan(tag_target=SHA_A, release_assets=PUBLISHED - {V13.wear_apk_asset, V13.wear_aab_asset}, built_from=SHA_A),
         )
 
     def test_a_tag_made_without_a_release_is_used_as_it_is(self):
@@ -233,6 +240,22 @@ class WorkflowShapeTest(unittest.TestCase):
             name = step.split("\n", 1)[0]
             if name in {"Materialize protected build inputs", "Build signed release APK and AAB", "Verify artifact versions and signatures"}:
                 self.assertIn("steps.release.outputs.build == 'true'", step, name)
+
+    def test_the_watch_app_is_built_checked_and_published_with_the_phone_app(self):
+        workflow = (self.root / ".github/workflows/changelog-on-merge.yml").read_text()
+        publish = workflow.split("  publish-release:\n", 1)[1].split("\n  refresh-update-feed:\n", 1)[0]
+        # One Gradle run builds both apps, so they share a commit and a signing key.
+        self.assertEqual(1, publish.count(":app:assembleRelease :app:bundlePlayRelease :wear:assembleRelease :wear:bundleRelease"))
+        verify = publish.split("- name: Verify artifact versions and signatures", 1)[1].split("      - name: ", 1)[0]
+        self.assertIn("expected_wear_code=$((EXPECTED_VERSION_CODE + 1000000))", verify)
+        self.assertIn('"$wear_apk_cert" != "$expected_cert"', verify)
+        stage = publish.split("- name: Stage release assets", 1)[1].split("      - name: ", 1)[0]
+        self.assertIn('sha256sum "$APK_ASSET" "$AAB_ASSET" "$WEAR_APK_ASSET" "$WEAR_AAB_ASSET" > SHA256SUMS', stage)
+        upload = publish.split("- name: Publish the files to the GitHub release", 1)[1].split("      - name: ", 1)[0]
+        for name in ("$WEAR_APK_ASSET", "$WEAR_AAB_ASSET"):
+            self.assertIn(f'"$RUNNER_TEMP/release-assets/{name}"', upload)
+        dry_run = (self.root / ".github/workflows/release-contracts.yml").read_text()
+        self.assertIn(":wear:assembleRelease :wear:bundleRelease :wear:lintRelease", dry_run)
 
     def test_files_record_their_commit_and_the_feed_text_comes_from_master(self):
         workflow = (self.root / ".github/workflows/changelog-on-merge.yml").read_text()

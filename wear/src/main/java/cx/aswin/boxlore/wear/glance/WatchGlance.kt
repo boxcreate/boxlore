@@ -35,7 +35,7 @@ internal object GlanceRules {
     }
 
     /** Changes exactly when the tile and the watch face have something new to draw. */
-    fun key(glance: WatchGlance?): String = glance?.let { "${it.episodeId}|${it.minutesLeft}" }.orEmpty()
+    fun key(glance: WatchGlance?): String = glance?.let { "${it.episodeId}|${it.minutesLeft}|${it.title}|${it.showTitle}|${it.artworkUrl}" }.orEmpty()
 
     /** The show's name before the time left; the time alone when the show is not known. */
     fun detail(showTitle: String, timeLeft: String, joined: (String, String) -> String): String =

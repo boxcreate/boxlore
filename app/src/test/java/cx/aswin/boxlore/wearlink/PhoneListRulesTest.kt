@@ -1,14 +1,28 @@
 package cx.aswin.boxlore.wearlink
 
+import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.model.Episode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PhoneListRulesTest {
     private fun episode(id: String, published: Long) =
         Episode(id = id, title = id, description = "", audioUrl = "https://example.com/$id.mp3", publishedDate = published)
+
+    // Regression: a show's new release did not reach the watch's New episodes until something else changed.
+    @Test
+    fun `a show's newer latest episode counts as a change to send, and nothing else new does not`() {
+        val show = PodcastEntity(podcastId = "1", title = "Show", author = "Pub", imageUrl = "https://example.com/a.jpg", description = null, latestEpisode = episode("old", 100L))
+        val key = PhoneListRules.showsKey(listOf(show))
+
+        assertEquals(key, PhoneListRules.showsKey(listOf(show.copy(author = "Other"))))
+        assertNotEquals(key, PhoneListRules.showsKey(listOf(show.copy(latestEpisode = episode("new", 200L)))))
+        assertNotEquals(key, PhoneListRules.showsKey(listOf(show.copy(title = "Renamed"))))
+        assertNotEquals(key, PhoneListRules.showsKey(emptyList()))
+    }
 
     @Test
     fun `new episodes are each show's newest, without the finished ones, newest first`() {

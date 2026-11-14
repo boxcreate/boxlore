@@ -6,6 +6,7 @@ import cx.aswin.boxlore.core.wearlink.LinkItem
 import cx.aswin.boxlore.core.wearlink.PhoneLibrary
 import cx.aswin.boxlore.core.wearlink.PhoneNowPlaying
 import cx.aswin.boxlore.core.wearlink.WatchNowPlaying
+import cx.aswin.boxlore.core.wearlink.WatchSignInReply
 import cx.aswin.boxlore.core.wearlink.WearLinkCodec
 import cx.aswin.boxlore.core.wearlink.WearLinkCommand
 import cx.aswin.boxlore.core.wearlink.WearLinkEpisode
@@ -17,6 +18,7 @@ import cx.aswin.boxlore.wear.data.WatchLibraryStore
 import cx.aswin.boxlore.wear.data.WatchSettings
 import cx.aswin.boxlore.wear.model.WatchDownload
 import java.util.UUID
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +28,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /** What the rest of the watch app sees of the phone. */
 interface WatchLink {
@@ -37,6 +40,9 @@ interface WatchLink {
 
     /** The phone's saved episodes of a show, or null when it is out of reach or has none. */
     suspend fun episodes(showId: String): List<WearLinkEpisode>?
+
+    /** Asks the phone to sign this watch in to the listener's account; null when the phone is out of reach. */
+    suspend fun signIn(): WatchSignInReply? = null
 
     /** Sends a player command to the phone. [onLost] runs when it could not be handed over. */
     fun send(command: WearLinkCommand, onLost: () -> Unit = {})
@@ -50,6 +56,26 @@ object NoWatchLink : WatchLink {
     override suspend fun episodes(showId: String): List<WearLinkEpisode>? = null
 
     override fun send(command: WearLinkCommand, onLost: () -> Unit) = onLost()
+}
+
+/**
+ * Whether the link has read what the phone last said. A choice that depends on the phone, such
+ * as where Resume plays, waits for it, but never long: a watch with no phone must not hang.
+ */
+class PhoneWord(private val limitMs: Long = LIMIT_MS) {
+    private val read = CompletableDeferred<Unit>()
+
+    fun heard() {
+        read.complete(Unit)
+    }
+
+    suspend fun await() {
+        withTimeoutOrNull(limitMs) { read.await() }
+    }
+
+    private companion object {
+        const val LIMIT_MS = 1_500L
+    }
 }
 
 /** What the link needs to know about the watch's own player. */
@@ -89,6 +115,9 @@ class LiveWatchLink(
     @Volatile
     var player: () -> PlayerGlance = { PlayerGlance(null, isPlaying = false) }
 
+    /** Heard once everything the phone had left for the watch has been read. */
+    val phoneWord = PhoneWord()
+
     override val phoneReachable: StateFlow<Boolean> = transport.peerReachable
     override val phoneNowPlaying: StateFlow<PhoneNowPlaying?> = phonePlayer.asStateFlow()
 
@@ -96,7 +125,10 @@ class LiveWatchLink(
         store.update { if (it.watchId.isBlank()) it.copy(watchId = UUID.randomUUID().toString()) else it }
         scope.launch { transport.refreshPeer() }
         scope.launch { transport.changes(WearLinkProtocol.PHONE_PREFIX).collect(::take) }
-        scope.launch { transport.current(WearLinkProtocol.PHONE_PREFIX).forEach(::take) }
+        scope.launch {
+            transport.current(WearLinkProtocol.PHONE_PREFIX).forEach(::take)
+            phoneWord.heard()
+        }
         scope.launch { publishChanges() }
         scope.launch {
             settings.linkSettings.collect { transport.publish(WearLinkProtocol.PATH_WATCH_SETTINGS, WearLinkCodec.encode(it)) }
@@ -115,6 +147,11 @@ class LiveWatchLink(
         if (!transport.peerReachable.value) return null
         val answer = transport.request(WearLinkProtocol.PATH_EPISODES, WearLinkCodec.encode(EpisodeListRequest(showId)))
         return WearLinkCodec.decode<EpisodeListReply>(answer)?.episodes?.takeIf { it.isNotEmpty() }
+    }
+
+    override suspend fun signIn(): WatchSignInReply? {
+        if (!transport.peerReachable.value) return null
+        return WearLinkCodec.decode<WatchSignInReply>(transport.request(WearLinkProtocol.PATH_SIGN_IN, ByteArray(0)))
     }
 
     override fun send(command: WearLinkCommand, onLost: () -> Unit) {

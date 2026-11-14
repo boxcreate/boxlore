@@ -62,6 +62,7 @@ class PhoneWearLink(
     private val player: PhonePlayerPort,
     private val store: PhoneLinkStore,
     private val scope: CoroutineScope,
+    private val account: PhoneAccountPort = PhoneAccountPort.None,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     private val started = AtomicBoolean(false)
@@ -167,12 +168,18 @@ class PhoneWearLink(
     }
 
     /** A question the watch asked; null when it is not one this app answers. */
-    suspend fun onRequest(path: String, bytes: ByteArray): ByteArray? {
-        if (path != WearLinkProtocol.PATH_EPISODES) return null
-        val request = WearLinkCodec.decode<EpisodeListRequest>(bytes) ?: return null
-        val episodes = attempt { library.episodes(request.podcastId, request.limit.coerceIn(1, MAX_EPISODES)) }.orEmpty()
-        return WearLinkCodec.encode(EpisodeListReply(request.podcastId, episodes))
-    }
+    suspend fun onRequest(path: String, bytes: ByteArray): ByteArray? =
+        when (path) {
+            WearLinkProtocol.PATH_EPISODES ->
+                WearLinkCodec.decode<EpisodeListRequest>(bytes)?.let { request ->
+                    val episodes = attempt { library.episodes(request.podcastId, request.limit.coerceIn(1, MAX_EPISODES)) }.orEmpty()
+                    WearLinkCodec.encode(EpisodeListReply(request.podcastId, episodes))
+                }
+            // Only boxlore on the listener's own watch can ask: the system delivers these between the two apps alone.
+            WearLinkProtocol.PATH_SIGN_IN ->
+                WearLinkCodec.encode(attempt { account.watchSignIn() } ?: WatchSignInReply(WatchSignInReply.FAILED))
+            else -> null
+        }
 
     private suspend fun onChanges(changes: WatchChanges) {
         store.watchKnown = true

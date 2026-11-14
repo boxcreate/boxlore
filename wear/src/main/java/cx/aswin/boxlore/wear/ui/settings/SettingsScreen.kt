@@ -25,6 +25,7 @@ internal fun SettingsScreen(
     onShowsLayout: (ShowsLayout) -> Unit,
     storageLimitMb: Int,
     onStorageLimitMb: (Int) -> Unit,
+    account: AccountSettings,
 ) {
     val locale = LocalConfiguration.current.locales[0]
     val listState = rememberTransformingLazyColumnState()
@@ -77,6 +78,7 @@ internal fun SettingsScreen(
                     )
                 }
             }
+            accountItems(account, spec)
         }
     }
 }

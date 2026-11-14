@@ -47,6 +47,7 @@ import cx.aswin.boxlore.wear.ui.player.SleepTimerScreen
 import cx.aswin.boxlore.wear.ui.player.SpeedScreen
 import cx.aswin.boxlore.wear.ui.search.SearchResultsScreen
 import cx.aswin.boxlore.wear.ui.search.SearchScreen
+import cx.aswin.boxlore.wear.ui.settings.AccountSettings
 import cx.aswin.boxlore.wear.ui.settings.SettingsScreen
 import cx.aswin.boxlore.wear.ui.show.EpisodeActions
 import cx.aswin.boxlore.wear.ui.show.EpisodeScreen
@@ -174,7 +175,15 @@ private fun NavGraphBuilder.homeRoutes(
     composable(WatchRoutes.SETTINGS) {
         val layout by container.settings.showsLayout.collectAsStateWithLifecycle()
         val limitMb by container.settings.storageLimitMb.collectAsStateWithLifecycle()
-        SettingsScreen(layout, container.settings::setShowsLayout, limitMb, container.settings::setStorageLimitMb)
+        val account by container.account.state.collectAsStateWithLifecycle()
+        val problem by container.account.problem.collectAsStateWithLifecycle()
+        SettingsScreen(
+            showsLayout = layout,
+            onShowsLayout = container.settings::setShowsLayout,
+            storageLimitMb = limitMb,
+            onStorageLimitMb = container.settings::setStorageLimitMb,
+            account = AccountSettings(account, problem, container.account::signIn, container.account::signOut),
+        )
     }
     composable(WatchRoutes.SEARCH) {
         SearchScreen(

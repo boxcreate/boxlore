@@ -49,6 +49,12 @@ class GlanceRulesTest {
         assertNotEquals(key, GlanceRules.key(GlanceRules.from(at11)))
         assertNotEquals(key, GlanceRules.key(GlanceRules.from(other)))
         assertEquals("", GlanceRules.key(null))
+
+        // The same episode at the same minute, renamed: the tile shows the name, so it is redrawn.
+        val glance = GlanceRules.from(at10)!!
+        assertNotEquals(key, GlanceRules.key(glance.copy(title = "Renamed")))
+        assertNotEquals(key, GlanceRules.key(glance.copy(showTitle = "Other show")))
+        assertNotEquals(key, GlanceRules.key(glance.copy(artworkUrl = "https://example.org/other.jpg")))
     }
 
     @Test

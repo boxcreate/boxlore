@@ -298,4 +298,17 @@ class WatchLinkRulesTest {
         assertEquals(20_000L, PublishPacing.waitMs(isPlaying = true, sinceLastMs = 40_000L))
         assertEquals(PublishPacing.SETTLE_MS, PublishPacing.waitMs(isPlaying = true, sinceLastMs = 10 * minute))
     }
+
+    // Regression: the phone named one episode under two IDs, and the watch kept two records of it.
+    @Test
+    fun `an episode the phone names twice, under two IDs, is one record in New episodes and Daily Mix`() {
+        fun named(id: String) = WearLinkEpisode(episodeId = id, podcastId = "1", title = "Same episode", audioUrl = "https://example.org/same.mp3")
+        val library = PhoneLibrary(newEpisodes = listOf(named("owner"), named("alias")), dailyMix = listOf(named("alias")))
+
+        val next = WatchLinkRules.withPhone(WatchLibraryState(watchId = "w"), library, playingId = null)
+
+        assertEquals(listOf("owner"), next.newFromPhone)
+        assertEquals(listOf("owner"), next.mixFromPhone)
+        assertEquals(setOf("owner"), next.episodes.keys)
+    }
 }

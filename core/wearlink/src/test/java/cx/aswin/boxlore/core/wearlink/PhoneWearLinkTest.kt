@@ -83,7 +83,9 @@ class PhoneWearLinkTest {
         runCurrent()
     }
 
-    private fun TestScope.link() = PhoneWearLink(transport, library, player, store, backgroundScope) { now }
+    private var account = PhoneAccountPort.None
+
+    private fun TestScope.link() = PhoneWearLink(transport, library, player, store, backgroundScope, account) { now }
 
     private fun changes(revision: Long, vararg history: Pair<Long, String>, follows: List<Pair<Long, String>> = emptyList(), watchId: String = "w") =
         WatchChanges(
@@ -428,6 +430,23 @@ class PhoneWearLinkTest {
         assertTrue(WearLinkCodec.decode<EpisodeListReply>(none)!!.episodes.isEmpty())
         assertNull(link.onRequest("/boxlore/other", byteArrayOf()))
     }
+
+    @Test
+    fun `a watch asking to be signed in gets the phone's code, or why there is none`() =
+        runTest {
+            // A phone with no account says so.
+            val signedOut = WearLinkCodec.decode<WatchSignInReply>(link().onRequest(WearLinkProtocol.PATH_SIGN_IN, byteArrayOf()))
+            assertEquals(WatchSignInReply.SIGNED_OUT, signedOut?.status)
+
+            account = PhoneAccountPort { WatchSignInReply(WatchSignInReply.OK, code = "code-1", account = "me@example.org") }
+            val ok = WearLinkCodec.decode<WatchSignInReply>(link().onRequest(WearLinkProtocol.PATH_SIGN_IN, byteArrayOf()))
+            assertEquals(WatchSignInReply(WatchSignInReply.OK, "code-1", "me@example.org"), ok)
+
+            // A failure on the phone still answers, so the watch does not wait for nothing.
+            account = PhoneAccountPort { error("no network") }
+            val failed = WearLinkCodec.decode<WatchSignInReply>(link().onRequest(WearLinkProtocol.PATH_SIGN_IN, byteArrayOf()))
+            assertEquals(WatchSignInReply.FAILED, failed?.status)
+        }
 
     @Test
     fun `watch settings follow whichever side changed them last`() = runTest {

@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.Log
 import cx.aswin.boxlore.core.wearlink.GmsWearLinkTransport
 import cx.aswin.boxlore.core.wearlink.WearLinkProtocol
+import cx.aswin.boxlore.wear.cloud.WatchCloud
+import cx.aswin.boxlore.wear.cloud.WatchCloudPorts
 import cx.aswin.boxlore.wear.data.ApiWatchCatalog
 import cx.aswin.boxlore.wear.data.FileWatchDownloads
 import cx.aswin.boxlore.wear.data.LiveWatchLibrary
@@ -12,6 +14,7 @@ import cx.aswin.boxlore.wear.data.RssWatchFeedReader
 import cx.aswin.boxlore.wear.data.StoragePolicy
 import cx.aswin.boxlore.wear.data.WatchFeedReader
 import cx.aswin.boxlore.wear.data.WatchLibraryStore
+import cx.aswin.boxlore.wear.data.WatchMapping
 import cx.aswin.boxlore.wear.data.WatchSettings
 import cx.aswin.boxlore.wear.data.WatchStorageLimits
 import cx.aswin.boxlore.wear.glance.BoxloreComplicationService
@@ -24,6 +27,7 @@ import cx.aswin.boxlore.wear.link.PlayerGlance
 import cx.aswin.boxlore.wear.link.WatchLinkRules
 import cx.aswin.boxlore.wear.net.WatchServer
 import cx.aswin.boxlore.wear.playback.LiveWatchPlayback
+import cx.aswin.boxlore.wear.playback.WatchAudioOutputGate
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +45,9 @@ internal object LiveWatchContainer {
         val app = context.applicationContext
         val background = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         val main = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-        val api = WatchServer.start(app, BuildConfig.BOXLORE_API_BASE_URL, BuildConfig.VERSION_NAME, background)
+        val apis = WatchServer.start(app, BuildConfig.BOXLORE_API_BASE_URL, BuildConfig.VERSION_NAME, background)
+        val api = apis?.catalog
+        val catalog = api?.let(::ApiWatchCatalog) ?: NoWatchCatalog
         val store = WatchLibraryStore.create(app, background)
         val settings = WatchSettings.create(app)
         val limits =
@@ -62,7 +68,7 @@ internal object LiveWatchContainer {
         val link = LiveWatchLink(transport, store, settings, downloads, background, log = { Log.d(LINK_LOG_TAG, it) })
         val library =
             LiveWatchLibrary(
-                catalog = api?.let(::ApiWatchCatalog) ?: NoWatchCatalog,
+                catalog = catalog,
                 feeds = api?.let(::RssWatchFeedReader) ?: WatchFeedReader { _, _ -> null },
                 store = store,
                 downloadManager = downloads,
@@ -71,7 +77,7 @@ internal object LiveWatchContainer {
                 // Episodes in the phone's queue get a page on the watch like any other.
                 namedByPhone = link.phoneNowPlaying.map { phone -> phone?.upNext.orEmpty().map { WatchLinkRules.watchEpisode(it) } },
             )
-        val watchPlayer = LiveWatchPlayback(app, library, store, downloads, main)
+        val watchPlayer = LiveWatchPlayback(app, library, store, downloads, main, WatchAudioOutputGate(app))
         val playback = LinkedWatchPlayback(watchPlayer, link, store, main)
         link.player = { PlayerGlance(watchPlayer.loadedEpisodeId, watchPlayer.nowPlaying.value?.isPlaying == true) }
         link.start()
@@ -90,8 +96,15 @@ internal object LiveWatchContainer {
                 link.publishPlaying(playing, id)
             }
         }
+        val cloud =
+            WatchCloudPorts(
+                askPhone = link::signIn,
+                showOf = { id -> id.toLongOrNull()?.let { catalog.show(it) }?.feed?.let { WatchMapping.show(it, subscribed = true) } },
+                playingId = { watchPlayer.loadedEpisodeId },
+            )
+        val account = WatchCloud.start(app, apis?.account, store, cloud, background)
         // Runs once at start-up and again whenever the listener changes the limit.
         background.launch { settings.storageLimitMb.collect { downloads.enforceLimit() } }
-        return WatchContainer(library = library, playback = playback, settings = settings, onPhoneCommand = PhoneOrders(store, downloads, playback::fromPhone)::take, glance = { GlanceRules.from(store.state.value) })
+        return WatchContainer(library = library, playback = playback, settings = settings, onPhoneCommand = PhoneOrders(store, downloads, playback::fromPhone)::take, glance = { GlanceRules.from(store.state.value) }, phoneKnown = link.phoneWord::await, account = account)
     }
 }

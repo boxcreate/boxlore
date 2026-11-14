@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Whether the watch holds an episode's audio, as far as the phone knows. */
@@ -56,7 +57,8 @@ class PhoneWatchDownloads(private val transport: WearLinkTransport, private val 
         scope.launch {
             val sent = transport.send(WearLinkProtocol.PATH_WATCH_COMMAND, WearLinkCodec.encode(WearLinkCommand(action, episode = episode)))
             // Shown at once; the watch's next report says what really happened.
-            if (sent) reported.value = assumed(reported.value)
+            // Applied as one step, so two orders finishing together both show.
+            if (sent) reported.update(assumed)
             onResult(sent)
         }
     }

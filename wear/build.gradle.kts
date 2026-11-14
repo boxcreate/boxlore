@@ -31,12 +31,21 @@ android {
     // The watch app must carry the phone app's signature, or the two cannot talk to each other.
     val phoneKeystore = rootProject.file("app/release.keystore")
 
+    // The watch app is released with the phone app and carries its version name. Its version code is
+    // the phone's plus a fixed offset: Google Play takes each code once per app, and the two share one.
+    // Both are read from the phone app's build file, the only place a release changes.
+    val phoneBuild = providers.fileContents(rootProject.layout.projectDirectory.file("app/build.gradle.kts")).asText.get()
+    val phoneVersion = { pattern: String ->
+        Regex(pattern, RegexOption.MULTILINE).find(phoneBuild)?.groupValues?.get(1) ?: error("app/build.gradle.kts: nothing matches $pattern")
+    }
+    val watchVersionCodeOffset = 1_000_000
+
     defaultConfig {
         applicationId = "cx.aswin.boxlore"
         minSdk = 33
         targetSdk = 36
-        versionCode = 31
-        versionName = "0.0.31"
+        versionCode = watchVersionCodeOffset + phoneVersion("""^\s*versionCode\s*=\s*(\d+)\s*$""").toInt()
+        versionName = phoneVersion("""^\s*versionName\s*=\s*"([^"]+)"\s*$""")
         buildConfigField("String", "BOXLORE_API_BASE_URL", "\"$apiBaseUrl\"")
     }
 

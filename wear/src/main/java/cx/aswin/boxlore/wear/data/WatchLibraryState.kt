@@ -28,10 +28,18 @@ data class WatchLibraryState(
     val watchId: String = "",
     /** Grows with every follow, unfollow and listening change made on this watch. */
     val revision: Long = 0L,
-    /** Follows and unfollows the phone has not confirmed, by show ID. */
+    /** Follows and unfollows not yet confirmed by everyone who needs them, by show ID. */
     val pendingShows: Map<String, PendingShowChange> = emptyMap(),
-    /** Episodes whose listening the phone has not confirmed, with the revision of the last change. */
+    /** Episodes whose listening is not yet confirmed by everyone who needs it, with the revision of the last change. */
     val pendingEpisodes: Map<String, Long> = emptyMap(),
+    /** The newest revision the phone has confirmed. */
+    val phoneAcked: Long = 0L,
+    /** Whether this watch is signed in to the listener's account, so its changes go to the cloud too. */
+    val cloudLinked: Boolean = false,
+    /** The newest revision the cloud has confirmed. */
+    val cloudAcked: Long = 0L,
+    /** The cloud's own time at the last pull; the next pull asks for what changed since. */
+    val cloudSince: Long = 0L,
     /**
      * When this watch's own player last saved a place. Listening merged from the phone never moves
      * it, so it says which of the two devices was used last.
