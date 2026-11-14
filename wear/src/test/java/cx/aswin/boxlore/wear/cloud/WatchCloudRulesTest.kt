@@ -4,6 +4,7 @@ import cx.aswin.boxlore.core.network.model.ListeningHistorySyncDto
 import cx.aswin.boxlore.core.network.model.SyncPullResponse
 import cx.aswin.boxlore.core.network.model.UserSubscriptionSyncDto
 import cx.aswin.boxlore.core.wearlink.PhoneLibrary
+import cx.aswin.boxlore.core.wearlink.WearLinkShow
 import cx.aswin.boxlore.wear.data.WatchLibraryState
 import cx.aswin.boxlore.wear.link.WatchLinkRules
 import cx.aswin.boxlore.wear.model.WatchEpisode
@@ -155,5 +156,22 @@ class WatchCloudRulesTest {
         assertEquals(WatchCloudRules.MAX_PULLED_HISTORY, next.played.size)
         assertTrue("e${WatchCloudRules.MAX_PULLED_HISTORY + 50}" in next.played)
         assertFalse("e1" in next.played)
+    }
+
+    // Regression: a follow the phone had confirmed, still waiting for the cloud, came back on the
+    // watch after the listener unfollowed the show on the phone.
+    @Test
+    fun `a follow the phone confirmed is not put back over the phone's later unfollow`() {
+        val followed = signedIn.copy(phoneLinked = true).subscribe(show("9"), nowMs = 100L)
+        val phoneHasIt = WatchLinkRules.withPhone(followed, PhoneLibrary(shows = listOf(WearLinkShow("9", "Show 9", "Pub")), acked = mapOf("w" to followed.revision)), playingId = null)
+
+        // Still waiting for the cloud, which is out of reach.
+        assertEquals(setOf("9"), phoneHasIt.pendingShows.keys)
+
+        val unfollowedOnPhone = WatchLinkRules.withPhone(phoneHasIt, PhoneLibrary(shows = emptyList(), acked = mapOf("w" to followed.revision)), playingId = null)
+
+        assertFalse(unfollowedOnPhone.isSubscribed("9"))
+        // The follow still goes up, as the listener made it; the cloud settles it by time.
+        assertEquals(listOf("9"), WatchCloudRules.push(unfollowedOnPhone, now = 1L)!!.request.subscriptions.map { it.podcastId })
     }
 }

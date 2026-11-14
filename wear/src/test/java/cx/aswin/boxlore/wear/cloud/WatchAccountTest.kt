@@ -10,6 +10,7 @@ import cx.aswin.boxlore.wear.data.WatchLibraryStore
 import cx.aswin.boxlore.wear.model.WatchEpisode
 import cx.aswin.boxlore.wear.model.WatchShow
 import java.io.File
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -202,4 +203,91 @@ class WatchAccountTest {
         assertFalse(RetrofitWatchCloudApi.refusesToken(401, null))
         assertFalse(RetrofitWatchCloudApi.refusesToken(500, """{"error":"watch_token_invalid"}"""))
     }
+
+    // Regression: signing out while a sign-in was still on its way left the watch signed in after all.
+    @Test
+    fun `a sign-out during a sign-in try wins, whatever the try comes back with`() =
+        runTest {
+            val gate = CompletableDeferred<Unit>()
+            val cloud = FakeCloud()
+            val tokens = WatchAccountStore.InMemory()
+            val store = store()
+            var synced = 0
+            val account =
+                LiveWatchAccount(
+                    askPhone = {
+                        gate.await()
+                        WatchSignInReply(WatchSignInReply.OK, code = "code-1", account = "me@example.org")
+                    },
+                    api = cloud,
+                    tokens = tokens,
+                    store = store,
+                    onSignedIn = { synced++ },
+                    scope = backgroundScope,
+                )
+
+            account.signIn()
+            runCurrent()
+            account.signOut()
+            gate.complete(Unit)
+            runCurrent()
+
+            assertEquals(WatchAccountState.SignedOut, account.state.value)
+            assertNull(tokens.token)
+            assertFalse(store.state.value.cloudLinked)
+            assertEquals(0, synced)
+        }
+
+    // Regression: a refusal of the old token, arriving after a fresh sign-in, signed the new session out.
+    @Test
+    fun `a refusal of an old token does not sign a newer session out`() =
+        runTest {
+            val tokens = WatchAccountStore.InMemory(token = "new-token", account = "me@example.org")
+            val store = store()
+            store.update { it.copy(cloudLinked = true) }
+            val account = LiveWatchAccount({ null }, FakeCloud(), tokens, store, {}, backgroundScope)
+
+            account.forget(refused = "old-token")
+            assertEquals(WatchAccountState.SignedIn("me@example.org"), account.state.value)
+            assertEquals("new-token", tokens.token)
+
+            account.forget(refused = "new-token")
+            assertEquals(WatchAccountState.SignedOut, account.state.value)
+            assertNull(tokens.token)
+        }
+
+    @Test
+    fun `a refused sync names the token it used`() =
+        runTest {
+            val cloud = FakeCloud()
+            cloud.pullAnswer = CloudAnswer.Refused
+            val refused = mutableListOf<String>()
+            val sync = WatchCloudSync(cloud, WatchAccountStore.InMemory(token = "t"), store(), { null }, { null }, backgroundScope, onSignedOut = { refused += it })
+
+            sync.syncNow()
+
+            assertEquals(listOf("t"), refused)
+        }
+
+    // Regression: with more unknown shows than one sync looks up and every lookup failing, the sync
+    // asked again at once, for ever, and the shows past the first batch were never tried.
+    @Test
+    fun `show lookups that all fail are not retried at once, and the shows not tried yet go first next time`() =
+        runTest {
+            val cloud = FakeCloud()
+            val follows = (1..45).map { UserSubscriptionSyncDto(it.toString(), subscribedAt = 1L, updatedAt = 1L) }
+            cloud.pullAnswer = CloudAnswer.Ok(SyncPullResponse(subscriptions = follows, syncedAt = 500L))
+            val looked = mutableListOf<String>()
+            val sync = WatchCloudSync(cloud, WatchAccountStore.InMemory(token = "t"), store(), { id -> looked.add(id).let { null } }, { null }, backgroundScope)
+            sync.start()
+            runCurrent()
+
+            // One sync ran at start; with nothing looked up it does not ask for another straight away.
+            assertEquals(1, cloud.pulls.size)
+            assertEquals((1..40).map(Int::toString), looked)
+
+            looked.clear()
+            sync.syncNow()
+            assertEquals((41..45).map(Int::toString), looked.take(5))
+        }
 }

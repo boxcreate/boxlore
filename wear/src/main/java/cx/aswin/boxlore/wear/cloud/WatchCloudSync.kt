@@ -35,11 +35,14 @@ internal class WatchCloudSync(
     private val playingId: () -> String?,
     private val scope: CoroutineScope,
     private val clock: () -> Long = System::currentTimeMillis,
-    /** Runs when the API stopped taking this watch's token. */
-    private val onSignedOut: () -> Unit = {},
+    /** Runs with the token the API stopped taking. */
+    private val onSignedOut: (refused: String) -> Unit = {},
 ) {
     private val running = Mutex()
     private val wake = Channel<Unit>(Channel.CONFLATED)
+
+    // Shows whose lookup failed; the ones not tried yet go first, so a few that keep failing hold nobody up.
+    private val failed = mutableSetOf<String>()
 
     /** Asks for a sync soon; several asks before it runs make one sync. */
     fun request() {
@@ -65,8 +68,8 @@ internal class WatchCloudSync(
         running.withLock {
             val token = tokens.token ?: return@withLock CloudSyncResult.NotSignedIn
             val sent = push(token)
-            if (sent != CloudSyncResult.Done) return@withLock ended(sent)
-            ended(pull(token))
+            if (sent != CloudSyncResult.Done) return@withLock ended(sent, token)
+            ended(pull(token), token)
         }
 
     private suspend fun push(token: String): CloudSyncResult {
@@ -85,18 +88,22 @@ internal class WatchCloudSync(
         when (val answer = api.pull(token, SyncPullRequest(since = store.state.value.cloudSince))) {
             is CloudAnswer.Ok -> {
                 val unknown = WatchCloudRules.unknownShows(store.state.value, answer.value)
-                val shows = unknown.take(MAX_LOOKUPS).mapNotNull { id -> showOf(id)?.let { id to it } }.toMap()
+                val tried = unknown.sortedBy { it in failed }.take(MAX_LOOKUPS)
+                val shows = tried.mapNotNull { id -> showOf(id)?.let { id to it } }.toMap()
+                failed += tried - shows.keys
+                failed -= shows.keys
                 store.update { WatchCloudRules.withCloud(it, answer.value, shows, playingId()) }
-                // More shows than one sync looks up: the next one carries on straight away.
-                if (unknown.size > MAX_LOOKUPS) request()
+                // More shows than one sync looks up: the next one carries on straight away, as long as
+                // this one got somewhere. Lookups that all failed wait for the next regular sync.
+                if (unknown.size > tried.size && shows.isNotEmpty()) request()
                 CloudSyncResult.Done
             }
             CloudAnswer.Refused -> CloudSyncResult.SignedOut
             CloudAnswer.Unreachable -> CloudSyncResult.Unreachable
         }
 
-    private fun ended(result: CloudSyncResult): CloudSyncResult {
-        if (result == CloudSyncResult.SignedOut) onSignedOut()
+    private fun ended(result: CloudSyncResult, token: String): CloudSyncResult {
+        if (result == CloudSyncResult.SignedOut) onSignedOut(token)
         return result
     }
 

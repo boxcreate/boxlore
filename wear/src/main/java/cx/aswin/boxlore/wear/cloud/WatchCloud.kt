@@ -25,7 +25,7 @@ internal object WatchCloud {
         val cloud = RetrofitWatchCloudApi(api)
         val tokens = SharedPreferencesWatchAccountStore.create(context)
         var account: LiveWatchAccount? = null
-        val sync = WatchCloudSync(cloud, tokens, store, ports.showOf, ports.playingId, scope, onSignedOut = { account?.forget() })
+        val sync = WatchCloudSync(cloud, tokens, store, ports.showOf, ports.playingId, scope, onSignedOut = { refused -> account?.forget(refused) })
         val live = LiveWatchAccount(ports.askPhone, cloud, tokens, store, onSignedIn = sync::request, scope = scope)
         account = live
         sync.start()

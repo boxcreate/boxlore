@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import cx.aswin.boxlore.core.wearlink.WatchSignInReply
 import cx.aswin.boxlore.wear.data.WatchLibraryStore
 import cx.aswin.boxlore.wear.data.confirmed
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -115,15 +116,21 @@ internal class LiveWatchAccount(
     private val current = MutableStateFlow(if (tokens.token == null) WatchAccountState.SignedOut else WatchAccountState.SignedIn(tokens.account))
     private val lastProblem = MutableStateFlow<SignInProblem?>(null)
 
+    // Counts sign-in tries and sign-outs, so a try that was overtaken by a sign-out changes nothing.
+    private val turn = AtomicInteger()
+
     override val state: StateFlow<WatchAccountState> = current.asStateFlow()
     override val problem: StateFlow<SignInProblem?> = lastProblem.asStateFlow()
 
     override fun signIn() {
         if (!current.compareAndSet(WatchAccountState.SignedOut, WatchAccountState.SigningIn)) return
         lastProblem.value = null
+        val mine = turn.incrementAndGet()
         scope.launch {
             val reply = askPhone()
             val token = if (WatchSignInRules.problem(reply) == null) api.redeem(reply?.code.orEmpty()) else null
+            // Signed out while this was on its way: the listener's last word stands.
+            if (turn.get() != mine) return@launch
             if (token == null) {
                 lastProblem.value = WatchSignInRules.problem(reply) ?: SignInProblem.Failed
                 current.value = WatchAccountState.SignedOut
@@ -143,8 +150,13 @@ internal class LiveWatchAccount(
         if (token != null) scope.launch { api.revoke(token) }
     }
 
-    /** The API stopped taking this watch's token: signed out, with nothing to give up. */
-    fun forget() {
+    /**
+     * Signed out, with nothing to give up. [refused] is the token the API stopped taking; a
+     * refusal that arrives after the watch signed in afresh is about the old one and is ignored.
+     */
+    fun forget(refused: String? = null) {
+        if (refused != null && tokens.token != refused) return
+        turn.incrementAndGet()
         tokens.clear()
         store.update { it.copy(cloudLinked = false, cloudAcked = 0L, cloudSince = 0L).confirmed() }
         lastProblem.value = null

@@ -3,8 +3,10 @@ package cx.aswin.boxlore.wear.glance
 import cx.aswin.boxlore.wear.data.WatchLibraryState
 import cx.aswin.boxlore.wear.model.WatchEpisode
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class GlanceRulesTest {
@@ -84,5 +86,30 @@ class GlanceRulesTest {
         assertNotEquals(TileRules.resourcesVersion(first, hasArtwork = true), TileRules.resourcesVersion(second, hasArtwork = true))
         assertEquals(TileRules.NO_ARTWORK, TileRules.resourcesVersion(first, hasArtwork = false))
         assertEquals(TileRules.NO_ARTWORK, TileRules.resourcesVersion(null, hasArtwork = false))
+    }
+
+    // Regression: a Resume tap still waiting for the phone was lost when the screen was rebuilt, and
+    // could start playback after a newer launch had asked for something else.
+    @Test
+    fun `a waiting Resume tap survives a rebuilt screen, gives way to a newer launch and is never acted on twice`() {
+        val request = ResumeRequest()
+        request.ask("a")
+        assertEquals("a", request.pending)
+
+        // The rebuilt screen carries it over and acts on it once.
+        val rebuilt = ResumeRequest(request.pending)
+        assertTrue(rebuilt.take("a"))
+        assertFalse(rebuilt.take("a"))
+        assertNull(rebuilt.pending)
+
+        // A newer launch drops it: the older tap must not start playing afterwards.
+        request.drop()
+        assertFalse(request.take("a"))
+
+        // A second tap for another episode replaces the first.
+        request.ask("a")
+        request.ask("b")
+        assertFalse(request.take("a"))
+        assertTrue(request.take("b"))
     }
 }

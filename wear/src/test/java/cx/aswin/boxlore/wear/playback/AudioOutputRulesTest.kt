@@ -46,4 +46,17 @@ class AudioOutputRulesTest {
 
         assertEquals(0, starts)
     }
+
+    // Regression: a start waiting for headphones began after the listener had paused.
+    @Test
+    fun `a start given up, by a pause or the sleep timer, does not run when headphones connect`() {
+        var starts = 0
+        val held = HeldStart(holdMs = 2 * minute)
+
+        held.hold({ starts++ }, now = 0L)
+        held.drop()
+        held.release(now = 1L)
+
+        assertEquals(0, starts)
+    }
 }

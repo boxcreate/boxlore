@@ -8,12 +8,16 @@ import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.provider.Settings
 
 /** Decides whether playback can start now, and what happens when there is nothing to hear it through. */
 fun interface AudioOutputGate {
     /** Runs [play] now when something can be heard; otherwise asks for headphones and runs it once they connect. */
     fun start(play: () -> Unit)
+
+    /** Gives up a start that is still waiting for headphones: the listener paused, or the sleep timer ran out. */
+    fun cancel() = Unit
 
     companion object {
         /** No check: for a build without a real player. */
@@ -54,6 +58,10 @@ internal class HeldStart(private val holdMs: Long = HOLD_MS) {
         until = now + holdMs
     }
 
+    fun drop() {
+        held = null
+    }
+
     /** Runs the held start, unless it waited too long: sound starting minutes later would be a surprise. */
     fun release(now: Long) {
         val start = held ?: return
@@ -72,7 +80,8 @@ internal class HeldStart(private val holdMs: Long = HOLD_MS) {
  */
 class WatchAudioOutputGate(
     private val context: Context,
-    private val clock: () -> Long = System::currentTimeMillis,
+    /** Time that only moves forward: the wall clock can jump, and a wait measured on it could outlive its limit. */
+    private val clock: () -> Long = SystemClock::elapsedRealtime,
 ) : AudioOutputGate {
     private val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val held = HeldStart()
@@ -93,6 +102,8 @@ class WatchAudioOutputGate(
         // From the background the settings cannot be opened; the start still waits for headphones.
         runCatching { context.startActivity(connectHeadphones()) }
     }
+
+    override fun cancel() = held.drop()
 
     private fun canBeHeard(): Boolean =
         AudioOutputRules.canBeHeard(

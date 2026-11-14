@@ -74,8 +74,7 @@ src/release/java/...         # release WatchContainerFactory
   and queue. It tells the phone when the watch plays, and takes the phone's orders (pause, play
   this here) through `WatchLinkListenerService`. A phone that went out of reach while playing is
   shown paused where it was last heard (`PlaceRules.heard`), so Play carries on here.
-- Signing in never shows a typing screen: the watch asks the phone over the link, the phone
-  answers with a one-time code, and the watch trades it for its own account token
+- Signing in never shows a typing screen: the watch asks the linked phone to sign it in
   (`LiveWatchAccount`). `WatchCloudSync` then pushes and pulls the cloud's sync rows. A change
   made on the watch waits until everyone who needs it has confirmed it: the phone once one has
   linked, the cloud while signed in (`WatchLibraryState.confirmed`). The cloud sends only what
@@ -141,7 +140,7 @@ src/release/java/...         # release WatchContainerFactory
 - `files/watch_downloads/` (`FileWatchDownloads.DIRECTORY_NAME`): stored audio, one
   `<episode ID>.audio` per episode.
 - SharedPreferences `boxlore_watch_settings`: `shows_layout`, `storage_limit_mb`, `changed_at`.
-- SharedPreferences `boxlore_watch_account`: the account token and the account's name.
+- SharedPreferences `boxlore_watch_account`: the watch's sign-in and the account's name.
 - The capability `boxlore_watch` (`res/values/wear.xml`) is how the phone app finds this app.
 - The API session uses `:core:network`'s own file and Keystore alias, created fresh on the watch.
 - Install channel `wear` (`WatchServer.CHANNEL`).

@@ -88,7 +88,11 @@ class LiveWatchPlayback(
         }
     }
 
-    override fun pause() = withController { it.pause() }
+    override fun pause() {
+        // A start still waiting for headphones must not begin after the listener paused.
+        output.cancel()
+        withController { it.pause() }
+    }
 
     override fun seekBack() = withController { it.seekBack() }
 
@@ -104,6 +108,7 @@ class LiveWatchPlayback(
                 scope.launch {
                     delay(delayMs)
                     sleepTimer = SleepTimerChoice.Off
+                    output.cancel()
                     controller?.pause()
                 }
             }

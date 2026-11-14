@@ -95,7 +95,9 @@ internal object WatchLinkRules {
         val phoneIds = fromPhone.mapTo(HashSet(), WatchShow::id)
         // A cut list says nothing about the shows it leaves out, so those stay as they were.
         val base = if (library.showsTruncated) fromPhone + state.shows.filterNot { it.id in phoneIds } else fromPhone
-        return state.pendingShows.values.sortedBy { it.revision }.fold(base) { shows, change ->
+        // Only what the phone has not confirmed goes on top. A change it has confirmed may still wait
+        // here for the cloud, but the phone's list already says what became of it.
+        return state.pendingShows.values.filter { it.revision > state.phoneAcked }.sortedBy { it.revision }.fold(base) { shows, change ->
             when {
                 !change.subscribed -> shows.filterNot { it.id == change.show.id }
                 shows.any { it.id == change.show.id } -> shows

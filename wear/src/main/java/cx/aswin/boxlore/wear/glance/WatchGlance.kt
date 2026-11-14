@@ -17,6 +17,32 @@ data class WatchGlance(
 /** What a tap on Resume, in the tile or on the watch face, leads to. */
 enum class ResumeTap { ShowPlayer, PlayHere, AskWhere }
 
+/**
+ * The one Resume tap still being decided. A newer launch replaces it, and once it has been
+ * acted on it is gone, so a screen that is rebuilt meanwhile neither loses it nor plays it twice.
+ */
+class ResumeRequest(waiting: String? = null) {
+    /** The episode still waiting to be resumed; what a rebuilt screen has to carry over. */
+    var pending: String? = waiting
+        private set
+
+    fun ask(episodeId: String) {
+        pending = episodeId
+    }
+
+    /** A newer launch asked for something else. */
+    fun drop() {
+        pending = null
+    }
+
+    /** Whether [episodeId] is still the one waiting; if so it now counts as acted on. */
+    fun take(episodeId: String): Boolean {
+        val mine = pending == episodeId
+        if (mine) pending = null
+        return mine
+    }
+}
+
 /** How the saved library becomes a [WatchGlance], and what its short texts say. */
 internal object GlanceRules {
     private const val MINUTE_MS = 60_000L
