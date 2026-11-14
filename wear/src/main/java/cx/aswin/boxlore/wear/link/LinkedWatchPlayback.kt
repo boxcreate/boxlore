@@ -55,6 +55,17 @@ internal object PlaceRules {
     fun heard(phone: PhoneNowPlaying?, reachable: Boolean, lostAt: Long): PhoneNowPlaying? =
         if (phone == null || reachable || !phone.isPlaying) phone else phone.copy(isPlaying = false, positionMs = phone.positionAt(lostAt))
 
+    /**
+     * Whether the phone's [theirs] is the episode the watch holds as [episodeId]. The watch's copy
+     * of it may carry another ID than the one asked for, so the same audio of the same show counts too.
+     */
+    fun isSame(state: WatchLibraryState, theirs: WearLinkEpisode, episodeId: String): Boolean {
+        val mine = WatchLinkRules.watchEpisode(theirs)
+        if (state.merged(mine).id == episodeId) return true
+        val asked = state.episodes[episodeId] ?: return false
+        return mine.audioUrl != null && asked.showId == mine.showId && asked.audioUrl == mine.audioUrl
+    }
+
     /** Taking the phone's episode over needs only the watch; handing one to the phone needs the phone in reach. */
     fun canSwitch(onPhone: Boolean, phoneReachable: Boolean): Boolean = onPhone || phoneReachable
 
@@ -167,7 +178,7 @@ class LinkedWatchPlayback(
         // The phone is playing this very episode: the watch carries on from where the phone is now.
         // Its own saved place is only where it last heard the phone was, often minutes behind.
         val playing = phone.value?.takeIf { it.isPlaying }?.episode
-        if (playing != null && store.state.value.merged(WatchLinkRules.watchEpisode(playing)).id == episodeId) return moveToWatch()
+        if (playing != null && PlaceRules.isSame(store.state.value, playing, episodeId)) return moveToWatch()
         // Starting something on the watch takes over from the phone, so the two never play at once.
         if (link.phoneNowPlaying.value?.isPlaying == true) link.send(WearLinkCommand(WearLinkCommand.PAUSE))
         watch.play(episodeId)

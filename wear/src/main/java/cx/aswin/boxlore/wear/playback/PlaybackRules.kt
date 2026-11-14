@@ -50,6 +50,20 @@ internal object PlaybackRules {
     /** How long a timed sleep choice runs, or null for Off and End of episode. */
     fun sleepDelayMs(choice: SleepTimerChoice): Long? = choice.minutes?.times(MINUTE_MS)
 
+    /**
+     * Whether starting [startingId] first saves where the player is. A player that stands still
+     * saved its place when it stopped. On the same episode, the saved place may since have moved
+     * on (the phone played it further), and saving again would put the old place back over it.
+     */
+    fun savesPlaceBeforeStart(loadedId: String?, startingId: String, isPlaying: Boolean): Boolean = isPlaying || loadedId != startingId
+
+    /**
+     * Whether a jump in the player's position is saved at once. A playing player saves as it goes.
+     * A still one saves nothing more, so a seek the listener made there would be lost the next
+     * time the episode starts from its saved place.
+     */
+    fun savesPlaceOnJump(isSeek: Boolean, isPlaying: Boolean): Boolean = isSeek && !isPlaying
+
     /** Whether the next queued episode should start when one ends. */
     fun continuesAfterEnd(choice: SleepTimerChoice): Boolean = choice != SleepTimerChoice.EndOfEpisode
 }

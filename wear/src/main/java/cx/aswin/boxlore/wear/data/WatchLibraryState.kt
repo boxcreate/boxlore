@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.wear.data
 
+import cx.aswin.boxlore.core.model.EpisodeRecipeId
 import cx.aswin.boxlore.wear.model.PendingShowChange
 import cx.aswin.boxlore.wear.model.WatchDownload
 import cx.aswin.boxlore.wear.model.WatchEpisode
@@ -76,7 +77,14 @@ data class WatchLibraryState(
 
     /** The saved copy of [episode] when the watch has one, so progress and downloads carry over. */
     fun merged(episode: WatchEpisode): WatchEpisode {
-        val saved = episodes[episode.id] ?: sameAudio(episode)
+        // The watch can hold an episode twice: under boxlore's own ID, and under an older ID the phone
+        // still uses. Whichever ID it comes under, it is one copy, or the same episode would play from
+        // two places. A copy with finished audio comes first: a file is kept under the ID it was
+        // stored with, and only a finished one can be played. Then the copy under the own ID, where
+        // the watch's own lists keep the place. Then the copy under the ID asked for.
+        val saved =
+            (listOfNotNull(episodes[episode.id]) + sameAudio(episode))
+                .maxWithOrNull(compareBy({ it.download == WatchDownload.Done }, { it.hasOwnId }, { it.id == episode.id }))
         return when {
             saved != null ->
                 episode.copy(
@@ -94,11 +102,13 @@ data class WatchLibraryState(
         }
     }
 
-    /** A saved episode of the same show with the same audio address as [episode], under another ID. */
-    private fun sameAudio(episode: WatchEpisode): WatchEpisode? {
-        val audio = episode.audioUrl ?: return null
-        return episodes.values.firstOrNull { it.showId == episode.showId && it.audioUrl == audio }
+    /** The saved episodes of the same show with the same audio address as [episode], under other IDs. */
+    private fun sameAudio(episode: WatchEpisode): List<WatchEpisode> {
+        val audio = episode.audioUrl ?: return emptyList()
+        return episodes.values.filter { it.id != episode.id && it.showId == episode.showId && it.audioUrl == audio }
     }
+
+    private val WatchEpisode.hasOwnId: Boolean get() = id.toLongOrNull()?.let(EpisodeRecipeId::isRecipeId) == true
 
     fun subscribe(show: WatchShow, nowMs: Long = 0L): WatchLibraryState =
         if (isSubscribed(show.id)) {

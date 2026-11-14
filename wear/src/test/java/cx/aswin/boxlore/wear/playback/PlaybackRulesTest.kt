@@ -84,4 +84,75 @@ class PlaybackRulesTest {
         assertTrue(PlaybackRules.continuesAfterEnd(SleepTimerChoice.Off))
         assertTrue(PlaybackRules.continuesAfterEnd(SleepTimerChoice.Minutes30))
     }
+
+    // Regression: taking an episode back from the phone restarted it where the watch had stopped, not where the phone was.
+    @Test
+    fun `a still player does not save its old place when the same episode is started again`() {
+        assertFalse(PlaybackRules.savesPlaceBeforeStart(loadedId = "a", startingId = "a", isPlaying = false))
+        assertTrue(PlaybackRules.savesPlaceBeforeStart(loadedId = "a", startingId = "a", isPlaying = true))
+        assertTrue(PlaybackRules.savesPlaceBeforeStart(loadedId = "a", startingId = "b", isPlaying = false))
+        assertTrue(PlaybackRules.savesPlaceBeforeStart(loadedId = null, startingId = "a", isPlaying = false))
+    }
+
+    // Regression: pause, seek, start the same episode again. The still player skips saving at the start, so the seek must be saved when made.
+    @Test
+    fun `a seek on a still player is saved at once, any other jump or a playing player is not`() {
+        assertTrue(PlaybackRules.savesPlaceOnJump(isSeek = true, isPlaying = false))
+        assertFalse(PlaybackRules.savesPlaceOnJump(isSeek = true, isPlaying = true))
+        // A new episode being loaded also moves the position; that is not the listener's place in it.
+        assertFalse(PlaybackRules.savesPlaceOnJump(isSeek = false, isPlaying = false))
+    }
+
+    /**
+     * The player and the saved place as the saving rules move them: the player saves when it stops,
+     * on a jump and before a start only where the rules say so, and a start reads the saved place.
+     */
+    private class Places(var player: Long, var saved: Long, var isPlaying: Boolean = true) {
+        fun pause() {
+            isPlaying = false
+            saved = player
+        }
+
+        fun seek(to: Long) {
+            player = to
+            if (PlaybackRules.savesPlaceOnJump(isSeek = true, isPlaying = isPlaying)) saved = player
+        }
+
+        /** Starts the loaded episode again and returns where it starts. */
+        fun startSame(): Long {
+            if (PlaybackRules.savesPlaceBeforeStart(loadedId = "a", startingId = "a", isPlaying = isPlaying)) saved = player
+            player = saved
+            isPlaying = true
+            return player
+        }
+    }
+
+    // Regression: pause, seek, then start the same episode again must keep the seek.
+    @Test
+    fun `pause, seek, start the same episode again starts at the seeked place`() {
+        val places = Places(player = 10 * minute, saved = 9 * minute)
+
+        places.pause()
+        places.seek(to = 12 * minute)
+
+        assertEquals(12 * minute, places.startSame())
+    }
+
+    // Regression: the phone played the paused episode on; the watch must start there, not where it had stopped.
+    @Test
+    fun `a place the phone moved on while the watch stood still is where the same episode starts`() {
+        val places = Places(player = 10 * minute, saved = 9 * minute)
+
+        places.pause()
+        places.saved = 14 * minute
+
+        assertEquals(14 * minute, places.startSame())
+    }
+
+    @Test
+    fun `starting the episode that is playing keeps the player's own place`() {
+        val places = Places(player = 10 * minute, saved = 9 * minute)
+
+        assertEquals(10 * minute, places.startSame())
+    }
 }
