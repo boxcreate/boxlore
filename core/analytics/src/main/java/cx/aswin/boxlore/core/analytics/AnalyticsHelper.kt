@@ -314,6 +314,16 @@ object AnalyticsHelper : Analytics {
 
     fun trackAndroidAutoConnected(sessionId: String? = null) = PhaseCAnalyticsTracks.trackAndroidAutoConnected(sessionId)
 
+    fun trackWatchLinked() = WatchAnalyticsTracks.trackWatchLinked()
+
+    fun trackWatchSignInAnswered(result: String) = WatchAnalyticsTracks.trackWatchSignInAnswered(result)
+
+    fun trackWatchEpisodeOrder(download: Boolean, sent: Boolean) = WatchAnalyticsTracks.trackWatchEpisodeOrder(download, sent)
+
+    fun trackWatchPlaybackMoved(toWatch: Boolean) = WatchAnalyticsTracks.trackWatchPlaybackMoved(toWatch)
+
+    fun trackWatchChangesMerged(episodes: Int, follows: Int) = WatchAnalyticsTracks.trackWatchChangesMerged(episodes, follows)
+
     fun trackAndroidAutoDisconnected(sessionId: String? = null, durationSeconds: Int? = null,) = PhaseCAnalyticsTracks.trackAndroidAutoDisconnected(sessionId, durationSeconds)
 
     fun trackAndroidAutoBrowse(node: String, action: String? = null,) = PhaseCAnalyticsTracks.trackAndroidAutoBrowse(node, action)

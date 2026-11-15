@@ -176,6 +176,11 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 | `android_auto_connected` | Auto session began in a car (car mode or Android Automotive; Android Auto's background connections don't count) | — | session_id:string | none |
 | `android_auto_disconnected` | Auto session ended | — | session_id:string; duration_seconds:int | none |
 | `android_auto_browse` | User browsed Auto media tree | node:string | action:string | none |
+| `watch_linked` | boxlore on a Wear OS watch linked with this phone for the first time. Watch events are sent by the phone; the watch app sends none | — | — | none |
+| `watch_sign_in_answered` | The phone answered the watch's request to be signed in | result:string (`ok`, `signed_out`, `failed`) | — | none |
+| `watch_episode_order` | Send to watch or Remove from watch on an episode page | action:string (`download`, `remove`); result:string (`sent`, `out_of_reach`) | — | none |
+| `watch_playback_moved` | Playback moved between the phone and the watch | direction:string (`to_watch`, `to_phone`) | — | none |
+| `watch_changes_merged` | Listening and follows done on the watch reached the phone's library | episode_count:int; follow_change_count:int | — | none |
 | `adaptive_ranking_status` | Ranking engine status/update | status:string | details:string | none |
 | `learn_caught_up` | User reached Learn caught-up state | — | cards_remaining:int | none |
 | `catalog_miss` | Catalog/lookup miss | lookup_type:string | key:string | none |

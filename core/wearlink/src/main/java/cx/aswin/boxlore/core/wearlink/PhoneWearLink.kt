@@ -63,6 +63,7 @@ class PhoneWearLink(
     private val store: PhoneLinkStore,
     private val scope: CoroutineScope,
     private val account: PhoneAccountPort = PhoneAccountPort.None,
+    private val events: PhoneLinkEvents = PhoneLinkEvents.None,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     private val started = AtomicBoolean(false)
@@ -87,7 +88,7 @@ class PhoneWearLink(
     val playOnWatchOffer: StateFlow<Boolean> = offer.asStateFlow()
 
     /** What the watch stores, and the orders to download an episode there or remove it. */
-    val watchDownloads = PhoneWatchDownloads(transport, scope)
+    val watchDownloads = PhoneWatchDownloads(transport, scope, events)
 
     val status: StateFlow<WearLinkStatus> = linkStatus.asStateFlow()
     val settings: StateFlow<WearLinkSettings> = watchSettings.asStateFlow()
@@ -130,7 +131,10 @@ class PhoneWearLink(
             val position = live?.positionMs ?: lastPlaying?.positionAt(clock()) ?: 0L
             val upNext = (live?.upNext ?: lastPlaying?.upNext).orEmpty().take(PhoneNowPlaying.UP_NEXT_LIMIT)
             val command = WearLinkCommand(WearLinkCommand.PLAY_EPISODE, positionMs = position, episode = episode, upNext = upNext)
-            if (transport.send(WearLinkProtocol.PATH_WATCH_COMMAND, WearLinkCodec.encode(command))) attempt { player.pause() }
+            if (transport.send(WearLinkProtocol.PATH_WATCH_COMMAND, WearLinkCodec.encode(command))) {
+                attempt { player.pause() }
+                events.note(PhoneLinkEvent.PlaybackMoved(toWatch = true))
+            }
         }
     }
 
@@ -162,7 +166,11 @@ class PhoneWearLink(
                 WearLinkCommand.SEEK_BACK -> player.seekBack()
                 WearLinkCommand.SEEK_FORWARD -> player.seekForward()
                 WearLinkCommand.SET_SPEED -> command.speed?.let { player.setSpeed(it) }
-                WearLinkCommand.PLAY_EPISODE -> command.episode?.let { player.play(it, command.positionMs ?: 0L, command.upNext) }
+                WearLinkCommand.PLAY_EPISODE ->
+                    command.episode?.let {
+                        player.play(it, command.positionMs ?: 0L, command.upNext)
+                        events.note(PhoneLinkEvent.PlaybackMoved(toWatch = false))
+                    }
             }
         }
     }
@@ -176,12 +184,16 @@ class PhoneWearLink(
                     WearLinkCodec.encode(EpisodeListReply(request.podcastId, episodes))
                 }
             // Only boxlore on the listener's own watch can ask: the system delivers these between the two apps alone.
-            WearLinkProtocol.PATH_SIGN_IN ->
-                WearLinkCodec.encode(attempt { account.watchSignIn() } ?: WatchSignInReply(WatchSignInReply.FAILED))
+            WearLinkProtocol.PATH_SIGN_IN -> {
+                val reply = attempt { account.watchSignIn() } ?: WatchSignInReply(WatchSignInReply.FAILED)
+                events.note(PhoneLinkEvent.SignInAnswered(reply.status))
+                WearLinkCodec.encode(reply)
+            }
             else -> null
         }
 
     private suspend fun onChanges(changes: WatchChanges) {
+        if (!store.watchKnown) events.note(PhoneLinkEvent.WatchLinked)
         store.watchKnown = true
         store.watchStatus = WatchStatus(changes.storedBytes, changes.downloads, clock())
         watchDownloads.report(changes.stored)
@@ -195,6 +207,9 @@ class PhoneWearLink(
                 val subscriptions = changes.subscriptions.filter { it.revision > from }.map { it.change }
                 val history = changes.history.filter { it.revision > from }.map { it.row }
                 val applied = (subscriptions.isEmpty() && history.isEmpty()) || attempt { library.apply(subscriptions, history) } != null
+                if (applied && (subscriptions.isNotEmpty() || history.isNotEmpty())) {
+                    events.note(PhoneLinkEvent.WatchChangesMerged(episodes = history.size, follows = subscriptions.size))
+                }
                 if (applied && changes.revision != acked) store.setAcked(changes.watchId, changes.revision)
                 applied && changes.revision != acked
             }
@@ -203,6 +218,7 @@ class PhoneWearLink(
     }
 
     private suspend fun onWatchSettings(remote: WearLinkSettings) {
+        if (!store.watchKnown) events.note(PhoneLinkEvent.WatchLinked)
         store.watchKnown = true
         linkStatus.value = linkStatus.value.copy(watchKnown = true)
         start()

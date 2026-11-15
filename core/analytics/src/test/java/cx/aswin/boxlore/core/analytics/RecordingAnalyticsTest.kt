@@ -185,7 +185,10 @@ class AnalyticsGlossaryAllowlistTest {
         assertTrue(AnalyticsGlossary.isAllowedEvent("feed_fetch_result"))
         assertTrue(AnalyticsGlossary.isAllowedEvent("feed_url_corrected"))
         assertTrue(AnalyticsGlossary.isAllowedEvent("own_ids_upgrade_completed"))
-        assertEquals(13, AnalyticsGlossary.PHASE_C.size)
+        // Plus the five Wear OS events the phone sends for the watch.
+        assertTrue(AnalyticsGlossary.isAllowedEvent("watch_linked"))
+        assertTrue(AnalyticsGlossary.isAllowedEvent("watch_changes_merged"))
+        assertEquals(18, AnalyticsGlossary.PHASE_C.size)
     }
 
     @Test

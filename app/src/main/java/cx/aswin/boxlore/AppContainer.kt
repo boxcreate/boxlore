@@ -770,6 +770,8 @@ class AppContainer(
                         network.createWatchAccountApi(apiBaseUrl, network.createCachedClient(appContext))
                     },
                 ),
+            // The watch app sends no usage events; the phone counts what passes through the link.
+            events = cx.aswin.boxlore.wearlink.PhoneLinkAnalytics(),
         )
     }
 

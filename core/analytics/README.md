@@ -53,6 +53,7 @@ It does not configure the PostHog SDK (`:app` does, and installs `AnalyticsBefor
 - Appearance (`trackHomeHeroStyleSelected`, `syncHomeHeroStylePersonProperties`) and recommendations (`trackRecommendationSectionToggled`) report the names listeners see in Settings, not stored keys.
 - Surveys (`SurveyAnalyticsTracks`): PostHog's standard survey events for boxlore's own NPS card; `surveyCopyOverrides` reads survey wording from a flag payload.
 - Support (`SupportAnalyticsTracks`, `SupportWorldContext`): `supportWorldVariant` reads the support experiment flag once per visit and records an exposure only for a known variant.
+- Wear OS (`WatchAnalyticsTracks`): what the phone sees through the watch link; the watch app sends no events.
 - Onboarding, growth, discovery, library, queue and playback façades live in their matching `*AnalyticsTracks.kt` files; `GenrePersonaLogic` derives onboarding's genre persona properties.
 - `InstallAttribution` saves `install_channel` once `:app` knows whether the Play Store installed the copy: Play's referrer only for Play installs, kept when the installer is still unknown, `not_play` otherwise.
 

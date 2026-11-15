@@ -90,6 +90,36 @@ data class WearLinkStatus(
     val inReach: Boolean get() = watchKnown && reachable
 }
 
+/**
+ * Something that passed between the phone and the watch, for the app's usage counts. The watch
+ * sends no usage data of its own, so what the phone sees here is all that is counted.
+ */
+sealed interface PhoneLinkEvent {
+    /** boxlore on a watch made contact with this phone for the first time. */
+    data object WatchLinked : PhoneLinkEvent
+
+    /** The phone answered the watch's request to be signed in; [status] is a [WatchSignInReply] status. */
+    data class SignInAnswered(val status: String) : PhoneLinkEvent
+
+    /** Send to watch or Remove from watch; [sent] is whether the watch could be handed the order. */
+    data class EpisodeOrder(val download: Boolean, val sent: Boolean) : PhoneLinkEvent
+
+    /** Playback moved between the two devices. */
+    data class PlaybackMoved(val toWatch: Boolean) : PhoneLinkEvent
+
+    /** Listening and follows done on the watch reached the phone's library. */
+    data class WatchChangesMerged(val episodes: Int, val follows: Int) : PhoneLinkEvent
+}
+
+/** Where the link reports [PhoneLinkEvent]s. An implementation must not throw. */
+fun interface PhoneLinkEvents {
+    fun note(event: PhoneLinkEvent)
+
+    companion object {
+        val None = PhoneLinkEvents { }
+    }
+}
+
 /** What the phone remembers about the watch link between launches. */
 interface PhoneLinkStore {
     var watchKnown: Boolean
