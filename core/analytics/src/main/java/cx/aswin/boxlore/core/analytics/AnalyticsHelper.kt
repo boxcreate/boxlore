@@ -3,7 +3,6 @@
 package cx.aswin.boxlore.core.analytics
 
 import android.content.Context
-import android.content.SharedPreferences
 import com.posthog.PostHog
 import com.posthog.PostHogOnFeatureFlags
 import cx.aswin.boxlore.core.model.Episode
@@ -11,7 +10,6 @@ import cx.aswin.boxlore.core.model.FeedFetchReport
 import cx.aswin.boxlore.core.model.FeedUrlCorrection
 import cx.aswin.boxlore.core.model.RankingAggregateTelemetry
 import cx.aswin.boxlore.core.model.UpgradeRepairReport
-import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import java.time.Instant
 
 object AnalyticsHelper : Analytics {
@@ -44,36 +42,25 @@ object AnalyticsHelper : Analytics {
         return reason
     }
 
-    private const val PREFS_NAME = PrefsFileMigrator.Files.ANALYTICS
-    private const val KEY_FIRST_LAUNCH = "is_first_launch"
-    private const val KEY_SAMPLE_BUCKET = "analytics_sample_bucket"
-    private const val KEY_POLICY = "analytics_policy"
-
     fun deriveGenrePersona(selectedGenres: Set<String>): Map<String, String> = GenrePersonaLogic.deriveGenrePersona(selectedGenres)
 
-    // ── 0. Event levels ────────────────────────────────────────────
+    // ── 0. Event levels ────────────────────────────────────────
 
     /**
      * Loads this install's sample bucket (picked once, kept across PostHog resets) and the switch
      * remembered from the last launch for this [appVersion]. Call before PostHog setup so the first
      * events already follow it.
      */
-    fun initPolicy(context: Context, appVersion: String,) = startPolicy(PrefsPolicyStore(analyticsPrefs(context)), appVersion)
+    fun initPolicy(context: Context, appVersion: String,) = startPolicy(AnalyticsLocalState.policyStore(context), appVersion)
 
-    internal fun startPolicy(store: AnalyticsPolicy.Store, appVersion: String,) {
-        policyHome = PolicyHome(store, appVersion)
-        AnalyticsPolicy.start(store, appVersion)
-    }
+    internal fun startPolicy(store: AnalyticsPolicy.Store, appVersion: String,) = AnalyticsLocalState.startPolicy(store, appVersion)
 
     /**
      * Applies the `analytics-policy-v1` flag PostHog holds now and remembers it for the next launch.
      * Runs whenever flags load: PostHog's own callback (startup, `identify`, `reset`) and
      * [reloadFeatureFlags]. Does nothing before [initPolicy].
      */
-    fun refreshAnalyticsPolicy() {
-        val home = policyHome ?: return
-        AnalyticsPolicy.refresh(policyPayload(), home.appVersion, home.store)
-    }
+    fun refreshAnalyticsPolicy() = AnalyticsLocalState.refreshPolicy()
 
     /**
      * `PostHog.reloadFeatureFlags` that also applies a changed analytics switch, then runs [onLoaded].
@@ -82,71 +69,18 @@ object AnalyticsHelper : Analytics {
      */
     fun reloadFeatureFlags(onLoaded: () -> Unit = {}) = PostHog.reloadFeatureFlags(flagsReloaded(onLoaded))
 
-    internal fun flagsReloaded(onLoaded: () -> Unit): PostHogOnFeatureFlags =
-        PostHogOnFeatureFlags {
-            try {
-                refreshAnalyticsPolicy()
-            } finally {
-                onLoaded()
-            }
-        }
+    internal fun flagsReloaded(onLoaded: () -> Unit): PostHogOnFeatureFlags = AnalyticsLocalState.flagsReloaded(onLoaded)
 
     /** Test hook: the payload PostHog holds for the switch. */
-    @Volatile
-    internal var policyPayload: () -> Any? = { PostHog.getFeatureFlagPayload(AnalyticsPolicy.FLAG_KEY, null) }
+    internal var policyPayload: () -> Any? by AnalyticsLocalState::policyPayload
 
     /** Test hook: no store yet, payload read from PostHog. */
-    internal fun resetPolicyForTest() {
-        policyHome = null
-        policyPayload = { PostHog.getFeatureFlagPayload(AnalyticsPolicy.FLAG_KEY, null) }
-    }
+    internal fun resetPolicyForTest() = AnalyticsLocalState.resetPolicy()
 
-    /** Where [initPolicy] keeps the bucket and switch, and the app version they belong to. */
-    private class PolicyHome(val store: AnalyticsPolicy.Store, val appVersion: String)
+    // ── 1. App Launch ──────────────────────────────────────────
 
-    @Volatile
-    private var policyHome: PolicyHome? = null
-
-    private class PrefsPolicyStore(private val prefs: SharedPreferences) : AnalyticsPolicy.Store {
-        override fun bucket(): Int? = prefs.getInt(KEY_SAMPLE_BUCKET, -1).takeIf { it >= 0 }
-
-        override fun saveBucket(bucket: Int) = prefs.edit().putInt(KEY_SAMPLE_BUCKET, bucket).apply()
-
-        override fun rules(): String? = prefs.getString(KEY_POLICY, null)
-
-        override fun saveRules(encoded: String) = prefs.edit().putString(KEY_POLICY, encoded).apply()
-    }
-
-    private fun analyticsPrefs(context: Context) =
-        PrefsFileMigrator.open(
-            context,
-            newName = PREFS_NAME,
-            oldName = PrefsFileMigrator.LegacyFiles.ANALYTICS,
-        )
-
-    // ── 1. App Launch ──────────────────────────────────────────────
-
-    override fun trackFirstLaunchIfNecessary(context: Context) {
-        val prefs =
-            PrefsFileMigrator.open(
-                context,
-                newName = PREFS_NAME,
-                oldName = PrefsFileMigrator.LegacyFiles.ANALYTICS,
-            )
-        val isFirstLaunch = prefs.getBoolean(KEY_FIRST_LAUNCH, true)
-
-        if (isFirstLaunch) {
-            AnalyticsEmit.personSet(
-                mapOf(
-                    "first_seen_at" to Instant.now().toString(),
-                    "onboarding_status" to "pending",
-                ),
-            )
-            prefs.edit().putBoolean(KEY_FIRST_LAUNCH, false).apply()
-        }
-        // Open/background volume is SDK-backed (Application Opened / Backgrounded).
-        // Do not emit glossary app_open / app_background here.
-    }
+    // Open/background volume is SDK-backed (Application Opened / Backgrounded); no glossary app_open / app_background here.
+    override fun trackFirstLaunchIfNecessary(context: Context) = AnalyticsLocalState.noteFirstLaunch(context)
 
     /** Person `$set_once` install_channel only — never emit install_attributed volume event. */
     fun trackInstallChannelAttributed(

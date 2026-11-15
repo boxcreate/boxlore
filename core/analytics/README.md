@@ -63,6 +63,7 @@ It does not configure the PostHog SDK (`:app` does, and installs `AnalyticsBefor
 src/main/java/cx/aswin/boxlore/core/analytics/
   Analytics.kt                     # the interface
   AnalyticsHelper.kt               # PostHog-backed singleton and façades
+  AnalyticsLocalState.kt           # the façade's own state: first-launch mark, levels switch store
   AnalyticsEmit.kt                 # levels, recipe IDs, sinks
   AnalyticsPolicy.kt               # levels, sampling, remote switch
   AnalyticsBeforeSend.kt           # PostHog beforeSend hook
