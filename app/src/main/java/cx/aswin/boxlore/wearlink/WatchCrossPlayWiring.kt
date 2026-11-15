@@ -16,13 +16,13 @@ import cx.aswin.boxlore.core.wearlink.WearLinkStatus
 import cx.aswin.boxlore.ui.WatchTakeover
 
 /** What the players read to offer the watch, or null while no watch with boxlore is in reach of this phone. */
-internal fun watchPlayOffer(status: WearLinkStatus, link: PhoneWearLink): WatchPlayOffer? =
-    if (status.inReach) WatchPlayOffer(link::playOnWatch) else null
+internal fun watchPlayOffer(status: WearLinkStatus, playOnWatch: () -> Unit): WatchPlayOffer? =
+    if (status.inReach) WatchPlayOffer(playOnWatch) else null
 
 @Composable
 internal fun rememberWatchPlayOffer(link: PhoneWearLink): WatchPlayOffer? {
     val status by link.status.collectAsState()
-    return remember(status.watchKnown, status.reachable, link) { watchPlayOffer(status, link) }
+    return remember(status.inReach, link) { watchPlayOffer(status, link::playOnWatch) }
 }
 
 /** What an episode page can do with the watch, or null while no watch with boxlore is in reach of this phone. */
