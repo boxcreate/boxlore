@@ -58,9 +58,9 @@ interface PhonePlayerPort {
 
     /**
      * Starts [episode] at [positionMs] and queues [upNext] after it: the listener moved playback
-     * from the watch to the phone.
+     * from the watch to the phone. False when the phone has no audio for the episode and started nothing.
      */
-    suspend fun play(episode: WearLinkEpisode, positionMs: Long, upNext: List<WearLinkEpisode> = emptyList())
+    suspend fun play(episode: WearLinkEpisode, positionMs: Long, upNext: List<WearLinkEpisode> = emptyList()): Boolean
 }
 
 data class PhonePlayerState(

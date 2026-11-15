@@ -3,8 +3,10 @@ package cx.aswin.boxlore.core.analytics
 /**
  * Wear OS usage, as the phone sees it through the watch link. The watch app sends nothing itself,
  * so listening on a watch that never meets this phone is not counted.
+ *
+ * Called directly, not through [AnalyticsHelper]: that file is past the source-size limit.
  */
-internal object WatchAnalyticsTracks {
+object WatchAnalyticsTracks {
     /** boxlore on a watch linked with this phone for the first time. */
     fun trackWatchLinked() = AnalyticsEmit.event("watch_linked", emptyMap())
 

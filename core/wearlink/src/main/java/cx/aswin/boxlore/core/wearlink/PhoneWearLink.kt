@@ -168,8 +168,8 @@ class PhoneWearLink(
                 WearLinkCommand.SET_SPEED -> command.speed?.let { player.setSpeed(it) }
                 WearLinkCommand.PLAY_EPISODE ->
                     command.episode?.let {
-                        player.play(it, command.positionMs ?: 0L, command.upNext)
-                        events.note(PhoneLinkEvent.PlaybackMoved(toWatch = false))
+                        // An episode the phone has no audio for starts nothing, so nothing moved.
+                        if (player.play(it, command.positionMs ?: 0L, command.upNext)) events.note(PhoneLinkEvent.PlaybackMoved(toWatch = false))
                     }
             }
         }

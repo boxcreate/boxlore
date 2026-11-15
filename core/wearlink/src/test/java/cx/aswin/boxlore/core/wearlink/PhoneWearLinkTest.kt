@@ -49,6 +49,9 @@ class PhoneWearLinkTest {
         val calls = ArrayList<String>()
         var failing = false
 
+        /** Whether the phone has audio for what it is asked to play. */
+        var hasAudio = true
+
         override suspend fun togglePlayPause() {
             check(!failing) { "MediaController method is called from a wrong thread" }
             calls += "toggle"
@@ -70,10 +73,12 @@ class PhoneWearLinkTest {
             calls += "speed $speed"
         }
 
-        override suspend fun play(episode: WearLinkEpisode, positionMs: Long, upNext: List<WearLinkEpisode>) {
+        override suspend fun play(episode: WearLinkEpisode, positionMs: Long, upNext: List<WearLinkEpisode>): Boolean {
             check(!failing) { "MediaController method is called from a wrong thread" }
+            if (!hasAudio) return false
             val then = if (upNext.isEmpty()) "" else " then ${upNext.joinToString(",") { it.episodeId }}"
             calls += "play ${episode.episodeId} at $positionMs$then"
+            return true
         }
     }
 
@@ -543,6 +548,9 @@ class PhoneWearLinkTest {
         link.onCommand(WearLinkCodec.encode(WearLinkCommand(WearLinkCommand.PLAY_EPISODE, positionMs = 5L, episode = WearLinkEpisode("e", "1", "E"))))
         // Controlling the phone's player from the watch moves nothing.
         link.onCommand(WearLinkCodec.encode(WearLinkCommand(WearLinkCommand.TOGGLE)))
+        // An episode the phone has no audio for starts nothing: no move to report.
+        player.hasAudio = false
+        link.onCommand(WearLinkCodec.encode(WearLinkCommand(WearLinkCommand.PLAY_EPISODE, positionMs = 5L, episode = WearLinkEpisode("gone", "1", "Gone"))))
 
         assertEquals(listOf<PhoneLinkEvent>(PhoneLinkEvent.PlaybackMoved(toWatch = true), PhoneLinkEvent.PlaybackMoved(toWatch = false)), noted)
     }

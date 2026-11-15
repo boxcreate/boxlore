@@ -1,6 +1,6 @@
 package cx.aswin.boxlore.wearlink
 
-import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.analytics.WatchAnalyticsTracks
 import cx.aswin.boxlore.core.wearlink.PhoneLinkEvent
 import cx.aswin.boxlore.core.wearlink.PhoneLinkEvents
 
@@ -13,11 +13,11 @@ internal class PhoneLinkAnalytics(private val send: (PhoneLinkEvent) -> Unit = :
     private companion object {
         fun track(event: PhoneLinkEvent) {
             when (event) {
-                PhoneLinkEvent.WatchLinked -> AnalyticsHelper.trackWatchLinked()
-                is PhoneLinkEvent.SignInAnswered -> AnalyticsHelper.trackWatchSignInAnswered(event.status)
-                is PhoneLinkEvent.EpisodeOrder -> AnalyticsHelper.trackWatchEpisodeOrder(event.download, event.sent)
-                is PhoneLinkEvent.PlaybackMoved -> AnalyticsHelper.trackWatchPlaybackMoved(event.toWatch)
-                is PhoneLinkEvent.WatchChangesMerged -> AnalyticsHelper.trackWatchChangesMerged(event.episodes, event.follows)
+                PhoneLinkEvent.WatchLinked -> WatchAnalyticsTracks.trackWatchLinked()
+                is PhoneLinkEvent.SignInAnswered -> WatchAnalyticsTracks.trackWatchSignInAnswered(event.status)
+                is PhoneLinkEvent.EpisodeOrder -> WatchAnalyticsTracks.trackWatchEpisodeOrder(event.download, event.sent)
+                is PhoneLinkEvent.PlaybackMoved -> WatchAnalyticsTracks.trackWatchPlaybackMoved(event.toWatch)
+                is PhoneLinkEvent.WatchChangesMerged -> WatchAnalyticsTracks.trackWatchChangesMerged(event.episodes, event.follows)
             }
         }
     }
