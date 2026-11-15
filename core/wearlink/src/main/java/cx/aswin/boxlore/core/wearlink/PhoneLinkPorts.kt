@@ -82,7 +82,13 @@ data class WearLinkStatus(
     /** Whether that watch app can be reached right now. */
     val reachable: Boolean = false,
     val watch: WatchStatus = WatchStatus(),
-)
+) {
+    /**
+     * Whether the phone can do something with the watch right now. Anything the phone offers for
+     * the watch (play there, send an episode) goes by this: offered out of reach, it could only fail.
+     */
+    val inReach: Boolean get() = watchKnown && reachable
+}
 
 /** What the phone remembers about the watch link between launches. */
 interface PhoneLinkStore {
