@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Share cards line up with the artwork and add a details line: an episode's length and date, or a show's genre and how often it posts. ([#1260](https://github.com/boxcreate/boxlore/pull/1260)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `AndroidAutoTip` (`:app`): a one-time full-screen `TIP` announcement and notification for installs that didn't come from the Play Store, shown when boxlore opens during a drive or a drive starts while its player service runs; `CarSignals` and `DriveStartWatcher` (`:core:playback`) report drive starts and Android Auto browsing. ([#1251](https://github.com/boxcreate/boxlore/pull/1251)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - Every event carries `build_channel`, `install_source` and `installer_package` (`PostHogWiring.installTags`, `installOrigin`), resolved off the main thread before PostHog setup so SDK lifecycle events carry them too. ([#1250](https://github.com/boxcreate/boxlore/pull/1250)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- Wear OS usage events sent by the phone (`WatchAnalyticsTracks`), reported by the watch link through `PhoneLinkEvents`. ([#1263](https://github.com/boxcreate/boxlore/pull/1263)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Changed
 - `SleepTimerPopup` takes `onPlayOnWatch` and reports `SleepTimerPopupDismissReason.PlayedOnWatch`; with it the prompt waits five seconds longer. ([#1256](https://github.com/boxcreate/boxlore/pull/1256)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - `playerState.position` now follows seeks made while the app is not on screen (`PlaybackControllerStatePolicy.afterSeek`). ([#1256](https://github.com/boxcreate/boxlore/pull/1256)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
@@ -91,6 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `LinkedWatchPlayback.play` carries the phone's current position and queue when the phone is playing the episode being started. ([#1259](https://github.com/boxcreate/boxlore/pull/1259)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - `WatchLibraryState.merged` prefers the copy under the episode's own ID over one saved under the phone's older ID for the same audio. ([#1262](https://github.com/boxcreate/boxlore/pull/1262)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - `LiveWatchPlayback.play` keeps a newer saved place when the still player holds the same episode (`PlaybackRules.savesPlaceBeforeStart`). ([#1262](https://github.com/boxcreate/boxlore/pull/1262)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- The episode page's watch button follows `WearLinkStatus.inReach` and is hidden while the watch cannot be reached. ([#1263](https://github.com/boxcreate/boxlore/pull/1263)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ## [v0.0.31] - 2026-11-07
 
 ### Added
