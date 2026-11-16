@@ -343,7 +343,7 @@ fun EpisodeInfoScreen(
                         modifier = Modifier.align(Alignment.CenterStart).padding(start = 16.dp),
                     )
 
-                    // Watch button: only while a watch has linked; it sits beside Share.
+                    // Watch button: only while a watch is in reach; it sits beside Share.
                     watchActions?.let { actions ->
                         cx.aswin.boxlore.feature.info.components.EpisodeWatchButton(
                             episode = state.episode,

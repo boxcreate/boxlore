@@ -17,6 +17,7 @@ It does not own the watch's end (that is [`:wear`](../../wear/README.md)), the p
 - `PhoneWearLink`: the phone's end, one per app. `start()` does nothing until a watch has made contact once. `onItem`, `onCommand` and `onRequest` take what the app's listener service receives. `status` and `settings` feed the Wear OS settings page; `setShowsLayout` and `setStorageLimitMb` change the watch's settings. `playOnWatch` moves the phone's episode, place and queue to the watch; `playOnWatchOffer` is true after the phone took over from a playing watch, until `dismissPlayOnWatchOffer`.
 - `PhoneWatchDownloads` (`PhoneWearLink.watchDownloads`): Send to watch. `send` and `remove` order one episode onto or off the watch; `WatchCopyRules.of` reads its state (`WatchCopy`) from what the watch reports it stores.
 - `PhoneLibraryPort`, `PhonePlayerPort`, `PhoneAccountPort`: what the app implements over its repositories and the account. `PhoneAccountPort` answers the watch's request to be signed in (`WatchSignInReply`).
+- `PhoneLinkEvents`: where the link reports what passed through it (`PhoneLinkEvent`) for the app's usage counts; the watch sends none of its own.
 - `PhoneLinkStore` (`SharedPreferencesPhoneLinkStore`, `PhoneLinkStore.InMemory`): what the phone remembers about the link.
 
 ## Internal structure

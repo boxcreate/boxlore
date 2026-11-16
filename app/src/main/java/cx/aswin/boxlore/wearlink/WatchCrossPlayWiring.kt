@@ -16,18 +16,18 @@ import cx.aswin.boxlore.core.wearlink.WearLinkStatus
 import cx.aswin.boxlore.ui.WatchTakeover
 
 /** What the players read to offer the watch, or null while no watch with boxlore is in reach of this phone. */
-internal fun watchPlayOffer(status: WearLinkStatus, link: PhoneWearLink): WatchPlayOffer? =
-    if (status.watchKnown && status.reachable) WatchPlayOffer(link::playOnWatch) else null
+internal fun watchPlayOffer(status: WearLinkStatus, playOnWatch: () -> Unit): WatchPlayOffer? =
+    if (status.inReach) WatchPlayOffer(playOnWatch) else null
 
 @Composable
 internal fun rememberWatchPlayOffer(link: PhoneWearLink): WatchPlayOffer? {
     val status by link.status.collectAsState()
-    return remember(status.watchKnown, status.reachable, link) { watchPlayOffer(status, link) }
+    return remember(status.inReach, link) { watchPlayOffer(status, link::playOnWatch) }
 }
 
-/** What an episode page can do with the watch, or null until boxlore on a watch has linked with this phone. */
-internal fun watchEpisodeActions(watchKnown: Boolean, stored: List<WatchStoredEpisode>, downloads: PhoneWatchDownloads): WatchEpisodeActions? {
-    if (!watchKnown) return null
+/** What an episode page can do with the watch, or null while no watch with boxlore is in reach of this phone. */
+internal fun watchEpisodeActions(status: WearLinkStatus, stored: List<WatchStoredEpisode>, downloads: PhoneWatchDownloads): WatchEpisodeActions? {
+    if (!status.inReach) return null
     return WatchEpisodeActions(
         copyOf = { id, audioUrl ->
             when (WatchCopyRules.of(id, audioUrl, stored)) {
@@ -45,7 +45,7 @@ internal fun watchEpisodeActions(watchKnown: Boolean, stored: List<WatchStoredEp
 internal fun rememberWatchEpisodeActions(link: PhoneWearLink): WatchEpisodeActions? {
     val status by link.status.collectAsState()
     val stored by link.watchDownloads.stored.collectAsState()
-    return remember(status.watchKnown, stored, link) { watchEpisodeActions(status.watchKnown, stored, link.watchDownloads) }
+    return remember(status.inReach, stored, link) { watchEpisodeActions(status, stored, link.watchDownloads) }
 }
 
 /** Whether this phone has just taken over from a playing watch, with what the notice's buttons do. */

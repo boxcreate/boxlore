@@ -177,8 +177,8 @@ internal class PhonePlayerAdapter(
 
     override suspend fun setSpeed(speed: Float) = playback().setPlaybackSpeed(speed)
 
-    override suspend fun play(episode: WearLinkEpisode, positionMs: Long, upNext: List<WearLinkEpisode>) {
-        val (found, show) = resolve(episode) ?: return
+    override suspend fun play(episode: WearLinkEpisode, positionMs: Long, upNext: List<WearLinkEpisode>): Boolean {
+        val (found, show) = resolve(episode) ?: return false
         // The player's controller only answers on the main thread; the link's work runs elsewhere.
         withContext(Dispatchers.Main.immediate) { playback().playEpisode(found, show, initialPositionMs = positionMs) }
         // What waited on the watch waits on the phone now. One that cannot be found is left out, not fatal.
@@ -186,6 +186,7 @@ internal class PhonePlayerAdapter(
             val (next, itsShow) = resolve(queued) ?: continue
             withContext(Dispatchers.Main.immediate) { playback().addToQueue(next, itsShow) }
         }
+        return true
     }
 
     /** The phone's own copy of an episode the watch named, with its show; null when it has no audio to play. */

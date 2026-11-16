@@ -49,6 +49,9 @@ class PhoneWearLinkTest {
         val calls = ArrayList<String>()
         var failing = false
 
+        /** Whether the phone has audio for what it is asked to play. */
+        var hasAudio = true
+
         override suspend fun togglePlayPause() {
             check(!failing) { "MediaController method is called from a wrong thread" }
             calls += "toggle"
@@ -70,10 +73,12 @@ class PhoneWearLinkTest {
             calls += "speed $speed"
         }
 
-        override suspend fun play(episode: WearLinkEpisode, positionMs: Long, upNext: List<WearLinkEpisode>) {
+        override suspend fun play(episode: WearLinkEpisode, positionMs: Long, upNext: List<WearLinkEpisode>): Boolean {
             check(!failing) { "MediaController method is called from a wrong thread" }
+            if (!hasAudio) return false
             val then = if (upNext.isEmpty()) "" else " then ${upNext.joinToString(",") { it.episodeId }}"
             calls += "play ${episode.episodeId} at $positionMs$then"
+            return true
         }
     }
 
@@ -85,7 +90,10 @@ class PhoneWearLinkTest {
 
     private var account = PhoneAccountPort.None
 
-    private fun TestScope.link() = PhoneWearLink(transport, library, player, store, backgroundScope, account) { now }
+    /** What the link reported for the app's usage counts, in order. */
+    private val noted = mutableListOf<PhoneLinkEvent>()
+
+    private fun TestScope.link() = PhoneWearLink(transport, library, player, store, backgroundScope, account, { noted += it }) { now }
 
     private fun changes(revision: Long, vararg history: Pair<Long, String>, follows: List<Pair<Long, String>> = emptyList(), watchId: String = "w") =
         WatchChanges(
@@ -485,6 +493,102 @@ class PhoneWearLinkTest {
 
         assertEquals(listOf("a"), library.applied.single().second.map { it.episodeId })
         assertEquals(mapOf("w" to 2L), publishedLibrary()!!.acked)
+    }
+
+    @Test
+    fun `a first contact is reported once, and each merge with what it brought`() = runTest {
+        val link = link()
+
+        link.hears(changes(3L, 2L to "a", 3L to "b", follows = listOf(1L to "9")))
+        // The watch repeats itself until it hears the confirmation: nothing new, nothing reported.
+        link.hears(changes(3L, 2L to "a", 3L to "b", follows = listOf(1L to "9")))
+        link.hears(changes(4L, 4L to "c"))
+        settle()
+
+        assertEquals(
+            listOf(
+                PhoneLinkEvent.WatchLinked,
+                PhoneLinkEvent.WatchChangesMerged(episodes = 2, follows = 1),
+                PhoneLinkEvent.WatchChangesMerged(episodes = 1, follows = 0),
+            ),
+            noted,
+        )
+    }
+
+    @Test
+    fun `a merge that fails, or a watch with nothing new, reports no listening`() = runTest {
+        val link = link()
+        library.failApply = true
+
+        link.hears(changes(2L, 2L to "a"))
+        link.hears(changes(0L, watchId = "other"))
+        settle()
+
+        assertEquals(listOf<PhoneLinkEvent>(PhoneLinkEvent.WatchLinked), noted)
+    }
+
+    @Test
+    fun `moving playback is reported with its direction, and only when it moved`() = runTest {
+        val link = link()
+        link.hears(changes(0L))
+        settle()
+        noted.clear()
+        player.state.value = PhonePlayerState(WearLinkEpisode("e", "1", "E"), isPlaying = true, positionMs = 10_000L)
+        settle()
+
+        // Out of reach: the phone keeps playing, so nothing moved.
+        transport.reachable.value = false
+        link.playOnWatch()
+        settle()
+        assertTrue(noted.isEmpty())
+
+        transport.reachable.value = true
+        link.playOnWatch()
+        settle()
+        link.onCommand(WearLinkCodec.encode(WearLinkCommand(WearLinkCommand.PLAY_EPISODE, positionMs = 5L, episode = WearLinkEpisode("e", "1", "E"))))
+        // Controlling the phone's player from the watch moves nothing.
+        link.onCommand(WearLinkCodec.encode(WearLinkCommand(WearLinkCommand.TOGGLE)))
+        // An episode the phone has no audio for starts nothing: no move to report.
+        player.hasAudio = false
+        link.onCommand(WearLinkCodec.encode(WearLinkCommand(WearLinkCommand.PLAY_EPISODE, positionMs = 5L, episode = WearLinkEpisode("gone", "1", "Gone"))))
+
+        assertEquals(listOf<PhoneLinkEvent>(PhoneLinkEvent.PlaybackMoved(toWatch = true), PhoneLinkEvent.PlaybackMoved(toWatch = false)), noted)
+    }
+
+    @Test
+    fun `each answer to the watch's sign-in request is reported with its outcome`() = runTest {
+        link().onRequest(WearLinkProtocol.PATH_SIGN_IN, byteArrayOf())
+        account = PhoneAccountPort { WatchSignInReply(WatchSignInReply.OK, code = "code-1", account = "me@example.org") }
+        link().onRequest(WearLinkProtocol.PATH_SIGN_IN, byteArrayOf())
+        account = PhoneAccountPort { error("no network") }
+        link().onRequest(WearLinkProtocol.PATH_SIGN_IN, byteArrayOf())
+
+        // Only the outcome travels: never the code or the account's name.
+        assertEquals(
+            listOf<PhoneLinkEvent>(
+                PhoneLinkEvent.SignInAnswered(WatchSignInReply.SIGNED_OUT),
+                PhoneLinkEvent.SignInAnswered(WatchSignInReply.OK),
+                PhoneLinkEvent.SignInAnswered(WatchSignInReply.FAILED),
+            ),
+            noted,
+        )
+    }
+
+    @Test
+    fun `Send to watch and Remove from watch are reported with whether the watch got the order`() = runTest {
+        val link = link()
+        val episode = WearLinkEpisode("e", "1", "E", audioUrl = "https://example.org/e.mp3")
+
+        link.watchDownloads.send(episode)
+        settle()
+        transport.reachable.value = false
+        link.watchDownloads.remove(episode)
+        settle()
+
+        assertEquals(
+            listOf<PhoneLinkEvent>(PhoneLinkEvent.EpisodeOrder(download = true, sent = true), PhoneLinkEvent.EpisodeOrder(download = false, sent = false)),
+            noted,
+        )
     }
 
     private companion object {

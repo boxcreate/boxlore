@@ -31,7 +31,11 @@ object WatchCopyRules {
  * download this episode, and remove it again. An order is only handed over while the watch is in
  * reach; the watch's storage limit still decides whether a download is kept.
  */
-class PhoneWatchDownloads(private val transport: WearLinkTransport, private val scope: CoroutineScope) {
+class PhoneWatchDownloads(
+    private val transport: WearLinkTransport,
+    private val scope: CoroutineScope,
+    private val events: PhoneLinkEvents = PhoneLinkEvents.None,
+) {
     private val reported = MutableStateFlow<List<WatchStoredEpisode>>(emptyList())
 
     val stored: StateFlow<List<WatchStoredEpisode>> = reported.asStateFlow()
@@ -59,6 +63,7 @@ class PhoneWatchDownloads(private val transport: WearLinkTransport, private val 
             // Shown at once; the watch's next report says what really happened.
             // Applied as one step, so two orders finishing together both show.
             if (sent) reported.update(assumed)
+            events.note(PhoneLinkEvent.EpisodeOrder(download = action == WearLinkCommand.DOWNLOAD_EPISODE, sent = sent))
             onResult(sent)
         }
     }

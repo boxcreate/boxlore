@@ -331,6 +331,11 @@ class GlossaryAllEventsEmissionTest {
                     AnalyticsHelper.trackHomeImportBannerImpression()
                 },
                 "android_auto_connected" to { AnalyticsHelper.trackAndroidAutoConnected("s1") },
+                "watch_linked" to { WatchAnalyticsTracks.trackWatchLinked() },
+                "watch_sign_in_answered" to { WatchAnalyticsTracks.trackWatchSignInAnswered("ok") },
+                "watch_episode_order" to { WatchAnalyticsTracks.trackWatchEpisodeOrder(download = true, sent = true) },
+                "watch_playback_moved" to { WatchAnalyticsTracks.trackWatchPlaybackMoved(toWatch = true) },
+                "watch_changes_merged" to { WatchAnalyticsTracks.trackWatchChangesMerged(episodes = 2, follows = 1) },
                 "android_auto_disconnected" to {
                     AnalyticsHelper.trackAndroidAutoDisconnected("s1", durationSeconds = 10)
                 },

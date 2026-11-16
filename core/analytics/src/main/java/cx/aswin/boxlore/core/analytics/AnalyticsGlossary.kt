@@ -107,6 +107,11 @@ object AnalyticsGlossary {
         setOf(
             "android_auto_connected",
             "android_auto_disconnected",
+            "watch_linked",
+            "watch_sign_in_answered",
+            "watch_episode_order",
+            "watch_playback_moved",
+            "watch_changes_merged",
             "android_auto_browse",
             "adaptive_ranking_status",
             "learn_caught_up",
