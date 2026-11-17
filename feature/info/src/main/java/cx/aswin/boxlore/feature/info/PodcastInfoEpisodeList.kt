@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -29,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
@@ -57,8 +60,11 @@ import cx.aswin.boxlore.feature.info.components.showFeedStatusText
 import cx.aswin.boxlore.feature.info.logic.FeedItem
 import cx.aswin.boxlore.feature.info.logic.HideCompletedFill
 import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
+import cx.aswin.boxlore.feature.info.logic.podcastSearchCoverage
 import cx.aswin.boxlore.feature.info.logic.podcastSearchHasNoResults
+import cx.aswin.boxlore.feature.info.logic.podcastSearchShowsFailure
 import cx.aswin.boxlore.feature.info.sections.PodcastInfoHeroSection
+import java.text.NumberFormat
 
 internal data class EpisodeListContentState(
     val listState: LazyListState,
@@ -178,6 +184,8 @@ internal fun PodcastInfoEpisodeList(
             }
         }
 
+        searchCoverageItem(contentState)
+
         episodesSection(
             contentState = contentState,
             callbacks = callbacks,
@@ -191,24 +199,68 @@ internal fun PodcastInfoEpisodeList(
             }
         }
 
-        if (podcastSearchHasNoResults(contentState.isSearchActive, contentState.state.searchQuery, contentState.state.isSearching, contentState.state.searchResults)) {
-            item {
-                Box(
-                    modifier = Modifier.fillMaxWidth().padding(48.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = stringResource(R.string.podcast_info_no_search_results),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
+        searchFailedItem(contentState, callbacks)
+        searchNoResultsItem(contentState)
+    }
+}
+
+/** A finished search with no matches. */
+private fun LazyListScope.searchNoResultsItem(contentState: EpisodeListContentState) {
+    val state = contentState.state
+    if (!podcastSearchHasNoResults(contentState.isSearchActive, state.searchQuery, state.isSearching, state.searchResults, state.searchFailed)) return
+    item {
+        Box(
+            modifier = Modifier.fillMaxWidth().padding(48.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = stringResource(R.string.podcast_info_no_search_results),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
 
 private const val LOADING_CARDS = 2
+
+/** A search of a show longer than the server lists: says how many of the newest episodes it covered, above its results. */
+private fun LazyListScope.searchCoverageItem(contentState: EpisodeListContentState) {
+    val state = contentState.state
+    val searched =
+        podcastSearchCoverage(contentState.isSearchActive, state.searchQuery, state.isSearching, state.searchFailed, state.searchedNewest) ?: return
+    item(key = "search_coverage") {
+        Text(
+            text = stringResource(R.string.podcast_info_search_newest_only, NumberFormat.getIntegerInstance().format(searched)),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+        )
+    }
+}
+
+/** A search that couldn't read the show's episodes: says so and runs the same search again on Try again. */
+private fun LazyListScope.searchFailedItem(contentState: EpisodeListContentState, callbacks: EpisodeListContentCallbacks) {
+    val state = contentState.state
+    if (!podcastSearchShowsFailure(contentState.isSearchActive, state.searchQuery, state.isSearching, state.searchFailed)) return
+    item(key = "search_failed") {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp, vertical = 40.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.podcast_info_search_failed),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            TextButton(onClick = { callbacks.onSearchChange(state.searchQuery) }) {
+                Text(stringResource(R.string.podcast_info_retry))
+            }
+        }
+    }
+}
 
 private fun showsLoadingCards(contentState: EpisodeListContentState): Boolean = !contentState.isSearchActive &&
     !contentState.state.isRssRefreshing &&

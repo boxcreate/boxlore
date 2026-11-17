@@ -289,4 +289,30 @@ class SameShowContinuationLogicTest {
 
         assertEquals(listOf("ep-2", "ep-3"), candidates.map { it.id })
     }
+
+    @Test
+    fun `computeCandidates offers nothing when the window starts after an episode it does not hold`() {
+        // Reported: from an episode older than the newest 200, the banner offered the oldest of
+        // those 200, hundreds of episodes ahead of the listener's place.
+        val newest200 = (801L..1_000L).map { testEpisode("ep-$it", publishedDate = it) }
+        val current = testEpisode("ep-500", publishedDate = 500L)
+
+        val candidates =
+            SameShowContinuationLogic.computeCandidates(
+                allEpisodes = newest200,
+                currentEpisode = current,
+                podcast = testPodcast(type = "serial"),
+            )
+
+        assertEquals(emptyList<Episode>(), candidates)
+    }
+
+    @Test
+    fun `forwardWithoutAnchor keeps the newer episodes of a window that holds the episode's date`() {
+        val window = (801L..810L).map { testEpisode("ep-$it", publishedDate = it) }
+
+        assertEquals(listOf("ep-809", "ep-810"), SameShowContinuationLogic.forwardWithoutAnchor(window, 808L).map { it.id })
+        assertEquals(emptyList<Episode>(), SameShowContinuationLogic.forwardWithoutAnchor(window, 800L))
+        assertEquals(emptyList<Episode>(), SameShowContinuationLogic.forwardWithoutAnchor(emptyList(), 800L))
+    }
 }

@@ -51,6 +51,18 @@ class SubscribedEpisodeCatalogTest {
         assertEquals(listOf("pi:123", "rss:123"), visits)
     }
 
+    @Test fun lastFeedReadComesFromTheShowsOwnSource() = runTest {
+        val pi = object : LocalEpisodeCatalogPort by FakeLocalEpisodeCatalogPort() {
+            override suspend fun lastFeedReadAt(podcastId: String) = 111L
+        }
+        val rss = object : LocalEpisodeCatalogPort by FakeLocalEpisodeCatalogPort() {
+            override suspend fun lastFeedReadAt(podcastId: String) = 222L
+        }
+        val shared = SubscribedEpisodeCatalog(pi, rss)
+        assertEquals(111L, shared.lastFeedReadAt("123"))
+        assertEquals(222L, shared.lastFeedReadAt("rss:abc"))
+    }
+
     @Test fun everyRefreshPathFollowsAFeedThatMovedForGood() = runTest {
         val moved = LocalEpisodeCatalogPort.RefreshOutcome.Success(newest = null, itemCount = 1, ready = true, movedTo = "https://new.example/feed.xml")
         val pi = FakeLocalEpisodeCatalogPort().apply { refreshOutcome = moved }

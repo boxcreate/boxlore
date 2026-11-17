@@ -103,6 +103,8 @@ class RssParityIntegrationTest {
         assertEquals(1, feed.conditionals)
         assertEquals(1, callbacks)
         assertTrue(database.podcastDao().getPodcast(id)!!.lastRssSyncAt > 0)
+        assertEquals(database.podcastDao().getPodcast(id)!!.lastRssSyncAt, repository.episodeCatalog.lastFeedReadAt(id))
+        assertEquals(0L, repository.episodeCatalog.lastFeedReadAt("rss:never-followed"))
     }
 
     @Test fun anchoredRssPlaybackContinuesForwardRegardlessOfListSort() = runBlocking {
@@ -138,6 +140,51 @@ class RssParityIntegrationTest {
         assertEquals(3, feed.gets)
         assertEquals(1, feed.conditionals)
         assertEquals(3, callbacks)
+    }
+
+    @Test fun pullInsideTheQuietWaitReadsConditionallyAndIsNotForced() = runBlocking {
+        repository.episodeCatalog.refresh(request())
+        assertEquals(1, feed.gets)
+        assertFalse(repository.episodeCatalog.isRefreshDue(id, url, System.currentTimeMillis()))
+        feed.unchanged = true
+
+        assertTrue(repository.episodeCatalog.refresh(request(RefreshReason.PULL)) is RefreshOutcome.Unchanged)
+
+        assertEquals(1, feed.conditionals)
+        assertEquals("a pull is not a forced full download", 1, feed.gets)
+    }
+
+    /** Regression: an offline pull pushed every `rss:` show it could not read back a full six hours. */
+    @Test fun aFailedPullOfAShowNotYetDueKeepsItsWait() = runBlocking {
+        repository.episodeCatalog.refresh(request())
+        val oneHourAgo = System.currentTimeMillis() - 60L * 60 * 1000
+        database.podcastDao().upsert(database.podcastDao().getPodcast(id)!!.copy(lastRssSyncAt = oneHourAgo))
+        assertFalse(repository.episodeCatalog.isRefreshDue(id, url, System.currentTimeMillis()))
+        feed.onGet = { throw IOException("offline") }
+
+        assertTrue(repository.episodeCatalog.refresh(request(RefreshReason.PULL)) is RefreshOutcome.Failure)
+
+        assertEquals(1, feed.conditionals)
+        val stored = database.podcastDao().getPodcast(id)!!
+        assertEquals(oneHourAgo, stored.lastRssSyncAt)
+        assertFalse(stored.rssCatalogStale)
+        assertFalse(repository.episodeCatalog.isRefreshDue(id, url, oneHourAgo + 60L * 60 * 1000))
+        assertTrue(repository.episodeCatalog.isRefreshDue(id, url, oneHourAgo + 21_600_000))
+    }
+
+    @Test fun aFailedPullOfADueShowStillRecordsTheAttempt() = runBlocking {
+        repository.episodeCatalog.refresh(request())
+        makeDue()
+        assertTrue(repository.episodeCatalog.isRefreshDue(id, url, System.currentTimeMillis()))
+        feed.onGet = { throw IOException("offline") }
+        val before = System.currentTimeMillis()
+
+        assertTrue(repository.episodeCatalog.refresh(request(RefreshReason.PULL)) is RefreshOutcome.Failure)
+
+        val stored = database.podcastDao().getPodcast(id)!!
+        assertTrue(stored.lastRssSyncAt >= before)
+        assertTrue(stored.rssCatalogStale)
+        assertFalse(repository.episodeCatalog.isRefreshDue(id, url, System.currentTimeMillis()))
     }
 
     @Test fun concurrentSettingsChangeSurvivesRefresh() = runBlocking {

@@ -43,6 +43,8 @@ object SameShowContinuationLogic {
     /**
      * Filters and orders candidates forward in time from [currentEpisode], excluding
      * the current track, existing queue items, trailers, and items without an audio URL.
+     * When [allEpisodes] doesn't hold [currentEpisode], episodes newer than it count only if it
+     * is no older than the window's oldest: a window that starts after it can't say what follows.
      */
     fun computeCandidates(
         allEpisodes: List<Episode>,
@@ -61,7 +63,7 @@ object SameShowContinuationLogic {
         val idx = chronological.indexOfFirst { it.id == currentEpisode.id }
         val rawCandidates =
             if (idx == -1) {
-                chronological.filter { it.publishedDate > currentPublished }
+                forwardWithoutAnchor(chronological, currentPublished)
             } else {
                 chronological.drop(idx + 1)
             }
@@ -75,5 +77,16 @@ object SameShowContinuationLogic {
             .distinctBy { it.id }
             .take(maxCount)
             .toList()
+    }
+
+    /**
+     * The episodes of [chronological] (oldest first) after an episode it doesn't hold, published at
+     * [currentPublished]: none when that is before the window's oldest. The window then starts
+     * somewhere past the listener's place, and its oldest isn't the episode that follows.
+     */
+    internal fun forwardWithoutAnchor(chronological: List<Episode>, currentPublished: Long): List<Episode> {
+        val oldest = chronological.firstOrNull()?.publishedDate ?: return emptyList()
+        if (currentPublished < oldest) return emptyList()
+        return chronological.filter { it.publishedDate > currentPublished }
     }
 }

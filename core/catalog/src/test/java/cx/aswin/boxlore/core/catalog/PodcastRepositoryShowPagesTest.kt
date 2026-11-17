@@ -63,6 +63,7 @@ class PodcastRepositoryShowPagesTest {
         context = ApplicationProvider.getApplicationContext()
         database = Room.inMemoryDatabaseBuilder(context, BoxLoreDatabase::class.java).allowMainThreadQueries().build()
         PodcastRepository.episodesCache.clear()
+        PodcastRepository.showSearchCache.clear()
         server = MockWebServer()
         server.dispatcher =
             object : Dispatcher() {
@@ -83,6 +84,7 @@ class PodcastRepositoryShowPagesTest {
         database.close()
         RssPodcastRepository.clearInstanceForTests()
         PodcastRepository.episodesCache.clear()
+        PodcastRepository.showSearchCache.clear()
     }
 
     @Test

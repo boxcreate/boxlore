@@ -12,8 +12,8 @@ Catalog and feeds:
 
 - `PodcastCatalogPort`: show details, one episode, and a show's episodes from the catalog.
 - `LocalCatalogPort`: local show lookup, the subscribed RSS show linked to a Podcast Index show, and subscribed show upsert.
-- `LocalEpisodeCatalogPort`: the subscribed-show episode catalog (ready gate, pages and windows, search, newest, refresh, unsubscribe TTL). Production composes catalog and RSS adapters in `:core:catalog`'s `SubscribedEpisodeCatalog`.
-- `LocalEpisodeCatalogPort.RefreshRequest`: `podcastIndexId` carries the canonical show ID, including `rss:`; `reason` is a `RefreshReason` (`NORMAL`, `AUTO_DOWNLOAD`, `NEW_RELEASE`, `MANUAL`).
+- `LocalEpisodeCatalogPort`: the subscribed-show episode catalog (ready gate, pages and windows, search, newest, refresh, last feed read, unsubscribe TTL). Production composes catalog and RSS adapters in `:core:catalog`'s `SubscribedEpisodeCatalog`.
+- `LocalEpisodeCatalogPort.RefreshRequest`: `podcastIndexId` carries the canonical show ID, including `rss:`; `reason` is a `RefreshReason` (`NORMAL`, `AUTO_DOWNLOAD`, `NEW_RELEASE`, `MANUAL`, `PULL`); `MANUAL` and `NEW_RELEASE` force a full download, and `PULL` (pull to refresh over followed shows) skips the quiet wait but keeps the conditional check.
 - `RefreshRequest.canProceed` rechecks authorization before network and storage work; `runPostPersistCallback = false` keeps background recovery from running post-write callbacks.
 - `RefreshRequest.detectMove` asks for a confirmed new HTTPS address in `RefreshOutcome.Success.movedTo`; `serverEpNs` is only compared with the stored namespace and never changes an ID.
 - `LocalEpisodeCatalogPort.RefreshOutcome`: `Success`, `Unchanged` or `Failure`; `Failure.addressGone` marks a dead address and `reportStatus` uses the `/v2/feed-report` status words.
@@ -34,7 +34,7 @@ Other ports:
 - `DeviceIdentityPort`: device ID for sync attribution.
 - `FeedTelemetryPort`: reports feed reads, saved-address swaps and upgrade repair results without depending on `:core:analytics`; `NONE` reports nothing and implementations must not throw.
 
-Default methods (`isRefreshDue`, `isPublisherFeedUnchanged`, `listDirectFeedOptIns`, `restoreDirectFeedOptIn`, `unfollowedCount`, `clearUnfollowed`) keep fakes small.
+Default methods (`isRefreshDue`, `lastFeedReadAt`, `isPublisherFeedUnchanged`, `listDirectFeedOptIns`, `restoreDirectFeedOptIn`, `unfollowedCount`, `clearUnfollowed`) keep fakes small.
 
 ## Internal structure
 

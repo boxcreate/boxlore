@@ -48,7 +48,11 @@ internal suspend fun refreshLocalCatalogLocked(deps: LocalCatalogRefreshDeps, re
         publisherFeedUnchanged(deps, request.podcastIndexId, url)
     ) {
         if (!request.canProceed()) return RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE)
-        deps.dao.upsertFeed(existing.copy(fetchedAt = System.currentTimeMillis()))
+        // Re-read inside the write: follow and unfollow change the TTL without this show's lock, and
+        // the check above can take a network timeout, so only the read time moves.
+        deps.runInTransaction {
+            deps.dao.getFeed(request.podcastIndexId)?.let { current -> deps.dao.upsertFeed(current.copy(fetchedAt = deps.nowMillis())) }
+        }
         return RefreshOutcome.Unchanged(
             deps.dao.getNewest(request.podcastIndexId)?.toCatalogEpisode(request.meta),
         )
@@ -81,7 +85,8 @@ internal fun shouldSkipQuiet(
     reason: RefreshReason = RefreshReason.NORMAL,
     nowMillis: Long = System.currentTimeMillis(),
 ): Boolean {
-    if (reason == RefreshReason.NEW_RELEASE || reason == RefreshReason.MANUAL) return false
+    // PULL skips only this wait: its conditional check still runs (forceFetch in refreshLocalCatalogLocked).
+    if (reason == RefreshReason.NEW_RELEASE || reason == RefreshReason.MANUAL || reason == RefreshReason.PULL) return false
     if (existing == null) return false
     if (!LocalCatalogReadyLogic.isReady(existing)) return false
     if (existing.needsFullBackfill) return false
@@ -190,8 +195,11 @@ internal data class FeedRowPolicy(
         LocalCatalogReadyLogic.isReadyToFlip(feedReady = storedCount >= copied)
     }
 
-    /** A show-page read keeps the stored unsubscribe TTL ([current]); a followed show's refresh clears it. */
-    fun ttlExpiresAt(current: LocalEpisodeFeedEntity?): Long? = if (showPage) current?.ttlExpiresAt else null
+    /**
+     * A show-page read keeps the stored unsubscribe TTL ([current]), and so does any read of a show
+     * unfollowed by now (the unfollow can land while the feed is read); a followed show's refresh clears it.
+     */
+    fun ttlExpiresAt(current: LocalEpisodeFeedEntity?): Long? = if (showPage || current?.followed == false) current?.ttlExpiresAt else null
 
     /**
      * Whether a read of the newest items left a gap: the copy had rows, yet none of the items read

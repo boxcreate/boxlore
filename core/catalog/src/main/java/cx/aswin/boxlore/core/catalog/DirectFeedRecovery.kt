@@ -37,15 +37,16 @@ internal data class AddressCandidate(val feedUrl: String, val step: FeedUrlCorre
  * reached the show today (they share one daily stamp per show). The new address is read at once and
  * saved only when that read works, so a server that offers another dead address (say, Podcast
  * Index's own) never replaces the saved one. Shows still failing take their latest episode from
- * `/sync` (which serves stale shows from their live feed), through the ordinary save that never
- * replaces a newer tip. Never for `rss:` shows: their address is their identity and notification consent.
+ * `/sync` (which serves stale shows from their live feed), asked directly even when their local
+ * catalog is ready, through the ordinary save that never replaces a newer tip. Never for `rss:`
+ * shows: their address is their identity and notification consent.
  */
 internal object DirectFeedRecovery {
     private const val TAG = "DirectFeedRecovery"
 
     /**
      * @param readAgain reads one show's feed at this address and saves its tip
-     * @param syncFromServer asks `/sync` for these shows and saves their tips
+     * @param syncFromServer asks `/sync` for these shows, ready local catalogs included, and saves their tips
      */
     suspend fun recover(
         failed: Map<String, DirectFeedResolveResult>,

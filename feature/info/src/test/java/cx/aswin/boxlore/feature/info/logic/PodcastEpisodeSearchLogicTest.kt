@@ -46,6 +46,26 @@ class PodcastEpisodeSearchLogicTest {
     }
 
     @Test
+    fun `a search that could not read the episodes shows Try again, not no matches`() {
+        // Reported: a failed read of the show's list looked like a finished search with no matches.
+        assertFalse(podcastSearchHasNoResults(true, "query", false, emptyList(), failed = true))
+        assertTrue(podcastSearchShowsFailure(true, "query", false, failed = true))
+        assertFalse(podcastSearchShowsFailure(true, "query", true, failed = true), "not while the retry runs")
+        assertFalse(podcastSearchShowsFailure(false, "query", false, failed = true), "not after search closes")
+        assertFalse(podcastSearchShowsFailure(true, "query", false, failed = false))
+    }
+
+    @Test
+    fun `a search that covered only the newest says so once it finishes`() {
+        assertEquals(11_000, podcastSearchCoverage(true, "query", false, false, 11_000))
+        assertEquals(null, podcastSearchCoverage(true, "query", false, false, null), "covered every episode")
+        assertEquals(null, podcastSearchCoverage(true, "query", true, false, 11_000), "not while it runs")
+        assertEquals(null, podcastSearchCoverage(true, "query", false, true, 11_000), "not with a failure")
+        assertEquals(null, podcastSearchCoverage(false, "query", false, false, 11_000), "not after search closes")
+        assertEquals(null, podcastSearchCoverage(true, " ", false, false, 11_000))
+    }
+
+    @Test
     fun `late results after clear query change or show navigation cannot overwrite the list`() {
         assertFalse(podcastSearchResponseIsCurrent("old", "show", "", "show"))
         assertFalse(podcastSearchResponseIsCurrent("old", "show", "new", "show"))

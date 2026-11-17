@@ -100,14 +100,23 @@ class RssEpisodeCatalog internal constructor(
         val url = existing.feedUrl ?: return failure()
         val force = request.reason == RefreshReason.MANUAL || request.reason == RefreshReason.NEW_RELEASE
         val repair = needsRepair(existing)
-        if (!force && !isRefreshDue(id, url, System.currentTimeMillis())) return RefreshOutcome.Unchanged(newest(id, request.meta))
+        val due = isRefreshDue(id, url, System.currentTimeMillis())
+        // PULL skips the quiet wait but still reads conditionally unless a repair needs the whole feed.
+        val pull = request.reason == RefreshReason.PULL
+        if (!force && !pull && !due) return RefreshOutcome.Unchanged(newest(id, request.meta))
         return PublisherFeedRefreshGate.permits.withPermit {
             if (!request.canProceed()) return@withPermit failure()
-            fetchAndPersist(request, existing, force || repair)
+            // A pull that fails on a show not yet due (offline, a flaky network) keeps its wait as it was.
+            fetchAndPersist(request, existing, fullFetch = force || repair, recordFailure = !pull || due)
         }
     }
 
-    private suspend fun fetchAndPersist(request: RefreshRequest, existing: PodcastEntity, fullFetch: Boolean): RefreshOutcome {
+    private suspend fun fetchAndPersist(
+        request: RefreshRequest,
+        existing: PodcastEntity,
+        fullFetch: Boolean,
+        recordFailure: Boolean = true,
+    ): RefreshOutcome {
         val url = existing.feedUrl ?: return failure()
         val outcome = try {
             val fetched = if (fullFetch) feedClient.fetch(url) else feedClient.fetchConditional(url, existing.feedEtag, existing.feedLastModified)
@@ -123,7 +132,7 @@ class RssEpisodeCatalog internal constructor(
         } catch (_: Exception) {
             failure()
         }
-        if (outcome is RefreshOutcome.Failure) recordFailedAttempt(request, existing)
+        if (outcome is RefreshOutcome.Failure && recordFailure) recordFailedAttempt(request, existing)
         return outcome
     }
 
@@ -202,6 +211,8 @@ class RssEpisodeCatalog internal constructor(
             row.lastRssSyncAt <= 0L ||
             nowMillis - row.lastRssSyncAt !in 0 until LocalEpisodeCatalogRepository.QUIET_INTERVAL_MS
     }
+
+    override suspend fun lastFeedReadAt(podcastId: String): Long = podcasts.getPodcast(podcastId)?.lastRssSyncAt ?: 0L
 
     // Conditional GET in refresh owns validator updates and its quiet interval.
     override suspend fun isPublisherFeedUnchanged(podcastId: String, feedUrl: String): Boolean = false
