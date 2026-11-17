@@ -55,3 +55,5 @@ Announcement title:
 - Casting no longer closes boxlore when your queue has an episode your Cast device can't stream, such as one from a feed on your home network. Those episodes stay in your queue but are skipped on the Cast device.
 - After you listen on another device, Play on the mini player now starts the episode it shows, at the right spot, instead of an older one from your queue.
 - For you in Explore no longer reloads again and again while your account syncs. It refreshes when the shows you follow or your languages change, and when your picks get old.
+- Picked for you on Home and For you in Explore now start from the shows you've played or followed most recently, not the first ones from A to Z, and leave out shows you follow, even in a large library.
+- In Lore, Check for new cards now looks much further through the deck, so it finds new cards past the first few pages.

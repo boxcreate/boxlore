@@ -2,9 +2,11 @@ package cx.aswin.boxlore.core.catalog
 
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.FeedUrlCorrectionStep
+import cx.aswin.boxlore.core.network.model.V2FeedReportResponse
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
@@ -96,6 +98,77 @@ class DirectFeedRecoveryTest {
         assertEquals(null, check(now = 3 * day, last = 0L, confirmed = "https://new.example/f.xml", saved = null), "no saved address: recovery owns it")
     }
 
+    @Test
+    fun `with more failing shows than the daily limit, a newly failing show is still reported by the second day`() = runTest {
+        // 25 followed shows fail on every read and come first in the pass; one more starts failing too.
+        val chronic = (1..25).map { (1000 + it).toString() }
+        val failed = (chronic + NEWLY_BROKEN).associateWith { gone("http_404") }
+        var now = 100 * DAY
+        val (reporter, sent) = reporter { now }
+
+        recoverOnce(failed, reporter)
+        now += DAY + 1
+        recoverOnce(failed, reporter)
+
+        assertEquals(chronic.take(FeedReportLimiter.DAILY_CAP), sent.take(FeedReportLimiter.DAILY_CAP), "day one: the limit, in the pass's order")
+        assertEquals(FeedReportLimiter.DAILY_CAP * 2, sent.size, "the limit still holds each day")
+        val secondDay = sent.drop(FeedReportLimiter.DAILY_CAP)
+        assertEquals((chronic.drop(FeedReportLimiter.DAILY_CAP) + NEWLY_BROKEN).toSet(), secondDay.take(6).toSet(), "day two starts with the shows not reported yet")
+        assertTrue(NEWLY_BROKEN in secondDay, "reported by the second day, not left behind the same 20 every day")
+        assertEquals((chronic + NEWLY_BROKEN).toSet(), sent.toSet(), "every failing show takes its turn")
+    }
+
+    @Test
+    fun `a passing failure never takes the day's limit ahead of a dead address`() = runTest {
+        val slow = (1..FeedReportLimiter.DAILY_CAP).map { (2000 + it).toString() }
+        val failed = slow.associateWith { DirectFeedResolveResult(tip = null, persisted = false, failed = true, reportStatus = "timeout") } + (NEWLY_BROKEN to gone("http_410"))
+        val (reporter, sent) = reporter { 100 * DAY }
+
+        recoverOnce(failed, reporter)
+
+        assertEquals(NEWLY_BROKEN, sent.first())
+        assertEquals(FeedReportLimiter.DAILY_CAP, sent.size)
+    }
+
+    @Test
+    fun `report order puts never-reported shows first, then the ones reported longest ago`() {
+        val failed = listOf("a", "b", "c", "d").associateWith { gone("http_404") }
+
+        val order = DirectFeedRecovery.reportOrder(failed, lastReportedAt = mapOf("a" to 300L, "b" to 100L, "c" to 200L))
+
+        assertEquals(listOf("d", "b", "c", "a"), order.map { it.first })
+    }
+
+    private fun gone(status: String) = DirectFeedResolveResult(tip = null, persisted = false, failed = true, addressGone = true, reportStatus = status)
+
+    /** A [FeedReporter] on one report store whose API answers every report; the shows it sent, in order. */
+    private fun reporter(now: () -> Long): Pair<FeedReporter, List<String>> {
+        val sent = mutableListOf<String>()
+        val reporter =
+            FeedReporter(
+                send = { request ->
+                    sent += request.id.toString()
+                    V2FeedReportResponse(queued = true)
+                },
+                limiter = FeedReportLimiter(MemoryFeedReportStamps()),
+                isOnline = { true },
+                enabled = { true },
+                nowMillis = now,
+            )
+        return reporter to sent
+    }
+
+    private suspend fun recoverOnce(failed: Map<String, DirectFeedResolveResult>, reporter: FeedReporter) = DirectFeedRecovery.recover(
+        failed = failed,
+        directFeed =
+        DirectFeedSyncSeams(
+            reportFeed = { id, status -> reporter.report(id, status, "https://old.example/$id.xml") },
+            lastReportedAt = reporter::lastReportedAt,
+        ),
+        readAgain = { _, _ -> null },
+        syncFromServer = {},
+    )
+
     private fun episode(id: String, podcastId: String) = Episode(
         id = id,
         title = "T",
@@ -105,4 +178,9 @@ class DirectFeedRecoveryTest {
         duration = 60,
         podcastId = podcastId,
     )
+
+    private companion object {
+        const val DAY = FeedReportLimiter.PER_SHOW_INTERVAL_MS
+        const val NEWLY_BROKEN = "9999"
+    }
 }

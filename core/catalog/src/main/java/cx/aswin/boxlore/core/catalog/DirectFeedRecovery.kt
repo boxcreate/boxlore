@@ -29,7 +29,8 @@ internal data class AddressCandidate(val feedUrl: String, val step: FeedUrlCorre
  * Shows whose own feed failed in a [SubscriptionForegroundSync] pass (P4a; reports since P4 PR 14).
  *
  * Every failed read of a Podcast Index show is reported to the API ([DirectFeedSyncSeams.reportFeed],
- * `/v2/feed-report`, limited per show and never while offline), which queues a re-check there. When
+ * `/v2/feed-report`, limited per show and never while offline; shows reported longest ago go first,
+ * [reportOrder]), which queues a re-check there. When
  * the saved address looks dead ([DirectFeedResolveResult.addressGone]) another address is tried:
  * the one the report answered with, else the server's confirmed address from `/podcast`
  * ([DirectFeedSyncSeams.recheckAddress]), which runs only when the daily address check hasn't
@@ -54,7 +55,7 @@ internal object DirectFeedRecovery {
     ) {
         if (failed.isEmpty()) return
         val stillFailing = mutableListOf<String>()
-        for ((id, result) in failed) {
+        for ((id, result) in reportOrder(failed, directFeed.lastReportedAt())) {
             if (id.startsWith("rss:")) continue
             val candidate = candidate(directFeed, id, result)
             val retried = candidate?.let { readAgain(id, it.feedUrl) }
@@ -68,6 +69,21 @@ internal object DirectFeedRecovery {
         Log.d(TAG, "Asking /sync for ${stillFailing.size} shows whose own feed failed")
         syncFromServer(stillFailing)
     }
+
+    /**
+     * [failed] in the order its reports are sent, so the day's report limit
+     * ([FeedReportLimiter.DAILY_CAP]) goes to the shows reported longest ago: never-reported shows
+     * first, then by their last report, oldest first. More failing shows than the limit then take
+     * turns, and a show that newly fails is reported within two days. Within each, a dead address
+     * ([DirectFeedResolveResult.addressGone]) comes before a passing failure; otherwise the pass's order is kept.
+     */
+    internal fun reportOrder(
+        failed: Map<String, DirectFeedResolveResult>,
+        lastReportedAt: Map<String, Long>,
+    ): List<Pair<String, DirectFeedResolveResult>> = failed.toList().sortedWith(
+        compareBy<Pair<String, DirectFeedResolveResult>> { (id, _) -> lastReportedAt[id] ?: 0L }
+            .thenBy { (_, result) -> if (result.addressGone) 0 else 1 },
+    )
 
     /** Reports the failed read, then picks another address only when the saved one looks dead. */
     private suspend fun candidate(directFeed: DirectFeedSyncSeams, id: String, result: DirectFeedResolveResult): AddressCandidate? {

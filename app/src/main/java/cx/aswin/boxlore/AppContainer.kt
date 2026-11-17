@@ -269,6 +269,8 @@ class AppContainer(
             ),
             // A show Podcast Index renumbered keeps one follow, under the show it now answers as.
             onShowRenumbered = { oldId, answer -> subscriptionRepository.renumberedFollows.adoptAnswer(oldId, answer) },
+            // Recommendations order follows after recent plays by when they were followed, never by title.
+            followedAt = { database.podcastDao().getFollowedAtTimes().associate { it.podcastId to it.subscribedAt } },
         )
     }
 

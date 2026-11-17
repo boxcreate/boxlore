@@ -433,6 +433,7 @@ class SubscriptionForegroundSync(
                     reportFeed = { id, status ->
                         addressJobs.reporter.report(id, status, subscriptionRepository.getPodcastEntity(id)?.feedUrl)
                     },
+                    lastReportedAt = addressJobs.reporter::lastReportedAt,
                     saveAddress = { id, candidate ->
                         subscriptionRepository.updateFeedAddress(candidate.change(id, System.currentTimeMillis()))
                     },
@@ -953,6 +954,8 @@ internal data class DirectFeedSyncSeams(
      * differs from the saved one. Null status: no read happened (P4 PR 14).
      */
     val reportFeed: suspend (id: String, status: String?) -> String? = { _, _ -> null },
+    /** When each show was last reported ([FeedReportLimiter.lastReportedAt]): who is reported first. */
+    val lastReportedAt: () -> Map<String, Long> = { emptyMap() },
     /** Saves an address that [reportFeed] or [recheckAddress] offered and that then read successfully. */
     val saveAddress: suspend (id: String, candidate: AddressCandidate) -> Unit = { _, _ -> },
     /** Whether shows whose own feed failed this pass get their latest episode from `/sync`. */

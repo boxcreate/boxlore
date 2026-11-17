@@ -106,7 +106,7 @@ class PodcastRepositoryV2DiscoveryTest {
                 history = listeningHistory(),
                 interests = listOf("History"),
                 country = "us",
-                subscribedPodcastIds = listOf(REC_SHOW, "rss:abc"),
+                subscribedPodcastIds = listOf(OTHER_SHOW, "rss:abc"),
                 languages = listOf("en", "id", "hi", "fr"),
             )
 
@@ -125,7 +125,7 @@ class PodcastRepositoryV2DiscoveryTest {
         assertEquals(setOf(REC_A, RECIPE_B, RECIPE_C, 5555L), episodeSeeds.map { it.get("id").asLong }.toSet())
         // The Podcast Index ID the phone can't place is still excluded as itself.
         assertEquals(listOf(REC_A, RECIPE_B, RECIPE_C, 5555L), body.getAsJsonArray("excludedEpisodeIds").map { it.asLong })
-        assertEquals(listOf(REC_SHOW.toLong()), body.getAsJsonArray("subscribedPodcastIds").map { it.asLong })
+        assertEquals(listOf(OTHER_SHOW.toLong()), body.getAsJsonArray("subscribedPodcastIds").map { it.asLong })
         // The API refuses more than four languages; `id` is expanded on the server.
         assertEquals(listOf("en", "id", "hi", "fr"), body.getAsJsonArray("languages").map { it.asString })
     }
@@ -148,6 +148,82 @@ class PodcastRepositoryV2DiscoveryTest {
         } finally {
             database.close()
         }
+    }
+
+    @Test
+    fun followSeedsAndTheFollowedIdsGoByRecentPlaysThenNewestFollowsNotByTitle() = runTest {
+        answers["/v2/recommendations"] = { fixture("fixtures/v2/recommendations.json") }
+        // 300 follows, one a day: "1" is followed first and "300" last; "7" was played lately but followed long ago.
+        val follows = (1..300).map(Int::toString)
+        val history = listOf(HistoryItem("Show 7", "Unplaced", podcastId = "7", episodeId = "-66"))
+
+        repository(followedAt = follows.associateWith { it.toLong() * DAY_MS })
+            .getPersonalizedRecommendations(history = history, country = "us", subscribedPodcastIds = follows)
+
+        val body = parse(seen.single().body)
+        val sentFollows = body.getAsJsonArray("subscribedPodcastIds").map { it.asLong }
+        assertEquals(250, sentFollows.size)
+        assertEquals(listOf(7L) + (300L downTo 52L), sentFollows)
+        val seeds = body.getAsJsonArray("seeds").map { it.asJsonObject.get("id").asLong }
+        assertEquals(listOf(7L) + (300L downTo 290L), seeds)
+    }
+
+    @Test
+    fun picksFromAnyFollowedShowAreLeftOutEvenPastTheFollowedIdsTheRequestCarries() = runTest {
+        answers["/v2/recommendations"] = { fixture("fixtures/v2/recommendations.json") }
+        // The recorded picks' first show is the oldest of 300 follows, so the request leaves it out.
+        val follows = listOf(REC_SHOW) + (1..299).map(Int::toString)
+        val followedAt = follows.withIndex().associate { (index, id) -> id to index * DAY_MS }
+
+        val picks = repository(followedAt = followedAt).getPersonalizedRecommendations(history = emptyList(), country = "us", subscribedPodcastIds = follows)
+
+        assertFalse(parse(seen.single().body).getAsJsonArray("subscribedPodcastIds").map { it.asString }.contains(REC_SHOW))
+        assertEquals(listOf("9001"), picks.map { it.id })
+
+        // Last good picks kept from before a follow leave the show out too.
+        PodcastRepository.recommendationsCache.clear()
+        answers["/v2/recommendations"] = { MockResponse().setResponseCode(503) }
+        val kept = repository().getPersonalizedRecommendations(history = emptyList(), interests = listOf("News"), country = "us", subscribedPodcastIds = listOf(REC_C_SHOW))
+        assertEquals(listOf(REC_A.toString(), REC_B.toString()), kept.map { it.recipeId.toString() })
+    }
+
+    @Test
+    fun rememberedPicksLeaveOutAShowFollowedSincePastTheFollowedIdsTheRequestCarries() = runTest {
+        answers["/v2/recommendations"] = { fixture("fixtures/v2/recommendations.json") }
+        // A full request's worth of follows, one a day; then a restored follow of the picks' show, older than all of them.
+        val follows = (1..MAX_RECOMMENDATION_IDS).map(Int::toString)
+        val followedAt = follows.associateWith { (it.toLong() + 10) * DAY_MS } + (REC_SHOW to DAY_MS)
+        val repository = repository(followedAt = followedAt)
+
+        val before = repository.getPersonalizedRecommendations(history = emptyList(), country = "us", subscribedPodcastIds = follows)
+        val after = repository.getPersonalizedRecommendations(history = emptyList(), country = "us", subscribedPodcastIds = follows + REC_SHOW)
+
+        assertEquals("the same request both times: the second is answered from memory", 1, seen.size)
+        assertEquals(listOf("7777", REC_B.toString(), "9001"), before.map { it.id })
+        assertEquals(listOf("9001"), after.map { it.id })
+    }
+
+    @Test
+    fun homePicksLeaveOutFollowedShows() = runTest {
+        answers["/v2/home/bootstrap"] = { fixture("fixtures/v2/bootstrap-post.json") }
+        val recorded = fixtureItems("fixtures/v2/bootstrap-post.json", "recommendations")
+        val followedShow = recorded[0].asJsonObject.get("feedId").asString
+
+        val picks = repository().getHomeRecommendations(country = "us", history = listeningHistory(), subscribedPodcastIds = listOf(followedShow))
+
+        assertEquals(fixtureIds("fixtures/v2/bootstrap-post.json", "recommendations").drop(1), picks.items.map { it.id })
+    }
+
+    @Test
+    fun aFailedCheckForNewLoreCardsAnswersNothingWhileAnOrdinaryPageKeepsItsLastGoodAnswer() = runTest {
+        answers["/v2/curated/curiosity-v3"] = { fixture("fixtures/v2/curiosity.json") }
+        val repository = repository()
+        val loaded = repository.getCuratedCuriosity(page = 1)!!
+
+        answers["/v2/curated/curiosity-v3"] = { MockResponse().setResponseCode(503) }
+        assertNull("a failed check never passes off the remembered page as new", repository.getCuratedCuriosity(page = 1, bypassCache = true))
+        assertEquals(loaded, repository.getCuratedCuriosity(page = 1))
+        assertTrue(seen.any { it.path.startsWith("/v2/curated/curiosity-v3") && it.path.contains("cb=") })
     }
 
     @Test
@@ -463,7 +539,7 @@ class PodcastRepositoryV2DiscoveryTest {
         assertFalse(seen.any())
     }
 
-    private fun repository(discoveryIds: DiscoveryEpisodeIds = ids): PodcastRepository {
+    private fun repository(discoveryIds: DiscoveryEpisodeIds = ids, followedAt: Map<String, Long> = emptyMap()): PodcastRepository {
         val client = OkHttpClient.Builder().readTimeout(5, TimeUnit.SECONDS).build()
         val base = server.url("/").toString()
         val database = mock(BoxLoreDatabase::class.java)
@@ -478,6 +554,7 @@ class PodcastRepositoryV2DiscoveryTest {
             boxLoreApiV2 = NetworkModule.createBoxLoreApiV2(base, client),
             rolloutSwitches = RolloutSwitches(v2Discovery = { v2Discovery }),
             discoveryEpisodeIds = discoveryIds,
+            followedAt = { followedAt },
         )
     }
 
@@ -522,7 +599,7 @@ class PodcastRepositoryV2DiscoveryTest {
 
     private fun fixture(path: String): MockResponse = json(fixtureText(path))
 
-    private fun fixtureItems(path: String): JsonArray = parse(fixtureText(path)).getAsJsonArray("items")
+    private fun fixtureItems(path: String, list: String = "items"): JsonArray = parse(fixtureText(path)).getAsJsonArray(list)
 
     /** The `id` of each entry of [list] in the recorded fixture at [path]. */
     private fun fixtureIds(path: String, list: String): List<String> = parse(fixtureText(path)).getAsJsonArray(list).map { it.asJsonObject.get("id").asString }
@@ -549,6 +626,7 @@ class PodcastRepositoryV2DiscoveryTest {
 
     private companion object {
         const val APP_KEY = "test-app-key"
+        const val DAY_MS = 24L * 60L * 60L * 1000L
 
         // Recorded `/v2/recommendations` picks (fixtures/v2/recommendations.json).
         const val REC_SHOW = "190857"
@@ -556,6 +634,9 @@ class PodcastRepositoryV2DiscoveryTest {
         const val REC_B = 5_622_440_355_708_660L
         const val REC_C_SHOW = "55810"
         const val REC_C = 5_989_386_213_024_727L
+
+        // A followed show with no recorded pick.
+        const val OTHER_SHOW = "75075"
 
         // Recorded trending, briefing, curiosity and vibe episodes.
         const val TRENDING_SHOW = "743229"

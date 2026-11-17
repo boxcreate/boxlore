@@ -14,7 +14,8 @@ import retrofit2.awaitResponse
 
 /**
  * When each show's broken feed was last reported (epoch ms), kept across launches so a show is
- * reported at most once a day however often the app starts.
+ * reported at most once a day however often the app starts, and for
+ * [FeedReportLimiter.HISTORY_MS] so reports can go to the shows reported longest ago first.
  *
  * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows: reports).
  */
@@ -40,7 +41,8 @@ class MemoryFeedReportStamps : FeedReportStamps {
 
 /**
  * [FeedReportStamps] in SharedPreferences file [FILE_NAME]: one key per show ID, its last report
- * time as a Long. Entries older than a day are dropped on each write. Stable storage name: never rename.
+ * time as a Long. Entries older than [FeedReportLimiter.HISTORY_MS] are dropped on each write.
+ * Stable storage name: never rename.
  *
  * Added in P4 PR 14 of the own-episode-IDs plan (plan section 11, followed shows: reports).
  */
@@ -83,8 +85,14 @@ class FeedReportLimiter(private val stamps: FeedReportStamps) {
 
     /** Counts a report of [podcastId] the API answered at [nowMillis]. */
     fun record(podcastId: String, nowMillis: Long) = synchronized(stamps) {
-        stamps.mark(podcastId, nowMillis, keepSince = nowMillis - PER_SHOW_INTERVAL_MS)
+        stamps.mark(podcastId, nowMillis, keepSince = nowMillis - HISTORY_MS)
     }
+
+    /**
+     * When each show was last reported, over the last [HISTORY_MS]; a show missing from the map
+     * wasn't reported in that time. Only the last [PER_SHOW_INTERVAL_MS] counts toward [allows].
+     */
+    fun lastReportedAt(): Map<String, Long> = synchronized(stamps) { stamps.all() }
 
     private fun recent(nowMillis: Long): Map<String, Long> {
         val since = nowMillis - PER_SHOW_INTERVAL_MS
@@ -93,6 +101,12 @@ class FeedReportLimiter(private val stamps: FeedReportStamps) {
 
     companion object {
         const val PER_SHOW_INTERVAL_MS = 24L * 60L * 60L * 1000L
+
+        /**
+         * How long report times are kept: long enough that, with more failing shows than
+         * [DAILY_CAP], the ones reported longest ago (or never) can go first ([lastReportedAt]).
+         */
+        const val HISTORY_MS = 7L * PER_SHOW_INTERVAL_MS
 
         /** The API's limit: 20 reports a day from one phone. */
         const val DAILY_CAP = 20
@@ -126,6 +140,9 @@ class FeedReporter(
      */
     suspend fun report(podcastId: String, status: String?, savedFeedUrl: String?): String? =
         (reportTarget(podcastId, status, savedFeedUrl) as? V2FeedReadTarget.Direct)?.url
+
+    /** When each show was last reported ([FeedReportLimiter.lastReportedAt]). */
+    fun lastReportedAt(): Map<String, Long> = limiter.lastReportedAt()
 
     /**
      * [report] for a caller that can also read through boxlore's transport: the answer's address

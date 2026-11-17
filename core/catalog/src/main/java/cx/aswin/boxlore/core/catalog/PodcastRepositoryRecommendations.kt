@@ -10,7 +10,7 @@ import cx.aswin.boxlore.core.network.model.RecommendationsV2Request
 internal const val MAX_RECOMMENDATION_INTERESTS = 12
 
 /** Seed shows and excluded episodes per current-algorithm request. */
-private const val MAX_RECOMMENDATION_IDS = 250
+internal const val MAX_RECOMMENDATION_IDS = 250
 
 /** Trimmed, non-empty, distinct interests, at most [MAX_RECOMMENDATION_INTERESTS]. */
 internal fun boundedRecommendationInterests(interests: List<String>): List<String> =
@@ -41,7 +41,8 @@ internal fun cx.aswin.boxlore.core.network.model.RecommendationsV2Response.isVal
 
 /**
  * Seeds for the current recommendation algorithm: episodes from [history] weighted by how they
- * were listened to, then followed shows up to [maximumSeeds].
+ * were listened to, then followed shows up to [maximumSeeds], in [subscribedPodcastIds]' order
+ * (the request passes them in [recommendationFollowOrder]).
  *
  * An episode seed is the ID in [seedIds] for its stored ID when there is one (on `/v2`, its recipe
  * ID), else the stored ID when positive (a Podcast Index ID, which `/v2` matches through the seed's
@@ -120,7 +121,10 @@ internal fun v2RecommendationHistory(history: List<HistoryItem>, recipeIds: Map<
  * a recipe ID are no longer left out. A Podcast Index ID the phone can't place yet is still sent as
  * itself, as v1 sent it: it can't clash with a recipe ID, and the answer is filtered against the
  * history on the phone as well ([withoutHistory]). [languages] is the listener's normalised list
- * (at most four); the API refuses more and expands `id` to `in` itself.
+ * (at most four); the API refuses more and expands `id` to `in` itself. Follow seeds and the
+ * followed IDs come in [recommendationFollowOrder], so a library past [MAX_RECOMMENDATION_IDS]
+ * leaves out its least-used shows; the answer is also filtered against every followed show on the
+ * phone ([withoutFollowed]).
  *
  * Added in P4 PR 12 of the own-episode-IDs plan (plan section 9, v2 discovery routes).
  */
@@ -133,7 +137,13 @@ internal suspend fun PodcastRepository.v2RecommendationRequest(
 ): RecommendationsV2Request? {
     val recipeIds = discoveryEpisodeIds.recipeIdsOrOwn(history.mapNotNull { it.episodeId })
     val usable = v2RecommendationHistory(history, recipeIds)
-    val follows = subscribedPodcastIds.filterNot { it.startsWith("rss:") }
+    val podcastIndexFollows = subscribedPodcastIds.filterNot { it.startsWith("rss:") }
+    val follows =
+        if (podcastIndexFollows.size < 2) {
+            podcastIndexFollows
+        } else {
+            recommendationFollowOrder(podcastIndexFollows, history, followedAtTimes(), System.currentTimeMillis())
+        }
     val seeds = buildRecommendationSeeds(usable, follows, seedIds = recipeIds)
     val boundedInterests = boundedRecommendationInterests(interests)
     if (seeds.isEmpty() && boundedInterests.isEmpty()) return null
