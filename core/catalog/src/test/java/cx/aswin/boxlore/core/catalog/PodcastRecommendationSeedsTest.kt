@@ -133,9 +133,82 @@ class PodcastRecommendationSeedsTest {
     }
 
     @Test
+    fun withoutHistoryFollowSeedsComeFromTheNewestFollowsNotTheFirstByTitle() {
+        // 30 follows passed in title order (as Room lists them); the later ones were followed on later days.
+        val follows = (1..30).map { (100 + it).toString() }
+        val followedAt = follows.withIndex().associate { (index, id) -> id to index * DAY + 1_000L }
+
+        val order = recommendationFollowOrder(follows, emptyList(), followedAt, nowMillis = 40 * DAY)
+        val seeds = buildRecommendationSeeds(emptyList(), order)
+
+        assertEquals((130L downTo 119L).toList(), seeds.map { it.id })
+    }
+
+    @Test
+    fun followsPlayedLatelyComeFirstByTheirLatestPlay() {
+        val follows = listOf("1", "2", "3", "4")
+        val history =
+            listOf(
+                TestFixtures.historyItem(podcastId = "3", episodeId = "30"),
+                TestFixtures.historyItem(podcastId = "9", episodeId = "90"),
+                TestFixtures.historyItem(podcastId = "1", episodeId = "10"),
+                TestFixtures.historyItem(podcastId = "3", episodeId = "31"),
+            )
+
+        val order = recommendationFollowOrder(follows + "3", history, followedAt = mapOf("2" to 5L, "4" to DAY + 9L), nowMillis = 2 * DAY)
+
+        assertEquals(listOf("3", "1", "4", "2"), order)
+    }
+
+    @Test
+    fun followsFollowedTogetherTakeTurnsDayByDay() {
+        // An OPML import: every show followed at the same moment.
+        val follows = (1..30).map { "%03d".format(it) }
+        val followedAt = follows.associateWith { 500L }
+
+        val today = recommendationFollowOrder(follows, emptyList(), followedAt, nowMillis = 10 * DAY)
+        val laterToday = recommendationFollowOrder(follows, emptyList(), followedAt, nowMillis = 10 * DAY + DAY - 1)
+        val days = (10L..16L).map { recommendationFollowOrder(follows, emptyList(), followedAt, nowMillis = it * DAY).take(12).toSet() }
+
+        assertEquals(today, laterToday, "the same order all day")
+        assertEquals(follows.toSet(), today.toSet())
+        assertTrue(today.take(12) != follows.take(12), "not the first 12 by title")
+        assertTrue(days.toSet().size > 1, "another day, other shows")
+        assertEquals(follows.toSet(), days.flatten().toSet(), "over a week every show seeds")
+    }
+
+    @Test
+    fun anImportFollowedMomentsApartStillTakesTurnsDayByDay() {
+        // A 300-show OPML import in title order: each show followed a few hundred ms after the last.
+        val follows = (1..300).map { "%03d".format(it) }
+        val importStart = 5 * DAY + 1_000L
+        val followedAt = follows.withIndex().associate { (index, id) -> id to importStart + index * 350L }
+        val laterFollow = "later"
+        val earlierFollow = "earlier"
+        val all = follows + laterFollow + earlierFollow
+        val stamps = followedAt + (laterFollow to 6 * DAY + 5L) + (earlierFollow to 4 * DAY)
+
+        val orders = (10L..16L).map { recommendationFollowOrder(all, emptyList(), stamps, nowMillis = it * DAY) }
+
+        orders.forEach { order ->
+            assertEquals(laterFollow, order.first(), "a show followed on a later day comes before the import")
+            assertEquals(earlierFollow, order.last(), "a show followed on an earlier day comes after it")
+        }
+        val seeds = orders.map { it.drop(1).take(12) }
+        val cut = orders.map { it.drop(MAX_RECOMMENDATION_IDS).toSet() }
+        assertTrue(seeds.toSet().size > 1, "the seeds change from day to day")
+        assertTrue(seeds.first() != follows.takeLast(12).reversed(), "not the last 12 by title")
+        assertTrue(cut.toSet().size > 1, "other shows are left out of the request each day")
+    }
+
+    @Test
     fun requiresPositiveMaximum() {
         assertThrows(IllegalArgumentException::class.java) {
             buildRecommendationSeeds(emptyList(), emptyList(), maximumSeeds = 0)
         }
+    }
+
+    private companion object {
+        const val DAY = 24L * 60L * 60L * 1000L
     }
 }

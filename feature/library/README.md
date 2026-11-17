@@ -43,7 +43,7 @@ Owns the Library tab: the hub, Subscriptions (Shows and New Episodes, with folde
 
 ## Downloads and Liked
 
-- Downloads groups by show, sorts by `DownloadsSortOrder`, and supports multi-select delete (checklist in the top bar, or long-press a row).
+- Downloads groups by show, sorts by `DownloadsSortOrder`, and supports multi-select delete (checklist in the top bar, or long-press a row). A failed download, other than an auto-download, offers Download Again in place of Play.
 - Removing a single downloaded episode asks first through designsystem's `RemoveDownloadConfirmationDialog`.
 - The Smart Downloads dashboard card (`SmartDownloadsDashboardCard`) shows status and a sync action; its settings live in `:feature:settings`.
 

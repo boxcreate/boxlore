@@ -16,7 +16,7 @@ class SharedPreferencesFeedReportStampsTest {
     private val context get() = ApplicationProvider.getApplicationContext<Context>()
 
     @Test
-    fun `a report sent in one process holds in the next, and old times are dropped`() {
+    fun `a report sent in one process holds in the next, and times older than a week are dropped`() {
         val day = FeedReportLimiter.PER_SHOW_INTERVAL_MS
         val prefs = context.getSharedPreferences(SharedPreferencesFeedReportStamps.FILE_NAME, Context.MODE_PRIVATE)
         FeedReportLimiter(SharedPreferencesFeedReportStamps(prefs)).record("920666", 10 * day)
@@ -25,7 +25,9 @@ class SharedPreferencesFeedReportStampsTest {
         assertFalse(FeedReportLimiter(nextProcess).allows("920666", 10 * day + 1))
 
         FeedReportLimiter(nextProcess).record("1", 12 * day)
-        assertEquals(mapOf("1" to 12 * day), nextProcess.all())
+        assertEquals(mapOf("920666" to 10 * day, "1" to 12 * day), nextProcess.all())
+        FeedReportLimiter(nextProcess).record("2", 10 * day + FeedReportLimiter.HISTORY_MS + 1)
+        assertEquals(setOf("1", "2"), nextProcess.all().keys)
         assertEquals("boxlore_feed_reports", SharedPreferencesFeedReportStamps.FILE_NAME)
     }
 }

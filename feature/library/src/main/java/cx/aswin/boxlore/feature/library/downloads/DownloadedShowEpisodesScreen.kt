@@ -32,6 +32,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Queue
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.SelectAll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
@@ -84,6 +85,7 @@ import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.downloads.canRetryDownload
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.library.LibraryUiState
@@ -129,7 +131,7 @@ fun DownloadedShowEpisodesScreen(
         }
     }
 
-    val totalSizeBytes = remember(showEpisodes) { showEpisodes.sumOf { it.sizeBytes } }
+    val summary = remember(showEpisodes) { showEpisodes.downloadSummary() }
 
     val listState = rememberLazyListState()
     val scrollOffset by remember {
@@ -312,7 +314,7 @@ fun DownloadedShowEpisodesScreen(
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     Text(
-                                        text = "${showEpisodes.size} ${if (showEpisodes.size == 1) "episode" else "episodes"} • ${formatSize(totalSizeBytes)} saved",
+                                        text = summary.countLine(sizeSuffix = " saved"),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -331,9 +333,9 @@ fun DownloadedShowEpisodesScreen(
                                                     feedback = ExpressivePressFeedback.Control,
                                                     shape = RoundedCornerShape(50),
                                                     onClick = {
-                                                        val episodes = showEpisodes.map { it.toEpisode() }
-                                                        val podcast = firstItem.toPodcast()
-                                                        viewModel.playQueue(episodes, podcast)
+                                                        // A failed download has no audio, so playing skips it.
+                                                        val episodes = showEpisodes.playableDownloads().map { it.toEpisode() }
+                                                        if (episodes.isNotEmpty()) viewModel.playQueue(episodes, firstItem.toPodcast())
                                                     }
                                                 )
                                                 .background(MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(50))
@@ -401,6 +403,8 @@ fun DownloadedShowEpisodesScreen(
                         items(items = sortedEpisodes, key = { it.episodeId }) { download ->
                             val isSelected = selectedEpisodeIds.contains(download.episodeId)
                             var showMenu by remember { mutableStateOf(false) }
+                            // A download that failed stays listed, offering to download it again instead of playing.
+                            val canRetry = download.canRetryDownload()
 
                             val dismissScope = rememberCoroutineScope()
                             val dismissState = rememberSwipeToDismissBoxState()
@@ -564,6 +568,13 @@ fun DownloadedShowEpisodesScreen(
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
+                                            if (canRetry) {
+                                                Text(
+                                                    text = DOWNLOAD_FAILED_LINE,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.error
+                                                )
+                                            }
 
                                             // Linear progress loader under text if actively downloading
                                             if (download.status == DownloadedEpisodeEntity.STATUS_DOWNLOADING) {
@@ -586,13 +597,17 @@ fun DownloadedShowEpisodesScreen(
                                             ) {
                                                 IconButton(
                                                     onClick = {
-                                                        viewModel.playQueue(listOf(download.toEpisode()), download.toPodcast())
+                                                        if (canRetry) {
+                                                            viewModel.retryDownload(download.episodeId)
+                                                        } else {
+                                                            viewModel.playQueue(listOf(download.toEpisode()), download.toPodcast())
+                                                        }
                                                     },
                                                     modifier = Modifier.size(32.dp)
                                                 ) {
                                                     Icon(
-                                                        imageVector = Icons.Rounded.PlayArrow,
-                                                        contentDescription = "Play episode",
+                                                        imageVector = if (canRetry) Icons.Rounded.Refresh else Icons.Rounded.PlayArrow,
+                                                        contentDescription = if (canRetry) DOWNLOAD_AGAIN_LABEL else "Play episode",
                                                         tint = MaterialTheme.colorScheme.primary,
                                                         modifier = Modifier.size(20.dp)
                                                     )
@@ -615,36 +630,49 @@ fun DownloadedShowEpisodesScreen(
                                                         shape = RoundedCornerShape(20.dp),
                                                         offset = DpOffset(x = (-12).dp, y = 4.dp)
                                                     ) {
-                                                        DropdownMenuItem(
-                                                            text = { Text("Play") },
-                                                            onClick = {
-                                                                showMenu = false
-                                                                viewModel.playQueue(listOf(download.toEpisode()), download.toPodcast())
-                                                            },
-                                                            leadingIcon = {
-                                                                Icon(Icons.Rounded.PlayArrow, contentDescription = null)
-                                                            }
-                                                        )
-                                                        DropdownMenuItem(
-                                                            text = { Text("Play Next") },
-                                                            onClick = {
-                                                                showMenu = false
-                                                                viewModel.addToQueueNext(download.toEpisode(), download.toPodcast())
-                                                            },
-                                                            leadingIcon = {
-                                                                Icon(Icons.Rounded.PlayArrow, contentDescription = null)
-                                                            }
-                                                        )
-                                                        DropdownMenuItem(
-                                                            text = { Text("Add to Queue") },
-                                                            onClick = {
-                                                                showMenu = false
-                                                                viewModel.addToQueue(download.toEpisode(), download.toPodcast())
-                                                            },
-                                                            leadingIcon = {
-                                                                Icon(Icons.Rounded.Queue, contentDescription = null)
-                                                            }
-                                                        )
+                                                        if (canRetry) {
+                                                            DropdownMenuItem(
+                                                                text = { Text(DOWNLOAD_AGAIN_LABEL) },
+                                                                onClick = {
+                                                                    showMenu = false
+                                                                    viewModel.retryDownload(download.episodeId)
+                                                                },
+                                                                leadingIcon = {
+                                                                    Icon(Icons.Rounded.Refresh, contentDescription = null)
+                                                                }
+                                                            )
+                                                        } else {
+                                                            DropdownMenuItem(
+                                                                text = { Text("Play") },
+                                                                onClick = {
+                                                                    showMenu = false
+                                                                    viewModel.playQueue(listOf(download.toEpisode()), download.toPodcast())
+                                                                },
+                                                                leadingIcon = {
+                                                                    Icon(Icons.Rounded.PlayArrow, contentDescription = null)
+                                                                }
+                                                            )
+                                                            DropdownMenuItem(
+                                                                text = { Text("Play Next") },
+                                                                onClick = {
+                                                                    showMenu = false
+                                                                    viewModel.addToQueueNext(download.toEpisode(), download.toPodcast())
+                                                                },
+                                                                leadingIcon = {
+                                                                    Icon(Icons.Rounded.PlayArrow, contentDescription = null)
+                                                                }
+                                                            )
+                                                            DropdownMenuItem(
+                                                                text = { Text("Add to Queue") },
+                                                                onClick = {
+                                                                    showMenu = false
+                                                                    viewModel.addToQueue(download.toEpisode(), download.toPodcast())
+                                                                },
+                                                                leadingIcon = {
+                                                                    Icon(Icons.Rounded.Queue, contentDescription = null)
+                                                                }
+                                                            )
+                                                        }
                                                         DropdownMenuItem(
                                                             text = { Text("Remove Download") },
                                                             onClick = {
@@ -730,3 +758,8 @@ fun DownloadedShowEpisodesScreen(
         }
     }
 }
+
+/** Under a download that failed, which then offers [DOWNLOAD_AGAIN_LABEL] instead of Play. */
+internal const val DOWNLOAD_FAILED_LINE = "Couldn’t download"
+
+internal const val DOWNLOAD_AGAIN_LABEL = "Download Again"

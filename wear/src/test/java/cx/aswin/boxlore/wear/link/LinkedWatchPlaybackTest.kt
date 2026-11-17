@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.wear.link
 
+import cx.aswin.boxlore.core.wearlink.EpisodeListReply
 import cx.aswin.boxlore.core.wearlink.PhoneNowPlaying
 import cx.aswin.boxlore.core.wearlink.WearLinkCommand
 import cx.aswin.boxlore.core.wearlink.WearLinkEpisode
@@ -35,7 +36,7 @@ class LinkedWatchPlaybackTest {
         override val phoneNowPlaying = MutableStateFlow(playing)
         val sent = mutableListOf<String>()
 
-        override suspend fun episodes(showId: String): List<WearLinkEpisode>? = null
+        override suspend fun episodes(showId: String, fresh: Boolean): EpisodeListReply? = null
 
         override fun send(command: WearLinkCommand, onLost: () -> Unit) {
             sent += command.action
