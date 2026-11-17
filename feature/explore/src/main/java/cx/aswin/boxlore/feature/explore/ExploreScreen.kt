@@ -103,6 +103,7 @@ import cx.aswin.boxlore.feature.explore.components.ExploreTopicTransition
 import cx.aswin.boxlore.feature.explore.components.ExploreVibeCard
 import cx.aswin.boxlore.feature.explore.components.ExploreVibeChipRow
 import cx.aswin.boxlore.feature.explore.components.SearchTabSelector
+import cx.aswin.boxlore.feature.explore.components.exploreNextPageFooter
 import cx.aswin.boxlore.feature.explore.components.exploreTopicResults
 import cx.aswin.boxlore.feature.explore.components.rememberExploreTabPagerState
 import cx.aswin.boxlore.feature.explore.logic.ExploreBrowseLogic
@@ -153,6 +154,7 @@ fun ExploreScreen(
         onClearVibe = viewModel::clearVibe,
         onRegionClick = onNavigateToRegionSettings,
         onLoadMore = { viewModel.loadMoreTrending() },
+        onRetry = viewModel::retry,
         searchRequested = searchRequested,
         onSearchRequestHandled = onSearchRequestHandled,
     )
@@ -175,6 +177,7 @@ fun ExploreContent(
     onClearVibe: () -> Unit,
     onRegionClick: () -> Unit = {},
     onLoadMore: () -> Unit = {},
+    onRetry: (ExploreRetry) -> Unit = {},
     searchRequested: Boolean = false,
     onSearchRequestHandled: () -> Unit = {},
 ) {
@@ -608,7 +611,7 @@ fun ExploreContent(
                                         }
                                     } else if (showEmptyState) {
                                         item(span = StaggeredGridItemSpan.FullLine) {
-                                            ExploreEmptyState()
+                                            ExploreEmptyState(failed = state.showSearchFailed) { onRetry(ExploreRetry.SHOW_SEARCH) }
                                         }
                                     } else if (showContent) {
                                         val showGenreChip = state.currentCategory == "All"
@@ -809,7 +812,7 @@ fun ExploreContent(
                                     }
                                 } else if (showEmptyState) {
                                     item(span = StaggeredGridItemSpan.FullLine) {
-                                        ExploreEmptyState(searchMode = false)
+                                        ExploreEmptyState(searchMode = false, failed = state.topChartFailed) { onRetry(ExploreRetry.TOP_CHART) }
                                     }
                                 } else if (showContent) {
                                     if (tabletColumns >= 3) {
@@ -839,17 +842,7 @@ fun ExploreContent(
                                     }
                                     }
 
-                                    // Loading indicator for pagination
-                                    if (state.isLoadingMore) {
-                                        item(span = StaggeredGridItemSpan.FullLine) {
-                                            Box(
-                                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                BoxLoreLoader.Expressive(size = 40.dp)
-                                            }
-                                        }
-                                    }
+                                    exploreNextPageFooter(state.isLoadingMore, state.nextTopChartPageFailed) { onRetry(ExploreRetry.NEXT_TOP_CHART_PAGE) }
                                 }
                             }
                         }

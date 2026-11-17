@@ -4,9 +4,11 @@ import android.util.Log
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.model.Podcast
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -168,7 +170,7 @@ internal fun OnboardingViewModel.returnToAiChatFromSearch() {
 }
 
 internal fun OnboardingViewModel.updateSearchQuery(query: String) {
-    _uiState.update { it.copy(searchQuery = query) }
+    _uiState.update { it.copy(searchQuery = query, searchFailed = false) }
 
     // Debounce search
     searchJob?.cancel()
@@ -210,21 +212,18 @@ internal fun OnboardingViewModel.updateSearchQuery(query: String) {
                 val grouped = podcastRepository.searchPodcastsGrouped(cleaned)
                 grouped.all.forEach { seenPodcasts[it.id] = it }
 
-                val (catalog, alsoFound) = combineOnboardingShowSearch(grouped, localMatches)
+                val searched = _uiState.updateAndGet { it.withShowSearch(grouped, localMatches) }
 
-                _uiState.update {
-                    it.copy(
-                        searchResults = catalog,
-                        alsoFoundResults = alsoFound,
-                        isSearching = false,
-                    )
+                // A failed search isn't a search with no results, so it isn't reported as one.
+                if (!grouped.failed) {
+                    searchesPerformedCount++
+                    AnalyticsHelper.trackSearchPerformed(cleaned, searched.searchResults.size + searched.alsoFoundResults.size)
                 }
-
-                searchesPerformedCount++
-                AnalyticsHelper.trackSearchPerformed(cleaned, catalog.size + alsoFound.size)
             } catch (e: Exception) {
+                // A newer query cancelled this search; its own job owns the screen now.
+                if (e is CancellationException) throw e
                 Log.e("OnboardingViewModel", "Search error", e)
-                _uiState.update { it.copy(isSearching = false) }
+                _uiState.update { it.withShowSearchError(e) }
             }
         }
 }

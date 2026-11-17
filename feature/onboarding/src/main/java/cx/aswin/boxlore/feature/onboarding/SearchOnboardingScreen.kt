@@ -63,6 +63,8 @@ internal fun OnboardingSearchScreen(
     results: List<Podcast>,
     alsoFoundResults: List<Podcast> = emptyList(),
     isSearching: Boolean,
+    searchFailed: Boolean = false,
+    onRetrySearch: () -> Unit = {},
     subscribedIds: Set<String>,
     selectedPodcasts: Map<String, Podcast>,
     onQueryChange: (String) -> Unit,
@@ -236,6 +238,9 @@ internal fun OnboardingSearchScreen(
                         }
                     }
                 }
+            }
+            results.isEmpty() && alsoFoundResults.isEmpty() && searchFailed -> {
+                OnboardingSearchFailed(onRetrySearch, Modifier.fillMaxWidth().weight(1f).padding(horizontal = 24.dp))
             }
             results.isEmpty() && alsoFoundResults.isEmpty() && !isSearching -> {
                 Box(
@@ -618,6 +623,39 @@ private fun SearchResultRow(
                     contentDescription = "Select",
                     modifier = Modifier.size(18.dp),
                 )
+            }
+        }
+    }
+}
+
+/** A show search that couldn't be read says so and offers Try again, never "No Podcasts Found". */
+@Composable
+private fun OnboardingSearchFailed(onRetry: () -> Unit, modifier: Modifier = Modifier) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                Icons.Rounded.CloudOff,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Couldn’t search right now",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Check your connection and try again.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            FilledTonalButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text("Try again")
             }
         }
     }

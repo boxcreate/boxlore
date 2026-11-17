@@ -232,9 +232,10 @@ internal class PodcastInfoShowLoader(
                             } catch (e: Exception) {
                                 Log.e(TAG, "Silent direct-feed refresh failed", e)
                                 val failed =
-                                    uiState.value as? PodcastInfoUiState.Success ?: return@launch
+                                    (uiState.value as? PodcastInfoUiState.Success)
+                                        ?.takeIf { it.podcast.id == apiPodcastWithFallback.id } ?: return@launch
                                 uiState.value =
-                                    failed.copy(directFeedChip = DirectFeedChipState.Updated)
+                                    failed.copy(directFeedChip = DirectFeedChipState.CheckFailed)
                             }
                         }
                     }

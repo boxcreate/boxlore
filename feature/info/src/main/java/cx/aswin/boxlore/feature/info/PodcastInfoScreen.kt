@@ -821,7 +821,7 @@ fun PodcastInfoScreen(
                 // A restored dialog waits for the reloaded page to offer the feed check again, and
                 // is dropped once the check has run, so a confirm always has something to start.
                 LaunchedEffect(state.directFeedChip) {
-                    if (state.directFeedChip == DirectFeedChipState.Updated) showMissingEpisodesConfirm = false
+                    if (state.directFeedChip == DirectFeedChipState.Updated || state.directFeedChip == DirectFeedChipState.CheckFailed) showMissingEpisodesConfirm = false
                 }
                 if (showMissingEpisodesConfirm && state.directFeedChip == DirectFeedChipState.Offer) {
                     MissingEpisodesConfirmDialog(

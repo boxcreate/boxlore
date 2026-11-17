@@ -18,7 +18,10 @@ import cx.aswin.boxlore.core.ranking.RankingSurface
 import cx.aswin.boxlore.feature.explore.logic.ExploreBrowseLogic
 import cx.aswin.boxlore.feature.explore.logic.ExploreForYouRefreshKey
 import cx.aswin.boxlore.feature.explore.logic.ExploreForYouRefresher
+import cx.aswin.boxlore.feature.explore.logic.ExploreLoadFailures
 import cx.aswin.boxlore.feature.explore.logic.ExploreSharedRecommendationsLogic
+import cx.aswin.boxlore.feature.explore.logic.ExploreTopChartPaging
+import cx.aswin.boxlore.feature.explore.logic.debouncedShowSearchText
 import java.util.Calendar
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -33,9 +36,13 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 enum class SearchTab { SHOWS, EPISODES }
+
+/** What a Try again button on Explore asks for again. */
+enum class ExploreRetry { SHOW_SEARCH, TOP_CHART, NEXT_TOP_CHART_PAGE }
 
 sealed interface ExploreUiState {
     data object Loading : ExploreUiState
@@ -65,6 +72,12 @@ sealed interface ExploreUiState {
         val hasPerformedSemanticSearch: Boolean = false,
         /** Hybrid `/search` hits not already in Meili typeahead. */
         val alsoFoundResults: List<Podcast> = emptyList(),
+        /** The show search couldn't be read: no results means Try again, not no matches. */
+        val showSearchFailed: Boolean = false,
+        /** The Top chart's first page couldn't be read: no shows means Try again. */
+        val topChartFailed: Boolean = false,
+        /** The next Top chart page couldn't be read; the chart hasn't ended. */
+        val nextTopChartPageFailed: Boolean = false,
     ) : ExploreUiState
     data class Error(val message: String) : ExploreUiState
 }
@@ -81,6 +94,7 @@ private data class ExploreLoadingSlice(
     val isLoading: Boolean,
     val isLoadingMore: Boolean,
     val hasMore: Boolean,
+    val failures: ExploreLoadFailures,
 )
 
 private data class ExploreRecsSlice(
@@ -201,11 +215,13 @@ class ExploreViewModel(
     private var searchJob: Job? = null
 
     // Pagination State
-    private var currentOffset = 0
+    private var topChart = ExploreTopChartPaging()
     private val PAGE_SIZE = 20
     private val searchTieWindow = 4
     private val _isLoadingMore = MutableStateFlow(false)
     private val _hasMorePages = MutableStateFlow(true)
+    private val _failures = MutableStateFlow(ExploreLoadFailures())
+    private val _topChartRetries = MutableStateFlow(0)
 
     // Telemetry State
     private var sessionStartTime = System.currentTimeMillis()
@@ -253,8 +269,8 @@ class ExploreViewModel(
                 ) { subIds, category, trending, searchRes, query ->
                     ExplorePrimarySlice(subIds, category, trending, searchRes, query)
                 },
-                combine(_isLoading, _isLoadingMore, _hasMorePages) { loading, loadingMore, hasMore ->
-                    ExploreLoadingSlice(loading, loadingMore, hasMore)
+                combine(_isLoading, _isLoadingMore, _hasMorePages, _failures) { loading, loadingMore, hasMore, failures ->
+                    ExploreLoadingSlice(loading, loadingMore, hasMore, failures)
                 },
             ) { primary, loading -> primary to loading }
 
@@ -334,6 +350,9 @@ class ExploreViewModel(
                     isSemanticLoading = search.isSemanticLoading,
                     hasPerformedSemanticSearch = search.hasPerformedSemanticSearch,
                     alsoFoundResults = search.alsoFoundResults,
+                    showSearchFailed = loading.failures.showSearch,
+                    topChartFailed = loading.failures.topChart,
+                    nextTopChartPageFailed = loading.failures.nextTopChartPage,
                 )
             }.collect { state ->
                 _uiState.value = state
@@ -347,7 +366,8 @@ class ExploreViewModel(
         loadAllVibes()
 
         viewModelScope.launch {
-            combine(_currentCategory, userPrefs.regionStream) { category, region ->
+            // Try again on a failed chart bumps the retry count, which loads the same chart again.
+            combine(_currentCategory, userPrefs.regionStream, _topChartRetries) { category, region, _ ->
                 category to region
             }.collectLatest { (category, region) ->
                 loadTrending(category, region)
@@ -413,8 +433,7 @@ class ExploreViewModel(
     private fun startSearchObserver() {
         // Show typeahead: short debounce (Meili is cheap)
         _searchQuery
-            .debounce(300L)
-            .distinctUntilChanged()
+            .debouncedShowSearchText()
             .onEach { query ->
                 if (query.isNotBlank() && _searchTab.value == SearchTab.SHOWS) {
                     performSearch(query)
@@ -533,56 +552,80 @@ class ExploreViewModel(
     }
 
     private suspend fun loadTrending(category: String, region: String) {
-        currentOffset = 0
+        topChart = ExploreTopChartPaging()
         _hasMorePages.value = true
+        _failures.update { it.copy(topChart = false, nextTopChartPage = false) }
         _isLoading.value = true
         try {
             // Map "All" to null for API, and lowercase others for consistency
             val apiCategory = if (category == "All") null else category.lowercase()
 
-            // This hits the Turso DB (via Proxy)
-            val podcasts = podcastRepository.getTrendingPodcasts(
+            // This hits the Turso DB (via Proxy); null when the chart couldn't be read.
+            val podcasts = podcastRepository.getTrendingPodcastsOrNull(
                 country = region,
                 limit = PAGE_SIZE,
                 category = apiCategory,
                 offset = 0
             )
-            _trendingPodcasts.value = podcasts
-            podcasts.forEach { _seenPodcasts[it.id] = it }
-            _hasMorePages.value = podcasts.size >= PAGE_SIZE
-            currentOffset = podcasts.size
+            _trendingPodcasts.value = podcasts.orEmpty()
+            podcasts?.forEach { _seenPodcasts[it.id] = it }
+            topChart = topChart.afterPage(podcasts?.size, PAGE_SIZE)
+            _hasMorePages.value = topChart.hasMore
+            _failures.update { it.copy(topChart = podcasts == null) }
         } catch (e: Exception) {
-            // Handle error
+            if (e is kotlinx.coroutines.CancellationException) throw e
             _trendingPodcasts.value = emptyList()
+            _failures.update { it.copy(topChart = true) }
         } finally {
             _isLoading.value = false
         }
     }
 
+    /** Scrolling near the end; a failed chart or page waits for Try again, so a lost connection can't loop requests. */
     fun loadMoreTrending() {
+        if (!_failures.value.scrollMayLoadNextPage) return
+        loadNextTopChartPage()
+    }
+
+    /** Try again after a failed show search, Top chart or chart page. */
+    fun retry(target: ExploreRetry) {
+        when (target) {
+            ExploreRetry.SHOW_SEARCH -> _searchQuery.value.takeIf { it.isNotBlank() }?.let(::performSearch)
+            ExploreRetry.TOP_CHART -> _topChartRetries.update { it + 1 }
+            ExploreRetry.NEXT_TOP_CHART_PAGE -> loadNextTopChartPage()
+        }
+    }
+
+    private fun loadNextTopChartPage() {
         if (_isLoadingMore.value || !_hasMorePages.value || _searchQuery.value.isNotEmpty() || _currentVibe.value != null) return
+        _failures.update { it.copy(nextTopChartPage = false) }
         _isLoadingMore.value = true
         viewModelScope.launch {
             try {
                 val apiCategory = if (_currentCategory.value == "All") null else _currentCategory.value.lowercase()
                 val region = userPrefs.regionStream.first()
-                val morePodcasts = podcastRepository.getTrendingPodcasts(
+                val morePodcasts = podcastRepository.getTrendingPodcastsOrNull(
                     country = region,
                     limit = PAGE_SIZE,
                     category = apiCategory,
-                    offset = currentOffset
+                    offset = topChart.offset
                 )
-                if (morePodcasts.size < PAGE_SIZE) {
-                    _hasMorePages.value = false
+                // A failed page keeps the offset and the chart open, so Try again asks for it again.
+                topChart = topChart.afterPage(morePodcasts?.size, PAGE_SIZE)
+                _hasMorePages.value = topChart.hasMore
+                if (morePodcasts == null) {
+                    _failures.update { it.copy(nextTopChartPage = true) }
+                    return@launch
                 }
-                currentOffset += morePodcasts.size
                 val previous = _trendingPodcasts.value
                 val merged = ExploreBrowseLogic.mergeUniqueById(previous, morePodcasts) { it.id }
                 val newPodcasts = merged.drop(previous.size)
                 _trendingPodcasts.value = merged
                 newPodcasts.forEach { _seenPodcasts[it.id] = it }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 android.util.Log.e("ExploreViewModel", "Load more error", e)
+                _failures.update { it.copy(nextTopChartPage = true) }
             } finally {
                 _isLoadingMore.value = false
             }
@@ -606,6 +649,7 @@ class ExploreViewModel(
             _isLoading.value = true
             _searchResults.value = emptyList()
             _alsoFoundResults.value = emptyList()
+            _failures.update { it.showSearchStarted() }
             try {
                 val grouped = podcastRepository.searchPodcastsGrouped(query)
                 if (searchJob == myJob) {
@@ -615,10 +659,14 @@ class ExploreViewModel(
                     _searchResults.value = rankedCatalog
                     _alsoFoundResults.value = rankedAlso
                     grouped.all.forEach { _seenPodcasts[it.id] = it }
-                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackExploreSearchPerformed(
-                        query,
-                        rankedCatalog.size + rankedAlso.size,
-                    )
+                    _failures.update { it.showSearchAnswered(grouped.failed) }
+                    // A failed search isn't a search with no results, so it isn't reported as one.
+                    if (!grouped.failed) {
+                        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackExploreSearchPerformed(
+                            query,
+                            rankedCatalog.size + rankedAlso.size,
+                        )
+                    }
                 }
             } catch (error: kotlinx.coroutines.CancellationException) {
                 throw error
@@ -626,6 +674,7 @@ class ExploreViewModel(
                 if (searchJob == myJob) {
                     _searchResults.value = emptyList()
                     _alsoFoundResults.value = emptyList()
+                    _failures.update { it.showSearchAnswered(failed = true) }
                 }
             } finally {
                 if (searchJob == myJob) {
@@ -806,7 +855,11 @@ class ExploreViewModel(
     }
 
     /** Whether the Explore screen is visible (started); For you refreshes only while it is. */
-    fun onScreenVisibilityChanged(visible: Boolean) = forYouRefresher.onVisibilityChanged(visible)
+    fun onScreenVisibilityChanged(visible: Boolean) {
+        forYouRefresher.onVisibilityChanged(visible)
+        // A Top chart that failed loads again when the listener comes back to Explore, once per visit.
+        if (visible && _failures.value.topChart && !_isLoading.value) _topChartRetries.update { it + 1 }
+    }
 
     /** Asks for For you picks for [key]; null when the request failed with no last good picks. */
     private suspend fun fetchForYouPicks(key: ExploreForYouRefreshKey): ForYouPicks? {

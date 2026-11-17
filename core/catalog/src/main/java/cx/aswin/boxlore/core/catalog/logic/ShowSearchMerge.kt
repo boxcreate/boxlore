@@ -11,7 +11,8 @@ enum class ShowSearchGroup {
     ALSO_FOUND,
 }
 
-data class GroupedShowSearchResult(val catalog: List<Podcast>, val alsoFound: List<Podcast>, val correctedQuery: String? = null,) {
+/** [failed] when both searches couldn't be read; one failed search still gives the other's results. */
+data class GroupedShowSearchResult(val catalog: List<Podcast>, val alsoFound: List<Podcast>, val correctedQuery: String? = null, val failed: Boolean = false,) {
     val all: List<Podcast>
         get() = catalog + alsoFound
 }
@@ -41,6 +42,10 @@ fun mergeShowSearchResults(typeahead: List<Podcast>, hybrid: List<Podcast>,): Gr
     for (p in hybrid) tryAdd(alsoFound, p)
     return GroupedShowSearchResult(catalog = catalog, alsoFound = alsoFound)
 }
+
+/** [mergeShowSearchResults] of two searches where null is a search that failed; failed only when both did. */
+fun groupShowSearch(typeahead: List<Podcast>?, hybrid: List<Podcast>?,): GroupedShowSearchResult =
+    mergeShowSearchResults(typeahead.orEmpty(), hybrid.orEmpty()).copy(failed = typeahead == null && hybrid == null)
 
 private fun Podcast.withSearchGenreFrom(hybrid: List<Podcast>): Podcast {
     if (genre.isUsefulSearchGenre()) return this

@@ -274,10 +274,11 @@ internal class PodcastInfoPullRefresh(
                 if (!PodcastInfoPullRefreshLogic.shouldApply(pageState.currentPodcastId, targetPodcastId)) {
                     return@launch
                 }
+                // The listener asked for this refresh, so a failed feed check says so.
                 val appliedState =
                     pageState.applySupplementRefreshState(
                         targetPodcastId,
-                        refreshed.state.copy(isRssRefreshing = false),
+                        refreshed.state.copy(isRssRefreshing = false, userMessage = refreshed.failureMessage ?: refreshed.state.userMessage),
                     ) ?: return@launch
                 refreshed.pageSourceCount?.let { pageState.currentOffset = it }
                 if (PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(
@@ -305,7 +306,8 @@ internal class PodcastInfoPullRefresh(
                 uiState.value =
                     failed.copy(
                         isRssRefreshing = false,
-                        directFeedChip = DirectFeedChipState.Updated,
+                        directFeedChip = DirectFeedChipState.CheckFailed,
+                        userMessage = PodcastInfoSupplementSupport.FEED_CHECK_FAILED_MESSAGE,
                     )
             }
         }

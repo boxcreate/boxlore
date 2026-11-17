@@ -60,8 +60,10 @@ Announcement title:
 - When boxlore fills your queue from the show you're playing, or offers to continue it, it now picks the episodes right after yours, even deep into a long show you don't follow, instead of jumping hundreds of episodes ahead.
 - Downloaded episodes now show their chapters and transcript straight away, even offline or on a weak connection. Chapters and transcripts that can't load now stop trying instead of loading forever.
 - For you in Explore no longer reloads again and again while your account syncs. It refreshes when the shows you follow or your languages change, and when your picks get old.
+- When a show search or Explore's Top chart can't load, boxlore now says so and lets you try again, instead of saying no shows were found or ending the chart early. This includes searching for shows while you set up boxlore.
 - If you follow a lot of shows, New Episodes no longer misses new episodes from some of them, and pulling down on New Episodes checks all your shows (up to 200), not just a few.
 - The Brief opens as soon as it's ready, even when its stories are slow to load. They appear when they arrive.
 - New episode notifications from different shows no longer replace each other or open the wrong show. Each show gets its own notification, grouped together, for up to 16 shows at a time.
 - On a show's page, Mark all as played and Mark all as unplayed now change every episode, not just the newest 200. If the episodes can't load, nothing changes and boxlore tells you.
+- On a show's page where you allowed feed checks, a check that fails now says Couldn't update instead of Up to date, and pulling down tells you when the feed couldn't be read.
 - When boxlore can't read a long show's own feed, searching that show now looks through up to 11,000 of its episodes instead of the newest 1,000, and says so when there are more. If the search can't run, the page says so and lets you try again instead of showing no matches.
