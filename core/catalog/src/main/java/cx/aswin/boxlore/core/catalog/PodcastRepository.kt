@@ -317,23 +317,28 @@ class PodcastRepository(
         }
     }
 
+    /** [searchShowEpisodes]' matching episodes. */
+    suspend fun searchEpisodes(feedId: String, query: String,): List<Episode> = searchShowEpisodes(feedId, query).episodes
+
     /**
      * In-show search, always on the phone: the RSS table, a followed show's catalog, the feed-first
      * stored copy (the show page completes its archive first), or else the server's list of the
-     * show (`/v2/episodes`). Never v1 `episodes/search`, whose answers carry served IDs that would
-     * mix with recipe IDs (P4 PR 16, decision D16).
+     * show (`/v2/episodes`, as far as the route pages, saying how far when that isn't every
+     * episode). Never v1 `episodes/search`, whose answers carry served IDs that would mix with
+     * recipe IDs (P4 PR 16, decision D16). Throws [java.io.IOException] when the server's list can't
+     * be read, so a failed search is never shown as no matches.
      */
-    suspend fun searchEpisodes(feedId: String, query: String,): List<Episode> = withContext(Dispatchers.IO) {
+    suspend fun searchShowEpisodes(feedId: String, query: String,): ShowEpisodeSearch = withContext(Dispatchers.IO) {
         if (feedId.startsWith("rss:")) {
-            return@withContext searchRssEpisodes(feedId, query)
+            return@withContext ShowEpisodeSearch(searchRssEpisodes(feedId, query))
         }
         if (isLocalCatalogReady(feedId)) {
-            return@withContext searchLocalCatalog(feedId, query)
+            return@withContext ShowEpisodeSearch(searchLocalCatalog(feedId, query))
         }
         if (showPageSource(feedId) == ShowPageSource.FEED) {
-            searchFeedCopy(feedId, query)?.let { return@withContext it }
+            searchFeedCopy(feedId, query)?.let { return@withContext ShowEpisodeSearch(it) }
         }
-        searchServerList(feedId, query)
+        searchServerList(feedId, query) ?: throw java.io.IOException("The show's episodes couldn't be read")
     }
 
     /**
@@ -454,6 +459,28 @@ class PodcastRepository(
     }
 
     /**
+     * One page of a read of the whole show (Select all and Mark all on the show page), from the
+     * page's own source as [getShowPageEpisodes] picks it, at [offset] in [sort]. Unlike the page,
+     * a page that can't be read throws [java.io.IOException] instead of ending the list early, so a
+     * whole-show action never acts on part of the show as if it were all of it, and a list longer
+     * than `/v2/episodes` pages through throws [ShowListTooLongException]. The server's list is read
+     * [SHOW_LIST_SCAN_PAGE] rows at a time from `/v2/episodes`, never mixed with v1 pages and never
+     * kept in the shared page cache; a show `/v2` doesn't list is read from v1 `/episodes`
+     * throughout ([wholeShowServerPage]). Stored sources are read [MAX_SAFE_PAGE_LIMIT] rows at a time.
+     */
+    suspend fun getWholeShowPage(feedId: String, offset: Int, sort: String,): EpisodePage = withContext(Dispatchers.IO) {
+        when (showPageSource(feedId)) {
+            ShowPageSource.RSS -> {
+                val episodes = rssRepository.getEpisodes(feedId, MAX_SAFE_PAGE_LIMIT, offset, sort)
+                EpisodePage(episodes, hasMore = offset + episodes.size < rssRepository.episodeCount(feedId))
+            }
+            ShowPageSource.FOLLOWED_CATALOG -> getLocalCatalogPage(feedId, MAX_SAFE_PAGE_LIMIT, offset, sort)
+            ShowPageSource.FEED -> feedCopyPage(feedId, MAX_SAFE_PAGE_LIMIT, offset, sort) ?: wholeShowServerPage(feedId, offset, sort)
+            ShowPageSource.SERVER_LIST -> wholeShowServerPage(feedId, offset, sort)
+        }
+    }
+
+    /**
      * True when [feedId]'s show page reads its feed first (`feed_first` on, a Podcast Index show),
      * whether or not this page has fallen back: such a page never offers "Missing episodes?".
      *
@@ -467,8 +494,12 @@ class PodcastRepository(
      * go too (before P4 PR 16 only pages under [feedId] itself were dropped).
      */
     fun invalidateEpisodesCache(feedId: String) {
-        val prefixes = setOfNotNull(feedId, resolvedFeedIds[feedId]).map { "$it|" }
+        val ids = setOfNotNull(feedId, resolvedFeedIds[feedId])
+        val prefixes = ids.map { "$it|" }
         episodesCache.invalidateIf { key -> prefixes.any(key::startsWith) }
+        windowScanHints.invalidateIf { key -> prefixes.any(key::startsWith) }
+        showSearchCache.invalidateIf { key -> key in ids }
+        showSearchMatches.invalidateIf { key -> key in ids }
     }
 
     /**
@@ -526,6 +557,8 @@ class PodcastRepository(
         offset: Int,
         sort: String,
         mergeSupplements: Boolean,
+        /** True for a whole-show read: a page that can't be read throws [java.io.IOException] instead of answering an empty last page. */
+        strict: Boolean = false,
     ): EpisodePage {
         val resolvedId = resolvePodcastIndexFeedId(feedId)
         rememberResolvedFeedId(feedId, resolvedId)
@@ -536,38 +569,25 @@ class PodcastRepository(
             return maybeMergeSupplements(resolvedId, cached, offset, sort, mergeSupplements)
         }
         android.util.Log.d("PodcastRepository", "Cache MISS for getEpisodesPaginated: $cacheKey. Fetching from network.")
-        return try {
-            val response = api.getEpisodesPaginated(publicKey, resolvedId, limit, offset, sort).execute()
-            if (response.isSuccessful && response.body() != null) {
-                val piItems = response.body()!!.items.mapNotNull { mapToEpisode(it) }
-                val page =
-                    EpisodePage(
-                        episodes = piItems,
-                        hasMore = response.body()!!.hasMore,
-                        sourceCount = piItems.size,
-                    )
-                episodesCache[cacheKey] = page
-                maybeMergeSupplements(resolvedId, page, offset, sort, mergeSupplements)
-            } else {
-                maybeMergeSupplements(
-                    resolvedId,
-                    EpisodePage(emptyList(), false, sourceCount = 0),
-                    offset,
-                    sort,
-                    mergeSupplements,
-                )
+        val page =
+            try {
+                val response = api.getEpisodesPaginated(publicKey, resolvedId, limit, offset, sort).execute()
+                val body = response.body()
+                if (response.isSuccessful && body != null) {
+                    val piItems = body.items.mapNotNull { mapToEpisode(it) }
+                    EpisodePage(episodes = piItems, hasMore = body.hasMore, sourceCount = piItems.size).also { episodesCache[cacheKey] = it }
+                } else {
+                    android.util.Log.w("PodcastRepository", "v1 episodes failed at offset $offset: HTTP ${response.code()}")
+                    null
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.w("PodcastRepository", "v1 episodes failed at offset $offset", e)
+                null
             }
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            maybeMergeSupplements(
-                resolvedId,
-                EpisodePage(emptyList(), false, sourceCount = 0),
-                offset,
-                sort,
-                mergeSupplements,
-            )
-        }
+        if (page == null && strict) throw java.io.IOException("Episodes page at offset $offset couldn't be read")
+        return maybeMergeSupplements(resolvedId, page ?: EpisodePage(emptyList(), false, sourceCount = 0), offset, sort, mergeSupplements)
     }
 
     internal suspend fun maybeMergeSupplements(
@@ -1066,7 +1086,11 @@ class PodcastRepository(
 
     override suspend fun getEpisodes(feedId: String): List<Episode> = getEpisodesImpl(feedId)
 
-    /** Bounded window for Smart Queue / Auto — never materializes a mega-feed. */
+    /**
+     * Bounded window for Smart Queue / Auto — never materializes a mega-feed. With
+     * [aroundEpisodeId] it holds that episode and the ones after it, read in [sort]; a show on the
+     * server's list that doesn't hold the episode answers an empty window ([getShowEpisodeWindow]).
+     */
     suspend fun getEpisodeWindow(feedId: String, aroundEpisodeId: String? = null, sort: String = "newest",): List<Episode> = withContext(Dispatchers.IO) {
         if (feedId.startsWith("rss:")) {
             return@withContext getRssEpisodeWindow(feedId, aroundEpisodeId)
@@ -1096,7 +1120,42 @@ class PodcastRepository(
         // Catalog caches are endpoint-versioned so an otherwise-valid v1/v2 response cannot
         // suppress the v3 fetch and then invalidate grouped v3 section responses.
 
-        internal val episodesCache = TimedLruCache<String, EpisodePage>(maxEntries = 30, ttlMillis = DEFAULT_EPISODE_CACHE_TTL_MS)
+        internal val episodesCache =
+            TimedLruCache<String, EpisodePage>(maxEntries = 30, ttlMillis = DEFAULT_EPISODE_CACHE_TTL_MS, timeProvider = CatalogCacheClock::now)
+
+        /**
+         * How far in-show search has read the server's list of a show ([searchServerList]), by show
+         * ID, so a search cut short by the next keystroke or a failed page carries on from there.
+         * Kept apart from [episodesCache], to [SHOW_SEARCH_CACHE_ENTRIES] show, and slim past the
+         * newest [SEARCH_FULL_ROWS] rows ([ShowSearchScan]), so a long show's list never pushes other
+         * shows' pages out or holds thousands of full episodes.
+         */
+        internal val showSearchCache =
+            TimedLruCache<String, ShowSearchScan>(
+                maxEntries = SHOW_SEARCH_CACHE_ENTRIES,
+                ttlMillis = DEFAULT_EPISODE_CACHE_TTL_MS,
+                timeProvider = CatalogCacheClock::now,
+            )
+
+        /**
+         * The full episodes of in-show search's older (slim) matches, by show ID and then episode
+         * ID, up to [SEARCH_MATCH_EPISODES], so the next keystroke's search never reads their pages
+         * again. Dropped with [showSearchCache].
+         */
+        internal val showSearchMatches =
+            TimedLruCache<String, Map<String, Episode>>(
+                maxEntries = SHOW_SEARCH_CACHE_ENTRIES,
+                ttlMillis = DEFAULT_EPISODE_CACHE_TTL_MS,
+                timeProvider = CatalogCacheClock::now,
+            )
+
+        /**
+         * The row where same-show continuation last found its episode on the server's list, by
+         * "show ID|sort" ([serverListWindowAround]): the next episode's search starts near it. Kept
+         * for [WINDOW_SCAN_HINT_TTL_MS], past the episode playing, unlike the windows themselves.
+         */
+        internal val windowScanHints =
+            TimedLruCache<String, Int>(maxEntries = WINDOW_SCAN_HINTS, ttlMillis = WINDOW_SCAN_HINT_TTL_MS, timeProvider = CatalogCacheClock::now)
 
         /** The Podcast Index ID each `url:`, `guid:` or `itunes:` show ID resolved to, for [invalidateEpisodesCache]. */
         internal val resolvedFeedIds = java.util.concurrent.ConcurrentHashMap<String, String>()

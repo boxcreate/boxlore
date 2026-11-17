@@ -12,7 +12,7 @@ It does not own playback, download workers, Compose UI, the Room schema ([`:core
 
 - `PodcastRepository`: the one application-scoped repository for search, trending, recommendations, vibes, Home bootstrap, similar episodes, briefings, content catalog v3, feedback and episode lists. It builds `api` and `apiV2` lazily on one cached OkHttp client.
 - Episode-list sources: `rss:` shows read the RSS table; a followed show with a ready local catalog reads Room only; others read the server's list (`/v2/episodes`, mapped to local owner IDs). `getEpisodesPaginated`, `getEpisodeWindow` and `getEpisodes` never read a feed copy.
-- Limits: pages are capped at 100 (`clampPageLimit`), `getEpisodes` is a 200-episode window, and `TimedLruCache` bounds the in-memory caches.
+- Limits: pages are capped at 100 (`clampPageLimit`), `getEpisodes` is a 200-episode window, and `TimedLruCache` bounds the in-memory caches. `getEpisodeWindow` around an episode holds that episode and up to 199 after it; on the server's list it reads in the asked sort until the episode turns up, starting near the show's last found row, and answers empty when the list doesn't hold it.
 - `syncSubscriptions`: each show's latest episode, from Room for ready catalogs, cached extras for opted-in shows, else `/sync` in calls of at most 20 IDs, two at a time, because the API serves only 40 IDs per call.
 - `loadPiEpisodesForSupplement`: the strict Podcast Index baseline that feed-only extras are compared with; when it fails the extras refresh stops.
 - Discovery uses `/v2` routes while the discovery switch is on, else v1. Show search, typeahead, onboarding, content catalog, feedback, `/sync` and OPML lookups stay on v1.
@@ -48,7 +48,8 @@ It does not own playback, download workers, Compose UI, the Room schema ([`:core
 - `showPageSource(feedId)`: `RSS`, `FOLLOWED_CATALOG`, `FEED` (feed-first on, a Podcast Index show not in fallback) or `SERVER_LIST`.
 - `getShowPageEpisodes` is the only reader of the feed-first stored copy, so a copy no longer read never goes stale under other callers.
 - `FeedFirstShowPages` reads the feed into the copy: offline shows the copy; a failed read is retried once and reported (never for a followed show), then the page uses the server's list (`FALLBACK`) until reopened.
-- In-show search (`searchEpisodes`) runs on the phone or against the server's list, never v1 `episodes/search`.
+- In-show search (`searchShowEpisodes`, or `searchEpisodes` for the matches alone) runs on the phone or against the server's list as far as `/v2/episodes` pages, never v1 `episodes/search`; its answer says how many of the newest it searched when a show lists more. It throws when that list can't be read, and keeps its reading progress for one show in `showSearchCache`, not the page cache: the newest 1,000 rows whole, older rows slim, and the older rows it matched whole in `showSearchMatches`.
+- `getWholeShowPage` is the whole-show read behind Select all and Mark all: the show page's sources, but a page that can't be read throws instead of ending the list, and a list longer than `/v2/episodes` pages through throws `ShowListTooLongException`. The server's list is read 1,000 rows a time from `/v2/episodes`, never mixed with v1 pages; a show `/v2` doesn't list is read from v1 `/episodes` throughout.
 
 ### Episode links and shares
 

@@ -19,6 +19,7 @@ import cx.aswin.boxlore.feature.info.logic.PostSubscribeRefreshes
 import cx.aswin.boxlore.feature.info.logic.enablePodcastNotifications
 import cx.aswin.boxlore.feature.info.logic.togglePodcastAutoDownload
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +34,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /**
  * The show page. Opening a show ([PodcastInfoShowLoader]), the episode list
@@ -119,16 +121,26 @@ class PodcastInfoViewModel(
             supplementSupport = supplementSupport,
             postSubscribeRefreshes = postSubscribeRefreshes,
         )
+
+    /** Where Mark all reads and writes, so leaving the page doesn't stop it. */
+    private val markAllScope = deps.applicationScope ?: viewModelScope
+
     private val episodeActions =
         PodcastInfoEpisodeActions(
             pageState = pageState,
-            repository = repository,
             playbackRepository = playbackRepository,
             downloadRepository = downloadRepository,
             queueManager = deps.queueManager,
             sessionTracker = sessionTracker,
             entryPoint = entryPoint,
             scope = viewModelScope,
+            // On the main thread like the page's own feed reads; the feed read belongs to the Mark all work.
+            loadWholeShow = {
+                withContext(Dispatchers.Main.immediate) {
+                    episodePaging.selectionWindow(EpisodeSort.NEWEST, archiveScope = markAllScope).episodes
+                }
+            },
+            workScope = markAllScope,
         )
 
     val folderNames: StateFlow<List<String>> =

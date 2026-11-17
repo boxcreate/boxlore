@@ -54,4 +54,7 @@ Announcement title:
 - In Android Auto, skipping forward or back no longer sends the list you're browsing back to the top.
 - Casting no longer closes boxlore when your queue has an episode your Cast device can't stream, such as one from a feed on your home network. Those episodes stay in your queue but are skipped on the Cast device.
 - After you listen on another device, Play on the mini player now starts the episode it shows, at the right spot, instead of an older one from your queue.
+- When boxlore fills your queue from the show you're playing, or offers to continue it, it now picks the episodes right after yours, even deep into a long show you don't follow, instead of jumping hundreds of episodes ahead.
 - For you in Explore no longer reloads again and again while your account syncs. It refreshes when the shows you follow or your languages change, and when your picks get old.
+- On a show's page, Mark all as played and Mark all as unplayed now change every episode, not just the newest 200. If the episodes can't load, nothing changes and boxlore tells you.
+- When boxlore can't read a long show's own feed, searching that show now looks through up to 11,000 of its episodes instead of the newest 1,000, and says so when there are more. If the search can't run, the page says so and lets you try again instead of showing no matches.

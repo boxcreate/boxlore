@@ -38,6 +38,20 @@ class PodcastRepositoryMemoryPolicyTest {
     }
 
     @Test
+    fun `TimedLruCache drops expired entries when another is stored, read or not`() {
+        // Reviewed: an entry nobody read again stayed in memory long past its time.
+        var currentTime = 1000L
+        val cache = TimedLruCache<String, String>(maxEntries = 3, ttlMillis = 500L, timeProvider = { currentTime })
+
+        cache["old"] = "list"
+        currentTime += 501L
+        cache["new"] = "page"
+
+        assertEquals(1, cache.size())
+        assertEquals("page", cache["new"])
+    }
+
+    @Test
     fun `TimedLruCache evicts least recently accessed entry when capacity is exceeded`() {
         var currentTime = 1000L
         val cache = TimedLruCache<String, String>(
