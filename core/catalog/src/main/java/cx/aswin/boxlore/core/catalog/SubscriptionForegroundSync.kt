@@ -3,7 +3,6 @@ package cx.aswin.boxlore.core.catalog
 import android.util.Log
 import cx.aswin.boxlore.core.catalog.logic.DirectFeedSyncOrder
 import cx.aswin.boxlore.core.catalog.logic.SubscriptionForegroundSyncLogic
-import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.model.Episode
@@ -511,23 +510,6 @@ class SubscriptionForegroundSync(
             }
         }
 
-        @Suppress("LongParameterList")
-        private suspend fun resolveLocalCatalogTip(
-            podcastId: String,
-            meta: DirectFeedTipMeta,
-            localEpisodeCatalog: LocalEpisodeCatalogPort?,
-            episodeSupplementPort: EpisodeSupplementPort,
-            podcastRepository: PodcastRepository,
-            followMoves: Boolean,
-            adoptMovedFeed: suspend (readFrom: String, movedTo: String) -> Unit,
-        ): DirectFeedResolveResult {
-            val catalog = localEpisodeCatalog
-            if (catalog != null) {
-                return resolveCatalogRefresh(podcastId, meta, catalog, followMoves, adoptMovedFeed)
-            }
-            return resolveLegacySupplementTip(podcastId, meta, episodeSupplementPort, podcastRepository)
-        }
-
         /**
          * Refreshes one show's catalog. The catalog runs its own conditional (ETag/Last-Modified)
          * check, so an unchanged feed is recorded as read and is not downloaded. Inside a pull to
@@ -581,51 +563,6 @@ class SubscriptionForegroundSync(
                 }
             }
         }
-
-        private suspend fun resolveLegacySupplementTip(
-            podcastId: String,
-            meta: DirectFeedTipMeta,
-            episodeSupplementPort: EpisodeSupplementPort,
-            podcastRepository: PodcastRepository,
-        ): DirectFeedResolveResult {
-            if (episodeSupplementPort.isPublisherFeedUnchanged(podcastId, meta.feedUrl.orEmpty())) {
-                return DirectFeedResolveResult(
-                    tip =
-                    episodeSupplementPort
-                        .getEpisodesForPodcast(podcastId)
-                        .maxByOrNull { it.publishedDate },
-                    persisted = false,
-                )
-            }
-            return when (
-                val outcome =
-                    episodeSupplementPort.refreshFromFeed(
-                        EpisodeSupplementPort.RefreshFromFeedRequest(
-                            podcastIndexId = podcastId,
-                            feedUrl = meta.feedUrl.orEmpty(),
-                            loadBaseline = { podcastRepository.loadPiEpisodesForSupplement(podcastId) },
-                            podcastTitle = meta.title,
-                            podcastImageUrl = meta.imageUrl,
-                            podcastGenre = meta.genre,
-                            podcastArtist = meta.artist,
-                        ),
-                    )
-            ) {
-                is EpisodeSupplementOutcome.Success ->
-                    DirectFeedResolveResult(tip = outcome.newestFeedEpisode, persisted = true)
-                is EpisodeSupplementOutcome.Failure ->
-                    DirectFeedResolveResult(tip = null, persisted = false, failed = true)
-                EpisodeSupplementOutcome.NoDisconnect ->
-                    DirectFeedResolveResult(tip = null, persisted = false)
-            }
-        }
-
-        private fun catalogMeta(meta: DirectFeedTipMeta) = LocalEpisodeCatalogPort.PodcastMeta(
-            title = meta.title,
-            imageUrl = meta.imageUrl,
-            genre = meta.genre,
-            artist = meta.artist,
-        )
 
         /**
          * Chunked sync body (test seam).
