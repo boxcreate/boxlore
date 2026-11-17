@@ -1,9 +1,14 @@
 package cx.aswin.boxlore.feature.home
 
 import androidx.lifecycle.viewModelScope
+import cx.aswin.boxlore.core.catalog.FollowedShowFeedRead
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
+import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
 import cx.aswin.boxlore.core.playback.episodeGroupTokens
+import cx.aswin.boxlore.feature.home.logic.HomeChipFeedReads
+import cx.aswin.boxlore.feature.home.logic.HomeChipRefresh
+import cx.aswin.boxlore.feature.home.logic.HomeChipSelection
 import cx.aswin.boxlore.feature.home.logic.HomeForegroundSyncLogic
 import cx.aswin.boxlore.feature.home.logic.HomeSelectedPodcastLogic
 import cx.aswin.boxlore.feature.home.logic.HomeShowEpisodesLogic
@@ -183,6 +188,73 @@ internal fun HomeViewModel.seriesEpisodesLoader(podcastId: String): SeriesEpisod
     },
     groupTokens = { ids -> playbackRepository.episodeGroupTokens(ids) },
 )
+
+/**
+ * A listener's tap reads the show's feed, at most once per show per 15 minutes ([HomeChipFeedReads]).
+ * An `rss:` show also repairs its catalog on a selection, tapped or automatic, while that catalog is
+ * stale or its once-a-session refresh is due. A [recheck] (a tap on a chip that already looks
+ * selected) is always held to the 15-minute limit, repair included.
+ */
+internal fun HomeViewModel.refreshSelectedShow(
+    podcast: Podcast,
+    explicitTap: Boolean,
+    recheck: Boolean = false,
+) {
+    val podcastId = podcast.id
+    val tapRead = HomeChipFeedReads.shared.claim(podcastId, explicitTap = explicitTap, nowMs = System.currentTimeMillis())
+    val manualRefreshPending =
+        podcast.isRss &&
+            podcast.rssRefreshCapability == Podcast.RSS_REFRESH_MANUAL &&
+            podcastId !in rssFeedsRefreshedThisSession
+    when (HomeChipSelection.refreshFor(podcast.isRss, podcast.rssCatalogStale, manualRefreshPending, tapRead, recheck)) {
+        HomeChipRefresh.RSS_REPAIR -> {
+            if (manualRefreshPending) rssFeedsRefreshedThisSession.add(podcastId)
+            refreshSelectedRssPodcast(podcastId) { rssRepository.refreshCatalog(podcastId) }
+        }
+        // A listener's check: if it fails before the show is due, the show keeps its wait.
+        HomeChipRefresh.RSS_TAP_READ -> refreshSelectedRssPodcast(podcastId) { rssRepository.refreshCatalogNow(podcastId) }
+        HomeChipRefresh.FEED_READ -> readSelectedShowFeed(podcastId)
+        HomeChipRefresh.NONE -> Unit
+    }
+}
+
+private fun HomeViewModel.refreshSelectedRssPodcast(
+    podcastId: String,
+    refresh: suspend () -> Result<Int>,
+) {
+    viewModelScope.launch {
+        try {
+            refresh().getOrThrow()
+            HomeForegroundSyncLogic.reloadIfStillOpen(podcastId, _selectedPodcastId, _rssRefreshVersion)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            android.util.Log.e("HomeViewModel", "Failed to refresh selected RSS podcast $podcastId", e)
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackRssRefreshFailed(
+                podcastId,
+                e::class.simpleName,
+            )
+        }
+    }
+}
+
+/**
+ * A tapped Podcast Index show's feed, read even inside its six-hour wait ([FollowedShowFeedRead]);
+ * the chip reloads when the read is done if it is still open. `HomeChipFeedReads` limits it to once per show per 15 minutes.
+ */
+private fun HomeViewModel.readSelectedShowFeed(podcastId: String) {
+    viewModelScope.launch(Dispatchers.IO) {
+        try {
+            FollowedShowFeedRead.readNow(podcastRepository, subscriptionRepository, podcastId)
+            // The read also cleared the show's cached pages.
+            HomeForegroundSyncLogic.reloadIfStillOpen(podcastId, _selectedPodcastId, _rssRefreshVersion)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            android.util.Log.w("HomeViewModelFilteredView", "Failed to read the selected show's feed $podcastId", e)
+        }
+    }
+}
 
 internal fun HomeViewModel.observeDirectFeedRefresh() {
     viewModelScope.launch {

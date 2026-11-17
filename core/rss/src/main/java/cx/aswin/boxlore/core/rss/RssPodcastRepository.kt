@@ -6,6 +6,7 @@ import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.RssEpisodeEntity
 import cx.aswin.boxlore.core.domain.RssSubscriptionResult
+import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshReason
 import cx.aswin.boxlore.core.domain.ports.RssSubscriptionPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -191,32 +192,36 @@ class RssPodcastRepository private constructor(
         linkedPodcast
     }
 
-    suspend fun refreshCatalog(podcastId: String): Result<Int> = refreshEpisodes(podcastId, manual = true)
+    suspend fun refreshCatalog(podcastId: String): Result<Int> = refreshEpisodes(podcastId, RefreshReason.MANUAL)
 
-    suspend fun refreshCatalogIfNeeded(podcastId: String): Result<Int> = refreshEpisodes(podcastId, manual = false)
+    suspend fun refreshCatalogIfNeeded(podcastId: String): Result<Int> = refreshEpisodes(podcastId, RefreshReason.NORMAL)
 
-    private suspend fun refreshEpisodes(podcastId: String, manual: Boolean): Result<Int> {
+    /**
+     * A listener's own check of the show, even inside its six-hour wait
+     * ([RefreshReason.PULL]): read
+     * conditionally unless the catalog needs repair, and a failed read of a show not yet due keeps
+     * its wait.
+     */
+    suspend fun refreshCatalogNow(podcastId: String): Result<Int> = refreshEpisodes(podcastId, RefreshReason.PULL)
+
+    private suspend fun refreshEpisodes(podcastId: String, reason: RefreshReason): Result<Int> {
         markRefreshing(podcastId, true)
         return try {
             // Links exist only where they were written: every refresh, changed or not, links a
             // switched show again, so a restored show and rows that arrived later link too (D8).
-            refreshEpisodesOnce(podcastId, manual).also { switchedShowLinker.relinkQuietly(podcastId) }
+            refreshEpisodesOnce(podcastId, reason).also { switchedShowLinker.relinkQuietly(podcastId) }
         } finally {
             markRefreshing(podcastId, false)
         }
     }
 
-    private suspend fun refreshEpisodesOnce(podcastId: String, manual: Boolean): Result<Int> = try {
+    private suspend fun refreshEpisodesOnce(podcastId: String, reason: RefreshReason): Result<Int> = try {
         val row = podcastDao.getPodcast(podcastId) ?: error(ERROR_RSS_SUBSCRIPTION_NOT_FOUND)
         val outcome = episodeCatalog.refresh(
             cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshRequest(
                 podcastId,
                 row.feedUrl.orEmpty(),
-                reason = if (manual) {
-                    cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshReason.MANUAL
-                } else {
-                    cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshReason.NORMAL
-                },
+                reason = reason,
             ),
         )
         when (outcome) {
