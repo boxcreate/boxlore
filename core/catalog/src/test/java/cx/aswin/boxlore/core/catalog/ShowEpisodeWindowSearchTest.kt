@@ -52,6 +52,26 @@ class ShowEpisodeWindowSearchTest {
     }
 
     @Test
+    fun `oldest first, pages that map to few episodes are read on until the window is full`() = runTest {
+        // Reviewed: only one page past the episode's page was read, so rows without audio left a short window.
+        val list = show(300)
+        var reads = 0
+        val firstPage = ShowEpisodeWindowSearch.Page(list.take(100), hasMore = true)
+        val window =
+            requireNotNull(
+                ShowEpisodeWindowSearch.around("ep100", newestFirst = false, bound = 150, firstPage = firstPage) { offset ->
+                    reads++
+                    // Page 100 lists 100 rows but none of them maps to an episode.
+                    val episodes = if (offset == 100) emptyList() else list.drop(offset).take(100)
+                    ShowEpisodeWindowSearch.Page(episodes, hasMore = offset + 100 < list.size, sourceCount = 100)
+                },
+            )
+
+        assertEquals(listOf("ep100") + (201..300).map { "ep$it" }, window.map { it.id })
+        assertEquals(2, reads, "both pages after the episode's page")
+    }
+
+    @Test
     fun `newest first, the window still runs forward in time from the episode`() = runTest {
         val served = Served(show(1_000).reversed(), firstSize = 200, pageSize = 1_000)
 

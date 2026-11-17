@@ -50,8 +50,8 @@ internal class PodcastInfoEpisodeActions(
     private val sessionTracker: PodcastInfoSessionTracker,
     private val entryPoint: String?,
     private val scope: CoroutineScope,
-    /** Every episode of the show, as Select all reads it ([PodcastInfoEpisodePaging.selectionWindow]); throws when any page fails. */
-    private val loadWholeShow: suspend () -> List<Episode>,
+    /** Every episode of the given show, as Select all reads it ([PodcastInfoEpisodePaging.selectionWindow]); throws when any page fails or the page shows another show. */
+    private val loadWholeShow: suspend (podcastId: String) -> List<Episode>,
     /** Where Mark all reads and writes, so leaving the page doesn't stop it: the app's scope, or [scope]. */
     workScope: CoroutineScope = scope,
 ) {

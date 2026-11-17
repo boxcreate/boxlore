@@ -135,8 +135,10 @@ class PodcastInfoViewModel(
             entryPoint = entryPoint,
             scope = viewModelScope,
             // On the main thread like the page's own feed reads; the feed read belongs to the Mark all work.
-            loadWholeShow = {
+            loadWholeShow = { podcastId ->
                 withContext(Dispatchers.Main.immediate) {
+                    // The read follows the page's show: if the page moved to another since the tap, write nothing.
+                    if (pageState.currentPodcastId != podcastId) throw java.io.IOException("The page now shows another show")
                     episodePaging.selectionWindow(EpisodeSort.NEWEST, archiveScope = markAllScope).episodes
                 }
             },

@@ -454,6 +454,42 @@ class PodcastRepositoryShowWindowTest {
         assertEquals(2, episodeRequests().size)
     }
 
+    @Test
+    fun aMatchNewerEpisodesMovedToTheNextPageFailsTheSearchAndTryAgainFindsIt() = runBlocking {
+        // Reviewed: a slim match read again at its old page was left out, so the search showed no result.
+        showSize = 2_500
+        val repository = repository()
+        assertTrue(repository.searchEpisodes(SHOW, "no such words").isEmpty())
+
+        // One new episode moves every row on by one: episode 501 goes from row 1,999 to row 2,000.
+        showSize = 2_501
+        try {
+            repository.searchEpisodes(SHOW, "Episode 501")
+            fail("a match missing from its page fails the search")
+        } catch (expected: IOException) {
+            // The page offers Try again.
+        }
+
+        assertEquals(listOf(id(501)), repository.searchEpisodes(SHOW, "Episode 501").map { it.id })
+    }
+
+    @Test
+    fun aRefreshWhileASearchReadsDropsThePagesReadBeforeIt() = runBlocking {
+        // Reviewed: a search waiting on a page put back the list a refresh had just dropped.
+        showSize = 2_500
+        heldOffset = 1_000
+        val repository = repository()
+        val search = async(Dispatchers.IO) { repository.searchEpisodes(SHOW, "no such words") }
+        assertTrue(held.await(5, TimeUnit.SECONDS))
+
+        repository.invalidateEpisodesCache(SHOW)
+        release.countDown()
+        search.await()
+
+        val newestReads = episodeRequests().count { it.requestUrl?.queryParameter("offset") == "0" }
+        assertEquals("the newest page is read again after the refresh", 2, newestReads)
+    }
+
     private fun episodeRequests() = requests.filter { it.requestUrl?.encodedPath == "/v2/episodes" }
 
     private fun clearCaches() {

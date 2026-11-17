@@ -68,7 +68,10 @@ internal object ShowEpisodeWindowSearch {
         return chronological.drop(index).distinctBy(Episode::id).take(bound.coerceAtLeast(1))
     }
 
-    /** Oldest first: the rest of the anchor's page, and the next page when that is short; null when that page fails. */
+    /**
+     * Oldest first: the rest of the anchor's page, then later pages until [rest] episodes are in hand
+     * or the list ends (a page can map to fewer episodes than it lists); null when a page fails.
+     */
     private suspend fun oldestAfter(
         page: Page,
         index: Int,
@@ -76,10 +79,15 @@ internal object ShowEpisodeWindowSearch {
         rest: Int,
         loadPage: suspend (offset: Int) -> Page?,
     ): List<Episode>? {
-        val after = page.episodes.drop(index + 1)
-        if (after.size >= rest || !page.hasMore) return after.take(rest)
-        val next = loadPage(offset + page.sourceCount) ?: return null
-        return (after + next.episodes).take(rest)
+        val after = page.episodes.drop(index + 1).toMutableList()
+        var current = page
+        var nextOffset = offset
+        while (after.size < rest && current.hasMore && current.sourceCount > 0) {
+            nextOffset += current.sourceCount
+            current = loadPage(nextOffset) ?: return null
+            after += current.episodes
+        }
+        return after.take(rest)
     }
 
     private fun ArrayDeque<Episode>.keepLast(episodes: List<Episode>, count: Int) {

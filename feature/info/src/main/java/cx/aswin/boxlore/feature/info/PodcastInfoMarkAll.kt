@@ -22,7 +22,8 @@ import kotlinx.coroutines.sync.withLock
 internal class PodcastInfoMarkAll(
     private val pageScope: CoroutineScope,
     private val uiState: MutableStateFlow<PodcastInfoUiState>,
-    private val loadWholeShow: suspend () -> List<Episode>,
+    /** Every episode of the show it is given, read for that show only (the page may show another by then). */
+    private val loadWholeShow: suspend (podcastId: String) -> List<Episode>,
     private val onFailure: (Exception) -> Unit = {},
     private val workScope: CoroutineScope = pageScope,
 ) {
@@ -34,7 +35,7 @@ internal class PodcastInfoMarkAll(
         uiState.setMarkingAll(true)
         val outcome = CompletableDeferred<MarkAllOutcome>()
         workScope
-            .launch { outcome.complete(markAllLock(podcastId).withLock { markWholeShow(loadWholeShow, onFailure, write) }) }
+            .launch { outcome.complete(markAllLock(podcastId).withLock { markWholeShow({ loadWholeShow(podcastId) }, onFailure, write) }) }
             .invokeOnCompletion { cause -> if (cause != null) outcome.completeExceptionally(cause) }
         job =
             pageScope.launch {

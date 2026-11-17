@@ -142,6 +142,22 @@ class PodcastInfoMarkAllTest {
     }
 
     @Test
+    fun `Mark all reads the show it was started for`() = runTest {
+        // Reviewed: the read used the page's show when it ran, which may no longer be the one tapped.
+        val asked = mutableListOf<String>()
+        val markAll =
+            PodcastInfoMarkAll(this, uiState, loadWholeShow = { id ->
+                asked += id
+                show(3)
+            })
+
+        markAll.start("p1") { }
+        advanceUntilIdle()
+
+        assertEquals(listOf("p1"), asked)
+    }
+
+    @Test
     fun `a Mark all that fails says nothing was marked and stops running`() = runTest {
         val markAll = PodcastInfoMarkAll(this, uiState, loadWholeShow = { throw IOException("HTTP 429") })
         val written = mutableListOf<List<Episode>>()
@@ -212,7 +228,7 @@ class PodcastInfoMarkAllTest {
         assertEquals(MarkAllOutcome.TOO_LONG, markWholeShow(tooLong) { written += it })
         assertTrue(written.isEmpty())
 
-        PodcastInfoMarkAll(this, uiState, tooLong).start("p1") { written += it }
+        PodcastInfoMarkAll(this, uiState, { tooLong() }).start("p1") { written += it }
         advanceUntilIdle()
         assertTrue(written.isEmpty())
         assertEquals(MARK_ALL_TOO_LONG_MESSAGE, state().userMessage)

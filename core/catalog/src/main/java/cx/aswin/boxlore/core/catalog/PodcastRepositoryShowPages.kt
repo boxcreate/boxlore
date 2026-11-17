@@ -192,12 +192,20 @@ private val searchScanLock = Mutex()
 private suspend fun PodcastRepository.serverSearchScan(resolvedId: String, query: String): ShowSearchScan? {
     V2EpisodeIds.parseShowId(resolvedId)?.takeIf(V2EpisodeIds::isEpisodeShowId) ?: return null
     return searchScanLock.withLock {
-        var scan = PodcastRepository.showSearchCache[resolvedId] ?: ShowSearchScan()
+        var kept = PodcastRepository.showSearchCache[resolvedId]
+        var scan = kept ?: ShowSearchScan()
         while (!scan.done && !scan.answers(query, MAX_SHOW_SEARCH_RESULTS)) {
             val offset = scan.nextOffset
             val page = v2ScanPage(resolvedId, offset, NEWEST_SORT) ?: return@withLock null
+            if (PodcastRepository.showSearchCache[resolvedId] !== kept) {
+                // The show's lists were dropped while this page was read (a refresh): start again from the newest page.
+                kept = null
+                scan = ShowSearchScan()
+                continue
+            }
             scan = scan.withPage(offset, page)
             PodcastRepository.showSearchCache[resolvedId] = scan
+            kept = scan
             val matchedHere = scan.matches(query, MAX_SHOW_SEARCH_RESULTS).slim.filter { it.pageOffset == offset }.mapTo(HashSet()) { it.id }
             rememberSearchMatches(resolvedId, page.episodes.filter { it.id in matchedHere })
         }
@@ -209,9 +217,9 @@ private suspend fun PodcastRepository.serverSearchScan(resolvedId: String, query
  * The full episodes of slim search matches, newest first: those an earlier search read
  * ([PodcastRepository.showSearchMatches]) at once, and each page holding one not yet read read
  * again. Every page's matches are kept as soon as it arrives, so a search the next keystroke
- * cancels keeps them, and typing on (whose matches are a few of these) reads nothing. A match the
- * list no longer holds at that page (newer episodes moved it on) is left out. Null when a page
- * can't be read.
+ * cancels keeps them, and typing on (whose matches are a few of these) reads nothing. Null when a
+ * page can't be read, or when a match is no longer on its page (newer episodes moved it on): the
+ * show's search list is then dropped, so trying again reads the list afresh.
  */
 private suspend fun PodcastRepository.slimMatchEpisodes(resolvedId: String, rows: List<ShowSearchScan.SlimRow>): List<Episode>? {
     if (rows.isEmpty()) return emptyList()
@@ -222,6 +230,10 @@ private suspend fun PodcastRepository.slimMatchEpisodes(resolvedId: String, rows
         val found = page.episodes.filter { it.id in wanted && it.id !in byId }
         found.forEach { byId[it.id] = it }
         rememberSearchMatches(resolvedId, found)
+    }
+    if (rows.any { it.id !in byId }) {
+        PodcastRepository.showSearchCache.invalidateIf { key -> key == resolvedId }
+        return null
     }
     return rows.mapNotNull { byId[it.id] }.also { rememberSearchMatches(resolvedId, it) }
 }

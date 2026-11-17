@@ -229,6 +229,11 @@ internal class PodcastInfoEpisodePaging(
         if (!feedFirst.readsFeed(feedId)) return false
         if (ShowFeedLogic.needsArchive(feedFirst.archiveComplete, ShowFeedLogic.ArchiveAction.SEARCH)) {
             feedFirst.completeArchive(scope, podcast)
+            // Offline, or the read failed: the copy holds only the newest items, so searching it would
+            // pass off part of the show as all of it. Fail, so the page offers Try again.
+            if (!ShowFeedLogic.selectionReadsWholeShow(feedFirst.readsFeed(feedId), feedFirst.archiveComplete)) {
+                throw IOException("The show's feed could not be read in full")
+            }
         }
         return feedFirst.readsFeed(feedId) && repository.showPageSource(feedId) == ShowPageSource.FEED
     }
