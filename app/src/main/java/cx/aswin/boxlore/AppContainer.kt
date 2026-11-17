@@ -848,6 +848,7 @@ class AppContainer(
             playbackRepository = playbackRepository,
             playerStateFlow = playbackRepository.playerState,
             isOnlineFlow = connectivityObserver.isOnlineFlow,
+            playingHistoryIds = { episodeId -> database.episodeListenerStore().memberIds(episodeId) },
             onSignOutAction = {
                 try {
                     com.google.firebase.messaging.FirebaseMessaging.getInstance().deleteToken()
