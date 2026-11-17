@@ -14,6 +14,7 @@ import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.QueueManager
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
+import kotlinx.coroutines.CoroutineScope
 
 /** Shared deps for podcast/episode info ViewModels (keeps assembler APIs ≤7 params). */
 data class InfoSharedDeps(
@@ -25,6 +26,8 @@ data class InfoSharedDeps(
     val episodeOfflineLookup: EpisodeOfflineLookupPort,
     val subscriptionForegroundSync: SubscriptionForegroundSync? = null,
     val folderRepository: cx.aswin.boxlore.core.catalog.FolderRepository? = null,
+    /** The app's own scope, for work that must outlive the page (Mark all); the page's scope when null. */
+    val applicationScope: CoroutineScope? = null,
 )
 
 data class PodcastInfoRouteArgs(

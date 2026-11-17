@@ -9,9 +9,15 @@ import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort.Scope
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.logic.ShowFeedLogic
+import kotlin.coroutines.ContinuationInterceptor
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 
 /**
  * The feed-first part of [PodcastInfoViewModel]: which show reads its feed, the reads (with the
@@ -133,16 +139,33 @@ internal class PodcastInfoFeedFirst(
     /**
      * Reads the rest of the feed before an action that needs every episode, when the copy holds
      * only the newest. The read runs in [scope], so a search the listener keeps typing into waits
-     * on the same read instead of starting it again. Nothing is read once the page fell back: the
-     * action uses the server's list until the page opens again. [atCopyEnd]: scrolling reached the
-     * end of the copy, which then waits for a connection when the read finds the phone offline.
+     * on the same read instead of starting it again; a caller that outlives the scope a running read
+     * belongs to (Mark all after the page closed) reads again in its own [scope] when that one stops.
+     * Callers stay on the main thread, so two never start a read at once. Nothing is read once the
+     * page fell back: the action uses the server's list until the page opens again. [atCopyEnd]:
+     * scrolling reached the end of the copy, which then waits for a connection when the read finds
+     * the phone offline.
      */
     suspend fun completeArchive(scope: CoroutineScope, podcast: Podcast, extra: Int = 0, atCopyEnd: Boolean = false): ShowPageFeedRead? {
         if (archiveComplete || fellBack) return null
-        val running = archiveRead?.takeIf { it.isActive } ?: scope.async { read(podcast, Scope.ARCHIVE, extra = extra) }.also { archiveRead = it }
-        val read = running.await()
+        val running = archiveRead?.takeIf { it.isActive } ?: startArchiveRead(scope, podcast, extra)
+        val read =
+            try {
+                running.await()
+            } catch (e: CancellationException) {
+                // This caller is cancelled too: stop. Otherwise the read's own scope ended under it.
+                currentCoroutineContext().ensureActive()
+                if (archiveComplete || fellBack) return null
+                startArchiveRead(scope, podcast, extra).await()
+            }
         if (atCopyEnd && read?.result == ShowPageFeedResult.OFFLINE) waitingAtCopyEnd = true
         return read
+    }
+
+    /** A read owned by [scope]'s job but run on the caller's thread, so the page's state stays on one thread. */
+    private suspend fun startArchiveRead(scope: CoroutineScope, podcast: Podcast, extra: Int): Deferred<ShowPageFeedRead?> {
+        val callerThread: CoroutineContext = currentCoroutineContext()[ContinuationInterceptor] ?: EmptyCoroutineContext
+        return scope.async(callerThread) { read(podcast, Scope.ARCHIVE, extra = extra) }.also { archiveRead = it }
     }
 
     /**

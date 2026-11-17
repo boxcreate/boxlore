@@ -8,7 +8,7 @@ internal data class PodcastEpisodeSelectionWindow(
     val newestFirst: Boolean,
 )
 
-/** Episodes asked for per request while reading a whole show: the most one request returns. */
+/** Episodes [loadPodcastEpisodeSelectionWindow] asks its loader for per page; the repository's whole-show read sizes its own pages. */
 internal const val SELECTION_PAGE_SIZE = 100
 
 /**

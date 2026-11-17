@@ -3,7 +3,7 @@ package cx.aswin.boxlore.feature.info
 import android.os.Bundle
 import android.util.Log
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
-import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.ShowListTooLongException
 import cx.aswin.boxlore.core.downloads.DownloadRepository
 import cx.aswin.boxlore.core.downloads.DownloadToggleAction
 import cx.aswin.boxlore.core.downloads.DownloadTogglePolicy
@@ -23,7 +23,10 @@ import cx.aswin.boxlore.core.playback.withEpisodeAliases
 import cx.aswin.boxlore.feature.info.PodcastInfoPageState.Companion.TAG
 import cx.aswin.boxlore.feature.info.PodcastInfoPageState.Companion.sortParamFor
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPlaybackSourceLogic
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -41,15 +44,21 @@ import kotlinx.coroutines.launch
  */
 internal class PodcastInfoEpisodeActions(
     private val pageState: PodcastInfoPageState,
-    private val repository: PodcastRepository,
     private val playbackRepository: PlaybackRepository,
     private val downloadRepository: DownloadRepository,
     private val queueManager: QueueManager,
     private val sessionTracker: PodcastInfoSessionTracker,
     private val entryPoint: String?,
     private val scope: CoroutineScope,
+    /** Every episode of the given show, as Select all reads it ([PodcastInfoEpisodePaging.selectionWindow]); throws when any page fails or the page shows another show. */
+    private val loadWholeShow: suspend (podcastId: String) -> List<Episode>,
+    /** Where Mark all reads and writes, so leaving the page doesn't stop it: the app's scope, or [scope]. */
+    workScope: CoroutineScope = scope,
 ) {
     private val uiState = pageState.uiState
+
+    /** One Mark all at a time; a repeat tap while the show is read is ignored. */
+    private val markAll = PodcastInfoMarkAll(scope, uiState, loadWholeShow, ::logMarkAllFailure, workScope)
 
     val downloadedEpisodeIds: StateFlow<Set<String>> =
         downloadRepository.completedDownloadIds
@@ -124,42 +133,28 @@ internal class PodcastInfoEpisodeActions(
         }
     }
 
+    /**
+     * Marks every episode of the show played: the same whole-show read Select all uses
+     * ([loadWholeShow]), then one batched write. A failed page changes nothing and says so.
+     */
     fun markAllAsCompleted() {
-        val currentState = uiState.value
-        if (currentState is PodcastInfoUiState.Success) {
-            scope.launch {
-                val allEpisodes =
-                    try {
-                        repository.getEpisodes(currentState.podcast.id)
-                    } catch (e: Exception) {
-                        emptyList()
-                    }
-                val targetEpisodes = if (allEpisodes.isNotEmpty()) allEpisodes else currentState.episodes
-                playbackRepository.markAllEpisodesCompleted(
-                    episodes = targetEpisodes,
-                    podcastId = currentState.podcast.id,
-                    podcastTitle = currentState.podcast.title,
-                    podcastImageUrl = currentState.podcast.imageUrl,
-                )
-            }
+        val currentState = uiState.value as? PodcastInfoUiState.Success ?: return
+        val podcast = currentState.podcast
+        markAll.start(podcast.id) { targets ->
+            playbackRepository.markAllEpisodesCompleted(
+                episodes = targets,
+                podcastId = podcast.id,
+                podcastTitle = podcast.title,
+                podcastImageUrl = podcast.imageUrl,
+            )
         }
     }
 
+    /** [markAllAsCompleted], marking every episode unplayed. */
     fun markAllAsUncompleted() {
-        val currentState = uiState.value
-        if (currentState is PodcastInfoUiState.Success) {
-            scope.launch {
-                val allEpisodes =
-                    try {
-                        repository.getEpisodes(currentState.podcast.id)
-                    } catch (e: Exception) {
-                        emptyList()
-                    }
-                val targetEpisodes = if (allEpisodes.isNotEmpty()) allEpisodes else currentState.episodes
-                playbackRepository.markAllEpisodesUncompleted(
-                    episodes = targetEpisodes,
-                )
-            }
+        val currentState = uiState.value as? PodcastInfoUiState.Success ?: return
+        markAll.start(currentState.podcast.id) { targets ->
+            playbackRepository.markAllEpisodesUncompleted(episodes = targets)
         }
     }
 
@@ -325,4 +320,64 @@ internal class PodcastInfoEpisodeActions(
             }
         }
     }
+}
+
+/** Shown when Mark all as played or unplayed couldn't read the whole show and changed nothing. */
+internal const val MARK_ALL_FAILED_MESSAGE = "Couldn’t load every episode, so none were marked. Check your connection and try again."
+
+/** Shown when the show lists more episodes than boxlore can read at once, so trying again can't help. */
+internal const val MARK_ALL_TOO_LONG_MESSAGE = "This show has too many episodes to mark them all, so none were marked."
+
+/** What Mark all did ([markWholeShow]). */
+internal enum class MarkAllOutcome {
+    MARKED,
+
+    /** A page couldn't be read; nothing was written. */
+    FAILED,
+
+    /** The show lists more episodes than the server's list pages through ([ShowListTooLongException]); nothing was written. */
+    TOO_LONG,
+}
+
+/** Tells the page of [podcastId], if it still shows that show, that Mark all changed nothing and why. */
+internal fun MutableStateFlow<PodcastInfoUiState>.showMarkAllFailed(podcastId: String, outcome: MarkAllOutcome = MarkAllOutcome.FAILED) {
+    val latest = value as? PodcastInfoUiState.Success ?: return
+    if (latest.podcast.id != podcastId) return
+    val message = if (outcome == MarkAllOutcome.TOO_LONG) MARK_ALL_TOO_LONG_MESSAGE else MARK_ALL_FAILED_MESSAGE
+    value = latest.copy(userMessage = message)
+}
+
+private fun logMarkAllFailure(error: Exception) {
+    Log.w(TAG, "Mark all stopped: the whole show couldn't be read", error)
+}
+
+/**
+ * Mark all as played or unplayed: reads the whole show with [loadWholeShow] before writing
+ * anything, then hands every episode once to [write]. Never a part of the show passed off as all
+ * of it: when any page fails nothing is written, and the answer says whether the show was too long
+ * to read or a page failed.
+ */
+internal suspend fun markWholeShow(
+    loadWholeShow: suspend () -> List<Episode>,
+    onFailure: (Exception) -> Unit = {},
+    write: suspend (List<Episode>) -> Unit,
+): MarkAllOutcome {
+    val episodes =
+        try {
+            loadWholeShow()
+        } catch (e: CancellationException) {
+            // A read that stopped under this one while it runs on: a failure.
+            currentCoroutineContext().ensureActive()
+            onFailure(e)
+            return MarkAllOutcome.FAILED
+        } catch (e: ShowListTooLongException) {
+            onFailure(e)
+            return MarkAllOutcome.TOO_LONG
+        } catch (e: Exception) {
+            onFailure(e)
+            return MarkAllOutcome.FAILED
+        }
+    val targets = episodes.distinctBy(Episode::id)
+    if (targets.isNotEmpty()) write(targets)
+    return MarkAllOutcome.MARKED
 }

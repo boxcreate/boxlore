@@ -100,6 +100,8 @@ internal class PodcastInfoEpisodePaging(
                 hasMoreEpisodes = true,
                 searchQuery = "",
                 searchResults = null,
+                searchFailed = false,
+                searchedNewest = null,
             )
 
         scope.launch {
@@ -157,6 +159,8 @@ internal class PodcastInfoEpisodePaging(
                     searchQuery = "",
                     searchResults = null,
                     isSearching = false,
+                    searchFailed = false,
+                    searchedNewest = null,
                 )
             return
         }
@@ -164,7 +168,7 @@ internal class PodcastInfoEpisodePaging(
         // Debounce search
         searchJob =
             scope.launch {
-                uiState.value = (uiState.value as? PodcastInfoUiState.Success)?.copy(isSearching = true) ?: return@launch
+                uiState.value = (uiState.value as? PodcastInfoUiState.Success)?.copy(isSearching = true, searchFailed = false) ?: return@launch
                 delay(SEARCH_DEBOUNCE_MS)
 
                 try {
@@ -174,7 +178,8 @@ internal class PodcastInfoEpisodePaging(
                     val podcast = podcastContext.podcast
 
                     val readsFeed = prepareFeedFirstSearch(feedId, podcast)
-                    val networkResults = repository.searchEpisodes(feedId, query)
+                    val search = repository.searchShowEpisodes(feedId, query)
+                    val networkResults = search.episodes
                     val results =
                         supplementSupport.unionSearch(
                             feedId = feedId,
@@ -200,6 +205,8 @@ internal class PodcastInfoEpisodePaging(
                         latestState.copy(
                             searchResults = results,
                             isSearching = false,
+                            searchFailed = false,
+                            searchedNewest = search.searchedNewest,
                         )
                 } catch (e: CancellationException) {
                     throw e
@@ -207,7 +214,8 @@ internal class PodcastInfoEpisodePaging(
                     e.printStackTrace()
                     val latestState = uiState.value as? PodcastInfoUiState.Success ?: return@launch
                     if (!podcastSearchResponseIsCurrent(query, currentState.podcast.id, latestState.searchQuery, latestState.podcast.id)) return@launch
-                    uiState.value = latestState.copy(isSearching = false, searchResults = emptyList())
+                    // Not "no matches": the episodes couldn't be read, so the list offers Try again.
+                    uiState.value = latestState.copy(isSearching = false, searchResults = emptyList(), searchFailed = true, searchedNewest = null)
                 }
             }
     }
@@ -221,29 +229,38 @@ internal class PodcastInfoEpisodePaging(
         if (!feedFirst.readsFeed(feedId)) return false
         if (ShowFeedLogic.needsArchive(feedFirst.archiveComplete, ShowFeedLogic.ArchiveAction.SEARCH)) {
             feedFirst.completeArchive(scope, podcast)
+            // Offline, or the read failed: the copy holds only the newest items, so searching it would
+            // pass off part of the show as all of it. Fail, so the page offers Try again.
+            if (!ShowFeedLogic.selectionReadsWholeShow(feedFirst.readsFeed(feedId), feedFirst.archiveComplete)) {
+                throw IOException("The show's feed could not be read in full")
+            }
         }
         return feedFirst.readsFeed(feedId) && repository.showPageSource(feedId) == ShowPageSource.FEED
     }
 
     /**
-     * Every episode of the page's show for range selection ([loadPodcastEpisodeSelectionWindow]), in
-     * [sort] or the page's sort. A feed-first page whose copy holds only the newest items reads the
-     * rest of the feed first, as search does, so the selection reaches the show's first episode.
+     * Every episode of the page's show for range selection and Mark all
+     * ([loadPodcastEpisodeSelectionWindow]), in [sort] or the page's sort, read with the repository's
+     * whole-show read ([PodcastRepository.getWholeShowPage]): a page that can't be read throws rather
+     * than ending the list early. A feed-first page whose copy holds only the newest items reads the
+     * rest of the feed first, as search does, so the selection reaches the show's first episode;
+     * that read runs in [archiveScope] (Mark all passes its own, so leaving the page doesn't stop it).
      */
-    suspend fun selectionWindow(sort: EpisodeSort?): PodcastEpisodeSelectionWindow {
+    suspend fun selectionWindow(sort: EpisodeSort?, archiveScope: CoroutineScope = scope): PodcastEpisodeSelectionWindow {
         val feedId = pageState.currentPodcastId
         val state = uiState.value as? PodcastInfoUiState.Success
         val needsArchive = ShowFeedLogic.needsArchive(feedFirst.archiveComplete, ShowFeedLogic.ArchiveAction.SELECT_RANGE)
         if (state != null && needsArchive && feedFirst.readsFeed(feedId)) {
-            feedFirst.completeArchive(scope, state.podcast)
+            feedFirst.completeArchive(archiveScope, state.podcast)
             // Offline, or the read failed: the copy still holds only the newest items, so the window
             // would be part of the show. Fail instead; a page that fell back pages the server's list.
             if (!ShowFeedLogic.selectionReadsWholeShow(feedFirst.readsFeed(feedId), feedFirst.archiveComplete)) {
                 throw IOException("The show's feed could not be read in full")
             }
         }
-        return loadPodcastEpisodeSelectionWindow(uiState.value as? PodcastInfoUiState.Success, sort) { limit, offset, sortParam ->
-            repository.getShowPageEpisodes(feedId = feedId, limit = limit, offset = offset, sort = sortParam)
+        // The whole-show read sizes its own pages: the most each source answers in one request.
+        return loadPodcastEpisodeSelectionWindow(uiState.value as? PodcastInfoUiState.Success, sort) { _, offset, sortParam ->
+            repository.getWholeShowPage(feedId = feedId, offset = offset, sort = sortParam)
         }
     }
 

@@ -742,6 +742,9 @@ class AppContainer(
     /** The scope the watch link's listener service hands its work to. */
     val wearLinkScope: CoroutineScope get() = syncScope
 
+    /** The scope a page hands work that must finish after the page closes, such as Mark all on a show. */
+    val pageWorkScope: CoroutineScope get() = syncScope
+
     /** The phone's end of the Wear OS link; it stays idle until boxlore on a watch makes contact. */
     val phoneWearLink: cx.aswin.boxlore.core.wearlink.PhoneWearLink by lazy {
         cx.aswin.boxlore.core.wearlink.PhoneWearLink(

@@ -393,7 +393,7 @@ class DefaultSmartQueueEngine(
             if (idx != -1) {
                 chronological.drop(idx + 1)
             } else {
-                chronological.filter { it.publishedDate > currentPublished }
+                SameShowContinuationLogic.forwardWithoutAnchor(chronological, currentPublished)
             }
         return if (newestFirst) {
             forward.sortedByDescending { it.publishedDate }
