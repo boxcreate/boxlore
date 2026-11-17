@@ -11,11 +11,11 @@ It does not own the playback or download services, preference storage, catalog r
 Downloads:
 
 - `DownloadRepository`: application-scoped coordinator of Media3 `DownloadManager`, the cache and Room download rows.
-- `DownloadRepository.addDownload`, `addAutoDownload`, `removeDownload`: start and remove downloads; background starts enqueue straight on `DownloadManager`.
+- `DownloadRepository.addDownload`, `addAutoDownload`, `retryDownload`, `removeDownload`: start, restart and remove downloads; background starts enqueue straight on `DownloadManager`. A download Media3 gives up on stays as failed unless it is a Smart Download; `canRetryDownload` says whether the listener can restart it, which is never for an auto-download, since it retries on its own.
 - `DownloadRepository.completedDownloadItems`: completed downloads as `CompletedDownloadItem` (`Episode`, `Podcast`, download time), newest release first, with local playback paths only.
 - `DownloadRepository.completedDownloadIds`, `downloadingEpisodeIds`, `isDownloaded`, `isDownloading`: count a download held under any trusted ID of the episode.
 - `DownloadRepository.awaitDownloadCompletion`: lets a worker suspend until a download finishes or times out.
-- `DownloadRepository.reconcileDownloadStatus`, `reconcileStaleDownloads`: reset or clear rows stuck in downloading.
+- `DownloadRepository.reconcileDownloadStatus`, `reconcileStaleDownloads`: reset or clear rows stuck in downloading; a row Media3 reports failed is marked failed, except a Smart Download's, which is cleared.
 - `DownloadRepository.relinkDownloadCache`: moves cached spans to a replacement episode ID and reports success; only the orphan rematch calls it.
 - `DownloadTogglePolicy`, `DownloadToggleAction`: the toggle action on every surface (`CONFIRM_REMOVAL`, `CANCEL_DOWNLOAD`, `START_DOWNLOAD`); removing a finished download always asks first.
 - `DownloadAnalyticsMapping`: download event properties; unknown size or source stays null and failures map to allowlisted codes.
@@ -83,7 +83,7 @@ src/main/java/cx/aswin/boxlore/core/
 - `AutoDownloadScheduling.enqueueEpisode` serializes enqueue decisions under its own lock, separate from the transfer lock.
 - Auto-download transfers run in resumable slices of `AutoDownloadWorker.WORK_SLICE_MS` (eight minutes) to stay inside WorkManager's limit.
 - Push-triggered and foreground-discovered auto-downloads need no background consent.
-- Background discovery is opt-in through `AutoDownloadBackgroundSettings`, off by default, and runs about every six hours; per-show auto-download flags never enable it.
+- Background discovery is opt-in through `AutoDownloadBackgroundSettings`, off by default, and runs about every six hours; per-show auto-download flags never enable it. A show whose feed can't be read is logged and read again next period; WorkManager retries only when a show's read is cut short or its new releases can't be saved or enqueued on the phone.
 - `AutoDownloadBackgroundGate` fails closed on missing consent, unknown connectivity, low or unknown battery, a metered network when restricted, or no charger when required. It is rechecked before fetches, writes and enqueues, and a live watcher cancels work when the policy stops permitting it.
 - Turning background checks off cancels discovery and every background-tagged transfer.
 - Foreground and push admission replace an unfinished background or legacy transfer for the same episode; repeated admissions of the same kind keep the current request.
