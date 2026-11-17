@@ -38,7 +38,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
@@ -57,6 +60,7 @@ internal fun BriefingStoriesPager(
     isPlaying: Boolean,
     currentPositionMs: Long,
     accentColor: Color,
+    chaptersLoading: Boolean = false,
     onEpisodeClick: (Episode) -> Unit,
     onPlayPauseClick: (Long?) -> Unit,
     onShowSources: () -> Unit = {},
@@ -110,6 +114,7 @@ internal fun BriefingStoriesPager(
         BriefingStoriesPagerUiState(
             briefing = briefing,
             chapters = chapters,
+            chaptersLoading = chaptersLoading,
             paragraphs = paragraphs,
             activeChapterIndex = activeChapterIndex,
             isPlaying = isPlaying,
@@ -132,6 +137,7 @@ private fun activeChapterIndexFor(
 private data class BriefingStoriesPagerUiState(
     val briefing: Briefing,
     val chapters: List<cx.aswin.boxlore.core.model.Chapter>,
+    val chaptersLoading: Boolean,
     val paragraphs: List<String>,
     val activeChapterIndex: Int,
     val isPlaying: Boolean,
@@ -254,7 +260,7 @@ private fun BriefingStoriesPagerContent(
     actions: BriefingStoriesPagerActions,
 ) {
     if (uiState.chapters.isEmpty()) {
-        LoadingScriptPlaceholder()
+        StoriesPlaceholder(loading = uiState.chaptersLoading)
         return
     }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -343,19 +349,24 @@ private fun stableChapterKey(
     chapter: cx.aswin.boxlore.core.model.Chapter,
 ): String = "${chapter.startTime}:${chapter.title}:${chapter.url.orEmpty()}:${chapter.img.orEmpty()}"
 
+/** One 96 dp box for both states, so a fetch that ends empty swaps the text without moving the page. */
 @Composable
-private fun LoadingScriptPlaceholder() {
+private fun StoriesPlaceholder(loading: Boolean) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(96.dp)
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = 24.dp)
+            .semantics { liveRegion = LiveRegionMode.Polite },
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "Story text is unavailable. You can still listen to the brief.",
+            text = storiesPlaceholderText(loading),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
+
+internal fun storiesPlaceholderText(loading: Boolean): String =
+    if (loading) "Loading stories…" else "Story text is unavailable. You can still listen to the brief."

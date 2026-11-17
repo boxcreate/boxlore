@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTouchHeightIsEqualTo
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
@@ -242,6 +243,22 @@ class BriefingScreenTest {
     }
 
     @Test
+    fun `stories still loading never say story text is unavailable`() {
+        val state = mutableStateOf<BriefingUiState>(BriefingUiState.Success(briefing, "global", duration = 180_000, chaptersLoading = true))
+        compose.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                Box(Modifier.width(320.dp)) { BriefingScreen(state.value, {}, {}, { _, _ -> }, {}, {}, {}) }
+            }
+        }
+        compose.onNodeWithText("Loading stories…").performScrollTo().assertIsDisplayed()
+        compose.onAllNodesWithText(UNAVAILABLE_STORIES, substring = true).assertCountEquals(0)
+
+        compose.runOnIdle { state.value = BriefingUiState.Success(briefing, "global", duration = 180_000) }
+        compose.onNodeWithText(UNAVAILABLE_STORIES, substring = true).performScrollTo().assertIsDisplayed()
+        compose.onAllNodesWithText("Loading stories…").assertCountEquals(0)
+    }
+
+    @Test
     fun `native playback story navigation and source controls remain independent`() {
         render(BriefingUiState.Success(briefing, "global", duration = 180_000, chapters = listOf(Chapter(0.0, "Energy markets"), Chapter(60.0, "Digital policy"))))
         compose.onNodeWithText("Listen to brief").performScrollTo().performClick()
@@ -286,5 +303,9 @@ class BriefingScreenTest {
         assertEquals("in", defaultRegion)
         assertEquals("global", region)
         compose.onNodeWithText("Done").performScrollTo().assertIsDisplayed()
+    }
+
+    private companion object {
+        const val UNAVAILABLE_STORIES = "Story text is unavailable"
     }
 }

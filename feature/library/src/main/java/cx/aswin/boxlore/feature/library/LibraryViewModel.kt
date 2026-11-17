@@ -7,7 +7,6 @@ import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.sortedByListening
-import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.FolderDisplaySize
@@ -26,6 +25,7 @@ import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.EpisodeRankingInput
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
+import cx.aswin.boxlore.feature.library.logic.LibraryRankingScores
 import cx.aswin.boxlore.feature.library.logic.SubscriptionManualOrderLogic
 import cx.aswin.boxlore.feature.library.logic.SubscriptionSmartOrderLogic
 import cx.aswin.boxlore.feature.library.subscriptions.AutoOrganizeLook
@@ -76,6 +76,25 @@ class LibraryViewModel(
     private val adaptiveScorer: AdaptiveCandidateScorer,
     private val folderRepository: FolderRepository? = null,
 ) : ViewModel() {
+
+    private val rankingScores = LibraryRankingScores(
+        scoreShows = { podcasts, history ->
+            adaptiveScorer.scorePodcasts(
+                podcasts = podcasts,
+                history = history,
+                objective = RankingObjective.YOUR_SHOWS,
+                surface = RankingSurface.LIBRARY,
+            )
+        },
+        scoreLatest = { inputs, history ->
+            adaptiveScorer.scoreEpisodes(
+                inputs = inputs,
+                history = history,
+                objective = RankingObjective.YOUR_SHOWS,
+                surface = RankingSurface.LIBRARY,
+            )
+        },
+    )
 
     val lastSeenEpisodes: StateFlow<Map<String, String>> = userPreferencesRepository.lastSeenEpisodesStream
         .stateIn(
@@ -294,12 +313,7 @@ class LibraryViewModel(
             }
         }
         return try {
-            adaptiveScorer.scoreEpisodes(
-                inputs = inputs,
-                history = history,
-                objective = RankingObjective.YOUR_SHOWS,
-                surface = RankingSurface.LIBRARY,
-            )
+            rankingScores.latestScores(inputs, history)
         } catch (error: CancellationException) {
             throw error
         } catch (_: Exception) {
@@ -548,13 +562,9 @@ class LibraryViewModel(
             }
         }
 
+        // Progress saves re-emit history every few seconds; they redraw progress bars, and within an hour reuse the scores.
         val podScoresMap = try {
-            adaptiveScorer.scorePodcasts(
-                podcasts = enrichedPodcasts.map { it.toScorable() },
-                history = allHistory,
-                objective = RankingObjective.YOUR_SHOWS,
-                surface = RankingSurface.LIBRARY,
-            )
+            rankingScores.showScores(enrichedPodcasts, allHistory)
         } catch (error: CancellationException) {
             throw error
         } catch (_: Exception) {

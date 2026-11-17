@@ -17,7 +17,7 @@ It does not own the Room schema ([`:core:database`](../database/README.md)), pre
 - It implements `ActivePlaybackSyncPort`: cloud sync never overwrites the playing episode, and an account switch stops playback and clears the in-memory queue.
 - `PlaybackActivationRequest` carries a one-shot start position; `PlaybackIntroOutroController` applies resume, intro skip and outro trim to automatic starts, while explicit positions and route transfers keep theirs.
 - `PlaybackSkipPolicy`: with "Restart forgotten episodes" on, implicit plays restart an episode not played for `STALE_RESUME_MS`; Jump Back In and History always resume. Progress is never wiped.
-- `PlaybackChaptersTranscriptController`: chapters and transcripts with offline fallbacks; a briefing missing its links gets them from `:core:catalog`'s `BriefingLinks`.
+- `PlaybackChaptersTranscriptController`: chapters and transcripts, a download's saved copy before the network; a briefing missing its links gets them from `:core:catalog`'s `BriefingLinks`.
 - `PlaybackRouteState` mirrors the active route's device name and volume into `PlayerState`; `PlaybackControlSync` keeps speed and skip lengths aligned with Media3.
 - `PlaybackMediaIdPolicy` sets session IDs and cache keys; `PlaybackArtworkMetadata` picks the artwork to save.
 
@@ -125,7 +125,7 @@ src/main/java/cx/aswin/boxlore/core/data/service/   # stubs for legacy service n
 
 - `AppContainer` builds the graph once: DB → `PodcastRepository` → `QueueRepository` → `PlaybackRepository` → `QueueManager`.
 - Player and controller callbacks run on the main thread. `restoreLastSession` and transport calls hop to `PlaybackThreadPolicy.mainDispatcher`; database, artwork and recommendation work runs on background dispatchers.
-- `PlaybackRepository` polls the controller position only while app UI is in the foreground; widgets call `refreshProgressOnce()`, which publishes it once while the player still holds the named episode. The service alone saves active-session progress and telemetry.
+- `PlaybackRepository` polls position only while app UI is in the foreground; widgets call `refreshProgressOnce()`, which publishes it once while the player holds the named episode. Only the service saves active-session progress and telemetry.
 - `PlaybackMediaControllerHandle.awaitController()` returns null on a rejected connection and reconnects with growing delays, at most `MediaControllerReconnectPolicy.MAX_ATTEMPTS` times.
 - `BoxLorePlaybackService` resolves shared dependencies lazily; its service-scoped players keep playback and transfers going without an Activity.
 - Idle handoff: a local session paused in the background for `PlaybackPowerPolicy.PAUSED_IDLE_TIMEOUT_MS` saves progress, rechecks eligibility and stops the service. Playback, buffering intent, foreground UI and Cast skip that teardown.

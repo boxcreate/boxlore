@@ -2,6 +2,7 @@ package cx.aswin.boxlore.widgets
 
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.ScorablePodcast
 import cx.aswin.boxlore.core.database.sortedByListening
 import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.model.EpisodeStatus
@@ -13,7 +14,9 @@ import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.EpisodeRankingInput
+import cx.aswin.boxlore.core.ranking.RankingHistorySignature
 import cx.aswin.boxlore.core.ranking.RankingObjective
+import cx.aswin.boxlore.core.ranking.RankingScoreCache
 import cx.aswin.boxlore.core.ranking.RankingSurface
 import cx.aswin.boxlore.feature.widgets.WidgetEpisodeRow
 import cx.aswin.boxlore.feature.widgets.WidgetLibraryCounts
@@ -28,6 +31,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
@@ -35,43 +39,78 @@ import kotlinx.coroutines.flow.stateIn
 /**
  * Projects Library → Subscriptions (Shows + Latest) into widget rows.
  * Lives in `:app` so scoring/history stay out of `:feature:widgets`.
+ *
+ * The widget ranks from [RankingHistorySignature], not raw history: playback saves progress every few
+ * seconds, and those saves change the signature only when an episode is first started or the
+ * last-played hour moves; a new, finished or liked episode always re-ranks.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class WidgetLibrarySourceAdapter(
-    private val subscriptionRepository: SubscriptionRepository,
-    private val playbackRepository: PlaybackRepository,
-    private val userPreferencesRepository: UserPreferencesRepository,
-    private val adaptiveScorer: AdaptiveCandidateScorer,
+class WidgetLibrarySourceAdapter internal constructor(
+    podcasts: Flow<List<Podcast>>,
+    history: Flow<List<ListeningHistoryEntity>>,
+    sortName: Flow<String>,
+    hideCompleted: Flow<Boolean>,
+    useSmart: Flow<Boolean>,
+    lastSeen: Flow<Map<String, String>>,
+    private val scoreShows: suspend (List<ScorablePodcast>, List<ListeningHistoryEntity>) -> Map<String, Double>,
+    private val scoreLatest: suspend (List<EpisodeRankingInput>, List<ListeningHistoryEntity>) -> Map<String, Double>,
     scope: CoroutineScope,
 ) : WidgetLibrarySource {
+    constructor(
+        subscriptionRepository: SubscriptionRepository,
+        playbackRepository: PlaybackRepository,
+        userPreferencesRepository: UserPreferencesRepository,
+        adaptiveScorer: AdaptiveCandidateScorer,
+        scope: CoroutineScope,
+    ) : this(
+        podcasts = subscriptionRepository.subscribedPodcasts,
+        history = playbackRepository.getAllHistory(),
+        sortName = userPreferencesRepository.subscriptionSortStream,
+        hideCompleted = userPreferencesRepository.hideCompletedInSubsStream,
+        useSmart = userPreferencesRepository.latestEpisodesSortUseSmartStream,
+        lastSeen = userPreferencesRepository.lastSeenEpisodesStream,
+        scoreShows = { shows, rows ->
+            adaptiveScorer.scorePodcasts(
+                podcasts = shows,
+                history = rows,
+                objective = RankingObjective.YOUR_SHOWS,
+                surface = RankingSurface.LIBRARY,
+            )
+        },
+        scoreLatest = { inputs, rows ->
+            adaptiveScorer.scoreEpisodes(
+                inputs = inputs,
+                history = rows,
+                objective = RankingObjective.YOUR_SHOWS,
+                surface = RankingSurface.LIBRARY,
+            )
+        },
+        scope = scope,
+    )
+
     private data class Projection(
         val subscriptions: List<WidgetShowRow>,
         val newEpisodes: List<WidgetEpisodeRow>,
         val counts: WidgetLibraryCounts = WidgetLibraryCounts(),
     )
 
+    private val showScores = RankingScoreCache<Pair<List<ScorablePodcast>, RankingHistorySignature>>()
+    private val latestScores = RankingScoreCache<Pair<List<EpisodeRankingInput>, RankingHistorySignature>>()
+
     private val projection: Flow<Projection> =
         combine(
-            combine(
-                subscriptionRepository.subscribedPodcasts,
-                playbackRepository.getAllHistory(),
-                userPreferencesRepository.subscriptionSortStream,
-            ) { podcasts, history, sortName ->
-                Triple(podcasts, history, sortName)
+            combine(podcasts, rankingHistory(history), sortName) { podcastList, signedHistory, sort ->
+                Triple(podcastList, signedHistory, sort)
             },
-            combine(
-                userPreferencesRepository.hideCompletedInSubsStream,
-                userPreferencesRepository.latestEpisodesSortUseSmartStream,
-                userPreferencesRepository.lastSeenEpisodesStream,
-            ) { hideCompleted, useSmart, lastSeen ->
-                Triple(hideCompleted, useSmart, lastSeen)
+            combine(hideCompleted, useSmart, lastSeen) { hide, smart, seen ->
+                Triple(hide, smart, seen)
             },
         ) { podcastsHistorySort, filters ->
-            val (podcasts, history, sortName) = podcastsHistorySort
-            val (hideCompleted, useSmart, lastSeen) = filters
-            Inputs(podcasts, history, sortName, hideCompleted, useSmart, lastSeen)
+            val (podcastList, signedHistory, sort) = podcastsHistorySort
+            val (hide, smart, seen) = filters
+            Inputs(podcastList, signedHistory, sort, hide, smart, seen)
         }.mapLatest { inputs ->
-            val enriched = enrichWithHistory(inputs.podcasts, inputs.history)
+            val enriched = enrichWithHistory(inputs.podcasts, inputs.history.rows)
             val sort = parseSort(inputs.sortName)
             val sortedShows = sortShows(enriched, inputs.history, sort)
             val showRows =
@@ -123,23 +162,22 @@ class WidgetLibrarySourceAdapter(
 
     private data class Inputs(
         val podcasts: List<Podcast>,
-        val history: List<ListeningHistoryEntity>,
+        val history: SignedHistory,
         val sortName: String,
         val hideCompleted: Boolean,
         val useSmart: Boolean,
         val lastSeen: Map<String, String>,
     )
 
-    private suspend fun sortShows(podcasts: List<Podcast>, history: List<ListeningHistoryEntity>, sort: ShowSort,): List<Podcast> = when (sort) {
+    /** History with the signature it ranks by; two values with one signature rank the same. */
+    internal class SignedHistory(val rows: List<ListeningHistoryEntity>, val signature: RankingHistorySignature)
+
+    private suspend fun sortShows(podcasts: List<Podcast>, history: SignedHistory, sort: ShowSort,): List<Podcast> = when (sort) {
         ShowSort.SmartRank -> {
             val scores =
                 try {
-                    adaptiveScorer.scorePodcasts(
-                        podcasts = podcasts.map { it.toScorable() },
-                        history = history,
-                        objective = RankingObjective.YOUR_SHOWS,
-                        surface = RankingSurface.LIBRARY,
-                    )
+                    val scorable = podcasts.map { it.toScorable() }
+                    showScores.get(scorable to history.signature) { scoreShows(scorable, history.rows) }
                 } catch (error: CancellationException) {
                     throw error
                 } catch (_: Exception) {
@@ -158,10 +196,10 @@ class WidgetLibrarySourceAdapter(
             podcasts.sortedByDescending { it.latestEpisode?.publishedDate ?: 0L }
         ShowSort.Alphabetical ->
             podcasts.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
-        ShowSort.MostListened -> podcasts.sortedByListening(history)
+        ShowSort.MostListened -> podcasts.sortedByListening(history.rows)
     }
 
-    private suspend fun sortLatest(podcasts: List<Podcast>, history: List<ListeningHistoryEntity>, useSmart: Boolean,): List<Podcast> {
+    private suspend fun sortLatest(podcasts: List<Podcast>, history: SignedHistory, useSmart: Boolean,): List<Podcast> {
         if (!useSmart) {
             return podcasts.sortedByDescending { it.latestEpisode!!.publishedDate }
         }
@@ -178,12 +216,7 @@ class WidgetLibrarySourceAdapter(
             }
         val scores =
             try {
-                adaptiveScorer.scoreEpisodes(
-                    inputs = inputs,
-                    history = history,
-                    objective = RankingObjective.YOUR_SHOWS,
-                    surface = RankingSurface.LIBRARY,
-                )
+                latestScores.get(inputs to history.signature) { scoreLatest(inputs, history.rows) }
             } catch (error: CancellationException) {
                 throw error
             } catch (_: Exception) {
@@ -211,10 +244,23 @@ class WidgetLibrarySourceAdapter(
         /** The whole library's sizes, taken from the full lists before the widget's rows are capped. */
         fun libraryCounts(shows: List<Podcast>, latest: List<Podcast>): WidgetLibraryCounts = WidgetLibraryCounts(subscriptions = shows.size, newEpisodes = latest.size)
 
-        fun enrichWithHistory(podcasts: List<Podcast>, allHistory: List<ListeningHistoryEntity>,): List<Podcast> = podcasts.map { podcast ->
-            val episode = podcast.latestEpisode ?: return@map podcast
-            val history = allHistory.find { it.episodeId == episode.id }
-            when {
+        /**
+         * [history] as the widget ranks it: a new value only when its [RankingHistorySignature] changes,
+         * so a progress save re-ranks only when it starts an episode or reaches a new hour.
+         */
+        internal fun rankingHistory(history: Flow<List<ListeningHistoryEntity>>): Flow<SignedHistory> = history
+            .map { rows -> SignedHistory(rows, RankingHistorySignature.of(rows)) }
+            .distinctUntilChangedBy { it.signature }
+
+        fun enrichWithHistory(podcasts: List<Podcast>, allHistory: List<ListeningHistoryEntity>,): List<Podcast> {
+            val historyById = allHistory.associateBy { it.episodeId }
+            return podcasts.map { podcast -> enrich(podcast, historyById) }
+        }
+
+        private fun enrich(podcast: Podcast, historyById: Map<String, ListeningHistoryEntity>): Podcast {
+            val episode = podcast.latestEpisode ?: return podcast
+            val history = historyById[episode.id]
+            return when {
                 history == null || (history.progressMs == 0L && !history.isCompleted) ->
                     podcast.copy(episodeStatus = EpisodeStatus.UNPLAYED)
                 !history.isCompleted && history.progressMs > 0L -> {
