@@ -65,6 +65,8 @@ Announcement title:
 - A download you start that fails now stays in Downloads, marked as failed, with Download Again, instead of disappearing.
 - Auto-downloads checked in the background stay on schedule when one show's feed can't be read, so new episodes from your other shows still arrive on time.
 - For you in Explore no longer reloads again and again while your account syncs. It refreshes when the shows you follow or your languages change, and when your picks get old.
+- Picked for you on Home and For you in Explore now start from the shows you've played or followed most recently, not the first ones from A to Z, and leave out shows you follow, even in a large library.
+- In Lore, Check for new cards now looks much further through the deck, so it finds new cards past the first few pages.
 - If you follow a lot of shows, New Episodes no longer misses new episodes from some of them, and pulling down on New Episodes checks all your shows (up to 200), not just a few.
 - The Brief opens as soon as it's ready, even when its stories are slow to load. They appear when they arrive.
 - New episode notifications from different shows no longer replace each other or open the wrong show. Each show gets its own notification, grouped together, for up to 16 shows at a time.

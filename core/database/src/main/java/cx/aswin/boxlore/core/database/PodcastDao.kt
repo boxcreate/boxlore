@@ -24,6 +24,12 @@ data class RssFeedStateUpdate(
     val rssHasNewEpisodes: Boolean,
 )
 
+/** When a followed show was followed ([PodcastEntity.subscribedAt], epoch ms; 0 when unknown). */
+data class FollowedAt(
+    val podcastId: String,
+    val subscribedAt: Long,
+)
+
 @Dao
 interface PodcastDao {
 
@@ -60,6 +66,10 @@ interface PodcastDao {
 
     @Query("SELECT * FROM podcasts WHERE isSubscribed = 1 AND sourceType = 'rss' ORDER BY title ASC")
     suspend fun getSubscribedRssPodcasts(): List<PodcastEntity>
+
+    /** When each followed show was followed, without loading whole rows (recommendation seeds order follows by it). */
+    @Query("SELECT podcastId, subscribedAt FROM podcasts WHERE isSubscribed = 1")
+    suspend fun getFollowedAtTimes(): List<FollowedAt>
 
     /** Includes disabled and unsubscribed rows for migration of device-owned notification registrations. */
     @Query("SELECT * FROM podcasts WHERE podcastId LIKE 'rss:%' ORDER BY podcastId ASC")
