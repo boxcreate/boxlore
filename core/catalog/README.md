@@ -21,7 +21,7 @@ It does not own playback, download workers, Compose UI, the Room schema ([`:core
 - `/v2` answers are cached under `v2|` keys, apart from v1 answers.
 - `DiscoveryRouting` and `BriefingLinks` give code outside the repository the same switch and ID translation.
 - `RolloutSwitches`: feed-first show pages (off by default, fixed per process), the upgrade repair, the daily address check and `/v2` discovery (on by default). Off pauses a job without marking it done.
-- `ChapterRepository`, `TranscriptRepository`, `ChapterOfflineStorage` and `TranscriptOfflineStorage`: chapters and transcripts, remote, from descriptions, and saved for downloads. Remote reads go through `RemoteText` (a plain OkHttp client with a 15 s limit); callers loading one address share one read; parsed results sit in a bounded `TimedLruCache`, and chapters are kept untranslated so related-episode IDs are translated on every return, saved chapters included.
+- `ChapterRepository`, `TranscriptRepository`, `ChapterOfflineStorage` and `TranscriptOfflineStorage`: chapters and transcripts, remote, from descriptions, and saved for downloads. Remote reads use `RemoteText` (15 s limit), loads of one address share one read, and results sit in a bounded `TimedLruCache`; chapters stay untranslated, so related-episode IDs are translated on every return.
 - `shownotes.ShowNotesParser`: publisher HTML links, handles and description chapters, without fetching pages.
 
 ### Subscriptions and feed addresses

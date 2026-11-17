@@ -704,4 +704,24 @@ class AutoBrowseLibraryCallbackTest {
         assertEquals(AutoBrowseContract.SOURCE_SHOW to false, callback.playContextFor(AutoBrowseContract.SUBSCRIPTION_PREFIX + "123"))
         assertNull(callback.playContextFor(AutoBrowseContract.GENRE_PREFIX + "news"))
     }
+
+    @Test
+    fun `the car's Shows list is not cut at 50 when it asks without paging, and pages when it pages`() {
+        // Regression: every request was cut to 50, so with 154 follows the car showed only the top 50.
+        val session = mock(MediaLibrarySession::class.java)
+        val car = controllerFrom("com.google.android.projection.gearhead")
+        val shows = (1..154).map {
+            MediaItem.Builder().setMediaId("subscription:$it")
+                .setMediaMetadata(MediaMetadata.Builder().setIsBrowsable(true).setIsPlayable(false).build()).build()
+        }
+        runBlocking { `when`(treeBuilder.getSubscriptionsChildren()).thenReturn(shows) }
+        Mockito.doCallRealMethod().`when`(treeBuilder).slicePage(mockAny(), Mockito.anyInt(), Mockito.anyInt())
+
+        // Media3 passes a browse without paging extras on as page 0 of Int.MAX_VALUE.
+        val unpaged = callback.onGetChildren(session, car, AutoBrowseContract.LIBRARY_SUBSCRIPTIONS_ID, 0, Int.MAX_VALUE, null).get()
+        assertEquals(shows.map { it.mediaId }, unpaged.value!!.map { it.mediaId })
+
+        val paged = callback.onGetChildren(session, car, AutoBrowseContract.LIBRARY_SUBSCRIPTIONS_ID, 1, 50, null).get()
+        assertEquals((51..100).map { "subscription:$it" }, paged.value!!.map { it.mediaId })
+    }
 }

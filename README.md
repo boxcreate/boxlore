@@ -94,9 +94,11 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>In Android Auto, artwork loads faster, and every episode has a picture, in lists and in the queue: one with no image of its own shows its show's cover.</li>
 <li>In Android Auto, tapping something that can't be played no longer stops what you're listening to.</li>
 <li>In Android Auto, skipping forward or back no longer sends the list you're browsing back to the top.</li>
+<li>In Android Auto, Shows no longer stops at 50 of the shows you follow.</li>
 <li>Casting no longer closes boxlore when your queue has an episode your Cast device can't stream, such as one from a feed on your home network. Those episodes stay in your queue but are skipped on the Cast device.</li>
 <li>After you listen on another device, Play on the mini player now starts the episode it shows, at the right spot, instead of an older one from your queue.</li>
 <li>For you in Explore no longer reloads again and again while your account syncs. It refreshes when the shows you follow or your languages change, and when your picks get old.</li>
+<li>New episode notifications from different shows no longer replace each other or open the wrong show. Each show gets its own notification, grouped together, for up to 16 shows at a time.</li>
 </ul>
 <!-- release-upcoming:end -->
 
