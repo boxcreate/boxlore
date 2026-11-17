@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -131,6 +132,27 @@ class SubscriptionStubHealTest {
     }
 
     /** A pull that saves every follow as a placeholder and asks nothing. */
+    @Test
+    fun aShowUnfollowedWhileItsDetailsAreReadStaysUnfollowed() = runBlocking {
+        // Reviewed: the fill wrote back a copy read before the lookup, so an unfollow meanwhile was undone.
+        pull(placeholdersOnly(), 1)
+        val resolver =
+            SubscriptionSyncResolver(
+                podcastDao = dao,
+                detailsLookups =
+                PacedPodcastLookups(budget()) { show ->
+                    dao.setSubscribed(show, false)
+                    PodcastDetailsAnswer.Found(TestFixtures.podcast(id = show, title = "Show $show", imageUrl = "https://cdn.example/$show.jpg"))
+                },
+            )
+
+        resolver.healStubRows()
+
+        val row = requireNotNull(dao.getPodcast("1001"))
+        assertFalse("the unfollow stays", row.isSubscribed)
+        assertEquals("Show 1001", row.title)
+    }
+
     private fun placeholdersOnly() = SubscriptionSyncResolver(podcastDao = dao, detailsLookups = null)
 
     private fun resolver() = SubscriptionSyncResolver(podcastDao = dao, detailsLookups = PacedPodcastLookups(budget(), ::fakeLookup))

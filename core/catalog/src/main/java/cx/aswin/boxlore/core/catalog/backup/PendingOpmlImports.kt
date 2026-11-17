@@ -29,6 +29,9 @@ interface PendingOpmlImports {
 
     /** Forgets every outline and its misses: an account switch, so one account's import never follows shows into another. */
     fun clear()
+
+    /** Whether [feed] is still waiting; false once settled or cleared by an account switch, so a run stops following it. */
+    fun contains(feed: OpmlFeed): Boolean
 }
 
 /** How many catch-ups tried a pending outline without an answer, when the first of them was, and when the latest was. */
@@ -68,6 +71,9 @@ class MemoryPendingOpmlImports : PendingOpmlImports {
         feeds.clear()
         misses.clear()
     }
+
+    @Synchronized
+    override fun contains(feed: OpmlFeed): Boolean = feed.xmlUrl in feeds
 }
 
 /**
@@ -122,6 +128,9 @@ class SharedPreferencesPendingOpmlImports(private val prefs: SharedPreferences,)
         val firstAt = prefs.getLong(FIRST_MISS_PREFIX + feed.xmlUrl, 0L)
         return PendingOpmlMisses(prefs.getInt(MISSES_PREFIX + feed.xmlUrl, 0), firstAt, prefs.getLong(LAST_MISS_PREFIX + feed.xmlUrl, firstAt))
     }
+
+    @Synchronized
+    override fun contains(feed: OpmlFeed): Boolean = prefs.contains(feed.xmlUrl)
 
     @Synchronized
     @SuppressLint("ApplySharedPref")

@@ -122,6 +122,24 @@ interface PodcastDao {
     @Query("SELECT * FROM podcasts WHERE podcastId IN (:ids)")
     suspend fun getPodcastsByIds(ids: List<String>): List<PodcastEntity>
 
+    /**
+     * Fills a placeholder row's show details and a missing address, leaving its follow state and
+     * every setting as they are (a follow change while the details were read stays); 0 when the row is gone.
+     */
+    @Query(
+        "UPDATE podcasts SET title = :title, author = :author, imageUrl = :imageUrl, description = :description, " +
+            "genre = :genre, feedUrl = COALESCE(feedUrl, :feedUrl) WHERE podcastId = :podcastId",
+    )
+    suspend fun fillShowDetails(
+        podcastId: String,
+        title: String,
+        author: String,
+        imageUrl: String,
+        description: String?,
+        genre: String?,
+        feedUrl: String?,
+    ): Int
+
     @Query(
         """
         UPDATE podcasts

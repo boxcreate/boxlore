@@ -54,15 +54,17 @@ internal class PodcastInfoEpisodePaging(
                 val latest = uiState.value as? PodcastInfoUiState.Success ?: return@launch
                 // The sort changed while this page was retrying: its own first page replaces the list.
                 if (latest.currentSort != currentState.currentSort) return@launch
-                pageState.currentOffset += page.sourceCount
                 val nextPi = latest.piEpisodes + page.episodes
-                uiState.value =
+                // The offset moves only with the list that shows it, so a failed remount doesn't skip this page.
+                val remounted =
                     supplementSupport.remountWithSupplements(
                         state = latest,
                         piEpisodes = nextPi,
                         hasMoreEpisodes = page.hasMore,
                         isLoadingMore = false,
                     )
+                pageState.currentOffset += page.sourceCount
+                uiState.value = remounted
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -130,7 +132,8 @@ internal class PodcastInfoEpisodePaging(
                 searchedNewest = null,
             )
 
-        scope.launch {
+        // Tracked like a later page, so toggling again cancels this first page and it can't land on a newer list.
+        loadMoreJob = scope.launch {
             // Persist sort preference for subscribed podcasts
             if (currentState.isSubscribed) {
                 subscriptionRepository.updatePreferredSort(pageState.currentPodcastId, sortParamFor(newSort))
@@ -154,14 +157,15 @@ internal class PodcastInfoEpisodePaging(
             val page = loadPageRetrying { repository.getShowPageEpisodes(pageState.currentPodcastId, pageSizeFor(sort), 0, sortParamFor(sort), list = pageState.listSchemes) }
             val latestState = uiState.value as? PodcastInfoUiState.Success ?: return
             if (latestState.currentSort != sort) return
-            pageState.currentOffset = page.sourceCount
-            uiState.value =
+            val remounted =
                 supplementSupport.remountWithSupplements(
                     state = latestState,
                     piEpisodes = page.episodes,
                     hasMoreEpisodes = page.hasMore,
                     isLoadingMore = false,
                 )
+            pageState.currentOffset = page.sourceCount
+            uiState.value = remounted
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -287,9 +291,11 @@ internal class PodcastInfoEpisodePaging(
                 throw IOException("The show's feed could not be read in full")
             }
         }
-        // The whole-show read sizes its own pages: the most each source answers in one request.
+        // The whole-show read sizes its own pages: the most each source answers in one request. Its
+        // route is the list's at the start, kept for every page, so a refresh meanwhile can't mix ID schemes.
+        val operationList = pageState.listSchemes.copy()
         return loadPodcastEpisodeSelectionWindow(uiState.value as? PodcastInfoUiState.Success, sort) { _, offset, sortParam ->
-            repository.getWholeShowPage(feedId = feedId, offset = offset, sort = sortParam, list = pageState.listSchemes)
+            repository.getWholeShowPage(feedId = feedId, offset = offset, sort = sortParam, list = operationList)
         }
     }
 

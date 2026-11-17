@@ -25,7 +25,17 @@ internal object ShowPageRetry {
     ): PodcastRepository.EpisodePage {
         var lastError: Exception? = null
         repeat(maxAttempts) { attempt ->
-            if (attempt > 0) sleep(maxOf(waitMs(), backoffMs(attempt - 1)))
+            if (attempt > 0) {
+                sleep(maxOf(waitMs(), backoffMs(attempt - 1)))
+                // Another request's 429 may have extended the route's pause meanwhile: honour the pause current at dispatch.
+                var extraWaits = 0
+                var pause = waitMs()
+                while (pause > 0L && extraWaits < maxAttempts) {
+                    sleep(pause)
+                    extraWaits++
+                    pause = waitMs()
+                }
+            }
             val page =
                 try {
                     load()

@@ -747,9 +747,14 @@ class LibraryBackupManager(
     }
 
     /** Imports one outline; a show the catalog couldn't answer for yet is [OpmlFeedImport.Pending], not dropped. */
+    private fun OpmlCatalogDecision.follows(): Boolean = this is OpmlCatalogDecision.Found || this == OpmlCatalogDecision.ConfirmedAbsent
+
     private suspend fun importOpmlFeed(feed: OpmlFeed, resolver: OpmlCatalogResolver): OpmlFeedImport {
         try {
-            return when (val resolution = resolver.resolve(feed)) {
+            val resolution = resolver.resolve(feed)
+            // An account switch clears the store: an outline it held is never followed into the new account.
+            if (resolution.follows() && !pendingOpmlImports.contains(feed)) return OpmlFeedImport.Pending
+            return when (resolution) {
                 is OpmlCatalogDecision.Found -> {
                     subscriptionRepository.subscribe(resolution.podcast)
                     refreshImportedLatestEpisodes(

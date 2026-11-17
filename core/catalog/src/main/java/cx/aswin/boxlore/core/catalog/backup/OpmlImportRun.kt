@@ -24,6 +24,8 @@ data class OpmlImportReport(
     val imported: List<Podcast>,
     val pending: List<OpmlFeed>,
     val gaveUp: List<OpmlFeed> = emptyList(),
+    /** The outlines couldn't be saved first, so nothing was asked: none would survive the app closing. */
+    val saveFailed: Boolean = false,
 )
 
 /**
@@ -65,7 +67,7 @@ internal object OpmlImportRun {
         shouldStop: () -> Boolean = { false },
         nowMs: () -> Long = System::currentTimeMillis,
     ): OpmlImportReport {
-        pending.add(feeds)
+        if (!pending.add(feeds)) return OpmlImportReport(imported = emptyList(), pending = emptyList(), saveFailed = true)
         val startedAt = nowMs()
         val (due, waiting) = if (countMisses) feeds.partition { isDue(pending.misses(it), startedAt) } else feeds to emptyList()
         val imported = mutableListOf<Podcast>()
@@ -81,8 +83,10 @@ internal object OpmlImportRun {
         val left = limited + tries.failed + tries.untried + waiting
         if (tries.stopped) return OpmlImportReport(imported.toList(), left)
         if (imported.isEmpty() && forgetWhenNothingImported) {
-            feeds.forEach(pending::remove)
-            return OpmlImportReport(imported = emptyList(), pending = emptyList())
+            // Outlines the rate limit held back, or never reached, stay for the catch-up; the rest are forgotten.
+            val kept = (limited + tries.untried + waiting).toSet()
+            feeds.filterNot { it in kept }.forEach(pending::remove)
+            return OpmlImportReport(imported = emptyList(), pending = kept.toList())
         }
         val now = nowMs()
         val gaveUp = if (countMisses) tries.failed.filter { feed -> givesUp(pending.missed(feed, now), now) } else emptyList()
@@ -121,7 +125,8 @@ internal object OpmlImportRun {
         suspend fun round(feeds: List<OpmlFeed>, progressIndex: (Int) -> Int): List<OpmlFeed> {
             val limited = mutableListOf<OpmlFeed>()
             feeds.forEachIndexed { index, feed ->
-                if (shouldStop()) {
+                // An account switch clears the store: stop, so nothing of the old account is followed.
+                if (shouldStop() || !pending.contains(feed)) {
                     stopped = true
                     untried = feeds.drop(index)
                     return limited

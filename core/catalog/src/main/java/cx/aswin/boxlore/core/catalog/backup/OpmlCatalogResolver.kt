@@ -7,6 +7,7 @@ import cx.aswin.boxlore.core.catalog.ExactPodcastLookupResult
 import cx.aswin.boxlore.core.catalog.ExactPodcastLookupType
 import cx.aswin.boxlore.core.catalog.PodcastIndexSearchResult
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.rss.FeedHttpException
 import cx.aswin.boxlore.core.rss.RssFeedClient
 
 /**
@@ -52,10 +53,14 @@ internal class OpmlCatalogResolver(
         }
 
         // The catalog answered (no match) but the feed itself can't be read: a dead or non-web
-        // address. Only an unanswered search leaves room for a later try to find it.
+        // address. An unanswered search, or a read that may work later (a timeout, no connection, a
+        // server error), leaves room for a later try to find it.
         val peeked =
-            peek(feed.xmlUrl)
-                ?: return if (titleSearch is PodcastIndexSearchResult.Success) OpmlCatalogDecision.Unresolvable else OpmlCatalogDecision.Deferred
+            when (val peek = peek(feed.xmlUrl)) {
+                is FeedPeek.Read -> peek.feed
+                is FeedPeek.Failed ->
+                    return if (titleSearch is PodcastIndexSearchResult.Success && !peek.transient) OpmlCatalogDecision.Unresolvable else OpmlCatalogDecision.Deferred
+            }
         val redirectedUrlLookup =
             if (OpmlImportLogic.canonicalFeedUrl(peeked.finalUrl) == OpmlImportLogic.canonicalFeedUrl(feed.xmlUrl)) {
                 // The feed didn't move: its address was just asked under every spelling.
@@ -106,21 +111,37 @@ internal class OpmlCatalogResolver(
         if (podcastRepository.routeBudget.isPaused(route)) limited = true
     }
 
-    private suspend fun peek(xmlUrl: String): PeekedOpmlFeed? {
-        val httpsUrl = OpmlImportLogic.httpsFeedUrl(xmlUrl) ?: return null
-        return runCatching {
+    private suspend fun peek(xmlUrl: String): FeedPeek {
+        val httpsUrl = OpmlImportLogic.httpsFeedUrl(xmlUrl) ?: return FeedPeek.Failed(transient = false)
+        return try {
             val fetched = rssFeedClient.fetch(httpsUrl)
             val parsed = rssFeedClient.parse(fetched.finalUrl, fetched.body)
-            PeekedOpmlFeed(
-                finalUrl = fetched.finalUrl,
-                title = parsed.title,
-                guid = parsed.podcastGuid,
-            )
-        }.onFailure { error ->
-            if (error is kotlinx.coroutines.CancellationException) throw error
+            FeedPeek.Read(PeekedOpmlFeed(finalUrl = fetched.finalUrl, title = parsed.title, guid = parsed.podcastGuid))
+        } catch (error: kotlinx.coroutines.CancellationException) {
+            throw error
+        } catch (error: Exception) {
             Log.w("OPML_IMPORT", "Feed peek failed for $xmlUrl", error)
-        }.getOrNull()
+            FeedPeek.Failed(transient = isTransient(error))
+        }
+    }
+
+    /** A read that may work later: no connection, a timeout, or a server that is busy or down. An HTTPS handshake failure is not. */
+    private fun isTransient(error: Exception): Boolean = when (error) {
+        is FeedHttpException -> error.code >= SERVER_ERROR || error.code == REQUEST_TIMEOUT || error.code == TOO_MANY_REQUESTS
+        is javax.net.ssl.SSLException -> false
+        is java.io.IOException -> true
+        else -> false
+    }
+
+    private sealed interface FeedPeek {
+        data class Read(val feed: PeekedOpmlFeed) : FeedPeek
+
+        data class Failed(val transient: Boolean) : FeedPeek
     }
 
     private data class PeekedOpmlFeed(val finalUrl: String, val title: String, val guid: String?,)
 }
+
+private const val SERVER_ERROR = 500
+private const val REQUEST_TIMEOUT = 408
+private const val TOO_MANY_REQUESTS = 429

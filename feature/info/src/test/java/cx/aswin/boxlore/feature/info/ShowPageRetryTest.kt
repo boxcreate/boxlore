@@ -37,12 +37,36 @@ class ShowPageRetryTest {
     fun `a route paused by a 429 waits for its Retry-After`() = runTest {
         val waits = mutableListOf<Long>()
         var asked = 0
+        var now = 0L
         ShowPageRetry.load(
             load = { PodcastRepository.EpisodePage(emptyList(), hasMore = false, failed = ++asked == 1) },
-            waitMs = { 60_000L },
-            sleep = { waits += it },
+            waitMs = { (60_000L - now).coerceAtLeast(0L) },
+            sleep = {
+                waits += it
+                now += it
+            },
         )
         assertEquals(listOf(60_000L), waits)
+    }
+
+    @Test
+    fun `a pause another request extends during the wait is waited out before asking again`() = runTest {
+        // Reviewed: the wait was read once before the sleep, so a 429 elsewhere meanwhile was ignored.
+        val waits = mutableListOf<Long>()
+        var asked = 0
+        var now = 0L
+        var pausedUntil = 5_000L
+        ShowPageRetry.load(
+            load = { PodcastRepository.EpisodePage(emptyList(), hasMore = false, failed = ++asked == 1) },
+            waitMs = { (pausedUntil - now).coerceAtLeast(0L) },
+            sleep = {
+                waits += it
+                now += it
+                if (waits.size == 1) pausedUntil = now + 60_000L
+            },
+        )
+        assertEquals(listOf(5_000L, 60_000L), waits)
+        assertEquals(2, asked)
     }
 
     @Test

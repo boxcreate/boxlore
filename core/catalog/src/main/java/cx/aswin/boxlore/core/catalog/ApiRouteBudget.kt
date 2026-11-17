@@ -38,6 +38,28 @@ class ApiRouteBudget(
         }
     }
 
+    /**
+     * Waits for room on [route] and counts one request, unless the room would come only after
+     * [deadlineMs]: then nothing is counted and the answer is false. Each look decides and reserves
+     * under one lock, so another request or a 429 in between can't make it send past the deadline.
+     */
+    suspend fun acquireBefore(route: String, deadlineMs: Long): Boolean {
+        while (true) {
+            val waitMs =
+                lock.withLock {
+                    val now = nowMs()
+                    val wait = waitFor(route, now)
+                    when {
+                        now + wait > deadlineMs -> return false
+                        wait <= 0L -> sent.getOrPut(route) { ArrayDeque() }.addLast(now)
+                    }
+                    wait
+                }
+            if (waitMs <= 0L) return true
+            sleep(waitMs)
+        }
+    }
+
     /** Counts one request on [route] when it has room now; false (nothing counted) when it would have to wait. */
     suspend fun tryAcquire(route: String): Boolean = lock.withLock { reserve(route) <= 0L }
 

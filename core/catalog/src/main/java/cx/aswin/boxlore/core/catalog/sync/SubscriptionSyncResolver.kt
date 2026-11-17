@@ -179,23 +179,28 @@ class SubscriptionSyncResolver(
         }
     }
 
-    /** Writes [details] into [podcastId]'s row; false when the row is gone. */
+    /**
+     * Writes [details] into [podcastId]'s row; false when the row is gone. Only the show's details are
+     * written ([PodcastDao.fillShowDetails]), so an unfollow while they were read is kept.
+     */
     private suspend fun applyDetails(podcastId: String, details: Podcast): Boolean {
         val current = podcastDao.getPodcast(podcastId) ?: return false
 
         val routed = routesAddress(current)
-        val enriched =
-            current.copy(
+        val written =
+            podcastDao.fillShowDetails(
+                podcastId = podcastId,
                 title = details.title.takeIf { it.isNotBlank() } ?: current.title,
                 author = details.artist.takeIf { it.isNotBlank() } ?: current.author,
                 imageUrl = details.imageUrl.takeIf { it.isNotBlank() } ?: current.imageUrl,
                 description = details.description ?: current.description,
                 genre = details.genre.takeIf { it.isNotBlank() } ?: current.genre,
-                feedUrl = if (routed) current.feedUrl else current.feedUrl ?: details.feedUrl,
+                feedUrl = if (routed) null else details.feedUrl,
             )
-        upsertMerged(enriched)
+        if (written == 0) return false
         if (routed) fillMissingAddress(current, details.feedUrl)
-        if (current.notificationsEnabled) {
+        val now = podcastDao.getPodcast(podcastId)
+        if (now != null && now.isSubscribed && now.notificationsEnabled) {
             notificationSyncPort?.setNotificationTopicSubscribed(podcastId, true)
         }
         return true

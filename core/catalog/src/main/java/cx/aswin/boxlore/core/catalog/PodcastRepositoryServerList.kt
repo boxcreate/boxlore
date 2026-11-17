@@ -122,6 +122,15 @@ class ShowListSchemes {
     }
 
     internal fun clear() = schemes.clear()
+
+    /** A copy to read a refresh into, so its route is kept only once its page is shown ([adopt]). */
+    fun copy(): ShowListSchemes = ShowListSchemes().also { it.schemes.putAll(schemes) }
+
+    /** Keeps [other]'s routes: the page read into it is now the list on screen. */
+    fun adopt(other: ShowListSchemes) {
+        schemes.clear()
+        schemes.putAll(other.schemes)
+    }
 }
 
 /** The [ShowListSchemes] of show-page reads that bring none of their own. */

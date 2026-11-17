@@ -56,11 +56,7 @@ internal class OpmlScreenPace(
 
     fun expired(): Boolean = nowMs() >= deadlineMs
 
-    suspend fun pace(route: String): Boolean {
-        if (nowMs() + budget.waitMs(route) > deadlineMs) return false
-        budget.acquire(route)
-        return true
-    }
+    suspend fun pace(route: String): Boolean = budget.acquireBefore(route, deadlineMs)
 
     companion object {
         /** How long the Importing screen sends requests: about 50 at 25 a minute. */

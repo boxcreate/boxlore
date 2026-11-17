@@ -213,7 +213,9 @@ internal class PodcastInfoPullRefresh(
         val limit = pageSizeFor(activeInitialState.currentSort)
         val sortParam = sortParamFor(activeInitialState.currentSort)
         val podcast = repository.getPodcastDetails(targetPodcastId) ?: activeInitialState.podcast
-        val page = repository.getShowPageEpisodes(targetPodcastId, limit, 0, sortParam, list = pageState.listSchemes)
+        // Read into a copy: the route this page came from is kept only if the page is shown.
+        val requestList = pageState.listSchemes.copy()
+        val page = repository.getShowPageEpisodes(targetPodcastId, limit, 0, sortParam, list = requestList)
         if (!PodcastInfoPullRefreshLogic.shouldApply(pageState.currentPodcastId, targetPodcastId)) {
             return
         }
@@ -223,6 +225,11 @@ internal class PodcastInfoPullRefresh(
                 ?: activeInitialState
         if (!PodcastInfoPullRefreshLogic.shouldAcceptPageSort(activeInitialState.currentSort, activeState.currentSort)) {
             uiState.value = activeState.copy(isLoadingMore = false, isRssRefreshing = false)
+            return
+        }
+        if (page.failed) {
+            // The list couldn't be read: keep what's shown, and its paging and route, and offer Try again.
+            uiState.value = activeState.copy(isLoadingMore = false, isRssRefreshing = false, pageLoadFailed = true)
             return
         }
         val localPodcast = localCatalog.getLocalPodcast(targetPodcastId)
@@ -242,8 +249,7 @@ internal class PodcastInfoPullRefresh(
                     p
                 }
             }
-        pageState.currentOffset = page.sourceCount
-        uiState.value =
+        val remounted =
             supplementSupport
                 .remountWithSupplements(
                     state = activeState.copy(podcast = preservedPodcast),
@@ -251,6 +257,9 @@ internal class PodcastInfoPullRefresh(
                     hasMoreEpisodes = page.hasMore,
                     isLoadingMore = false,
                 ).copy(isRssRefreshing = false)
+        pageState.listSchemes.adopt(requestList)
+        pageState.currentOffset = page.sourceCount
+        uiState.value = remounted
     }
 
     private fun refreshDirectFeedFromPull(currentState: PodcastInfoUiState.Success) {

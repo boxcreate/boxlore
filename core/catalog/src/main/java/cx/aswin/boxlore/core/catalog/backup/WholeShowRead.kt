@@ -28,7 +28,8 @@ internal object WholeShowRead {
             if (offset == 0) scheme = read.scheme
             episodes += read.episodes
             offset += read.sourceCount
-            if (!read.hasMore || read.episodes.isEmpty() || read.sourceCount <= 0) return Result(episodes, complete = true)
+            // A page whose rows all lack audio maps to no episodes but is not the end: hasMore decides.
+            if (!read.hasMore || read.sourceCount <= 0) return Result(episodes, complete = true)
         }
     }
 

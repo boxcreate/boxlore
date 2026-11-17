@@ -119,7 +119,7 @@ class OpmlImportRateLimitTest {
     fun aRateLimitedOutlineCostsOneRequestNotEverySpelling() = runBlocking {
         serverPerMinute = 0
         val budget = budget()
-        val resolver = OpmlCatalogResolver(repository(budget), RssFeedClient()) { route -> budget.acquire(route).let { true } }
+        val resolver = OpmlCatalogResolver(repository(budget), deadFeeds) { route -> budget.acquire(route).let { true } }
 
         assertEquals(OpmlCatalogDecision.Limited, resolver.resolve(OpmlFeed("Show 1", "https://feeds.example/1")))
         assertEquals("one GET /podcast, then the outline waits", 1, podcastCalls.size)
@@ -139,9 +139,24 @@ class OpmlImportRateLimitTest {
     }
 
     @Test
+    fun aFeedThatTimesOutIsKeptPendingNotSkipped() = runBlocking {
+        // Reviewed: any failed feed read settled the outline as unresolvable, so a publisher outage dropped it for good.
+        val budget = budget()
+        val timingOut =
+            object : RssFeedClient() {
+                override suspend fun fetch(url: String): cx.aswin.boxlore.core.rss.RssFetchResult = throw java.net.SocketTimeoutException("the publisher is slow")
+            }
+        val resolver = OpmlCatalogResolver(repository(budget), timingOut) { route -> budget.acquire(route).let { true } }
+
+        val decision = resolver.resolve(OpmlFeed("", server.url("/dead/1").toString()))
+
+        assertEquals("a read that may work later keeps the outline pending", OpmlCatalogDecision.Deferred, decision)
+    }
+
+    @Test
     fun anOutlineWithoutATitleSendsNoSearch() = runBlocking {
         val budget = budget()
-        val resolver = OpmlCatalogResolver(repository(budget), RssFeedClient()) { route -> budget.acquire(route).let { true } }
+        val resolver = OpmlCatalogResolver(repository(budget), deadFeeds) { route -> budget.acquire(route).let { true } }
 
         val decision = resolver.resolve(OpmlFeed("", server.url("/dead/1").toString()))
 
@@ -184,7 +199,7 @@ class OpmlImportRateLimitTest {
         val feeds = feeds(10)
         val pending = MemoryPendingOpmlImports()
         val budget = budget()
-        val resolver = OpmlCatalogResolver(repository(budget), RssFeedClient()) { route -> budget.acquire(route).let { true } }
+        val resolver = OpmlCatalogResolver(repository(budget), deadFeeds) { route -> budget.acquire(route).let { true } }
         var seen = 0
         runCatching {
             OpmlImportRun.run(feeds, pending, forgetWhenNothingImported = true, importOne = { feed ->
@@ -217,7 +232,7 @@ class OpmlImportRateLimitTest {
         serverPerMinute = 0
         val pending = MemoryPendingOpmlImports()
         val budget = budget()
-        val resolver = OpmlCatalogResolver(repository(budget), RssFeedClient()) { route -> budget.tryAcquire(route) }
+        val resolver = OpmlCatalogResolver(repository(budget), deadFeeds) { route -> budget.tryAcquire(route) }
         val feed = OpmlFeed("Show 1", "https://feeds.example/1")
 
         val report = OpmlImportRun.run(listOf(feed), pending, forgetWhenNothingImported = false, importOne = { importOf(resolver, it) })
@@ -233,7 +248,7 @@ class OpmlImportRateLimitTest {
         val pending = MemoryPendingOpmlImports()
         val budget = budget()
         val pace = OpmlScreenPace(budget, nowMs = { clock.get() })
-        val resolver = OpmlCatalogResolver(repository(budget), RssFeedClient(), pace::pace)
+        val resolver = OpmlCatalogResolver(repository(budget), deadFeeds, pace::pace)
 
         val report =
             OpmlImportRun.run(feeds, pending, forgetWhenNothingImported = true, importOne = { feed ->
@@ -268,11 +283,17 @@ class OpmlImportRateLimitTest {
         assertTrue("its misses go with it", prefs.all.isEmpty())
     }
 
+    /** Every feed here is gone: its address answers 404, so a read of it is a dead feed, not one that may work later. */
+    private val deadFeeds =
+        object : RssFeedClient() {
+            override suspend fun fetch(url: String): cx.aswin.boxlore.core.rss.RssFetchResult = throw cx.aswin.boxlore.core.rss.FeedHttpException(404)
+        }
+
     private suspend fun import(feeds: List<OpmlFeed>, pending: PendingOpmlImports) = run(feeds, pending, forget = true)
 
     private suspend fun run(feeds: List<OpmlFeed>, pending: PendingOpmlImports, forget: Boolean): OpmlImportReport {
         val budget = budget()
-        val resolver = OpmlCatalogResolver(repository(budget), RssFeedClient()) { route -> budget.acquire(route).let { true } }
+        val resolver = OpmlCatalogResolver(repository(budget), deadFeeds) { route -> budget.acquire(route).let { true } }
         return OpmlImportRun.run(feeds, pending, forgetWhenNothingImported = forget, importOne = { importOf(resolver, it) })
     }
 

@@ -141,7 +141,7 @@ class ImportDialogAdaptiveTest {
         transitions.forEach { next ->
             compose.runOnIdle { window.value = next }
             compose.waitForIdle()
-            compose.onNodeWithText("boxlore is still adding 3 shows. They’ll appear in your library while boxlore is open.").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithText("3 shows couldn’t be added right away. boxlore keeps trying while it’s open.").performScrollTo().assertIsDisplayed()
             compose.onNodeWithText("Ready when you are.").assertDoesNotExist()
         }
         compose.runOnIdle { state.value = OpmlImportState.Success(importedCount = 48, completedCount = 0, importedPodcasts = shows.take(48)) }

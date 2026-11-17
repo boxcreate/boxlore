@@ -234,5 +234,51 @@ class OpmlImportRunTest {
         nowMs = now,
     )
 
+    @Test
+    fun `outlines that couldn't be saved first are never asked for`() = runTest {
+        // Reviewed: a failed save was ignored, so outlines asked for could be lost if the app closed.
+        val unsaved = object : PendingOpmlImports by MemoryPendingOpmlImports() {
+            override fun add(feeds: List<OpmlFeed>): Boolean = false
+        }
+        var asked = 0
+
+        val report =
+            OpmlImportRun.run((1..3).map(::feed), unsaved, forgetWhenNothingImported = true, importOne = {
+                asked++
+                OpmlFeedImport.Skipped
+            })
+
+        assertEquals(0, asked)
+        assertTrue(report.saveFailed)
+    }
+
+    @Test
+    fun `an import the rate limit held back entirely keeps its outlines for the catch-up`() = runTest {
+        // Reviewed: an import that followed nothing forgot every outline, including those only held back by a 429.
+        val feeds = (1..3).map(::feed)
+        val pending = MemoryPendingOpmlImports()
+
+        val report = OpmlImportRun.run(feeds, pending, forgetWhenNothingImported = true, importOne = { OpmlFeedImport.Limited })
+
+        assertEquals(feeds.toSet(), pending.all().toSet())
+        assertEquals(feeds.toSet(), report.pending.toSet())
+    }
+
+    @Test
+    fun `a run whose outlines an account switch cleared stops instead of following them`() = runTest {
+        // Reviewed: a run begun before an account switch kept following the old account's outlines.
+        val feeds = (1..4).map(::feed)
+        val pending = MemoryPendingOpmlImports()
+        val asked = mutableListOf<OpmlFeed>()
+
+        OpmlImportRun.run(feeds, pending, forgetWhenNothingImported = false, importOne = { feed ->
+            asked += feed
+            if (asked.size == 2) pending.clear()
+            OpmlFeedImport.Imported(TestFixtures.podcast(id = feed.xmlUrl))
+        })
+
+        assertEquals(feeds.take(2), asked)
+    }
+
     private fun feed(index: Int) = OpmlFeed("Show $index", "https://feeds.example/$index")
 }

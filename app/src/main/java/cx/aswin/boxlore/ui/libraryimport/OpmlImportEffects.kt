@@ -9,7 +9,7 @@ import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.catalog.backup.LibraryBackupManager
-import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.catalog.backup.OpmlImportReport
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import kotlin.coroutines.cancellation.CancellationException
@@ -89,37 +89,8 @@ fun OpmlImportEffects(
                                 ),
                             )
                         }
-                    val importedList: List<Podcast> = report.imported
-
-                    if (importedList.isEmpty()) {
-                        AnalyticsHelper.trackOnboardingImportFailed(
-                            "opml",
-                            LibraryBackupAnalyticsErrors.NO_PODCASTS_RESOLVED,
-                        )
-                        AnalyticsHelper.trackBackupRestoreResult(
-                            action = "import",
-                            success = false,
-                            format = "opml",
-                            errorMessage = LibraryBackupAnalyticsErrors.NO_PODCASTS_RESOLVED,
-                        )
-                        onStateChange(
-                            OpmlImportState.Error(ImportFailure.NothingReachable),
-                        )
-                    } else {
-                        AnalyticsHelper.trackBackupRestoreResult(
-                            action = "import",
-                            success = true,
-                            itemCount = importedList.size,
-                            format = "opml",
-                        )
-                        onStateChange(
-                            OpmlImportState.AskCompleted(
-                                importedPodcasts = importedList,
-                                selectedIds = importedList.map { it.id }.toSet(),
-                                pendingCount = report.pending.size,
-                            ),
-                        )
-                    }
+                    trackOpmlImportOutcome(report)
+                    onStateChange(opmlImportOutcome(report))
                 } catch (e: Exception) {
                     if (e is CancellationException) throw e
                     Log.e("OPML_IMPORT", "Error during parsing/importing", e)
@@ -149,6 +120,8 @@ fun OpmlImportEffects(
                             context = context,
                         )
                     val total = state.podcastsToMark.size
+                    // Only shows read in full count as marked: one whose pages ran out is left partly marked.
+                    var fullyMarked = 0
                     for (index in state.podcastsToMark.indices) {
                         val podcast = state.podcastsToMark[index]
                         onStateChange(
@@ -161,12 +134,12 @@ fun OpmlImportEffects(
                                 pendingCount = state.pendingCount,
                             ),
                         )
-                        backupManager.markAllEpisodesCompleted(podcast)
+                        if (backupManager.markAllEpisodesCompleted(podcast)) fullyMarked++
                     }
                     onStateChange(
                         OpmlImportState.Success(
                             importedCount = state.totalImportedCount,
-                            completedCount = total,
+                            completedCount = fullyMarked,
                             isJson = false,
                             importedPodcasts = state.importedPodcasts,
                             pendingCount = state.pendingCount,
@@ -269,6 +242,47 @@ suspend fun performJsonLibraryImport(
             withContext(Dispatchers.Main) {
                 onStateChange(OpmlImportState.Error(ImportFailure.BackupFailed))
             }
+        }
+    }
+}
+
+/** The screen after an OPML import: the shows it followed to mark played, still adding (only held back by the rate limit), or nothing reachable. */
+private fun opmlImportOutcome(report: OpmlImportReport): OpmlImportState = when {
+    report.imported.isNotEmpty() ->
+        OpmlImportState.AskCompleted(
+            importedPodcasts = report.imported,
+            selectedIds = report.imported.map { it.id }.toSet(),
+            pendingCount = report.pending.size,
+        )
+    // Nothing yet, but the rate limit only held them back: the catch-up adds them while boxlore is open.
+    report.pending.isNotEmpty() ->
+        OpmlImportState.Success(
+            importedCount = 0,
+            completedCount = 0,
+            isJson = false,
+            importedPodcasts = emptyList(),
+            pendingCount = report.pending.size,
+        )
+    else -> OpmlImportState.Error(ImportFailure.NothingReachable)
+}
+
+private fun trackOpmlImportOutcome(report: OpmlImportReport) {
+    when {
+        report.imported.isNotEmpty() ->
+            AnalyticsHelper.trackBackupRestoreResult(
+                action = "import",
+                success = true,
+                itemCount = report.imported.size,
+                format = "opml",
+            )
+        report.pending.isEmpty() -> {
+            AnalyticsHelper.trackOnboardingImportFailed("opml", LibraryBackupAnalyticsErrors.NO_PODCASTS_RESOLVED)
+            AnalyticsHelper.trackBackupRestoreResult(
+                action = "import",
+                success = false,
+                format = "opml",
+                errorMessage = LibraryBackupAnalyticsErrors.NO_PODCASTS_RESOLVED,
+            )
         }
     }
 }

@@ -5,6 +5,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 /**
@@ -13,6 +14,23 @@ import org.junit.Test
  */
 class MissingFeedUrlRecoveryTest {
     private val now = 10L * FeedUrlLookup.LOOKUP_INTERVAL_MS
+
+    @Before
+    fun forgetTries() = MissingFeedUrlRecovery.clearTriesForTests()
+
+    @Test
+    fun showsWhoseLookupKeepsFailingDontHoldLaterDueShowsBack() = runTest {
+        // Reviewed: a failed lookup kept its old stamp, so 20 shows that kept failing took every pass.
+        val ids = (1..21).map { "show-$it" }.toSet()
+        val stamps = ids.associateWith { it.removePrefix("show-").toLong() }.toMutableMap()
+        val first = dueTargets(ids, stamps)
+        assertEquals((1..20).map { "show-$it" }, first)
+
+        first.forEach { id -> MissingFeedUrlRecovery.recoverOne(id, now, { FeedUrlLookup.NoAnswer }, { show, at -> stamps[show] = at }, { _, _ -> }) }
+
+        assertTrue("the show not tried yet goes next", "show-21" in dueTargets(ids, stamps))
+        assertEquals("a failed lookup stamps nothing", (1..21).associate { "show-$it" to it.toLong() }, stamps)
+    }
 
     @Test
     fun aPassTakesAtMost20ShowsLeastRecentlyAskedFirst() = runTest {
@@ -56,8 +74,10 @@ class MissingFeedUrlRecoveryTest {
         assertTrue("a 429 stamps nothing", unanswered.all { stamps.getValue(it) == 0L })
 
         val nextPass = dueTargets(ids, stamps)
-        assertEquals("the unanswered shows and the ones not reached come first", (ids - saved.keys).sorted().take(20).toSet(), nextPass.toSet())
-        assertTrue(nextPass.containsAll(unanswered))
+        val notReached = ids - firstPass.toSet()
+        assertEquals(20, nextPass.size)
+        assertTrue("the shows not reached go first", nextPass.containsAll(notReached))
+        assertTrue("then the unanswered ones, still due", (nextPass - notReached).all { it in unanswered })
     }
 
     @Test
