@@ -54,7 +54,7 @@ internal object OpmlImportRun {
     /** How long a catch-up waits after an outline's 1st, 2nd and 3rd-or-later miss before trying it again. */
     private val RETRY_WAITS_MS = longArrayOf(HOUR_MS, 6 * HOUR_MS, 24 * HOUR_MS)
 
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "kotlin:S107")
     suspend fun run(
         feeds: List<OpmlFeed>,
         pending: PendingOpmlImports,

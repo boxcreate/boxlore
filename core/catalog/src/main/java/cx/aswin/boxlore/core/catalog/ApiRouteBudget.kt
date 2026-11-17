@@ -66,7 +66,7 @@ class ApiRouteBudget(
         val paused = (pausedUntil[route] ?: 0L) - now
         if (paused > 0L) return paused
         val times = sent[route]
-        while (times != null && times.isNotEmpty() && now - times.first() >= windowMs) times.removeFirst()
+        while (!times.isNullOrEmpty() && now - times.first() >= windowMs) times.removeFirst()
         if ((times?.size ?: 0) < perMinute) return 0L
         val oldest = times?.firstOrNull() ?: return windowMs
         return (oldest + windowMs - now).coerceAtLeast(1L)

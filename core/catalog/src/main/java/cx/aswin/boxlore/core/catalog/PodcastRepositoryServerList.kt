@@ -26,7 +26,7 @@ import retrofit2.awaitResponse
  * `/v2/episodes`; decision D1).
  * COMPAT(own-ids): the server's list in recipe IDs. Permanent: never remove (MIGRATION.md §5).
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "kotlin:S107")
 internal suspend fun PodcastRepository.getServerListPage(
     feedId: String,
     limit: Int,

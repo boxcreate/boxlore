@@ -49,14 +49,11 @@ class SubscriptionSyncResolver(
         val remoteSubTime = if (remote.subscribedAt > 0) remote.subscribedAt else remote.updatedAt
         val remoteUnsubTime = if (remote.unsubscribedAt > 0) remote.unsubscribedAt else remote.updatedAt
 
-        if (local == null) {
-            handleNewSubscription(remote, remoteSubTime, syncedAt)
-        } else if (!remote.isSubscribed) {
-            handleRemoteTombstone(local, remoteUnsubTime, syncedAt)
-        } else if (!local.isSubscribed) {
-            handleLocalUnsubscribedState(local, remote, remoteSubTime, syncedAt)
-        } else if (!local.isDirty) {
-            handleLocalCleanSubscribedState(local, remote, remoteSubTime, syncedAt)
+        when {
+            local == null -> handleNewSubscription(remote, remoteSubTime, syncedAt)
+            !remote.isSubscribed -> handleRemoteTombstone(local, remoteUnsubTime, syncedAt)
+            !local.isSubscribed -> handleLocalUnsubscribedState(local, remote, remoteSubTime, syncedAt)
+            !local.isDirty -> handleLocalCleanSubscribedState(local, remote, remoteSubTime, syncedAt)
         }
     }
 
