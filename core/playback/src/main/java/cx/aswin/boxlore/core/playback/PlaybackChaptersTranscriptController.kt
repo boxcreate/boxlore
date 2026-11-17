@@ -1,13 +1,13 @@
 package cx.aswin.boxlore.core.playback
 
 import cx.aswin.boxlore.core.catalog.BriefingLinks
-import cx.aswin.boxlore.core.catalog.ChapterOfflineStorage
 import cx.aswin.boxlore.core.catalog.ChapterRepository
 import cx.aswin.boxlore.core.catalog.PodcastRepository
-import cx.aswin.boxlore.core.catalog.TranscriptOfflineStorage
 import cx.aswin.boxlore.core.catalog.TranscriptRepository
+import cx.aswin.boxlore.core.catalog.TranscriptSegment
 import cx.aswin.boxlore.core.catalog.mapRegionForBriefing
 import cx.aswin.boxlore.core.model.AutoTranscriptState
+import cx.aswin.boxlore.core.model.Chapter
 import cx.aswin.boxlore.core.playback.PlayerState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -16,6 +16,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+
+/** Where the player reads chapters and transcripts: a downloaded episode's saved copy, or its links. */
+internal class ChaptersTranscriptSources(
+    val chapters: suspend (String) -> List<Chapter> = ChapterRepository::getChapters,
+    val offlineChapters: suspend (android.content.Context, String) -> List<Chapter> = ChapterRepository::getOfflineChapters,
+    val transcript: suspend (String) -> List<TranscriptSegment> = { TranscriptRepository.getTranscript(it) },
+    val offlineTranscript: suspend (android.content.Context, String) -> List<TranscriptSegment> =
+        TranscriptRepository::getOfflineTranscript,
+)
 
 /**
  * Chapters / transcript monitoring for [cx.aswin.boxlore.core.playback.PlaybackRepository].
@@ -27,6 +36,7 @@ internal class PlaybackChaptersTranscriptController(
     private val playerStateFlow: MutableStateFlow<PlayerState>,
     private val podcastRepository: PodcastRepository,
     @Suppress("UNUSED_PARAMETER") deviceUuid: (() -> String)? = null,
+    private val sources: ChaptersTranscriptSources = ChaptersTranscriptSources(),
 ) {
     private var chaptersAndTranscriptFetchJob: Job? = null
     private var lastLoadedEpisodeId: String? = null
@@ -166,9 +176,10 @@ internal class PlaybackChaptersTranscriptController(
                                             autoChaptersState = AutoTranscriptState.NONE,
                                         )
                                     launch {
-                                        var chapters = ChapterRepository.getChapters(chaptersUrl)
+                                        // A downloaded episode's saved copy first: no network wait, and it works offline.
+                                        var chapters = sources.offlineChapters(context, episodeId)
                                         if (chapters.isEmpty()) {
-                                            chapters = ChapterOfflineStorage.getOfflineChapters(context, episodeId)
+                                            chapters = sources.chapters(chaptersUrl)
                                         }
                                         if (chapters.isEmpty()) {
                                             chapters = ChapterRepository.parseChaptersFromDescription(episode.description)
@@ -182,7 +193,7 @@ internal class PlaybackChaptersTranscriptController(
                                         }
                                     }
                                 } else {
-                                    val offlineChapters = ChapterOfflineStorage.getOfflineChapters(context, episodeId)
+                                    val offlineChapters = sources.offlineChapters(context, episodeId)
                                     val parsedChapters = if (offlineChapters.isNotEmpty()) {
                                         offlineChapters
                                     } else {
@@ -213,16 +224,16 @@ internal class PlaybackChaptersTranscriptController(
                                     // RSS transcript available — fetch normally, no AI state
                                     playerStateFlow.value = playerStateFlow.value.copy(autoTranscriptState = AutoTranscriptState.NONE)
                                     launch {
-                                        var transcript = TranscriptRepository.getTranscript(transcriptUrl)
+                                        var transcript = sources.offlineTranscript(context, episodeId)
                                         if (transcript.isEmpty()) {
-                                            transcript = TranscriptOfflineStorage.getOfflineTranscript(context, episodeId)
+                                            transcript = sources.transcript(transcriptUrl)
                                         }
                                         if (playerStateFlow.value.currentEpisode?.id == episodeId) {
                                             playerStateFlow.value = playerStateFlow.value.copy(currentTranscript = transcript)
                                         }
                                     }
                                 } else if (episode != null && episode.audioUrl.isNotEmpty()) {
-                                    val offlineTranscript = TranscriptOfflineStorage.getOfflineTranscript(context, episodeId)
+                                    val offlineTranscript = sources.offlineTranscript(context, episodeId)
                                     playerStateFlow.value =
                                         playerStateFlow.value.copy(
                                             autoTranscriptState = AutoTranscriptState.NONE,

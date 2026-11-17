@@ -12,6 +12,7 @@ It does not own the main database, Podcast Index networking, content retrieval, 
 - `YourShowsScorer`: the one deterministic `YOUR_SHOWS` path on every surface; log-normalized listening, freshness and preference signals plus a single subscribe-recency floor, with no exposure training.
 - `YourShowsSubscriptionRecency`: the bounded floor for newly followed shows, high for a short window and then decaying, so listening habits take over without a cliff.
 - `RankingHistory`: listening history with each episode counted once across its IDs; `forShowEpisode` finds a show's latest-episode history within its `listenerShowIds`.
+- `RankingHistorySignature`, `RankingScoreCache`: what subscription ranking reads from history, with progress reduced to started or not and play time to the hour, and the last scores per input, so a progress save re-ranks only when it starts an episode or the last-played hour moves; a new, finished or liked episode always re-ranks.
 - `AdaptiveRankingRepository`: ranking state, exposure recording, facet affinities, `exportBackup` / `restoreBackup`, and `migrateShowFacet` for show ID repairs.
 - `RankingFeedbackRepository`: records listener actions and implements `RankingResetPort`.
 - `RankingRuntimeControls`: runtime switches for ranking surfaces.
@@ -33,6 +34,7 @@ src/main/java/cx/aswin/boxlore/core/ranking/
   RankingFeedbackRepository.kt
   RankingModels.kt                   # objectives, surfaces, sources, DiversityPolicy, DiversityReranker
   RankingHistory.kt
+  RankingHistorySignature.kt         # RankingHistorySignature and RankingScoreCache
   RankingReward.kt
   RankingRuntimeControls.kt
   RankingSerialization.kt

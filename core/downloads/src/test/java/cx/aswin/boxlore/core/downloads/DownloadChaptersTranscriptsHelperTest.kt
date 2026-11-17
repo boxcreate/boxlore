@@ -9,6 +9,7 @@ import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.model.Episode
 import java.io.File
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -63,7 +64,21 @@ class DownloadChaptersTranscriptsHelperTest {
     }
 
     @Test
-    fun downloadTextUrl_handlesLocalFileAndFileUri() {
+    fun downloadTextUrl_givesUpOnAStalledRemoteRead() = runTest {
+        val reader = DownloadChaptersTranscriptsHelper.readRemote
+        val timeout = DownloadChaptersTranscriptsHelper.remoteTimeoutMs
+        DownloadChaptersTranscriptsHelper.readRemote = { awaitCancellation() }
+        DownloadChaptersTranscriptsHelper.remoteTimeoutMs = 1_000L
+        try {
+            assertNull(DownloadChaptersTranscriptsHelper.downloadTextUrl("https://cdn.example/e1/chapters.json"))
+        } finally {
+            DownloadChaptersTranscriptsHelper.readRemote = reader
+            DownloadChaptersTranscriptsHelper.remoteTimeoutMs = timeout
+        }
+    }
+
+    @Test
+    fun downloadTextUrl_handlesLocalFileAndFileUri() = runTest {
         val tempFile = File.createTempFile("sample_text", ".txt")
         tempFile.writeText("sample content")
 
