@@ -360,6 +360,10 @@ interface PodcastDao {
     @Query("SELECT COUNT(*) FROM podcasts WHERE isDirty = 1")
     fun getDirtyCountFlow(): Flow<Int>
 
+    /** Whether any show waits to be pushed, without reading the rows. */
+    @Query("SELECT EXISTS(SELECT 1 FROM podcasts WHERE isDirty = 1)")
+    suspend fun hasDirtyPodcasts(): Boolean
+
     @Query("UPDATE podcasts SET isDirty = 1 WHERE isSubscribed = 1")
     suspend fun markAllSubscribedPodcastsDirty(): Int
 

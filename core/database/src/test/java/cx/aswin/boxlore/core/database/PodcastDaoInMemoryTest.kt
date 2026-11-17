@@ -267,4 +267,15 @@ class PodcastDaoInMemoryTest {
         dao.markPodcastsSynced(listOf("p1", "p2"), 1000L)
         assertEquals(0, dao.getDirtyCountFlow().first())
     }
+
+    @Test
+    fun hasDirtyPodcasts_followsTheDirtyRows() = runTest {
+        assertEquals(false, dao.hasDirtyPodcasts())
+        dao.upsert(createPodcast("p1", isDirty = false))
+        assertEquals(false, dao.hasDirtyPodcasts())
+        dao.upsert(createPodcast("p2", isDirty = true))
+        assertEquals(true, dao.hasDirtyPodcasts())
+        dao.markPodcastsSynced(listOf("p2"), 1000L)
+        assertEquals(false, dao.hasDirtyPodcasts())
+    }
 }
