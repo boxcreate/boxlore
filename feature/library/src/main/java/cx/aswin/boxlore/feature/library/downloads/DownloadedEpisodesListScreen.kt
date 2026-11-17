@@ -115,7 +115,7 @@ fun DownloadedEpisodesScreen(
             val firstItem = items.firstOrNull()
             val podcastName = firstItem?.podcastName ?: ""
             val podcastImageUrl = firstItem?.podcastImageUrl
-            val totalSize = items.sumOf { it.sizeBytes }
+            val totalSize = items.playableDownloads().sumOf { it.sizeBytes }
             val latestDownloadedAt = items.maxOfOrNull { it.downloadedAt } ?: 0L
             PodcastGroup(
                 podcastId = podcastId,
@@ -138,7 +138,7 @@ fun DownloadedEpisodesScreen(
     val selectedPodcastIds = remember { mutableStateListOf<String>() }
     var deleteConfirmSelectedDialog by rememberSaveable { mutableStateOf(false) }
 
-    val totalSizeBytes = remember(downloads) { downloads.sumOf { it.sizeBytes } }
+    val summary = remember(downloads) { downloads.downloadSummary() }
 
     val listBottomPadding = remember(downloads, isSelectionMode, isPlayerActive) {
         if (downloads.isNotEmpty() && !isSelectionMode) {
@@ -213,7 +213,7 @@ fun DownloadedEpisodesScreen(
                                 )
                                 if (downloads.isNotEmpty() && scrollBehavior.state.collapsedFraction < 0.4f) {
                                     Text(
-                                        text = "${downloads.size} ${if (downloads.size == 1) "episode" else "episodes"} • ${formatSize(totalSizeBytes)} used",
+                                        text = summary.countLine(sizeSuffix = " used"),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -334,9 +334,11 @@ fun DownloadedEpisodesScreen(
                                         onPodcastShowClick(group.podcastId, group.podcastName)
                                     },
                                     onPlayClick = {
-                                        val eps = group.episodes.map { it.toEpisode() }
-                                        val pod = group.episodes.first().toPodcast()
-                                        viewModel.playQueue(eps, pod)
+                                        // A failed download has no audio, so playing skips it.
+                                        val playable = group.episodes.playableDownloads()
+                                        if (playable.isNotEmpty()) {
+                                            viewModel.playQueue(playable.map { it.toEpisode() }, playable.first().toPodcast())
+                                        }
                                     },
                                     selection =
                                     DownloadShowCardSelection(
@@ -369,7 +371,7 @@ fun DownloadedEpisodesScreen(
                 PlayAllFab(
                     isPlayerActive = isPlayerActive,
                     onClick = {
-                        val episodes = downloads.map { it.toEpisode() }
+                        val episodes = downloads.playableDownloads().map { it.toEpisode() }
                         val dummyPodcast = Podcast(
                             id = "downloads_all",
                             title = "All Downloads",
@@ -378,7 +380,7 @@ fun DownloadedEpisodesScreen(
                             description = "",
                             genre = ""
                         )
-                        viewModel.playQueue(episodes, dummyPodcast)
+                        if (episodes.isNotEmpty()) viewModel.playQueue(episodes, dummyPodcast)
                     }
                 )
             }

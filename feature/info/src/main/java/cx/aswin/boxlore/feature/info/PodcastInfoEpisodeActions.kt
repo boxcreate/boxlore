@@ -242,13 +242,28 @@ internal class PodcastInfoEpisodeActions(
         }
     }
 
+    /**
+     * Adds the selection to the end of the queue while it has room ([PlaybackRepository.QUEUE_LIMIT]),
+     * and says how many were added when some didn't fit.
+     */
     fun addEpisodesToQueue(episodes: List<Episode>) {
         val currentState = uiState.value as? PodcastInfoUiState.Success ?: return
+        val podcastId = currentState.podcast.id
         scope.launch {
             var added = 0
             try {
-                episodes.distinctBy(Episode::id).forEach { episode ->
-                    if (playbackRepository.addToQueue(episode = episode, podcast = currentState.podcast)) added++
+                val outcome =
+                    addSelectionToQueue(
+                        episodes = episodes,
+                        queuedIds = queuedEpisodeIds.value,
+                        queueLimit = PlaybackRepository.QUEUE_LIMIT,
+                        queueSize = { playbackRepository.playerState.value.queue.size },
+                    ) { episode ->
+                        playbackRepository.addToQueue(episode = episode, podcast = currentState.podcast).also { if (it) added++ }
+                    }
+                queueSelectionMessage(outcome)?.let { message ->
+                    val latest = uiState.value as? PodcastInfoUiState.Success
+                    if (latest != null && latest.podcast.id == podcastId) uiState.value = latest.copy(userMessage = message)
                 }
             } finally {
                 // One event for the whole selection, with what was added even if a later add failed.
