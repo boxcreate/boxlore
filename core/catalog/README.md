@@ -21,7 +21,7 @@ It does not own playback, download workers, Compose UI, the Room schema ([`:core
 - `/v2` answers are cached under `v2|` keys, apart from v1 answers.
 - `DiscoveryRouting` and `BriefingLinks` give code outside the repository the same switch and ID translation.
 - `RolloutSwitches`: feed-first show pages (off by default, fixed per process), the upgrade repair, the daily address check and `/v2` discovery (on by default). Off pauses a job without marking it done.
-- `ChapterRepository`, `TranscriptRepository`, `ChapterOfflineStorage` and `TranscriptOfflineStorage`: chapters and transcripts, remote, from descriptions, and saved for downloads.
+- `ChapterRepository`, `TranscriptRepository`, `ChapterOfflineStorage` and `TranscriptOfflineStorage`: chapters and transcripts, remote, from descriptions, and saved for downloads. Remote reads use `RemoteText` (15 s limit), loads of one address share one read, and results sit in a bounded `TimedLruCache`; chapters stay untranslated, so related-episode IDs are translated on every return.
 - `shownotes.ShowNotesParser`: publisher HTML links, handles and description chapters, without fetching pages.
 
 ### Subscriptions and feed addresses
@@ -100,7 +100,7 @@ src/main/java/cx/aswin/boxlore/core/catalog/
   FeedAddress*.kt, DirectFeedRecovery.kt, FeedReports.kt, FeedFirstShowPages.kt
   Renumbered*.kt, Upgrade*.kt, LegacyRssRepair.kt, RolloutSwitches.kt
   PodcastNotificationRegistrar.kt, PendingNotificationRegistrations.kt, RssNotification*.kt
-  SharedAppDependencies.kt, InstallReferrerManager.kt, ChapterRepository.kt, TranscriptRepository.kt
+  SharedAppDependencies.kt, InstallReferrerManager.kt, ChapterRepository.kt, TranscriptRepository.kt, RemoteText.kt, SharedLoads.kt
   backup/  content/  crosspromo/  logic/  ports/  privacy/  shownotes/  sync/
 src/main/res/                  # auto_* strings and Android Auto drawables
 ```

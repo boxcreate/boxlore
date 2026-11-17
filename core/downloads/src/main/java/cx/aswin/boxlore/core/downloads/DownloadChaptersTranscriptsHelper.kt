@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import cx.aswin.boxlore.core.catalog.ChapterOfflineStorage
 import cx.aswin.boxlore.core.catalog.ChapterRepository
+import cx.aswin.boxlore.core.catalog.RemoteText
 import cx.aswin.boxlore.core.catalog.TranscriptOfflineStorage
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
@@ -14,22 +15,40 @@ import cx.aswin.boxlore.core.ranking.RankingAction
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import java.io.File
 import java.net.URI
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 internal object DownloadChaptersTranscriptsHelper {
 
     private const val TAG = "DownloadChaptersHelper"
 
-    fun downloadTextUrl(url: String?): String? {
+    /** Reads a remote chapters or transcript link; tests replace it. */
+    @Volatile
+    var readRemote: suspend (String) -> String = RemoteText::read
+
+    /** The longest a remote read may take before the download is saved without that file. */
+    @Volatile
+    var remoteTimeoutMs: Long = RemoteText.TIMEOUT_MS
+
+    suspend fun downloadTextUrl(url: String?): String? {
         if (url.isNullOrBlank()) return null
         return try {
             if (url.startsWith("/") || url.startsWith("file:")) {
                 val cleanPath = url.removePrefix("file://").removePrefix("file:")
-                val file = File(cleanPath)
-                if (file.exists()) file.readText() else null
+                withContext(Dispatchers.IO) {
+                    val file = File(cleanPath)
+                    if (file.exists()) file.readText() else null
+                }
             } else {
                 val cleanUrl = if (url.startsWith("//")) "https:$url" else url
-                URI.create(cleanUrl).toURL().readText()
+                val text = withTimeoutOrNull(remoteTimeoutMs) { readRemote(cleanUrl) }
+                if (text == null) Log.w(TAG, "Timed out downloading text from $url")
+                text
             }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (e: Exception) {
             Log.w(TAG, "Failed to download text from $url", e)
             null

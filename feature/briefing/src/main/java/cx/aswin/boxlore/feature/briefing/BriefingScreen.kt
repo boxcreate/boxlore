@@ -441,6 +441,7 @@ private fun BriefingEditionContent(
         BriefingStoriesPager(
             briefing = state.briefing,
             chapters = state.chapters,
+            chaptersLoading = state.chaptersLoading,
             isPlaying = state.isPlaying,
             currentPositionMs = state.currentPosition,
             accentColor = MaterialTheme.colorScheme.primary,

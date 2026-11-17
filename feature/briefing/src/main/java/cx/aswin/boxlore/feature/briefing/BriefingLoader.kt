@@ -20,6 +20,8 @@ internal data class BriefingLoadState(
     val session: PlaybackSession? = null,
     val isLoading: Boolean = true,
     val failed: Boolean = false,
+    /** The Brief is shown but its stories are still being fetched; false once that fetch ends. */
+    val chaptersLoading: Boolean = false,
 )
 
 /** Owns the ViewModel's cancellable load sequence without constructing repositories or playback. */
@@ -60,6 +62,9 @@ internal class BriefingLoader(
             }
             val session = fetchSession(briefing)
             currentCoroutineContext().ensureActive()
+            // The Brief shows now; its stories follow when the chapters arrive, so a slow chapters
+            // read never holds the page on its loading state.
+            publish(BriefingLoadState(selected, briefing, emptyList(), session, isLoading = false, chaptersLoading = true))
             val chapters = try {
                 fetchChapters(briefing)
             } catch (cancelled: CancellationException) {
@@ -68,6 +73,7 @@ internal class BriefingLoader(
                 emptyList()
             }
             currentCoroutineContext().ensureActive()
+            // Always end the stories' loading state, so an empty or failed fetch reads as unavailable.
             publish(BriefingLoadState(selected, briefing, chapters, session, isLoading = false))
         }
     }
