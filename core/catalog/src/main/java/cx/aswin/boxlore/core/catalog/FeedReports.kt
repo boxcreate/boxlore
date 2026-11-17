@@ -103,10 +103,12 @@ class FeedReportLimiter(private val stamps: FeedReportStamps) {
         const val PER_SHOW_INTERVAL_MS = 24L * 60L * 60L * 1000L
 
         /**
-         * How long report times are kept: long enough that, with more failing shows than
-         * [DAILY_CAP], the ones reported longest ago (or never) can go first ([lastReportedAt]).
+         * How long report times are kept: longer than a full rotation of even a very large library's
+         * failing shows at [DAILY_CAP] a day, so a show reported long ago never ranks with a show
+         * never reported ([lastReportedAt]) while others still wait their turn. At most [DAILY_CAP]
+         * times are added a day, so the store stays small.
          */
-        const val HISTORY_MS = 7L * PER_SHOW_INTERVAL_MS
+        const val HISTORY_MS = 90L * PER_SHOW_INTERVAL_MS
 
         /** The API's limit: 20 reports a day from one phone. */
         const val DAILY_CAP = 20

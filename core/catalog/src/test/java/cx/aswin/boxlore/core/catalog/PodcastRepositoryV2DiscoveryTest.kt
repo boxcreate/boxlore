@@ -204,6 +204,22 @@ class PodcastRepositoryV2DiscoveryTest {
     }
 
     @Test
+    fun aShowUnfollowedSinceIsPickedAgainFromRememberedPicks() = runTest {
+        // Reviewed: picks were remembered after the follow filter, so a show unfollowed later stayed hidden.
+        answers["/v2/recommendations"] = { fixture("fixtures/v2/recommendations.json") }
+        val follows = (1..MAX_RECOMMENDATION_IDS).map(Int::toString)
+        val followedAt = follows.associateWith { (it.toLong() + 10) * DAY_MS } + (REC_SHOW to DAY_MS)
+        val repository = repository(followedAt = followedAt)
+
+        val whileFollowed = repository.getPersonalizedRecommendations(history = emptyList(), country = "us", subscribedPodcastIds = follows + REC_SHOW)
+        val afterUnfollow = repository.getPersonalizedRecommendations(history = emptyList(), country = "us", subscribedPodcastIds = follows)
+
+        assertEquals("the same request both times: the second is answered from memory", 1, seen.size)
+        assertEquals(listOf("9001"), whileFollowed.map { it.id })
+        assertEquals(listOf("7777", REC_B.toString(), "9001"), afterUnfollow.map { it.id })
+    }
+
+    @Test
     fun homePicksLeaveOutFollowedShows() = runTest {
         answers["/v2/home/bootstrap"] = { fixture("fixtures/v2/bootstrap-post.json") }
         val recorded = fixtureItems("fixtures/v2/bootstrap-post.json", "recommendations")

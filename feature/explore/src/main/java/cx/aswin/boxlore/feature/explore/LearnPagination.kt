@@ -94,7 +94,8 @@ internal class CuriosityScanResume {
      * server past its caches (Check for new cards).
      */
     fun after(result: InitialCuriosityDeckResult, dismissedIds: Set<String>, freshPages: Boolean) {
-        val resumeAt = nextPage ?: 1
+        // Where this scan actually started: page 1 when a restored card reset the place.
+        val resumeAt = startPage(dismissedIds)
         when (result) {
             is InitialCuriosityDeckResult.Capped -> if (freshPages) resumeFrom(result.lastPage + 1, dismissedIds)
             is InitialCuriosityDeckResult.Failed -> if (freshPages && result.page > resumeAt) resumeFrom(result.page, dismissedIds)

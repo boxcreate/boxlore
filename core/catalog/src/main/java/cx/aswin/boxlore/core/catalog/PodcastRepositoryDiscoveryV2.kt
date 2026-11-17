@@ -177,8 +177,10 @@ internal suspend fun PodcastRepository.v2PersonalizedRecommendations(
         return discoveryEpisodeIds.toLocalOwners(lastGood.episodes).withoutHistory(history).withoutFollowed(subscribedPodcastIds)
     }
     recommendationsLastGood.save(RecommendationsLastGood.Surface.PERSONAL, country, RecommendationsLastGood.LastGoodPicks(items, isFallback = false))
-    return discoveryEpisodeIds.toLocalOwners(items).withoutHistory(history).withoutFollowed(subscribedPodcastIds)
-        .also { PodcastRepository.recommendationsCache[cacheKey] = it }
+    // Cached before the follow filter, so a show unfollowed later with the same key can be picked again.
+    val candidates = discoveryEpisodeIds.toLocalOwners(items).withoutHistory(history)
+    PodcastRepository.recommendationsCache[cacheKey] = candidates
+    return candidates.withoutFollowed(subscribedPodcastIds)
 }
 
 /** A region's briefing; its chapters link is the signed `/v2` one, so related episodes come under recipe IDs. */

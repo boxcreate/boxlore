@@ -281,4 +281,18 @@ class LearnPaginationTest {
         duration = 0,
         description = null,
     )
+
+    @Test
+    fun aFailedCheckAfterARestoredCardResumesFromThePageItReached() {
+        // Reviewed: the place reset to page 1 when a card was restored, but a failure on page 6 was
+        // compared with the old place (13), so the next check read pages 1 to 5 again.
+        val resume = CuriosityScanResume()
+        resume.after(InitialCuriosityDeckResult.Capped(12), dismissedIds = setOf("a", "b"), freshPages = true)
+        val afterRestore = setOf("b")
+        assertEquals(1, resume.startPage(afterRestore))
+
+        resume.after(InitialCuriosityDeckResult.Failed(6), afterRestore, freshPages = true)
+
+        assertEquals(6, resume.startPage(afterRestore))
+    }
 }

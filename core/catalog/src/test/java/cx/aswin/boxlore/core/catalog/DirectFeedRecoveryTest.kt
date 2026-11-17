@@ -139,6 +139,28 @@ class DirectFeedRecoveryTest {
         assertEquals(listOf("d", "b", "c", "a"), order.map { it.first })
     }
 
+    @Test
+    fun everyFailingShowIsReportedInTurnOverManyDailyCapsWithoutAnyGroupStarving() {
+        // Reviewed: report times were kept 7 days, so with 180 failing shows the ones reported first
+        // ranked with never-reported shows again and the last group could wait forever.
+        val limiter = FeedReportLimiter(MemoryFeedReportStamps())
+        val ids = (1..180).map { "show-$it" }
+        val failed = ids.associateWith { DirectFeedResolveResult(tip = null, persisted = false, failed = true) }
+        val reportedOn = mutableMapOf<String, Int>()
+        var now = 1_000_000L
+        for (day in 1..20) {
+            now += FeedReportLimiter.PER_SHOW_INTERVAL_MS + 1
+            for ((id, _) in DirectFeedRecovery.reportOrder(failed, limiter.lastReportedAt())) {
+                if (!limiter.allows(id, now)) continue
+                limiter.record(id, now)
+                reportedOn.putIfAbsent(id, day)
+            }
+        }
+        // 180 shows at 20 a day: every one within the first 9 days, then the rotation repeats.
+        assertEquals(ids.toSet(), reportedOn.keys)
+        assertTrue(reportedOn.values.all { it <= 9 })
+    }
+
     private fun gone(status: String) = DirectFeedResolveResult(tip = null, persisted = false, failed = true, addressGone = true, reportStatus = status)
 
     /** A [FeedReporter] on one report store whose API answers every report; the shows it sent, in order. */
