@@ -293,14 +293,14 @@ internal constructor(
             val episode = podcast.latestEpisode ?: return podcast
             val history = historyById[episode.id]
             return when {
-                episode.id in completedIds ->
+                episode.id in completedIds || history?.isCompleted == true ->
                     podcast.copy(
                         resumeProgress = 1f,
                         episodeStatus = EpisodeStatus.COMPLETED,
                     )
-                history == null || (history.progressMs == 0L && !history.isCompleted) ->
+                history == null || history.progressMs == 0L ->
                     podcast.copy(episodeStatus = EpisodeStatus.UNPLAYED)
-                !history.isCompleted && history.progressMs > 0L -> {
+                history.progressMs > 0L -> {
                     val progress =
                         if (history.durationMs > 0) {
                             (history.progressMs.toFloat() / history.durationMs).coerceIn(0f, 1f)
@@ -312,11 +312,6 @@ internal constructor(
                         episodeStatus = EpisodeStatus.IN_PROGRESS,
                     )
                 }
-                history.isCompleted ->
-                    podcast.copy(
-                        resumeProgress = 1f,
-                        episodeStatus = EpisodeStatus.COMPLETED,
-                    )
                 else -> podcast
             }
         }
