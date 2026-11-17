@@ -92,6 +92,8 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>Widgets that follow your phone's light and dark mode now switch with it, even when boxlore isn't open.</li>
 <li>The Your Shows and New Episodes widgets now count your whole library instead of stopping at 50.</li>
 <li>While an episode plays, the Your Shows and New Episodes widgets and your Library use less battery.</li>
+<li>While an episode plays, boxlore syncs your place in it every few minutes instead of every few seconds, so it uses less battery and data. Pausing, switching episodes or leaving boxlore still syncs it straight away.</li>
+<li>With a large listening history, boxlore no longer slows down or closes when your phone gets its connection back.</li>
 <li>On Home, a show you've heard every episode of now lists its latest episodes instead of an empty list, and a show whose episodes can't load lets you try again.</li>
 <li>On Home, tapping a show in Your shows now checks it for new episodes, even if boxlore checked it a few hours ago.</li>
 <li>In Android Auto, artwork loads faster, and every episode has a picture, in lists and in the queue: one with no image of its own shows its show's cover.</li>
