@@ -652,22 +652,7 @@ class ExploreViewModel(
             _failures.update { it.showSearchStarted() }
             try {
                 val grouped = podcastRepository.searchPodcastsGrouped(query)
-                if (searchJob == myJob) {
-                    val history = playbackRepository.getAllHistory().first()
-                    val rankedCatalog = rankPodcastsOrOriginal(grouped.catalog, history)
-                    val rankedAlso = rankPodcastsOrOriginal(grouped.alsoFound, history)
-                    _searchResults.value = rankedCatalog
-                    _alsoFoundResults.value = rankedAlso
-                    grouped.all.forEach { _seenPodcasts[it.id] = it }
-                    _failures.update { it.showSearchAnswered(grouped.failed) }
-                    // A failed search isn't a search with no results, so it isn't reported as one.
-                    if (!grouped.failed) {
-                        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackExploreSearchPerformed(
-                            query,
-                            rankedCatalog.size + rankedAlso.size,
-                        )
-                    }
-                }
+                if (searchJob == myJob) showSearchAnswer(query, grouped)
             } catch (error: kotlinx.coroutines.CancellationException) {
                 throw error
             } catch (_: Exception) {
@@ -683,6 +668,20 @@ class ExploreViewModel(
             }
         }
         searchJob = myJob
+    }
+
+    /** Shows a show search's answer, ranked; a failed search says so and isn't counted as one with no results. */
+    private suspend fun showSearchAnswer(query: String, grouped: cx.aswin.boxlore.core.catalog.logic.GroupedShowSearchResult) {
+        val history = playbackRepository.getAllHistory().first()
+        val rankedCatalog = rankPodcastsOrOriginal(grouped.catalog, history)
+        val rankedAlso = rankPodcastsOrOriginal(grouped.alsoFound, history)
+        _searchResults.value = rankedCatalog
+        _alsoFoundResults.value = rankedAlso
+        grouped.all.forEach { _seenPodcasts[it.id] = it }
+        _failures.update { it.showSearchAnswered(grouped.failed) }
+        if (!grouped.failed) {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackExploreSearchPerformed(query, rankedCatalog.size + rankedAlso.size)
+        }
     }
 
     private var semanticSearchJob: Job? = null
