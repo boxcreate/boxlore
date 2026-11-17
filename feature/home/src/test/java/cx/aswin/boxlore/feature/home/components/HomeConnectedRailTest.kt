@@ -73,6 +73,7 @@ class HomeConnectedRailTest {
     private val selectedLoading = mutableStateOf(false)
     private var retries = 0
     private val showEvents = mutableListOf<String>()
+    private val selections = mutableListOf<String?>()
     private val episodeEvents = mutableListOf<Triple<String, String, String>>()
     private val playEvents = mutableListOf<Triple<String, String, PlaybackEntryPoint>>()
     private val episode = TestFixtures.episode(id = "episode", title = "An exceptionally long episode name with enough words to fill three lines and still need truncation", duration = 7500)
@@ -116,6 +117,37 @@ class HomeConnectedRailTest {
         composeRule.onNodeWithTag("home_show_selector_mix").assertDoesNotExist()
         composeRule.onNodeWithTag("home_selected_show_clear").assertDoesNotExist()
         composeRule.onNodeWithTag("home_filtered_episodes").assertExists()
+    }
+
+    @Test fun `tapping the only show sends its id on phones and in the tablet spotlight`() {
+        // Before, the only show's chip ignored taps on phones and the tablet spotlight only opened the
+        // show, so neither checked it for new episodes.
+        state.value = Scenario(count = 1)
+        render()
+        composeRule.onNodeWithTag("home_show_selector_show-0").performClick()
+        assertEquals(listOf<String?>("show-0"), selections)
+        composeRule.onNodeWithTag("home_show_selector_show-0").performClick()
+        assertEquals("a second tap checks it again instead of clearing it", listOf<String?>("show-0", "show-0"), selections)
+
+        state.value = state.value.copy(width = 1_200, tablet = true)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home_show_selector_show-0", useUnmergedTree = true).performClick()
+        assertEquals(listOf<String?>("show-0", "show-0", "show-0"), selections)
+        assertEquals("the spotlight still opens the show", listOf("show-0"), showEvents)
+
+        state.value = state.value.copy(width = 353, tablet = false)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home_show_selector_show-0").performClick()
+        assertEquals("back on a phone width the chip still sends its id", "show-0", selections.last())
+    }
+
+    @Test fun `tapping the open show among several clears the selection`() {
+        state.value = Scenario(count = 3, selected = "show-0")
+        render()
+        composeRule.onNodeWithTag("home_show_selector_show-0").performClick()
+        assertEquals(listOf<String?>(null), selections)
+        composeRule.onNodeWithTag("home_show_selector_show-1").performClick()
+        assertEquals(listOf(null, "show-1"), selections)
     }
 
     @Test fun `Mix and show artwork share square geometry across selector layouts`() {
@@ -562,7 +594,10 @@ class HomeConnectedRailTest {
                                 episodePlaybackState = StablePlaybackStateMap(emptyMap()),
                                 selectedShowStatus = scenario.status,
                                 onRetrySelectedShow = { retries++ },
-                                onPodcastSelected = { state.value = state.value.copy(selected = it) },
+                                onPodcastSelected = {
+                                    selections += it
+                                    state.value = state.value.copy(selected = it)
+                                },
                                 onPodcastClick = { podcast ->
                                     infoClicks++
                                     showEvents += podcast.id

@@ -81,6 +81,11 @@ object LibraryWidgetCoordinator {
         }
     }
 
+    /**
+     * Redraws from the saved snapshot. Widgets never check feeds for new episodes, to spare the
+     * battery: New episodes changes when boxlore's own passes or pushes save a newer one
+     * (`NewEpisodeCheckGate` in `:core:catalog`).
+     */
     fun requestRefresh(context: Context) {
         val store = LibraryWidgetSnapshotStore(context)
         val snapshot = store.read() ?: return

@@ -30,6 +30,7 @@ internal class AutoBrowseLibraryCallback(
     resumptionHandler: AutoPlaybackResumptionHandler? = null,
     treeBuilder: AutoBrowseTreeBuilder? = null,
     private val io: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.IO,
+    private val elapsedMs: () -> Long = android.os.SystemClock::elapsedRealtime,
 ) : MediaLibrarySession.Callback {
     private val mediaResolver = mediaResolver ?: AutoMediaResolver(host)
     private val treeBuilder = treeBuilder ?: AutoBrowseTreeBuilder(host, this.mediaResolver)
@@ -45,6 +46,10 @@ internal class AutoBrowseLibraryCallback(
     }
     private val carBrowsers = java.util.concurrent.ConcurrentHashMap.newKeySet<MediaSession.ControllerInfo>()
     private val carScreensReported = java.util.concurrent.atomic.AtomicBoolean(false)
+    private val newEpisodeCheckAsked = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    /** After `:app` turned a check down, browses ask nothing until then ([elapsedMs]). */
+    @Volatile private var newEpisodeCheckRetryAtMs = Long.MIN_VALUE
 
     private val connectedAtMs =
         java.util.concurrent.ConcurrentHashMap<MediaSession.ControllerInfo, Long>()
@@ -68,6 +73,10 @@ internal class AutoBrowseLibraryCallback(
     private val HOME_NEW_EPISODES_ID = AutoBrowseContract.HOME_NEW_EPISODES_ID
     private val PLAY_ALL_NEW_EPISODES_ID = AutoBrowseContract.PLAY_ALL_NEW_ID
     private val SUBSCRIPTION_PREFIX = AutoBrowseContract.SUBSCRIPTION_PREFIX
+
+    /** New episodes and Shows, including the IDs the old layout used: the lists that may ask for a new-episode check. */
+    private val newEpisodeCheckNodes =
+        setOf(HOME_NEW_EPISODES_ID, AutoBrowseContract.LIBRARY_SUBSCRIPTIONS_ID, HOME_SUBSCRIPTIONS_ID, SUBSCRIPTIONS_ID)
 
     private val seekBackCommand = androidx.media3.session.SessionCommand("SEEK_BACK", Bundle.EMPTY)
     private val SEEK_FORWARD_CMD = androidx.media3.session.SessionCommand("SEEK_FORWARD", Bundle.EMPTY)
@@ -198,6 +207,7 @@ internal class AutoBrowseLibraryCallback(
         if (connectedAtMs.isEmpty()) {
             phoneChanges.stop()
             queueArtwork.stop()
+            endNewEpisodeCheck()
         }
     }
 
@@ -228,10 +238,45 @@ internal class AutoBrowseLibraryCallback(
         }
     }
 
+    /**
+     * Asks `:app` for a new-episode check when the car opens New episodes or Shows
+     * ([CarSignals.onCarNewEpisodesOpened]). Once `:app` starts one, later browses in the same drive
+     * ask nothing: the car asks for these lists again and again. When `:app` turns it down (a check
+     * ran within its last half hour), a browse after [NEW_EPISODE_CHECK_RETRY_MS] asks again, so a
+     * long drive still gets its check. A browse with no car present doesn't count.
+     */
+    private fun askForNewEpisodeCheck(node: String) {
+        if (node !in newEpisodeCheckNodes || newEpisodeCheckAsked.get() || elapsedMs() < newEpisodeCheckRetryAtMs) return
+        host.serviceScope.launch {
+            val context = host.asContext()
+            val inCar = runCatching { withContext(io) { CarConnectionState.isInCar(context) } }.getOrDefault(false)
+            if (inCar && newEpisodeCheckAsked.compareAndSet(false, true)) {
+                val started =
+                    withContext(io) {
+                        runCatching { CarSignals.onCarNewEpisodesOpened?.invoke(context.applicationContext) == true }.getOrDefault(false)
+                    }
+                if (!started) {
+                    newEpisodeCheckRetryAtMs = elapsedMs() + NEW_EPISODE_CHECK_RETRY_MS
+                    newEpisodeCheckAsked.set(false)
+                }
+            }
+        }
+    }
+
+    /** The drive is over: the next drive may ask again, and a check still running stops ([CarSignals.onCarDriveEnded]). */
+    private fun endNewEpisodeCheck() {
+        if (!newEpisodeCheckAsked.getAndSet(false)) return
+        val context = host.asContext().applicationContext
+        host.serviceScope.launch { withContext(io) { runCatching { CarSignals.onCarDriveEnded?.invoke(context) } } }
+    }
+
     override fun onDisconnected(session: MediaSession, controller: MediaSession.ControllerInfo) {
         onCarGone(controller)
         rootChildLimits.remove(controller)
-        if (carBrowsers.remove(controller) && carBrowsers.isEmpty()) carConnection.stop()
+        if (carBrowsers.remove(controller) && carBrowsers.isEmpty()) {
+            carConnection.stop()
+            endNewEpisodeCheck()
+        }
         super.onDisconnected(session, controller)
     }
 
@@ -524,6 +569,7 @@ internal class AutoBrowseLibraryCallback(
         if (isAndroidAuto(session, browser)) {
             AnalyticsHelper.trackAndroidAutoBrowse(node = parentId, action = "get_children")
             reportCarScreensOpened()
+            askForNewEpisodeCheck(AutoBrowseContract.targetNode(parentId))
         }
 
         return host.serviceScope.future {
@@ -948,6 +994,9 @@ internal class AutoBrowseLibraryCallback(
         /** How long to keep asking whether a connected Android Auto is in a car, and how often. */
         const val IN_CAR_WAIT_MS = 15_000L
         const val IN_CAR_POLL_MS = 1_000L
+
+        /** How long browses wait to ask again after `:app` turned a new-episode check down. */
+        const val NEW_EPISODE_CHECK_RETRY_MS = 60_000L
 
         /** What a tap means in each list: the source it is labelled with, and whether playback carries on down the list. */
         val PLAY_CONTEXT_BY_NODE: Map<String, Pair<String, Boolean>> = mapOf(

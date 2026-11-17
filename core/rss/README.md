@@ -20,7 +20,7 @@ It does not own Podcast Index or boxlore API calls ([`:core:network`](../network
 
 ### RSS-only shows
 
-- `RssPodcastRepository`: implements `RssSubscriptionPort` for `rss:` shows (subscribe, `restoreSubscription`, `refreshCatalog`, `refreshCatalogIfNeeded`, episode reads, `confirmPodcastIndexLink`, `relinkSwitchedShow`). Application-scoped; built by `AppContainer`.
+- `RssPodcastRepository`: implements `RssSubscriptionPort` for `rss:` shows (subscribe, `restoreSubscription`, `refreshCatalog`, `refreshCatalogIfNeeded`, `refreshCatalogNow` (a listener's own check, read as a pull), episode reads, `confirmPodcastIndexLink`, `relinkSwitchedShow`). Application-scoped; built by `AppContainer`.
 - `RssPodcastRepository.episodeCatalog` (`RssEpisodeCatalog`): the same `LocalEpisodeCatalogPort` contract as Podcast Index catalogs, over `rss_episodes`.
 - `RssPodcastRepository.legacySubscriptionRepair` (`LegacyRssSubscriptionRepair`): `inspect` returns a `LegacyRssFeedSnapshot` without writing; `upgrade` copies a verified RSS catalog under a Podcast Index ID and returns a `LegacyRssUpgradeOutcome`.
 - `StickyRssEpisodeRemap`: maps parsed rows to the stored episode IDs before a write, so stored IDs never change.

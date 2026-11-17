@@ -90,6 +90,11 @@ internal class PhoneLibraryAdapter(
             .distinctUntilChanged()
             .map { }
 
+    /**
+     * What the phone already saved. The watch asking never starts a new-episode check, to spare the
+     * battery; its New episodes follows the phone's own passes and pushes
+     * ([cx.aswin.boxlore.core.catalog.NewEpisodeCheckGate]).
+     */
     override suspend fun library(historyLimit: Int): PhoneLibraryRows {
         val rows = sync().linkedDeviceRows(historyLimit)
         val shows = rows.shows.map { WearLinkShow(it.podcastId, it.title, it.author, it.imageUrl.takeIf(String::isNotBlank), it.feedUrl) }
