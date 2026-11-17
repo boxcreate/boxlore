@@ -195,8 +195,11 @@ internal data class FeedRowPolicy(
         LocalCatalogReadyLogic.isReadyToFlip(feedReady = storedCount >= copied)
     }
 
-    /** A show-page read keeps the stored unsubscribe TTL ([current]); a followed show's refresh clears it. */
-    fun ttlExpiresAt(current: LocalEpisodeFeedEntity?): Long? = if (showPage) current?.ttlExpiresAt else null
+    /**
+     * A show-page read keeps the stored unsubscribe TTL ([current]), and so does any read of a show
+     * unfollowed by now (the unfollow can land while the feed is read); a followed show's refresh clears it.
+     */
+    fun ttlExpiresAt(current: LocalEpisodeFeedEntity?): Long? = if (showPage || current?.followed == false) current?.ttlExpiresAt else null
 
     /**
      * Whether a read of the newest items left a gap: the copy had rows, yet none of the items read

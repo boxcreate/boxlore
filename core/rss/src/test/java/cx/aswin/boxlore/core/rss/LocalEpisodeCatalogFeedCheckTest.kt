@@ -64,6 +64,21 @@ class LocalEpisodeCatalogFeedCheckTest {
         assertTrue(stored.fetchedAt > sevenHoursAgo)
     }
 
+    /** Regression: a changed feed's write cleared the TTL of an unfollow that landed while the feed was read. */
+    @Test fun aChangedFeedKeepsAnUnfollowMadeDuringTheRead() = runTest {
+        val dao = FakeCatalogDao()
+        val ttl = System.currentTimeMillis() + 24L * 60 * 60 * 1000
+        dao.feeds["100"] = readyFeed(fetchedAt = System.currentTimeMillis() - 7L * 60 * 60 * 1000).copy(ttlExpiresAt = null, followed = true)
+        val client = CountingFeedClient(onFetch = { dao.setTtlAndFollowed("100", ttlExpiresAt = ttl, followed = false) })
+        val repo = catalogRepo(dao, feedClient = client, isFeedUnchanged = { _, _, _ -> false })
+
+        assertTrue(repo.refresh(LocalEpisodeCatalogPort.RefreshRequest("100", SHOW_URL)) is RefreshOutcome.Success)
+        assertEquals(1, client.fetches)
+        val stored = dao.feeds.getValue("100")
+        assertEquals(ttl, stored.ttlExpiresAt)
+        assertFalse(stored.followed)
+    }
+
     @Test fun aPullInsideTheQuietWaitStillChecksAndDownloadsOnlyAChangedFeed() = runTest {
         val dao = FakeCatalogDao()
         val client = CountingFeedClient()
@@ -112,11 +127,12 @@ class LocalEpisodeCatalogFeedCheckTest {
     )
 
     /** A one-episode feed that counts full downloads. */
-    private class CountingFeedClient : RssFeedClient() {
+    private class CountingFeedClient(private val onFetch: suspend () -> Unit = {}) : RssFeedClient() {
         var fetches = 0
 
         override suspend fun fetch(url: String): RssFetchResult {
             fetches++
+            onFetch()
             return RssFetchResult(finalUrl = url, etag = "etag-2", lastModified = null, body = ByteArray(1))
         }
 

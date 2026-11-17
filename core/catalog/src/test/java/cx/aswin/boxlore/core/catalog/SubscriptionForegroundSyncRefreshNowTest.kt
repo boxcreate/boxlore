@@ -122,6 +122,32 @@ class SubscriptionForegroundSyncRefreshNowTest {
         assertEquals(1, runs)
     }
 
+    /** Regression: pulls that each stopped waiting during one long automatic pass each ran a pass after it. */
+    @Test
+    fun pullsDuringOneLongAutomaticPassShareOneManualPass() = runTest {
+        val passes = mutableListOf<Boolean>()
+        val sync =
+            SubscriptionForegroundSync(
+                scope = this,
+                initialDelayMs = 0L,
+                syncAction = {
+                    val manual = isManualRefreshPass()
+                    passes += manual
+                    delay(if (manual) 1_000L else 40_000L)
+                },
+                periodicIntervalMs = 0L,
+                nowMs = { testScheduler.currentTime },
+            )
+
+        sync.requestRefresh()
+        runCurrent()
+        sync.refreshNow() // Gives up waiting after 15 s while the automatic pass reads on.
+        sync.refreshNow() // So does this one.
+        advanceUntilIdle()
+
+        assertEquals(listOf(false, true), passes)
+    }
+
     @Test
     fun aPullReadsFeedsStillInsideTheirWait() = runTest {
         val notPastWait: suspend (String) -> Boolean = { false }
