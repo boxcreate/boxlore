@@ -170,6 +170,8 @@ class LocalEpisodeCatalogRepository private constructor(
         return existing?.feedUrl?.trim() != feedUrl.trim() || !shouldSkipQuiet(existing, nowMillis = nowMillis)
     }
 
+    override suspend fun lastFeedReadAt(podcastId: String): Long = refreshDeps.dao.getFeed(podcastId)?.fetchedAt ?: 0L
+
     companion object {
         const val FEED_LOAD_FAILED_MESSAGE = "Couldn't update episodes from the feed"
         const val QUIET_INTERVAL_MS = 6L * 60L * 60L * 1000L

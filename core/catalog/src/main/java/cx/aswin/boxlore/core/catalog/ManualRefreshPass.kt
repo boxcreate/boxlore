@@ -5,8 +5,12 @@ import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.currentCoroutineContext
 
 /**
- * Marks a [SubscriptionForegroundSync] pass started by pull to refresh. The pass reads every
- * followed feed it selects, even one read within the local catalog's six-hour wait.
+ * Marks a [SubscriptionForegroundSync] pass started by pull to refresh. The pass checks every
+ * followed feed, up to [DirectFeedRefreshBatch.MANUAL_MAX], even one read within the six-hour wait:
+ * its reads are [cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshReason.PULL],
+ * which skip that wait but keep the conditional (ETag/Last-Modified) check, so they are not forced
+ * full downloads: a feed whose saved copy has those validators and answers unchanged is not
+ * downloaded again.
  */
 internal class ManualRefreshPass : AbstractCoroutineContextElement(ManualRefreshPass) {
     companion object Key : CoroutineContext.Key<ManualRefreshPass>

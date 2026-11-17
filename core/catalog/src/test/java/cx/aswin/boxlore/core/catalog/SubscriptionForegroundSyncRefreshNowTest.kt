@@ -4,6 +4,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -89,6 +90,38 @@ class SubscriptionForegroundSyncRefreshNowTest {
         assertEquals(1, runs)
     }
 
+    /** Regression: a pull over a large library kept its spinner up until every feed was read. */
+    @Test
+    fun aLongPullStopsWaitingAfterFifteenSecondsWhileItsPassCarriesOn() = runTest {
+        var runs = 0
+        var finished = false
+        val sync =
+            SubscriptionForegroundSync(
+                scope = this,
+                initialDelayMs = 0L,
+                syncAction = {
+                    runs++
+                    delay(60_000L)
+                    finished = true
+                },
+                periodicIntervalMs = 0L,
+                nowMs = { testScheduler.currentTime },
+            )
+
+        sync.refreshNow()
+
+        assertEquals(SubscriptionForegroundSync.PULL_WAIT_MAX_MS, testScheduler.currentTime)
+        assertFalse(finished, "the pass is still reading")
+
+        advanceTimeBy(5_000L)
+        sync.refreshNow() // A second pull while the first pass still runs joins it.
+        assertEquals(1, runs)
+
+        advanceUntilIdle()
+        assertTrue(finished, "the pass was never cancelled")
+        assertEquals(1, runs)
+    }
+
     @Test
     fun aPullReadsFeedsStillInsideTheirWait() = runTest {
         val notPastWait: suspend (String) -> Boolean = { false }
@@ -118,5 +151,37 @@ class SubscriptionForegroundSyncRefreshNowTest {
         sync.refreshNow()
 
         assertEquals(0, runs)
+    }
+
+    @Test
+    fun aPullReadsMoreFeedsAtOnceThanAnAutomaticPass() = runTest {
+        suspend fun peakReads(): Int {
+            var inFlight = 0
+            var peak = 0
+            val ids = (1..12).map { "p$it" }.toSet()
+            SubscriptionForegroundSync.syncSubscribedLatestEpisodes(
+                loadIds = { ids },
+                loadPodcastMeta = { id -> DirectFeedTipMeta("https://feeds.example/$id.xml", id, null, null, null, null) },
+                syncChunk = { emptyMap() },
+                saveLatest = { _, _ -> },
+                directFeed =
+                DirectFeedSyncSeams(
+                    loadOptedInIds = { ids },
+                    resolveFeedTip = { _, _ ->
+                        inFlight++
+                        peak = maxOf(peak, inFlight)
+                        delay(50)
+                        inFlight--
+                        DirectFeedResolveResult(tip = null, persisted = false)
+                    },
+                    feedConcurrency = 2,
+                    manualFeedConcurrency = 4,
+                ),
+            )
+            return peak
+        }
+
+        assertEquals(2, peakReads())
+        assertEquals(4, withContext(ManualRefreshPass()) { peakReads() })
     }
 }

@@ -13,7 +13,13 @@ import cx.aswin.boxlore.core.model.Episode
 interface LocalEpisodeCatalogPort {
     data class PodcastMeta(val title: String? = null, val imageUrl: String? = null, val genre: String? = null, val artist: String? = null,)
 
-    enum class RefreshReason { NORMAL, AUTO_DOWNLOAD, NEW_RELEASE, MANUAL }
+    /**
+     * Why a show's feed is read. [MANUAL] (the listener refreshing one show, as on its show page) and
+     * [NEW_RELEASE] (a push) force a full download. [PULL] is pull to refresh over followed shows: it
+     * skips the six-hour quiet wait but keeps the conditional (ETag/Last-Modified) check, so it is not
+     * a forced full download.
+     */
+    enum class RefreshReason { NORMAL, AUTO_DOWNLOAD, NEW_RELEASE, MANUAL, PULL }
 
     data class RefreshRequest(
         /** Stable show id, including rss: IDs when using the RSS adapter. */
@@ -95,6 +101,14 @@ interface LocalEpisodeCatalogPort {
 
     /** Shared per-show automatic freshness gate; manual refresh and pushes can bypass it. */
     suspend fun isRefreshDue(podcastId: String, feedUrl: String, nowMillis: Long): Boolean = true
+
+    /**
+     * When this show's feed was last read (epoch milliseconds), or 0 when never: for a Podcast Index
+     * show, its last successful read or unchanged answer; for an `rss:` show, its last attempt,
+     * including a failed one, except a failed [RefreshReason.PULL] read of a show not yet due.
+     * Followed-show refreshes read the longest-unread feeds first.
+     */
+    suspend fun lastFeedReadAt(podcastId: String): Long = 0L
 
     suspend fun isPublisherFeedUnchanged(podcastId: String, feedUrl: String,): Boolean
 

@@ -71,6 +71,7 @@ class SubscribedEpisodeCatalog(
         return outcome
     }
     override suspend fun isRefreshDue(podcastId: String, feedUrl: String, nowMillis: Long) = source(podcastId).isRefreshDue(podcastId, feedUrl, nowMillis)
+    override suspend fun lastFeedReadAt(podcastId: String) = source(podcastId).lastFeedReadAt(podcastId)
     override suspend fun isPublisherFeedUnchanged(podcastId: String, feedUrl: String) = source(podcastId).isPublisherFeedUnchanged(podcastId, feedUrl)
     override suspend fun markFeedUrlLookup(podcastId: String, atMillis: Long) = source(podcastId).markFeedUrlLookup(podcastId, atMillis)
     override suspend fun lastFeedUrlLookupAt(podcastId: String) = source(podcastId).lastFeedUrlLookupAt(podcastId)

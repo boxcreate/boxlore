@@ -28,11 +28,13 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
- * Foreground refresh of subscribed shows' latest episodes via
- * [PodcastRepository.syncSubscriptions], with direct-feed tip refresh for shows
- * the user opted into via Podcast Info "Missing episodes?".
+ * Foreground refresh of followed shows' latest episodes. Every followed show with an HTTPS feed
+ * is read from its own feed (a direct-feed show), whether or not the listener opted into it;
+ * Podcast Index shows with neither an HTTPS feed nor a ready local catalog get their latest
+ * episode from `/sync` ([PodcastRepository.syncSubscriptions]).
  *
  * Cold start: [ensureStarted] waits [DEFAULT_INITIAL_DELAY_MS] so Home first paint
  * is not competing with `/sync`. [requestRefresh] has no extra delay so
@@ -41,9 +43,14 @@ import kotlinx.coroutines.sync.withPermit
  * and skipped during [DEFAULT_REFRESH_COOLDOWN_MS]. A periodic loop keeps a
  * long-lived process from going stale.
  *
- * Feed refreshes are capped at [DEFAULT_FEED_CONCURRENCY], skip work on an
- * unchanged ETag, and still rematch against a 1000-episode PI-only baseline when
- * the feed changed. Home may [preferFeedPodcast] so the open chip is first.
+ * Feed refreshes read the shows [DirectFeedRefreshBatch] picks (the open show, then the longest
+ * unread), checking [DEFAULT_FEED_CONCURRENCY] shows at a time ([MANUAL_FEED_CONCURRENCY] for pull
+ * to refresh); full feed downloads, and every read of an `rss:` show (its conditional check
+ * included), still share the app-wide two-at-a-time publisher-feed gate (`PublisherFeedRefreshGate`
+ * in `:core:rss`). A feed whose validators answer unchanged (ETag/Last-Modified) is recorded as read
+ * and not downloaded. Podcast Index shows whose own feed still fails after [DirectFeedRecovery] get
+ * their latest episode from `/sync` while [FeedFixToggles.syncFallback] is on. Home may
+ * [preferFeedPodcast] so the open chip is first.
  * Subscribe calls [requestCatalogIngest] so the first publisher-feed persist
  * survives leaving Podcast Info (cooldown does not apply). Each sync pass
  * sweeps local catalogs whose unsubscribe TTL has elapsed.
@@ -86,7 +93,7 @@ class SubscriptionForegroundSync(
             onBufferOverflow = BufferOverflow.DROP_OLDEST,
         )
 
-    /** Emits a PI podcast id after a successful publisher-feed persist (not 304 skips). */
+    /** Emits a followed show's id (including `rss:` ids) after its own feed was read and saved; an unchanged answer emits nothing. */
     val directFeedRefreshed: SharedFlow<String> = directFeedRefreshedMutable.asSharedFlow()
 
     /**
@@ -95,7 +102,7 @@ class SubscriptionForegroundSync(
      */
     val catalogIngestFinished: SharedFlow<String> = catalogIngestFinishedMutable.asSharedFlow()
 
-    /** Prefer this opted-in id when ordering the feed-refresh queue (open Home chip). */
+    /** Puts this followed show's feed first in the next pass when it is due, or in any pull to refresh (the open Home chip). */
     fun preferFeedPodcast(id: String?) {
         preferredFeedPodcastId.set(id)
     }
@@ -120,18 +127,24 @@ class SubscriptionForegroundSync(
 
     /**
      * Pull to refresh on New Episodes: runs a pass now even inside the cooldown and returns when
-     * it is done. The pass reads feeds still inside their six-hour wait ([ManualRefreshPass]).
-     * An automatic pass already running is let finish first; another pull's pass is joined
-     * instead of starting a second. The pass runs on [scope], so leaving the screen does not
-     * cancel it. Does nothing while the app is in the background.
+     * it is done or after [PULL_WAIT_MAX_MS], whichever comes first. The pass reads feeds still
+     * inside their six-hour wait ([ManualRefreshPass]). An automatic pass already running is let
+     * finish first; another pull's pass is joined instead of starting a second. The pass runs on
+     * [scope] and is never cancelled here, so leaving the screen or the wait running out does not
+     * stop it: New Episodes keeps filling in from Room as it reads. Does nothing while the app is
+     * in the background.
      */
     suspend fun refreshNow() {
         if (!foreground.value) return
-        scope.launch {
-            if (passRunning.value && !manualPassRunning.get()) passRunning.first { running -> !running }
-            runSync(manual = true)
-        }.join()
-        passRunning.first { running -> !running }
+        val job =
+            scope.launch {
+                if (passRunning.value && !manualPassRunning.get()) passRunning.first { running -> !running }
+                runSync(manual = true)
+            }
+        withTimeoutOrNull(PULL_WAIT_MAX_MS) {
+            job.join()
+            passRunning.first { running -> !running }
+        }
     }
 
     /**
@@ -254,6 +267,17 @@ class SubscriptionForegroundSync(
         const val DEFAULT_FEED_NETWORK_DELAY_MS = 0L
         const val DEFAULT_CHUNK_SIZE = 10
         const val DEFAULT_FEED_CONCURRENCY = 2
+
+        /**
+         * Shows checked at once during pull to refresh, which checks up to
+         * [DirectFeedRefreshBatch.MANUAL_MAX] followed feeds. Full feed downloads, and every read of
+         * an `rss:` show (its conditional check included), still share the app-wide two-at-a-time
+         * publisher-feed gate (`PublisherFeedRefreshGate` in `:core:rss`).
+         */
+        const val MANUAL_FEED_CONCURRENCY = 4
+
+        /** The longest [refreshNow] keeps the pull spinner up; the pass itself carries on. */
+        const val PULL_WAIT_MAX_MS = 15_000L
         const val DEFAULT_PI_CONCURRENCY = 6
 
         /** Process-wide guard — AppRoot + Home may hold distinct instances after restarts. */
@@ -422,12 +446,17 @@ class SubscriptionForegroundSync(
                     feedConcurrency = DEFAULT_FEED_CONCURRENCY,
                     preferredPodcastId = { preferred.get() },
                     selectRefreshBatch = { candidates ->
-                        refreshBatch.select(candidates, preferred.get()) { id ->
+                        refreshBatch.select(
+                            ids = candidates,
+                            preferred = preferred.get(),
+                            lastReadAt = { id -> localEpisodeCatalog?.lastFeedReadAt(id) ?: 0L },
+                        ) { id ->
                             isFeedDueThisPass(subscriptionRepository.getPodcastEntity(id)?.feedUrl) { feed ->
                                 localEpisodeCatalog?.isRefreshDue(id, feed, System.currentTimeMillis()) != false
                             }
                         }
                     },
+                    onFeedReadStarted = refreshBatch::markTried,
                     onFeedRefreshed = { refreshed.tryEmit(it) },
                     recheckAddress = DirectFeedRecovery.addressRecheck(feedFixes, subscriptionRepository, podcastRepository),
                     reportFeed = { id, status ->
@@ -437,6 +466,7 @@ class SubscriptionForegroundSync(
                         subscriptionRepository.updateFeedAddress(candidate.change(id, System.currentTimeMillis()))
                     },
                     syncFallbackEnabled = feedFixes.syncFallback,
+                    fetchServerTips = { failedIds -> podcastRepository.fetchPiSyncTips(failedIds) },
                 ),
             )
             syncTrackedFeedUrlsForHttpsNotifications(
@@ -491,6 +521,12 @@ class SubscriptionForegroundSync(
         }
 
         /**
+         * Refreshes one show's catalog. The catalog runs its own conditional (ETag/Last-Modified)
+         * check, so an unchanged feed is recorded as read and is not downloaded. Inside a pull to
+         * refresh ([isManualRefreshPass]) the read is [LocalEpisodeCatalogPort.RefreshReason.PULL],
+         * which skips the six-hour wait; otherwise it is
+         * [LocalEpisodeCatalogPort.RefreshReason.NORMAL].
+         *
          * With [followMoves], a feed that moved for good ([LocalEpisodeCatalogPort.RefreshOutcome.Success.movedTo])
          * has its new address saved through [adoptMovedFeed] (P4a); never for `rss:` shows, whose
          * address is their identity and notification consent.
@@ -502,20 +538,16 @@ class SubscriptionForegroundSync(
             followMoves: Boolean = false,
             adoptMovedFeed: suspend (readFrom: String, movedTo: String) -> Unit = { _, _ -> },
         ): DirectFeedResolveResult {
-            val podcastMeta = catalogMeta(meta)
-            if (catalog.isPublisherFeedUnchanged(podcastId, meta.feedUrl.orEmpty())) {
-                return DirectFeedResolveResult(
-                    tip = catalog.newest(podcastId, podcastMeta),
-                    persisted = false,
-                )
-            }
+            val reason =
+                if (isManualRefreshPass()) LocalEpisodeCatalogPort.RefreshReason.PULL else LocalEpisodeCatalogPort.RefreshReason.NORMAL
             return when (
                 val outcome =
                     catalog.refresh(
                         LocalEpisodeCatalogPort.RefreshRequest(
                             podcastIndexId = podcastId,
                             feedUrl = meta.feedUrl.orEmpty(),
-                            meta = podcastMeta,
+                            meta = catalogMeta(meta),
+                            reason = reason,
                             detectMove = followMoves && !podcastId.startsWith("rss:"),
                         ),
                     )
@@ -590,9 +622,9 @@ class SubscriptionForegroundSync(
         /**
          * Chunked sync body (test seam).
          *
-         * Order: PI `/sync` chunks in parallel → promote opted-in tips from **local**
-         * supplement cache → optional delay → concurrent [EpisodeSupplementPort.refreshFromFeed]
-         * (1000-oldest PI-only baseline) for opted-in so extras land in Room for Home chips.
+         * Order: `/sync` chunks in parallel for Podcast Index shows with neither an HTTPS feed nor a
+         * ready local catalog → promote direct-feed shows' cached tips → optional delay → read the feeds
+         * [DirectFeedSyncSeams.selectRefreshBatch] picks → [DirectFeedRecovery] for failed reads.
          */
         internal suspend fun syncSubscribedLatestEpisodes(
             loadIds: suspend () -> Set<String>,
@@ -664,7 +696,7 @@ class SubscriptionForegroundSync(
                 readAgain = { id, url ->
                     syncOneDirectFeedTip(id, { loadPodcastMeta(it)?.copy(feedUrl = url) }, directFeed.resolveFeedTip, saveFeed, directFeed.onFeedRefreshed)
                 },
-                syncFromServer = { ids -> syncPiChunks(ids, chunkSize, syncChunk, saveLatest) },
+                syncFromServer = { ids -> syncOneChunk(ids, directFeed.fetchServerTips, saveLatest) },
             )
             Log.d(TAG, "Finished background sync for all ${currentSubs.size} subs")
         }
@@ -698,12 +730,14 @@ class SubscriptionForegroundSync(
             if (feedTipIds.isEmpty()) return emptyMap()
             val ordered =
                 directFeed.selectRefreshBatch(DirectFeedSyncOrder.prioritize(feedTipIds, directFeed.preferredPodcastId()))
-            val gate = Semaphore(directFeed.feedConcurrency.coerceAtLeast(1))
+            val concurrency = if (isManualRefreshPass()) directFeed.manualFeedConcurrency else directFeed.feedConcurrency
+            val gate = Semaphore(concurrency.coerceAtLeast(1))
             return coroutineScope {
                 ordered
                     .map { id ->
                         async {
                             gate.withPermit {
+                                directFeed.onFeedReadStarted(id)
                                 id to
                                     syncOneDirectFeedTip(
                                         podcastId = id,
@@ -943,9 +977,13 @@ internal data class DirectFeedSyncSeams(
     val saveDirectFeedLatest: (suspend (String, Episode) -> Unit)? = null,
     val feedNetworkDelayMs: Long = 0L,
     val feedConcurrency: Int = SubscriptionForegroundSync.DEFAULT_FEED_CONCURRENCY,
+    /** [feedConcurrency] for a pull-to-refresh pass ([isManualRefreshPass]). */
+    val manualFeedConcurrency: Int = SubscriptionForegroundSync.MANUAL_FEED_CONCURRENCY,
     val preferredPodcastId: () -> String? = { null },
     val onFeedRefreshed: (String) -> Unit = {},
     val selectRefreshBatch: suspend (List<String>) -> List<String> = { it },
+    /** Called as a selected show's read starts (it holds a read slot), so only reads that began count as tries. */
+    val onFeedReadStarted: (String) -> Unit = {},
     /** Re-checks a show's dead saved address: a different address to try, or null. */
     val recheckAddress: suspend (String) -> String? = { null },
     /**
@@ -957,6 +995,11 @@ internal data class DirectFeedSyncSeams(
     val saveAddress: suspend (id: String, candidate: AddressCandidate) -> Unit = { _, _ -> },
     /** Whether shows whose own feed failed this pass get their latest episode from `/sync`. */
     val syncFallbackEnabled: () -> Boolean = { true },
+    /**
+     * Asks `/sync` for these shows' latest episodes, whether or not their local catalogs are ready
+     * (production: `PodcastRepository.fetchPiSyncTips`), for [DirectFeedRecovery]'s fallback.
+     */
+    val fetchServerTips: suspend (List<String>) -> Map<String, Episode> = { emptyMap() },
 )
 
 /**
