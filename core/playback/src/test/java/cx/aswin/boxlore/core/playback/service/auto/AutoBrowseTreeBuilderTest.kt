@@ -252,6 +252,66 @@ class AutoBrowseTreeBuilderTest {
         assertTrue(tiles.all { it.mediaMetadata.artworkUri?.scheme == "android.resource" })
     }
 
+    @Test
+    fun aHostThatDoesNotPageGetsTheWholeList() {
+        val items = mediaItems(154)
+        assertEquals(154, treeBuilder.slicePage(items, 0, Int.MAX_VALUE).size)
+        assertEquals(154, treeBuilder.slicePage(items, 0, 0).size)
+        assertTrue(treeBuilder.slicePage(items, 1, Int.MAX_VALUE).isEmpty())
+    }
+
+    @Test
+    fun aHostThatPagesGetsExactlyThePageItAskedFor() {
+        val items = mediaItems(154)
+        assertEquals((50 until 100).map { "item:$it" }, treeBuilder.slicePage(items, 1, 50).map { it.mediaId })
+        // A page size above 50 is honoured, so the host's offsets line up.
+        assertEquals((100 until 154).map { "item:$it" }, treeBuilder.slicePage(items, 1, 100).map { it.mediaId })
+        assertTrue(treeBuilder.slicePage(items, 4, 50).isEmpty())
+    }
+
+    /** Covers this app's slicing only: Media3's legacy browser path still cuts a reply at its size limit. */
+    @Test
+    fun theShowsListIsNotCutAtFiftyWhenTheCarDoesNotPage() = runBlocking {
+        (1..154).forEach { database.podcastDao().upsertRow(show("$it", latest = null)) }
+
+        val tiles = treeBuilder.slicePage(treeBuilder.getSubscriptionsChildren(), 0, Int.MAX_VALUE)
+
+        assertEquals(154, tiles.size)
+        assertEquals((1..154).map { "subscription:$it" }.toSet(), tiles.map { it.mediaId }.toSet())
+    }
+
+    @Test
+    fun theOldLibraryListPutsLikedAndHistoryBeforeAnyShow() = runBlocking {
+        // Media3 trims a reply that passes its size limit from the end, so with a few hundred follows
+        // the two folders were cut when they came after the shows.
+        (1..300).forEach { database.podcastDao().upsertRow(show("$it", latest = null)) }
+
+        val ids = treeBuilder.slicePage(treeBuilder.getLibraryChildren(), 0, Int.MAX_VALUE).map { it.mediaId }
+
+        assertEquals(302, ids.size)
+        assertEquals(listOf(AutoBrowseContract.LIBRARY_LIKED_ID, AutoBrowseContract.LIBRARY_HISTORY_ID), ids.take(2))
+        assertTrue(ids.drop(2).all { it.startsWith("subscription:") })
+    }
+
+    @Test
+    fun aCuratedListStaysAtFiftyShowsWhenTheCarDoesNotPage() = runBlocking {
+        val prefs = mock(cx.aswin.boxlore.core.prefs.UserPreferencesRepository::class.java)
+        val repository = mock(cx.aswin.boxlore.core.catalog.PodcastRepository::class.java)
+        `when`(prefs.regionStream).thenReturn(kotlinx.coroutines.flow.flowOf("us"))
+        `when`(prefs.contentLanguagesStream).thenReturn(kotlinx.coroutines.flow.flowOf(listOf("en")))
+        `when`(host.userPreferencesRepository).thenReturn(prefs)
+        `when`(host.podcastRepository).thenReturn(repository)
+        val shows = (1..80).map { cx.aswin.boxlore.core.model.Podcast(id = "$it", title = "Show $it", artist = "", imageUrl = "") }
+        `when`(repository.getCuratedPodcasts(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyList()))
+            .thenReturn(shows)
+
+        val tiles = treeBuilder.slicePage(treeBuilder.getCuratedChildren("morning_news"), 0, Int.MAX_VALUE)
+
+        assertEquals((1..50).map { "subscription:$it" }, tiles.map { it.mediaId })
+    }
+
+    private fun mediaItems(count: Int) = (0 until count).map { androidx.media3.common.MediaItem.Builder().setMediaId("item:$it").build() }
+
     private fun episode(id: String, publishedSeconds: Long = 0L, durationSeconds: Int = 1_800) = Episode(
         id = id,
         title = "Episode $id",
