@@ -62,6 +62,7 @@ Announcement title:
 - After you listen on another device, Play on the mini player now starts the episode it shows, at the right spot, instead of an older one from your queue.
 - When boxlore fills your queue from the show you're playing, or offers to continue it, it now picks the episodes right after yours, even deep into a long show you don't follow, instead of jumping hundreds of episodes ahead.
 - Downloaded episodes now show their chapters and transcript straight away, even offline or on a weak connection. Chapters and transcripts that can't load now stop trying instead of loading forever.
+- Smart Downloads no longer downloads episodes you've already finished, a show you listen to oldest first gets its next episode, and Sync Now checks your shows for new episodes before it picks what to download.
 - A download you start that fails now stays in Downloads, marked as failed, with Download Again, instead of disappearing.
 - Auto-downloads checked in the background stay on schedule when one show's feed can't be read, so new episodes from your other shows still arrive on time.
 - For you in Explore no longer reloads again and again while your account syncs. It refreshes when the shows you follow or your languages change, and when your picks get old.

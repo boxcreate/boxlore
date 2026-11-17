@@ -101,26 +101,40 @@ internal object SmartDownloadCandidateLogic {
         }
     }
 
+    /**
+     * The unplayed episode [pod] offers: its latest episode, or for a show listened to oldest first
+     * only its next episode from [resolvedSerial]. An oldest-first show missing from [resolvedSerial]
+     * (a failed scan, or one that never found where the listener is) offers nothing, never its
+     * latest episode, which would jump ahead.
+     */
     internal fun resolveUnplayedDropCandidate(
         pod: PodcastEntity,
         resolvedSerial: Map<String, Episode>,
-        historyByEpisode: Map<String, ListeningHistoryEntity>
+        historyByEpisode: Map<String, ListeningHistoryEntity>,
+        completedEpisodeIds: Set<String>,
     ): Pair<PodcastEntity, Episode>? {
         val sort = pod.preferredSort ?: "newest"
         val resolvedEpisode = if (sort == "oldest") {
-            resolvedSerial[pod.podcastId] ?: pod.latestEpisode
+            resolvedSerial[pod.podcastId]
         } else {
             pod.latestEpisode
         }
-        return buildUnplayedDropCandidate(pod, resolvedEpisode, historyByEpisode)
+        return buildUnplayedDropCandidate(pod, resolvedEpisode, historyByEpisode, completedEpisodeIds)
     }
 
+    /**
+     * [pod] and [episode] when the episode is unplayed. [historyByEpisode] holds only the latest
+     * history rows, so an episode missing from it can still be finished: [completedEpisodeIds]
+     * (every finished episode under each of its IDs) rules it out.
+     */
     internal fun buildUnplayedDropCandidate(
         pod: PodcastEntity,
         episode: Episode?,
         historyByEpisode: Map<String, ListeningHistoryEntity>,
+        completedEpisodeIds: Set<String>,
     ): Pair<PodcastEntity, Episode>? {
         val ep = episode ?: return null
+        if (ep.id in completedEpisodeIds) return null
         val history = historyByEpisode[ep.id]
         val isUnplayed = history == null || (history.progressMs == 0L && !history.isCompleted)
         return if (isUnplayed) {
@@ -152,12 +166,13 @@ internal object SmartDownloadCandidateLogic {
         subs: List<PodcastEntity>,
         resolvedSerial: Map<String, Episode>,
         historyByEpisode: Map<String, ListeningHistoryEntity>,
+        completedEpisodeIds: Set<String>,
         podScoresMap: Map<String, Double>,
         nowMs: Long,
     ): List<MixtapeCandidate> {
         val eligibleSubs = subs.filter { !it.autoDownloadEnabled }
         val unplayedDropsCandidates = eligibleSubs.mapNotNull { pod ->
-            resolveUnplayedDropCandidate(pod, resolvedSerial, historyByEpisode)
+            resolveUnplayedDropCandidate(pod, resolvedSerial, historyByEpisode, completedEpisodeIds)
         }
 
         return unplayedDropsCandidates.map { (pod, ep) ->
@@ -230,6 +245,7 @@ internal object SmartDownloadCandidateLogic {
         allHistory: List<ListeningHistoryEntity>,
         historyByEpisode: Map<String, ListeningHistoryEntity>,
         resolvedSerial: Map<String, Episode>,
+        completedEpisodeIds: Set<String>,
         podScoresMap: Map<String, Double>,
         nowMs: Long,
     ): List<MixtapeCandidate> {
@@ -241,9 +257,86 @@ internal object SmartDownloadCandidateLogic {
         val subIds = subsMap.keys
 
         val inProgress = buildInProgressMixtapeCandidates(subsMap, allHistory, subIds, nowMs)
-        val unplayed = buildUnplayedDropsMixtapeCandidates(eligibleSubs, resolvedSerial, historyByEpisode, podScoresMap, nowMs)
+        val unplayed = buildUnplayedDropsMixtapeCandidates(eligibleSubs, resolvedSerial, historyByEpisode, completedEpisodeIds, podScoresMap, nowMs)
 
         return deduplicateAndOrderMixtapeCandidates(inProgress, unplayed)
+    }
+
+    /** One page of a show's oldest-first episode list; [sourceCount] advances the offset. */
+    internal data class SerialPage(val episodes: List<Episode>, val sourceCount: Int, val hasMore: Boolean,)
+
+    /**
+     * The oldest-first shows of [subs] whose next episode Smart Downloads can offer: never an
+     * auto-download show, whose pick the candidates drop. Highest [podScores] first, so the network
+     * pages the sync shares go to the shows the listener plays most rather than by title.
+     */
+    internal fun serialShowsToResolve(subs: List<PodcastEntity>, podScores: Map<String, Double>,): List<PodcastEntity> = subs
+        .filter { !it.autoDownloadEnabled && (it.preferredSort ?: "newest") == "oldest" }
+        .sortedByDescending { podScores[it.podcastId] ?: 0.0 }
+
+    /**
+     * The first unfinished episode ([isUnfinished]) after [anchorId]'s episode in a show's
+     * oldest-first list, read page by page from [loadPage] until it is found or [maxEpisodes] have
+     * been read. With no [anchorId], the first unfinished episode. When the whole list was read and
+     * nothing unfinished follows the anchor, or the anchor is not in it, the first unfinished
+     * episode read. A later page that comes back empty is a failed read and gives no pick rather
+     * than an early episode the listener skipped.
+     *
+     * A scan that stops at [maxEpisodes] or [maxPages] looks for the anchor among the newest episodes
+     * ([loadNewestPage], newest first; null when it may not be read): the first unfinished episode
+     * after it there, else the first unfinished episode read, as for a whole list. An anchor in
+     * neither range gives no pick, so a listener partway through is never jumped ahead. The anchor
+     * is matched under any of its stored IDs ([groupTokens]).
+     */
+    internal suspend fun findSerialNextEpisode(
+        anchorId: String?,
+        isUnfinished: (Episode) -> Boolean,
+        groupTokens: suspend (Collection<String>) -> Map<String, String>,
+        loadPage: suspend (offset: Int) -> SerialPage,
+        maxEpisodes: Int,
+        loadNewestPage: suspend () -> List<Episode>? = { null },
+        /** Pages [loadPage] may read, whatever each holds: a page short of rows can't stretch a show's request budget. */
+        maxPages: Int = Int.MAX_VALUE,
+    ): Episode? {
+        val scan = SerialScan(anchorToken = anchorId?.let { id -> groupTokens(listOf(id))[id] ?: id }, isUnfinished = isUnfinished)
+        var offset = 0
+        var pages = 0
+        while (offset < maxEpisodes && pages < maxPages) {
+            val page = loadPage(offset)
+            pages++
+            // The page before said there was more, so an empty page here is a failed read, not the end of the list.
+            if (offset > 0 && page.sourceCount <= 0) return null
+            val tokens = if (scan.anchorFound) emptyMap() else groupTokens(page.episodes.map { it.id })
+            scan.read(page.episodes, tokens)?.let { return it }
+            if (!page.hasMore || page.sourceCount <= 0) return scan.firstUnfinished
+            offset += page.sourceCount
+        }
+        return scan.nextFromNewest(loadNewestPage() ?: return null, groupTokens)
+    }
+
+    /**
+     * The pages one Smart Downloads sync may read from the network for its serial shows. Each show
+     * read from the network gets its first page, as before, and up to [perShowPages] pages while
+     * the [extraPages] shared by every show last; a show whose scan stops at its cap reads one
+     * newest-first page while the [newestPages] shared by every show last. So paging past the first
+     * page adds at most [extraPages] plus [newestPages] requests to a sync; first pages are not
+     * capped here. A show read from the phone (`rss:` or a ready catalog) costs nothing here.
+     */
+    internal class SerialNetworkPages(private var extraPages: Int, private val perShowPages: Int, private var newestPages: Int,) {
+        /** Pages the next show read from the network may load. */
+        fun pagesForNextShow(): Int = 1 + minOf(extraPages, perShowPages - 1).coerceAtLeast(0)
+
+        /** Records that a show loaded a page past its first from the network. */
+        fun spendExtraPage() {
+            if (extraPages > 0) extraPages--
+        }
+
+        /** Takes one newest-first page for a show whose scan stopped at its cap; false once none are left. */
+        fun takeNewestPage(): Boolean {
+            if (newestPages <= 0) return false
+            newestPages--
+            return true
+        }
     }
 
     internal fun estimateDownloadSize(download: DownloadedEpisodeEntity): Long = if (download.status == DownloadedEpisodeEntity.STATUS_COMPLETED) {
@@ -275,5 +368,42 @@ internal object SmartDownloadCandidateLogic {
             recommendationQuota = recQuota,
             trendingQuota = trendQuota,
         )
+    }
+}
+
+/** [SmartDownloadCandidateLogic.findSerialNextEpisode]'s progress through a show's oldest-first list, one page at a time. */
+private class SerialScan(val anchorToken: String?, private val isUnfinished: (Episode) -> Boolean,) {
+    /** True once the anchor episode has been read, or when there is none. */
+    var anchorFound = anchorToken == null
+        private set
+
+    /** The first unfinished episode read before the anchor. */
+    var firstUnfinished: Episode? = null
+        private set
+
+    /** The first unfinished episode after the anchor in [episodes], whose IDs map to group tokens in [tokens]; null when none yet. */
+    fun read(episodes: List<Episode>, tokens: Map<String, String>): Episode? {
+        for (episode in episodes) {
+            when {
+                anchorFound -> if (isUnfinished(episode)) return episode
+                (tokens[episode.id] ?: episode.id) == anchorToken -> anchorFound = true
+                firstUnfinished == null && isUnfinished(episode) -> firstUnfinished = episode
+            }
+        }
+        return null
+    }
+
+    /**
+     * After a scan cut off at its cap: the first unfinished episode after the anchor in [newest]
+     * (the show's newest episodes, newest first), else [firstUnfinished], since nothing after the
+     * anchor is unfinished up to the end of the list. Null when the anchor is not in [newest].
+     */
+    suspend fun nextFromNewest(newest: List<Episode>, groupTokens: suspend (Collection<String>) -> Map<String, String>,): Episode? {
+        val anchor = anchorToken ?: return null
+        val tokens = groupTokens(newest.map { it.id })
+        val anchorIndex = newest.indexOfFirst { (tokens[it.id] ?: it.id) == anchor }
+        if (anchorIndex == -1) return null
+        // The episodes newer than the anchor, in publish order.
+        return newest.subList(0, anchorIndex).asReversed().firstOrNull(isUnfinished) ?: firstUnfinished
     }
 }
