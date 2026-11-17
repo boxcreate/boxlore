@@ -58,5 +58,6 @@ Announcement title:
 - After you listen on another device, Play on the mini player now starts the episode it shows, at the right spot, instead of an older one from your queue.
 - Downloaded episodes now show their chapters and transcript straight away, even offline or on a weak connection. Chapters and transcripts that can't load now stop trying instead of loading forever.
 - For you in Explore no longer reloads again and again while your account syncs. It refreshes when the shows you follow or your languages change, and when your picks get old.
+- If you follow a lot of shows, New Episodes no longer misses new episodes from some of them, and pulling down on New Episodes checks all your shows (up to 200), not just a few.
 - The Brief opens as soon as it's ready, even when its stories are slow to load. They appear when they arrive.
 - New episode notifications from different shows no longer replace each other or open the wrong show. Each show gets its own notification, grouped together, for up to 16 shows at a time.
