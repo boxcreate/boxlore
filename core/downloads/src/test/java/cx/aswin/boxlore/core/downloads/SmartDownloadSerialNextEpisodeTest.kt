@@ -37,6 +37,28 @@ class SmartDownloadSerialNextEpisodeTest {
     }
 
     @Test
+    fun `a scan stops at its page cap even when pages hold fewer episodes than asked`() = runTest {
+        // Reviewed: rows without audio left 99 episodes a page, so a 300-episode cap took a fourth request.
+        val list = (1..400).map { episode("e$it", "serial") }
+        val reads = mutableListOf<Int>()
+
+        SmartDownloadCandidateLogic.findSerialNextEpisode(
+            anchorId = "e390",
+            isUnfinished = { true },
+            groupTokens = { ids -> ids.associateWith { it } },
+            loadPage = { offset ->
+                reads += offset
+                val episodes = list.drop(offset).take(99)
+                SmartDownloadCandidateLogic.SerialPage(episodes, episodes.size, offset + episodes.size < list.size)
+            },
+            maxEpisodes = 300,
+            maxPages = 3,
+        )
+
+        assertEquals(listOf(0, 99, 198), reads)
+    }
+
+    @Test
     fun `serial next episode after the last of a page comes from the next page`() = runTest {
         val list = (1..150).map { episode("e$it", "serial") }
 

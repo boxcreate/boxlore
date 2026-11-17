@@ -282,7 +282,7 @@ internal object SmartDownloadCandidateLogic {
      * episode read. A later page that comes back empty is a failed read and gives no pick rather
      * than an early episode the listener skipped.
      *
-     * A scan that stops at [maxEpisodes] looks for the anchor among the newest episodes
+     * A scan that stops at [maxEpisodes] or [maxPages] looks for the anchor among the newest episodes
      * ([loadNewestPage], newest first; null when it may not be read): the first unfinished episode
      * after it there, else the first unfinished episode read, as for a whole list. An anchor in
      * neither range gives no pick, so a listener partway through is never jumped ahead. The anchor
@@ -295,11 +295,15 @@ internal object SmartDownloadCandidateLogic {
         loadPage: suspend (offset: Int) -> SerialPage,
         maxEpisodes: Int,
         loadNewestPage: suspend () -> List<Episode>? = { null },
+        /** Pages [loadPage] may read, whatever each holds: a page short of rows can't stretch a show's request budget. */
+        maxPages: Int = Int.MAX_VALUE,
     ): Episode? {
         val scan = SerialScan(anchorToken = anchorId?.let { id -> groupTokens(listOf(id))[id] ?: id }, isUnfinished = isUnfinished)
         var offset = 0
-        while (offset < maxEpisodes) {
+        var pages = 0
+        while (offset < maxEpisodes && pages < maxPages) {
             val page = loadPage(offset)
+            pages++
             // The page before said there was more, so an empty page here is a failed read, not the end of the list.
             if (offset > 0 && page.sourceCount <= 0) return null
             val tokens = if (scan.anchorFound) emptyMap() else groupTokens(page.episodes.map { it.id })

@@ -184,7 +184,8 @@ class SmartDownloadManager(
             val inProgressIds = listenerStore.withAllAliases(showHistory.filter { !it.isCompleted && it.progressMs > 0L }.map { it.episodeId })
             val source = serialEpisodeSource
             val fromPhone = source.pageSource(pod.podcastId) in PHONE_PAGE_SOURCES
-            val maxEpisodes = if (fromPhone) MAX_SERIAL_SCAN_EPISODES else SERIAL_PAGE_SIZE * networkPages.pagesForNextShow()
+            val maxPages = if (fromPhone) Int.MAX_VALUE else networkPages.pagesForNextShow()
+            val maxEpisodes = if (fromPhone) MAX_SERIAL_SCAN_EPISODES else SERIAL_PAGE_SIZE * maxPages
             return SmartDownloadCandidateLogic.findSerialNextEpisode(
                 anchorId = anchorId,
                 isUnfinished = { ep -> ep.id !in completedIds && ep.id !in inProgressIds },
@@ -195,6 +196,7 @@ class SmartDownloadManager(
                     SmartDownloadCandidateLogic.SerialPage(page.episodes, page.sourceCount, page.hasMore)
                 },
                 maxEpisodes = maxEpisodes,
+                maxPages = maxPages,
                 loadNewestPage = {
                     if (fromPhone || networkPages.takeNewestPage()) {
                         source.page(pod.podcastId, SERIAL_PAGE_SIZE, offset = 0, sort = "newest", mergeSupplements = false).episodes
@@ -235,7 +237,10 @@ class SmartDownloadManager(
                 resolvedSerial[pod.podcastId] = nextEp
             }
         }
-        return resolvedSerial
+        if (resolvedSerial.isEmpty()) return resolvedSerial
+        // Paging can take a while: an episode finished meanwhile is not offered.
+        val finishedNow = projectedCompletedEpisodeIds()
+        return resolvedSerial.filterValues { it.id !in finishedNow }
     }
 
     private suspend fun fetchPersonalizedRecommendations(
@@ -532,6 +537,8 @@ class SmartDownloadManager(
                     )
                 }
             val resolvedSerial = resolveOldestSerialNextEpisodes(subs, completedEpisodeIds, podScoresMap)
+            // Read again after the serial paging, so an episode finished meanwhile isn't picked.
+            val completedAfterPaging = if (resolvedSerial.isEmpty()) completedEpisodeIds else projectedCompletedEpisodeIds()
 
             val initialCandidates =
                 SmartDownloadCandidateLogic.generateMixtapeCandidates(
@@ -539,7 +546,7 @@ class SmartDownloadManager(
                     allHistory = allHistory,
                     historyByEpisode = historyByEpisode,
                     resolvedSerial = resolvedSerial,
-                    completedEpisodeIds = completedEpisodeIds,
+                    completedEpisodeIds = completedAfterPaging,
                     podScoresMap = podScoresMap,
                     nowMs = nowMs,
                 )

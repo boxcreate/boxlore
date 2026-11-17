@@ -318,6 +318,18 @@ class SmartDownloadManagerTest {
     }
 
     @Test
+    fun `an episode finished while the show's pages are read is not offered`() = runBlocking {
+        // Reviewed: completion was read before paging, so an episode finished meanwhile could still be downloaded.
+        finish(NET_SHOW, 1..150)
+        manager.serialEpisodeSource =
+            FakeSerialSource(mapOf(NET_SHOW to netEpisodes(NET_SHOW, 300)), onPage = { _, offset -> if (offset == 100) finish(NET_SHOW, 151..151) })
+
+        val next = manager.resolveOldestSerialNextEpisodes(listOf(serialShow(NET_SHOW)), completedIds())
+
+        assertFalse(NET_SHOW in next)
+    }
+
+    @Test
     fun `a serial show read from the network never jumps ahead of a listener partway through`() = runBlocking {
         manager.serialEpisodeSource = FakeSerialSource(mapOf(NET_SHOW to netEpisodes(NET_SHOW, 450)))
         finish(NET_SHOW, 1..330)
@@ -514,6 +526,7 @@ class SmartDownloadManagerTest {
         private val lists: Map<String, List<Episode>>,
         private val extras: Map<String, List<Episode>> = emptyMap(),
         private val failing: Set<String> = emptySet(),
+        private val onPage: suspend (feedId: String, offset: Int) -> Unit = { _, _ -> },
     ) : SerialEpisodeSource {
         private val calls = mutableListOf<Triple<String, String, Int>>()
         val mergeFlags = mutableListOf<Boolean>()
@@ -525,6 +538,7 @@ class SmartDownloadManagerTest {
         override suspend fun page(feedId: String, limit: Int, offset: Int, sort: String, mergeSupplements: Boolean,): PodcastRepository.EpisodePage {
             calls += Triple(feedId, sort, offset)
             mergeFlags += mergeSupplements
+            onPage(feedId, offset)
             val merged = if (mergeSupplements && offset == 0) extras[feedId].orEmpty() else emptyList()
             if (feedId in failing) return PodcastRepository.EpisodePage(merged, hasMore = false, sourceCount = 0)
             val list = lists.getValue(feedId).let { if (sort == "newest") it.asReversed() else it }
