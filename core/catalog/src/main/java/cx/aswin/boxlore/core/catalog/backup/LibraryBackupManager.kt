@@ -252,8 +252,11 @@ class LibraryBackupManager(
         identity?.restoreRenumberedShows(backup.episodeIdentity)
         val titleMap = backup.subscriptions.associate { it.podcastId to it.title }
         val importedIds = mutableListOf<String>()
+        // Shows followed without a live feed read; the refresh step skips them, so it never waits on
+        // the same feed twice and the normal RSS refresh still sees them as due.
+        val unreadRssIds = mutableSetOf<String>()
         for (entity in backup.subscriptions) {
-            importBackupSubscription(entity, backup)?.let { importedIds += it }
+            importBackupSubscription(entity, backup, unreadRssIds)?.let { importedIds += it }
         }
         val folderRepo = folderRepository ?: SharedAppDependenciesHolder.instance?.folderRepository
         if (folderRepo != null) {
@@ -269,7 +272,7 @@ class LibraryBackupManager(
             adaptiveRankingRepository.restoreBackup(rankingBackup)
         }
         refreshImportedLatestEpisodes(
-            importedIds = importedIds,
+            importedIds = importedIds.filterNot { it in unreadRssIds },
             backupOptIns = backup.directFeedOptIns,
             titleMap = titleMap,
             onProgress = onProgress,
@@ -363,10 +366,14 @@ class LibraryBackupManager(
         prefs.smartDownloadsCleanupRule?.let { up.setSmartDownloadsCleanupRule(it) }
     }
 
-    private suspend fun importBackupSubscription(entity: PodcastEntity, backup: BoxLoreBackup,): String? {
+    private suspend fun importBackupSubscription(
+        entity: PodcastEntity,
+        backup: BoxLoreBackup,
+        unreadRssIds: MutableSet<String>,
+    ): String? {
         val podcast =
             if (entity.sourceType == PodcastEntity.SOURCE_RSS) {
-                importRssBackupSubscription(entity) ?: return null
+                importRssBackupSubscription(entity, unreadRssIds) ?: return null
             } else {
                 importPiBackupSubscription(entity)
             }
@@ -374,7 +381,16 @@ class LibraryBackupManager(
         return podcast.id
     }
 
-    private suspend fun importRssBackupSubscription(entity: PodcastEntity): cx.aswin.boxlore.core.model.Podcast? {
+    /**
+     * Follows an `rss:` show again under its backed-up ID, reading its feed first so the show gets the
+     * feed's current address, details and episodes. When the feed can't be read now, the show is still
+     * followed from the backup's saved row ([LibraryBackupShowRestore.unreadRssPodcast]), so it and its
+     * history stay, and its ID goes into [unreadRssIds].
+     */
+    private suspend fun importRssBackupSubscription(
+        entity: PodcastEntity,
+        unreadRssIds: MutableSet<String>,
+    ): cx.aswin.boxlore.core.model.Podcast? {
         val feedUrl = entity.feedUrl
         if (feedUrl.isNullOrBlank()) return null
         val rssPodcast =
@@ -385,13 +401,9 @@ class LibraryBackupManager(
                         .podcast
                 },
                 onFailure = { error ->
-                    Log.e(
-                        "JSON_IMPORT",
-                        "RSS restore failed for ${entity.title}; feed must be re-added",
-                        error,
-                    )
+                    Log.e("JSON_IMPORT", "RSS feed unreadable for ${entity.title}; restored from the backup", error)
                 },
-            ) ?: return null
+            ) ?: return importUnreadRssBackupSubscription(entity)?.also { unreadRssIds += it.id }
         val subscribedRssPodcast =
             rssPodcast.copy(
                 preferredSort = entity.preferredSort,
@@ -408,43 +420,14 @@ class LibraryBackupManager(
         return subscribedRssPodcast
     }
 
+    private suspend fun importUnreadRssBackupSubscription(entity: PodcastEntity): cx.aswin.boxlore.core.model.Podcast? {
+        val podcast = LibraryBackupShowRestore.unreadRssPodcast(entity) ?: return null
+        subscriptionRepository.restoreSubscription(podcast = podcast, subscribedAt = entity.subscribedAt)
+        return podcast
+    }
+
     private suspend fun importPiBackupSubscription(entity: PodcastEntity): cx.aswin.boxlore.core.model.Podcast {
-        val podcast =
-            cx.aswin.boxlore.core.model.Podcast(
-                id = (entity.podcastId as String?) ?: "",
-                title = (entity.title as String?) ?: "Unknown",
-                artist = (entity.author as String?) ?: "Unknown",
-                imageUrl = (entity.imageUrl as String?) ?: "",
-                description = entity.description,
-                genre = entity.genre ?: "Podcast",
-                type = (entity.type as String?) ?: "episodic",
-                latestEpisode = entity.latestEpisode,
-                subscribedAt = entity.subscribedAt,
-                podcastGuid = entity.podcastGuid,
-                fundingUrl = entity.fundingUrl,
-                fundingMessage = entity.fundingMessage,
-                medium = entity.medium,
-                hasValue = entity.hasValue,
-                updateFrequency = entity.updateFrequency,
-                location = entity.location,
-                license = entity.license,
-                isLocked = entity.isLocked,
-                preferredSort = entity.preferredSort,
-                skipBeginningOverrideMs = entity.skipBeginningOverrideMs,
-                skipEndingOverrideMs = entity.skipEndingOverrideMs,
-                sourceType =
-                (entity.sourceType as String?)
-                    ?: PodcastEntity.SOURCE_PODCAST_INDEX,
-                feedUrl = entity.feedUrl,
-                rssRefreshCapability =
-                (entity.rssRefreshCapability as String?)
-                    ?: PodcastEntity.RSS_REFRESH_MANUAL,
-                rssCatalogStale = entity.rssCatalogStale,
-                rssHasNewEpisodes = entity.rssHasNewEpisodes,
-                linkedPodcastIndexId = entity.linkedPodcastIndexId,
-                customGenre = entity.customGenre,
-                customGenreIcon = entity.customGenreIcon,
-            )
+        val podcast = LibraryBackupShowRestore.podcastFromBackup(entity)
         subscriptionRepository.restoreSubscription(
             podcast = podcast,
             subscribedAt = entity.subscribedAt,
