@@ -856,6 +856,8 @@ private fun isEpisodeActiveOrDone(
     existingDownloads: List<DownloadedEpisodeEntity>,
 ): Boolean {
     if (currentInDb != null) {
+        // A failed download the listener started stays theirs to retry from Downloads.
+        if (currentInDb.isListenersFailedDownload()) return true
         val status = currentInDb.status
         if (status == DownloadedEpisodeEntity.STATUS_COMPLETED ||
             status == DownloadedEpisodeEntity.STATUS_DOWNLOADING ||

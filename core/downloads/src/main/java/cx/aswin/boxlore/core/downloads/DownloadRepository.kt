@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
 open class DownloadRepository(
@@ -83,24 +84,8 @@ open class DownloadRepository(
                                 }
                             }
                         } else if (state == androidx.media3.exoplayer.offline.Download.STATE_FAILED) {
-                            val errorReason = DownloadAnalyticsMapping.failureReason(finalException)
-
-                            CoroutineScope(Dispatchers.IO).launch {
-                                val existing = database.downloadedEpisodeDao().getDownload(episodeId)
-                                val podcastId = existing?.podcastId ?: podcastIdFromRequest
-                                val source = DownloadAnalyticsMapping.source(existing?.isSmartDownloaded)
-                                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDownloadFailed(
-                                    errorReason,
-                                    episodeId,
-                                    podcastId,
-                                    source,
-                                )
-                                if (existing?.downloadOrigin == DownloadedEpisodeEntity.ORIGIN_AUTO) {
-                                    database.downloadedEpisodeDao().updateAutoStatus(episodeId, DownloadedEpisodeEntity.STATUS_FAILED)
-                                } else {
-                                    database.downloadedEpisodeDao().delete(episodeId)
-                                }
-                            }
+                            // The listener's own download stays as failed, to see and retry in Downloads.
+                            CoroutineScope(Dispatchers.IO).launch { onMedia3DownloadFailed(database, download, finalException) }
                         } else if (state == androidx.media3.exoplayer.offline.Download.STATE_REMOVING) {
                             CoroutineScope(Dispatchers.IO).launch {
                                 database.downloadedEpisodeDao().delete(episodeId)
@@ -119,7 +104,7 @@ open class DownloadRepository(
         val admitted = database.withTransaction {
             if (autoDownloadRefused(episode.id)) return@withTransaction false
             val old = dao.getDownload(episode.id)
-            if (old != null && !old.isSmartDownloaded && old.downloadOrigin != DownloadedEpisodeEntity.ORIGIN_AUTO) return@withTransaction false
+            if (old?.isOwnedByManualRequest() == true) return@withTransaction false
             dao.insert(
                 DownloadedEpisodeEntity(
                     episodeId = episode.id,
@@ -221,6 +206,25 @@ open class DownloadRepository(
                 dispatchAddDownload(context, mediaDownloadServiceClass(), downloadRequest, isForeground)
             }
         }
+    }
+
+    /**
+     * Starts a failed download of [episodeId] again ([canRetryDownload]); false, changing nothing,
+     * when the row isn't a failed download the listener can retry or its audio address is unknown.
+     * When another stored ID of the episode already holds its download, the failed row is removed
+     * instead, never making a second copy (docs/EPISODE_IDS.md §5). Safe to call from the main thread.
+     */
+    open suspend fun retryDownload(episodeId: String, isForeground: Boolean = true): Boolean = withContext(Dispatchers.IO) {
+        if (heldByAnotherId(episodeId)) {
+            if (database.downloadedEpisodeDao().getDownload(episodeId)?.canRetryDownload() == true) {
+                removeDownload(episodeId, isForeground = false, acrossAliases = false).join()
+            }
+            return@withContext false
+        }
+        val (row, request) = prepareDownloadRetry(database, downloadManager.downloadIndex, episodeId) ?: return@withContext false
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDownloadRequested(episodeId, row.podcastId, "manual")
+        dispatchAddDownload(context, mediaDownloadServiceClass(), request, isForeground)
+        true
     }
 
     /**
@@ -414,9 +418,13 @@ open class DownloadRepository(
                 markCompletedInDb(episodeId, media3Download.contentLength)
                 database.downloadedEpisodeDao().getDownload(episodeId)
             }
-            Download.STATE_FAILED,
+            Download.STATE_FAILED -> {
+                Log.w("DownloadRepo", "Reconciling download $episodeId: Media3 reported FAILED. Keeping it as failed.")
+                keepFailedDownload(database, episodeId)
+                database.downloadedEpisodeDao().getDownload(episodeId)
+            }
             Download.STATE_REMOVING -> {
-                Log.w("DownloadRepo", "Reconciling download $episodeId: Media3 reported state ${media3Download.state}. Deleting Room row.")
+                Log.w("DownloadRepo", "Reconciling download $episodeId: Media3 reported REMOVING. Deleting Room row.")
                 database.downloadedEpisodeDao().delete(episodeId)
                 null
             }

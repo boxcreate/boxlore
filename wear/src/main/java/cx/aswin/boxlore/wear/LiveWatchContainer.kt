@@ -10,6 +10,7 @@ import cx.aswin.boxlore.wear.data.ApiWatchCatalog
 import cx.aswin.boxlore.wear.data.FileWatchDownloads
 import cx.aswin.boxlore.wear.data.LiveWatchLibrary
 import cx.aswin.boxlore.wear.data.NoWatchCatalog
+import cx.aswin.boxlore.wear.data.PhoneEpisodeList
 import cx.aswin.boxlore.wear.data.RssWatchFeedReader
 import cx.aswin.boxlore.wear.data.StoragePolicy
 import cx.aswin.boxlore.wear.data.WatchFeedReader
@@ -73,7 +74,9 @@ internal object LiveWatchContainer {
                 store = store,
                 downloadManager = downloads,
                 scope = main,
-                phoneEpisodes = { showId, show -> link.episodes(showId)?.map { WatchLinkRules.watchEpisode(it, show) } },
+                phoneEpisodes = { showId, show, fresh ->
+                    link.episodes(showId, fresh)?.let { reply -> PhoneEpisodeList(reply.episodes.map { WatchLinkRules.watchEpisode(it, show) }, reply.readAt) }
+                },
                 // Episodes in the phone's queue get a page on the watch like any other.
                 namedByPhone = link.phoneNowPlaying.map { phone -> phone?.upNext.orEmpty().map { WatchLinkRules.watchEpisode(it) } },
             )

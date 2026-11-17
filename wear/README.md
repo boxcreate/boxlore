@@ -14,8 +14,9 @@ the listener's library, and once signed in it also syncs with the listener's acc
 Nothing outside this module depends on it. Inside it, screens depend only on these ports:
 
 - `data.WatchLibrary`: the listener's shows, Jump back in, New episodes, Up next and downloads, one
-  show or episode by ID, search, download problems, and the subscribe, download, play-next and
-  mark-played actions.
+  show or episode by ID, a show's episodes as loading, loaded or failed (`ShowEpisodes`, with
+  `reloadShow` to try again), search, download problems, and the subscribe, download, play-next
+  and mark-played actions.
 - `data.WatchPlayback`: what is loaded and where it is playing (`NowPlaying`), and the transport,
   speed, sleep timer, Daily Mix and phone/watch switch. `hasDailyMix` and `canSwitchPlace` say which
   of the last two a build can do.
@@ -66,8 +67,12 @@ src/release/java/...         # release WatchContainerFactory
   (`pendingShows`, `pendingEpisodes`); `WatchLinkRules.changes` sends those, and
   `WatchLinkRules.withPhone` takes the phone's shows and newer listening while keeping
   unconfirmed watch changes on top. A phone in reach also answers a show's episodes from what it
-  has saved, before the watch reads a feed itself. New episodes and Daily Mix are the phone's own
-  lists (`WatchLinkRules.withPhone`); Home hides them until a phone has linked (`HomeTiles`).
+  has saved, before the watch reads a feed itself. When the phone last read that feed long ago, the
+  watch asks it for a fresh list, or reads the feed itself if the phone cannot give one, now and
+  then rather than on every visit. A fresh read replaces the episodes it covers; an older list only
+  adds newer ones, and the API's list stands in only when nothing else came (`ShowEpisodeRules`). New episodes and Daily Mix
+  are the phone's own lists (`WatchLinkRules.withPhone`); Home hides them until a phone has linked
+  (`HomeTiles`).
   `PhoneOrders` downloads or removes an episode when the phone's Send to watch asks.
 - `LinkedWatchPlayback` shows whichever player is in use, the watch's or the phone's
   (`PlaceRules`), sends the buttons to that one, and moves playback between them with its position

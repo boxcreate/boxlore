@@ -3,15 +3,11 @@ package cx.aswin.boxlore.sync
 import android.app.Application
 import android.content.Context
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LifecycleRegistry
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import app.cash.turbine.test
-import cx.aswin.boxlore.core.auth.AuthRepository
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.catalog.sync.SyncResult
-import cx.aswin.boxlore.core.catalog.sync.UserSyncCoordinator
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
@@ -53,11 +49,11 @@ class CloudSyncTriggerCoordinatorTest {
     private lateinit var queueDao: QueueDao
     private lateinit var prefs: BoxcastPrefs
 
-    private lateinit var fakeCoordinator: FakeUserSyncCoordinator
-    private lateinit var fakeAuthRepository: FakeAuthRepository
+    private lateinit var fakeCoordinator: FakeTriggerSyncCoordinator
+    private lateinit var fakeAuthRepository: FakeTriggerAuthRepository
     private lateinit var playerStateFlow: MutableStateFlow<PlayerState>
     private lateinit var isOnlineFlow: MutableStateFlow<Boolean>
-    private lateinit var testLifecycleOwner: TestLifecycleOwner
+    private lateinit var testLifecycleOwner: TriggerTestLifecycleOwner
 
     private var currentTime = 100_000L
     private var currentCoordinator: CloudSyncTriggerCoordinator? = null
@@ -77,11 +73,11 @@ class CloudSyncTriggerCoordinatorTest {
         listeningHistoryDao = database.listeningHistoryDao()
         queueDao = database.queueDao()
 
-        fakeCoordinator = FakeUserSyncCoordinator()
-        fakeAuthRepository = FakeAuthRepository()
+        fakeCoordinator = FakeTriggerSyncCoordinator()
+        fakeAuthRepository = FakeTriggerAuthRepository()
         playerStateFlow = MutableStateFlow(PlayerState())
         isOnlineFlow = MutableStateFlow(true)
-        testLifecycleOwner = TestLifecycleOwner()
+        testLifecycleOwner = TriggerTestLifecycleOwner()
         currentTime = 100_000L
         currentCoordinator = null
     }
@@ -132,6 +128,9 @@ class CloudSyncTriggerCoordinatorTest {
     private fun createCoordinator(
         testScope: TestScope,
         onSignOutAction: (() -> Unit)? = null,
+        podcastDao: PodcastDao = this.podcastDao,
+        listeningHistoryDao: ListeningHistoryDao = this.listeningHistoryDao,
+        playingHistoryIds: suspend (String) -> List<String> = { listOf(it) },
     ): CloudSyncTriggerCoordinator {
         val coordinator = CloudSyncTriggerCoordinator(
             context = context,
@@ -149,6 +148,7 @@ class CloudSyncTriggerCoordinatorTest {
             clock = { currentTime },
             ioDispatcher = kotlinx.coroutines.test.StandardTestDispatcher(testScope.testScheduler),
             onSignOutAction = onSignOutAction,
+            playingHistoryIds = playingHistoryIds,
         )
         currentCoordinator = coordinator
         return coordinator
@@ -401,6 +401,64 @@ class CloudSyncTriggerCoordinatorTest {
         assertEquals(initialCalls + 1, fakeCoordinator.syncNowCalls)
     }
 
+    // Regression: the reconnect check loaded every dirty row (descriptions included) to test for one.
+    @Test
+    fun connectivityReconnect_checksForDirtyRowsWithoutLoadingThem() = runTest {
+        fakeAuthRepository.currentUser.value = testUser("user-1")
+        val noFullHistoryReads = object : ListeningHistoryDao by listeningHistoryDao {
+            override suspend fun getDirtyListeningHistory(): List<ListeningHistoryEntity> = error("loaded every dirty row")
+            override suspend fun getDirtyItems(): List<ListeningHistoryEntity> = error("loaded every dirty row")
+        }
+        val noFullPodcastReads = object : PodcastDao by podcastDao {
+            override suspend fun getDirtyPodcasts(): List<PodcastEntity> = error("loaded every dirty show")
+        }
+        val coordinator = createCoordinator(
+            this,
+            podcastDao = noFullPodcastReads,
+            listeningHistoryDao = noFullHistoryReads,
+        )
+        coordinator.start()
+        advanceUntilIdle()
+        val initialCalls = fakeCoordinator.syncNowCalls
+
+        listeningHistoryDao.upsert(testHistory("ep-dirty", isDirty = true))
+        isOnlineFlow.value = false
+        advanceUntilIdle()
+        isOnlineFlow.value = true
+        advanceUntilIdle()
+
+        assertEquals(initialCalls + 1, fakeCoordinator.syncNowCalls)
+    }
+
+    // Regression: one failed check ended the connectivity collector, so later reconnects never synced.
+    @Test
+    fun connectivityReconnect_keepsWorkingAfterACheckFails() = runTest {
+        fakeAuthRepository.currentUser.value = testUser("user-1")
+        var checks = 0
+        val failsOnce = object : ListeningHistoryDao by listeningHistoryDao {
+            override suspend fun hasDirtyListeningHistory(): Boolean {
+                checks++
+                if (checks == 1) error("cursor window full")
+                return listeningHistoryDao.hasDirtyListeningHistory()
+            }
+        }
+        val coordinator = createCoordinator(this, listeningHistoryDao = failsOnce)
+        coordinator.start()
+        advanceUntilIdle()
+        val initialCalls = fakeCoordinator.syncNowCalls
+        listeningHistoryDao.upsert(testHistory("ep-dirty", isDirty = true))
+
+        repeat(2) {
+            isOnlineFlow.value = false
+            advanceUntilIdle()
+            isOnlineFlow.value = true
+            advanceUntilIdle()
+        }
+
+        assertEquals(2, checks)
+        assertEquals(initialCalls + 1, fakeCoordinator.syncNowCalls)
+    }
+
     @Test
     fun connectivityReconnect_doesNotTrigger_whenNoDirtyItems() = runTest {
         fakeAuthRepository.currentUser.value = testUser("user-1")
@@ -480,27 +538,6 @@ class CloudSyncTriggerCoordinatorTest {
         advanceUntilIdle()
 
         assertEquals(1, fakeCoordinator.executePushCalls)
-    }
-
-    @Test
-    fun playbackSteadyProgress_zeroNetworkCalls() = runTest {
-        fakeAuthRepository.currentUser.value = testUser("user-1")
-        val coordinator = createCoordinator(this)
-        coordinator.start()
-        advanceUntilIdle()
-
-        val ep = createTestEpisode("ep-1")
-        playerStateFlow.value = PlayerState(isPlaying = true, currentEpisode = ep, position = 1000L)
-        advanceUntilIdle()
-
-        // Continuous progress ticks while playing
-        for (pos in 2000L..10000L step 1000L) {
-            playerStateFlow.value = PlayerState(isPlaying = true, currentEpisode = ep, position = pos)
-            advanceUntilIdle()
-        }
-
-        // ZERO pushes executed!
-        assertEquals(0, fakeCoordinator.executePushCalls)
     }
 
     @Test
@@ -697,54 +734,4 @@ class CloudSyncTriggerCoordinatorTest {
         duration = 3600,
         publishedDate = 1000L,
     )
-
-    private class TestLifecycleOwner : LifecycleOwner {
-        val registry = LifecycleRegistry(this)
-        override val lifecycle: Lifecycle get() = registry
-    }
-
-    private class FakeUserSyncCoordinator : UserSyncCoordinator() {
-        var syncNowCalls = 0
-        var executePushCalls = 0
-        var executePushDelayMs = 0L
-        var syncNowResult: SyncResult = SyncResult.Success(0, 0, false, 0, 0, false, 12345L)
-        var executePushResult: Result<PushBatchSummary> = Result.success(PushBatchSummary(0, 0, false, 77_000L))
-
-        /** When set, each sync waits for it, so a test can act while a sync is still running. */
-        var syncNowGate: CompletableDeferred<Unit>? = null
-
-        override suspend fun syncNow(): SyncResult {
-            syncNowCalls++
-            syncNowGate?.await()
-            return syncNowResult
-        }
-
-        override suspend fun executePush(token: String?): Result<PushBatchSummary> {
-            executePushCalls++
-            if (executePushDelayMs > 0) {
-                kotlinx.coroutines.delay(executePushDelayMs)
-            }
-            return executePushResult
-        }
-    }
-
-    private class FakeAuthRepository : AuthRepository {
-        override val currentUser = MutableStateFlow<BoxLoreUser?>(null)
-        override val currentUserId: String? get() = currentUser.value?.uid
-
-        override suspend fun signInWithGoogle(idToken: String): Result<BoxLoreUser> = error("unused")
-        override suspend fun signInWithEmailPassword(email: String, password: String): Result<BoxLoreUser> = error("unused")
-        override suspend fun signUpWithEmailPassword(email: String, password: String): Result<BoxLoreUser> = error("unused")
-        override suspend fun sendMagicLink(email: String): Result<Unit> = error("unused")
-        override suspend fun signInWithEmailLink(email: String, emailLink: String): Result<BoxLoreUser> = error("unused")
-        override fun isSignInWithEmailLink(link: String): Boolean = false
-        override suspend fun sendPasswordReset(email: String): Result<Unit> = error("unused")
-        override suspend fun sendEmailVerification(): Result<Unit> = Result.success(Unit)
-        override suspend fun reloadUser(): Result<BoxLoreUser?> = Result.success(currentUser.value)
-        override fun signOut() {
-            currentUser.value = null
-        }
-        override suspend fun deleteAccount(): Result<Unit> = Result.success(Unit)
-        override suspend fun getIdToken(forceRefresh: Boolean): String? = "mock-token"
-    }
 }

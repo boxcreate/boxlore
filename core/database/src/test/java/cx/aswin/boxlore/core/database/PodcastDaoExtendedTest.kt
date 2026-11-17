@@ -69,6 +69,15 @@ class PodcastDaoExtendedTest {
     }
 
     @Test
+    fun followedAtTimesListOnlyFollowedShowsWithWhenTheyWereFollowed() = runTest {
+        dao.upsert(podcast("1", title = "Zebra").copy(subscribedAt = 300L))
+        dao.upsert(podcast("2", title = "Apple"))
+        dao.upsert(podcast("3", title = "Unsubbed", isSubscribed = false))
+
+        assertEquals(setOf(FollowedAt("1", 300L), FollowedAt("2", 100L)), dao.getFollowedAtTimes().toSet())
+    }
+
+    @Test
     fun subscribedPodcastsSplitBySourceType() = runTest {
         dao.upsert(podcast("rss-1", sourceType = PodcastEntity.SOURCE_RSS))
         dao.upsert(podcast("idx-1", sourceType = PodcastEntity.SOURCE_PODCAST_INDEX))

@@ -3,7 +3,6 @@ package cx.aswin.boxlore.core.catalog
 import android.util.Log
 import cx.aswin.boxlore.core.catalog.logic.DirectFeedSyncOrder
 import cx.aswin.boxlore.core.catalog.logic.SubscriptionForegroundSyncLogic
-import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.model.Episode
@@ -469,6 +468,7 @@ class SubscriptionForegroundSync(
                     reportFeed = { id, status ->
                         addressJobs.reporter.report(id, status, subscriptionRepository.getPodcastEntity(id)?.feedUrl)
                     },
+                    lastReportedAt = addressJobs.reporter::lastReportedAt,
                     saveAddress = { id, candidate ->
                         subscriptionRepository.updateFeedAddress(candidate.change(id, System.currentTimeMillis()))
                     },
@@ -508,23 +508,6 @@ class SubscriptionForegroundSync(
             } catch (e: Exception) {
                 Log.e(TAG, "Daily address check failed", e)
             }
-        }
-
-        @Suppress("LongParameterList")
-        private suspend fun resolveLocalCatalogTip(
-            podcastId: String,
-            meta: DirectFeedTipMeta,
-            localEpisodeCatalog: LocalEpisodeCatalogPort?,
-            episodeSupplementPort: EpisodeSupplementPort,
-            podcastRepository: PodcastRepository,
-            followMoves: Boolean,
-            adoptMovedFeed: suspend (readFrom: String, movedTo: String) -> Unit,
-        ): DirectFeedResolveResult {
-            val catalog = localEpisodeCatalog
-            if (catalog != null) {
-                return resolveCatalogRefresh(podcastId, meta, catalog, followMoves, adoptMovedFeed)
-            }
-            return resolveLegacySupplementTip(podcastId, meta, episodeSupplementPort, podcastRepository)
         }
 
         /**
@@ -580,51 +563,6 @@ class SubscriptionForegroundSync(
                 }
             }
         }
-
-        private suspend fun resolveLegacySupplementTip(
-            podcastId: String,
-            meta: DirectFeedTipMeta,
-            episodeSupplementPort: EpisodeSupplementPort,
-            podcastRepository: PodcastRepository,
-        ): DirectFeedResolveResult {
-            if (episodeSupplementPort.isPublisherFeedUnchanged(podcastId, meta.feedUrl.orEmpty())) {
-                return DirectFeedResolveResult(
-                    tip =
-                    episodeSupplementPort
-                        .getEpisodesForPodcast(podcastId)
-                        .maxByOrNull { it.publishedDate },
-                    persisted = false,
-                )
-            }
-            return when (
-                val outcome =
-                    episodeSupplementPort.refreshFromFeed(
-                        EpisodeSupplementPort.RefreshFromFeedRequest(
-                            podcastIndexId = podcastId,
-                            feedUrl = meta.feedUrl.orEmpty(),
-                            loadBaseline = { podcastRepository.loadPiEpisodesForSupplement(podcastId) },
-                            podcastTitle = meta.title,
-                            podcastImageUrl = meta.imageUrl,
-                            podcastGenre = meta.genre,
-                            podcastArtist = meta.artist,
-                        ),
-                    )
-            ) {
-                is EpisodeSupplementOutcome.Success ->
-                    DirectFeedResolveResult(tip = outcome.newestFeedEpisode, persisted = true)
-                is EpisodeSupplementOutcome.Failure ->
-                    DirectFeedResolveResult(tip = null, persisted = false, failed = true)
-                EpisodeSupplementOutcome.NoDisconnect ->
-                    DirectFeedResolveResult(tip = null, persisted = false)
-            }
-        }
-
-        private fun catalogMeta(meta: DirectFeedTipMeta) = LocalEpisodeCatalogPort.PodcastMeta(
-            title = meta.title,
-            imageUrl = meta.imageUrl,
-            genre = meta.genre,
-            artist = meta.artist,
-        )
 
         /**
          * Chunked sync body (test seam).
@@ -972,6 +910,8 @@ internal data class DirectFeedSyncSeams(
      * differs from the saved one. Null status: no read happened (P4 PR 14).
      */
     val reportFeed: suspend (id: String, status: String?) -> String? = { _, _ -> null },
+    /** When each show was last reported ([FeedReportLimiter.lastReportedAt]): who is reported first. */
+    val lastReportedAt: () -> Map<String, Long> = { emptyMap() },
     /** Saves an address that [reportFeed] or [recheckAddress] offered and that then read successfully. */
     val saveAddress: suspend (id: String, candidate: AddressCandidate) -> Unit = { _, _ -> },
     /** Whether shows whose own feed failed this pass get their latest episode from `/sync`. */

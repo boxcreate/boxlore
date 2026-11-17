@@ -224,6 +224,33 @@ class SmartDownloadManagerTest {
     }
 
     @Test
+    fun `smart downloads leave a failed download the listener started for them to retry`() = runBlocking {
+        // Reported: Smart sync picked up a listener's failed download, failed again and deleted it from Downloads.
+        database.downloadedEpisodeDao().insert(
+            completedDownload("manual-failed").copy(status = DownloadedEpisodeEntity.STATUS_FAILED, downloadOrigin = DownloadedEpisodeEntity.ORIGIN_MANUAL),
+        )
+        database.downloadedEpisodeDao().insert(
+            completedDownload("smart-failed").copy(
+                status = DownloadedEpisodeEntity.STATUS_FAILED,
+                isSmartDownloaded = true,
+                downloadOrigin = DownloadedEpisodeEntity.ORIGIN_SMART,
+            ),
+        )
+        testDownloadRepo.completionResultProvider = { false }
+
+        manager.triggerDownloads(
+            combinedEpisodes = listOf(createEpisode("manual-failed", "pod-1", duration = 60), createEpisode("smart-failed", "pod-1", duration = 60)),
+            existingDownloads = database.downloadedEpisodeDao().getAllDownloadsSync(),
+            subs = listOf(createPodcastEntity("pod-1")),
+            budget = SmartDownloadBudget(maxCount = 5, storageBudgetMb = 500L),
+        )
+
+        assertEquals("only the Smart Download's own row is tried again", listOf("smart-failed"), testDownloadRepo.addedDownloads)
+        assertEquals(listOf("smart-failed"), testDownloadRepo.removedDownloads)
+        assertEquals(DownloadedEpisodeEntity.STATUS_FAILED, database.downloadedEpisodeDao().getDownload("manual-failed")?.status)
+    }
+
+    @Test
     fun `a serial show switched to its feed continues after the episode its old show was playing`() = runBlocking {
         // The feed show replaced Podcast Index show "920666": its listening stays under that show's
         // IDs ("pi-1" finished, "pi-2" in progress), linked to the feed's episodes "-1" and "-2".
