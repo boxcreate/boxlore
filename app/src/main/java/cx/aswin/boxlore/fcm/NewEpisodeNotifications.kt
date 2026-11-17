@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.fcm
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -7,11 +8,25 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.net.Uri
 import android.os.Build
+import android.service.notification.StatusBarNotification
 import androidx.core.app.NotificationCompat
 
 internal object NewEpisodeNotifications {
     private const val RELEASE_KEY = "boxlore_release_key"
+    private const val SLOT_KEY = "boxlore_episode_slot"
+    private const val ORDER_KEY = "boxlore_episode_order"
     private val updateLock = Any()
+
+    /** Posts and cancels Android may not list yet; read and written only under [updateLock]. */
+    private val recentPosts = RecentEpisodePosts()
+
+    /** Time for [recentPosts], which must not jump with the wall clock. */
+    @androidx.annotation.VisibleForTesting
+    internal var clock: () -> Long = { android.os.SystemClock.elapsedRealtime() }
+
+    @androidx.annotation.VisibleForTesting
+    internal fun clearRecentPosts() = synchronized(updateLock) { recentPosts.clear() }
+
     data class NewEpisodeDetails(
         val episodeId: String?,
         val podcastTitle: String,
@@ -69,28 +84,30 @@ internal object NewEpisodeNotifications {
         val channelId = "boxlore_new_episodes_v1"
         val soundUri = Uri.parse("android.resource://${context.packageName}/raw/boxlore_chime")
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val audioAttributes =
-                AudioAttributes
-                    .Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                    .build()
-            val channel =
-                NotificationChannel(
-                    channelId,
-                    "New Episodes",
-                    NotificationManager.IMPORTANCE_DEFAULT,
-                ).apply {
-                    description = "Alerts for new podcast episodes"
-                    setSound(soundUri, audioAttributes)
-                }
-            notificationManager.createNotificationChannel(channel)
-        }
+        createChannel(notificationManager, channelId, soundUri)
 
-        val slot = NewEpisodeFcmLogic.episodeSlot(podcastId)
-        val notificationId = NewEpisodeFcmLogic.EPISODE_NOTIFICATION_ID_BASE + slot
-        val requestCode = NewEpisodeFcmLogic.EPISODE_REQUEST_CODE_BASE + slot
+        // One notification per show, tagged with its ID; its tap slot is chosen from what is showing,
+        // counting this process's own posts and cancels Android does not list yet.
+        val active = notificationManager.activeNotifications
+        val now = clock()
+        val posted = recentPosts.merge(postedEpisodeNotifications(active), now)
+        val placement = NewEpisodeFcmLogic.placeEpisodeNotification(podcastId, posted, isUpdate = fetchArtwork)
+        val otherShows = posted.count { it.podcastId != podcastId && it.podcastId != placement.replacesPodcastId }
+        val summaryShowing = recentPosts.summaryShowing(
+            active.any { it.id == NewEpisodeFcmLogic.EPISODE_SUMMARY_NOTIFICATION_ID && it.tag == null },
+            now,
+        )
+        val summaryPlan = NewEpisodeFcmLogic.planSummary(otherShows, summaryShowing, isUpdate = fetchArtwork)
+        // Cancelling the summary takes its whole group with it, so it only ever goes before the post.
+        if (summaryPlan.cancelSummaryFirst) {
+            notificationManager.cancel(NewEpisodeFcmLogic.EPISODE_SUMMARY_NOTIFICATION_ID)
+            recentPosts.recordSummary(showing = false, now)
+        }
+        placement.replacesPodcastId?.let {
+            notificationManager.cancel(it, NewEpisodeFcmLogic.EPISODE_NOTIFICATION_ID_BASE)
+            recentPosts.recordCancel(it, now)
+        }
+        val requestCode = NewEpisodeFcmLogic.EPISODE_REQUEST_CODE_BASE + placement.slot
 
         val intent =
             NewEpisodeFcmLogic.createNormalizedPushIntent(
@@ -99,7 +116,7 @@ internal object NewEpisodeNotifications {
                 notificationType = "new_episode",
                 podcastId = podcastId,
                 episodeId = episodeId,
-            )
+            ).setIdentifier(NewEpisodeFcmLogic.EPISODE_INTENT_IDENTIFIER_PREFIX + podcastId)
 
         val pendingIntent =
             try {
@@ -118,6 +135,7 @@ internal object NewEpisodeNotifications {
                 null
             }
 
+        val title = NewEpisodeFcmLogic.episodeNotificationTitle(podcastTitle)
         val bodyText =
             if (durationMinutes > 0) {
                 "\"$episodeTitle\" ($durationMinutes mins)"
@@ -130,11 +148,18 @@ internal object NewEpisodeNotifications {
                 .Builder(context, channelId)
                 .setSmallIcon(cx.aswin.boxlore.R.drawable.ic_notification_custom)
                 .setColor(android.graphics.Color.parseColor("#5B5BD6"))
-                .setContentTitle("New Episode • $podcastTitle")
+                .setContentTitle(title)
                 .setContentText(bodyText)
                 .setAutoCancel(true)
                 .setOnlyAlertOnce(fetchArtwork)
-                .addExtras(android.os.Bundle().apply { putString(RELEASE_KEY, releaseKey) })
+                .addExtras(
+                    android.os.Bundle().apply {
+                        putString(RELEASE_KEY, releaseKey)
+                        putInt(SLOT_KEY, placement.slot)
+                        putLong(ORDER_KEY, placement.order)
+                    },
+                )
+                .setGroup(NewEpisodeFcmLogic.EPISODE_GROUP_KEY)
                 .setSound(soundUri)
 
         if (pendingIntent != null) {
@@ -148,7 +173,96 @@ internal object NewEpisodeNotifications {
                 ).setLargeIcon(bitmap)
         }
 
-        notificationManager.notify(notificationId, notificationBuilder.build())
+        notificationManager.notify(podcastId, NewEpisodeFcmLogic.EPISODE_NOTIFICATION_ID_BASE, notificationBuilder.build())
+        recentPosts.recordPost(NewEpisodeFcmLogic.PostedEpisodeNotification(podcastId, placement.slot, placement.order, releaseKey), now)
+        // An older build's untagged copy of this show would now show twice; it was never grouped.
+        NewEpisodeFcmLogic.legacyCopyToClear(podcastId, title, legacyEpisodeNotifications(active))?.let { notificationManager.cancel(it) }
+        summaryPlan.summaryCount?.let {
+            postSummary(context, notificationManager, channelId, it)
+            recentPosts.recordSummary(showing = true, now)
+        }
+    }
+
+    private fun createChannel(notificationManager: NotificationManager, channelId: String, soundUri: Uri) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val audioAttributes =
+            AudioAttributes
+                .Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                .build()
+        val channel =
+            NotificationChannel(
+                channelId,
+                "New Episodes",
+                NotificationManager.IMPORTANCE_DEFAULT,
+            ).apply {
+                description = "Alerts for new podcast episodes"
+                setSound(soundUri, audioAttributes)
+            }
+        notificationManager.createNotificationChannel(channel)
+    }
+
+    /** Untagged notifications older builds left in the new-episode id range. */
+    private fun legacyEpisodeNotifications(active: Array<StatusBarNotification>): List<NewEpisodeFcmLogic.LegacyEpisodeNotification> {
+        val ids = NewEpisodeFcmLogic.EPISODE_NOTIFICATION_ID_BASE until
+            NewEpisodeFcmLogic.EPISODE_NOTIFICATION_ID_BASE + NewEpisodeFcmLogic.MAX_EPISODE_NOTIFICATION_SLOTS
+        return active
+            .filter { it.tag == null && it.id in ids }
+            .map { NewEpisodeFcmLogic.LegacyEpisodeNotification(it.id, it.notification.extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()) }
+    }
+
+    /** The new-episode notifications showing now, read back from the tag, slot and order each one carries. */
+    private fun postedEpisodeNotifications(active: Array<StatusBarNotification>): List<NewEpisodeFcmLogic.PostedEpisodeNotification> =
+        active.mapNotNull { posted ->
+            val tag = posted.tag
+            val extras = posted.notification.extras
+            if (posted.id != NewEpisodeFcmLogic.EPISODE_NOTIFICATION_ID_BASE || tag.isNullOrEmpty() || !extras.containsKey(SLOT_KEY)) {
+                null
+            } else {
+                NewEpisodeFcmLogic.PostedEpisodeNotification(
+                    tag,
+                    extras.getInt(SLOT_KEY),
+                    extras.getLong(ORDER_KEY, posted.postTime),
+                    extras.getString(RELEASE_KEY),
+                )
+            }
+        }
+
+    /** Bundles two or more shows' notifications under one quiet summary. */
+    private fun postSummary(context: Context, manager: NotificationManager, channelId: String, showing: Int) {
+        val intent = NewEpisodeFcmLogic.createNormalizedPushIntent(
+            context,
+            targetRoute = NewEpisodeFcmLogic.NEW_EPISODES_ROUTE,
+            notificationType = NewEpisodeFcmLogic.SUMMARY_NOTIFICATION_TYPE,
+        )
+        val pendingIntent =
+            try {
+                PendingIntent.getActivity(
+                    context,
+                    NewEpisodeFcmLogic.EPISODE_SUMMARY_REQUEST_CODE,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+            } catch (e: SecurityException) {
+                android.util.Log.w("BoxLoreFcmService", "Failed to create PendingIntent for new episodes summary", e)
+                null
+            }
+        val summary =
+            NotificationCompat
+                .Builder(context, channelId)
+                .setSmallIcon(cx.aswin.boxlore.R.drawable.ic_notification_custom)
+                .setColor(android.graphics.Color.parseColor("#5B5BD6"))
+                .setContentTitle("New Episodes")
+                .setContentText("$showing shows have new episodes")
+                .setGroup(NewEpisodeFcmLogic.EPISODE_GROUP_KEY)
+                .setGroupSummary(true)
+                .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
+                .setOnlyAlertOnce(true)
+                .setSilent(true)
+                .setAutoCancel(true)
+        if (pendingIntent != null) summary.setContentIntent(pendingIntent)
+        manager.notify(NewEpisodeFcmLogic.EPISODE_SUMMARY_NOTIFICATION_ID, summary.build())
     }
 
     fun show(context: Context, podcastId: String, data: Map<String, String>, local: cx.aswin.boxlore.core.model.Episode? = null, fetchArtwork: Boolean = false, canPresent: () -> Boolean = { true }) {
@@ -165,7 +279,7 @@ internal object NewEpisodeNotifications {
             null
         }
         synchronized(updateLock) {
-            // Recheck after artwork I/O, before updating the shared PendingIntent or notification slot.
+            // Recheck after artwork I/O, before updating the show's notification and its tap slot.
             if (fetchArtwork && !isCurrentRelease(context, podcastId, releaseKey)) return
             if (!canPresent()) return
             showNewEpisodeNotification(context, podcastId, details, fetchArtwork, releaseKey, bitmap)
@@ -173,8 +287,15 @@ internal object NewEpisodeNotifications {
     }
 
     private fun isCurrentRelease(context: Context, podcastId: String, releaseKey: String): Boolean {
+        synchronized(updateLock) {
+            // A newer release or a cancel this process just made may not be listed yet.
+            if (recentPosts.supersedes(podcastId, releaseKey, clock())) return false
+        }
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val id = NewEpisodeFcmLogic.EPISODE_NOTIFICATION_ID_BASE + NewEpisodeFcmLogic.episodeSlot(podcastId)
-        return manager.activeNotifications.any { it.id == id && it.notification.extras.getString(RELEASE_KEY) == releaseKey }
+        return manager.activeNotifications.any {
+            it.id == NewEpisodeFcmLogic.EPISODE_NOTIFICATION_ID_BASE &&
+                it.tag == podcastId &&
+                it.notification.extras.getString(RELEASE_KEY) == releaseKey
+        }
     }
 }

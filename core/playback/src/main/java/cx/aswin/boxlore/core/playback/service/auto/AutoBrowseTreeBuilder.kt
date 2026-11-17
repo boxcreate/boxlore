@@ -505,7 +505,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
                 region(),
                 languages = withTimeoutOrNull(PREFS_TIMEOUT_MS) { host.userPreferencesRepository.contentLanguagesStream.first() },
             )
-        return buildPodcastFolderItems(curatedPodcasts)
+        return buildPodcastFolderItems(curatedPodcasts.take(LIST_LIMIT))
     }
 
     suspend fun getGenreChildren(category: String): List<MediaItem> {
@@ -542,8 +542,11 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
 
     // ── Nodes kept for cars that remembered the old layout ──────────────────────────────────
 
-    /** The old Library node: shows, then Liked and Listening history. */
-    suspend fun getLibraryChildren(): List<MediaItem> = getSubscriptionsChildren() +
+    /**
+     * The old Library node: Liked and Listening history, then the shows. Media3 cuts a reply to the
+     * car at its size limit, so the two folders lead and only shows can fall off the end.
+     */
+    suspend fun getLibraryChildren(): List<MediaItem> =
         listOf(
             AutoMediaItemFactory.browsable(
                 id = AutoBrowseContract.LIBRARY_LIKED_ID,
@@ -559,7 +562,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
                 mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
                 singleItemStyle = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
             ),
-        )
+        ) + getSubscriptionsChildren()
 
     // ── Shared reads ────────────────────────────────────────────────────────────────────────
 
@@ -640,11 +643,18 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
 
     private fun iconUri(@DrawableRes id: Int): Uri = host.drawableUri(id)
 
+    /**
+     * The page of [items] the host asked for. A browse without paging extras reaches here as page 0
+     * of [Int.MAX_VALUE] (Media3's default) and gets the whole list instead of the first 50; lists
+     * that need a limit set it where they are built. Media3's legacy browser path still cuts a reply
+     * at its size limit (about 256 KB, a few hundred show tiles). A host that pages gets exactly its
+     * page size, so its offsets line up.
+     */
     fun slicePage(items: List<MediaItem>, page: Int, pageSize: Int,): List<MediaItem> {
-        val safePageSize = pageSize.takeIf { it > 0 }?.coerceAtMost(LIST_LIMIT) ?: LIST_LIMIT
-        val start = page.coerceAtLeast(0) * safePageSize
+        val size = pageSize.takeIf { it > 0 } ?: Int.MAX_VALUE
+        val start = page.coerceAtLeast(0).toLong() * size
         if (start >= items.size) return emptyList()
-        return items.subList(start, minOf(start + safePageSize, items.size))
+        return items.subList(start.toInt(), minOf(start + size, items.size.toLong()).toInt())
     }
 
     /** A started episode's second line, e.g. "Show name · 35 min left". */
