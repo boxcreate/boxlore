@@ -9,7 +9,6 @@ import cx.aswin.boxlore.core.wearlink.WatchNowPlaying
 import cx.aswin.boxlore.core.wearlink.WatchSignInReply
 import cx.aswin.boxlore.core.wearlink.WearLinkCodec
 import cx.aswin.boxlore.core.wearlink.WearLinkCommand
-import cx.aswin.boxlore.core.wearlink.WearLinkEpisode
 import cx.aswin.boxlore.core.wearlink.WearLinkProtocol
 import cx.aswin.boxlore.core.wearlink.WearLinkSettings
 import cx.aswin.boxlore.core.wearlink.WearLinkTransport
@@ -38,8 +37,12 @@ interface WatchLink {
     /** The phone's player as last heard, or null when the phone has never said. */
     val phoneNowPlaying: StateFlow<PhoneNowPlaying?>
 
-    /** The phone's saved episodes of a show, or null when it is out of reach or has none. */
-    suspend fun episodes(showId: String): List<WearLinkEpisode>?
+    /**
+     * The phone's saved episodes of a show and when it last read the show's feed, or null when it
+     * is out of reach, does not answer or has none. With [fresh] the phone first reads the feed
+     * when its own rules allow, so the answer may take longer.
+     */
+    suspend fun episodes(showId: String, fresh: Boolean = false): EpisodeListReply?
 
     /** Asks the phone to sign this watch in to the listener's account; null when the phone is out of reach. */
     suspend fun signIn(): WatchSignInReply? = null
@@ -53,7 +56,7 @@ object NoWatchLink : WatchLink {
     override val phoneReachable: StateFlow<Boolean> = MutableStateFlow(false)
     override val phoneNowPlaying: StateFlow<PhoneNowPlaying?> = MutableStateFlow(null)
 
-    override suspend fun episodes(showId: String): List<WearLinkEpisode>? = null
+    override suspend fun episodes(showId: String, fresh: Boolean): EpisodeListReply? = null
 
     override fun send(command: WearLinkCommand, onLost: () -> Unit) = onLost()
 }
@@ -92,6 +95,9 @@ internal object PublishPacing {
     fun waitMs(isPlaying: Boolean, sinceLastMs: Long): Long =
         if (isPlaying) (PLAYING_INTERVAL_MS - sinceLastMs).coerceIn(SETTLE_MS, PLAYING_INTERVAL_MS) else SETTLE_MS
 }
+
+/** How long the watch waits for the phone to read a show's feed before reading it itself. */
+private const val FRESH_LIST_TIMEOUT_MS = 15_000L
 
 /**
  * The live phone link. It merges what the phone publishes into the watch's library, tells the
@@ -143,10 +149,12 @@ class LiveWatchLink(
         }
     }
 
-    override suspend fun episodes(showId: String): List<WearLinkEpisode>? {
+    override suspend fun episodes(showId: String, fresh: Boolean): EpisodeListReply? {
         if (!transport.peerReachable.value) return null
-        val answer = transport.request(WearLinkProtocol.PATH_EPISODES, WearLinkCodec.encode(EpisodeListRequest(showId)))
-        return WearLinkCodec.decode<EpisodeListReply>(answer)?.episodes?.takeIf { it.isNotEmpty() }
+        val request = WearLinkCodec.encode(EpisodeListRequest(showId, fresh = fresh))
+        // A fresh list can wait on the phone reading a feed; a saved one should come straight back.
+        val answer = if (fresh) transport.request(WearLinkProtocol.PATH_EPISODES, request, FRESH_LIST_TIMEOUT_MS) else transport.request(WearLinkProtocol.PATH_EPISODES, request)
+        return WearLinkCodec.decode<EpisodeListReply>(answer)?.takeIf { it.episodes.isNotEmpty() }
     }
 
     override suspend fun signIn(): WatchSignInReply? {

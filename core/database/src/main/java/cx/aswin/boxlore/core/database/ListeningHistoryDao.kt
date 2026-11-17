@@ -132,6 +132,18 @@ interface ListeningHistoryDao {
     @Query("SELECT COUNT(*) FROM listening_history WHERE isDirty = 1")
     fun getDirtyCountFlow(): Flow<Int>
 
+    /** Whether any row waits to be pushed, without reading the rows. */
+    @Query("SELECT EXISTS(SELECT 1 FROM listening_history WHERE isDirty = 1)")
+    suspend fun hasDirtyListeningHistory(): Boolean
+
+    /** Rows waiting to be pushed other than [excludedIds] (the episode that is playing). */
+    @Query("SELECT COUNT(*) FROM listening_history WHERE isDirty = 1 AND episodeId NOT IN (:excludedIds)")
+    fun getDirtyCountExcludingFlow(excludedIds: List<String>): Flow<Int>
+
+    /** Whether any of [episodeIds] waits to be pushed. */
+    @Query("SELECT EXISTS(SELECT 1 FROM listening_history WHERE isDirty = 1 AND episodeId IN (:episodeIds))")
+    fun hasDirtyHistoryForFlow(episodeIds: List<String>): Flow<Boolean>
+
     @Query("UPDATE listening_history SET isDirty = 0, syncedAt = :timestamp WHERE episodeId IN (:ids)")
     suspend fun markAsSynced(ids: List<String>, timestamp: Long,)
 

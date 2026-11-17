@@ -1,10 +1,12 @@
 package cx.aswin.boxlore.wearlink
 
 import cx.aswin.boxlore.core.database.PodcastEntity
+import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.model.Episode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -22,6 +24,30 @@ class PhoneListRulesTest {
         assertNotEquals(key, PhoneListRules.showsKey(listOf(show.copy(latestEpisode = episode("new", 200L)))))
         assertNotEquals(key, PhoneListRules.showsKey(listOf(show.copy(title = "Renamed"))))
         assertNotEquals(key, PhoneListRules.showsKey(emptyList()))
+    }
+
+    // Regression: the watch kept showing the phone's old episode list however long ago the feed was read.
+    @Test
+    fun `the watch's request for a fresh list is an ordinary feed read, and only for a show with a feed`() {
+        val show = PodcastEntity(podcastId = "1", title = "Show", author = "Pub", imageUrl = "", description = null, feedUrl = "https://example.com/feed.xml")
+
+        val request = PhoneListRules.watchRefresh(show)!!
+
+        assertEquals("1", request.podcastIndexId)
+        assertEquals("https://example.com/feed.xml", request.feedUrl)
+        assertEquals(LocalEpisodeCatalogPort.RefreshReason.NORMAL, request.reason)
+        // Regression: a watch-asked read queued auto-downloads in the foreground, past the phone's background download rules.
+        assertFalse(request.runPostPersistCallback)
+        assertEquals("Show", request.meta.title)
+        assertNull(request.meta.imageUrl)
+        assertNull(PhoneListRules.watchRefresh(show.copy(feedUrl = " ")))
+        assertNull(PhoneListRules.watchRefresh(show.copy(feedUrl = null)))
+    }
+
+    @Test
+    fun `a feed never read has no read time to send`() {
+        assertNull(PhoneListRules.readAt(0L))
+        assertEquals(5L, PhoneListRules.readAt(5L))
     }
 
     @Test

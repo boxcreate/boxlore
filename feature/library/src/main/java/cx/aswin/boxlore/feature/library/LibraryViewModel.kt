@@ -679,6 +679,13 @@ class LibraryViewModel(
         }
     }
 
+    /** Starts a failed download again from Downloads. */
+    fun retryDownload(episodeId: String) {
+        viewModelScope.launch {
+            downloadRepository.retryDownload(episodeId)
+        }
+    }
+
     fun removeMultipleDownloads(episodeIds: List<String>) {
         viewModelScope.launch {
             genericItemsRemovedCount += episodeIds.size

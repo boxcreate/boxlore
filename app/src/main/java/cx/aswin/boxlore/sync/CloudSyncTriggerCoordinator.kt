@@ -21,16 +21,26 @@ import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -39,8 +49,14 @@ import kotlinx.coroutines.withTimeoutOrNull
  * Event-driven lifecycle and interaction coordinator for Boxlore Realtime Cloud Sync.
  * Coalesces and debounces triggers across auth state changes, process lifecycle,
  * playback milestones, and database mutations without mid-play polling.
+ *
+ * While an episode plays, its own history row (progress saved every few seconds) pushes at most once
+ * per [PLAYING_PROGRESS_PUSH_INTERVAL_MS]; pause, completion, a track change and the process going to
+ * the background push it straight away. A like of it, like every other change, pushes after
+ * [LIBRARY_MUTATION_DEBOUNCE_MS]. [playingHistoryIds] gives the IDs the playing episode's row can be
+ * stored under (its episode's trusted IDs), so progress written to the owner ID counts as its own.
  */
-@OptIn(FlowPreview::class)
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @Suppress("LongParameterList", "TooManyFunctions")
 class CloudSyncTriggerCoordinator(
     private val context: Context,
@@ -58,6 +74,7 @@ class CloudSyncTriggerCoordinator(
     private val clock: () -> Long = { System.currentTimeMillis() },
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val onSignOutAction: (() -> Unit)? = null,
+    private val playingHistoryIds: suspend (episodeId: String) -> List<String> = { listOf(it) },
 ) : DefaultLifecycleObserver {
 
     private val _syncStatusFlow = MutableStateFlow<CloudSyncUiStatus>(
@@ -290,8 +307,14 @@ class CloudSyncTriggerCoordinator(
             isOnlineFlow.collect { isOnline ->
                 val prev = wasOnline
                 wasOnline = isOnline
-                if (shouldSyncOnReconnect(prev, isOnline) && hasDirtyItems()) {
-                    syncNowInternal()
+                if (!shouldSyncOnReconnect(prev, isOnline)) return@collect
+                // One failed check must not end reconnect syncs for the rest of the process.
+                try {
+                    if (hasDirtyItems()) syncNowInternal()
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "Reconnect sync check failed: ${e.message}")
                 }
             }
         }
@@ -300,9 +323,10 @@ class CloudSyncTriggerCoordinator(
     private fun shouldSyncOnReconnect(wasOffline: Boolean?, isOnline: Boolean): Boolean =
         wasOffline == false && isOnline && authRepository.currentUserId != null
 
+    /** Existence checks only: a first sync or a bulk mark can leave a very large history dirty. */
     private suspend fun hasDirtyItems(): Boolean {
-        if (podcastDao.getDirtyPodcasts().isNotEmpty()) return true
-        if (listeningHistoryDao.getDirtyListeningHistory().isNotEmpty()) return true
+        if (podcastDao.hasDirtyPodcasts()) return true
+        if (listeningHistoryDao.hasDirtyListeningHistory()) return true
         val queueMeta = queueDao.getQueueMetadata()
         return queueMeta?.isDirty == true
     }
@@ -347,18 +371,78 @@ class CloudSyncTriggerCoordinator(
 
     private fun observeLibraryMutations() {
         applicationScope.launch(ioDispatcher + coordinatorJob) {
-            combine(
-                podcastDao.getDirtyCountFlow(),
-                listeningHistoryDao.getDirtyCountFlow(),
-            ) { podcastsDirty, historyDirty ->
-                podcastsDirty + historyDirty
-            }
-                .filter { it > 0 }
-                .debounce(LIBRARY_MUTATION_DEBOUNCE_MS)
+            val stateFlow = playerStateFlow ?: playbackRepository?.playerState
+            val playingIds = stateFlow?.let { playingEpisodeHistoryIds(it) } ?: flowOf(emptyList())
+            playingIds
+                .flatMapLatest { ids -> libraryPushSignals(ids, stateFlow) }
                 .collect {
                     executePushInternal()
                 }
         }
+    }
+
+    /** The history IDs of the episode that is playing; empty while nothing plays. */
+    private fun playingEpisodeHistoryIds(stateFlow: StateFlow<PlayerState>): Flow<List<String>> =
+        stateFlow
+            .map { state -> state.currentEpisode?.id?.takeIf { state.isPlaying } }
+            .distinctUntilChanged()
+            .map { episodeId -> episodeId?.let { historyIdsOf(it) }.orEmpty() }
+
+    private suspend fun historyIdsOf(episodeId: String): List<String> {
+        val ids = try {
+            playingHistoryIds(episodeId)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not resolve the playing episode's IDs: ${e.message}")
+            emptyList()
+        }
+        return (listOf(episodeId) + ids).distinct()
+    }
+
+    /**
+     * When to push library changes. With nothing playing ([playingIds] empty), any dirty row pushes
+     * after [LIBRARY_MUTATION_DEBOUNCE_MS]. While an episode plays, its own row is left out of that
+     * count and pushes at most once per [PLAYING_PROGRESS_PUSH_INTERVAL_MS], or after
+     * [LIBRARY_MUTATION_DEBOUNCE_MS] when its like changes; the playback milestones push it on pause,
+     * completion and track change. While playing, other rows push only when their dirty counts change:
+     * each progress save re-runs the count queries, so rows a failed push left dirty would otherwise
+     * push again on every save. Those rows are retried by the progress interval, the milestones,
+     * backgrounding and the sync worker.
+     */
+    private fun libraryPushSignals(playingIds: List<String>, stateFlow: StateFlow<PlayerState>?): Flow<Unit> {
+        val dirtyHistory = if (playingIds.isEmpty()) {
+            listeningHistoryDao.getDirtyCountFlow()
+        } else {
+            listeningHistoryDao.getDirtyCountExcludingFlow(playingIds)
+        }
+        val dirtyCounts = combine(podcastDao.getDirtyCountFlow(), dirtyHistory) { podcastsDirty, historyDirty ->
+            podcastsDirty to historyDirty
+        }
+        // Debounced before the filter, so rows another push already sent (count back to 0) don't push again.
+        val changes = (if (playingIds.isEmpty()) dirtyCounts else dirtyCounts.distinctUntilChanged())
+            .map { (podcastsDirty, historyDirty) -> podcastsDirty + historyDirty }
+            .debounce(LIBRARY_MUTATION_DEBOUNCE_MS)
+            .filter { it > 0 }
+            .map { }
+        if (playingIds.isEmpty() || stateFlow == null) return changes
+
+        val playingProgress = flow {
+            listeningHistoryDao.hasDirtyHistoryForFlow(playingIds)
+                .filter { it }
+                .conflate()
+                .collect {
+                    delay(PLAYING_PROGRESS_PUSH_INTERVAL_MS)
+                    if (listeningHistoryDao.hasDirtyHistoryForFlow(playingIds).first()) emit(Unit)
+                }
+        }
+        val playingLike = stateFlow
+            .map { it.isLiked }
+            .distinctUntilChanged()
+            .drop(1)
+            .debounce(LIBRARY_MUTATION_DEBOUNCE_MS)
+            .map { }
+        return merge(changes, playingProgress, playingLike)
     }
 
     companion object {
@@ -367,6 +451,7 @@ class CloudSyncTriggerCoordinator(
         const val BACKGROUND_PUSH_TIMEOUT_MS = 3_000L
         const val QUEUE_MUTATION_DEBOUNCE_MS = 2_000L
         const val LIBRARY_MUTATION_DEBOUNCE_MS = 1_500L
+        const val PLAYING_PROGRESS_PUSH_INTERVAL_MS = 5 * 60_000L
     }
 }
 

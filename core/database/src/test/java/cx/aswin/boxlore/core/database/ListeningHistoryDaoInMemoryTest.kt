@@ -500,6 +500,28 @@ class ListeningHistoryDaoInMemoryTest {
         assertEquals(0, dao.getDirtyCountFlow().first())
     }
 
+    @Test
+    fun dirtyExistenceAndPlayingExclusion_matchTheDirtyRows() = runTest {
+        assertFalse(dao.hasDirtyListeningHistory())
+        dao.upsert(history("playing", isDirty = false))
+        dao.upsert(history("owner", isDirty = false))
+        dao.upsert(history("other", isDirty = false))
+        assertFalse(dao.hasDirtyHistoryForFlow(listOf("playing", "owner")).first())
+
+        // A progress save on the playing episode's owner row: dirty, but not counted as another change.
+        dao.updateProgress("owner", progressMs = 200, durationMs = 1000, lastPlayedAt = 50)
+        assertTrue(dao.hasDirtyListeningHistory())
+        assertTrue(dao.hasDirtyHistoryForFlow(listOf("playing", "owner")).first())
+        assertEquals(0, dao.getDirtyCountExcludingFlow(listOf("playing", "owner")).first())
+
+        dao.setLikeStatus("other", isLiked = true, now = 60)
+        assertEquals(1, dao.getDirtyCountExcludingFlow(listOf("playing", "owner")).first())
+
+        dao.markListeningHistorySynced(listOf("owner", "other"), 1000L)
+        assertFalse(dao.hasDirtyListeningHistory())
+        assertFalse(dao.hasDirtyHistoryForFlow(listOf("playing", "owner")).first())
+    }
+
     // Regression: history kept the player's Android Auto artwork link after its cover was gone.
     @Test
     fun `player-only artwork links are repaired from the episode, then the show, and marked for sync`() = runTest {

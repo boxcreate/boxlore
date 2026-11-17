@@ -87,6 +87,22 @@ internal object PhoneListRules {
      * came or went, was renamed or redrawn, or got a newer latest episode (the watch's New episodes).
      */
     fun showsKey(shows: List<PodcastEntity>): List<List<String?>> = shows.map { listOf(it.podcastId, it.title, it.imageUrl, it.latestEpisode?.id) }
+
+    /**
+     * The feed read the watch asks for when the phone's saved episodes of [show] are old, or null
+     * when the show has no feed address. It is an ordinary read: the catalog's own quiet wait and
+     * unchanged-feed check still apply, so the watch never makes the phone read a feed early. It
+     * only refreshes the saved list: whether a new episode auto-downloads stays with the phone's own
+     * background-gated or foreground passes, as for every other background read.
+     */
+    fun watchRefresh(show: PodcastEntity): LocalEpisodeCatalogPort.RefreshRequest? {
+        val feedUrl = show.feedUrl?.takeIf(String::isNotBlank) ?: return null
+        val meta = LocalEpisodeCatalogPort.PodcastMeta(title = show.title, imageUrl = show.imageUrl.takeIf(String::isNotBlank))
+        return LocalEpisodeCatalogPort.RefreshRequest(podcastIndexId = show.podcastId, feedUrl = feedUrl, meta = meta, runPostPersistCallback = false)
+    }
+
+    /** The catalog's last feed read, or null for its "never read" 0. */
+    fun readAt(lastFeedReadAt: Long): Long? = lastFeedReadAt.takeIf { it > 0L }
 }
 
 /** The phone's library for the watch link, over the same sync rows the cloud gets. */
@@ -135,6 +151,13 @@ internal class PhoneLibraryAdapter(
 
     override suspend fun episodes(podcastId: String, limit: Int): List<WearLinkEpisode> =
         savedEpisodes().getPage(podcastId, limit = limit, offset = 0, sort = NEWEST).map { it.toLink(podcastId) }
+
+    override suspend fun episodesReadAt(podcastId: String): Long? = PhoneListRules.readAt(savedEpisodes().lastFeedReadAt(podcastId))
+
+    override suspend fun refreshEpisodes(podcastId: String) {
+        val request = podcasts.getPodcast(podcastId)?.let(PhoneListRules::watchRefresh) ?: return
+        savedEpisodes().refresh(request)
+    }
 
     private companion object {
         const val NEWEST = "newest"

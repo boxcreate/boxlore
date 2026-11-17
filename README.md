@@ -72,6 +72,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>Send to watch on an episode's page downloads it to your watch. <a href="https://github.com/boxcreate/boxlore/pull/1258"><img src="https://img.shields.io/badge/PR-1258-6750A4?style=flat-square" alt="PR #1258" height="18"/></a></li>
 <li>A tile and a watch-face shortcut resume your last episode in one tap. <a href="https://github.com/boxcreate/boxlore/pull/1258"><img src="https://img.shields.io/badge/PR-1258-6750A4?style=flat-square" alt="PR #1258" height="18"/></a></li>
 <li>Sign in on your watch with one tap from your phone. <a href="https://github.com/boxcreate/boxlore/pull/1258"><img src="https://img.shields.io/badge/PR-1258-6750A4?style=flat-square" alt="PR #1258" height="18"/></a></li>
+<li>On your watch, a show's page now says when its episodes are loading or couldn't load, with Try again, and gets a fresh list from your phone when the one it has is old.</li>
 </ul>
 <b>⚡ Improved:</b>
 <ul align="left">
@@ -91,6 +92,8 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>Widgets that follow your phone's light and dark mode now switch with it, even when boxlore isn't open.</li>
 <li>The Your Shows and New Episodes widgets now count your whole library instead of stopping at 50.</li>
 <li>While an episode plays, the Your Shows and New Episodes widgets and your Library use less battery.</li>
+<li>While an episode plays, boxlore syncs your place in it every few minutes instead of every few seconds, so it uses less battery and data. Pausing, switching episodes or leaving boxlore still syncs it straight away.</li>
+<li>With a large listening history, boxlore no longer slows down or closes when your phone gets its connection back.</li>
 <li>On Home, a show you've heard every episode of now lists its latest episodes instead of an empty list, and a show whose episodes can't load lets you try again.</li>
 <li>On Home, tapping a show in Your shows now checks it for new episodes, even if boxlore checked it a few hours ago.</li>
 <li>In Android Auto, artwork loads faster, and every episode has a picture, in lists and in the queue: one with no image of its own shows its show's cover.</li>
@@ -101,11 +104,16 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>After you listen on another device, Play on the mini player now starts the episode it shows, at the right spot, instead of an older one from your queue.</li>
 <li>When boxlore fills your queue from the show you're playing, or offers to continue it, it now picks the episodes right after yours, even deep into a long show you don't follow, instead of jumping hundreds of episodes ahead.</li>
 <li>Downloaded episodes now show their chapters and transcript straight away, even offline or on a weak connection. Chapters and transcripts that can't load now stop trying instead of loading forever.</li>
+<li>A download you start that fails now stays in Downloads, marked as failed, with Download Again, instead of disappearing.</li>
+<li>Auto-downloads checked in the background stay on schedule when one show's feed can't be read, so new episodes from your other shows still arrive on time.</li>
 <li>For you in Explore no longer reloads again and again while your account syncs. It refreshes when the shows you follow or your languages change, and when your picks get old.</li>
+<li>Picked for you on Home and For you in Explore now start from the shows you've played or followed most recently, not the first ones from A to Z, and leave out shows you follow, even in a large library.</li>
+<li>In Lore, Check for new cards now looks much further through the deck, so it finds new cards past the first few pages.</li>
 <li>If you follow a lot of shows, New Episodes no longer misses new episodes from some of them, and pulling down on New Episodes checks all your shows (up to 200), not just a few.</li>
 <li>The Brief opens as soon as it's ready, even when its stories are slow to load. They appear when they arrive.</li>
 <li>New episode notifications from different shows no longer replace each other or open the wrong show. Each show gets its own notification, grouped together, for up to 16 shows at a time.</li>
 <li>On a show's page, Mark all as played and Mark all as unplayed now change every episode, not just the newest 200. If the episodes can't load, nothing changes and boxlore tells you.</li>
+<li>On a show's page, adding selected episodes to your queue now adds as many as fit and tells you when your queue is full, instead of silently leaving the rest out.</li>
 <li>When boxlore can't read a long show's own feed, searching that show now looks through up to 11,000 of its episodes instead of the newest 1,000, and says so when there are more. If the search can't run, the page says so and lets you try again instead of showing no matches.</li>
 </ul>
 <!-- release-upcoming:end -->

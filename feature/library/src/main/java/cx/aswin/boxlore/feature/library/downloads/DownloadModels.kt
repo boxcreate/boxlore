@@ -99,8 +99,7 @@ internal fun PodcastListShowCard(
 ) {
     val title = group.podcastName
     val imageUrl = group.podcastImageUrl
-    val downloadCount = group.episodes.size
-    val totalSizeBytes = group.totalSizeBytes
+    val countLine = group.episodes.downloadSummary().countLine()
     val latestDownloadedAt = group.latestDownloadedAt
     Row(
         modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Episode)
@@ -154,7 +153,7 @@ internal fun PodcastListShowCard(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "$downloadCount ${if (downloadCount == 1) "episode" else "episodes"} • ${formatSize(totalSizeBytes)}",
+                text = countLine,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
