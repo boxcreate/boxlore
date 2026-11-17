@@ -7,13 +7,20 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import kotlinx.coroutines.CancellationException
 
-/** Application-scoped first persist after Subscribe (not ViewModel-scoped). */
+/**
+ * Reads one followed show's feed and saves its newest episode: the first save after Subscribe, on
+ * the application scope, and Home's show-chip read ([FollowedShowFeedRead]), on Home's ViewModel
+ * scope, so that one may be cancelled when Home closes.
+ */
 internal object SubscriptionForegroundSyncIngest {
+    /** [refreshCatalog] reads the feed; [FollowedShowFeedRead.chipRefresh] reads it past its six-hour wait. */
     fun catalogIngestAction(
         podcastRepository: PodcastRepository,
         subscriptionRepository: SubscriptionRepository,
         localEpisodeCatalog: LocalEpisodeCatalogPort?,
         onFeedRefreshed: (String) -> Unit,
+        refreshCatalog: suspend (String, DirectFeedTipMeta) -> DirectFeedResolveResult =
+            catalogRefresh(localEpisodeCatalog, pastWait = false),
     ): suspend (String) -> Unit = { podcastId ->
         ingestSubscribedLocalCatalog(
             podcastId = podcastId,
@@ -30,17 +37,7 @@ internal object SubscriptionForegroundSyncIngest {
                     )
                 }
             },
-            refreshCatalog = { id, meta ->
-                if (localEpisodeCatalog == null) {
-                    DirectFeedResolveResult(tip = null, persisted = false)
-                } else {
-                    SubscriptionForegroundSync.resolveCatalogRefresh(
-                        podcastId = id,
-                        meta = meta,
-                        catalog = localEpisodeCatalog,
-                    )
-                }
-            },
+            refreshCatalog = refreshCatalog,
             saveLatest = { id, episode ->
                 subscriptionRepository.updateLatestEpisode(
                     podcastId = id,
@@ -64,6 +61,26 @@ internal object SubscriptionForegroundSyncIngest {
             },
             onFeedRefreshed = onFeedRefreshed,
         )
+    }
+
+    /**
+     * The feed read an ingest runs. [pastWait] reads it even inside its six-hour wait
+     * ([FollowedShowFeedRead.readPastWait]); otherwise the automatic read decides whether to read.
+     */
+    fun catalogRefresh(
+        localEpisodeCatalog: LocalEpisodeCatalogPort?,
+        pastWait: Boolean,
+    ): suspend (String, DirectFeedTipMeta) -> DirectFeedResolveResult = { id, meta ->
+        when {
+            localEpisodeCatalog == null -> DirectFeedResolveResult(tip = null, persisted = false)
+            pastWait -> FollowedShowFeedRead.readPastWait(id, meta, localEpisodeCatalog)
+            else ->
+                SubscriptionForegroundSync.resolveCatalogRefresh(
+                    podcastId = id,
+                    meta = meta,
+                    catalog = localEpisodeCatalog,
+                )
+        }
     }
 
     @Suppress("LongParameterList", "kotlin:S107")

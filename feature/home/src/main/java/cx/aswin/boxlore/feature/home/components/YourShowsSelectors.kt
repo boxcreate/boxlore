@@ -185,7 +185,8 @@ private fun ShowSelectorItem(
             podcast = podcast,
             lastSeenId = lastSeen[podcast.id],
             isSelected = selectedId == podcast.id || count == 1,
-            onClick = { if (count > 1) onSelected(if (selectedId == podcast.id) null else podcast.id) },
+            // The only show can't be toggled off; tapping it sends its id again, which checks it for new episodes.
+            onClick = { onSelected(if (count > 1 && selectedId == podcast.id) null else podcast.id) },
             modifier = modifier,
             pin = CoverPin(podcast.id in pinnedIds) { onTogglePin(podcast.id) },
         )

@@ -23,6 +23,8 @@ import cx.aswin.boxlore.core.prefs.HomePinnedShows
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.feature.home.logic.FilterSelectionAction
 import cx.aswin.boxlore.feature.home.logic.HomeBecauseYouLikeLogic
+import cx.aswin.boxlore.feature.home.logic.HomeChipSelection
+import cx.aswin.boxlore.feature.home.logic.HomeChipTap
 import cx.aswin.boxlore.feature.home.logic.HomeFilterSelectionLogic
 import cx.aswin.boxlore.feature.home.logic.HomeForegroundSyncLogic
 import cx.aswin.boxlore.feature.home.logic.HomeMixMode
@@ -369,7 +371,16 @@ class HomeViewModel(
     private var filterSelectionIsAuto = false
 
     fun selectPodcast(podcastId: String?) {
-        applySelection(podcastId, isAuto = false)
+        val shows = uiState.value.subscribedPodcasts
+        when (HomeChipSelection.tapKind(podcastId, _selectedPodcastId.value, onlyShowId = shows.singleOrNull()?.id)) {
+            // The selection (and whether it is automatic) stays; the tap only checks the show again.
+            HomeChipTap.RECHECK ->
+                shows.firstOrNull { it.id == podcastId }?.let { refreshSelectedShow(it, explicitTap = true, recheck = true) }
+            // Leaving Home cleared the only show's automatic selection, though its chip still looks
+            // selected: the tap restores it as automatic and checks it like any re-tap.
+            HomeChipTap.RESTORE_ONLY_SHOW -> applySelection(podcastId, isAuto = true, explicitTap = true, recheck = true)
+            HomeChipTap.SELECT -> applySelection(podcastId, isAuto = false)
+        }
     }
 
     /** Try again after the selected show's episodes failed to load. */
@@ -381,6 +392,8 @@ class HomeViewModel(
         podcastId: String?,
         isAuto: Boolean,
         autoResolvedPodcast: Podcast? = null,
+        explicitTap: Boolean = !isAuto,
+        recheck: Boolean = false,
     ) {
         filterSelectionIsAuto = isAuto && podcastId != null
         _selectedPodcastId.value = podcastId
@@ -394,11 +407,11 @@ class HomeViewModel(
         // waiting for uiState to catch up. Manual selections keep resolving from uiState as before.
         when {
             autoResolvedPodcast != null ->
-                applySelectedPodcast(podcastId, autoResolvedPodcast, isAuto)
+                applySelectedPodcast(podcastId, autoResolvedPodcast, isAuto, explicitTap, recheck)
             else ->
                 uiState.value.subscribedPodcasts
                     .firstOrNull { it.id == podcastId }
-                    ?.let { applySelectedPodcast(podcastId, it, isAuto) }
+                    ?.let { applySelectedPodcast(podcastId, it, isAuto, explicitTap, recheck) }
         }
     }
 
@@ -406,6 +419,8 @@ class HomeViewModel(
         podcastId: String,
         podcast: Podcast,
         isAuto: Boolean,
+        explicitTap: Boolean,
+        recheck: Boolean,
     ) {
         // Auto-selection (single show) shouldn't be reported as a user-driven filter.
         if (!isAuto) {
@@ -418,14 +433,7 @@ class HomeViewModel(
         if (latestEpisodeId != null) {
             markPodcastEpisodeAsSeen(podcastId, latestEpisodeId)
         }
-        if (podcast.isRss) {
-            val manualRefreshDue =
-                podcast.rssRefreshCapability == Podcast.RSS_REFRESH_MANUAL &&
-                    rssFeedsRefreshedThisSession.add(podcastId)
-            if (podcast.rssCatalogStale || manualRefreshDue) {
-                refreshSelectedRssPodcast(podcastId)
-            }
-        }
+        refreshSelectedShow(podcast, explicitTap = explicitTap, recheck = recheck)
     }
 
     /**
@@ -457,23 +465,6 @@ class HomeViewModel(
             is FilterSelectionAction.AutoSelect ->
                 applySelection(action.podcast.id, isAuto = true, autoResolvedPodcast = action.podcast)
             FilterSelectionAction.Keep -> Unit
-        }
-    }
-
-    private fun refreshSelectedRssPodcast(podcastId: String) {
-        viewModelScope.launch {
-            try {
-                rssRepository.refreshCatalog(podcastId).getOrThrow()
-                _rssRefreshVersion.value += 1L
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                android.util.Log.e("HomeViewModel", "Failed to refresh selected RSS podcast $podcastId", e)
-                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackRssRefreshFailed(
-                    podcastId,
-                    e::class.simpleName,
-                )
-            }
         }
     }
 
