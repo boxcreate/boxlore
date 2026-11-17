@@ -9,6 +9,7 @@ import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningInsightsMaintenance
 import cx.aswin.boxlore.core.database.PlayedShowDao
+import cx.aswin.boxlore.core.database.countsAsListening
 import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.domain.ports.ListeningHistoryPort
 import cx.aswin.boxlore.core.model.Episode
@@ -22,13 +23,17 @@ import cx.aswin.boxlore.core.model.ListeningPlayedShow
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
 
 /**
@@ -93,15 +98,52 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
         }
     }
 
-    /** Every episode once, with its projected state ([EpisodeListenerStore.projectedRows]). */
-    override fun getAllHistory(): Flow<List<ListeningHistoryEntity>> = listenerStore.projectedRows(data.listeningHistoryDao.getAllHistory())
+    /**
+     * Recent history ([ListeningHistoryDao.getRecentHistory]), every episode once with its projected
+     * state ([EpisodeListenerStore.projectedRows]). Playback saves progress every few seconds and
+     * each save re-reads it, so while any screen watches, one read is shared by all of them.
+     */
+    override fun getRecentHistory(): Flow<List<ListeningHistoryEntity>> = sharedRecentHistory
+
+    private val sharedRecentHistory: Flow<List<ListeningHistoryEntity>> by lazy {
+        listenerStore
+            .projectedRows(data.listeningHistoryDao.getRecentHistory())
+            .flowOn(Dispatchers.Default)
+            .shareIn(player.scope, SharingStarted.WhileSubscribed(stopTimeoutMillis = 0L, replayExpirationMillis = 0L), replay = 1)
+    }
+
+    /**
+     * Every started, unfinished row ([ListeningHistoryDao.getInProgressHistory]) as stored, one read
+     * shared by every screen that shows progress, made again on each write while any of them watches.
+     */
+    internal val inProgressRows: Flow<List<ListeningHistoryEntity>> by lazy {
+        data.listeningHistoryDao
+            .getInProgressHistory()
+            .flowOn(Dispatchers.Default)
+            .shareIn(player.scope, SharingStarted.WhileSubscribed(stopTimeoutMillis = 0L, replayExpirationMillis = 0L), replay = 1)
+    }
+
+    /**
+     * Every completed ID as projected: an episode stored under several IDs is completed for all or
+     * none of them. While any screen watches, one read is shared by all of them and made again only
+     * when completions change, not on each progress save. Once none watches, the value is dropped,
+     * so the next reader never starts from an old one.
+     */
+    internal val completedEpisodeIds: Flow<Set<String>> by lazy {
+        listenerStore
+            .projectedCompletedIds(data.listeningHistoryDao.getCompletedEpisodeIdsFlow())
+            .distinctUntilChanged()
+            .flowOn(Dispatchers.Default)
+            .shareIn(player.scope, SharingStarted.WhileSubscribed(stopTimeoutMillis = 0L, replayExpirationMillis = 0L), replay = 1)
+    }
 
     /** Every stored row, one per episode ID, for library export. */
     override suspend fun exportStoredHistory(): List<ListeningHistoryEntity> = data.listeningHistoryDao.getAllStoredHistory()
 
-    override fun observeHistoryTimeline(): Flow<List<ListeningHistoryItem>> = getAllHistory().map { entities ->
+    /** Recent listening ([countsAsListening]): rows only marked played or unplayed are left out. */
+    override fun observeHistoryTimeline(): Flow<List<ListeningHistoryItem>> = getRecentHistory().map { entities ->
         entities
-            .filter { !it.isManualCompletion && !it.isBulkCompletion }
+            .filter { it.countsAsListening }
             .map { it.toListeningHistoryItem() }
     }
 
@@ -109,7 +151,9 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
      * The whole history, read again at most once a second ([throttleLatest]): playback saves progress
      * every few seconds, and each save would otherwise re-read and re-project every row. A Podcast Index
      * show switched to its RSS feed counts as the RSS show, as in [observeListeningByDay] and
-     * [observePlayedShows], so the history screen joins rows, time and genres under one show.
+     * [observePlayedShows], so the history screen joins rows, time and genres under one show. Only
+     * real listening is listed ([countsAsListening]): an episode marked played, or marked played
+     * and then unplayed without being heard, is not.
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeFullHistoryTimeline(): Flow<List<ListeningHistoryItem>> = combine(
@@ -119,7 +163,7 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
         listenerStore.showReplacementsFlow(),
     ) { entities, replacedBy ->
         entities
-            .filter { !it.isManualCompletion && !it.isBulkCompletion }
+            .filter { it.countsAsListening }
             .sortedWith(compareByDescending<ListeningHistoryEntity> { it.lastPlayedAt }.thenBy { it.episodeId })
             .map { row -> (replacedBy[row.podcastId]?.let { row.copy(podcastId = it) } ?: row).toListeningHistoryItem() }
     }
@@ -175,7 +219,7 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
     override fun observeInsights(period: ListeningPeriod): Flow<ListeningInsightSummary> = combine(
         data.listeningSessionDao.observeAllSessions(),
         data.listeningRollupDao.observeAllRollups(),
-        // All of history, not the screens' latest 300, so counts stay right for long histories.
+        // All of history, not the screens' recent rows, so counts stay right for long histories.
         listenerStore.projectedCompleteRows(data.listeningHistoryDao.observeAllStoredHistory()),
         listenerStore.showReplacementsFlow(),
     ) { storedSessions, storedRollups, storedHistory, replacedBy ->
@@ -183,7 +227,7 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
         val rollups = storedRollups.map { row -> replacedBy[row.podcastId]?.let { row.copy(podcastId = it) } ?: row }
         val history = storedHistory.map { row -> replacedBy[row.podcastId]?.let { row.copy(podcastId = it) } ?: row }
         val timeline =
-            history.filter { !it.isManualCompletion && !it.isBulkCompletion }
+            history.filter { it.countsAsListening }
         val completedCount =
             timeline.count {
                 ListeningCompletionLogic.isCompleted(it.isCompleted, it.progressMs, it.durationMs)
@@ -322,7 +366,9 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
      * Marks [episodes] played in one transaction. Each episode's row is its owner's (an episode
      * stored under one ID writes that ID, as before), and the completion reaches the episode's other
      * trusted IDs and its group settings ([EpisodeListenerStore.recordCompletions]). Owners and
-     * settings are worked out in batches, so a large show costs a few queries per 500 episodes.
+     * settings are worked out in batches, so a large show costs a few queries per 500 episodes. An
+     * episode already completed, under any of its IDs, keeps its rows and settings as they are,
+     * with how and when it was finished.
      */
     override suspend fun markAllEpisodesCompleted(
         episodes: List<Episode>,
@@ -333,10 +379,15 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
         val currentTime = System.currentTimeMillis()
         val database = BoxLoreDatabase.getDatabase(player.context)
         database.withTransaction {
-            val historyIdById = listenerStore.historyIds(episodes.map { it.id })
-            val historyIds = episodes.map { historyIdById[it.id] ?: it.id }
+            // Episodes already completed keep their rows untouched (finished by listening stays so),
+            // judged across all their IDs: a finish under another ID must not become a marked one.
+            val projected = listenerStore.projectedHistoryOf(episodes.map { it.id })
+            val toMark = episodes.filterNot { projected[it.id]?.isCompleted == true }
+            if (toMark.isEmpty()) return@withTransaction
+            val historyIdById = listenerStore.historyIds(toMark.map { it.id })
+            val historyIds = toMark.map { historyIdById[it.id] ?: it.id }
             val entitiesToUpsert =
-                episodes.mapIndexed { index, episode ->
+                toMark.mapIndexedNotNull { index, episode ->
                     val historyId = historyIds[index]
                     ListeningHistoryUpsertLogic.buildBulkCompleteEntity(
                         episode = episode,
@@ -345,7 +396,7 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
                         podcastImageUrl = podcastImageUrl,
                         existing = data.listeningHistoryDao.getHistoryItem(historyId),
                         nowMs = currentTime,
-                    ).copy(episodeId = historyId)
+                    )?.copy(episodeId = historyId)
                 }
             data.listeningHistoryDao.upsertAll(entitiesToUpsert)
             listenerStore.recordCompletions(historyIds, completed = true, nowMs = currentTime)

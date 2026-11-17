@@ -43,6 +43,9 @@ class HomeListeningHistoryItemTest {
         assertEquals(true, item.isLiked)
         assertEquals(123_456_789L, item.lastPlayedAt)
         assertEquals(120_000_000L, item.finishedAt)
+        // Marked played: not real listening.
+        assertEquals(false, item.countsAsListening)
+        assertEquals(true, entity.copy(isManualCompletion = false).toHomeListeningHistoryItem().countsAsListening)
     }
 
     @Test

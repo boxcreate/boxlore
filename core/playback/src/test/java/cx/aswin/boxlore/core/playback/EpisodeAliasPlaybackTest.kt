@@ -178,7 +178,7 @@ class EpisodeAliasPlaybackTest {
         assertTrue(database.listeningHistoryDao().getHistoryItem("A")!!.isLiked)
         assertTrue(database.listeningHistoryDao().getHistoryItem("B")!!.isLiked)
         assertEquals(listOf("A"), historyStore.likedEpisodes.first().map { it.episodeId })
-        assertEquals(listOf("A"), historyStore.getAllHistory().first().map { it.episodeId })
+        assertEquals(listOf("A"), historyStore.getRecentHistory().first().map { it.episodeId })
         // Library export still gets every stored row.
         assertEquals(setOf("A", "B"), historyStore.exportStoredHistory().map { it.episodeId }.toSet())
     }

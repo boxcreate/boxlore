@@ -8,7 +8,7 @@ import cx.aswin.boxlore.core.catalog.autoOrganizeFolderLook
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
-import cx.aswin.boxlore.core.playback.historyForEpisodeLookup
+import cx.aswin.boxlore.core.playback.inProgressForEpisodeLookup
 import cx.aswin.boxlore.core.playback.likedEpisodeIds
 import cx.aswin.boxlore.core.prefs.HomePinnedShows
 import cx.aswin.boxlore.feature.info.PodcastInfoPageState.Companion.TAG
@@ -597,8 +597,8 @@ class PodcastInfoViewModel(
         kotlinx.coroutines.flow
             .combine(
                 playbackRepository.playerState,
-                // Looked up by the IDs this page lists: an episode stored under several IDs shows its progress under each.
-                playbackRepository.historyForEpisodeLookup.map { history ->
+                // Every started episode, looked up by the IDs this page lists: an episode stored under several IDs shows its progress under each.
+                playbackRepository.inProgressForEpisodeLookup.map { history ->
                     history.map { it.toInfoListeningProgressItem() }
                 },
                 pageState.currentPodcastIdFlow,

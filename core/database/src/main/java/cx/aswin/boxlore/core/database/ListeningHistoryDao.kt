@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.mapLatest
 
 @Dao
@@ -96,18 +97,34 @@ interface ListeningHistoryDao {
     @Query("SELECT * FROM listening_history WHERE isCompleted = 0 AND progressMs > 0 ORDER BY lastPlayedAt DESC LIMIT 20")
     suspend fun getResumeItemsList(): List<ListeningHistoryEntity>
 
+    /**
+     * Recent history for screens and ranking, newest first, without descriptions: the newest rows
+     * and the newest rows of real listening ([countsAsListening]). One "Mark all as played" stamps
+     * every row it marks as played now, so the newest rows alone could be only marked rows and hide
+     * the listening behind them. Bounded, so ranking never counts old plays without limit and each
+     * read stays on the indexes. Not the whole history: played state comes from the completed IDs
+     * and progress from [getInProgressHistory].
+     */
+    @Query(RECENT_HISTORY_SQL)
+    fun getRecentHistory(): Flow<List<ListeningHistoryEntity>>
+
+    /**
+     * Every episode started and not finished, newest first, without descriptions. Unlike the
+     * recent history it has no cap, so a screen showing progress finds every started episode. For
+     * status only, never ranking: an abandoned play would count for as long as it stays unfinished.
+     */
     @Query(
         """
-        SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl, 
-               episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted, 
-               isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType, 
-               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt 
-        FROM listening_history 
+        SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl,
+               episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted,
+               isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt
+        FROM listening_history
+        WHERE isCompleted = 0 AND progressMs > 0
         ORDER BY lastPlayedAt DESC
-        LIMIT 300
     """,
     )
-    fun getAllHistory(): Flow<List<ListeningHistoryEntity>>
+    fun getInProgressHistory(): Flow<List<ListeningHistoryEntity>>
 
     @Query("SELECT * FROM listening_history WHERE isDirty = 1")
     suspend fun getDirtyItems(): List<ListeningHistoryEntity>
@@ -279,6 +296,22 @@ interface ListeningHistoryDao {
     @Query("SELECT COUNT(*) FROM listening_history WHERE isCompleted = 1")
     fun completedEpisodeCountFlow(): Flow<Int>
 
+    /**
+     * A value that changes when the set of completed rows or a shared completion setting changes,
+     * and stays the same through a progress save (which only writes unfinished rows). Room emits
+     * it on every write; callers drop the repeats.
+     */
+    @Query(
+        """
+        SELECT
+            (SELECT COUNT(*) FROM listening_history WHERE isCompleted = 1) AS completedRows,
+            (SELECT COALESCE(SUM(lastPlayedAt), 0) FROM listening_history WHERE isCompleted = 1) AS completedPlayedAtSum,
+            (SELECT COALESCE(MAX(rowid), 0) FROM listening_history WHERE isCompleted = 1) AS newestCompletedRow,
+            (SELECT COALESCE(SUM(completedAt), 0) + COALESCE(SUM(completeClearedAt), 0) FROM episode_group_state) AS groupCompletionSum
+        """,
+    )
+    fun completedHistorySignal(): Flow<CompletedHistorySignal>
+
     @Transaction
     suspend fun getCompletedEpisodeIds(): List<String> {
         val ids = ArrayList<String>()
@@ -291,12 +324,14 @@ interface ListeningHistoryDao {
         }
     }
 
+    /** Every completed ID, read again only when [completedHistorySignal] changes, not on each progress save. */
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun getCompletedEpisodeIdsFlow(): Flow<List<String>> = completedEpisodeCountFlow().mapLatest { getCompletedEpisodeIds() }
+    fun getCompletedEpisodeIdsFlow(): Flow<List<String>> =
+        completedHistorySignal().distinctUntilChanged().mapLatest { getCompletedEpisodeIds() }
 
     // Every stored row without descriptions, one page at a time along the primary key (each page
-    // seeks to its start, so a long history reads in linear time). Screens keep getAllHistory's
-    // latest 300; the library backup and insights need all of it.
+    // seeks to its start, so a long history reads in linear time). Screens keep getRecentHistory's
+    // recent rows; the library backup and insights need all of it.
     @Query(
         """
         SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl,
@@ -378,6 +413,40 @@ interface ListeningHistoryDao {
 
     @Query("SELECT * FROM listening_history ORDER BY lastPlayedAt DESC LIMIT :limit")
     suspend fun getRecentHistoryList(limit: Int): List<ListeningHistoryEntity>
+
+    /**
+     * The newest [limit] rows and the newest [limit] rows of real listening ([countsAsListening]),
+     * newest first: what ranking reads, so rows only marked played can't push the listening out.
+     */
+    @Query(RECENT_WITH_LISTENING_SQL)
+    suspend fun getRecentHistoryWithListeningList(limit: Int): List<ListeningHistoryEntity>
+
+    /**
+     * The newest [limit] rows of real listening ([countsAsListening]), newest first: filtered
+     * before the limit, so episodes only marked played, or marked unplayed again without being
+     * heard, neither show nor push the listening out.
+     */
+    @Query("SELECT * FROM listening_history WHERE $LISTENING_ROW ORDER BY lastPlayedAt DESC LIMIT :limit")
+    suspend fun getRecentListeningList(limit: Int): List<ListeningHistoryEntity>
+
+    /** [getInProgressHistory] read once. */
+    @Query("SELECT * FROM listening_history WHERE isCompleted = 0 AND progressMs > 0 ORDER BY lastPlayedAt DESC")
+    suspend fun getInProgressHistoryList(): List<ListeningHistoryEntity>
+
+    /**
+     * The newest [limit] rows a recommendation can learn from: played for at least a minute or
+     * finished by listening, never only marked played. Filtered before the limit, so marked rows
+     * can't leave the request with nothing.
+     */
+    @Query(
+        """
+        SELECT * FROM listening_history
+        WHERE isManualCompletion = 0 AND isBulkCompletion = 0 AND (isCompleted = 1 OR progressMs >= $MIN_RECOMMENDATION_PROGRESS_MS)
+        ORDER BY lastPlayedAt DESC
+        LIMIT :limit
+        """,
+    )
+    suspend fun getRecommendationHistoryList(limit: Int): List<ListeningHistoryEntity>
 
     @Query("SELECT * FROM listening_history WHERE isDirty = 1")
     suspend fun getDirtyListeningHistory(): List<ListeningHistoryEntity>
@@ -462,6 +531,46 @@ interface ListeningHistoryDao {
     )
     suspend fun repairPlaybackArtworkLinks(): Int
 }
+
+/** How many of the newest rows, and of the newest listening rows, the recent history holds. */
+private const val RECENT_HISTORY_ROWS = 300
+
+/** [countsAsListening] as SQL over `listening_history`. */
+private const val LISTENING_ROW = """(isManualCompletion = 0 AND isBulkCompletion = 0
+    AND (isCompleted = 1 OR progressMs > 0 OR firstPlayedAt IS NOT NULL OR finishedAt IS NOT NULL OR isLiked = 1))"""
+
+/**
+ * [ListeningHistoryDao.getRecentHistory]: the newest rows and the newest listening rows, each one
+ * bounded set read along the `lastPlayedAt` index, then looked up by ID rather than by walking
+ * the table, so no read scans the whole history.
+ */
+internal const val RECENT_HISTORY_SQL = """
+    SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl,
+           episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted,
+           isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
+           isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt
+    FROM listening_history
+    WHERE episodeId IN (
+        SELECT episodeId FROM (SELECT episodeId FROM listening_history ORDER BY lastPlayedAt DESC LIMIT $RECENT_HISTORY_ROWS)
+        UNION
+        SELECT episodeId FROM (SELECT episodeId FROM listening_history WHERE $LISTENING_ROW ORDER BY lastPlayedAt DESC LIMIT $RECENT_HISTORY_ROWS)
+    )
+    ORDER BY lastPlayedAt DESC
+"""
+
+/** [ListeningHistoryDao.getRecentHistoryWithListeningList], as [RECENT_HISTORY_SQL] with `:limit` rows of each. */
+internal const val RECENT_WITH_LISTENING_SQL = """
+    SELECT * FROM listening_history
+    WHERE episodeId IN (
+        SELECT episodeId FROM (SELECT episodeId FROM listening_history ORDER BY lastPlayedAt DESC LIMIT :limit)
+        UNION
+        SELECT episodeId FROM (SELECT episodeId FROM listening_history WHERE $LISTENING_ROW ORDER BY lastPlayedAt DESC LIMIT :limit)
+    )
+    ORDER BY lastPlayedAt DESC
+"""
+
+/** Listening a recommendation counts: at least a minute played (`HistoryRecommendationLogic.MIN_PROGRESS_MS`). */
+private const val MIN_RECOMMENDATION_PROGRESS_MS = 60_000
 
 /** A player-only artwork link (`content://<app>.collage/...`), as a LIKE pattern. */
 private const val PLAYER_ONLY_ART = "'content://%.collage/%'"

@@ -42,7 +42,7 @@ It does not own the Room schema ([`:core:database`](../database/README.md)), pre
 - `PlaybackProgressCoordinator` and `PlaybackProgressPersistencePolicy`: sequence-stamped saves, so an older write never replaces a later seek or restart.
 - `PlaybackSessionRestoreHelper`, `PlaybackControllerStatePolicy` and `logic.PlaybackHistorySeedPolicy`: restores never replace Room's progress with an empty controller's, and missing rows are seeded from service metadata.
 - `IdleSessionHandoff`: a newer cloud session takes the idle mini-player only when it is empty or the session is a different, more recently played episode.
-- `observeInsights`, `observeFullHistoryTimeline`, `observeListeningByDay` and `observePlayedShows` read every stored row, not the screens' latest 300, at most once a second (`throttleLatest`).
+- `observeInsights`, `observePlayedShows`, `observeFullHistoryTimeline` and `observeListeningByDay` (last two `throttleLatest`) read every stored row; insights and timeline keep only real listening (`countsAsListening`).
 - `PlaybackFinishes`: when this phone last played an episode to the end; the app persists `onRecorded` for Home's survey and review prompts.
 
 #### Listening records

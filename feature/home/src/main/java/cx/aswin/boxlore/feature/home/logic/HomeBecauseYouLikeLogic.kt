@@ -31,6 +31,13 @@ internal object HomeBecauseYouLikeLogic {
         isLiked = item.isLiked,
     )
 
+    /**
+     * The listening Because you like picks its show from: only real listening (`countsAsListening`).
+     * Episodes only marked played, often a whole show at once, say nothing about taste.
+     */
+    fun affinitySignals(history: List<HomeListeningHistoryItem>): List<PodcastAffinityLogic.HistorySignal> =
+        history.filter { it.countsAsListening }.map(::toAffinitySignal)
+
     fun <T> distinctByIdAndTitle(
         items: List<T>,
         id: (T) -> String,

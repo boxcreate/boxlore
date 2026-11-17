@@ -56,6 +56,47 @@ class MixtapeEngineTest {
     }
 
     @Test
+    fun anEpisodeStartedOutsideRecentHistoryIsStillAResumePick() = runTest {
+        // Regression: recent history is bounded, so a started episode behind it came back as new.
+        val subscriptions = listOf(TestFixtures.podcast(id = "pod-1").copy(latestEpisode = episode("started")))
+
+        val result =
+            MixtapeEngine.build(
+                subscriptions = subscriptions,
+                history = emptyList(),
+                inProgress = listOf(history("started")),
+                nowMs = nowMs,
+            )
+
+        assertEquals(listOf("started"), result.episodes.map { it.id })
+        assertEquals(EpisodeStatus.IN_PROGRESS, result.podcasts.single().episodeStatus)
+    }
+
+    @Test
+    fun anEpisodeFinishedOutsideRecentHistoryIsNotOfferedAsUnplayed() = runTest {
+        // Regression: the mix read played state from recent history only, so after a Mark all of
+        // 300+ episodes a finished latest episode with no row left in it came back as unplayed.
+        val finished = episode("finished-latest", podcastId = "pod-1")
+        val fresh = episode("fresh-latest", podcastId = "pod-2")
+        val subscriptions = listOf(
+            TestFixtures.podcast(id = "pod-1").copy(latestEpisode = finished),
+            TestFixtures.podcast(id = "pod-2").copy(latestEpisode = fresh),
+        )
+
+        val result =
+            MixtapeEngine.build(
+                subscriptions = subscriptions,
+                history = emptyList(),
+                completedIds = setOf("finished-latest", "recommended-done"),
+                recommendations = listOf(episode("recommended-done", podcastId = "pod-9")),
+                nowMs = nowMs,
+            )
+
+        assertEquals(listOf("fresh-latest"), result.episodes.map { it.id })
+        assertEquals(1, result.unplayedCount)
+    }
+
+    @Test
     fun inProgressHistoryBecomesResumeCandidate() = runTest {
         val result =
             MixtapeEngine.build(

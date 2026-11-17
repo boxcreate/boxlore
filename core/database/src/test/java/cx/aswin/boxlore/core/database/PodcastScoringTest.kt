@@ -73,6 +73,56 @@ class PodcastScoringTest {
         assertEquals(262.0, scores.getValue("fresh"), 1e-9)
     }
 
+    @Test
+    fun `a show marked played all at once ranks below the shows really listened to`() {
+        // Regression: 300 rows of one Mark all as played scored 12 points each as plays.
+        val listened = listOf("daily", "weekly", "news").flatMap { show ->
+            (0 until 7).map { row("$show-$it", show, nowMs - (it + 1) * 3_600_000L, progressMs = 600_000L) }
+        }
+        val marked = (0 until 300).map { row("old-$it", "back-catalogue", nowMs, completed = true).copy(isBulkCompletion = true) }
+        val oneMarked = row("manual", "back-catalogue", nowMs, completed = true).copy(isManualCompletion = true)
+        val shows = listOf("back-catalogue", "daily", "weekly", "news").map { scorable(it, 0L) }
+
+        val scores = PodcastScoring.calculateScores(podcasts = shows, allHistory = marked + oneMarked + listened, nowMs = nowMs)
+
+        assertEquals(0.0, scores.getValue("back-catalogue"), 1e-9)
+        listOf("daily", "weekly", "news").forEach { assertTrue(scores.getValue(it) > scores.getValue("back-catalogue")) }
+        val mostListened = shows.map { cx.aswin.boxlore.core.model.Podcast(id = it.id, title = it.id, artist = "", imageUrl = "") }
+            .sortedByListening(marked + oneMarked + listened)
+        assertEquals("back-catalogue", mostListened.last().id)
+    }
+
+    @Test
+    fun `a latest episode marked played gets no freshness boost`() {
+        val latest = cx.aswin.boxlore.core.model.Episode(id = "new", title = "New", description = "", audioUrl = "", publishedDate = nowMs / 1000L)
+        val show = scorable("show", 1L).copy(latestEpisode = latest)
+
+        val unplayed = PodcastScoring.calculateScores(listOf(show), emptyList(), includeSubscriptionRecency = false, nowMs = nowMs)
+        val marked = PodcastScoring.calculateScores(
+            listOf(show),
+            listOf(row("new", "show", nowMs, completed = true).copy(isBulkCompletion = true)),
+            includeSubscriptionRecency = false,
+            nowMs = nowMs,
+        )
+
+        assertTrue(unplayed.getValue("show") > 0.0)
+        assertEquals(0.0, marked.getValue("show"), 1e-9)
+    }
+
+    private fun row(id: String, show: String, playedAt: Long, progressMs: Long = 0L, completed: Boolean = false,) = ListeningHistoryEntity(
+        episodeId = id,
+        podcastId = show,
+        episodeTitle = "Episode $id",
+        episodeImageUrl = null,
+        podcastImageUrl = null,
+        episodeAudioUrl = null,
+        podcastName = show,
+        progressMs = progressMs,
+        durationMs = 3_600_000L,
+        isCompleted = completed,
+        lastPlayedAt = playedAt,
+    )
+
     private fun scorable(id: String, subscribedAt: Long,) = ScorablePodcast(
         id = id,
         subscribedAt = subscribedAt,

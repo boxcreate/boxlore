@@ -120,9 +120,12 @@ class DefaultSmartQueueSources(
     override suspend fun getResumeCandidates(): List<ListeningHistoryEntity> =
         database.episodeListenerStore().projectRows(database.listeningHistoryDao().getResumeItemsList()) { !it.isCompleted && it.progressMs > 0 }
 
-    /** Recent history with each episode once and its projected state. */
+    /**
+     * Recent history with each episode once and its projected state: the newest rows and the newest
+     * real listening, so episodes only marked played can't push the listening out of ranking.
+     */
     override suspend fun getRecentHistory(limit: Int): List<ListeningHistoryEntity> =
-        database.episodeListenerStore().projectRows(database.listeningHistoryDao().getRecentHistoryList(limit))
+        database.episodeListenerStore().projectRows(database.listeningHistoryDao().getRecentHistoryWithListeningList(limit))
 
     override suspend fun getRegion(): String = try {
         userPreferencesRepository.regionStream.first()
@@ -146,7 +149,7 @@ class DefaultSmartQueueSources(
      */
     override suspend fun getHistoryForRecommendations(limit: Int): List<HistoryItem> {
         val podcastDao = database.podcastDao()
-        val rawHistory = database.episodeListenerStore().projectRows(database.listeningHistoryDao().getRecentHistoryList(limit * 3))
+        val rawHistory = database.episodeListenerStore().projectRows(database.listeningHistoryDao().getRecommendationHistoryList(limit * 3))
         val filtered =
             rawHistory
                 .filter { entity ->

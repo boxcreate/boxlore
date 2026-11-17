@@ -69,7 +69,7 @@ class EpisodeListenerStoreTest {
         assertEquals(rows.associate { it.episodeId to it.episodeId }, store.groupTokens(rows.map { it.episodeId }))
         assertEquals(setOf("4"), store.projectCompletedIds(listOf("4")))
         assertEquals(emptyMap<String, String>(), store.downloadHolders(rows.map { it.episodeId }))
-        assertEquals(rows, store.projectedRows(history.getAllHistory()).first().sortedBy { it.episodeId })
+        assertEquals(rows, store.projectedRows(history.getRecentHistory()).first().sortedBy { it.episodeId })
 
         // The like write is the old single-row write: same flag, same time, marked for sync.
         assertEquals(1, store.setLiked("3", liked = true, nowMs = 777L))
@@ -236,12 +236,12 @@ class EpisodeListenerStoreTest {
         // B was played after the owner A, so the episode reads B's progress under A's row.
         assertEquals(10L, projected.first().progressMs)
         assertEquals(listOf("C"), store.projectRows(rows) { it.progressMs == 0L }.map { it.episodeId })
-        assertEquals(listOf("A", "C"), store.projectedRows(history.getAllHistory()).first().map { it.episodeId })
+        assertEquals(listOf("A", "C"), store.projectedRows(history.getRecentHistory()).first().map { it.episodeId })
         // Lookups find the episode under each of its IDs, once per ID.
         val byMember = store.projectRowsByMember(rows)
         assertEquals(listOf("A", "B", "C"), byMember.map { it.episodeId })
         assertEquals(byMember[0].copy(episodeId = "B"), byMember[1])
-        assertEquals(listOf("A", "B", "C"), store.projectedRowsByMember(history.getAllHistory()).first().map { it.episodeId })
+        assertEquals(listOf("A", "B", "C"), store.projectedRowsByMember(history.getRecentHistory()).first().map { it.episodeId })
 
         val tokens = store.groupTokens(listOf("A", "B", "C"))
         assertEquals(tokens["A"], tokens["B"])
@@ -393,6 +393,24 @@ class EpisodeListenerStoreTest {
 
     private suspend fun twoAliases() {
         identity.insertAliasesIfAbsent(listOf(alias("A", owner = true, createdAt = 1L), alias("B", createdAt = 2L)))
+    }
+
+    @Test
+    fun listedEpisodesAreLookedUpByIdInTheWholeHistory() = runTest {
+        // Regression: Android Auto read played state from the newest 300 rows, so 301 rows marked
+        // played at once left an episode finished earlier, under its other ID, unplayed.
+        twoAliases()
+        history.upsertAll(
+            listOf(row("A", completed = true, playedAt = 5L), row("solo", progress = 400L, playedAt = 4L)) +
+                (0 until 301).map { row("bulk-$it", completed = true, playedAt = 1_000L + it).copy(isBulkCompletion = true) },
+        )
+
+        val byId = store.projectedHistoryOf(listOf("B", "solo", "never"))
+
+        assertTrue(byId.getValue("B").isCompleted)
+        assertEquals(400L, byId.getValue("solo").progressMs)
+        assertFalse("never" in byId)
+        assertTrue(store.projectedHistoryOf(emptyList()).isEmpty())
     }
 
     @Test

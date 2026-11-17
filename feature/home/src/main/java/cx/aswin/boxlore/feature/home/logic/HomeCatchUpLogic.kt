@@ -41,10 +41,16 @@ internal object HomeCatchUpLogic {
         return if (copies.isEmpty()) allHistory else allHistory + copies
     }
 
+    /**
+     * Sorts each show's fresh episode into unplayed, in progress or finished. [completedEpisodeIds]
+     * holds every completed episode, so one finished long ago, or among many marked played at
+     * once, counts as finished even when [allHistory] (recent history) no longer holds its row.
+     */
     fun buildCatchUpBuckets(
         subs: List<Podcast>,
         allHistory: List<HomeListeningHistoryItem>,
         resolvedSerial: Map<String, Episode>,
+        completedEpisodeIds: Set<String> = emptySet(),
     ): CatchUpBuckets {
         val unplayedBucket = mutableListOf<Podcast>()
         val inProgressBucket = mutableListOf<Pair<Podcast, Long>>()
@@ -63,9 +69,19 @@ internal object HomeCatchUpLogic {
                         podcastId = pod.id,
                     )
                 val history = allHistory.find { it.episodeId == freshEpisodeWithContext.id }
+                val isCompleted = freshEpisodeWithContext.id in completedEpisodeIds || history?.isCompleted == true
 
                 when {
-                    history == null || (history.progressMs == 0L && !history.isCompleted) -> {
+                    isCompleted -> {
+                        completedBucket.add(
+                            pod.copy(
+                                latestEpisode = freshEpisodeWithContext,
+                                resumeProgress = 1f,
+                                episodeStatus = EpisodeStatus.COMPLETED,
+                            ) to (history?.lastPlayedAt ?: 0L),
+                        )
+                    }
+                    history == null || history.progressMs == 0L -> {
                         unplayedBucket.add(
                             pod.copy(
                                 latestEpisode = freshEpisodeWithContext,
@@ -73,27 +89,12 @@ internal object HomeCatchUpLogic {
                             ),
                         )
                     }
-                    !history.isCompleted && history.progressMs > 0L -> {
-                        val progress =
-                            if (history.durationMs > 0) {
-                                (history.progressMs.toFloat() / history.durationMs).coerceIn(0f, 1f)
-                            } else {
-                                0f
-                            }
+                    else -> {
                         inProgressBucket.add(
                             pod.copy(
                                 latestEpisode = freshEpisodeWithContext,
-                                resumeProgress = progress,
+                                resumeProgress = progressOf(history),
                                 episodeStatus = EpisodeStatus.IN_PROGRESS,
-                            ) to history.lastPlayedAt,
-                        )
-                    }
-                    history.isCompleted -> {
-                        completedBucket.add(
-                            pod.copy(
-                                latestEpisode = freshEpisodeWithContext,
-                                resumeProgress = 1f,
-                                episodeStatus = EpisodeStatus.COMPLETED,
                             ) to history.lastPlayedAt,
                         )
                     }
@@ -109,4 +110,7 @@ internal object HomeCatchUpLogic {
             completed = completedBucket,
         )
     }
+
+    private fun progressOf(history: HomeListeningHistoryItem): Float =
+        if (history.durationMs > 0) (history.progressMs.toFloat() / history.durationMs).coerceIn(0f, 1f) else 0f
 }

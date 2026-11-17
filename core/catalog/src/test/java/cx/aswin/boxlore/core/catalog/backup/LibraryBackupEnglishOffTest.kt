@@ -42,7 +42,7 @@ class LibraryBackupEnglishOffTest {
 
     private val noHistory =
         object : ListeningHistoryBackupPort {
-            override fun getAllHistory(): Flow<List<ListeningHistoryEntity>> = flowOf(emptyList())
+            override fun getRecentHistory(): Flow<List<ListeningHistoryEntity>> = flowOf(emptyList())
 
             override suspend fun exportStoredHistory(): List<ListeningHistoryEntity> = emptyList()
 

@@ -335,7 +335,7 @@ class LibraryBackupIdentityRoomTest {
 
     /** History through Room, as the app's playback repository stores it. */
     private class RoomHistory(private val database: BoxLoreDatabase) : ListeningHistoryBackupPort {
-        override fun getAllHistory(): Flow<List<ListeningHistoryEntity>> = database.listeningHistoryDao().getAllHistory()
+        override fun getRecentHistory(): Flow<List<ListeningHistoryEntity>> = database.listeningHistoryDao().getRecentHistory()
 
         override suspend fun exportStoredHistory(): List<ListeningHistoryEntity> = database.listeningHistoryDao().getAllStoredHistory()
 

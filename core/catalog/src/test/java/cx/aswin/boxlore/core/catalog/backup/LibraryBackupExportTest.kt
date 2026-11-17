@@ -32,7 +32,7 @@ class LibraryBackupExportTest {
     private val adaptiveRankingRepository = mock(AdaptiveRankingRepository::class.java)
     private val listeningHistory =
         object : ListeningHistoryBackupPort {
-            override fun getAllHistory(): Flow<List<ListeningHistoryEntity>> = flowOf(
+            override fun getRecentHistory(): Flow<List<ListeningHistoryEntity>> = flowOf(
                 listOf(
                     ListeningHistoryEntity(
                         episodeId = "ep-1",
@@ -52,7 +52,7 @@ class LibraryBackupExportTest {
                 ),
             )
 
-            override suspend fun exportStoredHistory(): List<ListeningHistoryEntity> = getAllHistory().first()
+            override suspend fun exportStoredHistory(): List<ListeningHistoryEntity> = getRecentHistory().first()
 
             override suspend fun upsertHistoryEntity(entity: ListeningHistoryEntity) {}
 

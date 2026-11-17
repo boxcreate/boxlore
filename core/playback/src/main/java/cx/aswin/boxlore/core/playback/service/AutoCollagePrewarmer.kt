@@ -77,7 +77,9 @@ internal class AutoCollagePrewarmer(
     private suspend fun loadSnapshot(): PrewarmSnapshot {
         // Each episode once, with its projected state (own-episode-IDs P4, plan section 8).
         val listenerStore = database.episodeListenerStore()
-        val history = listenerStore.projectRows(database.listeningHistoryDao().getRecentHistoryList(300))
+        // The newest rows and the newest listening, as the Daily Mix in Android Auto reads them.
+        val history = listenerStore.projectRows(database.listeningHistoryDao().getRecentHistoryWithListeningList(300))
+        val completedIds = listenerStore.projectCompletedIds(database.listeningHistoryDao().getCompletedEpisodeIds())
         val resumeItems = listenerStore.projectRows(database.listeningHistoryDao().getResumeItemsList()) { !it.isCompleted && it.progressMs > 0 }
         val subscriptions = database.podcastDao().getSubscribedPodcastsList()
         val liked = listenerStore.projectRows(database.listeningHistoryDao().getLikedEpisodesList(8)) { it.isLiked }
@@ -85,6 +87,7 @@ internal class AutoCollagePrewarmer(
         val queue = queueRepository.getQueueEpisodeSnapshot()
         return PrewarmSnapshot(
             history = history,
+            completedIds = completedIds,
             resumeItems = resumeItems,
             liked = liked,
             subscriptions = subscriptions,
@@ -98,6 +101,7 @@ internal class AutoCollagePrewarmer(
             MixtapeEngine.build(
                 subscriptions = snapshot.subscriptions.map(toAutoPodcast),
                 history = snapshot.history,
+                completedIds = snapshot.completedIds,
                 adaptiveRanking =
                 MixtapeEngine.AdaptiveRanking(
                     scorer = adaptiveCandidateScorer,
@@ -121,6 +125,7 @@ internal class AutoCollagePrewarmer(
         return MixtapeEngine.build(
             subscriptions = snapshot.subscriptions.map(toAutoPodcast),
             history = snapshot.history,
+            completedIds = snapshot.completedIds,
             recommendations = recommendations,
             adaptiveRanking =
             MixtapeEngine.AdaptiveRanking(
@@ -147,6 +152,7 @@ internal class AutoCollagePrewarmer(
         val subscriptions: List<PodcastEntity>,
         val downloads: List<DownloadedEpisodeEntity>,
         val queue: List<Episode>,
+        val completedIds: Set<String> = emptySet(),
     ) {
         fun buildFolderInputs(mixtape: MixtapeEngine.Result): Map<String, List<AutoCollageFolderLogic.ArtPair>> {
             val historyPairs =

@@ -46,6 +46,8 @@ data class HomeDataWrapper(
     val pinnedPodcastIds: List<String> = emptyList(),
     val showsOrderRefreshGeneration: Long = 0L,
     val scoringHistory: List<ListeningHistoryEntity> = emptyList(),
+    /** Every started episode, for Daily Mix resume picks; [history] holds them too. Never ranking. */
+    val inProgressHistory: List<ListeningHistoryEntity> = emptyList(),
     /** Every ID of each episode stored under several IDs, for lookups by the ID a row lists. */
     val episodeAliases: Map<String, Set<String>> = emptyMap(),
 )
@@ -54,9 +56,12 @@ internal data class HomeCoreSlice(
     val trending: List<Podcast>,
     val resume: List<cx.aswin.boxlore.core.playback.PlaybackSession>,
     val subs: List<Podcast>,
+    /** Recent history plus every started episode: status only (in progress, finished, the place). */
     val history: List<HomeListeningHistoryItem>,
     val resolvedSerial: Map<String, Episode>,
+    /** Recent history alone: what ranking reads. */
     val scoringHistory: List<ListeningHistoryEntity>,
+    val inProgressHistory: List<ListeningHistoryEntity> = emptyList(),
     /** Every ID of each episode stored under several IDs (`PlaybackRepository.episodeAliasGroups`). */
     val episodeAliases: Map<String, Set<String>> = emptyMap(),
 )

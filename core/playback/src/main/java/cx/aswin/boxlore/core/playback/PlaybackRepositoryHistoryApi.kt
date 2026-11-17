@@ -34,6 +34,7 @@ val PlaybackRepository.resumeSessions: Flow<List<PlaybackSession>>
 val PlaybackRepository.likedEpisodes: Flow<List<ListeningHistoryEntity>>
     get() = historyStore.likedEpisodes
 
+/** Every completed ID as projected, from the whole history; one read shared by every screen. */
 val PlaybackRepository.completedEpisodeIds: Flow<Set<String>>
     get() = historyStore.completedEpisodeIds
 
@@ -42,11 +43,19 @@ val PlaybackRepository.likedEpisodeIds: Flow<Set<String>>
     get() = historyStore.likedEpisodeIds
 
 /**
- * Recent history for looking an episode up by the ID a screen shows: an episode stored under
- * several IDs appears once per stored ID with its projected state. Lists use `getAllHistory`.
+ * Every episode in progress, for looking one up by the ID a screen shows: an episode stored under
+ * several IDs appears once per stored ID with its projected state. Not capped; played state comes
+ * from [completedEpisodeIds].
  */
-val PlaybackRepository.historyForEpisodeLookup: Flow<List<ListeningHistoryEntity>>
-    get() = historyStore.historyForEpisodeLookup
+val PlaybackRepository.inProgressForEpisodeLookup: Flow<List<ListeningHistoryEntity>>
+    get() = historyStore.inProgressForEpisodeLookup
+
+/**
+ * Every episode in progress once, under the ID recent history lists it by, with its projected
+ * state. Not capped; for progress and the listener's place, never ranking.
+ */
+val PlaybackRepository.inProgressHistory: Flow<List<ListeningHistoryEntity>>
+    get() = historyStore.inProgressHistory
 
 /**
  * A token per ID, equal for every stored ID of one episode and different between episodes; an ID

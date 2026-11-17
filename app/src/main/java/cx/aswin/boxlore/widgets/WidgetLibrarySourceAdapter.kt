@@ -10,6 +10,8 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.core.model.isLatestEpisodeNew
 import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.core.playback.completedEpisodeIds
+import cx.aswin.boxlore.core.playback.inProgressForEpisodeLookup
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.ranking.CandidateSource
@@ -32,6 +34,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
@@ -45,10 +48,14 @@ import kotlinx.coroutines.flow.stateIn
  * last-played hour moves; a new, finished or liked episode always re-ranks.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class WidgetLibrarySourceAdapter internal constructor(
+class WidgetLibrarySourceAdapter
+@Suppress("LongParameterList")
+internal constructor(
     podcasts: Flow<List<Podcast>>,
     history: Flow<List<ListeningHistoryEntity>>,
     sortName: Flow<String>,
+    completedEpisodeIds: Flow<Set<String>> = flowOf(emptySet()),
+    inProgress: Flow<List<ListeningHistoryEntity>> = flowOf(emptyList()),
     hideCompleted: Flow<Boolean>,
     useSmart: Flow<Boolean>,
     lastSeen: Flow<Map<String, String>>,
@@ -64,8 +71,10 @@ class WidgetLibrarySourceAdapter internal constructor(
         scope: CoroutineScope,
     ) : this(
         podcasts = subscriptionRepository.subscribedPodcasts,
-        history = playbackRepository.getAllHistory(),
+        history = playbackRepository.getRecentHistory(),
         sortName = userPreferencesRepository.subscriptionSortStream,
+        completedEpisodeIds = playbackRepository.completedEpisodeIds,
+        inProgress = playbackRepository.inProgressForEpisodeLookup,
         hideCompleted = userPreferencesRepository.hideCompletedInSubsStream,
         useSmart = userPreferencesRepository.latestEpisodesSortUseSmartStream,
         lastSeen = userPreferencesRepository.lastSeenEpisodesStream,
@@ -102,15 +111,14 @@ class WidgetLibrarySourceAdapter internal constructor(
             combine(podcasts, rankingHistory(history), sortName) { podcastList, signedHistory, sort ->
                 Triple(podcastList, signedHistory, sort)
             },
-            combine(hideCompleted, useSmart, lastSeen) { hide, smart, seen ->
-                Triple(hide, smart, seen)
+            combine(hideCompleted, useSmart, lastSeen, completedEpisodeIds, startedEpisodes(inProgress)) { hide, smart, seen, completed, started ->
+                Filters(hide, smart, seen, completed, started)
             },
         ) { podcastsHistorySort, filters ->
             val (podcastList, signedHistory, sort) = podcastsHistorySort
-            val (hide, smart, seen) = filters
-            Inputs(podcastList, signedHistory, sort, hide, smart, seen)
+            Inputs(podcastList, signedHistory, sort, filters)
         }.mapLatest { inputs ->
-            val enriched = enrichWithHistory(inputs.podcasts, inputs.history.rows)
+            val enriched = enrichWithHistory(inputs.podcasts, inputs.history.rows, inputs.filters.completedIds, inputs.filters.inProgress)
             val sort = parseSort(inputs.sortName)
             val sortedShows = sortShows(enriched, inputs.history, sort)
             val showRows =
@@ -123,12 +131,12 @@ class WidgetLibrarySourceAdapter internal constructor(
                             artworkUrl = artworkUrlFor(podcast),
                             fallbackArtworkUrls = podcast.artworkUrls(),
                             deepLinkUri = podcastDeepLink(podcast.id),
-                            isNew = podcast.isLatestEpisodeNew(inputs.lastSeen[podcast.id]),
+                            isNew = podcast.isLatestEpisodeNew(inputs.filters.lastSeen[podcast.id]),
                         )
                     },
                 )
 
-            val sortedLatest = sortLatest(latestEpisodePool(enriched, inputs.hideCompleted), inputs.history, inputs.useSmart)
+            val sortedLatest = sortLatest(latestEpisodePool(enriched, inputs.filters.hideCompleted), inputs.history, inputs.filters.useSmart)
             val episodeRows =
                 LibraryWidgetLogic.truncateEpisodes(
                     sortedLatest.mapNotNull { podcast ->
@@ -160,13 +168,19 @@ class WidgetLibrarySourceAdapter internal constructor(
     override val newEpisodes: Flow<List<WidgetEpisodeRow>> = projection.map { it.newEpisodes }
     override val counts: Flow<WidgetLibraryCounts> = projection.map { it.counts }
 
+    private data class Filters(
+        val hideCompleted: Boolean,
+        val useSmart: Boolean,
+        val lastSeen: Map<String, String>,
+        val completedIds: Set<String>,
+        val inProgress: List<ListeningHistoryEntity>,
+    )
+
     private data class Inputs(
         val podcasts: List<Podcast>,
         val history: SignedHistory,
         val sortName: String,
-        val hideCompleted: Boolean,
-        val useSmart: Boolean,
-        val lastSeen: Map<String, String>,
+        val filters: Filters,
     )
 
     /** History with the signature it ranks by; two values with one signature rank the same. */
@@ -252,15 +266,38 @@ class WidgetLibrarySourceAdapter internal constructor(
             .map { rows -> SignedHistory(rows, RankingHistorySignature.of(rows)) }
             .distinctUntilChangedBy { it.signature }
 
-        fun enrichWithHistory(podcasts: List<Podcast>, allHistory: List<ListeningHistoryEntity>,): List<Podcast> {
-            val historyById = allHistory.associateBy { it.episodeId }
-            return podcasts.map { podcast -> enrich(podcast, historyById) }
+        /**
+         * Every started episode, again only when one starts or stops being in progress: like
+         * [rankingHistory], a progress save alone doesn't redraw the widget.
+         */
+        internal fun startedEpisodes(inProgress: Flow<List<ListeningHistoryEntity>>): Flow<List<ListeningHistoryEntity>> =
+            inProgress.distinctUntilChangedBy { rows -> rows.mapTo(HashSet()) { it.episodeId } }
+
+        /**
+         * [podcasts] with their latest episode's status. [completedIds] holds every completed
+         * episode and [inProgress] every started one, so an episode finished or started long ago,
+         * or behind many marked played at once, keeps its status even when the recent [allHistory]
+         * no longer holds its row.
+         */
+        fun enrichWithHistory(
+            podcasts: List<Podcast>,
+            allHistory: List<ListeningHistoryEntity>,
+            completedIds: Set<String> = emptySet(),
+            inProgress: List<ListeningHistoryEntity> = emptyList(),
+        ): List<Podcast> {
+            val historyById = (inProgress + allHistory).associateBy { it.episodeId }
+            return podcasts.map { podcast -> enrich(podcast, historyById, completedIds) }
         }
 
-        private fun enrich(podcast: Podcast, historyById: Map<String, ListeningHistoryEntity>): Podcast {
+        private fun enrich(podcast: Podcast, historyById: Map<String, ListeningHistoryEntity>, completedIds: Set<String>): Podcast {
             val episode = podcast.latestEpisode ?: return podcast
             val history = historyById[episode.id]
             return when {
+                episode.id in completedIds ->
+                    podcast.copy(
+                        resumeProgress = 1f,
+                        episodeStatus = EpisodeStatus.COMPLETED,
+                    )
                 history == null || (history.progressMs == 0L && !history.isCompleted) ->
                     podcast.copy(episodeStatus = EpisodeStatus.UNPLAYED)
                 !history.isCompleted && history.progressMs > 0L -> {

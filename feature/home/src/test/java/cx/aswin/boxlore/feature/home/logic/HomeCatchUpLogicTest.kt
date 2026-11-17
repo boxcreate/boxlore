@@ -1,8 +1,11 @@
 package cx.aswin.boxlore.feature.home.logic
 
+import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.withInProgress
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.home.HomeListeningHistoryItem
+import cx.aswin.boxlore.feature.home.toHomeListeningHistoryItem
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -58,6 +61,52 @@ class HomeCatchUpLogicTest {
                 .single()
                 .first.episodeStatus,
         )
+    }
+
+    @Test
+    fun `a latest episode finished outside recent history still reads as finished`() {
+        // Regression: after one Mark all of 300+ episodes no row of an episode finished earlier was
+        // left in recent history, so Home offered it again as new.
+        val finished = TestFixtures.episode(id = "ep-done", podcastId = "d")
+        val fresh = TestFixtures.episode(id = "ep-new", podcastId = "u")
+        val subs =
+            listOf(
+                TestFixtures.podcast(id = "d", title = "D").copy(latestEpisode = finished),
+                TestFixtures.podcast(id = "u", title = "U").copy(latestEpisode = fresh),
+            )
+
+        val buckets = HomeCatchUpLogic.buildCatchUpBuckets(subs, emptyList(), resolvedSerial = emptyMap(), completedEpisodeIds = setOf("ep-done"))
+
+        assertEquals(listOf("u"), buckets.unplayed.map { it.id })
+        assertEquals(listOf("d"), buckets.completed.map { it.first.id })
+        assertEquals(EpisodeStatus.COMPLETED, buckets.completed.single().first.episodeStatus)
+    }
+
+    @Test
+    fun `a latest episode started behind recent history still reads as in progress`() {
+        // Regression: recent history is bounded, so a started episode behind it read as new. Home
+        // adds every started episode to its status history (recent history withInProgress).
+        val started = TestFixtures.episode(id = "ep-started", podcastId = "s")
+        val subs = listOf(TestFixtures.podcast(id = "s", title = "S").copy(latestEpisode = started))
+        val row = ListeningHistoryEntity(
+            episodeId = "ep-started",
+            podcastId = "s",
+            episodeTitle = "Started",
+            episodeImageUrl = null,
+            podcastImageUrl = null,
+            episodeAudioUrl = null,
+            podcastName = "S",
+            progressMs = 900_000L,
+            durationMs = 3_600_000L,
+            isCompleted = false,
+            lastPlayedAt = 5L,
+        )
+        val statusHistory = emptyList<ListeningHistoryEntity>().withInProgress(listOf(row)).map { it.toHomeListeningHistoryItem() }
+
+        val buckets = HomeCatchUpLogic.buildCatchUpBuckets(subs, statusHistory, resolvedSerial = emptyMap())
+
+        assertEquals(listOf("s"), buckets.inProgress.map { it.first.id })
+        assertEquals(0.25f, buckets.inProgress.single().first.resumeProgress)
     }
 
     @Test
