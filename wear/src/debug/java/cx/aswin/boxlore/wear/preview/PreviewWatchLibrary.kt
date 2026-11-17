@@ -5,6 +5,7 @@ import cx.aswin.boxlore.wear.data.WatchLibrary
 import cx.aswin.boxlore.wear.data.WatchPlayback
 import cx.aswin.boxlore.wear.model.NowPlaying
 import cx.aswin.boxlore.wear.model.PlaybackPlace
+import cx.aswin.boxlore.wear.model.ShowEpisodes
 import cx.aswin.boxlore.wear.model.SleepTimerChoice
 import cx.aswin.boxlore.wear.model.WatchDownload
 import cx.aswin.boxlore.wear.model.WatchEpisode
@@ -41,8 +42,8 @@ internal class PreviewWatchLibrary : WatchLibrary {
 
     override fun show(showId: String): Flow<WatchShow?> = allShows.map { list -> list.firstOrNull { it.id == showId } }
 
-    override fun episodes(showId: String): Flow<List<WatchEpisode>> =
-        allEpisodes.map { list -> list.filter { it.showId == showId } }
+    override fun episodes(showId: String): Flow<ShowEpisodes> =
+        allEpisodes.map { list -> ShowEpisodes.Loaded(list.filter { it.showId == showId }) }
 
     override fun episode(episodeId: String): Flow<WatchEpisode?> =
         allEpisodes.map { list -> list.firstOrNull { it.id == episodeId } }

@@ -22,6 +22,15 @@ interface PhoneLibraryPort {
 
     /** The newest [limit] episodes of a show the phone has saved; empty when it has none. */
     suspend fun episodes(podcastId: String, limit: Int): List<WearLinkEpisode>
+
+    /** When the phone last read the show's feed (epoch milliseconds); null when it never has. */
+    suspend fun episodesReadAt(podcastId: String): Long? = null
+
+    /**
+     * Reads the show's feed into the saved episodes, when the phone's own freshness rules say it
+     * is due. Asked only when the watch found the saved list old.
+     */
+    suspend fun refreshEpisodes(podcastId: String) = Unit
 }
 
 /** The listener's account on the phone, as far as signing the watch in needs it. */
