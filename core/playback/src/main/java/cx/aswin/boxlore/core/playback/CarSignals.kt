@@ -11,13 +11,21 @@ import cx.aswin.boxlore.core.playback.service.CarConnectionState
  *   the car's screen (installs that didn't come from a trusted store such as Google Play).
  * - [onCarScreensOpened]: Android Auto asked for boxlore's lists during a drive, so boxlore is on
  *   the car's screen. Sent once per player service.
+ * - [onCarNewEpisodesOpened]: Android Auto opened New episodes or Shows during a drive, while the
+ *   player service runs. `:app` may start one bounded new-episode check and returns whether it did;
+ *   sent once per drive once one is started, and asked again on a later browse when it was not.
+ * - [onCarDriveEnded]: the drive whose [onCarNewEpisodesOpened] started a check ended.
  *
- * Both run off the main thread.
+ * All run off the main thread.
  */
 object CarSignals {
     @Volatile var onDriveStarted: ((Context) -> Unit)? = null
 
     @Volatile var onCarScreensOpened: ((Context) -> Unit)? = null
+
+    @Volatile var onCarNewEpisodesOpened: ((Context) -> Boolean)? = null
+
+    @Volatile var onCarDriveEnded: ((Context) -> Unit)? = null
 
     /** Whether the phone is in a car right now: Android Auto on a car's screen, car mode, or Automotive. Reads a provider, so off the main thread. */
     fun isInCar(context: Context): Boolean = CarConnectionState.isInCar(context)

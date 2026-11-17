@@ -48,7 +48,7 @@ It does not own the Room schema ([`:core:database`](../database/README.md)), pre
 #### Listening records
 
 - `PlaybackTelemetrySession` records one listen from sound starting until it pauses, finishes, switches episode, stops or the service closes; `ListenTally` counts heard time and `service.ListenEndRule` decides the end.
-- `ListeningRecordWriter` saves each timed play with its listening time, play source, output (`service.ListeningOutputRoute`), release date and listening device ID. Sessions stay whole for 400 days (`ListeningSessionRecordLogic.RETENTION_DAYS`), then fold into daily rollups.
+- `ListeningRecordWriter` saves each timed play (listening time, play source, output `service.ListeningOutputRoute`, release date, listening device ID). Sessions stay whole for 400 days (`ListeningSessionRecordLogic.RETENTION_DAYS`), then fold into daily rollups.
 - Listen, error and interruption events (`ListenNoteKeeper`, `ListenInterruptions`, `PlaybackErrorOnce`, `FirstPlayClaim`) are described in [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md).
 
 ### Playback service and notification
@@ -72,7 +72,7 @@ It does not own the Room schema ([`:core:database`](../database/README.md)), pre
 - `service.SeekSettleWindow` hides a seek's buffering, which resets Android Auto's scroll.
 - `AutoMediaResolver`, `AutoPlaybackResumptionHandler` and `AutoVoiceSearchHandler`, each with a policy object: playable items, resumption, voice search.
 - `AutoBrowseControllerMatcher` tells car controllers from Bluetooth AVRCP and system UI; connection events count only in a car (`CarConnectionState`, `CarConnectionWatcher`), and `labelCarPlay` names a play `android_auto_*` only when Auto's controller asked.
-- `CarSignals` tells `:app` when a drive starts while the player service runs (`service.DriveStartWatcher`) and when Auto first browses during a drive.
+- `CarSignals` tells `:app` when a drive starts while the player service runs (`service.DriveStartWatcher`), when Auto first browses during a drive, and when it opens New episodes or Shows.
 - `service.AutoCollageProvider` serves `content://` covers and collages (`AutoCollagePrewarmer`, `AutoCollageGenerator`, `AutoCollageLayouts`), fetched by `AutoArtworkDownloader` over validated HTTPS, cached at car size (`AutoArtworkScaler`).
 - The show's cover replaces a failed episode image; saved artwork is `PlaybackArtworkMetadata.savedArtworkUrl`, never a collage link.
 - Browse root title: `:core:catalog`'s `auto_app_name`; the generic tile spells `boxlore` lowercase.
@@ -125,10 +125,10 @@ src/main/java/cx/aswin/boxlore/core/data/service/   # stubs for legacy service n
 
 - `AppContainer` builds the graph once: DB → `PodcastRepository` → `QueueRepository` → `PlaybackRepository` → `QueueManager`.
 - Player and controller callbacks run on the main thread. `restoreLastSession` and transport calls hop to `PlaybackThreadPolicy.mainDispatcher`; database, artwork and recommendation work runs on background dispatchers.
-- `PlaybackRepository` polls position only while app UI is in the foreground; widgets call `refreshProgressOnce()`, which publishes it once while the player holds the named episode. Only the service saves active-session progress and telemetry.
+- `PlaybackRepository` polls position only while app UI is in the foreground; widgets' `refreshProgressOnce()` publishes it once while the player holds the named episode. Only the service saves active-session progress and telemetry.
 - `PlaybackMediaControllerHandle.awaitController()` returns null on a rejected connection and reconnects with growing delays, at most `MediaControllerReconnectPolicy.MAX_ATTEMPTS` times.
 - `BoxLorePlaybackService` resolves shared dependencies lazily; its service-scoped players keep playback and transfers going without an Activity.
-- Idle handoff: a local session paused in the background for `PlaybackPowerPolicy.PAUSED_IDLE_TIMEOUT_MS` saves progress, rechecks eligibility and stops the service. Playback, buffering intent, foreground UI and Cast skip that teardown.
+- Idle handoff: a local session paused in the background for `PlaybackPowerPolicy.PAUSED_IDLE_TIMEOUT_MS` saves progress, rechecks eligibility and stops the service, unless playing, buffering, in the foreground or casting.
 - The local player keeps `WAKE_MODE_NETWORK` for screen-off streaming and enables audio offload only where playback speed still works.
 - Natural completion is event-driven; outro polling runs only while playing with a real trim.
 

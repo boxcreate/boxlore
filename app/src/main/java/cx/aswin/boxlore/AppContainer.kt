@@ -504,6 +504,11 @@ class AppContainer(
         )
     }
 
+    /** The only owner of [subscriptionForegroundSync]'s foreground gate: boxlore on screen, or one check for Android Auto. */
+    val newEpisodeCheckGate: cx.aswin.boxlore.core.catalog.NewEpisodeCheckGate by lazy {
+        cx.aswin.boxlore.core.catalog.NewEpisodeCheckGate(subscriptionForegroundSync, syncScope)
+    }
+
     override val subscriptionForegroundSync: SubscriptionForegroundSync by lazy {
         SubscriptionForegroundSync.create(
             podcastRepository = podcastRepository,

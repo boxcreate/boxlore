@@ -178,7 +178,7 @@ class BoxLoreApplication :
             }
         }
         cx.aswin.boxlore.lifecycle.AutoDownloadLifecycle(this, container, applicationScope).start()
-        connectAndroidAutoTip()
+        connectCarSignals()
         HomeScreenWidgetsInstaller.install(
             context = this,
             scope = applicationScope,
@@ -394,12 +394,18 @@ class BoxLoreApplication :
         }
     }
 
-    /** The Android Auto tip hears about drives from the player, which can't depend on :app. */
-    private fun connectAndroidAutoTip() {
+    /**
+     * Car moments from the player, which can't depend on :app: drives for the Android Auto tip, and
+     * New episodes or Shows opened in the car for one bounded new-episode check
+     * ([cx.aswin.boxlore.core.catalog.NewEpisodeCheckGate]).
+     */
+    private fun connectCarSignals() {
         cx.aswin.boxlore.core.playback.CarSignals.onDriveStarted = {
             applicationScope.launch { container.androidAutoTip.maybeShow(cx.aswin.boxlore.ui.announcement.AndroidAutoTip.Trigger.DRIVE_STARTED) }
         }
         cx.aswin.boxlore.core.playback.CarSignals.onCarScreensOpened = { container.androidAutoTip.carScreensOpened() }
+        cx.aswin.boxlore.core.playback.CarSignals.onCarNewEpisodesOpened = { container.newEpisodeCheckGate.carListsOpened() }
+        cx.aswin.boxlore.core.playback.CarSignals.onCarDriveEnded = { container.newEpisodeCheckGate.carDriveEnded() }
     }
 
     /** PostHog setup: event levels first, then the SDK off the main thread. */

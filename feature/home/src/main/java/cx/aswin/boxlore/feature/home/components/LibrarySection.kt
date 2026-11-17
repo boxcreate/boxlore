@@ -170,7 +170,11 @@ fun YourShowsSection(
             selectors = {
                 if (sidebar && subscribedPodcasts.list.size == 1) {
                     val onlyShow = subscribedPodcasts.list.single()
-                    TabletSingleShowSpotlight(onlyShow, LocalLastSeenEpisodes.current[onlyShow.id], CoverPin(onlyShow.id in pinnedPodcastIds) { onTogglePin(onlyShow.id) }, onPodcastClick)
+                    // Opening the only show also checks it for new episodes, like tapping its chip on a phone.
+                    TabletSingleShowSpotlight(onlyShow, LocalLastSeenEpisodes.current[onlyShow.id], CoverPin(onlyShow.id in pinnedPodcastIds) { onTogglePin(onlyShow.id) }) {
+                        onPodcastSelected(it.id)
+                        onPodcastClick(it)
+                    }
                 } else {
             YourShowsSelectors(
                 podcasts = subscribedPodcasts.list,

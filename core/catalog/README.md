@@ -39,6 +39,7 @@ It does not own playback, downloads, Compose UI, Room schema ([`:core:database`]
 - `requestRefresh` respects a cooldown, `refreshNow` (pull to refresh) skips it and waits at most `PULL_WAIT_MAX_MS` while its pass carries on, and `requestCatalogIngest` reads a newly followed show's feed on the application scope.
 - `DirectFeedRecovery`: reports a failed read, tries a replacement address, saved only if it reads; `FeedFixToggles` stay on without an answer.
 - `FeedAddressDailyCheck`: asks `/v2/shows/feeds` daily per followed show and swaps only a confirmed move that reads; follows not yet pushed wait.
+- `FollowedShowFeedRead.readNow` reads one followed show's feed past its wait (Home's show chip; the caller throttles it).
 - `FeedReporter` / `FeedReportLimiter`: broken-feed reports, once per show a day and 20 a day, with `FOLLOWED_SHOWS_RESERVE` kept for followed shows. Use the app's one limiter.
 - `RenumberedShowFollows` (`SubscriptionRepository.renumberedFollows`, rules in `RenumberedFollowMerge`) keeps one follow when Podcast Index renumbers a show.
 - `SubscribedEpisodeCatalog`: routes the local catalog port to the Podcast Index or RSS adapter; a `FeedMoveFollower` saves permanent feed moves.
@@ -122,7 +123,7 @@ src/main/res/                  # auto_* strings and Android Auto drawables
 - Instances are application-scoped, built by `AppContainer`; workers and services use `SharedAppDependenciesHolder`.
 - Repository APIs are `suspend` and do network and database work on IO.
 - `PodcastRepository` is built on the main thread, so its preferences and clients open lazily.
-- `SubscriptionForegroundSync` pauses its timer outside the foreground; manual and ingest passes are not tied to a screen.
+- `SubscriptionForegroundSync` pauses its timer outside the foreground; manual and ingest passes are not tied to a screen. Only `NewEpisodeCheckGate` opens that gate: while boxlore is on screen, and briefly for one automatic pass when Android Auto opens New episodes or Shows. Widgets and the watch never start a check.
 - Sync pushes run one at a time (`pushMutex`); address and renumbering read-modify-writes are single transactions.
 
 ## Persistence & identity
