@@ -213,7 +213,7 @@ internal class PodcastInfoPullRefresh(
         val limit = pageSizeFor(activeInitialState.currentSort)
         val sortParam = sortParamFor(activeInitialState.currentSort)
         val podcast = repository.getPodcastDetails(targetPodcastId) ?: activeInitialState.podcast
-        val page = repository.getShowPageEpisodes(targetPodcastId, limit, 0, sortParam)
+        val page = repository.getShowPageEpisodes(targetPodcastId, limit, 0, sortParam, list = pageState.listSchemes)
         if (!PodcastInfoPullRefreshLogic.shouldApply(pageState.currentPodcastId, targetPodcastId)) {
             return
         }

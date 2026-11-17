@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.catalog.sync
 
+import cx.aswin.boxlore.core.catalog.backup.PendingOpmlImports
 import cx.aswin.boxlore.core.catalog.ports.ActivePlaybackSyncPort
 import cx.aswin.boxlore.core.catalog.ports.QueueSyncPort
 import cx.aswin.boxlore.core.database.EpisodeIdentityDao
@@ -79,6 +80,8 @@ open class UserSyncCoordinator(
     private val playedShowDao: PlayedShowDao? = null,
     /** Daily listening per phone for the cloud sync (Room v40); null syncs no listening, as older builds. */
     private val listeningInsightsMaintenance: ListeningInsightsMaintenance? = null,
+    /** OPML outlines an import hasn't finished; cleared on an account switch so they are never followed into the new account. */
+    private val pendingOpmlImports: PendingOpmlImports? = null,
     /**
      * Runs before this phone's first pull for an account (a sign-in or an account switch), which can
      * bring in another phone's finished episodes: starts the review prompt's quiet days.
@@ -291,6 +294,7 @@ open class UserSyncCoordinator(
         purgeHistory()
         purgeQueue()
         purgeAccountMetadata()
+        pendingOpmlImports?.clear()
     }
 
     private suspend fun purgeSubscriptions() {

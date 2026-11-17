@@ -56,6 +56,9 @@ interface SharedAppDependencies {
      * Added in P4 PR 17 of the own-episode-IDs plan (plan section 8, JSON backup v7).
      */
     val renumberedShows: RenumberedShows get() = RenumberedShows.NONE
+
+    /** OPML outlines an import couldn't settle yet (`boxlore_pending_opml_imports`); null keeps them for one process only (tests). */
+    val pendingOpmlImports: cx.aswin.boxlore.core.catalog.backup.PendingOpmlImports? get() = null
 }
 
 /**

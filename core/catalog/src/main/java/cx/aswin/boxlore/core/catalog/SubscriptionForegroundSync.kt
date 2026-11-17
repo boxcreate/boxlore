@@ -7,7 +7,6 @@ import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
@@ -60,6 +59,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  * call it. Library Subscriptions must call [requestRefresh] on appear; its pull to
  * refresh calls [refreshNow], which skips the cooldown.
  */
+@Suppress("LongParameterList", "kotlin:S107") // The later parameters are test seams with production defaults.
 class SubscriptionForegroundSync(
     private val scope: CoroutineScope,
     private val initialDelayMs: Long = DEFAULT_INITIAL_DELAY_MS,
@@ -74,9 +74,12 @@ class SubscriptionForegroundSync(
     private val periodicIntervalMs: Long = DEFAULT_PERIODIC_INTERVAL_MS,
     private val nowMs: () -> Long = { System.currentTimeMillis() },
     private val catalogIngestAction: suspend (String) -> Unit = {},
+    /** Paced library catch-up run after each completed pass ([ForegroundCatchUp]). */
+    catchUpSteps: List<suspend () -> Unit> = emptyList(),
 ) {
     private val started = AtomicBoolean(false)
     private val foreground = MutableStateFlow(true)
+    private val catchUp = ForegroundCatchUp(scope, foreground, catchUpSteps)
 
     /** App lifecycle owns this gate; process survival must not authorize polling. */
     fun setForeground(active: Boolean) {
@@ -248,6 +251,7 @@ class SubscriptionForegroundSync(
                 }
             }
             lastCompletedAtMs.set(nowMs())
+            catchUp.request()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -307,6 +311,7 @@ class SubscriptionForegroundSync(
             chunkSize: Int = DEFAULT_CHUNK_SIZE,
             feedFixes: FeedFixToggles = FeedFixToggles(),
             addressUpkeep: FeedAddressUpkeep = FeedAddressUpkeep(),
+            catchUpSteps: List<suspend () -> Unit> = emptyList(),
         ): SubscriptionForegroundSync {
             val preferred = AtomicReference<String?>(null)
             val refreshed =
@@ -340,6 +345,7 @@ class SubscriptionForegroundSync(
                     addressJobs =
                     addressJobs(podcastRepository, subscriptionRepository, addressUpkeep, DirectFeedRecovery.addressRead(subscriptionRepository, localEpisodeCatalog)),
                 ),
+                catchUpSteps = catchUpSteps,
             )
         }
 
@@ -372,6 +378,34 @@ class SubscriptionForegroundSync(
             )
         }
 
+        /** Looks up the missing HTTPS addresses that are due ([MissingFeedUrlRecovery]), stamping each only once answered. */
+        private suspend fun recoverDueMissingFeedUrls(
+            ids: Set<String>,
+            podcastRepository: PodcastRepository,
+            subscriptionRepository: SubscriptionRepository,
+            localEpisodeCatalog: LocalEpisodeCatalogPort?,
+        ) {
+            val recoveryNow = System.currentTimeMillis()
+            recoverMissingFeedUrls(
+                ids =
+                MissingFeedUrlRecovery.dueTargets(
+                    ids = ids,
+                    now = recoveryNow,
+                    feedUrlOf = { id -> subscriptionRepository.getPodcastEntity(id)?.feedUrl },
+                    lastLookupAt = { id -> localEpisodeCatalog?.lastFeedUrlLookupAt(id) ?: 0L },
+                ).toSet(),
+                recoverOne = { id ->
+                    MissingFeedUrlRecovery.recoverOne(
+                        id = id,
+                        now = recoveryNow,
+                        lookup = podcastRepository::lookupFeedUrlWhenRoom,
+                        stamp = { show, at -> localEpisodeCatalog?.markFeedUrlLookup(show, at) },
+                        saveHttps = { show, url -> subscriptionRepository.ensureHttpsFeedUrl(show, url) },
+                    )
+                },
+            )
+        }
+
         @Suppress("LongParameterList", "kotlin:S107")
         private fun subscribedSyncAction(
             podcastRepository: PodcastRepository,
@@ -392,19 +426,7 @@ class SubscriptionForegroundSync(
             // One follow per renumbered show before feeds are read (RenumberedShowFollows.collapseFollowsQuietly).
             subscriptionRepository.renumberedFollows.collapseFollowsQuietly(podcastRepository::getPodcastDetails)
             val ids = subscriptionRepository.subscribedPodcastIds.first()
-            val recoveryNow = System.currentTimeMillis()
-            recoverMissingFeedUrls(
-                ids = ids,
-                recoverOne = { id ->
-                    recoverOneMissingFeedUrl(
-                        id = id,
-                        now = recoveryNow,
-                        subscriptionRepository = subscriptionRepository,
-                        podcastRepository = podcastRepository,
-                        localEpisodeCatalog = localEpisodeCatalog,
-                    )
-                },
-            )
+            recoverDueMissingFeedUrls(ids, podcastRepository, subscriptionRepository, localEpisodeCatalog)
             syncSubscribedLatestEpisodes(
                 loadIds = { ids },
                 loadPodcastMeta = { id -> tipMeta(subscriptionRepository, id) },
@@ -803,34 +825,6 @@ class SubscriptionForegroundSync(
                         }
                     }.awaitAll()
             }
-        }
-
-        private suspend fun recoverOneMissingFeedUrl(
-            id: String,
-            now: Long,
-            subscriptionRepository: SubscriptionRepository,
-            podcastRepository: PodcastRepository,
-            localEpisodeCatalog: LocalEpisodeCatalogPort?,
-        ) {
-            val entity = subscriptionRepository.getPodcastEntity(id) ?: return
-            if (TrackedPodcastRtdbLogic.httpsFeedUrl(entity.feedUrl) != null) return
-            val lastLookup = localEpisodeCatalog?.lastFeedUrlLookupAt(id) ?: 0L
-            if (lastLookup > 0L &&
-                now - lastLookup < LocalEpisodeCatalogRepository.FEED_URL_LOOKUP_INTERVAL_MS
-            ) {
-                return
-            }
-            localEpisodeCatalog?.markFeedUrlLookup(id, now)
-            val details =
-                try {
-                    podcastRepository.getPodcastDetails(id)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    null
-                }
-            val https = TrackedPodcastRtdbLogic.httpsFeedUrl(details?.feedUrl) ?: return
-            subscriptionRepository.ensureHttpsFeedUrl(id, https)
         }
 
         private suspend fun httpsSubscribedIds(ids: Set<String>, subscriptionRepository: SubscriptionRepository,): Set<String> = ids

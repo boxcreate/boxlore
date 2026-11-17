@@ -117,7 +117,7 @@ internal class PodcastInfoShowLoader(
 
                 if (currentPodcast?.isRss == true) {
                     val cachedPage =
-                        repository.getShowPageEpisodes(effectivePodcastId, limit, 0, sortParam)
+                        repository.getShowPageEpisodes(effectivePodcastId, limit, 0, sortParam, list = pageState.listSchemes)
                     pageState.currentOffset = cachedPage.sourceCount
                     val successState =
                         PodcastInfoUiState.Success(
@@ -340,14 +340,14 @@ internal class PodcastInfoShowLoader(
             apiPodcast = repository.getPodcastDetails(podcastId)
             if (apiPodcast != null) {
                 val realId = apiPodcast.id
-                val episodesDeferred = async { repository.getShowPageEpisodes(realId, limit, 0, sortParam) }
+                val episodesDeferred = async { repository.getShowPageEpisodes(realId, limit, 0, sortParam, list = pageState.listSchemes) }
                 page = episodesDeferred.await()
             } else {
                 page = PodcastRepository.EpisodePage(emptyList(), false)
             }
         } else {
             val podcastDeferred = async { repository.getPodcastDetails(podcastId) }
-            val episodesDeferred = async { repository.getShowPageEpisodes(podcastId, limit, 0, sortParam) }
+            val episodesDeferred = async { repository.getShowPageEpisodes(podcastId, limit, 0, sortParam, list = pageState.listSchemes) }
             apiPodcast = podcastDeferred.await()
             page = episodesDeferred.await()
         }

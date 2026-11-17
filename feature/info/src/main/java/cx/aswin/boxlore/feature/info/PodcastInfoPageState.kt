@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.info
 
+import cx.aswin.boxlore.core.catalog.ShowListSchemes
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoAsyncResultLogic
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPageShow
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPullRefreshLogic
@@ -28,6 +29,13 @@ internal class PodcastInfoPageState {
 
     /** Source episodes loaded so far, the offset of the next page. */
     var currentOffset: Int = 0
+
+    /**
+     * Which route this page's list of each show was read from, for every episode-list read of this
+     * page ([cx.aswin.boxlore.core.catalog.PodcastRepository.getShowPageEpisodes]): its later pages
+     * and range selection read only that route, whatever another page for the same show reads.
+     */
+    val listSchemes = ShowListSchemes()
 
     /** Records the show [routePodcastId]'s page resolved to, while that route is still the one requested. */
     fun setShownPodcastId(routePodcastId: String, shownPodcastId: String) {

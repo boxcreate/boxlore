@@ -934,6 +934,7 @@ fun BoxLoreAppRoot(
                                         completedCount = 0,
                                         isJson = false,
                                         importedPodcasts = currentState.importedPodcasts,
+                                        pendingCount = currentState.pendingCount,
                                     )
                             } else {
                                 opmlImportState =
@@ -943,6 +944,7 @@ fun BoxLoreAppRoot(
                                         podcastsToMark = podcastsToMark,
                                         totalImportedCount = currentState.importedPodcasts.size,
                                         importedPodcasts = currentState.importedPodcasts,
+                                        pendingCount = currentState.pendingCount,
                                     )
                                 importTriggerKey = System.currentTimeMillis()
                             }
@@ -957,6 +959,7 @@ fun BoxLoreAppRoot(
                                     completedCount = 0,
                                     isJson = false,
                                     importedPodcasts = currentState.importedPodcasts,
+                                    pendingCount = currentState.pendingCount,
                                 )
                         }
                     },

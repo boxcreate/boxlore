@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.info
 
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.ShowListSchemes
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.model.Episode
@@ -46,13 +47,15 @@ internal class PodcastInfoSupplementSupport(
         isCatalogReady = { false },
     )
 
+    /** The app's support: the show page's episode list read in that page's [list]. */
     constructor(
         repository: PodcastRepository,
         episodeSupplementPort: EpisodeSupplementPort,
+        list: ShowListSchemes,
     ) : this(
         episodeSupplementPort,
         { id, limit, offset, sort ->
-            repository.getShowPageEpisodes(id, limit, offset, sort)
+            repository.getShowPageEpisodes(id, limit, offset, sort, list = list)
         },
         { id -> repository.loadPiEpisodesForSupplement(id) },
         // A feed-first page reads the feed itself (pull to refresh), so it never offers "Missing
@@ -107,6 +110,8 @@ internal class PodcastInfoSupplementSupport(
             isLoadingMore = isLoadingMore,
             userMessage = userMessage,
             directFeedChip = chip,
+            // A page loaded: whatever failed before is behind the list now.
+            pageLoadFailed = false,
         )
     }
 

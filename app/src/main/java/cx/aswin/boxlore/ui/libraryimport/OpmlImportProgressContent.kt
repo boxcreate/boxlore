@@ -206,7 +206,13 @@ private fun importStepLabel(kind: ImportStepKind): Int = when (kind) {
 @Composable
 private fun SuccessHeader(state: OpmlImportState.Success) {
     ImportTitle(stringResource(if (state.isJson) R.string.import_done_backup_title else R.string.import_done_title))
-    ImportBody(stringResource(R.string.import_done_body))
+    ImportBody(
+        if (state.pendingCount > 0) {
+            pluralStringResource(R.plurals.import_done_body_pending, state.pendingCount, state.pendingCount)
+        } else {
+            stringResource(R.string.import_done_body)
+        },
+    )
     Row(Modifier.fillMaxWidth().padding(top = 12.dp).testTag("import_stats"), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         ImportStatTile(state.importedCount, pluralStringResource(R.plurals.import_done_subscribed, state.importedCount), Modifier.weight(1f))
         if (!state.isJson && state.completedCount > 0) {

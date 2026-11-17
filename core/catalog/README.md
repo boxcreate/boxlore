@@ -13,6 +13,8 @@ It does not own playback, downloads, Compose UI, Room schema ([`:core:database`]
 - `PodcastRepository`: the one application-scoped repository for discovery, Home bootstrap, briefings, content catalog v3, feedback and episode lists; lazy `api`/`apiV2` share one cached OkHttp client.
 - Episode-list sources: RSS table for `rss:` shows, Room only for ready followed catalogs, else the server's list (`/v2/episodes`, local owner IDs).
 - Limits: 100 per page (`clampPageLimit`), a 200-episode `getEpisodes` window, bounded `TimedLruCache` caches. `getEpisodeWindow` around an episode gives it and up to 199 newer; on the server's list it searches in the asked sort from near the last found row, empty if not listed.
+- `ApiRouteBudget` (`PodcastRepository.routeBudget`) paces library-wide jobs per route; a 429 holds the route until `Retry-After`.
+- An unreadable server-list page is `EpisodePage.failed`, not the list's end; a list keeps its first page's ID scheme (`EpisodePage.scheme`, per show page in `ShowListSchemes`), and `strict` reads throw.
 - `syncSubscriptions`: each show's latest episode from Room (ready catalogs), cached extras (opted-in shows), else `/sync` in 20-ID calls, two at a time.
 - `loadPiEpisodesForSupplement`: the strict Podcast Index baseline for feed-only extras; failure stops the extras refresh.
 - Discovery uses `/v2` when its switch is on, else v1; show search, typeahead, onboarding, content catalog, feedback, `/sync` and OPML lookups stay v1.
@@ -32,7 +34,8 @@ It does not own playback, downloads, Compose UI, Room schema ([`:core:database`]
 - One address write is one compare-and-set transaction (`PodcastDao.replaceFeedAddress`): both addresses, `previousFeedUrl`, source (`FeedUrlSources`), check time, cleared validators, dirty mark; refuses `rss:` shows and non-HTTPS addresses.
 - A cloud pull never restores an address a confirmed correction replaced (`KEPT_CORRECTION`); merges use `PodcastDao.upsertKeepingFeedAddress`.
 - Address writes fail closed: without a `PendingNotificationRegistrations` record first, nothing is written (`NOT_SAVED`).
-- `SubscriptionForegroundSync`: the foreground pass. It sweeps expired catalogs, recovers missing addresses, sends Podcast Index shows with neither an HTTPS feed nor a ready catalog to `/sync` in chunks, and reads the followed feeds `DirectFeedRefreshBatch` picks, longest unread first: an automatic pass takes feeds past their wait, while pull to refresh (`RefreshReason.PULL`) skips the wait but still asks whether a feed changed. Full downloads share `:core:rss`'s publisher-feed gate; a feed that still fails after `DirectFeedRecovery` is asked from `/sync` while `FeedFixToggles.syncFallback` is on.
+- `SubscriptionForegroundSync`: the foreground pass. It sweeps expired catalogs, looks up missing HTTPS addresses least recently asked first, stamped only once answered (`FeedUrlLookup`), sends Podcast Index shows with neither an HTTPS feed nor a ready catalog to `/sync` in chunks, and reads the followed feeds `DirectFeedRefreshBatch` picks, longest unread first: an automatic pass takes feeds past their wait, while pull to refresh (`RefreshReason.PULL`) skips the wait but still asks whether a feed changed. Full downloads share `:core:rss`'s publisher-feed gate; a feed that still fails after `DirectFeedRecovery` is asked from `/sync` while `FeedFixToggles.syncFallback` is on.
+- `ForegroundCatchUp` then fills in pulled placeholder rows and pending OPML outlines while the app is open.
 - `requestRefresh` respects a cooldown, `refreshNow` (pull to refresh) skips it and waits at most `PULL_WAIT_MAX_MS` while its pass carries on, and `requestCatalogIngest` reads a newly followed show's feed on the application scope.
 - `DirectFeedRecovery`: reports a failed read, tries a replacement address, saved only if it reads; `FeedFixToggles` stay on without an answer.
 - `FeedAddressDailyCheck`: asks `/v2/shows/feeds` daily per followed show and swaps only a confirmed move that reads; follows not yet pushed wait.
@@ -62,6 +65,7 @@ It does not own playback, downloads, Compose UI, Room schema ([`:core:database`]
 
 - `sync.UserSyncCoordinator`: bounded dirty-row pushes, pulls, account-switch purge, `deleteCloudSyncData`; results: `SyncResult`, `CloudSyncUiStatus`. Watch link: `linkedDeviceRows` (follows, newest history), `applyLinkedDeviceChanges` (merged by pull rules, marked dirty).
 - `SubscriptionSyncResolver`, `HistorySyncResolver` (shields the playing episode) and `QueueSyncResolver` (one entry per episode) merge pulls; `QueueItemHydration` builds pulled queue rows.
+- Pulled placeholder rows (`STUB_TITLE`) fill in while the budget has room, the rest via `healStubRows`.
 - `SyncEpisodeIdentity` carries identity beside each row's stored ID; catch-up runs once after upgrade or account switch, again on `requestIdentityCatchUp()`. Rules: [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md) §5.
 - `sync.ListeningSync`: uses the listening device ID, not the sync one; days count as sent once accepted. Wire fields: [`core/network/README.md`](../network/README.md).
 
@@ -69,7 +73,7 @@ It does not own playback, downloads, Compose UI, Room schema ([`:core:database`]
 
 - `backup.LibraryBackupManager`: JSON (subscriptions, folders, all stored history, preferences, ranking, episode identity, listening) and OPML, export and import.
 - Identity and listening restores only add, never reverse local decisions, and change nothing when repeated.
-- OPML import matches Podcast Index before creating an `rss:` row; a transient lookup failure defers the feed. OPML export writes saved publisher addresses only.
+- OPML import matches Podcast Index before creating an `rss:` row; outlines the API hasn't answered for stay in `PendingOpmlImports` until settled (`finishPendingOpmlImports`, which waits longer after each miss). OPML export writes saved publisher addresses only.
 
 ### Notifications
 
@@ -125,7 +129,7 @@ src/main/res/                  # auto_* strings and Android Auto drawables
 
 Never rename these:
 
-- SharedPreferences: `boxlore_discovery_last_good` (keys `v2_recommendations|<personal or home>|<country>`, each with `|fallback`), `boxlore_feed_reports`, `boxlore_notification_reregistrations`, `boxlore_upgrade_repair_report`, `content_catalog_cache`, and `boxlore_player` / `boxlore_referrer_prefs`.
+- SharedPreferences: `boxlore_discovery_last_good` (keys `v2_recommendations|<personal or home>|<country>`, each with `|fallback`), `boxlore_feed_reports`, `boxlore_notification_reregistrations`, `boxlore_pending_opml_imports` (feed address keys, plus `#misses:`, `#first_miss:` and `#last_miss:` keys), `boxlore_upgrade_repair_report`, `content_catalog_cache`, and `boxlore_player` / `boxlore_referrer_prefs`.
 - `noBackupFilesDir`: `upgrade_repair_notifications`, and the RSS consent and registration journals (URL fingerprints only).
 - `FeedUrlSources` values: `feed_move`, `podcast_lookup`, `cloud_sync`, `feed_report`, `backup_restore`, `registry`, or a `registry:` source.
 - RTDB `tracked_podcasts/<show ID>` holds only `title`, `imageUrl` and optional HTTPS `feedUrl`; RSS rows use per-device keys. FCM topics: `new_ep_<show ID>`; `rss:` becomes `rss_` plus feed fingerprint.

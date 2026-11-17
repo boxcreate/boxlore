@@ -77,6 +77,11 @@ sealed interface PodcastInfoUiState {
         val userMessage: String? = null,
         /** The feed-first show page's status line (P4 PR 16). */
         val feedStatus: ShowFeedStatus = ShowFeedStatus.NONE,
+        /**
+         * The next page of episodes (or a new sort's first page) couldn't load after a few tries: the
+         * list shows that with Try again, and nothing loads by itself until then. The list hasn't ended.
+         */
+        val pageLoadFailed: Boolean = false,
     ) : PodcastInfoUiState
 
     data object Error : PodcastInfoUiState

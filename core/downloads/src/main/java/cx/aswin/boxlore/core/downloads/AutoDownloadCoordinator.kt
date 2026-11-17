@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.downloads
 
 import android.content.Context
+import cx.aswin.boxlore.core.catalog.FeedUrlLookup
 import cx.aswin.boxlore.core.database.AutoDownloadReleaseEntity
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.PodcastEntity
@@ -17,14 +18,16 @@ import kotlinx.coroutines.sync.withLock
  * Publisher RSS + Room own release discovery. Push is only an early wake-up hint.
  *
  * A recovered address is saved through [saveFeedUrl], the app's one feed address writer (P4 PR 14
- * of the own-episode-IDs plan, plan section 11); the default writes the row directly (tests).
+ * of the own-episode-IDs plan, plan section 11); the default writes the row directly (tests). A
+ * missing-address lookup ([recoverFeedUrl]) is stamped only once the server answered, so a 429 or a
+ * failed request is asked again on the next run instead of a day later.
  */
 class AutoDownloadCoordinator(
     private val database: BoxLoreDatabase,
     private val catalog: LocalEpisodeCatalogPort,
     private val preferences: UserPreferencesRepository,
     private val enqueue: suspend (podcastId: String, episodeId: String, wifiOnly: Boolean, background: Boolean) -> Unit,
-    private val recoverFeedUrl: suspend (String) -> String? = { null },
+    private val recoverFeedUrl: suspend (String) -> FeedUrlLookup = { FeedUrlLookup.NoAnswer },
     private val nowSeconds: () -> Long = { System.currentTimeMillis() / 1000L },
     private val saveFeedUrl: suspend (podcastId: String, feedUrl: String) -> Unit = { id, url -> database.podcastDao().setFeedUrl(id, url) },
 ) {
@@ -86,10 +89,10 @@ class AutoDownloadCoordinator(
 
     private suspend fun recoverMissingFeed(podcastId: String): String? {
         val now = nowSeconds() * 1000L
-        val last = catalog.lastFeedUrlLookupAt(podcastId)
-        if (last > 0 && now - last in 0 until 24 * 60 * 60 * 1000L) return null
-        catalog.markFeedUrlLookup(podcastId, now)
-        return recoverFeedUrl(podcastId)
+        if (!FeedUrlLookup.isDue(catalog.lastFeedUrlLookupAt(podcastId), now)) return null
+        val answer = recoverFeedUrl(podcastId) as? FeedUrlLookup.Answered ?: return null
+        catalog.markFeedUrlLookup(podcastId, answer.stampAt(now))
+        return answer.httpsFeedUrl
     }
 
     /** Called after foreground feed persistence too; pending claims are replayable after a crash. */
@@ -136,7 +139,7 @@ class AutoDownloadCoordinator(
             database: BoxLoreDatabase,
             catalog: LocalEpisodeCatalogPort,
             preferences: UserPreferencesRepository,
-            recoverFeedUrl: suspend (String) -> String?,
+            recoverFeedUrl: suspend (String) -> FeedUrlLookup,
             saveFeedUrl: suspend (podcastId: String, feedUrl: String) -> Unit,
         ): AutoDownloadCoordinator = AutoDownloadCoordinator(
                 database,

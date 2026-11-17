@@ -61,6 +61,11 @@
     <string name="import_done_title">Your shows are in</string>
     <string name="import_done_backup_title">Your backup is restored</string>
     <string name="import_done_body">Ready when you are.</string>
+    <!-- Shown instead of import_done_body when some OPML shows couldn't be added yet; boxlore keeps adding them while it is open. -->
+    <plurals name="import_done_body_pending">
+        <item quantity="one">boxlore is still adding %d show. It’ll appear in your library while boxlore is open.</item>
+        <item quantity="other">boxlore is still adding %d shows. They’ll appear in your library while boxlore is open.</item>
+    </plurals>
     <plurals name="import_done_subscribed">
         <item quantity="one">show subscribed</item>
         <item quantity="other">shows subscribed</item>

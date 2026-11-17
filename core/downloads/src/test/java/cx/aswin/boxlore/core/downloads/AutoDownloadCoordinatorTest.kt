@@ -241,7 +241,7 @@ class AutoDownloadCoordinatorTest {
             catalog,
             prefs,
             enqueue = { _, episodeId, _, _ -> enqueued += episodeId },
-            recoverFeedUrl = { URL },
+            recoverFeedUrl = { cx.aswin.boxlore.core.catalog.FeedUrlLookup.Answered(URL) },
             nowSeconds = { now },
             saveFeedUrl = { id, url -> saved += id to url },
         )
@@ -250,6 +250,36 @@ class AutoDownloadCoordinatorTest {
 
         assertEquals(listOf("100" to URL), saved)
         assertNull("the coordinator never writes the row itself", database.podcastDao().getPodcast("100")!!.feedUrl)
+    }
+
+    @Test fun aLookupTheServerDidNotAnswerIsNotStampedSoTheNextRunAsksAgain() = runBlocking {
+        val row = database.podcastDao().getPodcast("100")!!
+        database.podcastDao().upsertRow(row.copy(feedUrl = null))
+        var answer: cx.aswin.boxlore.core.catalog.FeedUrlLookup = cx.aswin.boxlore.core.catalog.FeedUrlLookup.NoAnswer
+        var asked = 0
+        val coordinator = AutoDownloadCoordinator(
+            database,
+            catalog,
+            prefs,
+            enqueue = { _, episodeId, _, _ -> enqueued += episodeId },
+            recoverFeedUrl = {
+                asked++
+                answer
+            },
+            nowSeconds = { now },
+            saveFeedUrl = { _, _ -> },
+        )
+
+        coordinator.discover { true }
+        assertEquals("a 429 or failed lookup leaves no stamp", 0L, catalog.lastFeedUrlLookupAt("100"))
+
+        answer = cx.aswin.boxlore.core.catalog.FeedUrlLookup.Answered(null)
+        coordinator.discover { true }
+        assertEquals("asked again on the next run", 2, asked)
+        assertEquals("an answer is stamped", now * 1000L, catalog.lastFeedUrlLookupAt("100"))
+
+        coordinator.discover { true }
+        assertEquals("then it waits a day", 2, asked)
     }
 
     @Test fun pureRssUsesSameReleaseLedgerRetentionBoundAndNeverLoadsCatalogBaseline() = runBlocking {

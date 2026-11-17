@@ -122,4 +122,22 @@ class PodcastEpisodeSelectionWindowTest {
         assertEquals(PodcastEpisodeSelectionWindow(emptyList(), newestFirst = false), window)
         assertEquals(0, reads)
     }
+
+    @Test
+    fun `a page that comes back failed on page 3 fails the window instead of ending the show there`() = runTest {
+        // Reported: a 429 on one page read as "no more episodes", so Select all covered part of the show.
+        val show = show(1_000)
+        val complete = served(show)
+        assertThrows(IOException::class.java) {
+            kotlinx.coroutines.runBlocking {
+                loadPodcastEpisodeSelectionWindow(page(listOf("e1000")), sort = null) { limit, offset, sort ->
+                    if (offset == 2 * SELECTION_PAGE_SIZE) {
+                        PodcastRepository.EpisodePage(emptyList(), hasMore = false, failed = true)
+                    } else {
+                        complete(limit, offset, sort)
+                    }
+                }
+            }
+        }
+    }
 }

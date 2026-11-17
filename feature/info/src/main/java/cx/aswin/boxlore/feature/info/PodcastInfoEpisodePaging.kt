@@ -32,6 +32,7 @@ internal class PodcastInfoEpisodePaging(
 ) {
     private val uiState = pageState.uiState
     private var searchJob: Job? = null
+    private var loadMoreJob: Job? = null
 
     fun loadMore() {
         val currentState = uiState.value
@@ -39,19 +40,21 @@ internal class PodcastInfoEpisodePaging(
 
         uiState.value = currentState.copy(isLoadingMore = true)
 
-        scope.launch {
+        loadMoreJob = scope.launch {
             try {
                 val limit = pageSizeFor(currentState.currentSort)
                 val sortParam = sortParamFor(currentState.currentSort)
-                val page = repository.getShowPageEpisodes(pageState.currentPodcastId, limit, pageState.currentOffset, sortParam)
+                val page = loadPageRetrying { repository.getShowPageEpisodes(pageState.currentPodcastId, limit, pageState.currentOffset, sortParam, list = pageState.listSchemes) }
                 if (needsArchiveToLoadMore(limit, page.episodes.size)) {
                     // Past the stored newest episodes: read the whole feed, then show one more page.
                     feedFirst.completeArchive(scope, currentState.podcast, extra = limit, atCopyEnd = true)
                     pageState.stopLoadingMore()
                     return@launch
                 }
-                pageState.currentOffset += page.sourceCount
                 val latest = uiState.value as? PodcastInfoUiState.Success ?: return@launch
+                // The sort changed while this page was retrying: its own first page replaces the list.
+                if (latest.currentSort != currentState.currentSort) return@launch
+                pageState.currentOffset += page.sourceCount
                 val nextPi = latest.piEpisodes + page.episodes
                 uiState.value =
                     supplementSupport.remountWithSupplements(
@@ -64,8 +67,27 @@ internal class PodcastInfoEpisodePaging(
                 throw e
             } catch (e: Exception) {
                 e.printStackTrace()
-                uiState.value = currentState.copy(isLoadingMore = false)
+                val latest = uiState.value as? PodcastInfoUiState.Success ?: return@launch
+                if (latest.currentSort != currentState.currentSort) return@launch
+                // Not the end of the list: it says the page couldn't load and offers Try again.
+                uiState.value = latest.copy(isLoadingMore = false, hasMoreEpisodes = true, pageLoadFailed = true)
             }
+        }
+    }
+
+    /**
+     * Try again after a page couldn't load ([PodcastInfoUiState.Success.pageLoadFailed]): the next
+     * page, or the current sort's first page when the list has none yet.
+     */
+    fun retryFailedPage() {
+        val state = uiState.value as? PodcastInfoUiState.Success ?: return
+        if (!state.pageLoadFailed) return
+        if (pageState.currentOffset == 0) {
+            uiState.value = state.copy(pageLoadFailed = false, isLoadingMore = true, hasMoreEpisodes = true)
+            loadMoreJob = scope.launch { loadFirstSortedPage(state, state.currentSort) }
+        } else {
+            uiState.value = state.copy(pageLoadFailed = false)
+            loadMore()
         }
     }
 
@@ -75,6 +97,7 @@ internal class PodcastInfoEpisodePaging(
      */
     private fun canLoadMore(state: PodcastInfoUiState.Success): Boolean =
         !state.isLoadingMore &&
+            !state.pageLoadFailed &&
             state.hasMoreEpisodes &&
             state.searchResults == null &&
             !(feedFirst.readsFeed(pageState.currentPodcastId) && feedFirst.holdsAtCopyEnd())
@@ -90,6 +113,8 @@ internal class PodcastInfoEpisodePaging(
 
         val newSort = if (currentState.currentSort == EpisodeSort.NEWEST) EpisodeSort.OLDEST else EpisodeSort.NEWEST
         pageState.currentOffset = 0
+        // A page of the old order still loading or retrying has nothing to add to the new one.
+        loadMoreJob?.cancel()
 
         uiState.value =
             currentState.copy(
@@ -98,6 +123,7 @@ internal class PodcastInfoEpisodePaging(
                 piEpisodes = emptyList(),
                 isLoadingMore = true,
                 hasMoreEpisodes = true,
+                pageLoadFailed = false,
                 searchQuery = "",
                 searchResults = null,
                 searchFailed = false,
@@ -125,9 +151,10 @@ internal class PodcastInfoEpisodePaging(
                 pageState.stopLoadingMore()
                 return
             }
-            val page = repository.getShowPageEpisodes(pageState.currentPodcastId, pageSizeFor(sort), 0, sortParamFor(sort))
-            pageState.currentOffset = page.sourceCount
+            val page = loadPageRetrying { repository.getShowPageEpisodes(pageState.currentPodcastId, pageSizeFor(sort), 0, sortParamFor(sort), list = pageState.listSchemes) }
             val latestState = uiState.value as? PodcastInfoUiState.Success ?: return
+            if (latestState.currentSort != sort) return
+            pageState.currentOffset = page.sourceCount
             uiState.value =
                 supplementSupport.remountWithSupplements(
                     state = latestState,
@@ -140,7 +167,9 @@ internal class PodcastInfoEpisodePaging(
         } catch (e: Exception) {
             e.printStackTrace()
             val latestState = uiState.value as? PodcastInfoUiState.Success ?: return
-            uiState.value = latestState.copy(isLoadingMore = false)
+            if (latestState.currentSort != sort) return
+            // The list in the new order is empty, not finished: it says so and offers Try again.
+            uiState.value = latestState.copy(isLoadingMore = false, hasMoreEpisodes = true, pageLoadFailed = true)
         }
     }
 
@@ -260,9 +289,16 @@ internal class PodcastInfoEpisodePaging(
         }
         // The whole-show read sizes its own pages: the most each source answers in one request.
         return loadPodcastEpisodeSelectionWindow(uiState.value as? PodcastInfoUiState.Success, sort) { _, offset, sortParam ->
-            repository.getWholeShowPage(feedId = feedId, offset = offset, sort = sortParam)
+            repository.getWholeShowPage(feedId = feedId, offset = offset, sort = sortParam, list = pageState.listSchemes)
         }
     }
+
+    /** [load] until a page comes back; a failed page waits and asks again a few times while the loading cards show ([ShowPageRetry]), then throws. */
+    private suspend fun loadPageRetrying(load: suspend () -> PodcastRepository.EpisodePage): PodcastRepository.EpisodePage = ShowPageRetry.load(
+        load = load,
+        waitMs = { repository.routeBudget.waitMs(cx.aswin.boxlore.core.catalog.ApiRouteBudget.V2_EPISODES) },
+        sleep = { delay(it) },
+    )
 
     private companion object {
         const val SEARCH_DEBOUNCE_MS = 500L

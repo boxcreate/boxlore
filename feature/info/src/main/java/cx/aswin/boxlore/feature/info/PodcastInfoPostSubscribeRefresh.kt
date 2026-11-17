@@ -121,6 +121,7 @@ internal class PodcastInfoPostSubscribeRefresh(
                 limit = pageSizeFor(shownState.currentSort),
                 offset = 0,
                 sort = sortParamFor(shownState.currentSort),
+                list = pageState.listSchemes,
             )
         if (!PodcastInfoPullRefreshLogic.shouldApply(pageState.currentPodcastId, targetPodcastId)) {
             return

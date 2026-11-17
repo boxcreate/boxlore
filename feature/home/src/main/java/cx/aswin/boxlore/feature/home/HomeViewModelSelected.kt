@@ -11,6 +11,7 @@ import cx.aswin.boxlore.feature.home.logic.HomeYourShowsSignals
 import cx.aswin.boxlore.feature.home.logic.SelectedShowLoadState
 import cx.aswin.boxlore.feature.home.logic.SelectedShowLoadTransitions
 import cx.aswin.boxlore.feature.home.logic.SeriesEpisodesLoader
+import cx.aswin.boxlore.feature.home.logic.SeriesOldestPages
 import cx.aswin.boxlore.feature.home.logic.ShowEpisodesList
 import cx.aswin.boxlore.feature.home.logic.ShowEpisodesPool
 import cx.aswin.boxlore.feature.home.logic.settledCatalogChanges
@@ -169,20 +170,23 @@ private suspend fun HomeViewModel.loadSelectedShowPool(info: SelectedPodcastSign
 }
 
 /** Reads a show listened to in order from the listener's place on; shared by the selected-show list and Daily mix. */
-internal fun HomeViewModel.seriesEpisodesLoader(podcastId: String): SeriesEpisodesLoader = SeriesEpisodesLoader(
-    window = { aroundId -> podcastRepository.getEpisodeWindow(podcastId, aroundEpisodeId = aroundId, sort = "oldest") },
-    oldestPage = { offset ->
-        val page =
+internal fun HomeViewModel.seriesEpisodesLoader(podcastId: String): SeriesEpisodesLoader {
+    val oldestPages =
+        SeriesOldestPages { offset, scheme ->
             podcastRepository.getEpisodesPaginated(
                 podcastId,
                 limit = SeriesEpisodesLoader.PAGE_SIZE,
                 offset = offset,
                 sort = "oldest",
+                scheme = scheme,
             )
-        SeriesEpisodesLoader.Page(page.episodes, hasMore = page.hasMore, advance = page.sourceCount)
-    },
-    groupTokens = { ids -> playbackRepository.episodeGroupTokens(ids) },
-)
+        }
+    return SeriesEpisodesLoader(
+        window = { aroundId -> podcastRepository.getEpisodeWindow(podcastId, aroundEpisodeId = aroundId, sort = "oldest") },
+        oldestPage = oldestPages::page,
+        groupTokens = { ids -> playbackRepository.episodeGroupTokens(ids) },
+    )
+}
 
 internal fun HomeViewModel.observeDirectFeedRefresh() {
     viewModelScope.launch {

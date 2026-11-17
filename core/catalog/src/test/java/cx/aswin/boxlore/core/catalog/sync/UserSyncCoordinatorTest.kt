@@ -881,6 +881,9 @@ class UserSyncCoordinatorTest {
     @Test
     fun syncNow_onAccountSwitch_purgesLocalDataAndClearsActivePlaybackSession() = runTest(testDispatcher) {
         val fakePlayback = FakeActivePlaybackSyncPort()
+        // Account A's import left outlines to finish later; Account B must never follow them.
+        val pendingImports = cx.aswin.boxlore.core.catalog.backup.MemoryPendingOpmlImports()
+        pendingImports.add(listOf(cx.aswin.boxlore.core.catalog.backup.OpmlFeed("Account A Show", "https://example.com/a.xml")))
         val customCoordinator = UserSyncCoordinator(
             boxLoreApi = fakeBoxLoreApi,
             publicKey = "test-public-key",
@@ -895,6 +898,7 @@ class UserSyncCoordinatorTest {
             boxcastPrefs = prefs,
             activePlaybackSyncPort = fakePlayback,
             ioDispatcher = testDispatcher,
+            pendingOpmlImports = pendingImports,
         )
 
         // Seed data belonging to Account A
@@ -946,6 +950,7 @@ class UserSyncCoordinatorTest {
         assertTrue(listeningHistoryDao.getHistoryItem("ep-account-a") == null)
         assertTrue(fakeQueueSyncPort.getQueueSnapshot().isEmpty())
         assertTrue(fakePlayback.stopAndClearActiveSessionCalled)
+        assertTrue("Account A's unfinished import is forgotten", pendingImports.all().isEmpty())
         assertEquals("account-b", prefs.getLastSyncedUserId())
         assertEquals(2000L, prefs.getLastSyncTimestamp())
     }

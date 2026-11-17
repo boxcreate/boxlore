@@ -76,21 +76,20 @@ fun OpmlImportEffects(
                         ),
                     )
 
-                    val importedList = mutableListOf<Podcast>()
-                    for (index in feeds.indices) {
-                        val feed = feeds[index]
-                        onStateChange(
-                            OpmlImportState.Importing(
-                                currentFeedTitle = feed.title,
-                                progress = index.toFloat() / feeds.size,
-                                currentCount = index,
-                                totalCount = feeds.size,
-                                importedPodcasts = importedList.toList(),
-                            ),
-                        )
-                        val imported = backupManager.importSingleOpmlFeed(feed)
-                        if (imported != null) importedList.add(imported)
-                    }
+                    // Paced under the API's rate limits; outlines it still couldn't answer for are finished later.
+                    val report =
+                        backupManager.importOpmlFeeds(feeds) { index, feed, imported ->
+                            onStateChange(
+                                OpmlImportState.Importing(
+                                    currentFeedTitle = feed.title,
+                                    progress = index.toFloat() / feeds.size,
+                                    currentCount = index,
+                                    totalCount = feeds.size,
+                                    importedPodcasts = imported,
+                                ),
+                            )
+                        }
+                    val importedList: List<Podcast> = report.imported
 
                     if (importedList.isEmpty()) {
                         AnalyticsHelper.trackOnboardingImportFailed(
@@ -115,8 +114,9 @@ fun OpmlImportEffects(
                         )
                         onStateChange(
                             OpmlImportState.AskCompleted(
-                                importedPodcasts = importedList.toList(),
+                                importedPodcasts = importedList,
                                 selectedIds = importedList.map { it.id }.toSet(),
+                                pendingCount = report.pending.size,
                             ),
                         )
                     }
@@ -158,6 +158,7 @@ fun OpmlImportEffects(
                                 podcastsToMark = state.podcastsToMark,
                                 totalImportedCount = state.totalImportedCount,
                                 importedPodcasts = state.importedPodcasts,
+                                pendingCount = state.pendingCount,
                             ),
                         )
                         backupManager.markAllEpisodesCompleted(podcast)
@@ -168,6 +169,7 @@ fun OpmlImportEffects(
                             completedCount = total,
                             isJson = false,
                             importedPodcasts = state.importedPodcasts,
+                            pendingCount = state.pendingCount,
                         ),
                     )
                 } catch (e: Exception) {

@@ -134,6 +134,22 @@ class ImportDialogAdaptiveTest {
         assertEquals(1, dismissed)
     }
 
+    @Test fun `shows still being added are named on the done screen through every window change`() {
+        // Some OPML shows hit the API's rate limit and are added later: the done screen says so instead of "Ready when you are."
+        state.value = OpmlImportState.Success(importedCount = 45, completedCount = 0, importedPodcasts = shows.take(45), pendingCount = 3)
+        render()
+        transitions.forEach { next ->
+            compose.runOnIdle { window.value = next }
+            compose.waitForIdle()
+            compose.onNodeWithText("boxlore is still adding 3 shows. They’ll appear in your library while boxlore is open.").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithText("Ready when you are.").assertDoesNotExist()
+        }
+        compose.runOnIdle { state.value = OpmlImportState.Success(importedCount = 48, completedCount = 0, importedPodcasts = shows.take(48)) }
+        compose.onNodeWithText("Ready when you are.").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("import_continue").performScrollTo().performClick()
+        assertEquals(1, dismissed)
+    }
+
     @Test fun `failures say whether the library changed and lead back to the import options`() {
         state.value = OpmlImportState.Error(ImportFailure.NoFeeds)
         render()

@@ -59,14 +59,14 @@ class PodcastInfoViewModel(
     private val localCatalog = deps.localCatalog
     private val folderRepository = deps.folderRepository
     private val entryPoint = routeArgs.entryPoint
-    private val supplementSupport = PodcastInfoSupplementSupport(repository, episodeSupplementPort)
     private val pageState = PodcastInfoPageState()
+    private val supplementSupport = PodcastInfoSupplementSupport(repository, episodeSupplementPort, pageState.listSchemes)
     private val _uiState = pageState.uiState
 
     /** The feed-first show page (P4 PR 16): reads, the status line and reloads as the list grows. */
     private val feedFirst =
         PodcastInfoFeedFirst(
-            PodcastInfoFeedFirst.sourceOf(repository),
+            PodcastInfoFeedFirst.sourceOf(repository, pageState.listSchemes),
             object : PodcastInfoFeedFirst.Ui {
                 override fun state(): PodcastInfoUiState.Success? = _uiState.value as? PodcastInfoUiState.Success
 
@@ -440,6 +440,9 @@ class PodcastInfoViewModel(
     }
 
     fun loadMoreEpisodes() = episodePaging.loadMore()
+
+    /** Try again after a page of episodes couldn't load. */
+    fun retryEpisodePage() = episodePaging.retryFailedPage()
 
     fun refreshRssFeed() = pullRefresh.refresh()
 
