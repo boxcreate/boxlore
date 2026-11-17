@@ -17,7 +17,7 @@ It does not own the Room schema ([`:core:database`](../database/README.md)), pre
 - It implements `ActivePlaybackSyncPort`: cloud sync never overwrites the playing episode, and an account switch stops playback and clears the in-memory queue.
 - `PlaybackActivationRequest` carries a one-shot start position; `PlaybackIntroOutroController` applies resume, intro skip and outro trim to automatic starts, while explicit positions and route transfers keep theirs.
 - `PlaybackSkipPolicy`: with "Restart forgotten episodes" on, implicit plays restart an episode not played for `STALE_RESUME_MS`; Jump Back In and History always resume. Progress is never wiped.
-- `PlaybackChaptersTranscriptController`: chapters and transcripts with offline fallbacks; a briefing missing its links gets them from `:core:catalog`'s `BriefingLinks`.
+- `PlaybackChaptersTranscriptController`: chapters and transcripts, a downloaded episode's saved copy first and the network only when nothing is saved; a briefing missing its links gets them from `:core:catalog`'s `BriefingLinks`.
 - `PlaybackRouteState` mirrors the active route's device name and volume into `PlayerState`; `PlaybackControlSync` keeps speed and skip lengths aligned with Media3.
 - `PlaybackMediaIdPolicy` sets session IDs and cache keys; `PlaybackArtworkMetadata` picks the artwork to save.
 

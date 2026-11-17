@@ -1,9 +1,11 @@
 package cx.aswin.boxlore.core.catalog
 
+import android.content.Context
 import androidx.annotation.VisibleForTesting
-import java.net.URL
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Parsed transcript segment with timing.
@@ -16,7 +18,23 @@ data class TranscriptSegment(val startMs: Long, val endMs: Long, val text: Strin
 object TranscriptRepository {
 
     private val HTML_TAG_REGEX = Regex("<[^>]+>")
-    private val cache = mutableMapOf<String, List<TranscriptSegment>>()
+
+    /** Transcripts kept in memory; they are the largest text the player holds, so only a few. */
+    private const val CACHE_ENTRIES = 8
+
+    /** How long a kept transcript is reused before it is read again. */
+    private const val CACHE_TTL_MS = 6 * 60 * 60 * 1000L
+
+    private val cache = TimedLruCache<String, List<TranscriptSegment>>(maxEntries = CACHE_ENTRIES, ttlMillis = CACHE_TTL_MS)
+    private val loads = SharedLoads<String, List<TranscriptSegment>>()
+
+    /** Reads a remote transcript link; tests replace it. */
+    @Volatile
+    internal var readRemote: suspend (String) -> String = RemoteText::read
+
+    /** The longest a remote read may take before the transcript counts as unavailable. */
+    @Volatile
+    internal var remoteTimeoutMs: Long = RemoteText.TIMEOUT_MS
 
     private const val HTTPS_SCHEME = "https://"
     private const val HTTP_SCHEME = "http://"
@@ -43,25 +61,50 @@ object TranscriptRepository {
         }
     }
 
+    /**
+     * The transcript at [url] (a remote link or a saved file). Callers asking for one address at once
+     * share one read. A remote read that takes longer than [remoteTimeoutMs] gives no transcript.
+     */
     suspend fun getTranscript(url: String, type: String? = null): List<TranscriptSegment> = withContext(Dispatchers.IO) {
         val normalizedUrl = if (url.startsWith("/") || url.startsWith("file:")) {
             url
         } else {
             normalizeUrl(url)
         }
-        cache[normalizedUrl]?.let { return@withContext it }
+        cache[normalizedUrl] ?: loads.load(normalizedUrl) { loadTranscript(url, type, normalizedUrl) }
+    }
 
-        try {
-            val content = resolveTranscriptContent(url, normalizedUrl)
-            val segments = parseTranscriptContent(content, type, normalizedUrl)
-            if (segments.isNotEmpty()) {
-                cache[normalizedUrl] = segments
+    /** A downloaded episode's saved transcript, read off the main thread. */
+    suspend fun getOfflineTranscript(context: Context, episodeId: String): List<TranscriptSegment> = withContext(Dispatchers.IO) {
+        TranscriptOfflineStorage.getOfflineTranscript(context, episodeId)
+    }
+
+    /** Reads and parses one address; never throws, so every caller sharing the load gets an answer. */
+    private suspend fun loadTranscript(url: String, type: String?, normalizedUrl: String): List<TranscriptSegment> {
+        cache[normalizedUrl]?.let { return it }
+        val segments = try {
+            val content = when {
+                url.startsWith("/") -> java.io.File(url).readText()
+                url.startsWith("file://") -> java.io.File(url.removePrefix("file://")).readText()
+                url.startsWith("file:") -> java.io.File(url.removePrefix("file:")).readText()
+                else -> withTimeoutOrNull(remoteTimeoutMs) { readRemote(normalizedUrl) }
             }
-            segments
+            if (content == null) {
+                android.util.Log.w("TranscriptRepo", "Timed out fetching transcript: $normalizedUrl")
+                emptyList()
+            } else {
+                parseTranscriptContent(content, type, normalizedUrl)
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (e: Exception) {
             android.util.Log.w("TranscriptRepo", "Failed to fetch transcript: $normalizedUrl", e)
             emptyList()
         }
+        if (segments.isNotEmpty()) {
+            cache[normalizedUrl] = segments
+        }
+        return segments
     }
 
     /**
@@ -291,13 +334,6 @@ object TranscriptRepository {
     fun clearCache() {
         cache.clear()
     }
-}
-
-private fun resolveTranscriptContent(url: String, normalizedUrl: String): String = when {
-    url.startsWith("/") -> java.io.File(url).readText()
-    url.startsWith("file://") -> java.io.File(url.removePrefix("file://")).readText()
-    url.startsWith("file:") -> java.io.File(url.removePrefix("file:")).readText()
-    else -> URL(normalizedUrl).readText()
 }
 
 private fun parseTranscriptContent(content: String, type: String?, normalizedUrl: String): List<TranscriptSegment> = when {

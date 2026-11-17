@@ -108,14 +108,42 @@ class BriefingViewModelLoadingTest {
         loader(this, chapterFetch = { error("chapters unavailable") }).load("in")
         advanceUntilIdle()
         assertEquals(BriefingLoadState("in", brief("in"), emptyList(), session, isLoading = false), states.last())
+        assertFalse(states.last().chaptersLoading)
     }
 
     @Test
-    fun `cancelled chapter request is never converted into successful or failed content`() = runTest {
+    fun `an empty chapters fetch ends the stories loading state so the page reads unavailable`() = runTest {
+        loader(this, chapterFetch = { emptyList() }).load("in")
+        advanceUntilIdle()
+        assertTrue(states[states.size - 2].chaptersLoading)
+        assertEquals(BriefingLoadState("in", brief("in"), emptyList(), session, isLoading = false), states.last())
+        assertFalse(states.last().chaptersLoading)
+    }
+
+    @Test
+    fun `cancelled chapter request publishes nothing after the brief`() = runTest {
         loader(this, chapterFetch = { throw CancellationException("cancelled") }).load("in")
         advanceUntilIdle()
-        assertEquals(1, states.size)
-        assertTrue(states.last().isLoading)
+        assertEquals(2, states.size)
+        assertEquals(loadingStories("in"), states.last())
+    }
+
+    @Test
+    fun `the brief leaves its loading state while chapters are still on their way`() = runTest {
+        val chaptersArrive = CompletableDeferred<Unit>()
+        loader(this, chapterFetch = {
+            chaptersArrive.await()
+            chapters
+        }).load("in")
+        advanceUntilIdle()
+        // The first shown state says the stories are on their way, not that they are unavailable.
+        assertEquals(loadingStories("in"), states.last())
+        assertEquals(states.last(), states.first { it.briefing != null })
+
+        chaptersArrive.complete(Unit)
+        advanceUntilIdle()
+        assertEquals(BriefingLoadState("in", brief("in"), chapters, session, isLoading = false), states.last())
+        assertFalse(states.last().chaptersLoading)
     }
 
     @Test
@@ -132,7 +160,7 @@ class BriefingViewModelLoadingTest {
         ready.complete(Unit)
         advanceUntilIdle()
         assertEquals("us", states.last().briefing?.region)
-        assertEquals(1, states.count { !it.isLoading })
+        assertTrue(states.none { it.briefing?.region == "in" })
     }
 
     @Test
@@ -150,7 +178,7 @@ class BriefingViewModelLoadingTest {
         advanceUntilIdle()
         assertEquals("gb", states.last().briefing?.region)
         assertEquals(listOf(Chapter(0.0, "gb")), states.last().chapters)
-        assertEquals(1, states.count { !it.isLoading })
+        assertTrue(states.none { it.chapters == listOf(Chapter(0.0, "in")) })
     }
 
     @Test
@@ -160,8 +188,11 @@ class BriefingViewModelLoadingTest {
         advanceUntilIdle()
         loader.load("gb")
         advanceUntilIdle()
-        assertEquals(BriefingLoadState(region = "gb"), states[2])
+        assertEquals(BriefingLoadState(region = "gb"), states[states.indexOfLast { it.region == "in" } + 1])
     }
+
+    private fun loadingStories(region: String) =
+        BriefingLoadState(region, brief(region), emptyList(), session, isLoading = false, chaptersLoading = true)
 
     private fun brief(region: String) = Briefing("2026-10-11", region, "Daily news", "", "https://example.invalid/audio", "")
 }

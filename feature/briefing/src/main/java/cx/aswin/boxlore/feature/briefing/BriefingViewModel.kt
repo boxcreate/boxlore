@@ -39,7 +39,7 @@ class BriefingViewModel(
     val defaultEdition = userPreferences.briefingDefaultEdition
 
     private val _briefingState = MutableStateFlow<Briefing?>(null)
-    private val _briefingChapters = MutableStateFlow<List<Chapter>>(emptyList())
+    private val _briefingStories = MutableStateFlow(BriefingStories())
     private val _isLoading = MutableStateFlow(true)
     private val _error = MutableStateFlow<String?>(null)
     private val _savedSession = MutableStateFlow<cx.aswin.boxlore.core.playback.PlaybackSession?>(null)
@@ -61,7 +61,7 @@ class BriefingViewModel(
             if (state.isLoading) _isLoading.value = true
             _selectedRegion.value = state.region
             _briefingState.value = state.briefing
-            _briefingChapters.value = state.chapters
+            _briefingStories.value = BriefingStories(state.chapters, state.chaptersLoading)
             _savedSession.value = state.session
             _error.value = if (state.failed) application.getString(R.string.briefing_load_error) else null
             if (!state.isLoading) _isLoading.value = false
@@ -102,9 +102,9 @@ class BriefingViewModel(
             _isLoading,
             _error,
             _selectedRegion,
-            _briefingChapters
-        ) { briefing, isLoading, error, region, chapters ->
-            BriefingSubState(briefing, isLoading, error, region, chapters)
+            _briefingStories
+        ) { briefing, isLoading, error, region, stories ->
+            BriefingSubState(briefing, isLoading, error, region, stories)
         }
 
         viewModelScope.launch {
@@ -117,7 +117,7 @@ class BriefingViewModel(
                 val isLoading = subState.isLoading
                 val error = subState.error
                 val region = subState.region
-                val chapters = subState.chapters
+                val stories = subState.stories
 
                 when {
                     isLoading -> BriefingUiState.Loading(region)
@@ -136,7 +136,8 @@ class BriefingViewModel(
                             currentPosition = currentPos,
                             duration = dur,
                             isBuffering = isCurrentBriefing && playerState.isLoading,
-                            chapters = chapters
+                            chapters = stories.chapters,
+                            chaptersLoading = stories.loading,
                         )
                     }
                     else -> BriefingUiState.Error(application.getString(R.string.briefing_unavailable), region)
@@ -269,5 +270,10 @@ private data class BriefingSubState(
     val isLoading: Boolean,
     val error: String?,
     val region: String,
-    val chapters: List<Chapter>
+    val stories: BriefingStories,
+)
+
+private data class BriefingStories(
+    val chapters: List<Chapter> = emptyList(),
+    val loading: Boolean = false,
 )
