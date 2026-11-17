@@ -6,10 +6,21 @@ import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.widgets.WidgetShowRow
 import cx.aswin.boxlore.feature.widgets.logic.LibraryWidgetLogic
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class WidgetLibrarySourceAdapterTest {
     @Test
     fun enrichMarksCompletedFromHistory() {
@@ -101,5 +112,81 @@ class WidgetLibrarySourceAdapterTest {
         // A show without a latest episode is a show, but not a New Episodes row.
         val withoutEpisode = library + Podcast(id = "bare", title = "Bare", artist = "Host", imageUrl = "")
         assertEquals(total, WidgetLibrarySourceAdapter.latestEpisodePool(withoutEpisode, hideCompleted = false).size)
+    }
+
+    @Test
+    fun progressSavesDuringPlaybackNeverRankTheLibraryAgain() = runTest {
+        val shows = listOf(show("p1", "e1"), show("p2", "e2"))
+        val history = MutableStateFlow(listOf(played("e1", "p1", progressMs = 10_000L, lastPlayedAt = HOUR_START)))
+        var showRuns = 0
+        var latestRuns = 0
+        // The adapter's long-lived scope, on the test clock: advanceUntilIdle skips backgroundScope.
+        val adapterScope = CoroutineScope(SupervisorJob() + StandardTestDispatcher(testScheduler))
+        val adapter =
+            WidgetLibrarySourceAdapter(
+                podcasts = flowOf(shows),
+                history = history,
+                sortName = flowOf("SmartRank"),
+                hideCompleted = flowOf(true),
+                useSmart = flowOf(true),
+                lastSeen = flowOf(emptyMap()),
+                scoreShows = { scorable, _ ->
+                    showRuns++
+                    scorable.associate { it.id to if (it.id == "p1") 2.0 else 1.0 }
+                },
+                scoreLatest = { inputs, _ ->
+                    latestRuns++
+                    inputs.associate { it.episode.id to 1.0 }
+                },
+                scope = adapterScope,
+            )
+        advanceUntilIdle()
+        assertEquals(1, showRuns)
+        assertEquals(1, latestRuns)
+
+        // Playback saves progress every 10 s: the rows the widget ranks from do not change.
+        for (tick in 1..30) {
+            history.value = listOf(played("e1", "p1", progressMs = 10_000L + tick * 10_000L, lastPlayedAt = HOUR_START + tick * 10_000L))
+            advanceUntilIdle()
+        }
+        assertEquals(1, showRuns)
+        assertEquals(1, latestRuns)
+        assertEquals(listOf("e1", "e2"), adapter.newEpisodes.first().map { it.episodeId })
+
+        // Finishing the episode is a real history change: it ranks again and hides the finished episode.
+        history.value = listOf(played("e1", "p1", progressMs = 300_000L, lastPlayedAt = HOUR_START + 300_000L, isCompleted = true))
+        advanceUntilIdle()
+        assertEquals(2, showRuns)
+        assertEquals(2, latestRuns)
+        assertEquals(listOf("p1", "p2"), adapter.subscriptions.first().map { it.podcastId })
+        assertEquals(listOf("e2"), adapter.newEpisodes.first().map { it.episodeId })
+        adapterScope.cancel()
+    }
+
+    private fun show(id: String, episodeId: String) = Podcast(
+        id = id,
+        title = "Show $id",
+        artist = "Host",
+        imageUrl = "https://example.com/$id.jpg",
+        latestEpisode = Episode(id = episodeId, title = "Ep $episodeId", description = "", audioUrl = "https://example.com/$episodeId.mp3", publishedDate = 1_700_000_000L),
+    )
+
+    private fun played(episodeId: String, podcastId: String, progressMs: Long, lastPlayedAt: Long, isCompleted: Boolean = false,) = ListeningHistoryEntity(
+        episodeId = episodeId,
+        podcastId = podcastId,
+        episodeTitle = "Ep",
+        episodeImageUrl = null,
+        podcastImageUrl = null,
+        episodeAudioUrl = null,
+        podcastName = "Show",
+        progressMs = progressMs,
+        durationMs = 3_000_000L,
+        isCompleted = isCompleted,
+        lastPlayedAt = lastPlayedAt,
+    )
+
+    private companion object {
+        // On the hour, so the 30 ticks above stay inside one hour.
+        const val HOUR_START = 1_700_002_800_000L
     }
 }

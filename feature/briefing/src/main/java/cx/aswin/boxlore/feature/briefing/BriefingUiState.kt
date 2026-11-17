@@ -13,7 +13,9 @@ sealed interface BriefingUiState {
         val currentPosition: Long = 0L,
         val duration: Long = 0L,
         val isBuffering: Boolean = false,
-        val chapters: List<Chapter> = emptyList()
+        val chapters: List<Chapter> = emptyList(),
+        /** Stories are still being fetched; empty [chapters] then means "not yet", not "unavailable". */
+        val chaptersLoading: Boolean = false,
     ) : BriefingUiState
 
     data class Error(

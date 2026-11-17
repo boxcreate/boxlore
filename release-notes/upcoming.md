@@ -48,6 +48,7 @@ Announcement title:
 
 - Widgets that follow your phone's light and dark mode now switch with it, even when boxlore isn't open.
 - The Your Shows and New Episodes widgets now count your whole library instead of stopping at 50.
+- While an episode plays, the Your Shows and New Episodes widgets and your Library use less battery.
 - On Home, a show you've heard every episode of now lists its latest episodes instead of an empty list, and a show whose episodes can't load lets you try again.
 - In Android Auto, artwork loads faster, and every episode has a picture, in lists and in the queue: one with no image of its own shows its show's cover.
 - In Android Auto, tapping something that can't be played no longer stops what you're listening to.
@@ -55,5 +56,7 @@ Announcement title:
 - In Android Auto, Shows no longer stops at 50 of the shows you follow.
 - Casting no longer closes boxlore when your queue has an episode your Cast device can't stream, such as one from a feed on your home network. Those episodes stay in your queue but are skipped on the Cast device.
 - After you listen on another device, Play on the mini player now starts the episode it shows, at the right spot, instead of an older one from your queue.
+- Downloaded episodes now show their chapters and transcript straight away, even offline or on a weak connection. Chapters and transcripts that can't load now stop trying instead of loading forever.
 - For you in Explore no longer reloads again and again while your account syncs. It refreshes when the shows you follow or your languages change, and when your picks get old.
+- The Brief opens as soon as it's ready, even when its stories are slow to load. They appear when they arrive.
 - New episode notifications from different shows no longer replace each other or open the wrong show. Each show gets its own notification, grouped together, for up to 16 shows at a time.
