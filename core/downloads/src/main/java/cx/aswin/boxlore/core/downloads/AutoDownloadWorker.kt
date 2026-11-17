@@ -113,8 +113,8 @@ open class AutoDownloadWorker(context: Context, params: WorkerParameters) : Coro
             enforceQuota(podcastId, maximum, repository)
             return Result.success()
         }
-        // A manual request owns this episode. Auto retention must never adopt it.
-        if (!existing.isSmartDownloaded && existing.downloadOrigin != DownloadedEpisodeEntity.ORIGIN_AUTO) {
+        // A manual request owns this episode. Auto retention must never adopt it; a failed one gives way.
+        if (existing.isOwnedByManualRequest()) {
             database.autoDownloadDao().finish(existing.episodeId)
             return Result.success()
         }

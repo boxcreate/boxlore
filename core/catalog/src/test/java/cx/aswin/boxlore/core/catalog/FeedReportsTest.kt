@@ -115,15 +115,29 @@ class FeedReportsTest {
     }
 
     @Test
-    fun `old report times are dropped as new ones are written`() {
+    fun `report times are kept for a week, and only the last day counts`() {
         val limiter = FeedReportLimiter(stamps)
         limiter.record("1", now)
         now += 2 * DAY
-        assertTrue(limiter.allows("1", now))
+        assertTrue(limiter.allows("1", now), "a day later the show may be reported again")
         limiter.record("2", now)
+        assertEquals(mapOf("1" to now - 2 * DAY, "2" to now), limiter.lastReportedAt(), "still known as reported, to order reports")
 
-        assertEquals(setOf("2"), stamps.all().keys)
-        assertFalse(limiter.allows("2", now + 1))
+        now += FeedReportLimiter.HISTORY_MS + 1
+        limiter.record("3", now)
+        assertEquals(setOf("3"), stamps.all().keys, "older times are dropped as new ones are written")
+        assertFalse(limiter.allows("3", now + 1))
+    }
+
+    @Test
+    fun `reports from earlier days don't count toward today's limit`() {
+        val limiter = FeedReportLimiter(stamps)
+        repeat(FeedReportLimiter.DAILY_CAP) { limiter.record("${100 + it}", now) }
+        assertFalse(limiter.allows("1", now))
+
+        now += DAY + 1
+        assertTrue(limiter.allows("1", now))
+        assertTrue(limiter.allows("100", now))
     }
 
     private companion object {

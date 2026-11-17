@@ -18,8 +18,8 @@ It does not own playback, downloads, Compose UI, Room schema ([`:core:database`]
 - `syncSubscriptions`: each show's latest episode from Room (ready catalogs), cached extras (opted-in shows), else `/sync` in 20-ID calls, two at a time.
 - `loadPiEpisodesForSupplement`: the strict Podcast Index baseline for feed-only extras; failure stops the extras refresh.
 - Discovery uses `/v2` when its switch is on, else v1; show search, typeahead, onboarding, content catalog, feedback, `/sync` and OPML lookups stay v1.
-- `DiscoveryEpisodeIds` (`RoomDiscoveryEpisodeIds` in production) maps recipe IDs in `/v2` answers to the phone's owner IDs before callers use them, and sends seeds and exclusions as recipe IDs.
-- Failed `/v2` requests never fall back to v1: they keep the last good answer (`V2DiscoveryLastGood`; `RecommendationsLastGood` per country, Home picks marked `fromLastGood`), else mark Home results `failed` (keep what's shown), like failed v1 picks.
+- `DiscoveryEpisodeIds` (`RoomDiscoveryEpisodeIds` in production) maps recipe IDs in `/v2` answers to the phone's owner IDs before callers use them, and sends seeds and exclusions as recipe IDs. Follow seeds and sent followed IDs go by latest play, then follow day (same-day follows take turns daily); picks of any followed show are dropped.
+- Failed `/v2` requests never fall back to v1: they keep the last good answer (`V2DiscoveryLastGood`, never for a Lore check for new cards; `RecommendationsLastGood` per country, Home picks marked `fromLastGood`), else mark Home results `failed` (keep what's shown), like failed v1 picks.
 - `/v2` answers are cached under `v2|` keys, apart from v1 answers.
 - `DiscoveryRouting` and `BriefingLinks` give code outside the repository the same switch and ID translation.
 - `RolloutSwitches`: feed-first show pages (default off, fixed per process); upgrade repair, daily address check, `/v2` discovery (default on). Off pauses without marking done.
@@ -40,7 +40,7 @@ It does not own playback, downloads, Compose UI, Room schema ([`:core:database`]
 - `DirectFeedRecovery`: reports a failed read, tries a replacement address, saved only if it reads; `FeedFixToggles` stay on without an answer.
 - `FeedAddressDailyCheck`: asks `/v2/shows/feeds` daily per followed show and swaps only a confirmed move that reads; follows not yet pushed wait.
 - `FollowedShowFeedRead.readNow` reads one followed show's feed past its wait (Home's show chip; the caller throttles it).
-- `FeedReporter` / `FeedReportLimiter`: broken-feed reports, once per show a day and 20 a day, with `FOLLOWED_SHOWS_RESERVE` kept for followed shows. Use the app's one limiter.
+- `FeedReporter` / `FeedReportLimiter`: broken-feed reports, once per show a day and 20 a day, with `FOLLOWED_SHOWS_RESERVE` kept for followed shows. Kept report times (`lastReportedAt`) send the longest-unreported shows first. Use the app's one limiter.
 - `RenumberedShowFollows` (`SubscriptionRepository.renumberedFollows`, rules in `RenumberedFollowMerge`) keeps one follow when Podcast Index renumbers a show.
 - `SubscribedEpisodeCatalog`: routes the local catalog port to the Podcast Index or RSS adapter; a `FeedMoveFollower` saves permanent feed moves.
 - `UpgradeAddressRepair`: one-time post-upgrade address repair run by the app's `UpgradeRepairWorker`; finished steps survive process death.

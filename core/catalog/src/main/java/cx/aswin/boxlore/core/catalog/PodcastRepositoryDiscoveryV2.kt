@@ -152,8 +152,8 @@ internal fun List<Episode>.withoutSeed(query: SimilarEpisodesQuery): List<Episod
  * Personal picks from `/v2/recommendations` (Smart Queue, Smart Downloads, Android Auto and content
  * rows). Without a seed or an interest no request is made, as on v1. A failure, or an answer without
  * picks, keeps the last good picks for [country] ([RecommendationsLastGood]), never the v1
- * recommendations. Episodes [history] holds are left out ([withoutHistory]). [languages] is the
- * normalised list (at most four).
+ * recommendations. Episodes [history] holds and episodes of followed shows are left out
+ * ([withoutHistory], [withoutFollowed]). [languages] is the normalised list (at most four).
  */
 internal suspend fun PodcastRepository.v2PersonalizedRecommendations(
     history: List<cx.aswin.boxlore.core.network.model.HistoryItem>,
@@ -164,7 +164,8 @@ internal suspend fun PodcastRepository.v2PersonalizedRecommendations(
 ): List<Episode> {
     val request = v2RecommendationRequest(history, interests, country, subscribedPodcastIds, languages) ?: return emptyList()
     val cacheKey = request.v2CacheKey()
-    PodcastRepository.recommendationsCache[cacheKey]?.let { return it }
+    // The key holds at most [MAX_RECOMMENDATION_IDS] follows, so a show followed since may be past it.
+    PodcastRepository.recommendationsCache[cacheKey]?.let { return it.withoutFollowed(subscribedPodcastIds) }
     val items =
         v2Body("recommendations") { apiV2.getRecommendations(getOrCreateDeviceUuid(), request).execute() }
             ?.takeIf { it.isValidRecommendationV2Response(isHttpSuccessful = true) }
@@ -173,10 +174,13 @@ internal suspend fun PodcastRepository.v2PersonalizedRecommendations(
             .orEmpty()
     if (items.isEmpty()) {
         val lastGood = recommendationsLastGood.load(RecommendationsLastGood.Surface.PERSONAL, country) ?: return emptyList()
-        return discoveryEpisodeIds.toLocalOwners(lastGood.episodes).withoutHistory(history)
+        return discoveryEpisodeIds.toLocalOwners(lastGood.episodes).withoutHistory(history).withoutFollowed(subscribedPodcastIds)
     }
     recommendationsLastGood.save(RecommendationsLastGood.Surface.PERSONAL, country, RecommendationsLastGood.LastGoodPicks(items, isFallback = false))
-    return discoveryEpisodeIds.toLocalOwners(items).withoutHistory(history).also { PodcastRepository.recommendationsCache[cacheKey] = it }
+    // Cached before the follow filter, so a show unfollowed later with the same key can be picked again.
+    val candidates = discoveryEpisodeIds.toLocalOwners(items).withoutHistory(history)
+    PodcastRepository.recommendationsCache[cacheKey] = candidates
+    return candidates.withoutFollowed(subscribedPodcastIds)
 }
 
 /** A region's briefing; its chapters link is the signed `/v2` one, so related episodes come under recipe IDs. */
@@ -210,7 +214,8 @@ internal suspend fun PodcastRepository.v2HomeBootstrapFast(country: String): Hom
  * popular picks as on v1. [HomeRecommendations.isFallback] follows v1: true only for that
  * country-default request. No picks (a failure, or none found) keeps the last good picks for
  * [country], translated again ([RecommendationsLastGood]) and marked
- * [HomeRecommendations.fromLastGood]; with none, the answer is marked [HomeRecommendations.failed]. Episodes [history] holds are left out ([withoutHistory]).
+ * [HomeRecommendations.fromLastGood]; with none, the answer is marked [HomeRecommendations.failed]. Episodes [history] holds and
+ * episodes of followed shows are left out ([withoutHistory], [withoutFollowed]).
  *
  * [languages] is the normalised list (at most four) the recommendation body carries; the bootstrap's
  * own `languages` field gets the expanded list, as on v1.
@@ -240,18 +245,24 @@ internal suspend fun PodcastRepository.v2HomeRecommendations(
     if (items.isEmpty()) {
         val lastGood = recommendationsLastGood.load(RecommendationsLastGood.Surface.HOME, country) ?: return HomeRecommendations(failed = true)
         return HomeRecommendations(
-            discoveryEpisodeIds.toLocalOwners(lastGood.episodes).withoutHistory(history),
+            discoveryEpisodeIds.toLocalOwners(lastGood.episodes).withoutHistory(history).withoutFollowed(subscribedPodcastIds),
             lastGood.isFallback,
             fromLastGood = true,
         )
     }
     recommendationsLastGood.save(RecommendationsLastGood.Surface.HOME, country, RecommendationsLastGood.LastGoodPicks(items, isFallback))
-    return HomeRecommendations(discoveryEpisodeIds.toLocalOwners(items).withoutHistory(history), isFallback)
+    return HomeRecommendations(discoveryEpisodeIds.toLocalOwners(items).withoutHistory(history).withoutFollowed(subscribedPodcastIds), isFallback)
 }
 
-/** A page of the curiosity deck; each card's recipe ID is translated to its local owner. */
+/**
+ * A page of the curiosity deck; each card's recipe ID is translated to its local owner. A failed
+ * request answers the page's last good answer, except for a check for new cards ([cacheBuster]
+ * set), which answers null so the caller knows nothing new was loaded.
+ */
 internal suspend fun PodcastRepository.v2CuratedCuriosity(page: Int, cacheBuster: String?,): CuratedCuriosityResponseDto? {
     val key = page.toString()
-    val body = v2Body("curated/curiosity-v3") { apiV2.getCuratedCuriosity(page, cacheBuster).execute() } ?: return v2LastGood.curiosity[key]
+    val body =
+        v2Body("curated/curiosity-v3") { apiV2.getCuratedCuriosity(page, cacheBuster).execute() }
+            ?: return if (cacheBuster == null) v2LastGood.curiosity[key] else null
     return discoveryEpisodeIds.curiosityToLocalOwners(body).also { v2LastGood.curiosity[key] = it }
 }

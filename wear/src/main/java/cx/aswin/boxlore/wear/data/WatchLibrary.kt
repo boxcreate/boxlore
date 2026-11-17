@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.wear.data
 
+import cx.aswin.boxlore.wear.model.ShowEpisodes
 import cx.aswin.boxlore.wear.model.WatchEpisode
 import cx.aswin.boxlore.wear.model.WatchSearchResult
 import cx.aswin.boxlore.wear.model.WatchShow
@@ -44,7 +45,10 @@ interface WatchLibrary {
 
     fun show(showId: String): Flow<WatchShow?>
 
-    fun episodes(showId: String): Flow<List<WatchEpisode>>
+    fun episodes(showId: String): Flow<ShowEpisodes>
+
+    /** Loads a show page again after it failed: the show's details and its episodes. */
+    fun reloadShow(showId: String) = Unit
 
     fun episode(episodeId: String): Flow<WatchEpisode?>
 
@@ -71,7 +75,7 @@ class EmptyWatchLibrary : WatchLibrary {
 
     override fun show(showId: String): Flow<WatchShow?> = flowOf(null)
 
-    override fun episodes(showId: String): Flow<List<WatchEpisode>> = flowOf(emptyList())
+    override fun episodes(showId: String): Flow<ShowEpisodes> = flowOf(ShowEpisodes.Loaded(emptyList()))
 
     override fun episode(episodeId: String): Flow<WatchEpisode?> = flowOf(null)
 

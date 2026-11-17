@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.downloads
 
 import android.content.Context
+import android.util.Log
 import cx.aswin.boxlore.core.catalog.FeedUrlLookup
 import cx.aswin.boxlore.core.database.AutoDownloadReleaseEntity
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
@@ -44,7 +45,13 @@ class AutoDownloadCoordinator(
         active
     }
 
-    /** Failure of one feed does not prevent discovery or replay for other shows. */
+    /**
+     * Reads every auto-download show's feed and claims its new releases. A show whose feed can't be
+     * read (no https address, an error or an unreadable feed) is logged and read again next period,
+     * so it never makes the run retry; a show not started because [canProceed] had already turned
+     * false also waits for the next period. False when a show stopped partway because [canProceed]
+     * turned false during its read, or when claiming or enqueueing its releases failed on the phone.
+     */
     suspend fun discover(canProceed: suspend () -> Boolean = { false }): Boolean {
         if (!canProceed()) return true
         synchronizeSubscriptions()
@@ -54,37 +61,58 @@ class AutoDownloadCoordinator(
                 async {
                     limit.acquire()
                     try {
-                        !canProceed() || discoverShow(show, canProceed)
+                        // A closed gate before a show starts waits for the next period, as the worker's gate does.
+                        if (!canProceed()) ShowDiscovery.DONE else discoverShow(show, canProceed)
                     } finally {
                         limit.release()
                     }
                 }
-            }.map { it.await() }.all { it }
+            }.map { it.await() }.none { it == ShowDiscovery.INCOMPLETE }
         }
     }
 
-    private suspend fun discoverShow(show: PodcastEntity, canProceed: suspend () -> Boolean): Boolean = try {
+    private suspend fun discoverShow(show: PodcastEntity, canProceed: suspend () -> Boolean): ShowDiscovery {
+        val read = try {
+            readFeed(show, canProceed)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "Feed read failed for show ${show.podcastId}", e)
+            false
+        }
+        return try {
+            scanCached(show.podcastId, background = true, canProceed = canProceed)
+            when {
+                read -> ShowDiscovery.DONE
+                !canProceed() -> ShowDiscovery.INCOMPLETE
+                else -> {
+                    Log.w(TAG, "Couldn't read show ${show.podcastId}; it is read again next period")
+                    ShowDiscovery.UNREADABLE
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Claiming or enqueueing failed on the phone: the pending claims replay on the retry.
+            ShowDiscovery.INCOMPLETE
+        }
+    }
+
+    /** True when [show]'s feed was read; false when it has no https address or the read failed. */
+    private suspend fun readFeed(show: PodcastEntity, canProceed: suspend () -> Boolean): Boolean {
         val feed = show.feedUrl?.takeIf { it.startsWith("https://") } ?: if (show.isRss) null else recoverMissingFeed(show.podcastId)
-        var succeeded = feed != null
-        if (feed != null) {
-            if (feed != show.feedUrl) saveFeedUrl(show.podcastId, feed)
-            val outcome = catalog.refresh(
-                LocalEpisodeCatalogPort.RefreshRequest(
+        if (feed == null) return false
+        if (feed != show.feedUrl) saveFeedUrl(show.podcastId, feed)
+        val outcome = catalog.refresh(
+            LocalEpisodeCatalogPort.RefreshRequest(
                 podcastIndexId = show.podcastId,
-                    feedUrl = feed,
-                    meta = meta(show),
+                feedUrl = feed,
+                meta = meta(show),
                 reason = LocalEpisodeCatalogPort.RefreshReason.AUTO_DOWNLOAD,
                 canProceed = canProceed,
             )
-            )
-            succeeded = outcome !is LocalEpisodeCatalogPort.RefreshOutcome.Failure
-        }
-        scanCached(show.podcastId, background = true, canProceed = canProceed)
-        succeeded
-    } catch (e: CancellationException) {
-        throw e
-    } catch (_: Exception) {
-        false
+        )
+        return outcome !is LocalEpisodeCatalogPort.RefreshOutcome.Failure
     }
 
     private suspend fun recoverMissingFeed(podcastId: String): String? {
@@ -130,7 +158,21 @@ class AutoDownloadCoordinator(
         }
     }
 
+    /** How far discovery got with one show. */
+    private enum class ShowDiscovery {
+        /** Read, or not started because the gate closed first. */
+        DONE,
+
+        /** The feed couldn't be read; the show is read again next period. */
+        UNREADABLE,
+
+        /** Stopped partway: the gate closed during the read, or local work failed. */
+        INCOMPLETE,
+    }
+
     companion object {
+        private const val TAG = "AutoDownload"
+
         fun eligible(show: PodcastEntity): Boolean = show.isSubscribed && show.autoDownloadEnabled
         fun meta(show: PodcastEntity) = LocalEpisodeCatalogPort.PodcastMeta(show.title, show.imageUrl, show.genre, show.author)
 

@@ -88,6 +88,12 @@ class PodcastRepository(
     private val onShowRenumbered: suspend (oldId: String, answer: Podcast) -> Unit = { _, _ -> },
     /** The process's one pacer for library-wide requests ([ApiRouteBudget]); tests pass one on a virtual clock. */
     val routeBudget: ApiRouteBudget = ApiRouteBudget(),
+    /**
+     * When each followed show was followed (epoch ms), which orders follows for recommendations
+     * after recent plays ([recommendationFollowOrder]). The app reads the follow rows; the default
+     * knows none, so follows not in the history are in the daily shuffle alone.
+     */
+    private val followedAt: suspend () -> Map<String, Long> = { emptyMap() },
 ) : cx.aswin.boxlore.core.domain.ports.PodcastCatalogPort {
     internal val episodeFeedReader: EpisodeFeedReader by lazy { feedReader ?: RssEpisodeFeedReader(cx.aswin.boxlore.core.rss.RssFeedClient()) { apiV2 } }
 
@@ -126,6 +132,16 @@ class PodcastRepository(
             telemetry = feedFirstWiring.telemetry,
             isFollowed = feedFirstWiring.isFollowed,
         )
+    }
+
+    /** [followedAt], or none when it fails: the follow order then falls back to the daily shuffle. */
+    internal suspend fun followedAtTimes(): Map<String, Long> = try {
+        followedAt()
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        android.util.Log.w("PodcastRepository", "Couldn't read when shows were followed", e)
+        emptyMap()
     }
 
     /** Last good `/v2` discovery answers of this process (P4 PR 12, plan section 9). */
@@ -1106,6 +1122,10 @@ class PodcastRepository(
         result
     }
 
+    /**
+     * A page of the Lore curiosity deck, or null when it couldn't be loaded. [bypassCache] (a check
+     * for new cards) asks the server past every cache and never answers a remembered page.
+     */
     suspend fun getCuratedCuriosity(page: Int = 1, bypassCache: Boolean = false,): CuratedCuriosityResponseDto? = withContext(Dispatchers.IO) {
         try {
             val cbVal = if (bypassCache) System.currentTimeMillis().toString() else null

@@ -171,7 +171,12 @@ class AutoDownloadCoordinatorTest {
         assertFalse("the copy is never the followed live list", catalog.isReady("200"))
     }
 
-    @Test fun publisherFailureKeepsPendingForRetry() = runBlocking {
+    /**
+     * A feed that can't be read is read again next period: the run still finishes, so background
+     * discovery keeps its six-hour period instead of WorkManager's retry backoff, and the pending
+     * claim stays for the next run.
+     */
+    @Test fun publisherFailureFinishesTheRunAndKeepsPendingForTheNextPeriod() = runBlocking {
         val coordinator = coordinator()
         coordinator.synchronizeSubscriptions()
         release()
@@ -180,8 +185,41 @@ class AutoDownloadCoordinatorTest {
         feed.fail = true
         val stored = database.localEpisodeCatalogDao().getFeed("100")!!
         database.localEpisodeCatalogDao().upsertFeed(stored.copy(fetchedAt = 1))
-        assertFalse(coordinator.discover { true })
+        assertTrue(coordinator.discover { true })
         assertEquals(AutoDownloadReleaseEntity.PENDING, database.autoDownloadDao().getRelease(id)?.state)
+    }
+
+    /**
+     * Reported: one auto-download show with only an http:// address made every discovery run
+     * return retry, so feeds were read about every 10 hours instead of every 6. The run now
+     * finishes, and the other show's new release is still claimed and downloaded.
+     */
+    @Test fun aShowWithoutAnHttpsAddressNeitherFailsTheRunNorBlocksOtherShows() = runBlocking {
+        database.podcastDao().upsert(
+            PodcastEntity(
+                "300", "Plain", "Author", "", null,
+                isSubscribed = true, autoDownloadEnabled = true, notificationsEnabled = false, feedUrl = "http://feeds.example/plain.xml",
+            )
+        )
+        var lookups = 0
+        val coordinator = AutoDownloadCoordinator(
+            database,
+            catalog,
+            prefs,
+            enqueue = { _, episodeId, _, _ -> enqueued += episodeId },
+            recoverFeedUrl = {
+                lookups++
+                cx.aswin.boxlore.core.catalog.FeedUrlLookup.Answered(null)
+            },
+            nowSeconds = { now },
+        )
+        coordinator.synchronizeSubscriptions()
+        release()
+
+        assertTrue(coordinator.discover { true })
+
+        assertEquals(listOf(catalog.findByCatalogKey("100", "release", null)!!.id), enqueued)
+        assertEquals("the plain show was tried", 1, lookups)
     }
 
     @Test fun defaultDiscoveryAndDeniedBackgroundScanCannotFetchOrEnqueue() = runBlocking {

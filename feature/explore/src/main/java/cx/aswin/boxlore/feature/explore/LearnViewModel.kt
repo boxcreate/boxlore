@@ -179,10 +179,10 @@ class LearnViewModel(
         }
     }
 
-    private var currentPage = 1
+    private val paging = CuriosityDeckPaging()
     private var isLoadingMore = false
-    private var isEndOfContent = false
     private var fetchJob: Job? = null
+    private val scanResume = CuriosityScanResume()
 
     init {
         viewModelScope.launch {
@@ -195,20 +195,36 @@ class LearnViewModel(
 
     private fun getDismissedIds(): Set<String> = historyStore.getDismissedIds()
 
+    /** Scans for the first deck with unseen cards, carrying on where an earlier check stopped ([CuriosityScanResume]). */
     private suspend fun loadFirstAvailableDeck(
         bypassCache: Boolean
-    ): InitialCuriosityDeckResult = findFirstUnseenCuriosityDeck(
-        dismissedIds = getDismissedIds(),
-        fetchPage = { page ->
-            podcastRepository.getCuratedCuriosity(
-                page = page,
-                bypassCache = bypassCache
-            )?.questionsStack?.map { it.toLearnCuriosityCard() }
+    ): InitialCuriosityDeckResult {
+        val dismissedIds = getDismissedIds()
+        return findFirstUnseenCuriosityDeck(
+            dismissedIds = dismissedIds,
+            startPage = scanResume.startPage(dismissedIds),
+            fetchPage = { page ->
+                podcastRepository.getCuratedCuriosity(
+                    page = page,
+                    bypassCache = bypassCache
+                )?.questionsStack?.map { it.toLearnCuriosityCard() }
+            }
+        ).also {
+            scanResume.after(it, dismissedIds, freshPages = bypassCache)
+            paging.onScan(it)
         }
-    )
+    }
+
+    /**
+     * No unseen card found: caught up. After [InitialCuriosityDeckResult.Capped] the list goes on,
+     * so paging stays open and the next check carries on further down.
+     */
+    private fun showCaughtUp() {
+        _uiState.value = LearnUiState.CaughtUp()
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLearnCaughtUp(0)
+    }
 
     private fun showDeck(result: InitialCuriosityDeckResult.Found) {
-        currentPage = result.page
         val shuffled = weightedShuffle(
             list = result.unseenItems,
             curiosityScore = LearnCuriosityCard::curiosityScore,
@@ -225,7 +241,7 @@ class LearnViewModel(
         val currentState = _uiState.value
         if (currentState is LearnUiState.Success) {
             val updatedStack = currentState.questionsStack.filterNot { it.episodeId == episodeId }
-            if (updatedStack.isEmpty() && isEndOfContent) {
+            if (updatedStack.isEmpty() && paging.isEndOfContent) {
                 _uiState.value = LearnUiState.CaughtUp()
                 cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLearnCaughtUp(0)
                 return
@@ -244,10 +260,10 @@ class LearnViewModel(
     ): List<LearnCuriosityCard> {
         val res = podcastRepository.getCuratedCuriosity(page = page, bypassCache = false) ?: return emptyList()
         if (res.questionsStack.isEmpty()) {
-            isEndOfContent = true
+            paging.onListEnded()
             return emptyList()
         }
-        currentPage = page
+        paging.onPageLoaded(page)
         return filterAndShuffleNewItems(
             rawItems = res.questionsStack.map { it.toLearnCuriosityCard() },
             currentStack = currentStack,
@@ -268,22 +284,22 @@ class LearnViewModel(
     }
 
     private fun fetchNextPage() {
-        if (isLoadingMore || isEndOfContent || fetchJob?.isActive == true) return
+        if (isLoadingMore || paging.isEndOfContent || fetchJob?.isActive == true) return
         if (_uiState.value !is LearnUiState.Success) return
 
         isLoadingMore = true
         fetchJob = viewModelScope.launch {
             try {
-                var pageToFetch = currentPage + 1
+                var pageToFetch = paging.currentPage + 1
                 var accumulatedNew = emptyList<LearnCuriosityCard>()
                 var pageAttempts = 0
                 val maxAttempts = 5
 
-                while (accumulatedNew.isEmpty() && !isEndOfContent && pageAttempts < maxAttempts) {
+                while (accumulatedNew.isEmpty() && !paging.isEndOfContent && pageAttempts < maxAttempts) {
                     pageAttempts++
                     val currentStack = (_uiState.value as? LearnUiState.Success)?.questionsStack ?: emptyList()
                     accumulatedNew = fetchPageAndFilter(pageToFetch, currentStack)
-                    if (!isEndOfContent) {
+                    if (!paging.isEndOfContent) {
                         pageToFetch++
                     }
                 }
@@ -292,7 +308,7 @@ class LearnViewModel(
                     appendCuriositiesToSuccessState(accumulatedNew)
                 }
             } catch (e: Exception) {
-                android.util.Log.e("LearnViewModel", "Failed to load page ${currentPage + 1}", e)
+                android.util.Log.e("LearnViewModel", "Failed to load page ${paging.currentPage + 1}", e)
             } finally {
                 isLoadingMore = false
             }
@@ -303,18 +319,13 @@ class LearnViewModel(
         fetchJob?.cancel()
         fetchJob = viewModelScope.launch {
             _uiState.value = LearnUiState.Loading
-            currentPage = 1
-            isEndOfContent = false
+            paging.reset()
             isLoadingMore = false
             try {
                 when (val result = loadFirstAvailableDeck(bypassCache = false)) {
                     is InitialCuriosityDeckResult.Found -> showDeck(result)
-                    is InitialCuriosityDeckResult.Exhausted -> {
-                        currentPage = result.lastPage
-                        isEndOfContent = true
-                        _uiState.value = LearnUiState.CaughtUp()
-                        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLearnCaughtUp(0)
-                    }
+                    is InitialCuriosityDeckResult.Exhausted,
+                    is InitialCuriosityDeckResult.Capped -> showCaughtUp()
                     is InitialCuriosityDeckResult.Failed -> {
                         _uiState.value = LearnUiState.Error("Failed to load curiosity curation")
                     }
@@ -335,17 +346,12 @@ class LearnViewModel(
                 else -> Unit
             }
             try {
-                currentPage = 1
-                isEndOfContent = false
                 isLoadingMore = false
+                // A failed check keeps what is shown and the paging behind it: only an answer moves [paging].
                 when (val result = loadFirstAvailableDeck(bypassCache = true)) {
                     is InitialCuriosityDeckResult.Found -> showDeck(result)
-                    is InitialCuriosityDeckResult.Exhausted -> {
-                        currentPage = result.lastPage
-                        isEndOfContent = true
-                        _uiState.value = LearnUiState.CaughtUp()
-                        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLearnCaughtUp(0)
-                    }
+                    is InitialCuriosityDeckResult.Exhausted,
+                    is InitialCuriosityDeckResult.Capped -> showCaughtUp()
                     is InitialCuriosityDeckResult.Failed -> {
                         _uiState.value = when (current) {
                             is LearnUiState.Success -> current.copy(isRefreshing = false)

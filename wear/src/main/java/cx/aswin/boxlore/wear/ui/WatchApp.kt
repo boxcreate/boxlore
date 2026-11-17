@@ -31,6 +31,7 @@ import cx.aswin.boxlore.wear.R
 import cx.aswin.boxlore.wear.WatchContainer
 import cx.aswin.boxlore.wear.data.StoragePolicy
 import cx.aswin.boxlore.wear.data.WatchDownloadProblem
+import cx.aswin.boxlore.wear.model.ShowEpisodes
 import cx.aswin.boxlore.wear.model.WatchSearchResult
 import cx.aswin.boxlore.wear.ui.components.LocalPlayingEpisode
 import cx.aswin.boxlore.wear.ui.components.PlayingEpisode
@@ -55,7 +56,9 @@ import cx.aswin.boxlore.wear.ui.settings.ShowsLayoutSettingsScreen
 import cx.aswin.boxlore.wear.ui.settings.StorageLimitSettingsScreen
 import cx.aswin.boxlore.wear.ui.show.EpisodeActions
 import cx.aswin.boxlore.wear.ui.show.EpisodeScreen
+import cx.aswin.boxlore.wear.ui.show.ShowLoading
 import cx.aswin.boxlore.wear.ui.show.ShowScreen
+import cx.aswin.boxlore.wear.ui.show.ShowUnavailable
 import cx.aswin.boxlore.wear.ui.shows.YourShowsScreen
 
 /** Route names. Arguments are appended as path segments. */
@@ -293,14 +296,19 @@ private fun NavGraphBuilder.detailRoutes(container: WatchContainer, navControlle
     composable(WatchRoutes.SHOW) { entry ->
         val showId = entry.arguments?.getString(WatchRoutes.ARG).orEmpty()
         val show by remember(showId) { container.library.show(showId) }.collectAsStateWithLifecycle(null)
-        val episodes by remember(showId) { container.library.episodes(showId) }.collectAsStateWithLifecycle(emptyList())
-        show?.let { current ->
-            ShowScreen(
-                show = current,
-                episodes = episodes,
-                onToggleSubscribed = { container.library.setSubscribed(current.id, !current.subscribed) },
-                onEpisode = { navController.navigate(WatchRoutes.episode(it)) },
-            )
+        val episodes by remember(showId) { container.library.episodes(showId) }.collectAsStateWithLifecycle(ShowEpisodes.Loading)
+        val current = show
+        when {
+            current != null ->
+                ShowScreen(
+                    show = current,
+                    episodes = episodes,
+                    onToggleSubscribed = { container.library.setSubscribed(current.id, !current.subscribed) },
+                    onEpisode = { navController.navigate(WatchRoutes.episode(it)) },
+                    onRetry = { container.library.reloadShow(showId) },
+                )
+            episodes == ShowEpisodes.Failed -> ShowUnavailable(onRetry = { container.library.reloadShow(showId) })
+            else -> ShowLoading()
         }
     }
     composable(WatchRoutes.EPISODE) { entry ->
