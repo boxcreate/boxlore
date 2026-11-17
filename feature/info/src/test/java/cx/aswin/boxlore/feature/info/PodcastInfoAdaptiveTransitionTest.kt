@@ -63,6 +63,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -228,6 +229,74 @@ class PodcastInfoAdaptiveTransitionTest {
         recreate(COMPACT)
         fixture.compose.onNodeWithContentDescription("Close episode search").assertDoesNotExist()
         verify(model, times(2)).searchEpisodes("Episode 1")
+    }
+
+    @Test
+    fun `a search that could not read the show offers Try again across window changes, and Try again searches once more`() {
+        // Reported: a failed read of the show's list showed "No matching episodes" for episodes that exist.
+        render()
+        fixture.compose.onNodeWithContentDescription("Search episodes").performClick()
+        searchField().performTextInput("Episode 1")
+        verify(model, times(1)).searchEpisodes("Episode 1")
+        fixture.compose.runOnIdle {
+            uiState.update { state -> (state as PodcastInfoUiState.Success).copy(searchResults = emptyList(), searchFailed = true) }
+        }
+
+        acrossWindowChanges {
+            fixture.compose.onNodeWithTag(LIST_TAG).performScrollToNode(hasText(SEARCH_FAILED))
+            fixture.compose.onNodeWithText(SEARCH_FAILED).assertIsDisplayed()
+            fixture.compose.onNodeWithText(NO_MATCHES).assertDoesNotExist()
+            assertEquals("Episode 1", (uiState.value as PodcastInfoUiState.Success).searchQuery)
+        }
+
+        fixture.compose.onNodeWithTag(LIST_TAG).performScrollToNode(hasText("Try again"))
+        fixture.compose.onNodeWithText("Try again").performClick()
+        fixture.compose.waitForIdle()
+        verify(model, times(2)).searchEpisodes("Episode 1")
+    }
+
+    @Test
+    fun `a search that covered only the newest episodes says so across window changes`() {
+        // Reviewed: a search cut at the route's last offset showed "No matching episodes" as if it covered the whole show.
+        render()
+        fixture.compose.onNodeWithContentDescription("Search episodes").performClick()
+        searchField().performTextInput("Episode 1")
+        fixture.compose.runOnIdle {
+            uiState.update { state -> (state as PodcastInfoUiState.Success).copy(searchResults = emptyList(), searchedNewest = 11_000) }
+        }
+
+        acrossWindowChanges {
+            fixture.compose.onNodeWithTag(LIST_TAG).performScrollToNode(hasText(SEARCHED_NEWEST))
+            fixture.compose.onNodeWithText(SEARCHED_NEWEST).assertIsDisplayed()
+            assertEquals("Episode 1", (uiState.value as PodcastInfoUiState.Success).searchQuery)
+        }
+        fixture.compose.runOnIdle {
+            uiState.update { state -> (state as PodcastInfoUiState.Success).copy(searchedNewest = null) }
+        }
+        fixture.compose.onNodeWithText(SEARCHED_NEWEST).assertDoesNotExist()
+    }
+
+    @Test
+    fun `while Mark all reads the show its menu items wait, across window changes`() {
+        // Reviewed: Mark all reads the whole show first, and a repeat tap started a second read.
+        render()
+        fixture.compose.runOnIdle {
+            uiState.update { state -> (state as PodcastInfoUiState.Success).copy(isMarkingAll = true) }
+        }
+        acrossWindowChanges { assertTrue((uiState.value as PodcastInfoUiState.Success).isMarkingAll) }
+
+        fixture.compose.onNodeWithContentDescription("More Options").performClick()
+        fixture.compose.onNodeWithText("Mark all as played").assertIsNotEnabled()
+        fixture.compose.onNodeWithText("Mark all as unplayed").assertIsNotEnabled()
+        fixture.compose.onNodeWithText("Mark all as played").performClick()
+        fixture.compose.onNodeWithText("Mark all as played?").assertDoesNotExist()
+
+        fixture.compose.runOnIdle {
+            uiState.update { state -> (state as PodcastInfoUiState.Success).copy(isMarkingAll = false) }
+        }
+        fixture.compose.onNodeWithText("Mark all as played").assertIsEnabled()
+        fixture.compose.onNodeWithText("Mark all as unplayed").assertIsEnabled()
+        verify(model, never()).markAllAsCompleted()
     }
 
     @Test
@@ -989,6 +1058,9 @@ class PodcastInfoAdaptiveTransitionTest {
         const val REFRESH_TAG = "podcast_info_refresh_indicator"
         const val FEED_STATUS_TAG = "podcast_info_feed_status"
         const val RESULT_ROW = 2
+        const val SEARCH_FAILED = "Couldn’t search this show’s episodes. Check your connection."
+        const val NO_MATCHES = "No matching episodes. Try another title or keyword."
+        const val SEARCHED_NEWEST = "Searched only the newest 11,000 episodes of this show."
         val ALERT_EXITS = listOf(Exit.CONFIRM, Exit.CANCEL, Exit.BACK, Exit.OUTSIDE)
         val SELECTION_ACTIONS = listOf(
             "Play selected episodes",

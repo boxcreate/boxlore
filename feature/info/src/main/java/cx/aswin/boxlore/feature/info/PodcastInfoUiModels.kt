@@ -64,6 +64,12 @@ sealed interface PodcastInfoUiState {
         val searchQuery: String = "",
         val isSearching: Boolean = false,
         val searchResults: List<Episode>? = null, // null = not searching, empty = no results
+        /** The last search couldn't read the show's episodes: the list offers Try again, not "no matches". */
+        val searchFailed: Boolean = false,
+        /** How many of the newest episodes the last search covered, when the show has more than that; null when it covered them all. */
+        val searchedNewest: Int? = null,
+        /** Mark all as played or unplayed is reading the show: the menu's Mark all items wait until it ends. */
+        val isMarkingAll: Boolean = false,
         /** Accumulated repository page list (offset-0 pages already include cached feed extras). */
         val piEpisodes: List<Episode> = emptyList(),
         val directFeedChip: DirectFeedChipState = DirectFeedChipState.Hidden,

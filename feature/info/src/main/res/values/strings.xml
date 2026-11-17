@@ -100,6 +100,7 @@
     <string name="episode_selection_select_older">Select all older episodes</string>
     <string name="episode_selection_select_newer">Select all newer episodes</string>
     <string name="episode_selection_failed">Couldn’t load every episode. Check your connection and try again.</string>
+    <string name="episode_selection_too_long">This show has too many episodes to select them all.</string>
     <string name="subscribe_to_edit_genre">Subscribe to the show to edit genre</string>
     <string name="genre_visibility_hint">Visible on this podcast page, Subscriptions filters, and folders.</string>
     <string name="genre_edit_placeholder">Click to set custom tag</string>
@@ -118,6 +119,8 @@
     <string name="podcast_info_close_search">Close episode search</string>
     <string name="podcast_info_clear_search">Clear search</string>
     <string name="podcast_info_no_search_results">No matching episodes. Try another title or keyword.</string>
+    <string name="podcast_info_search_newest_only">Searched only the newest %1$s episodes of this show.</string>
+    <string name="podcast_info_search_failed">Couldn’t search this show’s episodes. Check your connection.</string>
     <string name="podcast_info_missing_offer">Missing episodes?</string>
     <string name="podcast_info_missing_fetching">Updating…</string>
     <string name="podcast_info_missing_updated">Up to date</string>

@@ -37,6 +37,21 @@ class SmartQueueEngineSupplementTest {
     }
 
     @Test
+    fun `tier 0 queues nothing from a window that starts after an episode it does not hold`() = runTest {
+        // Reported: Smart Queue continued from the oldest of the newest 200, far ahead of the place.
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = (801L..1_000L).map { episode(it) }
+
+        val batch =
+            engine(sources).getNextEpisodes(
+                EpisodeItem(id = 500, title = "Episode 500", datePublished = 500),
+                podcast("pod1", type = "serial"),
+            )
+
+        assertTrue(batch.none { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
+    }
+
+    @Test
     fun `subscription fallback queues a feed-only negative id from candidates`() = runTest {
         val sources = FakeSources()
         sources.episodesByPodcast["pod1"] = listOf(episode(1))

@@ -59,6 +59,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.catalog.ShowListTooLongException
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
@@ -375,6 +376,7 @@ fun PodcastInfoScreen(
                     }
                 }
                 val selectionFailedMessage = stringResource(R.string.episode_selection_failed)
+                val selectionTooLongMessage = stringResource(R.string.episode_selection_too_long)
                 val addRange: (EpisodeSelectionRange, List<Episode>, Boolean) -> Unit = { range, episodes, newestFirst ->
                     selectionEpisodePool = (selectionEpisodePool + episodes).distinctBy(Episode::id)
                     selectedEpisodeIds =
@@ -399,12 +401,14 @@ fun PodcastInfoScreen(
                         isLoadingFullSelection = true
                         coroutineScope.launch {
                             try {
-                                val window = viewModel.selectionWindowOrNull(rangeSort)
+                                val loaded = viewModel.selectionWindowResult(rangeSort)
                                 if (requestGeneration != selectionRequestGeneration) return@launch
+                                val window = loaded.getOrNull()
                                 if (window == null) {
                                     // The selection stays as it was: never part of a show passed off as all of it.
                                     isLoadingFullSelection = false
-                                    snackbarHostState.showSnackbar(selectionFailedMessage)
+                                    val tooLong = loaded.exceptionOrNull() is ShowListTooLongException
+                                    snackbarHostState.showSnackbar(if (tooLong) selectionTooLongMessage else selectionFailedMessage)
                                     return@launch
                                 }
                                 selectionSortName = rangeSort.name
@@ -453,7 +457,7 @@ fun PodcastInfoScreen(
                         val restoreSort = selectionSortName?.let(EpisodeSort::valueOf) ?: latestState.currentSort
                         isRestoringSelection = true
                         try {
-                            val window = viewModel.selectionWindowOrNull(restoreSort)
+                            val window = viewModel.selectionWindowResult(restoreSort).getOrNull()
                             if (requestGeneration != selectionRequestGeneration) return@LaunchedEffect
                             if (window == null) {
                                 selectionRestoreFailedOn = latestState
@@ -709,6 +713,7 @@ fun PodcastInfoScreen(
                         isPinnedToHome = isPinnedToHome,
                         onToggleHomePin = viewModel::toggleHomePin,
                         onEditGenre = handleEditGenreClick,
+                        markAllRunning = state.isMarkingAll,
                     ),
                     look = PodcastInfoTopBarLook(
                         sealAlpha = if (brandedPage == null) 0f else sealShown * (1f - (titleMotion.scrollFraction / 0.5f).coerceIn(0f, 1f)),
@@ -993,15 +998,15 @@ private val EpisodeIdListSaver = Saver<List<String>, ArrayList<String>>(
 
 /**
  * The selection window, in [sort], for a range selection or to look selected episodes up again
- * after the page is recreated, or null when it cannot be loaded: a range selection then leaves the
- * selection as it was and says so, and the restore keeps every ID and tries again.
+ * after the page is recreated, or the failure when it cannot be loaded: a range selection then
+ * leaves the selection as it was and says why, and the restore keeps every ID and tries again.
  */
 @Suppress("TooGenericExceptionCaught") // Any load failure is handled by the caller.
-private suspend fun PodcastInfoViewModel.selectionWindowOrNull(sort: EpisodeSort): PodcastEpisodeSelectionWindow? = try {
-    loadEpisodeSelectionWindow(sort)
+private suspend fun PodcastInfoViewModel.selectionWindowResult(sort: EpisodeSort): Result<PodcastEpisodeSelectionWindow> = try {
+    Result.success(loadEpisodeSelectionWindow(sort))
 } catch (cancelled: CancellationException) {
     throw cancelled
 } catch (failure: Exception) {
     android.util.Log.w("PodcastInfoScreen", "Could not load the show's episodes for selection", failure)
-    null
+    Result.failure(failure)
 }

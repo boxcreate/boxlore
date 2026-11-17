@@ -9,7 +9,13 @@ import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort.Scope
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.testing.TestFixtures
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -23,6 +29,7 @@ import org.junit.jupiter.api.Test
  * rows the listener was on, offline without a copy says so, the end of the copy waits for a
  * connection, concurrent searches share one archive read, and following hands the page over.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class PodcastInfoFeedFirstTest {
     private val source = FakeSource()
     private val ui = FakeUi()
@@ -114,6 +121,57 @@ class PodcastInfoFeedFirstTest {
         assertEquals(listOf(Scope.ARCHIVE), source.reads)
         assertTrue(feedFirst.archiveComplete)
         assertNull(feedFirst.completeArchive(this, podcast), "a whole archive is never read for search again")
+    }
+
+    @Test
+    fun `Mark all waiting on the page's archive read reads again when the page closes, and still gets the whole feed`() = runTest {
+        // Reviewed: Mark all awaited the page's own archive read, so pressing Back cancelled it and nothing was marked.
+        source.list = episodes(0 until 20)
+        feedFirst.open(SHOW, podcast)
+        ui.show(podcast, source.list)
+        val gate = CompletableDeferred<Unit>()
+        source.gate = gate
+        source.archiveAfterRead = true
+        val pageScope = TestScope(testScheduler)
+        val workScope = TestScope(testScheduler)
+
+        pageScope.launch { feedFirst.completeArchive(pageScope, podcast) }
+        runCurrent()
+        val markAllRead = workScope.async { feedFirst.completeArchive(workScope, podcast) }
+        runCurrent()
+        assertEquals(listOf(Scope.ARCHIVE), source.reads, "Mark all waits on the read already running")
+
+        pageScope.cancel()
+        runCurrent()
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(ShowPageFeedResult.UPDATED, markAllRead.await()?.result)
+        assertEquals(listOf(Scope.ARCHIVE, Scope.ARCHIVE), source.reads, "read again in Mark all's own scope")
+        assertTrue(feedFirst.archiveComplete)
+    }
+
+    @Test
+    fun `an archive read Mark all starts outlives the page`() = runTest {
+        source.list = episodes(0 until 20)
+        feedFirst.open(SHOW, podcast)
+        ui.show(podcast, source.list)
+        val gate = CompletableDeferred<Unit>()
+        source.gate = gate
+        source.archiveAfterRead = true
+        val pageScope = TestScope(testScheduler)
+        val workScope = TestScope(testScheduler)
+
+        val markAllRead = workScope.async { feedFirst.completeArchive(workScope, podcast) }
+        runCurrent()
+        pageScope.launch { feedFirst.completeArchive(pageScope, podcast) }
+        runCurrent()
+        pageScope.cancel()
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(ShowPageFeedResult.UPDATED, markAllRead.await()?.result)
+        assertEquals(listOf(Scope.ARCHIVE), source.reads, "one read, shared with the page while it was open")
     }
 
     @Test

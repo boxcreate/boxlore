@@ -317,6 +317,8 @@ internal data class PodcastInfoTopOverlayActions(
     val isPinnedToHome: Boolean = false,
     val onToggleHomePin: () -> Unit = {},
     val onEditGenre: () -> Unit = {},
+    /** Mark all is reading the show: both Mark all items wait until it ends. */
+    val markAllRunning: Boolean = false,
 )
 
 internal data class MissingEpisodesChip(
@@ -454,6 +456,7 @@ private fun PodcastInfoOverflowMenuItems(
 ) {
     DropdownMenuItem(
         text = { Text("Mark all as played") },
+        enabled = !actions.markAllRunning,
         onClick = {
             onDismiss()
             actions.onMarkAllPlayed()
@@ -464,6 +467,7 @@ private fun PodcastInfoOverflowMenuItems(
     )
     DropdownMenuItem(
         text = { Text("Mark all as unplayed") },
+        enabled = !actions.markAllRunning,
         onClick = {
             onDismiss()
             actions.onMarkAllUnplayed()
