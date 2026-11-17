@@ -519,17 +519,22 @@ class SubscriptionForegroundSyncTest {
         val rechecked = mutableListOf<String>()
         val reads = mutableMapOf<String, Int>()
         val savedAddresses = mutableMapOf<String, String>()
+        val libraryChunks = mutableListOf<String>()
         SubscriptionForegroundSync.syncSubscribedLatestEpisodes(
             loadIds = { urls.keys.toSet() },
             loadPodcastMeta = { id -> DirectFeedTipMeta(urls[id], id, null, null, null, null) },
             syncChunk = { chunk ->
-                piSynced += chunk
-                chunk.associateWith { episode(id = "pi_$it", podcastId = it) }
+                libraryChunks += chunk
+                emptyMap()
             },
             saveLatest = { id, ep -> saved[id] = ep.id },
             directFeed =
             DirectFeedSyncSeams(
                 loadOptedInIds = { urls.keys.toSet() },
+                fetchServerTips = { ids ->
+                    piSynced += ids
+                    ids.associateWith { episode(id = "pi_$it", podcastId = it) }
+                },
                 resolveFeedTip = { id, meta ->
                     reads[id] = (reads[id] ?: 0) + 1
                     when {
@@ -559,6 +564,7 @@ class SubscriptionForegroundSyncTest {
         assertEquals("pi_flaky", saved["flaky"])
         assertEquals("pi_dead", saved["dead"])
         assertFalse(saved.containsKey("rss:own"))
+        assertTrue(libraryChunks.isEmpty(), "shows read from their own feed never go through the library /sync")
     }
 
     @Test
@@ -577,6 +583,10 @@ class SubscriptionForegroundSyncTest {
                 loadOptedInIds = { setOf("down") },
                 resolveFeedTip = { _, _ -> DirectFeedResolveResult(tip = null, persisted = false, failed = true) },
                 syncFallbackEnabled = { false },
+                fetchServerTips = { ids ->
+                    piSynced += ids
+                    emptyMap()
+                },
             ),
         )
         assertTrue(piSynced.isEmpty())
