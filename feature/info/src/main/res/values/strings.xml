@@ -107,6 +107,10 @@
     <string name="episode_info_episode_from_show">%1$s, from %2$s</string>
     <string name="podcast_info_load_error">Couldn’t load this podcast</string>
     <string name="podcast_info_retry">Try again</string>
+    <!-- End of a show's episode list when its next page couldn't load; Try again (podcast_info_retry) sits under it. -->
+    <string name="podcast_info_more_episodes_failed">Couldn’t load more episodes</string>
+    <!-- In place of a show's episode list when the first page in a new order couldn't load; Try again sits under it. -->
+    <string name="podcast_info_episodes_failed">Couldn’t load episodes</string>
     <string name="podcast_info_subscribe">Subscribe</string>
     <string name="podcast_info_subscribed">Subscribed</string>
     <string name="podcast_info_unsubscribe">Unsubscribe</string>

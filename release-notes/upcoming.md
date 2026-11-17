@@ -73,3 +73,6 @@ Announcement title:
 - On a show's page, Mark all as played and Mark all as unplayed now change every episode, not just the newest 200. If the episodes can't load, nothing changes and boxlore tells you.
 - On a show's page, adding selected episodes to your queue now adds as many as fit and tells you when your queue is full, instead of silently leaving the rest out.
 - When boxlore can't read a long show's own feed, searching that show now looks through up to 11,000 of its episodes instead of the newest 1,000, and says so when there are more. If the search can't run, the page says so and lets you try again instead of showing no matches.
+- On a show page, episodes that don't load are tried again and then show Try again, instead of the list just ending. Select all on a long show selects every episode or says it couldn't.
+- After you sign in on a new phone, every show you follow now gets its name and artwork. Some used to stay as “Loading...” with no artwork.
+- Importing a large library from another podcast app no longer stops partway. Shows boxlore can't add right away are added later while boxlore is open.

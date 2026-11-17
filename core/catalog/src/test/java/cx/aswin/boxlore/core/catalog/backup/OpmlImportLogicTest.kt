@@ -26,6 +26,20 @@ class OpmlImportLogicTest {
     }
 
     @Test
+    fun `an address and a GUID naming two different shows is settled as unresolvable, not kept pending`() {
+        val decision =
+            OpmlImportLogic.finalCatalogDecision(
+                opmlTitle = "Show",
+                opmlXmlUrl = "https://feeds.example/show.xml",
+                urlLookup = ExactPodcastLookupResult.Found(TestFixtures.podcast(id = "1")),
+                guidLookup = ExactPodcastLookupResult.Found(TestFixtures.podcast(id = "2")),
+                titleSearch = PodcastIndexSearchResult.Success(emptyList()),
+            )
+
+        assertEquals(OpmlCatalogDecision.Unresolvable, decision)
+    }
+
+    @Test
     fun `RSS fallback requires settled exact lookups and successful empty search`() {
         val decision =
             OpmlImportLogic.finalCatalogDecision(
@@ -213,5 +227,19 @@ class OpmlImportLogicTest {
                 listOf(ExactPodcastLookupResult.NotFound),
             ),
         )
+    }
+
+    @Test
+    fun `firstExactLookup stops at the first lookup that did not settle`() {
+        val asked = mutableListOf<String>()
+        val result =
+            kotlinx.coroutines.runBlocking {
+                OpmlImportLogic.firstExactLookup(OpmlImportLogic.urlLookupCandidates("http://www.feeds.example/show")) { candidate ->
+                    asked += candidate
+                    if (asked.size == 2) ExactPodcastLookupResult.Failed else ExactPodcastLookupResult.NotFound
+                }
+            }
+        assertEquals(ExactPodcastLookupResult.Failed, result)
+        assertEquals(2, asked.size, "a 429 on the second spelling spends no more requests")
     }
 }

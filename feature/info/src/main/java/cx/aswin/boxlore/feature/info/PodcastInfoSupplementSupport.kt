@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.info
 
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.ShowListSchemes
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.model.Episode
@@ -46,13 +47,15 @@ internal class PodcastInfoSupplementSupport(
         isCatalogReady = { false },
     )
 
+    /** The app's support: the show page's episode list read in that page's [list]. */
     constructor(
         repository: PodcastRepository,
         episodeSupplementPort: EpisodeSupplementPort,
+        list: ShowListSchemes,
     ) : this(
         episodeSupplementPort,
         { id, limit, offset, sort ->
-            repository.getShowPageEpisodes(id, limit, offset, sort)
+            repository.getShowPageEpisodes(id, limit, offset, sort, list = list)
         },
         { id -> repository.loadPiEpisodesForSupplement(id) },
         // A feed-first page reads the feed itself (pull to refresh), so it never offers "Missing
@@ -107,7 +110,26 @@ internal class PodcastInfoSupplementSupport(
             isLoadingMore = isLoadingMore,
             userMessage = userMessage,
             directFeedChip = chip,
+            // A page loaded: whatever failed before is behind the list now.
+            pageLoadFailed = false,
         )
+    }
+
+    /**
+     * [state] with [page] shown. A failed [page] (the server's list couldn't be read) keeps the
+     * episodes on screen and their paging, and offers Try again ([PodcastInfoUiState.Success.pageLoadFailed]).
+     */
+    suspend fun remountPage(
+        state: PodcastInfoUiState.Success,
+        page: PodcastRepository.EpisodePage,
+        isLoadingMore: Boolean = false,
+        userMessage: String? = state.userMessage,
+        isFetchingFromFeed: Boolean = false,
+    ): PodcastInfoUiState.Success = if (page.failed) {
+        remountWithSupplements(state, state.piEpisodes, state.hasMoreEpisodes, isLoadingMore, userMessage, isFetchingFromFeed)
+            .copy(pageLoadFailed = true)
+    } else {
+        remountWithSupplements(state, page.episodes, page.hasMore, isLoadingMore, userMessage, isFetchingFromFeed)
     }
 
     /**
@@ -149,16 +171,9 @@ internal class PodcastInfoSupplementSupport(
             (outcome as? EpisodeSupplementOutcome.Success)?.newestFeedEpisode
         val reloaded = reloadDisplayPage(state)
         return MissingEpisodesRefresh(
-            state =
-            remountWithSupplements(
-                state = state,
-                piEpisodes = reloaded.episodes,
-                hasMoreEpisodes = reloaded.hasMore,
-                userMessage = message,
-                isFetchingFromFeed = false,
-            ),
+            state = remountPage(state, reloaded, isLoadingMore = state.isLoadingMore, userMessage = message),
             libraryTip = tip,
-            pageSourceCount = reloaded.sourceCount,
+            pageSourceCount = reloaded.sourceCount.takeUnless { reloaded.failed },
         )
     }
 
@@ -202,10 +217,10 @@ internal class PodcastInfoSupplementSupport(
                 val reloaded = reloadDisplayPage(state)
                 MissingEpisodesRefresh(
                     state =
-                    remountWithSupplements(
+                    remountPage(
                         state = state,
-                        piEpisodes = reloaded.episodes,
-                        hasMoreEpisodes = reloaded.hasMore,
+                        page = reloaded,
+                        isLoadingMore = state.isLoadingMore,
                         userMessage =
                         if (announce) {
                             if (outcome.addedCount > 0) {
@@ -219,7 +234,7 @@ internal class PodcastInfoSupplementSupport(
                         isFetchingFromFeed = false,
                     ),
                     libraryTip = outcome.newestFeedEpisode,
-                    pageSourceCount = reloaded.sourceCount,
+                    pageSourceCount = reloaded.sourceCount.takeUnless { reloaded.failed },
                 )
             }
         }

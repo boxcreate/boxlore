@@ -85,7 +85,8 @@ sealed interface OpmlImportState {
         val importedPodcasts: List<Podcast>,
     ) : ActiveImportState
 
-    data class AskCompleted(val importedPodcasts: List<Podcast>, val selectedIds: Set<String>,) : OpmlImportState
+    /** [pendingCount]: outlines the catalog couldn't answer for yet, which boxlore finishes adding later. */
+    data class AskCompleted(val importedPodcasts: List<Podcast>, val selectedIds: Set<String>, val pendingCount: Int = 0,) : OpmlImportState
 
     data class Completing(
         val progress: Float,
@@ -93,6 +94,7 @@ sealed interface OpmlImportState {
         val podcastsToMark: List<Podcast>,
         val totalImportedCount: Int,
         val importedPodcasts: List<Podcast> = emptyList(),
+        val pendingCount: Int = 0,
     ) : OpmlImportState
 
     data class Success(
@@ -101,6 +103,8 @@ sealed interface OpmlImportState {
         val isJson: Boolean = false,
         val importedPodcasts: List<Podcast> = emptyList(),
         val hasNotificationsEnabled: Boolean = false,
+        /** OPML shows boxlore is still adding ([AskCompleted.pendingCount]). */
+        val pendingCount: Int = 0,
     ) : OpmlImportState
 
     data class Error(val failure: ImportFailure) : OpmlImportState

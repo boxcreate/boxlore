@@ -54,6 +54,7 @@ import cx.aswin.boxlore.feature.info.components.PodcastInfoEpisodeSearch
 import cx.aswin.boxlore.feature.info.components.ShowCaughtUpCard
 import cx.aswin.boxlore.feature.info.components.ShowFeedStatusLine
 import cx.aswin.boxlore.feature.info.components.ShowListStatusLine
+import cx.aswin.boxlore.feature.info.components.ShowPageLoadFailedRow
 import cx.aswin.boxlore.feature.info.components.ToolbarWarningBanner
 import cx.aswin.boxlore.feature.info.components.podcastEpisodeCardProgress
 import cx.aswin.boxlore.feature.info.components.showFeedStatusText
@@ -107,6 +108,8 @@ internal data class EpisodeListContentCallbacks(
     val onLongPressSelection: (Episode) -> Unit,
     val onLoadMore: () -> Unit,
     val onShowCompleted: () -> Unit = {},
+    /** Try again after a page of episodes couldn't load ([PodcastInfoUiState.Success.pageLoadFailed]). */
+    val onRetryPage: () -> Unit = {},
 )
 
 @Composable
@@ -192,6 +195,16 @@ internal fun PodcastInfoEpisodeList(
             viewModel = viewModel,
         )
 
+        if (showsPageFailed(contentState)) {
+            item(key = "page_failed") {
+                ShowPageLoadFailedRow(
+                    listEmpty = contentState.state.episodes.isEmpty(),
+                    onRetry = callbacks.onRetryPage,
+                    modifier = Modifier.animateItem(),
+                )
+            }
+        }
+
         if (showsLoadingCards(contentState)) {
             // Loading more, or every episode for oldest first: cards in the list's own shape.
             items(count = LOADING_CARDS, key = { "loading_card_$it" }) {
@@ -261,6 +274,11 @@ private fun LazyListScope.searchFailedItem(contentState: EpisodeListContentState
         }
     }
 }
+
+private fun showsPageFailed(contentState: EpisodeListContentState): Boolean = contentState.state.pageLoadFailed &&
+    !contentState.isSearchActive &&
+    contentState.state.searchResults == null &&
+    !contentState.state.isLoadingMore
 
 private fun showsLoadingCards(contentState: EpisodeListContentState): Boolean = !contentState.isSearchActive &&
     !contentState.state.isRssRefreshing &&
@@ -419,7 +437,8 @@ private fun LazyListScope.episodesSection(
             contentState.state.searchResults == null &&
             isLastItem &&
             contentState.state.hasMoreEpisodes &&
-            !contentState.state.isLoadingMore
+            !contentState.state.isLoadingMore &&
+            !contentState.state.pageLoadFailed
 
         if (canLoadMore) {
             LaunchedEffect(contentState.feedItems.size) {

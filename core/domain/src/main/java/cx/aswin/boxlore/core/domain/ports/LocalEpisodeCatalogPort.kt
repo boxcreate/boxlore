@@ -112,7 +112,10 @@ interface LocalEpisodeCatalogPort {
 
     suspend fun isPublisherFeedUnchanged(podcastId: String, feedUrl: String,): Boolean
 
-    /** Record a GET /podcast feedUrl lookup time for the daily retry. */
+    /**
+     * Record a GET /podcast feedUrl lookup the server answered, for the daily retry. A stamp later
+     * than now puts the next lookup off further (an answer with only an http address).
+     */
     suspend fun markFeedUrlLookup(podcastId: String, atMillis: Long,)
 
     suspend fun lastFeedUrlLookupAt(podcastId: String): Long

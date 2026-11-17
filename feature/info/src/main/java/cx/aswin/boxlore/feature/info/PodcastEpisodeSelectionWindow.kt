@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.info
 
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.model.Episode
+import java.io.IOException
 
 internal data class PodcastEpisodeSelectionWindow(
     val episodes: List<Episode>,
@@ -17,7 +18,8 @@ internal const val SELECTION_PAGE_SIZE = 100
  * offset and sort parameter) until the show has no more, then the episodes [state] already lists
  * that the pages didn't, without repeats, in date order. [sort] is the order the selection was
  * made in; null uses the page's current sort. Without a loaded page the window is empty. A failed
- * page throws, so a selection never acts on part of a show as if it were all of it.
+ * page throws (one that throws, or one that comes back [PodcastRepository.EpisodePage.failed]), so a
+ * selection never acts on part of a show as if it were all of it.
  */
 internal suspend fun loadPodcastEpisodeSelectionWindow(
     state: PodcastInfoUiState.Success?,
@@ -33,6 +35,7 @@ internal suspend fun loadPodcastEpisodeSelectionWindow(
     var offset = 0
     do {
         val page = loadPage(SELECTION_PAGE_SIZE, offset, sortParam)
+        if (page.failed) throw IOException("Episodes page at $offset couldn't be read")
         val before = episodes.size
         page.episodes.forEach { episodes.putIfAbsent(it.id, it) }
         offset += page.sourceCount

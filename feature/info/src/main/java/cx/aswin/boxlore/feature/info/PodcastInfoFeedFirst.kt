@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.info
 
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.ShowListSchemes
 import cx.aswin.boxlore.core.catalog.ShowPageFeedRead
 import cx.aswin.boxlore.core.catalog.ShowPageFeedResult
 import cx.aswin.boxlore.core.catalog.ShowPageFeedState
@@ -212,15 +213,15 @@ internal class PodcastInfoFeedFirst(
         private const val MAX_PAGE = 100
         private const val MIN_PAGE = 20
 
-        /** The app's [Source]: the repository's feed-first calls and the show page's episode list. */
-        fun sourceOf(repository: PodcastRepository): Source = object : Source {
+        /** The app's [Source]: the repository's feed-first calls and the show page's episode list, in that page's [list]. */
+        fun sourceOf(repository: PodcastRepository, list: ShowListSchemes): Source = object : Source {
             override suspend fun open(podcastId: String, meta: PodcastMeta): ShowPageFeedState? = repository.openFeedShowPage(podcastId, meta)
 
             override suspend fun read(podcastId: String, meta: PodcastMeta, scope: Scope, savedFeedUrl: String?): ShowPageFeedRead =
                 repository.readShowPageFeed(podcastId, meta, scope, savedFeedUrl)
 
             override suspend fun page(podcastId: String, limit: Int, offset: Int, sort: String): PodcastRepository.EpisodePage =
-                repository.getShowPageEpisodes(podcastId, limit, offset, sort)
+                repository.getShowPageEpisodes(podcastId, limit, offset, sort, list = list)
 
             override fun online(): Boolean = repository.feedFirst.online()
         }

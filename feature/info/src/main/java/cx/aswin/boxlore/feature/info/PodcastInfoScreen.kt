@@ -662,6 +662,7 @@ fun PodcastInfoScreen(
                     },
                     onLoadMore = { viewModel.loadMoreEpisodes() },
                     onShowCompleted = viewModel::toggleHideCompleted,
+                    onRetryPage = viewModel::retryEpisodePage,
                 )
 
                 PullToRefreshBox(

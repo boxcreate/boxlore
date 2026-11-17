@@ -184,11 +184,17 @@ internal suspend fun PodcastRepository.v2ScanPage(resolvedId: String, offset: In
  * stops early or mixes in v1 pages. A show `/v2`
  * doesn't list at all reads v1 `/episodes` for the whole read, with the same rule.
  */
-internal suspend fun PodcastRepository.wholeShowServerPage(feedId: String, offset: Int, sort: String): PodcastRepository.EpisodePage {
+internal suspend fun PodcastRepository.wholeShowServerPage(
+    feedId: String,
+    offset: Int,
+    sort: String,
+    list: ShowListSchemes = serverListSchemes,
+): PodcastRepository.EpisodePage {
     val resolvedId = resolvePodcastIndexFeedId(feedId)
     PodcastRepository.rememberResolvedFeedId(feedId, resolvedId)
     val listSort = showListSort(sort)
-    if (V2EpisodeIds.parseShowId(resolvedId)?.let(V2EpisodeIds::isEpisodeShowId) != true) {
+    val listOnV1 = list.keptFor(resolvedId, showPage = true, offset = offset, strict = true) == ServerListScheme.V1
+    if (listOnV1 || V2EpisodeIds.parseShowId(resolvedId)?.let(V2EpisodeIds::isEpisodeShowId) != true) {
         return getNetworkEpisodesPaginated(feedId, MAX_SAFE_PAGE_LIMIT, offset, listSort, mergeSupplements = true, strict = true)
     }
     if (offset > V2EpisodesPaging.OFFSET_MAX) throw ShowListTooLongException()
