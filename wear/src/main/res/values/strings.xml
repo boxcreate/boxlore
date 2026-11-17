@@ -96,6 +96,11 @@
     <string name="wear_downloads_empty_body">Download an episode to play it without your phone.</string>
     <string name="wear_up_next_empty">Nothing up next</string>
     <string name="wear_episodes_empty">No episodes yet</string>
+    <string name="wear_episodes_loading">Loading episodes</string>
+    <string name="wear_episodes_failed">Couldn\'t load episodes</string>
+    <string name="wear_show_failed">Couldn\'t load this show</string>
+    <string name="wear_load_failed_body">Check your connection or bring your phone close.</string>
+    <string name="wear_try_again">Try again</string>
 
     <!-- Settings -->
     <string name="wear_shows_layout">Your shows layout</string>

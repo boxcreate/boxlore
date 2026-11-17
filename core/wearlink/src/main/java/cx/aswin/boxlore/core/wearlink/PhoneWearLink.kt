@@ -180,8 +180,10 @@ class PhoneWearLink(
         when (path) {
             WearLinkProtocol.PATH_EPISODES ->
                 WearLinkCodec.decode<EpisodeListRequest>(bytes)?.let { request ->
-                    val episodes = attempt { library.episodes(request.podcastId, request.limit.coerceIn(1, MAX_EPISODES)) }.orEmpty()
-                    WearLinkCodec.encode(EpisodeListReply(request.podcastId, episodes))
+                    val showId = request.podcastId
+                    if (request.fresh) attempt { library.refreshEpisodes(showId) }
+                    val episodes = attempt { library.episodes(showId, request.limit.coerceIn(1, MAX_EPISODES)) }.orEmpty()
+                    WearLinkCodec.encode(EpisodeListReply(showId, episodes, readAt = attempt { library.episodesReadAt(showId) }))
                 }
             // Only boxlore on the listener's own watch can ask: the system delivers these between the two apps alone.
             WearLinkProtocol.PATH_SIGN_IN -> {

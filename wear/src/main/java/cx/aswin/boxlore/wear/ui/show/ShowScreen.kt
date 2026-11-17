@@ -1,20 +1,27 @@
 package cx.aswin.boxlore.wear.ui.show
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Podcasts
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -23,6 +30,8 @@ import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.ButtonDefaults
+import androidx.wear.compose.material3.CircularProgressIndicator
+import androidx.wear.compose.material3.EdgeButton
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ScreenScaffold
@@ -31,6 +40,7 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import cx.aswin.boxlore.wear.R
+import cx.aswin.boxlore.wear.model.ShowEpisodes
 import cx.aswin.boxlore.wear.model.WatchEpisode
 import cx.aswin.boxlore.wear.model.WatchShow
 import cx.aswin.boxlore.wear.ui.WatchFormat
@@ -43,9 +53,10 @@ import java.time.ZoneId
 @Composable
 internal fun ShowScreen(
     show: WatchShow,
-    episodes: List<WatchEpisode>,
+    episodes: ShowEpisodes,
     onToggleSubscribed: () -> Unit,
     onEpisode: (String) -> Unit,
+    onRetry: () -> Unit,
 ) {
     val listState = rememberTransformingLazyColumnState()
     val spec = rememberTransformationSpec()
@@ -76,20 +87,86 @@ internal fun ShowScreen(
                     transformation = SurfaceTransformation(spec),
                 )
             }
-            if (episodes.isEmpty()) {
-                item { EmptyMessage(icon = Icons.Rounded.Podcasts, title = stringResource(R.string.wear_episodes_empty)) }
+            when (episodes) {
+                ShowEpisodes.Loading -> item { EpisodesLoading() }
+                ShowEpisodes.Failed -> {
+                    item {
+                        EmptyMessage(
+                            icon = Icons.Rounded.CloudOff,
+                            title = stringResource(R.string.wear_episodes_failed),
+                            body = stringResource(R.string.wear_load_failed_body),
+                        )
+                    }
+                    item {
+                        TryAgainButton(onClick = onRetry, modifier = Modifier.transformedHeight(this, spec), transformation = SurfaceTransformation(spec))
+                    }
+                }
+                is ShowEpisodes.Loaded -> {
+                    if (episodes.episodes.isEmpty()) {
+                        item { EmptyMessage(icon = Icons.Rounded.Podcasts, title = stringResource(R.string.wear_episodes_empty)) }
+                    }
+                    items(episodes.episodes, key = { it.id }) { episode ->
+                        // No artwork here: every row is the same show, and the title needs the width.
+                        WatchRow(
+                            title = episode.title,
+                            onClick = { onEpisode(episode.id) },
+                            modifier = Modifier.transformedHeight(this, spec),
+                            transformation = SurfaceTransformation(spec),
+                            secondary = { EpisodeState(episode) },
+                        )
+                    }
+                }
             }
-            items(episodes, key = { it.id }) { episode ->
-                // No artwork here: every row is the same show, and the title needs the width.
-                WatchRow(
-                    title = episode.title,
-                    onClick = { onEpisode(episode.id) },
-                    modifier = Modifier.transformedHeight(this, spec),
-                    transformation = SurfaceTransformation(spec),
-                    secondary = { EpisodeState(episode) },
+        }
+    }
+}
+
+/** The show page before its details have arrived. */
+@Composable
+internal fun ShowLoading() {
+    ScreenScaffold {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { EpisodesLoading() }
+    }
+}
+
+/** The show page when the show itself could not be looked up. */
+@Composable
+internal fun ShowUnavailable(onRetry: () -> Unit) {
+    val listState = rememberTransformingLazyColumnState()
+    ScreenScaffold(
+        scrollState = listState,
+        edgeButton = {
+            EdgeButton(onClick = onRetry) {
+                Icon(Icons.Rounded.Refresh, contentDescription = null)
+                Text(stringResource(R.string.wear_try_again))
+            }
+        },
+    ) { contentPadding ->
+        TransformingLazyColumn(state = listState, contentPadding = contentPadding) {
+            item {
+                EmptyMessage(
+                    icon = Icons.Rounded.CloudOff,
+                    title = stringResource(R.string.wear_show_failed),
+                    body = stringResource(R.string.wear_load_failed_body),
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun EpisodesLoading() {
+    val description = stringResource(R.string.wear_episodes_loading)
+    Box(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator(modifier = Modifier.size(32.dp).semantics { contentDescription = description })
+    }
+}
+
+@Composable
+private fun TryAgainButton(onClick: () -> Unit, modifier: Modifier, transformation: SurfaceTransformation) {
+    Button(onClick = onClick, modifier = modifier, colors = ButtonDefaults.filledTonalButtonColors(), transformation = transformation) {
+        Icon(imageVector = Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+        Text(text = stringResource(R.string.wear_try_again), modifier = Modifier.weight(1f, fill = false))
     }
 }
 

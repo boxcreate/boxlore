@@ -3,6 +3,7 @@ package cx.aswin.boxlore.wear
 import cx.aswin.boxlore.wear.data.EmptyWatchLibrary
 import cx.aswin.boxlore.wear.data.IdleWatchPlayback
 import cx.aswin.boxlore.wear.model.PlaybackSpeeds
+import cx.aswin.boxlore.wear.model.ShowEpisodes
 import cx.aswin.boxlore.wear.model.SleepTimerChoice
 import cx.aswin.boxlore.wear.model.WatchSearchResult
 import cx.aswin.boxlore.wear.ui.WatchFormat
@@ -93,7 +94,7 @@ class WatchModelsTest {
             assertTrue(library.downloads.value.isEmpty())
             assertNull(library.show("any").first())
             assertNull(library.episode("any").first())
-            assertTrue(library.episodes("any").first().isEmpty())
+            assertEquals(ShowEpisodes.Loaded(emptyList()), library.episodes("any").first())
             assertEquals(WatchSearchResult.NoConnection("history"), library.search("history"))
         }
 

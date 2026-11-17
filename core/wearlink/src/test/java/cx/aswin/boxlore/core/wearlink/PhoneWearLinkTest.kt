@@ -42,6 +42,20 @@ class PhoneWearLinkTest {
         }
 
         override suspend fun episodes(podcastId: String, limit: Int) = saved[podcastId].orEmpty().take(limit)
+
+        var readAt = mapOf("1" to 100L)
+        val refreshed = ArrayList<String>()
+        var feedNow: Pair<List<WearLinkEpisode>, Long>? = null
+
+        override suspend fun episodesReadAt(podcastId: String): Long? = readAt[podcastId]
+
+        override suspend fun refreshEpisodes(podcastId: String) {
+            refreshed += podcastId
+            feedNow?.let { (episodes, at) ->
+                saved = saved + (podcastId to episodes)
+                readAt = readAt + (podcastId to at)
+            }
+        }
     }
 
     private class FakePlayer : PhonePlayerPort {
@@ -93,7 +107,8 @@ class PhoneWearLinkTest {
     /** What the link reported for the app's usage counts, in order. */
     private val noted = mutableListOf<PhoneLinkEvent>()
 
-    private fun TestScope.link() = PhoneWearLink(transport, library, player, store, backgroundScope, account, { noted += it }) { now }
+    private fun TestScope.link(library: PhoneLibraryPort = this@PhoneWearLinkTest.library) =
+        PhoneWearLink(transport, library, player, store, backgroundScope, account, { noted += it }) { now }
 
     private fun changes(revision: Long, vararg history: Pair<Long, String>, follows: List<Pair<Long, String>> = emptyList(), watchId: String = "w") =
         WatchChanges(
@@ -437,6 +452,38 @@ class PhoneWearLinkTest {
         assertEquals(listOf("e1"), WearLinkCodec.decode<EpisodeListReply>(answer)!!.episodes.map { it.episodeId })
         assertTrue(WearLinkCodec.decode<EpisodeListReply>(none)!!.episodes.isEmpty())
         assertNull(link.onRequest("/boxlore/other", byteArrayOf()))
+    }
+
+    @Test
+    fun `a saved list says when the feed was read, and only a fresh request reads the feed first`() = runTest {
+        val library = FakeLibrary()
+        library.feedNow = listOf(WearLinkEpisode("e2", "1", "Episode 2"), WearLinkEpisode("e1", "1", "Episode 1")) to 900L
+        val link = link(library)
+
+        val saved = WearLinkCodec.decode<EpisodeListReply>(link.onRequest(WearLinkProtocol.PATH_EPISODES, WearLinkCodec.encode(EpisodeListRequest("1"))))!!
+        assertEquals(100L, saved.readAt)
+        assertTrue(library.refreshed.isEmpty())
+
+        val fresh = WearLinkCodec.decode<EpisodeListReply>(link.onRequest(WearLinkProtocol.PATH_EPISODES, WearLinkCodec.encode(EpisodeListRequest("1", fresh = true))))!!
+        assertEquals(listOf("1"), library.refreshed)
+        assertEquals(listOf("e2", "e1"), fresh.episodes.map { it.episodeId })
+        assertEquals(900L, fresh.readAt)
+    }
+
+    @Test
+    fun `a feed read that fails still answers with the saved list`() = runTest {
+        val library =
+            object : PhoneLibraryPort by FakeLibrary() {
+                override suspend fun refreshEpisodes(podcastId: String) = error("no network")
+
+                override suspend fun episodesReadAt(podcastId: String): Long? = 100L
+            }
+        val link = link(library)
+
+        val reply = WearLinkCodec.decode<EpisodeListReply>(link.onRequest(WearLinkProtocol.PATH_EPISODES, WearLinkCodec.encode(EpisodeListRequest("1", fresh = true))))!!
+
+        assertEquals(listOf("e1"), reply.episodes.map { it.episodeId })
+        assertEquals(100L, reply.readAt)
     }
 
     @Test

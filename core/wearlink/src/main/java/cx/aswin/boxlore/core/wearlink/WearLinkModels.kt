@@ -200,10 +200,15 @@ data class WearLinkCommand(
     }
 }
 
+/**
+ * The watch asking for a show's saved episodes. With [fresh] the watch found the saved list old,
+ * so the phone reads the show's feed first when its own freshness rules allow it.
+ */
 @Serializable
 data class EpisodeListRequest(
     val podcastId: String,
     val limit: Int = DEFAULT_LIMIT,
+    val fresh: Boolean = false,
 ) {
     companion object {
         const val DEFAULT_LIMIT = 25
@@ -232,9 +237,14 @@ data class WatchSignInReply(
     }
 }
 
-/** The phone's saved episodes of a show, newest first; empty when it has none saved. */
+/**
+ * The phone's saved episodes of a show, newest first; empty when it has none saved. [readAt] is
+ * when the phone last read the show's feed (epoch milliseconds), null when it never has or an
+ * older phone app does not say.
+ */
 @Serializable
 data class EpisodeListReply(
     val podcastId: String,
     val episodes: List<WearLinkEpisode> = emptyList(),
+    val readAt: Long? = null,
 )

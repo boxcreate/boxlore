@@ -131,3 +131,13 @@ sealed interface WatchSearchResult {
     /** The watch could not reach the search service. */
     data class NoConnection(val query: String) : WatchSearchResult
 }
+
+/** A show page's episodes: still loading, the list (possibly empty), or nothing could be loaded. */
+sealed interface ShowEpisodes {
+    data object Loading : ShowEpisodes
+
+    data class Loaded(val episodes: List<WatchEpisode>) : ShowEpisodes
+
+    /** No phone answer, feed or API list came back, or the show itself could not be looked up. */
+    data object Failed : ShowEpisodes
+}
