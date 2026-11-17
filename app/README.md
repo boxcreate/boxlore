@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`:app` is the Android application shell and the only production composition root. It owns `BoxLoreApplication`, `MainActivity`, `AppContainer`, the navigation host and adaptive shell, push and App Link entry points, in-app announcements and updates, the library import overlay, API-session setup, and the WorkManager jobs that need the whole object graph. Screens and data engines stay in their `:feature:*` and `:core:*` modules; `:app` wires them together.
+`:app` is the Android application shell and the only production composition root. It owns `BoxLoreApplication`, `MainActivity`, `AppContainer`, the navigation host and adaptive shell, push and App Link entry points, in-app announcements and updates, the library import overlay, API-session setup, and the WorkManager jobs that need the whole object graph. Screens and engines live in `:feature:*` and `:core:*`; `:app` only wires them.
 
 ## Public API
 
@@ -20,8 +20,8 @@
 - The one `PlaybackRepository` is built lazily. Cast state waits in `DeferredCastSessionState` until it exists, so widget, worker and notification starts never build playback on the main thread.
 - The container gives core modules ports instead of reverse dependencies: `feedTelemetry` for feed events, `rolloutSwitches`, and a `DownloadServiceLauncherHolder` that starts `MediaDownloadService`.
 - `onCreate` order: API sessions first, then the Coil image loader (before widgets and services), Media3 Cast from `BoxLoreCastOptionsProvider`, the shared `UserPreferencesRepository`, the container and its holders. PostHog starts later on a background thread through `PostHogStartup`, after `AnalyticsHelper.initPolicy`.
-- `StartupWorkGate` holds optional work until the first screen commits: cloud sync, Smart Downloads reconciliation, feed address repair scheduling, foreground subscription sync, legacy RSS repair and the first publish of the widget picker previews. Initializers run one at a time.
-- Home releases the gate after loaded content and two frames, other start routes after two frames, and a headless worker or widget launch at the first idle main queue. An Activity stopping early also releases it; configuration recreation does not.
+- `StartupWorkGate` holds optional work (cloud sync, Smart Downloads reconciliation, address repair scheduling, foreground subscription sync, legacy RSS repair, the first widget preview publish) until the first screen commits, running initializers one at a time.
+- Home releases the gate after its content and two frames, other routes after two frames, a headless worker or widget launch at the first idle main queue; an early Activity stop also releases it, recreation does not.
 - Missing DataStore appearance keys are filled from the theme fast cache off the main thread; existing choices are never overwritten.
 - `TabletAlphaStartupGate` shows a one-time notice on tablet windows of tablet-sized displays before the app root composes; update and survey prompts wait behind it.
 
@@ -43,25 +43,25 @@
 - `MainActivity` recognises email sign-in links through `AppContainer.emailLinkSignIn`, clears the intent data, refuses replay across recreation, and asks for the address (`CrossDeviceEmailDialog`) when the link was opened on another device.
 - `BoxLoreFcmService` saves each new-episode push as unique `NewEpisodeDeliveryWorker` work before any network call. Download scheduling and notification display fail independently.
 - `NewEpisodePushHydration` matches a push by GUID or enclosure, then catalog key, then show and recipe ID; without a match the notification opens the push's own IDs.
-- Each show's new-episode notification uses the show ID as its tag and is grouped under `boxlore_new_episodes`; a silent summary appears while two or more are showing. At most 16 are showing at once, each with its own tap slot, and a new show replaces the oldest. Taps use normalized intents to `MainActivity` with the route in `target_route` and the show in the intent identifier, so a show reuses its slot's PendingIntent and a slot passed to another show never rewrites an earlier tap; if the quota is exhausted the notification posts without a tap action.
+- New-episode notifications are tagged by show ID and grouped under `boxlore_new_episodes`, with a silent summary while two or more show; at most 16 show at once, a new show replacing the oldest. Taps open `MainActivity` with `target_route`, and the show ID in the intent identifier keeps each show's PendingIntent its own; without quota it posts with no tap action.
 - `dispatchPushAction` routes push actions on cold and warm launches: allowlisted routes navigate, registered links use Navigation, update targets open the updater, and other web links open externally with boxlore excluded from the chooser.
 - An `rss:` push shows only if it matches the saved feed URL and local consent; `RssNotificationSyncWorker` reconciles registrations and topics.
 - Announcements are native Compose surfaces with a Markdown subset; payload HTML stays text. Only release alerts are filtered by install channel and version.
-- `AndroidAutoTip` shows an install that didn't come from the Play Store, once, how to put boxlore on the car's screen: a full-screen `TIP` announcement when boxlore opens during a drive, plus a notification when a drive starts while its player service runs, playing or paused. It never shows once Android Auto has opened boxlore's lists in a car, and its record (`boxlore_android_auto_tip`) stays out of backups.
+- `AndroidAutoTip` shows a non-Play install, once, how to put boxlore on the car's screen: a full-screen `TIP` announcement when boxlore opens during a drive, or a notification when a drive starts while its player service runs. Never once Android Auto has opened boxlore's lists; its record (`boxlore_android_auto_tip`) stays out of backups.
 - `SupportPushTopicSync` keeps support topics in step with each conversation refresh. A reply push opens `feedback?thread=<id>`, closing an open tablet detail first.
 - `ShareManager.episodeShareTargets` comes from `AppContainer.episodeSharePreparer`; `EpisodeShareRegistrationWorker` retries a registration that misses its short wait.
 
 ## In-app updates
 
-- `InstallChannel` picks the flow: the Play build or a Play install uses Play Core (`PlayAppUpdateHelper`); otherwise the direct flow reads a versioned `update.json` from the GitHub Latest release. The same rule sets the API channel header.
+- `InstallChannel` picks the flow: the Play build or a Play install uses Play Core (`PlayAppUpdateHelper`), anything else reads a versioned `update.json` from the GitHub Latest release; the same rule sets the API channel header.
 - Foreground checks are rate-limited with failure backoff; Settings → Check for updates bypasses the limit. Background checks never prompt or download.
-- Direct updates download, verify and install as separate explicit actions, rechecking checksum, package, version, minimum Android version and signing identity before each installer handoff. Sessions survive permission settings and process restart and stay out of backups.
+- Direct updates download, verify and install as separate actions, rechecking checksum, package, version, minimum Android version and signer before each installer handoff; sessions survive permission screens and process restart and stay out of backups.
 - Build types: `release` is the direct APK with the installer and `REQUEST_INSTALL_PACKAGES` (`src/direct`); `playRelease` is the Play AAB without either; `updateTest` is isolated and never published ([isolated testing](../docs/TESTING.md#isolated-update-and-announcement-testing)).
 
 ## API sessions
 
 - `ApiSessionSetup.install` starts the `:core:network` session manager behind the splash, sets version and channel headers, supplies App Check (`FirebaseAppCheckTokenSource`) to the session exchange only, and forwards foreground and connectivity. Details: [`core/network/README.md`](../core/network/README.md).
-- `session/turnstile` runs the extra check the API can request on AI onboarding routes: an invisible, origin-locked WebView page that moves into the shared modal sheet only when it needs interaction. Failure, timeout or Skip continues onboarding without AI; a remote switch decides whether it runs.
+- `session/turnstile` runs the check the API can request on AI onboarding routes: an invisible, origin-locked WebView page, shown in the shared modal sheet only when it needs interaction. Failure, timeout or Skip continues without AI; a remote switch decides whether it runs.
 
 ## Sync, switches and repair jobs
 
