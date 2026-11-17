@@ -4,8 +4,9 @@ import android.content.Context
 import androidx.annotation.VisibleForTesting
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.withTimeout
 
 /**
  * Parsed transcript segment with timing.
@@ -87,14 +88,13 @@ object TranscriptRepository {
                 url.startsWith("/") -> java.io.File(url).readText()
                 url.startsWith("file://") -> java.io.File(url.removePrefix("file://")).readText()
                 url.startsWith("file:") -> java.io.File(url.removePrefix("file:")).readText()
-                else -> withTimeoutOrNull(remoteTimeoutMs) { readRemote(normalizedUrl) }
+                else -> withTimeout(remoteTimeoutMs) { readRemote(normalizedUrl) }
             }
-            if (content == null) {
-                android.util.Log.w("TranscriptRepo", "Timed out fetching transcript: $normalizedUrl")
-                emptyList()
-            } else {
-                parseTranscriptContent(content, type, normalizedUrl)
-            }
+            parseTranscriptContent(content, type, normalizedUrl)
+        } catch (timedOut: TimeoutCancellationException) {
+            // Only this read timed out; a cancelled caller arrives as a plain CancellationException.
+            android.util.Log.w("TranscriptRepo", "Timed out fetching transcript: $normalizedUrl", timedOut)
+            emptyList()
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (e: Exception) {

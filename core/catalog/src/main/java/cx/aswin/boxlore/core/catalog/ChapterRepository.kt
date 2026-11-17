@@ -5,8 +5,9 @@ import cx.aswin.boxlore.core.model.Chapter
 import cx.aswin.boxlore.core.model.Episode
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.withTimeout
 import org.json.JSONObject
 
 /**
@@ -93,14 +94,13 @@ object ChapterRepository {
                 chaptersUrl.startsWith("/") -> java.io.File(chaptersUrl).readText()
                 chaptersUrl.startsWith("file://") -> java.io.File(chaptersUrl.removePrefix("file://")).readText()
                 chaptersUrl.startsWith("file:") -> java.io.File(chaptersUrl.removePrefix("file:")).readText()
-                else -> withTimeoutOrNull(remoteTimeoutMs) { readRemote(normalizedUrl) }
+                else -> withTimeout(remoteTimeoutMs) { readRemote(normalizedUrl) }
             }
-            if (json == null) {
-                android.util.Log.w("ChapterRepo", "Timed out fetching chapters: $normalizedUrl")
-                emptyList()
-            } else {
-                parseChaptersFromJson(json)
-            }
+            parseChaptersFromJson(json)
+        } catch (timedOut: TimeoutCancellationException) {
+            // Only this read timed out; a cancelled caller arrives as a plain CancellationException.
+            android.util.Log.w("ChapterRepo", "Timed out fetching chapters: $normalizedUrl", timedOut)
+            emptyList()
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (e: Exception) {
