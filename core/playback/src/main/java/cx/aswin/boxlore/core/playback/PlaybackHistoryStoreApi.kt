@@ -50,16 +50,22 @@ internal val PlaybackHistoryStore.likedEpisodeIds: Flow<Set<String>>
     get() = listenerStore.projectedLikedIds(data.listeningHistoryDao.getLikedEpisodes())
 
 /**
- * Recent history for looking an episode up by the ID a screen shows: as [PlaybackHistoryStore.getAllHistory],
- * but an episode stored under several IDs appears once per stored ID with its projected state, so
- * its progress shows whichever ID the screen lists. Not for lists, which count it once.
+ * Every episode in progress, for looking one up by the ID a screen shows: an episode stored under
+ * several IDs appears once per stored ID with its projected state, so its progress shows whichever
+ * ID the screen lists, and one finished under another of its IDs is left out. Not capped, so an
+ * episode started long ago keeps its progress. Played state comes from
+ * [PlaybackHistoryStore.completedEpisodeIds].
  */
-internal val PlaybackHistoryStore.historyForEpisodeLookup: Flow<List<ListeningHistoryEntity>>
-    get() = listenerStore.projectedRowsByMember(data.listeningHistoryDao.getAllHistory())
+internal val PlaybackHistoryStore.inProgressForEpisodeLookup: Flow<List<ListeningHistoryEntity>>
+    get() = listenerStore.projectedRowsByMember(inProgressRows) { !it.isCompleted && it.progressMs > 0 }
 
-/** Completed IDs as projected: an episode stored under several IDs is completed for all or none of them. */
-internal val PlaybackHistoryStore.completedEpisodeIds: Flow<Set<String>>
-    get() = listenerStore.projectedCompletedIds(data.listeningHistoryDao.getCompletedEpisodeIdsFlow())
+/**
+ * Every episode in progress once, under its owner's ID with its projected state, as the recent
+ * history lists it ([PlaybackHistoryStore.getRecentHistory]); one finished under another of its
+ * IDs is left out. For status, never ranking.
+ */
+internal val PlaybackHistoryStore.inProgressHistory: Flow<List<ListeningHistoryEntity>>
+    get() = listenerStore.projectedRows(inProgressRows) { !it.isCompleted && it.progressMs > 0 }
 
 internal suspend fun PlaybackHistoryStore.recordListeningSession(session: ListeningSessionEntity) {
     ListeningSessionRecordLogic.persistSessionAndRollUp(
@@ -350,10 +356,7 @@ internal suspend fun PlaybackHistoryStore.markAllEpisodesUncompleted(episodes: L
         val entitiesToUpsert =
             historyIds.mapNotNull { historyId ->
                 val existing = data.listeningHistoryDao.getHistoryItem(historyId) ?: return@mapNotNull null
-                ListeningHistoryUpsertLogic.buildBulkUncompleteEntity(
-                    existing = existing,
-                    nowMs = currentTime,
-                )
+                ListeningHistoryUpsertLogic.buildBulkUncompleteEntity(existing = existing)
             }
         if (entitiesToUpsert.isNotEmpty()) {
             data.listeningHistoryDao.upsertAll(entitiesToUpsert)
@@ -371,7 +374,8 @@ internal suspend fun PlaybackHistoryStore.findPodcastIdForEpisode(episodeId: Str
 internal suspend fun PlaybackHistoryStore.getHistoryForRecommendations(limit: Int = 15): List<HistoryItem> {
     val database = BoxLoreDatabase.getDatabase(player.context)
     val podcastDao = database.podcastDao()
-    val rawHistory = listenerStore.projectRows(data.listeningHistoryDao.getRecentHistoryList(limit * 3))
+    // Filtered before the limit, so episodes only marked played can't crowd out the listening.
+    val rawHistory = listenerStore.projectRows(data.listeningHistoryDao.getRecommendationHistoryList(limit * 3))
     return HistoryRecommendationLogic
         .selectEligible(
             raw = rawHistory,

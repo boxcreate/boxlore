@@ -6,16 +6,17 @@ import cx.aswin.boxlore.core.catalog.FolderRepository
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.countsAsListening
 import cx.aswin.boxlore.core.database.sortedByListening
 import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.addToQueue
 import cx.aswin.boxlore.core.playback.addToQueueNext
-import cx.aswin.boxlore.core.playback.historyForEpisodeLookup
+import cx.aswin.boxlore.core.playback.completedEpisodeIds
+import cx.aswin.boxlore.core.playback.inProgressForEpisodeLookup
 import cx.aswin.boxlore.core.playback.likedEpisodes
 import cx.aswin.boxlore.core.playback.playEpisode
 import cx.aswin.boxlore.core.playback.playQueue
@@ -25,6 +26,7 @@ import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.EpisodeRankingInput
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
+import cx.aswin.boxlore.feature.library.logic.LibraryEpisodeStatusLogic
 import cx.aswin.boxlore.feature.library.logic.LibraryRankingScores
 import cx.aswin.boxlore.feature.library.logic.SubscriptionManualOrderLogic
 import cx.aswin.boxlore.feature.library.logic.SubscriptionSmartOrderLogic
@@ -67,6 +69,13 @@ sealed interface LibraryUiState {
     ) : LibraryUiState
     data class Error(val message: String) : LibraryUiState
 }
+
+/** Library's history: [recent] for ranking and the recent strip; [inProgress] and [completedIds] for played state. */
+private data class LibraryHistory(
+    val recent: List<ListeningHistoryEntity>,
+    val inProgress: List<ListeningHistoryEntity>,
+    val completedIds: Set<String>,
+)
 
 class LibraryViewModel(
     private val subscriptionRepository: SubscriptionRepository,
@@ -517,50 +526,27 @@ class LibraryViewModel(
         playbackRepository.likedEpisodes,
         downloadRepository.downloads,
         // Lists count an episode once; the lookup finds an episode stored under several IDs by any of them.
-        combine(playbackRepository.getAllHistory(), playbackRepository.historyForEpisodeLookup) { list, lookup -> list to lookup },
+        // Played state comes from every completed and every started episode, not the recent rows.
+        combine(
+            playbackRepository.getRecentHistory(),
+            playbackRepository.inProgressForEpisodeLookup,
+            playbackRepository.completedEpisodeIds,
+        ) { list, inProgress, completed -> LibraryHistory(list, inProgress, completed) },
         sortAndManualOrder,
     ) {
             podcasts: List<Podcast>,
             liked: List<ListeningHistoryEntity>,
             downloads: List<cx.aswin.boxlore.core.database.DownloadedEpisodeEntity>,
-            histories: Pair<List<ListeningHistoryEntity>, List<ListeningHistoryEntity>>,
+            histories: LibraryHistory,
             sortAndOrder,
         ->
-        val (allHistory, historyLookup) = histories
+        val allHistory = histories.recent
         val (sort, manualOrder) = sortAndOrder
-        // Enrich podcasts with episode status from listening history
-        val historyById = historyLookup.associateBy { it.episodeId }
-        val enrichedPodcasts = podcasts.map { podcast ->
-            val episode = podcast.latestEpisode ?: return@map podcast
-            val history = historyById[episode.id]
-
-            when {
-                // Never touched → UNPLAYED
-                history == null || (history.progressMs == 0L && !history.isCompleted) -> {
-                    podcast.copy(episodeStatus = EpisodeStatus.UNPLAYED)
-                }
-                // Started but not finished → IN_PROGRESS
-                !history.isCompleted && history.progressMs > 0L -> {
-                    val progress = if (history.durationMs > 0) {
-                        (history.progressMs.toFloat() / history.durationMs).coerceIn(0f, 1f)
-                    } else {
-                        0f
-                    }
-                    podcast.copy(
-                        resumeProgress = progress,
-                        episodeStatus = EpisodeStatus.IN_PROGRESS
-                    )
-                }
-                // Completed
-                history.isCompleted -> {
-                    podcast.copy(
-                        resumeProgress = 1f,
-                        episodeStatus = EpisodeStatus.COMPLETED
-                    )
-                }
-                else -> podcast
-            }
-        }
+        val enrichedPodcasts = LibraryEpisodeStatusLogic.withLatestEpisodeStatus(
+            podcasts = podcasts,
+            inProgressById = histories.inProgress.associateBy { it.episodeId },
+            completedIds = histories.completedIds,
+        )
 
         // Progress saves re-emit history every few seconds; they redraw progress bars, and within an hour reuse the scores.
         val podScoresMap = try {
@@ -595,7 +581,7 @@ class LibraryViewModel(
             subscribedPodcasts = sortedPodcasts,
             likedEpisodes = liked,
             downloadedEpisodes = downloads,
-            recentHistory = allHistory.filter { !it.isManualCompletion && !it.isBulkCompletion }.take(3),
+            recentHistory = allHistory.filter { it.countsAsListening }.take(3),
             currentSort = sort,
             allHistory = allHistory,
             manualOrder = manualOrder,

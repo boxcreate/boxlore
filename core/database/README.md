@@ -32,7 +32,7 @@ It does not own repositories, sync, feed parsing or ranking. Catalog and sync lo
 - `EpisodeListenerStore` (`BoxLoreDatabase.episodeListenerStore()`): reads and writes one listener state per episode across its stored IDs, built on `EpisodeGroup` and `EpisodeListenerProjection`. Rules: [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md#5-aliases-on-the-phone).
 - `ListeningInsightsMaintenance` (`BoxLoreDatabase.listeningInsightsMaintenance()`): rolls sessions into daily summaries, claims listening stored without an origin (`ListeningOrigins`), lists days to push and applies cloud days. Listening sync itself: [`:core:catalog`](../catalog/README.md).
 - Pure rules, testable without SQLite: `ListeningDates`, `ListeningDayTotals`, `ListeningRollupMerge`, `EpisodeListenerProjection`.
-- `PodcastScoring`, `ScorablePodcast` and `sortedByListening`: listening, like and freshness signals for `:core:ranking`, Smart Queue, Smart Downloads and Most listened.
+- `PodcastScoring`, `ScorablePodcast` and `sortedByListening`: listening, like and freshness signals for `:core:ranking`, Smart Queue, Smart Downloads and Most listened. Plays count only real listening (`countsAsListening`), never episodes only marked played or unplayed.
 - `PodcastDao.replaceFeedAddress(FeedAddressWrite)`: the one transactional feed address write, a compare-and-set on the address the caller read. Only `:core:catalog`'s `FeedAddressUpdater` calls it.
 - `EpisodeIdentityDao.knownRecipeIds`: an ID's own recipe ID or a trusted alias's, never a guess.
 - `Converters`: Room type conversion, with Gson for embedded JSON such as `Episode` and `QueueRemovalIdentity`.
@@ -51,7 +51,7 @@ src/main/java/cx/aswin/boxlore/core/database/
   BriefingArtworkCompatibility.kt    # open callback and triggers for Brief artwork
   Converters.kt
   PodcastEntity.kt, PodcastDao.kt, FeedAddressWrite.kt, PodcastScoring.kt
-  ListeningHistoryEntity.kt, ListeningHistoryDao.kt, ListeningDates.kt
+  ListeningHistoryEntity.kt, ListeningHistoryDao.kt, ListeningHistoryReads.kt, ListeningDates.kt
   ListeningSessionEntity.kt, ListeningSessionDao.kt, ListeningSessionValues.kt
   ListeningRollupEntity.kt, ListeningRollupDao.kt, ListeningRollupMerge.kt, ListeningDayTotals.kt
   PushedListeningDayEntity.kt, ListeningPushDao.kt, ListeningInsightsMaintenance.kt

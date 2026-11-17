@@ -609,7 +609,7 @@ class ExploreViewModel(
             try {
                 val grouped = podcastRepository.searchPodcastsGrouped(query)
                 if (searchJob == myJob) {
-                    val history = playbackRepository.getAllHistory().first()
+                    val history = playbackRepository.getRecentHistory().first()
                     val rankedCatalog = rankPodcastsOrOriginal(grouped.catalog, history)
                     val rankedAlso = rankPodcastsOrOriginal(grouped.alsoFound, history)
                     _searchResults.value = rankedCatalog
@@ -650,7 +650,7 @@ class ExploreViewModel(
                 val region = userPrefs.regionStream.first()
                 val grouped = podcastRepository.searchSemanticGrouped(query, region)
                 if (semanticSearchJob == myJob) {
-                    val history = playbackRepository.getAllHistory().first()
+                    val history = playbackRepository.getRecentHistory().first()
                     val rankedEps = rankEpisodesOrOriginal(grouped.episodes, history)
                     val rankedPods = rankPodcastsOrOriginal(grouped.podcasts, history)
                     _semanticSearchResults.value = rankedEps
@@ -706,7 +706,7 @@ class ExploreViewModel(
         results: List<Podcast>,
         historyOverride: List<cx.aswin.boxlore.core.database.ListeningHistoryEntity>? = null,
     ): List<Podcast> {
-        val history = historyOverride ?: playbackRepository.getAllHistory().first()
+        val history = historyOverride ?: playbackRepository.getRecentHistory().first()
         return results.chunked(searchTieWindow).flatMap { window ->
             adaptiveScorer.rankPodcasts(
                 inputs = window.map { podcast ->
@@ -728,7 +728,7 @@ class ExploreViewModel(
         results: List<Episode>,
         historyOverride: List<cx.aswin.boxlore.core.database.ListeningHistoryEntity>? = null,
     ): List<Episode> {
-        val history = historyOverride ?: playbackRepository.getAllHistory().first()
+        val history = historyOverride ?: playbackRepository.getRecentHistory().first()
         return results.chunked(searchTieWindow).flatMap { window ->
             val scores = adaptiveScorer.scoreEpisodes(
                 inputs = window.map { episode ->

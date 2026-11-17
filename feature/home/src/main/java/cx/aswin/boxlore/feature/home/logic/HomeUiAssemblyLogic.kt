@@ -119,6 +119,7 @@ internal object HomeUiAssemblyLogic {
                 subs = subs,
                 allHistory = historyByEveryId,
                 resolvedSerial = resolvedSerial,
+                completedEpisodeIds = completedEpisodeIds,
             )
 
         val orderToUse =

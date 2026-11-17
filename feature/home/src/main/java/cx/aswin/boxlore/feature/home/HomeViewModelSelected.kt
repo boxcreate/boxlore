@@ -35,7 +35,7 @@ internal fun HomeViewModel.observeSelectedPodcast() {
         val signal =
             combine(
                 _selectedPodcastId,
-                allHomeHistory,
+                homeStatusHistory,
                 subscriptionRepository.subscribedPodcasts,
                 _rssRefreshVersion,
                 _selectedShowRetryVersion,

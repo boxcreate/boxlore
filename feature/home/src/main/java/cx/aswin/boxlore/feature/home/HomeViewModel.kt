@@ -199,9 +199,10 @@ class HomeViewModel(
         MutableStateFlow(boxcastPrefs.isFeaturedVideoShowcaseDismissed())
     val featuredVideoShowcaseDismissed: StateFlow<Boolean> = _featuredVideoShowcaseDismissed.asStateFlow()
 
+    /** Recent history (bounded): what Because you like and the show picker rank from. Status reads [homeStatusHistory]. */
     internal val allHomeHistory: Flow<List<HomeListeningHistoryItem>> =
         playbackRepository
-            .getAllHistory()
+            .getRecentHistory()
             .map { history -> history.map { it.toHomeListeningHistoryItem() } }
 
     // Cached base data (For You)

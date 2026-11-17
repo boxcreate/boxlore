@@ -2,10 +2,12 @@ package cx.aswin.boxlore.feature.home
 
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.database.toScorable
+import cx.aswin.boxlore.core.database.withInProgress
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.MixtapeEngine
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
 import cx.aswin.boxlore.core.playback.episodeAliasGroups
+import cx.aswin.boxlore.core.playback.inProgressHistory
 import cx.aswin.boxlore.core.playback.resumeSessions
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
@@ -16,6 +18,7 @@ import cx.aswin.boxlore.feature.home.logic.withSelectedShowFrom
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -24,6 +27,15 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+/**
+ * Recent history plus every started episode, for status only: the place in a show listened to in
+ * order and which episodes are in progress, however old. Never ranked.
+ */
+internal val HomeViewModel.homeStatusHistory: Flow<List<HomeListeningHistoryItem>>
+    get() = combine(playbackRepository.getRecentHistory(), playbackRepository.inProgressHistory) { recent, inProgress ->
+        recent.withInProgress(inProgress).map { it.toHomeListeningHistoryItem() }
+    }
 
 // from private fun loadData
 @OptIn(FlowPreview::class)
@@ -87,10 +99,20 @@ internal fun HomeViewModel.loadData() {
                         playbackRepository.resumeSessions,
                         subscriptionRepository.subscribedPodcasts,
                         // History keeps an episode stored under several IDs under its owner's ID.
-                        combine(playbackRepository.getAllHistory(), playbackRepository.episodeAliasGroups, ::Pair),
+                        // Ranking reads recent history alone; status also sees every started episode.
+                        combine(playbackRepository.getRecentHistory(), playbackRepository.inProgressHistory, playbackRepository.episodeAliasGroups, ::Triple),
                         _resolvedSerialEpisodes,
-                    ) { trending, resume, subs, (history, episodeAliases), resolvedSerial ->
-                        HomeCoreSlice(trending, resume, subs, history.map { it.toHomeListeningHistoryItem() }, resolvedSerial, history, episodeAliases)
+                    ) { trending, resume, subs, (history, inProgress, episodeAliases), resolvedSerial ->
+                        HomeCoreSlice(
+                            trending = trending,
+                            resume = resume,
+                            subs = subs,
+                            history = history.withInProgress(inProgress).map { it.toHomeListeningHistoryItem() },
+                            resolvedSerial = resolvedSerial,
+                            scoringHistory = history,
+                            inProgressHistory = inProgress,
+                            episodeAliases = episodeAliases,
+                        )
                     }
                 val recsSlice =
                     combine(
@@ -152,6 +174,7 @@ internal fun HomeViewModel.loadData() {
                             subs = core.subs,
                             history = core.history,
                             scoringHistory = core.scoringHistory,
+                            inProgressHistory = core.inProgressHistory,
                             episodeAliases = core.episodeAliases,
                             resolvedSerial = core.resolvedSerial,
                             recommendations = recs.recommendations,
@@ -278,6 +301,8 @@ internal fun HomeViewModel.loadData() {
                                     MixtapeEngine.build(
                                         subscriptions = subs,
                                         history = scoringHistory,
+                                        completedIds = completedEpisodeIds,
+                                        inProgress = wrapper.inProgressHistory,
                                         resolvedSerialEpisodes = _resolvedSerialEpisodes.value,
                                         recommendations = recommendations,
                                         podcastScores = scores,

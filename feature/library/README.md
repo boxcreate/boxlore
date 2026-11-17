@@ -19,8 +19,8 @@ Owns the Library tab: the hub, Subscriptions (Shows and New Episodes, with folde
 - `tab=0` opens Shows and `tab=1` New Episodes. Without `tab` (the hub, **Open app to** Subscriptions) the app resolves Appearance **Default tabs** (`SubscriptionsDefaultTab`); an explicit `tab` wins (Home, widgets).
 - The tab switcher is designsystem's `DiscoveryTabSwitcher`, in the top bar or as a floating selector (`SubscriptionsTabStyle`). Play All keeps clear of the floating selector and the player.
 - Shows is a grid or a list; the choice persists. Genre chips (`SubscriptionChip`) filter both tabs; genre labels and icons come from `SubscriptionGenreCatalog`, which mirrors Explore without importing it.
-- Smart sort uses the shared Your shows score (`RankingObjective.YOUR_SHOWS` on `RankingSurface.LIBRARY`), then title (`SubscriptionSmartOrderLogic`). Most listened counts history under every ID of a show (`sortedByListening` in `:core:database`).
-- Each show's latest-episode status reads `PlaybackRepository.historyForEpisodeLookup`, so an episode stored under several IDs shows its progress whichever ID the show lists; see [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md).
+- Smart sort uses the shared Your shows score (`RankingObjective.YOUR_SHOWS` on `RankingSurface.LIBRARY`), then title (`SubscriptionSmartOrderLogic`). Most listened counts real listening, not episodes only marked played, under every ID of a show (`sortedByListening` in `:core:database`).
+- Each show's latest-episode status reads the whole history (`PlaybackRepository.completedEpisodeIds`, `inProgressForEpisodeLookup`), so an episode stored under several IDs shows its state whichever ID the show lists; see [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md).
 - Manual order: the first drop seeds the saved order from the visible list and switches the sort to Manual; new shows append A–Z; unsubscribing drops the ID from the manual order and Home pins (`SubscriptionManualOrderLogic`).
 - The Shows grid and list never receive the same show twice: the saved order and subscription rows are de-duplicated before they reach the keyed lists.
 - NEW badges use the shared `isLatestEpisodeNew` rule from `:core:model`.
@@ -63,7 +63,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
   LibraryPlaybackLayout.kt, PlayAllFab.kt
   FolderEditLogic.kt                        # folder save rules shared by the editors
   downloads/                                # Downloads list, a show's downloads, Smart Downloads card, models
-  logic/                                    # SubscriptionManualOrderLogic, SubscriptionSmartOrderLogic
+  logic/                                    # SubscriptionManualOrderLogic, SubscriptionSmartOrderLogic, LibraryEpisodeStatusLogic
   subscriptions/                            # tabs, rows, chips, sort sheet, reorder, context menus,
                                             #   folder pages and editors, New Episodes swipe, refresh
                                             #   and playback queue logic

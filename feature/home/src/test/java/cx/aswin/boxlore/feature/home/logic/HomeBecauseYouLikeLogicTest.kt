@@ -223,4 +223,38 @@ class HomeBecauseYouLikeLogicTest {
         assertFalse(HomeBecauseYouLikeLogic.skipsSavedRows(fetched = listOf("fr"), current = listOf("fr")))
         assertTrue(HomeBecauseYouLikeLogic.skipsSavedRows(fetched = listOf("en", "fr"), current = listOf("fr")))
     }
+
+    @Test
+    fun `a show only marked played is never the Because you like pick`() {
+        // Regression: 300 episodes of one Mark all as played made that show the favourite.
+        val marked = (0 until 300).map { historyItem("marked-$it", "back-catalogue", playedAt = 10_000L + it, completed = true, listened = false) }
+        val heard = (0 until 3).map { historyItem("heard-$it", "daily", playedAt = 1_000L + it, completed = false, listened = true) }
+
+        val signals = HomeBecauseYouLikeLogic.affinitySignals(marked + heard)
+        val lastPlayed = mutableMapOf<String, Long>()
+        val scores = PodcastAffinityLogic.calculatePodcastAffinityScores(
+            subscriptions = emptyList(),
+            historyList = signals,
+            lastPlayedMap = lastPlayed,
+            podcastNameMap = mutableMapOf(),
+            podcastImageMap = mutableMapOf(),
+        )
+
+        assertEquals(setOf("daily"), signals.map { it.podcastId }.toSet())
+        assertFalse("back-catalogue" in scores)
+        assertEquals("daily", BecauseYouLikeRotationLogic.filterEligibleCandidates(scores, lastPlayed).first())
+    }
+
+    private fun historyItem(id: String, show: String, playedAt: Long, completed: Boolean, listened: Boolean,) = HomeListeningHistoryItem(
+        episodeId = id,
+        podcastId = show,
+        podcastName = show,
+        podcastImageUrl = null,
+        progressMs = if (completed) 0L else 1_200_000L,
+        durationMs = 3_600_000L,
+        isCompleted = completed,
+        isLiked = false,
+        lastPlayedAt = playedAt,
+        countsAsListening = listened,
+    )
 }

@@ -114,7 +114,7 @@ src/main/java/cx/aswin/boxlore/feature/info/
 
 - This module owns no storage files or keys of its own.
 - Keys it uses through `:core:prefs`: `home_pinned_podcast_ids` (Home pin), `content_languages` and region (Try these episodes), `has_requested_notification_permission` (`BoxcastPrefs`).
-- Episode and show identity, aliases and `rss:` IDs come from core modules. Likes, progress, downloads and queue state are read through alias-aware lookups (`PlaybackRepository.likedEpisodeIds`, `historyForEpisodeLookup`, `withEpisodeAliases`), so an episode stored under several IDs shows one state. See [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md).
+- Episode and show identity, aliases and `rss:` IDs come from core modules. Likes, progress, downloads and queue state are read through alias-aware lookups (`PlaybackRepository.likedEpisodeIds`, `inProgressForEpisodeLookup`, `withEpisodeAliases`), so an episode stored under several IDs shows one state. See [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md).
 - `:app` owns route patterns and deep links.
 - Screen names: `podcast_detail`, `podcast_showcase`, `episode_detail`; show-page playback passes `podcast_detail` as its entry point. See [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md).
 

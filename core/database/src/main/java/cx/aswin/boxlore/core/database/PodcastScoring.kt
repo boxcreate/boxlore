@@ -45,12 +45,15 @@ object PodcastScoring {
             val podHistory = pod.listenerShowIds
                 .filter { it == pod.id || it !in scoredIds }
                 .flatMap { historyByPodcast[it].orEmpty() }
-            val playCount = podHistory.size
+            // Plays and their recency count only real listening: an episode marked played (one or
+            // a whole show at once) was not listened to. Freshness below still sees every row.
+            val listened = podHistory.filter { it.countsAsListening }
+            val playCount = listened.size
             val likeCount = podHistory.count { it.isLiked }
             val playScore = 12.0 * playCount
             val likeScore = 25.0 * likeCount
 
-            val lastPlayTime = podHistory.maxOfOrNull { it.lastPlayedAt }
+            val lastPlayTime = listened.maxOfOrNull { it.lastPlayedAt }
             val playRecencyScore =
                 if (lastPlayTime != null) {
                     val hoursSinceLastPlay = (nowMs - lastPlayTime).toDouble() / (1000.0 * 3600.0)
@@ -132,13 +135,13 @@ val PodcastEntity.listenerShowIds: Set<String>
     get() = ListenerShows.idsOf(podcastId, isRss, linkedPodcastIndexId)
 
 /**
- * [this] shows with the most history rows first ("Most listened"); ties keep their order. A show
- * the listener switched to its feed counts the rows its old Podcast Index show holds
- * ([Podcast.listenerShowIds]).
+ * [this] shows with the most rows of real listening first ("Most listened"; rows only marked
+ * played don't count, [countsAsListening]); ties keep their order. A show the listener switched to
+ * its feed counts the rows its old Podcast Index show holds ([Podcast.listenerShowIds]).
  *
  * Added in P4 of the own-episode-IDs plan (plan section 8, re-key paths narrowed; decision D8).
  */
 fun List<Podcast>.sortedByListening(history: List<ListeningHistoryEntity>): List<Podcast> {
-    val counts = history.groupingBy { it.podcastId }.eachCount()
+    val counts = history.filter { it.countsAsListening }.groupingBy { it.podcastId }.eachCount()
     return sortedByDescending { podcast -> podcast.listenerShowIds.sumOf { counts[it] ?: 0 } }
 }

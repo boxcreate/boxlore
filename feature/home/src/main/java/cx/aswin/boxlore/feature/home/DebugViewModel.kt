@@ -43,7 +43,7 @@ class DebugViewModel(
 ) : AndroidViewModel(application) {
     val history: Flow<List<DebugHistoryItem>> =
         playbackRepository
-            .getAllHistory()
+            .getRecentHistory()
             .map { history -> history.map { it.toDebugHistoryItem() } }
     val podcasts: Flow<List<PodcastEntity>> = subscriptionRepository.getAllSubscribedPodcasts()
 
@@ -119,7 +119,7 @@ class DebugViewModel(
 
     fun refreshNpsSurveyStatus() {
         viewModelScope.launch {
-            val finished = playbackRepository.getAllHistory().first().map { it.toHomeListeningHistoryItem() }.countFinishedSince(installedAtMs)
+            val finished = playbackRepository.getRecentHistory().first().map { it.toHomeListeningHistoryItem() }.countFinishedSince(installedAtMs)
             _npsSurveyStatus.value = npsSurveyDebugStatus(engagementCoordinator.npsSurveyWaitsFor(installedAtMs, finished), finished)
         }
     }
