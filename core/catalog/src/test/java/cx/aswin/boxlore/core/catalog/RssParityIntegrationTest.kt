@@ -172,6 +172,34 @@ class RssParityIntegrationTest {
         assertTrue(repository.episodeCatalog.isRefreshDue(id, url, oneHourAgo + 21_600_000))
     }
 
+    /** Regression: a forced chip-tap read that failed offline kept a healthy `rss:` show from automatic passes for six hours. */
+    @Test fun aFailedListenerCheckOfAShowNotYetDueKeepsItsWait() = runBlocking {
+        repository.episodeCatalog.refresh(request())
+        val fiveHoursAgo = System.currentTimeMillis() - 5L * 60 * 60 * 1000
+        database.podcastDao().upsert(database.podcastDao().getPodcast(id)!!.copy(lastRssSyncAt = fiveHoursAgo))
+        feed.onGet = { throw IOException("offline") }
+
+        assertTrue(repository.refreshCatalogNow(id).isFailure)
+
+        assertEquals("a listener's check reads conditionally", 1, feed.gets)
+        assertEquals(1, feed.conditionals)
+        val stored = database.podcastDao().getPodcast(id)!!
+        assertEquals(fiveHoursAgo, stored.lastRssSyncAt)
+        assertFalse(stored.rssCatalogStale)
+        assertTrue(repository.episodeCatalog.isRefreshDue(id, url, fiveHoursAgo + 21_600_000))
+    }
+
+    @Test fun aListenerCheckReadsInsideTheWait() = runBlocking {
+        repository.episodeCatalog.refresh(request())
+        assertFalse(repository.episodeCatalog.isRefreshDue(id, url, System.currentTimeMillis()))
+        feed.rows = listOf(row("-1", "release", 100), row("-2", "newer", 200))
+
+        assertTrue(repository.refreshCatalogNow(id).isSuccess)
+
+        assertEquals(1, feed.conditionals)
+        assertNotNull(repository.episodeCatalog.findByCatalogKey(id, "newer", null))
+    }
+
     @Test fun aFailedPullOfADueShowStillRecordsTheAttempt() = runBlocking {
         repository.episodeCatalog.refresh(request())
         makeDue()

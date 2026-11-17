@@ -32,7 +32,7 @@ internal class AutoDownloadLifecycle(
 
     fun start() {
         val foreground = ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
-        container.subscriptionForegroundSync.setForeground(foreground)
+        container.newEpisodeCheckGate.setAppVisible(foreground)
         foregroundScan.setForeground(foreground)
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
         scope.launch {
@@ -62,14 +62,14 @@ internal class AutoDownloadLifecycle(
     }
 
     override fun onStart(owner: LifecycleOwner) {
-        container.subscriptionForegroundSync.setForeground(true)
+        container.newEpisodeCheckGate.setAppVisible(true)
         foregroundScan.setForeground(true)
         foregroundScan.request()
     }
 
     override fun onStop(owner: LifecycleOwner) {
         foregroundScan.setForeground(false)
-        container.subscriptionForegroundSync.setForeground(false)
+        container.newEpisodeCheckGate.setAppVisible(false)
     }
 
     private suspend fun safely(block: suspend () -> Unit) {
