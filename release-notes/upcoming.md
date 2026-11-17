@@ -61,3 +61,4 @@ Announcement title:
 - If you follow a lot of shows, New Episodes no longer misses new episodes from some of them, and pulling down on New Episodes checks all your shows (up to 200), not just a few.
 - The Brief opens as soon as it's ready, even when its stories are slow to load. They appear when they arrive.
 - New episode notifications from different shows no longer replace each other or open the wrong show. Each show gets its own notification, grouped together, for up to 16 shows at a time.
+- Smart Downloads no longer downloads episodes you've already finished, a show you listen to oldest first gets its next episode, and Sync Now checks your shows for new episodes before it picks what to download.

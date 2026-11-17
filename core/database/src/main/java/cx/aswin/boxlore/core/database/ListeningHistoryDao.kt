@@ -167,6 +167,19 @@ interface ListeningHistoryDao {
     @Query("SELECT * FROM listening_history WHERE podcastId = :podcastId")
     suspend fun getHistoryForPodcast(podcastId: String): List<ListeningHistoryEntity>
 
+    /**
+     * Every started or finished row of the shows [podcastIds] (one show under all its show IDs),
+     * last played first: where a listener is in a show, however long ago it was played.
+     */
+    @Query(
+        """
+        SELECT * FROM listening_history
+        WHERE podcastId IN (:podcastIds) AND (isCompleted = 1 OR progressMs > 0)
+        ORDER BY lastPlayedAt DESC
+        """,
+    )
+    suspend fun getPlayedHistoryForShows(podcastIds: List<String>): List<ListeningHistoryEntity>
+
     @Query("SELECT * FROM listening_history WHERE episodeId = :episodeId LIMIT 1")
     fun getHistoryItemFlow(episodeId: String): Flow<ListeningHistoryEntity?>
 

@@ -8,10 +8,10 @@ import android.net.NetworkCapabilities
 import android.os.BatteryManager
 import android.util.Log
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.ShowPageSource
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
-import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.PodcastScoring
 import cx.aswin.boxlore.core.database.episodeListenerStore
@@ -38,6 +38,15 @@ internal data class SmartDownloadBudget(
     val maxTimeBudgetMs: Long = SmartDownloadManager.MAX_TIME_BUDGET_MS,
 )
 
+/** Where Smart Downloads reads a serial show's episode list ([PodcastRepository]); replaced in tests. */
+internal interface SerialEpisodeSource {
+    /** Where [feedId]'s episodes are read from ([PodcastRepository.showPageSource]). */
+    suspend fun pageSource(feedId: String): ShowPageSource
+
+    /** One page of [feedId]'s episodes ([PodcastRepository.getEpisodesPaginated]). */
+    suspend fun page(feedId: String, limit: Int, offset: Int, sort: String, mergeSupplements: Boolean,): PodcastRepository.EpisodePage
+}
+
 @Suppress("TooManyFunctions")
 class SmartDownloadManager(
     private val context: Context,
@@ -50,6 +59,15 @@ class SmartDownloadManager(
     private val adaptiveScorer: AdaptiveCandidateScorer,
 ) {
     private val syncGate = SmartDownloadSyncGate()
+
+    @androidx.annotation.VisibleForTesting
+    internal var serialEpisodeSource: SerialEpisodeSource =
+        object : SerialEpisodeSource {
+            override suspend fun pageSource(feedId: String): ShowPageSource = podcastRepository.showPageSource(feedId)
+
+            override suspend fun page(feedId: String, limit: Int, offset: Int, sort: String, mergeSupplements: Boolean,): PodcastRepository.EpisodePage =
+                podcastRepository.getEpisodesPaginated(feedId, limit = limit, offset = offset, sort = sort, mergeSupplements = mergeSupplements)
+        }
 
     private suspend fun checkSyncConstraints(isManual: Boolean, isForeground: Boolean,): Boolean {
         val isEnabled = userPrefs.smartDownloadsEnabledStream.first()
@@ -139,75 +157,82 @@ class SmartDownloadManager(
     }
 
     /**
-     * The next episode of the serial show [pod] after its latest unfinished, else latest finished,
-     * episode. A show the listener switched to its feed reads the listening its old Podcast Index
-     * show holds (`PodcastEntity.listenerShowIds`), and an episode is found in the show's list under
-     * any of its stored IDs (own-episode-IDs P4, plan section 8; decision D8).
+     * The next episode of the serial show [pod]: the first unfinished episode after its most
+     * recently played episode, finished or not, else the first unfinished episode at all. Where
+     * the listener is comes from the show's own history (`ListeningHistoryDao.getPlayedHistoryForShows`),
+     * not the latest rows of all shows, so a show last played long ago still continues. The
+     * oldest-first list is read page by page until that episode is found: up to
+     * [MAX_SERIAL_SCAN_EPISODES] from the phone (`rss:` or a ready catalog), and only the pages
+     * [networkPages] allows from the network. A list cut off before then is looked up from its
+     * newest end ([SmartDownloadCandidateLogic.findSerialNextEpisode]). Pages hold only the show's
+     * own list, never its feed extras, which would break the order and the offsets. An episode in
+     * [completedIds] or in progress is never picked. A show the listener switched to its feed reads the listening its old Podcast Index
+     * show holds (`PodcastEntity.listenerShowIds`), and an episode is found in the show's list
+     * under any of its stored IDs (own-episode-IDs P4, plan section 8; decision D8).
      */
     private suspend fun resolveOldestSerialNextEpisode(
         pod: PodcastEntity,
-        allHistory: List<ListeningHistoryEntity>,
-        completedEpIdsForResolve: Set<String>,
-        inProgressEpIdsForResolve: Set<String>,
+        completedIds: Set<String>,
+        networkPages: SmartDownloadCandidateLogic.SerialNetworkPages,
     ): Episode? {
         try {
-            val showIds = pod.listenerShowIds
-            val ongoingId =
-                allHistory
-                    .filter { h ->
-                        h.podcastId in showIds && !h.isCompleted && h.progressMs > 0L
-                    }.maxByOrNull { it.lastPlayedAt }
-                    ?.episodeId
-            val lastCompletedId =
-                allHistory
-                    .filter { h ->
-                        h.podcastId in showIds && h.isCompleted
-                    }.maxByOrNull { it.lastPlayedAt }
-                    ?.episodeId
-
-            val page = podcastRepository.getEpisodesPaginated(pod.podcastId, limit = 100, offset = 0, sort = "oldest")
-            val allEpisodes = page.episodes
-            val tokens = database.episodeListenerStore().groupTokens(allEpisodes.map { it.id } + listOfNotNull(ongoingId, lastCompletedId))
-            val tokenOf = { id: String -> tokens[id] ?: id }
-
-            return when {
-                ongoingId != null -> episodeAfter(allEpisodes, ongoingId, tokenOf)
-                lastCompletedId != null -> episodeAfter(allEpisodes, lastCompletedId, tokenOf)
-                else -> allEpisodes.firstOrNull()
-            } ?: allEpisodes.firstOrNull { ep ->
-                ep.id !in completedEpIdsForResolve && ep.id !in inProgressEpIdsForResolve
-            }
+            val listenerStore = database.episodeListenerStore()
+            val showHistory = listenerStore.projectRows(database.listeningHistoryDao().getPlayedHistoryForShows(pod.listenerShowIds.toList()))
+            // The latest play wins, so an episode sampled long ago and left unfinished does not hold the show back.
+            val anchorId = showHistory.maxByOrNull { it.lastPlayedAt }?.episodeId
+            // An unfinished episode is unfinished under every one of its stored IDs.
+            val inProgressIds = listenerStore.withAllAliases(showHistory.filter { !it.isCompleted && it.progressMs > 0L }.map { it.episodeId })
+            val source = serialEpisodeSource
+            val fromPhone = source.pageSource(pod.podcastId) in PHONE_PAGE_SOURCES
+            val maxEpisodes = if (fromPhone) MAX_SERIAL_SCAN_EPISODES else SERIAL_PAGE_SIZE * networkPages.pagesForNextShow()
+            return SmartDownloadCandidateLogic.findSerialNextEpisode(
+                anchorId = anchorId,
+                isUnfinished = { ep -> ep.id !in completedIds && ep.id !in inProgressIds },
+                groupTokens = { ids -> listenerStore.groupTokens(ids) },
+                loadPage = { offset ->
+                    if (!fromPhone && offset > 0) networkPages.spendExtraPage()
+                    val page = source.page(pod.podcastId, SERIAL_PAGE_SIZE, offset, sort = "oldest", mergeSupplements = false)
+                    SmartDownloadCandidateLogic.SerialPage(page.episodes, page.sourceCount, page.hasMore)
+                },
+                maxEpisodes = maxEpisodes,
+                loadNewestPage = {
+                    if (fromPhone || networkPages.takeNewestPage()) {
+                        source.page(pod.podcastId, SERIAL_PAGE_SIZE, offset = 0, sort = "newest", mergeSupplements = false).episodes
+                    } else {
+                        null
+                    }
+                },
+            )
+        } catch (error: kotlinx.coroutines.CancellationException) {
+            throw error
         } catch (e: Exception) {
             Log.e("SmartDownloadManager", "Failed to resolve oldest serial next episode for pod ${pod.podcastId}", e)
         }
         return null
     }
 
-    /** The episode after [episodeId]'s episode in [episodes], found under any of its IDs ([tokenOf]); null when it is last or missing. */
-    private fun episodeAfter(episodes: List<Episode>, episodeId: String, tokenOf: (String) -> String,): Episode? {
-        val index = episodes.indexOfFirst { tokenOf(it.id) == tokenOf(episodeId) }
-        return if (index != -1 && index < episodes.lastIndex) episodes[index + 1] else null
-    }
-
-    /** The next episode of each oldest-first show in [subs], by show ID ([resolveOldestSerialNextEpisode]). */
+    /**
+     * The next episode of each oldest-first show in [subs] that can be offered, by show ID
+     * ([resolveOldestSerialNextEpisode]). Auto-download shows are skipped, and the shows are read
+     * highest [podScores] first ([SmartDownloadCandidateLogic.serialShowsToResolve]).
+     */
     @androidx.annotation.VisibleForTesting
     internal suspend fun resolveOldestSerialNextEpisodes(
         subs: List<PodcastEntity>,
-        allHistory: List<ListeningHistoryEntity>,
-        completedEpisodeIds: List<String>,
+        completedEpisodeIds: Set<String>,
+        podScores: Map<String, Double> = emptyMap(),
     ): Map<String, Episode> {
-        val completedEpIdsForResolve = allHistory.filter { it.isCompleted }.map { it.episodeId }.toSet() + completedEpisodeIds
-        // An unfinished episode is unfinished under every one of its stored IDs.
-        val inProgressEpIdsForResolve =
-            database.episodeListenerStore().withAllAliases(allHistory.filter { !it.isCompleted && it.progressMs > 0L }.map { it.episodeId })
         val resolvedSerial = mutableMapOf<String, Episode>()
-
-        for (pod in subs) {
-            if ((pod.preferredSort ?: "newest") == "oldest") {
-                val nextEp = resolveOldestSerialNextEpisode(pod, allHistory, completedEpIdsForResolve, inProgressEpIdsForResolve)
-                if (nextEp != null) {
-                    resolvedSerial[pod.podcastId] = nextEp
-                }
+        val networkPages =
+            SmartDownloadCandidateLogic.SerialNetworkPages(
+                extraPages = MAX_SERIAL_EXTRA_NETWORK_PAGES,
+                perShowPages = MAX_SERIAL_NETWORK_PAGES_PER_SHOW,
+                newestPages = MAX_SERIAL_NEWEST_NETWORK_PAGES,
+            )
+        for (pod in SmartDownloadCandidateLogic.serialShowsToResolve(subs, podScores)) {
+            val nextEp = resolveOldestSerialNextEpisode(pod, completedEpisodeIds, networkPages)
+            if (nextEp != null) {
+                resolvedSerial[pod.podcastId] = nextEp
             }
         }
         return resolvedSerial
@@ -482,8 +507,8 @@ class SmartDownloadManager(
             val listenerStore = database.episodeListenerStore()
             val recentHistory = database.listeningHistoryDao().getRecentHistoryList(limit = 200)
             val allHistory = listenerStore.projectRows(recentHistory)
-            val completedEpisodeIds = projectedCompletedEpisodeIds().toList()
-            val resolvedSerial = resolveOldestSerialNextEpisodes(subs, allHistory, completedEpisodeIds)
+            // Every finished episode, under each of its IDs: not only those in the latest rows.
+            val completedEpisodeIds = projectedCompletedEpisodeIds()
 
             // Looked up by a candidate's ID: an episode stored under several IDs is found under any of them.
             val historyByEpisode = listenerStore.projectRowsByMember(recentHistory).associateBy { it.episodeId }
@@ -506,6 +531,7 @@ class SmartDownloadManager(
                         includeAutoDownloadBoost = false,
                     )
                 }
+            val resolvedSerial = resolveOldestSerialNextEpisodes(subs, completedEpisodeIds, podScoresMap)
 
             val initialCandidates =
                 SmartDownloadCandidateLogic.generateMixtapeCandidates(
@@ -513,6 +539,7 @@ class SmartDownloadManager(
                     allHistory = allHistory,
                     historyByEpisode = historyByEpisode,
                     resolvedSerial = resolvedSerial,
+                    completedEpisodeIds = completedEpisodeIds,
                     podScoresMap = podScoresMap,
                     nowMs = nowMs,
                 )
@@ -673,6 +700,24 @@ class SmartDownloadManager(
     companion object {
         const val MAX_TIME_BUDGET_MS = 510_000L // 8.5 minutes cumulative time budget
         const val PER_EPISODE_TIMEOUT_MS = 150_000L // 2.5 minutes per-episode timeout
+
+        /** Episodes per page when a serial show's oldest-first list is read for its next episode. */
+        internal const val SERIAL_PAGE_SIZE = 100
+
+        /** How far into a serial show's oldest-first list read from the phone its next episode is looked for. */
+        internal const val MAX_SERIAL_SCAN_EPISODES = 1_000
+
+        /** Pages one serial show may read from the network in a sync. */
+        internal const val MAX_SERIAL_NETWORK_PAGES_PER_SHOW = 3
+
+        /** Network pages past each show's first that all serial shows share in one sync. */
+        internal const val MAX_SERIAL_EXTRA_NETWORK_PAGES = 6
+
+        /** Newest-first network pages that serial shows cut off at their cap share in one sync. */
+        internal const val MAX_SERIAL_NEWEST_NETWORK_PAGES = 6
+
+        /** Where a show's episodes are read from the phone, so paging costs no network request. */
+        private val PHONE_PAGE_SOURCES = setOf(ShowPageSource.RSS, ShowPageSource.FOLLOWED_CATALOG)
 
         fun schedulePeriodicSync(context: Context, wifiOnly: Boolean, chargingOnly: Boolean,) {
             try {

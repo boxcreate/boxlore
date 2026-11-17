@@ -320,7 +320,11 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                 scope.launch(Dispatchers.IO) {
                     isSyncingSmartDownloads = true
                     try {
-                        smartDownloadManager.performSync(isManual = true)
+                        // Check followed feeds first, so a new episode not yet seen can be picked.
+                        cx.aswin.boxlore.core.downloads.SmartDownloadSyncNow.run(
+                            checkFeeds = { container.subscriptionForegroundSync.refreshNow() },
+                            sync = { smartDownloadManager.performSync(isManual = true) },
+                        )
                     } finally {
                         isSyncingSmartDownloads = false
                     }
