@@ -43,14 +43,11 @@ internal fun rememberListScrollingUp(listState: LazyListState): State<Boolean> {
         var lastOffset = listState.firstVisibleItemScrollOffset
         snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
             .collect { (currentIndex, currentOffset) ->
-                if (currentIndex > lastIndex) {
-                    scrollingUp.value = false
-                } else if (currentIndex < lastIndex) {
-                    scrollingUp.value = true
-                } else if (currentOffset > lastOffset) {
-                    scrollingUp.value = false
-                } else if (currentOffset < lastOffset) {
-                    scrollingUp.value = true
+                when {
+                    currentIndex > lastIndex -> scrollingUp.value = false
+                    currentIndex < lastIndex -> scrollingUp.value = true
+                    currentOffset > lastOffset -> scrollingUp.value = false
+                    currentOffset < lastOffset -> scrollingUp.value = true
                 }
                 lastIndex = currentIndex
                 lastOffset = currentOffset

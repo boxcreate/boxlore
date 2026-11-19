@@ -70,9 +70,8 @@ internal suspend fun HomeViewModel.resolveFavoritePodcast(
     if (candidateIds.isEmpty()) return null
 
     val candidatePodcasts = candidateIds.map { podId ->
-        subscriptions.find { it.id == podId }
-            ?: localCatalog.getLocalPodcast(podId)
-            ?: Podcast(
+        val known: Podcast? = subscriptions.find { it.id == podId } ?: localCatalog.getLocalPodcast(podId)
+        known ?: Podcast(
                 id = podId,
                 title = podcastNameMap[podId] ?: "Podcast",
                 artist = "",
