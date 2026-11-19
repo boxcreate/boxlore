@@ -71,6 +71,8 @@ internal class PodcastInfoSupplementSupport(
         val libraryTip: Episode?,
         /** Reloaded page `sourceCount` so [PodcastInfoViewModel] can reset pagination. */
         val pageSourceCount: Int? = null,
+        /** The feed check's failure message, set even when the result isn't announced. */
+        val failureMessage: String? = null,
     )
 
     suspend fun remountWithSupplements(
@@ -80,6 +82,8 @@ internal class PodcastInfoSupplementSupport(
         isLoadingMore: Boolean = state.isLoadingMore,
         userMessage: String? = state.userMessage,
         isFetchingFromFeed: Boolean = false,
+        // A failed check stays failed through later reloads until a check succeeds.
+        feedCheckFailed: Boolean = state.directFeedChip == DirectFeedChipState.CheckFailed,
     ): PodcastInfoUiState.Success {
         // Offset pages overlap when episodes publish between requests; the list keys rows by id.
         val uniqueEpisodes = piEpisodes.distinctBy { it.id }
@@ -92,6 +96,7 @@ internal class PodcastInfoSupplementSupport(
             when {
                 catalogReady -> DirectFeedChipState.Hidden
                 isFetchingFromFeed -> DirectFeedChipState.Fetching
+                optedIn && feedCheckFailed -> DirectFeedChipState.CheckFailed
                 optedIn -> DirectFeedChipState.Updated
                 state.isSubscribed -> DirectFeedChipState.Hidden
                 !eligible -> DirectFeedChipState.Hidden
@@ -125,11 +130,27 @@ internal class PodcastInfoSupplementSupport(
         isLoadingMore: Boolean = false,
         userMessage: String? = state.userMessage,
         isFetchingFromFeed: Boolean = false,
+        feedCheckFailed: Boolean = state.directFeedChip == DirectFeedChipState.CheckFailed,
     ): PodcastInfoUiState.Success = if (page.failed) {
-        remountWithSupplements(state, state.piEpisodes, state.hasMoreEpisodes, isLoadingMore, userMessage, isFetchingFromFeed)
-            .copy(pageLoadFailed = true)
+        remountWithSupplements(
+            state = state,
+            piEpisodes = state.piEpisodes,
+            hasMoreEpisodes = state.hasMoreEpisodes,
+            isLoadingMore = isLoadingMore,
+            userMessage = userMessage,
+            isFetchingFromFeed = isFetchingFromFeed,
+            feedCheckFailed = feedCheckFailed,
+        ).copy(pageLoadFailed = true)
     } else {
-        remountWithSupplements(state, page.episodes, page.hasMore, isLoadingMore, userMessage, isFetchingFromFeed)
+        remountWithSupplements(
+            state = state,
+            piEpisodes = page.episodes,
+            hasMoreEpisodes = page.hasMore,
+            isLoadingMore = isLoadingMore,
+            userMessage = userMessage,
+            isFetchingFromFeed = isFetchingFromFeed,
+            feedCheckFailed = feedCheckFailed,
+        )
     }
 
     /**
@@ -171,9 +192,17 @@ internal class PodcastInfoSupplementSupport(
             (outcome as? EpisodeSupplementOutcome.Success)?.newestFeedEpisode
         val reloaded = reloadDisplayPage(state)
         return MissingEpisodesRefresh(
-            state = remountPage(state, reloaded, isLoadingMore = state.isLoadingMore, userMessage = message),
+            state =
+            remountPage(
+                state,
+                reloaded,
+                isLoadingMore = state.isLoadingMore,
+                userMessage = message,
+                feedCheckFailed = outcome is EpisodeSupplementOutcome.Failure,
+            ),
             libraryTip = tip,
             pageSourceCount = reloaded.sourceCount.takeUnless { reloaded.failed },
+            failureMessage = (outcome as? EpisodeSupplementOutcome.Failure)?.message,
         )
     }
 
@@ -288,6 +317,9 @@ internal class PodcastInfoSupplementSupport(
          * newest episodes); a page is capped at 100.
          */
         const val SUPPLEMENT_BASELINE_LIMIT = 1000
+
+        /** Pull to refresh's message when the feed check threw instead of answering. */
+        const val FEED_CHECK_FAILED_MESSAGE = "Couldn't update episodes from the feed"
         private const val DISPLAY_PAGE_SIZE = 20
 
         private const val OLDEST_PAGE_SIZE = 50

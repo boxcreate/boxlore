@@ -28,6 +28,8 @@ data class OnboardingUiState(
     /** Hybrid `/search` hits not already in Meili typeahead (coverage for episode-count shrink). */
     val alsoFoundResults: List<Podcast> = emptyList(),
     val isSearching: Boolean = false,
+    /** The show search couldn't be read: no results means Try again, not no matches. */
+    val searchFailed: Boolean = false,
     val isCompleting: Boolean = false,
     val currentRegion: String = "us",
     val initialRegion: String = "us",

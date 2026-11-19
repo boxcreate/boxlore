@@ -21,8 +21,11 @@ import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
+import okhttp3.mockwebserver.SocketPolicy
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
@@ -265,6 +268,52 @@ class PodcastRepositoryCatalogTest {
 
         assertTrue(grouped.catalog.isEmpty())
         assertEquals(listOf("75075"), grouped.alsoFound.map { it.id })
+        assertFalse(grouped.failed, "one search answered, so its results show")
+    }
+
+    @Test
+    fun `a show search whose two requests are rate limited is failed, not no matches`() = runTest(testDispatcher) {
+        server.dispatcher = answering { MockResponse().setResponseCode(429).setBody("""{"error":"slow down"}""") }
+
+        val grouped = repository.searchPodcastsGrouped("darknet diaries")
+
+        assertTrue(grouped.failed)
+        assertTrue(grouped.all.isEmpty())
+        assertTrue(repository.searchPodcastsWithCorrection("darknet diaries").failed)
+    }
+
+    @Test
+    fun `a show search that can't reach the server is failed`() = runTest(testDispatcher) {
+        server.dispatcher = answering { MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START) }
+
+        assertTrue(repository.searchPodcastsGrouped("darknet diaries").failed)
+    }
+
+    @Test
+    fun `an empty show search answer is no matches, not a failure`() = runTest(testDispatcher) {
+        server.dispatcher = answering { MockResponse().setHeader("Content-Type", "application/json").setBody("""{"status":"true","feeds":[]}""") }
+
+        val grouped = repository.searchPodcastsGrouped("zzzz")
+
+        assertFalse(grouped.failed)
+        assertTrue(grouped.all.isEmpty())
+        assertFalse(repository.searchPodcastsWithCorrection("zzzz").failed)
+    }
+
+    @Test
+    fun `a chart page that fails is null, and an empty page is an empty list`() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(503))
+        assertNull(repository.getTrendingPodcastsOrNull(country = "us", limit = 20, offset = 40))
+
+        server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START))
+        assertNull(repository.getTrendingPodcastsOrNull(country = "us", limit = 20, offset = 40))
+
+        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody("""{"status":"true","feeds":[]}"""))
+        assertEquals(emptyList<Any>(), repository.getTrendingPodcastsOrNull(country = "us", limit = 20, offset = 40))
+    }
+
+    private fun answering(response: () -> MockResponse) = object : Dispatcher() {
+        override fun dispatch(request: RecordedRequest): MockResponse = response()
     }
 
     @Test

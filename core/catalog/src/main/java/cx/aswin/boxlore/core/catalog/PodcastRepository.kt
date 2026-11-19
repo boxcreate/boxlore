@@ -4,7 +4,7 @@ import com.google.gson.Gson
 import cx.aswin.boxlore.core.catalog.content.ContentCatalogSnapshot
 import cx.aswin.boxlore.core.catalog.logic.GroupedShowSearchResult
 import cx.aswin.boxlore.core.catalog.logic.SemanticSearchGroupedResult
-import cx.aswin.boxlore.core.catalog.logic.mergeShowSearchResults
+import cx.aswin.boxlore.core.catalog.logic.groupShowSearch
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.model.Briefing
@@ -166,20 +166,12 @@ class PodcastRepository(
             android.content.Context.MODE_PRIVATE,
         )
 
-    suspend fun getTrendingPodcasts(country: String = "us", limit: Int = 50, category: String? = null, offset: Int = 0,): List<Podcast> = withContext(Dispatchers.IO) {
-        if (usesV2Discovery()) return@withContext v2TrendingPodcasts(country, limit, category, offset)
-        // Fallback or non-streaming implementation
-        try {
-            val response = api.getTrending(publicKey, country, limit, category, offset).execute()
-            if (response.isSuccessful && response.body() != null) {
-                mapFeedsToPodcasts(response.body()!!.feeds)
-            } else {
-                emptyList()
-            }
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
+    suspend fun getTrendingPodcasts(country: String = "us", limit: Int = 50, category: String? = null, offset: Int = 0,): List<Podcast> =
+        getTrendingPodcastsOrNull(country, limit, category, offset).orEmpty()
+
+    /** A chart page, or null when it couldn't be read (on `/v2`, with no last good copy), so a failed page is never the end of the chart. */
+    suspend fun getTrendingPodcastsOrNull(country: String = "us", limit: Int = 50, category: String? = null, offset: Int = 0,): List<Podcast>? =
+        withContext(Dispatchers.IO) { trendingPodcastsOrNull(country, limit, category, offset) }
 
     suspend fun getCuratedPodcasts(vibeId: String, country: String? = null, languages: List<String>? = null,): List<Podcast> = withContext(Dispatchers.IO) {
         try {
@@ -224,18 +216,7 @@ class PodcastRepository(
      * Index results, so listeners could no longer find shows outside the catalog.
      */
     suspend fun searchPodcastsWithCorrection(query: String): SearchResult = withContext(Dispatchers.IO) {
-        try {
-            val response = api.search(publicKey, query).execute()
-            if (response.isSuccessful && response.body() != null) {
-                val body = response.body()!!
-                val podcasts = body.feeds.mapNotNull { mapSearchFeedToPodcast(it) }
-                SearchResult(podcasts, null)
-            } else {
-                SearchResult(emptyList())
-            }
-        } catch (e: Exception) {
-            SearchResult(emptyList())
-        }
+        hybridShowSearchOrNull(query)?.let { SearchResult(it) } ?: SearchResult(emptyList(), failed = true)
     }
 
     suspend fun searchPodcasts(query: String): List<Podcast> = withContext(Dispatchers.IO) {
@@ -261,16 +242,7 @@ class PodcastRepository(
 
     /** Meili typeahead only (additive endpoint). */
     suspend fun searchPodcastsTypeahead(query: String, limit: Int = 20,): List<Podcast> = withContext(Dispatchers.IO) {
-        try {
-            val response = api.searchTypeahead(publicKey, query, limit).execute()
-            if (response.isSuccessful && response.body() != null) {
-                response.body()!!.feeds.mapNotNull { mapSearchFeedToPodcast(it) }
-            } else {
-                emptyList()
-            }
-        } catch (_: Exception) {
-            emptyList()
-        }
+        typeaheadShowSearchOrNull(query, limit).orEmpty()
     }
 
     /**
@@ -283,11 +255,9 @@ class PodcastRepository(
         if (cleaned.isEmpty()) {
             return@withContext GroupedShowSearchResult(emptyList(), emptyList())
         }
-        val typeaheadDeferred = async { searchPodcastsTypeahead(cleaned) }
-        val hybridDeferred = async { searchPodcastsWithCorrection(cleaned) }
-        val typeahead = typeaheadDeferred.await()
-        val hybrid = hybridDeferred.await()
-        mergeShowSearchResults(typeahead, hybrid.podcasts)
+        val typeaheadDeferred = async { typeaheadShowSearchOrNull(cleaned) }
+        val hybridDeferred = async { hybridShowSearchOrNull(cleaned) }
+        groupShowSearch(typeaheadDeferred.await(), hybridDeferred.await())
     }
 
     internal fun mapSearchFeedToPodcast(feed: cx.aswin.boxlore.core.network.model.SearchFeed): Podcast? {

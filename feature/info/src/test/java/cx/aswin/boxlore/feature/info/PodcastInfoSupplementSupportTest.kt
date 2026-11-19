@@ -320,7 +320,7 @@ class PodcastInfoSupplementSupportTest {
         assertTrue(port.optedIn.isEmpty(), "the feed was never compared with an empty list")
     }
 
-    private class FakePort(
+    internal class FakePort(
         var optedIn: MutableSet<String>,
     ) : EpisodeSupplementPort {
         var refreshOutcome: EpisodeSupplementOutcome = EpisodeSupplementOutcome.NoDisconnect

@@ -134,4 +134,18 @@ class ShowSearchMergeTest {
         assertTrue(merged.alsoFound.isEmpty())
         assertEquals(1, merged.all.size)
     }
+
+    @Test
+    fun groupedSearchIsFailedOnlyWhenBothSearchesFailed() {
+        val show = Podcast(id = "1", title = "Darknet Diaries", artist = "Jack", imageUrl = "")
+        assertTrue(groupShowSearch(null, null).failed)
+        assertTrue(groupShowSearch(null, null).all.isEmpty())
+        // One search answering is a partial result, not a failure.
+        assertEquals(listOf("1"), groupShowSearch(null, listOf(show)).alsoFound.map { it.id })
+        assertEquals(false, groupShowSearch(null, listOf(show)).failed)
+        assertEquals(listOf("1"), groupShowSearch(listOf(show), null).catalog.map { it.id })
+        assertEquals(false, groupShowSearch(listOf(show), null).failed)
+        // An empty answer is no matches.
+        assertEquals(false, groupShowSearch(emptyList(), emptyList()).failed)
+    }
 }

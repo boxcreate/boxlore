@@ -23,7 +23,7 @@ Used by `:app` navigation:
 - The first tab is For You unless Appearance **Default tabs** says Top, a genre category is given (always Top), or the route names `tab` (`trending`, `top`, `for_you`). `ExploreDefaultTab.resolveIndex` in `:core:prefs` decides.
 - With the **Picked for you** switch off (`DiscoverySections.pickedForYou`), Explore shows Top alone with no switcher and makes no recommendations request; a fetch already running cannot publish.
 - For You reads the same recommendations payload as Home: it hydrates from the shared `BoxcastPrefs` cache, refreshes through `PodcastRepository.getHomeRecommendations` with region and content languages, and writes the cache back. A failed request keeps the picks already shown.
-- Top shows charts (**Top charts**) or a genre's top shows. The genre row (`ExploreGenreSelector`) shows All and the top genres, with **More** opening the full list.
+- Top shows charts (**Top charts**) or a genre's top shows. A chart or chart page that couldn't be read shows **Try again**, and a failed page never ends the chart (`ExploreTopChartPaging`). The genre row (`ExploreGenreSelector`) shows All and the top genres, with **More** opening the full list.
 - Mood topics (`ExploreVibeChipRow`, titles from `CuratedMoods`) open a topic destination loaded with `getCuratedPodcasts` for the listener's region and languages. Back, toolbar or predictive, returns to the saved browse position.
 - The header collapses as the feed scrolls down and returns on upward scroll, at the top or on a mode change (`ExploreChromeScrollLogic`); the For You / Top switcher stays visible.
 - Cards are the shared discovery cards from `:core:designsystem`; list keys go through `LazyListKeyPolicy` so duplicates never collide.
@@ -32,7 +32,7 @@ Used by `:app` navigation:
 
 - **Find a show** searches show titles as you type after a short debounce. Catalog matches arriving later are prepended, and the grid stays pinned to the top (`ProgressiveSearchScrollLogic` in `:core:designsystem`); results split into **Matches** and **Also found**.
 - **Ask anything** searches shows and episodes by meaning. It waits longer before sending, so partial queries are not sent, and shows one complete result set behind a loader: a **Related shows** rail, then episodes.
-- The search landing lists **Explore collections** for Find a show and fixed example questions for Ask anything (`ConceptSearchIdleLogic`). Empty and no-match states explain what to try.
+- The search landing lists **Explore collections** for Find a show and fixed example questions for Ask anything (`ConceptSearchIdleLogic`). Empty and no-match states explain what to try; a show search that couldn't be read shows **Try again** instead (`ExploreLoadFailures`).
 - Search mode and open search state survive resizing across the tablet gates.
 
 ## Lore
@@ -61,7 +61,7 @@ src/main/java/cx/aswin/boxlore/feature/explore/
   components/   browse headers, cards, genre and tab selectors, search results and
                 suggestions, topic results and transition, skeletons, empty states
   logic/        pure decisions: browse, tab pager, header scroll, shared recommendations,
-                For You refresh, search landing examples, Lore deck shuffle
+                For You refresh, load failures and Top chart paging, search landing examples, Lore deck shuffle
 src/main/res/values/strings.xml
 ```
 

@@ -128,6 +128,7 @@
     <string name="podcast_info_missing_offer">Missing episodes?</string>
     <string name="podcast_info_missing_fetching">Updating…</string>
     <string name="podcast_info_missing_updated">Up to date</string>
+    <string name="podcast_info_missing_check_failed">Couldn’t update</string>
     <string name="podcast_info_missing_title">Find missing episodes?</string>
     <string name="podcast_info_missing_message">Subscribed shows automatically get the latest episodes from the publisher’s feed. This check is only needed if you prefer to stay unsubscribed.\n\nAllow boxlore to look for missing episodes and refresh the list whenever you open this show. Large feeds may use more data.</string>
     <string name="podcast_info_missing_allow">Allow feed checks</string>

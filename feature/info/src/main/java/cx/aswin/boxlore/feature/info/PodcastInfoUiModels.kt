@@ -19,6 +19,9 @@ enum class DirectFeedChipState {
 
     /** Opted in; idle. */
     Updated,
+
+    /** Opted in, and the last feed check failed, so the list may miss new episodes; never "Up to date". */
+    CheckFailed,
 }
 
 /**

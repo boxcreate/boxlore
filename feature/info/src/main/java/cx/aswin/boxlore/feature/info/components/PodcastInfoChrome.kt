@@ -32,6 +32,7 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.SyncProblem
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
@@ -537,8 +538,9 @@ private fun MissingEpisodesChipButton(chip: MissingEpisodesChip) {
     ) {
         val clickable = chip.state == DirectFeedChipState.Offer
         val scheme = MaterialTheme.colorScheme
-        val container = if (chip.state == DirectFeedChipState.Updated) scheme.surfaceContainerHigh else scheme.primaryContainer
-        val content = if (chip.state == DirectFeedChipState.Updated) scheme.onSurfaceVariant else scheme.onPrimaryContainer
+        val idle = chip.state == DirectFeedChipState.Updated || chip.state == DirectFeedChipState.CheckFailed
+        val container = if (idle) scheme.surfaceContainerHigh else scheme.primaryContainer
+        val content = if (idle) scheme.onSurfaceVariant else scheme.onPrimaryContainer
         FilledTonalButton(
             onClick = chip.onClick,
             enabled = clickable,
@@ -564,7 +566,11 @@ private fun MissingEpisodesChipButton(chip: MissingEpisodesChip) {
                     )
             } else {
                 Icon(
-                    if (chip.state == DirectFeedChipState.Updated) Icons.Rounded.CheckCircle else Icons.AutoMirrored.Rounded.PlaylistAdd,
+                    when (chip.state) {
+                        DirectFeedChipState.Updated -> Icons.Rounded.CheckCircle
+                        DirectFeedChipState.CheckFailed -> Icons.Rounded.SyncProblem
+                        else -> Icons.AutoMirrored.Rounded.PlaylistAdd
+                    },
                     contentDescription = null,
                     modifier = Modifier.size(18.dp),
                 )
@@ -575,6 +581,7 @@ private fun MissingEpisodesChipButton(chip: MissingEpisodesChip) {
                             when (chip.state) {
                             DirectFeedChipState.Fetching -> R.string.podcast_info_missing_fetching
                             DirectFeedChipState.Updated -> R.string.podcast_info_missing_updated
+                            DirectFeedChipState.CheckFailed -> R.string.podcast_info_missing_check_failed
                             else -> R.string.podcast_info_missing_offer
                         }
                         ),

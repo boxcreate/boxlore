@@ -67,11 +67,12 @@ private inline fun <T> v2Body(route: String, call: () -> Response<T>,): T? = try
     null
 }
 
-internal suspend fun PodcastRepository.v2TrendingPodcasts(country: String, limit: Int, category: String?, offset: Int,): List<Podcast> {
+/** One chart page, or null on a failure with no last good copy of the same page. */
+internal suspend fun PodcastRepository.v2TrendingPodcasts(country: String, limit: Int, category: String?, offset: Int,): List<Podcast>? {
     val key = trendingLastGoodKey(country, limit, category, offset)
     val body =
         v2Body("trending") { apiV2.getTrending(country, limit, category, offset).execute() }
-            ?: return v2LastGood.podcasts[key].orEmpty()
+            ?: return v2LastGood.podcasts[key]
     return discoveryEpisodeIds.latestToLocalOwners(mapFeedsToPodcasts(body.feeds)).also { v2LastGood.podcasts[key] = it }
 }
 

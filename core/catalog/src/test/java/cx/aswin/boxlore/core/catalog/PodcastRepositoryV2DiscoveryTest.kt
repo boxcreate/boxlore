@@ -467,8 +467,10 @@ class PodcastRepositoryV2DiscoveryTest {
 
         answers["/v2/trending"] = { MockResponse().setResponseCode(503) }
         assertEquals(good, repository.getTrendingPodcasts(country = "us", limit = 10))
-        // A request that never succeeded has nothing to keep.
+        assertEquals(good, repository.getTrendingPodcastsOrNull(country = "us", limit = 10))
+        // A request that never succeeded has nothing to keep, and Explore is told it failed.
         assertTrue(repository.getTrendingPodcasts(country = "in", limit = 10).isEmpty())
+        assertEquals(null, repository.getTrendingPodcastsOrNull(country = "in", limit = 10))
 
         answers["/v2/trending"] = { json("""{"status":"true","feeds":[]}""") }
         assertTrue(repository.getTrendingPodcasts(country = "us", limit = 10, offset = 50).isEmpty())

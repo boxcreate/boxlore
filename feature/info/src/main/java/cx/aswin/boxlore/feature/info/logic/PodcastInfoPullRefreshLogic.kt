@@ -35,7 +35,7 @@ internal object PodcastInfoPullRefreshLogic {
         feedFirst -> Target.FEED_FIRST
         chip == DirectFeedChipState.Fetching -> Target.NONE
         isSubscribed -> Target.SUBSCRIBED_DIRECT_FEED
-        chip == DirectFeedChipState.Updated -> Target.DIRECT_FEED
+        chip == DirectFeedChipState.Updated || chip == DirectFeedChipState.CheckFailed -> Target.DIRECT_FEED
         else -> Target.PI_CATALOG
     }
 

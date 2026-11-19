@@ -24,6 +24,11 @@
     <string name="explore_show_search_empty_hint">Try a different name or check the spelling.</string>
     <string name="explore_browse_empty_title">No shows to browse</string>
     <string name="explore_browse_empty_hint">Try another genre, or search for a show.</string>
+    <string name="explore_show_search_failed_title">Couldn’t search right now</string>
+    <string name="explore_browse_failed_title">Couldn’t load shows</string>
+    <string name="explore_load_failed_hint">Check your connection and try again.</string>
+    <string name="explore_next_page_failed">Couldn’t load more shows</string>
+    <string name="explore_try_again">Try again</string>
     <string name="explore_show_search_loading">Searching for shows</string>
     <string name="explore_question_search_loading">Finding shows and episodes</string>
     <string name="explore_topic_empty">No podcasts to show right now</string>

@@ -21,7 +21,8 @@ internal fun resolveContentLanguagesForQuery(languages: List<String>?, country: 
     return cx.aswin.boxlore.core.model.ContentRegions.expandLanguagesForQuery(normalized)
 }
 
-data class SearchResult(val podcasts: List<cx.aswin.boxlore.core.model.Podcast>, val correctedQuery: String? = null)
+/** [failed] when `/search` couldn't be read, so callers never show the failure as no matches. */
+data class SearchResult(val podcasts: List<cx.aswin.boxlore.core.model.Podcast>, val correctedQuery: String? = null, val failed: Boolean = false,)
 
 /** Meili catalog + hybrid “Also found” groups for progressive show search. */
 typealias GroupedShowSearch = cx.aswin.boxlore.core.catalog.logic.GroupedShowSearchResult

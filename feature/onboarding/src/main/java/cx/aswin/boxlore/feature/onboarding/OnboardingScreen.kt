@@ -215,6 +215,8 @@ fun OnboardingScreen(
                     results = uiState.searchResults,
                     alsoFoundResults = uiState.alsoFoundResults,
                     isSearching = uiState.isSearching,
+                    searchFailed = uiState.searchFailed,
+                    onRetrySearch = viewModel::retrySearch,
                     subscribedIds = uiState.subscribedPodcastIds,
                     selectedPodcasts = uiState.selectedPodcasts,
                     onQueryChange = viewModel::updateSearchQuery,
