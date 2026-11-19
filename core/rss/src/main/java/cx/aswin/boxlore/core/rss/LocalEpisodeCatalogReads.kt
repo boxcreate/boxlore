@@ -85,6 +85,8 @@ internal class LocalEpisodeCatalogReads(
     override suspend fun isPublisherFeedUnchanged(podcastId: String, feedUrl: String,): Boolean = withContext(Dispatchers.IO) {
         val existing = dao.getFeed(podcastId) ?: return@withContext false
         if (!LocalCatalogReadyLogic.isReady(existing)) return@withContext false
+        // A stored episode without a date (one an older parser couldn't read) needs a full read.
+        if (dao.hasUndatedEpisode(podcastId)) return@withContext false
         if (existing.feedEtag.isNullOrBlank() && existing.feedLastModified.isNullOrBlank()) {
             return@withContext false
         }

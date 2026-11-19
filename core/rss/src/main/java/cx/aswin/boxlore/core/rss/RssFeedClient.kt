@@ -10,10 +10,6 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
-import java.time.Instant
-import java.time.OffsetDateTime
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
@@ -906,18 +902,6 @@ internal fun parseDuration(value: String): Int {
                     else -> 3600
                 }
         }.coerceAtLeast(0)
-}
-
-internal fun parseDate(value: String): Long? {
-    if (value.isBlank()) return null
-    value.toLongOrNull()?.let { numeric ->
-        return if (numeric > 10_000_000_000L) numeric / 1000L else numeric
-    }
-    return sequenceOf(
-        { ZonedDateTime.parse(value, DateTimeFormatter.RFC_1123_DATE_TIME).toEpochSecond() },
-        { OffsetDateTime.parse(value).toEpochSecond() },
-        { Instant.parse(value).epochSecond },
-    ).firstNotNullOfOrNull { parser -> runCatching(parser).getOrNull() }
 }
 
 /**

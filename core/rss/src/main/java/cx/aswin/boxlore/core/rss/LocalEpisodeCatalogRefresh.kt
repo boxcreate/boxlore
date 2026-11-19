@@ -63,6 +63,8 @@ internal suspend fun refreshLocalCatalogLocked(deps: LocalCatalogRefreshDeps, re
 private suspend fun publisherFeedUnchanged(deps: LocalCatalogRefreshDeps, podcastId: String, url: String,): Boolean {
     val existing = deps.dao.getFeed(podcastId) ?: return false
     if (!LocalCatalogReadyLogic.isReady(existing)) return false
+    // A stored episode without a date (one an older parser couldn't read) needs a full read.
+    if (deps.dao.hasUndatedEpisode(podcastId)) return false
     if (existing.feedEtag.isNullOrBlank() && existing.feedLastModified.isNullOrBlank()) {
         return false
     }

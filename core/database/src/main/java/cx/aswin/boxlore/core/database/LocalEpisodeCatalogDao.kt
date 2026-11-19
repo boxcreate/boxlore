@@ -125,6 +125,10 @@ interface LocalEpisodeCatalogDao {
     @Query("SELECT COUNT(*) FROM local_episodes WHERE podcastId = :podcastId")
     suspend fun count(podcastId: String): Int
 
+    /** Whether any of the show's stored episodes has no publish date (0 or less). */
+    @Query("SELECT EXISTS(SELECT 1 FROM local_episodes WHERE podcastId = :podcastId AND publishedDate <= 0)")
+    suspend fun hasUndatedEpisode(podcastId: String): Boolean
+
     /**
      * [query] must already be escaped for SQL LIKE by the caller, using `\`
      * as the escape character.
