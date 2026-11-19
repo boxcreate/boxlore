@@ -178,6 +178,7 @@ class BoxLoreApplication :
             }
         }
         cx.aswin.boxlore.lifecycle.AutoDownloadLifecycle(this, container, applicationScope).start()
+        cx.aswin.boxlore.backup.AutoBackupScheduling.start(this, applicationScope)
         connectCarSignals()
         HomeScreenWidgetsInstaller.install(
             context = this,

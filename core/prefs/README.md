@@ -25,6 +25,7 @@ It does not own analytics event storage, playback behaviour, ranking storage, ca
 - `PreferenceIdList`: encodes ordered ID lists in one string, safe for `rss:` URLs containing commas.
 - `AutoDownloadBackgroundSettings`: installation-local consent for background auto-download checks (off, unmetered-only, charging optional by default).
 - `NpsSurveySchedule`, `NpsSurveyRule`, `NpsSurveyStore`: pure survey timing rules and their backup-excluded store.
+- `AutoBackupStore`, `AutoBackupSettings`, `AutoBackupFrequency`, `AutoBackupProblem`: the automatic backup's folder link, schedule (daily or weekly, keep 3, 5 or 10), last result and problem codes, in a backup-excluded store.
 - `PlaybackSkipBounds`, `EngagementPromptConstants`: shared bounds and thresholds.
 - `BoxcastPrefs.resolveLearnerLogEnabled(isDebugBuild)`: on by default in debug; off in release unless explicitly stored as `true`.
 
@@ -52,6 +53,7 @@ src/main/java/cx/aswin/boxlore/core/prefs/
   NpsSurveySchedule.kt, NpsSurveyStore.kt
   AnnouncementPreferences.kt
   AutoDownloadBackgroundSettings.kt
+  AutoBackupStore.kt
   PlaybackSkipBounds.kt
   BoxcastPrefs.kt
   PrefsFileMigrator.kt               # file names, legacy reads, DualReadSharedPreferences
@@ -85,6 +87,7 @@ Files:
 | `boxlore_player`, `boxlore_api_config`, `boxlore_referrer_prefs`, `boxlore_analytics_prefs` | SharedPreferences | Canonical names opened through `PrefsFileMigrator` for other modules |
 | `auto_download_background` | DataStore | Background auto-download consent; excluded from backup and device transfer |
 | `boxlore_nps_survey` | DataStore | Survey last shown, launches, last finish, legacy carry-over flags; excluded from backup |
+| `auto_backup` | DataStore | Automatic backup folder link and name, frequency, keep count, last attempt, success, file and problem; excluded from backup and device transfer, never in library backups |
 | `boxlore_listening_device_id` | File in `noBackupFilesDir` | Per-installation listening device ID |
 
 Contracts:
@@ -105,6 +108,7 @@ Contracts:
 - `sync_device_id` is backed up with `boxlore_prefs`; the listening device ID is not, so two phones restored from one backup stay distinct. `getListeningLegacyOrigin()` is `legacy-` plus the sync device ID.
 - Sync cursors in `boxlore_prefs`: `sync_last_timestamp`, `sync_last_user_id`, `sync_metadata_version`, `sync_listening_pulled_until`, `sync_listening_dates_sent_after`, `sync_listening_dates_sent`, `sync_listening_totals_sent`, `sync_listening_release_known_sent`.
 - Other `boxlore_prefs` keys include `onboarding_completed`, `user_genres`, `cached_byl_*`, `pending_auth_email`, `feedback_draft_*`, `featured_video_showcase_dismissed`, `tablet_ui_alpha_notice_acknowledged`, `has_requested_notification_permission`, `learner_log_enabled`.
+- `AutoBackupStore.setFolder` turns automatic backup on and forgets another folder's last backup; `turnOff` forgets the folder, whose grant the app releases. Successes and problems are recorded only for the folder they happened in. `settingsWhenReadable` ends on a read error instead of reading as off, so the schedule stays.
 - `AutoDownloadBackgroundSettings` is enabled only by its explicit setter; auto-download preferences and per-show flags never grant consent.
 
 ## Testing notes
@@ -120,7 +124,7 @@ Tests live in `core/prefs/src/test` (JUnit 5, Robolectric for DataStore and Shar
 | Library and folders | `HomePinnedShowsTest`, `PreferenceIdListTest`, `AutoOrganizeLookPreferenceTest` |
 | Content and discovery | `ContentLanguagePreferencesTest`, `BriefingEditionTest`, `DiscoverySectionPreferencesTest`, `DiscoverySectionLoaderTest` |
 | Prompts and survey | `ReviewPromptPreferencesTest`, `NpsSurveyScheduleTest`, `NpsSurveyStoreTest`, `AnnouncementPreferencesTest` |
-| Files and facade | `BoxcastPrefsTest`, `PrefsFileMigratorTest`, `AutoDownloadBackgroundSettingsTest` |
+| Files and facade | `BoxcastPrefsTest`, `PrefsFileMigratorTest`, `AutoDownloadBackgroundSettingsTest`, `AutoBackupStoreTest` |
 
 ```bash
 ./gradlew :core:prefs:testDebugUnitTest

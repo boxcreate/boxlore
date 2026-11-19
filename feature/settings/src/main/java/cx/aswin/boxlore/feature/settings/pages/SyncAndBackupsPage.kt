@@ -55,6 +55,7 @@ internal fun SyncAndBackupsPage(
     backupActions: LibraryBackupActions,
     onBack: () -> Unit,
     onAccountClick: () -> Unit,
+    autoBackup: AutoBackupPage? = null,
 ) {
     TrackScreenView("sync_and_backups")
     SettingsScaffold(
@@ -66,6 +67,7 @@ internal fun SyncAndBackupsPage(
             syncStatus = syncStatus,
             onAccountClick = onAccountClick,
         )
+        autoBackup?.let { AutoBackupGroup(it) }
         SyncBackupExportGroup(backupActions = backupActions)
         SyncBackupImportGroup(backupActions = backupActions)
     }

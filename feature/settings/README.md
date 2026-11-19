@@ -39,7 +39,7 @@ Owns the Settings hub and its pages, sign-in, the Smart and automatic download s
 - Opening a sign-in link shows its progress or failure through `AccountEmailLinkUi`, fed by `SettingsRepositories.emailLinkSignIn`.
 - Signed in from Settings shows the sync panel (`AccountSyncPanel`) and the account group (sign out, reset password for password accounts, delete account). Backend error text is never shown.
 - Echo (`AccountEcho`, the shared `EchoCharacter`) is decorative; tapping it cycles outfits (`AccountEchoOutfits`), except while syncing.
-- Cloud Sync & Backups exports and imports a full JSON backup or subscriptions only (OPML) through `LibraryBackupWriters`; its copy names exactly what the JSON holds (`FULL_LIBRARY_EXPORT_SUMMARY`).
+- Cloud Sync & Backups exports and imports a full JSON backup or subscriptions only (OPML) through `LibraryBackupWriters`; its copy names exactly what the JSON holds (`FULL_LIBRARY_EXPORT_SUMMARY`). Its Automatic backup group (`AutoBackupControl`, from the app) picks the folder, how often and how many backups to keep, and shows the last backup or a folder problem with its fix. `SettingsScreen` holds the folder picker above the adaptive layout, so an open picker survives resizes and recreation.
 - Account copy lives in `res/values/account.xml`.
 
 ## Feedback and support conversations
@@ -90,7 +90,7 @@ src/main/java/cx/aswin/boxlore/feature/settings/
   feedback/                      # FeedbackScreen, panes, list, thread, sent screen,
                                  #   view models, diagnostics and logcat collectors
   pages/
-    SettingsHub.kt, *SettingsPage.kt, SyncAndBackupsPage.kt, RecommendationsSettingsPage.kt
+    SettingsHub.kt, *SettingsPage.kt, SyncAndBackupsPage.kt, AutoBackupGroup.kt, RecommendationsSettingsPage.kt
     WearOsSettingsPage.kt        # WearOsSettings, WearOsUiState, WearOsCopy, the page
     Account*.kt                  # Account & sync: auth state, sign-in, email link, sync panel, Echo
     Appearance*Page.kt, AppearancePictures.kt
@@ -132,7 +132,7 @@ Hermetic JVM tests live in `feature/settings/src/test`, using fakes from [`:core
 | RSS and reset dialogs | `SettingsViewModelTest`, `SettingsViewModelDialogTest`, `SettingsGoldenRoborazziTest` |
 | Appearance | `AppearancePagesTest`, `AppearanceActionsTrackedTest`, `SettingsPictureRowTest`, `PlayerStyleSectionTest`, `AppearanceWidgetsPageTest` |
 | Themes | `CustomThemeEditorTest`, `CustomThemeEditorOptionsTest`, `ThemeEditorPressFeedbackTest`, `ThemeSettingsLogicTest`, `ThemePresetResolutionTest`, `AccentSwatchLayoutTest` |
-| Account and sync | `AccountPagePresentationTest`, `AccountPageAdaptiveTest`, `AccountSettingsPageTest`, `AccountAuthHelpersTest`, `AccountLinkFailedContentTest`, `SyncAndBackupsPageTest` |
+| Account and sync | `AccountPagePresentationTest`, `AccountPageAdaptiveTest`, `AccountSettingsPageTest`, `AccountAuthHelpersTest`, `AccountLinkFailedContentTest`, `SyncAndBackupsPageTest`, `AutoBackupGroupTest`, `AutoBackupPageAdaptiveTest` |
 | Library | `LibraryLanguagesAdaptiveTest`, `ClearSavedShowsAdaptiveTest` |
 | Downloads | `AutoDownloadSettingsActionsTest` |
 | Wear OS | `WearOsSettingsTest` |

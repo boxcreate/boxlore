@@ -23,6 +23,11 @@ class BackgroundCheckBackupRulesTest {
         assertExcludedEverywhere("datastore/boxlore_nps_survey.preferences_pb")
     }
 
+    /** A folder link only works on the phone that granted it; a restored copy would point at nothing. */
+    @Test fun autoBackupFolderIsExcludedFromLegacyBackupCloudBackupAndDeviceTransfer() {
+        assertExcludedEverywhere("datastore/auto_backup.preferences_pb")
+    }
+
     private fun assertExcludedEverywhere(path: String) {
         val context = ApplicationProvider.getApplicationContext<Context>()
         for ((resource, expected) in listOf(R.xml.backup_rules to 1, R.xml.data_extraction_rules to 2)) {

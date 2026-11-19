@@ -9,6 +9,8 @@
         <exclude domain="file" path="datastore/boxlore_api_session.preferences_pb" />
         <!-- When this install last showed the NPS survey; a restored phone is asked afresh. -->
         <exclude domain="file" path="datastore/boxlore_nps_survey.preferences_pb" />
+        <!-- The automatic backup folder link only works on the phone that granted it. -->
+        <exclude domain="file" path="datastore/auto_backup.preferences_pb" />
         <!-- Update offers and installation sessions belong to this device only. -->
         <exclude domain="sharedpref" path="boxlore_direct_updates.xml" />
         <exclude domain="sharedpref" path="boxlore_play_updates.xml" />
@@ -34,6 +36,8 @@
         <exclude domain="file" path="datastore/boxlore_api_session.preferences_pb" />
         <!-- When this install last showed the NPS survey; a restored phone is asked afresh. -->
         <exclude domain="file" path="datastore/boxlore_nps_survey.preferences_pb" />
+        <!-- The automatic backup folder link only works on the phone that granted it. -->
+        <exclude domain="file" path="datastore/auto_backup.preferences_pb" />
         <!-- Update offers and installation sessions belong to this device only. -->
         <exclude domain="sharedpref" path="boxlore_direct_updates.xml" />
         <exclude domain="sharedpref" path="boxlore_play_updates.xml" />

@@ -30,6 +30,7 @@ Announcement title:
 - A tile and a watch-face shortcut resume your last episode in one tap. (#1258)
 - Sign in on your watch with one tap from your phone. (#1258)
 - On your watch, a show's page now says when its episodes are loading or couldn't load, with Try again, and gets a fresh list from your phone when the one it has is old.
+- boxlore can now back up your library automatically, daily or weekly, to a folder you choose, ready for apps like Syncthing. Turn it on in Settings › Cloud Sync & Backups.
 
 ## Improved
 

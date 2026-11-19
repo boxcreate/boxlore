@@ -15,14 +15,14 @@
 
 ## Composition root and startup
 
-- `AppContainer` is created once in `BoxLoreApplication.onCreate` and wires database, network, auth, RSS, catalog, ranking, playback, queue, downloads, prefs, support and analytics in the [object graph order](../ARCHITECTURE.md#identity-and-storage).
+- `AppContainer` is created once in `BoxLoreApplication.onCreate` and wires every repository in the [object graph order](../ARCHITECTURE.md#identity-and-storage).
 - `ui/rememberOnboardingViewModel` keeps the one `OnboardingViewModel` in the activity's `ViewModelStore`, so every onboarding flow shares it and it is cleared when the activity finishes; never create it with `remember`.
 - The one `PlaybackRepository` is built lazily. Cast state waits in `DeferredCastSessionState` until it exists, so widget, worker and notification starts never build playback on the main thread.
 - The container gives core modules ports instead of reverse dependencies: `feedTelemetry` for feed events, `rolloutSwitches`, and a `DownloadServiceLauncherHolder` that starts `MediaDownloadService`.
 - `onCreate` order: API sessions first, then the Coil image loader (before widgets and services), Media3 Cast from `BoxLoreCastOptionsProvider`, the shared `UserPreferencesRepository`, the container and its holders. PostHog starts later on a background thread through `PostHogStartup`, after `AnalyticsHelper.initPolicy`.
 - `StartupWorkGate` holds optional work (cloud sync, Smart Downloads reconciliation, address repair scheduling, foreground subscription sync, legacy RSS repair, the first widget preview publish) until the first screen commits, running initializers one at a time.
-- Home releases the gate after its content and two frames, other routes after two frames, a headless worker or widget launch at the first idle main queue; an early Activity stop also releases it, recreation does not.
-- Missing DataStore appearance keys are filled from the theme fast cache off the main thread; existing choices are never overwritten.
+- Home releases the gate after its content and two frames, other routes after two frames, headless launches at the first idle main queue; an early Activity stop also releases it, recreation does not.
+- Missing DataStore appearance keys are filled from the theme fast cache off the main thread; existing choices win.
 - `TabletAlphaStartupGate` shows a one-time notice on tablet windows of tablet-sized displays before the app root composes; update and survey prompts wait behind it.
 
 ## Navigation and adaptive shell
@@ -55,7 +55,7 @@
 
 - `InstallChannel` picks the flow: the Play build or a Play install uses Play Core (`PlayAppUpdateHelper`), anything else reads a versioned `update.json` from the GitHub Latest release; the same rule sets the API channel header.
 - Foreground checks are rate-limited with failure backoff; Settings → Check for updates bypasses the limit. Background checks never prompt or download.
-- Direct updates download, verify and install as separate actions, rechecking checksum, package, version, minimum Android version and signer before each installer handoff; sessions survive permission screens and process restart and stay out of backups.
+- Direct updates download, verify and install as separate actions, rechecking checksum, package, version, minimum Android version and signer before each installer handoff; sessions survive permission screens and restarts and stay out of backups.
 - Build types: `release` is the direct APK with the installer and `REQUEST_INSTALL_PACKAGES` (`src/direct`); `playRelease` is the Play AAB without either; `updateTest` is isolated and never published ([isolated testing](../docs/TESTING.md#isolated-update-and-announcement-testing)).
 
 ## API sessions
@@ -67,12 +67,13 @@
 
 - `CloudSyncTriggerCoordinator` syncs on process lifecycle, auth, connectivity, playback milestones and database changes, and exposes `syncStatusFlow` and `triggerManualSync` to Account. `CloudSyncWorker` adds a periodic sync and a one-shot flush.
 - Feed fix switches (`FeedFixSwitches`) fail open: a fix runs unless its switch is on.
-- Job pause switches (`SavedKillSwitch`) follow the live answer and save it; until then the saved answer decides, and a job runs when none was saved.
+- Job pause switches (`SavedKillSwitch`) follow the live answer and save it; until then the saved answer decides (none: the job runs).
 - The feed-first switch (`FeedFirstSwitch`) fails closed (saved answer, else off) and is fixed for the process. `RolloutFlagMemory` saves answers whenever flags load; all reach `:core:catalog` through `AppContainer.rolloutSwitches`.
 - `UpgradeRepairWorker.scheduleIfNeeded` runs on every launch, headless ones included, and enqueues the feed address repair only while stored state says work is left; a restore enqueues it again.
 - `PodcastNotificationRegistrationWorker` registers a Podcast Index show's notifications again after its saved address changes.
 - `LegacyRssRepairLaunchGate` enables the legacy RSS repair only for upgraded installs of allow-listed versions; fresh installs settle without changes and anything else fails closed.
 - `AutoDownloadLifecycle` scans cached release claims only while the process is in the foreground; background discovery keeps its own consent.
+- `AutoBackupWorker` writes JSON backups to the picked folder, pruning older `boxlore_auto_backup_*` files; folder loss isn't retried.
 
 ## Internal structure
 
@@ -83,6 +84,7 @@ src/main/java/cx/aswin/boxlore/
   connectivity/   AndroidConnectivityObserver
   fcm/            BoxLoreFcmService, FcmPayloadParser, NewEpisodePushHydration,
                   delivery and registration workers, SupportReplies
+  backup/         automatic backups
   lifecycle/      AutoDownloadLifecycle, AutoDownloadForegroundScan
   navigation/     BoxLoreNavHost, NavGraph*Destinations, StartDestinationResolver,
                   WebAppLinks, EpisodeShowLinks, PushActionRouter,
@@ -120,13 +122,13 @@ src/debug/        App Check debug provider, ADB-only notification preview receiv
 Shared contracts (application ID, IDs, deep-link schemes, core-owned preference files, worker bridges, the share, re-registration and repair work names) are in [identity and storage](../ARCHITECTURE.md#identity-and-storage) and [upgrade failsafes](../ARCHITECTURE.md#upgrade-failsafes). App-owned names that must not change:
 
 - Manifest components: `.BoxLoreApplication`, `.MainActivity`, `.fcm.BoxLoreFcmService`, `.wearlink.WearLinkListenerService` and the `BoxLoreCastOptionsProvider` metadata.
-- Worker classes: `CloudSyncWorker`, `UpgradeRepairWorker`, `PodcastNotificationRegistrationWorker`, `EpisodeShareRegistrationWorker`, `NewEpisodeDeliveryWorker`, `RssNotificationSyncWorker`.
-- Unique work: `boxlore_cloud_sync_periodic`, `boxlore_cloud_sync_flush`, `rss-notification-registration-sync`, `new-episode-delivery-<hash>`.
+- Worker classes: `CloudSyncWorker`, `UpgradeRepairWorker`, `PodcastNotificationRegistrationWorker`, `EpisodeShareRegistrationWorker`, `NewEpisodeDeliveryWorker`, `RssNotificationSyncWorker`, `AutoBackupWorker`.
+- Unique work: `boxlore_cloud_sync_periodic`, `boxlore_cloud_sync_flush`, `boxlore_auto_backup_periodic`, `boxlore_auto_backup_now`, `rss-notification-registration-sync`, `new-episode-delivery-<hash>`.
 - Notification channels: `boxlore_announcements_v2`, `boxlore_new_episodes_v1`, `boxlore_silent_v1`, `boxlore_feedback_replies_v1`.
 - SharedPreferences: `boxlore_support`, `boxlore_direct_updates`, `boxlore_play_updates`, `boxlore_update_session` and their `boxlore_test_*` counterparts.
 - `noBackupFilesDir` files: `feed_first_flag`, `kill_switch_<switch>`, `upgrade_repair_notifications`, `rss_notification_consent`, `rss_notification_registrations`, `fcm_topics_synced`.
 - Routes: `ACCOUNT_PAGE_ROUTE` (`settings?page=account`), `tablet_context_root`, and every route in `PushTargetRouteAllowlist`.
-- Backup and device transfer include Room, SharedPreferences and `files/datastore/`, excluding WorkManager's database, the API session, the NPS store, update state and background download consent (`res/xml/data_extraction_rules.xml`).
+- Backup and device transfer include Room, SharedPreferences and `files/datastore/`, excluding WorkManager's database, the API session, the NPS store, update state, background download consent and `auto_backup` (`res/xml/data_extraction_rules.xml`).
 - Build config reads `BOXLORE_API_BASE_URL`, `BOXLORE_PUBLIC_KEY` (both accept `BOXCAST_*` fallbacks) and `BOXLORE_CAST_RECEIVER_ID`; debug builds may read `BOXLORE_APPCHECK_DEBUG_SECRET` from `local.properties`.
 
 ## Testing notes

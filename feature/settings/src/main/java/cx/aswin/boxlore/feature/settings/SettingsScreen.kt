@@ -92,6 +92,8 @@ data class LibraryBackupWriters(
     val onExportOpml: (Uri) -> Unit = {},
     val onImportJson: (Uri) -> Unit = {},
     val onImportOpml: (Uri) -> Unit = {},
+    /** Automatic backup to a folder the listener picks; null leaves the group off Cloud Sync & Backups. */
+    val autoBackup: cx.aswin.boxlore.feature.settings.pages.AutoBackupControl? = null,
 )
 
 /** Content-region + language prefs and the Recommendations switches, surfaced from the Library settings sub-pages. */
@@ -254,6 +256,9 @@ fun SettingsScreen(
             onResult = { uri -> uri?.let(libraryBackupWriters.onImportOpml) },
         )
 
+    // Above the adaptive layout, so an open folder picker survives resizes, rotation and the split view.
+    val autoBackupPage = cx.aswin.boxlore.feature.settings.pages.rememberAutoBackupPage(libraryBackupWriters.autoBackup)
+
     TrackScreenView("settings") {
         AnalyticsHelper.trackSettingsScreenViewed("home_top_bar")
     }
@@ -295,6 +300,7 @@ fun SettingsScreen(
         isDeletionExpanded = isDeletionExpanded,
         appInfo = appInfo,
         totalListeningHours = totalListeningHours,
+        autoBackup = autoBackupPage,
     )
 
     val actions = SettingsPagesActions(
@@ -370,6 +376,7 @@ internal data class SettingsPagesUiData(
     val isDeletionExpanded: Boolean,
     val appInfo: AppInfo,
     val totalListeningHours: Long? = null,
+    val autoBackup: cx.aswin.boxlore.feature.settings.pages.AutoBackupPage? = null,
 )
 
 internal data class SettingsPagesActions(
@@ -470,6 +477,7 @@ private fun SettingsDestinationContent(
                 backupActions = actions.backupActions,
                 onBack = actions.onReturnToHub,
                 onAccountClick = actions.onNavigateToAccountFromSync,
+                autoBackup = uiData.autoBackup,
             )
 
         ProfileSettingsDestination.Library ->
