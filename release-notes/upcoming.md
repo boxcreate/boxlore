@@ -79,4 +79,5 @@ Announcement title:
 - When boxlore can't read a long show's own feed, searching that show now looks through up to 11,000 of its episodes instead of the newest 1,000, and says so when there are more. If the search can't run, the page says so and lets you try again instead of showing no matches.
 - On a show page, episodes that don't load are tried again and then show Try again, instead of the list just ending. Select all on a long show selects every episode or says it couldn't.
 - After you sign in on a new phone, every show you follow now gets its name and artwork. Some used to stay as “Loading...” with no artwork.
+- Restoring a full library backup no longer drops shows you added by RSS feed when their feed can't be reached. They come back with your listening history, and their episodes load once the feed responds.
 - Importing a large library from another podcast app no longer stops partway. Shows boxlore can't add right away are added later while boxlore is open.
