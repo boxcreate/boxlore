@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -57,6 +58,23 @@ class LocalEpisodeCatalogDaoOwnersTest {
         assertEquals(100L, dao.getFeed("100")?.epNs)
         assertEquals(9L, dao.getFeed("100")?.fetchedAt)
         assertEquals(555L, dao.getFeed("200")?.epNs)
+    }
+
+    @Test
+    fun hasUndatedEpisodeLooksOnlyAtTheShowsOwnRows() = runTest {
+        dao.upsertEpisodes(
+            listOf(
+                row("-11", show = "100", key = "guid-a"),
+                row("-12", show = "100", key = "guid-b").copy(publishedDate = 0L),
+                row("-13", show = "200", key = "guid-c"),
+                row("-14", show = "300", key = "guid-d").copy(publishedDate = -1L),
+            ),
+        )
+
+        assertTrue(dao.hasUndatedEpisode("100"))
+        assertFalse(dao.hasUndatedEpisode("200"))
+        assertTrue(dao.hasUndatedEpisode("300"))
+        assertFalse("a show with no rows has none", dao.hasUndatedEpisode("400"))
     }
 
     private fun feed(show: String) = LocalEpisodeFeedEntity(

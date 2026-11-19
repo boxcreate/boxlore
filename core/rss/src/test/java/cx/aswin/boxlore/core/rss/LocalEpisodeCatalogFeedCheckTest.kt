@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.rss
 
+import cx.aswin.boxlore.core.database.LocalEpisodeEntity
 import cx.aswin.boxlore.core.database.RssEpisodeEntity
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome
@@ -107,6 +108,54 @@ class LocalEpisodeCatalogFeedCheckTest {
         assertEquals(1, client.fetches, "a changed feed is read in full")
         assertTrue(dao.episodes.any { it.podcastId == "100" })
     }
+
+    /**
+     * Regression: episodes an older parser stored without a date (feeds that write EST or PDT)
+     * stayed undated, because the feed kept answering "not modified" and was never parsed again.
+     */
+    @Test fun aStoredEpisodeWithoutADateIsReadInFullUntilItHasOne() = runTest {
+        val dao = FakeCatalogDao()
+        val sevenHoursAgo = System.currentTimeMillis() - 7L * 60 * 60 * 1000
+        dao.feeds["100"] = readyFeed(fetchedAt = sevenHoursAgo)
+        dao.episodes += undatedEpisode()
+        val client = CountingFeedClient()
+        var checks = 0
+        val repo = catalogRepo(dao, feedClient = client, isFeedUnchanged = { _, _, _ ->
+            checks++
+            true
+        })
+        assertFalse(repo.isPublisherFeedUnchanged("100", SHOW_URL))
+
+        assertTrue(repo.refresh(LocalEpisodeCatalogPort.RefreshRequest("100", SHOW_URL)) is RefreshOutcome.Success)
+        assertEquals(0, checks, "no conditional check while an episode has no date")
+        assertEquals(1, client.fetches)
+        assertEquals(listOf(10L), dao.episodes.filter { it.podcastId == "100" }.map { it.publishedDate })
+
+        dao.feeds["100"] = dao.feeds.getValue("100").copy(fetchedAt = sevenHoursAgo)
+        assertTrue(repo.isPublisherFeedUnchanged("100", SHOW_URL))
+        assertTrue(repo.refresh(LocalEpisodeCatalogPort.RefreshRequest("100", SHOW_URL)) is RefreshOutcome.Unchanged)
+        assertEquals(1, client.fetches, "a dated catalog trusts the unchanged answer again")
+    }
+
+    private fun undatedEpisode() = LocalEpisodeEntity(
+        episodeId = "-42",
+        podcastId = "100",
+        guid = "guid-1",
+        title = "Episode",
+        description = "",
+        audioUrl = "https://cdn.example/episode.mp3",
+        imageUrl = null,
+        duration = 60,
+        publishedDate = 0L,
+        chaptersUrl = null,
+        transcriptUrl = null,
+        transcripts = null,
+        persons = null,
+        seasonNumber = null,
+        episodeNumber = null,
+        episodeType = null,
+        enclosureType = null,
+    )
 
     private fun catalogRepo(dao: FakeCatalogDao, feedClient: RssFeedClient, isFeedUnchanged: suspend (String, String?, String?) -> Boolean) =
         LocalEpisodeCatalogRepository(

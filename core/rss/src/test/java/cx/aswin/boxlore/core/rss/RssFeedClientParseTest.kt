@@ -96,4 +96,17 @@ class RssFeedClientParseTest {
 
         assertTrue(parsed.episodes.all { it.podcastId == expectedPodcastId })
     }
+
+    /** Regression: a feed dating its episodes with EST and EDT gave every episode no date, so they lost their order. */
+    @Test
+    fun readsDatesWithZoneNamesAndSortsByThem() = runTest {
+        val parsed = client.parse(feedUrl, fixture("feed_named_zones.xml"))
+        val dates = parsed.episodes.associate { it.title to it.publishedDate }
+
+        assertEquals(1_795_093_800L, dates.getValue("Newest Episode"))
+        assertEquals(1_793_247_000L, dates.getValue("Summer Time Episode"))
+        assertEquals(1_537_142_940L, dates.getValue("Older Season Episode"))
+        assertEquals(listOf("Newest Episode", "Summer Time Episode", "Older Season Episode"), parsed.episodes.map { it.title })
+        assertEquals(1_795_093_800L, parsed.declaredUpdatedAt)
+    }
 }

@@ -65,6 +65,8 @@ internal class FakeCatalogDao : LocalEpisodeCatalogDao {
 
     override suspend fun count(podcastId: String): Int = episodes.count { it.podcastId == podcastId }
 
+    override suspend fun hasUndatedEpisode(podcastId: String): Boolean = episodes.any { it.podcastId == podcastId && it.publishedDate <= 0L }
+
     override suspend fun search(podcastId: String, query: String,): List<LocalEpisodeEntity> = emptyList()
 
     override suspend fun getEpisodesAfter(
