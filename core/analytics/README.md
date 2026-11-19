@@ -50,7 +50,7 @@ It does not configure the PostHog SDK (`:app` does, and installs `AnalyticsBefor
 
 - API sessions (`trackApiSessionStatus`, `ApiSessionStatus`) and App Check (`trackAppCheckStatus`): categories only, never tokens, IDs or keys.
 - Feeds (`trackFeedFetchResult`, `trackFeedUrlCorrected`, `trackOwnIdsUpgradeCompleted`): never carry a feed address. Catalog code reaches them through `:core:domain`'s `FeedTelemetryPort`, which `:app` wires.
-- Appearance (`trackHomeHeroStyleSelected`, `syncHomeHeroStylePersonProperties`) and recommendations (`trackRecommendationSectionToggled`) report the names listeners see in Settings, not stored keys.
+- Appearance (`trackHomeHeroStyleSelected`, `syncHomeHeroStylePersonProperties`) and recommendations (`trackRecommendationSectionToggled`) report the names listeners see in Settings, not stored keys. `FeatureAdoptionAnalytics.sync` sends the feature-adoption person properties from a `FeatureAdoption` flow `:app` builds.
 - Surveys (`SurveyAnalyticsTracks`): PostHog's standard survey events for boxlore's own NPS card; `surveyCopyOverrides` reads survey wording from a flag payload.
 - Support (`SupportAnalyticsTracks`, `SupportWorldContext`): `supportWorldVariant` reads the support experiment flag once per visit and records an exposure only for a known variant.
 - Wear OS (`WatchAnalyticsTracks`, called directly): what the phone sees through the watch link; the watch app sends no events.
@@ -63,7 +63,8 @@ It does not configure the PostHog SDK (`:app` does, and installs `AnalyticsBefor
 src/main/java/cx/aswin/boxlore/core/analytics/
   Analytics.kt                     # the interface
   AnalyticsHelper.kt               # PostHog-backed singleton and façades
-  AnalyticsLocalState.kt           # the façade's own state: first-launch mark, levels switch store
+  AnalyticsLocalState.kt           # the façade's own state: first-launch mark, levels switch and feature-adoption stores
+  FeatureAdoptionAnalytics.kt      # feature-adoption person properties
   AnalyticsEmit.kt                 # levels, recipe IDs, sinks
   AnalyticsPolicy.kt               # levels, sampling, remote switch
   AnalyticsBeforeSend.kt           # PostHog beforeSend hook
@@ -86,7 +87,7 @@ src/main/java/cx/aswin/boxlore/core/analytics/
 ## Dependencies
 
 - `implementation`: `:core:model`, `:core:prefs`.
-- Libraries: PostHog Android SDK, AndroidX core.
+- Libraries: PostHog Android SDK, AndroidX core, Kotlin coroutines.
 - Forbidden: catalog, database, network, playback, downloads, designsystem or feature modules. Callers that emit events depend on this module directly; features never import PostHog.
 
 ## Threading / lifecycle
@@ -94,14 +95,14 @@ src/main/java/cx/aswin/boxlore/core/analytics/
 - `AnalyticsHelper` is process-scoped and callable from any thread; the SDK dispatches internally.
 - Calls made before PostHog setup finishes are queued and replayed in order; feature flags and `getDistinctId()` read as unset until then, and callers fall back.
 - `ScreenViews` and `PendingEntryPoint` are synchronized; `PlayerSessionAggregator` is not, and the player UI calls it on the main thread.
-- Person properties that follow a setting (the Home hero look) are sent once per process and on each change, so rotation, folding and resizing do not resend them.
+- Person properties that follow a setting (the Home hero look) are sent once per process and on each change, so rotation, folding and resizing do not resend them. Feature-adoption values are sent only when they differ from the last values sent on this install, after 5 s without change.
 
 ## Persistence & identity
 
 Never rename these:
 
 - SharedPreferences file `boxlore_analytics_prefs` (`PrefsFileMigrator.Files.ANALYTICS`, migrated from `boxcast_analytics_prefs`).
-- Keys `is_first_launch`, `analytics_sample_bucket` (this install's sample bucket, kept across a PostHog reset) and `analytics_policy` (the last remote switch with its app version). `AnalyticsPolicy.Store` is the storage seam.
+- Keys `is_first_launch`, `analytics_sample_bucket` (this install's sample bucket, kept across a PostHog reset), `analytics_policy` (the last remote switch with its app version) and `feature_adoption_sent` (the feature-adoption values last sent). `AnalyticsPolicy.Store` and `FeatureAdoptionAnalytics.Store` are the storage seams.
 - Install attribution keys (`InstallAttribution.Store`): `not_play_attributed` (set once PostHog has taken `not_play`), and `pending_install_channel` with `pending_referrer_raw` (Play's referrer, kept until the installer is known; cleared once its capture is sent, or for an install not from Play).
 - Event and property names are contracts with the glossary and its CSV ([`docs/analytics/event_glossary.csv`](../../docs/analytics/event_glossary.csv)) and the coverage inventory ([`docs/analytics/glossary_emission_coverage.csv`](../../docs/analytics/glossary_emission_coverage.csv)).
 

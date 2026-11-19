@@ -44,6 +44,7 @@ dependencies {
     implementation(projects.core.prefs)
     implementation(libs.posthog.android)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.kotlinx.coroutines.android)
 
     // Testing
     testImplementation(projects.core.testing)

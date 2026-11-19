@@ -286,10 +286,6 @@ fun LibraryContent(
                         )
                     }
 
-                    playlists?.let { card ->
-                        item { LibraryPlaylistsMenuCard(card) }
-                    }
-
                     item {
                         val downloadImages = uiState.downloadedEpisodes.take(3).map {
                             it.episodeImageUrl ?: it.podcastImageUrl ?: ""
@@ -327,6 +323,10 @@ fun LibraryContent(
                             images = historyImages,
                             shapes = historyShapes,
                         )
+                    }
+
+                    playlists?.let { card ->
+                        item(key = "playlists") { LibraryPlaylistsMenuCard(card) }
                     }
                 }
                 }

@@ -408,6 +408,10 @@ interface PodcastDao {
     @Query("SELECT COUNT(*) FROM podcasts WHERE isDirty = 1")
     fun getDirtyCountFlow(): Flow<Int>
 
+    /** How many followed shows play at their own speed, for analytics. */
+    @Query("SELECT COUNT(*) FROM podcasts WHERE isSubscribed = 1 AND playbackSpeedOverride IS NOT NULL")
+    fun observeFollowedOwnSpeedCount(): Flow<Int>
+
     /** Whether any show waits to be pushed, without reading the rows. */
     @Query("SELECT EXISTS(SELECT 1 FROM podcasts WHERE isDirty = 1)")
     suspend fun hasDirtyPodcasts(): Boolean

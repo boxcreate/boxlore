@@ -6,7 +6,7 @@ Owns the Library tab: the hub, Subscriptions (Shows and New Episodes, with folde
 
 ## Public API
 
-- `LibraryScreen`: the hub on the app's `library` route, with cards for Subscriptions, Liked Episodes, Playlists (when the app passes a `LibraryPlaylistsCard`), Downloads and Listening History.
+- `LibraryScreen`: the hub on the app's `library` route, with cards for Subscriptions, Liked Episodes, Downloads, Listening History and, last, Playlists (when the app passes a `LibraryPlaylistsCard`).
 - `SubscriptionsScreen`: Shows and New Episodes on `library/subscriptions?tab={tab}`. `LocalLastSeenEpisodes` supplies the last-seen episode per show for NEW badges.
 - `LikedEpisodesScreen`, `DownloadedEpisodesScreen` and `DownloadedShowEpisodesScreen` (wrappers over `downloads/`).
 - `DownloadedEpisodeEntity.toEpisode()` / `toPodcast()`: map a download to domain models, keeping its own show ID and name and its chapter and transcript links.

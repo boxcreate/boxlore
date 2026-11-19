@@ -28,7 +28,7 @@ sealed interface PlaylistDetailState {
 /**
  * The Playlists page and, with [playlistId], one playlist's page. Storage is [PlaylistRepository]
  * (`:core:catalog`); [startPlayback] hands the queue copy to playback (the app passes
- * `QueueManager.playPlaylist`). Analytics go out as `playlist_modified` with source `library`.
+ * `QueueManager.playPlaylist`). Create, delete, reorder and play send `playlist_modified` with source `library`.
  */
 class PlaylistsViewModel(
     private val repository: PlaylistRepository,
@@ -60,7 +60,7 @@ class PlaylistsViewModel(
 
     fun rename(playlistId: String, name: String) {
         viewModelScope.launch {
-            if (repository.renamePlaylist(playlistId, name)) AnalyticsHelper.trackPlaylistModified("rename", SOURCE)
+            repository.renamePlaylist(playlistId, name)
         }
     }
 
@@ -77,15 +77,13 @@ class PlaylistsViewModel(
         viewModelScope.launch {
             val removed = repository.removeEpisodes(entry.playlistId, listOf(entry.itemId))
             if (removed.isEmpty()) return@launch
-            AnalyticsHelper.trackPlaylistModified("remove", SOURCE, itemsCount = removed.size)
             onRemoved(removed)
         }
     }
 
     fun undoRemove(removed: List<PlaylistEpisode>) {
         viewModelScope.launch {
-            val back = repository.restoreEpisodes(removed)
-            if (back > 0) AnalyticsHelper.trackPlaylistModified("add", SOURCE, itemsCount = back)
+            repository.restoreEpisodes(removed)
         }
     }
 

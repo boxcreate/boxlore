@@ -79,7 +79,7 @@
 ```text
 src/main/java/cx/aswin/boxlore/
   BoxLoreApplication.kt  AppContainer.kt  MainActivity.kt  LegacyWorkerFactory.kt
-  analytics/      PostHogWiring
+  analytics/      PostHogWiring, FeatureAdoptionWiring
   connectivity/   AndroidConnectivityObserver
   fcm/            BoxLoreFcmService, FcmPayloadParser, NewEpisodePushHydration,
                   delivery and registration workers, SupportReplies

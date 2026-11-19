@@ -89,6 +89,8 @@ data class PlaybackListenSummary(
     val bufferingCount: Int,
     val bufferingMs: Long,
     val queueSize: Int?,
+    /** Whether silence trimming was on for the listen (never on a Cast device). */
+    val trimSilence: Boolean = false,
 )
 
 /** A listen the previous run left unfinished because Android ended the app: `playback_interrupted`. */

@@ -8,7 +8,7 @@ import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 
 /**
  * The Library hub's Playlists card: [coverUrls] are the first playlists' covers. The hub shows the
- * card only when the app passes one, between Liked Episodes and Downloads.
+ * card only when the app passes one, as its last card.
  */
 data class LibraryPlaylistsCard(val coverUrls: List<String> = emptyList(), val onClick: () -> Unit,)
 

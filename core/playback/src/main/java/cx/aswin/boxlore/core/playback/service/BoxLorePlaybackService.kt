@@ -203,6 +203,7 @@ open class BoxLorePlaybackService :
             session.listeningDeviceId = { prefs.getOrCreateListeningDeviceId() }
             session.listens.analyticsOutput = { ListeningOutputRoute.forAnalytics(this, mediaSession?.player ?: playbackPlayer) }
             session.listens.isAppInBackground = { !PlaybackUiVisibility.isForeground.value }
+            session.listens.trimSilence = { localExoPlayer?.skipSilenceEnabled == true }
             session.listens.listenNotes = cx.aswin.boxlore.core.playback.ListenNoteKeeper(cx.aswin.boxlore.core.playback.PrefsListenNoteStore(this))
             session.firstPlay =
                 cx.aswin.boxlore.core.playback.FirstPlayClaim(

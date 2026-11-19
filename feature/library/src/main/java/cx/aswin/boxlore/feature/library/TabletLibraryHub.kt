@@ -43,14 +43,14 @@ internal fun TabletLibraryHub(
         item(key = "liked") {
             LibraryMenuCard("Liked Episodes", Icons.Rounded.Favorite, liked, MaterialTheme.colorScheme.tertiaryContainer, state.likedEpisodes.take(3).map { it.episodeImageUrl ?: it.podcastImageUrl ?: "" }, listOf(ExpressiveShapes.Heart, ExpressiveShapes.Star, ExpressiveShapes.SoftBurst))
         }
-        playlists?.let { card ->
-            item(key = "playlists") { LibraryPlaylistsMenuCard(card) }
-        }
         item(key = "downloads") {
             LibraryMenuCard("Downloads", Icons.Rounded.DownloadDone, downloads, MaterialTheme.colorScheme.primaryContainer, state.downloadedEpisodes.take(3).map { it.episodeImageUrl ?: it.podcastImageUrl ?: "" }, listOf(ExpressiveShapes.Hexagon, ExpressiveShapes.Gem, ExpressiveShapes.Cookie4))
         }
         item(key = "history") {
             LibraryMenuCard("Listening History", Icons.Rounded.History, history, MaterialTheme.colorScheme.surfaceContainerHigh, state.recentHistory.take(3).map { it.episodeImageUrl ?: it.podcastImageUrl ?: "" }, listOf(ExpressiveShapes.Circle, ExpressiveShapes.Burst, ExpressiveShapes.Sunny))
+        }
+        playlists?.let { card ->
+            item(key = "playlists") { LibraryPlaylistsMenuCard(card) }
         }
     }
 }
