@@ -72,4 +72,13 @@ class RssFeedClientHelpersTest {
         assertNull(parseDate("Thu, 32 Nov 2026 08:10:00 EST"))
         assertNull(parseDate("Thu, 19 Nov 2026 EST"))
     }
+
+    /** Dropping a mismatched weekday must not let a lenient parse move an impossible date to a real one. */
+    @Test
+    fun `parseDate rejects impossible days even when the weekday is dropped`() {
+        assertNull(parseDate("Fri, 31 Apr 2026 08:10:00 EST"))
+        assertNull(parseDate("31 Apr 2026 08:10:00 GMT"))
+        assertNull(parseDate("Sun, 29 Feb 2026 08:10:00 GMT"))
+        assertEquals(1_582_963_800L, parseDate("Sat, 29 Feb 2020 08:10:00 GMT"))
+    }
 }

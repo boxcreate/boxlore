@@ -4,6 +4,7 @@ import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.ResolverStyle
 import java.util.Locale
 
 /**
@@ -27,17 +28,20 @@ internal fun parseDate(value: String): Long? {
  * An RSS `pubDate` as feeds write it. Java's RFC 1123 parser reads only `GMT` and numeric offsets,
  * so the other RFC 822 zone names (`EST`, `PDT`, `UT`, `Z`...) and `UTC` become their offsets
  * first. A weekday that doesn't match the date is dropped, because the date is what the feed means.
+ * Parsing is strict, so an impossible date (31 April) is rejected rather than moved to a real one.
  */
 private fun parseRfc822Date(text: String): Long {
     val zoned = withNumericZone(text)
     val parsed =
-        runCatching { ZonedDateTime.parse(zoned, DateTimeFormatter.RFC_1123_DATE_TIME) }.getOrElse { error ->
+        runCatching { ZonedDateTime.parse(zoned, STRICT_RFC_1123) }.getOrElse { error ->
             val withoutWeekday = zoned.substringAfter(',', missingDelimiterValue = "").trim()
             if (withoutWeekday.isEmpty()) throw error
-            ZonedDateTime.parse(withoutWeekday, DateTimeFormatter.RFC_1123_DATE_TIME)
+            ZonedDateTime.parse(withoutWeekday, STRICT_RFC_1123)
         }
     return parsed.toEpochSecond()
 }
+
+private val STRICT_RFC_1123: DateTimeFormatter = DateTimeFormatter.RFC_1123_DATE_TIME.withResolverStyle(ResolverStyle.STRICT)
 
 private fun withNumericZone(text: String): String {
     val zone = text.substringAfterLast(' ', missingDelimiterValue = "")

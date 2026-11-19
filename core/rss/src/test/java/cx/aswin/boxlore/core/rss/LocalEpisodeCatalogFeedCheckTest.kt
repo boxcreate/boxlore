@@ -129,7 +129,9 @@ class LocalEpisodeCatalogFeedCheckTest {
         assertTrue(repo.refresh(LocalEpisodeCatalogPort.RefreshRequest("100", SHOW_URL)) is RefreshOutcome.Success)
         assertEquals(0, checks, "no conditional check while an episode has no date")
         assertEquals(1, client.fetches)
-        assertEquals(listOf(10L), dao.episodes.filter { it.podcastId == "100" }.map { it.publishedDate })
+        val repaired = dao.episodes.filter { it.podcastId == "100" }
+        assertEquals(listOf(10L), repaired.map { it.publishedDate })
+        assertEquals(listOf("-42"), repaired.map { it.episodeId }, "the repaired episode keeps its stored ID")
 
         dao.feeds["100"] = dao.feeds.getValue("100").copy(fetchedAt = sevenHoursAgo)
         assertTrue(repo.isPublisherFeedUnchanged("100", SHOW_URL))
