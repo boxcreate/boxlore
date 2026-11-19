@@ -11,7 +11,8 @@ import cx.aswin.boxlore.core.catalog.ports.ListeningHistoryBackupPort
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.Person
+import cx.aswin.boxlore.core.model.Playlist
+import cx.aswin.boxlore.core.model.PlaylistOrder
 import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import kotlinx.coroutines.flow.Flow
@@ -19,7 +20,6 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,9 +28,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Playlists travel in the JSON library backup (version 11): exported with their episode copies in
- * order and restored on another phone; restoring onto a phone that has the playlist merges, and an
- * older backup without playlists changes nothing.
+ * Playlists travel in the JSON library backup (version 11): exported with their order and show IDs
+ * and restored on another phone; restoring onto a phone that has the playlist only adds shows, and
+ * an older backup without playlists changes nothing.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -55,36 +55,36 @@ class LibraryBackupPlaylistsRoomTest {
     fun playlistsRoundTripThroughTheJsonBackup() = runTest {
         var clock = 1_000L
         val sourceRepository = RoomPlaylistRepository(source.playlistDao(), now = { clock++ })
-        val commute = sourceRepository.createPlaylist(
-            "Commute",
-            listOf(episode("b"), episode("a").copy(persons = listOf(Person(name = "Guest", role = "guest")), episodeNumber = 4)),
-        ).playlist
+        val comedy = sourceRepository.createPlaylist("Comedy", listOf("200", "100"))
+        sourceRepository.setOrder(comedy.id, PlaylistOrder.OLDEST)
         sourceRepository.createPlaylist("Empty")
 
         val json = manager(source).exportLibraryAsJson()
         val exported = JsonParser.parseString(json).asJsonObject
         assertEquals(11, exported["version"].asInt)
         val playlists = exported["playlists"].asJsonArray.map { it.asJsonObject }
-        assertEquals(listOf("Commute", "Empty"), playlists.map { it["name"].asString })
-        assertEquals(listOf("b", "a"), playlists[0]["episodes"].asJsonArray.map { it.asJsonObject["episodeId"].asString })
+        assertEquals(listOf("Comedy", "Empty"), playlists.map { it["name"].asString })
+        assertEquals(listOf("200", "100"), playlists[0]["showIds"].asJsonArray.map { it.asString })
+        assertEquals("oldest", playlists[0]["order"].asString)
 
         manager(target).importLibraryFromJson(json)
 
         val targetRepository = RoomPlaylistRepository(target.playlistDao())
         val restored = targetRepository.getPlaylists()
-        assertEquals(listOf(commute.id to "Commute", restored[1].id to "Empty"), restored.map { it.id to it.name })
-        assertEquals(sourceRepository.getEpisodes(commute.id).map { it.episode }, targetRepository.getEpisodes(commute.id).map { it.episode })
+        assertEquals(listOf(comedy.id to "Comedy", restored[1].id to "Empty"), restored.map { it.id to it.name })
+        assertEquals(PlaylistOrder.OLDEST, restored[0].order)
+        assertEquals(mapOf(comedy.id to listOf("200", "100")), targetRepository.getShowIds())
 
         // Restoring the same backup again adds nothing.
         manager(target).importLibraryFromJson(json)
-        assertEquals(2, targetRepository.getEpisodes(commute.id).size)
+        assertEquals(mapOf(comedy.id to listOf("200", "100")), targetRepository.getShowIds())
         assertEquals(2, targetRepository.getPlaylists().size)
     }
 
     @Test
     fun anOlderBackupLeavesPlaylistsAlone() = runTest {
         val targetRepository = RoomPlaylistRepository(target.playlistDao())
-        targetRepository.createPlaylist("Mine", listOf(episode("a")))
+        targetRepository.createPlaylist("Mine", listOf("1"))
 
         manager(target).importLibraryFromJson("""{"version":10,"subscriptions":[],"history":[]}""")
 
@@ -92,49 +92,21 @@ class LibraryBackupPlaylistsRoomTest {
     }
 
     @Test
-    fun unplayableRowsAndNamelessPlaylistsAreSkipped() = runTest {
+    fun restoringOntoAnExistingPlaylistOnlyAddsShows() = runTest {
+        val targetRepository = RoomPlaylistRepository(target.playlistDao())
+        targetRepository.importPlaylist(Playlist("p1", "Mine", 1L, 1L, showCount = 0), listOf("a"))
         val json = """{"version":11,"subscriptions":[],"history":[],"playlists":[
-            {"id":"p1","name":"Kept","episodes":[{"episodeId":"x","title":"X","audioUrl":"https://cdn.example/x.mp3"},{"episodeId":"y","title":"No audio"}]},
-            {"id":"p2","episodes":[]}
+            {"id":"p1","name":"Theirs","order":"oldest","showIds":["b","a",null,""]},
+            {"id":"p2","showIds":["c"]}
         ]}"""
 
         manager(target).importLibraryFromJson(json)
 
-        val targetRepository = RoomPlaylistRepository(target.playlistDao())
-        assertEquals(listOf("Kept"), targetRepository.getPlaylists().map { it.name })
-        assertEquals(listOf("x"), targetRepository.getEpisodes("p1").map { it.episode.id })
-        assertTrue(targetRepository.getEpisodes("p2").isEmpty())
+        val restored = targetRepository.getPlaylists()
+        assertEquals(listOf("Mine"), restored.map { it.name })
+        assertEquals(PlaylistOrder.NEWEST, restored.single().order)
+        assertEquals(mapOf("p1" to listOf("a", "b")), targetRepository.getShowIds())
     }
-
-    @Test
-    fun rowsUnderIdsTheIdentityRestoreRefusedAreSkipped() = runTest {
-        val targetRepository = RoomPlaylistRepository(target.playlistDao())
-        val backup = listOf(
-            PlaylistBackup(
-                id = "p1",
-                name = "Commute",
-                episodes = listOf("a", "taken", "b").map { PlaylistEpisodeBackup(episodeId = it, title = "Episode $it", audioUrl = "https://cdn.example/$it.mp3") },
-            ),
-        )
-
-        val added = LibraryBackupPlaylists.restore(backup, targetRepository, refusedIds = setOf("taken"))
-
-        assertEquals(2, added)
-        assertEquals(listOf("a", "b"), targetRepository.getEpisodes("p1").map { it.episode.id })
-    }
-
-    private fun episode(id: String) = Episode(
-        id = id,
-        title = "Episode $id",
-        description = "Notes",
-        audioUrl = "https://cdn.example/$id.mp3",
-        imageUrl = "https://img.example/$id.jpg",
-        podcastImageUrl = "https://img.example/show.jpg",
-        podcastTitle = "Show",
-        podcastId = "1001",
-        duration = 90,
-        publishedDate = 7L,
-    )
 
     private fun manager(database: BoxLoreDatabase) = LibraryBackupManager(
         subscriptionRepository = SubscriptionRepository(database.podcastDao()),

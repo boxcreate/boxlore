@@ -3,9 +3,12 @@ package cx.aswin.boxlore.core.designsystem.components
 import android.app.Application
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -13,7 +16,6 @@ import androidx.compose.ui.test.performTextInput
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
-import cx.aswin.boxlore.core.model.PLAYLIST_EPISODE_LIMIT
 import cx.aswin.boxlore.core.model.Playlist
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -24,9 +26,9 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * The Add to playlist sheet moves between its phone sheet and tablet dialog hosts as the window
- * crosses the 600dp, 480dp and 840dp gates; a new playlist's unsaved name stays, and Create and add
- * still creates it. A full playlist can't be picked.
+ * The show page's Add to playlist sheet moves between its phone sheet and tablet dialog hosts as the
+ * window crosses the 600dp, 480dp and 840dp gates in both directions; a new playlist's unsaved name
+ * stays, and Create and add still creates it. Each playlist shows whether it holds the show and toggles it.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], qualifiers = "w1300dp-h1300dp-mdpi", application = Application::class)
@@ -37,11 +39,11 @@ class AddToPlaylistSheetAdaptiveTest {
     private val window = mutableStateOf(BoxloreWindowLayout(360f, 740f))
     private val state = AddToPlaylistSheetState()
     private val created = mutableListOf<String>()
-    private val picked = mutableListOf<String>()
+    private val toggled = mutableListOf<String>()
 
     private val playlists = listOf(
-        Playlist("p1", "Commute", 0L, 0L, episodeCount = 3),
-        Playlist("p2", "Archive", 0L, 0L, episodeCount = PLAYLIST_EPISODE_LIMIT),
+        Playlist("p1", "Comedy", 0L, 0L, showCount = 3),
+        Playlist("p2", "History", 0L, 0L, showCount = 1),
     )
 
     private val windows = listOf(
@@ -59,10 +61,11 @@ class AddToPlaylistSheetAdaptiveTest {
             BoxLoreTheme(dynamicColor = false) {
                 CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) {
                     AddToPlaylistSheet(
+                        showTitle = "The Show",
                         playlists = playlists,
-                        episodeCount = 2,
+                        memberIds = setOf("p2"),
                         state = state,
-                        onAddTo = { picked += it.id },
+                        onToggle = { toggled += it.id },
                         onCreate = { created += it },
                         onDismissRequest = {},
                     )
@@ -88,11 +91,12 @@ class AddToPlaylistSheetAdaptiveTest {
     }
 
     @Test
-    fun `an open playlist adds and a full one is disabled`() {
+    fun `each playlist shows whether it holds the show and a tap toggles it`() {
         show()
-        compose.onNodeWithText("500 episodes · Full").assertExists()
-        compose.onNodeWithText("Archive").assertIsNotEnabled()
-        compose.onNodeWithText("Commute").performClick()
-        compose.runOnIdle { assertEquals(listOf("p1"), picked) }
+        compose.onNodeWithText("3 shows").assertExists()
+        compose.onNode(hasText("History") and isToggleable()).assertIsOn()
+        compose.onNode(hasText("Comedy") and isToggleable()).assertIsOff().performClick()
+        compose.onNode(hasText("History") and isToggleable()).performClick()
+        compose.runOnIdle { assertEquals(listOf("p1", "p2"), toggled) }
     }
 }

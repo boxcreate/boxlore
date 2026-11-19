@@ -889,7 +889,7 @@ object AnalyticsHelper : Analytics {
         itemsCount: Int? = null,
     ) = QueueContentAnalyticsTracks.trackQueueModified(action, episodeId, podcastId, queueSize, source, itemsCount)
 
-    /** A playlist change: [action] create/delete/add/reorder/play, from [source]. */
+    /** A playlist change: [action] create/delete/add_show/remove_show/play, from [source] (library or show_page). */
     fun trackPlaylistModified(action: String, source: String, itemsCount: Int? = null, playlistSize: Int? = null,) =
         QueueContentAnalyticsTracks.trackPlaylistModified(action, source, itemsCount, playlistSize)
 

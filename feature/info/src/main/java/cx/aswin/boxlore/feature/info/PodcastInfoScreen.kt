@@ -714,6 +714,7 @@ fun PodcastInfoScreen(
                         titlesOnly = titlesOnly,
                         onToggleTitlesOnly = viewModel::toggleEpisodeTitlesOnly,
                         isSubscribed = state.isSubscribed,
+                        onAddToPlaylist = viewModel.playlists?.takeIf { state.isSubscribed }?.let { { playlistPicker.open = true } },
                         isPinnedToHome = isPinnedToHome,
                         onToggleHomePin = viewModel::toggleHomePin,
                         onEditGenre = handleEditGenreClick,
@@ -820,11 +821,10 @@ fun PodcastInfoScreen(
                             onSelectNewer = {
                                 selectFullRange(EpisodeSelectionRange.NEWER)
                             },
-                            onAddToPlaylist = viewModel.playlists?.let { { playlistPicker.open = true } },
                         ),
                     )
                 }
-                InfoPlaylistPickerHost(playlistPicker, viewModel.playlists, selectedEpisodes, snackbarHostState, state.podcast, onAdded = clearEpisodeSelection)
+                InfoPlaylistPickerHost(playlistPicker, viewModel.playlists, state.podcast.takeIf { state.isSubscribed }, snackbarHostState)
 
                 // A restored dialog waits for the reloaded page to offer the feed check again, and
                 // is dropped once the check has run, so a confirm always has something to start.

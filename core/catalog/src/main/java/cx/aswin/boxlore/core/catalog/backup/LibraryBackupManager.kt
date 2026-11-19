@@ -95,7 +95,7 @@ data class BoxLoreBackup(
     val episodeIdentity: EpisodeIdentityBackup? = null,
     /** Version 8+: listening sessions, daily summaries and played shows ([ListeningBackup]). */
     val listening: ListeningBackup? = null,
-    /** Version 11+: playlists and their episodes ([PlaylistBackup]). */
+    /** Version 11+: playlists with their order and shows ([PlaylistBackup]). */
     val playlists: List<PlaylistBackup>? = null,
 )
 
@@ -283,7 +283,7 @@ class LibraryBackupManager(
         restoreImportedHistory(backup.history, importedIds, refusedIds)
         listening()?.restore(backup.listening, refusedIds, importedIds)
         relinkImportedSwitchedShows(importedIds)
-        playlistRepository?.let { LibraryBackupPlaylists.restore(backup.playlists, it, refusedIds) }
+        playlistRepository?.let { LibraryBackupPlaylists.restore(backup.playlists, it) }
         backup.adaptiveRanking?.let { rankingBackup ->
             adaptiveRankingRepository.restoreBackup(rankingBackup)
         }

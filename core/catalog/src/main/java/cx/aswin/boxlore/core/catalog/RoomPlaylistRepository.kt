@@ -1,35 +1,42 @@
 package cx.aswin.boxlore.core.catalog
 
+import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.PlaylistDao
 import cx.aswin.boxlore.core.database.PlaylistEntity
-import cx.aswin.boxlore.core.database.PlaylistItemEntity
+import cx.aswin.boxlore.core.database.PlaylistShowEntity
+import cx.aswin.boxlore.core.database.PlaylistShowRow
 import cx.aswin.boxlore.core.database.PlaylistSummary
 import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.PLAYLIST_EPISODE_LIMIT
 import cx.aswin.boxlore.core.model.Playlist
-import cx.aswin.boxlore.core.model.PlaylistEpisode
+import cx.aswin.boxlore.core.model.PlaylistOrder
+import cx.aswin.boxlore.core.model.PlaylistShow
 import cx.aswin.boxlore.core.model.normalizePlaylistName
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * [PlaylistRepository] on Room. [episodeIds] gives every stored ID of an episode (the app passes
- * `EpisodeListenerStore.memberIds`), so an episode stored under several IDs is added once, as the
- * queue does. Writes run one at a time, so two adds can't both pass the limit.
+ * [PlaylistRepository] on Room. [projectedHistory] and [withAliases] read listening state across an
+ * episode's stored IDs (the app passes `EpisodeListenerStore.projectedHistoryOf` and
+ * `withAllAliases`); [hiddenShowIds] are the shows hidden everywhere. Writes run one at a time.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 class RoomPlaylistRepository(
     private val dao: PlaylistDao,
-    private val episodeIds: suspend (String) -> Collection<String> = { listOf(it) },
+    projectedHistory: suspend (Collection<String>) -> Map<String, ListeningHistoryEntity> = { emptyMap() },
+    withAliases: suspend (Collection<String>) -> Set<String> = { it.toSet() },
+    private val hiddenShowIds: Flow<Set<String>> = flowOf(emptySet()),
     private val now: () -> Long = System::currentTimeMillis,
     private val newId: () -> String = { UUID.randomUUID().toString() },
 ) : PlaylistRepository {
     private val writes = Mutex()
+    private val episodes = PlaylistEpisodeSource(dao, projectedHistory, withAliases)
 
     override val playlists: Flow<List<Playlist>> =
         combine(dao.observePlaylistSummaries(), dao.observePlaylistCovers()) { summaries, covers ->
@@ -40,25 +47,23 @@ class RoomPlaylistRepository(
     override fun playlist(playlistId: String): Flow<Playlist?> =
         playlists.map { list -> list.firstOrNull { it.id == playlistId } }.distinctUntilChanged()
 
-    override fun episodes(playlistId: String): Flow<List<PlaylistEpisode>> =
-        dao.observeItems(playlistId).map { rows -> rows.map(PlaylistEpisodeSnapshot::toPlaylistEpisode) }.distinctUntilChanged()
+    override fun shows(playlistId: String): Flow<List<PlaylistShow>> =
+        combine(dao.observeShows(playlistId), hiddenShowIds) { rows, hidden -> rows.map { it.toShow(hidden) } }.distinctUntilChanged()
 
-    override suspend fun getPlaylists(): List<Playlist> {
-        val covers = dao.getAllItems().groupBy { it.playlistId }
-        return dao.getAllPlaylists().map { entity -> entity.toPlaylist(covers[entity.playlistId].orEmpty()) }
-    }
+    override fun playlistIdsForShow(podcastId: String): Flow<Set<String>> =
+        dao.observePlaylistIdsForShow(podcastId).map { it.toSet() }.distinctUntilChanged()
 
-    override suspend fun getEpisodes(playlistId: String): List<PlaylistEpisode> =
-        dao.getItems(playlistId).map(PlaylistEpisodeSnapshot::toPlaylistEpisode)
+    override suspend fun getPlaylists(): List<Playlist> = playlists.first()
 
-    override suspend fun createPlaylist(name: String, episodes: List<Episode>): PlaylistCreated = writes.withLock {
+    override suspend fun getShowIds(): Map<String, List<String>> =
+        dao.getAllShowRows().groupBy({ it.playlistId }) { it.podcastId }
+
+    override suspend fun createPlaylist(name: String, podcastIds: List<String>): Playlist = writes.withLock {
         val createdAt = now()
         val entity = PlaylistEntity(playlistId = newId(), name = displayName(name), createdAt = createdAt, updatedAt = createdAt)
         dao.insertPlaylist(entity)
-        val result = appendLocked(entity.playlistId, episodes, createdAt)
-        // Only the new playlist's rows: the episodes just added.
-        val items = if (result.added > 0) dao.getItems(entity.playlistId) else emptyList()
-        PlaylistCreated(entity.toPlaylist(items), result)
+        appendLocked(entity.playlistId, podcastIds, createdAt, touch = false)
+        playlist(entity.playlistId).first() ?: Playlist(entity.playlistId, entity.name, createdAt, createdAt, showCount = 0)
     }
 
     override suspend fun renamePlaylist(playlistId: String, name: String): Boolean = writes.withLock {
@@ -67,106 +72,78 @@ class RoomPlaylistRepository(
         dao.renamePlaylist(playlistId, normalized, now()) > 0
     }
 
+    override suspend fun setOrder(playlistId: String, order: PlaylistOrder): Boolean = writes.withLock {
+        dao.setEpisodeOrder(playlistId, order.stored, now()) > 0
+    }
+
     override suspend fun deletePlaylist(playlistId: String) = writes.withLock { dao.deletePlaylist(playlistId) }
 
-    override suspend fun addEpisodes(playlistId: String, episodes: List<Episode>): PlaylistAddResult = writes.withLock {
-        if (dao.getPlaylist(playlistId) == null) return@withLock PlaylistAddResult(added = 0)
-        appendLocked(playlistId, episodes, now())
+    override suspend fun addShows(playlistId: String, podcastIds: List<String>): Int = writes.withLock {
+        appendLocked(playlistId, podcastIds, now(), touch = true)
     }
 
-    override suspend fun removeEpisodes(playlistId: String, itemIds: Collection<Long>): List<PlaylistEpisode> = writes.withLock {
-        val wanted = itemIds.toSet()
-        val removed = dao.getItems(playlistId).filter { it.id in wanted }
-        removed.forEach { dao.deleteItem(it.id) }
-        if (removed.isNotEmpty()) dao.touchPlaylist(playlistId, now())
-        removed.map(PlaylistEpisodeSnapshot::toPlaylistEpisode)
+    override suspend fun removeShow(playlistId: String, podcastId: String): PlaylistShow? = writes.withLock {
+        val row = dao.getShows(playlistId).firstOrNull { it.podcastId == podcastId } ?: return@withLock null
+        if (dao.deleteShow(playlistId, podcastId) == 0) return@withLock null
+        dao.touchPlaylist(playlistId, now())
+        row.toShow(emptySet())
     }
 
-    override suspend fun restoreEpisodes(removed: List<PlaylistEpisode>): Int = writes.withLock {
-        var restored = 0
-        for ((playlistId, rows) in removed.groupBy { it.playlistId }) {
-            if (dao.getPlaylist(playlistId) != null) restored += restoreInto(playlistId, rows)
-        }
-        restored
+    override suspend fun replaceShow(oldPodcastId: String, newPodcastId: String) {
+        if (oldPodcastId.isBlank() || newPodcastId.isBlank()) return
+        writes.withLock { dao.reassignPodcast(oldPodcastId, newPodcastId) }
     }
 
-    private suspend fun restoreInto(playlistId: String, rows: List<PlaylistEpisode>): Int {
-        var room = PLAYLIST_EPISODE_LIMIT - dao.countItems(playlistId)
-        var back = 0
-        for (row in rows.sortedBy { it.position }) {
-            val fits = room > 0 && dao.episodeIdsIn(playlistId, aliases(row.episode.id).toList()).isEmpty()
-            if (fits && dao.insertItem(PlaylistEpisodeSnapshot.toEntity(row)) != -1L) {
-                back++
-                room--
-            }
-        }
-        if (back > 0) dao.touchPlaylist(playlistId, now())
-        return back
+    override suspend fun restoreShow(removed: PlaylistShow): Boolean = writes.withLock {
+        if (dao.getPlaylist(removed.playlistId) == null) return@withLock false
+        val back = dao.insertShow(PlaylistShowEntity(removed.playlistId, removed.podcastId, removed.position, removed.addedAt)) != -1L
+        if (back) dao.touchPlaylist(removed.playlistId, now())
+        back
     }
 
-    override suspend fun reorder(playlistId: String, orderedItemIds: List<Long>) = writes.withLock {
-        dao.reorder(playlistId, orderedItemIds)
+    override suspend fun nextEpisodes(playlistId: String, limit: Int, excludeIds: Collection<String>): List<Episode> {
+        val playlist = dao.getPlaylist(playlistId) ?: return emptyList()
+        val hidden = hiddenShowIds.first()
+        val shows = dao.getShows(playlistId).filter { it.isSubscribed && it.podcastId !in hidden }
+        return episodes.next(shows, PlaylistOrder.fromStored(playlist.episodeOrder), limit, excludeIds)
     }
 
-    override suspend fun importPlaylist(playlist: Playlist, episodes: List<PlaylistEpisode>): PlaylistAddResult = writes.withLock {
+    override suspend fun importPlaylist(playlist: Playlist, podcastIds: List<String>): Int = writes.withLock {
         val id = playlist.id.ifBlank { newId() }
         if (dao.getPlaylist(id) == null) {
             dao.insertPlaylist(
-                PlaylistEntity(playlistId = id, name = displayName(playlist.name), createdAt = playlist.createdAt, updatedAt = playlist.updatedAt),
+                PlaylistEntity(
+                    playlistId = id,
+                    name = displayName(playlist.name),
+                    createdAt = playlist.createdAt,
+                    updatedAt = playlist.updatedAt,
+                    episodeOrder = playlist.order.stored,
+                ),
             )
         }
-        var result = PlaylistAddResult(added = 0)
-        // Each row keeps the time it was added; the playlist's own updatedAt is kept from the backup.
-        for (row in episodes.sortedBy { it.position }) {
-            val one = appendLocked(id, listOf(row.episode), row.addedAt, touch = false)
-            result = PlaylistAddResult(result.added + one.added, result.alreadyIn + one.alreadyIn, result.didNotFit + one.didNotFit)
-        }
-        result
+        // The playlist's own updatedAt is kept from the backup.
+        appendLocked(id, podcastIds, playlist.updatedAt, touch = false)
     }
 
     override suspend fun deleteAll() = writes.withLock { dao.deleteAll() }
 
-    private suspend fun appendLocked(playlistId: String, episodes: List<Episode>, addedAt: Long, touch: Boolean = true): PlaylistAddResult {
-        var room = PLAYLIST_EPISODE_LIMIT - dao.countItems(playlistId)
-        var added = 0
-        var alreadyIn = 0
-        var didNotFit = 0
-        val seen = HashSet<String>()
-        for (episode in episodes.filter { it.id.isNotBlank() && it.audioUrl.isNotBlank() }) {
-            val ids = aliases(episode.id)
-            when {
-                ids.any { it in seen } || dao.episodeIdsIn(playlistId, ids.toList()).isNotEmpty() -> alreadyIn++
-                room <= 0 -> didNotFit++
-                insertAtEnd(playlistId, episode, addedAt) -> {
-                    seen += ids
-                    added++
-                    room--
-                }
-                else -> alreadyIn++
-            }
-        }
+    private suspend fun appendLocked(playlistId: String, podcastIds: List<String>, addedAt: Long, touch: Boolean): Int {
+        val added = podcastIds.filter(String::isNotBlank).distinct().count { dao.appendShow(playlistId, it, addedAt, touch = false) }
         if (added > 0 && touch) dao.touchPlaylist(playlistId, addedAt)
-        return PlaylistAddResult(added, alreadyIn, didNotFit)
+        return added
     }
-
-    private suspend fun insertAtEnd(playlistId: String, episode: Episode, addedAt: Long): Boolean {
-        val position = (dao.getMaxPosition(playlistId) ?: -1) + 1
-        return dao.insertItem(PlaylistEpisodeSnapshot.toEntity(playlistId, episode, addedAt, position)) != -1L
-    }
-
-    private suspend fun aliases(episodeId: String): Set<String> =
-        (episodeIds(episodeId) + episodeId).filter(String::isNotBlank).toSet()
 
     private fun displayName(name: String): String = normalizePlaylistName(name).ifEmpty { DEFAULT_NAME }
 
-    /** [items] are the playlist's rows in order; the first [PlaylistDao.COVER_LIMIT] give its covers. */
-    private fun PlaylistEntity.toPlaylist(items: List<PlaylistItemEntity>): Playlist = Playlist(
-        id = playlistId,
-        name = name,
-        createdAt = createdAt,
-        updatedAt = updatedAt,
-        episodeCount = items.size,
-        coverUrls = items.take(PlaylistDao.COVER_LIMIT).mapNotNull { (it.imageUrl ?: it.podcastImageUrl)?.takeIf(String::isNotBlank) },
+    private fun PlaylistShowRow.toShow(hidden: Set<String>) = PlaylistShow(
+        playlistId = playlistId,
+        podcastId = podcastId,
+        position = position,
+        addedAt = addedAt,
+        title = title.orEmpty(),
+        imageUrl = imageUrl?.takeIf(String::isNotBlank),
+        isFollowed = isSubscribed,
+        isHidden = podcastId in hidden,
     )
 
     private fun PlaylistSummary.toPlaylist(covers: List<String?>): Playlist = Playlist(
@@ -174,7 +151,8 @@ class RoomPlaylistRepository(
         name = playlist.name,
         createdAt = playlist.createdAt,
         updatedAt = playlist.updatedAt,
-        episodeCount = itemCount,
+        showCount = showCount,
+        order = PlaylistOrder.fromStored(playlist.episodeOrder),
         coverUrls = covers.mapNotNull { it?.takeIf(String::isNotBlank) },
     )
 

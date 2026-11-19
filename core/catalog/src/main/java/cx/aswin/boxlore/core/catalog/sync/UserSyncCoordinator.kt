@@ -88,7 +88,7 @@ open class UserSyncCoordinator(
      * bring in another phone's finished episodes: starts the review prompt's quiet days.
      */
     private val onFirstAccountPull: suspend () -> Unit = { userPreferencesRepository?.markLibraryImported() },
-    /** Playlists (Room v43); never synced, so an account switch deletes them with the folders. */
+    /** Playlists (Room v44); never synced, so an account switch deletes them with the folders. */
     private val playlistDao: PlaylistDao? = null,
 ) {
     private val syncMutex = Mutex()

@@ -413,7 +413,6 @@ internal data class PlayerQueueSheetCallbacks(
     val onEnableSmartQueue: () -> Unit = {},
     val onAddSameShowEpisodes: () -> Unit = {},
     val onDismissSameShowBanner: () -> Unit = {},
-    val onSaveAsPlaylist: (() -> Unit)? = null,
 )
 
 @Composable
@@ -425,7 +424,6 @@ internal fun PlayerQueueSheet(
     resources: PlayerQueueSheetResources,
     ui: FullPlayerUiState,
     actions: FullPlayerActions? = null,
-    onSaveAsPlaylist: (() -> Unit)? = null,
 ) {
     TrackScreenView("player_queue")
     val sameShowQueueOnly by userPrefs.sameShowQueueOnlyStream
@@ -461,7 +459,6 @@ internal fun PlayerQueueSheet(
                     onDismissSameShowBanner = {
                         playbackRepository.dismissSameShowContinuation()
                     },
-                    onSaveAsPlaylist = onSaveAsPlaylist,
                 ),
             ),
         )
@@ -507,7 +504,6 @@ internal fun queueSheetActions(
     onEnableSmartQueue = callbacks.onEnableSmartQueue,
     onAddSameShowEpisodes = callbacks.onAddSameShowEpisodes,
     onDismissSameShowBanner = callbacks.onDismissSameShowBanner,
-    onSaveAsPlaylist = callbacks.onSaveAsPlaylist,
     onEpisodeInfoClick = { episode ->
         cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("episode_info")
         ui.showQueueSheet = false

@@ -59,8 +59,12 @@ class PodcastInfoViewModel(
     private val localCatalog = deps.localCatalog
     private val folderRepository = deps.folderRepository
 
-    /** Add to playlist for selected episodes; null without playlists, which hides it. */
-    val playlists: InfoPlaylists? = InfoPlaylists.create(deps.playlistRepository, viewModelScope, InfoPlaylists.SOURCE_SHOW_PAGE)
+    /** Add to playlist for this show (menu, followed shows only); null without playlists, which hides it. */
+    val playlists: InfoPlaylists? =
+        InfoPlaylists.create(deps.playlistRepository, viewModelScope) { shownId ->
+            // The ID the page's follow is stored under (a linked feed or a retired number), so the playlist plays it.
+            subscriptionRepository.followIdOf(pageState.requestedPodcastId ?: shownId, shownId) ?: shownId
+        }
     private val entryPoint = routeArgs.entryPoint
     private val pageState = PodcastInfoPageState()
     private val supplementSupport = PodcastInfoSupplementSupport(repository, episodeSupplementPort, pageState.listSchemes)

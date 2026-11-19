@@ -485,6 +485,8 @@ class AppContainer(
             folderRepository = folderRepository,
             userPreferencesRepository = userPreferencesRepository,
             autoDownloadDao = database.autoDownloadDao(),
+            // A renumbered show keeps its playlist places.
+            playlistRepository = playlistRepository,
             rssNotificationConsent = cx.aswin.boxlore.core.catalog.DeviceRssNotificationConsent(
                 java.io.File(appContext.noBackupFilesDir, "rss_notification_consent"),
             ),
@@ -615,11 +617,17 @@ class AppContainer(
         )
     }
 
-    /** Playlists (Room v43): one episode once across its stored IDs, as the queue does. */
+    /**
+     * Playlists of shows (Room v44). What one plays reads listening state across an episode's
+     * stored IDs, as the queue does, and skips shows hidden everywhere.
+     */
     override val playlistRepository: cx.aswin.boxlore.core.catalog.PlaylistRepository by lazy {
+        val listeners = database.episodeListenerStore()
         cx.aswin.boxlore.core.catalog.RoomPlaylistRepository(
             dao = database.playlistDao(),
-            episodeIds = { episodeId -> database.episodeListenerStore().memberIds(episodeId) },
+            projectedHistory = listeners::projectedHistoryOf,
+            withAliases = listeners::withAllAliases,
+            hiddenShowIds = userPreferencesRepository.hiddenShows.matchIdsStream,
         )
     }
 

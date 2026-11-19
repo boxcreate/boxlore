@@ -8,18 +8,19 @@ import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Playlists and their episodes (Room v43). Items are read in playlist order (`position`, then insertion);
- * an episode ID is in a playlist at most once, and deleting a playlist deletes its items.
+ * Playlists and their shows (Room v44). Shows are read in playlist order (`position`, then when
+ * they were added); a show is in a playlist at most once, and deleting a playlist deletes its rows.
+ * Also reads the stored episodes and in-progress history a playlist plays from.
  */
 @Dao
 @Suppress("TooManyFunctions")
 interface PlaylistDao {
-    /** Every playlist with its episode count, oldest first. */
+    /** Every playlist with its show count, oldest first. */
     @Query(
         """
-        SELECT p.*, COUNT(i.id) AS itemCount
+        SELECT p.*, COUNT(s.podcastId) AS showCount
         FROM playlists p
-        LEFT JOIN playlist_items i ON i.playlistId = p.playlistId
+        LEFT JOIN playlist_shows s ON s.playlistId = p.playlistId
         GROUP BY p.playlistId
         ORDER BY p.createdAt ASC, p.playlistId ASC
         """,
@@ -27,25 +28,24 @@ interface PlaylistDao {
     fun observePlaylistSummaries(): Flow<List<PlaylistSummary>>
 
     /**
-     * The artwork of each playlist's first [COVER_LIMIT] episodes, in playlist order: the episode's own
-     * image, else its show's. Without window functions, so it runs on every supported SQLite.
+     * The artwork of each playlist's first [COVER_LIMIT] shows, in playlist order. Without window
+     * functions, so it runs on every supported SQLite.
      */
     @Query(
         """
-        SELECT i.playlistId AS playlistId, COALESCE(NULLIF(i.imageUrl, ''), i.podcastImageUrl) AS imageUrl
-        FROM playlist_items i
+        SELECT s.playlistId AS playlistId, p.imageUrl AS imageUrl
+        FROM playlist_shows s
+        LEFT JOIN podcasts p ON p.podcastId = s.podcastId
         WHERE (
-            SELECT COUNT(*) FROM playlist_items j
-            WHERE j.playlistId = i.playlistId
-                AND (j.position < i.position OR (j.position = i.position AND j.id < i.id))
+            SELECT COUNT(*) FROM playlist_shows t
+            WHERE t.playlistId = s.playlistId
+                AND (t.position < s.position OR (t.position = s.position AND t.addedAt < s.addedAt)
+                    OR (t.position = s.position AND t.addedAt = s.addedAt AND t.podcastId < s.podcastId))
         ) < $COVER_LIMIT
-        ORDER BY i.playlistId ASC, i.position ASC, i.id ASC
+        ORDER BY s.playlistId ASC, s.position ASC, s.addedAt ASC, s.podcastId ASC
         """,
     )
     fun observePlaylistCovers(): Flow<List<PlaylistCover>>
-
-    @Query("SELECT * FROM playlists WHERE playlistId = :playlistId")
-    fun observePlaylist(playlistId: String): Flow<PlaylistEntity?>
 
     @Query("SELECT * FROM playlists WHERE playlistId = :playlistId")
     suspend fun getPlaylist(playlistId: String): PlaylistEntity?
@@ -53,27 +53,39 @@ interface PlaylistDao {
     @Query("SELECT * FROM playlists ORDER BY createdAt ASC, playlistId ASC")
     suspend fun getAllPlaylists(): List<PlaylistEntity>
 
-    @Query("SELECT * FROM playlist_items WHERE playlistId = :playlistId ORDER BY position ASC, id ASC")
-    fun observeItems(playlistId: String): Flow<List<PlaylistItemEntity>>
+    @Query(
+        """
+        SELECT s.playlistId, s.podcastId, s.position, s.addedAt, p.title AS title, p.imageUrl AS imageUrl,
+            p.author AS author, p.genre AS genre, COALESCE(p.isSubscribed, 0) AS isSubscribed
+        FROM playlist_shows s
+        LEFT JOIN podcasts p ON p.podcastId = s.podcastId
+        WHERE s.playlistId = :playlistId
+        ORDER BY s.position ASC, s.addedAt ASC, s.podcastId ASC
+        """,
+    )
+    fun observeShows(playlistId: String): Flow<List<PlaylistShowRow>>
 
-    @Query("SELECT * FROM playlist_items WHERE playlistId = :playlistId ORDER BY position ASC, id ASC")
-    suspend fun getItems(playlistId: String): List<PlaylistItemEntity>
+    @Query(
+        """
+        SELECT s.playlistId, s.podcastId, s.position, s.addedAt, p.title AS title, p.imageUrl AS imageUrl,
+            p.author AS author, p.genre AS genre, COALESCE(p.isSubscribed, 0) AS isSubscribed
+        FROM playlist_shows s
+        LEFT JOIN podcasts p ON p.podcastId = s.podcastId
+        WHERE s.playlistId = :playlistId
+        ORDER BY s.position ASC, s.addedAt ASC, s.podcastId ASC
+        """,
+    )
+    suspend fun getShows(playlistId: String): List<PlaylistShowRow>
 
-    /** Every playlist's items, each playlist in its order (for backups). */
-    @Query("SELECT * FROM playlist_items ORDER BY playlistId ASC, position ASC, id ASC")
-    suspend fun getAllItems(): List<PlaylistItemEntity>
+    /** Every playlist's show rows, each playlist in its order (for backups). */
+    @Query("SELECT * FROM playlist_shows ORDER BY playlistId ASC, position ASC, addedAt ASC, podcastId ASC")
+    suspend fun getAllShowRows(): List<PlaylistShowEntity>
 
-    /** Which of [episodeIds] (at most 500) are already in [playlistId]. */
-    @Query("SELECT episodeId FROM playlist_items WHERE playlistId = :playlistId AND episodeId IN (:episodeIds)")
-    suspend fun episodeIdsIn(playlistId: String, episodeIds: List<String>): List<String>
+    /** The playlists holding [podcastId]. */
+    @Query("SELECT playlistId FROM playlist_shows WHERE podcastId = :podcastId")
+    fun observePlaylistIdsForShow(podcastId: String): Flow<List<String>>
 
-    @Query("SELECT COUNT(*) FROM playlists")
-    suspend fun countPlaylists(): Int
-
-    @Query("SELECT COUNT(*) FROM playlist_items WHERE playlistId = :playlistId")
-    suspend fun countItems(playlistId: String): Int
-
-    @Query("SELECT MAX(position) FROM playlist_items WHERE playlistId = :playlistId")
+    @Query("SELECT MAX(position) FROM playlist_shows WHERE playlistId = :playlistId")
     suspend fun getMaxPosition(playlistId: String): Int?
 
     /** Adds [playlist]; throws when its ID is taken. */
@@ -84,89 +96,131 @@ interface PlaylistDao {
     @Query("UPDATE playlists SET name = :name, updatedAt = :updatedAt WHERE playlistId = :playlistId")
     suspend fun renamePlaylist(playlistId: String, name: String, updatedAt: Long): Int
 
+    /** Sets [playlistId]'s episode order (`newest` or `oldest`); returns the rows changed. */
+    @Query("UPDATE playlists SET episodeOrder = :episodeOrder, updatedAt = :updatedAt WHERE playlistId = :playlistId")
+    suspend fun setEpisodeOrder(playlistId: String, episodeOrder: String, updatedAt: Long): Int
+
     @Query("UPDATE playlists SET updatedAt = :updatedAt WHERE playlistId = :playlistId")
     suspend fun touchPlaylist(playlistId: String, updatedAt: Long)
 
-    /** Deletes [playlistId]; its items go with it. */
+    /** Deletes [playlistId]; its show rows go with it. */
     @Query("DELETE FROM playlists WHERE playlistId = :playlistId")
     suspend fun deletePlaylist(playlistId: String)
 
-    /** Inserts [item] as given; -1 when its episode is already in the playlist. Prefer [appendItem]. */
+    /** Inserts [row] as given; -1 when the show is already in the playlist. Prefer [appendShow]. */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertItem(item: PlaylistItemEntity): Long
+    suspend fun insertShow(row: PlaylistShowEntity): Long
 
     /**
-     * Adds [item] after the playlist's last episode and sets the playlist's `updatedAt` to its `addedAt`.
-     * Returns the new row ID, or null when the playlist doesn't exist or already holds the episode.
+     * Adds [podcastId] after the playlist's last show and sets the playlist's `updatedAt` to [addedAt]
+     * when [touch]. False when the playlist doesn't exist or already holds the show.
      */
     @Transaction
-    suspend fun appendItem(item: PlaylistItemEntity): Long? {
-        if (getPlaylist(item.playlistId) == null) return null
-        val position = (getMaxPosition(item.playlistId) ?: -1) + 1
-        val id = insertItem(item.copy(id = 0, position = position))
-        if (id == -1L) return null
-        touchPlaylist(item.playlistId, item.addedAt)
-        return id
+    suspend fun appendShow(playlistId: String, podcastId: String, addedAt: Long, touch: Boolean = true): Boolean {
+        if (getPlaylist(playlistId) == null) return false
+        val position = (getMaxPosition(playlistId) ?: -1) + 1
+        if (insertShow(PlaylistShowEntity(playlistId, podcastId, position, addedAt)) == -1L) return false
+        if (touch) touchPlaylist(playlistId, addedAt)
+        return true
     }
 
-    /** [appendItem] for each of [items], in order, in one transaction; returns how many were added. */
-    @Transaction
-    suspend fun appendItems(items: List<PlaylistItemEntity>): Int = items.count { appendItem(it) != null }
+    /** Removes [podcastId] from [playlistId]; returns the rows removed. */
+    @Query("DELETE FROM playlist_shows WHERE playlistId = :playlistId AND podcastId = :podcastId")
+    suspend fun deleteShow(playlistId: String, podcastId: String): Int
 
-    @Query("DELETE FROM playlist_items WHERE id = :itemId")
-    suspend fun deleteItem(itemId: Long)
-
-    /** Removes [episodeIds] (at most 500) from [playlistId]; returns how many rows went. */
-    @Query("DELETE FROM playlist_items WHERE playlistId = :playlistId AND episodeId IN (:episodeIds)")
-    suspend fun deleteItemsByEpisodeIds(playlistId: String, episodeIds: List<String>): Int
-
-    @Query("UPDATE playlist_items SET position = :position WHERE id = :itemId")
-    suspend fun setItemPosition(itemId: Long, position: Int)
+    @Query("SELECT * FROM playlist_shows WHERE podcastId = :podcastId")
+    suspend fun getRowsForShow(podcastId: String): List<PlaylistShowEntity>
 
     /**
-     * Puts [playlistId]'s items in the order of [orderedItemIds] (positions 0, 1, 2…). IDs not in the
-     * playlist are ignored; items left out keep their relative order after the listed ones.
+     * Moves every playlist row of show [oldPodcastId] to [newPodcastId] (RSS follow upgrade). A
+     * playlist that already holds the new show keeps that row, so the show stays in it once.
      */
     @Transaction
-    suspend fun reorder(playlistId: String, orderedItemIds: List<Long>) {
-        val items = getItems(playlistId)
-        val byId = items.associateBy { it.id }
-        val listed = orderedItemIds.distinct().mapNotNull { byId[it] }
-        val listedIds = listed.mapTo(HashSet()) { it.id }
-        (listed + items.filter { it.id !in listedIds }).forEachIndexed { index, item ->
-            if (item.position != index) setItemPosition(item.id, index)
+    suspend fun reassignPodcast(oldPodcastId: String, newPodcastId: String): Int {
+        if (oldPodcastId == newPodcastId) return 0
+        val rows = getRowsForShow(oldPodcastId)
+        rows.forEach { row ->
+            deleteShow(row.playlistId, oldPodcastId)
+            insertShow(row.copy(podcastId = newPodcastId))
         }
+        return rows.size
     }
 
-    /** Points every playlist row of show [oldPodcastId] at show [newPodcastId] with its details (RSS follow upgrade). */
-    @Query(
-        "UPDATE playlist_items SET podcastId = :newPodcastId, podcastTitle = :podcastTitle, podcastGenre = :podcastGenre, " +
-            "podcastArtist = :podcastArtist, podcastImageUrl = :podcastImageUrl WHERE podcastId = :oldPodcastId",
-    )
-    suspend fun reassignPodcast(
-        oldPodcastId: String,
-        newPodcastId: String,
-        podcastTitle: String,
-        podcastGenre: String,
-        podcastArtist: String,
-        podcastImageUrl: String?,
-    ): Int
-
-    @Query("DELETE FROM playlist_items")
-    suspend fun deleteAllItems()
+    @Query("DELETE FROM playlist_shows")
+    suspend fun deleteAllShows()
 
     @Query("DELETE FROM playlists")
     suspend fun deleteAllPlaylists()
 
-    /** Deletes every playlist and item (account switch). */
+    /** Deletes every playlist and its shows (account switch). */
     @Transaction
     suspend fun deleteAll() {
-        deleteAllItems()
+        deleteAllShows()
         deleteAllPlaylists()
     }
 
+    /**
+     * Up to [limit] of [podcastIds]' stored episodes with audio that aren't finished under this ID,
+     * newest release first, released before ([beforeDate], [beforeId]): keyset pages, so each page
+     * reads only from where the last one ended. Reads `local_episodes` (Podcast Index shows) and
+     * `rss_episodes` (`rss:` shows); each ID is bound twice, so at most 400 IDs per call.
+     */
+    @Query(
+        """
+        SELECT e.* FROM ($STORED_EPISODES) e WHERE e.audioUrl != ''
+            AND (e.publishedDate < :beforeDate OR (e.publishedDate = :beforeDate AND e.episodeId < :beforeId))
+            AND $NOT_FINISHED
+        ORDER BY e.publishedDate DESC, e.episodeId DESC LIMIT :limit
+        """,
+    )
+    suspend fun newestEpisodes(podcastIds: List<String>, beforeDate: Long, beforeId: String, limit: Int): List<PlaylistEpisodeRow>
+
+    /** [newestEpisodes], oldest release first, released after ([afterDate], [afterId]). */
+    @Query(
+        """
+        SELECT e.* FROM ($STORED_EPISODES) e WHERE e.audioUrl != ''
+            AND (e.publishedDate > :afterDate OR (e.publishedDate = :afterDate AND e.episodeId > :afterId))
+            AND $NOT_FINISHED
+        ORDER BY e.publishedDate ASC, e.episodeId ASC LIMIT :limit
+        """,
+    )
+    suspend fun oldestEpisodes(podcastIds: List<String>, afterDate: Long, afterId: String, limit: Int): List<PlaylistEpisodeRow>
+
+    /** The stored episodes among [episodeIds] (bound twice, so at most 400), from either episode table. */
+    @Query("SELECT * FROM ($STORED_EPISODES_BY_ID)")
+    suspend fun storedEpisodes(episodeIds: List<String>): List<PlaylistEpisodeRow>
+
+    /**
+     * History rows of [podcastIds] (at most 997) the listener is midway through, at least
+     * [minProgressMs] in, most recently played first.
+     */
+    @Query(
+        """
+        SELECT * FROM listening_history
+        WHERE isCompleted = 0 AND progressMs >= :minProgressMs AND progressMs > 0 AND podcastId IN (:podcastIds)
+        ORDER BY lastPlayedAt DESC LIMIT :limit
+        """,
+    )
+    suspend fun inProgressHistory(podcastIds: List<String>, minProgressMs: Long, limit: Int): List<ListeningHistoryEntity>
+
     companion object {
-        /** How many episodes' artwork [observePlaylistCovers] returns per playlist. */
+        /** How many shows' artwork [observePlaylistCovers] returns per playlist. */
         const val COVER_LIMIT = 4
     }
 }
+
+private const val EPISODE_COLUMNS =
+    "episodeId, podcastId, title, description, audioUrl, imageUrl, duration, publishedDate, chaptersUrl, " +
+        "transcriptUrl, seasonNumber, episodeNumber, episodeType, enclosureType"
+
+private const val STORED_EPISODES =
+    "SELECT $EPISODE_COLUMNS FROM local_episodes WHERE podcastId IN (:podcastIds) " +
+        "UNION ALL SELECT $EPISODE_COLUMNS FROM rss_episodes WHERE podcastId IN (:podcastIds)"
+
+/** Not finished under its own ID; the caller still checks the episode's other IDs. */
+private const val NOT_FINISHED =
+    "NOT EXISTS (SELECT 1 FROM listening_history h WHERE h.episodeId = e.episodeId AND h.isCompleted = 1)"
+
+private const val STORED_EPISODES_BY_ID =
+    "SELECT $EPISODE_COLUMNS FROM local_episodes WHERE episodeId IN (:episodeIds) " +
+        "UNION ALL SELECT $EPISODE_COLUMNS FROM rss_episodes WHERE episodeId IN (:episodeIds)"

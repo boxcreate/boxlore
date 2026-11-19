@@ -356,7 +356,7 @@ class PodcastInfoAdaptiveTransitionTest {
         fixture.compose.onNodeWithTag(LIST_TAG).performScrollToIndex(RESULT_ROW + 1)
         fixture.compose.onNodeWithText("Episode 10").performSemanticsAction(SemanticsActions.OnLongClick)
         selectionCount("1")
-        fixture.compose.onNodeWithContentDescription("More actions").performClick()
+        fixture.compose.onNodeWithContentDescription("More selection options").performClick()
         fixture.compose.onNodeWithText("Select all episodes").performClick()
 
         // "Episode 1" and "Episode 10" to "Episode 19": every result, not the show's newest episodes.
@@ -372,7 +372,7 @@ class PodcastInfoAdaptiveTransitionTest {
         selectionWindow = { throw java.io.IOException("offline") }
         render()
         fixture.compose.onNodeWithText("Episode 0").performTouchInput { longClick() }
-        fixture.compose.onNodeWithContentDescription("More actions").performClick()
+        fixture.compose.onNodeWithContentDescription("More selection options").performClick()
         fixture.compose.onNodeWithText("Select all episodes").performClick()
 
         selectionCount("1")
@@ -446,7 +446,7 @@ class PodcastInfoAdaptiveTransitionTest {
         uiState.value = success(episodes = oldestFirst.take(20), sort = EpisodeSort.OLDEST, isSubscribed = false)
         render()
         fixture.compose.onNodeWithText("Episode 59").performTouchInput { longClick() }
-        fixture.compose.onNodeWithContentDescription("More actions").performClick()
+        fixture.compose.onNodeWithContentDescription("More selection options").performClick()
         fixture.compose.onNodeWithText("Select all episodes").performClick()
         selectionCount("50")
         assertEquals(listOf<EpisodeSort?>(EpisodeSort.OLDEST), windowSorts)
@@ -480,14 +480,14 @@ class PodcastInfoAdaptiveTransitionTest {
         selectionCount("50")
         selectionActionsEnabled(false)
         // The range menu shows progress instead of its button while the lookup runs.
-        fixture.compose.onNodeWithContentDescription("More actions").assertDoesNotExist()
+        fixture.compose.onNodeWithContentDescription("More selection options").assertDoesNotExist()
         assertEquals(true, fixture.compose.onAllNodes(hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate)).fetchSemanticsNodes().isNotEmpty())
 
         lookup.complete(newestWindow(50))
         fixture.compose.waitForIdle()
         selectionCount("50")
         selectionActionsEnabled(true)
-        fixture.compose.onNodeWithContentDescription("More actions").assertExists()
+        fixture.compose.onNodeWithContentDescription("More selection options").assertExists()
         fixture.compose.onNodeWithContentDescription("Play selected episodes").performClick()
         assertEquals(listOf(episodes.take(50).map(Episode::id)), playedIds())
     }
@@ -501,7 +501,7 @@ class PodcastInfoAdaptiveTransitionTest {
 
         selectionCount("50")
         selectionActionsEnabled(false)
-        fixture.compose.onNodeWithContentDescription("More actions").assertExists()
+        fixture.compose.onNodeWithContentDescription("More selection options").assertExists()
         acrossWindowChanges { selectionCount("50") }
         assertEquals("One attempt per page state", 2, windowSorts.size)
 
@@ -1057,7 +1057,7 @@ class PodcastInfoAdaptiveTransitionTest {
 
     private fun selectAll() {
         fixture.compose.onNodeWithText("Episode 0").performTouchInput { longClick() }
-        fixture.compose.onNodeWithContentDescription("More actions").performClick()
+        fixture.compose.onNodeWithContentDescription("More selection options").performClick()
         fixture.compose.onNodeWithText("Select all episodes").performClick()
         selectionCount("50")
     }

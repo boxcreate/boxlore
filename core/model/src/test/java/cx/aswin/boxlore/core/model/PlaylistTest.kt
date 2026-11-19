@@ -14,8 +14,18 @@ class PlaylistTest {
     }
 
     @Test
-    fun `a playlist is full at the limit`() {
-        assertFalse(Playlist("p", "P", 0L, 0L, PLAYLIST_EPISODE_LIMIT - 1).isFull)
-        assertTrue(Playlist("p", "P", 0L, 0L, PLAYLIST_EPISODE_LIMIT).isFull)
+    fun `order reads its stored value and defaults to newest`() {
+        assertEquals(PlaylistOrder.OLDEST, PlaylistOrder.fromStored("oldest"))
+        assertEquals(PlaylistOrder.NEWEST, PlaylistOrder.fromStored("newest"))
+        assertEquals(PlaylistOrder.NEWEST, PlaylistOrder.fromStored(null))
+        assertEquals(PlaylistOrder.NEWEST, PlaylistOrder.fromStored("sideways"))
+    }
+
+    @Test
+    fun `a show plays only while followed and not hidden`() {
+        val show = PlaylistShow("p", "s", 0, 0L, "Show", null, isFollowed = true)
+        assertTrue(show.isPlayable)
+        assertFalse(show.copy(isFollowed = false).isPlayable)
+        assertFalse(show.copy(isHidden = true).isPlayable)
     }
 }

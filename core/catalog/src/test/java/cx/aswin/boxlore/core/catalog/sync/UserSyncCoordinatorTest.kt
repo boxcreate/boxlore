@@ -905,7 +905,7 @@ class UserSyncCoordinatorTest {
         // Seed data belonging to Account A
         podcastDao.upsert(createTestPodcastEntity("pod-account-a", "Account A Show", isSubscribed = true))
         val playlists = cx.aswin.boxlore.core.catalog.RoomPlaylistRepository(database.playlistDao())
-        playlists.createPlaylist("Account A list", listOf(cx.aswin.boxlore.core.model.Episode("ep-account-a", "Ep", "", "https://example.com/audio.mp3")))
+        playlists.createPlaylist("Account A list", listOf("pod-account-a"))
         listeningHistoryDao.upsert(createTestHistoryEntity("ep-account-a", "pod-account-a"))
         fakeQueueSyncPort.applyRemoteQueueState(
             items = listOf(

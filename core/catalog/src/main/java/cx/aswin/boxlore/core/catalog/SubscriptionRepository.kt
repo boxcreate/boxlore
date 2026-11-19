@@ -56,6 +56,7 @@ class SubscriptionRepository(
     private val folderRepository: FolderRepository? = null,
     private val userPreferencesRepository: UserPreferencesRepository? = null,
     private val autoDownloadDao: cx.aswin.boxlore.core.database.AutoDownloadDao? = null,
+    private val playlistRepository: PlaylistRepository? = null,
     private val rssNotificationConsent: RssNotificationConsent = RssNotificationConsent.NONE,
     private val rssNotificationRegistrations: RssNotificationRegistrationStore = MemoryRssNotificationRegistrations(),
     private val requestRssNotificationSync: () -> Unit = {},
@@ -67,7 +68,7 @@ class SubscriptionRepository(
         feedAddressWiring.run { FeedAddressUpdater(podcastDao, requestNotificationRegistration, telemetry, pendingRegistrations) }
 
     /** One follow for a show Podcast Index renumbered (docs/EPISODE_IDS.md §5, renumbered shows). */
-    val renumberedFollows: RenumberedShowFollows = renumbering.follows(podcastDao, feedAddresses, RenumberedFollowWrites.Library(folderRepository, userPreferencesRepository, autoDownloadDao, localEpisodeCatalog)) { updateFirebaseSubscription(it.podcastId, it.title, it.imageUrl, false) }
+    val renumberedFollows: RenumberedShowFollows = renumbering.follows(podcastDao, feedAddresses, RenumberedFollowWrites.Library(folderRepository, userPreferencesRepository, autoDownloadDao, localEpisodeCatalog, playlistRepository)) { updateFirebaseSubscription(it.podcastId, it.title, it.imageUrl, false) }
 
     private val notificationRegistrar by lazy { PodcastNotificationRegistrar(podcastDao) }
 
@@ -224,10 +225,11 @@ class SubscriptionRepository(
         folderRepository?.syncLinkedGenres()
     }
 
-    suspend fun isSubscribed(podcastId: String): Boolean {
-        if (podcastDao.getPodcast(podcastId)?.isSubscribed == true) return true
-        return podcastDao.getRssPodcastLinkedTo(podcastId)?.isSubscribed == true
-    }
+    suspend fun isSubscribed(podcastId: String): Boolean = podcastDao.ownFollowId(podcastId) != null
+
+    /** The ID a show page's follow is stored under ([pageFollowId]), or null when none is followed. */
+    suspend fun followIdOf(routePodcastId: String, shownPodcastId: String): String? =
+        podcastDao.pageFollowId(renumberedFollows, routePodcastId, shownPodcastId)
 
     suspend fun subscribe(podcast: Podcast) {
         subscribeInternal(podcast, restoredSubscribedAt = null, recordFeedback = true)

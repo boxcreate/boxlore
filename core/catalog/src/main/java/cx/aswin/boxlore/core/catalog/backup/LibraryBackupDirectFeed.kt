@@ -20,7 +20,7 @@ internal object LibraryBackupDirectFeedLogic {
      * episode identity block ([BoxLoreBackup.episodeIdentity], P4 PR 17 of the own-episode-IDs plan);
      * 8 the timed listening and played shows ([BoxLoreBackup.listening]) and the history rows'
      * listening dates; 9 the daily summaries' richer totals (Room v41); 10 their time with a known
-     * release date (Room v42); 11 each show's playback speed and trim silence, and playlists (Room v43).
+     * release date (Room v42); 11 each show's playback speed and trim silence (Room v43), and playlists (Room v44).
      */
     const val VERSION = 11
 

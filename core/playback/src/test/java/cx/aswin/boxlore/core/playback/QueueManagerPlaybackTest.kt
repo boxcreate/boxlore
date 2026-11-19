@@ -101,10 +101,77 @@ class QueueManagerPlaybackTest {
     }
 
     @Test
-    fun `an episode page opened from a playlist page is not a playing playlist`() {
-        assertEquals(null, PlaybackQueueContext.knownEntryPoint("library_playlist"))
-        assertEquals(null, PlaybackQueueContext.entryPointFor("library_playlist"))
-        assertEquals(PlaybackQueueContext.PLAYLIST, PlaybackQueueContext.knownEntryPoint("playlist"))
+    fun `undo puts the queue back and plays its episode from where it was`() = runTest(testDispatcher) {
+        val podcast = Podcast("show-1", "Show", "Host", "art")
+        val queue = listOf(
+            Episode("1", "First", "", "https://example.com/1.mp3", podcastId = "show-1"),
+            Episode("2", "Second", "", "https://example.com/2.mp3", podcastId = "show-1"),
+        )
+        val state = PlayerState(currentEpisode = queue[1], currentPodcast = podcast, queue = queue, position = 42_000L, isPlaying = true)
+        `when`(playbackRepository.playerState).thenReturn(MutableStateFlow(state))
+        val manager = QueueManager(queueRepository, playbackRepository)
+
+        val snapshot = manager.upNextSnapshot()!!
+        assertEquals(UpNextSnapshot(queue, 1, 42_000L, true, podcast), snapshot)
+        manager.restoreUpNext(snapshot)
+        advanceUntilIdle()
+
+        verify(queueRepository).replaceQueue(queue)
+        verify(queueCoordinator).playQueue(
+            safeEq(queue),
+            safeEq(podcast),
+            safeEq(1),
+            safeEq(PlaybackEntryPoint.GENERIC),
+            safeEq(42_000L),
+            safeEq(null),
+        )
+    }
+
+    @Test
+    fun `undo of a paused queue loads it paused, so no audio or play start comes first`() = runTest(testDispatcher) {
+        val podcast = Podcast("show-1", "Show", "Host", "art")
+        val queue = listOf(
+            Episode("1", "First", "", "https://example.com/1.mp3", podcastId = "show-1"),
+            Episode("2", "Second", "", "https://example.com/2.mp3", podcastId = "show-1"),
+        )
+        val state = PlayerState(currentEpisode = queue[1], currentPodcast = podcast, queue = queue, position = 42_000L, isPlaying = false)
+        `when`(playbackRepository.playerState).thenReturn(MutableStateFlow(state))
+        val manager = QueueManager(queueRepository, playbackRepository)
+
+        manager.restoreUpNext(manager.upNextSnapshot()!!)
+        advanceUntilIdle()
+
+        verify(queueRepository).replaceQueue(queue)
+        verify(queueCoordinator).loadQueuePaused(safeEq(queue), safeEq(podcast), safeEq(1), safeEq(42_000L))
+        verify(queueCoordinator, never()).playQueue(
+            safeAny(emptyList()),
+            safeAny(podcast),
+            anyInt(),
+            safeAny(PlaybackEntryPoint.GENERIC),
+            safeAny(0L),
+            safeAny(Bundle()),
+        )
+    }
+
+    @Test
+    fun `an episode playing outside its queue leads the undo with its own position`() {
+        val podcast = Podcast("show-1", "Show", "Host", "art")
+        val playing = Episode("9", "Playing", "", "https://example.com/9.mp3", podcastId = "show-1")
+        val upNext = listOf(Episode("1", "First", "", "https://example.com/1.mp3", podcastId = "show-1"))
+
+        val snapshot = UpNextSnapshot.of(PlayerState(currentEpisode = playing, currentPodcast = podcast, queue = upNext, position = 7_000L))!!
+
+        assertEquals(listOf("9", "1"), snapshot.episodes.map { it.id })
+        assertEquals(0 to 7_000L, snapshot.currentIndex to snapshot.positionMs)
+    }
+
+    @Test
+    fun `nothing queued or playing has nothing to undo`() {
+        assertEquals(null, UpNextSnapshot.of(PlayerState()))
+        val alone = Episode("9", "Only", "", "https://example.com/9.mp3", podcastId = "show-9", podcastTitle = "Nine")
+        val snapshot = UpNextSnapshot.of(PlayerState(currentEpisode = alone, position = 5L))!!
+        assertEquals(listOf("9") to 0, snapshot.episodes.map { it.id } to snapshot.currentIndex)
+        assertEquals("show-9" to "Nine", snapshot.podcast.id to snapshot.podcast.title)
     }
 
     @Test
@@ -123,6 +190,11 @@ class QueueManagerPlaybackTest {
     private fun <T> safeEq(value: T): T {
         ArgumentMatchers.eq(value)
         return value
+    }
+
+    private fun <T> safeAny(fallback: T): T {
+        ArgumentMatchers.any<T>()
+        return fallback
     }
 
     private fun <T> safeCapture(captor: ArgumentCaptor<T>, fallback: T,): T {

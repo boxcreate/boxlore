@@ -325,8 +325,6 @@ class AnalyticsRawTextAndEntryPointTest {
         assertEquals("library_latest_episodes", AnalyticsGlossary.normalizeEntryPoint("library_latest_episodes"))
         // A playing playlist: one value for every playlist, never its ID.
         assertEquals("playlist", AnalyticsGlossary.normalizeEntryPoint("playlist"))
-        // An episode page opened from a playlist's page is not a playing playlist.
-        assertEquals("library_playlist", AnalyticsGlossary.normalizeEntryPoint("library_playlist"))
     }
 
     @Test

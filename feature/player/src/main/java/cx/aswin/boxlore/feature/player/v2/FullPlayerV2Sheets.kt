@@ -139,7 +139,6 @@ internal fun FullPlayerModalSheets(
             ),
             ui = ui,
             actions = actions,
-            onSaveAsPlaylist = dependencies.playlistRepository?.let { { ui.saveQueueName = "" } },
         )
     }
     if (ui.showChaptersSheet && !usesTabletLayout) {

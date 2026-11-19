@@ -83,9 +83,6 @@ data class FullPlayerDependencies(
     val playbackRepository: PlaybackRepository,
     val downloadRepository: cx.aswin.boxlore.core.downloads.DownloadRepository,
     val userPrefs: cx.aswin.boxlore.core.prefs.UserPreferencesRepository,
-    /** Save queue as playlist; null (tests, previews) hides it. */
-    val playlistRepository: cx.aswin.boxlore.core.catalog.PlaylistRepository? =
-        cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder.instance?.playlistRepository,
 )
 
 /**
@@ -128,9 +125,6 @@ internal class FullPlayerUiState {
     var supportingContentUsesTablet by mutableStateOf(false)
     var restoreSupportingContentOnCompact by mutableStateOf(false)
 
-    /** The name being typed in Save queue as playlist, or null while the dialog is closed. */
-    var saveQueueName by mutableStateOf<String?>(null)
-
     fun selectSupportingTab(tab: PlayerSupportingTab, restoreOnCompact: Boolean = true) {
         supportingTab = tab
         restoreSupportingContentOnCompact = restoreOnCompact
@@ -159,7 +153,7 @@ internal class FullPlayerUiState {
 }
 
 internal val FullPlayerUiStateSaver =
-    listSaver<FullPlayerUiState, Any>(
+    listSaver<FullPlayerUiState, Boolean>(
         save = { state ->
             listOf(
                 state.showQueueSheet,
@@ -177,12 +171,9 @@ internal val FullPlayerUiStateSaver =
                 state.supportingTab == PlayerSupportingTab.Notes,
                 state.supportingContentUsesTablet,
                 state.restoreSupportingContentOnCompact,
-                state.saveQueueName != null,
-                state.saveQueueName.orEmpty(),
             )
         },
-        restore = { saved ->
-            val values = saved.map { it as? Boolean ?: false }
+        restore = { values ->
             FullPlayerUiState().apply {
                 showQueueSheet = values.getOrElse(0) { false }
                 showChaptersSheet = values.getOrElse(1) { false }
@@ -202,7 +193,6 @@ internal val FullPlayerUiStateSaver =
                 }
                 supportingContentUsesTablet = values.getOrElse(13) { false }
                 restoreSupportingContentOnCompact = values.getOrElse(14) { false }
-                saveQueueName = if (values.getOrElse(15) { false }) saved.getOrNull(16) as? String ?: "" else null
             }
         },
     )
@@ -378,14 +368,6 @@ fun FullPlayerV2(
         ),
         actions = playerActions,
     )
-
-    // After the sheets, and recreated whenever the phone queue sheet opens, so its window always
-    // sits above that sheet's (a resize back to phone reopens the sheet under an open dialog).
-    MaterialTheme(colorScheme = display.colorScheme) {
-        androidx.compose.runtime.key(ui.showQueueSheet && !tablet) {
-            SaveQueueAsPlaylistDialog(dependencies.playlistRepository, ui, state.queue, scope, queueSnackbarHostState)
-        }
-    }
 
     // ------------------------------------------------------------------
     // Fullscreen transcript overlay

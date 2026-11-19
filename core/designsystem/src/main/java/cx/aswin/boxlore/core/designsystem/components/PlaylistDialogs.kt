@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.core.designsystem.components
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -20,11 +19,10 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.PLAYLIST_NAME_MAX_LENGTH
 import cx.aswin.boxlore.core.model.normalizePlaylistName
 
-/** Wording shared by every playlist dialog, so the show page, episode page, player and Library match. */
+/** Wording shared by every playlist dialog, so the show page and Library match. */
 object PlaylistCopy {
     const val NEW_PLAYLIST = "New playlist"
     const val RENAME_PLAYLIST = "Rename playlist"
-    const val SAVE_QUEUE = "Save queue as playlist"
     const val NAME_LABEL = "Name"
     const val CREATE = "Create"
     const val SAVE = "Save"
@@ -32,24 +30,17 @@ object PlaylistCopy {
     const val DELETE = "Delete"
     const val DELETE_TITLE = "Delete playlist?"
 
-    fun episodeCount(count: Int): String = when (count) {
-        0 -> "No episodes yet"
-        1 -> "1 episode"
-        else -> "$count episodes"
+    fun showCount(count: Int): String = when (count) {
+        0 -> "No shows yet"
+        1 -> "1 show"
+        else -> "$count shows"
     }
 
-    fun deleteBody(name: String): String = "“$name” will be deleted. This can’t be undone. Your downloads and listening history stay as they are."
-
-    /** The player's Save queue as playlist: what gets saved. */
-    fun saveQueueBody(upNextCount: Int): String = when (upNextCount) {
-        0 -> "Saves the episode playing now."
-        1 -> "Saves the episode playing now and 1 episode up next."
-        else -> "Saves the episode playing now and $upNextCount episodes up next."
-    }
+    fun deleteBody(name: String): String = "“$name” will be deleted. This can’t be undone. The shows, your downloads and your listening history stay as they are."
 }
 
 /**
- * A playlist name dialog: New playlist, Rename playlist or Save queue as playlist. Stateless: the
+ * A playlist name dialog: New playlist or Rename playlist. Stateless: the
  * caller keeps [name] in saved state, so a draft survives resizing, folding and recreation.
  * [onConfirm] gets the normalised name and is offered only when it isn't blank.
  */
@@ -62,7 +53,6 @@ fun PlaylistNameDialog(
     confirmLabel: String,
     onConfirm: (String) -> Unit,
     onDismissRequest: () -> Unit,
-    supportingText: String? = null,
 ) {
     val normalized = normalizePlaylistName(name)
     val confirm = { if (normalized.isNotEmpty()) onConfirm(normalized) }
@@ -70,20 +60,15 @@ fun PlaylistNameDialog(
         onDismissRequest = onDismissRequest,
         title = { Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = GoogleSansWeight.bold) },
         text = {
-            Column {
-                supportingText?.let {
-                    Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { onNameChange(it.take(PLAYLIST_NAME_MAX_LENGTH)) },
-                    label = { Text(PlaylistCopy.NAME_LABEL) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { confirm() }),
-                    modifier = Modifier.fillMaxWidth().testTag(PLAYLIST_NAME_FIELD_TAG),
-                )
-            }
+            OutlinedTextField(
+                value = name,
+                onValueChange = { onNameChange(it.take(PLAYLIST_NAME_MAX_LENGTH)) },
+                label = { Text(PlaylistCopy.NAME_LABEL) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { confirm() }),
+                modifier = Modifier.fillMaxWidth().testTag(PLAYLIST_NAME_FIELD_TAG),
+            )
         },
         confirmButton = {
             Button(onClick = confirm, enabled = normalized.isNotEmpty()) { Text(confirmLabel) }

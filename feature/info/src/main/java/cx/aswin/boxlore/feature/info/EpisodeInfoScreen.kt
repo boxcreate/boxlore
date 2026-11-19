@@ -23,7 +23,6 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.LibraryAdd
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -102,9 +101,6 @@ fun EpisodeInfoScreen(
     val density = LocalDensity.current
     val watchActions = cx.aswin.boxlore.core.designsystem.components.LocalWatchEpisodeActions.current
     var watchMessage by remember { mutableStateOf<Int?>(null) }
-    val playlistPicker = rememberInfoPlaylistPicker(episodeId)
-    val playlistMessages = remember { androidx.compose.material3.SnackbarHostState() }
-    val playlistEpisode = (uiState as? EpisodeInfoUiState.Success)?.let(EpisodeLoadRequests::playlistEpisode)
 
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -357,16 +353,6 @@ fun EpisodeInfoScreen(
                         )
                     }
 
-                    // Add to playlist: left of Share, and of the watch button when there is one.
-                    if (viewModel.playlists != null && playlistEpisode != null) {
-                        cx.aswin.boxlore.feature.info.components.EpisodeInfoHeaderButton(
-                            icon = Icons.Rounded.LibraryAdd,
-                            label = androidx.compose.ui.res.stringResource(R.string.episode_info_add_playlist),
-                            onClick = { playlistPicker.open = true },
-                            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 16.dp + cx.aswin.boxlore.feature.info.components.EpisodeWatchHeader.playlistButtonEnd(watchActions != null)),
-                        )
-                    }
-
                     // Share Button
                     var showShareSheet by remember { mutableStateOf(false) }
                     cx.aswin.boxlore.feature.info.components.EpisodeInfoHeaderButton(
@@ -427,7 +413,7 @@ fun EpisodeInfoScreen(
                         // With the watch button in the bar the name stops before it, not under it.
                         .padding(
                             start = titleHorizontalPadding,
-                            end = titleHorizontalPadding + cx.aswin.boxlore.feature.info.components.EpisodeWatchHeader.titleEndExtra(watchActions != null, hasPlaylistButton = viewModel.playlists != null),
+                            end = titleHorizontalPadding + cx.aswin.boxlore.feature.info.components.EpisodeWatchHeader.titleEndExtra(watchActions != null),
                         )
                         .graphicsLayer {
                             translationY = titleTranslationY
@@ -442,12 +428,9 @@ fun EpisodeInfoScreen(
                         onShown = { watchMessage = null },
                         modifier = Modifier.padding(top = collapsedHeaderHeight + 8.dp),
                     )
-                    androidx.compose.material3.SnackbarHost(playlistMessages, Modifier.padding(top = collapsedHeaderHeight + 8.dp))
                 }
             }
         }
-
-        InfoPlaylistPickerHost(playlistPicker, viewModel.playlists, listOfNotNull(playlistEpisode), playlistMessages)
 
         if (showRemoveDownloadDialog) {
             RemoveDownloadConfirmationDialog(

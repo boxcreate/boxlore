@@ -1,31 +1,48 @@
 package cx.aswin.boxlore.core.model
 
 /**
- * A listener's playlist: episodes in an order the listener chose. [coverUrls] are the artwork of its
- * first few episodes, in playlist order.
+ * A listener's playlist: a set of shows played as one list. Its episodes are worked out when it
+ * plays (the shows' unfinished episodes in [order]), so it never runs out while the shows publish.
+ * [coverUrls] are the artwork of its first few shows, in the order they were added.
  */
 data class Playlist(
     val id: String,
     val name: String,
     val createdAt: Long,
     val updatedAt: Long,
-    val episodeCount: Int,
+    val showCount: Int,
+    val order: PlaylistOrder = PlaylistOrder.NEWEST,
     val coverUrls: List<String> = emptyList(),
-) {
-    val isFull: Boolean get() = episodeCount >= PLAYLIST_EPISODE_LIMIT
-}
-
-/** One episode in a playlist. [itemId] identifies this row (the same episode can sit in other playlists). */
-data class PlaylistEpisode(
-    val itemId: Long,
-    val playlistId: String,
-    val position: Int,
-    val addedAt: Long,
-    val episode: Episode,
 )
 
-/** The most episodes one playlist holds. */
-const val PLAYLIST_EPISODE_LIMIT = 500
+/** Which end of the release dates a playlist plays from. [stored] is the value kept on the phone and in backups. */
+enum class PlaylistOrder(val stored: String) {
+    NEWEST("newest"),
+    OLDEST("oldest"),
+    ;
+
+    companion object {
+        /** Unknown or missing values read as [NEWEST]. */
+        fun fromStored(value: String?): PlaylistOrder = entries.firstOrNull { it.stored == value } ?: NEWEST
+    }
+}
+
+/**
+ * One show in a playlist, with what the phone knows of it. [isFollowed] false or [isHidden] true
+ * means the show stays in the playlist but its episodes are skipped.
+ */
+data class PlaylistShow(
+    val playlistId: String,
+    val podcastId: String,
+    val position: Int,
+    val addedAt: Long,
+    val title: String,
+    val imageUrl: String?,
+    val isFollowed: Boolean,
+    val isHidden: Boolean = false,
+) {
+    val isPlayable: Boolean get() = isFollowed && !isHidden
+}
 
 /** The longest playlist name, in characters. */
 const val PLAYLIST_NAME_MAX_LENGTH = 60

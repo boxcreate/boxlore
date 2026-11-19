@@ -8,7 +8,6 @@ import cx.aswin.boxlore.core.database.FeedAddressWrite
 import cx.aswin.boxlore.core.database.LocalEpisodeFeedEntity
 import cx.aswin.boxlore.core.database.LocalFeedOrder
 import cx.aswin.boxlore.core.database.PlaylistEntity
-import cx.aswin.boxlore.core.database.PlaylistItemEntity
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome
 import cx.aswin.boxlore.core.model.EpisodeRecipeId
@@ -384,40 +383,24 @@ class LegacyIdentityRoomTest : RoomCatalogTestBase() {
     }
 
     @Test
-    fun theLegacyRssUpgradeMovesPlaylistRowsToTheUpgradedShow() = runBlocking {
+    fun theLegacyRssUpgradeMovesPlaylistShowsToTheUpgradedShowOnce() = runBlocking {
         val rss = RssPodcastRepository.createForTests(ApplicationProvider.getApplicationContext(), database, feed)
         feed.items = listOf(Item("g1"))
         val rssId = rss.addSubscription(RSS_FEED_URL).podcast.id
-        val carried = database.rssEpisodeDao().getAllNewest(rssId).single().episodeId
         val playlists = database.playlistDao()
         playlists.insertPlaylist(PlaylistEntity(playlistId = "p1", name = "Mix", createdAt = 1L, updatedAt = 1L))
-        playlists.appendItem(playlistRow("p1", carried, rssId))
-        playlists.appendItem(playlistRow("p1", "other-episode", OTHER_SHOW))
+        playlists.insertPlaylist(PlaylistEntity(playlistId = "p2", name = "Both", createdAt = 2L, updatedAt = 2L))
+        playlists.appendShow("p1", rssId, addedAt = 1L)
+        playlists.appendShow("p1", OTHER_SHOW, addedAt = 2L)
+        playlists.appendShow("p2", rssId, addedAt = 1L)
+        playlists.appendShow("p2", SHOW, addedAt = 2L)
         val snapshot = rss.legacySubscriptionRepair.inspect(rssId).getOrThrow()
 
         assertEquals(LegacyRssUpgradeOutcome.MIGRATED, rss.legacySubscriptionRepair.upgrade(rssId, target(), snapshot))
 
-        val (moved, untouched) = playlists.getItems("p1")
-        assertEquals(carried, moved.episodeId)
-        assertEquals(SHOW to "Show", moved.podcastId to moved.podcastTitle)
-        assertEquals("another show's row stays", OTHER_SHOW, untouched.podcastId)
+        assertEquals(listOf(SHOW, OTHER_SHOW), playlists.getShows("p1").map { it.podcastId })
+        assertEquals("the upgraded show is in a playlist once", listOf(SHOW), playlists.getShows("p2").map { it.podcastId })
     }
-
-    private fun playlistRow(playlistId: String, episodeId: String, show: String) = PlaylistItemEntity(
-        playlistId = playlistId,
-        position = 0,
-        addedAt = 1L,
-        episodeId = episodeId,
-        title = "Ep $episodeId",
-        podcastId = show,
-        podcastTitle = "Old $show",
-        podcastImageUrl = "https://img.example/old.jpg",
-        imageUrl = null,
-        audioUrl = "https://cdn.example/$episodeId.mp3",
-        duration = 60,
-        pubDate = 1L,
-        description = null,
-    )
 
     @Test
     fun theLegacyRssUpgradeHandsOwnershipFromAnEarlierReadToTheIdsItCarries() = runBlocking {

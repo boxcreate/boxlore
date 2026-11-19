@@ -5,7 +5,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
 
-/** Library › Playlists and one playlist's page. Storage is `:core:catalog`'s `PlaylistRepository`; playing goes through `QueueManager.playPlaylist`. */
+/**
+ * Library › Playlists and one playlist's page. Storage is `:core:catalog`'s `PlaylistRepository`;
+ * playing goes through `QueueManager.playPlaylist`, with `upNextSnapshot`/`restoreUpNext` for Undo.
+ */
 internal fun androidx.navigation.NavGraphBuilder.addPlaylistDestinations(w: NavGraphWiring) {
     val navController = w.navController
     val playlistRepository = w.playlistRepository
@@ -17,18 +20,25 @@ internal fun androidx.navigation.NavGraphBuilder.addPlaylistDestinations(w: NavG
             @Suppress("UNCHECKED_CAST")
             override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T = cx.aswin.boxlore.feature.library.playlists.PlaylistsViewModel(
                 repository = playlistRepository,
-                completedEpisodeIds = playbackRepository.completedEpisodeIds,
-                startPlayback = { id, episodes ->
-                    val first = episodes.first()
-                    val fallback =
-                        cx.aswin.boxlore.core.model.Podcast(
-                            id = first.podcastId.orEmpty(),
-                            title = first.podcastTitle.orEmpty(),
-                            artist = first.podcastArtist.orEmpty(),
-                            imageUrl = first.podcastImageUrl ?: first.imageUrl.orEmpty(),
-                        )
-                    queueManager.playPlaylist(id, episodes, fallback)
-                },
+                ports =
+                cx.aswin.boxlore.feature.library.playlists.PlaylistPlaybackPorts(
+                    followedShows = w.subscriptionRepository.subscribedPodcasts,
+                    folders = w.folderRepository.folders,
+                    completedEpisodeIds = playbackRepository.completedEpisodeIds,
+                    startPlayback = { id, episodes ->
+                        val first = episodes.first()
+                        val fallback =
+                            cx.aswin.boxlore.core.model.Podcast(
+                                id = first.podcastId.orEmpty(),
+                                title = first.podcastTitle.orEmpty(),
+                                artist = first.podcastArtist.orEmpty(),
+                                imageUrl = first.podcastImageUrl ?: first.imageUrl.orEmpty(),
+                            )
+                        queueManager.playPlaylist(id, episodes, fallback)
+                    },
+                    upNextSnapshot = queueManager::upNextSnapshot,
+                    restoreUpNext = queueManager::restoreUpNext,
+                ),
                 playlistId = playlistId,
             ) as T
         }
@@ -56,18 +66,6 @@ internal fun androidx.navigation.NavGraphBuilder.addPlaylistDestinations(w: NavG
         cx.aswin.boxlore.feature.library.playlists.PlaylistDetailScreen(
             viewModel = viewModel,
             onBack = { navController.popBackStack() },
-            onEpisodeClick = { episode ->
-                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                w.navigate(
-                    "episode/${encode(episode.id)}/${encode(episode.title)}/" +
-                        "${encode(episode.description.take(500))}/" +
-                        "${encode(episode.imageUrl ?: episode.podcastImageUrl)}/" +
-                        "${encode(episode.audioUrl)}/" +
-                        "${episode.duration}/${encode(episode.podcastId)}/" +
-                        "${encode(episode.podcastTitle)}" +
-                        "?entryPoint=library_playlist",
-                )
-            },
             isPlayerActive = w.session.currentEpisode != null,
         )
     }

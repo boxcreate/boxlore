@@ -41,7 +41,6 @@ Used by `:app`:
 ## Queue and Cast
 
 - `PlayerQueueSheet` wraps `QueueSheetContent`: reorder, remove with Undo, source labels and show navigation. With an empty queue and Smart queue off, it offers **Turn on**.
-- **Save queue as playlist** (the header, or the top of the tablet Up next pane) names a new playlist of the playing episode and Up next; its draft lives in `FullPlayerUiState`. Hidden when `FullPlayerDependencies.playlistRepository` is null.
 - `SameShowContinuationBanner` appears above Up next when recommendation playback skipped same-show continuation, and adds the show's next episodes in one tap.
 - The Cast button opens a boxlore device sheet that scans only while open. On Android 17 it first asks for local network access; if that is declined, it opens Android's own output picker instead (`castButtonAction`, `castActionAfterLocalNetworkRequest`).
 - One `CastPickerState` (`LocalCastPicker`) sits above the phone and tablet layouts, so an open sheet or a pending permission answer survives a fold, unfold or resize.
@@ -93,7 +92,7 @@ src/main/res/                                strings, plurals, video texture lay
 - This module owns no storage files. Keys it reads live in `:core:prefs`: `full_player_style` and `mini_player_seek_buttons_enabled`.
 - Queue rows, session flags and media ID prefixes belong to `:core:playback`; the player treats media IDs as opaque strings.
 - Stable test tags used by `:app` tests: `tablet_player_artwork_region`, `tablet_player_controls_region`, `tablet_player_support_region`, `tablet_player_support`, `tablet_player_scroll`. `minimalEpisodeTitle` is used by this module's tests.
-- Page views (`TrackScreenView`): the expanded sheet is `player_full`; its sheets report `player_queue`, `save_queue_as_playlist`, `player_chapters`, `player_speed`, `player_sleep_timer`, `player_cast`, `player_share` and `player_transcript_fullscreen`. See [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md).
+- Page views (`TrackScreenView`): the expanded sheet is `player_full`; its sheets report `player_queue`, `player_chapters`, `player_speed`, `player_sleep_timer`, `player_cast`, `player_share` and `player_transcript_fullscreen`. See [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md).
 
 ## Testing notes
 

@@ -58,7 +58,7 @@ class RoomV42UpgradeTest {
         }
         val db = BoxLoreDatabase.builder(context, NAME).allowMainThreadQueries().build().also { database = it }
 
-        assertEquals(43, db.openHelper.writableDatabase.version)
+        assertEquals(44, db.openHelper.writableDatabase.version)
         val upgraded = db.listeningRollupDao().getRollup("phone-a", 20L, "ep-1")!!
         assertEquals(600_000L, upgraded.consumedMs)
         assertEquals(ListeningDayTotals(longestSessionMs = 300_000L, carMs = 600_000L, loreMs = 100_000L, newReleaseMs = 250_000L), upgraded.totals)

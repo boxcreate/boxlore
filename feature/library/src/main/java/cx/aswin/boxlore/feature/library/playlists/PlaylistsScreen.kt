@@ -48,26 +48,36 @@ import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Playlist
+import cx.aswin.boxlore.core.model.PlaylistOrder
+import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
 
 /** The Playlists page's wording. */
 internal object PlaylistsCopy {
     const val TITLE = "Playlists"
     const val EMPTY_TITLE = "No playlists yet"
-    const val EMPTY_BODY = "Make one here, or add episodes from a show page, an episode page or Up Next."
+    const val EMPTY_BODY = "Make one from the shows you follow, like one for comedy and one for history. Each keeps its place, so you can switch between them any time."
     const val RENAME = "Rename"
     const val DELETE = "Delete"
     const val BACK = "Back"
     fun moreFor(name: String) = "More options for $name"
+
+    /** A card's second line: its show count and, when it plays oldest first, that. */
+    fun summary(playlist: Playlist): String =
+        if (playlist.order == PlaylistOrder.OLDEST) "${PlaylistCopy.showCount(playlist.showCount)} · ${PlaylistDetailCopy.OLDEST}" else PlaylistCopy.showCount(playlist.showCount)
 }
 
 /** What the Playlists page and its dialogs do; [PlaylistsScreen] implements it with [PlaylistsViewModel]. */
 internal interface PlaylistsActions {
     fun open(playlistId: String)
-    fun create(name: String)
+    fun create(name: String, podcastIds: List<String>)
     fun rename(playlistId: String, name: String)
     fun delete(playlistId: String)
 }
+
+/** The shows a playlist can be made from: followed shows and Library folders. */
+internal data class PlaylistPickSource(val followed: List<Podcast> = emptyList(), val folders: List<SubscriptionFolder> = emptyList())
 
 /** Library › Playlists on `library/playlists`. */
 @Composable
@@ -79,16 +89,18 @@ fun PlaylistsScreen(
 ) {
     TrackScreenView("playlists")
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
+    val followed by viewModel.followedShows.collectAsStateWithLifecycle()
+    val folders by viewModel.folders.collectAsStateWithLifecycle()
     val state = rememberPlaylistPagesState()
     val actions = remember(viewModel, onOpenPlaylist) {
         object : PlaylistsActions {
             override fun open(playlistId: String) = onOpenPlaylist(playlistId)
-            override fun create(name: String) = viewModel.create(name) { onOpenPlaylist(it.id) }
+            override fun create(name: String, podcastIds: List<String>) = viewModel.create(name, podcastIds) { onOpenPlaylist(it.id) }
             override fun rename(playlistId: String, name: String) = viewModel.rename(playlistId, name)
             override fun delete(playlistId: String) = viewModel.delete(playlistId)
         }
     }
-    PlaylistsContent(playlists, state, actions, onBack, bottomPadding = if (isPlayerActive) 160.dp else 96.dp)
+    PlaylistsContent(playlists, state, actions, onBack, PlaylistPickSource(followed, folders), bottomPadding = if (isPlayerActive) 160.dp else 96.dp)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,6 +110,7 @@ internal fun PlaylistsContent(
     state: PlaylistPagesState,
     actions: PlaylistsActions,
     onBack: () -> Unit,
+    pickSource: PlaylistPickSource = PlaylistPickSource(),
     bottomPadding: androidx.compose.ui.unit.Dp = 96.dp,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -156,21 +169,21 @@ internal fun PlaylistsContent(
             }
         }
     }
-    PlaylistEditorDialogs(state, playlists.orEmpty(), actions)
+    PlaylistEditorDialogs(state, playlists.orEmpty(), actions, pickSource)
 }
 
 @Composable
 private fun PlaylistRow(playlist: Playlist, onClick: () -> Unit, onRename: () -> Unit, onDelete: () -> Unit) {
     Surface(onClick = onClick, color = MaterialTheme.colorScheme.surfaceContainerLow, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
         Row(
-            Modifier.fillMaxWidth().heightIn(min = 72.dp).padding(start = 12.dp, top = 8.dp, bottom = 8.dp),
+            Modifier.fillMaxWidth().heightIn(min = 88.dp).padding(start = 12.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            PlaylistCover(playlist.coverUrls.firstOrNull(), size = 56.dp)
+            PlaylistCover(playlist.coverUrls, size = 64.dp)
             Column(Modifier.weight(1f)) {
                 Text(playlist.name, style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.semiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(PlaylistCopy.episodeCount(playlist.episodeCount), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(PlaylistsCopy.summary(playlist), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             PlaylistMenu(playlist.name, onRename, onDelete)
         }
@@ -195,21 +208,31 @@ internal fun PlaylistMenu(name: String, onRename: () -> Unit, onDelete: () -> Un
     }
 }
 
-/** The open dialog from [state]: New playlist, Rename playlist or Delete playlist. */
+/**
+ * What [state] has open: New playlist and Add shows ([PlaylistShowPicker], with [pickSource] and the
+ * shows already in the playlist, [inPlaylist]), Rename playlist or Delete playlist. Add shows goes
+ * to [onAddShows].
+ */
 @Composable
-internal fun PlaylistEditorDialogs(state: PlaylistPagesState, playlists: List<Playlist>, actions: PlaylistsActions) {
+internal fun PlaylistEditorDialogs(
+    state: PlaylistPagesState,
+    playlists: List<Playlist>,
+    actions: PlaylistsActions,
+    pickSource: PlaylistPickSource,
+    inPlaylist: Set<String> = emptySet(),
+    onAddShows: (List<String>) -> Unit = {},
+) {
     when (val editor = state.editor) {
         null -> Unit
-        PlaylistEditor.Create -> cx.aswin.boxlore.core.designsystem.components.PlaylistNameDialog(
-            title = PlaylistCopy.NEW_PLAYLIST,
-            name = state.nameDraft,
-            onNameChange = { state.nameDraft = it },
-            confirmLabel = PlaylistCopy.CREATE,
-            onConfirm = { name ->
+        PlaylistEditor.Create, is PlaylistEditor.AddShows -> PlaylistShowPicker(
+            state = state,
+            followed = pickSource.followed,
+            folders = pickSource.folders,
+            inPlaylist = if (editor == PlaylistEditor.Create) emptySet() else inPlaylist,
+            onConfirm = { name, ids ->
                 state.closeEditor()
-                actions.create(name)
+                if (editor == PlaylistEditor.Create) actions.create(name, ids) else onAddShows(ids)
             },
-            onDismissRequest = state::closeEditor,
         )
         is PlaylistEditor.Rename -> cx.aswin.boxlore.core.designsystem.components.PlaylistNameDialog(
             title = PlaylistCopy.RENAME_PLAYLIST,

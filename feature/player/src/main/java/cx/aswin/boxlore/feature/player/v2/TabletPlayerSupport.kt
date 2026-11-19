@@ -164,7 +164,6 @@ private fun TabletQueueContent(
                 onEnableSmartQueue = { resources.body.scope.launch { dependencies.userPrefs.setSameShowQueueOnly(false) } },
                 onAddSameShowEpisodes = { resources.body.scope.launch { dependencies.playbackRepository.addSameShowContinuationEpisodes() } },
                 onDismissSameShowBanner = { dependencies.playbackRepository.dismissSameShowContinuation() },
-                onSaveAsPlaylist = dependencies.playlistRepository?.let { { ui.saveQueueName = "" } },
             ),
         ),
     )

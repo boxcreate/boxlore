@@ -2,27 +2,16 @@ package cx.aswin.boxlore.core.catalog
 
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Playlist
-import cx.aswin.boxlore.core.model.PlaylistEpisode
+import cx.aswin.boxlore.core.model.PlaylistOrder
+import cx.aswin.boxlore.core.model.PlaylistShow
 import kotlinx.coroutines.flow.Flow
 
-/** What adding episodes to a playlist did. */
-data class PlaylistAddResult(
-    val added: Int,
-    /** Episodes the playlist already held, under any of their IDs. */
-    val alreadyIn: Int = 0,
-    /** Episodes left out because the playlist reached [cx.aswin.boxlore.core.model.PLAYLIST_EPISODE_LIMIT]. */
-    val didNotFit: Int = 0,
-)
-
-/** A new playlist and what adding its first episodes did. */
-data class PlaylistCreated(val playlist: Playlist, val result: PlaylistAddResult)
-
 /**
- * The listener's playlists (Room v43). A playlist keeps its episodes in the listener's order, holds
- * an episode once across all of the episode's stored IDs (the queue's rule, docs/EPISODE_IDS.md §5),
- * and holds at most [cx.aswin.boxlore.core.model.PLAYLIST_EPISODE_LIMIT] episodes. Playlists stay on
- * this phone: they go into library backups and Android backup, never the cloud sync, and an
- * account switch deletes them with the folders.
+ * The listener's playlists (Room v44): each a name, an episode order and a set of shows. What a
+ * playlist plays is worked out when asked ([nextEpisodes]): the unfinished stored episodes of its
+ * followed, unhidden shows, any the listener is midway through first, then by release date in the
+ * playlist's order. Playlists stay on this phone: they go into library backups and Android backup,
+ * never the cloud sync, and an account switch deletes them with the folders.
  */
 @Suppress("TooManyFunctions")
 interface PlaylistRepository {
@@ -31,38 +20,59 @@ interface PlaylistRepository {
 
     fun playlist(playlistId: String): Flow<Playlist?>
 
-    /** [playlistId]'s episodes in playlist order. */
-    fun episodes(playlistId: String): Flow<List<PlaylistEpisode>>
+    /** [playlistId]'s shows in playlist order, each marked when it is no longer followed or is hidden. */
+    fun shows(playlistId: String): Flow<List<PlaylistShow>>
+
+    /** The IDs of the playlists holding show [podcastId]. */
+    fun playlistIdsForShow(podcastId: String): Flow<Set<String>>
 
     suspend fun getPlaylists(): List<Playlist>
 
-    suspend fun getEpisodes(playlistId: String): List<PlaylistEpisode>
+    /** Every playlist's show IDs in playlist order, by playlist ID (for backups). */
+    suspend fun getShowIds(): Map<String, List<String>>
 
-    /** Creates a playlist named [name] (normalised; blank becomes "Playlist") holding [episodes]. */
-    suspend fun createPlaylist(name: String, episodes: List<Episode> = emptyList()): PlaylistCreated
+    /** Creates a playlist named [name] (normalised; blank becomes "Playlist") holding [podcastIds] in order. */
+    suspend fun createPlaylist(name: String, podcastIds: List<String> = emptyList()): Playlist
 
     /** False when the playlist doesn't exist or [name] is blank. */
     suspend fun renamePlaylist(playlistId: String, name: String): Boolean
 
+    /** False when the playlist doesn't exist. */
+    suspend fun setOrder(playlistId: String, order: PlaylistOrder): Boolean
+
     suspend fun deletePlaylist(playlistId: String)
 
-    /** Adds [episodes] to the end of [playlistId], in order, skipping ones it holds and ones past the limit. */
-    suspend fun addEpisodes(playlistId: String, episodes: List<Episode>): PlaylistAddResult
+    /** Adds [podcastIds] after the playlist's last show, skipping ones it holds; returns how many were added. */
+    suspend fun addShows(playlistId: String, podcastIds: List<String>): Int
 
-    /** Removes the rows [itemIds] from [playlistId] and returns them, for [restoreEpisodes]. */
-    suspend fun removeEpisodes(playlistId: String, itemIds: Collection<Long>): List<PlaylistEpisode>
+    /** Removes [podcastId] from [playlistId] and returns the removed show, for [restoreShow]. Null when it wasn't there. */
+    suspend fun removeShow(playlistId: String, podcastId: String): PlaylistShow?
 
-    /** Puts [removed] rows back in their places (Undo). Returns how many came back. */
-    suspend fun restoreEpisodes(removed: List<PlaylistEpisode>): Int
+    /**
+     * Moves show [oldPodcastId]'s places in every playlist to [newPodcastId] (a show Podcast Index
+     * renumbered, or followed through its feed instead). A playlist already holding [newPodcastId]
+     * keeps it once.
+     */
+    suspend fun replaceShow(oldPodcastId: String, newPodcastId: String)
 
-    /** Puts [playlistId]'s rows in the order of [orderedItemIds]; rows left out keep their order after them. */
-    suspend fun reorder(playlistId: String, orderedItemIds: List<Long>)
+    /** Puts a [removed] show back in its place (Undo). False when its playlist is gone or holds it again. */
+    suspend fun restoreShow(removed: PlaylistShow): Boolean
+
+    /**
+     * Up to [limit] episodes [playlistId] plays next: unfinished, with audio, not trailers, from its
+     * followed and unhidden shows; any midway through first, then by release date in the playlist's
+     * order. Episodes under any ID of [excludeIds] (what is already queued) are left out. An
+     * unfinished episode taken out of Up next comes back here: the queue's removals can't tell it
+     * from a queue Play replaced, so Mark played is how a listener drops one for good.
+     */
+    suspend fun nextEpisodes(playlistId: String, limit: Int, excludeIds: Collection<String> = emptyList()): List<Episode>
 
     /**
      * A playlist from a library backup: added when this phone doesn't have [playlist]'s ID, otherwise
-     * its name stays; then [episodes] it doesn't hold are added to its end, in order, up to the limit.
+     * its name and order stay; then [podcastIds] it doesn't hold are added to its end, in order.
+     * Returns how many shows were added.
      */
-    suspend fun importPlaylist(playlist: Playlist, episodes: List<PlaylistEpisode>): PlaylistAddResult
+    suspend fun importPlaylist(playlist: Playlist, podcastIds: List<String>): Int
 
     /** Deletes every playlist (account switch). */
     suspend fun deleteAll()

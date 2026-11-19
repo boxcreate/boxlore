@@ -209,7 +209,6 @@ internal fun androidx.navigation.NavGraphBuilder.addEpisodeFullPathDestination(w
             queueManager = queueManager,
             localCatalog = container.localCatalogPort,
             episodeOfflineLookup = container.episodeOfflineLookupPort,
-            playlistRepository = container.playlistRepository,
         )
         val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.info.EpisodeInfoViewModel>(
             factory = cx.aswin.boxlore.feature.info.InfoViewModelAssembler.episodeInfoFactory(
@@ -346,7 +345,6 @@ internal fun androidx.navigation.NavGraphBuilder.addEpisodeDeepLinkDestination(w
             queueManager = queueManager,
             localCatalog = container.localCatalogPort,
             episodeOfflineLookup = container.episodeOfflineLookupPort,
-            playlistRepository = container.playlistRepository,
         )
         val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.info.EpisodeInfoViewModel>(
             factory = cx.aswin.boxlore.feature.info.InfoViewModelAssembler.episodeInfoFactory(

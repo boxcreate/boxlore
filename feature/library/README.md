@@ -13,7 +13,7 @@ Owns the Library tab: the hub, Subscriptions (Shows and New Episodes, with folde
 - `LibraryViewModel` and `LibraryUiState`: one ViewModel class for every Library destination, built by the app from core repositories, `AdaptiveCandidateScorer` and an optional `FolderRepository`.
 - `SubscriptionSort`, `DownloadsSortOrder` and `ShowSortOrder`: sort choices shown by the screens.
 - `PlayAllFab`: the shared Play All button.
-- `PlaylistsScreen`, `PlaylistDetailScreen` and `PlaylistsViewModel` (`playlists/`): Library › Playlists and one playlist's page, built by the app from `:core:catalog`'s `PlaylistRepository`, completed IDs and a play callback.
+- `PlaylistsScreen`, `PlaylistDetailScreen` and `PlaylistsViewModel` (`playlists/`): Library › Playlists and one playlist's page, built by the app from `:core:catalog`'s `PlaylistRepository` and `PlaylistPlaybackPorts` (followed shows, folders, completed IDs, play and Up next Undo).
 
 ## Subscriptions
 
@@ -44,10 +44,10 @@ Owns the Library tab: the hub, Subscriptions (Shows and New Episodes, with folde
 
 ## Playlists
 
-- The Playlists page lists playlists with their first cover and count; New playlist, Rename and Delete (asked first) are dialogs. Creating one there opens it.
-- A playlist's page keeps its own order: drag to reorder (or TalkBack Move up / Move down), remove from a row's menu with Undo, and played episodes stay, marked Played.
-- Play All starts at the first unplayed episode, a tapped row at that row; played rows after the start are skipped and the queue copy holds at most `PlaybackRepository.QUEUE_LIMIT` episodes (`PlaylistPlaybackLogic`). It plays through `QueueManager.playPlaylist`, so Smart Queue waits for the last one; reordering the queue never changes the playlist.
-- `PlaylistPagesState` (saved state) holds the open dialog, its name draft and a drag order not yet saved; a drag is saved when it ends or the page goes.
+- A playlist is a set of followed shows with an episode order. The Playlists page lists them with a cover of up to four shows and the show count; Rename and Delete (asked first) are dialogs. New playlist (`PlaylistShowPicker`) takes a name and followed shows, with chips that add a Library folder's shows to the pick (no lasting folder link); creating one opens it.
+- A playlist's page shows its show count, Newest first / Oldest first, Play, Coming up (the next ten episodes Play would queue, worked out again when the page comes back) and its shows: Add shows uses the same picker, remove has Undo, and a show no longer followed or hidden stays, marked as skipped. With no shows it says how to add some.
+- Play queues the first 20 episodes (never past `PlaybackRepository.QUEUE_LIMIT`) through `QueueManager.playPlaylist`; the playback service tops the queue up from the playlist. When it replaces a queue, an Up next replaced snackbar offers Undo (`QueueManager.restoreUpNext`).
+- `PlaylistPagesState` (saved state) holds what is open, the name being typed and the picked shows.
 
 ## Downloads and Liked
 
@@ -73,7 +73,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
   LibraryPlaylistsCard.kt                   # the hub's Playlists card
   downloads/                                # Downloads list, a show's downloads, Smart Downloads card, models
   logic/                                    # SubscriptionManualOrderLogic, SubscriptionSmartOrderLogic, LibraryEpisodeStatusLogic
-  playlists/                                # Playlists and playlist pages, their ViewModel, saved state and play rules
+  playlists/                                # Playlists and playlist pages, show picker, ViewModel and saved state
   subscriptions/                            # tabs, rows, chips, sort sheet, reorder, context menus,
                                             #   folder pages and editors, New Episodes swipe, refresh
                                             #   and playback queue logic
@@ -109,7 +109,7 @@ Hermetic JVM tests live in `feature/library/src/test`, using fakes from [`:core:
 | Genres, filters and tabs | `SubscriptionFilterLogicTest`, `SubscriptionsTabStyleTest` |
 | Folders | `FolderEditLogicTest`, `SubscriptionFolderLayoutLogicTest`, `FolderSummaryLogicTest`, `AutoOrganizePreviewLogicTest`, `FolderFlowLogicTest` |
 | New Episodes | `LatestEpisodesDisplayLogicTest`, `LatestPlaybackQueueLogicTest`, `LatestSwipeLogicTest`, `LatestEpisodeActionsTest` |
-| Playlists | `PlaylistPlaybackLogicTest`, `PlaylistPagesStateTest`, `PlaylistsViewModelTest` |
+| Playlists | `PlaylistPagesStateTest`, `PlaylistsViewModelTest` |
 | Downloads | `DownloadModelsTest` |
 | Adaptive layouts | `FolderPagesAdaptiveTest`, `PlaylistPagesAdaptiveTest`, `LibraryPlaybackLayoutTest` |
 

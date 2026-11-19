@@ -58,15 +58,6 @@ internal object EpisodeLoadRequests {
         return state.episode.copy(podcastId = knownShow(state.podcastId))
     }
 
-    /** The episode Add to playlist saves from a loaded page: [shareEpisode] with the page's show name and genre filled in. */
-    fun playlistEpisode(state: EpisodeInfoUiState.Success): Episode {
-        val episode = shareEpisode(state)
-        return episode.copy(
-            podcastTitle = episode.podcastTitle?.takeIf(String::isNotBlank) ?: state.podcastTitle.takeIf(String::isNotBlank),
-            podcastGenre = episode.podcastGenre?.takeIf(String::isNotBlank) ?: state.podcastGenre.takeIf(String::isNotBlank),
-        )
-    }
-
     /** [podcastId] unless it is blank or the "unknown" placeholder. */
     fun knownShow(podcastId: String): String? = podcastId.takeIf { it.isNotBlank() && it != UNKNOWN_SHOW }
 

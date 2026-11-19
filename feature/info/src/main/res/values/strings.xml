@@ -9,7 +9,6 @@
     <string name="episode_info_not_found_body_no_show">It may have been removed, or this link may not open on this phone.</string>
     <string name="episode_info_back">Back</string>
     <string name="episode_info_share">Share episode</string>
-    <string name="episode_info_add_playlist">Add to playlist</string>
     <!-- The header's watch button, shown only while boxlore on a watch is in reach of the phone. -->
     <string name="episode_info_send_to_watch">Send to watch</string>
     <string name="episode_info_downloading_on_watch">Downloading on your watch. Remove from watch</string>
@@ -95,8 +94,9 @@
     <string name="episode_selection_mark_unplayed">Mark selected episodes unplayed</string>
     <string name="episode_selection_play">Play selected episodes</string>
     <string name="episode_selection_add_queue">Add selected episodes to queue</string>
-    <string name="episode_selection_more">More actions</string>
-    <string name="episode_selection_add_playlist">Add to playlist</string>
+    <string name="episode_selection_more">More selection options</string>
+    <!-- Show page menu, only for a followed show: opens the sheet that puts this show in playlists. -->
+    <string name="podcast_info_add_to_playlist">Add to playlist</string>
     <string name="episode_selection_select_visible">Select visible episodes</string>
     <string name="episode_selection_select_all">Select all episodes</string>
     <string name="episode_selection_select_older">Select all older episodes</string>

@@ -276,8 +276,6 @@ object AnalyticsGlossary {
             "queue_skip",
             "library_latest_episodes",
             "playlist",
-            // An episode page opened from a playlist's page; distinct from a playing playlist.
-            "library_playlist",
             "downloads",
             "history",
             "liked",

@@ -124,7 +124,7 @@ class SmartQueueRefillCoordinatorTest {
         assertTrue(playlist.items.all(PlaybackQueueContext::isContextItem))
     }
 
-    @Test fun `after a playlist's last episode Smart Queue continues as after New Episodes`() = runTest {
+    @Test fun `once a playlist has nothing left Smart Queue continues as after New Episodes`() = runTest {
         val episodes = PlaybackQueueContext.playlistEpisodes(listOf(episode(1), episode(2)), "list-a")
         repository.replaceQueue(episodes)
         val playlist = Playlist(episodes, 1)

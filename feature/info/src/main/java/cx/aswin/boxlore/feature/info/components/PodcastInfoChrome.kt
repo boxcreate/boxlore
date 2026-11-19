@@ -327,6 +327,8 @@ internal data class PodcastInfoTopOverlayActions(
     val titlesOnly: Boolean = false,
     val onToggleTitlesOnly: () -> Unit = {},
     val isSubscribed: Boolean = false,
+    /** Opens Add to playlist; null hides it (the show isn't followed, or there are no playlists). */
+    val onAddToPlaylist: (() -> Unit)? = null,
     val isPinnedToHome: Boolean = false,
     val onToggleHomePin: () -> Unit = {},
     val onEditGenre: () -> Unit = {},
@@ -528,6 +530,7 @@ private fun PodcastInfoOverflowMenuItems(
             Icon(Icons.Rounded.Tune, contentDescription = null)
         },
     )
+    actions.onAddToPlaylist?.let { AddToPlaylistMenuItem(onDismiss, it) }
     if (actions.isSubscribed) {
         DropdownMenuItem(
             text = { Text("Change tag / genre") },

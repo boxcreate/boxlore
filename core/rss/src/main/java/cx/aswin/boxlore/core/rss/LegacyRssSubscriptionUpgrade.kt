@@ -504,14 +504,8 @@ internal class LegacyRssSubscriptionUpgrader(private val database: BoxLoreDataba
                     ),
                 )
             }
-        database.playlistDao().reassignPodcast(
-            oldPodcastId = sourcePodcastId,
-            newPodcastId = targetEntity.podcastId,
-            podcastTitle = targetEntity.title,
-            podcastGenre = targetEntity.genre.orEmpty(),
-            podcastArtist = targetEntity.author,
-            podcastImageUrl = targetEntity.imageUrl,
-        )
+        // A playlist holding both shows keeps the upgraded one once.
+        database.playlistDao().reassignPodcast(oldPodcastId = sourcePodcastId, newPodcastId = targetEntity.podcastId)
         database.listeningSessionDao().reassignPodcastId(sourcePodcastId, targetEntity.podcastId)
         database.listeningRollupDao().reassignPodcastId(sourcePodcastId, targetEntity.podcastId)
     }

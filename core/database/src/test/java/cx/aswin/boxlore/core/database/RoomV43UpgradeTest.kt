@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -17,9 +18,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Upgrades a v42 database to v43 through [BoxLoreDatabase.builder]: every show keeps its stored values
- * and reads no per-show speed or trim silence (the app settings apply), and the new playlist tables
- * work, delete their items with the playlist, and match a fresh install's.
+ * Upgrades a v42 database through [BoxLoreDatabase.builder], which takes the direct 42→44 path: every
+ * show keeps its stored values and reads no per-show speed or trim silence (the app settings apply),
+ * and the show playlist tables work, delete their shows with the playlist, and match a fresh
+ * install's. v43's episode playlists ([RoomV44UpgradeTest]) are never created.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -57,7 +59,7 @@ class RoomV43UpgradeTest {
     fun showsKeepTheirValuesAndReadNoPerShowSpeedOrTrimSilence() = runBlocking<Unit> {
         val db = upgrade()
 
-        assertEquals(43, db.openHelper.writableDatabase.version)
+        assertEquals(44, db.openHelper.writableDatabase.version)
         val show = db.podcastDao().getPodcast(SHOW)!!
         assertEquals("Show $SHOW", show.title)
         assertEquals("History", show.genre)
@@ -79,20 +81,22 @@ class RoomV43UpgradeTest {
     }
 
     @Test
-    fun playlistsWorkAndDeleteTheirItemsWithThem() = runBlocking<Unit> {
+    fun playlistsWorkAndDeleteTheirShowsWithThem() = runBlocking<Unit> {
         val dao = upgrade().playlistDao()
 
-        dao.insertPlaylist(PlaylistEntity(playlistId = "pl-1", name = "Road trip", createdAt = 1L, updatedAt = 1L))
-        val added = dao.appendItem(item("pl-1", "ep-1", addedAt = 5L))
-        assertEquals(dao.getItems("pl-1").single().id, added)
-        assertNull("an episode is in a playlist once", dao.appendItem(item("pl-1", "ep-1", addedAt = 6L)))
+        dao.insertPlaylist(PlaylistEntity(playlistId = "pl-1", name = "Comedy", createdAt = 1L, updatedAt = 1L))
+        assertEquals("newest", dao.getPlaylist("pl-1")!!.episodeOrder)
+        assertTrue(dao.appendShow("pl-1", SHOW, addedAt = 5L))
+        assertFalse("a show is in a playlist once", dao.appendShow("pl-1", SHOW, addedAt = 6L))
         assertThrows(SQLiteConstraintException::class.java) {
-            runBlocking { dao.insertItem(item("missing", "ep-2", addedAt = 7L)) }
+            runBlocking { dao.insertShow(PlaylistShowEntity("missing", OTHER, 0, 7L)) }
         }
-        assertEquals(1, dao.observePlaylistSummaries().first().single().itemCount)
+        val summary = dao.observePlaylistSummaries().first().single()
+        assertEquals(1, summary.showCount)
+        assertEquals(listOf(true), dao.getShows("pl-1").map { it.isSubscribed })
 
         dao.deletePlaylist("pl-1")
-        assertTrue(dao.getAllItems().isEmpty())
+        assertTrue(dao.getAllShowRows().isEmpty())
     }
 
     @Test
@@ -102,27 +106,13 @@ class RoomV43UpgradeTest {
         try {
             val freshSql = RoomSchemaFixture.schemaSql(fresh.openHelper.writableDatabase)
             for (name in NEW_OBJECTS) assertEquals(name, freshSql.getValue(name), upgraded.getValue(name))
+            assertFalse("playlist_items" in upgraded)
             val columns = { db: BoxLoreDatabase -> RoomSchemaFixture.columns(db.openHelper.writableDatabase, "podcasts").sorted() }
             assertEquals(columns(fresh), columns(database!!))
         } finally {
             fresh.close()
         }
     }
-
-    private fun item(playlistId: String, episodeId: String, addedAt: Long,) = PlaylistItemEntity(
-        playlistId = playlistId,
-        position = 0,
-        addedAt = addedAt,
-        episodeId = episodeId,
-        title = "Episode $episodeId",
-        podcastId = SHOW,
-        podcastTitle = "Show",
-        imageUrl = null,
-        audioUrl = "https://cdn.example/$episodeId.mp3",
-        duration = 60,
-        pubDate = 0L,
-        description = null,
-    )
 
     private companion object {
         const val NAME = "room-v43-upgrade.db"
@@ -140,9 +130,8 @@ class RoomV43UpgradeTest {
         )
         val NEW_OBJECTS = listOf(
             "playlists",
-            "playlist_items",
-            "index_playlist_items_playlistId",
-            "index_playlist_items_playlistId_episodeId",
+            "playlist_shows",
+            "index_playlist_shows_podcastId",
         )
     }
 }

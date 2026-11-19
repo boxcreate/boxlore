@@ -5,81 +5,74 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
-import cx.aswin.boxlore.core.catalog.PlaylistAddResult
 import cx.aswin.boxlore.core.catalog.PlaylistRepository
 import cx.aswin.boxlore.core.designsystem.components.AddToPlaylistCopy
 import cx.aswin.boxlore.core.designsystem.components.AddToPlaylistSheet
 import cx.aswin.boxlore.core.designsystem.components.AddToPlaylistSheetState
-import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Playlist
 import cx.aswin.boxlore.core.model.Podcast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 
 /**
- * Add to playlist for the show and episode pages. The page's ViewModel owns it, so an add finishes
- * in the ViewModel's scope; [onMessage] gets the confirmation to show ([AddToPlaylistCopy.result]).
- * Sends `playlist_modified` with [source].
+ * The show page's Add to playlist: puts the show in playlists, takes it out, or makes a playlist
+ * holding it. The page's ViewModel owns it, so a change finishes in the ViewModel's scope;
+ * [onMessage] gets the confirmation to show ([AddToPlaylistCopy]). Sends `playlist_modified`
+ * (create, add_show, remove_show) with source `show_page`. [followId] turns the shown show's ID into
+ * the ID its follow is stored under (its followed `rss:` feed, or the number the page was opened
+ * as), which is the ID a playlist plays and checks as followed.
  */
-class InfoPlaylists internal constructor(private val repository: PlaylistRepository, private val scope: CoroutineScope, private val source: String,) {
+class InfoPlaylists internal constructor(
+    private val repository: PlaylistRepository,
+    private val scope: CoroutineScope,
+    private val followId: suspend (String) -> String = { it },
+) {
     val playlists: Flow<List<Playlist>> get() = repository.playlists
 
-    fun addTo(playlist: Playlist, episodes: List<Episode>, onMessage: (String) -> Unit) {
-        if (episodes.isEmpty()) return
+    /** The IDs of the playlists holding show [podcastId] (under the ID its follow is stored under). */
+    fun memberIds(podcastId: String): Flow<Set<String>> = flow { emitAll(repository.playlistIdsForShow(followId(podcastId))) }
+
+    /** Adds show [shownId] to [playlist], or removes it when [isMember]. */
+    fun toggle(playlist: Playlist, shownId: String, isMember: Boolean, onMessage: (String) -> Unit) {
         scope.launch {
-            val result = repository.addEpisodes(playlist.id, episodes)
-            report("add", result, playlist.episodeCount + result.added)
-            onMessage(message(playlist.name, result))
+            val podcastId = followId(shownId)
+            if (isMember) {
+                if (repository.removeShow(playlist.id, podcastId) == null) return@launch
+                AnalyticsHelper.trackPlaylistModified("remove_show", SOURCE_SHOW_PAGE, playlistSize = (playlist.showCount - 1).coerceAtLeast(0))
+                onMessage(AddToPlaylistCopy.removed(playlist.name))
+            } else {
+                if (repository.addShows(playlist.id, listOf(podcastId)) == 0) return@launch
+                AnalyticsHelper.trackPlaylistModified("add_show", SOURCE_SHOW_PAGE, playlistSize = playlist.showCount + 1)
+                onMessage(AddToPlaylistCopy.added(playlist.name))
+            }
         }
     }
 
-    fun create(name: String, episodes: List<Episode>, onMessage: (String) -> Unit) {
+    /** Makes a playlist named [name] holding show [shownId]. */
+    fun create(name: String, shownId: String, onMessage: (String) -> Unit) {
         scope.launch {
-            val created = repository.createPlaylist(name, episodes)
-            AnalyticsHelper.trackPlaylistModified("create", source, itemsCount = created.result.added, playlistSize = created.playlist.episodeCount)
-            onMessage(message(created.playlist.name, created.result))
+            val created = repository.createPlaylist(name, listOf(followId(shownId)))
+            AnalyticsHelper.trackPlaylistModified("create", SOURCE_SHOW_PAGE, playlistSize = created.showCount)
+            onMessage(AddToPlaylistCopy.added(created.name))
         }
-    }
-
-    private fun report(action: String, result: PlaylistAddResult, size: Int) {
-        if (result.added > 0) AnalyticsHelper.trackPlaylistModified(action, source, itemsCount = result.added, playlistSize = size)
     }
 
     internal companion object {
         const val SOURCE_SHOW_PAGE = "show_page"
-        const val SOURCE_EPISODE_PAGE = "episode_page"
-
-        fun message(name: String, result: PlaylistAddResult): String =
-            AddToPlaylistCopy.result(name, result.added, result.alreadyIn, result.didNotFit)
-
-        /**
-         * [episodes] with [show]'s ID, title, artist, genre and artwork where they carry none, so a
-         * playlist row keeps the page's show details. An episode naming another show is left as it is.
-         */
-        fun withShow(episodes: List<Episode>, show: Podcast?): List<Episode> {
-            if (show == null || show.id.isBlank()) return episodes
-            return episodes.map { episode ->
-                if (!episode.podcastId.isNullOrBlank() && episode.podcastId != show.id) return@map episode
-                episode.copy(
-                    podcastId = show.id,
-                    podcastTitle = episode.podcastTitle?.takeIf(String::isNotBlank) ?: show.title.takeIf(String::isNotBlank),
-                    podcastArtist = episode.podcastArtist?.takeIf(String::isNotBlank) ?: show.artist.takeIf(String::isNotBlank),
-                    podcastGenre = episode.podcastGenre?.takeIf(String::isNotBlank) ?: show.genre.takeIf(String::isNotBlank),
-                    podcastImageUrl = episode.podcastImageUrl?.takeIf(String::isNotBlank) ?: show.imageUrl.takeIf(String::isNotBlank),
-                )
-            }
-        }
 
         /** Null without a repository (tests, previews), which hides Add to playlist. */
-        fun create(repository: PlaylistRepository?, scope: CoroutineScope, source: String): InfoPlaylists? =
-            repository?.let { InfoPlaylists(it, scope, source) }
+        fun create(repository: PlaylistRepository?, scope: CoroutineScope, followId: suspend (String) -> String = { it }): InfoPlaylists? =
+            repository?.let { InfoPlaylists(it, scope, followId) }
     }
 }
 
@@ -113,37 +106,32 @@ internal fun rememberInfoPlaylistPicker(key: Any? = null): InfoPlaylistPicker =
     rememberSaveable(key, saver = InfoPlaylistPicker.Saver) { InfoPlaylistPicker() }
 
 /**
- * The Add to playlist sheet for [episodes] while [picker] is open. Waits while [episodes] is empty
- * (a recreated show page still looking its selection up). [show] fills in show details the
- * episodes lack ([InfoPlaylists.withShow]). [onAdded] runs once the listener picks.
+ * The Add to playlist sheet for [show] while [picker] is open. [show] is null while the show isn't
+ * followed, which keeps the sheet away. A tap on a playlist toggles the show and keeps the sheet
+ * open; a new playlist closes it.
  */
 @Composable
-internal fun InfoPlaylistPickerHost(
-    picker: InfoPlaylistPicker,
-    playlists: InfoPlaylists?,
-    episodes: List<Episode>,
-    snackbarHostState: SnackbarHostState,
-    show: Podcast? = null,
-    onAdded: () -> Unit = {},
-) {
+internal fun InfoPlaylistPickerHost(picker: InfoPlaylistPicker, playlists: InfoPlaylists?, show: Podcast?, snackbarHostState: SnackbarHostState) {
     // Remembered before the sheet, so a confirmation still shows after the sheet closes.
     val scope = rememberCoroutineScope()
-    if (!picker.open || playlists == null || episodes.isEmpty()) return
+    if (!picker.open || playlists == null || show == null) return
     val all by playlists.playlists.collectAsStateWithLifecycle(initialValue = emptyList())
-    val showMessage: (String) -> Unit = { message -> scope.launch { snackbarHostState.showSnackbar(message) } }
+    val members by remember(playlists, show.id) { playlists.memberIds(show.id) }.collectAsStateWithLifecycle(initialValue = emptySet())
+    val showMessage: (String) -> Unit = { message ->
+        scope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.showSnackbar(message)
+        }
+    }
     AddToPlaylistSheet(
+        showTitle = show.title,
         playlists = all,
-        episodeCount = episodes.size,
+        memberIds = members,
         state = picker.sheet,
-        onAddTo = { playlist ->
-            playlists.addTo(playlist, InfoPlaylists.withShow(episodes, show), showMessage)
-            picker.close()
-            onAdded()
-        },
+        onToggle = { playlist -> playlists.toggle(playlist, show.id, playlist.id in members, showMessage) },
         onCreate = { name ->
-            playlists.create(name, InfoPlaylists.withShow(episodes, show), showMessage)
+            playlists.create(name, show.id, showMessage)
             picker.close()
-            onAdded()
         },
         onDismissRequest = picker::close,
     )

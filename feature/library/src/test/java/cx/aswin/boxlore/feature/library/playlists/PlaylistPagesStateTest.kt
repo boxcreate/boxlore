@@ -1,8 +1,12 @@
 package cx.aswin.boxlore.feature.library.playlists
 
 import androidx.compose.runtime.saveable.SaverScope
+import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.SubscriptionFolder
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class PlaylistPagesStateTest {
@@ -12,42 +16,51 @@ class PlaylistPagesStateTest {
     }
 
     @Test
-    fun `the open dialog, draft and pending order survive saving`() {
-        val state = PlaylistPagesState().apply {
-            openRename("p1", "Commute")
-            nameDraft = "Drive"
-            move(listOf(1L, 2L, 3L), 3L, 1L)
-        }
-        val restored = roundTrip(state)
-        assertEquals(PlaylistEditor.Rename("p1"), restored.editor)
-        assertEquals("Drive", restored.nameDraft)
-        assertEquals(listOf(3L, 1L, 2L), restored.pendingOrder)
-        assertEquals(PlaylistEditor.Delete("p2"), roundTrip(PlaylistPagesState().apply { openDelete("p2") }).editor)
-        assertEquals(PlaylistEditor.Create, roundTrip(PlaylistPagesState().apply { openCreate() }).editor)
-    }
-
-    @Test
-    fun `a pending order settles once stored, or when its rows change`() {
-        val state = PlaylistPagesState()
-        state.move(listOf(1L, 2L), 2L, 1L)
-        state.settle(listOf(1L, 2L))
-        assertEquals(listOf(2L, 1L), state.pendingOrder)
-        state.settle(listOf(2L, 1L))
-        assertNull(state.pendingOrder)
-
-        state.move(listOf(1L, 2L, 3L), 3L, 1L)
-        state.settle(listOf(1L, 2L))
-        assertNull(state.pendingOrder)
-    }
-
-    @Test
-    fun `closing a dialog drops its draft`() {
+    fun `the open editor, name and picked shows survive saving`() {
         val state = PlaylistPagesState().apply {
             openCreate()
-            nameDraft = "New"
-            closeEditor()
+            nameDraft = "Comedy"
+            toggle("b")
+            pickAll(listOf("a", "b", "c"))
+            toggle("a")
         }
-        assertNull(state.editor)
-        assertEquals("", state.nameDraft)
+        val restored = roundTrip(state)
+        assertEquals(PlaylistEditor.Create, restored.editor)
+        assertEquals("Comedy", restored.nameDraft)
+        assertEquals(listOf("b", "c"), restored.picked)
+
+        restored.closeEditor()
+        val closed = roundTrip(restored)
+        assertNull(closed.editor)
+        assertTrue(closed.picked.isEmpty())
+    }
+
+    @Test
+    fun `every editor encodes and decodes`() {
+        listOf(PlaylistEditor.Create, PlaylistEditor.AddShows("p1"), PlaylistEditor.Rename("p1"), PlaylistEditor.Delete("p1"), null).forEach {
+            assertEquals(it, PlaylistEditor.decode(PlaylistEditor.encode(it)))
+        }
+        assertTrue(PlaylistEditor.AddShows("p1").picksShows)
+        assertFalse(PlaylistEditor.Rename("p1").picksShows)
+    }
+
+    @Test
+    fun `folder chips pre-fill only followed shows not yet in the playlist`() {
+        val followed = listOf(Podcast("a", "A", "", ""), Podcast("b", "B", "", ""), Podcast("c", "C", "", ""))
+        val pickable = PlaylistShowPickerLogic.pickable(followed, inPlaylist = setOf("a"))
+        assertEquals(listOf("b", "c"), pickable.map { it.id })
+        val folders = listOf(
+            SubscriptionFolder("f1", "Comedy", podcastIds = listOf("a", "b", "gone")),
+            SubscriptionFolder("f2", "Only in playlist", podcastIds = listOf("a")),
+        )
+        assertEquals(listOf("Comedy" to listOf("b")), PlaylistShowPickerLogic.folderChips(folders, pickable).map { it.first.name to it.second })
+    }
+
+    @Test
+    fun `a new playlist needs a name and adding needs a show`() {
+        assertFalse(PlaylistShowPickerLogic.canConfirm(PlaylistEditor.Create, "  ", listOf("a")))
+        assertTrue(PlaylistShowPickerLogic.canConfirm(PlaylistEditor.Create, "Comedy", emptyList()))
+        assertFalse(PlaylistShowPickerLogic.canConfirm(PlaylistEditor.AddShows("p1"), "", emptyList()))
+        assertTrue(PlaylistShowPickerLogic.canConfirm(PlaylistEditor.AddShows("p1"), "", listOf("a")))
     }
 }
