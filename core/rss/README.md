@@ -108,7 +108,7 @@ src/main/java/cx/aswin/boxlore/core/rss/
 - At most two whole-feed reads run at once across followed catalogs, RSS shows and show pages (`PublisherFeedRefreshGate`).
 - `RefreshRequest.canProceed` is checked again after waiting and after fetching, so a revoked refresh writes nothing.
 - Cancelling a refresh cancels the HTTP call, including while the body is read (`RssHttpExecution`); every response, redirects included, must be HTTPS.
-- Automatic refreshes of ready catalogs and RSS shows wait out a six-hour cooldown (for RSS shows, also after a failed read, except a failed `PULL` of a show still inside its wait). `MANUAL` and `NEW_RELEASE` refreshes skip it and read the whole feed; `PULL` skips it but still asks first whether the feed changed (ETag/Last-Modified) when the saved copy has those validators, unless an RSS show needs repair.
+- Automatic refreshes of ready catalogs and RSS shows wait out a six-hour cooldown (for RSS shows, also after a failed read, except a failed `PULL` of a show still inside its wait). `MANUAL` and `NEW_RELEASE` refreshes skip it and read the whole feed; `PULL` skips it but still asks first whether the feed changed (ETag/Last-Modified) when the saved copy has those validators, unless an RSS show needs repair or a followed catalog holds an episode without a date, which reads the whole feed.
 - The post-persist callback runs outside the transaction and lock, and never for `AUTO_DOWNLOAD` or `runPostPersistCallback = false`.
 
 ## Persistence & identity
