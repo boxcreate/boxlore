@@ -450,6 +450,17 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
     fun projectedRows(source: Flow<List<ListeningHistoryEntity>>, keep: (ListeningHistoryEntity) -> Boolean = { true },): Flow<List<ListeningHistoryEntity>> =
         projectedRows(source, keep, everyMember = false)
 
+    /**
+     * The projected history of the episodes a screen lists, by the listed ID, read from the whole
+     * history rather than a recent window: each ID with every other trusted ID of its episode, read
+     * in chunks the database accepts. An ID without history is missing from the map.
+     */
+    suspend fun projectedHistoryOf(episodeIds: Collection<String>): Map<String, ListeningHistoryEntity> {
+        if (episodeIds.isEmpty()) return emptyMap()
+        val rows = withAllAliases(episodeIds).chunked(MAX_IDS_PER_QUERY).flatMap { history.getHistoryItems(it) }
+        return projectRowsByMember(rows).associateBy { it.episodeId }
+    }
+
     /** [source] projected as [projectRowsByMember]: an episode stored under several IDs appears once per stored ID. */
     fun projectedRowsByMember(source: Flow<List<ListeningHistoryEntity>>, keep: (ListeningHistoryEntity) -> Boolean = { true },): Flow<List<ListeningHistoryEntity>> =
         projectedRows(source, keep, everyMember = true)

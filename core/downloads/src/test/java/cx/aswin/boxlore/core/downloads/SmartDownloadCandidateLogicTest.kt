@@ -73,6 +73,7 @@ class SmartDownloadCandidateLogicTest {
                 pod = podcast,
                 resolvedSerial = mapOf("serial" to resolved),
                 historyByEpisode = emptyMap(),
+                completedEpisodeIds = emptySet(),
             )
 
         assertNotNull(candidate)
@@ -93,9 +94,9 @@ class SmartDownloadCandidateLogicTest {
                 "progress" to history("progress", "pod1", progressMs = 10_000),
             )
 
-        assertNotNull(SmartDownloadCandidateLogic.buildUnplayedDropCandidate(podcast, unplayed, historyByEpisode))
-        assertNull(SmartDownloadCandidateLogic.buildUnplayedDropCandidate(podcast, completed, historyByEpisode))
-        assertNull(SmartDownloadCandidateLogic.buildUnplayedDropCandidate(podcast, inProgress, historyByEpisode))
+        assertNotNull(SmartDownloadCandidateLogic.buildUnplayedDropCandidate(podcast, unplayed, historyByEpisode, emptySet()))
+        assertNull(SmartDownloadCandidateLogic.buildUnplayedDropCandidate(podcast, completed, historyByEpisode, emptySet()))
+        assertNull(SmartDownloadCandidateLogic.buildUnplayedDropCandidate(podcast, inProgress, historyByEpisode, emptySet()))
     }
 
     @Test
@@ -169,6 +170,7 @@ class SmartDownloadCandidateLogicTest {
                 allHistory = history,
                 historyByEpisode = history.associateBy { it.episodeId },
                 resolvedSerial = emptyMap(),
+                completedEpisodeIds = emptySet(),
                 podScoresMap = mapOf("pod2" to 50.0),
                 nowMs = nowMs,
             )
@@ -253,6 +255,7 @@ class SmartDownloadCandidateLogicTest {
             SmartDownloadCandidateLogic.buildUnplayedDropsMixtapeCandidates(
                 subs = listOf(autoDownloadPod, normalPod),
                 resolvedSerial = emptyMap(),
+                completedEpisodeIds = emptySet(),
                 historyByEpisode = emptyMap(),
                 podScoresMap = emptyMap(),
                 nowMs = nowMs,
@@ -316,6 +319,7 @@ class SmartDownloadCandidateLogicTest {
                 allHistory = historyList,
                 historyByEpisode = historyList.associateBy { it.episodeId },
                 resolvedSerial = emptyMap(),
+                completedEpisodeIds = emptySet(),
                 podScoresMap = emptyMap(),
                 nowMs = nowMs,
             )
@@ -344,6 +348,7 @@ class SmartDownloadCandidateLogicTest {
                 allHistory = historyList,
                 historyByEpisode = historyList.associateBy { it.episodeId },
                 resolvedSerial = emptyMap(),
+                completedEpisodeIds = emptySet(),
                 podScoresMap = emptyMap(),
                 nowMs = nowMs,
             )
@@ -351,6 +356,51 @@ class SmartDownloadCandidateLogicTest {
         val inProgress = candidates.filter { it.isProgress }
         assertEquals(listOf("old-ep"), inProgress.map { it.episodeId })
         assertEquals("rss:feed", inProgress.single().podcast.id)
+    }
+
+    @Test
+    fun `a finished episode missing from the latest history rows is not offered again`() {
+        // The latest history rows (historyByEpisode) no longer reach the finished episodes.
+        val newestShow = podcastEntity("newest", latestEpisode = episode("finished-latest", "newest", publishedDate = nowSeconds))
+        val serialShow = podcastEntity("serial", preferredSort = "oldest", latestEpisode = episode("finished-tip", "serial"))
+        val freshShow = podcastEntity("fresh", latestEpisode = episode("new-one", "fresh", publishedDate = nowSeconds))
+        val completed = setOf("finished-latest", "finished-ep-1", "finished-tip")
+
+        val candidates =
+            SmartDownloadCandidateLogic.generateMixtapeCandidates(
+                subs = listOf(newestShow, serialShow, freshShow),
+                allHistory = emptyList(),
+                historyByEpisode = emptyMap(),
+                resolvedSerial = mapOf("serial" to episode("finished-ep-1", "serial")),
+                completedEpisodeIds = completed,
+                podScoresMap = emptyMap(),
+                nowMs = nowMs,
+            )
+
+        assertEquals(listOf("new-one"), candidates.map { it.episodeId })
+        assertNull(SmartDownloadCandidateLogic.buildUnplayedDropCandidate(newestShow, newestShow.latestEpisode, emptyMap(), completed))
+    }
+
+    @Test
+    fun `an oldest-first show whose scan gave no pick offers nothing, not its newest episode`() {
+        // A failed or cut-off scan leaves the serial show out of resolvedSerial; its unplayed
+        // newest episode would jump far ahead of the listener.
+        val serialShow = podcastEntity("serial", preferredSort = "oldest", latestEpisode = episode("ep-400", "serial", publishedDate = nowSeconds))
+        val freshShow = podcastEntity("fresh", latestEpisode = episode("new-one", "fresh", publishedDate = nowSeconds))
+
+        val candidates =
+            SmartDownloadCandidateLogic.generateMixtapeCandidates(
+                subs = listOf(serialShow, freshShow),
+                allHistory = emptyList(),
+                historyByEpisode = emptyMap(),
+                resolvedSerial = emptyMap(),
+                completedEpisodeIds = emptySet(),
+                podScoresMap = emptyMap(),
+                nowMs = nowMs,
+            )
+
+        assertEquals(listOf("new-one"), candidates.map { it.episodeId })
+        assertNull(SmartDownloadCandidateLogic.resolveUnplayedDropCandidate(serialShow, emptyMap(), emptyMap(), emptySet()))
     }
 
     private fun podcastEntity(

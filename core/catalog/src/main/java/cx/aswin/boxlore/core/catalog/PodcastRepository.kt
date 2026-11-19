@@ -86,6 +86,8 @@ class PodcastRepository(
      * nothing. A failure is logged and the answer still returned.
      */
     private val onShowRenumbered: suspend (oldId: String, answer: Podcast) -> Unit = { _, _ -> },
+    /** The process's one pacer for library-wide requests ([ApiRouteBudget]); tests pass one on a virtual clock. */
+    val routeBudget: ApiRouteBudget = ApiRouteBudget(),
     /**
      * When each followed show was followed (epoch ms), which orders follows for recommendations
      * after recent plays ([recommendationFollowOrder]). The app reads the follow rows; the default
@@ -228,6 +230,7 @@ class PodcastRepository(
             if (response.isSuccessful && body != null) {
                 PodcastIndexSearchResult.Success(body.feeds.mapNotNull(::mapSearchFeedToPodcast))
             } else {
+                if (response.code() == 429) routeBudget.rateLimited(ApiRouteBudget.SEARCH, retryAfterMs(response))
                 PodcastIndexSearchResult.Failed
             }
         } catch (error: kotlinx.coroutines.CancellationException) {
@@ -400,6 +403,10 @@ class PodcastRepository(
         val hasMore: Boolean,
         /** PI/RSS items in this fetch before supplement extras. Use for pagination offsets. */
         val sourceCount: Int = episodes.size,
+        /** The page couldn't be read (an error answer, a 429, no connection): not the end of the list. */
+        val failed: Boolean = false,
+        /** The server's list route this page came from; null for pages read another way (feed, `rss:`, local catalog). */
+        val scheme: ServerListScheme? = null,
     )
 
     suspend fun getEpisodesPaginated(
@@ -412,15 +419,32 @@ class PodcastRepository(
          * so extras are not treated as Podcast Index rows and wiped on refresh.
          */
         mergeSupplements: Boolean = true,
+        /** Range selection's whole-show read: a page that can't be read throws instead of coming back [EpisodePage.failed]. */
+        strict: Boolean = false,
+        /** A later page of a list: the [EpisodePage.scheme] of its first page, so the list never mixes ID schemes. */
+        scheme: ServerListScheme? = null,
+    ): EpisodePage = episodesPage(feedId, limit, offset, sort, mergeSupplements, strict, showPage = false, scheme = scheme, list = null)
+
+    @Suppress("LongParameterList")
+    private suspend fun episodesPage(
+        feedId: String,
+        limit: Int,
+        offset: Int,
+        sort: String,
+        mergeSupplements: Boolean,
+        strict: Boolean,
+        showPage: Boolean,
+        scheme: ServerListScheme?,
+        list: ShowListSchemes?,
     ): EpisodePage = withContext(Dispatchers.IO) {
         val safeLimit = clampPageLimit(limit)
         if (feedId.startsWith("rss:")) {
-            return@withContext getRssEpisodesPaginated(feedId, safeLimit, offset, sort)
+            return@withContext getRssEpisodesPaginated(feedId, safeLimit, offset, sort).also { if (strict && it.failed) throw java.io.IOException("RSS page failed") }
         }
         if (isLocalCatalogReady(feedId)) {
             return@withContext getLocalCatalogPage(feedId, safeLimit, offset, sort)
         }
-        getServerListPage(feedId, safeLimit, offset, sort, mergeSupplements)
+        getServerListPage(feedId, safeLimit, offset, sort, mergeSupplements, strict, showPage, scheme, list ?: serverListSchemes)
     }
 
     /**
@@ -437,11 +461,16 @@ class PodcastRepository(
         limit: Int = 20,
         offset: Int = 0,
         sort: String = "newest",
+        strict: Boolean = false,
+        /** As for [getEpisodesPaginated]; without it the page follows the scheme the show page's list keeps. */
+        scheme: ServerListScheme? = null,
+        /** The show page's own memory of its list's scheme; one per show page, so another page for the same show can't switch it. */
+        list: ShowListSchemes? = null,
     ): EpisodePage = withContext(Dispatchers.IO) {
         if (showPageSource(feedId) == ShowPageSource.FEED) {
             feedCopyPage(feedId, clampPageLimit(limit), offset, sort)?.let { return@withContext it }
         }
-        getEpisodesPaginated(feedId, limit, offset, sort)
+        episodesPage(feedId, limit, offset, sort, mergeSupplements = true, strict = strict, showPage = true, scheme = scheme, list = list)
     }
 
     /**
@@ -454,15 +483,21 @@ class PodcastRepository(
      * kept in the shared page cache; a show `/v2` doesn't list is read from v1 `/episodes`
      * throughout ([wholeShowServerPage]). Stored sources are read [MAX_SAFE_PAGE_LIMIT] rows at a time.
      */
-    suspend fun getWholeShowPage(feedId: String, offset: Int, sort: String,): EpisodePage = withContext(Dispatchers.IO) {
+    suspend fun getWholeShowPage(
+        feedId: String,
+        offset: Int,
+        sort: String,
+        /** The show page's list memory: a list that started on v1 is read from v1 throughout, so its IDs never mix with `/v2`'s. */
+        list: ShowListSchemes? = null,
+    ): EpisodePage = withContext(Dispatchers.IO) {
         when (showPageSource(feedId)) {
             ShowPageSource.RSS -> {
                 val episodes = rssRepository.getEpisodes(feedId, MAX_SAFE_PAGE_LIMIT, offset, sort)
                 EpisodePage(episodes, hasMore = offset + episodes.size < rssRepository.episodeCount(feedId))
             }
             ShowPageSource.FOLLOWED_CATALOG -> getLocalCatalogPage(feedId, MAX_SAFE_PAGE_LIMIT, offset, sort)
-            ShowPageSource.FEED -> feedCopyPage(feedId, MAX_SAFE_PAGE_LIMIT, offset, sort) ?: wholeShowServerPage(feedId, offset, sort)
-            ShowPageSource.SERVER_LIST -> wholeShowServerPage(feedId, offset, sort)
+            ShowPageSource.FEED -> feedCopyPage(feedId, MAX_SAFE_PAGE_LIMIT, offset, sort) ?: wholeShowServerPage(feedId, offset, sort, list ?: serverListSchemes)
+            ShowPageSource.SERVER_LIST -> wholeShowServerPage(feedId, offset, sort, list ?: serverListSchemes)
         }
     }
 
@@ -528,7 +563,7 @@ class PodcastRepository(
         throw e
     } catch (e: Exception) {
         android.util.Log.e("PodcastRepository", "RSS getEpisodesPaginated failed for $feedId", e)
-        EpisodePage(emptyList(), false)
+        EpisodePage(emptyList(), false, failed = true)
     }
 
     /**
@@ -573,7 +608,7 @@ class PodcastRepository(
                 null
             }
         if (page == null && strict) throw java.io.IOException("Episodes page at offset $offset couldn't be read")
-        return maybeMergeSupplements(resolvedId, page ?: EpisodePage(emptyList(), false, sourceCount = 0), offset, sort, mergeSupplements)
+        return maybeMergeSupplements(resolvedId, page ?: EpisodePage(emptyList(), false, sourceCount = 0, failed = true), offset, sort, mergeSupplements)
     }
 
     internal suspend fun maybeMergeSupplements(
@@ -595,7 +630,7 @@ class PodcastRepository(
     }
 
     /** Hands an answer for [feedId] that names another numeric show ID to [onShowRenumbered]. */
-    private suspend fun reportRenumbering(feedId: String, answer: Podcast) {
+    internal suspend fun reportRenumbering(feedId: String, answer: Podcast) {
         if (!cx.aswin.boxlore.core.rss.RenumberedShowIds.isRenumbering(feedId, answer.id)) return
         try {
             onShowRenumbered(feedId, answer)
@@ -616,7 +651,7 @@ class PodcastRepository(
     }
 
     /** Picks the right lookup parameter (feed URL/guid/iTunes id/id) and executes the request. */
-    private fun executeGetPodcastRequest(feedId: String): retrofit2.Response<cx.aswin.boxlore.core.network.model.PodcastResponse> = when {
+    internal fun executeGetPodcastRequest(feedId: String): retrofit2.Response<cx.aswin.boxlore.core.network.model.PodcastResponse> = when {
         feedId.startsWith(FEED_PREFIX_URL) -> {
             val decodedUrl = java.net.URLDecoder.decode(feedId.substringAfter(FEED_PREFIX_URL), "UTF-8")
             api.getPodcast(publicKey = publicKey, feedUrl = decodedUrl).execute()
@@ -630,7 +665,7 @@ class PodcastRepository(
         else -> api.getPodcast(publicKey = publicKey, feedId = feedId).execute()
     }
 
-    private fun mapPodcastResponseFeed(feed: cx.aswin.boxlore.core.network.model.PodcastFeed): Podcast = Podcast(
+    internal fun mapPodcastResponseFeed(feed: cx.aswin.boxlore.core.network.model.PodcastFeed): Podcast = Podcast(
         id = feed.id.toString(),
         title = feed.title,
         artist = feed.author ?: "Unknown",
@@ -683,7 +718,10 @@ class PodcastRepository(
                     }
                 }
                 response.code() == 404 -> ExactPodcastLookupResult.NotFound
-                else -> ExactPodcastLookupResult.Failed
+                else -> {
+                    if (response.code() == 429) routeBudget.rateLimited(ApiRouteBudget.PODCAST, retryAfterMs(response))
+                    ExactPodcastLookupResult.Failed
+                }
             }
         } catch (error: kotlinx.coroutines.CancellationException) {
             throw error

@@ -19,7 +19,7 @@ Used by `:app` navigation:
 
 ## Show page
 
-- **Loading.** When the show-details request fails, `logic/PodcastInfoLoadRecovery` keeps a stored row and its episodes; with no row the page shows `PodcastInfoLoadError` with a retry (`retryLoad`).
+- **Loading.** When the show-details request fails, `logic/PodcastInfoLoadRecovery` keeps a stored row and its episodes; with no row the page shows `PodcastInfoLoadError` with a retry (`retryLoad`). A later page, or a new sort's first page, that still fails after a few tries (`ShowPageRetry`) sets `pageLoadFailed`: the list stays open and shows `ShowPageLoadFailedRow` with a retry (`retryEpisodePage`).
 - **Repeat loads.** `PodcastInfoLoadGuard` skips a repeat `loadPodcast` for the route ID even when the page shows another ID (a linked `rss:` feed or catalog ID).
 - **Episode source.** The list comes from `PodcastRepository.getShowPageEpisodes`. When `PodcastRepository.showPageSource` is `FEED`, `PodcastInfoFeedFirst` runs the page: the stored copy of the show's feed shows at once, boxlore's list stands in while the feed is read, and the list grows under the same IDs. Decisions live in `logic/ShowFeedLogic`; sources are described in [`core/catalog/README.md`](../../core/catalog/README.md).
 - **Feed reads.** Search, oldest-first sort, range selection and scrolling past the stored copy read the whole archive first (`ShowFeedLogic.needsArchive`). After a failed read the page shows boxlore's list (`FALLBACK`) and reads no feed again until it is reopened (`readsFeed`). Feed-first pages never offer **Missing episodes?** (`isFeedFirstShowPage`).
@@ -114,7 +114,7 @@ src/main/java/cx/aswin/boxlore/feature/info/
 
 - This module owns no storage files or keys of its own.
 - Keys it uses through `:core:prefs`: `home_pinned_podcast_ids` (Home pin), `content_languages` and region (Try these episodes), `has_requested_notification_permission` (`BoxcastPrefs`).
-- Episode and show identity, aliases and `rss:` IDs come from core modules. Likes, progress, downloads and queue state are read through alias-aware lookups (`PlaybackRepository.likedEpisodeIds`, `historyForEpisodeLookup`, `withEpisodeAliases`), so an episode stored under several IDs shows one state. See [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md).
+- Episode and show identity, aliases and `rss:` IDs come from core modules. Likes, progress, downloads and queue state are read through alias-aware lookups (`PlaybackRepository.likedEpisodeIds`, `inProgressForEpisodeLookup`, `withEpisodeAliases`), so an episode stored under several IDs shows one state. See [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md).
 - `:app` owns route patterns and deep links.
 - Screen names: `podcast_detail`, `podcast_showcase`, `episode_detail`; show-page playback passes `podcast_detail` as its entry point. See [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md).
 

@@ -121,18 +121,15 @@ internal class PodcastInfoPostSubscribeRefresh(
                 limit = pageSizeFor(shownState.currentSort),
                 offset = 0,
                 sort = sortParamFor(shownState.currentSort),
+                list = pageState.listSchemes,
             )
         if (!PodcastInfoPullRefreshLogic.shouldApply(pageState.currentPodcastId, targetPodcastId)) {
             return
         }
-        pageState.currentOffset = page.sourceCount
-        uiState.value =
-            supplementSupport.remountWithSupplements(
-                state = shownState,
-                piEpisodes = page.episodes,
-                hasMoreEpisodes = page.hasMore,
-                isFetchingFromFeed = false,
-            )
+        val remounted = supplementSupport.remountPage(state = shownState, page = page, isLoadingMore = shownState.isLoadingMore)
+        // A failed page keeps the list shown and its paging.
+        if (!page.failed) pageState.currentOffset = page.sourceCount
+        uiState.value = remounted
     }
 
     private suspend fun syncPiTipAfterSubscribe(podcastId: String) {

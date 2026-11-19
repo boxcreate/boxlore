@@ -104,6 +104,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>After you listen on another device, Play on the mini player now starts the episode it shows, at the right spot, instead of an older one from your queue.</li>
 <li>When boxlore fills your queue from the show you're playing, or offers to continue it, it now picks the episodes right after yours, even deep into a long show you don't follow, instead of jumping hundreds of episodes ahead.</li>
 <li>Downloaded episodes now show their chapters and transcript straight away, even offline or on a weak connection. Chapters and transcripts that can't load now stop trying instead of loading forever.</li>
+<li>Smart Downloads no longer downloads episodes you've already finished, a show you listen to oldest first gets its next episode, and Sync Now checks your shows for new episodes before it picks what to download.</li>
 <li>A download you start that fails now stays in Downloads, marked as failed, with Download Again, instead of disappearing.</li>
 <li>Auto-downloads checked in the background stay on schedule when one show's feed can't be read, so new episodes from your other shows still arrive on time.</li>
 <li>For you in Explore no longer reloads again and again while your account syncs. It refreshes when the shows you follow or your languages change, and when your picks get old.</li>
@@ -113,8 +114,12 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>The Brief opens as soon as it's ready, even when its stories are slow to load. They appear when they arrive.</li>
 <li>New episode notifications from different shows no longer replace each other or open the wrong show. Each show gets its own notification, grouped together, for up to 16 shows at a time.</li>
 <li>On a show's page, Mark all as played and Mark all as unplayed now change every episode, not just the newest 200. If the episodes can't load, nothing changes and boxlore tells you.</li>
+<li>Marking a whole show as played no longer makes episodes of your other shows, or ones you played long ago, look unplayed or lose their progress, on your phone or in Android Auto. Episodes you'd already finished stay in Listening history, the show no longer jumps to the top of Your shows or Most listened, and your recommendations keep following what you listen to. Marking the show unplayed again no longer fills today's Listening history with episodes you never played.</li>
 <li>On a show's page, adding selected episodes to your queue now adds as many as fit and tells you when your queue is full, instead of silently leaving the rest out.</li>
 <li>When boxlore can't read a long show's own feed, searching that show now looks through up to 11,000 of its episodes instead of the newest 1,000, and says so when there are more. If the search can't run, the page says so and lets you try again instead of showing no matches.</li>
+<li>On a show page, episodes that don't load are tried again and then show Try again, instead of the list just ending. Select all on a long show selects every episode or says it couldn't.</li>
+<li>After you sign in on a new phone, every show you follow now gets its name and artwork. Some used to stay as “Loading...” with no artwork.</li>
+<li>Importing a large library from another podcast app no longer stops partway. Shows boxlore can't add right away are added later while boxlore is open.</li>
 </ul>
 <!-- release-upcoming:end -->
 

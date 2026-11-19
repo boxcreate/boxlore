@@ -25,7 +25,7 @@ internal fun HomeViewModel.startOldestSortResolution() {
 
         combine(
             subscriptionRepository.subscribedPodcasts,
-            allHomeHistory,
+            homeStatusHistory,
             playbackRepository.completedEpisodeIds,
         ) { subs, allHistory, completedEpisodeIds ->
             Triple(subs, allHistory, completedEpisodeIds)

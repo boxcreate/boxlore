@@ -3,13 +3,9 @@ package cx.aswin.boxlore.core.catalog.backup
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import cx.aswin.boxlore.core.catalog.ExactPodcastLookupKey
-import cx.aswin.boxlore.core.catalog.ExactPodcastLookupResult
-import cx.aswin.boxlore.core.catalog.ExactPodcastLookupType
 import cx.aswin.boxlore.core.catalog.FeedUrlSources
 import cx.aswin.boxlore.core.catalog.FolderRepository
 import cx.aswin.boxlore.core.catalog.LOCAL_CATALOG_WINDOW_BOUND
-import cx.aswin.boxlore.core.catalog.PodcastIndexSearchResult
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
@@ -114,6 +110,8 @@ class LibraryBackupManager(
     private val renumberedShows: RenumberedShows? = null,
     private val deviceIdentity: DeviceIdentityPort? = null,
     private val legacyListeningOrigin: DeviceIdentityPort? = null,
+    private val pendingOpmlImports: PendingOpmlImports =
+        SharedAppDependenciesHolder.instance?.pendingOpmlImports ?: MemoryPendingOpmlImports(),
 ) {
     private val context = context.applicationContext
     private val rssFeedClient = RssFeedClient()
@@ -662,9 +660,62 @@ class LibraryBackupManager(
     suspend fun importFromOpml(inputStream: InputStream): Int = LibraryBackupImportLogic.opmlImportCount(
         onFailure = { error -> Log.e("OPML_IMPORT", "Failed to import OPML", error) },
     ) {
-        parseOpmlFeeds(inputStream).count { feed ->
-            importSingleOpmlFeed(feed) != null
+        importOpmlFeeds(parseOpmlFeeds(inputStream)).imported.size
+    }
+
+    /**
+     * Imports [feeds] in order, waiting for room in the route budget before each request, so a large
+     * file isn't cut short by the API's rate limits ([OpmlImportRun]). The screen sends requests for
+     * [OpmlScreenPace.SCREEN_BUDGET_MS] at most: outlines it didn't get to, and those the API still
+     * couldn't answer for, are returned as [OpmlImportReport.pending] and finished later by
+     * [finishPendingOpmlImports]; an import that followed nothing keeps none pending. One OPML run
+     * at a time in the process ([opmlRuns]); a catch-up running gives way to it.
+     */
+    suspend fun importOpmlFeeds(
+        feeds: List<OpmlFeed>,
+        onProgress: suspend (index: Int, feed: OpmlFeed, imported: List<cx.aswin.boxlore.core.model.Podcast>) -> Unit = { _, _, _ -> },
+    ): OpmlImportReport {
+        // Shown while a catch-up finishes the outline it is on.
+        feeds.firstOrNull()?.let { onProgress(0, it, emptyList()) }
+        return opmlRuns.screen {
+            val pace = OpmlScreenPace(podcastRepository.routeBudget)
+            val resolver = OpmlCatalogResolver(podcastRepository, rssFeedClient, pace::pace)
+            OpmlImportRun.run(
+                feeds,
+                pendingOpmlImports,
+                forgetWhenNothingImported = true,
+                importOne = { feed -> if (pace.expired()) OpmlFeedImport.Pending else importOpmlFeed(feed, resolver) },
+                onProgress = onProgress,
+            )
         }
+    }
+
+    /**
+     * Finishes outlines an earlier import left pending (the API couldn't answer, the screen's time ran
+     * out, or the app closed mid-import), paced like the import itself. Run by the foreground
+     * catch-up; what it can't finish stays pending for a later one, which waits longer after each
+     * miss ([OpmlImportRun.retryWaitMs]), and an outline the API never answers for is given up on in
+     * the end ([OpmlImportRun.GIVE_UP_AFTER_MISSES]). Does nothing while an import runs, and stops
+     * after its current outline when the listener starts one.
+     */
+    suspend fun finishPendingOpmlImports(): OpmlImportReport {
+        val nothing = OpmlImportReport(emptyList(), emptyList())
+        if (pendingOpmlImports.all().isEmpty()) return nothing
+        return opmlRuns.catchUp { yieldToScreen ->
+            val pace = OpmlCatchUpPace(podcastRepository.routeBudget, yieldToScreen)
+            val resolver = OpmlCatalogResolver(podcastRepository, rssFeedClient, pace::pace)
+            OpmlImportRun
+                .run(
+                    pendingOpmlImports.all(),
+                    pendingOpmlImports,
+                    forgetWhenNothingImported = false,
+                    importOne = { importOpmlFeed(it, resolver) },
+                    countMisses = true,
+                    shouldStop = yieldToScreen,
+                ).also { report ->
+                    report.gaveUp.forEach { Log.w("OPML_IMPORT", "Gave up on ${it.title}: Podcast Index never answered for it") }
+                }
+        } ?: nothing
     }
 
     fun parseOpmlFeeds(inputStream: InputStream): List<OpmlFeed> {
@@ -679,7 +730,9 @@ class LibraryBackupManager(
             while (eventType != XmlPullParser.END_DOCUMENT) {
                 if (eventType == XmlPullParser.START_TAG && parser.name == "outline") {
                     val xmlUrl = parser.getAttributeValue(null, "xmlUrl")
-                    val title = parser.getAttributeValue(null, "text") ?: parser.getAttributeValue(null, "title")
+                    val text = parser.getAttributeValue(null, "text")
+                    // An empty `text` falls back to `title`, so the outline's title search has a name.
+                    val title = text?.takeIf { it.isNotBlank() } ?: parser.getAttributeValue(null, "title") ?: text
 
                     if (xmlUrl != null && title != null) {
                         feeds.add(OpmlFeed(title, xmlUrl))
@@ -693,16 +746,22 @@ class LibraryBackupManager(
         return feeds
     }
 
-    suspend fun importSingleOpmlFeed(feed: OpmlFeed): cx.aswin.boxlore.core.model.Podcast? {
+    /** Imports one outline; a show the catalog couldn't answer for yet is [OpmlFeedImport.Pending], not dropped. */
+    private fun OpmlCatalogDecision.follows(): Boolean = this is OpmlCatalogDecision.Found || this == OpmlCatalogDecision.ConfirmedAbsent
+
+    private suspend fun importOpmlFeed(feed: OpmlFeed, resolver: OpmlCatalogResolver): OpmlFeedImport {
         try {
-            return when (val resolution = resolveOpmlCatalogPodcast(feed)) {
+            val resolution = resolver.resolve(feed)
+            // An account switch clears the store: an outline it held is never followed into the new account.
+            if (resolution.follows() && !pendingOpmlImports.contains(feed)) return OpmlFeedImport.Pending
+            return when (resolution) {
                 is OpmlCatalogDecision.Found -> {
                     subscriptionRepository.subscribe(resolution.podcast)
                     refreshImportedLatestEpisodes(
                         importedIds = listOf(resolution.podcast.id),
                         backupOptIns = null,
                     )
-                    resolution.podcast
+                    OpmlFeedImport.Imported(resolution.podcast)
                 }
                 OpmlCatalogDecision.ConfirmedAbsent ->
                     LibraryBackupImportLogic.runRestore(
@@ -718,10 +777,15 @@ class LibraryBackupManager(
                                 error,
                             )
                         },
-                    )
+                    )?.let { OpmlFeedImport.Imported(it) } ?: OpmlFeedImport.Skipped
                 OpmlCatalogDecision.Deferred -> {
                     Log.w("OPML_IMPORT", "Deferring ${feed.title}; Podcast Index lookup did not settle")
-                    null
+                    OpmlFeedImport.Pending
+                }
+                OpmlCatalogDecision.Limited -> OpmlFeedImport.Limited
+                OpmlCatalogDecision.Unresolvable -> {
+                    Log.w("OPML_IMPORT", "Skipping ${feed.title}; its feed can't be read or names another show")
+                    OpmlFeedImport.Skipped
                 }
             }
         } catch (e: CancellationException) {
@@ -729,78 +793,8 @@ class LibraryBackupManager(
         } catch (e: Exception) {
             Log.e("OPML_IMPORT", "Failed to import single feed: ${feed.title}", e)
         }
-        return null
+        return OpmlFeedImport.Skipped
     }
-
-    private suspend fun resolveOpmlCatalogPodcast(feed: OpmlFeed): OpmlCatalogDecision {
-        val initialUrlLookup = lookupOpmlFeedByUrl(feed.xmlUrl)
-        if (initialUrlLookup is ExactPodcastLookupResult.Found) {
-            return OpmlCatalogDecision.Found(initialUrlLookup.podcast)
-        }
-        val titleSearch =
-            podcastRepository.searchPodcastIndexForOpml(feed.title)
-        if (titleSearch is PodcastIndexSearchResult.Success) {
-            OpmlImportLogic
-                .catalogMatch(
-                    opmlTitle = feed.title,
-                    opmlXmlUrl = feed.xmlUrl,
-                    urlLookup = null,
-                    titleSearch = titleSearch.podcasts,
-                )?.let { return OpmlCatalogDecision.Found(it) }
-        }
-
-        val peeked = peekOpmlFeed(feed.xmlUrl) ?: return OpmlCatalogDecision.Deferred
-        val redirectedUrlLookup = lookupOpmlFeedByUrl(peeked.finalUrl)
-        val urlLookup = OpmlImportLogic.preferLookup(initialUrlLookup, redirectedUrlLookup)
-        val guidLookup =
-            peeked.guid
-                ?.let { lookupOpmlFeedByGuid(it) }
-                ?: ExactPodcastLookupResult.NotFound
-        return OpmlImportLogic.finalCatalogDecision(
-            opmlTitle = peeked.title.ifBlank { feed.title },
-            opmlXmlUrl = peeked.finalUrl,
-            urlLookup = urlLookup,
-            guidLookup = guidLookup,
-            titleSearch = titleSearch,
-        )
-    }
-
-    private suspend fun lookupOpmlFeedByUrl(xmlUrl: String): ExactPodcastLookupResult = OpmlImportLogic.firstExactLookup(OpmlImportLogic.urlLookupCandidates(xmlUrl)) { candidate ->
-        podcastRepository.lookupExactPodcastIndex(
-            ExactPodcastLookupKey(
-                type = ExactPodcastLookupType.FEED_URL,
-                value = candidate,
-            ),
-        )
-    }
-
-    private suspend fun lookupOpmlFeedByGuid(guid: String): ExactPodcastLookupResult {
-        val value = guid.trim()
-        if (value.isEmpty()) return ExactPodcastLookupResult.NotFound
-        return podcastRepository.lookupExactPodcastIndex(
-            ExactPodcastLookupKey(
-                type = ExactPodcastLookupType.PODCAST_GUID,
-                value = value,
-            ),
-        )
-    }
-
-    private suspend fun peekOpmlFeed(xmlUrl: String): PeekedOpmlFeed? {
-        val httpsUrl = OpmlImportLogic.httpsFeedUrl(xmlUrl) ?: return null
-        return runCatching {
-            val fetched = rssFeedClient.fetch(httpsUrl)
-            val parsed = rssFeedClient.parse(fetched.finalUrl, fetched.body)
-            PeekedOpmlFeed(
-                finalUrl = fetched.finalUrl,
-                title = parsed.title,
-                guid = parsed.podcastGuid,
-            )
-        }.onFailure { error ->
-            Log.w("OPML_IMPORT", "Feed peek failed for $xmlUrl", error)
-        }.getOrNull()
-    }
-
-    private data class PeekedOpmlFeed(val finalUrl: String, val title: String, val guid: String?,)
 
     private fun supplementPort(): EpisodeSupplementPort? = episodeSupplementPort ?: podcastRepository.episodeSupplementRepository
 
@@ -933,23 +927,26 @@ class LibraryBackupManager(
         )
     }
 
-    suspend fun markAllEpisodesCompleted(podcast: cx.aswin.boxlore.core.model.Podcast) {
+    /**
+     * Marks every episode of [podcast] played. Its pages are read paced under the route's rate limit
+     * in one ID scheme ([WholeShowRead]); a page that still can't be read leaves the episodes read so
+     * far marked and the rest as they were (logged). False when the show couldn't be read in full.
+     */
+    suspend fun markAllEpisodesCompleted(podcast: cx.aswin.boxlore.core.model.Podcast): Boolean {
         try {
-            val episodes = mutableListOf<cx.aswin.boxlore.core.model.Episode>()
-            var offset = 0
-            val pageSize = LOCAL_CATALOG_WINDOW_BOUND
-            do {
-                val page =
+            val read =
+                WholeShowRead.read { offset, scheme ->
                     podcastRepository.getEpisodesPaginated(
                         feedId = podcast.id,
-                        limit = pageSize,
+                        limit = LOCAL_CATALOG_WINDOW_BOUND,
                         offset = offset,
                         sort = "newest",
+                        strict = true,
+                        scheme = scheme,
                     )
-                episodes += page.episodes
-                offset += page.sourceCount
-                if (!page.hasMore || page.episodes.isEmpty()) break
-            } while (true)
+                }
+            val episodes = read.episodes
+            if (!read.complete) Log.w("OPML_IMPORT", "Marked only the newest ${episodes.size} episodes of ${podcast.title}: a page couldn't be read")
             if (episodes.isNotEmpty()) {
                 listeningHistory.markAllEpisodesCompleted(
                     episodes = episodes,
@@ -958,10 +955,15 @@ class LibraryBackupManager(
                     podcastImageUrl = podcast.imageUrl,
                 )
             }
+            return read.complete
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
             Log.e("OPML_IMPORT", "Failed to mark all episodes completed for: ${podcast.title}", e)
+            return false
         }
     }
 }
+
+/** The import screen's OPML run and the catch-up's share pending outlines, so only one runs at a time. */
+private val opmlRuns = OpmlRunGate()

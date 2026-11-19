@@ -147,7 +147,7 @@ class ListeningHistoryDaoInMemoryTest {
     }
 
     @Test
-    fun getAllHistoryOrdersByLastPlayed() = runTest {
+    fun getRecentHistoryOrdersByLastPlayed() = runTest {
         dao.upsertAll(
             listOf(
                 history("a", lastPlayedAt = 1L),
@@ -155,7 +155,7 @@ class ListeningHistoryDaoInMemoryTest {
                 history("c", lastPlayedAt = 2L),
             ),
         )
-        assertEquals(listOf("b", "c", "a"), dao.getAllHistory().first().map { it.episodeId })
+        assertEquals(listOf("b", "c", "a"), dao.getRecentHistory().first().map { it.episodeId })
     }
 
     @Test
@@ -180,7 +180,7 @@ class ListeningHistoryDaoInMemoryTest {
         dao.delete("a")
         assertNull(dao.getHistoryItem("a"))
         dao.deleteAll()
-        assertTrue(dao.getAllHistory().first().isEmpty())
+        assertTrue(dao.getRecentHistory().first().isEmpty())
     }
 
     @Test

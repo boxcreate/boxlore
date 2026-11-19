@@ -66,6 +66,22 @@ internal object PhoneListRules {
 
     fun mixIsFresh(builtAt: Long, now: Long): Boolean = builtAt > 0L && now - builtAt < MIX_TTL_MS
 
+    /** How much recent listening the mix looks at, as on the phone's other mixes. */
+    private const val MIX_HISTORY_WINDOW = 200
+
+    /**
+     * The Daily Mix as the phone builds it for [shows]: ranked from the newest rows and the newest
+     * real listening (so a show marked played all at once can't crowd it out), resuming any started
+     * episode however old, and never offering one in [completedIds] as unplayed.
+     */
+    suspend fun dailyMix(shows: List<Podcast>, history: ListeningHistoryDao, completedIds: Set<String>): MixtapeEngine.Result =
+        MixtapeEngine.build(
+            subscriptions = shows,
+            history = history.getRecentHistoryWithListeningList(MIX_HISTORY_WINDOW),
+            completedIds = completedIds,
+            inProgress = history.getInProgressHistoryList(),
+        )
+
     /**
      * Changes whenever the watch would be sent something new about the followed shows: a show
      * came or went, was renamed or redrawn, or got a newer latest episode (the watch's New episodes).
@@ -117,14 +133,14 @@ internal class PhoneLibraryAdapter(
         val completed = history.getCompletedEpisodeIds().toSet()
         val latest = rows.shows.mapNotNull { show -> show.latestEpisode?.copy(podcastId = show.podcastId, podcastTitle = show.title, podcastImageUrl = show.imageUrl) }
         val newEpisodes = PhoneListRules.newEpisodes(latest, completed).map { it.toLink(it.podcastId, it.podcastTitle) }
-        return PhoneLibraryRows(shows, rows.history, newEpisodes, dailyMix(rows.shows))
+        return PhoneLibraryRows(shows, rows.history, newEpisodes, dailyMix(rows.shows, completed))
     }
 
     /** The Daily Mix as the phone would play it, kept for [PhoneListRules.MIX_TTL_MS]. */
-    private suspend fun dailyMix(shows: List<PodcastEntity>): List<WearLinkEpisode> {
+    private suspend fun dailyMix(shows: List<PodcastEntity>, completed: Set<String>): List<WearLinkEpisode> {
         val now = clock()
         if (PhoneListRules.mixIsFresh(mixBuiltAt, now)) return mix
-        val built = MixtapeEngine.build(subscriptions = shows.map { it.toPodcast() }, history = history.getRecentHistoryList(MIX_HISTORY_WINDOW))
+        val built = PhoneListRules.dailyMix(shows.map { it.toPodcast() }, history, completed)
         mix = built.episodes.map { it.toLink(it.podcastId, it.podcastTitle) }
         mixBuiltAt = now
         return mix
@@ -145,9 +161,6 @@ internal class PhoneLibraryAdapter(
 
     private companion object {
         const val NEWEST = "newest"
-
-        /** How much recent listening the mix looks at, as on the phone's other mixes. */
-        const val MIX_HISTORY_WINDOW = 200
     }
 }
 

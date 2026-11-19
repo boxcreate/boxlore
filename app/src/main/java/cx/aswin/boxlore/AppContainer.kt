@@ -38,6 +38,7 @@ import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.catalog.UpgradeAddressRepair
 import cx.aswin.boxlore.core.catalog.UpgradeRepairPorts
+import cx.aswin.boxlore.core.catalog.lookupFeedUrlWhenRoom
 import cx.aswin.boxlore.core.catalog.ports.SmartDownloadSyncPort
 import cx.aswin.boxlore.core.catalog.privacy.ConsentManager
 import cx.aswin.boxlore.core.catalog.sync.HistorySyncResolver
@@ -197,6 +198,13 @@ class AppContainer(
      */
     override val renumberedShows: RenumberedShows by lazy {
         SharedPreferencesRenumberedShows(appContext.getSharedPreferences(SharedPreferencesRenumberedShows.FILE_NAME, Context.MODE_PRIVATE))
+    }
+
+    /** `boxlore_pending_opml_imports`: OPML outlines an import couldn't settle yet, finished by the foreground catch-up. */
+    override val pendingOpmlImports: cx.aswin.boxlore.core.catalog.backup.PendingOpmlImports by lazy {
+        cx.aswin.boxlore.core.catalog.backup.SharedPreferencesPendingOpmlImports(
+            appContext.getSharedPreferences(cx.aswin.boxlore.core.catalog.backup.SharedPreferencesPendingOpmlImports.FILE_NAME, Context.MODE_PRIVATE),
+        )
     }
 
     /**
@@ -455,7 +463,8 @@ class AppContainer(
             database,
             subscribedEpisodeCatalog,
             userPreferencesRepository,
-            recoverFeedUrl = { id -> cx.aswin.boxlore.core.catalog.TrackedPodcastRtdbLogic.httpsFeedUrl(podcastRepository.getPodcastDetails(id)?.feedUrl) },
+            // Paced: asked only when the /podcast route has room, and stamped only once answered.
+            recoverFeedUrl = { id -> podcastRepository.lookupFeedUrlWhenRoom(id) },
             saveFeedUrl = { id, url -> subscriptionRepository.ensureHttpsFeedUrl(id, url) },
         )
     }
@@ -521,6 +530,12 @@ class AppContainer(
                 reportStamps = feedReportStamps,
                 isOnline = connectivityStatus::isOnline,
                 reportLimiter = feedReportLimiter,
+            ),
+            // Paced catch-up after each pass: shows a cloud pull left as placeholders, then OPML outlines still pending.
+            catchUpSteps =
+            listOf(
+                { subscriptionSyncResolver.healStubRows() },
+                { opmlCatchUpManager.finishPendingOpmlImports() },
             ),
         )
     }
@@ -785,11 +800,20 @@ class AppContainer(
         )
     }
 
-    override val userSyncCoordinator: UserSyncCoordinator by lazy {
-        val queuePort = queueRepository
-        // Episode identity on the sync wire: recipe IDs and catalog keys out, aliases for pulled rows in (own-episode-IDs P4).
-        val episodeIdentity = SyncEpisodeIdentity(database)
-        val subResolver = SubscriptionSyncResolver(
+    /** Finishes OPML outlines still pending during the foreground catch-up; built once, on the first catch-up. */
+    private val opmlCatchUpManager: cx.aswin.boxlore.core.catalog.backup.LibraryBackupManager by lazy {
+        cx.aswin.boxlore.core.catalog.backup.LibraryBackupManager(
+            subscriptionRepository,
+            playbackRepository,
+            podcastRepository,
+            userPreferencesRepository,
+            appContext,
+        )
+    }
+
+    /** The cloud pull's subscription merge; also fills in placeholder rows during the foreground catch-up. */
+    private val subscriptionSyncResolver: SubscriptionSyncResolver by lazy {
+        SubscriptionSyncResolver(
             podcastDao = database.podcastDao(),
             folderRepository = folderRepository,
             podcastRepository = podcastRepository,
@@ -797,6 +821,13 @@ class AppContainer(
             notificationSyncPort = subscriptionRepository,
             feedAddresses = subscriptionRepository.feedAddresses,
         )
+    }
+
+    override val userSyncCoordinator: UserSyncCoordinator by lazy {
+        val queuePort = queueRepository
+        // Episode identity on the sync wire: recipe IDs and catalog keys out, aliases for pulled rows in (own-episode-IDs P4).
+        val episodeIdentity = SyncEpisodeIdentity(database)
+        val subResolver = subscriptionSyncResolver
         val historyResolver = HistorySyncResolver(
             listeningHistoryDao = database.listeningHistoryDao(),
             activePlaybackSyncPort = playbackRepository,
@@ -834,6 +865,7 @@ class AppContainer(
             episodeIdentity = episodeIdentity,
             playedShowDao = database.playedShowDao(),
             listeningInsightsMaintenance = database.listeningInsightsMaintenance(),
+            pendingOpmlImports = pendingOpmlImports,
         )
     }
 

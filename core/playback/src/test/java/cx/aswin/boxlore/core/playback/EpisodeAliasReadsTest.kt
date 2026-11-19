@@ -159,14 +159,14 @@ class EpisodeAliasReadsTest {
     fun screensLookingAnEpisodeUpByAnotherIdSeeItsLikeAndProgress() = runTest {
         twoIds(database)
         dao.upsertAll(listOf(history("A", progress = 600_000L, liked = true, likedAt = 9L, playedAt = 30L), history("solo", progress = 5L, playedAt = 20L)))
-        val historyStore = EpisodeAliasFixtures.historyStore(context, database, this)
+        val historyStore = EpisodeAliasFixtures.historyStore(context, database, backgroundScope)
 
         assertEquals(setOf("A", "B"), historyStore.likedEpisodeIds.first())
-        val byId = historyStore.historyForEpisodeLookup.first().associateBy { it.episodeId }
+        val byId = historyStore.inProgressForEpisodeLookup.first().associateBy { it.episodeId }
         assertEquals(setOf("A", "B", "solo"), byId.keys)
         assertEquals(600_000L, byId.getValue("B").progressMs)
         // Lists still count the episode once.
-        assertEquals(listOf("A", "solo"), historyStore.getAllHistory().first().map { it.episodeId })
+        assertEquals(listOf("A", "solo"), historyStore.getRecentHistory().first().map { it.episodeId })
     }
 
     @Test

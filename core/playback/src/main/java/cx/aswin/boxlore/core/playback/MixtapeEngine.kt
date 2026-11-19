@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.playback
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.PodcastScoring
 import cx.aswin.boxlore.core.database.toScorable
+import cx.aswin.boxlore.core.database.withInProgress
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
@@ -37,10 +38,19 @@ object MixtapeEngine {
         val lastPlayedAtMs: Long? = null,
     )
 
+    /**
+     * @param history recent history: resume candidates, ranking and progress.
+     * @param completedIds every completed episode ID (the whole history, projected): an episode in
+     *   it is never offered as unplayed, even when [history] no longer holds its row.
+     * @param inProgress started episodes [history] may not hold (rows behind many marked played):
+     *   resume picks and progress only, never ranking.
+     */
     @Suppress("LongParameterList", "CyclomaticComplexMethod")
     suspend fun build(
         subscriptions: List<Podcast>,
         history: List<ListeningHistoryEntity>,
+        completedIds: Set<String> = emptySet(),
+        inProgress: List<ListeningHistoryEntity> = emptyList(),
         resolvedSerialEpisodes: Map<String, Episode> = emptyMap(),
         recommendations: List<Episode> = emptyList(),
         podcastScores: Map<String, Double> = PodcastScoring.calculateScores(
@@ -51,10 +61,11 @@ object MixtapeEngine {
         nowMs: Long = System.currentTimeMillis(),
         staleRestartEnabled: Boolean = true,
     ): Result {
-        val historyByEpisode = history.associateBy(ListeningHistoryEntity::episodeId)
+        val statusRows = history.withInProgress(inProgress)
+        val historyByEpisode = statusRows.associateBy(ListeningHistoryEntity::episodeId)
         val subscriptionsById = subscriptions.associateBy(Podcast::id)
         val candidates = buildResumeCandidates(
-            history = history,
+            history = statusRows,
             subscriptionsById = subscriptionsById,
             podcastScores = podcastScores,
             nowMs = nowMs,
@@ -64,11 +75,11 @@ object MixtapeEngine {
             historyByEpisode = historyByEpisode,
             podcastScores = podcastScores,
             nowMs = nowMs,
-        )
+        ).filter { it.episode.id !in completedIds }
         var ordered = orderCandidates(candidates).toMutableList()
         addRecommendationFallbacks(
             candidates = ordered,
-            recommendations = recommendations,
+            recommendations = recommendations.filter { it.id !in completedIds },
             subscriptionsById = subscriptionsById,
             historyByEpisode = historyByEpisode,
         )

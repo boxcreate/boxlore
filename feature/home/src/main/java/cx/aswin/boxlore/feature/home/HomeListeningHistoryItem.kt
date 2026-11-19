@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.home
 
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.countsAsListening
 
 data class HomeListeningHistoryItem(
     val episodeId: String,
@@ -14,6 +15,8 @@ data class HomeListeningHistoryItem(
     val lastPlayedAt: Long,
     /** When it was played to the end; null when only marked played or not finished. */
     val finishedAt: Long? = null,
+    /** Real listening, not only marked played or unplayed (`countsAsListening`). */
+    val countsAsListening: Boolean = true,
 )
 
 /**
@@ -36,4 +39,5 @@ internal fun ListeningHistoryEntity.toHomeListeningHistoryItem(): HomeListeningH
     isLiked = isLiked,
     lastPlayedAt = lastPlayedAt,
     finishedAt = finishedAt,
+    countsAsListening = countsAsListening,
 )

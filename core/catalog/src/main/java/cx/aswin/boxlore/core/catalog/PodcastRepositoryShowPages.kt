@@ -4,7 +4,6 @@ import cx.aswin.boxlore.core.domain.ports.FeedTelemetryPort
 import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.network.model.V2EpisodeIds
-import cx.aswin.boxlore.core.network.model.V2EpisodesPaging
 import cx.aswin.boxlore.core.network.model.V2PodcastResponse
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
@@ -38,6 +37,7 @@ internal const val NEWEST_SORT = "newest"
 
 /** The `/v2/episodes` sort for a caller's sort: oldest first only when asked, else newest first. */
 internal fun showListSort(sort: String): String = if (sort == OLDEST_SORT) OLDEST_SORT else NEWEST_SORT
+internal const val HTTP_TOO_MANY_REQUESTS = 429
 
 /**
  * True when [feedId]'s show page reads its feed first: `feed_first` is on and [feedId] is a Podcast
@@ -118,39 +118,10 @@ private suspend fun PodcastRepository.serverListWindow(feedId: String, sort: Str
     return mergeCachedSupplementsIntoPage(resolvedId, page, 0, listSort).episodes.take(LOCAL_CATALOG_WINDOW_BOUND)
 }
 
-/**
- * A page of the server's list of the show (`/v2/episodes`), its recipe IDs mapped to the stored IDs
- * that own them on this phone, merged with cached feed extras; v1 `/episodes` only when `/v2` fails.
- *
- * Added in P4 PR 16 of the own-episode-IDs plan (plan section 11, rollback: `feed_first` off reads
- * `/v2/episodes`; decision D1).
- * COMPAT(own-ids): the server's list in recipe IDs. Permanent: never remove (MIGRATION.md §5).
- */
-internal suspend fun PodcastRepository.getServerListPage(
-    feedId: String,
-    limit: Int,
-    offset: Int,
-    sort: String,
-    mergeSupplements: Boolean,
-): PodcastRepository.EpisodePage {
-    val resolvedId = resolvePodcastIndexFeedId(feedId)
-    PodcastRepository.rememberResolvedFeedId(feedId, resolvedId)
-    val page = v2EpisodesPage(resolvedId, limit, offset, sort) ?: return getNetworkEpisodesPaginated(feedId, limit, offset, sort, mergeSupplements)
-    return maybeMergeSupplements(resolvedId, page, offset, sort, mergeSupplements)
-}
-
 /** One `/v2/episodes` page under local owners, cached with the v1 pages; null when the route can't answer. */
 internal suspend fun PodcastRepository.v2EpisodesPage(resolvedId: String, limit: Int, offset: Int, sort: String,): PodcastRepository.EpisodePage? {
-    val showId = V2EpisodeIds.parseShowId(resolvedId)?.takeIf { V2EpisodesPaging.isValid(it, limit, offset) } ?: return null
-    val cacheKey = "$resolvedId|v2|$limit|$offset|$sort"
-    PodcastRepository.episodesCache[cacheKey]?.let { return it }
-    val body = v2Answer("episodes") { apiV2.getEpisodes(showId, limit, offset, sort).awaitResponse() } ?: return null
-    return PodcastRepository
-        .EpisodePage(
-            episodes = discoveryEpisodeIds.toLocalOwners(body.items.mapNotNull(::mapToEpisode)),
-            hasMore = body.hasMore,
-            sourceCount = body.items.size,
-        ).also { PodcastRepository.episodesCache[cacheKey] = it }
+    val showId = V2EpisodeIds.parseShowId(resolvedId)?.takeIf(V2EpisodeIds::isEpisodeShowId) ?: return null
+    return (v2EpisodesPageRead(resolvedId, showId, limit, offset, sort, paced = false) as? V2PageRead.Page)?.page
 }
 
 /**
@@ -241,9 +212,10 @@ private suspend fun PodcastRepository.slimMatchEpisodes(resolvedId: String, rows
 /** The show's registry entry (`/v2/podcast`): its address, transport and namespace. Null when it can't be read. */
 internal suspend fun PodcastRepository.v2ShowAddress(showId: Long): V2PodcastResponse? = v2Answer("podcast") { apiV2.getPodcast(showId).awaitResponse() }
 
-/** The body of a successful `/v2` answer, or null; cancellation propagates. */
-internal inline fun <T> v2Answer(route: String, call: () -> Response<T>): T? = try {
+/** The body of a successful `/v2` answer, or null; a 429 also goes to [onRateLimited] with its `Retry-After`. Cancellation propagates. */
+internal inline fun <T> v2Answer(route: String, onRateLimited: (Long?) -> Unit = {}, call: () -> Response<T>): T? = try {
     val response = call()
+    if (response.code() == HTTP_TOO_MANY_REQUESTS) onRateLimited(retryAfterMs(response))
     response.body().takeIf { response.isSuccessful }.also {
         if (it == null) android.util.Log.w(SHOW_PAGES_TAG, "v2 $route failed: HTTP ${response.code()}")
     }

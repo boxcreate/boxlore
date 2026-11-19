@@ -54,7 +54,7 @@ internal suspend fun HomeViewModel.resolveFavoritePodcast(
     val scores =
         PodcastAffinityLogic.calculatePodcastAffinityScores(
             subscriptions = subscriptions,
-            historyList = historySignals,
+            historyList = HomeBecauseYouLikeLogic.affinitySignals(historyList),
             lastPlayedMap = lastPlayedMap,
             podcastNameMap = podcastNameMap,
             podcastImageMap = podcastImageMap,

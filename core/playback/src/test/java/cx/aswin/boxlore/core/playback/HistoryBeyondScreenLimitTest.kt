@@ -217,6 +217,8 @@ class HistoryBeyondScreenLimitTest {
         likedAt = if (liked) playedAt else 0L,
         lastPlayedAt = playedAt,
         isDirty = false,
+        // Played: Listening history lists only rows with some listening.
+        firstPlayedAt = playedAt,
     )
 
     private companion object {

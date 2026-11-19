@@ -24,6 +24,7 @@ Downloads:
 Smart Downloads and auto-downloads:
 
 - `SmartDownloadManager`: picks and schedules Smart Downloads within cumulative and per-episode time budgets, and keeps the periodic job in line with the stored toggle (`reconcileScheduleWithPreferences`).
+- `SmartDownloadSyncNow`: Sync Now on the Downloads screen. It waits for the caller's feed check, then runs a manual sync. The check may end its wait before every followed feed is read and may skip feeds read recently, so some picks still come from stored episodes; `FEED_CHECK_TIMEOUT_MS` only bounds a check that hangs, and a failed check still syncs.
 - `AutoDownloadCoordinator`: per-show auto-download. It syncs subscriptions, discovers releases from publisher RSS and Room, claims releases and enqueues transfers.
 - `AutoDownloadScheduling`: unique work names, tags and constraints for discovery and transfers; `enqueueEpisode` and `reconcile` are the only entry points.
 - `SmartDownloadWorker`, `AutoDownloadWorker`, `PurgeSmartDownloadsWorker`, `AutoDownloadDiscoveryWorker`: the background workers.
@@ -50,6 +51,7 @@ src/main/java/cx/aswin/boxlore/core/
     SmartDownloadCandidateLogic.kt
     SmartDownloadScheduleLogic.kt      # cadence and unique work name
     SmartDownloadSyncGate.kt           # serializes automatic and manual runs
+    SmartDownloadSyncNow.kt            # feed check before a manual sync
     SmartDownloadWorker.kt
     PurgeSmartDownloadsWorker.kt
     AutoDownloadCoordinator.kt
@@ -80,6 +82,7 @@ src/main/java/cx/aswin/boxlore/core/
 - `SmartDownloadSyncGate` serializes cadence admission and reconciliation, so a launch catch-up and a WorkManager run never both recycle downloads.
 - Automatic Smart Downloads run at most once per 24-hour cadence from the stored last-success time; a timestamp in the future fails open. A manual refresh skips the cadence but stays serialized.
 - Smart Downloads never run while disabled, except from an explicit manual refresh.
+- Every run refreshes the latest episodes through `PodcastRepository.syncSubscriptions` before choosing; that call may ask the server for tips and read `rss:` feeds under their usual refresh rules. Only Sync Now also waits first for the followed-shows feed check (`SubscriptionForegroundSync.refreshNow`), which reads feeds under its own wait and refresh rules.
 - `AutoDownloadScheduling.enqueueEpisode` serializes enqueue decisions under its own lock, separate from the transfer lock.
 - Auto-download transfers run in resumable slices of `AutoDownloadWorker.WORK_SLICE_MS` (eight minutes) to stay inside WorkManager's limit.
 - Push-triggered and foreground-discovered auto-downloads need no background consent.
@@ -106,7 +109,7 @@ Download data:
 - Automatic clean-ups (Smart Downloads recycling, failed attempts, the per-show limit, the purge) pass `acrossAliases = false`, so they never remove another ID's download, such as a manual one.
 - `relinkDownloadCache` changes the Room row only after the cache move succeeds; a failed or conflicting move keeps the old completed row and bytes. It moves only phone-minted IDs with no alias or an unresolved one.
 - Switching a show to its RSS feed moves no downloads; the RSS episode plays the old ID's download through its alias.
-- Smart Downloads read history through `EpisodeListenerStore`, so an episode counts once across its IDs; per-show reads and the auto-download limit cover every show in `listenerShowIds`.
+- Smart Downloads read history through `EpisodeListenerStore`, so an episode counts once across its IDs; per-show reads and the auto-download limit cover every show in `listenerShowIds`. An episode finished under any of its IDs is never picked, and a show listened to oldest first continues from its own latest play. Those shows are read only with auto-download off, highest score first, each list (without feed extras) page by page, up to `MAX_SERIAL_SCAN_EPISODES` when stored on the phone and up to `MAX_SERIAL_NETWORK_PAGES_PER_SHOW` pages from the network, within network pages shared by the whole sync. A list cut off before the next episode is found looks for the latest play among the newest episodes; a page that fails, or a latest play found in neither range, gives no pick.
 - Each auto-download show stores its activation time; only releases published after it are downloaded, so turning auto-download on never fetches the archive.
 - A recovered feed address is saved only through `saveFeedUrl`, the app's one feed address writer.
 - An unfollowed show's stored copy never schedules, claims or enqueues auto-downloads.
@@ -122,7 +125,7 @@ Tests live in `core/downloads/src/test` (JUnit 5, Robolectric, WorkManager testi
 | Repository and toggles | `DownloadRepositoryTest`, `CompletedDownloadItemsTest`, `DownloadTogglePolicyTest`, `DownloadAudioUriTest` |
 | Offline extras and artwork | `DownloadChaptersTranscriptsHelperTest`, `DownloadArtworkUrlsTest` |
 | Analytics | `DownloadAnalyticsMappingTest` |
-| Smart Downloads | `SmartDownloadManagerTest`, `SmartDownloadCandidateLogicTest`, `SmartDownloadScheduleLogicTest`, `SmartDownloadSyncGateTest`, `SmartDownloadWorkerTest` |
+| Smart Downloads | `SmartDownloadManagerTest`, `SmartDownloadCandidateLogicTest`, `SmartDownloadSerialNextEpisodeTest`, `SmartDownloadScheduleLogicTest`, `SmartDownloadSyncGateTest`, `SmartDownloadSyncNowTest`, `SmartDownloadWorkerTest` |
 | Auto-downloads | `AutoDownloadCoordinatorTest`, `AutoDownloadSchedulingTest`, `AutoDownloadBackgroundGateTest`, `AutoDownloadWorkerTest`, `AutoDownloadRetentionTest` |
 | Wiring | `DownloadsDependenciesHolderTest` |
 

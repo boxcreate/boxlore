@@ -64,7 +64,7 @@ class ListeningHistoryUpsertLogicTest {
                 podcastImageUrl = null,
                 existing = existing,
                 nowMs = 50L,
-            )
+            )!!
         assertTrue(updated.isCompleted)
         assertTrue(updated.isBulkCompletion)
         assertEquals(0L, updated.progressMs)
@@ -79,9 +79,36 @@ class ListeningHistoryUpsertLogicTest {
                 podcastImageUrl = "pi",
                 existing = null,
                 nowMs = 50L,
-            )
+            )!!
         assertEquals(episode.title, created.episodeTitle)
         assertTrue(created.isCompleted)
+    }
+
+    @Test
+    fun `bulk complete leaves an episode already finished as it is`() {
+        // Regression: Mark all as played turned episodes finished by listening into marked rows,
+        // so they left Listening history, insights and monthly stories.
+        val episode = TestFixtures.episode(id = "e1", title = "One")
+        val finished =
+            ListeningHistoryEntity(
+                episodeId = "e1",
+                podcastId = "p",
+                episodeTitle = "One",
+                episodeImageUrl = null,
+                podcastImageUrl = null,
+                episodeAudioUrl = "https://a",
+                podcastName = "Show",
+                progressMs = 0L,
+                durationMs = 10_000L,
+                isCompleted = true,
+                lastPlayedAt = 1L,
+                isDirty = false,
+                firstPlayedAt = 1L,
+                finishedAt = 1L,
+            )
+        listOf(finished, finished.copy(isManualCompletion = true), finished.copy(isBulkCompletion = true)).forEach { existing ->
+            assertNull(ListeningHistoryUpsertLogic.buildBulkCompleteEntity(episode, "p", "Show", null, existing, nowMs = 50L))
+        }
     }
 
     @Test
@@ -100,12 +127,13 @@ class ListeningHistoryUpsertLogicTest {
                 isCompleted = false,
                 lastPlayedAt = 1L,
             )
-        assertNull(ListeningHistoryUpsertLogic.buildBulkUncompleteEntity(incomplete, 9L))
+        assertNull(ListeningHistoryUpsertLogic.buildBulkUncompleteEntity(incomplete))
 
         val completed = incomplete.copy(isCompleted = true)
-        val undone = ListeningHistoryUpsertLogic.buildBulkUncompleteEntity(completed, 9L)!!
+        val undone = ListeningHistoryUpsertLogic.buildBulkUncompleteEntity(completed)!!
         assertFalse(undone.isCompleted)
-        assertEquals(9L, undone.lastPlayedAt)
+        // Regression: it moved to now, so an episode heard long ago came back under today.
+        assertEquals(2L, undone.lastPlayedAt)
         assertTrue(undone.isDirty)
     }
 }

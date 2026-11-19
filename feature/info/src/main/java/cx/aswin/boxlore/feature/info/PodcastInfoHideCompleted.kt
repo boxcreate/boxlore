@@ -18,11 +18,14 @@ internal fun rememberHideCompletedFill(
     state: PodcastInfoUiState.Success,
     onLoadMore: () -> Unit,
 ): HideCompletedFill.State {
-    val loadsMore = HideCompletedFill.loadsMore(hideCompleted, searching, visibleCount, state.hasMoreEpisodes, state.isLoadingMore)
+    // A page that couldn't load waits for Try again: nothing asks for it by itself meanwhile.
+    val failed = state.pageLoadFailed
+    val loadsMore = !failed && HideCompletedFill.loadsMore(hideCompleted, searching, visibleCount, state.hasMoreEpisodes, state.isLoadingMore)
     val load by rememberUpdatedState(onLoadMore)
     // Keyed on the loaded count too, so each page that still leaves too few asks for the next.
     LaunchedEffect(loadsMore, state.episodes.size) {
         if (loadsMore) load()
     }
+    if (failed) return HideCompletedFill.State.NONE
     return HideCompletedFill.state(hideCompleted, searching, visibleCount, state.episodes.size, state.hasMoreEpisodes, state.isLoadingMore)
 }

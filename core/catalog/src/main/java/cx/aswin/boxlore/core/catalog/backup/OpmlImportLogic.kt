@@ -9,7 +9,18 @@ internal sealed interface OpmlCatalogDecision {
 
     data object ConfirmedAbsent : OpmlCatalogDecision
 
+    /** The API didn't answer (a server error, no connection): asked again by a later catch-up. */
     data object Deferred : OpmlCatalogDecision
+
+    /** [Deferred] because a route had no room or answered 429: asked again in this run once there's room. */
+    data object Limited : OpmlCatalogDecision
+
+    /**
+     * The API answered, but the outline can't become a show: its feed can't be read and the catalog
+     * doesn't have it, or its address and its feed's GUID name two different shows. Asking again
+     * wouldn't change that, so it is skipped (logged), not kept pending.
+     */
+    data object Unresolvable : OpmlCatalogDecision
 }
 
 /**
@@ -35,7 +46,7 @@ internal object OpmlImportLogic {
         val urlPodcast = (urlLookup as? ExactPodcastLookupResult.Found)?.podcast
         val guidPodcast = (guidLookup as? ExactPodcastLookupResult.Found)?.podcast
         if (urlPodcast != null && guidPodcast != null && urlPodcast.id != guidPodcast.id) {
-            return OpmlCatalogDecision.Deferred
+            return OpmlCatalogDecision.Unresolvable
         }
         (urlPodcast ?: guidPodcast)?.takeUnless { it.isRss }?.let {
             return OpmlCatalogDecision.Found(it)
@@ -72,6 +83,11 @@ internal object OpmlImportLogic {
         }
     }
 
+    /**
+     * The first candidate the index has, trying them in order. Stops at the first lookup that didn't
+     * settle (a 429, a server error, no connection): the outline is retried later as a whole, so the
+     * remaining spellings aren't spent against a route that is refusing requests.
+     */
     suspend fun firstExactLookup(
         candidates: List<String>,
         lookup: suspend (String) -> ExactPodcastLookupResult,
@@ -79,7 +95,7 @@ internal object OpmlImportLogic {
         val seen = ArrayList<ExactPodcastLookupResult>(candidates.size)
         for (candidate in candidates) {
             val result = lookup(candidate)
-            if (result is ExactPodcastLookupResult.Found) return result
+            if (result is ExactPodcastLookupResult.Found || result is ExactPodcastLookupResult.Failed) return result
             seen += result
         }
         return collapseCandidateLookups(seen)

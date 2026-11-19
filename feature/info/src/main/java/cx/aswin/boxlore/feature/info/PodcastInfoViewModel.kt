@@ -8,7 +8,7 @@ import cx.aswin.boxlore.core.catalog.autoOrganizeFolderLook
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
-import cx.aswin.boxlore.core.playback.historyForEpisodeLookup
+import cx.aswin.boxlore.core.playback.inProgressForEpisodeLookup
 import cx.aswin.boxlore.core.playback.likedEpisodeIds
 import cx.aswin.boxlore.core.prefs.HomePinnedShows
 import cx.aswin.boxlore.feature.info.PodcastInfoPageState.Companion.TAG
@@ -59,14 +59,14 @@ class PodcastInfoViewModel(
     private val localCatalog = deps.localCatalog
     private val folderRepository = deps.folderRepository
     private val entryPoint = routeArgs.entryPoint
-    private val supplementSupport = PodcastInfoSupplementSupport(repository, episodeSupplementPort)
     private val pageState = PodcastInfoPageState()
+    private val supplementSupport = PodcastInfoSupplementSupport(repository, episodeSupplementPort, pageState.listSchemes)
     private val _uiState = pageState.uiState
 
     /** The feed-first show page (P4 PR 16): reads, the status line and reloads as the list grows. */
     private val feedFirst =
         PodcastInfoFeedFirst(
-            PodcastInfoFeedFirst.sourceOf(repository),
+            PodcastInfoFeedFirst.sourceOf(repository, pageState.listSchemes),
             object : PodcastInfoFeedFirst.Ui {
                 override fun state(): PodcastInfoUiState.Success? = _uiState.value as? PodcastInfoUiState.Success
 
@@ -441,6 +441,9 @@ class PodcastInfoViewModel(
 
     fun loadMoreEpisodes() = episodePaging.loadMore()
 
+    /** Try again after a page of episodes couldn't load. */
+    fun retryEpisodePage() = episodePaging.retryFailedPage()
+
     fun refreshRssFeed() = pullRefresh.refresh()
 
     fun toggleSort() {
@@ -597,8 +600,8 @@ class PodcastInfoViewModel(
         kotlinx.coroutines.flow
             .combine(
                 playbackRepository.playerState,
-                // Looked up by the IDs this page lists: an episode stored under several IDs shows its progress under each.
-                playbackRepository.historyForEpisodeLookup.map { history ->
+                // Every started episode, looked up by the IDs this page lists: an episode stored under several IDs shows its progress under each.
+                playbackRepository.inProgressForEpisodeLookup.map { history ->
                     history.map { it.toInfoListeningProgressItem() }
                 },
                 pageState.currentPodcastIdFlow,

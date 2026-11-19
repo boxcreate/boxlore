@@ -48,6 +48,11 @@ object ListeningHistoryUpsertLogic {
         finishedAt = input.lastPlayedAt.takeIf { input.isCompleted },
     )
 
+    /**
+     * The row "Mark all as played" writes for [episode], or null when [existing] is already
+     * completed: a row finished by listening (or marked played before) stays exactly as it is, so
+     * it keeps its place in Listening history and insights and isn't uploaded again.
+     */
     fun buildBulkCompleteEntity(
         episode: Episode,
         podcastId: String,
@@ -55,7 +60,8 @@ object ListeningHistoryUpsertLogic {
         podcastImageUrl: String?,
         existing: ListeningHistoryEntity?,
         nowMs: Long,
-    ): ListeningHistoryEntity {
+    ): ListeningHistoryEntity? {
+        if (existing?.isCompleted == true) return null
         if (existing != null) {
             return existing.copy(
                 isCompleted = true,
@@ -87,14 +93,21 @@ object ListeningHistoryUpsertLogic {
         )
     }
 
-    fun buildBulkUncompleteEntity(existing: ListeningHistoryEntity, nowMs: Long,): ListeningHistoryEntity? {
+    /**
+     * The row "Mark all as unplayed" writes for [existing], or null when it isn't completed. It
+     * keeps its place in time: an episode heard last month stays under last month in Listening
+     * history and ranking instead of moving to today. Its time moves on by one millisecond, so the
+     * reset still wins over the completed copy on other devices and in the cloud, which keep the
+     * newer `lastPlayedAt`.
+     */
+    fun buildBulkUncompleteEntity(existing: ListeningHistoryEntity): ListeningHistoryEntity? {
         if (!existing.isCompleted) return null
         return existing.copy(
             isCompleted = false,
             progressMs = 0L,
             isManualCompletion = false,
             isBulkCompletion = false,
-            lastPlayedAt = nowMs,
+            lastPlayedAt = existing.lastPlayedAt + 1L,
             isDirty = true,
         )
     }

@@ -13,6 +13,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -57,6 +58,39 @@ class WidgetLibrarySourceAdapterTest {
             )
         val enriched = WidgetLibrarySourceAdapter.enrichWithHistory(listOf(podcast), history)
         assertEquals(EpisodeStatus.COMPLETED, enriched.single().episodeStatus)
+
+        // Regression: finished outside recent history (after a Mark all of 300+ episodes), it read unplayed.
+        val outsideRecent = WidgetLibrarySourceAdapter.enrichWithHistory(listOf(podcast), emptyList(), completedIds = setOf("e1"))
+        assertEquals(EpisodeStatus.COMPLETED, outsideRecent.single().episodeStatus)
+        assertTrue(WidgetLibrarySourceAdapter.latestEpisodePool(outsideRecent, hideCompleted = true).isEmpty())
+
+        // Regression: started long ago, behind many rows marked played, it read unplayed.
+        val started = history.single().copy(isCompleted = false, progressMs = 5L)
+        val startedOutsideRecent = WidgetLibrarySourceAdapter.enrichWithHistory(listOf(podcast), emptyList(), inProgress = listOf(started)).single()
+        assertEquals(EpisodeStatus.IN_PROGRESS, startedOutsideRecent.episodeStatus)
+        assertEquals(0.5f, startedOutsideRecent.resumeProgress)
+    }
+
+    @Test
+    fun startedEpisodesRedrawOnlyWhenAnEpisodeStartsOrStops() = runTest {
+        fun row(id: String, progress: Long) = ListeningHistoryEntity(
+            episodeId = id,
+            podcastId = "p1",
+            episodeTitle = id,
+            episodeImageUrl = null,
+            podcastImageUrl = null,
+            episodeAudioUrl = null,
+            podcastName = "Show",
+            progressMs = progress,
+            durationMs = 100L,
+            isCompleted = false,
+            lastPlayedAt = 1L,
+        )
+        val saves = flowOf(listOf(row("a", 1L)), listOf(row("a", 2L)), listOf(row("a", 3L), row("b", 1L)))
+
+        val emitted = WidgetLibrarySourceAdapter.startedEpisodes(saves).toList()
+
+        assertEquals(listOf(listOf("a"), listOf("a", "b")), emitted.map { rows -> rows.map { it.episodeId } })
     }
 
     @Test

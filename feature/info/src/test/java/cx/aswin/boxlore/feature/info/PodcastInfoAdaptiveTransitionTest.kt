@@ -378,6 +378,44 @@ class PodcastInfoAdaptiveTransitionTest {
     }
 
     @Test
+    fun `a page that couldn't load keeps Try again across window changes and loads nothing by itself`() {
+        uiState.value = success().copy(pageLoadFailed = true)
+        render()
+        val failed = "Couldn’t load more episodes"
+        val list = fixture.compose.onNodeWithTag(LIST_TAG)
+
+        acrossWindowChanges {
+            list.performScrollToNode(hasText("Try again"))
+            fixture.compose.onNodeWithText(failed).assertIsDisplayed()
+            fixture.compose.onNodeWithText("Try again").assertIsDisplayed()
+        }
+        verify(model, never()).loadMoreEpisodes()
+
+        fixture.compose.onNodeWithText("Try again").performClick()
+        verify(model, times(1)).retryEpisodePage()
+
+        // The page loads: the row goes and the list carries on.
+        fixture.compose.runOnIdle { uiState.value = success(episodes = episodes.take(40)) }
+        fixture.compose.waitForIdle()
+        fixture.compose.onNodeWithText(failed).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a new order whose first page couldn't load says so in place of the list across window changes`() {
+        uiState.value = success(episodes = emptyList(), sort = EpisodeSort.OLDEST).copy(pageLoadFailed = true)
+        render()
+
+        acrossWindowChanges {
+            fixture.compose.onNodeWithTag(LIST_TAG).performScrollToNode(hasText("Couldn’t load episodes"))
+            fixture.compose.onNodeWithText("Couldn’t load episodes").assertIsDisplayed()
+        }
+        recreate(COMPACT)
+        fixture.compose.onNodeWithTag(LIST_TAG).performScrollToNode(hasText("Try again"))
+        fixture.compose.onNodeWithText("Try again").performClick()
+        verify(model, times(1)).retryEpisodePage()
+    }
+
+    @Test
     fun `a full range selection is rebuilt from its ids after the page is recreated`() {
         render()
         selectAll()

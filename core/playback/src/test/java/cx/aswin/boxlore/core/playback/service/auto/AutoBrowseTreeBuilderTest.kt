@@ -170,6 +170,34 @@ class AutoBrowseTreeBuilderTest {
     }
 
     @Test
+    fun aStartedEpisodeKeepsItsTimeLeftBehindAShowMarkedPlayedAllAtOnce() = runBlocking {
+        // Regression: rows were looked up in the newest 300, which one Mark all of 301 episodes filled.
+        database.podcastDao().upsertRow(show("1", latest = episode("e1", publishedSeconds = nowSeconds)))
+        database.listeningHistoryDao().upsertAll(
+            listOf(history("e1", progressMs = 600_000L, playedAt = 5L)) +
+                (0 until 301).map { history("bulk-$it", progressMs = 0L, playedAt = 1_000L + it, completed = true).copy(isBulkCompletion = true) },
+        )
+
+        val row = treeBuilder.getNewEpisodesChildren().single()
+
+        assertEquals("Show 1 · 20 min left", row.mediaMetadata.subtitle.toString())
+    }
+
+    @Test
+    fun historyListsOnlyRealListeningAfterAShowIsMarkedPlayedAndUnplayedAgain() = runBlocking {
+        // Regression: History listed every episode a Mark all as played and then unplayed had touched.
+        val heard = listOf(
+            history("heard-old", progressMs = 0L, playedAt = 10L, completed = true).copy(finishedAt = 10L),
+            history("heard-new", progressMs = 60_000L, playedAt = 20L).copy(firstPlayedAt = 15L),
+        )
+        val reset = (0 until 30).map { history("reset-$it", progressMs = 0L, playedAt = 1_000L + it) }
+        val marked = (0 until 30).map { history("marked-$it", progressMs = 0L, playedAt = 2_000L + it, completed = true).copy(isBulkCompletion = true) }
+        database.listeningHistoryDao().upsertAll(heard + reset + marked)
+
+        assertEquals(listOf("episode:heard-new", "episode:heard-old"), treeBuilder.getHistoryChildren().map { it.mediaId })
+    }
+
+    @Test
     fun aStartedEpisodeOfUnknownLengthDoesNotClaimToBeAlmostDone() = runBlocking {
         // Regression: with no length on the episode or its history row, the time left came out as zero.
         database.podcastDao().upsertRow(show("1", latest = episode("e1", publishedSeconds = 0L, durationSeconds = 0)))
