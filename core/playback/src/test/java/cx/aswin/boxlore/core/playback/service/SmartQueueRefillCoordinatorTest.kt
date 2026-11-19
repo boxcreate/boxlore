@@ -114,6 +114,26 @@ class SmartQueueRefillCoordinatorTest {
         assertEquals(listOf("1"), playlist.items.map { it.mediaId })
     }
 
+    @Test fun `a playing playlist with episodes left is never mixed with Smart Queue picks`() = runTest {
+        val episodes = PlaybackQueueContext.playlistEpisodes(listOf(episode(1), episode(2), episode(3)), "list-a")
+        repository.replaceQueue(episodes)
+        val playlist = Playlist(episodes, 1)
+        assertFalse(coordinator().refillQueue(playlist.player))
+        assertEquals(0, engineCalls)
+        assertEquals(listOf("1", "2", "3"), playlist.items.map { it.mediaId })
+        assertTrue(playlist.items.all(PlaybackQueueContext::isContextItem))
+    }
+
+    @Test fun `after a playlist's last episode Smart Queue continues as after New Episodes`() = runTest {
+        val episodes = PlaybackQueueContext.playlistEpisodes(listOf(episode(1), episode(2)), "list-a")
+        repository.replaceQueue(episodes)
+        val playlist = Playlist(episodes, 1)
+        assertTrue(coordinator().refillQueue(playlist.player, contextExhausted = true))
+        assertEquals(listOf("1", "2", "100"), playlist.items.map { it.mediaId })
+        assertEquals("playlist:list-a", source)
+        assertFalse(PlaybackQueueContext.isContextItem(playlist.items.last()))
+    }
+
     @Test fun `long exhausted list counts only upcoming items against cap and appends one batch`() = runTest {
         val episodes = PlaybackQueueContext.episodes((1..50).map(::episode))
         repository.replaceQueue(episodes)

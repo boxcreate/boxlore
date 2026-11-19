@@ -89,8 +89,12 @@ class EpisodeInfoViewModel(
     private val userPrefs: cx.aswin.boxlore.core.prefs.UserPreferencesRepository,
     private val localCatalog: LocalCatalogPort,
     private val episodeOfflineLookup: EpisodeOfflineLookupPort,
+    playlistRepository: cx.aswin.boxlore.core.catalog.PlaylistRepository? = null,
 ) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow<EpisodeInfoUiState>(EpisodeInfoUiState.Loading)
+
+    /** Add to playlist for this episode; null without playlists, which hides the button. */
+    val playlists: InfoPlaylists? = InfoPlaylists.create(playlistRepository, viewModelScope, InfoPlaylists.SOURCE_EPISODE_PAGE)
     val uiState: StateFlow<EpisodeInfoUiState> = _uiState.asStateFlow()
 
     /** Null until read. More like this shows and loads only while the listener keeps it on. */
@@ -112,7 +116,8 @@ class EpisodeInfoViewModel(
             val result = cx.aswin.boxlore.core.catalog.crosspromo.CrossPromotionDetector().detect(episode, hostTitle, notes)
             val name = result.extractedShowName
             if (result.isCrossPromotion && name != null) {
-                crossPromotionResolver.resolve(name, hostId, notes.links)?.let { target ->
+                // A promoted show the listener hid is never offered.
+                crossPromotionResolver.resolve(name, hostId, notes.links)?.takeUnless { cx.aswin.boxlore.core.model.HiddenShows.hides(userPrefs.hiddenShows.matchIds(), it) }?.let { target ->
                     cx.aswin.boxlore.core.model.ResolvedCrossPromotion(name, result.confidence, target, result.matchedIndicators)
                 }
             } else {

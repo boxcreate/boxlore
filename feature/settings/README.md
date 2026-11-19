@@ -23,11 +23,12 @@ Owns the Settings hub and its pages, sign-in, the Smart and automatic download s
 
 ## Appearance
 
-- The overview shows Display mode, then one row per page with its current choice (`appearanceSummary`): **Theme & colors**, **Home**, **Player**, **Navigation**, **Text** and **Widgets**.
+- The overview shows Display mode, then one row per page with its current choice (`appearanceSummary`): **Theme & colors**, **Home**, **Show pages**, **Player**, **Navigation**, **Text** and **Widgets**.
 - Theme & colors offers four looks (boxlore classic, Pure, Material 3, Custom) and **Use artwork colors** (on by default). Legacy palettes show as Custom without changing stored values (`ThemeSettingsLogic.kt`).
 - The custom theme editor is a full page. Drafts change only its preview; Save applies the palette in one write, and Back discards it.
 - Widgets holds the home screen widgets' colours (App theme or System) and every widget (`AddableWidget`, supplied by the app) as a card: its real look drawn by the app through `AppearanceWidgetPreview`, scaled to fit and never enlarged, its name, and an Add button that asks the home screen app to add it. The two round players share a row, and the Your Shows card carries the cover choice (whole covers or shapes) under its picture. When nothing answers the latest request within `ADD_WIDGET_ANSWER_MS` (the app is not paused by a confirmation and `AppearanceActions.addedWidgets` reports nothing), that card offers help and a way to the app's permission settings; the help goes away when an answer arrives. When the home screen app cannot add widgets (`AppearanceActions.canAddWidgets`), the cards stay without buttons, with the steps for adding one by hand.
 - Home holds the hero card style and its colour choice, with live previews drawn by the app through `AppearanceHeroPreview`. Hero styles are described in [`feature/home/README.md`](../home/README.md).
+- Show pages holds **Episode titles only** (off by default), the same choice as each show page's menu; show pages then list short title rows (see [`feature/info/README.md`](../info/README.md)).
 - Player holds **Player style** (Standard or bunpod) and the miniplayer's **Seek buttons** (off by default). The bunpod option credits Kamran Bekirov's BunPod design. Video always uses Standard.
 - Navigation holds the bar style, **Blur behind the bar** (Floating bar only) and **Start page & tabs** (**Explore opens to** hides while Picked for you is off). Text holds the letter shape with a preview.
 - Visual choices are `SettingsPictureTile` radio tiles in `SettingsPictureGrid` or the sideways `SettingsPictureRow`.
@@ -67,11 +68,11 @@ Owns the Settings hub and its pages, sign-in, the Smart and automatic download s
 
 - Library holds Charts › Country (`ContentRegionPickerSheet`), Recommendations › Languages with Include English (`ContentLanguagesSheet`), Add podcast by RSS feed, and Storage › Clear saved shows.
 - Clear saved shows counts unfollowed shows with saved episode lists through `SavedShowsControl` (wired by the app); `ClearSavedShowsDialog` confirms that history, downloads and queue stay.
-- LeaveMeAlone (`ProfileSettingsDestination.Recommendations`, entry `recommendations`) holds every switchable section, saved through `trackedDiscoverySectionSetter`. Appearance › Home links to it and becomes its Back target. The sections are described in [`feature/home/README.md`](../home/README.md).
+- LeaveMeAlone (`ProfileSettingsDestination.Recommendations`, entry `recommendations`) holds every switchable section, saved through `trackedDiscoverySectionSetter`, and Hidden shows (`HiddenShowsControl` in `RegionSettings`) with Unhide per show. Appearance › Home links to it and becomes its Back target. The sections are described in [`feature/home/README.md`](../home/README.md).
 
 ## Playback, downloads and privacy
 
-- Playback holds trimming, seek lengths (also used by the miniplayer's seek buttons), skip behaviour, restarting forgotten episodes, Smart queue and where completed episodes hide.
+- Playback holds trimming (including trim silence), seek lengths (also used by the miniplayer's seek buttons), skip behaviour, restarting forgotten episodes, Smart queue and where completed episodes hide.
 - Automatic downloads offers 1, 2, 3 or 5 episodes per show. Backup background checks are off by default; their network and charging controls show only when on and keep their values while hidden.
 - Privacy explains analytics and offers Reset recommendations, the analytics ID (copy or start a new one) and a request to delete analytics data.
 - Wear OS (`ProfileSettingsDestination.WearOs`, entry `wear_os`) sets the watch's Your shows layout and download storage limit and shows what the watch last reported. The hub and the tablet split list it only when `SettingsScreenConfig.wearOs` is set, which the app does once boxlore on a watch has linked.

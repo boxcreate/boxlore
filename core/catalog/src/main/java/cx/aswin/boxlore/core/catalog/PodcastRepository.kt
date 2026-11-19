@@ -94,6 +94,8 @@ class PodcastRepository(
      * knows none, so follows not in the history are in the daily shuffle alone.
      */
     private val followedAt: suspend () -> Map<String, Long> = { emptyMap() },
+    /** IDs of the shows the listener hid ([cx.aswin.boxlore.core.model.HiddenShows]); discovery leaves them out ([hiddenShowIds]). */
+    internal val hiddenShows: suspend () -> Set<String> = { emptySet() },
 ) : cx.aswin.boxlore.core.domain.ports.PodcastCatalogPort {
     internal val episodeFeedReader: EpisodeFeedReader by lazy { feedReader ?: RssEpisodeFeedReader(cx.aswin.boxlore.core.rss.RssFeedClient()) { apiV2 } }
 
@@ -167,7 +169,7 @@ class PodcastRepository(
         )
 
     suspend fun getTrendingPodcasts(country: String = "us", limit: Int = 50, category: String? = null, offset: Int = 0,): List<Podcast> =
-        getTrendingPodcastsOrNull(country, limit, category, offset).orEmpty()
+        withoutHiddenPodcasts(getTrendingPodcastsOrNull(country, limit, category, offset).orEmpty())
 
     /** A chart page, or null when it couldn't be read (on `/v2`, with no last good copy), so a failed page is never the end of the chart. */
     suspend fun getTrendingPodcastsOrNull(country: String = "us", limit: Int = 50, category: String? = null, offset: Int = 0,): List<Podcast>? =
@@ -201,14 +203,14 @@ class PodcastRepository(
             android.util.Log.e("BoxCastRepo", "Curated Vibe Error: $vibeId", e)
             emptyList()
         }
-    }
+    }.let { withoutHiddenPodcasts(it) }
 
     fun getTrendingPodcastsStream(
         country: String = "us",
         limit: Int = 50,
         category: String? = null,
         offset: Int = 0,
-    ): kotlinx.coroutines.flow.Flow<List<Podcast>> = trendingPodcastsStream(country, limit, category, offset)
+    ): kotlinx.coroutines.flow.Flow<List<Podcast>> = withoutHiddenPodcasts(trendingPodcastsStream(country, limit, category, offset))
 
     /**
      * Show search on v1 `/search` (catalog, Apple and Podcast Index results) whatever the v2
@@ -304,7 +306,7 @@ class PodcastRepository(
         } catch (_: Exception) {
             SemanticSearchGroupedResult(emptyList(), emptyList())
         }
-    }
+    }.let { withoutHiddenShows(it) }
 
     /** [searchShowEpisodes]' matching episodes. */
     suspend fun searchEpisodes(feedId: String, query: String,): List<Episode> = searchShowEpisodes(feedId, query).episodes
@@ -795,7 +797,7 @@ class PodcastRepository(
             return@withContext v2PersonalizedRecommendations(history, interests, resolvedCountry, subscribedPodcastIds, bodyLanguages)
         }
         v1PersonalizedRecommendations(history, interests, country, subscribedPodcastIds, subscribedGenres, languages)
-    }
+    }.let { withoutHiddenEpisodes(it) }
 
     suspend fun getBecauseYouLikeRecommendations(
         podcastTitle: String,
@@ -839,7 +841,7 @@ class PodcastRepository(
             android.util.Log.e("BoxCastRepo", "Because You Like Recommendations Error", e)
             BecauseYouLikeData()
         }
-    }
+    }.let { withoutHiddenShows(it) }
 
     suspend fun getSimilarEpisodes(query: SimilarEpisodesQuery): List<Episode> = withContext(Dispatchers.IO) {
         try {
@@ -881,7 +883,7 @@ class PodcastRepository(
             android.util.Log.e("PodcastRepository", "Error getting similar episodes", e)
             emptyList()
         }
-    }
+    }.let { withoutHiddenEpisodes(it) }
 
     suspend fun submitFeedback(
         category: String,
@@ -990,7 +992,7 @@ class PodcastRepository(
             android.util.Log.e("PodcastRepository", "getHomeBootstrapDataFast failed", e)
             HomeBootstrapData(null, emptyList(), emptyList(), emptyMap(), emptyList())
         }
-    }
+    }.let { withoutHiddenShows(it) }
 
     /**
      * Personal picks for Home's Picked for you and Explore's For you. The bootstrap request asks
@@ -1062,7 +1064,7 @@ class PodcastRepository(
             android.util.Log.e("PodcastRepository", "getHomeRecommendations failed", e)
             HomeRecommendations(failed = true)
         }
-    }
+    }.let { withoutHiddenShows(it) }
 
     suspend fun getCuratedVibes(vibeIds: List<String>, country: String, languages: List<String>? = null,): Map<String, List<Podcast>> = withContext(Dispatchers.IO) {
         val resolvedCountry =
@@ -1089,7 +1091,7 @@ class PodcastRepository(
                     }
                 }
             }.awaitAll()
-        result
+        withoutHiddenShows(result)
     }
 
     /**
@@ -1110,7 +1112,7 @@ class PodcastRepository(
             android.util.Log.e("PodcastRepository", "Failed to fetch curated curiosity: ${e.message}", e)
             null
         }
-    }
+    }?.withoutHiddenShows(hiddenShowIds())
 
     override suspend fun getEpisodes(feedId: String): List<Episode> = getEpisodesImpl(feedId)
 

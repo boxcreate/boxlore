@@ -244,6 +244,9 @@ class GlossaryAllEventsEmissionTest {
                 "queue_modified" to {
                     AnalyticsHelper.trackQueueModified("add", "e1", "p1", queueSize = 2, source = "player")
                 },
+                "playlist_modified" to {
+                    AnalyticsHelper.trackPlaylistModified("add", "show_page", itemsCount = 3, playlistSize = 12)
+                },
                 "episode_liked_toggled" to {
                     AnalyticsHelper.trackEpisodeLikedToggled("e1", "p1", isLiked = true, surface = "history")
                 },

@@ -7,6 +7,8 @@ import cx.aswin.boxlore.core.database.EpisodeAliasState
 import cx.aswin.boxlore.core.database.FeedAddressWrite
 import cx.aswin.boxlore.core.database.LocalEpisodeFeedEntity
 import cx.aswin.boxlore.core.database.LocalFeedOrder
+import cx.aswin.boxlore.core.database.PlaylistEntity
+import cx.aswin.boxlore.core.database.PlaylistItemEntity
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome
 import cx.aswin.boxlore.core.model.EpisodeRecipeId
@@ -380,6 +382,42 @@ class LegacyIdentityRoomTest : RoomCatalogTestBase() {
         assertTrue(refresh(SHOW, url = RSS_FEED_URL) is RefreshOutcome.Success)
         assertEquals(mapOf("g1" to rssIds.getValue("g1"), "g2" to rssIds.getValue("g2")), rows(SHOW))
     }
+
+    @Test
+    fun theLegacyRssUpgradeMovesPlaylistRowsToTheUpgradedShow() = runBlocking {
+        val rss = RssPodcastRepository.createForTests(ApplicationProvider.getApplicationContext(), database, feed)
+        feed.items = listOf(Item("g1"))
+        val rssId = rss.addSubscription(RSS_FEED_URL).podcast.id
+        val carried = database.rssEpisodeDao().getAllNewest(rssId).single().episodeId
+        val playlists = database.playlistDao()
+        playlists.insertPlaylist(PlaylistEntity(playlistId = "p1", name = "Mix", createdAt = 1L, updatedAt = 1L))
+        playlists.appendItem(playlistRow("p1", carried, rssId))
+        playlists.appendItem(playlistRow("p1", "other-episode", OTHER_SHOW))
+        val snapshot = rss.legacySubscriptionRepair.inspect(rssId).getOrThrow()
+
+        assertEquals(LegacyRssUpgradeOutcome.MIGRATED, rss.legacySubscriptionRepair.upgrade(rssId, target(), snapshot))
+
+        val (moved, untouched) = playlists.getItems("p1")
+        assertEquals(carried, moved.episodeId)
+        assertEquals(SHOW to "Show", moved.podcastId to moved.podcastTitle)
+        assertEquals("another show's row stays", OTHER_SHOW, untouched.podcastId)
+    }
+
+    private fun playlistRow(playlistId: String, episodeId: String, show: String) = PlaylistItemEntity(
+        playlistId = playlistId,
+        position = 0,
+        addedAt = 1L,
+        episodeId = episodeId,
+        title = "Ep $episodeId",
+        podcastId = show,
+        podcastTitle = "Old $show",
+        podcastImageUrl = "https://img.example/old.jpg",
+        imageUrl = null,
+        audioUrl = "https://cdn.example/$episodeId.mp3",
+        duration = 60,
+        pubDate = 1L,
+        description = null,
+    )
 
     @Test
     fun theLegacyRssUpgradeHandsOwnershipFromAnEarlierReadToTheIdsItCarries() = runBlocking {

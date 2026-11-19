@@ -3,7 +3,6 @@ package cx.aswin.boxlore.core.playback
 import android.content.ComponentName
 import android.content.Context
 import androidx.core.content.ContextCompat
-import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -69,6 +68,8 @@ data class PlayerState(
     val autoTranscriptLimitLeft: Int? = null,
     val playbackRoute: PlaybackRouteState = PlaybackRouteState(),
     val sameShowContinuation: SameShowContinuationState = SameShowContinuationState.HIDDEN,
+    /** The playing show's own speed and trim silence, and the app's trim silence setting. */
+    val audio: PlaybackAudioState = PlaybackAudioState(),
 )
 
 object SleepTimerHolder {
@@ -113,6 +114,8 @@ class PlaybackRepository internal constructor(
     private val rankingFeedbackRepository: RankingFeedbackRepository,
     internal val userPreferencesRepository: UserPreferencesRepository,
     internal val historyStore: PlaybackHistoryStore,
+    /** A show's own speed and trim silence; without it every player change goes to the app settings. */
+    internal val showPlaybackStore: ShowPlaybackSettingsStore? = null,
 ) : ListeningHistoryBackupPort by historyStore,
     ListeningHistoryPort by historyStore,
     ActivePlaybackSyncPort {
@@ -133,6 +136,7 @@ class PlaybackRepository internal constructor(
         podcastRepository: PodcastRepository,
         rankingFeedbackRepository: RankingFeedbackRepository,
         userPreferencesRepository: UserPreferencesRepository,
+        showPlaybackStore: ShowPlaybackSettingsStore? = null,
     ) : this(
         context = context,
         listeningHistoryDao = listeningHistoryDao,
@@ -153,6 +157,7 @@ class PlaybackRepository internal constructor(
             podcastRepository = podcastRepository,
             rankingFeedbackRepository = rankingFeedbackRepository,
         ),
+        showPlaybackStore = showPlaybackStore,
     )
 
     internal val mediaHandle = PlaybackMediaControllerHandle()
@@ -400,6 +405,7 @@ class PlaybackRepository internal constructor(
         historyStore.monitorLikeState()
         chaptersController.monitorChaptersAndTranscripts()
         continuationCoordinator.startMonitoring()
+        monitorPlayingShowAudio()
         queueRepository.onRemoteQueueAppliedListener = { newQueue ->
             withContext(PlaybackThreadPolicy.mainDispatcher) {
                 queueCoordinator.applyRemoteQueueToPlayer(newQueue)
@@ -434,18 +440,17 @@ class PlaybackRepository internal constructor(
         future.addListener({
             // A rejected connection retries later (bounded) instead of throwing on the main thread.
             mediaHandle.controller = mediaHandle.connectedOrNull(future) ?: return@addListener
-            // Restore the persisted playback speed so UI and ExoPlayer stay aligned
-            // across process death and session clears (even when the rate is already 1×).
-            repositoryScope.launch {
-                val savedSpeed =
-                    userPreferencesRepository.playbackSpeedStream
-                        .first()
-                        .coerceIn(0.5f, 3.0f)
-                val controller = mediaHandle.controller
-                if (controller != null && controller.playbackParameters.speed != savedSpeed) {
-                    controller.playbackParameters = PlaybackParameters(savedSpeed)
-                }
-                playerStateFlow.value = playerStateFlow.value.copy(playbackSpeed = savedSpeed)
+            // The service sets the speed (the playing show's own, else the app's), so the UI adopts
+            // the player's rate rather than pushing the app speed over a show's own speed.
+            mediaHandle.controller?.let { connected ->
+                playerStateFlow.value =
+                    playerStateFlow.value.copy(
+                        playbackSpeed =
+                        PlaybackControlSync.resolvePlaybackSpeed(
+                            connected.playbackParameters.speed,
+                            playerStateFlow.value.playbackSpeed,
+                        ),
+                    )
             }
             controllerBridge =
                 PlaybackMediaControllerBridge(
@@ -520,6 +525,7 @@ class PlaybackRepository internal constructor(
                             queue = playerStateFlow.value.queue, // Preserve queue
                             isLiked = restored.lastSession.isLiked,
                             playbackRoute = playerStateFlow.value.playbackRoute,
+                            audio = playerStateFlow.value.audio,
                         )
                     if (isPlaying) startProgressTicker()
                 }

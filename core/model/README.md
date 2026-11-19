@@ -14,6 +14,7 @@ Models:
 - `Person`, `Transcript`, `Chapter`, `PodrollItem` (`Podcast2Types.kt`): Podcasting 2.0 tag values.
 - `ShowNotes`, `EpisodeLink`, `EpisodeLinkKind`: parsed plain text, publisher HTML, chapters and labelled links, with no UI or parser-library dependency.
 - `SubscriptionFolder`, `FolderDisplaySize`: custom library folders and their tile sizes; `isPinnedToTop` and `placementLabel` separate grid-movable from top-pinned sizes.
+- `Playlist`, `PlaylistEpisode`, `PLAYLIST_EPISODE_LIMIT` (500), `normalizePlaylistName`: the listener's playlists and their rows.
 - `BoxLoreUser`: the signed-in account (UID, email, display name, verification, anonymous flag, provider).
 - `CrossPromotionResult`, `ResolvedCrossPromotion`, `CrossPromotionConfidence`, `CrossPromotionIndicator`: cross-promotion results; `DISTINCT_ARTWORK` marks an episode whose cover differs from its show's. Indicators live only in UI state.
 - `AutoTranscriptState`, `ShareTarget`, `SleepTimerConstants`: small shared enums and constants.
@@ -32,6 +33,7 @@ Rules and helpers:
 - `Episode.recipeId`, `Episode.catalogKey`: optional identity fields, null until a source fills them and omitted from JSON when unset; `id` stays the local ID.
 - `EpisodeRecipeId`: boxlore's own episode IDs for numeric shows (`forNamespace`, `catalogKey`, `showIdOrNull`). Rules: [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md).
 - `Podcast.listenerShowIds` (`ListenerShows.idsOf`): the shows whose history, downloads and queue rows count as this show's own, covering RSS shows switched from Podcast Index ([rules](../../docs/EPISODE_IDS.md)).
+- `HiddenShow`, `HiddenShows`, `withoutHiddenShows` / `withoutHiddenShowEpisodes` (`HiddenShows.kt`): shows hidden everywhere, matched by every ID in `Podcast.listenerShowIds` and by an episode's `podcastId`.
 - `Podcast.isLatestEpisodeNew`: the shared NEW badge rule.
 - `Podcast.effectiveGenre`: the listener's `customGenre` when set, else `genre`; `recommendationGenre` uses it only when it canonicalizes to a standard genre.
 - `Podcast.RSS_REFRESH_AUTOMATIC`: the refresh capability for publisher subscriptions; legacy capability strings stay readable.
@@ -53,6 +55,7 @@ Rules and helpers:
 ```text
 src/main/java/cx/aswin/boxlore/core/model/
   Podcast.kt                   # Podcast, ListenerShows
+  HiddenShows.kt               # HiddenShow and its matching
   Episode.kt
   Podcast2Types.kt             # Person, Transcript, Chapter, PodrollItem
   Briefing.kt, BriefingArtwork.kt

@@ -65,9 +65,9 @@ class ContextQueueContinuationCoordinatorTest {
         PlaybackLifecycleSignals.serviceOwnedNaturalAdvanceEpisodeId = null
     }
 
-    private fun player(context: Boolean = true): Player = mock(Player::class.java).also { player ->
+    private fun player(context: Boolean = true, entryPoint: String = PlaybackQueueContext.NEW_EPISODES): Player = mock(Player::class.java).also { player ->
         val extras = Bundle().apply {
-            if (context) putString("source_entry_point", PlaybackQueueContext.NEW_EPISODES)
+            if (context) putString("source_entry_point", entryPoint)
         }
         val item = MediaItem.Builder().setMediaId("123")
             .setMediaMetadata(MediaMetadata.Builder().setExtras(extras).build()).build()
@@ -96,6 +96,27 @@ class ContextQueueContinuationCoordinatorTest {
         verify(player).prepare()
         verify(player).play()
         verify(player, never()).stop()
+    }
+
+    @Test fun `a finished playlist continues once, like New Episodes`() = runTest {
+        val player = player(entryPoint = PlaybackQueueContext.PLAYLIST)
+        var calls = 0
+        val coordinator = ContextQueueContinuationCoordinator(this, { 1L }, {}, { _, _ ->
+            calls++
+            `when`(player.hasNextMediaItem()).thenReturn(true)
+            true
+        }, { it.stop() })
+        assertTrue(coordinator.onExhausted(player))
+        advanceUntilIdle()
+        assertEquals(1, calls)
+        verify(player).seekToNextMediaItem()
+        verify(player).play()
+    }
+
+    @Test fun `an unknown source entry point is not a chosen list`() = runTest {
+        val player = player(entryPoint = "playlist:list-a")
+        val coordinator = ContextQueueContinuationCoordinator(this, { 1L }, {}, { _, _ -> true }, { it.stop() })
+        assertFalse(coordinator.onExhausted(player))
     }
 
     @Test fun `empty fallback stops terminal context playback`() = runTest {

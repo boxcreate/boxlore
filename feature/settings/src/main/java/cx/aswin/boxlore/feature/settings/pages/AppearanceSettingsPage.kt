@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ViewList
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.PlayCircle
@@ -93,6 +94,8 @@ data class AppearanceUiState(
     val currentSubscriptionsDefaultTab: String = SubscriptionsDefaultTab.SHOWS,
     val currentSubscriptionsTabStyle: String = SubscriptionsTabStyle.TOP,
     val miniPlayerSeekButtonsEnabled: Boolean = false,
+    /** Show pages list episodes as short title rows (Appearance › Show pages, and each show page's menu). */
+    val episodeTitlesOnly: Boolean = false,
     val artworkColorsEnabled: Boolean = true,
     val navigationBlurLevel: String = NavigationBlurLevel.DEFAULT,
     val heroCardStyle: String = HeroCardStyle.DEFAULT,
@@ -131,6 +134,7 @@ data class AppearanceActions(
     val onSetSubscriptionsDefaultTab: (String) -> Unit = {},
     val onSetSubscriptionsTabStyle: (String) -> Unit = {},
     val onSetMiniPlayerSeekButtonsEnabled: (Boolean) -> Unit = {},
+    val onSetEpisodeTitlesOnly: (Boolean) -> Unit = {},
     val onSetThemePreset: (String) -> Unit = {},
     val onSetArtworkColorsEnabled: (Boolean) -> Unit = {},
     val onSetNavigationBlurLevel: (String) -> Unit = {},
@@ -151,7 +155,7 @@ data class AppearanceActions(
 typealias AppearanceHeroPreview = @Composable (style: String, coverShade: String, collection: Boolean, modifier: Modifier) -> Unit
 
 /** Where each Appearance row leads, so the page needs no navigation types of its own. */
-internal enum class AppearanceSection { Theme, Home, Player, Navigation, Text, Widgets }
+internal enum class AppearanceSection { Theme, Home, ShowPages, Player, Navigation, Text, Widgets }
 
 /**
  * The Appearance overview: Display mode (the setting people change most, also on Theme & colors),
@@ -175,6 +179,8 @@ internal fun AppearanceSettingsPage(
             SettingsDivider()
             SettingsNavigationRow(title = "Home", supportingText = summary.home, icon = Icons.Rounded.Home, onClick = { onOpenSection(AppearanceSection.Home) })
             SettingsDivider()
+            SettingsNavigationRow(title = "Show pages", supportingText = summary.showPages, icon = Icons.AutoMirrored.Rounded.ViewList, onClick = { onOpenSection(AppearanceSection.ShowPages) })
+            SettingsDivider()
             SettingsNavigationRow(title = "Player", supportingText = summary.player, icon = Icons.Rounded.PlayCircle, onClick = { onOpenSection(AppearanceSection.Player) })
             SettingsDivider()
             SettingsNavigationRow(title = "Navigation", supportingText = summary.navigation, icon = Icons.Rounded.ViewDay, onClick = { onOpenSection(AppearanceSection.Navigation) })
@@ -190,6 +196,7 @@ internal fun AppearanceSettingsPage(
 internal data class AppearanceSummary(
     val theme: String,
     val home: String,
+    val showPages: String,
     val player: String,
     val navigation: String,
     val text: String,
@@ -208,6 +215,7 @@ internal fun appearanceSummary(state: AppearanceUiState): AppearanceSummary {
     return AppearanceSummary(
         theme = if (state.artworkColorsEnabled) "$look · artwork colors on" else look,
         home = homeSummary(state),
+        showPages = showPagesSummary(state),
         player = if (state.miniPlayerSeekButtonsEnabled) "$player · seek buttons on" else player,
         navigation = "${NavigationStyle.fromKey(state.currentNavigationStyle).label} bar · starts on $start",
         text = "$letters letters",

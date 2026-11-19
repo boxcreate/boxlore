@@ -4,6 +4,9 @@ import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
@@ -42,6 +45,29 @@ class AppContainerSmokeTest {
                 sharedUserPreferences = prefs,
             )
         assertSame(prefs, container.userPreferencesRepository)
+    }
+
+    @Test
+    fun episodeTitlesOnlyIsReadForTheProcessBeforeAnyShowPageAsks() = runBlocking {
+        // Reviewed: each show page read the choice itself and drew full rows until prefs answered.
+        val prefs = UserPreferencesRepository(context)
+        prefs.setEpisodeTitlesOnly(true)
+        try {
+            val container =
+                AppContainer(
+                    context = context,
+                    apiBaseUrl = "https://example.test",
+                    publicKey = "test-key",
+                    sharedUserPreferences = prefs,
+                )
+
+            // Nothing collects it, yet it reaches the stored value and every page gets the same copy.
+            assertTrue(withTimeout(5_000) { container.episodeTitlesOnly.first { it } })
+            assertTrue(container.episodeTitlesOnly.value)
+            assertSame(container.episodeTitlesOnly, container.episodeTitlesOnly)
+        } finally {
+            prefs.setEpisodeTitlesOnly(false)
+        }
     }
 
     @Test

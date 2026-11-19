@@ -37,6 +37,10 @@ data class Podcast(
     val autoDownloadEnabled: Boolean = false,
     val skipBeginningOverrideMs: Long? = null,
     val skipEndingOverrideMs: Long? = null,
+    /** This show's playback speed; null uses the app speed. */
+    val playbackSpeedOverride: Float? = null,
+    /** This show's trim silence setting; null uses the app setting. */
+    val skipSilenceOverride: Boolean? = null,
     val sourceType: String = SOURCE_PODCAST_INDEX,
     val feedUrl: String? = null,
     val rssRefreshCapability: String = RSS_REFRESH_MANUAL,

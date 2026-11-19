@@ -66,6 +66,7 @@ object AnalyticsGlossary {
             "explore_recommendation_tapped",
             "explore_surface_impression",
             "queue_modified",
+            "playlist_modified",
             "episode_liked_toggled",
             "episode_mark_played",
             "download_requested",
@@ -274,6 +275,9 @@ object AnalyticsGlossary {
             "queue_auto_advance",
             "queue_skip",
             "library_latest_episodes",
+            "playlist",
+            // An episode page opened from a playlist's page; distinct from a playing playlist.
+            "library_playlist",
             "downloads",
             "history",
             "liked",

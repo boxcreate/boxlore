@@ -70,6 +70,44 @@ class QueueManagerPlaybackTest {
     }
 
     @Test
+    fun `playing a playlist replaces the queue with a tagged copy in playlist order`() = runTest(testDispatcher) {
+        val manager = QueueManager(queueRepository, playbackRepository)
+        val podcast = Podcast("show-1", "First show", "Host", "art")
+        val episodes = listOf(
+            Episode("3", "Third", "", "https://example.com/3.mp3", podcastId = "show-1"),
+            Episode("rss:1", "First", "", "https://example.com/1.mp3", podcastId = "rss:show-2"),
+            Episode("3", "Third again", "", "https://example.com/3.mp3", podcastId = "show-1"),
+        )
+        manager.playPlaylist("list-a", episodes, podcast)
+        advanceUntilIdle()
+
+        @Suppress("UNCHECKED_CAST")
+        val queueCaptor = ArgumentCaptor.forClass(List::class.java) as ArgumentCaptor<List<Episode>>
+        val contextCaptor = ArgumentCaptor.forClass(Bundle::class.java)
+        verify(queueRepository).replaceQueue(safeCapture(queueCaptor, emptyList()))
+        val persisted = queueCaptor.value
+        assertEquals(listOf("3", "rss:1"), persisted.map { it.id })
+        assertEquals(setOf("playlist:list-a"), persisted.map { it.contextSourceId }.toSet())
+        verify(queueCoordinator).playQueue(
+            safeEq(persisted),
+            safeEq(podcast),
+            safeEq(0),
+            safeEq(PlaybackEntryPoint.GENERIC),
+            safeEq(null),
+            safeCapture(contextCaptor, Bundle()),
+        )
+        assertEquals(PlaybackQueueContext.PLAYLIST, contextCaptor.value.getString("source_entry_point"))
+        assertEquals(PlaybackQueueContext.PLAYLIST, PlaybackQueueContext.entryPointFor(persisted.first().contextSourceId))
+    }
+
+    @Test
+    fun `an episode page opened from a playlist page is not a playing playlist`() {
+        assertEquals(null, PlaybackQueueContext.knownEntryPoint("library_playlist"))
+        assertEquals(null, PlaybackQueueContext.entryPointFor("library_playlist"))
+        assertEquals(PlaybackQueueContext.PLAYLIST, PlaybackQueueContext.knownEntryPoint("playlist"))
+    }
+
+    @Test
     fun `empty context playback leaves current queue alone`() = runTest(testDispatcher) {
         QueueManager(queueRepository, playbackRepository).playContextEpisodes(emptyList(), Podcast("show", "Show", "Host", "art"))
         advanceUntilIdle()

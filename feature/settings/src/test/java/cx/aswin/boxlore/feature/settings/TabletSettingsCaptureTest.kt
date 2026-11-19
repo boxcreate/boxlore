@@ -22,6 +22,7 @@ import cx.aswin.boxlore.feature.settings.pages.AppearanceHomePage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceNavigationPage
 import cx.aswin.boxlore.feature.settings.pages.AppearancePlayerPage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceSettingsPage
+import cx.aswin.boxlore.feature.settings.pages.AppearanceShowPagesPage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceTextPage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceWidgetsPage
 import cx.aswin.boxlore.feature.settings.pages.CustomThemeEditor
@@ -111,6 +112,7 @@ private fun CaptureSettingsPage(destination: ProfileSettingsDestination) {
         ProfileSettingsDestination.Recommendations -> RecommendationsSettingsPage(DiscoverySections(), { _, _ -> }, {})
         ProfileSettingsDestination.Appearance, ProfileSettingsDestination.Theme -> AppearanceSettingsPage(appearance.state, appearance.actions, {}, {})
         ProfileSettingsDestination.AppearanceHome,
+        ProfileSettingsDestination.AppearanceShowPages,
         ProfileSettingsDestination.AppearancePlayer,
         ProfileSettingsDestination.AppearanceNavigation,
         ProfileSettingsDestination.AppearanceText,
@@ -136,6 +138,7 @@ private fun CaptureDownloadsOrWearOs(destination: ProfileSettingsDestination) {
 private fun CaptureAppearanceSubpage(destination: ProfileSettingsDestination, appearance: AppearanceSettings) {
     when (destination) {
         ProfileSettingsDestination.AppearanceHome -> AppearanceHomePage(appearance.state, appearance.actions, null, {})
+        ProfileSettingsDestination.AppearanceShowPages -> AppearanceShowPagesPage(appearance.state, appearance.actions, {})
         ProfileSettingsDestination.AppearancePlayer -> AppearancePlayerPage(appearance.state, appearance.actions, {})
         ProfileSettingsDestination.AppearanceNavigation -> AppearanceNavigationPage(appearance.state, appearance.actions, {})
         ProfileSettingsDestination.AppearanceWidgets -> AppearanceWidgetsPage(appearance.state, appearance.actions, {})

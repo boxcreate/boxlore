@@ -50,10 +50,10 @@ internal class BoxLoreCastMediaItemConverter : MediaItemConverter {
                 mediaItem.buildUpon().setUri(remoteUri).build()
             }
         val converted = delegate.toMediaQueueItem(castItem)
-        if (!PlaybackQueueContext.isContextItem(castItem)) return converted
+        val context = PlaybackQueueContext.contextEntryPoint(castItem) ?: return converted
         // Media3's default converter does not serialize MediaMetadata.extras.
         val customData = JSONObject(converted.customData?.toString() ?: "{}")
-            .put(contextKey, PlaybackQueueContext.NEW_EPISODES)
+            .put(contextKey, context)
         return MediaQueueItem.Builder(converted)
             .setCustomData(customData)
             .build()
@@ -69,9 +69,9 @@ internal class BoxLoreCastMediaItemConverter : MediaItemConverter {
             } catch (_: Exception) {
                 return placeholder(mediaQueueItem)
             }
-        if (mediaQueueItem.customData?.optString(contextKey) != PlaybackQueueContext.NEW_EPISODES) return item
+        val context = PlaybackQueueContext.knownEntryPoint(mediaQueueItem.customData?.optString(contextKey)) ?: return item
         val extras = Bundle(item.mediaMetadata.extras ?: Bundle()).apply {
-            putString("source_entry_point", PlaybackQueueContext.NEW_EPISODES)
+            putString("source_entry_point", context)
         }
         return item.buildUpon().setMediaMetadata(item.mediaMetadata.buildUpon().setExtras(extras).build()).build()
     }

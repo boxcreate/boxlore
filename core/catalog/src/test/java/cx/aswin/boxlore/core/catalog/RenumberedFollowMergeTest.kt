@@ -11,7 +11,9 @@ class RenumberedFollowMergeTest {
     @Test
     fun aFollowedNewShowKeepsItsOwnChoicesAndFollowTimeAndTakesAnyOnSwitch() {
         val old = row("1", subscribedAt = 100L).copy(notificationsEnabled = true, customGenre = "Old genre", preferredSort = "oldest", skipEndingOverrideMs = 5_000L)
+            .copy(playbackSpeedOverride = 1.5f, skipSilenceOverride = true)
         val current = row("2", subscribedAt = 200L).copy(autoDownloadEnabled = true, customGenre = "New genre", customGenreIcon = "icon")
+            .copy(skipSilenceOverride = false)
 
         val move = RenumberedFollowMerge.move(old, "2", current, answer = null, nowMs = 1_000L)
 
@@ -22,6 +24,8 @@ class RenumberedFollowMergeTest {
         assertEquals("icon", move.kept.customGenreIcon)
         assertEquals("oldest", move.kept.preferredSort)
         assertEquals(5_000L, move.kept.skipEndingOverrideMs)
+        assertEquals("the old show's speed fills the new show's unset one", 1.5f, move.kept.playbackSpeedOverride)
+        assertEquals("the new show's own trim silence wins", false, move.kept.skipSilenceOverride)
         assertTrue(move.notificationsMoved)
         assertFalse("auto-download was already on", move.autoDownloadMoved)
         assertFalse(move.retired.isSubscribed)

@@ -85,6 +85,8 @@ class LegacyRssSubscriptionUpgradeLogicTest {
                 autoDownloadEnabled = true,
                 skipBeginningOverrideMs = 5_000L,
                 skipEndingOverrideMs = 8_000L,
+                playbackSpeedOverride = 1.75f,
+                skipSilenceOverride = true,
                 sourceType = PodcastEntity.SOURCE_RSS,
                 rssHasNewEpisodes = true,
             )
@@ -109,6 +111,8 @@ class LegacyRssSubscriptionUpgradeLogicTest {
         assertTrue(entity.notificationsEnabled)
         assertTrue(entity.autoDownloadEnabled)
         assertEquals(5_000L, entity.skipBeginningOverrideMs)
+        assertEquals(1.75f, entity.playbackSpeedOverride)
+        assertEquals(true, entity.skipSilenceOverride)
         assertTrue(entity.rssHasNewEpisodes)
     }
 

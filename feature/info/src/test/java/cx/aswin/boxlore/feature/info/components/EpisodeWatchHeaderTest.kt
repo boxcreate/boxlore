@@ -16,6 +16,14 @@ class EpisodeWatchHeaderTest {
     }
 
     @Test
+    fun `Add to playlist sits left of Share and of the watch button, and the title makes room for it`() {
+        assertEquals(48.dp, EpisodeWatchHeader.titleEndExtra(hasWatchButton = false, hasPlaylistButton = true))
+        assertEquals(96.dp, EpisodeWatchHeader.titleEndExtra(hasWatchButton = true, hasPlaylistButton = true))
+        assertEquals(48.dp, EpisodeWatchHeader.playlistButtonEnd(hasWatchButton = false))
+        assertEquals(96.dp, EpisodeWatchHeader.playlistButtonEnd(hasWatchButton = true))
+    }
+
+    @Test
     fun `sending is one tap, removing or stopping a download is asked first`() {
         assertFalse(EpisodeWatchHeader.asksFirst(WatchEpisodeCopy.None))
         assertTrue(EpisodeWatchHeader.asksFirst(WatchEpisodeCopy.OnWatch))

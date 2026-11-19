@@ -11,6 +11,7 @@ import cx.aswin.boxlore.core.database.ListeningInsightsMaintenance
 import cx.aswin.boxlore.core.database.ListeningRollupDao
 import cx.aswin.boxlore.core.database.ListeningSessionDao
 import cx.aswin.boxlore.core.database.PlayedShowDao
+import cx.aswin.boxlore.core.database.PlaylistDao
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.dao.QueueDao
@@ -87,6 +88,8 @@ open class UserSyncCoordinator(
      * bring in another phone's finished episodes: starts the review prompt's quiet days.
      */
     private val onFirstAccountPull: suspend () -> Unit = { userPreferencesRepository?.markLibraryImported() },
+    /** Playlists (Room v43); never synced, so an account switch deletes them with the folders. */
+    private val playlistDao: PlaylistDao? = null,
 ) {
     private val syncMutex = Mutex()
 
@@ -301,6 +304,7 @@ open class UserSyncCoordinator(
         requirePodcastDao.clearAllSubscriptionsForAccountSwitch()
         folderDao?.deleteAllCrossRefs()
         folderDao?.deleteAllFolders()
+        playlistDao?.deleteAll()
     }
 
     private suspend fun purgeHistory() {

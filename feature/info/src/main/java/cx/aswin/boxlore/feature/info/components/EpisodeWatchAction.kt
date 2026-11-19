@@ -50,7 +50,11 @@ internal object EpisodeWatchHeader {
      * The extra room the title leaves at its end when the watch button sits beside Share, so a
      * long episode name stops before the button instead of running under it.
      */
-    fun titleEndExtra(hasWatchButton: Boolean): Dp = if (hasWatchButton) ButtonSlot else 0.dp
+    fun titleEndExtra(hasWatchButton: Boolean, hasPlaylistButton: Boolean = false): Dp =
+        ButtonSlot * ((if (hasWatchButton) 1 else 0) + (if (hasPlaylistButton) 1 else 0))
+
+    /** How far from Share's end slot Add to playlist sits: one slot, or two beside the watch button. */
+    fun playlistButtonEnd(hasWatchButton: Boolean): Dp = ButtonSlot * (if (hasWatchButton) 2 else 1)
 
     /** What a tap does, and what the page says once the watch has, or has not, been told. */
     fun messageAfter(copy: WatchEpisodeCopy, handedOver: Boolean): Int =

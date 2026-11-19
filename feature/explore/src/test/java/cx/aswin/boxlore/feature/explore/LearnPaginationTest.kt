@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.explore
 
+import cx.aswin.boxlore.feature.explore.logic.LoreHiddenShows
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -236,6 +237,45 @@ class LearnPaginationTest {
         assertEquals(InitialCuriosityDeckResult.Failed(page = 2), result)
     }
 
+    @Test
+    fun aPageLeftWithOnlyHiddenShowsCardsIsSkippedLikeASeenPage() = runTest {
+        // Reviewed: hidden shows' cards are never dismissed, so page 1 counted as unseen forever, the
+        // deck filtered it to nothing and Lore stayed caught up without reading page 2.
+        val hidden = setOf("hidden-show")
+        val requestedPages = mutableListOf<Int>()
+
+        val result =
+            findFirstUnseenCuriosityDeck(
+                dismissedIds = setOf("1", "2"),
+                isHidden = { LoreHiddenShows.isHidden(it, hidden) },
+            ) { page ->
+                requestedPages += page
+                when (page) {
+                    1 -> response(card(1), card(2), card(3, podcastId = "hidden-show"), card(4, podcastId = "hidden-show"))
+                    2 -> response(card(5), card(6, podcastId = "hidden-show"))
+                    else -> response()
+                }
+            }
+
+        assertEquals(InitialCuriosityDeckResult.Found(page = 2, unseenItems = listOf(card(5))), result)
+        assertEquals(listOf(1, 2), requestedPages)
+    }
+
+    @Test
+    fun aListLeftWithOnlyHiddenShowsCardsEndsInsteadOfFindingADeck() = runTest {
+        val hidden = setOf("hidden-show")
+
+        val result =
+            findFirstUnseenCuriosityDeck(
+                dismissedIds = emptySet(),
+                isHidden = { LoreHiddenShows.isHidden(it, hidden) },
+            ) { page ->
+                if (page == 1) response(card(1, podcastId = "hidden-show")) else response()
+            }
+
+        assertEquals(InitialCuriosityDeckResult.Exhausted(lastPage = 2), result)
+    }
+
     /** A curiosity list of one card per page up to [lastPage], with the scan state a [LearnViewModel] keeps. */
     private inner class FakeLore(lastPage: Int) {
         val pages = (1..lastPage).associateWith { listOf(card(it.toLong())) }.toMutableMap()
@@ -267,7 +307,7 @@ class LearnPaginationTest {
 
     private fun response(vararg cards: LearnCuriosityCard): List<LearnCuriosityCard> = cards.toList()
 
-    private fun card(id: Long): LearnCuriosityCard = LearnCuriosityCard(
+    private fun card(id: Long, podcastId: String? = null): LearnCuriosityCard = LearnCuriosityCard(
         episodeId = id.toString(),
         question = "Question $id?",
         explanation = "Explanation $id",
@@ -276,7 +316,7 @@ class LearnPaginationTest {
         podcastTitle = "Podcast $id",
         imageUrl = null,
         feedImage = null,
-        podcastId = null,
+        podcastId = podcastId,
         audioUrl = "https://example.com/$id.mp3",
         duration = 0,
         description = null,

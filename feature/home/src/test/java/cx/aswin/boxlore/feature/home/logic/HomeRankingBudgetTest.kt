@@ -37,6 +37,7 @@ class HomeRankingBudgetTest {
             history: List<HomeListeningHistoryItem>,
             staleRestartEnabled: Boolean = true,
             nowMs: Long = 0L,
+            hidden: Set<String> = emptySet(),
         ): HomeUiAssemblyResult {
             val plan = ranker.plan(subs.map { it.id }.toSet(), history, staleRestartEnabled, generation)
             discovery.get(HomeDiscoveryRankingInput(emptyList(), emptyList(), plan.discoveryPass)) {
@@ -61,7 +62,7 @@ class HomeRankingBudgetTest {
                 editorialRows = emptyList(),
                 previousStableOrder = plan.previousOrder,
                 podcastScores = scores,
-                previousMixtape = plan.previousMixtape,
+                previousMixtape = HomeHiddenShowsLogic.mixtape(plan.previousMixtape, hidden),
                 buildMixtape = { _, _ ->
                     mixBuilds++
                     val withEpisodes = subs.filter { it.latestEpisode != null }
@@ -186,6 +187,23 @@ class HomeRankingBudgetTest {
         assertFalse(result.subscribedPodcasts.any { it.id == "show-0" })
         assertFalse(result.latestEpisodes.any { it.id == "show-0" })
         assertEquals(4, result.unplayedEpisodeCount)
+    }
+
+    @Test
+    fun `a hidden show leaves Daily Mix at once without a re-rank, and unhiding ranks nothing either`() = runTest {
+        val home = HomePipelineDriver()
+        val subs = List(5) { show(it) }
+        home.pass(subs, emptyList())
+        val runs = home.expensiveRuns
+
+        val hidden = home.pass(subs, emptyList(), hidden = setOf("show-2"))
+        assertEquals(runs, home.expensiveRuns)
+        assertFalse(hidden.latestEpisodes.any { it.id == "show-2" })
+        assertEquals(4, hidden.unplayedEpisodeCount)
+
+        // The show comes back with the next Daily Mix rebuild, never with a pass of its own.
+        home.pass(subs, emptyList())
+        assertEquals(runs, home.expensiveRuns)
     }
 
     @Test

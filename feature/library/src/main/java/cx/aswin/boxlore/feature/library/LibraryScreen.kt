@@ -74,6 +74,7 @@ import cx.aswin.boxlore.core.model.artworkUrls
  * Main Library Screen
  */
 @Composable
+@Suppress("LongParameterList") // One callback per hub card, plus the optional Playlists card.
 fun LibraryScreen(
     viewModel: LibraryViewModel,
     entryPoint: String = "bottom_nav",
@@ -84,6 +85,7 @@ fun LibraryScreen(
     onNavigateToSettings: () -> Unit = {},
     onNavigateToDebug: () -> Unit = {},
     onFeedbackClick: () -> Unit = {},
+    playlists: LibraryPlaylistsCard? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val homeShortcutsInLibrary by viewModel.homeShortcutsInLibrary.collectAsStateWithLifecycle()
@@ -126,6 +128,10 @@ fun LibraryScreen(
             onNavigateToHistory()
         },
         showHomeShortcuts = homeShortcutsInLibrary,
+        playlists = playlists?.copy(onClick = {
+            viewModel.hubNavigatedTo = "playlists"
+            playlists.onClick()
+        }),
         onFeedbackClick = {
             cx.aswin.boxlore.core.analytics.AnalyticsHelper
                 .trackTopControlbarInteraction("feedback_clicked", "library")
@@ -150,6 +156,7 @@ fun LibraryScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("LongParameterList", "LongMethod") // One callback per hub card; the phone hub lists every card inline.
 fun LibraryContent(
     uiState: LibraryUiState,
     onNavigateToLiked: () -> Unit,
@@ -161,6 +168,7 @@ fun LibraryContent(
     onFeedbackLongClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onSettingsLongClick: () -> Unit = {},
+    playlists: LibraryPlaylistsCard? = null,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val titleStyle = lerp(
@@ -226,7 +234,7 @@ fun LibraryContent(
             }
             is LibraryUiState.Success -> {
                 if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
-                    TabletLibraryHub(uiState, onNavigateToSubscriptions, onNavigateToLiked, onNavigateToDownloads, onNavigateToHistory, Modifier.padding(innerPadding))
+                    TabletLibraryHub(uiState, onNavigateToSubscriptions, onNavigateToLiked, onNavigateToDownloads, onNavigateToHistory, Modifier.padding(innerPadding), playlists)
                 } else {
                 LazyColumn(
                     contentPadding = PaddingValues(
@@ -276,6 +284,10 @@ fun LibraryContent(
                             images = likedImages,
                             shapes = likedShapes,
                         )
+                    }
+
+                    playlists?.let { card ->
+                        item { LibraryPlaylistsMenuCard(card) }
                     }
 
                     item {

@@ -153,6 +153,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLearnDestinations(w: NavGrap
                         application = application,
                         rankingFeedback = container.rankingFeedbackRepository,
                         historyStore = learnHistoryStore,
+                        hiddenShowIds = container.userPreferencesRepository.hiddenShows.matchIdsStream,
                     ) as T
                 },
             )

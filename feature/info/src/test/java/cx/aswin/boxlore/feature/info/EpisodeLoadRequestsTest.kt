@@ -81,4 +81,15 @@ class EpisodeLoadRequestsTest {
         val own = episode.copy(podcastId = "rss:abc")
         assertEquals("rss:abc", EpisodeLoadRequests.shareEpisode(EpisodeInfoUiState.Success(own, "920666", "Show")).podcastId)
     }
+
+    @Test
+    fun `Add to playlist saves the episode with the page's show filled in`() {
+        val shown = EpisodeInfoUiState.Success(episode, "920666", "Show", podcastGenre = "News")
+        val saved = EpisodeLoadRequests.playlistEpisode(shown)
+        assertEquals("920666", saved.podcastId)
+        assertEquals("Show", saved.podcastTitle)
+        assertEquals("News", saved.podcastGenre)
+        val own = EpisodeLoadRequests.playlistEpisode(shown.copy(episode = episode.copy(podcastId = "1", podcastTitle = "Own")))
+        assertEquals("1" to "Own", own.podcastId to own.podcastTitle)
+    }
 }

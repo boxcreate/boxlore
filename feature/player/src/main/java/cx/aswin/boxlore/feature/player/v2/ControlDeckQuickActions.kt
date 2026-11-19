@@ -99,14 +99,15 @@ internal fun QuickActionsTopRow(
     navigation: QuickControlNavigation,
     clickActions: SecondaryClickActions
 ) {
-    val speedIsCustom = kotlin.math.abs(playback.playbackSpeed - 1f) > 0.001f
+    val speedIsCustom = speedChipIsActive(playback.playbackSpeed, playback.audio)
+    val trimHint = playback.audio.trimSilence && !playback.audio.isCasting
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(3.dp)
     ) {
         UtilityAction(
             icon = Icons.Outlined.Speed,
-            label = formatSpeedLabel(playback.playbackSpeed),
+            label = formatSpeedLabel(playback.playbackSpeed) + if (trimHint) ", trim silence on" else "",
             state = UtilityActionState(
                 active = speedIsCustom,
                 status = formatSpeedLabel(playback.playbackSpeed).takeIf { speedIsCustom }
@@ -215,12 +216,11 @@ internal fun InlineSpeedSelector(
     colorScheme: ColorScheme,
     shapes: QuickControlShapes,
     onBack: () -> Unit,
-    onSpeedSelected: (Float) -> Unit
+    onSpeedSelected: (Float) -> Unit,
+    audio: InlineSpeedAudio = InlineSpeedAudio()
 ) {
     TrackScreenView("player_speed")
-    val speeds = remember {
-        listOf(0.5f, 0.8f, 0.9f, 1f, 1.1f, 1.2f, 1.25f, 1.5f, 1.75f, 2f, 2.5f, 3f)
-    }
+    val speeds = cx.aswin.boxlore.core.playback.ShowPlaybackPolicy.SPEED_OPTIONS
     val currentIndex = speeds.indices.minByOrNull { index ->
         kotlin.math.abs(speeds[index] - currentSpeed)
     } ?: speeds.indexOf(1f)
@@ -278,16 +278,12 @@ internal fun InlineSpeedSelector(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            presets.forEachIndexed { index, speed ->
+            presets.forEach { speed ->
                 LabelAction(
                     label = formatSpeedLabel(speed),
                     active = kotlin.math.abs(currentSpeed - speed) < 0.001f,
                     colorScheme = colorScheme,
-                    shape = when (index) {
-                        0 -> shapes.bottomStart
-                        presets.lastIndex -> shapes.bottomEnd
-                        else -> shapes.middle
-                    },
+                    shape = shapes.middle,
                     onClick = {
                         onSpeedSelected(speed)
                         onBack()
@@ -296,6 +292,14 @@ internal fun InlineSpeedSelector(
                 )
             }
         }
+        Spacer(Modifier.height(3.dp))
+        InlineSpeedAudioRow(
+            audio = audio.state,
+            colorScheme = colorScheme,
+            shapes = InlineSpeedAudioShapes(start = shapes.bottomStart, end = shapes.bottomEnd, full = InlineSpeedAudioBottomShape),
+            onUseAppSpeed = audio.onUseAppSpeed,
+            onTrimSilenceChange = audio.onTrimSilenceChange
+        )
     }
 }
 

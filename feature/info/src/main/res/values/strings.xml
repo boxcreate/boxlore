@@ -9,6 +9,7 @@
     <string name="episode_info_not_found_body_no_show">It may have been removed, or this link may not open on this phone.</string>
     <string name="episode_info_back">Back</string>
     <string name="episode_info_share">Share episode</string>
+    <string name="episode_info_add_playlist">Add to playlist</string>
     <!-- The header's watch button, shown only while boxlore on a watch is in reach of the phone. -->
     <string name="episode_info_send_to_watch">Send to watch</string>
     <string name="episode_info_downloading_on_watch">Downloading on your watch. Remove from watch</string>
@@ -94,7 +95,8 @@
     <string name="episode_selection_mark_unplayed">Mark selected episodes unplayed</string>
     <string name="episode_selection_play">Play selected episodes</string>
     <string name="episode_selection_add_queue">Add selected episodes to queue</string>
-    <string name="episode_selection_more">More selection options</string>
+    <string name="episode_selection_more">More actions</string>
+    <string name="episode_selection_add_playlist">Add to playlist</string>
     <string name="episode_selection_select_visible">Select visible episodes</string>
     <string name="episode_selection_select_all">Select all episodes</string>
     <string name="episode_selection_select_older">Select all older episodes</string>
@@ -148,4 +150,20 @@
     <string name="podcast_episode_select">Select episode</string>
     <string name="podcast_episode_selected">Selected</string>
     <string name="podcast_episode_up_next">Up next</string>
+    <!-- Hide show everywhere: keeps a show out of Home, Explore, Lore, Smart Queue and Android Auto; Explore’s Find a show search still finds it. LeaveMeAlone is the settings page (Library › LeaveMeAlone) that lists hidden shows; keep it as one word. -->
+    <string name="podcast_info_hide_show">Hide show everywhere</string>
+    <string name="podcast_info_unhide_show">Unhide show</string>
+    <string name="podcast_info_hide_title">Hide this show everywhere?</string>
+    <string name="podcast_info_hide_message">boxlore won’t suggest it on Home, Explore, Lore or in Smart Queue. You can still find it with Find a show and unhide it here or in LeaveMeAlone.</string>
+    <!-- The show is followed: hiding it unsubscribes too, and Undo subscribes again. -->
+    <string name="podcast_info_hide_message_subscribed">This also unsubscribes you from it. boxlore won’t suggest it on Home, Explore, Lore or in Smart Queue. You can still find it with Find a show and unhide it here or in LeaveMeAlone.</string>
+    <string name="podcast_info_hide_confirm">Hide show</string>
+    <string name="podcast_info_hide_confirm_subscribed">Hide and unsubscribe</string>
+    <string name="podcast_info_hide_cancel">Cancel</string>
+    <string name="podcast_info_hidden_snackbar">Hidden everywhere</string>
+    <string name="podcast_info_hidden_undo">Undo</string>
+    <string name="podcast_info_unhidden_snackbar">No longer hidden</string>
+    <!-- A small note under the show's actions while it is hidden. -->
+    <string name="podcast_info_hidden_note">Hidden everywhere</string>
+    <string name="podcast_info_hidden_note_unhide">Unhide</string>
 </resources>

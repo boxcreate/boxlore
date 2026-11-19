@@ -143,6 +143,36 @@ class FullPlayerUiStateSaverTest {
     }
 
     @Test
+    fun `a Save queue as playlist draft survives saving, the retained store, and a closed dialog stays closed`() {
+        val state = FullPlayerUiState().apply {
+            saveQueueName = "Road trip"
+            showQueueSheet = true
+        }
+        val saved = requireNotNull(with(FullPlayerUiStateSaver) { SaverScope { true }.save(state) })
+        val restored = requireNotNull(FullPlayerUiStateSaver.restore(saved))
+        assertEquals("Road trip", restored.saveQueueName)
+        assertTrue(restored.showQueueSheet)
+
+        val store = PlayerPresentationStore("42", state, true)
+        val storeSaved = requireNotNull(with(PlayerPresentationStoreSaver) { SaverScope { true }.save(store) })
+        val fromStore = requireNotNull(PlayerPresentationStoreSaver.restore(storeSaved))
+        assertEquals("Road trip", fromStore.ui.saveQueueName)
+        assertTrue(fromStore.expanded)
+        assertTrue(fromStore.ui.showQueueSheet)
+
+        val closed = requireNotNull(FullPlayerUiStateSaver.restore(requireNotNull(with(FullPlayerUiStateSaver) { SaverScope { true }.save(FullPlayerUiState()) })))
+        assertEquals(null, closed.saveQueueName)
+        val empty = FullPlayerUiState().apply { saveQueueName = "" }
+        assertEquals("", FullPlayerUiStateSaver.restore(requireNotNull(with(FullPlayerUiStateSaver) { SaverScope { true }.save(empty) }))?.saveQueueName)
+    }
+
+    @Test
+    fun `saving the queue confirms with the playlist's name`() {
+        assertEquals("Saved as Road trip", saveQueueMessage("Road trip", added = 5, didNotFit = 0))
+        assertEquals("Road trip is full. Remove an episode to add more.", saveQueueMessage("Road trip", added = 0, didNotFit = 2))
+    }
+
+    @Test
     fun `retained store restores compact intent without confusing it with expansion`() {
         listOf(false, true).forEach { expanded ->
             val state = FullPlayerUiState().apply { showInlineTranscript = true }
@@ -193,6 +223,25 @@ class FullPlayerUiStateSaverTest {
         assertEquals(PlayerSupportingTab.UpNext, restored.forEpisode("-42").supportingTab)
         assertFalse(restored.ui.supportingContentUsesTablet)
         assertFalse(restored.ui.restoreSupportingContentOnCompact)
+    }
+
+    @Test
+    fun `a save queue draft outlives an auto-advance to the next episode on tablet and phone`() {
+        val tabletStore = PlayerPresentationStore(tabletUsed = true)
+        tabletStore.forEpisode("one").apply {
+            saveQueueName = "Road trip"
+            showQueueSheet = true
+        }
+        val next = tabletStore.forEpisode("two")
+        assertEquals("Road trip", next.saveQueueName)
+        assertFalse(next.showQueueSheet, "other per-episode state still resets")
+
+        val phoneStore = PlayerPresentationStore()
+        phoneStore.uiFor("one", FullPlayerUiState()).saveQueueName = "Walks"
+        val second = phoneStore.uiFor("two", FullPlayerUiState())
+        assertEquals("Walks", second.saveQueueName)
+        second.saveQueueName = null
+        assertEquals(null, phoneStore.uiFor("three", FullPlayerUiState()).saveQueueName, "a closed dialog stays closed")
     }
 
     private fun assertSurface(state: FullPlayerUiState, expected: PlayerSupportingTab?) {

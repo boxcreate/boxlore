@@ -217,6 +217,8 @@ internal object LegacyRssUpgradeLogic {
         autoDownloadEnabled = source.autoDownloadEnabled,
         skipBeginningOverrideMs = source.skipBeginningOverrideMs,
         skipEndingOverrideMs = source.skipEndingOverrideMs,
+        playbackSpeedOverride = source.playbackSpeedOverride,
+        skipSilenceOverride = source.skipSilenceOverride,
         sourceType = PodcastEntity.SOURCE_PODCAST_INDEX,
         feedUrl = snapshot.finalFeedUrl,
         rssHasNewEpisodes = source.rssHasNewEpisodes,
@@ -502,6 +504,14 @@ internal class LegacyRssSubscriptionUpgrader(private val database: BoxLoreDataba
                     ),
                 )
             }
+        database.playlistDao().reassignPodcast(
+            oldPodcastId = sourcePodcastId,
+            newPodcastId = targetEntity.podcastId,
+            podcastTitle = targetEntity.title,
+            podcastGenre = targetEntity.genre.orEmpty(),
+            podcastArtist = targetEntity.author,
+            podcastImageUrl = targetEntity.imageUrl,
+        )
         database.listeningSessionDao().reassignPodcastId(sourcePodcastId, targetEntity.podcastId)
         database.listeningRollupDao().reassignPodcastId(sourcePodcastId, targetEntity.podcastId)
     }

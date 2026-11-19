@@ -5,8 +5,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -75,6 +78,43 @@ class AppearancePagesTest {
         }
         compose.onNodeWithText("Display mode").assertExists()
         verifyRows(opened)
+    }
+
+    @Test
+    fun `Show pages row names the episode list choice and opens its page`() {
+        val opened = mutableListOf<AppearanceSection>()
+        compose.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                AppearanceSettingsPage(state.value, actions, onBack = {}, onOpenSection = { opened += it })
+            }
+        }
+        compose.onNodeWithText("Full episode rows").assertExists()
+        compose.onNodeWithText("Show pages").performScrollTo().performClick()
+        assertEquals(listOf(AppearanceSection.ShowPages), opened)
+        compose.runOnIdle { state.value = state.value.copy(episodeTitlesOnly = true) }
+        compose.onNodeWithText("Episode titles only").assertExists()
+        compose.onNodeWithText("Full episode rows").assertDoesNotExist()
+    }
+
+    @Test
+    fun `Show pages switch turns episode titles only on and off`() {
+        val set = mutableListOf<Boolean>()
+        val pageActions = actions.copy(onSetEpisodeTitlesOnly = {
+            set += it
+            state.value = state.value.copy(episodeTitlesOnly = it)
+        })
+        compose.setContent {
+            BoxLoreTheme(dynamicColor = false) { AppearanceShowPagesPage(state.value, pageActions, onBack = {}) }
+        }
+        compose.onNodeWithText("Episode lists").assertExists()
+        compose.onNodeWithText("Short rows with each episode’s title, date, length and play button").assertExists()
+        compose.onNode(isToggleable()).assertIsOff()
+        compose.onNodeWithText("Episode titles only").performClick()
+        compose.onNode(isToggleable()).assertIsOn()
+        compose.onNodeWithText("Episode titles only").performClick()
+        compose.onNode(isToggleable()).assertIsOff()
+        assertEquals(listOf(true, false), set)
+        assertEquals("Full episode rows", showPagesSummary(state.value))
     }
 
     @Test

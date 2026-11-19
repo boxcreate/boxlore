@@ -13,14 +13,18 @@ import cx.aswin.boxlore.core.ranking.RankingExposure
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
+import cx.aswin.boxlore.feature.explore.logic.LoreHiddenShows
 import cx.aswin.boxlore.feature.explore.logic.filterAndShuffleNewItems
 import cx.aswin.boxlore.feature.explore.logic.weightedShuffle
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -43,6 +47,8 @@ class LearnViewModel(
     application: Application,
     private val rankingFeedback: RankingFeedbackRepository,
     private val historyStore: LearnCuriosityHistoryStore = LearnCuriosityHistoryStore(application),
+    /** Every ID of the shows hidden everywhere; their cards leave the deck at once and never join it. */
+    private val hiddenShowIds: Flow<Set<String>> = flowOf(emptySet()),
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow<LearnUiState>(LearnUiState.Loading)
@@ -184,7 +190,26 @@ class LearnViewModel(
     private var fetchJob: Job? = null
     private val scanResume = CuriosityScanResume()
 
+    @Volatile
+    private var hiddenIds: Set<String> = emptySet()
+
+    private fun List<LearnCuriosityCard>.withoutHiddenShows(): List<LearnCuriosityCard> = LoreHiddenShows.withoutHiddenShows(this, hiddenIds)
+
     init {
+        viewModelScope.launch {
+            hiddenShowIds.distinctUntilChanged().collect { ids ->
+                hiddenIds = ids
+                val state = _uiState.value as? LearnUiState.Success ?: return@collect
+                when (val change = LoreHiddenShows.change(state.questionsStack, ids, paging.isEndOfContent)) {
+                    LoreHiddenShows.Change.None -> Unit
+                    LoreHiddenShows.Change.CaughtUp -> showCaughtUp()
+                    is LoreHiddenShows.Change.Deck -> {
+                        _uiState.value = state.copy(questionsStack = change.cards)
+                        if (change.loadMore) fetchNextPage()
+                    }
+                }
+            }
+        }
         viewModelScope.launch {
             uiState.map { state ->
                 (state as? LearnUiState.Success)?.questionsStack.orEmpty().take(4).map { it.artworkSources }
@@ -200,9 +225,12 @@ class LearnViewModel(
         bypassCache: Boolean
     ): InitialCuriosityDeckResult {
         val dismissedIds = getDismissedIds()
+        // Read the hidden shows first so the scan never waits on the collector to see them.
+        val hidden = hiddenShowIds.first().also { hiddenIds = it }
         return findFirstUnseenCuriosityDeck(
             dismissedIds = dismissedIds,
             startPage = scanResume.startPage(dismissedIds),
+            isHidden = { LoreHiddenShows.isHidden(it, hidden) },
             fetchPage = { page ->
                 podcastRepository.getCuratedCuriosity(
                     page = page,
@@ -225,8 +253,10 @@ class LearnViewModel(
     }
 
     private fun showDeck(result: InitialCuriosityDeckResult.Found) {
+        val unhidden = result.unseenItems.withoutHiddenShows()
+        if (unhidden.isEmpty()) return showCaughtUp()
         val shuffled = weightedShuffle(
-            list = result.unseenItems,
+            list = unhidden,
             curiosityScore = LearnCuriosityCard::curiosityScore,
         )
         _uiState.value = LearnUiState.Success(
@@ -265,7 +295,7 @@ class LearnViewModel(
         }
         paging.onPageLoaded(page)
         return filterAndShuffleNewItems(
-            rawItems = res.questionsStack.map { it.toLearnCuriosityCard() },
+            rawItems = res.questionsStack.map { it.toLearnCuriosityCard() }.withoutHiddenShows(),
             currentStack = currentStack,
             dismissedIds = getDismissedIds(),
             episodeId = LearnCuriosityCard::episodeId,

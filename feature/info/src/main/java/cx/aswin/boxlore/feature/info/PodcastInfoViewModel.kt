@@ -58,6 +58,9 @@ class PodcastInfoViewModel(
     private val downloadRepository = deps.downloadRepository
     private val localCatalog = deps.localCatalog
     private val folderRepository = deps.folderRepository
+
+    /** Add to playlist for selected episodes; null without playlists, which hides it. */
+    val playlists: InfoPlaylists? = InfoPlaylists.create(deps.playlistRepository, viewModelScope, InfoPlaylists.SOURCE_SHOW_PAGE)
     private val entryPoint = routeArgs.entryPoint
     private val pageState = PodcastInfoPageState()
     private val supplementSupport = PodcastInfoSupplementSupport(repository, episodeSupplementPort, pageState.listSchemes)
@@ -213,6 +216,12 @@ class PodcastInfoViewModel(
                 cx.aswin.boxlore.core.playback.PlaybackSkipPolicy.DEFAULT_SKIP_ENDING_MS,
             )
 
+    /** The app speed and trim silence, shown as the defaults in "Playback for this show". */
+    val globalPlaybackSpeed: StateFlow<Float> =
+        userPrefs.playbackSpeedStream.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 1f)
+    val globalTrimSilence: StateFlow<Boolean> =
+        userPrefs.trimSilenceEnabledStream.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
     val hideCompletedInShowDetails: StateFlow<Boolean> =
         userPrefs.hideCompletedInShowDetailsStream
             .stateIn(
@@ -230,13 +239,111 @@ class PodcastInfoViewModel(
             initialValue = false,
         )
 
+    private val hideShow =
+        PodcastInfoHideShow(
+            scope = viewModelScope,
+            hiddenIds = userPrefs.hiddenShows.matchIdsStream,
+            hide = userPrefs.hiddenShows::hide,
+            unhide = { ids -> userPrefs.hiddenShows.unhide(ids) },
+            page = { _uiState.value as? PodcastInfoUiState.Success },
+            toggleFollow = ::toggleSubscriptionNow,
+            track = cx.aswin.boxlore.core.analytics.AnalyticsHelper::trackSettingsInteraction,
+            libraryPlace = { id ->
+                HiddenLibraryPlace(
+                    pinnedToHome = id in userPrefs.homePinnedPodcastIdsStream.first(),
+                    manualOrderIndex = userPrefs.subscriptionManualOrderStream.first().indexOf(id).takeIf { it >= 0 },
+                )
+            },
+            restoreFollow = ::restoreFollowAfterUndo,
+        )
+
+    /** Puts the show's Home pin and manual-order place back after Undo followed it again. */
+    private suspend fun restoreLibraryPlace(podcastId: String, place: HiddenLibraryPlace) {
+        if (place.pinnedToHome && podcastId !in userPrefs.homePinnedPodcastIdsStream.first()) userPrefs.toggleHomePinnedPodcastId(podcastId)
+        val index = place.manualOrderIndex ?: return
+        val order = userPrefs.subscriptionManualOrderStream.first()
+        if (podcastId !in order) userPrefs.setSubscriptionManualOrder(order.toMutableList().apply { add(index.coerceAtMost(size), podcastId) })
+    }
+
+    /** Puts back what unfollowing [state]'s show cleared when Undo followed it again. */
+    private suspend fun restoreFollowAfterUndo(state: PodcastInfoUiState.Success, follow: HiddenFollowSettings, place: HiddenLibraryPlace) {
+        val podcast = state.podcast
+        // A feed-only show asks again before it sends its feed address, so its notifications stay off.
+        val notifications = follow.notificationsEnabled && subscriptionRepository.setNotificationsEnabled(podcast, true)
+        if (follow.autoDownloadEnabled) subscriptionRepository.setAutoDownloadEnabled(podcast.id, true)
+        val restoresGenre = follow.customGenre != null || follow.customGenreIcon != null
+        if (restoresGenre) subscriptionRepository.updateCustomGenre(podcast.id, follow.customGenre, follow.customGenreIcon)
+        restoreLibraryPlace(podcast.id, place)
+        _uiState.update { latest ->
+            if (latest is PodcastInfoUiState.Success && latest.podcast.id == podcast.id && latest.isSubscribed) {
+                latest.copy(
+                    podcast = latest.podcast.copy(
+                        notificationsEnabled = notifications,
+                        autoDownloadEnabled = follow.autoDownloadEnabled,
+                        customGenre = follow.customGenre,
+                        customGenreIcon = follow.customGenreIcon,
+                    ),
+                )
+            } else {
+                latest
+            }
+        }
+        if (restoresGenre) {
+            PodcastInfoFolderSyncLogic.syncFoldersAfterGenreUpdate(
+                folderRepository = folderRepository,
+                autoOrganizeLook = if (userPrefs.autoOrganizeFoldersStream.first()) userPrefs.autoOrganizeFolderLook() else null,
+            )
+        }
+    }
+
+    /** True while this show is hidden everywhere. */
+    val isHidden: StateFlow<Boolean> =
+        hideShow.isHidden(_uiState).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    /** Hides this show everywhere; a followed show is unfollowed too ([undoHideShow] reverses both). */
+    fun hideShowEverywhere() = hideShow.hideShow()
+
+    fun unhideShow() = hideShow.unhideShow()
+
+    fun undoHideShow() = hideShow.undoHide()
+
     fun setUseAppPlaybackDefaults(useDefaults: Boolean) {
         val state = _uiState.value as? PodcastInfoUiState.Success ?: return
         if (!state.isSubscribed) return
         val beginning = if (useDefaults) null else globalSkipBeginningMs.value
         val ending = if (useDefaults) null else globalSkipEndingMs.value
         updatePodcastPlaybackOverrides(beginning, ending)
+        // App defaults cover the show's speed and trim silence too; turning them off keeps both on "App".
+        if (useDefaults) {
+            showPlayback.setSpeed(state, null)
+            showPlayback.setTrimSilence(state, null)
+        }
     }
+
+    /** This show's own speed; null plays it at the app speed. Applies at once if the show is playing. */
+    fun setPlaybackSpeedOverride(speed: Float?) {
+        val state = _uiState.value as? PodcastInfoUiState.Success ?: return
+        if (state.isSubscribed) showPlayback.setSpeed(state, speed)
+    }
+
+    /** Shows the stored speed, trim silence and skips when "Playback for this show" opens: the player can change them. */
+    fun refreshShowPlayback() {
+        val state = _uiState.value as? PodcastInfoUiState.Success ?: return
+        viewModelScope.launch { showPlayback.refresh(state.podcast) }
+    }
+
+    /** This show's own trim silence setting; null uses the app setting. */
+    fun setTrimSilenceOverride(enabled: Boolean?) {
+        val state = _uiState.value as? PodcastInfoUiState.Success ?: return
+        if (state.isSubscribed) showPlayback.setTrimSilence(state, enabled)
+    }
+
+    private val showPlayback =
+        PodcastShowPlaybackWriter(
+            scope = viewModelScope,
+            subscriptionRepository = subscriptionRepository,
+            uiState = _uiState,
+        )
 
     fun setSkipBeginningOverride(valueMs: Long) {
         val state = _uiState.value as? PodcastInfoUiState.Success ?: return
@@ -292,6 +399,19 @@ class PodcastInfoViewModel(
     fun toggleHideCompleted() {
         viewModelScope.launch {
             userPrefs.setHideCompletedInShowDetails(!hideCompletedInShowDetails.value)
+        }
+    }
+
+    /** Episode titles only, shared with Appearance › Show pages: short title rows on every show page. */
+    val episodeTitlesOnly: StateFlow<Boolean> =
+        episodeTitlesOnlyState(deps.episodeTitlesOnly, userPrefs.episodeTitlesOnlyStream, viewModelScope)
+
+    /** The overflow menu's Show titles only / Show full episodes. */
+    fun toggleEpisodeTitlesOnly() {
+        val enabled = !episodeTitlesOnly.value
+        viewModelScope.launch {
+            userPrefs.setEpisodeTitlesOnly(enabled)
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSettingsInteraction("episode_titles_only_toggled", enabled.toString())
         }
     }
 
@@ -459,19 +579,24 @@ class PodcastInfoViewModel(
     fun toggleSubscription() {
         val currentState = _uiState.value
         if (currentState !is PodcastInfoUiState.Success) return
-        viewModelScope.launch {
-            val wasSubscribed = currentState.isSubscribed
-            sessionTracker.subscriptionToggled(wasSubscribed)
-            // The page's own follow state decides the direction: it counts a follow under a retired number.
-            subscriptionRepository.toggleSubscription(currentState.podcast, shownFollowed = wasSubscribed)
-            val isSubscribed = showLoader.isPageFollowed(pageState.requestedPodcastId ?: currentState.podcast.id, currentState.podcast.id)
-            applyToggledSubscriptionUi(currentState, isSubscribed)
-            if (isSubscribed && !wasSubscribed) {
-                launch { postSubscribeRefresh.refreshTipAfterSubscribe() }
-            } else if (!isSubscribed && wasSubscribed) {
-                userPrefs.removeLastSeenEpisodeId(currentState.podcast.id)
-                userPrefs.removePodcastIdFromManualOrderAndPins(currentState.podcast.id)
-            }
+        viewModelScope.launch { toggleSubscriptionNow(currentState) }
+    }
+
+    /** Follows or unfollows [currentState]'s show; returns once the page shows the new follow state. */
+    private suspend fun toggleSubscriptionNow(currentState: PodcastInfoUiState.Success) {
+        val wasSubscribed = currentState.isSubscribed
+        sessionTracker.subscriptionToggled(wasSubscribed)
+        // The stored playback settings, not the page's: the player may have changed or cleared them.
+        val podcast = showPlayback.refresh(currentState.podcast)
+        // The page's own follow state decides the direction: it counts a follow under a retired number.
+        subscriptionRepository.toggleSubscription(podcast, shownFollowed = wasSubscribed)
+        val isSubscribed = showLoader.isPageFollowed(pageState.requestedPodcastId ?: currentState.podcast.id, currentState.podcast.id)
+        applyToggledSubscriptionUi(currentState, isSubscribed)
+        if (isSubscribed && !wasSubscribed) {
+            viewModelScope.launch { postSubscribeRefresh.refreshTipAfterSubscribe() }
+        } else if (!isSubscribed && wasSubscribed) {
+            userPrefs.removeLastSeenEpisodeId(currentState.podcast.id)
+            userPrefs.removePodcastIdFromManualOrderAndPins(currentState.podcast.id)
         }
     }
 

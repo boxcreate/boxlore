@@ -124,7 +124,8 @@ internal fun v2RecommendationHistory(history: List<HistoryItem>, recipeIds: Map<
  * (at most four); the API refuses more and expands `id` to `in` itself. Follow seeds and the
  * followed IDs come in [recommendationFollowOrder], so a library past [MAX_RECOMMENDATION_IDS]
  * leaves out its least-used shows; the answer is also filtered against every followed show on the
- * phone ([withoutFollowed]).
+ * phone ([withoutFollowed]). Hidden Podcast Index shows go in `excludedPodcastIds`
+ * ([hiddenPodcastIndexIds]); every hidden show is also filtered from the answer on the phone.
  *
  * Added in P4 PR 12 of the own-episode-IDs plan (plan section 9, v2 discovery routes).
  */
@@ -155,6 +156,7 @@ internal suspend fun PodcastRepository.v2RecommendationRequest(
         interests = boundedInterests,
         subscribedPodcastIds = follows.mapNotNull(String::toLongOrNull).filter { it > 0L }.distinct().take(MAX_RECOMMENDATION_IDS),
         excludedEpisodeIds = usable.mapNotNull { item -> item.exclusionId(recipeIds) }.distinct().take(MAX_RECOMMENDATION_IDS),
+        excludedPodcastIds = hiddenPodcastIndexIds(hiddenShowIds()),
     )
 }
 
@@ -223,6 +225,11 @@ internal fun RecommendationsV2Request.v2CacheKey(): String = buildString {
     append(seeds.joinToString(",") { "${it.kind}:${it.id}:${it.weight}" })
     append('|')
     append(excludedEpisodeIds.joinToString(","))
+    // Only when shows are hidden, so the keys of requests without any stay as they were.
+    if (excludedPodcastIds.isNotEmpty()) {
+        append("|x:")
+        append(excludedPodcastIds.sorted().joinToString(","))
+    }
 }
 
 internal fun PodcastRepository.fetchLegacyRecommendations(

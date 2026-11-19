@@ -164,7 +164,7 @@ class SubscriptionRepository(
                     rssHasNewEpisodes = podcast.rssHasNewEpisodes,
                     linkedPodcastIndexId = podcast.linkedPodcastIndexId,
                 )
-            podcastDao.upsert(entity)
+            podcastDao.upsert(entity.keepingShowPlayback(existing, podcast))
             localEpisodeCatalog?.setUnsubscribedTtl(podcast.id, null)
             recoverFeedUrlIfMissing(podcast)
             RankingFeedbackRepository.getIfInitialized()?.recordAction(
@@ -314,7 +314,7 @@ class SubscriptionRepository(
                 customGenre = existing?.customGenre ?: podcast.customGenre,
                 customGenreIcon = existing?.customGenreIcon ?: podcast.customGenreIcon,
             )
-        podcastDao.upsert(entity)
+        podcastDao.upsert(entity.keepingShowPlayback(existing, podcast))
         localEpisodeCatalog?.setUnsubscribedTtl(podcast.id, null)
         recoverFeedUrlIfMissing(podcast)
         if (isNewSubscription && recordFeedback) {
@@ -639,13 +639,14 @@ class SubscriptionRepository(
         }
     }
 
-    suspend fun setPlaybackSkipOverrides(podcastId: String, skipBeginningMs: Long?, skipEndingMs: Long?,) {
-        podcastDao.setPlaybackSkipOverrides(
-            podcastId,
-            skipBeginningMs,
-            skipEndingMs,
-        )
-    }
+    suspend fun setPlaybackSkipOverrides(podcastId: String, skipBeginningMs: Long?, skipEndingMs: Long?,) =
+        podcastDao.setPlaybackSkipOverrides(podcastId, skipBeginningMs, skipEndingMs)
+
+    /** This show's playback speed; null uses the app speed. Kept when the show is unfollowed, like the skip overrides. */
+    suspend fun setPlaybackSpeedOverride(podcastId: String, speed: Float?) = podcastDao.setPlaybackSpeedOverride(podcastId, speed)
+
+    /** This show's trim silence setting; null uses the app setting. Kept when the show is unfollowed. */
+    suspend fun setSkipSilenceOverride(podcastId: String, enabled: Boolean?) = podcastDao.setSkipSilenceOverride(podcastId, enabled)
 
     suspend fun updateCustomGenre(podcastId: String, customGenre: String?, customGenreIcon: String?) {
         val existing = podcastDao.getPodcast(podcastId)
@@ -766,3 +767,12 @@ class SubscriptionRepository(
         ensureHttpsFeedUrl(podcast.id, recovered)
     }
 }
+
+/**
+ * This row with [existing]'s own playback speed and trim silence, else [podcast]'s, so following a
+ * show again (or restoring it) keeps the settings it had, like the skip overrides.
+ */
+private fun PodcastEntity.keepingShowPlayback(existing: PodcastEntity?, podcast: Podcast): PodcastEntity = copy(
+    playbackSpeedOverride = existing?.playbackSpeedOverride ?: podcast.playbackSpeedOverride,
+    skipSilenceOverride = existing?.skipSilenceOverride ?: podcast.skipSilenceOverride,
+)

@@ -104,7 +104,8 @@ class RenumberedShowFollowsTest {
     fun aFollowOfTheOldShowOnlyMovesWithItsSettingsButNotItsNamespace() = runTest {
         podcastDao.upsert(
             row(OLD, notifications = true, subscribedAt = FOLLOWED_AT, epNs = OLD.toLong(), genre = "Crime")
-                .copy(autoDownloadEnabled = true, preferredSort = "oldest", type = "serial", skipBeginningOverrideMs = 30_000L),
+                .copy(autoDownloadEnabled = true, preferredSort = "oldest", type = "serial", skipBeginningOverrideMs = 30_000L)
+                .copy(playbackSpeedOverride = 0.9f, skipSilenceOverride = false),
         )
 
         assertTrue(repository.renumberedFollows.adoptAnswer(OLD, answer()))
@@ -117,6 +118,8 @@ class RenumberedShowFollowsTest {
         assertEquals("Crime", kept.customGenre)
         assertEquals("oldest", kept.preferredSort)
         assertEquals(30_000L, kept.skipBeginningOverrideMs)
+        assertEquals(0.9f, kept.playbackSpeedOverride)
+        assertEquals(false, kept.skipSilenceOverride)
         assertEquals("The Desi Crime Podcast", kept.title)
         assertEquals(FEED, kept.feedUrl)
         assertNull("a new row never takes the old show's namespace", kept.epNs)

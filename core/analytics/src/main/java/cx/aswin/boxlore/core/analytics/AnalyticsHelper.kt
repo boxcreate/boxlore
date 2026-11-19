@@ -888,6 +888,10 @@ object AnalyticsHelper : Analytics {
         itemsCount: Int? = null,
     ) = QueueContentAnalyticsTracks.trackQueueModified(action, episodeId, podcastId, queueSize, source, itemsCount)
 
+    /** A playlist change: [action] create/rename/delete/add/remove/reorder/play, from [source]. */
+    fun trackPlaylistModified(action: String, source: String, itemsCount: Int? = null, playlistSize: Int? = null,) =
+        QueueContentAnalyticsTracks.trackPlaylistModified(action, source, itemsCount, playlistSize)
+
     fun trackNavTabClicked(tabName: String, previousTab: String? = null,) = QueueContentAnalyticsTracks.trackNavTabClicked(tabName, previousTab)
 
     fun trackPlayMixClicked(count: Int, mixMode: String = "daily",) = LibraryAnalyticsTracks.trackPlayMixClicked(count, mixMode)

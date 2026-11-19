@@ -242,7 +242,7 @@ private fun CloudSyncCard(
 }
 
 /** Names only what `LibraryBackupManager.exportLibraryAsJson` writes. */
-internal const val FULL_LIBRARY_EXPORT_SUMMARY = "Subscriptions, folders, history, likes, and settings (JSON)"
+internal const val FULL_LIBRARY_EXPORT_SUMMARY = "Subscriptions, folders, playlists, history, likes, and settings (JSON)"
 
 @Composable
 private fun SyncBackupExportGroup(

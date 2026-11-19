@@ -32,6 +32,11 @@ internal class PlaybackIntroOutroController(
     private val onNaturalCompletion: (episodeId: String, durationMs: Long) -> Job?,
     private val onClearEndOfEpisodeSleep: () -> Unit,
     private val onContextQueueExhausted: (Player) -> Boolean = { false },
+    /**
+     * The playing show's own settings, resolved with its trim for the current activation only (a
+     * stale result never arrives); null for a briefing or an episode whose show isn't known.
+     */
+    private val onShowPlaybackResolved: (ShowPlaybackOverrides?) -> Unit = {},
 ) {
     data class SeekDiscontinuityResult(val isLifecycleSeek: Boolean,)
 
@@ -266,7 +271,7 @@ internal class PlaybackIntroOutroController(
         val episodeId = activeLifecycleEpisodeId ?: return
         val generation = playbackActivationGeneration
         val configurationJob = scope.launch(start = CoroutineStart.LAZY) {
-            val (history, effectiveTrim) = resolveActiveSkipConfiguration(episodeId)
+            val (history, effectiveTrim, showPlayback) = resolveActiveSkipConfiguration(episodeId)
 
             if (
                 generation != playbackActivationGeneration ||
@@ -277,6 +282,7 @@ internal class PlaybackIntroOutroController(
 
             effectiveSkipBeginningMs = effectiveTrim.skipBeginningMs
             effectiveSkipEndingMs = effectiveTrim.skipEndingMs
+            onShowPlaybackResolved(showPlayback)
 
             if (!introTargetResolved) {
                 resolveActiveIntroTarget(history)
@@ -290,15 +296,19 @@ internal class PlaybackIntroOutroController(
         configurationJob.start()
     }
 
+    private data class ActiveConfiguration(
+        val history: ListeningHistoryEntity?,
+        val trim: PlaybackSkipPolicy.EffectiveTrim,
+        val showPlayback: ShowPlaybackOverrides?,
+    )
+
     /**
-     * The saved state and trim for the playing [episodeId]. The saved position, completion and
+     * The saved state, trim and show settings for the playing [episodeId]. The saved position, completion and
      * listen time are the episode's projected state, so an episode stored under several IDs resumes
      * from the same place whichever of its IDs is playing; an episode stored under one ID reads its
-     * row as before (own-episode-IDs P4, plan section 8).
+     * row as before (own-episode-IDs P4, plan section 8). Briefings use the app settings.
      */
-    private suspend fun resolveActiveSkipConfiguration(
-        episodeId: String,
-    ): Pair<ListeningHistoryEntity?, PlaybackSkipPolicy.EffectiveTrim> {
+    private suspend fun resolveActiveSkipConfiguration(episodeId: String): ActiveConfiguration {
         val history =
             runCatching {
                 database.episodeListenerStore().projectedHistory(episodeId)
@@ -329,7 +339,11 @@ internal class PlaybackIntroOutroController(
                     podcastSkipEndingOverrideMs = podcast?.skipEndingOverrideMs,
                 )
             }
-        return history to effectiveTrim
+        return ActiveConfiguration(
+            history = history,
+            trim = effectiveTrim,
+            showPlayback = if (isBriefing) null else podcastId?.let { id -> podcast.showPlaybackOverrides(id) },
+        )
     }
 
     private fun resolveActiveIntroTarget(history: ListeningHistoryEntity?) {

@@ -9,6 +9,8 @@ import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.domain.ports.HistoryRecommendationSource
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.withoutHiddenShowEpisodes
+import cx.aswin.boxlore.core.model.withoutHiddenShows
 import cx.aswin.boxlore.core.network.model.HistoryItem
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
@@ -203,7 +205,7 @@ class DefaultSmartQueueSources(
             subscribedPodcastIds = subscribedPodcastIds,
             subscribedGenres = subscribedGenres,
             languages = languages,
-        )
+        ).withoutHiddenShowEpisodes(hiddenShowIds())
     }
 
     override suspend fun getSimilarEpisodes(
@@ -232,8 +234,18 @@ class DefaultSmartQueueSources(
                 country = country,
                 languages = languages,
             ),
-        )
+        ).withoutHiddenShowEpisodes(hiddenShowIds())
     }
 
-    override suspend fun getTrendingPodcasts(country: String, category: String?,): List<Podcast> = podcastRepository.getTrendingPodcasts(country = country, category = category)
+    override suspend fun getTrendingPodcasts(country: String, category: String?,): List<Podcast> =
+        podcastRepository.getTrendingPodcasts(country = country, category = category).withoutHiddenShows(hiddenShowIds())
+
+    /** The hidden shows, or none when they can't be read: Smart Queue never adds their episodes. */
+    private suspend fun hiddenShowIds(): Set<String> = try {
+        userPreferencesRepository.hiddenShows.matchIds()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        emptySet()
+    }
 }

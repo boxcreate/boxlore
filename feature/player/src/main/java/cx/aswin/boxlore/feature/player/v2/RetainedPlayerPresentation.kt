@@ -26,10 +26,12 @@ internal class PlayerPresentationStore(
     var tabletUsed: Boolean = false,
 ) : PlayerPresentationController {
     override var expanded by mutableStateOf(expanded)
+
+    /** A new episode starts fresh UI state, except a Save queue as playlist draft, which belongs to the queue. */
     fun forEpisode(id: String): FullPlayerUiState {
         if (episodeId != id) {
             episodeId = id
-            ui = FullPlayerUiState()
+            ui = FullPlayerUiState().apply { saveQueueName = ui.saveQueueName }
         }
         return ui
     }
@@ -37,6 +39,7 @@ internal class PlayerPresentationStore(
     /** Phone-only sessions use [local] but still hand it to the first tablet presentation. */
     fun uiFor(id: String, local: FullPlayerUiState): FullPlayerUiState {
         if (tabletUsed) return forEpisode(id)
+        if (episodeId != id && local !== ui && local.saveQueueName == null) local.saveQueueName = ui.saveQueueName
         episodeId = id
         ui = local
         return local
@@ -55,12 +58,14 @@ internal val PlayerPresentationStoreSaver = listSaver<PlayerPresentationStore, A
     save = { store ->
         val scope: SaverScope = this
         val flags = with(FullPlayerUiStateSaver) { scope.save(store.ui) } as List<*>
-        listOf(store.episodeId, if (store.tabletUsed) 1 else 0) + flags.filterIsInstance<Boolean>() + store.expanded
+        // The flags, then the player's one text value (a Save queue as playlist draft).
+        listOf(store.episodeId, if (store.tabletUsed) 1 else 0) + flags.filterIsInstance<Boolean>() + flags.filterIsInstance<String>() + store.expanded
     },
     restore = { values ->
+        val ui = values.drop(1).dropLast(1)
         PlayerPresentationStore(
             values.first() as String,
-            requireNotNull(FullPlayerUiStateSaver.restore(values.drop(1).dropLast(1).filterIsInstance<Boolean>())),
+            requireNotNull(FullPlayerUiStateSaver.restore(ui.filterIsInstance<Boolean>() + ui.filterIsInstance<String>())),
             values.lastOrNull() as? Boolean ?: false,
             values.getOrNull(1) == 1,
         )

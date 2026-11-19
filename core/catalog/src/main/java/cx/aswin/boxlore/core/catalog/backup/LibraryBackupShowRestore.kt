@@ -28,6 +28,8 @@ internal object LibraryBackupShowRestore {
         preferredSort = entity.preferredSort,
         skipBeginningOverrideMs = entity.skipBeginningOverrideMs,
         skipEndingOverrideMs = entity.skipEndingOverrideMs,
+        playbackSpeedOverride = entity.playbackSpeedOverride,
+        skipSilenceOverride = entity.skipSilenceOverride,
         sourceType = (entity.sourceType as String?) ?: PodcastEntity.SOURCE_PODCAST_INDEX,
         feedUrl = entity.feedUrl,
         rssRefreshCapability = (entity.rssRefreshCapability as String?) ?: PodcastEntity.RSS_REFRESH_MANUAL,

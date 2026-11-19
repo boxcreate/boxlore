@@ -19,6 +19,7 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.LibraryAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -56,6 +57,8 @@ data class QueueSheetActions(
     val onAddSameShowEpisodes: () -> Unit = {},
     val onDismissSameShowBanner: () -> Unit = {},
     val onEpisodeInfoClick: (Episode) -> Unit = {},
+    /** Save queue as playlist; null hides it. */
+    val onSaveAsPlaylist: (() -> Unit)? = null,
 )
 
 data class QueueItemDisplay(
@@ -88,10 +91,15 @@ fun QueueSheetContent(
     val lazyListState = rememberLazyListState()
     val dragStartIndex = remember { mutableIntStateOf(-1) }
     val showContinuation = sameShowContinuation.visible && sameShowContinuation.availableCount > 0
-    val headerItems = if (scrollContinuation && showContinuation) 1 else 0
+    val headerItems = queueHeaderItemCount(
+        scrollContinuation = scrollContinuation,
+        showContinuation = showContinuation,
+        showHeader = showHeader,
+        canSaveAsPlaylist = actions.onSaveAsPlaylist != null,
+    )
 
     Column(modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxWidth()) {
-        QueueSheetHeader(showHeader, queue.size, colorScheme, actions.onClose)
+        QueueSheetHeader(showHeader, queue.size, colorScheme, actions.onClose, actions.onSaveAsPlaylist)
 
         if (showContinuation && !scrollContinuation) {
             SameShowContinuationBanner(
@@ -124,6 +132,7 @@ fun QueueSheetContent(
                         SameShowContinuationBanner(sameShowContinuation, actions.onAddSameShowEpisodes, actions.onDismissSameShowBanner, colorScheme, onEpisodeClick = actions.onEpisodeInfoClick)
                     }
                 }
+                saveQueueAsPlaylistItem(showHeader, actions.onSaveAsPlaylist, colorScheme)
                 if (queue.isEmpty()) {
                     item(key = "tablet_queue_empty", contentType = "empty") {
                         QueueEmptyState(smartQueueEnabled, colorScheme, actions.onEnableSmartQueue, compact = !showHeader)
@@ -162,7 +171,7 @@ fun QueueSheetContent(
 }
 
 @Composable
-private fun QueueSheetHeader(visible: Boolean, count: Int, colorScheme: ColorScheme, onClose: () -> Unit) {
+private fun QueueSheetHeader(visible: Boolean, count: Int, colorScheme: ColorScheme, onClose: () -> Unit, onSaveAsPlaylist: (() -> Unit)? = null) {
     if (visible) {
             // Header: "Up Next" + Close button
             Row(
@@ -188,6 +197,12 @@ private fun QueueSheetHeader(visible: Boolean, count: Int, colorScheme: ColorSch
 
                 Spacer(modifier = Modifier.width(12.dp))
 
+                onSaveAsPlaylist?.let { save ->
+                    IconButton(onClick = save) {
+                        Icon(Icons.Rounded.LibraryAdd, contentDescription = SAVE_QUEUE_LABEL, tint = colorScheme.onSurface)
+                    }
+                }
+
                 IconButton(onClick = onClose) {
                     Icon(
                         Icons.Rounded.Close,
@@ -203,6 +218,23 @@ private fun QueueSheetHeader(visible: Boolean, count: Int, colorScheme: ColorSch
             )
         }
 }
+
+/** Save queue as playlist where the tablet pane has no header: a row above Up Next. */
+private fun androidx.compose.foundation.lazy.LazyListScope.saveQueueAsPlaylistItem(showHeader: Boolean, onSave: (() -> Unit)?, colorScheme: ColorScheme) {
+    if (onSave == null || !showsSaveQueueRow(showHeader, canSaveAsPlaylist = true)) return
+    item(key = "tablet_queue_save", contentType = "save") { SaveQueueAsPlaylistRow(colorScheme, onSave) }
+}
+
+@Composable
+private fun SaveQueueAsPlaylistRow(colorScheme: ColorScheme, onClick: () -> Unit) {
+    TextButton(onClick = onClick, modifier = Modifier.padding(horizontal = 8.dp)) {
+        Icon(Icons.Rounded.LibraryAdd, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(SAVE_QUEUE_LABEL, color = colorScheme.primary, style = MaterialTheme.typography.labelLarge, fontWeight = GoogleSansWeight.medium)
+    }
+}
+
+private val SAVE_QUEUE_LABEL = cx.aswin.boxlore.core.designsystem.components.PlaylistCopy.SAVE_QUEUE
 
 @Composable
 private fun QueueEmptyState(
@@ -589,6 +621,18 @@ fun SameShowContinuationBanner(
         }
     }
 }
+
+/** The tablet pane puts Save queue as playlist in the list because it has no header. */
+internal fun showsSaveQueueRow(showHeader: Boolean, canSaveAsPlaylist: Boolean): Boolean = !showHeader && canSaveAsPlaylist
+
+/** Lazy rows above the first queue row: the scrolled continuation banner and the tablet save row. */
+internal fun queueHeaderItemCount(
+    scrollContinuation: Boolean,
+    showContinuation: Boolean,
+    showHeader: Boolean,
+    canSaveAsPlaylist: Boolean,
+): Int = (if (scrollContinuation && showContinuation) 1 else 0) +
+    (if (showsSaveQueueRow(showHeader, canSaveAsPlaylist)) 1 else 0)
 
 /** Presentation-only rows do not change the queue indices delivered to the existing owner. */
 internal fun queueReorderIndex(lazyIndex: Int, headerItems: Int, queueSize: Int): Int =

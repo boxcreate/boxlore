@@ -6,17 +6,19 @@ import cx.aswin.boxlore.feature.home.HomeListeningHistoryItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 
 internal object HomeBecauseYouLikeLogic {
-    /** What the Because you like row loads for: the picked show, region and content languages. */
-    data class Request(val overriddenId: String?, val region: String, val languages: List<String>,)
+    /** What the Because you like row loads for: the picked show, region, content languages and the hidden shows. */
+    data class Request(val overriddenId: String?, val region: String, val languages: List<String>, val hiddenIds: Set<String> = emptySet(),)
 
     /** Emits again when any of the three changes, so a language change alone refetches the row. */
     fun requests(
         overriddenId: Flow<String?>,
         region: Flow<String>,
         languages: Flow<List<String>>,
-    ): Flow<Request> = combine(overriddenId, region, languages) { id, r, l -> Request(id, r, l) }.distinctUntilChanged()
+        hiddenIds: Flow<Set<String>> = flowOf(emptySet()),
+    ): Flow<Request> = combine(overriddenId, region, languages, hiddenIds) { id, r, l, h -> Request(id, r, l, h) }.distinctUntilChanged()
 
     /** Saved rows were fetched for [fetched] languages; once the languages differ they must not be reused. */
     fun skipsSavedRows(fetched: List<String>?, current: List<String>): Boolean = fetched != null && fetched != current

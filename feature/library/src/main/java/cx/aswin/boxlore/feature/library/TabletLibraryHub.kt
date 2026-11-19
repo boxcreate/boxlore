@@ -21,7 +21,15 @@ import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 
 @Composable
-internal fun TabletLibraryHub(state: LibraryUiState.Success, subscriptions: () -> Unit, liked: () -> Unit, downloads: () -> Unit, history: () -> Unit, modifier: Modifier) {
+internal fun TabletLibraryHub(
+    state: LibraryUiState.Success,
+    subscriptions: () -> Unit,
+    liked: () -> Unit,
+    downloads: () -> Unit,
+    history: () -> Unit,
+    modifier: Modifier,
+    playlists: LibraryPlaylistsCard? = null,
+) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(if (boxloreContentWidthDp() >= 640f) 2 else 1),
         modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxSize(),
@@ -34,6 +42,9 @@ internal fun TabletLibraryHub(state: LibraryUiState.Success, subscriptions: () -
         }
         item(key = "liked") {
             LibraryMenuCard("Liked Episodes", Icons.Rounded.Favorite, liked, MaterialTheme.colorScheme.tertiaryContainer, state.likedEpisodes.take(3).map { it.episodeImageUrl ?: it.podcastImageUrl ?: "" }, listOf(ExpressiveShapes.Heart, ExpressiveShapes.Star, ExpressiveShapes.SoftBurst))
+        }
+        playlists?.let { card ->
+            item(key = "playlists") { LibraryPlaylistsMenuCard(card) }
         }
         item(key = "downloads") {
             LibraryMenuCard("Downloads", Icons.Rounded.DownloadDone, downloads, MaterialTheme.colorScheme.primaryContainer, state.downloadedEpisodes.take(3).map { it.episodeImageUrl ?: it.podcastImageUrl ?: "" }, listOf(ExpressiveShapes.Hexagon, ExpressiveShapes.Gem, ExpressiveShapes.Cookie4))

@@ -13,11 +13,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
@@ -74,6 +80,7 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
         )
     }
     private val model = mock(PodcastInfoViewModel::class.java)
+    private val titlesOnly = MutableStateFlow(false)
     private lateinit var restoration: StateRestorationTester
 
     @Test
@@ -115,6 +122,23 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
         fixture.compose.runOnIdle { window.value = COMPACT }
         fixture.compose.waitForIdle()
         assertEquals(1, fixture.compose.onAllNodes(hasText("Episode 0")).fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun `titles only rows replace the episode cards across window changes and recreation, and the spotlight stays`() {
+        titlesOnly.value = true
+        render()
+        // The page keeps its own dress: the seal sits in the top bar until the list scrolls.
+        fixture.compose.onNodeWithContentDescription(SEAL_LABEL).assertExists()
+        val titleRows = {
+            fixture.compose.onNodeWithTag(LIST_TAG).performScrollToNode(hasTestTag(TITLE_ROW_TAG))
+            fixture.compose.onAllNodesWithTag(TITLE_ROW_TAG).onFirst().assertIsDisplayed()
+            spotlightOnce()
+        }
+        titleRows()
+        acrossWindowChanges(titleRows)
+        recreate(FOLD_TABLETOP)
+        titleRows()
     }
 
     @Test
@@ -208,10 +232,14 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
         `when`(model.downloadingEpisodeIds).thenReturn(MutableStateFlow(emptySet()))
         `when`(model.episodePendingDownloadRemoval).thenReturn(MutableStateFlow(null))
         `when`(model.hideCompletedInShowDetails).thenReturn(MutableStateFlow(false))
+        `when`(model.episodeTitlesOnly).thenReturn(titlesOnly)
         `when`(model.isPinnedToHome).thenReturn(MutableStateFlow(false))
+        `when`(model.isHidden).thenReturn(MutableStateFlow(false))
         `when`(model.pageShow).thenReturn(MutableStateFlow(PodcastInfoPageShow()))
         `when`(model.globalSkipBeginningMs).thenReturn(MutableStateFlow(0L))
         `when`(model.globalSkipEndingMs).thenReturn(MutableStateFlow(0L))
+        `when`(model.globalPlaybackSpeed).thenReturn(MutableStateFlow(1f))
+        `when`(model.globalTrimSilence).thenReturn(MutableStateFlow(false))
         `when`(model.autoDownloadBackgroundChecksEnabled).thenReturn(MutableStateFlow(false))
         `when`(model.completedEpisodesState).thenReturn(MutableStateFlow(emptySet()))
         `when`(model.likedEpisodesState).thenReturn(MutableStateFlow(emptySet()))
@@ -236,6 +264,8 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
         private const val COPYRIGHT_TITLE = "Artwork and logos"
         private const val SEAL_LABEL = "About this Showcase page"
         private const val SEAL_TITLE = "A Showcase page"
+        private const val LIST_TAG = "podcast_info_episode_list"
+        private const val TITLE_ROW_TAG = "podcast_info_episode_title_row"
         private val DESCRIPTION = List(12) { "A show about the things people make and why they matter." }.joinToString(" ")
         private val COMPACT = BoxloreWindowLayout(599f, 800f)
         private val TABLET = BoxloreWindowLayout(1_280f, 800f)
@@ -292,10 +322,14 @@ class DarkOnlyPageStatusBarTest {
         `when`(model.downloadingEpisodeIds).thenReturn(MutableStateFlow(emptySet()))
         `when`(model.episodePendingDownloadRemoval).thenReturn(MutableStateFlow(null))
         `when`(model.hideCompletedInShowDetails).thenReturn(MutableStateFlow(false))
+        `when`(model.episodeTitlesOnly).thenReturn(MutableStateFlow(false))
         `when`(model.isPinnedToHome).thenReturn(MutableStateFlow(false))
+        `when`(model.isHidden).thenReturn(MutableStateFlow(false))
         `when`(model.pageShow).thenReturn(MutableStateFlow(PodcastInfoPageShow()))
         `when`(model.globalSkipBeginningMs).thenReturn(MutableStateFlow(0L))
         `when`(model.globalSkipEndingMs).thenReturn(MutableStateFlow(0L))
+        `when`(model.globalPlaybackSpeed).thenReturn(MutableStateFlow(1f))
+        `when`(model.globalTrimSilence).thenReturn(MutableStateFlow(false))
         `when`(model.autoDownloadBackgroundChecksEnabled).thenReturn(MutableStateFlow(false))
         `when`(model.completedEpisodesState).thenReturn(MutableStateFlow(emptySet()))
         `when`(model.likedEpisodesState).thenReturn(MutableStateFlow(emptySet()))

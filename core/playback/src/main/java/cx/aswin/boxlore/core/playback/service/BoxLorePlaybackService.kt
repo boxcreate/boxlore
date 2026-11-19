@@ -17,6 +17,7 @@ import androidx.media3.session.MediaSession
 import cx.aswin.boxlore.core.catalog.content.CuratedMoods
 import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.playback.PlaybackActivationRequest
+import cx.aswin.boxlore.core.playback.PlaybackDiscontinuityPolicy
 import cx.aswin.boxlore.core.playback.PlaybackIntroOutroController
 import cx.aswin.boxlore.core.playback.PlaybackPowerPolicy
 import cx.aswin.boxlore.core.playback.PlaybackProgressCoordinator
@@ -229,8 +230,12 @@ open class BoxLorePlaybackService :
             onNaturalCompletion = this::persistNaturalCompletionFromLifecycle,
             onContextQueueExhausted = { player -> contextQueueContinuation.onExhausted(player) },
             onClearEndOfEpisodeSleep = this::clearEndOfEpisodeSleep,
+            onShowPlaybackResolved = { show -> showPlayback.onShowResolved(show) },
         ).also { introOutroControllerRef = it }
     }
+
+    /** Speed and trim silence: the playing show's own, else the app's ([ShowPlaybackApplier]). */
+    private val showPlayback by lazy { serviceShowPlaybackApplier({ playbackPlayer }, { localExoPlayer }) }
 
     private val progressCoordinator by lazy {
         PlaybackProgressCoordinator(
@@ -300,11 +305,7 @@ open class BoxLorePlaybackService :
                 reconcilePausedIdleTeardown(player)
             }
         }
-        serviceScope.launch {
-            userPreferencesRepository.playbackSpeedStream.collectLatest { savedSpeed ->
-                player.setPlaybackSpeed(savedSpeed.coerceIn(0.5f, 3.0f))
-            }
-        }
+        showPlayback.start(serviceScope, userPreferencesRepository, database.podcastDao()) { introOutroController.onSkipPreferencesChanged(player) }
         serviceScope.launch {
             userPreferencesRepository.skipBeginningMsStream.collectLatest { value ->
                 cachedSkipBeginningMs = PlaybackSkipPolicy.sanitizeTrim(value)
@@ -394,11 +395,9 @@ open class BoxLorePlaybackService :
                     newPosition: Player.PositionInfo,
                     reason: Int,
                 ) {
-                    android.util.Log.d(
-                        "BoxCastPlayer",
-                        "onPositionDiscontinuity: reason=$reason, from ${oldPosition.positionMs} to ${newPosition.positionMs}",
-                    )
-                    if (reason != Player.DISCONTINUITY_REASON_SEEK) {
+                    PlaybackDiscontinuityPolicy.log(reason, oldPosition.positionMs, newPosition.positionMs)
+                    // Trimmed silence is not a seek: the gap is neither heard nor counted as skipped.
+                    if (!PlaybackDiscontinuityPolicy.isSeek(reason)) {
                         telemetrySession.onPositionJump(oldPosition.positionMs, newPosition.positionMs, sameEpisode = isSameEpisode(oldPosition, newPosition))
                     } else {
                         telemetrySession.updateHeartbeatsForPosition(
@@ -762,7 +761,7 @@ open class BoxLorePlaybackService :
         newPosition: Player.PositionInfo,
         reason: Int,
     ) {
-        if (reason != Player.DISCONTINUITY_REASON_SEEK) {
+        if (!PlaybackDiscontinuityPolicy.isSeek(reason)) {
             telemetrySession.onPositionJump(oldPosition.positionMs, newPosition.positionMs, sameEpisode = isSameEpisode(oldPosition, newPosition))
             return
         }

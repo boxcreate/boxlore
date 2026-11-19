@@ -56,6 +56,8 @@ internal data class EpisodeSelectionToolbarActions(
     val onSelectAll: () -> Unit,
     val onSelectOlder: () -> Unit,
     val onSelectNewer: () -> Unit,
+    /** Null hides Add to playlist (no playlists on this build). */
+    val onAddToPlaylist: (() -> Unit)? = null,
 )
 
 @Composable
@@ -164,6 +166,17 @@ private fun EpisodeSelectionRangeMenu(
             expanded = expanded,
             onDismissRequest = { onExpandedChange(false) },
         ) {
+            actions.onAddToPlaylist?.let { addToPlaylist ->
+                RangeMenuItem(
+                    text = stringResource(R.string.episode_selection_add_playlist),
+                    enabled = state.actionsEnabled,
+                    onClick = {
+                        onExpandedChange(false)
+                        addToPlaylist()
+                    },
+                )
+                HorizontalDivider()
+            }
             RangeMenuItem(
                 text = stringResource(R.string.episode_selection_select_visible),
                 onClick = {

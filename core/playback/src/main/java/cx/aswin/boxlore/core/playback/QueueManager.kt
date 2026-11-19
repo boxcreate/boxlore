@@ -180,6 +180,29 @@ class QueueManager(private val queueRepository: QueueRepository, private val pla
         }
     }
 
+    /**
+     * Plays a playlist: replaces the queue with a copy of [episodes] (already in playlist order,
+     * starting with the one to play) tagged as [playlistId]'s, so Smart Queue waits until the last
+     * one. Reordering the queue afterwards never changes the playlist.
+     */
+    fun playPlaylist(
+        playlistId: String,
+        episodes: List<cx.aswin.boxlore.core.model.Episode>,
+        fallbackPodcast: cx.aswin.boxlore.core.model.Podcast,
+    ) {
+        val queue = PlaybackQueueContext.playlistEpisodes(episodes, playlistId)
+        if (queue.isEmpty()) return
+        PlaybackActivationRequest.clear()
+        scope.launch {
+            queueRepository.replaceQueue(queue)
+            val context = android.os.Bundle().apply {
+                putString("entry_point", PlaybackQueueContext.PLAYLIST)
+                putString("source_entry_point", PlaybackQueueContext.PLAYLIST)
+            }
+            playbackRepository.playQueue(queue, fallbackPodcast, sourceContext = context)
+        }
+    }
+
     fun dismissSameShowContinuation() {
         playbackRepository.dismissSameShowContinuation()
     }

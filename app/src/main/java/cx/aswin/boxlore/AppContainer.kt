@@ -95,6 +95,7 @@ import cx.aswin.boxlore.util.installOrigin
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -279,6 +280,8 @@ class AppContainer(
             onShowRenumbered = { oldId, answer -> subscriptionRepository.renumberedFollows.adoptAnswer(oldId, answer) },
             // Recommendations order follows after recent plays by when they were followed, never by title.
             followedAt = { database.podcastDao().getFollowedAtTimes().associate { it.podcastId to it.subscribedAt } },
+            // Shows hidden everywhere stay out of every discovery answer.
+            hiddenShows = { userPreferencesRepository.hiddenShows.matchIds() },
         )
     }
 
@@ -444,6 +447,7 @@ class AppContainer(
             podcastRepository = podcastRepository,
             rankingFeedbackRepository = rankingFeedbackRepository,
             userPreferencesRepository = userPreferencesRepository,
+            showPlaybackStore = cx.aswin.boxlore.core.playback.RoomShowPlaybackSettingsStore(database.podcastDao()),
         ).also { repository ->
             deferredCastSession.attach { isActive -> repository.synchronizeCastSession(isActive) }
         }
@@ -611,6 +615,14 @@ class AppContainer(
         )
     }
 
+    /** Playlists (Room v43): one episode once across its stored IDs, as the queue does. */
+    override val playlistRepository: cx.aswin.boxlore.core.catalog.PlaylistRepository by lazy {
+        cx.aswin.boxlore.core.catalog.RoomPlaylistRepository(
+            dao = database.playlistDao(),
+            episodeIds = { episodeId -> database.episodeListenerStore().memberIds(episodeId) },
+        )
+    }
+
     val legacyRssRepair: LegacyRssRepair by lazy {
         LegacyRssRepair.create(
             catalog =
@@ -767,6 +779,10 @@ class AppContainer(
     /** The scope a page hands work that must finish after the page closes, such as Mark all on a show. */
     val pageWorkScope: CoroutineScope get() = syncScope
 
+    /** Episode titles only, read once for the process so a show page opens with the stored choice rather than full rows first. */
+    val episodeTitlesOnly: kotlinx.coroutines.flow.StateFlow<Boolean> =
+        userPreferencesRepository.episodeTitlesOnlyStream.stateIn(syncScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, initialValue = false)
+
     /** The phone's end of the Wear OS link; it stays idle until boxlore on a watch makes contact. */
     val phoneWearLink: cx.aswin.boxlore.core.wearlink.PhoneWearLink by lazy {
         cx.aswin.boxlore.core.wearlink.PhoneWearLink(
@@ -866,6 +882,7 @@ class AppContainer(
             playedShowDao = database.playedShowDao(),
             listeningInsightsMaintenance = database.listeningInsightsMaintenance(),
             pendingOpmlImports = pendingOpmlImports,
+            playlistDao = database.playlistDao(),
         )
     }
 

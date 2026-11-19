@@ -52,6 +52,7 @@ class UserPreferencesRepository(context: Context,) {
     )
     private val library = LibraryPreferences(dataStore)
     private val subscriptionsLayout = SubscriptionsLayoutPreferences(dataStore)
+    private val showPage = ShowPagePreferences(dataStore)
     private val engagement = EngagementPreferences(dataStore)
     private val tips = TooltipPreferences(dataStore)
     private val reviews = ReviewPromptPreferences(dataStore)
@@ -437,6 +438,9 @@ class UserPreferencesRepository(context: Context,) {
 
     suspend fun removePodcastIdFromManualOrderAndPins(podcastId: String) = library.removePodcastIdFromManualOrderAndPins(podcastId)
 
+    /** The shows the listener hid everywhere; kept on an account switch. */
+    val hiddenShows = HiddenShowsPreferences(dataStore)
+
     suspend fun legacyRssRepairVersion(): Int = library.legacyRssRepairVersion()
 
     suspend fun markLegacyRssRepairVersion(version: Int) = library.markLegacyRssRepairVersion(version)
@@ -477,6 +481,12 @@ class UserPreferencesRepository(context: Context,) {
             preferences[Keys.PLAYBACK_SPEED] = speed
         }
     }
+
+    private val playbackAudio = PlaybackAudioPreferences(dataStore)
+
+    /** Trim silence: skips long pauses in episodes. Off by default; a show can set its own. */
+    val trimSilenceEnabledStream: Flow<Boolean> = playbackAudio.trimSilenceEnabled
+    suspend fun setTrimSilenceEnabled(enabled: Boolean) = playbackAudio.setTrimSilenceEnabled(enabled)
 
     val skipBeginningMsStream: Flow<Long> =
         playbackDurationStream(
@@ -683,6 +693,10 @@ class UserPreferencesRepository(context: Context,) {
             preferences[Keys.HIDE_COMPLETED_IN_SHOW_DETAILS] = hide
         }
     }
+
+    /** Show pages list episodes by title only, without artwork, descriptions or the action row (off by default). */
+    val episodeTitlesOnlyStream: Flow<Boolean> = showPage.episodeTitlesOnlyStream
+    suspend fun setEpisodeTitlesOnly(enabled: Boolean) = showPage.setEpisodeTitlesOnly(enabled)
 
     val hideCompletedInHomeStream: Flow<Boolean> =
         dataStore.data

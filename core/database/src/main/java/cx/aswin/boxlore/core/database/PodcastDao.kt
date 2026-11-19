@@ -115,6 +115,10 @@ interface PodcastDao {
     @Query("SELECT * FROM podcasts WHERE podcastId = :id")
     suspend fun getPodcast(id: String): PodcastEntity?
 
+    /** This show's row as it changes (null while it has none); playback follows the playing show's own settings with it. */
+    @Query("SELECT * FROM podcasts WHERE podcastId = :id")
+    fun observePodcast(id: String): Flow<PodcastEntity?>
+
     /**
      * Runs [move] in one transaction: it reads the old and new show rows of a follow moving from a
      * show Podcast Index renumbered, merges them and writes both through [upsert] (so each keeps its
@@ -205,6 +209,22 @@ interface PodcastDao {
         """,
     )
     suspend fun setPlaybackSkipOverrides(id: String, skipBeginningMs: Long?, skipEndingMs: Long?,)
+
+    /** This show's playback speed; null uses the app speed. Does nothing when the show has no row. */
+    @Query("UPDATE podcasts SET playbackSpeedOverride = :speed, isDirty = 1 WHERE podcastId = :id")
+    suspend fun setPlaybackSpeedOverride(id: String, speed: Float?)
+
+    /** This show's trim silence setting; null uses the app setting. Does nothing when the show has no row. */
+    @Query("UPDATE podcasts SET skipSilenceOverride = :enabled, isDirty = 1 WHERE podcastId = :id")
+    suspend fun setSkipSilenceOverride(id: String, enabled: Boolean?)
+
+    /** The player's change to this show's speed: cloud sync doesn't carry it, so the row isn't queued for upload. */
+    @Query("UPDATE podcasts SET playbackSpeedOverride = :speed WHERE podcastId = :id")
+    suspend fun setPlaybackSpeedOverrideLocally(id: String, speed: Float?)
+
+    /** The player's change to this show's trim silence; like [setPlaybackSpeedOverrideLocally], not queued for upload. */
+    @Query("UPDATE podcasts SET skipSilenceOverride = :enabled WHERE podcastId = :id")
+    suspend fun setSkipSilenceOverrideLocally(id: String, enabled: Boolean?)
 
     /** Partial-entity update — see [RssFeedStateUpdate] for why this isn't a plain `@Query`. */
     @Update(entity = PodcastEntity::class)

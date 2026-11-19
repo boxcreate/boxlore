@@ -64,7 +64,7 @@ class LibraryBackupListeningRoomTest {
         manager(target, PHONE_B).importLibraryFromJson(json)
 
         val exported = JsonParser.parseString(json).asJsonObject
-        assertEquals(10, exported["version"].asInt)
+        assertEquals(11, exported["version"].asInt)
         val listening = exported["listening"].asJsonObject
         assertEquals(PHONE_A, listening["deviceId"].asString)
         assertEquals("legacy-$PHONE_A", listening["dailySummaries"].asJsonArray[0].asJsonObject["deviceId"].asString)
