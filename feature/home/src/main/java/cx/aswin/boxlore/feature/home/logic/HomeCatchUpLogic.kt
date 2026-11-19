@@ -45,12 +45,14 @@ internal object HomeCatchUpLogic {
      * Sorts each show's fresh episode into unplayed, in progress or finished. [completedEpisodeIds]
      * holds every completed episode, so one finished long ago, or among many marked played at
      * once, counts as finished even when [allHistory] (recent history) no longer holds its row.
+     * An episode in [dismissedEpisodeIds] (archived) is left out of every bucket.
      */
     fun buildCatchUpBuckets(
         subs: List<Podcast>,
         allHistory: List<HomeListeningHistoryItem>,
         resolvedSerial: Map<String, Episode>,
         completedEpisodeIds: Set<String> = emptySet(),
+        dismissedEpisodeIds: Set<String> = emptySet(),
     ): CatchUpBuckets {
         val unplayedBucket = mutableListOf<Podcast>()
         val inProgressBucket = mutableListOf<Pair<Podcast, Long>>()
@@ -62,7 +64,8 @@ internal object HomeCatchUpLogic {
 
         try {
             for (pod in subs) {
-                val freshEpisode = resolveFreshEpisode(pod, resolvedSerial) ?: continue
+                // An archived episode is in no bucket: it is neither new nor played.
+                val freshEpisode = resolveFreshEpisode(pod, resolvedSerial)?.takeIf { it.id !in dismissedEpisodeIds } ?: continue
                 val freshEpisodeWithContext =
                     freshEpisode.copy(
                         podcastTitle = pod.title,

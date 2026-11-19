@@ -463,6 +463,8 @@ internal data class LatestTabConfig(
     val isRefreshing: Boolean = false,
     /** Rows swiped to played whose Undo still shows: drawn as played, hidden with Hide played. */
     val pendingPlayedEpisodeIds: Set<String> = emptySet(),
+    /** Archived episodes, never listed. */
+    val dismissedEpisodeIds: Set<String> = emptySet(),
 )
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -477,7 +479,7 @@ internal fun LatestTabContent(
     ) -> Map<String, Double>,
     actions: LatestTabActions,
 ) {
-    val allWithLatest = remember(podcasts) { podcasts.filter { it.latestEpisode != null } }
+    val allWithLatest = remember(podcasts, config.dismissedEpisodeIds) { latestWithoutArchived(podcasts, config.dismissedEpisodeIds) }
     val episodePodcasts = remember(allWithLatest, config.hideCompleted, config.pendingPlayedEpisodeIds) {
         visibleLatestPodcasts(allWithLatest, config.hideCompleted, config.pendingPlayedEpisodeIds)
     }

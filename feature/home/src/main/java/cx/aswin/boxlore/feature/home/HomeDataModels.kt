@@ -28,6 +28,8 @@ data class HomeDataWrapper(
     val resolvedSerial: Map<String, Episode>,
     val recommendations: List<Episode> = emptyList(),
     val completedEpisodeIds: Set<String> = emptySet(),
+    /** Archived episodes: no Home list offers them. */
+    val dismissedEpisodeIds: Set<String> = emptySet(),
     val isTrendingLoaded: Boolean = false,
     val isRecommendationsLoaded: Boolean = false,
     val hasDismissedImportBanner: Boolean = false,
@@ -75,6 +77,7 @@ internal data class HomeRecsSlice(
     val isRecommendationsLoaded: Boolean,
     val hasDismissedImportBanner: Boolean,
     val staleRestartEnabled: Boolean = true,
+    val dismissedEpisodeIds: Set<String> = emptySet(),
 )
 
 internal data class HomeBriefingSlice(

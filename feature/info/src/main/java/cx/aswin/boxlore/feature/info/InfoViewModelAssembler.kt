@@ -100,6 +100,7 @@ object InfoViewModelAssembler {
         userPrefs = userPrefs,
         localCatalog = deps.localCatalog,
         episodeOfflineLookup = deps.episodeOfflineLookup,
+        applicationScope = deps.applicationScope,
     )
 
     fun episodeInfoFactory(

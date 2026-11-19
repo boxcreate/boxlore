@@ -1245,6 +1245,7 @@ class PodcastInfoAdaptiveTransitionTest {
         `when`(model.globalTrimSilence).thenReturn(MutableStateFlow(false))
         `when`(model.autoDownloadBackgroundChecksEnabled).thenReturn(MutableStateFlow(true))
         `when`(model.completedEpisodesState).thenReturn(completed)
+        stubArchive(model)
         `when`(model.likedEpisodesState).thenReturn(MutableStateFlow(emptySet()))
         `when`(model.episodePlaybackState).thenReturn(MutableStateFlow(emptyMap()))
         doAnswer { invocation ->

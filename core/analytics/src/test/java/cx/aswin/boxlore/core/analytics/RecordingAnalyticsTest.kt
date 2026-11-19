@@ -167,8 +167,8 @@ class DeriveGenrePersonaTest {
 class AnalyticsGlossaryAllowlistTest {
     @Test
     fun `phase A union B has expected cardinality`() {
-        // 40 Phase A (with onboarding_similar_choice, the two listen events and the two screen events) + 1 A/B + 30 Phase B (with playlist_modified) + 5 Support + 2 custom-theme + 1 hero-style + 1 LeaveMeAlone events.
-        assertEquals(86, AnalyticsGlossary.PHASE_A_UNION_B.size)
+        // 40 Phase A (with onboarding_similar_choice, the two listen events and the two screen events) + 1 A/B + 31 Phase B (with playlist_modified and episode_archived) + 5 Support + 2 custom-theme + 1 hero-style + 1 LeaveMeAlone events.
+        assertEquals(87, AnalyticsGlossary.PHASE_A_UNION_B.size)
     }
 
     @Test

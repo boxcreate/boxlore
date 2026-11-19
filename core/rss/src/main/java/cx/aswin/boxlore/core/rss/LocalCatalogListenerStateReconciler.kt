@@ -9,6 +9,7 @@ import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.ListeningRollupMerge
 import cx.aswin.boxlore.core.database.LocalEpisodeEntity
+import cx.aswin.boxlore.core.database.dismissedAtValue
 import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
@@ -304,7 +305,8 @@ internal class LocalCatalogListenerStateReconciler(
  * [old]'s row merged into the catalog row [target]. Progress, length and play time keep the larger
  * value. The like is the latest like decision across both rows and [groupState] (the episode's
  * group settings), so an older liked row can't undo a later unlike. Completion is kept from either
- * row unless [groupState] records a later clear (own-episode-IDs P4, plan section 8).
+ * row unless [groupState] records a later clear (own-episode-IDs P4, plan section 8). The archive
+ * is the latest archive decision across both rows and [groupState], as the like is.
  */
 internal fun mergeHistory(
     old: ListeningHistoryEntity,
@@ -315,6 +317,7 @@ internal fun mergeHistory(
     val rows = listOfNotNull(old, existing)
     val like = EpisodeListenerProjection.likeDecision(rows, groupState)
     val completed = ListenerStateMoves.mergedCompletion(rows, groupState)
+    val dismissed = EpisodeListenerProjection.dismissDecision(rows, groupState)
     return old.copy(
         episodeId = target.episodeId,
         episodeTitle = target.title,
@@ -326,6 +329,7 @@ internal fun mergeHistory(
         isLiked = like.value,
         likedAt = maxOf(old.likedAt, existing?.likedAt ?: 0L, like.at),
         lastPlayedAt = maxOf(old.lastPlayedAt, existing?.lastPlayedAt ?: 0L),
+        dismissedAt = dismissedAtValue(dismissed.value, dismissed.at),
         isDirty = true,
         syncedAt = 0L,
         enclosureType = listOfNotNull(target.enclosureType, existing?.enclosureType, old.enclosureType).firstOrNull(),

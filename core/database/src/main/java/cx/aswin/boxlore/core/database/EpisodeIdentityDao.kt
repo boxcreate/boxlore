@@ -129,6 +129,14 @@ interface EpisodeIdentityDao {
     @Query("SELECT * FROM episode_group_state WHERE completedAt > completeClearedAt")
     suspend fun completedGroupStates(): List<EpisodeGroupStateEntity>
 
+    /** Episodes whose shared settings record an archive that wasn't cleared later (Room v45). */
+    @Query("SELECT * FROM episode_group_state WHERE dismissedAt > dismissClearedAt")
+    suspend fun dismissedGroupStates(): List<EpisodeGroupStateEntity>
+
+    /** Episodes whose shared settings record any archive decision, either way (Room v45). */
+    @Query("SELECT * FROM episode_group_state WHERE dismissedAt != 0 OR dismissClearedAt != 0")
+    suspend fun dismissDecidedGroupStates(): List<EpisodeGroupStateEntity>
+
     /**
      * Deletes one episode's shared settings (its history was removed). Returns the rows deleted.
      *

@@ -11,6 +11,7 @@ import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.core.model.isLatestEpisodeNew
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
+import cx.aswin.boxlore.core.playback.dismissedEpisodeIds
 import cx.aswin.boxlore.core.playback.inProgressForEpisodeLookup
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
@@ -56,6 +57,7 @@ internal constructor(
     sortName: Flow<String>,
     completedEpisodeIds: Flow<Set<String>> = flowOf(emptySet()),
     inProgress: Flow<List<ListeningHistoryEntity>> = flowOf(emptyList()),
+    dismissedEpisodeIds: Flow<Set<String>> = flowOf(emptySet()),
     hideCompleted: Flow<Boolean>,
     useSmart: Flow<Boolean>,
     lastSeen: Flow<Map<String, String>>,
@@ -75,6 +77,7 @@ internal constructor(
         sortName = userPreferencesRepository.subscriptionSortStream,
         completedEpisodeIds = playbackRepository.completedEpisodeIds,
         inProgress = playbackRepository.inProgressForEpisodeLookup,
+        dismissedEpisodeIds = playbackRepository.dismissedEpisodeIds,
         hideCompleted = userPreferencesRepository.hideCompletedInSubsStream,
         useSmart = userPreferencesRepository.latestEpisodesSortUseSmartStream,
         lastSeen = userPreferencesRepository.lastSeenEpisodesStream,
@@ -111,8 +114,14 @@ internal constructor(
             combine(podcasts, rankingHistory(history), sortName) { podcastList, signedHistory, sort ->
                 Triple(podcastList, signedHistory, sort)
             },
-            combine(hideCompleted, useSmart, lastSeen, completedEpisodeIds, startedEpisodes(inProgress)) { hide, smart, seen, completed, started ->
-                Filters(hide, smart, seen, completed, started)
+            combine(
+                hideCompleted,
+                useSmart,
+                lastSeen,
+                combine(completedEpisodeIds, dismissedEpisodeIds) { completed, dismissed -> completed to dismissed },
+                startedEpisodes(inProgress),
+            ) { hide, smart, seen, (completed, dismissed), started ->
+                Filters(hide, smart, seen, completed, started, dismissed)
             },
         ) { podcastsHistorySort, filters ->
             val (podcastList, signedHistory, sort) = podcastsHistorySort
@@ -136,7 +145,8 @@ internal constructor(
                     },
                 )
 
-            val sortedLatest = sortLatest(latestEpisodePool(enriched, inputs.filters.hideCompleted), inputs.history, inputs.filters.useSmart)
+            val pool = latestEpisodePool(enriched, inputs.filters.hideCompleted, inputs.filters.dismissedIds)
+            val sortedLatest = sortLatest(pool, inputs.history, inputs.filters.useSmart)
             val episodeRows =
                 LibraryWidgetLogic.truncateEpisodes(
                     sortedLatest.mapNotNull { podcast ->
@@ -174,6 +184,7 @@ internal constructor(
         val lastSeen: Map<String, String>,
         val completedIds: Set<String>,
         val inProgress: List<ListeningHistoryEntity>,
+        val dismissedIds: Set<String> = emptySet(),
     )
 
     private data class Inputs(
@@ -249,9 +260,12 @@ internal constructor(
     private fun parseSort(name: String): ShowSort = runCatching { ShowSort.valueOf(name) }.getOrDefault(ShowSort.SmartRank)
 
     companion object {
-        /** The shows whose latest episode New Episodes lists: all of them, or only the unfinished ones. */
-        fun latestEpisodePool(enriched: List<Podcast>, hideCompleted: Boolean): List<Podcast> {
-            val withLatest = enriched.filter { it.latestEpisode != null }
+        /**
+         * The shows whose latest episode New Episodes lists: all of them, or only the unfinished ones.
+         * An archived latest episode ([dismissedIds]) is never listed, whatever the setting.
+         */
+        fun latestEpisodePool(enriched: List<Podcast>, hideCompleted: Boolean, dismissedIds: Set<String> = emptySet()): List<Podcast> {
+            val withLatest = enriched.filter { it.latestEpisode != null && it.latestEpisode!!.id !in dismissedIds }
             return if (hideCompleted) withLatest.filter { it.episodeStatus != EpisodeStatus.COMPLETED } else withLatest
         }
 

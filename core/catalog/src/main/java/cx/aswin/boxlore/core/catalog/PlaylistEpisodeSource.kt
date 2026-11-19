@@ -4,14 +4,15 @@ import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.PlaylistDao
 import cx.aswin.boxlore.core.database.PlaylistEpisodeRow
 import cx.aswin.boxlore.core.database.PlaylistShowRow
+import cx.aswin.boxlore.core.database.isDismissed
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.PlaylistOrder
 import cx.aswin.boxlore.core.model.isTrailer
 
 /**
  * Pure rules for what a playlist plays, unit-tested without Room: an episode plays when it has
- * audio, isn't a trailer, isn't finished (under any of its IDs, which the history map already
- * projects) and isn't excluded; episodes midway through come first, most recently played first,
+ * audio, isn't a trailer, isn't finished or archived (under any of its IDs, which the history map
+ * already projects) and isn't excluded; episodes midway through come first, most recently played first,
  * so Play resumes the one the listener was last in.
  */
 internal object PlaylistEpisodeSelection {
@@ -19,7 +20,8 @@ internal object PlaylistEpisodeSelection {
         episode.audioUrl.isNotBlank() &&
             !episode.isTrailer &&
             episode.id !in excluded &&
-            history[episode.id]?.isCompleted != true
+            history[episode.id]?.isCompleted != true &&
+            history[episode.id]?.isDismissed != true
 
     /**
      * The episodes to play: [inProgress] that still play (most recently played first, as given),

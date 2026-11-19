@@ -32,6 +32,7 @@ import cx.aswin.boxlore.feature.info.PodcastInfoScreen
 import cx.aswin.boxlore.feature.info.PodcastInfoUiState
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPageShow
+import cx.aswin.boxlore.feature.info.stubArchive
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assume.assumeTrue
@@ -191,6 +192,7 @@ class BrandedPagesPhoneGoldenTest(private val show: String, private val dark: Bo
         `when`(model.globalTrimSilence).thenReturn(MutableStateFlow(false))
         `when`(model.autoDownloadBackgroundChecksEnabled).thenReturn(MutableStateFlow(false))
         `when`(model.completedEpisodesState).thenReturn(MutableStateFlow(emptySet()))
+        stubArchive(model)
         `when`(model.likedEpisodesState).thenReturn(MutableStateFlow(emptySet()))
         // "-partway": the latest episode is 38% heard.
         val partway = if (show.endsWith("-partway")) {

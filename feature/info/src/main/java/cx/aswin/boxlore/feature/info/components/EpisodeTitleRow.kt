@@ -64,6 +64,8 @@ internal data class EpisodeTitleRowState(
     val timeLeft: String? = null,
     val isCompleted: Boolean = false,
     val isUpNext: Boolean = false,
+    /** Archived: listed only with Show archived on or in a search, and marked. */
+    val isArchived: Boolean = false,
     val selectionActive: Boolean = false,
     val isSelected: Boolean = false,
 )
@@ -111,6 +113,7 @@ internal fun EpisodeTitleRow(
             }
             Column(Modifier.weight(1f).padding(vertical = 2.dp)) {
                 if (state.isUpNext) EpisodeTitleRowUpNext()
+                if (state.isArchived) EpisodeArchivedPill()
                 Text(
                     text = episode.title,
                     style = MaterialTheme.typography.titleMedium,
@@ -152,6 +155,7 @@ internal fun NormalEpisodeTitleRow(
             timeLeft = playState?.timeLeft,
             isCompleted = episode.id in ui.indicators.completedEpisodeIds,
             isUpNext = episode.id == ui.autoScrolledEpisodeId,
+            isArchived = episode.id in ui.indicators.archivedEpisodeIds,
             selectionActive = selection.isActive,
             isSelected = episode.id in selection.selectedEpisodeIds,
         ),

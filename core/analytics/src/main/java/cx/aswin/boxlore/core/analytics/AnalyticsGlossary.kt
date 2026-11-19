@@ -69,6 +69,7 @@ object AnalyticsGlossary {
             "playlist_modified",
             "episode_liked_toggled",
             "episode_mark_played",
+            "episode_archived",
             "download_requested",
             "download_completed",
             "download_failed",

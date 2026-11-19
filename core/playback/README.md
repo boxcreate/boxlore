@@ -39,10 +39,10 @@ It does not own the Room schema ([`:core:database`](../database/README.md)), pre
 
 ### History and listening records
 
-- `PlaybackHistoryStore` (mappers in `PlaybackHistoryMappings.kt`): history reads and writes, likes, completion, and removal with Undo.
+- `PlaybackHistoryStore` (mappers in `PlaybackHistoryMappings.kt`): history reads and writes, likes, completion, archive (`setEpisodesDismissed`; playing unarchives) and removal with Undo.
 - `PlaybackProgressCoordinator` and `PlaybackProgressPersistencePolicy`: sequence-stamped saves, so an older write never replaces a later seek or restart.
-- `PlaybackSessionRestoreHelper`, `PlaybackControllerStatePolicy` and `logic.PlaybackHistorySeedPolicy`: restores never replace Room's progress with an empty controller's, and missing rows are seeded from service metadata.
-- `IdleSessionHandoff`: a newer cloud session takes the idle mini-player only when it is empty or the session is a different, more recently played episode.
+- `PlaybackSessionRestoreHelper`, `PlaybackControllerStatePolicy` and `logic.PlaybackHistorySeedPolicy`: restores never replace Room's progress with an empty controller's; missing rows are seeded from service metadata.
+- `IdleSessionHandoff`: a newer cloud session takes the idle mini-player only when empty or for a different, more recently played episode.
 - `observeInsights`, `observePlayedShows`, `observeFullHistoryTimeline` and `observeListeningByDay` (last two `throttleLatest`) read every stored row; insights and timeline keep only real listening (`countsAsListening`).
 - `PlaybackFinishes`: when this phone last played an episode to the end; the app persists `onRecorded` for Home's survey and review prompts.
 
@@ -95,7 +95,7 @@ It does not own the Room schema ([`:core:database`](../database/README.md)), pre
 An episode can be stored under several IDs; the rules are in [`docs/EPISODE_IDS.md` §5](../../docs/EPISODE_IDS.md#5-aliases-on-the-phone). Playback goes through `:core:database`'s `EpisodeListenerStore`:
 
 - The media ID stays the one playback started with and is never translated mid-playback.
-- Progress goes to the owner row; likes and completion write an absolute target to every trusted ID.
+- Progress goes to the owner row; likes, completion and archive write an absolute target to every trusted ID.
 - Start positions, lists, Smart Queue sources and Android Auto read the projected state, so an episode counts once.
 - The queue holds an episode once across its IDs (`QueueAliasPolicy`); removals record every ID.
 - Media items play the bytes of the ID holding the download (`EpisodeListenerStore.downloadHolders`).

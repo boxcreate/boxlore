@@ -21,7 +21,7 @@ Models:
 
 Listening history:
 
-- `ListeningHistoryItem`: a history row with `firstPlayedAt` and `finishedAt` (null: not yet; 0: before boxlore recorded them; else epoch ms).
+- `ListeningHistoryItem`: a history row with `firstPlayedAt` and `finishedAt` (null: not yet; 0: before boxlore recorded them; else epoch ms) and its signed archive decision `dismissedAt`.
 - `ListeningDayEpisode`: one day's timed listening of an episode, with time by part of day, output, source and new releases, and `releaseKnownMs`.
 - `ListeningPlayedShow`: a show from history with its first and last plays.
 - `ListeningPeriod`, `ListeningInsightSummary`: the periods and summaries behind Listening history's insights.

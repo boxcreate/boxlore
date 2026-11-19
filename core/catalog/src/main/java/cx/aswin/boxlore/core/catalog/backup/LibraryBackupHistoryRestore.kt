@@ -32,5 +32,7 @@ internal object LibraryBackupHistoryRestore {
         // Version 8+; older backups have none, and the restore keeps a stored row's earlier dates.
         firstPlayedAt = entity.firstPlayedAt?.takeIf { it >= 0L },
         finishedAt = entity.finishedAt?.takeIf { it >= 0L },
+        // The archive decision (Room v45), signed like the row; backups made before it read 0, never decided.
+        dismissedAt = entity.dismissedAt,
     )
 }

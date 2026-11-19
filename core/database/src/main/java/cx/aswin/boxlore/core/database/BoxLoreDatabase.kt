@@ -35,7 +35,7 @@ import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
         PlaylistEntity::class,
         PlaylistShowEntity::class,
     ],
-    version = 44,
+    version = 45,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -373,6 +373,13 @@ abstract class BoxLoreDatabase : RoomDatabase() {
             }
         }
 
+        /** Archived episodes; see [DismissedEpisodesMigration]. Never edit it once shipped; later changes go to v46. */
+        private val MIGRATION_44_45 = object : Migration(44, 45) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                DismissedEpisodesMigration.migrate(db)
+            }
+        }
+
         /**
          * Every upgrade path, in order. Production and the upgrade tests open the database through
          * [builder] with this list, so the tests run exactly the migrations a phone runs.
@@ -415,6 +422,7 @@ abstract class BoxLoreDatabase : RoomDatabase() {
             MIGRATION_42_43,
             MIGRATION_43_44,
             MIGRATION_42_44,
+            MIGRATION_44_45,
         )
 
         /** Versions older than the first migration (12→13). Only these may still be wiped on upgrade. */

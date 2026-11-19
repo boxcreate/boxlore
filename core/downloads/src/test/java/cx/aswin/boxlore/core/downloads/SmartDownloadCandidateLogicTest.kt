@@ -332,6 +332,32 @@ class SmartDownloadCandidateLogicTest {
     }
 
     @Test
+    fun `generate mixtape candidates never offer an archived episode, started or not`() {
+        val pod1 = podcastEntity("pod1", latestEpisode = episode("trailer-1", "pod1", publishedDate = nowSeconds))
+        val pod2 = podcastEntity("pod2", latestEpisode = episode("drop-2", "pod2", publishedDate = nowSeconds))
+        val historyList = listOf(
+            history("resume-archived", "pod1", progressMs = 40_000, lastPlayedAt = nowMs - 1_000),
+            history("resume-2", "pod2", progressMs = 40_000, lastPlayedAt = nowMs - 2_000),
+        )
+
+        val candidates =
+            SmartDownloadCandidateLogic.generateMixtapeCandidates(
+                subs = listOf(pod1, pod2),
+                allHistory = historyList,
+                historyByEpisode = historyList.associateBy { it.episodeId },
+                resolvedSerial = emptyMap(),
+                completedEpisodeIds = emptySet(),
+                podScoresMap = emptyMap(),
+                nowMs = nowMs,
+            ).withoutArchived(dismissedEpisodeIds = setOf("trailer-1", "resume-archived"))
+
+        val ids = candidates.map { it.episodeId }
+        assertFalse(ids.contains("trailer-1"))
+        assertFalse(ids.contains("resume-archived"))
+        assertTrue(ids.contains("resume-2"))
+    }
+
+    @Test
     fun `a show switched to its feed offers the episode its old show was playing once`() {
         // "rss:feed" replaced Podcast Index show "pi-show", whose rows stay under that show.
         val feedShow = podcastEntity("rss:feed").copy(sourceType = PodcastEntity.SOURCE_RSS, linkedPodcastIndexId = "pi-show")

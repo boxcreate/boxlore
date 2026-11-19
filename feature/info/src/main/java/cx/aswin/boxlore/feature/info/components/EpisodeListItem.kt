@@ -69,6 +69,7 @@ fun EpisodeListItem(
     isQueued: Boolean,
     isCompleted: Boolean,
     isUpNext: Boolean = false,
+    isArchived: Boolean = false,
     selectionActive: Boolean = false,
     isSelected: Boolean = false,
     onClick: () -> Unit,
@@ -166,6 +167,7 @@ fun EpisodeListItem(
 
                 // Text Content
                 Column(modifier = Modifier.weight(1f)) {
+                    if (isArchived) EpisodeArchivedPill()
                     if (isUpNext) {
                         Surface(
                             shape = ExpressiveShapes.Pill,

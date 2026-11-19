@@ -59,7 +59,7 @@ class RoomV43UpgradeTest {
     fun showsKeepTheirValuesAndReadNoPerShowSpeedOrTrimSilence() = runBlocking<Unit> {
         val db = upgrade()
 
-        assertEquals(44, db.openHelper.writableDatabase.version)
+        assertEquals(45, db.openHelper.writableDatabase.version)
         val show = db.podcastDao().getPodcast(SHOW)!!
         assertEquals("Show $SHOW", show.title)
         assertEquals("History", show.genre)

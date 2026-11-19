@@ -197,7 +197,7 @@ interface PlaylistDao {
     @Query(
         """
         SELECT * FROM listening_history
-        WHERE isCompleted = 0 AND progressMs >= :minProgressMs AND progressMs > 0 AND podcastId IN (:podcastIds)
+        WHERE isCompleted = 0 AND dismissedAt <= 0 AND progressMs >= :minProgressMs AND progressMs > 0 AND podcastId IN (:podcastIds)
         ORDER BY lastPlayedAt DESC LIMIT :limit
         """,
     )
@@ -217,9 +217,9 @@ private const val STORED_EPISODES =
     "SELECT $EPISODE_COLUMNS FROM local_episodes WHERE podcastId IN (:podcastIds) " +
         "UNION ALL SELECT $EPISODE_COLUMNS FROM rss_episodes WHERE podcastId IN (:podcastIds)"
 
-/** Not finished under its own ID; the caller still checks the episode's other IDs. */
+/** Not finished nor archived under its own ID; the caller still checks the episode's other IDs. */
 private const val NOT_FINISHED =
-    "NOT EXISTS (SELECT 1 FROM listening_history h WHERE h.episodeId = e.episodeId AND h.isCompleted = 1)"
+    "NOT EXISTS (SELECT 1 FROM listening_history h WHERE h.episodeId = e.episodeId AND (h.isCompleted = 1 OR h.dismissedAt > 0))"
 
 private const val STORED_EPISODES_BY_ID =
     "SELECT $EPISODE_COLUMNS FROM local_episodes WHERE episodeId IN (:episodeIds) " +

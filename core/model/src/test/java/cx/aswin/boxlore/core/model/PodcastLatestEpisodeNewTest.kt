@@ -104,4 +104,14 @@ class PodcastLatestEpisodeNewTest {
             )
         assertFalse(podcast.isLatestEpisodeNew(null))
     }
+
+    @Test
+    fun anArchivedLatestEpisodeCountsAsSeen() {
+        val trailerShow = podcast(latestEpisode = episode(id = "trailer"))
+        val lastSeen = lastSeenWithArchived(mapOf("other" to "x"), listOf(trailerShow), dismissedIds = setOf("trailer"))
+
+        assertFalse(trailerShow.isLatestEpisodeNew(lastSeen[trailerShow.id]))
+        assertTrue(trailerShow.isLatestEpisodeNew(lastSeenWithArchived(emptyMap(), listOf(trailerShow), setOf("older"))[trailerShow.id]))
+        assertTrue(lastSeenWithArchived(mapOf("other" to "x"), listOf(trailerShow), emptySet()) == mapOf("other" to "x"))
+    }
 }

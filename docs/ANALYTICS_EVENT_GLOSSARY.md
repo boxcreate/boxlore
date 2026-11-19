@@ -147,6 +147,7 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 | `playlist_modified` | Playlist create/delete/add_show/remove_show/play (`action`; renames and order changes are not sent), from library or show_page (`source`); `items_count` is the episodes a play queued or, for a library add_show, the shows added; `playlist_size` the shows in the playlist | action:string; source:string | items_count:int; playlist_size:int | none |
 | `episode_liked_toggled` | Like/unlike episode | episode_id:string; podcast_id:string; is_liked:bool | recipe_id:string; surface:string | none |
 | `episode_mark_played` | User marked episode played/unplayed | episode_id:string; podcast_id:string; is_played:bool | recipe_id:string; surface:string | none |
+| `episode_archived` | Listener archived episodes (left their lists without being marked played) or brought them back; one event per action, however many episodes it covered | is_archived:bool; surface:string; items_count:int | none | none |
 | `download_requested` | User or Smart Downloads requested download | episode_id:string; podcast_id:string; source:string | recipe_id:string; wifi_only:bool | none |
 | `download_completed` | Episode finished downloading | episode_id:string; podcast_id:string | recipe_id:string; source:string; bytes:long; duration_ms:long | none |
 | `download_failed` | Download failed | error_type:string | episode_id:string; recipe_id:string; podcast_id:string; source:string; error_message:string | none |

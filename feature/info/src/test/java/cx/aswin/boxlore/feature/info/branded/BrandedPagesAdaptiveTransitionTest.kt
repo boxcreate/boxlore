@@ -43,6 +43,7 @@ import cx.aswin.boxlore.feature.info.PodcastInfoUiState
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
 import cx.aswin.boxlore.feature.info.branded.waveform.WaveformPage
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPageShow
+import cx.aswin.boxlore.feature.info.stubArchive
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -242,6 +243,7 @@ internal class BrandedPagesAdaptiveTransitionTest(private val page: BrandedShowP
         `when`(model.globalTrimSilence).thenReturn(MutableStateFlow(false))
         `when`(model.autoDownloadBackgroundChecksEnabled).thenReturn(MutableStateFlow(false))
         `when`(model.completedEpisodesState).thenReturn(MutableStateFlow(emptySet()))
+        stubArchive(model)
         `when`(model.likedEpisodesState).thenReturn(MutableStateFlow(emptySet()))
         `when`(model.episodePlaybackState).thenReturn(MutableStateFlow(emptyMap()))
         fixture.prepare()
@@ -332,6 +334,7 @@ class DarkOnlyPageStatusBarTest {
         `when`(model.globalTrimSilence).thenReturn(MutableStateFlow(false))
         `when`(model.autoDownloadBackgroundChecksEnabled).thenReturn(MutableStateFlow(false))
         `when`(model.completedEpisodesState).thenReturn(MutableStateFlow(emptySet()))
+        stubArchive(model)
         `when`(model.likedEpisodesState).thenReturn(MutableStateFlow(emptySet()))
         `when`(model.episodePlaybackState).thenReturn(MutableStateFlow(emptyMap()))
         fixture.prepare()

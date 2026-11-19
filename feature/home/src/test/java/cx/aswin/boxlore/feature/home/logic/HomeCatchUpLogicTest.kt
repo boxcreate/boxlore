@@ -144,4 +144,24 @@ class HomeCatchUpLogicTest {
         isLiked = false,
         lastPlayedAt = 1L,
     )
+
+    @Test
+    fun `an archived fresh episode is in no catch up bucket, played or not`() {
+        val trailer = TestFixtures.episode(id = "ep-trailer", podcastId = "t")
+        val started = TestFixtures.episode(id = "ep-started", podcastId = "s")
+        val fresh = TestFixtures.episode(id = "ep-fresh", podcastId = "f")
+        val subs =
+            listOf(
+                TestFixtures.podcast(id = "t", title = "T").copy(latestEpisode = trailer),
+                TestFixtures.podcast(id = "s", title = "S").copy(latestEpisode = started),
+                TestFixtures.podcast(id = "f", title = "F").copy(latestEpisode = fresh),
+            )
+        val history = listOf(history(episodeId = "ep-started", podcastId = "s", progressMs = 10_000L, durationMs = 100_000L, completed = false))
+
+        val buckets = HomeCatchUpLogic.buildCatchUpBuckets(subs, history, resolvedSerial = emptyMap(), dismissedEpisodeIds = setOf("ep-trailer", "ep-started"))
+
+        assertEquals(listOf("f"), buckets.unplayed.map { it.id })
+        assertEquals(emptyList<String>(), buckets.inProgress.map { it.first.id })
+        assertEquals(emptyList<String>(), buckets.completed.map { it.first.id })
+    }
 }

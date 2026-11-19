@@ -51,6 +51,13 @@ data class ListeningHistorySyncDto(
     /** First play and first finish by listening (Room v40): null unknown, 0 before recording, else epoch ms. Older servers ignore them. */
     @SerialName("firstPlayedAt") val firstPlayedAt: Long? = null,
     @SerialName("finishedAt") val finishedAt: Long? = null,
+    /**
+     * The listener's archive decision (Room v45): 0 never decided (not sent), positive archived at
+     * that epoch ms, negative brought back at minus that time. The newer decision wins, compared on
+     * the time alone, like [likedAt]. A server that doesn't know the field drops it; this device then
+     * keeps its own decision.
+     */
+    @SerialName("dismissedAt") val dismissedAt: Long = 0L,
 )
 
 @Serializable

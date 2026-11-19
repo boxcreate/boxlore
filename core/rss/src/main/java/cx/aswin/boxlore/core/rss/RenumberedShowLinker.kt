@@ -196,8 +196,8 @@ internal object RenumberedShowLinks {
     }
 
     /**
-     * The old episode's group settings ([former]) merged into the new one's ([current]): each like
-     * and completion decision keeps its latest time, as the projected state reads them. Null when
+     * The old episode's group settings ([former]) merged into the new one's ([current]): each like,
+     * completion and archive decision keeps its latest time, as the projected state reads them. Null when
      * the old episode has none.
      */
     fun mergedGroupState(former: EpisodeGroupStateEntity?, current: EpisodeGroupStateEntity?, currentId: String, key: String): EpisodeGroupStateEntity? {
@@ -208,6 +208,8 @@ internal object RenumberedShowLinks {
             likeClearedAt = maxOf(base.likeClearedAt, former.likeClearedAt),
             completedAt = maxOf(base.completedAt, former.completedAt),
             completeClearedAt = maxOf(base.completeClearedAt, former.completeClearedAt),
+            dismissedAt = maxOf(base.dismissedAt, former.dismissedAt),
+            dismissClearedAt = maxOf(base.dismissClearedAt, former.dismissClearedAt),
             version = maxOf(base.version, former.version) + 1L,
         )
     }

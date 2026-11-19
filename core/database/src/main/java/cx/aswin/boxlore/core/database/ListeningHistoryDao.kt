@@ -84,9 +84,9 @@ interface ListeningHistoryDao {
         SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl, 
                episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted, 
                isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType, 
-               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt 
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt, dismissedAt
         FROM listening_history 
-        WHERE isCompleted = 0 AND progressMs > 0 
+        WHERE isCompleted = 0 AND progressMs > 0 AND dismissedAt <= 0
         ORDER BY lastPlayedAt DESC 
         LIMIT 7
     """,
@@ -94,7 +94,7 @@ interface ListeningHistoryDao {
     fun getResumeItems(): Flow<List<ListeningHistoryEntity>>
 
     // Suspend version for Android Auto browse tree (non-Flow, one-shot)
-    @Query("SELECT * FROM listening_history WHERE isCompleted = 0 AND progressMs > 0 ORDER BY lastPlayedAt DESC LIMIT 20")
+    @Query("SELECT * FROM listening_history WHERE isCompleted = 0 AND progressMs > 0 AND dismissedAt <= 0 ORDER BY lastPlayedAt DESC LIMIT 20")
     suspend fun getResumeItemsList(): List<ListeningHistoryEntity>
 
     /**
@@ -118,7 +118,7 @@ interface ListeningHistoryDao {
         SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl,
                episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted,
                isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
-               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt, dismissedAt
         FROM listening_history
         WHERE isCompleted = 0 AND progressMs > 0
         ORDER BY lastPlayedAt DESC
@@ -234,7 +234,7 @@ interface ListeningHistoryDao {
         SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl, 
                episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted, 
                isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType, 
-               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt 
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt, dismissedAt
         FROM listening_history 
         WHERE isLiked = 1 
         ORDER BY lastPlayedAt DESC
@@ -311,6 +311,41 @@ interface ListeningHistoryDao {
     @Query("UPDATE listening_history SET isCompleted = :isCompleted, isDirty = 1 WHERE episodeId = :episodeId")
     suspend fun setCompletionStatus(episodeId: String, isCompleted: Boolean,)
 
+    /**
+     * Writes one archive decision ([ListeningHistoryEntity.dismissedAt]: positive archived, negative
+     * brought back) on these IDs' rows and marks them for sync; callers pass at most 500 IDs. Returns
+     * the rows written; 0 means none of them has a row yet. Progress and completion stay as they are.
+     */
+    @Query("UPDATE listening_history SET dismissedAt = :dismissedAt, isDirty = 1 WHERE episodeId IN (:episodeIds)")
+    suspend fun setDismissedForIds(episodeIds: List<String>, dismissedAt: Long,): Int
+
+    /** IDs whose own row is archived. Few: the listener archives them one selection at a time. */
+    @Query("SELECT episodeId FROM listening_history WHERE dismissedAt > 0")
+    suspend fun getDismissedEpisodeIds(): List<String>
+
+    /** Rows holding an archive decision, either way. */
+    @Query("SELECT * FROM listening_history WHERE dismissedAt != 0")
+    suspend fun getDismissDecidedRows(): List<ListeningHistoryEntity>
+
+    /**
+     * A value that changes when an archive decision is written to a row or to the shared settings,
+     * and stays the same through a progress save. Room emits it on every write; callers drop the repeats.
+     */
+    @Query(
+        """
+        SELECT
+            (SELECT COUNT(*) FROM listening_history WHERE dismissedAt != 0) AS decidedRows,
+            (SELECT COALESCE(SUM(dismissedAt), 0) FROM listening_history WHERE dismissedAt != 0) AS rowDecisionSum,
+            (SELECT COALESCE(SUM(dismissedAt), 0) + COALESCE(SUM(dismissClearedAt), 0) FROM episode_group_state) AS groupDecisionSum
+        """,
+    )
+    fun dismissedHistorySignal(): Flow<DismissedHistorySignal>
+
+    /** Every archived ID by its own row, read again only when [dismissedHistorySignal] changes. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getDismissedEpisodeIdsFlow(): Flow<List<String>> =
+        dismissedHistorySignal().distinctUntilChanged().mapLatest { getDismissedEpisodeIds() }
+
     // Get all episode IDs that have been fully played (for "unplayed" filtering in queue).
     // Listeners with tens of thousands of completed episodes (bulk "mark all played") overflowed a
     // single cursor read ("Couldn't read row ... from CursorWindow"), so reads are paged.
@@ -362,7 +397,7 @@ interface ListeningHistoryDao {
         SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl,
                episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted,
                isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
-               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt, dismissedAt
         FROM listening_history
         ORDER BY episodeId
         LIMIT :limit
@@ -375,7 +410,7 @@ interface ListeningHistoryDao {
         SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl,
                episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted,
                isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
-               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt, dismissedAt
         FROM listening_history
         WHERE episodeId > :afterEpisodeId
         ORDER BY episodeId
@@ -408,7 +443,7 @@ interface ListeningHistoryDao {
         SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl,
                episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted,
                isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
-               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt, dismissedAt
         FROM listening_history
         WHERE episodeId > :afterEpisodeId AND (firstPlayedAt IS NOT NULL OR finishedAt IS NOT NULL)
         ORDER BY episodeId
@@ -495,8 +530,10 @@ interface ListeningHistoryDao {
           AND progressMs = :snapshotProgressMs
           AND isCompleted = :snapshotIsCompleted
           AND isLiked = :snapshotIsLiked
+          AND dismissedAt = :snapshotDismissedAt
         """,
     )
+    @Suppress("LongParameterList") // One parameter per column the snapshot compares.
     suspend fun markHistorySyncedIfUnchanged(
         episodeId: String,
         snapshotLastPlayedAt: Long,
@@ -505,6 +542,7 @@ interface ListeningHistoryDao {
         snapshotIsCompleted: Boolean,
         snapshotIsLiked: Boolean,
         syncedAt: Long,
+        snapshotDismissedAt: Long = 0L,
     ): Int
 
     @Query("UPDATE listening_history SET isDirty = 1 WHERE episodeTitle IS NOT NULL AND episodeTitle != ''")
@@ -523,7 +561,7 @@ interface ListeningHistoryDao {
         SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl,
                episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted,
                isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
-               isManualCompletion, isBulkCompletion, NULL AS episodeDescription, firstPlayedAt, finishedAt
+               isManualCompletion, isBulkCompletion, NULL AS episodeDescription, firstPlayedAt, finishedAt, dismissedAt
         FROM listening_history
         WHERE isDirty = 1
         ORDER BY lastPlayedAt DESC
@@ -573,7 +611,7 @@ internal const val RECENT_HISTORY_SQL = """
     SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl,
            episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted,
            isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
-           isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt
+           isManualCompletion, isBulkCompletion, NULL as episodeDescription, firstPlayedAt, finishedAt, dismissedAt
     FROM listening_history
     WHERE episodeId IN (
         SELECT episodeId FROM (SELECT episodeId FROM listening_history ORDER BY lastPlayedAt DESC LIMIT $RECENT_HISTORY_ROWS)

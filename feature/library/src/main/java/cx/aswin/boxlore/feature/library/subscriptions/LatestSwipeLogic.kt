@@ -34,6 +34,10 @@ internal fun latestQueueMessage(outcome: LatestQueueOutcome): String = when (out
     LatestQueueOutcome.QueueFull -> "Your queue is full. Remove an episode to add this one."
 }
 
+/** Shows with a latest episode New Episodes can list: an archived one ([dismissedIds]) never is. */
+internal fun latestWithoutArchived(podcasts: List<Podcast>, dismissedIds: Set<String>): List<Podcast> =
+    podcasts.filter { podcast -> podcast.latestEpisode?.let { it.id !in dismissedIds } == true }
+
 /**
  * Rows New Episodes shows. A row swiped to played (its id in [pendingPlayedIds]) counts as
  * played before it is saved, so with [hideCompleted] on it leaves at once.

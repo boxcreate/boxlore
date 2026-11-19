@@ -58,6 +58,21 @@ class PhoneListRulesTest {
     }
 
     @Test
+    fun `new episodes leave archived episodes out, unplayed or not`() {
+        val latest = listOf(episode("trailer", 300L), episode("new", 200L), episode("old", 100L))
+
+        assertEquals(listOf("new"), PhoneListRules.newEpisodes(latest, completedIds = setOf("old"), dismissedIds = setOf("trailer")).map { it.id })
+    }
+
+    @Test
+    fun `a show's episode list on the watch leaves archived episodes out`() {
+        val saved = listOf(episode("e2", 2L), episode("trailer", 1L), episode("e1", 0L))
+
+        assertEquals(listOf("e2", "e1"), PhoneListRules.showEpisodes(saved, setOf("trailer")).map { it.id })
+        assertEquals(saved, PhoneListRules.showEpisodes(saved, emptySet()))
+    }
+
+    @Test
     fun `a long library sends only the newest few`() {
         val latest = (1..50).map { episode("e$it", it.toLong()) }
 

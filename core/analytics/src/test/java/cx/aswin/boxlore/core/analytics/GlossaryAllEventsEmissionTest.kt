@@ -253,6 +253,9 @@ class GlossaryAllEventsEmissionTest {
                 "episode_mark_played" to {
                     AnalyticsHelper.trackEpisodeMarkPlayed("e1", "p1", isPlayed = true, surface = "history")
                 },
+                "episode_archived" to {
+                    AnalyticsHelper.trackEpisodeArchived(isArchived = true, surface = "show_page", itemsCount = 3)
+                },
                 "download_requested" to {
                     AnalyticsHelper.trackDownloadRequested("e1", "p1", "episode_detail")
                 },

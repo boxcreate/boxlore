@@ -66,6 +66,17 @@ class LatestSwipeLogicTest {
     }
 
     @Test
+    fun archivedLatestEpisodesNeverListWhateverHidePlayedSays() {
+        val rows = listOf(podcast("a"), podcast("b"), podcast("c", EpisodeStatus.COMPLETED))
+
+        val listable = latestWithoutArchived(rows, dismissedIds = setOf("a_ep", "c_ep"))
+
+        assertEquals(listOf("b"), listable.map { it.id })
+        assertEquals(listOf("b"), visibleLatestPodcasts(listable, hideCompleted = false, pendingPlayedIds = emptySet()).map { it.id })
+        assertEquals(listOf("a", "b", "c"), latestWithoutArchived(rows, dismissedIds = emptySet()).map { it.id })
+    }
+
+    @Test
     fun heldPlayedRowStaysWhenHidePlayedIsOff() {
         val rows = listOf(podcast("a"), podcast("c", EpisodeStatus.COMPLETED))
 

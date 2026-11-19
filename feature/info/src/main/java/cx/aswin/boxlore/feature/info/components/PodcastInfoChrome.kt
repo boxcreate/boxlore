@@ -207,6 +207,8 @@ internal data class EpisodeListIndicators(
     val downloadedEpisodeIds: Set<String> = emptySet(),
     val downloadingEpisodeIds: Set<String> = emptySet(),
     val completedEpisodeIds: Set<String> = emptySet(),
+    /** Archived episodes, marked on their rows when Show archived or a search lists them. */
+    val archivedEpisodeIds: Set<String> = emptySet(),
 )
 
 internal data class EpisodeSelectionUi(
@@ -271,6 +273,7 @@ internal fun EpisodeFeedItemRow(
                         isQueued = ui.indicators.queuedEpisodeIds.contains(episode.id),
                         isCompleted = ui.indicators.completedEpisodeIds.contains(episode.id),
                         isUpNext = episode.id == ui.autoScrolledEpisodeId,
+                        isArchived = episode.id in ui.indicators.archivedEpisodeIds,
                         selectionActive = selection.isActive,
                         isSelected = episode.id in selection.selectedEpisodeIds,
                         onClick = onRowClick,
@@ -337,7 +340,21 @@ internal data class PodcastInfoTopOverlayActions(
     /** The show is hidden everywhere: the menu offers Unhide show instead of Hide show everywhere. */
     val isHidden: Boolean = false,
     val onToggleHidden: () -> Unit = {},
+    /** Show / Hide archived episodes, next to Hide completed. */
+    val archive: PodcastInfoArchiveMenu = PodcastInfoArchiveMenu(),
 )
+
+/**
+ * The menu's archived-episodes toggle: offered while the show has [archivedCount] archived episodes,
+ * or while they show ([showArchived]) so they can be hidden again.
+ */
+internal data class PodcastInfoArchiveMenu(
+    val archivedCount: Int = 0,
+    val showArchived: Boolean = false,
+    val onToggle: () -> Unit = {},
+) {
+    val offered: Boolean get() = showArchived || archivedCount > 0
+}
 
 internal data class MissingEpisodesChip(
     val visible: Boolean = false,
@@ -507,6 +524,7 @@ private fun PodcastInfoOverflowMenuItems(
             )
         },
     )
+    if (actions.archive.offered) ArchivedEpisodesMenuItem(actions.archive, onDismiss)
     DropdownMenuItem(
         text = { Text(if (actions.titlesOnly) "Show full episodes" else "Show titles only") },
         onClick = {

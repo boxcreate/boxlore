@@ -334,6 +334,30 @@ class BoxLoreApiSyncContractTest {
     }
 
     @Test
+    fun `history rows carry their archive decision either way, and a pull without it reads as never decided`() {
+        server.enqueue(okPush())
+        val request = SyncPushRequest(
+            history = listOf(
+                ListeningHistorySyncDto(episodeId = "archived", podcastId = "77", updatedAt = 10L, dismissedAt = 10L),
+                ListeningHistorySyncDto(episodeId = "brought-back", podcastId = "77", updatedAt = 12L, dismissedAt = -12L),
+                ListeningHistorySyncDto(episodeId = "never", podcastId = "77", updatedAt = 10L),
+            ),
+        )
+
+        api.syncPush(APP_KEY, AUTH_HEADER, request).execute()
+
+        val history = Json.parseToJsonElement(server.takeRequest().body.readUtf8()).jsonObject.getValue("history").jsonArray.map { it.jsonObject }
+        assertEquals(10L, history[0].getValue("dismissedAt").jsonPrimitive.long)
+        assertEquals(-12L, history[1].getValue("dismissedAt").jsonPrimitive.long)
+        assertFalse("dismissedAt" in history[2])
+
+        // The recorded answer predates the field: every row reads as never decided.
+        server.enqueue(MockResponse().setResponseCode(200).setBody(RECORDED_PULL))
+        val pulled = api.syncPull(APP_KEY, AUTH_HEADER, SyncPullRequest(since = 0L)).execute().body()!!
+        assertTrue(pulled.history.all { it.dismissedAt == 0L })
+    }
+
+    @Test
     fun `an older server's answers read as not storing the release date time`() {
         server.enqueue(okPush())
         server.enqueue(

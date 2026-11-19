@@ -178,6 +178,23 @@ class RoomPlaylistRepositoryTest {
     }
 
     @Test
+    fun `archived episodes are never queued nor coming up, started or not`() = runTest {
+        follow("a")
+        episodes("a", 10L, 30L, 50L)
+        history("a-30", "a", progressMs = 60_000L, completed = false, playedAt = 9L)
+        database.listeningHistoryDao().setDismissedForIds(listOf("a-30"), 100L)
+        // A trailer-like episode never played: archiving gave it a row with only the decision.
+        history("a-50", "a", progressMs = 0L, completed = false, playedAt = 0L)
+        database.listeningHistoryDao().setDismissedForIds(listOf("a-50"), 101L)
+        val id = repository.createPlaylist("Mix", listOf("a")).id
+
+        assertEquals(listOf("a-10"), repository.nextEpisodes(id, limit = 10).map { it.id })
+
+        database.listeningHistoryDao().setDismissedForIds(listOf("a-50"), -102L)
+        assertEquals(listOf("a-50", "a-10"), repository.nextEpisodes(id, limit = 10).map { it.id })
+    }
+
+    @Test
     fun `oldest first, with an episode midway through first and the batch limit`() = runTest {
         follow("a")
         follow("b")

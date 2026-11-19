@@ -6,6 +6,7 @@ import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.episodeListenerStore
+import cx.aswin.boxlore.core.database.isDismissed
 import cx.aswin.boxlore.core.domain.ports.HistoryRecommendationSource
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.first
  * JVM component that can be unit-tested with hand-rolled fakes. Production code
  * uses [DefaultSmartQueueSources], which wraps the real repositories and DAOs.
  */
+@Suppress("TooManyFunctions") // One read per kind of candidate the engine considers.
 interface SmartQueueSources : HistoryRecommendationSource {
     suspend fun getEpisodes(podcastId: String): List<Episode>
 
@@ -44,6 +46,9 @@ interface SmartQueueSources : HistoryRecommendationSource {
     suspend fun getSubscribedPodcasts(): List<Podcast>
 
     suspend fun getCompletedEpisodeIds(): Set<String>
+
+    /** Archived IDs as projected; the queue never picks them. */
+    suspend fun getDismissedEpisodeIds(): Set<String> = emptySet()
 
     suspend fun getRecentlyPlayedPodcastIds(sinceMs: Long): Set<String>
 
@@ -116,11 +121,13 @@ class DefaultSmartQueueSources(
         return database.episodeListenerStore().projectCompletedIds(completed)
     }
 
+    override suspend fun getDismissedEpisodeIds(): Set<String> = database.episodeListenerStore().dismissedIds()
+
     override suspend fun getRecentlyPlayedPodcastIds(sinceMs: Long): Set<String> = database.listeningHistoryDao().getRecentlyPlayedPodcasts(sinceMs).toSet()
 
     /** Resume candidates with each episode once and its projected state. */
     override suspend fun getResumeCandidates(): List<ListeningHistoryEntity> =
-        database.episodeListenerStore().projectRows(database.listeningHistoryDao().getResumeItemsList()) { !it.isCompleted && it.progressMs > 0 }
+        database.episodeListenerStore().projectRows(database.listeningHistoryDao().getResumeItemsList()) { !it.isCompleted && it.progressMs > 0 && !it.isDismissed }
 
     /**
      * Recent history with each episode once and its projected state: the newest rows and the newest
