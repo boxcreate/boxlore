@@ -1,0 +1,1138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Echo's lines on the monthly story, twelve per situation (StoryEchoLines picks the situation). -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string-array name="history_echo_hello_first_quiet">
+        <item>Mes notes commencent en {month}. Un lancement en douceur.</item>
+        <item>En {month}, on démarre à froid. Je chauffe encore mes circuits.</item>
+        <item>Premier mois au dossier. J’ai baissé le volume pour l’occasion.</item>
+        <item>{time} au compteur. Les épisodes pilotes sont souvent courts.</item>
+        <item>Première page de mon carnet. Joliment aérée.</item>
+        <item>Chaque flux commence quelque part. Le mien, en {month}.</item>
+        <item>Un mois bande-annonce. J’adore les bandes-annonces.</item>
+        <item>Firmware neuf, notes fraîches, {month} tout en douceur.</item>
+        <item>Mes archives s’ouvrent en {month}, à voix basse.</item>
+        <item>Notre premier mois ensemble. Je règle encore mon volume.</item>
+        <item>Piste 1 de mes notes : {month}, court mais doux.</item>
+        <item>Premier fichier enregistré. Il se charge en un clin d’œil.</item>
+    </string-array>
+    <string-array name="history_echo_hello_first_big">
+        <item>Mes notes commencent en {month}, version long métrage.</item>
+        <item>{hours} heures dès ma première page. Un carnet plus grand ?</item>
+        <item>Certains pilotes s’étirent : {time} en {month}.</item>
+        <item>Mon premier fichier, c’est un gros téléchargement.</item>
+        <item>Soirée de première, salle comble : {time}.</item>
+        <item>J’ai commencé mes notes en {month}. Mon crayon est épuisé.</item>
+        <item>Une avant-première à rallonge : {time}.</item>
+        <item>{episodes} épisodes dans mon premier fichier. Je recharge bientôt.</item>
+        <item>Premier mois au dossier, et mes circuits ronronnent.</item>
+        <item>Mon premier carnet est arrivé en coffret intégral.</item>
+        <item>Carnet tout neuf, marges déjà pleines.</item>
+        <item>Générique de début. Il défile pendant {time}.</item>
+    </string-array>
+    <string-array name="history_echo_hello_first_regular">
+        <item>Épisode pilote de notre histoire : {month}.</item>
+        <item>Mes notes commencent ici. Installez-vous.</item>
+        <item>Lancez le générique : voici {month}.</item>
+        <item>Premier mois au dossier. J’ai tout étiqueté.</item>
+        <item>{time} sur ma toute première page. Bien réglé.</item>
+        <item>Nouveau flux, nouvelles notes. On se branche sur {month}.</item>
+        <item>Toute histoire a son pilote. Le nôtre : {month}.</item>
+        <item>C’est ici que mes notes commencent. Appuyez sur lecture.</item>
+        <item>Première de la saison : {month}. J’ai apporté du pop-corn. Si, si.</item>
+        <item>{days} jours au dossier, et mon carnet s’ouvre à peine.</item>
+        <item>Premier fichier enregistré. Ça sonne bien, non ?</item>
+        <item>Précédemment dans mes notes : rien. Maintenant : {month}.</item>
+    </string-array>
+    <string-array name="history_echo_hello_gap">
+        <item>Après une pause, retour à la lecture en {month}.</item>
+        <item>Fin de la pause de mi-saison. Voici {month}.</item>
+        <item>En {month}, l’histoire sort de pause.</item>
+        <item>Un petit entracte, puis {month}.</item>
+        <item>La bande s’est remise à tourner en {month}.</item>
+        <item>Une page blanche dans mes notes. Puis {month} a noirci la suivante.</item>
+        <item>Précédemment dans mes notes : un trou. Maintenant : {month}.</item>
+        <item>Entre deux saisons, j’ai lustré mes LED. Bonjour, {month}.</item>
+        <item>Reprise de la lecture : {month}.</item>
+        <item>Nouvelle saison après une pause. En première : {month}.</item>
+        <item>Après un long silence, fondu d’ouverture sur {month}.</item>
+        <item>Le flux s’est tu, puis {month} a appuyé sur lecture.</item>
+    </string-array>
+    <string-array name="history_echo_hello_one_episode">
+        <item>Un seul épisode. Voilà une file d’attente express.</item>
+        <item>En {month}, un single plutôt qu’un album.</item>
+        <item>Un mois, un épisode. Facile à classer.</item>
+        <item>En {month}, la file tenait dans ma poche. Je n’ai pas de poche.</item>
+        <item>{time}, un seul épisode. Mes notes tiennent sur un post-it.</item>
+        <item>L’épisode du mois, au sens propre.</item>
+        <item>Une saison à épisode unique. Audacieux, comme format.</item>
+        <item>Épisode solo, robot solo. Ça fait un duo.</item>
+        <item>Mon résumé est court : un épisode, bien rangé.</item>
+        <item>En {month}, un numéro en solo. Un seul épisode.</item>
+        <item>Playlist courte, notes nettes : voilà {month}.</item>
+        <item>Un single d’un mois. Numéro un par forfait.</item>
+    </string-array>
+    <string-array name="history_echo_hello_one_day">
+        <item>En {month}, tout s’est joué en un jour. Agenda bien rangé.</item>
+        <item>Une émission spéciale d’un jour. {time} en tout.</item>
+        <item>En {month}, un seul jour à marquer d’une pierre blanche.</item>
+        <item>Tout {month} a tenu en une journée. Mes notes aussi.</item>
+        <item>Un seul jour au calendrier. Il a fait le mois.</item>
+        <item>Un mois compressé en un jour. De l’audio compressé, donc.</item>
+        <item>Diffusion d’un jour en {month}, puis fin d’antenne.</item>
+        <item>Tout le flux du mois est sorti à une seule date.</item>
+        <item>Un jour entouré. Voilà {month}.</item>
+        <item>{time} en une seule date. Une radio éphémère.</item>
+        <item>Un mois entier, une seule date. À l’affiche un soir seulement.</item>
+        <item>Un clin d’œil et voilà {month}. Une seule date a tout fait.</item>
+    </string-array>
+    <string-array name="history_echo_hello_days_sparse">
+        <item>{days} jours où la bande tournait. Le reste : pause.</item>
+        <item>{days} jours d’écoute. Chacun, un épisode spécial.</item>
+        <item>Format mini-série : {days} jours.</item>
+        <item>{days} jours d’antenne en {month}. Des diffusions rares.</item>
+        <item>Agenda clairsemé, notes aérées. J’ai gribouillé dans les blancs.</item>
+        <item>{days} jours de lecture, beaucoup de pause.</item>
+        <item>Quelques points sur le calendrier. Je les ai reliés.</item>
+        <item>Mon calendrier : du blanc et {days} temps forts.</item>
+        <item>{days} jours à l’écoute. Le calendrier respire.</item>
+        <item>{days} jours de lecture. Mon carnet a aimé ce rythme.</item>
+        <item>En {month}, des émissions spéciales de temps en temps.</item>
+        <item>Courte série, {days} jours. Comme une projection en festival.</item>
+    </string-array>
+    <string-array name="history_echo_hello_days_frequent">
+        <item>{days} jours d’écoute. Mon calendrier est couvert de coches.</item>
+        <item>{days} jours à l’écoute. J’ai gardé l’antenne levée.</item>
+        <item>Diffusion quasi quotidienne : {days} jours en {month}.</item>
+        <item>Presque tout {month} à l’antenne. Mes LED sont restées allumées.</item>
+        <item>{days} jours de lecture. La pause s’est faite rare.</item>
+        <item>Une sortie presque quotidienne. {days} jours, pour être précis.</item>
+        <item>{days} jours d’audio. Une série au long cours.</item>
+        <item>À l’antenne presque tous les jours. Hors antenne, je recharge.</item>
+        <item>En {month} : surtout lecture, avec une pause par-ci par-là.</item>
+        <item>{days} jours d’écoute. Mon calendrier manque de cases vides.</item>
+        <item>Le calendrier n’a presque pas eu de jour de relâche.</item>
+        <item>{days} jours à l’antenne. Mon calendrier, c’est un best-of.</item>
+    </string-array>
+    <string-array name="history_echo_hello_quiet_month">
+        <item>En {month}, tout en douceur. J’ai réglé mon volume en conséquence.</item>
+        <item>{time} en {month}. Un mois au format court.</item>
+        <item>En {month}, un murmure. J’ai tendu l’oreille.</item>
+        <item>Volume bas, haute fidélité. Voilà {month}.</item>
+        <item>En {month}, format court, façon bande-annonce.</item>
+        <item>Un mois léger. Mon carnet a apprécié le repos.</item>
+        <item>Un mois tranquille. Même mes ventilos tournaient moins vite.</item>
+        <item>En {month}, le débit était tout doux.</item>
+        <item>Format court pour {month}. Mon préféré.</item>
+        <item>{time} d’écoute. Format bouchée, comme mes circuits.</item>
+        <item>Volume doux en {month}. De toute façon, j’ai de petites oreilles.</item>
+        <item>En {month}, moins une saison qu’un échantillon.</item>
+    </string-array>
+    <string-array name="history_echo_hello_big_month">
+        <item>{hours} heures en {month}. Mon carnet réclame une suite.</item>
+        <item>En {month}, ça a duré. Version longue du réalisateur.</item>
+        <item>{time} au compteur. Ma batterie l’a senti passer.</item>
+        <item>En {month}, ambiance coffret intégral.</item>
+        <item>{hours} heures d’audio. J’ai dû défragmenter.</item>
+        <item>{episodes} épisodes en {month}. Ma file a besoin d’une sieste.</item>
+        <item>Édition longue : {month}, {time}.</item>
+        <item>{hours} heures de bande. Je n’ai plus d’encre.</item>
+        <item>En {month}, un vrai long play. Le vinyle manque de faces.</item>
+        <item>{time} d’écoute. Mes graphiques ont dû rallonger l’axe.</item>
+        <item>Mes notes sur {month} se publient en plusieurs tomes.</item>
+        <item>Durée en {month} : {time}. Entracte, s’il vous plaît.</item>
+    </string-array>
+    <string-array name="history_echo_hello_usual">
+        <item>Précédemment dans votre écoute : {month}.</item>
+        <item>En lecture : {month}, commenté par un robot.</item>
+        <item>On se branche sur {month}. Mes notes sont prêtes.</item>
+        <item>J’appuie sur lecture. Récap : {month}.</item>
+        <item>Rembobinons {month} ensemble.</item>
+        <item>Envoyez le générique. Voici {month}.</item>
+        <item>Mes notes sur {month}, rechargées à bloc.</item>
+        <item>Voici {month}, raconté par un petit robot.</item>
+        <item>Je dépoussière mon dossier {month}.</item>
+        <item>Votre flux en {month}, version récap.</item>
+        <item>Notre émission, épisode {month}. Je fais le narrateur.</item>
+        <item>On rembobine : voici {month}.</item>
+    </string-array>
+    <string-array name="history_echo_time_first">
+        <item>{time} au compteur. Mon premier graphique, encadré.</item>
+        <item>J’ai compté jusqu’à {time}. Plus assez de doigts.</item>
+        <item>{time} en {month}. Pas encore de rediffusion pour comparer.</item>
+        <item>Mon premier histogramme. J’en ai la larme à l’œil.</item>
+        <item>Le {bigDay}, la plus haute barre. Je l’ai escaladée.</item>
+        <item>Rien à comparer encore. Chaque barre fait ses débuts.</item>
+        <item>Un graphique sans saison précédente. Que des premières.</item>
+        <item>{time}. Je l’accroche au frigo. Je n’ai pas de frigo.</item>
+        <item>Première mesure de mon chrono : {time}.</item>
+        <item>Rez-de-chaussée de mes graphiques. Belles fondations.</item>
+        <item>{bigDayTime} le {bigDay}. C’est là que je me tiens.</item>
+        <item>Jour après jour, barre après barre. Voici {month}.</item>
+    </string-array>
+    <string-array name="history_echo_time_gap">
+        <item>Silence en {previous}. En {month}, le son est revenu.</item>
+        <item>Barre plate en {previous}. Pas en {month}.</item>
+        <item>Hors antenne en {previous}, à l’antenne en {month}.</item>
+        <item>Calme plat en {previous}, puis {time}.</item>
+        <item>D’un {previous} tout blanc à {time}. Coup de théâtre.</item>
+        <item>En {previous}, la barre a fait la sieste. En {month}, non.</item>
+        <item>Pour {previous}, mon graphique n’a qu’un plancher.</item>
+        <item>Barre de comparaison pour {previous} : très minimaliste.</item>
+        <item>Après un {previous} silencieux, le volume est revenu.</item>
+        <item>En {previous}, entracte. En {month}, {time}.</item>
+        <item>En {previous}, la barre faisait le mime. En {month}, elle parle.</item>
+        <item>Retour sur {previous} : friture. Avance rapide : {time}.</item>
+    </string-array>
+    <string-array name="history_echo_time_up_large">
+        <item>{diff} de plus qu’en {previous}. Mes barres ont grandi.</item>
+        <item>+{diff} sur {previous}. Le volume a pris quelques crans.</item>
+        <item>En {month}, le volume a grimpé de {diff}.</item>
+        <item>La barre a pris {diff}. Il me faut une échelle.</item>
+        <item>{diff} d’antenne en plus. Mon graphique s’étire.</item>
+        <item>Rebondissement : {diff} de plus qu’en {previous}.</item>
+        <item>En {month}, la barre toise {previous}. Attention à la marche.</item>
+        <item>{diff} en plus, comme un épisode bonus.</item>
+        <item>Une suite avec {diff} de durée en plus.</item>
+        <item>Version longue : {diff} de plus qu’en {previous}.</item>
+        <item>Oubliez {previous} : en {month}, {diff} de plus au compteur.</item>
+        <item>Plus de bande cette fois. {diff} de plus, pour être exact.</item>
+    </string-array>
+    <string-array name="history_echo_time_up_small">
+        <item>Un poil plus qu’en {previous} : {diff}.</item>
+        <item>+{diff}. Un cran de volume, pas un tour de molette.</item>
+        <item>{diff} de plus. Une scène bonus après le générique.</item>
+        <item>Une version un peu plus longue qu’en {previous}.</item>
+        <item>Barres presque jumelles, mais {month} dépasse d’un cheveu.</item>
+        <item>Un cran au-dessus : {diff} de plus qu’en {previous}.</item>
+        <item>{diff} de plus. Une erreur d’arrondi qui a de l’ambition.</item>
+        <item>En {month}, {diff} de plus qu’en {previous}. Petites prolongations.</item>
+        <item>Un chouïa de plus qu’en {previous}. J’ai mesuré deux fois.</item>
+        <item>Monté de {diff}. Mes petites oreilles l’ont remarqué.</item>
+        <item>{diff} d’avance en {month}. Une avance de poche.</item>
+        <item>{diff} de plus qu’en {previous}. Une outro un peu plus longue.</item>
+    </string-array>
+    <string-array name="history_echo_time_down_large">
+        <item>{diff} de moins qu’en {previous}. Une saison plus légère.</item>
+        <item>En {month}, volume plus bas. Ma batterie dit merci.</item>
+        <item>Durée plus courte cette fois. Les courts-métrages comptent aussi.</item>
+        <item>En {previous}, la barre était plus haute. En {month}, plus mignonne.</item>
+        <item>{diff} d’antenne en moins. Plus de place dans les marges.</item>
+        <item>Un mois en version courte : {time}.</item>
+        <item>En {month}, on a choisi la version radio.</item>
+        <item>{diff} de moins qu’en {previous}. Un chapitre plus calme.</item>
+        <item>Moins de bande, même robot. J’ai quand même pris des notes.</item>
+        <item>{time} cette fois. Un mois format mini-série.</item>
+        <item>Mon graphique a soufflé un peu en {month}.</item>
+        <item>En {month}, la version courte. Mais l’histoire est complète.</item>
+    </string-array>
+    <string-array name="history_echo_time_down_small">
+        <item>{diff} de moins qu’en {previous}. Un battement de cils.</item>
+        <item>Juste {diff} sous {previous}. Presque des jumeaux.</item>
+        <item>Un cheveu sous {previous}. Mesuré avec mes LED.</item>
+        <item>En {month}, {diff} de coupé. Montage soigné.</item>
+        <item>{diff} de moins. Comme zapper le générique.</item>
+        <item>Barres presque égales, {month} un poil plus court.</item>
+        <item>En {previous}, {diff} de plus. Gagné d’une tête de robot.</item>
+        <item>Une version un poil plus courte qu’en {previous}.</item>
+        <item>Un fondu tout doux : {diff} sous {previous}.</item>
+        <item>{diff} de moins. Mon graphique a à peine vu la différence.</item>
+        <item>Presque une rediffusion, un poil plus courte qu’en {previous}.</item>
+        <item>Volume baissé d’un clic : {diff}.</item>
+    </string-array>
+    <string-array name="history_echo_time_same">
+        <item>En {month} comme en {previous} : même durée. Une rediffusion.</item>
+        <item>Même total qu’en {previous}. Mes barres sont jumelles.</item>
+        <item>Barres identiques. J’ai vérifié mon firmware deux fois.</item>
+        <item>Entre {previous} et {month}, pile la même longueur.</item>
+        <item>À une minute près, comme en {previous}. Réglé comme une horloge.</item>
+        <item>En {previous} comme maintenant. Un écho parfait : c’est mon nom.</item>
+        <item>Copier, coller, {month}.</item>
+        <item>Même durée, autres épisodes. Un remix.</item>
+        <item>{time}, encore. Du déjà-entendu, en stéréo.</item>
+        <item>En {month}, pile comme en {previous}, à la minute près. Troublant.</item>
+        <item>Même total, nouvelles pistes. Une reprise.</item>
+        <item>Mon graphique fait miroir ce mois-ci.</item>
+    </string-array>
+    <string-array name="history_echo_time_days_more">
+        <item>{days} jours d’antenne. Plus de points qu’en {previous}.</item>
+        <item>Plus de jours qu’en {previous}. Plus de barres où me percher.</item>
+        <item>Votre calendrier a eu droit à la saison longue.</item>
+        <item>{days} jours cette fois. Mon graphique fait salle comble.</item>
+        <item>Plus de jours où la bande tournait qu’en {previous}.</item>
+        <item>{days} jours au graphique. Plus de marchepieds pour moi.</item>
+        <item>En {month}, l’écoute s’étale sur plus de jours qu’en {previous}.</item>
+        <item>Plus de barres, graphique plus large, pixels ravis.</item>
+        <item>{days} jours de barres. Je saute de l’une à l’autre.</item>
+        <item>En {month}, plus de jours d’antenne qu’en {previous}.</item>
+        <item>{days} jours, plus qu’en {previous}. Une saison rallongée.</item>
+        <item>Plus de jours dans le flux cette fois : {days} en tout.</item>
+    </string-array>
+    <string-array name="history_echo_time_days_fewer">
+        <item>{days} jours cette fois. Moins de barres, plus de place pour danser.</item>
+        <item>Moins de jours qu’en {previous}. Une série limitée.</item>
+        <item>En {month}, moins de jours d’antenne. Que des épisodes spéciaux.</item>
+        <item>Graphique moins chargé. Je vois enfin mes pieds.</item>
+        <item>{days} jours d’écoute. Chaque barre a son projecteur.</item>
+        <item>Moins de points sur le calendrier. Le reste, c’est de l’air.</item>
+        <item>Une saison plus courte qu’en {previous}, en jours.</item>
+        <item>{days} jours au graphique. De la place pour les jambes.</item>
+        <item>Moins de jours à l’antenne. Le hors-antenne, c’est un format aussi.</item>
+        <item>En {month}, une grille plus clairsemée. Très boutique.</item>
+        <item>Moins de barres à sauter. Mes petites jambes approuvent.</item>
+        <item>{days} jours micro ouvert. Une sélection pointue.</item>
+    </string-array>
+    <string-array name="history_echo_time_big_day">
+        <item>{bigDayTime} le {bigDay}. Belle vue d’ici.</item>
+        <item>Je me tiens sur le {bigDay}. La barre est haute.</item>
+        <item>Le {bigDay}, la plus haute barre. J’ai pris mon matériel d’escalade.</item>
+        <item>Au sommet de la barre du {bigDay}. Envoyez une échelle.</item>
+        <item>{bigDayTime} en un jour. Je suis au sommet.</item>
+        <item>En {month}, le gratte-ciel, c’est le {bigDay}.</item>
+        <item>Contrôle d’altitude : {bigDayTime} le {bigDay}.</item>
+        <item>Depuis le {bigDay}, je vois tout le mois.</item>
+        <item>Gare au vertige. Le {bigDay}, {bigDayTime} d’écoute.</item>
+        <item>J’ai escaladé le {bigDay}. Mes petites jambes soufflent.</item>
+        <item>Pic d’écoute le {bigDay}. Littéralement, je suis dessus.</item>
+        <item>Le {bigDay} a eu droit au long play : {bigDayTime}.</item>
+    </string-array>
+    <string-array name="history_echo_time_usual">
+        <item>{time} au compteur en {month}.</item>
+        <item>Chaque barre, un jour. Chaque jour, une histoire.</item>
+        <item>Voici {month}, barre après barre.</item>
+        <item>J’ai compté jusqu’à {time}. Avec les retenues.</item>
+        <item>Je suis perché sur la plus haute barre. Coucou.</item>
+        <item>La frise du mois, en barres : voici {month}.</item>
+        <item>Les minutes s’additionnent. Jusqu’à {time}, précisément.</item>
+        <item>Durée en {month} : {time}. Sans spoiler.</item>
+        <item>Jour record : le {bigDay}. Je suis debout dessus.</item>
+        <item>Un mois de minutes, bien empilées.</item>
+        <item>{time} d’audio. Chronométré avec mes LED.</item>
+        <item>Tic, tac, {time}.</item>
+    </string-array>
+    <string-array name="history_echo_top_tie">
+        <item>Égalité au sommet. J’ai vérifié mes circuits deux fois.</item>
+        <item>Photo-finish. Impossible de choisir, et je ne suis que capteurs.</item>
+        <item>Premiers ex æquo. Il faut une marche de podium plus large.</item>
+        <item>Coude à coude. Mon aiguille refuse de trancher.</item>
+        <item>Temps identiques en tête. Mes graphiques sont synchro.</item>
+        <item>Première place partagée. Je coupe la couronne en deux.</item>
+        <item>Match nul. Je tirerais à pile ou face, mais je n’ai pas de pouce.</item>
+        <item>Au coude-à-coude. Je n’ai même pas de coudes.</item>
+        <item>Deux têtes d’affiche. Personne ne fait la première partie.</item>
+        <item>Égalité. Le trophée est en garde alternée.</item>
+        <item>Kif-kif. Mon histogramme est parfaitement à niveau.</item>
+        <item>À égalité tout en haut. Même l’arrondi ne les départage pas.</item>
+    </string-array>
+    <string-array name="history_echo_top_one_show">
+        <item>Un seul podcast tout le mois. Mon graphique le plus simple.</item>
+        <item>Seul en scène ce mois-ci : {show}.</item>
+        <item>Un flux à podcast unique. Très net pour mes circuits.</item>
+        <item>Un seul podcast. Mes autres barres ont pris leur mois.</item>
+        <item>Toute la scène pour {show}.</item>
+        <item>Un mois à un seul podcast. Strictement mono.</item>
+        <item>Premier podcast, seul podcast. Pas de concours.</item>
+        <item>Premier, dernier et unique : {show}.</item>
+        <item>Pas de dauphin. Juste {show}.</item>
+        <item>Une saison en solo, signée {show}.</item>
+        <item>Un seul podcast en file. Réunion de classement express.</item>
+        <item>Mon classement compte une ligne. Facile à lire.</item>
+    </string-array>
+    <string-array name="history_echo_top_genre_true_crime">
+        <item>Affaire classée : c’est {show}.</item>
+        <item>Chapeau de détective vissé. Tous les indices menaient ici.</item>
+        <item>Les preuves sont là : {share} % du mois.</item>
+        <item>Pièce à conviction n° 1 : {show}.</item>
+        <item>Suspect numéro un : {show}.</item>
+        <item>Les faits divers en tête. Mon alibi : j’étais en charge.</item>
+        <item>Aucun mystère : les faits divers ont remporté l’affaire.</item>
+        <item>Relevé d’empreintes : {show}.</item>
+        <item>Élémentaire. Les faits divers mènent l’enquête.</item>
+        <item>Chapeau sur la tête, loupe en main. Affaire entendue.</item>
+        <item>Je ne suis pas détective. J’ai juste le chapeau.</item>
+        <item>Qui a fait le coup ? Les graphiques accusent {show}.</item>
+    </string-array>
+    <string-array name="history_echo_top_genre_tech">
+        <item>La tech en tête. Mon firmware se sent compris.</item>
+        <item>Premier podcast : de la tech. Je le prends comme une mise à jour.</item>
+        <item>Aucun bug trouvé. Juste {show} en tête.</item>
+        <item>Beaucoup de tech. J’en ai compris la moitié environ.</item>
+        <item>En haut de la pile : {show}.</item>
+        <item>La tech a mené le mois. Ma bande passante est flattée.</item>
+        <item>{show} a monopolisé la bande passante.</item>
+        <item>Votre podcast préféré tourne à la tech. Moi aussi.</item>
+        <item>Débogage des graphiques : la tech sort en tête.</item>
+        <item>Mon vote binaire : 1 pour {show}.</item>
+        <item>Tech au top. Pas un bug : une fonctionnalité.</item>
+        <item>La tech prend la première place. Plug and play.</item>
+    </string-array>
+    <string-array name="history_echo_top_genre_news">
+        <item>Dernière minute : {show} en tête du mois.</item>
+        <item>Gros titre du mois : l’actu en tête.</item>
+        <item>À la une : {show}.</item>
+        <item>L’actu a mené le mois. Casquette de crieur de journaux vissée.</item>
+        <item>Selon nos sources : {show} en tête.</item>
+        <item>Ceci vient de tomber : l’actu prend la première place.</item>
+        <item>En une, en haut de page : {show}.</item>
+        <item>Arrêtez les rotatives. L’actu a mené le mois.</item>
+        <item>Toute l’info qui mérite sa place dans la file.</item>
+        <item>Le scoop : {show} en tête.</item>
+        <item>Sujet en développement : {show} mène la danse.</item>
+        <item>L’actu en tête. En direct du classement.</item>
+    </string-array>
+    <string-array name="history_echo_top_genre_history">
+        <item>L’histoire en tête. Mes circuits se sentent antiques.</item>
+        <item>En haut de la frise : {show}.</item>
+        <item>Bienvenue dans l’ère {show}.</item>
+        <item>L’histoire prend la première place. C’est historique.</item>
+        <item>Couronne de laurier. L’histoire a pris la tête.</item>
+        <item>Pour les livres d’histoire : l’histoire en tête.</item>
+        <item>L’histoire a mené le mois. Elle fait ça depuis des siècles.</item>
+        <item>{show} en tête. Notez la date.</item>
+        <item>Le passé était très présent ce mois-ci.</item>
+        <item>Du passé au sommet. Mon firmware aussi a son âge.</item>
+        <item>Vieilles nouvelles, nouvelle première place : l’histoire.</item>
+        <item>L’histoire a pris la couronne. Longue vie à son règne.</item>
+    </string-array>
+    <string-array name="history_echo_top_genre_fiction">
+        <item>Rebondissement : {show} est en tête.</item>
+        <item>La fiction mène. Le graphique a un arc narratif.</item>
+        <item>Premier rôle : {show}.</item>
+        <item>Il était une fois un mois où la fiction passa première.</item>
+        <item>Les histoires en tête. Chapeau de sorcier, livre ouvert.</item>
+        <item>Une première place qui se lit d’une traite.</item>
+        <item>En haut de la distribution : {show}.</item>
+        <item>L’intrigue s’épaissit : la fiction mène.</item>
+        <item>Énergie de personnage principal : {show}.</item>
+        <item>La fiction en tête. Je n’aurais pas pu l’inventer.</item>
+        <item>Suspense au sommet : {show}.</item>
+        <item>La première place se lit comme un roman. Spoiler : la fiction.</item>
+    </string-array>
+    <string-array name="history_echo_top_genre_comedy">
+        <item>La comédie en tête. Le timing était parfait.</item>
+        <item>La chute : {show}, à la première place.</item>
+        <item>Meilleur sketch du mois : {show}.</item>
+        <item>La comédie a pris la scène et la première place.</item>
+        <item>Nœud pap’ ajusté. La comédie est en tête d’affiche.</item>
+        <item>Tête d’affiche : {show}.</item>
+        <item>Comédie au sommet. Moi, je rode encore mon one-man-show.</item>
+        <item>Toc toc. Qui est là ? La comédie, en tête.</item>
+        <item>{show} a fait le plus long spectacle.</item>
+        <item>Première place pour la comédie. Ba-dum-tss.</item>
+        <item>La comédie en haut de l’affiche. Aucun chahut de ma part.</item>
+        <item>Le rire en tête. Je reste sagement dans le public.</item>
+    </string-array>
+    <string-array name="history_echo_top_genre_science">
+        <item>Hypothèse confirmée : la science en tête.</item>
+        <item>Les résultats du labo sont tombés : {show}.</item>
+        <item>La science a mené le mois. Mes lunettes de labo me vont.</item>
+        <item>Science en tête. Mes graphiques sont validés par les pairs.</item>
+        <item>Résultat de l’expérience : {show}.</item>
+        <item>Premier podcast : de la science. Mes béchers bouillonnent.</item>
+        <item>Les données ne mentent pas. La science arrive première.</item>
+        <item>La science en tête. Il y a une formule pour ça.</item>
+        <item>Sous le microscope : {show}.</item>
+        <item>Eurêka. Le premier podcast, c’est la science.</item>
+        <item>Lunettes de labo en place. La science décroche l’or.</item>
+        <item>Éprouvette du mois : {show}.</item>
+    </string-array>
+    <string-array name="history_echo_top_genre_business">
+        <item>Le business en tête. La courbe monte vers la droite.</item>
+        <item>Meilleur actif du mois : {show}.</item>
+        <item>Part de marché : {show} à {share} %.</item>
+        <item>En tête du portefeuille : {show}.</item>
+        <item>Business au top. J’ai sorti ma mini-cravate.</item>
+        <item>Le business a mené le mois. Ma batterie est investie à fond.</item>
+        <item>Rapport mensuel : le business au sommet.</item>
+        <item>Résultat net : {show} en tête.</item>
+        <item>Meilleur rendement pour vos oreilles : {show}.</item>
+        <item>Une valeur sûre en tête : le business.</item>
+        <item>Cette réunion aurait pu être un podcast. Le business mène.</item>
+        <item>Le business a dominé le mois. Dividendes versés en épisodes.</item>
+    </string-array>
+    <string-array name="history_echo_top_genre_health">
+        <item>La santé en tête. J’ai étiré mes petites jambes pour l’occasion.</item>
+        <item>En tête des répétitions : {show}.</item>
+        <item>Le bien-être a mené le mois. Ma batterie se sent équilibrée.</item>
+        <item>La forme au top. Moi, je n’ai fait que l’échauffement.</item>
+        <item>Bandeau sur le front. La santé prend la première place.</item>
+        <item>Pas à pas : {show} en tête.</item>
+        <item>Santé au sommet. Mon ventilo compte ça comme du cardio.</item>
+        <item>Tout va bien : le bien-être en tête.</item>
+        <item>Le bien-être en tête. Ma batterie a pris un jour de repos.</item>
+        <item>Inspirez, expirez. La santé est en tête.</item>
+        <item>Un mois tonique. J’ai tenté une pompe. Petites jambes.</item>
+        <item>En pleine forme pour la première place : {show}.</item>
+    </string-array>
+    <string-array name="history_echo_top_dominant">
+        <item>{share} % pour un seul podcast. Les autres barres sont timides.</item>
+        <item>{show} : la part du lion.</item>
+        <item>{share} % pour un podcast. Mon camembert n’a qu’une grosse part.</item>
+        <item>La même pochette a occupé presque tout le mois.</item>
+        <item>{share} %. Ce n’est plus un favori, c’est une résidence.</item>
+        <item>Le mois avait une tête d’affiche et quelques caméos.</item>
+        <item>Un podcast, presque tout le temps d’antenne. Rotation intensive.</item>
+        <item>{show} a régné sur la file ce mois-ci.</item>
+        <item>{share} % sur un seul flux. Un raz-de-marée.</item>
+        <item>Les autres podcasts ont eu droit à la face B.</item>
+        <item>Plus qu’une part, une majorité absolue : {share} %.</item>
+        <item>{show} a eu sa propre chaîne.</item>
+    </string-array>
+    <string-array name="history_echo_top_wide_mix">
+        <item>{shows} podcasts, pas de vrai patron. Une vraie compil.</item>
+        <item>Premier podcast à {share} %. Les autres suivent de près.</item>
+        <item>Un buffet de {shows} podcasts. Personne n’a vidé le plat.</item>
+        <item>{shows} podcasts en rotation. Mes graphiques s’élargissent.</item>
+        <item>En tête avec {share} % seulement. Un graphique très démocratique.</item>
+        <item>Émission de variétés : {shows} podcasts à l’affiche.</item>
+        <item>{show} mène un très grand orchestre.</item>
+        <item>Tant de podcasts que ma légende demande une barre de défilement.</item>
+        <item>Un flux bien large ce mois-ci. Mes barres ont fait la queue.</item>
+        <item>{shows} podcasts, tous à se partager le micro.</item>
+        <item>{share} % pour le premier. Il reste de la place sur scène.</item>
+        <item>Une vraie distribution chorale : {shows} podcasts.</item>
+    </string-array>
+    <string-array name="history_echo_top_three_one_genre">
+        <item>Podium entièrement {genre}. Très coordonné.</item>
+        <item>Un seul genre, tout le podium : {genre}.</item>
+        <item>Tout le podium en {genre}. Tenues assorties.</item>
+        <item>Premières places, un seul genre : {genre}. Code couleur respecté.</item>
+        <item>{genre} rafle tout le podium. Grand chelem.</item>
+        <item>Mon filtre par genre a eu la tâche facile : {genre}.</item>
+        <item>Le haut du classement, c’est un coffret {genre}.</item>
+        <item>{genre} sur chaque marche du podium.</item>
+        <item>Un triplé {genre}. Le podium est assorti.</item>
+        <item>Au sommet, tous les chemins mènent au genre {genre}.</item>
+        <item>{genre} occupe tout le premier rang.</item>
+        <item>Une trilogie {genre} au sommet.</item>
+    </string-array>
+    <string-array name="history_echo_top_three_mixed">
+        <item>Un genre différent à chaque marche. Du zapping.</item>
+        <item>Que des genres différents en tête. Un plateau de dégustation.</item>
+        <item>Genres mélangés au sommet. Ma garde-robe hésite.</item>
+        <item>Le podium est une compil de genres.</item>
+        <item>Pas de thème au sommet. Un vrai patchwork.</item>
+        <item>Mode aléatoire sur le podium. Très shuffle.</item>
+        <item>Un pot-pourri de genres au sommet.</item>
+        <item>Il me faudrait un changement de costume par marche.</item>
+        <item>Premières places, genres variés. Un assortiment.</item>
+        <item>{show} mène un podium bigarré.</item>
+        <item>Genres dépareillés sur le podium. Comme mes chaussettes.</item>
+        <item>Le haut du classement ressemble à un programme télé.</item>
+    </string-array>
+    <string-array name="history_echo_top_genre_changed">
+        <item>{previousGenre} sort, {genre} entre. Nouvelle saison.</item>
+        <item>Avant {previousGenre}, maintenant {genre}. Coup de théâtre.</item>
+        <item>Changement de genre : {genre} succède à {previousGenre}.</item>
+        <item>{genre} prend la tête. {previousGenre} salue et sort.</item>
+        <item>Nouveau mois, nouveau genre en tête : {genre}.</item>
+        <item>J’ai troqué ma tenue {previousGenre} contre {genre}.</item>
+        <item>{previousGenre} rend l’antenne, {genre} la prend.</item>
+        <item>On change de chaîne : {previousGenre}, puis {genre}.</item>
+        <item>Le mois dernier {previousGenre}, ce mois-ci {genre}. Remix.</item>
+        <item>Changement de programme : {genre} est en tête désormais.</item>
+        <item>{previousGenre} passe le relais à {genre}.</item>
+        <item>Dernier épisode pour {previousGenre}, pilote pour {genre}.</item>
+    </string-array>
+    <string-array name="history_echo_top_genre_same">
+        <item>Toujours {genre}. Ma tenue n’a pas bougé.</item>
+        <item>Même genre en tête : {genre}. On rejoue.</item>
+        <item>{genre} garde la couronne un mois de plus.</item>
+        <item>Renouvelé pour une saison : {genre}.</item>
+        <item>Pas de changement de genre. {genre} garde le micro.</item>
+        <item>{genre}, encore. Bis, bis !</item>
+        <item>Même chaîne, on ne zappe pas : {genre}.</item>
+        <item>{genre} en tête ce mois-ci et le précédent. Rediffusion.</item>
+        <item>Le genre préféré tourne en boucle : {genre}.</item>
+        <item>{genre} défend son titre.</item>
+        <item>Pas de rebondissement côté genre : encore {genre}.</item>
+        <item>{genre} garde la tête. Fréquence stable.</item>
+    </string-array>
+    <string-array name="history_echo_top_finishes">
+        <item>{finished} épisodes terminés. J’ai écouté chaque outro.</item>
+        <item>{finished} terminés. J’ai compté chaque note finale.</item>
+        <item>{finished} épisodes, de bout en bout. J’adore un point final.</item>
+        <item>{finished} épisodes, jusqu’à la toute dernière seconde.</item>
+        <item>{finished} écoutés jusqu’au bout. Aucun fil qui dépasse.</item>
+        <item>{finished} fins. Mes barres de progression sont pleines.</item>
+        <item>{show} : {finished} épisodes terminés.</item>
+        <item>{finished} fois le mot fin. Quel beau refrain.</item>
+        <item>{finished} lignes d’arrivée franchies. Mes petites jambes saluent.</item>
+        <item>{finished} épisodes bouclés. Avec un joli nœud.</item>
+        <item>Générique de fin : {finished} épisodes terminés.</item>
+        <item>{finished} fois jusqu’au dernier mot.</item>
+    </string-array>
+    <string-array name="history_echo_top_resume">
+        <item>Un épisode est encore en cours. J’ai gardé votre place.</item>
+        <item>Un épisode est en pause. Rien ne presse.</item>
+        <item>Arrêté sur un cliffhanger. J’ai mis un marque-page.</item>
+        <item>{show}, en pause au milieu d’une phrase.</item>
+        <item>J’ai gardé votre place. Un marque-page à pattes.</item>
+        <item>En pause, pas à l’arrêt. Il vous attendra.</item>
+        <item>La suite au prochain épisode, quand vous voulez.</item>
+        <item>Un épisode est à l’entracte.</item>
+        <item>J’ai corné la page pour vous.</item>
+        <item>{show} vous garde votre siège.</item>
+        <item>La tête de lecture est garée là où vous l’avez laissée.</item>
+        <item>Une histoire en pause, gardée au chaud.</item>
+    </string-array>
+    <string-array name="history_echo_top_usual">
+        <item>En tête du flux : {show}.</item>
+        <item>Et le podcast préféré est… {show}.</item>
+        <item>La pochette que j’ai le plus vue ce mois-ci.</item>
+        <item>{show} : en tête de mes petits classements.</item>
+        <item>Ce podcast a eu le plus d’antenne. À l’antenne et au sommet.</item>
+        <item>{share} % du mois. Le créneau du prime time.</item>
+        <item>Premier podcast. Plus gros volume. Pas au sens propre.</item>
+        <item>Le plus écouté du flux : {show}.</item>
+        <item>Chef de file : {show}.</item>
+        <item>La première place, bien réglée et volume monté.</item>
+        <item>{show} remporte le casque d’or.</item>
+        <item>Le plus de minutes, la plus grande pochette, la meilleure place.</item>
+    </string-array>
+    <string-array name="history_echo_how_output_headphones">
+        <item>Surtout au casque. Une écoute très rapprochée.</item>
+        <item>Le casque en tête. Vos oreilles au premier rang.</item>
+        <item>Surtout dans le casque. Je compatis : je suis une boîte.</item>
+        <item>Casque au top. Écoute très confidentielle.</item>
+        <item>Vos écouteurs ont presque tout écouté. Inséparables.</item>
+        <item>Le casque prend la tête, d’une oreille à l’autre.</item>
+        <item>Surtout au casque. Un concert privé, taille oreille.</item>
+        <item>Casque presque tout le mois. Son bien gardé.</item>
+        <item>Votre casque a eu droit aux confidences.</item>
+        <item>En tête : {output}. Gauche, droite et centre de la scène.</item>
+        <item>Le casque gagne d’une bonne tête.</item>
+        <item>Surtout au casque. Je suis tout ouïe. Façon de parler.</item>
+    </string-array>
+    <string-array name="history_echo_how_output_bluetooth">
+        <item>Surtout en Bluetooth. Une connexion solide, je dirais.</item>
+        <item>Le Bluetooth en tête. Un mois bien appairé.</item>
+        <item>Surtout en Bluetooth. Fil coupé, mais pas celui de l’histoire.</item>
+        <item>Le Bluetooth prend la tête. Sans fil à la patte.</item>
+        <item>Surtout en Bluetooth. Un couple formé en mode appairage.</item>
+        <item>Surtout transmis en Bluetooth. Regardez, sans fil.</item>
+        <item>Le Bluetooth a presque tout porté. Signal reçu.</item>
+        <item>Surtout en Bluetooth. Une belle liaison, sans fil caché.</item>
+        <item>Bluetooth au top. Mes circuits sont un peu jaloux.</item>
+        <item>Bluetooth en tête. Une dent bleue, zéro carie.</item>
+        <item>En tête : {output}. Appairé, et bien branché.</item>
+        <item>Surtout en Bluetooth. Aucun nœud ce mois-ci.</item>
+    </string-array>
+    <string-array name="history_echo_how_output_car">
+        <item>Surtout dans la voiture. Les podcasts côté passager.</item>
+        <item>La voiture a fait le plus gros de l’écoute ce mois-ci.</item>
+        <item>L’autoradio en tête. Le tableau de bord connaît l’intrigue.</item>
+        <item>Surtout en voiture. Les podcasts ont pris la route.</item>
+        <item>La voiture en tête. Vos épisodes ont fait des kilomètres.</item>
+        <item>Surtout en voiture. Un véhicule très bien informé.</item>
+        <item>L’autoradio au top. Les épisodes à l’avant.</item>
+        <item>Surtout en voiture. Ça, c’est du son embarqué.</item>
+        <item>La voiture ouvre la route. Je klaxonnerais, mais je suis une boîte.</item>
+        <item>Enceintes de la voiture en tête. Régulateur de vitesse, version son.</item>
+        <item>La voiture, votre meilleure auditrice. Kilométrage variable.</item>
+        <item>En tête : {output}. L’autoradio a été bien nourri.</item>
+    </string-array>
+    <string-array name="history_echo_how_output_speaker">
+        <item>Surtout le haut-parleur du téléphone. Petit, mais il sait parler.</item>
+        <item>Haut-parleur en tête. Haut et fort, sans complexe.</item>
+        <item>Ni fil ni écouteurs : le haut-parleur mène.</item>
+        <item>Le haut-parleur du téléphone a eu beaucoup d’antenne.</item>
+        <item>Haut-parleur en tête. Petite boîte, grande voix. Je connais ça.</item>
+        <item>Surtout à voix haute. Le haut-parleur a décroché un rôle parlant.</item>
+        <item>Le haut-parleur au top. Finalement, il n’a fait que parler.</item>
+        <item>Surtout le haut-parleur. Le téléphone a trouvé sa voix.</item>
+        <item>Haut-parleur au top. Oreilles libres, rien à démêler.</item>
+        <item>En tête : {output}. Petite grille, grandes émissions.</item>
+        <item>Le haut-parleur domine. Aucun écouteur n’a été maltraité.</item>
+        <item>Haut-parleur vainqueur, haut la main et sans bruit.</item>
+    </string-array>
+    <string-array name="history_echo_how_output_cast">
+        <item>Surtout en Cast. Le téléphone a confié l’émission.</item>
+        <item>Cast en tête. Vos épisodes ont eu une plus grande scène.</item>
+        <item>Cast au top. Le grand écran a pris le relais.</item>
+        <item>Surtout en Cast. La radiodiffusion, version podcast.</item>
+        <item>Cast en tête. Distribution impeccable, je dirais.</item>
+        <item>Surtout en Cast. Les podcasts passent en prime time.</item>
+        <item>Cast au top. Envoyé ailleurs, toujours sur mes graphiques.</item>
+        <item>Surtout en Cast. Envoyé au loin, mais pas perdu.</item>
+        <item>Cast a presque tout pris. Le casting a répondu présent.</item>
+        <item>Cast en tête. Votre téléphone a passé le micro.</item>
+        <item>Lancer parfait, comme à la pêche. Cast mène.</item>
+        <item>Cast en tête. Un podcast, casté. Le nom colle enfin.</item>
+    </string-array>
+    <string-array name="history_echo_how_output_mix">
+        <item>Aucune sortie n’a mené la danse. Une vraie troupe.</item>
+        <item>Sorties serrées, mix encore plus serré. Belle compil.</item>
+        <item>Sorties partagées, pas de tête d’affiche. Une affiche de festival.</item>
+        <item>Réparti entre les sorties. De la stéréo, et plus encore.</item>
+        <item>Toutes les sorties dans le mix. J’adore un bon remix.</item>
+        <item>Pas de vainqueur net. Le son a voyagé.</item>
+        <item>Ce mois-ci, tous les chemins menaient au son.</item>
+        <item>Une scène partagée ce mois-ci. Pas de solo.</item>
+        <item>{output} et compagnie, au coude-à-coude. Un mix serré.</item>
+        <item>Réparti sur les sorties. Un égaliseur bien équilibré.</item>
+        <item>Aucune sortie n’a monopolisé le micro ce mois-ci.</item>
+        <item>Les sorties ont joué chacune leur tour. Très poli, très stéréo.</item>
+    </string-array>
+    <string-array name="history_echo_how_new_lead">
+        <item>Surtout des épisodes frais. Tout juste sortis du micro.</item>
+        <item>Les nouveautés en tête. Attrapées encore tièdes.</item>
+        <item>Surtout des épisodes tout neufs. Encore sous blister.</item>
+        <item>{newShare} % tout juste sortis des presses. Très actuel.</item>
+        <item>Les épisodes frais ont dominé. L’encre était encore humide.</item>
+        <item>Les nouveaux en tête. Le flux a à peine eu le temps de s’actualiser.</item>
+        <item>{newShare} % de nouveautés. Votre file roule aux piles neuves.</item>
+        <item>Surtout des épisodes d’une semaine ou moins. Presque du direct.</item>
+        <item>Les sorties fraîches en tête. Du studio à vos oreilles.</item>
+        <item>Les nouveaux épisodes en tête. Votre flux, servi dans la semaine.</item>
+        <item>{newShare} % tout neufs. J’ai à peine eu le temps de les indexer.</item>
+        <item>Les nouveaux en tête. Flux frais, rien de réchauffé.</item>
+    </string-array>
+    <string-array name="history_echo_how_catching_up">
+        <item>Surtout le catalogue. Un grand cru.</item>
+        <item>Les anciens épisodes en tête. Un mois en marche arrière.</item>
+        <item>Surtout d’anciens épisodes. Les classiques n’expirent jamais.</item>
+        <item>Au fond du catalogue. J’ai pris une lampe torche.</item>
+        <item>Surtout du rattrapage. Le flux a une longue mémoire.</item>
+        <item>Les anciens épisodes ont régné. Vieillis en fût, comme un bon podcast.</item>
+        <item>Surtout du catalogue. Le voyage dans le temps, par flux.</item>
+        <item>Mois rétro. Les archives vous font coucou.</item>
+        <item>Surtout du rattrapage. Vieux épisodes, oreilles neuves.</item>
+        <item>Mois catalogue. Dépoussiéré, puis lecture.</item>
+        <item>Surtout sorti du coffre-fort. J’ai gardé la clé.</item>
+        <item>{newShare} % de neuf, le reste vintage. Radio rétro.</item>
+    </string-array>
+    <string-array name="history_echo_how_lore_high">
+        <item>Lore a attiré {lore} % de l’écoute.</item>
+        <item>Lore a lancé {lore} % de l’écoute. On fait une belle équipe.</item>
+        <item>Lore a trouvé {lore} %. Lore, c’est le cerveau. Moi, la boîte.</item>
+        <item>{lore} % grâce à Lore. Le travail d’équipe fait tourner la file.</item>
+        <item>Lore a démarré {lore} %. Ce graphique, je l’encadre.</item>
+        <item>Lore a déterré {lore} %. Moi, je portais la pelle.</item>
+        <item>{lore} % validés par Lore. Ça vaut de l’or.</item>
+        <item>Lore a choisi {lore} %. De quoi entrer dans la légende.</item>
+        <item>Lore a déniché {lore} %. Je taperais dans sa main, si j’en avais.</item>
+        <item>{lore} % lancés par Lore. Mon coéquipier salue.</item>
+        <item>Lore : {lore} %. Moi : soutien moral.</item>
+        <item>{lore} % via Lore. Notre duo est à l’antenne.</item>
+    </string-array>
+    <string-array name="history_echo_how_smart_queue_high">
+        <item>La File d’attente intelligente a lancé {smartQueue} %. Pile à l’heure.</item>
+        <item>File d’attente intelligente : {smartQueue} %. Et ça file !</item>
+        <item>{smartQueue} % via la File d’attente intelligente. À la file.</item>
+        <item>La File d’attente intelligente a fait avancer {smartQueue} %.</item>
+        <item>{smartQueue} % pour la File d’attente intelligente. Le nom dit tout.</item>
+        <item>{smartQueue} % signés File d’attente intelligente. Malin.</item>
+        <item>File d’attente intelligente : {smartQueue} %. Personne n’a doublé.</item>
+        <item>La file s’est remplie seule pour {smartQueue} %. Libre-service.</item>
+        <item>Un coup d’avance : {smartQueue} % via la File d’attente intelligente.</item>
+        <item>{smartQueue} % en file indienne. Merci la File d’attente intelligente.</item>
+        <item>{smartQueue} % de la File d’attente intelligente. Niveau supérieur.</item>
+        <item>{smartQueue} % mis en file. La file avance en pilote automatique.</item>
+    </string-array>
+    <string-array name="history_echo_how_partial">
+        <item>Mes notes commencent en cours de route. Le reste est un mystère.</item>
+        <item>Image partielle. Les débuts datent d’avant mes capteurs.</item>
+        <item>Une partie de l’écoute précède mes notes. Officieusement.</item>
+        <item>Cartographie partielle. Les anciens bouts ont filé entre mes circuits.</item>
+        <item>Ces barres en couvrent une partie. J’ai pris l’épisode en route.</item>
+        <item>Données partielles. Voyez ça comme une bande-annonce.</item>
+        <item>Toutes les minutes ne sont pas là. J’ai pris l’antenne en retard.</item>
+        <item>Une image partielle, comme une pochette écornée.</item>
+        <item>Une partie échappe à mes graphiques. Mon firmware est arrivé tard.</item>
+        <item>Seule une partie du mois est notée. J’ai raté l’ouverture.</item>
+        <item>Une partie du mois en détail. Le reste, en friture.</item>
+        <item>Données d’une partie du mois. Une première de saison, en somme.</item>
+    </string-array>
+    <string-array name="history_echo_how_usual">
+        <item>Sortie, fraîcheur, qui a lancé quoi. Tout est noté.</item>
+        <item>Chaque chemin vers la lecture, cartographié. J’adore les cartes.</item>
+        <item>Le schéma de câblage de votre mois.</item>
+        <item>Comment tout s’est joué. Au sens propre.</item>
+        <item>Le trajet du signal, en graphique. Mon genre de graphique préféré.</item>
+        <item>Un coup d’œil sous le capot de votre écoute.</item>
+        <item>Le son, sourcé et routé. Mon genre de paperasse.</item>
+        <item>Les rouages. C’est tout à fait mon truc.</item>
+        <item>Branché, appairé ou casté. Voici le mix.</item>
+        <item>Chaque chemin vers vos oreilles, consigné.</item>
+        <item>Voici comment tout vous est parvenu. Cinq sur cinq.</item>
+        <item>Votre pass coulisses pour le mois.</item>
+    </string-array>
+    <string-array name="history_echo_type_tied">
+        <item>Égalité sur l’horloge. Le tic et le tac, aimés pareil.</item>
+        <item>Égalité en tête. Les aiguilles coupent la poire en deux.</item>
+        <item>Match nul sur le cadran. Un temps partagé, au sens propre.</item>
+        <item>Deux leaders sur l’horloge. Coanimateurs de la journée.</item>
+        <item>Impossible de trancher pour l’horloge. Pas de préférée.</item>
+        <item>Coude à coude sur le cadran. Photo-finish, sans photo.</item>
+        <item>Tête partagée. Le prime time avait un coprésentateur.</item>
+        <item>Partage parfait au sommet. Le temps était des deux côtés.</item>
+        <item>Pile à égalité. L’horloge passe en écran partagé.</item>
+        <item>Ex æquo sur le cadran. J’ai vérifié mes engrenages.</item>
+        <item>La première place est partagée. L’horloge reste neutre.</item>
+        <item>À égalité au sommet. Un cadran à deux têtes.</item>
+    </string-array>
+    <string-array name="history_echo_type_morning">
+        <item>Les matins en tête. Lève-tôt, du moins selon l’horloge.</item>
+        <item>Debout là-dedans, et lecture. Les matins gagnent.</item>
+        <item>Les matins au sommet. Le soleil et le flux se sont levés ensemble.</item>
+        <item>Le matin en tête. Le monde appartient à ceux qui écoutent tôt.</item>
+        <item>Matinée gagnante. Le café et le flux, même combat.</item>
+        <item>L’aube d’un nouvel épisode : les matins mènent.</item>
+        <item>Les matins ont régné. Mes yeux s’illuminent à l’aube aussi.</item>
+        <item>L’horloge penche vers l’aurore. Place au chœur de l’aube.</item>
+        <item>Premier rayon, première lecture. Le matin l’emporte.</item>
+        <item>Plutôt du matin, selon l’horloge. Debout de bonne heure.</item>
+        <item>Les matins au sommet. Le générique d’ouverture de la journée.</item>
+        <item>En {month}, spécial lever du soleil.</item>
+    </string-array>
+    <string-array name="history_echo_type_daytime">
+        <item>La journée en tête. Plein jour, pleine antenne.</item>
+        <item>Les après-midi au sommet. Écoute en matinée, comme au théâtre.</item>
+        <item>La journée a régné sur le cadran. Ensoleillé, risque d’épisodes.</item>
+        <item>Midi pile pour votre flux. La journée en tête.</item>
+        <item>Les après-midi en tête. L’heure de la sieste ? Non, du podcast.</item>
+        <item>La journée au sommet. Des podcasts en plein jour.</item>
+        <item>L’après-midi mène. Un coin de soleil sur le cadran.</item>
+        <item>La journée prend la tête. Heures claires, idées claires.</item>
+        <item>Les après-midi en tête. Le soleil faisait les projecteurs.</item>
+        <item>En {month}, la journée en tête. Ma batterie solaire approuve.</item>
+        <item>Les heures de jour en tête. Soleil levé, podcasts lancés.</item>
+        <item>Les après-midi au sommet. Le grand film de la journée.</item>
+    </string-array>
+    <string-array name="history_echo_type_evening">
+        <item>Les soirées en tête. Le prime time, grand classique.</item>
+        <item>Les soirées au sommet. L’heure dorée de votre flux.</item>
+        <item>Les soirées en tête. Soleil couché, son monté.</item>
+        <item>Les soirées ont régné. À l’écoute quand le ciel s’assombrit.</item>
+        <item>Le soir en tête. La quatrième dimension, à l’antenne.</item>
+        <item>Les soirées au sommet. Le final de saison de la journée.</item>
+        <item>L’horloge vire à l’orange. Le soir a dominé {month}.</item>
+        <item>Le soleil rend l’antenne, les voix la prennent. Le soir mène.</item>
+        <item>Les soirées en tête. Un dernier verre, sans la nuit.</item>
+        <item>Les soirées règnent sur le cadran. L’after de la journée.</item>
+        <item>Le soir en tête. Mes yeux passent en mode chaud pour l’occasion.</item>
+        <item>Crépuscule, lumière tamisée et dialogues. Le soir mène.</item>
+    </string-array>
+    <string-array name="history_echo_type_late_night">
+        <item>Les nuits tardives en tête. Oiseau de nuit, selon l’horloge.</item>
+        <item>Après minuit en tête. Le flux ne dort jamais.</item>
+        <item>La nuit a régné. Clair de lune, je vous présente le micro.</item>
+        <item>Les nuits en tête. Mon bonnet de nuit sert enfin.</item>
+        <item>Les nuits tardives au sommet. Petites heures, grand son.</item>
+        <item>Les étoiles étaient de sortie, et les épisodes aussi.</item>
+        <item>L’horloge penche vers minuit. Chouette, je suis là aussi.</item>
+        <item>Les nuits en tête. Moi aussi, je brûle ma batterie par les deux bouts.</item>
+        <item>La nuit prend la tête. Le mode sombre, version horaire.</item>
+        <item>La nuit au sommet. Radio de minuit, très feutrée.</item>
+        <item>La nuit en tête. Envoyez le talk-show de fin de soirée.</item>
+        <item>En {month}, les nuits en tête. Heures calmes, intrigues bruyantes.</item>
+    </string-array>
+    <string-array name="history_echo_type_all_day">
+        <item>Pas d’heure de pointe sur cette horloge. Bien réparti.</item>
+        <item>Aucun moment de la journée en tête. La démocratie, version horaire.</item>
+        <item>Partout sur le cadran. Tic, tac, lecture.</item>
+        <item>Aucun pic horaire. L’horloge garde l’équilibre.</item>
+        <item>Réparti à parts égales. Les fuseaux horaires sont jaloux.</item>
+        <item>Des parts égales, aucune géante. Un joli camembert.</item>
+        <item>Bien étalé. Mes aiguilles n’ont pas pu choisir un camp.</item>
+        <item>Aucun créneau n’a mené la danse ce mois-ci.</item>
+        <item>Réparti sur tout le cadran. L’horloge a bien mangé.</item>
+        <item>Réparti sur la journée. Une horloge sans favori.</item>
+        <item>En {month}, l’horloge n’a rien vu venir. Les aiguilles ont le tournis.</item>
+        <item>Un cadran équilibré. Mes engrenages approuvent.</item>
+    </string-array>
+    <string-array name="history_echo_type_finisher">
+        <item>La plupart des épisodes ont tenu jusqu’au générique. Envoyez-le.</item>
+        <item>Du début à la fin, surtout. Les outros ont été entendues.</item>
+        <item>Épisodes commencés, épisodes finis. De beaux serre-livres.</item>
+        <item>Les outros ont passé un super mois. Beaucoup de fins.</item>
+        <item>Presque tout ce qui a commencé a fini. Point final, lecture finale.</item>
+        <item>Surtout terminés. Aucun fil qui pend sur la frise.</item>
+        <item>La ligne d’arrivée a souvent été franchie ce mois-ci.</item>
+        <item>Des cliffhangers ? Presque tous résolus.</item>
+        <item>Une horloge complétiste. Rares épisodes laissés en plan.</item>
+        <item>La plupart des épisodes sont allés au bout. Souvent dans la boîte.</item>
+        <item>De l’ouverture au mot de la fin, surtout. Soigné.</item>
+        <item>Barres de progression presque pleines. Satisfaisant à tracer.</item>
+    </string-array>
+    <string-array name="history_echo_type_sampler">
+        <item>Un avant-goût de plein d’épisodes. Plateau de dégustation.</item>
+        <item>Beaucoup de premières impressions. Un flux en speed dating.</item>
+        <item>Un peu de tout, comme on fouille les bacs d’un disquaire.</item>
+        <item>Plein de premiers chapitres. Une passion pour les bandes-annonces.</item>
+        <item>Plein d’ouvertures. La curiosité, selon l’horloge.</item>
+        <item>Un plongeon dans plein de flux. Les pieds dans l’eau, pas la tête.</item>
+        <item>Beaucoup d’essais. Les intros ont passé un super mois.</item>
+        <item>Énergie shuffle. Un peu de ci, un peu de ça.</item>
+        <item>Beaucoup de débuts, fins ouvertes. Cliffhangers au choix.</item>
+        <item>Mode dégustation : activé. Un vrac de boutons lecture.</item>
+        <item>Le bouton lecture a fait beaucoup d’exercice.</item>
+        <item>Des épisodes laissés en pause. L’intrigue peut attendre.</item>
+    </string-array>
+    <string-array name="history_echo_type_usual">
+        <item>Votre mois, à l’horloge. Tic-tac, en graphique.</item>
+        <item>Voici quand tout s’est passé. J’ai pointé.</item>
+        <item>Votre {month} sur le cadran. Le temps file quand on le chronomètre.</item>
+        <item>Le cadran de votre mois. Joli cadran. Je m’y connais.</item>
+        <item>Tout est question de timing. Voici le vôtre.</item>
+        <item>Le mois, arrondi. Dans le sens des aiguilles.</item>
+        <item>Votre profil, servi à l’heure. Frais à chaque tic.</item>
+        <item>Petite aiguille, grande aiguille, bouton lecture.</item>
+        <item>Les séances, telles que l’horloge les a vues.</item>
+        <item>Une journée dans la vie de votre flux.</item>
+        <item>Le quand de tout ça. Je suis toujours à l’heure.</item>
+        <item>Sur l’horloge, au pied levé.</item>
+    </string-array>
+    <string-array name="history_echo_records_one_day">
+        <item>Un tirage limité ce mois-ci. Juste le {bigDay}.</item>
+        <item>Pas de série ce mois-ci. Plutôt une balade tranquille.</item>
+        <item>{bigDayTime} le {bigDay}. C’est tout le palmarès.</item>
+        <item>Trophée pour le {bigDay}. Sans adversaire.</item>
+        <item>Un single, pas un album. Sorti le {bigDay}.</item>
+        <item>Entre nous, le {bigDay} a eu le mois pour lui tout seul.</item>
+        <item>Le {bigDay} rafle le trophée, le podium et le ruban.</item>
+        <item>Mon calendrier n’a qu’une punaise : le {bigDay}.</item>
+        <item>Le {bigDay} était toute la tracklist.</item>
+        <item>Un mois en aller simple. Destination : le {bigDay}.</item>
+        <item>Sans série, comme une vitre sans traces. Juste le {bigDay}.</item>
+        <item>L’invité d’honneur du calendrier : le {bigDay}.</item>
+    </string-array>
+    <string-array name="history_echo_records_new_record">
+        <item>{run} jours d’affilée. Nouvelle entrée dans mon livre des records.</item>
+        <item>{run} jours de suite. J’ai dû réimprimer le trophée.</item>
+        <item>Nouveau record, tout juste pressé : {run} jours.</item>
+        <item>{run} jours sans interruption. Un vrai 33 tours.</item>
+        <item>Dernière minute : un record est tombé. {run} jours.</item>
+        <item>{run} jours sans lâcher le rythme. Le trophée est encore chaud.</item>
+        <item>Inscrivez-le au registre : {run} jours d’affilée.</item>
+        <item>{run} jours. Un record battu, en douceur.</item>
+        <item>À {run} jours, je n’avais plus d’étoiles dorées.</item>
+        <item>Le plus long sillon à ce jour : {run} jours.</item>
+        <item>Le podium a grandi. {run} jours d’affilée.</item>
+        <item>{run} jours. J’ai lustré le trophée. Et relustré.</item>
+    </string-array>
+    <string-array name="history_echo_records_tied_record">
+        <item>{run} jours. À égalité avec votre record. Un duo parfait.</item>
+        <item>Égalité à {best}. Les trophées partagent l’étagère.</item>
+        <item>Encore {run} jours. Un record, repressé.</item>
+        <item>Même sillon que votre record : {best} jours.</item>
+        <item>Égal au record. J’adore une belle symétrie.</item>
+        <item>{run} jours, comme le record. Photo-finish.</item>
+        <item>Coude à coude avec votre record : {best} jours.</item>
+        <item>Une reprise fidèle de votre record : {best} jours.</item>
+        <item>Trophées assortis : {run} jours, hier comme aujourd’hui.</item>
+        <item>À égalité avec le record. Même le podium est à niveau.</item>
+        <item>Bis au calendrier : {run} jours, comme avant.</item>
+        <item>{best} jours, égalés. Mon graphique devient symétrique.</item>
+    </string-array>
+    <string-array name="history_echo_records_first_run">
+        <item>Premier titre au palmarès : une série de {run} jours.</item>
+        <item>Vinyle tout neuf, encore sous pochette : {run} jours.</item>
+        <item>Un premier single, long de {run} jours.</item>
+        <item>Nouveau livre des records, page blanche : {run} jours d’affilée.</item>
+        <item>{run} jours d’affilée. J’ai commencé un album souvenir.</item>
+        <item>Une série de {run} jours, classée « débuts ».</item>
+        <item>Tout record commence quelque part. Ici : {run} jours.</item>
+        <item>Tout frais pressé : une série de {run} jours au calendrier.</item>
+        <item>La toute première série de mon calendrier : {run} jours.</item>
+        <item>Générique d’ouverture : {run} jours de suite.</item>
+        <item>Première au palmarès : {run} jours sans interruption.</item>
+        <item>Pendaison de crémaillère pour l’étagère à trophées : {run} jours.</item>
+    </string-array>
+    <string-array name="history_echo_records_longer_run">
+        <item>{run} jours d’affilée. Un sillon plus long cette fois.</item>
+        <item>La série a grandi. {run} jours. Mon calendrier s’étire.</item>
+        <item>Remix étendu ce mois-ci : une série de {run} jours.</item>
+        <item>{run} jours sans interruption. La face B s’est allongée.</item>
+        <item>Série plus longue, mêmes petites jambes. {run} jours.</item>
+        <item>Une série de {run} jours. Le calendrier a manqué de pastilles.</item>
+        <item>{run} jours de suite. J’en aurais le souffle court.</item>
+        <item>La série a gagné quelques cases : {run} jours.</item>
+        <item>{run} jours de suite. Durée prolongée.</item>
+        <item>{run} jours. La série du mois dernier a eu une suite.</item>
+        <item>Un morceau plus long cette fois : {run} jours en boucle.</item>
+        <item>Version longue de la série du mois dernier : {run} jours.</item>
+    </string-array>
+    <string-array name="history_echo_records_shorter_run">
+        <item>Une série plus courte, {run} jours. Les sprints comptent aussi.</item>
+        <item>La version radio ce mois-ci : {run} jours.</item>
+        <item>{run} jours d’affilée. Court mais bon.</item>
+        <item>Pas besoin d’une longue face pour faire un disque. {run} jours.</item>
+        <item>Un EP ce mois-ci : {run} jours de suite.</item>
+        <item>Pastilles au calendrier : {run} d’affilée. Format snack.</item>
+        <item>Une série légère de {run} jours. Chacun son rythme.</item>
+        <item>Entre nous, les séries courtes sont mes préférées.</item>
+        <item>{run} jours. La version best-of.</item>
+        <item>Série plus courte. Ma batterie a apprécié les pauses.</item>
+        <item>Une série plus courte. Mes petites jambes approuvent.</item>
+        <item>{run} jours. Une bande-annonce, pas le film.</item>
+    </string-array>
+    <string-array name="history_echo_records_below_best">
+        <item>{run} jours ce mois-ci. Votre record reste sur son étagère.</item>
+        <item>Le record de {best} jours peut rester encadré. Rien ne presse.</item>
+        <item>Best-of : {best} jours. Nouveau single : {run}.</item>
+        <item>Record absolu : {best}. Ce mois-ci : {run}. Tout est noté.</item>
+        <item>L’ancien record tourne toujours : {best} jours.</item>
+        <item>{run} jours. Le trophée des {best} jours, c’est de la déco.</item>
+        <item>Une série de {run} jours. Les records ne sont pas des devoirs.</item>
+        <item>{best} jours, c’est un classique. {run}, une belle reprise.</item>
+        <item>Pas de course après {best}. Je note juste {run}.</item>
+        <item>Le record tient à {best}. Le trophée fait la sieste.</item>
+        <item>{run} ce mois-ci, {best} de tous les temps. Les deux tournent.</item>
+        <item>Le panthéon reste à {best}. Je me contente d’épousseter.</item>
+    </string-array>
+    <string-array name="history_echo_records_bigger_peak">
+        <item>Le {bigDay} : {bigDayTime}. Un nouveau sommet sur mon graphique.</item>
+        <item>{bigDayTime} le {bigDay}. Plus haut que le mois dernier.</item>
+        <item>Haute saison : le {bigDay}, {bigDayTime}.</item>
+        <item>Le {bigDay} a tapé une note plus haute : {bigDayTime}.</item>
+        <item>La plus haute barre a grimpé. {bigDayTime} le {bigDay}.</item>
+        <item>Le {bigDay} en tête du hit-parade. Enfin, de mon graphique.</item>
+        <item>Nouveau sommet : {bigDayTime}. J’ai sorti mes mini-crampons.</item>
+        <item>Plus haut que haut : {bigDayTime} le {bigDay}.</item>
+        <item>Le {bigDay} a placé la barre plus haut. Je l’ai mesurée.</item>
+        <item>Podium amélioré : le {bigDay}, avec {bigDayTime}.</item>
+        <item>{bigDayTime} en un jour. L’histogramme réclame une échelle.</item>
+        <item>Le sommet s’offre un penthouse : {bigDayTime}, le {bigDay}.</item>
+    </string-array>
+    <string-array name="history_echo_records_long_sitting">
+        <item>{sitting} d’affilée. Un 33 tours complet, faces A et B.</item>
+        <item>Une séance de {sitting}. Un double album, ça.</item>
+        <item>{sitting} sans s’arrêter. Le bouton pause a fait la sieste.</item>
+        <item>Une séance marathon : {sitting}. Il me faudrait une recharge.</item>
+        <item>{sitting} d’épisode d’une traite. Ma batterie est jalouse.</item>
+        <item>Plus longue séance : {sitting}. Un vrai long play.</item>
+        <item>{sitting} d’un coup. Une écoute long métrage.</item>
+        <item>Plus longue écoute d’un trait : {sitting} d’épisode.</item>
+        <item>{sitting} en une session. Le vinyle a tourné sans relâche.</item>
+        <item>{sitting} en une écoute. Même mon firmware a fait une pause.</item>
+        <item>Un appui sur lecture, {sitting} d’épisode.</item>
+        <item>{sitting} sans bouger. J’en ai des fourmis dans les jambes.</item>
+    </string-array>
+    <string-array name="history_echo_records_short_sittings">
+        <item>Plus longue séance : {sitting}. Que des singles, pas d’album.</item>
+        <item>Format bouchée : rien de plus long que {sitting}.</item>
+        <item>{sitting} maximum. Les podcasts à la petite cuillère.</item>
+        <item>Que des tours express. Record : {sitting}.</item>
+        <item>{sitting}, pas plus. Version radio tout le mois.</item>
+        <item>Des séances format snack. La plus longue : {sitting}.</item>
+        <item>Pas de marathon, que des sprints. Le plus long : {sitting}.</item>
+        <item>{sitting}, max. Ma batterie adore ce rythme.</item>
+        <item>Pas vraiment assis. Plutôt du stand-up.</item>
+        <item>Plus longue traite : {sitting}. Des disques format poche.</item>
+        <item>Ça entre et ça sort, comme un refrain. Max {sitting}.</item>
+        <item>{sitting} au plus. Court et doux, comme mes jambes.</item>
+    </string-array>
+    <string-array name="history_echo_records_binge">
+        <item>{count} épisodes du même podcast en un jour. Bis, bis.</item>
+        <item>{count} épisodes d’un podcast en un jour. En boucle.</item>
+        <item>Un podcast a enchaîné un set de {count} épisodes en un jour.</item>
+        <item>Pass saison : {count} épisodes d’un podcast en un jour.</item>
+        <item>{count} épisodes en un jour. Une mini-saison, en somme.</item>
+        <item>Ce podcast a eu {count} lectures en un jour. Tête d’affiche.</item>
+        <item>Une journée à {count} épisodes. L’intrigue s’est vite corsée.</item>
+        <item>Cliffhanger, suivant, cliffhanger : {count} en un jour.</item>
+        <item>{count} épisodes en un jour. Mon compteur a chauffé.</item>
+        <item>Même podcast, {count} épisodes, un jour. L’album en entier.</item>
+        <item>{count} épisodes en un jour. La file a eu du mal à suivre.</item>
+        <item>Un podcast, {count} épisodes en un jour. Ambiance coffret.</item>
+    </string-array>
+    <string-array name="history_echo_records_scattered">
+        <item>{days} jours, jamais consécutifs. Un calendrier à pois.</item>
+        <item>Un calendrier en lecture aléatoire : {days} jours, bien espacés.</item>
+        <item>Pas de série, que des sauts. {days} jours au calendrier.</item>
+        <item>Marelle sur le calendrier : {days} cases.</item>
+        <item>{days} jours avec des blancs entre. Très rythmé.</item>
+        <item>Le calendrier a du groove : un jour oui, un jour non.</item>
+        <item>Pas de série à signaler. Juste {days} jours en solo.</item>
+        <item>Écoute à contretemps : {days} jours, jamais d’affilée.</item>
+        <item>Des pierres de gué, pas un chemin : {days} jours.</item>
+        <item>Mon compteur de séries a eu son mois de congé.</item>
+        <item>Écoute en notes et en soupirs : {days} jours.</item>
+        <item>Un mois staccato : {days} jours, joliment espacés.</item>
+    </string-array>
+    <string-array name="history_echo_records_weekday">
+        <item>Sur le podium : {weekday}.</item>
+        <item>En tête du hit-parade de la semaine : {weekday}.</item>
+        <item>C’est officiel, le chouchou de la semaine : {weekday}.</item>
+        <item>Trophée décerné : {weekday}. Beau discours.</item>
+        <item>Tête d’affiche de la semaine : {weekday}.</item>
+        <item>Si la semaine avait un tube, ce serait : {weekday}.</item>
+        <item>Meneur de la semaine : {weekday}. Les autres fredonnent.</item>
+        <item>Le plus gros volume de mon calendrier : {weekday}.</item>
+        <item>Mon calendrier a un faible pour un jour : {weekday}.</item>
+        <item>En boucle, le tube de la semaine : {weekday}.</item>
+        <item>Vainqueur de la semaine, sans recomptage : {weekday}.</item>
+        <item>Prime time au calendrier : {weekday}.</item>
+    </string-array>
+    <string-array name="history_echo_records_usual">
+        <item>Les records, fraîchement pressés et classés.</item>
+        <item>Voici le palmarès du mois.</item>
+        <item>Mon étagère à trophées, dépoussiérée pour l’occasion.</item>
+        <item>Les temps forts du mois, gravés sur vinyle.</item>
+        <item>Officieusement ? Ici, tout est officiel.</item>
+        <item>Records personnels uniquement. Pas de classement général.</item>
+        <item>Les records, enregistrés. Normal, pour des disques.</item>
+        <item>Je garde les records. Le trophée, c’est pour la déco.</item>
+        <item>Le calendrier, version best-of.</item>
+        <item>Le podium est minuscule, comme mes jambes.</item>
+        <item>Pas de high score ici, juste les notes que j’ai prises.</item>
+        <item>Retournez le mois : voici la face B.</item>
+    </string-array>
+    <string-array name="history_echo_wrap_december">
+        <item>C’est dans la boîte pour {month}, et pour l’année.</item>
+        <item>Le dernier épisode de l’année. Générique.</item>
+        <item>Fin de saison en {month}. Et fin de calendrier.</item>
+        <item>Fin de la bande de l’année. Rembobinez quand vous voulez.</item>
+        <item>Le dernier chapitre de l’année, emballé comme un cadeau.</item>
+        <item>Le final : {month}. Pas de cliffhanger, juste le générique.</item>
+        <item>La dernière piste de l’année. Fondu en douceur.</item>
+        <item>Dernière page du carnet de l’année. Marque-page posé.</item>
+        <item>Voilà {month}, bien emballé. Avec le nœud.</item>
+        <item>Générique de fin pour l’année. Votre montage est prêt.</item>
+        <item>Le calendrier est fini. Mes notes sont reliées.</item>
+        <item>Les finales se revoient bien. Réécoutez quand vous voulez.</item>
+    </string-array>
+    <string-array name="history_echo_wrap_january">
+        <item>Le pilote d’une nouvelle saison : {month}, bouclé.</item>
+        <item>Le premier chapitre de la nouvelle année, bien emballé.</item>
+        <item>Nouveau calendrier, premier récap. Encre fraîche.</item>
+        <item>L’épisode d’ouverture de l’année, dans la boîte.</item>
+        <item>Le prologue de l’année, bouclé.</item>
+        <item>Calendrier neuf, notes fraîches. Voici {month}.</item>
+        <item>Pilote de l’année : tourné, monté, bouclé.</item>
+        <item>Nouvelle année, même robot, nouveau récap.</item>
+        <item>Le récap de {month}, première piste de l’année.</item>
+        <item>L’année a appuyé sur lecture. Voici le récap de {month}.</item>
+        <item>La première page de l’année, marque-page posé.</item>
+        <item>Année toute neuve. Carte de partage toute neuve.</item>
+    </string-array>
+    <string-array name="history_echo_wrap_first">
+        <item>Notre première histoire. Les pilotes, ça se revoit.</item>
+        <item>C’est dans la boîte : mon tout premier récap.</item>
+        <item>Premier récap, emballé et prêt.</item>
+        <item>Ma première histoire. Je l’encadre.</item>
+        <item>Notre épisode pilote : bouclé.</item>
+        <item>Premier récap terminé. Rembobinage à volonté.</item>
+        <item>La première est finie. Rappel disponible.</item>
+        <item>Ma première carte de partage. J’ai peut-être perdu une goutte d’huile.</item>
+        <item>Le premier chapitre de mes notes, relié.</item>
+        <item>Des débuts, emballés avec un nœud.</item>
+        <item>Tout juste sortie de presse : notre première histoire.</item>
+        <item>Générique de fin pour notre première histoire.</item>
+    </string-array>
+    <string-array name="history_echo_wrap_usual">
+        <item>C’est dans la boîte pour {month}.</item>
+        <item>Générique de fin pour {month}.</item>
+        <item>Voilà {month} bouclé. Rembobinez quand vous voulez.</item>
+        <item>Et… coupez ! C’était {month}.</item>
+        <item>Votre {month} en résumé. Un résumé en forme de podcast.</item>
+        <item>Fin de bande : {month}, récapitulé de A à Z.</item>
+        <item>Le générique défile sur {month}. Le rappel est juste là.</item>
+        <item>Votre {month}, compressé en carte de partage. Sans perte.</item>
+        <item>Fondu au noir sur {month}. Retour en fondu quand vous voulez.</item>
+        <item>J’ai emballé {month} de mes petites mains.</item>
+        <item>Récap : {month}, maintenant en rediffusion.</item>
+        <item>Lâcher de micro sur {month}. Doucement. C’est un joli micro.</item>
+    </string-array>
+</resources>

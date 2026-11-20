@@ -1,0 +1,12 @@
+<resources>
+    <string name="player_now_playing">Läuft gerade</string>
+    <string name="player_chapters_tab">Kapitel</string>
+    <string name="player_transcript_tab">Transkript</string>
+    <string name="player_notes_tab">Shownotes</string>
+    <string name="player_open_fullscreen">Player im Vollbild öffnen</string>
+    <string name="player_share_episode">Folge teilen</string>
+    <string name="player_no_transcript">Kein Transkript verfügbar</string>
+    <string name="player_preparing_transcript">Transkript wird vorbereitet</string>
+    <string name="player_no_notes">Keine Shownotes verfügbar</string>
+    <string name="player_open_fullscreen_transcript">Transkript im Vollbild öffnen</string>
+</resources>

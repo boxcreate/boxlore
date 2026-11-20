@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="updates_title">Mises à jour de l’appli</string>
+    <string name="updates_checking">Recherche de mises à jour…</string>
+    <string name="updates_current">Vous êtes à jour</string>
+    <string name="updates_check_failed">Impossible de rechercher les mises à jour. Réessayez plus tard.</string>
+    <string name="updates_incompatible">La dernière mise à jour nécessite une version plus récente d’Android.</string>
+    <string name="updates_check">Rechercher des mises à jour</string>
+    <string name="updates_close">Fermer les mises à jour</string>
+    <string name="updates_available">Mise à jour disponible</string>
+    <string name="updates_version">Version %1$s</string>
+    <string name="updates_play_available">Une mise à jour est disponible sur Google Play</string>
+    <string name="updates_play">Mettre à jour avec Google Play</string>
+    <string name="updates_play_failed">Impossible d’ouvrir la mise à jour. Réessayez.</string>
+    <string name="updates_play_check_failed">Impossible de rechercher les mises à jour sur Google Play</string>
+    <string name="updates_open_play">Ouvrir Google Play</string>
+    <string name="updates_try_again">Réessayer</string>
+    <string name="updates_play_unavailable">Cette mise à jour n’est plus disponible. Recherchez à nouveau des mises à jour.</string>
+    <string name="updates_download">Télécharger la mise à jour</string>
+    <string name="updates_install">Installer la mise à jour</string>
+    <string name="updates_pause">Suspendre le téléchargement</string>
+    <string name="updates_downloading">Téléchargement de la mise à jour · %1$d %%</string>
+    <string name="updates_verifying">Vérification de la mise à jour…</string>
+    <string name="updates_ready">Prête à installer. Android vous demandera de confirmer.</string>
+    <string name="updates_permission">Autorisez boxlore à installer des mises à jour dans les paramètres Android, puis revenez et appuyez sur Installer la mise à jour.</string>
+    <string name="updates_transfer_failed">Impossible de préparer la mise à jour. Essayez de la télécharger à nouveau.</string>
+    <string name="updates_notes">Notes de version</string>
+    <string name="updates_read_notes">Lire les notes de version</string>
+    <string name="updates_upcoming">Prochainement</string>
+    <string name="updates_unreleased">Pas encore publié</string>
+</resources>

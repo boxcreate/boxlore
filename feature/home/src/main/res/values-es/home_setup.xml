@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_setup_title">¡A escuchar!</string>
+    <string name="home_setup_suggestions">Busca podcasts para mí</string>
+    <string name="home_setup_search">Buscar podcasts</string>
+    <string name="home_setup_import">Importar biblioteca</string>
+    <string name="home_setup_dismiss">Ocultar opciones de configuración</string>
+</resources>

@@ -1,0 +1,30 @@
+<resources>
+    <string name="updates_title">App-Updates</string>
+    <string name="updates_checking">Suche nach Updates…</string>
+    <string name="updates_current">Du bist auf dem neuesten Stand</string>
+    <string name="updates_check_failed">Suche nach Updates nicht möglich. Versuch es später noch mal.</string>
+    <string name="updates_incompatible">Das neueste Update braucht eine neuere Android-Version.</string>
+    <string name="updates_check">Nach Updates suchen</string>
+    <string name="updates_close">Updates schließen</string>
+    <string name="updates_available">Update verfügbar</string>
+    <string name="updates_version">Version %1$s</string>
+    <string name="updates_play_available">Bei Google Play ist ein Update verfügbar</string>
+    <string name="updates_play">Über Google Play aktualisieren</string>
+    <string name="updates_play_failed">Das Update konnte nicht geöffnet werden. Versuch es noch mal.</string>
+    <string name="updates_play_check_failed">Suche nach Updates bei Google Play nicht möglich</string>
+    <string name="updates_open_play">Google Play öffnen</string>
+    <string name="updates_try_again">Noch mal versuchen</string>
+    <string name="updates_play_unavailable">Dieses Update ist nicht mehr verfügbar. Such noch mal nach Updates.</string>
+    <string name="updates_download">Update herunterladen</string>
+    <string name="updates_install">Update installieren</string>
+    <string name="updates_pause">Download pausieren</string>
+    <string name="updates_downloading">Update wird heruntergeladen · %1$d %%</string>
+    <string name="updates_verifying">Update wird geprüft…</string>
+    <string name="updates_ready">Bereit zur Installation. Android bittet dich um Bestätigung.</string>
+    <string name="updates_permission">Erlaube boxlore in den Android-Einstellungen, Updates zu installieren. Komm dann zurück und tippe auf „Update installieren“.</string>
+    <string name="updates_transfer_failed">Das Update konnte nicht vorbereitet werden. Lade es noch mal herunter.</string>
+    <string name="updates_notes">Versionshinweise</string>
+    <string name="updates_read_notes">Versionshinweise lesen</string>
+    <string name="updates_upcoming">Demnächst</string>
+    <string name="updates_unreleased">Noch nicht veröffentlicht</string>
+</resources>

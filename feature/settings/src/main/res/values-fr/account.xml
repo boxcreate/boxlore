@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Account & sync page. Reached from Settings › Cloud Sync & Backups and from onboarding's Import library. -->
+    <string name="account_page_title">Compte et synchro</string>
+    <string name="account_back">Retour</string>
+    <string name="account_not_now">Plus tard</string>
+    <string name="account_echo_description">Echo, votre compagnon d’écoute</string>
+    <string name="account_echo_change">Changer la tenue d’Echo</string>
+
+    <!-- Signed out -->
+    <string name="account_headline">Votre bibliothèque, sur tous vos appareils</string>
+    <string name="account_syncs_shows">Podcasts</string>
+    <string name="account_syncs_queue">File d’attente</string>
+    <string name="account_syncs_progress">Progression</string>
+    <string name="account_syncs_description">Synchronise vos podcasts, votre file d’attente et votre progression d’écoute</string>
+    <string name="account_sign_in_label">Connectez-vous pour synchroniser</string>
+    <string name="account_google">Continuer avec Google</string>
+    <string name="account_google_detail">Utiliser votre compte Google</string>
+    <string name="account_google_connecting">Connexion à Google…</string>
+    <string name="account_link">Recevoir un lien de connexion par e-mail</string>
+    <string name="account_link_detail">Aucun mot de passe nécessaire</string>
+    <string name="account_password">Utiliser un e-mail et un mot de passe</string>
+    <string name="account_password_detail">Se connecter ou créer un compte</string>
+    <string name="account_other_ways">Autres moyens de connexion</string>
+    <string name="account_email">Adresse e-mail</string>
+    <string name="account_send_link">Envoyer le lien</string>
+    <string name="account_sign_in">Se connecter</string>
+    <string name="account_create">Créer un compte</string>
+    <string name="account_password_label">Mot de passe</string>
+    <string name="account_confirm_password">Confirmer le mot de passe</string>
+    <string name="account_password_rule">Au moins 6 caractères</string>
+    <string name="account_forgot_password">Mot de passe oublié ?</string>
+    <string name="account_show_password">Afficher le mot de passe</string>
+    <string name="account_hide_password">Masquer le mot de passe</string>
+    <!-- %1$s is the linked words "Privacy Policy" (account_privacy_policy). -->
+    <string name="account_privacy_notice">En continuant, vous acceptez la %1$s.</string>
+
+    <!-- Opening a sign-in link: signing in, or why it didn’t work -->
+    <string name="account_link_signing_in">Connexion en cours</string>
+    <string name="account_link_signing_in_body">Vérification de votre lien. Votre bibliothèque se synchronise juste après.</string>
+    <string name="account_link_expired">Ce lien a expiré</string>
+    <string name="account_link_expired_body">Les liens de connexion ne fonctionnent qu’une fois et expirent au bout d’un moment.</string>
+    <string name="account_link_send_new">Envoyer un nouveau lien</string>
+    <string name="account_link_failed">Impossible de vous connecter</string>
+    <string name="account_link_failed_body">Vérifiez votre connexion et réessayez le lien.</string>
+    <string name="account_link_try_again">Réessayer</string>
+
+    <!-- Check your email: a sign-in link, or confirming a new password account -->
+    <string name="account_check_title">Consultez vos e-mails</string>
+    <string name="account_check_body">Ouvrez le lien que nous avons envoyé sur ce téléphone pour terminer la connexion.</string>
+    <string name="account_confirm_title">Confirmez votre e-mail</string>
+    <string name="account_confirm_body">Ouvrez le lien de confirmation que nous avons envoyé, puis revenez sur boxlore. Nous prendrons le relais.</string>
+    <string name="account_sent_to">Envoyé à</string>
+    <string name="account_change_email">Changer d’e-mail</string>
+    <string name="account_open_gmail">Ouvrir Gmail</string>
+    <string name="account_open_email">Ouvrir l’appli de messagerie</string>
+    <string name="account_resend_link">Renvoyer le lien</string>
+    <string name="account_resend_email">Renvoyer l’e-mail</string>
+    <string name="account_resend_in">Renvoyer dans %1$d s</string>
+    <string name="account_confirmed">J’ai confirmé</string>
+    <string name="account_checking">Vérification…</string>
+    <string name="account_spam_hint">Pas dans votre boîte de réception ? Vérifiez vos spams.</string>
+
+    <!-- Signed in -->
+    <string name="account_signed_in_title">Vous êtes connecté</string>
+    <string name="account_listener">Auditeur boxlore</string>
+    <string name="account_continue">Continuer</string>
+    <string name="account_bringing">Transfert de votre bibliothèque sur ce téléphone</string>
+    <string name="account_on_phone">Votre bibliothèque est sur ce téléphone</string>
+    <string name="account_tile_done">Terminé</string>
+    <string name="account_tile_syncing">Synchro</string>
+    <string name="account_continue_hint_title">Inutile d’attendre</string>
+    <string name="account_continue_hint_body">Continuez quand vous voulez. Votre bibliothèque continue de se synchroniser en arrière-plan.</string>
+    <string name="account_sync_on">Synchro activée</string>
+    <string name="account_sync_on_body">Votre bibliothèque se synchronise automatiquement.</string>
+    <string name="account_sync_busy">Synchronisation de votre bibliothèque</string>
+    <string name="account_sync_busy_body">Mise à jour de vos podcasts et de votre progression.</string>
+    <string name="account_sync_done">À jour</string>
+    <string name="account_sync_error">Échec de la synchro</string>
+    <string name="account_sync_error_body">Votre bibliothèque est toujours sur ce téléphone.</string>
+    <string name="account_sync_now">Synchroniser</string>
+    <string name="account_sync_retry">Réessayer</string>
+    <string name="account_section">Compte</string>
+    <string name="account_signed_in_with">Connecté avec %1$s</string>
+    <string name="account_reset_password">Réinitialiser le mot de passe</string>
+    <string name="account_sign_out">Se déconnecter</string>
+    <string name="account_delete">Supprimer le compte</string>
+    <string name="account_privacy_policy">Politique de confidentialité</string>
+    <string name="account_how_deletion_works">Fonctionnement de la suppression</string>
+    <string name="settings_sync_cloud_sync_title">Synchro cloud</string>
+    <string name="settings_sync_badge_issue">Problème de synchro</string>
+    <string name="settings_sync_badge_syncing">Synchronisation…</string>
+    <string name="settings_sync_badge_active">Synchro cloud active</string>
+    <string name="settings_sync_signed_in_as">Connecté en tant que %1$s</string>
+    <string name="settings_sync_sign_in_prompt">Connectez-vous pour sauvegarder et synchroniser entre vos appareils</string>
+    <string name="settings_sync_cloud_sync_label">Synchro cloud</string>
+    <string name="settings_sync_open_account">Ouvrir les paramètres du compte</string>
+    <string name="settings_sync_full_backup_summary">Abonnements, dossiers, playlists, historique, j’aime et paramètres (JSON)</string>
+    <string name="settings_sync_export_title">Exporter</string>
+    <string name="settings_sync_full_backup">Sauvegarde complète de la bibliothèque</string>
+    <string name="settings_sync_subscriptions_only">Abonnements seulement</string>
+    <string name="settings_sync_opml_file">Fichier OPML</string>
+    <string name="settings_sync_import_title">Importer</string>
+    <!-- "Missing episodes?" is the name of a per-show option. -->
+    <string name="settings_sync_import_full_description">Restaure les choix « Des épisodes manquent ? » et actualise ces podcasts</string>
+    <string name="settings_sync_import_opml_description">Importer depuis un fichier OPML</string>
+    <string name="account_deleted_toast">Compte supprimé</string>
+    <string name="account_delete_dialog_title">Supprimer le compte</string>
+    <string name="account_delete_dialog_body">Voulez-vous vraiment supprimer votre compte boxlore ? Votre profil cloud et vos données de synchronisation entre appareils seront définitivement supprimés. Vos téléchargements et le catalogue de podcasts sur cet appareil ne seront pas effacés.</string>
+    <string name="account_delete_dialog_learn_more">Découvrir ce que deviennent vos données après la suppression</string>
+    <string name="account_delete_dialog_confirm">Supprimer définitivement</string>
+    <string name="account_reauth_dialog_title">Connexion récente requise</string>
+    <string name="account_reauth_dialog_body">Pour votre sécurité, la suppression de votre compte nécessite une connexion récente. Déconnectez-vous puis reconnectez-vous, et réessayez de supprimer votre compte.</string>
+    <string name="account_reauth_dialog_confirm">Se déconnecter pour se reconnecter</string>
+    <!-- Sign-in and account errors and confirmations. -->
+    <string name="account_error_no_account">Aucun compte n’est associé à cet e-mail. Essayez plutôt de vous inscrire.</string>
+    <string name="account_error_wrong_password">Mot de passe ou identifiants incorrects. Veuillez réessayer.</string>
+    <string name="account_error_email_in_use">Cet e-mail est déjà enregistré. Essayez plutôt de vous connecter.</string>
+    <string name="account_error_weak_password">Mot de passe trop faible. Utilisez au moins 6 caractères.</string>
+    <string name="account_error_invalid_email_server">Veuillez saisir une adresse e-mail valide.</string>
+    <string name="account_error_too_many">Trop de tentatives. Patientez quelques minutes avant de réessayer.</string>
+    <string name="account_error_disabled">Ce compte a été désactivé. Veuillez contacter l’assistance.</string>
+    <string name="account_error_recent_login">Par sécurité, déconnectez-vous puis reconnectez-vous avant de supprimer votre compte.</string>
+    <string name="account_error_network">Erreur réseau. Vérifiez votre connexion et réessayez.</string>
+    <string name="account_error_invalid_email">Veuillez saisir une adresse e-mail valide</string>
+    <string name="account_error_unexpected">Une erreur inattendue s’est produite</string>
+    <string name="account_error_enter_email">Veuillez saisir votre adresse e-mail</string>
+    <string name="account_error_enter_password">Veuillez saisir votre mot de passe</string>
+    <string name="account_error_password_short">Le mot de passe doit contenir au moins 6 caractères</string>
+    <string name="account_error_confirm_password">Veuillez confirmer votre mot de passe</string>
+    <string name="account_error_passwords_differ">Les mots de passe ne correspondent pas</string>
+    <string name="account_toast_signed_in">Connecté !</string>
+    <string name="account_toast_email_verified">E-mail vérifié ! Bienvenue sur boxlore.</string>
+    <string name="account_error_not_verified_yet">Nous n’avons pas encore reçu la vérification. Appuyez sur le lien dans votre e-mail, puis réessayez.</string>
+    <string name="account_toast_verification_resent">E-mail de vérification renvoyé</string>
+    <string name="account_toast_signed_in_google">Connecté avec Google !</string>
+    <string name="account_error_reset_needs_email">Saisissez votre adresse e-mail ci-dessus pour réinitialiser le mot de passe</string>
+    <string name="account_toast_reset_sent">E-mail de réinitialisation du mot de passe envoyé</string>
+    <string name="account_error_reset_failed">Échec de l’envoi de l’e-mail de réinitialisation</string>
+    <string name="account_error_google">Erreur de connexion Google</string>
+    <string name="account_error_google_timeout">La connexion Google a expiré</string>
+    <string name="account_error_google_credential">Identifiant inattendu reçu</string>
+    <string name="account_error_google_failed">Échec de la connexion Google</string>
+    <!-- How the account signs in, under the listener's name. -->
+    <string name="account_provider_google">Connecté avec Google</string>
+    <string name="account_provider_email_link">Connecté avec un lien par e-mail</string>
+    <string name="account_provider_password">Connecté avec un mot de passe</string>
+    <string name="account_sync_never">Pas encore synchronisé</string>
+    <string name="account_sync_just_now">Synchronisé à l’instant</string>
+    <string name="account_sync_yesterday">Synchronisé hier</string>
+    <!-- %1$s is a short relative time from the system, e.g. "15 min. ago" or "4 days ago". -->
+    <string name="account_sync_ago">Synchronisé %1$s</string>
+    <string name="account_error_no_browser">Impossible d’ouvrir le navigateur</string>
+    <string name="account_error_no_email_app">Impossible d’ouvrir l’appli de messagerie</string>
+    <!-- Clipboard label for the copied account deletion link. -->
+    <string name="account_deletion_clip_label">URL de suppression du compte</string>
+    <string name="account_link_copied">Lien copié dans le presse-papiers</string>
+    <!-- %1$s is the email address. -->
+    <string name="account_toast_reset_sent_to">E-mail de réinitialisation du mot de passe envoyé à %1$s</string>
+    <string name="account_toast_signed_out">Déconnecté</string>
+</resources>

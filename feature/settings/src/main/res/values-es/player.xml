@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_style_title">Estilo del reproductor</string>
+    <string name="player_style_standard">Estándar</string>
+    <string name="player_style_bunpod">bunpod</string>
+    <string name="player_style_description">La interfaz del reproductor bunpod pone primero el título y los controles. Ambos estilos usan los colores de la portada y mantienen el mismo minirreproductor. Los videos usan el reproductor estándar.</string>
+    <string name="player_style_credit">Diseño inspirado en BunPod · Kamran Bekirov ↗</string>
+</resources>

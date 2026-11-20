@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_folder_new">Nouveau dossier</string>
+    <string name="library_folder_edit">Modifier le dossier</string>
+    <string name="library_folder_delete">Supprimer le dossier</string>
+    <string name="library_folder_delete_title">Supprimer le dossier ?</string>
+    <!-- %1$s is the folder's name -->
+    <string name="library_folder_delete_body">Les podcasts de « %1$s » restent dans votre bibliothèque : ils ne sont pas supprimés et vos abonnements sont conservés.</string>
+    <string name="library_folder_delete_note">Ses podcasts restent dans votre bibliothèque</string>
+    <string name="library_folder_create">Créer le dossier</string>
+    <string name="library_folder_create_new">Créer un dossier</string>
+    <!-- Screen-reader label -->
+    <string name="library_folder_open">Ouvrir le dossier</string>
+    <!-- Screen-reader label for the mark on folders that fill from a genre -->
+    <string name="library_folder_auto">Auto</string>
+    <string name="library_folder_add_to">Ajouter au dossier</string>
+    <string name="library_folder_remove_from">Retirer du dossier</string>
+    <string name="library_folder_move_to_another">Déplacer vers un autre dossier</string>
+    <string name="library_folder_move_title">Déplacer vers un dossier</string>
+    <string name="library_folder_add_title">Ajouter à un dossier</string>
+    <string name="library_folder_no_other_folders">Aucun autre dossier pour l’instant</string>
+    <!-- %1$s is the folder's name -->
+    <string name="library_folder_add_shows_to">Ajouter des podcasts à %1$s</string>
+    <!-- %1$s is the show's name -->
+    <string name="library_folder_new_with_show">Nouveau dossier avec %1$s</string>
+    <!-- Beside a genre folder that already holds the show -->
+    <string name="library_folder_member_in_it">Déjà dedans</string>
+    <!-- %1$s is a genre such as News -->
+    <string name="library_folder_only_genre_shows">Uniquement les podcasts « %1$s »</string>
+    <!-- %1$s is the show's name -->
+    <string name="library_folder_genre_change_hint">Pour mettre %1$s dans un dossier par genre, changez son genre depuis sa page.</string>
+    <string name="library_folder_not_in_any">Dans aucun dossier pour l’instant</string>
+    <plurals name="library_folder_in_count">
+        <item quantity="one">Dans %1$d dossier</item>
+        <item quantity="other">Dans %1$d dossiers</item>
+    </plurals>
+    <!-- %2$s is the folder's size, such as 2×1 -->
+    <plurals name="library_folder_shows_and_dimensions">
+        <item quantity="one">%1$d podcast • %2$s</item>
+        <item quantity="other">%1$d podcasts • %2$s</item>
+    </plurals>
+    <!-- Pill beside a folder: how many new episodes it has -->
+    <plurals name="library_folder_new_count">
+        <item quantity="one">%1$d nouveau</item>
+        <item quantity="other">%1$d nouveaux</item>
+    </plurals>
+    <!-- Small badge on a folder; all capitals where the language uses them -->
+    <plurals name="library_folder_new_episodes_badge">
+        <item quantity="one">%1$d NOUVEL ÉPISODE</item>
+        <item quantity="other">%1$d NOUVEAUX ÉPISODES</item>
+    </plurals>
+    <string name="library_folder_empty_tap_to_add">Dossier vide • Appuyez pour ajouter des podcasts</string>
+    <string name="library_folder_empty_title">Aucun podcast dans ce dossier</string>
+    <!-- Add shows is a button's name -->
+    <string name="library_folder_empty_body">Utilisez Ajouter des podcasts pour le remplir.</string>
+    <!-- %1$s is a genre such as News -->
+    <string name="library_folder_empty_genre_title">Aucun podcast « %1$s » pour l’instant</string>
+    <!-- %1$s is a genre such as News -->
+    <string name="library_folder_empty_genre_body">Les podcasts « %1$s » auxquels vous êtes abonné apparaîtront ici.</string>
+    <!-- A folder's summary: %1$s is its show count, %2$s its new episodes -->
+    <string name="library_folder_summary_with_new">%1$s · %2$s</string>
+    <!-- %1$s is a show count, %2$s a folder look such as 1 row, in lower case -->
+    <string name="library_folder_count_and_look">%1$s · %2$s</string>
+    <!-- %1$s is a genre, %2$s a show count such as 4 shows -->
+    <string name="library_folder_genre_and_count">%1$s · %2$s</string>
+    <!-- A genre chip: the genre and how many shows match it -->
+    <string name="library_folder_genre_chip_count">%1$s · %2$d</string>
+    <!-- Section title with the number of shows in the folder -->
+    <string name="library_folder_shows_count">Podcasts · %1$d</string>
+    <!-- Screen-reader label; %1$s is the show's name -->
+    <string name="library_folder_remove_show">Retirer %1$s de ce dossier</string>
+    <string name="library_folder_remove_show_note">Un podcast retiré d’ici reste dans votre bibliothèque.</string>
+    <string name="library_folder_how_it_looks">Apparence</string>
+    <string name="library_folder_icon">Icône</string>
+    <string name="library_folder_genre">Genre</string>
+    <!-- Text field label -->
+    <string name="library_folder_name">Nom</string>
+    <string name="library_folder_name_it">Donnez-lui un nom</string>
+    <!-- %1$s is the name the listener typed -->
+    <string name="library_folder_name_is_genre">%1$s est un genre : ce dossier sera donc automatique.</string>
+    <!-- Under the name field when the listener types Technology; Tech is the stored genre name -->
+    <string name="library_folder_saved_as_tech">Enregistré sous Tech</string>
+    <!-- Stands in for a folder with no name -->
+    <string name="library_folder_fallback_name">Dossier</string>
+    <string name="library_folder_what_goes_in">Qu’y mettre ?</string>
+    <!-- Tab: pick shows by hand -->
+    <string name="library_folder_mode_shows">Podcasts</string>
+    <!-- Tab: fill from one genre -->
+    <string name="library_folder_mode_genre">Genre</string>
+    <!-- Tab: a folder for every genre -->
+    <string name="library_folder_mode_auto">Auto</string>
+    <string name="library_folder_pick_at_least_one">Choisissez-en au moins un</string>
+    <string name="library_folder_pick_stays_elsewhere">Ils restent aussi dans leurs autres dossiers</string>
+    <!-- Screen-reader label: %1$s is the show, %2$s the folder it is already in -->
+    <string name="library_folder_pick_show_in_folder">%1$s, dans %2$s</string>
+    <string name="library_folder_step_of">Étape %1$d sur %2$d</string>
+    <string name="library_folder_choose_look">Choisissez une apparence</string>
+    <!-- %1$s is the folder's name -->
+    <string name="library_folder_look_intro_named">Comment %1$s apparaît dans votre onglet Podcasts.</string>
+    <string name="library_folder_look_intro_unnamed">Comment ce dossier apparaît dans votre onglet Podcasts.</string>
+    <!-- +N is the overflow tile, such as +3 -->
+    <string name="library_folder_look_overflow_note">Plus de podcasts que ça ? Le dernier emplacement devient +N et ouvre le dossier. Vous pourrez changer l’apparence plus tard.</string>
+    <!-- %1$s is the look's description, such as Pinned on top. Tap up to 3 directly. -->
+    <string name="library_folder_look_description_with_overflow">%1$s S’il y a plus de podcasts, le dernier emplacement devient +N et ouvre le dossier.</string>
+    <!-- Folder look: one square among the shows -->
+    <string name="library_folder_look_tile">Tuile</string>
+    <!-- Folder look: a block of rows pinned on top -->
+    <plurals name="library_folder_look_rows">
+        <item quantity="one">%1$d rangée</item>
+        <item quantity="other">%1$d rangées</item>
+    </plurals>
+    <!-- Small caption under a folder look; lower case -->
+    <plurals name="library_folder_look_tap_up_to">
+        <item quantity="one">jusqu’à %1$d en accès direct</item>
+        <item quantity="other">jusqu’à %1$d en accès direct</item>
+    </plurals>
+    <plurals name="library_folder_look_pinned_description">
+        <item quantity="one">Épinglé en haut. Jusqu’à %1$d en accès direct.</item>
+        <item quantity="other">Épinglé en haut. Jusqu’à %1$d en accès direct.</item>
+    </plurals>
+    <plurals name="library_folder_look_among_description">
+        <item quantity="one">Parmi vos podcasts. Jusqu’à %1$d en accès direct.</item>
+        <item quantity="other">Parmi vos podcasts. Jusqu’à %1$d en accès direct.</item>
+    </plurals>
+    <string name="library_folder_tile_show_icon">Afficher l’icône</string>
+    <string name="library_folder_tile_show_icon_note">Un appui ouvre le dossier</string>
+    <string name="library_folder_tile_show_covers">Afficher les pochettes</string>
+    <plurals name="library_folder_tile_show_covers_note">
+        <item quantity="one">Jusqu’à %1$d podcast en accès direct</item>
+        <item quantity="other">Jusqu’à %1$d podcasts en accès direct</item>
+    </plurals>
+    <string name="library_auto_organize">Rangement auto</string>
+    <string name="library_auto_organize_is_on">Le rangement auto est activé</string>
+    <string name="library_auto_organize_turn_on">Activer le rangement auto</string>
+    <string name="library_auto_organize_turn_off">Désactiver le rangement auto</string>
+    <string name="library_auto_organize_turn_off_title">Désactiver le rangement auto ?</string>
+    <string name="library_auto_organize_turn_off_body">boxlore ne créera plus de nouveaux dossiers par genre. Vos dossiers par genre restent, et les nouveaux podcasts de leur genre continuent d’y être ajoutés.</string>
+    <string name="library_auto_organize_turn_off_hint">Pour vous en débarrasser, supprimez le dossier. Ses podcasts restent dans votre bibliothèque.</string>
+    <string name="library_auto_organize_summary_off">Désactivé · Ranger chaque podcast dans des dossiers par genre</string>
+    <plurals name="library_auto_organize_summary_on">
+        <item quantity="one">Activé · %1$d dossier par genre</item>
+        <item quantity="other">Activé · %1$d dossiers par genre</item>
+    </plurals>
+    <plurals name="library_auto_organize_status">
+        <item quantity="one">%1$d dossier par genre, mis à jour à chaque nouvel abonnement</item>
+        <item quantity="other">%1$d dossiers par genre, mis à jour à chaque nouvel abonnement</item>
+    </plurals>
+    <plurals name="library_auto_organize_apply_to_all">
+        <item quantity="one">Appliquer à %1$d dossier par genre</item>
+        <item quantity="other">Appliquer aux %1$d dossiers par genre</item>
+    </plurals>
+    <string name="library_auto_organize_apply_note">Les nouveaux dossiers par genre auront cette apparence. Appliquez-la pour modifier aussi ceux que vous avez déjà.</string>
+    <string name="library_auto_organize_folders_you_get">Dossiers prévus</string>
+    <string name="library_auto_organize_already_there">Déjà existant</string>
+    <plurals name="library_auto_organize_no_genre_note">
+        <item quantity="one">%1$d podcast sans genre reste dans votre grille principale.</item>
+        <item quantity="other">%1$d podcasts sans genre restent dans votre grille principale.</item>
+    </plurals>
+    <string name="library_auto_organize_how_folders_look">Apparence des dossiers</string>
+    <string name="library_auto_organize_let_boxlore_choose">Laisser boxlore choisir</string>
+    <string name="library_auto_organize_choose_description">Chaque dossier prend l’apparence adaptée à sa taille : 1 ou 2 podcasts donnent une tuile, 3 à 5 une rangée, 6 ou plus 2 rangées.</string>
+    <string name="library_auto_organize_one_look">Même apparence pour tous</string>
+    <string name="library_auto_organize_one_look_body">Chaque dossier par genre est une tuile, ou fait 1, 2 ou 3 rangées.</string>
+    <string name="library_auto_organize_note">Chaque genre a son dossier, et les podcasts auxquels vous vous abonnerez ensuite y sont ajoutés automatiquement. Un dossier que vous avez déjà pour un genre est aussi rempli.</string>
+    <!-- Manage is a button's name -->
+    <string name="library_auto_organize_already_on_note">Chaque genre a déjà son dossier, et les podcasts auxquels vous vous abonnerez ensuite y sont ajoutés automatiquement. Gérer permet de changer leur apparence.</string>
+    <!-- Sort and organize is a sheet's title -->
+    <string name="library_auto_organize_change_later">Vous pourrez modifier ce réglage ou le désactiver à tout moment dans Trier et organiser.</string>
+    <!-- %1$s is a genre such as News -->
+    <string name="library_genre_auto_add_note">Les podcasts « %1$s » auxquels vous vous abonnerez ensuite seront ajoutés automatiquement.</string>
+    <string name="library_genre_auto_add_note_this_genre">Les podcasts de ce genre auxquels vous vous abonnerez ensuite seront ajoutés automatiquement.</string>
+</resources>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared suggestions screen, reached from Echo, genres, search and library import. Nothing starts selected except shows the listener picked themselves. -->
+    <string name="suggestions_title">Podcasts para ti</string>
+    <string name="suggestions_echo_found">Esto es lo que encontré. Toca para añadir, mantén pulsado para ver detalles.</string>
+    <string name="suggestions_echo_finding">Buscando podcasts que encajen con lo que me contaste.</string>
+    <!-- Search flow: the shows picked on the search screen are already in the library. -->
+    <plurals name="suggestions_search_seeds">
+        <item quantity="one">Tu elección ya está en tu biblioteca</item>
+        <item quantity="many">Tus %d elecciones ya están en tu biblioteca</item>
+        <item quantity="other">Tus %d elecciones ya están en tu biblioteca</item>
+    </plurals>
+    <!-- Library import flow. -->
+    <plurals name="suggestions_library_seeds">
+        <item quantity="one">%d podcast importado está en tu biblioteca</item>
+        <item quantity="many">%d podcasts importados están en tu biblioteca</item>
+        <item quantity="other">%d podcasts importados están en tu biblioteca</item>
+    </plurals>
+    <string name="suggestions_more_like">Toca para añadir más, mantén pulsado para ver detalles.</string>
+    <!-- Echo flow: shows picked during the chat (a positive taste-test answer or a search). -->
+    <string name="suggestions_picks_lane">Tus elecciones</string>
+    <string name="suggestions_add_all">Añadir todos</string>
+    <string name="suggestions_remove_all">Quitar todos</string>
+    <string name="suggestions_start_without">Empezar sin añadir</string>
+    <plurals name="suggestions_add_shows">
+        <item quantity="one">Añadir %d podcast</item>
+        <item quantity="many">Añadir %d podcasts</item>
+        <item quantity="other">Añadir %d podcasts</item>
+    </plurals>
+    <string name="suggestions_adding">Añadiendo tus podcasts…</string>
+    <!-- Shown in the main button while suggestions load, one at a time. -->
+    <string-array name="suggestions_finding_words">
+        <item>Buscando podcasts…</item>
+        <item>Ordenándolos en filas…</item>
+        <item>Eligiendo los mejores…</item>
+    </string-array>
+    <string name="suggestions_loading_genres">Buscando podcasts para tus géneros.</string>
+    <string name="suggestions_loading_search">Buscando más como tus elecciones.</string>
+    <string name="suggestions_loading_library">Buscando podcasts como los de tu biblioteca.</string>
+    <string name="suggestions_error_title">No se pudieron cargar las sugerencias</string>
+    <string name="suggestions_error_body">Revisa tu conexión y vuelve a intentarlo.</string>
+    <string name="suggestions_empty_title">Esta vez no hay sugerencias</string>
+    <string name="suggestions_empty_body">Vuelve a intentarlo o empieza sin ellas.</string>
+    <string name="suggestions_try_again">Reintentar</string>
+    <!-- Search and import stop here before any request: suggestions only when asked for. -->
+    <string name="similar_choice_title">¿Quieres podcasts como estos?</string>
+    <string name="similar_choice_body">boxlore puede encontrar podcasts parecidos en unos segundos, o puedes empezar a escuchar ya.</string>
+    <string name="similar_choice_see">Ver podcasts parecidos</string>
+    <string name="similar_choice_home">Ir a Inicio</string>
+    <!-- While search or import suggestions load. The picked shows stay followed. -->
+    <string name="similar_skip_home">Saltar a Inicio</string>
+    <string name="suggestions_details">Ver detalles</string>
+    <string name="suggestions_back">Atrás</string>
+    <!-- Brief note on the show deck when a positive answer picks the show. %s is the show title. -->
+    <string name="echo_deck_added">%s se añadió a tus elecciones</string>
+    <!-- Lane titles the app writes. Lanes from the server keep the server's title. -->
+    <string name="suggestions_lane_for_you">Para ti</string>
+    <string name="suggestions_lane_popular_now">Populares ahora</string>
+    <!-- Fallback lanes when suggestions fall back to the charts. -->
+    <string name="suggestions_lane_trending_hits">Éxitos del momento</string>
+    <string name="suggestions_lane_trending_genres">Tendencias en tus géneros</string>
+    <!-- One line about what a lane is for. -->
+    <string name="suggestions_lane_purpose_matched">Podcasts que encajan con este gusto.</string>
+    <string name="suggestions_lane_purpose_themed">Una selección temática según lo que nos contaste.</string>
+    <string name="suggestions_lane_purpose_wind_down">Podcasts más tranquilos para desconectar.</string>
+    <string name="suggestions_lane_purpose_news">Mantente al día sin ruido.</string>
+    <string name="suggestions_lane_purpose_deep">Escuchas más largas que van más a fondo.</string>
+    <string name="suggestions_lane_purpose_lighter">Podcasts ligeros para cuando necesitas un empujón.</string>
+    <string name="suggestions_lane_purpose_tension">Historias con tensión y desenlace.</string>
+    <string name="suggestions_lane_purpose_similar">Más como los podcasts que ya elegiste.</string>
+    <string name="suggestions_lane_purpose_starter">Una mezcla inicial según tus preferencias.</string>
+    <string name="suggestions_lane_purpose_charts_region">Podcasts en las listas de tu región ahora mismo.</string>
+    <!-- %1$s is a genre name, for example "Comedy". -->
+    <string name="suggestions_lane_purpose_charts_one">Tendencias en %1$s en tu país.</string>
+    <!-- %1$s and %2$s are genre names. -->
+    <string name="suggestions_lane_purpose_charts_two">Tendencias en %1$s · %2$s en tu país.</string>
+    <!-- Show details sheet. -->
+    <string name="suggestions_details_close">Cerrar</string>
+    <string name="suggestions_details_add">Añadir podcast</string>
+    <string name="suggestions_details_remove">Quitar</string>
+    <!-- When a show has no description. %1$s is the show's name. -->
+    <string name="suggestions_details_fallback">Explora episodios y temas de %1$s.</string>
+    <!-- When a show has no description. %1$s is the show's name, %2$s its host or publisher. -->
+    <string name="suggestions_details_fallback_with_host">Explora episodios y temas de %1$s, de %2$s.</string>
+</resources>

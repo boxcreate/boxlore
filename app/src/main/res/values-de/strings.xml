@@ -1,0 +1,23 @@
+<resources>
+    <string name="lore_queue_conflict_title">Lore-Warteschlange starten?</string>
+    <string name="lore_queue_conflict_message">Du hast schon Folgen in deiner Warteschlange. Wenn du eine Lore-Warteschlange startest, stoppt die Wiedergabe und deine aktuelle Warteschlange wird durch diese Folge ersetzt. Wische auf anderen Lore-Karten nach rechts, um mehr hinzuzufügen.\n\nWenn du Folgen lieber zu deiner bestehenden Warteschlange hinzufügen willst, wähle „Aktuelle Warteschlange behalten“. Tippe dann auf eine Karte, um ihre Details zu öffnen, und wähle „Zur Warteschlange hinzufügen“.</string>
+    <string name="lore_queue_conflict_replace">Lore-Warteschlange starten</string>
+    <string name="lore_queue_conflict_keep">Aktuelle Warteschlange behalten</string>
+
+    <string name="app_cross_device_email_title">Bei boxlore anmelden</string>
+    <string name="app_cross_device_email_body">Gib die E-Mail-Adresse ein, mit der du diesen Anmeldelink angefordert hast.</string>
+    <string name="app_cross_device_email_label">E-Mail-Adresse</string>
+    <string name="app_cross_device_email_invalid">Bitte gib eine gültige E-Mail-Adresse ein</string>
+    <string name="app_cross_device_email_sign_in">Anmelden</string>
+    <string name="app_cross_device_email_cancel">Abbrechen</string>
+
+    <string name="app_library_export_json_success">Bibliothek erfolgreich exportiert</string>
+    <string name="app_library_export_json_failed">Export fehlgeschlagen: %1$s</string>
+    <string name="app_library_export_opml_success">Abos als OPML exportiert</string>
+    <string name="app_library_export_opml_failed">OPML-Export fehlgeschlagen: %1$s</string>
+
+    <string name="app_podcast_title_fallback">Podcast</string>
+    <string name="app_unknown_podcast">Unbekannter Podcast</string>
+    <string name="app_unknown_author">Unbekannt</string>
+    <string name="app_history_resume_description">Fortsetzen aus dem Verlauf</string>
+</resources>

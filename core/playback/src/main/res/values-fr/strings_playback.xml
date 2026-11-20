@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="playback_error_stop_cast">Ces épisodes n’ont pas pu être lus sur cet appareil Cast. La lecture est en pause.</string>
+    <string name="playback_error_stop">Ces épisodes n’ont pas pu être lus. Vérifiez votre connexion, puis réessayez.</string>
+    <string name="playback_error_skip_paused_cast">Cet épisode n’a pas pu être lu sur cet appareil Cast. Le suivant est prêt.</string>
+    <string name="playback_error_skip_paused">Cet épisode n’a pas pu être lu. Le suivant est prêt.</string>
+    <string name="playback_error_skip_cast">Cet épisode n’a pas pu être lu sur cet appareil Cast.</string>
+    <string name="playback_error_skip">Flux indisponible, passage au suivant…</string>
+    <string name="playback_cast_device_fallback">Appareil Cast</string>
+</resources>

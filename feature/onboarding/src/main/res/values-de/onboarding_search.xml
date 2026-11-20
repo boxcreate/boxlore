@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_search_placeholder">Titel, Hosts oder Themen suchen…</string>
+    <string name="onboarding_search_clear">Leeren</string>
+    <string name="onboarding_search_trending">Im Trend</string>
+    <string name="onboarding_search_trending_shows">Podcasts im Trend</string>
+    <string name="onboarding_search_popular_in">Beliebt in %1$s</string>
+    <string name="onboarding_search_no_popular">Keine Empfehlungen gefunden</string>
+    <string name="onboarding_search_empty_title">Keine Podcasts gefunden</string>
+    <string name="onboarding_search_empty_body">Versuch es mit dem genauen Wort oder Namen des Podcasts, den du suchst, und prüf Leerzeichen und Schreibweise.</string>
+    <string name="onboarding_search_matches">Treffer</string>
+    <string name="onboarding_search_also_found">Auch gefunden</string>
+    <plurals name="onboarding_search_selected_shows">
+        <item quantity="one">Ausgewählte Podcasts (%d)</item>
+        <item quantity="other">Ausgewählte Podcasts (%d)</item>
+    </plurals>
+    <string name="onboarding_search_remove">Entfernen</string>
+    <string name="onboarding_search_selected">Ausgewählt</string>
+    <string name="onboarding_search_select">Auswählen</string>
+    <string name="onboarding_search_side_trip_note">Diese Podcasts kommen in deine Bibliothek, und danach geht es zurück in den Chat, um deinen Feed weiter aufzubauen.</string>
+    <plurals name="onboarding_search_subscribe_continue_chat">
+        <item quantity="one">Abonnieren &amp; weiterchatten (%d)</item>
+        <item quantity="other">Abonnieren &amp; weiterchatten (%d)</item>
+    </plurals>
+    <plurals name="onboarding_search_continue_with">
+        <item quantity="one">Weiter mit %d</item>
+        <item quantity="other">Weiter mit %d</item>
+    </plurals>
+    <string name="onboarding_search_failed_title">Suche gerade nicht möglich</string>
+    <string name="onboarding_search_failed_body">Prüf deine Verbindung und versuch es noch mal.</string>
+    <string name="onboarding_search_try_again">Noch mal versuchen</string>
+</resources>

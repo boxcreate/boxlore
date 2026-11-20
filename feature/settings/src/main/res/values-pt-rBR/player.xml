@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_style_title">Estilo do player</string>
+    <string name="player_style_standard">Padrão</string>
+    <string name="player_style_bunpod">bunpod</string>
+    <string name="player_style_description">O player bunpod coloca o título e os controles em primeiro lugar. Os dois estilos usam as cores da arte e mantêm o mesmo miniplayer. Vídeos usam o player padrão.</string>
+    <string name="player_style_credit">Design inspirado no BunPod · Kamran Bekirov ↗</string>
+</resources>

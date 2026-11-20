@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_folder_new">Nova pasta</string>
+    <string name="library_folder_edit">Editar pasta</string>
+    <string name="library_folder_delete">Excluir pasta</string>
+    <string name="library_folder_delete_title">Excluir pasta?</string>
+    <!-- %1$s is the folder's name -->
+    <string name="library_folder_delete_body">Os podcasts em \"%1$s\" continuam na sua biblioteca. Eles não serão excluídos, e você continua seguindo todos.</string>
+    <string name="library_folder_delete_note">Os podcasts dela continuam na sua biblioteca</string>
+    <string name="library_folder_create">Criar pasta</string>
+    <string name="library_folder_create_new">Criar nova pasta</string>
+    <!-- Screen-reader label -->
+    <string name="library_folder_open">Abrir pasta</string>
+    <!-- Screen-reader label for the mark on folders that fill from a genre -->
+    <string name="library_folder_auto">Automática</string>
+    <string name="library_folder_add_to">Adicionar à pasta</string>
+    <string name="library_folder_remove_from">Remover da pasta</string>
+    <string name="library_folder_move_to_another">Mover para outra pasta</string>
+    <string name="library_folder_move_title">Mover para pasta</string>
+    <string name="library_folder_add_title">Adicionar à pasta</string>
+    <string name="library_folder_no_other_folders">Nenhuma outra pasta ainda</string>
+    <!-- %1$s is the folder's name -->
+    <string name="library_folder_add_shows_to">Adicionar podcasts a %1$s</string>
+    <!-- %1$s is the show's name -->
+    <string name="library_folder_new_with_show">Nova pasta com %1$s</string>
+    <!-- Beside a genre folder that already holds the show -->
+    <string name="library_folder_member_in_it">Já está</string>
+    <!-- %1$s is a genre such as News -->
+    <string name="library_folder_only_genre_shows">Só podcasts de %1$s</string>
+    <!-- %1$s is the show's name -->
+    <string name="library_folder_genre_change_hint">Para colocar %1$s numa pasta de gênero, mude o gênero na página dele.</string>
+    <string name="library_folder_not_in_any">Ainda não está em nenhuma pasta</string>
+    <plurals name="library_folder_in_count">
+        <item quantity="one">Em %1$d pasta</item>
+        <item quantity="other">Em %1$d pastas</item>
+    </plurals>
+    <!-- %2$s is the folder's size, such as 2×1 -->
+    <plurals name="library_folder_shows_and_dimensions">
+        <item quantity="one">%1$d podcast • %2$s</item>
+        <item quantity="other">%1$d podcasts • %2$s</item>
+    </plurals>
+    <!-- Pill beside a folder: how many new episodes it has -->
+    <plurals name="library_folder_new_count">
+        <item quantity="one">%1$d novo</item>
+        <item quantity="other">%1$d novos</item>
+    </plurals>
+    <!-- Small badge on a folder; all capitals where the language uses them -->
+    <plurals name="library_folder_new_episodes_badge">
+        <item quantity="one">%1$d EPISÓDIO NOVO</item>
+        <item quantity="other">%1$d EPISÓDIOS NOVOS</item>
+    </plurals>
+    <string name="library_folder_empty_tap_to_add">Pasta vazia • Toque para adicionar podcasts</string>
+    <string name="library_folder_empty_title">Nenhum podcast nesta pasta</string>
+    <!-- Add shows is a button's name -->
+    <string name="library_folder_empty_body">Use Adicionar podcasts para preenchê-la.</string>
+    <!-- %1$s is a genre such as News -->
+    <string name="library_folder_empty_genre_title">Nenhum podcast de %1$s ainda</string>
+    <!-- %1$s is a genre such as News -->
+    <string name="library_folder_empty_genre_body">Os podcasts de %1$s que você segue vão aparecer aqui.</string>
+    <!-- A folder's summary: %1$s is its show count, %2$s its new episodes -->
+    <string name="library_folder_summary_with_new">%1$s · %2$s</string>
+    <!-- %1$s is a show count, %2$s a folder look such as 1 row, in lower case -->
+    <string name="library_folder_count_and_look">%1$s · %2$s</string>
+    <!-- %1$s is a genre, %2$s a show count such as 4 shows -->
+    <string name="library_folder_genre_and_count">%1$s · %2$s</string>
+    <!-- A genre chip: the genre and how many shows match it -->
+    <string name="library_folder_genre_chip_count">%1$s · %2$d</string>
+    <!-- Section title with the number of shows in the folder -->
+    <string name="library_folder_shows_count">Podcasts · %1$d</string>
+    <!-- Screen-reader label; %1$s is the show's name -->
+    <string name="library_folder_remove_show">Remover %1$s desta pasta</string>
+    <string name="library_folder_remove_show_note">Remover um podcast daqui não o tira da sua biblioteca.</string>
+    <string name="library_folder_how_it_looks">Aparência</string>
+    <string name="library_folder_icon">Ícone</string>
+    <string name="library_folder_genre">Gênero</string>
+    <!-- Text field label -->
+    <string name="library_folder_name">Nome</string>
+    <string name="library_folder_name_it">Dê um nome</string>
+    <!-- %1$s is the name the listener typed -->
+    <string name="library_folder_name_is_genre">%1$s é um gênero, então esta é uma pasta automática.</string>
+    <!-- Under the name field when the listener types Technology; Tech is the stored genre name -->
+    <string name="library_folder_saved_as_tech">Salva como Tech</string>
+    <!-- Stands in for a folder with no name -->
+    <string name="library_folder_fallback_name">Pasta</string>
+    <string name="library_folder_what_goes_in">O que vai nela?</string>
+    <!-- Tab: pick shows by hand -->
+    <string name="library_folder_mode_shows">Podcasts</string>
+    <!-- Tab: fill from one genre -->
+    <string name="library_folder_mode_genre">Gênero</string>
+    <!-- Tab: a folder for every genre -->
+    <string name="library_folder_mode_auto">Auto</string>
+    <string name="library_folder_pick_at_least_one">Escolha pelo menos um</string>
+    <string name="library_folder_pick_stays_elsewhere">Eles continuam nas outras pastas também</string>
+    <!-- Screen-reader label: %1$s is the show, %2$s the folder it is already in -->
+    <string name="library_folder_pick_show_in_folder">%1$s, em %2$s</string>
+    <string name="library_folder_step_of">Etapa %1$d de %2$d</string>
+    <string name="library_folder_choose_look">Escolha uma aparência</string>
+    <!-- %1$s is the folder's name -->
+    <string name="library_folder_look_intro_named">Como %1$s aparece na sua aba Podcasts.</string>
+    <string name="library_folder_look_intro_unnamed">Como esta pasta aparece na sua aba Podcasts.</string>
+    <!-- +N is the overflow tile, such as +3 -->
+    <string name="library_folder_look_overflow_note">Tem mais podcasts que isso? O último espaço vira +N e abre a pasta. Você pode mudar a aparência depois.</string>
+    <!-- %1$s is the look's description, such as Pinned on top. Tap up to 3 directly. -->
+    <string name="library_folder_look_description_with_overflow">%1$s Com mais podcasts, o último espaço vira +N e abre a pasta.</string>
+    <!-- Folder look: one square among the shows -->
+    <string name="library_folder_look_tile">Bloco</string>
+    <!-- Folder look: a block of rows pinned on top -->
+    <plurals name="library_folder_look_rows">
+        <item quantity="one">%1$d linha</item>
+        <item quantity="other">%1$d linhas</item>
+    </plurals>
+    <!-- Small caption under a folder look; lower case -->
+    <plurals name="library_folder_look_tap_up_to">
+        <item quantity="one">acesso direto a %1$d</item>
+        <item quantity="other">acesso direto a até %1$d</item>
+    </plurals>
+    <plurals name="library_folder_look_pinned_description">
+        <item quantity="one">Fixada no topo. Toque direto em %1$d podcast.</item>
+        <item quantity="other">Fixada no topo. Toque direto em até %1$d podcasts.</item>
+    </plurals>
+    <plurals name="library_folder_look_among_description">
+        <item quantity="one">Entre seus podcasts. Toque direto em %1$d podcast.</item>
+        <item quantity="other">Entre seus podcasts. Toque direto em até %1$d podcasts.</item>
+    </plurals>
+    <string name="library_folder_tile_show_icon">Mostrar o ícone</string>
+    <string name="library_folder_tile_show_icon_note">Um toque abre a pasta</string>
+    <string name="library_folder_tile_show_covers">Mostrar capas</string>
+    <plurals name="library_folder_tile_show_covers_note">
+        <item quantity="one">Toque direto em %1$d podcast</item>
+        <item quantity="other">Toque direto em até %1$d podcasts</item>
+    </plurals>
+    <string name="library_auto_organize">Organizar automaticamente</string>
+    <string name="library_auto_organize_is_on">Organização automática ativada</string>
+    <string name="library_auto_organize_turn_on">Ativar organização automática</string>
+    <string name="library_auto_organize_turn_off">Desativar organização automática</string>
+    <string name="library_auto_organize_turn_off_title">Desativar organização automática?</string>
+    <string name="library_auto_organize_turn_off_body">O boxlore para de criar pastas de gênero. As pastas de gênero que você já tem continuam, e podcasts novos do mesmo gênero ainda entram nelas.</string>
+    <string name="library_auto_organize_turn_off_hint">Para se livrar de uma, exclua a pasta. Os podcasts dela continuam na sua biblioteca.</string>
+    <string name="library_auto_organize_summary_off">Desativada · Separe cada podcast em pastas de gênero</string>
+    <plurals name="library_auto_organize_summary_on">
+        <item quantity="one">Ativada · %1$d pasta de gênero</item>
+        <item quantity="other">Ativada · %1$d pastas de gênero</item>
+    </plurals>
+    <plurals name="library_auto_organize_status">
+        <item quantity="one">%1$d pasta de gênero, atualizada conforme você segue podcasts</item>
+        <item quantity="other">%1$d pastas de gênero, atualizadas conforme você segue podcasts</item>
+    </plurals>
+    <plurals name="library_auto_organize_apply_to_all">
+        <item quantity="one">Aplicar a %1$d pasta de gênero</item>
+        <item quantity="other">Aplicar a todas as %1$d pastas de gênero</item>
+    </plurals>
+    <string name="library_auto_organize_apply_note">Novas pastas de gênero ganham esta aparência. Aplique para mudar também as que você já tem.</string>
+    <string name="library_auto_organize_folders_you_get">Pastas que você vai ter</string>
+    <string name="library_auto_organize_already_there">Já existe</string>
+    <plurals name="library_auto_organize_no_genre_note">
+        <item quantity="one">%1$d podcast sem gênero continua na sua grade principal.</item>
+        <item quantity="other">%1$d podcasts sem gênero continuam na sua grade principal.</item>
+    </plurals>
+    <string name="library_auto_organize_how_folders_look">Aparência das pastas</string>
+    <string name="library_auto_organize_let_boxlore_choose">Deixar o boxlore escolher</string>
+    <string name="library_auto_organize_choose_description">Cada pasta ganha a aparência que combina com o tamanho dela. Com 1–2 podcasts vira um bloco, com 3–5 ganha 1 linha, com 6 ou mais ganha 2 linhas.</string>
+    <string name="library_auto_organize_one_look">Usar uma aparência para todas</string>
+    <string name="library_auto_organize_one_look_body">Toda pasta de gênero vira um bloco, 1 linha, 2 linhas ou 3 linhas.</string>
+    <string name="library_auto_organize_note">Cada gênero ganha uma pasta, e os podcasts que você seguir depois entram automaticamente. Uma pasta que você já tem para um gênero também é preenchida.</string>
+    <!-- Manage is a button's name -->
+    <string name="library_auto_organize_already_on_note">Cada gênero já tem uma pasta, e os podcasts que você seguir depois entram automaticamente. Em Gerenciar você muda a aparência delas.</string>
+    <!-- Sort and organize is a sheet's title -->
+    <string name="library_auto_organize_change_later">Você pode mudar isso ou desativar quando quiser em Ordenar e organizar.</string>
+    <!-- %1$s is a genre such as News -->
+    <string name="library_genre_auto_add_note">Os podcasts de %1$s que você seguir depois entram automaticamente.</string>
+    <string name="library_genre_auto_add_note_this_genre">Os podcasts deste gênero que você seguir depois entram automaticamente.</string>
+</resources>

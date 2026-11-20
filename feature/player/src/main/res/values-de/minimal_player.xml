@@ -1,0 +1,14 @@
+<resources>
+    <string name="minimal_play">Abspielen</string>
+    <string name="minimal_pause">Pause</string>
+    <string name="minimal_buffering">Wird gepuffert</string>
+    <string name="minimal_sleep">Sleep-Timer</string>
+    <string name="minimal_speed">Wiedergabegeschwindigkeit: %1$s</string>
+    <string name="minimal_up_next">Als Nächstes</string>
+    <string name="minimal_collapse">Player minimieren</string>
+    <string name="minimal_full_title">Ganzen Folgentitel anzeigen</string>
+    <string name="minimal_done">Fertig</string>
+    <string name="minimal_unknown_duration">—</string>
+    <string name="minimal_remaining">−%1$s</string>
+    <string name="player_seek">Wiedergabeposition</string>
+</resources>

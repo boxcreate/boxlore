@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_setup_title">Los geht’s mit dem Hören!</string>
+    <string name="home_setup_suggestions">Podcasts für mich finden</string>
+    <string name="home_setup_search">Podcasts suchen</string>
+    <string name="home_setup_import">Bibliothek importieren</string>
+    <string name="home_setup_dismiss">Einrichtungsoptionen ausblenden</string>
+</resources>

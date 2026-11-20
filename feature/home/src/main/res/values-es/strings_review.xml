@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Milestone review prompt (bottom sheet). The wording changes with how many episodes the listener has finished. -->
+    <string name="home_review_pro_title">Los podcasts son lo tuyo</string>
+    <!-- Shown from 30 finished episodes. -->
+    <plurals name="home_review_pro_body">
+        <item quantity="one">%1$d episodio y contando: tu reseña significaría muchísimo para nosotros.</item>
+        <item quantity="many">%1$d episodios y contando: tu reseña significaría muchísimo para nosotros.</item>
+        <item quantity="other">%1$d episodios y contando: tu reseña significaría muchísimo para nosotros.</item>
+    </plurals>
+    <string name="home_review_regular_title">Escuchar ya es costumbre</string>
+    <!-- Shown from 15 finished episodes. -->
+    <plurals name="home_review_regular_body">
+        <item quantity="one">Has terminado %1$d episodio. ¿Te animas a dejar una valoración rápida?</item>
+        <item quantity="many">Has terminado %1$d episodios. ¿Te animas a dejar una valoración rápida?</item>
+        <item quantity="other">Has terminado %1$d episodios. ¿Te animas a dejar una valoración rápida?</item>
+    </plurals>
+    <string name="home_review_roll_title">Vas en racha</string>
+    <plurals name="home_review_roll_body">
+        <item quantity="one">Has completado %1$d episodio. ¿Qué tal te va con boxlore?</item>
+        <item quantity="many">Has completado %1$d episodios. ¿Qué tal te va con boxlore?</item>
+        <item quantity="other">Has completado %1$d episodios. ¿Qué tal te va con boxlore?</item>
+    </plurals>
+    <!-- Primary button: opens the Play review flow. -->
+    <string name="home_review_rate_boxlore">Valorar boxlore</string>
+    <!-- Primary button on the first milestone: opens the Play review flow. -->
+    <string name="home_review_loving_it">Me encanta</string>
+    <!-- Secondary button: closes the prompt. -->
+    <string name="home_review_not_right_now">Ahora no</string>
+    <!-- Secondary button: opens the feedback form. -->
+    <string name="home_review_could_be_better">Podría mejorar</string>
+
+    <!-- Sheet shown after the Play review flow returns. -->
+    <string name="home_post_review_title">Nos alegra que disfrutes boxlore</string>
+    <string name="home_post_review_body">Si no pudiste dejar una valoración, no pasa nada. ¡También nos encanta escuchar tus ideas!</string>
+    <string name="home_post_review_share_idea">Compartir una idea</string>
+    <string name="home_post_review_maybe_later">Quizás más tarde</string>
+    <string name="home_review_rate_on_play">Valorar en Google Play</string>
+
+    <!-- Feedback form (bottom sheet). -->
+    <string name="home_feedback_title">Cuéntanos qué piensas</string>
+    <string name="home_feedback_close">Cerrar</string>
+    <string name="home_feedback_sent">Enviado. ¡Gracias!</string>
+    <string name="home_feedback_category_label">¿De qué se trata?</string>
+    <!-- Category chips; keep short, three sit on one row. -->
+    <string name="home_feedback_category_feature">Idea</string>
+    <string name="home_feedback_category_bug">Error</string>
+    <string name="home_feedback_category_other">Otro</string>
+    <string name="home_feedback_hint_feature">Describe la función que te gustaría ver…</string>
+    <string name="home_feedback_hint_bug">¿Qué pasó y cómo podemos reproducirlo?</string>
+    <string name="home_feedback_hint_other">Cuéntanos lo que tengas en mente…</string>
+    <!-- Characters typed out of the limit, e.g. "120/2000". -->
+    <string name="home_feedback_char_count">%1$d/%2$d</string>
+    <string name="home_feedback_email_feature">¿Nos dejas tu correo? Nos encantaría escribirte para hablar más de tu idea.</string>
+    <string name="home_feedback_email_bug">¿Nos dejas tu correo? Puede que necesitemos algunos detalles más para solucionar este error.</string>
+    <string name="home_feedback_email_other">¿Nos dejas tu correo? Agradecemos mucho tus comentarios y puede que te escribamos.</string>
+    <!-- Placeholder in the email field. -->
+    <string name="home_feedback_email_hint">tu@ejemplo.com (opcional)</string>
+    <string name="home_feedback_anonymous" formatted="false">Los comentarios son 100% anónimos: no se comparte ningún dato de tu cuenta.</string>
+    <string name="home_feedback_error_empty">Escribe un mensaje primero</string>
+    <string name="home_feedback_error_send">No se pudo enviar ahora. Vuelve a intentarlo.</string>
+    <string name="home_feedback_sending">Enviando…</string>
+    <string name="home_feedback_send">Enviar comentarios</string>
+</resources>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="list_middle">%1$s, %2$s</string>
+    <string name="list_end_and">%1$s y %2$s</string>
+    <string name="list_end_or">%1$s o %2$s</string>
+
+    <string name="content_languages_title">Idiomas</string>
+    <string name="content_languages_picked">%1$d de %2$d elegidos</string>
+    <string name="content_languages_include_english">Incluir inglés</string>
+    <string name="content_languages_suggested_for">Sugeridos para %1$s</string>
+    <string name="content_languages_other">Otros idiomas</string>
+    <string name="content_languages_done">Listo</string>
+    <string name="content_languages_english_off_one">Hay muchos menos podcasts en %1$s, así que las recomendaciones no se ajustarán tanto a tus gustos. Si no hay suficientes, boxlore añade algunos en inglés.</string>
+    <string name="content_languages_english_off_many">Hay muchos menos podcasts en tus idiomas, así que las recomendaciones no se ajustarán tanto a tus gustos. Si no hay suficientes, boxlore añade algunos en inglés.</string>
+    <string name="content_languages_english_can_turn_off">Desactívalo para ver solo podcasts en %1$s.</string>
+    <string name="content_languages_english_kept_on">Se mantiene activado con %1$s. Puedes desactivarlo si eliges solo %2$s.</string>
+    <string name="content_languages_english_only">Puedes desactivarlo si eliges solo %1$s.</string>
+
+    <string name="content_region_label">Región del contenido</string>
+    <string name="content_region_supporting">Rankings y clasificación regional</string>
+    <string name="content_region_choose">Elegir región del contenido</string>
+    <string name="content_region_sheet_body">Define los rankings principales de Explorar. Tus idiomas se quedan como están.</string>
+    <string name="content_region_suggested">Sugerencia: %1$s</string>
+</resources>

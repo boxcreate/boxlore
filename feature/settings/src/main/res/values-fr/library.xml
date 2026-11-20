@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_library_charts_title">Classements</string>
+    <string name="settings_library_charts_footer">Définit les classements dans Explorer.</string>
+    <string name="settings_library_country">Pays</string>
+    <string name="settings_library_recommendations_title">Recommandations</string>
+    <string name="settings_library_recommendations_footer">Pour vous, la recherche et les ambiances utilisent ces langues.</string>
+    <string name="settings_library_languages">Langues</string>
+    <string name="settings_library_add_rss">Ajouter un podcast par flux RSS</string>
+    <string name="settings_library_add_rss_description">Pour les podcasts absents du catalogue</string>
+    <string name="settings_library_country_faq_toggle">Pourquoi mon pays n’est-il pas dans la liste ?</string>
+    <string name="settings_collapse">Réduire</string>
+    <string name="settings_expand">Développer</string>
+    <string name="settings_library_country_faq_title">Pourquoi mon pays n’est-il pas dans la liste ?</string>
+    <string name="settings_library_country_faq_intro">Nous travaillons activement à étendre notre couverture ! Pour l’instant, nous ajoutons en priorité les pays où la demande des utilisateurs est la plus forte.</string>
+    <string name="settings_library_country_faq_effects">Ce que cela change pour vous :</string>
+    <string name="settings_library_country_faq_search">La recherche reste mondiale : vous pouvez toujours rechercher, trouver et écouter tous les contenus, même si votre pays n’est pas encore officiellement dans la liste.</string>
+    <string name="settings_library_country_faq_recommendations">Les recommandations intelligentes fonctionnent toujours : le moteur de recommandation suggère les contenus les plus proches de vos habitudes d’écoute, quel que soit le pays choisi.</string>
+    <string name="settings_library_country_faq_changes">Ce que change le pays : les classements dans Explorer. Vos langues ne changent pas.</string>
+    <string name="settings_library_country_faq_languages">Les langues sont à part : choisissez-les dans Recommandations › Langues pour Pour vous, la recherche et les ambiances. Les classements restent par pays et ne sont pas filtrés par langue.</string>
+    <string name="settings_library_country_faq_more">Vous voulez un autre pays ou une autre langue ?</string>
+    <string name="settings_library_country_faq_tell_us">Dites-le-nous via Avis ou GitHub : nous étendons la couverture selon la demande.</string>
+    <string name="settings_library_saved_shows_counting">Calcul…</string>
+    <string name="settings_library_saved_shows_none">Rien d’enregistré pour les podcasts auxquels vous n’êtes pas abonné</string>
+    <string name="settings_library_storage_title">Stockage</string>
+    <string name="settings_library_clear_saved_shows">Effacer les podcasts enregistrés</string>
+    <string name="settings_clear_saved_shows_title">Effacer les podcasts enregistrés ?</string>
+    <string name="settings_clear_saved_shows_kept">Vos abonnements, votre historique d’écoute, vos téléchargements et votre file d’attente ne sont pas concernés.</string>
+    <string name="settings_clear_saved_shows_confirm">Effacer</string>
+    <string name="settings_cancel">Annuler</string>
+    <!-- Under Clear saved shows: how many shows you don't follow have saved episode lists. -->
+    <plurals name="settings_library_saved_shows_count">
+        <item quantity="one">Listes d’épisodes de %1$d podcast auquel vous n’êtes pas abonné</item>
+        <item quantity="other">Listes d’épisodes de %1$d podcasts auxquels vous n’êtes pas abonné</item>
+    </plurals>
+    <plurals name="settings_clear_saved_shows_body">
+        <item quantity="one">Les listes d’épisodes de %1$d podcast auquel vous n’êtes pas abonné seront supprimées de ce téléphone. Elles se rechargent quand vous ouvrez un podcast.</item>
+        <item quantity="other">Les listes d’épisodes de %1$d podcasts auxquels vous n’êtes pas abonné seront supprimées de ce téléphone. Elles se rechargent quand vous ouvrez un podcast.</item>
+    </plurals>
+</resources>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Onboarding show search: pick shows to follow before suggestions (or during Echo's chat). -->
+    <string name="onboarding_search_placeholder">Pesquise títulos, apresentadores ou temas…</string>
+    <!-- Clears the search box. -->
+    <string name="onboarding_search_clear">Limpar</string>
+    <!-- First category chip: what's popular across all genres. -->
+    <string name="onboarding_search_trending">Em alta</string>
+    <!-- Heading above the popular shows when no genre chip is picked. -->
+    <string name="onboarding_search_trending_shows">Podcasts em alta</string>
+    <!-- Heading above the popular shows for one genre chip. %1$s is the chip's label, for example "Comedy". -->
+    <string name="onboarding_search_popular_in">Populares em %1$s</string>
+    <string name="onboarding_search_no_popular">Nenhuma recomendação encontrada</string>
+    <string name="onboarding_search_empty_title">Nenhum podcast encontrado</string>
+    <string name="onboarding_search_empty_body">Tente pesquisar a palavra ou o nome exato do podcast que você procura e confira os espaços e a grafia.</string>
+    <!-- Section headings in the results: shows from boxlore's catalog, then other shows the search found. -->
+    <string name="onboarding_search_matches">Resultados</string>
+    <string name="onboarding_search_also_found">Também encontrados</string>
+    <!-- Above the row of picked shows at the bottom. -->
+    <plurals name="onboarding_search_selected_shows">
+        <item quantity="one">Podcasts selecionados (%d)</item>
+        <item quantity="other">Podcasts selecionados (%d)</item>
+    </plurals>
+    <!-- Screen-reader label of the small badge that removes a picked show. -->
+    <string name="onboarding_search_remove">Remover</string>
+    <!-- Screen-reader state of a show's pick button. -->
+    <string name="onboarding_search_selected">Selecionado</string>
+    <string name="onboarding_search_select">Selecionar</string>
+    <!-- When search was opened from Echo's chat. -->
+    <string name="onboarding_search_side_trip_note">Esses podcasts vão para a sua biblioteca, e você volta para o chat para continuar montando seu feed.</string>
+    <plurals name="onboarding_search_subscribe_continue_chat">
+        <item quantity="one">Seguir e voltar ao chat (%d)</item>
+        <item quantity="other">Seguir e voltar ao chat (%d)</item>
+    </plurals>
+    <!-- Bottom button: continue with this many picked shows. -->
+    <plurals name="onboarding_search_continue_with">
+        <item quantity="one">Continuar com %d</item>
+        <item quantity="other">Continuar com %d</item>
+    </plurals>
+    <string name="onboarding_search_failed_title">Não foi possível pesquisar agora</string>
+    <string name="onboarding_search_failed_body">Verifique sua conexão e tente de novo.</string>
+    <string name="onboarding_search_try_again">Tentar de novo</string>
+</resources>

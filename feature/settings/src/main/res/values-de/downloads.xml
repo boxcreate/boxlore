@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_auto_download_background_title">Wenn boxlore geschlossen ist</string>
+    <string name="settings_auto_download_background_checks">Zusätzliche Hintergrundprüfungen</string>
+    <string name="settings_auto_download_background_checks_description">Findet neue Folgen, wenn Podcast-Benachrichtigungen aus sind oder nicht ankommen.</string>
+    <string name="settings_auto_download_background_wifi">Nur im WLAN prüfen</string>
+    <string name="settings_auto_download_background_wifi_description">Gilt für die Prüfungen und die Downloads, die sie starten.</string>
+    <string name="settings_auto_download_background_charging">Nur beim Laden</string>
+    <string name="settings_auto_download_background_on_footer">Prüft etwa alle 6 Stunden; Android kann das verzögern. Braucht zusätzlich Akku und Daten und pausiert bei niedrigem Akkustand.</string>
+    <string name="settings_auto_download_background_off_footer">Podcast-Benachrichtigungen können Downloads auch starten, wenn boxlore geschlossen ist. Ansonsten werden neue Folgen geladen, wenn du die App öffnest und aktualisierst.</string>
+    <string name="settings_auto_download_help_title">So funktionieren automatische Downloads</string>
+    <string name="settings_auto_download_help_shows_title">Wähle deine Podcasts</string>
+    <string name="settings_auto_download_help_shows">Schalte Auto-Download auf der Seite eines Podcasts ein. Dann werden neue Folgen geladen, nicht das ganze Archiv des Podcasts.</string>
+    <string name="settings_auto_download_help_closed">Podcast-Benachrichtigungen können Downloads starten, wenn neue Folgen erscheinen. Zusätzliche Hintergrundprüfungen sind optional: Sie finden neue Folgen, wenn Benachrichtigungen aus sind oder nicht ankommen. Sie prüfen etwa alle 6 Stunden, und Android kann sie verzögern.</string>
+    <string name="settings_auto_download_help_limits_title">Akku- und Netzwerkgrenzen</string>
+    <string name="settings_auto_download_help_limits">Hintergrundprüfungen brauchen zusätzlich Akku und Daten und pausieren bei niedrigem Akkustand immer. Ihre Netzwerk- und Ladebedingungen gelten auch für die Downloads, die sie starten. Die WLAN-Einstellung unter Downloads gilt für Audiodateien aus jeder Quelle.</string>
+    <string name="settings_auto_download_help_keeping_title">Folgen behalten</string>
+    <string name="settings_auto_download_help_keeping">Das Limit pro Podcast ersetzt nur ältere, fertig gehörte automatische Downloads; manuell gespeicherte Dateien sind davon ausgenommen. „Nach dem Hören entfernen“ löscht heruntergeladene Dateien, sobald du eine Folge beendest.</string>
+    <string name="settings_got_it">Verstanden</string>
+    <string name="settings_auto_download_title">Automatische Downloads</string>
+    <string name="settings_auto_download_shows_title">Für die Podcasts deiner Wahl</string>
+    <string name="settings_auto_download_shows_footer">Schalte Auto-Download auf der Seite jedes Podcasts ein.</string>
+    <string name="settings_auto_download_wifi_only">Nur WLAN</string>
+    <string name="settings_auto_download_wifi_only_description">Audiodateien warten auf eine Verbindung ohne Datenlimit.</string>
+    <string name="settings_auto_download_keep_per_show">Folgen pro Podcast behalten</string>
+    <string name="settings_auto_download_keep_per_show_description">Ersetzt den ältesten automatischen Download, wenn das Limit erreicht ist.</string>
+    <string name="settings_auto_download_remove_after">Nach dem Hören entfernen</string>
+    <string name="settings_auto_download_remove_after_description">Heruntergeladene Dateien löschen, wenn eine Folge fertig gehört ist.</string>
+    <string name="settings_downloads_offline_title">Folgen offline behalten</string>
+    <string name="settings_downloads_offline_footer">Wähle, welche Folgen boxlore offline abspielbereit hält.</string>
+    <string name="settings_downloads_smart">Smarte Downloads</string>
+    <string name="settings_downloads_smart_description">Hält passend zu deinem Hörverhalten wechselnde Folgen offline bereit</string>
+    <string name="settings_downloads_auto_description">Neue Folgen ausgewählter Abos herunterladen</string>
+    <string name="settings_smart_downloads_title">Smarte Downloads</string>
+    <string name="settings_smart_downloads_enable">Smarte Downloads einschalten</string>
+    <string name="settings_smart_downloads_about">Über smarte Downloads</string>
+    <string name="settings_smart_downloads_active">Aktiv</string>
+    <string name="settings_smart_downloads_inactive">Inaktiv</string>
+    <string name="settings_smart_downloads_description">Lädt anhand deines Hörverlaufs automatisch Folgen auf dein Gerät, die dir gefallen könnten, damit du sie auch offline hören kannst.</string>
+    <string name="settings_smart_downloads_max_episodes">Max. automatisch geladene Folgen</string>
+    <string name="settings_smart_downloads_storage_limit">Speicherlimit</string>
+    <string name="settings_smart_downloads_unlimited">Unbegrenzt</string>
+    <string name="settings_smart_downloads_conflict_description">Konfliktwarnung</string>
+    <string name="settings_smart_downloads_enabled">Eingeschaltet</string>
+    <string name="settings_smart_downloads_mobile_data">Mobile Daten nutzen</string>
+    <string name="settings_smart_downloads_charging_only">Nur beim Laden</string>
+    <string name="settings_smart_downloads_on_battery">Auch im Akkubetrieb laden</string>
+    <string name="settings_smart_downloads_auto_delete">Gehörte Folgen automatisch löschen</string>
+    <string name="settings_smart_downloads_delete_immediately">Sofort</string>
+    <string name="settings_smart_downloads_delete_24h">Nach 24 Stunden</string>
+    <string name="settings_smart_downloads_delete_7d">Nach 7 Tagen</string>
+    <string name="settings_smart_downloads_delete_never">Nie</string>
+    <string name="settings_smart_downloads_background">Downloads im Hintergrund</string>
+    <string name="settings_smart_downloads_background_allowed">Darf im Hintergrund laden und umgeht dabei strenge Energiesparfunktionen des Geräts. Das wirkt sich nicht auf die Akkulaufzeit aus, da die Hintergrundsynchronisierung effizient nur einmal alle 24 Stunden läuft.</string>
+    <string name="settings_smart_downloads_background_blocked">boxlore versucht, automatisch herunterzuladen, aber Geräte wie Xiaomi, OnePlus oder Samsung blockieren Downloads womöglich wegen strenger Energiesparregeln. Das Erlauben wirkt sich nicht auf die Akkulaufzeit aus, da die Hintergrundsynchronisierung effizient nur einmal alle 24 Stunden läuft.</string>
+    <string name="settings_smart_downloads_allowed">Erlaubt</string>
+    <string name="settings_smart_downloads_allow">Erlauben</string>
+    <!-- Smart Downloads chip: how many episodes to keep. -->
+    <plurals name="settings_smart_downloads_episode_count">
+        <item quantity="one">%1$d Folge</item>
+        <item quantity="other">%1$d Folgen</item>
+    </plurals>
+    <!-- %1$s is a storage size like "250 MB", %2$d the episode count. -->
+    <plurals name="settings_smart_downloads_conflict">
+        <item quantity="one">Dein Speicherlimit von %1$s reicht für %2$d Folge womöglich nicht aus. Die Synchronisierung pausiert, sobald das Limit erreicht ist.</item>
+        <item quantity="other">Dein Speicherlimit von %1$s reicht für %2$d Folgen womöglich nicht aus. Die Synchronisierung pausiert, sobald das Limit erreicht ist.</item>
+    </plurals>
+    <!-- Storage sizes. %1$s is an already formatted number. -->
+    <string name="settings_smart_downloads_size_mb">%1$s MB</string>
+    <string name="settings_smart_downloads_size_gb">%1$s GB</string>
+</resources>

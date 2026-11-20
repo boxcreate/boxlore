@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="font_roundness_crisp">Nítida</string>
+    <string name="font_roundness_soft">Suave</string>
+    <string name="font_roundness_round">Redonda</string>
+</resources>

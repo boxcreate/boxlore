@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Milestone review prompt (bottom sheet). The wording changes with how many episodes the listener has finished. -->
+    <string name="home_review_pro_title">Você é fera em podcasts</string>
+    <!-- Shown from 30 finished episodes. -->
+    <plurals name="home_review_pro_body">
+        <item quantity="one">%1$d episódio e não para por aí. Sua avaliação significaria muito para nós.</item>
+        <item quantity="other">%1$d episódios e não para por aí. Sua avaliação significaria muito para nós.</item>
+    </plurals>
+    <string name="home_review_regular_title">Você já é ouvinte de carteirinha</string>
+    <!-- Shown from 15 finished episodes. -->
+    <plurals name="home_review_regular_body">
+        <item quantity="one">Você concluiu %1$d episódio. Pode deixar uma avaliação rápida?</item>
+        <item quantity="other">Você concluiu %1$d episódios. Pode deixar uma avaliação rápida?</item>
+    </plurals>
+    <string name="home_review_roll_title">Você está com tudo</string>
+    <plurals name="home_review_roll_body">
+        <item quantity="one">Você concluiu %1$d episódio. O que está achando do boxlore?</item>
+        <item quantity="other">Você concluiu %1$d episódios. O que está achando do boxlore?</item>
+    </plurals>
+    <!-- Primary button: opens the Play review flow. -->
+    <string name="home_review_rate_boxlore">Avaliar o boxlore</string>
+    <!-- Primary button on the first milestone: opens the Play review flow. -->
+    <string name="home_review_loving_it">Estou amando</string>
+    <!-- Secondary button: closes the prompt. -->
+    <string name="home_review_not_right_now">Agora não</string>
+    <!-- Secondary button: opens the feedback form. -->
+    <string name="home_review_could_be_better">Poderia ser melhor</string>
+
+    <!-- Sheet shown after the Play review flow returns. -->
+    <string name="home_post_review_title">Que bom que você está curtindo o boxlore</string>
+    <string name="home_post_review_body">Se não deu para deixar uma avaliação, tudo bem. Também adoramos ouvir suas ideias de recursos!</string>
+    <string name="home_post_review_share_idea">Compartilhar uma ideia</string>
+    <string name="home_post_review_maybe_later">Talvez depois</string>
+    <string name="home_review_rate_on_play">Avaliar no Google Play</string>
+
+    <!-- Feedback form (bottom sheet). -->
+    <string name="home_feedback_title">Conte o que você acha</string>
+    <string name="home_feedback_close">Fechar</string>
+    <string name="home_feedback_sent">Enviado. Obrigado!</string>
+    <string name="home_feedback_category_label">Sobre o que é?</string>
+    <!-- Category chips; keep short, three sit on one row. -->
+    <string name="home_feedback_category_feature">Ideia</string>
+    <string name="home_feedback_category_bug">Bug</string>
+    <string name="home_feedback_category_other">Outro</string>
+    <string name="home_feedback_hint_feature">Descreva o recurso que você gostaria de ver...</string>
+    <string name="home_feedback_hint_bug">O que aconteceu e como podemos reproduzir?</string>
+    <string name="home_feedback_hint_other">Conte o que você está pensando...</string>
+    <!-- Characters typed out of the limit, e.g. "120/2000". -->
+    <string name="home_feedback_char_count">%1$d/%2$d</string>
+    <string name="home_feedback_email_feature">Pode compartilhar seu e-mail? Adoraríamos conversar mais sobre sua ideia.</string>
+    <string name="home_feedback_email_bug">Pode compartilhar seu e-mail? Talvez a gente precise de mais detalhes para resolver esse bug.</string>
+    <string name="home_feedback_email_other">Pode compartilhar seu e-mail? Agradecemos muito o feedback e podemos entrar em contato.</string>
+    <!-- Placeholder in the email field. -->
+    <string name="home_feedback_email_hint">voce@exemplo.com (opcional)</string>
+    <string name="home_feedback_anonymous" formatted="false">O feedback é 100% anônimo: nenhum dado da conta é compartilhado.</string>
+    <string name="home_feedback_error_empty">Escreva uma mensagem primeiro</string>
+    <string name="home_feedback_error_send">Não foi possível enviar agora. Tente de novo.</string>
+    <string name="home_feedback_sending">Enviando...</string>
+    <string name="home_feedback_send">Enviar feedback</string>
+</resources>

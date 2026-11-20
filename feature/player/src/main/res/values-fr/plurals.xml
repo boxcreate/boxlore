@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="seek_back_seconds">
+        <item quantity="one">Reculer de %1$d seconde</item>
+        <item quantity="other">Reculer de %1$d secondes</item>
+    </plurals>
+    <plurals name="seek_forward_seconds">
+        <item quantity="one">Avancer de %1$d seconde</item>
+        <item quantity="other">Avancer de %1$d secondes</item>
+    </plurals>
+    <plurals name="player_queue_episode_count">
+        <item quantity="one">%1$d épisode</item>
+        <item quantity="other">%1$d épisodes</item>
+    </plurals>
+    <plurals name="player_episodes_queued">
+        <item quantity="one">%1$d épisode ajouté à la file d’attente</item>
+        <item quantity="other">%1$d épisodes ajoutés à la file d’attente</item>
+    </plurals>
+    <plurals name="player_same_show_add_next">
+        <item quantity="one">Ajouter le suivant de ce podcast</item>
+        <item quantity="other">Ajouter les %1$d suivants de ce podcast</item>
+    </plurals>
+    <plurals name="player_same_show_preview">
+        <item quantity="one">Aperçu de %1$d épisode à venir</item>
+        <item quantity="other">Aperçu des %1$d épisodes à venir</item>
+    </plurals>
+</resources>

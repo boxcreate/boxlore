@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="welcome_curiosity">Du bringst die Neugier mit.</string>
+    <!-- The two visual lines enter in order; TalkBack reads welcome_curiosity as a single heading. -->
+    <string name="welcome_curiosity_first_line">Du bringst</string>
+    <string name="welcome_curiosity_second_line">die Neugier mit.</string>
+    <string name="welcome_lore">Wir haben die Lore.</string>
+    <!-- Fixed visual prefix. The full welcome_lore sentence is the stable screen-reader description. -->
+    <string name="welcome_reply_prefix">Wir haben die</string>
+    <!-- These complete welcome_reply_prefix. Preserve this order to match the corresponding icons. -->
+    <string-array name="welcome_reply_words">
+        <item>Rätsel.</item>
+        <item>Lacher.</item>
+        <item>Schlagzeilen.</item>
+        <item>großen Ideen.</item>
+        <item>Geschichten.</item>
+        <item>Entdeckungen.</item>
+        <item>Lore.</item>
+    </string-array>
+    <string name="welcome_find_shows">Podcasts für mich finden</string>
+    <string name="welcome_search">Podcasts suchen</string>
+    <string name="welcome_import">Bibliothek importieren</string>
+    <string name="welcome_skip">Einrichtung überspringen</string>
+</resources>

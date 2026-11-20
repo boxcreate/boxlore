@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_app_language_title">Wähle deine Sprache</string>
+    <string name="onboarding_app_language_body">boxlore zeigt Menüs und Schaltflächen in dieser Sprache. Podcasts und Folgen behalten ihre eigene. Du kannst sie jederzeit unter Einstellungen › Darstellung ändern.</string>
+    <string name="onboarding_app_language_other">Andere Sprachen</string>
+    <string name="onboarding_app_language_system">Systemstandard</string>
+</resources>

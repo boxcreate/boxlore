@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="history_title">Historial de escucha</string>
+    <string name="history_back">Atrás</string>
+    <string name="history_clear_all">Borrar todo</string>
+    <string name="history_clear_confirm_title">¿Borrar el historial de escucha?</string>
+    <string name="history_clear_confirm_body">Se borrarán tu cronología y las estadísticas de escucha guardadas en el dispositivo. No se puede deshacer.</string>
+    <string name="history_clear_confirm_action">Borrar</string>
+    <string name="history_cancel">Cancelar</string>
+    <string name="history_empty_title">Aún no hay historial de escucha</string>
+    <string name="history_empty_body">Reproduce un episodio y tus estadísticas empezarán a aparecer aquí.</string>
+    <string name="history_empty_explore">Explorar podcasts</string>
+    <string name="history_period_7d">7 d</string>
+    <string name="history_period_30d">30 d</string>
+    <string name="history_period_180d">180 d</string>
+    <string name="history_period_all">Todo</string>
+    <string name="history_filter_all">Todo</string>
+    <string name="history_filter_in_progress">En curso</string>
+    <string name="history_filter_completed">Terminados</string>
+    <string name="history_time_title">Tiempo escuchado</string>
+    <string name="history_section_highlights">Destacados</string>
+    <string name="history_section_patterns">Hábitos de escucha</string>
+    <string name="history_section_timeline">Escuchado recientemente</string>
+    <string name="history_time_estimated_short">Estimado</string>
+    <string name="history_time_vs_previous_short">vs. periodo anterior</string>
+    <string name="history_time_streak">Racha de %1$d días</string>
+    <string name="history_card_top_show">Podcast favorito</string>
+    <string name="history_card_completion">Terminados</string>
+    <string name="history_card_window">Horario habitual</string>
+    <string name="history_card_active_days">Días activos</string>
+    <string name="history_card_sessions">Sesiones</string>
+    <string name="history_bucket_morning">Mañana</string>
+    <string name="history_bucket_afternoon">Tarde</string>
+    <string name="history_bucket_evening">Noche</string>
+    <string name="history_bucket_night">Madrugada</string>
+    <string name="history_window_share">%1$s · %2$d%%</string>
+    <string name="history_waiting_for_plays">Faltan más escuchas</string>
+    <string name="history_activity_title">Actividad diaria</string>
+    <string name="history_activity_swipe_hint">Desliza para ver otras semanas</string>
+    <string name="history_tod_title">Momento del día</string>
+    <string name="history_tod_empty">Reproduce algunos episodios para ver cuándo sueles escuchar</string>
+    <string name="history_tod_peak">Sobre todo: %1$s</string>
+    <string name="history_completion_in_progress">%1$d en curso</string>
+    <string name="history_stat_streak">Días seguidos</string>
+    <string name="history_active_days_detail">con escucha</string>
+    <string name="history_sessions_longest">La más larga: %1$s</string>
+    <string name="history_top_show_listened">%1$s de escucha</string>
+    <string name="history_top_show_play_count">%1$d reproducciones</string>
+    <string name="history_timeline_empty">Ningún episodio coincide con este filtro.</string>
+    <string name="history_item_removed">Quitado del historial</string>
+    <string name="history_undo">Deshacer</string>
+    <string name="history_pick_date">Fecha</string>
+    <string name="history_clear_date_filter">Borrar</string>
+    <string name="history_tracking_notice_title">Tus estadísticas de escucha empiezan de cero</string>
+    <string name="history_tracking_notice_body">Tu historial de episodios no cambia: todos los podcasts que has reproducido siguen aquí.\n\nLos gráficos y el tiempo de escucha exacto ahora salen de sesiones reales de reproducción en lugar de estimaciones del progreso. Esas estadísticas se reinician con esta actualización y se irán llenando a medida que escuches. Perdona que por ahora esté todo en blanco.</string>
+    <string name="history_tracking_notice_confirm">Entendido</string>
+    <string name="history_status_completed">Terminado</string>
+    <string name="history_status_in_progress">En curso</string>
+
+    <!-- Listening history: tabs and Timeline (redesign) -->
+    <string name="history_tab_timeline">Cronología</string>
+    <string name="history_tab_insights">Estadísticas</string>
+    <string name="history_more_options">Más opciones</string>
+    <string name="history_search_hint">Buscar episodios y podcasts</string>
+    <string name="history_search_clear">Borrar búsqueda</string>
+    <string name="history_jump_back_in">Retoma donde lo dejaste</string>
+    <!-- Opens every in-progress episode. The argument is how many there are. -->
+    <string name="history_jump_back_in_all">Los %1$d</string>
+    <string name="history_filter_finished">Terminados</string>
+    <string name="history_filter_liked">Me gusta</string>
+    <string name="history_group_by">Agrupar por</string>
+    <string name="history_group_days">Días</string>
+    <string name="history_group_shows">Podcasts</string>
+    <plurals name="history_episode_count">
+        <item quantity="one">%1$d episodio</item>
+        <item quantity="many">%1$d episodios</item>
+        <item quantity="other">%1$d episodios</item>
+    </plurals>
+    <plurals name="history_brief_count">
+        <item quantity="one">%1$d resumen</item>
+        <item quantity="many">%1$d resúmenes</item>
+        <item quantity="other">%1$d resúmenes</item>
+    </plurals>
+    <plurals name="history_show_count">
+        <item quantity="one">%1$d podcast</item>
+        <item quantity="many">%1$d podcasts</item>
+        <item quantity="other">%1$d podcasts</item>
+    </plurals>
+    <plurals name="history_finished_count">
+        <item quantity="one">%1$d terminado</item>
+        <item quantity="many">%1$d terminados</item>
+        <item quantity="other">%1$d terminados</item>
+    </plurals>
+    <!-- Parts of a line of facts, joined with a middle dot, e.g. "38 episodes · 14 h 20 min". -->
+    <string name="history_meta_join">%1$s · %2$s</string>
+    <string name="history_shows_last_played_first">los más recientes primero</string>
+    <string name="history_day_today">Hoy</string>
+    <string name="history_day_yesterday">Ayer</string>
+    <!-- A length of time, e.g. "2 h 05 min". -->
+    <string name="history_duration_hours_minutes">%1$d h %2$02d min</string>
+    <string name="history_duration_minutes">%1$d min</string>
+    <string name="history_duration_under_minute">Menos de un minuto</string>
+    <!-- How much of an episode is left, e.g. "29 min left". -->
+    <string name="history_time_left">Quedan %1$s</string>
+    <string name="history_row_finished">Terminado</string>
+    <string name="history_row_liked">Me gusta</string>
+    <string name="history_resume">Reanudar %1$s</string>
+    <string name="history_more_options_for">Más opciones para %1$s</string>
+    <string name="history_go_to_show">Ir al podcast</string>
+    <string name="history_remove_from_history">Quitar del historial</string>
+    <string name="history_open_show">Abrir %1$s</string>
+    <!-- Segment bar of a show's episodes, e.g. "6 of 9 finished". -->
+    <!-- Quantity is the second number, the show's episodes. -->
+    <plurals name="history_show_finished_of">
+        <item quantity="one">%1$d de %2$d terminado</item>
+        <item quantity="many">%1$d de %2$d terminados</item>
+        <item quantity="other">%1$d de %2$d terminados</item>
+    </plurals>
+    <plurals name="history_show_all_finished">
+        <item quantity="one">Terminado</item>
+        <item quantity="many">Los %1$d terminados</item>
+        <item quantity="other">Los %1$d terminados</item>
+    </plurals>
+    <string name="history_scroll_to_date">Recorre tu historial</string>
+    <string name="history_no_results">Ningún episodio coincide con tu búsqueda.</string>
+
+    <!-- Jump to a day sheet -->
+    <string name="history_jump_title">Ir a un día</string>
+    <string name="history_jump_body">Los días en que escuchaste aparecen rellenos. Cuanto más oscuro, más tiempo.</string>
+    <string name="history_jump_previous_month">Mes anterior</string>
+    <string name="history_jump_next_month">Mes siguiente</string>
+    <string name="history_jump_less">Menos</string>
+    <string name="history_jump_more">Más</string>
+    <string name="history_jump_week_ago">Hace una semana</string>
+    <string name="history_jump_month_ago">Hace un mes</string>
+    <string name="history_jump_first_listen">Tu primera escucha</string>
+    <!-- A day in the calendar, e.g. "Oct 3, 35 minutes". -->
+    <string name="history_jump_day">%1$s, %2$s</string>
+    <string name="history_jump_today">Hoy, %1$s</string>
+    <string name="history_jump_played">escuchado</string>
+
+    <!-- Insights tab (redesign) -->
+    <string name="history_share_listening">Comparte lo que escuchas</string>
+    <string name="history_period_group">Periodo</string>
+    <string name="history_ins_time_title">Tiempo escuchado</string>
+    <!-- A day's average, e.g. "About 29 minutes a day". -->
+    <plurals name="history_ins_per_day_minutes">
+        <item quantity="one">Alrededor de %1$d minuto al día</item>
+        <item quantity="many">Alrededor de %1$d minutos al día</item>
+        <item quantity="other">Alrededor de %1$d minutos al día</item>
+    </plurals>
+    <string name="history_ins_per_day_under_minute">Menos de un minuto al día</string>
+    <!-- Against the period before, e.g. "2 h 05 min more than the 30 days before". -->
+    <string name="history_ins_more_than_7">%1$s más que los 7 días anteriores</string>
+    <string name="history_ins_more_than_30">%1$s más que los 30 días anteriores</string>
+    <string name="history_ins_more_than_180">%1$s más que los 180 días anteriores</string>
+    <string name="history_ins_less_than_7">%1$s menos que los 7 días anteriores</string>
+    <string name="history_ins_less_than_30">%1$s menos que los 30 días anteriores</string>
+    <string name="history_ins_less_than_180">%1$s menos que los 180 días anteriores</string>
+    <plurals name="history_ins_best_run">
+        <item quantity="one">Mejor racha: %1$d día</item>
+        <item quantity="many">Mejor racha: %1$d días</item>
+        <item quantity="other">Mejor racha: %1$d días</item>
+    </plurals>
+    <string name="history_ins_type_title">Tu tipo de oyente</string>
+    <!-- Listening type names: time word + habit, e.g. "Evening finisher". -->
+    <string name="history_type_morning_finisher">Completista matutino</string>
+    <string name="history_type_morning_listener">Oyente matutino</string>
+    <string name="history_type_morning_sampler">Explorador matutino</string>
+    <string name="history_type_daytime_finisher">Completista diurno</string>
+    <string name="history_type_daytime_listener">Oyente diurno</string>
+    <string name="history_type_daytime_sampler">Explorador diurno</string>
+    <string name="history_type_evening_finisher">Completista nocturno</string>
+    <string name="history_type_evening_listener">Oyente nocturno</string>
+    <string name="history_type_evening_sampler">Explorador nocturno</string>
+    <string name="history_type_late_night_finisher">Completista de madrugada</string>
+    <string name="history_type_late_night_listener">Oyente de madrugada</string>
+    <string name="history_type_late_night_sampler">Explorador de madrugada</string>
+    <string name="history_type_all_day_finisher">Completista de todo el día</string>
+    <string name="history_type_all_day_listener">Oyente de todo el día</string>
+    <string name="history_type_all_day_sampler">Explorador de todo el día</string>
+    <!-- Where listening falls, e.g. "Almost half your listening happens in the evening." -->
+    <string name="history_part_most_morning">Escuchas sobre todo por la mañana.</string>
+    <string name="history_part_most_afternoon">Escuchas sobre todo por la tarde.</string>
+    <string name="history_part_most_evening">Escuchas sobre todo por la noche.</string>
+    <string name="history_part_most_night">Escuchas sobre todo de madrugada.</string>
+    <string name="history_part_half_morning">Casi la mitad de lo que escuchas es por la mañana.</string>
+    <string name="history_part_half_afternoon">Casi la mitad de lo que escuchas es por la tarde.</string>
+    <string name="history_part_half_evening">Casi la mitad de lo que escuchas es por la noche.</string>
+    <string name="history_part_half_night">Casi la mitad de lo que escuchas es de madrugada.</string>
+    <string name="history_part_share_morning">El %1$d%% de lo que escuchas es por la mañana.</string>
+    <string name="history_part_share_afternoon">El %1$d%% de lo que escuchas es por la tarde.</string>
+    <string name="history_part_share_evening">El %1$d%% de lo que escuchas es por la noche.</string>
+    <string name="history_part_share_night">El %1$d%% de lo que escuchas es de madrugada.</string>
+    <!-- How many episodes you finish, e.g. "You finish about 3 in 4 episodes you start." -->
+    <!-- Quantity is the second number. -->
+    <plurals name="history_finish_rate">
+        <item quantity="one">Terminas unos %1$d de cada %2$d episodio que empiezas.</item>
+        <item quantity="many">Terminas unos %1$d de cada %2$d episodios que empiezas.</item>
+        <item quantity="other">Terminas unos %1$d de cada %2$d episodios que empiezas.</item>
+    </plurals>
+    <string name="history_finish_almost_all">Terminas casi todos los episodios que empiezas.</string>
+    <string name="history_finish_few">Terminas algunos de los episodios que empiezas.</string>
+    <string name="history_finish_none">Aún no has terminado ningún episodio de los que empezaste.</string>
+    <string name="history_ins_top_shows">Tus podcasts favoritos</string>
+    <string name="history_ins_by_time">por tiempo</string>
+    <!-- E.g. "4 h 10 min, 29% of your listening". -->
+    <string name="history_ins_top_share">%1$s, el %2$d%% de lo que escuchas</string>
+    <plurals name="history_ins_episodes_finished">
+        <item quantity="one">%1$d episodio terminado</item>
+        <item quantity="many">%1$d episodios terminados</item>
+        <item quantity="other">%1$d episodios terminados</item>
+    </plurals>
+    <string name="history_ins_when">Cuándo escuchas</string>
+    <string name="history_ins_mostly_morning">Sobre todo por la mañana</string>
+    <string name="history_ins_mostly_afternoon">Sobre todo por la tarde</string>
+    <string name="history_ins_mostly_evening">Sobre todo por la noche</string>
+    <string name="history_ins_mostly_night">Sobre todo de madrugada</string>
+    <string name="history_ins_lead_morning">Ganan las mañanas</string>
+    <string name="history_ins_lead_afternoon">Ganan las tardes</string>
+    <string name="history_ins_lead_evening">Ganan las noches</string>
+    <string name="history_ins_lead_night">Ganan las madrugadas</string>
+    <string name="history_ins_all_through_day">A lo largo de todo el día</string>
+    <!-- Legend line, e.g. "Evening 46%". -->
+    <string name="history_ins_part_share">%1$s %2$d%%</string>
+    <string name="history_clock_12am">12 a. m.</string>
+    <string name="history_clock_6am">6 a. m.</string>
+    <string name="history_clock_12pm">12 p. m.</string>
+    <string name="history_clock_6pm">6 p. m.</string>
+    <!-- E.g. "Wednesdays are your big day". -->
+    <string name="history_ins_big_day">%1$s son tu gran día</string>
+    <!-- E.g. "4 h 23 min on Wednesdays this month". -->
+    <string name="history_ins_big_day_7">%2$s: %1$s en los últimos 7 días</string>
+    <string name="history_ins_big_day_30">%2$s: %1$s en los últimos 30 días</string>
+    <string name="history_ins_big_day_180">%2$s: %1$s en los últimos 6 meses</string>
+    <string name="history_ins_big_day_all">%2$s: %1$s en total</string>
+    <string name="history_ins_weekday_chart">Escucha por día de la semana: el %1$s es el más alto</string>
+    <!-- E.g. "Your October". -->
+    <string name="history_ins_your_month">Tu %1$s</string>
+    <!-- E.g. "19 of 30 days"; the quantity is the second number, the days so far. -->
+    <plurals name="history_ins_days_of">
+        <item quantity="one">%1$d de %2$d día</item>
+        <item quantity="many">%1$d de %2$d días</item>
+        <item quantity="other">%1$d de %2$d días</item>
+    </plurals>
+    <string name="history_ins_mosaic_hint">Cada día muestra el podcast que más reprodujiste. Toca un día para abrirlo.</string>
+    <string name="history_ins_records">Récords</string>
+    <string name="history_rec_biggest_day">Día más intenso</string>
+    <string name="history_rec_longest_run">Racha más larga</string>
+    <string name="history_rec_longest_sitting">Sesión más larga</string>
+    <string name="history_rec_most_in_day">Más en un día</string>
+    <plurals name="history_rec_days">
+        <item quantity="one">%1$d día</item>
+        <item quantity="many">%1$d días</item>
+        <item quantity="other">%1$d días</item>
+    </plurals>
+    <!-- E.g. "Oct 19 to Oct 28". -->
+    <string name="history_rec_range">Del %1$s al %2$s</string>
+    <!-- E.g. "of Darknet Diaries, Oct 28". -->
+    <string name="history_rec_of_show">de %1$s, %2$s</string>
+    <string name="history_ins_genres">Lo que escuchas</string>
+    <string name="history_ins_genres_hint">Según los géneros de los podcasts que reprodujiste</string>
+    <string name="history_ins_percent">%1$d%%</string>
+    <string name="history_ins_where">Dónde escuchas</string>
+    <string name="history_ins_where_mostly_headphones">Sobre todo con auriculares</string>
+    <string name="history_ins_where_mostly_bluetooth">Sobre todo por Bluetooth</string>
+    <string name="history_ins_where_mostly_car">Sobre todo en el auto</string>
+    <string name="history_ins_where_mostly_speaker">Sobre todo por el altavoz del teléfono</string>
+    <string name="history_ins_where_mostly_cast">Sobre todo transmitiendo a otro dispositivo</string>
+    <string name="history_ins_where_spread">Repartido entre tus dispositivos</string>
+    <string name="history_ins_output_headphones">Auriculares</string>
+    <string name="history_ins_output_bluetooth">Bluetooth</string>
+    <string name="history_ins_output_car">Auto</string>
+    <string name="history_ins_output_speaker">Altavoz del teléfono</string>
+    <string name="history_ins_output_cast">Transmisión</string>
+    <string name="history_ins_fresh">Nuevos o poniéndote al día</string>
+    <string name="history_ins_fresh_mostly_new">Sobre todo episodios nuevos</string>
+    <string name="history_ins_fresh_mostly_back">Sobre todo poniéndote al día</string>
+    <string name="history_ins_fresh_half">Alrededor de la mitad son episodios nuevos</string>
+    <string name="history_ins_fresh_new">Nuevos %1$d%%</string>
+    <string name="history_ins_fresh_older">Anteriores %1$d%%</string>
+    <string name="history_ins_fresh_hint">Nuevo significa que llevaba una semana o menos publicado cuando lo reprodujiste</string>
+    <string name="history_ins_from_lore">El %1$d%% empezó desde Lore</string>
+    <string name="history_ins_from_smart_queue">El %1$d%% lo añadió la Cola inteligente</string>
+    <string name="history_ins_genre_other">Otros</string>
+    <!-- E.g. "178 finished". -->
+    <!-- Episodes finished all time; quantity is the number shown. -->
+    <plurals name="history_ins_finished_count">
+        <item quantity="one">%1$d terminado</item>
+        <item quantity="many">%1$d terminados</item>
+        <item quantity="other">%1$d terminados</item>
+    </plurals>
+    <string name="history_ins_all_time">en total</string>
+    <!-- E.g. "22 more to reach 200." -->
+    <!-- Episodes left to the next milestone; quantity is the first number. -->
+    <plurals name="history_ins_to_milestone">
+        <item quantity="one">Falta %1$d para llegar a %2$d.</item>
+        <item quantity="many">Faltan %1$d para llegar a %2$d.</item>
+        <item quantity="other">Faltan %1$d para llegar a %2$d.</item>
+    </plurals>
+    <plurals name="history_ins_in_progress_title">
+        <item quantity="one">%1$d episodio en curso</item>
+        <item quantity="many">%1$d episodios en curso</item>
+        <item quantity="other">%1$d episodios en curso</item>
+    </plurals>
+    <plurals name="history_ins_in_progress_stale">
+        <item quantity="one">%1$d de ellos lleva más de un mes sin reproducirse. Retómalo o márcalo como escuchado.</item>
+        <item quantity="many">%1$d de ellos llevan más de un mes sin reproducirse. Retoma algunos o márcalos como escuchados.</item>
+        <item quantity="other">%1$d de ellos llevan más de un mes sin reproducirse. Retoma algunos o márcalos como escuchados.</item>
+    </plurals>
+    <string name="history_ins_in_progress_fresh">Retómalos donde los dejaste o márcalos como escuchados.</string>
+    <string name="history_ins_review_in_progress">Revisar episodios en curso</string>
+    <!-- Little data (only a few days timed) -->
+    <string name="history_early_title">Lo que llevas escuchado</string>
+    <string name="history_early_finished">episodios terminados</string>
+    <string name="history_early_in_progress">%1$d en curso</string>
+    <plurals name="history_early_played_days">
+        <item quantity="one">Reproducido %1$d día este mes</item>
+        <item quantity="many">Reproducido %1$d días este mes</item>
+        <item quantity="other">Reproducido %1$d días este mes</item>
+    </plurals>
+    <!-- E.g. "Listening time starts from Oct 22". -->
+    <string name="history_early_timing_title">Estadísticas limitadas por ahora</string>
+    <string name="history_early_timing_body">boxlore empezó a guardar tu tiempo de escucha el %1$s. Vuelve después de unos días escuchando para verlo completo.</string>
+    <string name="history_early_timing_body_new">boxlore empieza a guardar tu tiempo de escucha con tu próxima reproducción. Vuelve después de unos días escuchando para verlo completo.</string>
+    <string name="history_early_most_played">Podcasts más reproducidos</string>
+    <string name="history_early_by_episodes">por episodios</string>
+    <string name="history_early_clock">Tu reloj de escucha</string>
+    <plurals name="history_early_clock_more_days">
+        <item quantity="one">Escucha %1$d día más para ver cuándo escuchas más.</item>
+        <item quantity="many">Escucha %1$d días más para ver cuándo escuchas más.</item>
+        <item quantity="other">Escucha %1$d días más para ver cuándo escuchas más.</item>
+    </plurals>
+    <!-- Quantity is the second number, the days needed. -->
+    <plurals name="history_early_clock_progress">
+        <item quantity="one">%1$d de %2$d día</item>
+        <item quantity="many">%1$d de %2$d días</item>
+        <item quantity="other">%1$d de %2$d días</item>
+    </plurals>
+
+    <!-- Monthly story (boards A7–A12) -->
+    <string name="history_story_close">Cerrar</string>
+    <string name="history_story_card_of">Tarjeta %1$d de %2$d</string>
+    <string name="history_story_previous">Tarjeta anterior</string>
+    <string name="history_story_next">Tarjeta siguiente</string>
+    <string name="history_story_clock">Reloj de escucha: %1$s</string>
+    <string name="history_story_hello_eyebrow">Tu mes de escucha</string>
+    <string name="history_story_hello_eyebrow_year">Tu mes de escucha · %1$d</string>
+    <string name="history_story_hello_line">%1$s, %2$s y un %3$s muy ocupado.</string>
+    <plurals name="history_story_days">
+        <item quantity="one">%1$d día</item>
+        <item quantity="many">%1$d días</item>
+        <item quantity="other">%1$d días</item>
+    </plurals>
+    <plurals name="history_story_shows">
+        <item quantity="one">%1$d podcast</item>
+        <item quantity="many">%1$d podcasts</item>
+        <item quantity="other">%1$d podcasts</item>
+    </plurals>
+    <string name="history_story_time_eyebrow">Tiempo escuchado</string>
+    <string name="history_story_hours">%1$d h</string>
+    <string name="history_story_minutes">%1$d min</string>
+    <string name="history_story_time_more">%1$s, y %2$s más que en %3$s.</string>
+    <string name="history_story_time_less">%1$s, y %2$s menos que en %3$s.</string>
+    <string name="history_story_time_only">%1$s.</string>
+    <string name="history_story_time_bubble">%1$s · %2$s</string>
+    <string name="history_story_time_chart">Escucha por día en %1$s, con el pico el %2$s</string>
+    <string name="history_story_top_eyebrow">Tu podcast favorito</string>
+    <string name="history_story_resume">Reanudar %1$s · %2$s</string>
+    <string name="history_story_resume_short">Reanudar · %s</string>
+    <string name="history_story_type_morning">por la mañana</string>
+    <string name="history_story_type_afternoon">por la tarde</string>
+    <string name="history_story_type_evening">por la noche</string>
+    <string name="history_story_type_night">de madrugada</string>
+    <!-- Quantity is the fourth number, the episodes started. -->
+    <plurals name="history_story_type_finish">
+        <item quantity="one">El %1$d%% de lo que escuchaste fue %2$s, y terminaste unos %3$d de cada %4$d episodio que empezaste.</item>
+        <item quantity="many">El %1$d%% de lo que escuchaste fue %2$s, y terminaste unos %3$d de cada %4$d episodios que empezaste.</item>
+        <item quantity="other">El %1$d%% de lo que escuchaste fue %2$s, y terminaste unos %3$d de cada %4$d episodios que empezaste.</item>
+    </plurals>
+    <string name="history_story_type_finish_all">El %1$d%% de lo que escuchaste fue %2$s, y terminaste casi todos los episodios que empezaste.</string>
+    <string name="history_story_type_finish_few">El %1$d%% de lo que escuchaste fue %2$s, y terminaste algunos de los episodios que empezaste.</string>
+    <string name="history_story_type_finish_none">El %1$d%% de lo que escuchaste fue %2$s. Aún no has terminado ningún episodio de los que empezaste.</string>
+    <string name="history_story_type_only">El %1$d%% de lo que escuchaste fue %2$s.</string>
+    <string name="history_story_records_eyebrow">Tus récords</string>
+    <plurals name="history_story_run_days">
+        <item quantity="one">%1$d día</item>
+        <item quantity="many">%1$d días</item>
+        <item quantity="other">%1$d días</item>
+    </plurals>
+    <string name="history_story_run_line">seguidos, del %1$s al %2$s.</string>
+    <string name="history_story_run_line_best">seguidos, del %1$s al %2$s. Tu mejor racha hasta ahora.</string>
+    <plurals name="history_story_run_pills">
+        <item quantity="one">%1$d día seguido escuchando</item>
+        <item quantity="many">%1$d días seguidos escuchando</item>
+        <item quantity="other">%1$d días seguidos escuchando</item>
+    </plurals>
+    <string name="history_story_biggest_only">el %1$s, tu día más intenso.</string>
+    <plurals name="history_story_episodes">
+        <item quantity="one">%1$d episodio</item>
+        <item quantity="many">%1$d episodios</item>
+        <item quantity="other">%1$d episodios</item>
+    </plurals>
+    <string name="history_story_share_card_title">Mi %1$s de escucha</string>
+    <string name="history_story_share_card_top">Podcast favorito</string>
+    <string name="history_story_share_listen_on">Escucha en</string>
+    <string name="history_story_share_card_label">Tarjeta para compartir: Mi %1$s de escucha, %2$s, podcast favorito %3$s, %4$s</string>
+    <string name="history_story_share">Comparte tu %1$s</string>
+    <string name="history_story_watch_again">Ver otra vez</string>
+    <string name="history_story_share_text">Mi %1$s de escucha en boxlore: %2$s.</string>
+    <string name="history_story_count">%1$d</string>
+    <string name="history_story_percent">%1$d%%</string>
+    <string name="history_story_stat_listened">escuchado</string>
+    <string name="history_story_stat_days">días de escucha</string>
+    <string name="history_story_stat_episodes">episodios reproducidos</string>
+    <string name="history_story_stat_finished">terminados</string>
+    <string name="history_story_time_compare">%1$s %2$s, %3$s %4$s</string>
+    <string name="history_story_top_share_of">de tu %1$s</string>
+    <plurals name="history_story_top_finished_short">
+        <item quantity="one">%1$d episodio terminado</item>
+        <item quantity="many">%1$d episodios terminados</item>
+        <item quantity="other">%1$d episodios terminados</item>
+    </plurals>
+    <string name="history_story_also">También en bucle</string>
+    <string name="history_story_how_eyebrow">Cómo escuchaste</string>
+    <string name="history_story_finished_of">%1$d de %2$d</string>
+    <string name="history_story_finished_label">episodios terminados</string>
+    <string name="history_story_run_line_best_is">seguidos, del %1$s al %2$s. Tu mejor racha es de %3$d.</string>
+    <string name="history_story_rec_biggest">Día más intenso\n%1$s</string>
+    <string name="history_story_rec_sitting">Sesión más larga\n%1$s</string>
+    <string name="history_story_rec_binge">episodios de %1$s en un día, el %2$s</string>
+    <string name="history_story_rec_weekday">tu gran día de la semana, %1$s en todo el mes</string>
+    <string name="history_story_share_days">días</string>
+    <string name="history_story_share_episodes">episodios</string>
+    <string name="history_story_share_finished">terminados</string>
+    <string name="history_story_new">Nuevo</string>
+    <string name="history_story_entry_title">Tu historia de %1$s</string>
+    <plurals name="history_story_entry_meta">
+        <item quantity="one">%1$d tarjeta · 1 min</item>
+        <item quantity="many">%1$d tarjetas · 1 min</item>
+        <item quantity="other">%1$d tarjetas · 1 min</item>
+    </plurals>
+    <string name="history_story_entry_top">%1$s en lo más alto</string>
+    <string name="history_story_watch">Ver tu historia de %1$s</string>
+    <string name="history_story_earlier">Historias anteriores</string>
+    <!-- A weekday's plural, as in "Wednesdays are your big day" and "4 h 23 min on Wednesdays this month". -->
+    <string name="history_weekday_plural_monday">Los lunes</string>
+    <string name="history_weekday_plural_tuesday">Los martes</string>
+    <string name="history_weekday_plural_wednesday">Los miércoles</string>
+    <string name="history_weekday_plural_thursday">Los jueves</string>
+    <string name="history_weekday_plural_friday">Los viernes</string>
+    <string name="history_weekday_plural_saturday">Los sábados</string>
+    <string name="history_weekday_plural_sunday">Los domingos</string>
+    <!-- Two labels read together by a screen reader, e.g. "New 40%, Older 60%". -->
+    <string name="history_list_pair">%1$s, %2$s</string>
+    <plurals name="history_story_earlier_all">
+        <item quantity="one">Ver %d historia</item>
+        <item quantity="many">Ver las %d historias</item>
+        <item quantity="other">Ver las %d historias</item>
+    </plurals>
+    <string name="history_story_earlier_fewer">Ver menos historias</string>
+</resources>

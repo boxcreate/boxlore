@@ -1,0 +1,8 @@
+<resources>
+    <string name="tablet_return_to_player">Läuft gerade</string>
+    <string name="tablet_alpha_title">Tablet-Layouts sind in der Alpha-Phase</string>
+    <string name="tablet_alpha_body">Wenn etwas komisch aussieht oder nicht mehr funktioniert, sag uns bitte Bescheid. Wir beheben es so schnell wie möglich.</string>
+    <string name="tablet_alpha_feedback_instruction">Um Feedback zu senden, tippe oben auf der Startseite auf das Symbol %1$s.</string>
+    <string name="tablet_alpha_feedback_icon_name">Feedback</string>
+    <string name="tablet_alpha_ok">OK</string>
+</resources>

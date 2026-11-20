@@ -1,0 +1,15 @@
+<resources>
+    <string name="minimal_play">Reproducir</string>
+    <string name="minimal_pause">Pausar</string>
+    <string name="minimal_buffering">Cargando</string>
+    <string name="minimal_sleep">Temporizador</string>
+    <string name="minimal_speed">Velocidad de reproducción: %1$s</string>
+    <string name="minimal_up_next">A continuación</string>
+    <string name="minimal_collapse">Minimizar reproductor</string>
+    <string name="minimal_full_title">Ver el título completo del episodio</string>
+    <string name="minimal_done">Listo</string>
+    <string name="minimal_unknown_duration">—</string>
+    <!-- Time left, shown as a negative count. %1$s: narrow duration such as 1h 14m -->
+    <string name="minimal_remaining">−%1$s</string>
+    <string name="player_seek">Posición de reproducción</string>
+</resources>

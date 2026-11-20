@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_app_language_title">Idioma de la app</string>
+    <string name="settings_app_language_system">Predeterminado del sistema</string>
+    <string name="settings_app_language_ai_note">Las traducciones se hacen con ayuda de IA. ¿Ves algún error? Cuéntanoslo en Comentarios.</string>
+</resources>

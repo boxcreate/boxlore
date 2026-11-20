@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_folder_new">Nueva carpeta</string>
+    <string name="library_folder_edit">Editar carpeta</string>
+    <string name="library_folder_delete">Eliminar carpeta</string>
+    <string name="library_folder_delete_title">¿Eliminar carpeta?</string>
+    <string name="library_folder_delete_body">Los podcasts de «%1$s» se quedarán en tu biblioteca: no se eliminarán ni dejarás de seguirlos.</string>
+    <string name="library_folder_delete_note">Sus podcasts se quedan en tu biblioteca</string>
+    <string name="library_folder_create">Crear carpeta</string>
+    <string name="library_folder_create_new">Crear carpeta nueva</string>
+    <string name="library_folder_open">Abrir carpeta</string>
+    <string name="library_folder_auto">Automática</string>
+    <string name="library_folder_add_to">Añadir a carpeta</string>
+    <string name="library_folder_remove_from">Quitar de la carpeta</string>
+    <string name="library_folder_move_to_another">Mover a otra carpeta</string>
+    <string name="library_folder_move_title">Mover a carpeta</string>
+    <string name="library_folder_add_title">Añadir a carpeta</string>
+    <string name="library_folder_no_other_folders">Aún no hay otras carpetas</string>
+    <string name="library_folder_add_shows_to">Añadir podcasts a %1$s</string>
+    <string name="library_folder_new_with_show">Nueva carpeta con %1$s</string>
+    <string name="library_folder_member_in_it">Ya dentro</string>
+    <string name="library_folder_only_genre_shows">Solo podcasts de %1$s</string>
+    <string name="library_folder_genre_change_hint">Para poner %1$s en una carpeta de género, cambia su género desde su página.</string>
+    <string name="library_folder_not_in_any">Aún no está en ninguna carpeta</string>
+    <plurals name="library_folder_in_count">
+        <item quantity="one">En %1$d carpeta</item>
+        <item quantity="many">En %1$d carpetas</item>
+        <item quantity="other">En %1$d carpetas</item>
+    </plurals>
+    <plurals name="library_folder_shows_and_dimensions">
+        <item quantity="one">%1$d podcast • %2$s</item>
+        <item quantity="many">%1$d podcasts • %2$s</item>
+        <item quantity="other">%1$d podcasts • %2$s</item>
+    </plurals>
+    <plurals name="library_folder_new_count">
+        <item quantity="one">%1$d nuevo</item>
+        <item quantity="many">%1$d nuevos</item>
+        <item quantity="other">%1$d nuevos</item>
+    </plurals>
+    <plurals name="library_folder_new_episodes_badge">
+        <item quantity="one">%1$d EPISODIO NUEVO</item>
+        <item quantity="many">%1$d EPISODIOS NUEVOS</item>
+        <item quantity="other">%1$d EPISODIOS NUEVOS</item>
+    </plurals>
+    <string name="library_folder_empty_tap_to_add">Carpeta vacía • Toca para añadir podcasts</string>
+    <string name="library_folder_empty_title">No hay podcasts en esta carpeta</string>
+    <string name="library_folder_empty_body">Usa Añadir podcasts para llenarla.</string>
+    <string name="library_folder_empty_genre_title">Aún no hay podcasts de %1$s</string>
+    <string name="library_folder_empty_genre_body">Aquí aparecerán los podcasts de %1$s que sigues.</string>
+    <string name="library_folder_summary_with_new">%1$s · %2$s</string>
+    <string name="library_folder_count_and_look">%1$s · %2$s</string>
+    <string name="library_folder_genre_and_count">%1$s · %2$s</string>
+    <string name="library_folder_genre_chip_count">%1$s · %2$d</string>
+    <string name="library_folder_shows_count">Podcasts · %1$d</string>
+    <string name="library_folder_remove_show">Quitar %1$s de esta carpeta</string>
+    <string name="library_folder_remove_show_note">Quitar un podcast de aquí lo mantiene en tu biblioteca.</string>
+    <string name="library_folder_how_it_looks">Cómo se ve</string>
+    <string name="library_folder_icon">Icono</string>
+    <string name="library_folder_genre">Género</string>
+    <string name="library_folder_name">Nombre</string>
+    <string name="library_folder_name_it">Ponle nombre</string>
+    <string name="library_folder_name_is_genre">%1$s es un género, así que esta es una carpeta automática.</string>
+    <string name="library_folder_saved_as_tech">Se guarda como Tecnología</string>
+    <string name="library_folder_fallback_name">Carpeta</string>
+    <string name="library_folder_what_goes_in">¿Qué va dentro?</string>
+    <string name="library_folder_mode_shows">Podcasts</string>
+    <string name="library_folder_mode_genre">Género</string>
+    <string name="library_folder_mode_auto">Auto</string>
+    <string name="library_folder_pick_at_least_one">Elige al menos uno</string>
+    <string name="library_folder_pick_stays_elsewhere">También siguen en sus otras carpetas</string>
+    <string name="library_folder_pick_show_in_folder">%1$s, en %2$s</string>
+    <string name="library_folder_step_of">Paso %1$d de %2$d</string>
+    <string name="library_folder_choose_look">Elige un aspecto</string>
+    <string name="library_folder_look_intro_named">Cómo aparece %1$s en tu pestaña Podcasts.</string>
+    <string name="library_folder_look_intro_unnamed">Cómo aparece esta carpeta en tu pestaña Podcasts.</string>
+    <string name="library_folder_look_overflow_note">¿Más podcasts que eso? El último hueco pasa a ser +N y abre la carpeta. Puedes cambiar el aspecto más tarde.</string>
+    <string name="library_folder_look_description_with_overflow">%1$s Con más podcasts, el último hueco pasa a ser +N y abre la carpeta.</string>
+    <string name="library_folder_look_tile">Mosaico</string>
+    <plurals name="library_folder_look_rows">
+        <item quantity="one">%1$d fila</item>
+        <item quantity="many">%1$d filas</item>
+        <item quantity="other">%1$d filas</item>
+    </plurals>
+    <plurals name="library_folder_look_tap_up_to">
+        <item quantity="one">toca hasta %1$d</item>
+        <item quantity="many">toca hasta %1$d</item>
+        <item quantity="other">toca hasta %1$d</item>
+    </plurals>
+    <plurals name="library_folder_look_pinned_description">
+        <item quantity="one">Fijada arriba. Toca hasta %1$d directamente.</item>
+        <item quantity="many">Fijada arriba. Toca hasta %1$d directamente.</item>
+        <item quantity="other">Fijada arriba. Toca hasta %1$d directamente.</item>
+    </plurals>
+    <plurals name="library_folder_look_among_description">
+        <item quantity="one">Entre tus podcasts. Toca hasta %1$d directamente.</item>
+        <item quantity="many">Entre tus podcasts. Toca hasta %1$d directamente.</item>
+        <item quantity="other">Entre tus podcasts. Toca hasta %1$d directamente.</item>
+    </plurals>
+    <string name="library_folder_tile_show_icon">Mostrar el icono</string>
+    <string name="library_folder_tile_show_icon_note">Al tocarla se abre la carpeta</string>
+    <string name="library_folder_tile_show_covers">Mostrar portadas</string>
+    <plurals name="library_folder_tile_show_covers_note">
+        <item quantity="one">Toca hasta %1$d podcast</item>
+        <item quantity="many">Toca hasta %1$d podcasts</item>
+        <item quantity="other">Toca hasta %1$d podcasts</item>
+    </plurals>
+    <string name="library_auto_organize">Organizar automáticamente</string>
+    <string name="library_auto_organize_is_on">Organización automática activada</string>
+    <string name="library_auto_organize_turn_on">Activar organización automática</string>
+    <string name="library_auto_organize_turn_off">Desactivar organización automática</string>
+    <string name="library_auto_organize_turn_off_title">¿Desactivar la organización automática?</string>
+    <string name="library_auto_organize_turn_off_body">boxlore dejará de crear carpetas de género nuevas. Las carpetas de género que tienes se quedan, y los podcasts nuevos de su género se siguen añadiendo.</string>
+    <string name="library_auto_organize_turn_off_hint">Para quitar una, elimina la carpeta. Sus podcasts se quedan en tu biblioteca.</string>
+    <string name="library_auto_organize_summary_off">Desactivada · Ordena cada podcast en carpetas de género</string>
+    <plurals name="library_auto_organize_summary_on">
+        <item quantity="one">Activada · %1$d carpeta de género</item>
+        <item quantity="many">Activada · %1$d carpetas de género</item>
+        <item quantity="other">Activada · %1$d carpetas de género</item>
+    </plurals>
+    <plurals name="library_auto_organize_status">
+        <item quantity="one">%1$d carpeta de género, al día según los podcasts que sigues</item>
+        <item quantity="many">%1$d carpetas de género, al día según los podcasts que sigues</item>
+        <item quantity="other">%1$d carpetas de género, al día según los podcasts que sigues</item>
+    </plurals>
+    <plurals name="library_auto_organize_apply_to_all">
+        <item quantity="one">Aplicar a %1$d carpeta de género</item>
+        <item quantity="many">Aplicar a las %1$d carpetas de género</item>
+        <item quantity="other">Aplicar a las %1$d carpetas de género</item>
+    </plurals>
+    <string name="library_auto_organize_apply_note">Las carpetas de género nuevas tendrán este aspecto. Aplícalo para cambiar también las que ya tienes.</string>
+    <string name="library_auto_organize_folders_you_get">Carpetas que tendrás</string>
+    <string name="library_auto_organize_already_there">Ya existen</string>
+    <plurals name="library_auto_organize_no_genre_note">
+        <item quantity="one">%1$d podcast sin género se queda en tu cuadrícula principal.</item>
+        <item quantity="many">%1$d podcasts sin género se quedan en tu cuadrícula principal.</item>
+        <item quantity="other">%1$d podcasts sin género se quedan en tu cuadrícula principal.</item>
+    </plurals>
+    <string name="library_auto_organize_how_folders_look">Aspecto de las carpetas</string>
+    <string name="library_auto_organize_let_boxlore_choose">Que elija boxlore</string>
+    <string name="library_auto_organize_choose_description">Cada carpeta tiene el aspecto que mejor va con su tamaño. 1–2 podcasts: mosaico; 3–5: 1 fila; 6 o más: 2 filas.</string>
+    <string name="library_auto_organize_one_look">Usar un aspecto para todas</string>
+    <string name="library_auto_organize_one_look_body">Todas las carpetas de género serán un mosaico, 1 fila, 2 filas o 3 filas.</string>
+    <string name="library_auto_organize_note">Cada género tiene su carpeta, y los podcasts que sigas después se añaden solos. Si ya tienes una carpeta para un género, también se llena.</string>
+    <string name="library_auto_organize_already_on_note">Cada género ya tiene una carpeta, y los podcasts que sigas después se añaden solos. Gestionar cambia su aspecto.</string>
+    <string name="library_auto_organize_change_later">Puedes cambiarlo o desactivarlo cuando quieras en Ordenar y organizar.</string>
+    <string name="library_genre_auto_add_note">Los podcasts de %1$s que sigas después se añaden solos.</string>
+    <string name="library_genre_auto_add_note_this_genre">Los podcasts de este género que sigas después se añaden solos.</string>
+</resources>

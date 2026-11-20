@@ -1,0 +1,12 @@
+<resources>
+    <string name="player_now_playing">Reproduciendo</string>
+    <string name="player_chapters_tab">Capítulos</string>
+    <string name="player_transcript_tab">Transcripción</string>
+    <string name="player_notes_tab">Notas</string>
+    <string name="player_open_fullscreen">Abrir reproductor a pantalla completa</string>
+    <string name="player_share_episode">Compartir episodio</string>
+    <string name="player_no_transcript">No hay transcripción disponible</string>
+    <string name="player_preparing_transcript">Preparando la transcripción</string>
+    <string name="player_no_notes">No hay notas del episodio disponibles</string>
+    <string name="player_open_fullscreen_transcript">Abrir transcripción a pantalla completa</string>
+</resources>

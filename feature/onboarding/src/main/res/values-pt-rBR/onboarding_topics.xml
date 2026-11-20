@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Manual topic pickers: genres, then sub-genres, listening moments and episode length. The app sends its own English keys to the server; these are display names only. -->
+    <string name="onboarding_back">Voltar</string>
+    <string name="onboarding_continue">Continuar</string>
+    <!-- Bottom button, plural on the number of picks. -->
+    <plurals name="onboarding_continue_selected">
+        <item quantity="one">Continuar (%d selecionado)</item>
+        <item quantity="other">Continuar (%d selecionados)</item>
+    </plurals>
+    <!-- Disabled bottom button on the genre picker before anything is picked. -->
+    <string name="onboarding_pick_at_least_one">Escolha pelo menos 1</string>
+    <!-- Disabled bottom button on the listening-moment and length pickers before anything is picked. -->
+    <string name="onboarding_select_at_least_one">Selecione pelo menos 1</string>
+    <string name="onboarding_select_all_that_apply">Selecione todas as opções que se aplicam</string>
+    <!-- Above the genre chips under a picked listening moment or length; tapping a chip assigns or removes that genre. -->
+    <string name="onboarding_target_genres">Gêneros (toque para marcar ou desmarcar):</string>
+
+    <string name="onboarding_genres_title">Podemos te conhecer melhor?</string>
+    <string name="onboarding_genres_body">Escolha os temas de que você gosta</string>
+    <string name="onboarding_subgenres_title">Vá um pouco mais fundo</string>
+    <string name="onboarding_subgenres_body">Selecione temas específicos (opcional)</string>
+    <string name="onboarding_subgenres_empty">Nenhum gênero selecionado. Volte para escolher alguns.</string>
+    <string name="onboarding_activities_title">Quando você ouve?</string>
+    <string name="onboarding_lengths_title">Duração preferida dos episódios</string>
+    <!-- Last manual step's button: builds the suggestions. -->
+    <string name="onboarding_lengths_generate">Gerar meu feed</string>
+
+    <!-- Genre chips (short labels, one line in a chip). -->
+    <string name="onboarding_genre_news">Notícias</string>
+    <string name="onboarding_genre_tech">Tecnologia</string>
+    <string name="onboarding_genre_business">Negócios</string>
+    <string name="onboarding_genre_comedy">Comédia</string>
+    <string name="onboarding_genre_true_crime">True crime</string>
+    <string name="onboarding_genre_sports">Esportes</string>
+    <string name="onboarding_genre_health">Saúde</string>
+    <string name="onboarding_genre_history">História</string>
+    <string name="onboarding_genre_arts">Artes</string>
+    <string name="onboarding_genre_society">Sociedade</string>
+    <string name="onboarding_genre_education">Educação</string>
+    <string name="onboarding_genre_science">Ciência</string>
+    <string name="onboarding_genre_tv_film">TV e cinema</string>
+    <string name="onboarding_genre_fiction">Ficção</string>
+    <string name="onboarding_genre_music">Música</string>
+    <string name="onboarding_genre_religion">Religião</string>
+    <string name="onboarding_genre_family">Família</string>
+    <string name="onboarding_genre_leisure">Lazer</string>
+    <!-- Short for Government. -->
+    <string name="onboarding_genre_government_short">Governo</string>
+    <!-- Full genre names where the chip uses a shorter label: section headings and genre chips on later steps. -->
+    <string name="onboarding_genre_technology">Tecnologia</string>
+    <string name="onboarding_genre_society_culture">Sociedade e cultura</string>
+    <string name="onboarding_genre_religion_spirituality">Religião e espiritualidade</string>
+    <string name="onboarding_genre_kids_family">Crianças e família</string>
+    <string name="onboarding_genre_government">Governo</string>
+
+    <!-- Sub-genre chips, grouped by genre. -->
+    <!-- News -->
+    <string name="onboarding_subgenre_daily_news">Notícias do dia</string>
+    <string name="onboarding_subgenre_politics">Política</string>
+    <string name="onboarding_subgenre_world_news">Notícias do mundo</string>
+    <string name="onboarding_subgenre_tech_news">Notícias de tecnologia</string>
+    <string name="onboarding_subgenre_local_news">Notícias locais</string>
+    <!-- Technology -->
+    <string name="onboarding_subgenre_software">Software</string>
+    <string name="onboarding_subgenre_gadgets">Gadgets</string>
+    <string name="onboarding_subgenre_ai_and_tech">IA e tecnologia</string>
+    <string name="onboarding_subgenre_startups">Startups</string>
+    <string name="onboarding_subgenre_cybersecurity">Cibersegurança</string>
+    <!-- Business -->
+    <string name="onboarding_subgenre_investing">Investimentos</string>
+    <string name="onboarding_subgenre_marketing">Marketing</string>
+    <string name="onboarding_subgenre_personal_finance">Finanças pessoais</string>
+    <string name="onboarding_subgenre_management">Gestão</string>
+    <string name="onboarding_subgenre_real_estate">Mercado imobiliário</string>
+    <!-- Comedy -->
+    <!-- Stand-up comedy. -->
+    <string name="onboarding_subgenre_standup">Stand-up</string>
+    <string name="onboarding_subgenre_improv">Improviso</string>
+    <string name="onboarding_subgenre_pop_culture_comedy">Humor e cultura pop</string>
+    <string name="onboarding_subgenre_storytelling_comedy">Causos engraçados</string>
+    <!-- True Crime -->
+    <string name="onboarding_subgenre_investigative">Investigação</string>
+    <string name="onboarding_subgenre_cold_cases">Casos arquivados</string>
+    <string name="onboarding_subgenre_serial_killers">Serial killers</string>
+    <string name="onboarding_subgenre_history_crime">Crimes históricos</string>
+    <!-- Sports -->
+    <!-- The sport the listener's region calls football. -->
+    <string name="onboarding_subgenre_football">Futebol</string>
+    <string name="onboarding_subgenre_basketball">Basquete</string>
+    <string name="onboarding_subgenre_f1_and_racing">F1 e automobilismo</string>
+    <string name="onboarding_subgenre_fantasy_sports">Fantasy games</string>
+    <string name="onboarding_subgenre_fitness">Fitness</string>
+    <!-- Health -->
+    <string name="onboarding_subgenre_mental_health">Saúde mental</string>
+    <string name="onboarding_subgenre_nutrition">Nutrição</string>
+    <string name="onboarding_subgenre_medicine">Medicina</string>
+    <string name="onboarding_subgenre_biohacking">Biohacking</string>
+    <string name="onboarding_subgenre_yoga_and_meditation">Ioga e meditação</string>
+    <!-- History -->
+    <string name="onboarding_subgenre_ancient_history">História antiga</string>
+    <string name="onboarding_subgenre_modern_history">História moderna</string>
+    <string name="onboarding_subgenre_military_history">História militar</string>
+    <string name="onboarding_subgenre_biographies">Biografias</string>
+    <!-- Arts -->
+    <string name="onboarding_subgenre_design">Design</string>
+    <string name="onboarding_subgenre_literature">Literatura</string>
+    <string name="onboarding_subgenre_visual_arts">Artes visuais</string>
+    <string name="onboarding_subgenre_performing_arts">Artes cênicas</string>
+    <string name="onboarding_subgenre_fashion">Moda</string>
+    <!-- Society &amp; Culture -->
+    <string name="onboarding_subgenre_philosophy">Filosofia</string>
+    <string name="onboarding_subgenre_relationships">Relacionamentos</string>
+    <string name="onboarding_subgenre_pop_culture">Cultura pop</string>
+    <string name="onboarding_subgenre_personal_journals">Diários pessoais</string>
+    <!-- Education -->
+    <string name="onboarding_subgenre_language_learning">Idiomas</string>
+    <string name="onboarding_subgenre_self_improvement">Desenvolvimento pessoal</string>
+    <string name="onboarding_subgenre_how_to">Tutoriais</string>
+    <string name="onboarding_subgenre_courses">Cursos</string>
+    <!-- Science -->
+    <string name="onboarding_subgenre_space_and_physics">Espaço e física</string>
+    <string name="onboarding_subgenre_biology">Biologia</string>
+    <string name="onboarding_subgenre_psychology">Psicologia</string>
+    <string name="onboarding_subgenre_nature">Natureza</string>
+    <string name="onboarding_subgenre_earth_sciences">Ciências da Terra</string>
+    <!-- TV &amp; Film -->
+    <string name="onboarding_subgenre_movie_reviews">Críticas de filmes</string>
+    <string name="onboarding_subgenre_tv_show_reviews">Críticas de séries</string>
+    <string name="onboarding_subgenre_anime">Anime</string>
+    <!-- Fiction -->
+    <string name="onboarding_subgenre_sci_fi_and_fantasy">Ficção científica e fantasia</string>
+    <string name="onboarding_subgenre_drama">Drama</string>
+    <string name="onboarding_subgenre_mystery_and_thriller">Mistério e suspense</string>
+    <string name="onboarding_subgenre_comedy_fiction">Ficção cômica</string>
+    <!-- Music -->
+    <string name="onboarding_subgenre_music_history">História da música</string>
+    <string name="onboarding_subgenre_songwriting">Composição</string>
+    <string name="onboarding_subgenre_interviews">Entrevistas</string>
+    <string name="onboarding_subgenre_music_commentary">Comentários sobre música</string>
+    <!-- Religion &amp; Spirituality -->
+    <string name="onboarding_subgenre_mindfulness">Mindfulness</string>
+    <string name="onboarding_subgenre_spirituality">Espiritualidade</string>
+    <string name="onboarding_subgenre_religion">Religião</string>
+    <!-- Kids &amp; Family -->
+    <string name="onboarding_subgenre_parenting">Criação de filhos</string>
+    <string name="onboarding_subgenre_bedtime_stories">Histórias para dormir</string>
+    <string name="onboarding_subgenre_education_for_kids">Educação para crianças</string>
+    <string name="onboarding_subgenre_family_activity">Atividades em família</string>
+    <!-- Leisure -->
+    <string name="onboarding_subgenre_gaming">Games</string>
+    <string name="onboarding_subgenre_hobbies">Hobbies</string>
+    <string name="onboarding_subgenre_travel">Viagem</string>
+    <string name="onboarding_subgenre_food_and_drink">Comida e bebida</string>
+    <string name="onboarding_subgenre_automotive">Carros</string>
+    <!-- Government -->
+    <string name="onboarding_subgenre_law_and_justice">Direito e justiça</string>
+    <string name="onboarding_subgenre_public_policy">Políticas públicas</string>
+    <string name="onboarding_subgenre_municipal_news">Notícias da cidade</string>
+    <string name="onboarding_subgenre_national_politics">Política nacional</string>
+
+    <!-- Listening moments. -->
+    <string name="onboarding_activity_commuting">No trajeto</string>
+    <string name="onboarding_activity_working">Trabalhando</string>
+    <string name="onboarding_activity_meditating">Meditando / Relaxando</string>
+    <string name="onboarding_activity_winding_down">Antes de dormir</string>
+    <string name="onboarding_activity_working_out">Malhando</string>
+    <string name="onboarding_activity_chores">Fazendo tarefas de casa</string>
+
+    <!-- Episode lengths, each with its range. -->
+    <string name="onboarding_length_short">Curto</string>
+    <string name="onboarding_length_short_range">Menos de 15 minutos</string>
+    <string name="onboarding_length_medium">Médio</string>
+    <string name="onboarding_length_medium_range">15 a 45 minutos</string>
+    <string name="onboarding_length_long">Longo</string>
+    <string name="onboarding_length_long_range">Mais de 45 minutos</string>
+</resources>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="now_playing_widget_label">Läuft gerade · Volle Steuerung</string>
+    <string name="now_playing_bar_widget_label">Läuft gerade · Kompakt</string>
+    <string name="playback_controls_widget_label">Läuft gerade · Rund</string>
+    <string name="playback_next_controls_widget_label">Läuft gerade · Rund, mit nächster Folge</string>
+    <string name="now_playing_widget_description">Der volle Player: Cover, Restzeit und alle fünf Steuerelemente</string>
+    <string name="now_playing_bar_widget_description">Ein schmaler einzeiliger Player mit Zurück, Abspielen und Vor</string>
+    <string name="playback_controls_widget_description">Ein runder Player mit Zurück, Abspielen und Vor</string>
+    <string name="playback_next_controls_widget_description">Ein runder Player mit Vor, Abspielen und nächster Folge</string>
+    <string name="widget_empty_title">Bereit, wenn du es bist</string>
+    <string name="widget_empty_subtitle">Tippen, um boxlore zu öffnen</string>
+    <string name="widget_previous">Vorherige Folge</string>
+    <string name="widget_next">Nächste Folge</string>
+    <string name="widget_skip_back">Zurückspulen</string>
+    <string name="widget_skip_forward">Vorspulen</string>
+    <string name="widget_play">Abspielen</string>
+    <string name="widget_pause">Pause</string>
+    <string name="widget_time_left">Noch %1$s</string>
+    <string name="widget_description_empty">boxlore-Widget „Läuft gerade“, keine Folge</string>
+    <string name="widget_description_playing_from">%1$s aus %2$s, wird abgespielt</string>
+    <string name="widget_description_paused_from">%1$s aus %2$s, pausiert</string>
+    <string name="widget_description_playing">%1$s, wird abgespielt</string>
+    <string name="widget_description_paused">%1$s, pausiert</string>
+    <plurals name="widget_description_playing_from_left">
+        <item quantity="one">%1$s aus %2$s, wird abgespielt, noch %3$d Minute</item>
+        <item quantity="other">%1$s aus %2$s, wird abgespielt, noch %3$d Minuten</item>
+    </plurals>
+    <plurals name="widget_description_paused_from_left">
+        <item quantity="one">%1$s aus %2$s, pausiert, noch %3$d Minute</item>
+        <item quantity="other">%1$s aus %2$s, pausiert, noch %3$d Minuten</item>
+    </plurals>
+    <plurals name="widget_description_playing_left">
+        <item quantity="one">%1$s, wird abgespielt, noch %2$d Minute</item>
+        <item quantity="other">%1$s, wird abgespielt, noch %2$d Minuten</item>
+    </plurals>
+    <plurals name="widget_description_paused_left">
+        <item quantity="one">%1$s, pausiert, noch %2$d Minute</item>
+        <item quantity="other">%1$s, pausiert, noch %2$d Minuten</item>
+    </plurals>
+    <string name="widget_meta_time_and_show">%1$s · %2$s</string>
+    <string name="widget_preview_episode">Warum Neugier sich auszahlt</string>
+    <string name="widget_preview_podcast">The Daily Lore</string>
+    <string name="widget_preview_episode_2">Eine ruhige Woche in Kyoto</string>
+    <string name="widget_preview_episode_2_show">Field Notes</string>
+    <string name="widget_preview_episode_3">Wie Karten unser Gedächtnis prägen</string>
+    <string name="widget_preview_episode_3_show">Soft Power</string>
+    <string name="widget_preview_count">12</string>
+    <string name="widget_preview_show_count">24</string>
+    <string name="widget_preview_time_and_show">Noch 36 Min. · The Daily Lore</string>
+    <string name="widget_preview_time_left">Noch 36 Min.</string>
+    <string name="subscriptions_widget_label">Bibliothek · Deine Podcasts</string>
+    <string name="subscriptions_widget_description">Deine abonnierten Podcasts als Raster aus Covern</string>
+    <string name="subscriptions_widget_header">Abos</string>
+    <string name="subscriptions_widget_empty_title">Noch keine Abos</string>
+    <string name="subscriptions_widget_empty_cta">boxlore öffnen</string>
+    <string name="new_episodes_widget_label">Bibliothek · Neue Folgen</string>
+    <string name="new_episodes_widget_description">Die neuesten Folgen deiner Podcasts</string>
+    <string name="new_episodes_widget_header">Neue Folgen</string>
+    <string name="new_episodes_widget_empty_title">Keine neuen Folgen</string>
+    <string name="new_episodes_widget_empty_cta">Abos öffnen</string>
+    <string name="library_widget_view_all">Alle ansehen</string>
+</resources>

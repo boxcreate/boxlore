@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="briefing_brand_name">The boxlore brief</string>
+    <string name="briefing_show_author">boxlore</string>
+    <string name="briefing_show_all_stories">Alle %1$d Meldungen anzeigen</string>
+    <string name="briefing_show_fewer_stories">Weniger Meldungen anzeigen</string>
+    <string name="briefing_all_stories_inline">Alle %1$d</string>
+    <string name="briefing_less_inline">Weniger</string>
+    <string name="briefing_story_label">Meldung %1$d</string>
+    <string name="briefing_play_story">Meldung abspielen</string>
+    <string name="briefing_pause_story">Meldung pausieren</string>
+    <string name="briefing_play_story_named">Meldung abspielen: %1$s</string>
+    <string name="briefing_pause_story_named">Meldung pausieren: %1$s</string>
+    <string name="briefing_original_reporting">Originalbericht</string>
+    <string name="briefing_region_us">USA</string>
+    <string name="briefing_region_india">Indien</string>
+    <string name="briefing_region_uk">Großbritannien</string>
+    <string name="briefing_region_global">Weltweit</string>
+    <string name="briefing_choose_edition">Briefing-Ausgabe wählen</string>
+    <string name="briefing_region_edition">Ausgabe %1$s</string>
+    <string name="briefing_loading_edition">Ausgabe %1$s wird geladen…</string>
+    <string name="briefing_back">Zurück</string>
+    <string name="briefing_preferences">Briefing-Einstellungen</string>
+    <string name="briefing_sources">Quellen</string>
+    <string name="briefing_open_sources">Quellen öffnen</string>
+    <string name="briefing_try_again">Noch mal versuchen</string>
+    <string name="briefing_pause">Briefing pausieren</string>
+    <string name="briefing_resume">Briefing fortsetzen</string>
+    <string name="briefing_listen">Briefing anhören</string>
+    <string name="briefing_finished">Zu Ende gehört</string>
+    <string name="briefing_default_region">Standardregion für das Briefing</string>
+    <string name="briefing_default_region_description">Start und das Briefing öffnen diese Ausgabe. Du kannst die Ausgabe wechseln, ohne deinen Standard zu ändern.</string>
+    <string name="briefing_follow_app_region">App-Region verwenden</string>
+    <string name="briefing_done">Fertig</string>
+    <string name="briefing_disclaimer">Dieses Briefing nutzt KI-generierte Zusammenfassungen und Sprachausgabe. Die vollständige Berichterstattung findest du in den Originalquellen.</string>
+    <string name="briefing_report_issue">Problem melden</string>
+    <string name="briefing_unavailable">Diese Ausgabe ist nicht verfügbar. Versuch es noch mal oder wähle eine andere Region.</string>
+    <string name="briefing_load_error">Diese Ausgabe konnte nicht geladen werden. Prüf deine Verbindung und versuch es noch mal.</string>
+    <string name="briefing_hide">Briefing ausblenden</string>
+    <string name="briefing_cancel_hide">Ausblenden abbrechen</string>
+    <string name="briefing_listen_minutes">~%1$d Min. Hörzeit</string>
+    <string name="briefing_remaining_minutes">noch ~%1$d Min.</string>
+    <string name="briefing_hide_today_title">Heutiges Briefing ausblenden?</string>
+    <string name="briefing_hide_today_description">Es kommt mit der nächsten Tagesausgabe zurück.</string>
+    <string name="briefing_hide_today">Heute ausblenden</string>
+    <string name="briefing_always_hide">Briefing immer ausblenden</string>
+    <string name="briefing_always_hide_title">Briefing immer ausblenden?</string>
+    <string name="briefing_always_hide_description">Das Briefing erscheint nicht mehr auf Start. Du kannst es unter Einstellungen → Bibliothek → LeaveMeAlone wieder einschalten.</string>
+    <string name="briefing_confirm_always_hide">Immer ausblenden</string>
+    <string name="briefing_send_feedback">Feedback senden</string>
+    <string name="briefing_card_pause">Pause</string>
+    <string name="briefing_card_resume">Weiter</string>
+    <string name="briefing_card_listen">Anhören</string>
+    <string name="briefing_open">Briefing öffnen</string>
+    <plurals name="briefing_story_count">
+        <item quantity="one">%d Meldung</item>
+        <item quantity="other">%d Meldungen</item>
+    </plurals>
+    <plurals name="briefing_source_count">
+        <item quantity="one">%d Quelle</item>
+        <item quantity="other">%d Quellen</item>
+    </plurals>
+</resources>

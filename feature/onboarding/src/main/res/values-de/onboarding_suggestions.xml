@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="suggestions_title">Podcasts für dich</string>
+    <string name="suggestions_echo_found">Das habe ich gefunden. Tippen zum Hinzufügen, gedrückt halten für Details.</string>
+    <string name="suggestions_echo_finding">Ich suche Podcasts, die zu dem passen, was du mir erzählt hast.</string>
+    <plurals name="suggestions_search_seeds">
+        <item quantity="one">Deine Auswahl ist in deiner Bibliothek</item>
+        <item quantity="other">Deine %d ausgewählten Podcasts sind in deiner Bibliothek</item>
+    </plurals>
+    <plurals name="suggestions_library_seeds">
+        <item quantity="one">%d importierter Podcast ist in deiner Bibliothek</item>
+        <item quantity="other">%d importierte Podcasts sind in deiner Bibliothek</item>
+    </plurals>
+    <string name="suggestions_more_like">Tippen, um mehr hinzuzufügen, gedrückt halten für Details.</string>
+    <string name="suggestions_picks_lane">Deine Auswahl</string>
+    <string name="suggestions_add_all">Alle hinzufügen</string>
+    <string name="suggestions_remove_all">Alle entfernen</string>
+    <string name="suggestions_start_without">Ohne Hinzufügen starten</string>
+    <plurals name="suggestions_add_shows">
+        <item quantity="one">%d Podcast hinzufügen</item>
+        <item quantity="other">%d Podcasts hinzufügen</item>
+    </plurals>
+    <string name="suggestions_adding">Deine Podcasts werden hinzugefügt…</string>
+    <string-array name="suggestions_finding_words">
+        <item>Suche Podcasts…</item>
+        <item>Sortiere sie in Reihen…</item>
+        <item>Wähle die guten aus…</item>
+    </string-array>
+    <string name="suggestions_loading_genres">Passende Podcasts zu deinen Genres werden gesucht.</string>
+    <string name="suggestions_loading_search">Wir suchen mehr wie deine Auswahl.</string>
+    <string name="suggestions_loading_library">Wir suchen Podcasts wie die in deiner Bibliothek.</string>
+    <string name="suggestions_error_title">Vorschläge konnten nicht geladen werden</string>
+    <string name="suggestions_error_body">Prüf deine Verbindung und versuch es dann noch mal.</string>
+    <string name="suggestions_empty_title">Diesmal keine Vorschläge</string>
+    <string name="suggestions_empty_body">Versuch es noch mal oder starte ohne sie.</string>
+    <string name="suggestions_try_again">Noch mal versuchen</string>
+    <string name="similar_choice_title">Ähnliche Podcasts gefällig?</string>
+    <string name="similar_choice_body">boxlore findet in wenigen Sekunden ähnliche Podcasts, oder du fängst gleich mit dem Hören an.</string>
+    <string name="similar_choice_see">Ähnliche Podcasts ansehen</string>
+    <string name="similar_choice_home">Zur Startseite</string>
+    <string name="similar_skip_home">Weiter zur Startseite</string>
+    <string name="suggestions_details">Podcast-Details</string>
+    <string name="suggestions_back">Zurück</string>
+    <string name="echo_deck_added">%s zu deiner Auswahl hinzugefügt</string>
+    <string name="suggestions_lane_for_you">Für dich</string>
+    <string name="suggestions_lane_popular_now">Gerade beliebt</string>
+    <string name="suggestions_lane_trending_hits">Angesagte Hits</string>
+    <string name="suggestions_lane_trending_genres">Im Trend in deinen Genres</string>
+    <string name="suggestions_lane_purpose_matched">Podcasts passend zu dieser Geschmacksrichtung.</string>
+    <string name="suggestions_lane_purpose_themed">Eine Themenauswahl auf Basis deiner Antworten.</string>
+    <string name="suggestions_lane_purpose_wind_down">Ruhigere Podcasts zum Abschalten.</string>
+    <string name="suggestions_lane_purpose_news">Auf dem Laufenden bleiben, ohne das Getöse.</string>
+    <string name="suggestions_lane_purpose_deep">Längeres zum Hören, das tiefer geht.</string>
+    <string name="suggestions_lane_purpose_lighter">Leichtere Podcasts, wenn du gute Laune brauchst.</string>
+    <string name="suggestions_lane_purpose_tension">Geschichten mit Spannung und Auflösung.</string>
+    <string name="suggestions_lane_purpose_similar">Mehr wie die Podcasts, die du schon ausgewählt hast.</string>
+    <string name="suggestions_lane_purpose_starter">Ein Start-Mix nach deinen Vorlieben.</string>
+    <string name="suggestions_lane_purpose_charts_region">Podcasts, die gerade in deiner Region in den Charts sind.</string>
+    <string name="suggestions_lane_purpose_charts_one">Im Trend in %1$s in deinem Land.</string>
+    <string name="suggestions_lane_purpose_charts_two">Im Trend in %1$s · %2$s in deinem Land.</string>
+    <string name="suggestions_details_close">Schließen</string>
+    <string name="suggestions_details_add">Podcast hinzufügen</string>
+    <string name="suggestions_details_remove">Entfernen</string>
+    <string name="suggestions_details_fallback">Entdecke Folgen und Themen aus %1$s.</string>
+    <string name="suggestions_details_fallback_with_host">Entdecke Folgen und Themen aus %1$s von %2$s.</string>
+</resources>

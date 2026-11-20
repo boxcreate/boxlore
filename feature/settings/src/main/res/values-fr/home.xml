@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Appearance > Home: the hero card style picker. Block is the solid colour card; Cover fills the card with the artwork. -->
+    <!-- Header above the non-interactive preview of the picked hero card style. -->
+    <!-- Heads the picked hero style's live preview and its options, for example "Tide look". -->
+    <string name="hero_card_look_title">Style %1$s</string>
+    <string name="hero_card_style_title">Cartes à la une</string>
+    <string name="hero_card_style_footer">Les grandes cartes en haut de l’accueil.</string>
+    <string name="hero_card_style_block">Bloc</string>
+    <string name="hero_card_style_block_description">Gros texte sur un bloc de couleur unie, avec l’illustration à côté.</string>
+    <string name="hero_card_style_cover">Pochette</string>
+    <string name="hero_card_style_cover_description">L’illustration en entier, avec le texte sur un fond ombré.</string>
+    <string name="hero_card_style_tide">Marée</string>
+    <string name="hero_card_style_tide_description">La pochette entière au-dessus d’un panneau ondulé, avec un bouton de lecture rond.</string>
+    <string name="hero_card_style_duotone">Bichromie</string>
+    <string name="hero_card_style_duotone_description">L’illustration en deux tons, pour que le texte ressorte toujours.</string>
+    <string name="hero_card_style_halo">Halo</string>
+    <string name="hero_card_style_halo_description">L’illustration découpée, entourée d’un anneau qui montre votre progression.</string>
+    <!-- Shown under the picker when Duotone is chosen: the two tones the artwork is redrawn in. Same choice as Cover's shade. -->
+    <string name="hero_duotone_colors_title">Couleurs de la bichromie</string>
+    <string name="hero_duotone_colors_footer">Sombre redessine les pochettes en noir et blanc. Illustration utilise la couleur de chaque pochette. Thème de l’appli utilise votre couleur d’accent.</string>
+    <string name="hero_card_style_marquee">Affiche</string>
+    <string name="hero_card_style_marquee_description">Une pochette pleine largeur sous la barre du haut, avec les cartes suivantes à côté de Lire.</string>
+    <!-- Marquee's tile on tablets, where Home shows Cover cards instead. -->
+    <string name="hero_card_style_marquee_description_tablet">Une pochette pleine largeur sur téléphone. Les tablettes affichent plutôt des cartes Pochette.</string>
+    <!-- Shown under the picker when Marquee is chosen: covers in full colour or redrawn in two tones. Same choice as Cover's shade. -->
+    <string name="hero_marquee_colors_title">Couleurs des pochettes</string>
+    <string name="hero_marquee_colors_footer">Toutes les couleurs affiche les pochettes telles quelles. Illustration les redessine en deux tons de leur propre couleur. Thème de l’appli utilise votre couleur d’accent.</string>
+    <!-- Marquee's name for the Dark choice: the cover keeps all its colours. -->
+    <string name="hero_marquee_colors_full">Toutes les couleurs</string>
+    <!-- Shown under the picker when Tide or Halo is chosen: the colour of the card around the artwork. Same choice as Cover's shade. -->
+    <string name="hero_card_colors_title">Couleur de la carte</string>
+    <string name="hero_card_colors_footer">Sombre garde les cartes presque noires. Illustration reprend la couleur de chaque pochette. Thème de l’appli utilise votre couleur d’accent.</string>
+    <!-- Shown under the picker only when Cover is chosen: the colour the artwork fades into behind the card's text. -->
+    <!-- Tide hero cards ring their Play button with listening progress; this picks the ring's shape. -->
+    <string name="hero_tide_progress_title">Anneau de progression</string>
+    <string name="hero_tide_progress_footer">Ondulé : des vaguelettes pendant la lecture d’un épisode. Cercle : un anneau lisse.</string>
+    <string name="hero_tide_progress_wavy">Ondulé</string>
+    <string name="hero_tide_progress_circle">Cercle</string>
+    <string name="hero_cover_shade_title">Fond derrière le texte</string>
+    <string name="hero_cover_shade_footer">Illustration prend une teinte foncée de la couleur de chaque pochette. Thème de l’appli utilise votre couleur d’accent.</string>
+    <string name="hero_cover_shade_dark">Sombre</string>
+    <!-- Each card takes a deep shade of its own cover's colour. -->
+    <string name="hero_cover_shade_artwork">Illustration</string>
+    <!-- A deep shade of the app's accent colour. Matches "App theme" in the Widgets picker. -->
+    <string name="hero_cover_shade_theme">Thème de l’appli</string>
+</resources>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Joining names into a list, built from the end: "German, French and Spanish" is list_middle(German, list_end_and(French, Spanish)). -->
+    <string name="list_middle">%1$s, %2$s</string>
+    <string name="list_end_and">%1$s e %2$s</string>
+    <string name="list_end_or">%1$s ou %2$s</string>
+
+    <!-- The content languages sheet (Library settings › Recommendations › Languages). -->
+    <string name="content_languages_title">Idiomas</string>
+    <!-- Beside the title: how many languages are picked. %1$d is the number picked, %2$d the most allowed (4). -->
+    <string name="content_languages_picked">%1$d de %2$d escolhidos</string>
+    <string name="content_languages_include_english">Incluir inglês</string>
+    <!-- Heading over language chips. %1$s is a country or region name, such as Germany. -->
+    <string name="content_languages_suggested_for">Sugeridos para %1$s</string>
+    <string name="content_languages_other">Outros idiomas</string>
+    <string name="content_languages_done">Concluído</string>
+    <!-- Under "Include English" when it is off and one language is picked. %1$s is that language's name as used inside a sentence (German, allemand). -->
+    <string name="content_languages_english_off_one">Há bem menos podcasts em %1$s, então as recomendações não vão combinar tanto com seu gosto. Se não houver o suficiente, o boxlore adiciona alguns em inglês.</string>
+    <string name="content_languages_english_off_many">Há bem menos podcasts nos seus idiomas, então as recomendações não vão combinar tanto com seu gosto. Se não houver o suficiente, o boxlore adiciona alguns em inglês.</string>
+    <!-- %1$s is a list of language names, such as "German and French". -->
+    <string name="content_languages_english_can_turn_off">Desative para ver só podcasts em %1$s.</string>
+    <!-- %1$s lists the picked languages that keep English on ("Hindi and Chinese"); %2$s lists the languages that can stand alone, joined with "or". -->
+    <string name="content_languages_english_kept_on">Fica ativado com %1$s. Você pode desativar quando escolher só %2$s.</string>
+    <!-- %1$s lists the languages that can stand alone, joined with "or". -->
+    <string name="content_languages_english_only">Você pode desativar quando escolher só %1$s.</string>
+
+    <!-- The content region picker, shared by settings and onboarding. -->
+    <string name="content_region_label">Região do conteúdo</string>
+    <string name="content_region_supporting">Paradas e ranking regional</string>
+    <string name="content_region_choose">Escolher região do conteúdo</string>
+    <string name="content_region_sheet_body">Define as paradas em Explorar. Seus idiomas continuam como estão.</string>
+    <!-- Under a country in the picker. %1$s lists that country's suggested languages, such as "English · Hindi". -->
+    <string name="content_region_suggested">Sugestão: %1$s</string>
+</resources>

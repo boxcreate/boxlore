@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Library > LeaveMeAlone: switches for the optional suggestion sections. Names match the section titles people see in the app. -->
+    <!-- Subtext of the LeaveMeAlone row on Library and on Appearance > Home, both opening the same page. -->
+    <string name="recommendations_row_description">Empfehlungen in der ganzen App ausschalten</string>
+    <string name="recommendations_home_title">Auf Start</string>
+    <!-- "Explore shows" is the charts grid at the bottom of Home. Off sections make no requests, so they do not load. -->
+    <string name="recommendations_home_footer">Hero-Karten, Deine Podcasts und Podcasts entdecken bleiben immer. Bereiche, die du ausschaltest, werden nicht geladen.</string>
+    <!-- The Brief is the daily audio news briefing card. Off is the same choice as the card's Always hide. -->
+    <string name="recommendations_brief">Briefing</string>
+    <string name="recommendations_brief_description">Ein kurzes tägliches Audio-Briefing</string>
+    <string name="recommendations_picked_for_you">Für dich ausgewählt</string>
+    <!-- Turning it off also removes the For you tab from Explore, which shows the same picks. -->
+    <string name="recommendations_picked_for_you_description">Folgen passend zu deinem Hörverhalten. Aus entfernt auch Für dich aus Entdecken.</string>
+    <string name="recommendations_because_you_like">Weil du magst</string>
+    <string name="recommendations_because_you_like_description">Podcasts und Folgen ähnlich wie das, was du hörst</string>
+    <!-- The rows under the greeting that changes through the day: Good Morning, Afternoon Break, Evening Unwind, Late Night Listen. -->
+    <string name="recommendations_time_of_day">Tipps zur Tageszeit</string>
+    <string name="recommendations_time_of_day_description">Reihen, die sich im Lauf des Tages ändern, etwa Guten Morgen</string>
+    <string name="recommendations_episodes_title">Auf Folgenseiten</string>
+    <!-- The episode pages' similar-episodes section is titled "Try these episodes" there. Off makes no request. -->
+    <string name="recommendations_more_like_this">Probier diese Folgen</string>
+    <string name="recommendations_more_like_this_description">Ähnliche Folgen am Ende jeder Folgenseite</string>
+    <!-- Shows hidden from a show page with Hide show everywhere; Unhide lets boxlore suggest them again. -->
+    <string name="recommendations_hidden_title">Ausgeblendete Podcasts</string>
+    <string name="recommendations_hidden_footer">Ausgeblendete Podcasts erscheinen nicht auf Start, in Entdecken, Lore und der Smarten Warteschlange. Über „Podcast finden“ findest du sie trotzdem.</string>
+    <string name="recommendations_hidden_empty">Keine ausgeblendeten Podcasts</string>
+    <!-- "Hide show everywhere" is the show page menu item, quoted as it reads there. -->
+    <string name="recommendations_hidden_empty_description">Um einen auszublenden, öffne den Podcast und wähle im Menü „Podcast überall ausblenden“.</string>
+    <!-- A hidden show whose name wasn't saved. -->
+    <string name="recommendations_hidden_unknown">Unbekannter Podcast</string>
+    <string name="recommendations_hidden_unhide">Einblenden</string>
+    <!-- Screen reader label of a row's Unhide button; %1$s is the show's name. -->
+    <string name="recommendations_hidden_unhide_description">%1$s einblenden</string>
+</resources>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_now_playing">Tocando agora</string>
+    <string name="player_chapters_tab">Capítulos</string>
+    <string name="player_transcript_tab">Transcrição</string>
+    <string name="player_notes_tab">Notas</string>
+    <string name="player_open_fullscreen">Abrir player em tela cheia</string>
+    <string name="player_share_episode">Compartilhar episódio</string>
+    <string name="player_no_transcript">Nenhuma transcrição disponível</string>
+    <string name="player_preparing_transcript">Preparando a transcrição</string>
+    <string name="player_no_notes">Nenhuma nota do episódio disponível</string>
+    <string name="player_open_fullscreen_transcript">Abrir transcrição em tela cheia</string>
+</resources>

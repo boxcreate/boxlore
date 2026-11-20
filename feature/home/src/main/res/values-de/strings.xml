@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_hero_play">Abspielen</string>
+    <string name="home_hero_play_latest">Neueste abspielen</string>
+    <string name="home_hero_pause">Pause</string>
+    <string name="home_hero_resume">Fortsetzen</string>
+    <string name="home_hero_minutes">%1$d Min.</string>
+    <string name="home_hero_hours_minutes">%1$d Std. %2$d Min.</string>
+    <!-- Keep each number and unit together. Hours and minutes occupy separate lines in the narrow hero column. -->
+    <string name="home_hero_hours_minutes_stacked">%1$d Std.\n%2$d Min.</string>
+    <string name="home_hero_time_left">übrig</string>
+    <string name="home_hero_remaining">Noch %1$s</string>
+    <string name="home_hero_listen">Anhören</string>
+    <string name="home_hero_fresh_drop">Frisch erschienen</string>
+    <string name="home_hero_new_episode">Neue Folge</string>
+    <string name="home_hero_next_episode">Nächste Folge</string>
+    <string name="home_hero_rank_number">#%1$s</string>
+    <string name="home_hero_rank_market">in %1$s</string>
+    <string name="home_hero_trending_in">Im Trend in</string>
+    <string name="home_hero_trending_in_genre">Im Trend in %1$s</string>
+    <string name="home_hero_trending">Im Trend</string>
+    <string name="home_hero_episode_details">Folgendetails öffnen</string>
+    <string name="home_hero_show_details">Podcast entdecken</string>
+    <string name="home_hero_listening_progress">Hörfortschritt</string>
+    <string name="home_hero_playing">Läuft</string>
+    <string name="home_hero_new">Neu</string>
+    <string name="home_hero_resume_collection">Weiterhören</string>
+    <string name="home_hero_new_collection">Neue Folgen</string>
+    <string name="home_hero_go_to">Zu %1$s</string>
+    <string name="home_hero_collection_counter">%1$d/%2$d</string>
+    <string name="home_hero_collection_position">%1$d von %2$d</string>
+    <string name="home_hero_collection_summary">%1$s · %2$s</string>
+    <plurals name="home_hero_episode_count">
+        <item quantity="one">%1$d Folge</item>
+        <item quantity="other">%1$d Folgen</item>
+    </plurals>
+    <string name="home_rss_feed_source">RSS-Feed</string>
+    <string name="home_mix_daily_title">Täglicher Mix</string>
+    <string name="home_mix_offline_title">Offline-Mix</string>
+    <string name="home_mix_change_mode">Mix ändern</string>
+    <plurals name="home_mix_daily_summary">
+        <item quantity="one">%1$d Folge · %2$s</item>
+        <item quantity="other">%1$d Folgen · %2$s</item>
+    </plurals>
+    <plurals name="home_mix_daily_count">
+        <item quantity="one">%1$d Folge</item>
+        <item quantity="other">%1$d Folgen</item>
+    </plurals>
+    <plurals name="home_mix_offline_subtitle">
+        <item quantity="one">%1$d Folge offline bereit</item>
+        <item quantity="other">%1$d Folgen offline bereit</item>
+    </plurals>
+    <string name="home_mix_play">Abspielen</string>
+    <string name="home_mix_caught_up_title">Du bist auf dem neuesten Stand</string>
+    <string name="home_mix_caught_up_body">Neue Folgen und laufende Wiedergaben erscheinen hier.</string>
+    <string name="home_mix_view_all_downloads">Alle Downloads</string>
+    <string name="home_mix_minutes_left">Noch %1$d Min.</string>
+    <string name="home_because_you_like">Weil du magst</string>
+    <string name="home_change_recommendation_show">Podcast für Empfehlungen ändern</string>
+    <string name="home_similar_shows">Ähnliche Podcasts</string>
+    <string name="home_recommended_episodes">Folgen zum Ausprobieren</string>
+    <string name="home_popular_region">Beliebt in deiner Region</string>
+    <string name="home_picked_for_you">Für dich ausgewählt</string>
+    <string name="home_recommendations_see_all">In empfohlenen Folgen stöbern</string>
+    <string name="home_discovery_see_all">In weiteren Folgen stöbern</string>
+    <string name="home_explore_shows">Podcasts entdecken</string>
+    <string name="home_shows_see_all">In Podcasts stöbern</string>
+    <string name="home_view_more_in">Mehr in %1$s</string>
+    <string name="home_view_more_shows">Mehr Podcasts</string>
+    <string name="home_video_type">Video</string>
+    <string name="home_genres_top">Top</string>
+    <string name="home_genres_more">Mehr</string>
+    <string name="home_browse_genres">In Genres stöbern</string>
+    <string name="home_your_shows_heading">Deine Podcasts</string>
+    <string name="home_view_library">Bibliothek ansehen</string>
+    <string name="home_shows_mix">Mix</string>
+    <string name="home_shows_next_episodes">Nächste Folgen</string>
+    <string name="home_shows_clear_filter">Podcast-Filter entfernen</string>
+    <string name="home_shows_open_show">Podcast-Infos</string>
+    <string name="home_shows_see_all_episodes">Alle Folgen ansehen</string>
+    <string name="home_shows_no_episodes">Noch keine Folgen</string>
+    <string name="home_shows_caught_up">Du bist auf dem neuesten Stand</string>
+    <string name="home_shows_load_failed">Folgen konnten nicht geladen werden</string>
+    <string name="home_shows_try_again">Noch mal versuchen</string>
+    <string name="home_shows_refreshing_rss">RSS-Folgen werden aktualisiert…</string>
+    <string name="home_shows_pin">Podcast anheften</string>
+    <string name="home_shows_unpin">Podcast lösen</string>
+    <string name="home_shows_pinned">Angeheftet</string>
+    <string name="home_mix_played">Gehört</string>
+    <string name="home_mix_downloaded">Heruntergeladen</string>
+    <string name="home_setup_suggestions_description">Hol dir Empfehlungen nach deinem Geschmack.</string>
+    <string name="home_setup_search_description">Finde einen Podcast, ein Thema oder eine Folge.</string>
+    <string name="home_setup_import_description">Hol deine Abos aus einer anderen Podcast-App.</string>
+</resources>

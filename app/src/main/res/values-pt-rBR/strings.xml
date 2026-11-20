@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shown after a Lore card's queue action when an existing non-Lore queue would be replaced. -->
+    <string name="lore_queue_conflict_title">Começar uma fila do Lore?</string>
+    <string name="lore_queue_conflict_message">Você já tem episódios na fila. Começar uma fila do Lore para a reprodução e substitui sua fila atual por este episódio. Deslize para a direita em outros cards do Lore para adicionar mais.\n\nPara adicionar episódios à sua fila atual, escolha Manter fila atual. Depois toque em um card para abrir os detalhes e escolha Adicionar à fila.</string>
+    <string name="lore_queue_conflict_replace">Começar fila do Lore</string>
+    <string name="lore_queue_conflict_keep">Manter fila atual</string>
+
+    <!-- Sign-in dialog when an email sign-in link is opened on another device. -->
+    <string name="app_cross_device_email_title">Entrar no boxlore</string>
+    <string name="app_cross_device_email_body">Digite o e-mail que você usou para pedir este link de acesso.</string>
+    <string name="app_cross_device_email_label">E-mail</string>
+    <string name="app_cross_device_email_invalid">Digite um e-mail válido</string>
+    <string name="app_cross_device_email_sign_in">Entrar</string>
+    <string name="app_cross_device_email_cancel">Cancelar</string>
+
+    <!-- Toasts after exporting the library from Settings. %1$s is the error from the system. -->
+    <string name="app_library_export_json_success">Biblioteca exportada</string>
+    <string name="app_library_export_json_failed">Falha ao exportar: %1$s</string>
+    <string name="app_library_export_opml_success">Podcasts seguidos exportados em OPML</string>
+    <string name="app_library_export_opml_failed">Falha ao exportar OPML: %1$s</string>
+
+    <!-- Stands in for a show's name on an episode page until the show loads. -->
+    <string name="app_podcast_title_fallback">Podcast</string>
+    <!-- Show name and author for a Lore episode queued without show details. -->
+    <string name="app_unknown_podcast">Podcast desconhecido</string>
+    <string name="app_unknown_author">Desconhecido</string>
+    <!-- Episode page text shown while an episode opened from History loads its description. -->
+    <string name="app_history_resume_description">Retomando do Histórico</string>
+</resources>

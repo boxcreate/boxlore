@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="explore_top">Top</string>
+    <string name="explore_find_show">Encontrar podcast</string>
+    <string name="explore_for_you">Para você</string>
+    <string name="explore_search_podcasts">Pesquisar podcasts</string>
+    <string name="explore_search_episodes">Pergunte qualquer coisa</string>
+    <string name="explore_back">Voltar</string>
+    <string name="explore_clear_search">Limpar pesquisa</string>
+    <string name="explore_back_to_browse">Voltar para Explorar</string>
+    <string name="explore_search">Pesquisar</string>
+    <string name="explore_suggested_topics">Explorar coleções</string>
+    <string name="explore_search_matches">Resultados</string>
+    <string name="explore_search_also_found">Também encontrados</string>
+    <string name="explore_related_shows">Podcasts relacionados</string>
+    <string name="explore_search_episode_results">Episódios</string>
+    <string name="explore_duration_minutes">%1$d min</string>
+    <string name="explore_show_search_idle_title">Pesquise um podcast</string>
+    <string name="explore_show_search_idle_hint">Digite o nome de um podcast no campo de pesquisa.</string>
+    <string name="explore_question_search_idle_title">Faça uma pergunta</string>
+    <string name="explore_question_search_idle_hint">Encontre podcasts e episódios sobre uma ideia.</string>
+    <string name="explore_question_search_empty_title">Nada combinou com essa ideia</string>
+    <string name="explore_question_search_empty_hint">Tente outra pergunta ou escolha uma abaixo.</string>
+    <string name="explore_show_search_empty_title">Nenhum podcast encontrado</string>
+    <string name="explore_show_search_empty_hint">Tente outro nome ou confira a grafia.</string>
+    <string name="explore_browse_empty_title">Nenhum podcast para explorar</string>
+    <string name="explore_browse_empty_hint">Tente outro gênero ou pesquise um podcast.</string>
+    <string name="explore_show_search_failed_title">Não foi possível pesquisar agora</string>
+    <string name="explore_browse_failed_title">Não foi possível carregar os podcasts</string>
+    <string name="explore_load_failed_hint">Verifique sua conexão e tente de novo.</string>
+    <string name="explore_next_page_failed">Não foi possível carregar mais podcasts</string>
+    <string name="explore_try_again">Tentar de novo</string>
+    <string name="explore_show_search_loading">Procurando podcasts</string>
+    <string name="explore_question_search_loading">Procurando podcasts e episódios</string>
+    <string name="explore_topic_empty">Nenhum podcast para mostrar agora</string>
+    <string name="explore_video">Videocast</string>
+    <string name="lore_action_skip">Pular</string>
+    <string name="lore_action_details">Detalhes</string>
+    <string name="lore_action_add_to_queue">Adicionar à fila</string>
+    <string name="lore_play_episode">Tocar episódio</string>
+    <string name="lore_resume_episode">Continuar episódio</string>
+    <string name="lore_pause_episode">Pausar episódio</string>
+    <string name="lore_loading_episode">Carregando episódio</string>
+    <string name="lore_open_podcast">Abrir podcast: %1$s</string>
+    <string name="lore_podcast_fallback">Podcast</string>
+    <!-- Visible Play button labels in the Lore card's action bar; the button is announced with its full description. -->
+    <string name="lore_button_play">Tocar</string>
+    <string name="lore_button_resume">Continuar</string>
+    <string name="lore_button_pause">Pausar</string>
+    <!-- Explore error state; %1$s is the error detail. -->
+    <string name="explore_error_message">Erro: %1$s</string>
+    <string name="explore_change_region">Mudar região do conteúdo</string>
+    <string name="explore_search_results">Resultados da pesquisa</string>
+    <string name="explore_video_badge">Vídeo</string>
+    <string name="explore_taste_growing_title">Seu perfil de gosto está crescendo</string>
+    <string name="explore_taste_growing_body">Conforme você ouve mais episódios e segue podcasts, vamos montar aqui recomendações personalizadas para o seu gosto.</string>
+    <!-- Top tab heading with no genre picked. -->
+    <string name="explore_top_charts">Mais ouvidos</string>
+    <!-- Top tab heading for a genre; %1$s is the genre name, e.g. "Top in Technology". -->
+    <string name="explore_top_in_genre">Mais ouvidos em %1$s</string>
+    <string name="explore_genre_browse_title">Explorar gêneros</string>
+    <!-- Genre chip that clears the genre filter. Short: shown in a chip. -->
+    <string name="explore_genre_all">Todos</string>
+    <!-- Chip that opens the full genre list. Short: shown in a chip. -->
+    <string name="explore_genre_more">Mais</string>
+    <!-- Genre chip labels: short, shown in chips. -->
+    <string name="explore_genre_news">Notícias</string>
+    <string name="explore_genre_tech">Tecnologia</string>
+    <string name="explore_genre_business">Negócios</string>
+    <string name="explore_genre_comedy">Comédia</string>
+    <string name="explore_genre_true_crime">True crime</string>
+    <string name="explore_genre_sports">Esportes</string>
+    <string name="explore_genre_health">Saúde</string>
+    <string name="explore_genre_history">História</string>
+    <string name="explore_genre_arts">Artes</string>
+    <string name="explore_genre_society">Sociedade</string>
+    <string name="explore_genre_education">Educação</string>
+    <string name="explore_genre_science">Ciência</string>
+    <string name="explore_genre_tv_film">TV e cinema</string>
+    <string name="explore_genre_fiction">Ficção</string>
+    <string name="explore_genre_music">Música</string>
+    <string name="explore_genre_religion">Religião</string>
+    <string name="explore_genre_family">Família</string>
+    <string name="explore_genre_leisure">Lazer</string>
+    <string name="explore_genre_govt">Governo</string>
+    <!-- Full genre names, used in the "Top in %1$s" heading where the chip label is shortened. -->
+    <string name="explore_genre_name_technology">Tecnologia</string>
+    <string name="explore_genre_name_society">Sociedade e cultura</string>
+    <string name="explore_genre_name_religion">Religião e espiritualidade</string>
+    <string name="explore_genre_name_family">Crianças e família</string>
+    <string name="explore_genre_name_government">Governo</string>
+    <!-- Example questions on the Ask anything search landing. -->
+    <string name="explore_concept_example_rome">Por que o Império Romano caiu?</string>
+    <string name="explore_concept_example_black_holes">Como os buracos negros funcionam de verdade?</string>
+    <string name="explore_concept_example_conspiracies">Por que as pessoas acreditam em teorias da conspiração?</string>
+    <string name="explore_concept_example_money">Como o dinheiro funciona de verdade?</string>
+    <string name="lore_history">Histórico do Lore</string>
+    <string name="lore_caught_up_title">Você está em dia</string>
+    <string name="lore_caught_up_body">Novas curiosidades chegam todo dia. Recupere uma favorita do seu histórico do Lore quando bater a inspiração.</string>
+    <string name="lore_check_new_cards">Buscar novos cards</string>
+    <string name="lore_open_history">Abrir histórico do Lore</string>
+    <string name="lore_error_title">O Lore perdeu o fio da meada</string>
+    <string name="lore_error_load_failed">Falha ao carregar a seleção de curiosidades</string>
+    <string name="lore_error_refresh_failed">Falha ao atualizar a seleção de curiosidades</string>
+    <string name="lore_error_unknown">Ocorreu um erro desconhecido</string>
+    <!-- Artist shown for a Lore episode whose show name is missing. -->
+    <string name="lore_unknown_artist">Desconhecido</string>
+    <string name="lore_deck_empty">Acabaram as curiosidades de hoje!</string>
+    <string name="lore_history_title">Seu histórico do Lore</string>
+    <string name="lore_history_subtitle">Perguntas que você dispensou ou pôs na fila, prontas para redescobrir.</string>
+    <string name="lore_history_empty_title">Nada do Lore para rever ainda</string>
+    <string name="lore_history_empty_body">Perguntas que você dispensar ou puser na fila ficam aqui, prontas para outra olhada.</string>
+    <string name="lore_history_clear">Limpar histórico</string>
+    <string name="lore_history_clear_title">Limpar o histórico de cards?</string>
+    <string name="lore_history_clear_body">Isso remove do histórico os cards que você deslizou ou pôs na fila. Não afeta o histórico de reprodução.</string>
+    <string name="lore_history_clear_confirm">Limpar</string>
+    <string name="lore_history_cancel">Cancelar</string>
+    <string name="lore_history_restore">Restaurar card</string>
+    <!-- History row status: the card was swiped away. -->
+    <string name="lore_history_dismissed">Dispensado</string>
+    <!-- History row status: the card's episode was added to the queue. -->
+    <string name="lore_history_queued">Na fila</string>
+</resources>

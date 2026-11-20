@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="recommendations_row_description">Desactiva las recomendaciones en toda la app</string>
+    <string name="recommendations_home_title">En Inicio</string>
+    <string name="recommendations_home_footer">Las tarjetas destacadas, Tus podcasts y Explorar podcasts siempre se quedan. Las secciones que desactives no se cargan.</string>
+    <string name="recommendations_brief">The Brief</string>
+    <string name="recommendations_brief_description">Un breve resumen diario en audio</string>
+    <string name="recommendations_picked_for_you">Elegidos para ti</string>
+    <string name="recommendations_picked_for_you_description">Episodios según lo que escuchas. Al desactivarlo, también se quita Para ti de Explorar.</string>
+    <string name="recommendations_because_you_like">Porque te gusta</string>
+    <string name="recommendations_because_you_like_description">Podcasts y episodios parecidos a uno que escuchas</string>
+    <string name="recommendations_time_of_day">Según la hora del día</string>
+    <string name="recommendations_time_of_day_description">Filas que cambian a lo largo del día, como Buenos días</string>
+    <string name="recommendations_episodes_title">En las páginas de episodios</string>
+    <string name="recommendations_more_like_this">Prueba estos episodios</string>
+    <string name="recommendations_more_like_this_description">Episodios parecidos al final de cada página de episodio</string>
+    <string name="recommendations_hidden_title">Podcasts ocultos</string>
+    <string name="recommendations_hidden_footer">Los podcasts ocultos no aparecen en Inicio, Explorar, Lore ni la Cola inteligente. Buscar un podcast sí los encuentra.</string>
+    <string name="recommendations_hidden_empty">No hay podcasts ocultos</string>
+    <string name="recommendations_hidden_empty_description">Para ocultar uno, abre el podcast y elige Ocultar podcast en todas partes en su menú.</string>
+    <string name="recommendations_hidden_unknown">Podcast desconocido</string>
+    <string name="recommendations_hidden_unhide">Mostrar</string>
+    <string name="recommendations_hidden_unhide_description">Volver a mostrar %1$s</string>
+</resources>

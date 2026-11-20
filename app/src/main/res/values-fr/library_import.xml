@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_pick_title">Importez vos podcasts</string>
+    <string name="import_pick_body">Où sont vos podcasts actuellement ?</string>
+    <string name="import_option_account">Dans mon compte boxlore</string>
+    <string name="import_option_account_body">Connectez-vous pour synchroniser vos podcasts, votre file d’attente et votre progression</string>
+    <string name="import_option_backup">Dans une sauvegarde boxlore</string>
+    <string name="import_option_backup_body">Un fichier .json enregistré depuis boxlore</string>
+    <string name="import_option_opml">Dans une autre appli de podcasts</string>
+    <string name="import_option_opml_body">Un fichier OPML de Pocket Casts, AntennaPod ou la plupart des autres applis</string>
+    <string name="import_opml_hint">Cherchez Exporter en OPML dans les paramètres de votre appli de podcasts.</string>
+    <string name="import_close">Fermer</string>
+    <string name="import_reading_title">Lecture de votre fichier</string>
+    <string name="import_importing_title">Importation de vos podcasts</string>
+    <string name="import_restoring_title">Restauration de votre sauvegarde</string>
+    <string name="import_marking_title">Marquage des anciens épisodes comme écoutés</string>
+    <plurals name="import_progress_count">
+        <item quantity="one">%1$d podcast sur %2$d</item>
+        <item quantity="other">%1$d podcasts sur %2$d</item>
+    </plurals>
+    <string name="import_progress_percent">%d %%</string>
+    <string name="import_now_subscribing">Abonnement à %s</string>
+    <string name="import_now_marking">Marquage de %s comme écouté</string>
+    <string name="import_now_refreshing">Récupération des épisodes de %s</string>
+    <string name="import_step_read">Lire votre fichier</string>
+    <plurals name="import_step_read_done">
+        <item quantity="one">%d podcast trouvé</item>
+        <item quantity="other">%d podcasts trouvés</item>
+    </plurals>
+    <string name="import_step_subscribe">Vous abonner à vos podcasts</string>
+    <plurals name="import_step_subscribe_done">
+        <item quantity="one">%d abonnement ajouté</item>
+        <item quantity="other">%d abonnements ajoutés</item>
+    </plurals>
+    <string name="import_step_choose">Choisir ce qu’il faut marquer comme écouté</string>
+    <string name="import_step_mark">Marquer les anciens épisodes comme écoutés</string>
+    <string name="import_step_restore">Restaurer vos podcasts et votre historique</string>
+    <string name="import_step_latest">Récupérer les derniers épisodes</string>
+    <string name="import_step_status_done">Terminé</string>
+    <string name="import_step_status_now">En cours</string>
+    <string name="import_step_status_next">À suivre</string>
+    <string name="import_fresh_title">Repartir de zéro ?</string>
+    <string name="import_fresh_body">Marquez les anciens épisodes comme écoutés pour que votre file d’attente commence par les nouveautés.</string>
+    <plurals name="import_fresh_all">
+        <item quantity="one">%d podcast</item>
+        <item quantity="other">Les %d podcasts</item>
+    </plurals>
+    <string name="import_fresh_selected">Sélection : %d</string>
+    <plurals name="import_fresh_confirm">
+        <item quantity="one">Marquer %d podcast comme écouté</item>
+        <item quantity="other">Marquer %d podcasts comme écoutés</item>
+    </plurals>
+    <string name="import_fresh_skip">Tout garder non écouté</string>
+    <string name="import_done_title">Vos podcasts sont là</string>
+    <string name="import_done_title_pending">Ajout de vos podcasts</string>
+    <string name="import_done_backup_title">Votre sauvegarde est restaurée</string>
+    <string name="import_done_body">Prêt quand vous l’êtes.</string>
+    <plurals name="import_done_body_pending">
+        <item quantity="one">%d podcast n’a pas pu être ajouté tout de suite. boxlore continue d’essayer tant qu’il est ouvert.</item>
+        <item quantity="other">%d podcasts n’ont pas pu être ajoutés tout de suite. boxlore continue d’essayer tant qu’il est ouvert.</item>
+    </plurals>
+    <plurals name="import_done_subscribed">
+        <item quantity="one">abonnement</item>
+        <item quantity="other">abonnements</item>
+    </plurals>
+    <string name="import_done_marked">marqués comme écoutés</string>
+    <string name="import_notify_body">Certains podcasts ont des alertes ou des téléchargements automatiques. Ils ont besoin des notifications pour fonctionner.</string>
+    <string name="import_notify_allow">Autoriser les notifications</string>
+    <string name="import_notify_settings">Ouvrir les paramètres</string>
+    <string name="import_continue">Continuer</string>
+    <string name="import_failed_unreadable_title">Impossible d’ouvrir ce fichier</string>
+    <string name="import_failed_unreadable_body">boxlore n’a pas pu le lire.</string>
+    <string name="import_failed_no_feeds_title">Aucun podcast dans ce fichier</string>
+    <string name="import_failed_no_feeds_body">Il ne contient aucun flux de podcast.</string>
+    <string name="import_failed_unreachable_title">Impossible d’ajouter ces podcasts</string>
+    <string name="import_failed_unreachable_body">Aucun des podcasts de ce fichier n’a pu être joint. Vérifiez votre connexion et réessayez.</string>
+    <string name="import_failed_stopped_title">Importation interrompue en cours de route</string>
+    <string name="import_failed_stopped_body">Les podcasts ajoutés avant l’interruption sont dans votre bibliothèque. Réessayez pour ajouter le reste.</string>
+    <string name="import_failed_marking_title">Impossible de tout marquer comme écouté</string>
+    <string name="import_failed_marking_body">Vos abonnements sont en place, mais certains anciens épisodes ne sont toujours pas écoutés.</string>
+    <string name="import_failed_backup_title">Impossible de restaurer cette sauvegarde</string>
+    <string name="import_failed_backup_body">Vérifiez qu’il s’agit bien d’une sauvegarde .json de boxlore, puis réessayez.</string>
+    <string name="import_unchanged">Rien n’a changé dans votre bibliothèque.</string>
+    <string name="import_file_hint">Utilisez un fichier .opml de votre appli de podcasts, ou une sauvegarde .json de boxlore.</string>
+    <string name="import_choose_another">Choisir un autre fichier</string>
+    <string name="import_try_again">Réessayer</string>
+</resources>

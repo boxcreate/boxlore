@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings › Wear OS -->
+    <string name="settings_wear_connected">Deine Uhr ist verbunden. Änderungen hier kommen sofort bei ihr an.</string>
+    <string name="settings_wear_not_connected">Deine Uhr ist gerade nicht verbunden. Änderungen hier kommen an, sobald sie sich wieder verbindet.</string>
+    <string name="settings_wear_size_mb">%1$d MB</string>
+    <string name="settings_wear_size_gb">%1$d GB</string>
+    <string name="settings_wear_no_downloads">Noch keine Downloads auf deiner Uhr.</string>
+    <!-- %1$d is the episode count, %2$s the space used in MB as a number, %3$s the limit like "500 MB". -->
+    <plurals name="settings_wear_usage">
+        <item quantity="one">Auf deiner Uhr: %1$d Folge, %2$s MB von %3$s.</item>
+        <item quantity="other">Auf deiner Uhr: %1$d Folgen, %2$s MB von %3$s.</item>
+    </plurals>
+    <string name="settings_wear_your_shows">Deine Podcasts</string>
+    <string name="settings_wear_layout_title">Layout auf der Uhr</string>
+    <!-- Watch layout that sets shows in a honeycomb of round covers. -->
+    <string name="settings_wear_layout_honeycomb">Waben</string>
+    <string name="settings_wear_layout_list">Liste</string>
+    <string name="settings_wear_downloads_title">Downloads auf der Uhr</string>
+    <string name="settings_wear_downloads_footer">Erreichen die Downloads das Limit, entfernt die Uhr zuerst die Folgen, die du am längsten nicht gehört oder am frühesten heruntergeladen hast.</string>
+    <string name="settings_wear_storage_limit">Speicherlimit</string>
+</resources>

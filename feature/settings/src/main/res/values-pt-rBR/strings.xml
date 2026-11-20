@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="add_rss_feed_instruction">Cole o link do feed RSS do seu podcast para adicioná-lo à sua biblioteca.</string>
+    <!-- Settings page titles, also used by the tablet category list. -->
+    <string name="settings_page_hub">Configurações</string>
+    <string name="settings_page_account">Conta</string>
+    <string name="settings_page_sync">Sincronização e backups</string>
+    <string name="settings_page_library">Biblioteca</string>
+    <string name="settings_page_appearance">Aparência</string>
+    <string name="settings_page_theme">Tema e cores</string>
+    <string name="settings_page_home">Início</string>
+    <string name="settings_page_show_pages">Páginas de podcasts</string>
+    <string name="settings_page_player">Player</string>
+    <string name="settings_page_navigation">Navegação</string>
+    <!-- Appearance page about the letter shape of the app's text. -->
+    <string name="settings_page_text">Texto</string>
+    <string name="settings_page_widgets">Widgets</string>
+    <string name="settings_page_playback">Reprodução</string>
+    <string name="settings_page_downloads">Downloads</string>
+    <string name="settings_page_about">Sobre o boxlore</string>
+    <string name="settings_page_support">Apoie o boxlore</string>
+    <!-- Tablet category list entry for About boxlore; keep short. -->
+    <string name="settings_category_about">Sobre</string>
+    <string name="settings_back">Voltar</string>
+    <string name="settings_hub_sync_description">Sincronização da conta, feeds OPML e backups da biblioteca</string>
+    <string name="settings_hub_library_description">Região de descoberta, idiomas do conteúdo e feeds RSS</string>
+    <string name="settings_hub_appearance_description">Tema e navegação</string>
+    <string name="settings_hub_playback_description">Pular vinheta, controles de avançar e voltar e episódios concluídos</string>
+    <string name="settings_hub_downloads_description">Downloads inteligentes e automáticos de episódios</string>
+    <string name="settings_hub_wear_os_description">Layout dos seus podcasts e armazenamento de downloads no relógio</string>
+    <string name="settings_hub_privacy_description">Dados de análise e pedidos de exclusão</string>
+    <string name="settings_hub_about_description">Versão do app e Podcast Index</string>
+    <string name="settings_about_catalog_title">Catálogo</string>
+    <string name="settings_about_powered_by">Com tecnologia do Podcast Index</string>
+    <string name="settings_about_catalog_body">O catálogo de podcasts do boxlore vem do Podcast Index, um diretório aberto que torna possível descobrir podcasts independentes. Somos gratos por ele existir.</string>
+    <string name="settings_about_podcast_index_logo">Logotipo do Podcast Index</string>
+    <string name="settings_about_visit_podcast_index">Visitar podcastindex.org</string>
+    <string name="settings_about_app_title">App</string>
+    <string name="settings_about_version">Versão</string>
+    <string name="settings_about_build">Build</string>
+    <string name="settings_about_package">Pacote</string>
+    <!-- %1$s is the Android release, %2$d the API level -->
+    <string name="settings_about_android_version">%1$s (API %2$d)</string>
+    <string name="settings_about_send_feedback">Enviar feedback</string>
+    <string name="settings_about_send_feedback_description">Ideias, relatos de bugs e logs</string>
+    <string name="settings_about_changelog">Novidades</string>
+    <string name="settings_about_changelog_description">O que há de novo no GitHub</string>
+    <!-- Toasts after Privacy › Reset recommendations. -->
+    <string name="settings_recommendations_reset_done">Recomendações redefinidas</string>
+    <string name="settings_recommendations_reset_failed">Não foi possível redefinir as recomendações</string>
+    <!-- Add podcast by RSS feed. %1$s is the podcast title. -->
+    <string name="settings_rss_using_rss_source">Usando a fonte RSS de %1$s.</string>
+    <string name="settings_rss_kept_separate">Os dois podcasts foram mantidos separados.</string>
+    <string name="settings_rss_switched_to_rss">%1$s agora usa a fonte RSS.</string>
+    <!-- %1$s is the podcast title, %2$d its episode count. -->
+    <plurals name="settings_rss_added_with_episodes">
+        <item quantity="one">%1$s adicionado (%2$d episódio).</item>
+        <item quantity="other">%1$s adicionado (%2$d episódios).</item>
+    </plurals>
+    <string name="settings_rss_added_refresh">%1$s adicionado. Para ver episódios novos, abra o podcast e atualize.</string>
+    <string name="settings_rss_error_invalid">Verifique se este é um feed RSS de podcast válido em HTTPS.</string>
+    <string name="settings_rss_error_download">Não foi possível baixar o feed RSS. Verifique sua conexão e tente de novo.</string>
+    <string name="settings_rss_error_generic">Não foi possível adicionar este feed RSS.</string>
+    <!-- Shown when the signed-in account has neither an email nor a name. -->
+    <string name="settings_account_connected">Conectada</string>
+    <!-- About › Version when the version can't be read. -->
+    <string name="settings_about_not_available">Indisponível</string>
+    <!-- Clipboard label for the copied analytics ID (shown by some keyboards). -->
+    <string name="settings_privacy_clipboard_label">ID de análise anônimo</string>
+    <string name="settings_privacy_id_copied">ID de análise copiado</string>
+    <string name="settings_no_email_app">Nenhum app de e-mail disponível</string>
+    <string name="settings_rss_dialog_title">Adicionar feed RSS</string>
+    <string name="settings_rss_feed_url">URL do feed</string>
+    <!-- Screen-reader label for the button that clears the URL field -->
+    <string name="settings_rss_clear">Limpar</string>
+    <string name="settings_rss_subscribing">Adicionando…</string>
+    <string name="settings_rss_add">Adicionar</string>
+    <string name="settings_rss_match_title">É o mesmo podcast?</string>
+    <!-- %1$s is the RSS feed's title, %2$s the title of the show already followed. -->
+    <string name="settings_rss_match_body">“%1$s” parece ser o mesmo podcast que você já segue, “%2$s”.</string>
+    <string name="settings_rss_match_explanation">Use a fonte RSS para manter um só item na biblioteca. O boxlore vai levar junto o progresso, as curtidas, os episódios concluídos, os downloads e os itens da fila correspondentes.</string>
+    <string name="settings_rss_match_use_rss">Usar fonte RSS</string>
+    <string name="settings_rss_match_keep_separate">Manter separados</string>
+    <!-- Screen-reader state of a colour swatch. -->
+    <string name="settings_state_selected">Selecionada</string>
+    <string name="settings_state_not_selected">Não selecionada</string>
+    <!-- Duration slider value when set to zero. -->
+    <string name="settings_duration_off">Desativado</string>
+    <plurals name="settings_duration_seconds">
+        <item quantity="one">%1$d segundo</item>
+        <item quantity="other">%1$d segundos</item>
+    </plurals>
+</resources>

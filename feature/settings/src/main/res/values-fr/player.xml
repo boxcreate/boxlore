@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_style_title">Style du lecteur</string>
+    <string name="player_style_standard">Standard</string>
+    <string name="player_style_bunpod">bunpod</string>
+    <string name="player_style_description">Le lecteur bunpod met le titre et les commandes en avant. Les deux styles reprennent les couleurs de l’illustration et gardent le même mini-lecteur. Les vidéos utilisent le lecteur standard.</string>
+    <string name="player_style_credit">Design inspiré de BunPod · Kamran Bekirov ↗</string>
+</resources>

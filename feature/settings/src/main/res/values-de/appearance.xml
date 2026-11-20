@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_display_mode_title">Anzeigemodus</string>
+    <string name="settings_navigation_bar_title">Navigationsleiste</string>
+    <string name="settings_navigation_blur_title">Unschärfe hinter der Leiste</string>
+    <string name="settings_navigation_blur_off">Aus</string>
+    <string name="settings_navigation_blur_soft">Leicht</string>
+    <string name="settings_navigation_blur_medium">Mittel</string>
+    <string name="settings_navigation_blur_strong">Stark</string>
+    <string name="settings_navigation_start_title">Startseite &amp; Tabs</string>
+    <string name="settings_navigation_start_footer">Die Startseite gilt, wenn du boxlore neu startest. Links können eine andere Seite oder einen anderen Tab öffnen.</string>
+    <string name="settings_navigation_start_page">Startseite</string>
+    <string name="settings_navigation_start_home">Start</string>
+    <string name="settings_navigation_start_subscriptions">Abos</string>
+    <string name="settings_navigation_start_downloads">Downloads</string>
+    <string name="settings_navigation_explore_opens_to">Entdecken öffnet mit</string>
+    <string name="settings_navigation_explore_for_you">Für dich</string>
+    <!-- Explore opens to its Top tab; also the Subscriptions tabs sitting at the top -->
+    <string name="settings_navigation_tab_top">Top</string>
+    <string name="settings_navigation_subscriptions_opens_to">Abos öffnet mit</string>
+    <string name="settings_navigation_subscriptions_shows">Podcasts</string>
+    <string name="settings_navigation_subscriptions_new_episodes">Neue Folgen</string>
+    <string name="settings_navigation_subscriptions_tab_position">Position der Abo-Tabs</string>
+    <string name="settings_navigation_tab_floating">Schwebend</string>
+    <string name="settings_player_miniplayer_title">Miniplayer</string>
+    <string name="settings_player_seek_buttons">Spultasten</string>
+    <string name="settings_player_seek_buttons_description">Tasten zum Zurück- und Vorspulen neben Abspielen und Pause zeigen</string>
+    <string name="settings_show_pages_episode_lists">Folgenlisten</string>
+    <string name="settings_show_pages_titles_only">Nur Folgentitel</string>
+    <string name="settings_show_pages_titles_only_description">Kurze Zeilen mit Titel, Datum, Länge und Play-Button jeder Folge</string>
+    <string name="settings_home_top_bar_title">Obere Leiste</string>
+    <string name="settings_home_shortcuts_in_library">Start-Verknüpfungen in die Bibliothek verschieben</string>
+    <string name="settings_home_shortcuts_in_library_description">Einstellungen und Feedback in der Bibliothek statt auf Start zeigen</string>
+    <!-- Appearance overview: what each row shows under its title. -->
+    <!-- %1$s is the theme look's name, e.g. "boxlore classic". -->
+    <string name="settings_appearance_summary_theme_artwork">%1$s · Cover-Farben an</string>
+    <!-- %1$s is the hero card style name (e.g. Block), %2$s what its colour choice does (e.g. dark cards). -->
+    <string name="settings_appearance_summary_home">Hero-Karten %1$s, %2$s</string>
+    <!-- %1$s is the player style name. -->
+    <string name="settings_appearance_summary_player_seek">%1$s · Spultasten an</string>
+    <!-- %1$s is the bar style (Floating or Classic), %2$s the start page (Home, Subscriptions or Downloads). -->
+    <string name="settings_appearance_summary_navigation">Leiste %1$s · startet mit %2$s</string>
+    <!-- %1$s is the letter shape: Crisp, Soft or Round. -->
+    <string name="settings_appearance_summary_letters">Schrift: %1$s</string>
+    <string name="settings_appearance_summary_widgets_theme_covers">App-Designfarben · ganze Cover</string>
+    <string name="settings_appearance_summary_widgets_theme_shapes">App-Designfarben · Formen</string>
+    <string name="settings_appearance_summary_widgets_system_covers">Systemfarben · ganze Cover</string>
+    <string name="settings_appearance_summary_widgets_system_shapes">Systemfarben · Formen</string>
+    <!-- What the hero colour choice does, shown after "<style> hero cards, ". Lowercase in English. -->
+    <string name="settings_hero_summary_dark_shade">dunkler Verlauf</string>
+    <string name="settings_hero_summary_theme_shade">Verlauf im App-Design</string>
+    <string name="settings_hero_summary_artwork_shade">Verlauf in Cover-Farbe</string>
+    <string name="settings_hero_summary_black_white">Schwarz-Weiß</string>
+    <string name="settings_hero_summary_theme_tones">Farbtöne im App-Design</string>
+    <string name="settings_hero_summary_artwork_tones">Farbtöne in Cover-Farbe</string>
+    <string name="settings_hero_summary_full_color">Vollfarbe</string>
+    <string name="settings_hero_summary_dark_cards">dunkle Karten</string>
+    <string name="settings_hero_summary_theme_color">Farbe des App-Designs</string>
+    <string name="settings_hero_summary_artwork_color">Cover-Farbe</string>
+    <!-- Screen-reader text for the hero preview. %1$s is the style name. -->
+    <string name="settings_hero_preview_description">Vorschau der Hero-Karten %1$s</string>
+    <string name="settings_display_mode_system">System</string>
+    <string name="settings_display_mode_light">Hell</string>
+    <string name="settings_display_mode_dark">Dunkel</string>
+    <string name="settings_show_pages_full_rows">Vollständige Folgenzeilen</string>
+    <!-- Letter shape names (Appearance › Text). -->
+    <string name="settings_letters_crisp">Kantig</string>
+    <string name="settings_letters_soft">Weich</string>
+    <string name="settings_letters_round">Rund</string>
+    <!-- Navigation bar style names. -->
+    <string name="settings_navigation_style_floating">Schwebend</string>
+    <string name="settings_navigation_style_classic">Klassisch</string>
+    <string name="settings_widgets_colors_title">Farben</string>
+    <string name="settings_widgets_colors_footer">App-Design übernimmt deine gewählten Farben und deinen Modus. System folgt dem Modus und den Hintergrundbildfarben deines Handys.</string>
+    <string name="settings_widgets_colors_app_theme">App-Design</string>
+    <string name="settings_widgets_colors_system">System</string>
+    <!-- Your Shows is the name of a widget. -->
+    <string name="settings_widgets_shows_covers_title">Cover im Widget „Deine Podcasts“</string>
+    <string name="settings_widgets_shows_covers_footer">Ganze Cover zeigt jedes Cover unbeschnitten. Formen schneidet Cover zu Kreisen, Bögen und Wellenkanten zu.</string>
+    <string name="settings_widgets_shows_covers_whole">Ganze Cover</string>
+    <string name="settings_widgets_shows_covers_shapes">Formen</string>
+    <string name="settings_widgets_add_title">Zum Startbildschirm hinzufügen</string>
+    <string name="settings_widgets_by_hand_title">boxlore-Widgets</string>
+    <string name="settings_widgets_open_app_settings">App-Einstellungen öffnen</string>
+    <!-- Screen-reader label for a widget's Add button. %1$s is the widget name. -->
+    <string name="settings_widgets_add_description">%1$s zum Startbildschirm hinzufügen</string>
+    <string name="settings_widgets_add">Hinzufügen</string>
+    <string name="settings_widgets_unanswered">Nichts geöffnet? Vielleicht blockiert dein Handy das. Schalte in den App-Einstellungen deines Handys die Startbildschirm-Verknüpfungen für boxlore ein und versuch es noch mal. Oder halte eine freie Stelle auf deinem Startbildschirm gedrückt und wähle Widgets.</string>
+    <string name="settings_widgets_confirm">Deine Startbildschirm-App bittet dich um Bestätigung.</string>
+    <string name="settings_widgets_by_hand">Um ein boxlore-Widget hinzuzufügen, halte eine freie Stelle auf deinem Startbildschirm gedrückt und wähle dann Widgets.</string>
+    <string name="settings_text_letter_shape_title">Buchstabenform</string>
+    <string name="settings_text_letter_shape_footer">Wie rund die Buchstaben in der ganzen App wirken. Am deutlichsten bei großen Titeln; kleiner Text ändert sich weniger.</string>
+    <string name="settings_text_preview_title">Vorschau</string>
+    <string name="settings_text_preview_footer">Manche Handys, etwa Xiaomi mit HyperOS, zeigen eventuell stattdessen die Systemschrift.</string>
+    <!-- Label above a sample line of a section header -->
+    <string name="settings_text_sample_section_label">Bereich</string>
+    <string name="settings_text_sample_section">Deine Morgenrunde</string>
+    <string name="settings_text_sample_title_label">Titel</string>
+    <string name="settings_text_sample_title">Das tägliche Briefing</string>
+    <string name="settings_text_sample_body_label">Fließtext</string>
+    <string name="settings_text_sample_body">Eine kurze Folge über Neugier, Handwerk und Hörgewohnheiten.</string>
+    <string name="settings_text_sample_caption_label">Beschriftung</string>
+    <string name="settings_text_sample_caption">Gerade aktualisiert · 24 Min.</string>
+    <string name="settings_theme_edit_custom">Eigenes Design bearbeiten</string>
+    <string name="settings_theme_create_custom">Eigenes Design erstellen</string>
+    <string name="settings_theme_custom_description">Farben mit Vorschau für Hell und Dunkel wählen</string>
+    <string name="settings_theme_artwork_colors">Cover-Farben verwenden</string>
+    <string name="settings_theme_artwork_colors_description">Folgen- und Podcastseiten an ihr Cover anpassen</string>
+    <string name="settings_theme_colors_title">Farben</string>
+    <string name="settings_theme_look_classic">boxlore classic</string>
+    <string name="settings_theme_look_classic_description">Typische Farben auf kühlen, neutralen Hintergründen.</string>
+    <string name="settings_theme_look_pure">Pur</string>
+    <string name="settings_theme_look_pure_description">Weiß im hellen Modus. Echtes Schwarz im dunklen Modus.</string>
+    <string name="settings_theme_look_material_description">Hintergrundbildfarben mit sanft getönten Hintergründen.</string>
+    <string name="settings_theme_look_custom">Eigenes</string>
+    <string name="settings_theme_look_custom_description">Wähle deine Farben und deinen Hintergrundstil.</string>
+    <string name="settings_theme_section_title">Design</string>
+</resources>
