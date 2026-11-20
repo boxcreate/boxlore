@@ -26,4 +26,6 @@ Announcement title:
 
 ## Improved
 
+- The Marquee style on Home now scrolls with the page in one go, and its cover stays clear behind the words.
+
 ## Fixed

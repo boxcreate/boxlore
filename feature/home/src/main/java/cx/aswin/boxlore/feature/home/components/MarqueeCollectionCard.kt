@@ -113,7 +113,8 @@ internal fun MarqueeCollectionCard(
         }
         if (active) MarqueeReportTone(look.topContent)
         Column(
-            Modifier.align(Alignment.BottomStart).fillMaxWidth().coverScrim(shade.deep.copy(alpha = MarqueeWordsScrim), fade = MarqueeWordsFade)
+            Modifier.align(Alignment.BottomStart).fillMaxWidth().marqueeWordsScrim(shade.deep)
+                .marqueeFadesUnderBar()
                 .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = MarqueeCopyBottom),
         ) {
             // The collection's name and position sit in the words' own column, so nothing can overlap them.

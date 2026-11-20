@@ -29,7 +29,6 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -59,13 +58,11 @@ import cx.aswin.boxlore.feature.home.components.LocalLastSeenEpisodes
 import cx.aswin.boxlore.feature.home.components.LocalMarqueeCardFrost
 import cx.aswin.boxlore.feature.home.components.LocalMarqueeTopTone
 import cx.aswin.boxlore.feature.home.components.MarqueeBarFrost
-import cx.aswin.boxlore.feature.home.components.MarqueeDetentConnection
 import cx.aswin.boxlore.feature.home.components.MarqueeSheetOverlap
 import cx.aswin.boxlore.feature.home.components.MarqueeTopTone
 import cx.aswin.boxlore.feature.home.components.TopControlBar
 import cx.aswin.boxlore.feature.home.components.homeHeroStyle
 import cx.aswin.boxlore.feature.home.components.marqueeBarOverArtwork
-import cx.aswin.boxlore.feature.home.components.marqueeDetent
 import cx.aswin.boxlore.feature.home.logic.HomeMixMode
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
@@ -647,18 +644,11 @@ fun HomeScreen(
             val topTone = remember { MarqueeTopTone() }
             val overlapPx = with(LocalDensity.current) { MarqueeSheetOverlap.toPx() }
             val edgePx = with(LocalDensity.current) { MarqueeBarEdge.toPx() }
-            // The hero keeps its cover still while it scrolls away.
+            // How far the hero has scrolled up: its words fade under the bar, and it stops moving on once mostly gone.
             val heroScroll: () -> Int = remember(gridState) {
                 { if (gridState.firstVisibleItemIndex == 0) gridState.firstVisibleItemScrollOffset else Int.MAX_VALUE }
             }
             val heroItem = { gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == "hero" } }
-            // The page stops where the body's edge meets the bar; the next swipe carries it under.
-            val detent = remember(gridState, overlapPx) {
-                MarqueeDetentConnection(
-                    detent = { heroItem()?.let { marqueeDetent(it.size.height, overlapPx, topBarHeight) } },
-                    scrolled = { if (heroItem() == null) null else heroScroll() },
-                )
-            }
             // The bar stays clear over the cover, and fills with the body's colour as the body passes under it.
             val overArtwork: () -> Float = remember(gridState, overlapPx, edgePx) {
                 { marqueeBarOverArtwork(heroItem()?.let { it.offset.y + it.size.height }, overlapPx, topBarHeight, edgePx) }
@@ -669,7 +659,7 @@ fun HomeScreen(
                 LocalHeroScrollOffset provides heroScroll,
                 LocalMarqueeTopTone provides topTone,
                 LocalMarqueeCardFrost provides false,
-            ) { Box(Modifier.fillMaxSize().nestedScroll(detent).hazeSource(marqueeFrost)) { feed() } }
+            ) { Box(Modifier.fillMaxSize().hazeSource(marqueeFrost)) { feed() } }
             // The bar's frost blurs the live page under it, fixed to the top at the bar's full height.
             MarqueeBarFrost(marqueeFrost, topInset, topTone, overArtwork)
             HomeTopBar(

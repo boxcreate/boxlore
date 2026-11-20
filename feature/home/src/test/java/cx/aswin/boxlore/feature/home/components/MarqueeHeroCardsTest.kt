@@ -178,11 +178,11 @@ class MarqueeHeroCardsTest {
         assertTrue("app theme $brightness", brightness.getValue(HeroCoverShade.THEME) >= fullColor * 0.5f)
     }
 
-    @Test fun `the cover stays still while Home scrolls the hero away`() {
+    @Test fun `the cover scrolls with the hero instead of staying still`() {
         render(topInset = 80.dp, scroll = 120)
         val hero = composeRule.onNodeWithTag("home_hero_marquee_hero").fetchSemanticsNode().boundsInRoot
         val cover = composeRule.onNodeWithTag("home_hero_artwork", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
-        assertEquals("the cover moves down as far as the hero scrolled up", 120f, cover.top - hero.top, 1f)
+        assertEquals("the cover stays at the hero's top as Home scrolls", 0f, cover.top - hero.top, 1f)
         // The cover is shown whole across the full width, never cropped from the sides into the tall card.
         assertEquals("the cover spans the card", hero.width, cover.width, 1f)
     }
@@ -192,7 +192,9 @@ class MarqueeHeroCardsTest {
         render(topInset = 80.dp, tone = tone)
         composeRule.onNodeWithTag("home_hero_marquee_frost", useUnmergedTree = true).assertExists()
         assertEquals(MarqueeLightContent, tone.content)
-        composeRule.onNodeWithTag("home_hero_sheet_handle", useUnmergedTree = true).assertExists()
+        // The page's rounded edge stays over the hero's foot, with no handle on it.
+        composeRule.onNodeWithTag("home_hero_sheet_edge", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithTag("home_hero_sheet_handle", useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test fun `without a top inset there is no frost`() {
@@ -206,7 +208,7 @@ class MarqueeHeroCardsTest {
         assertEquals(MarqueeLightContent, marqueeTopContent(null))
         assertTrue(marqueeVeilAlpha(toneKnown = false) > marqueeVeilAlpha(toneKnown = true))
         // A 100px bar; the body's edge starts 24px above the hero's foot. The bar stays clear while the edge
-        // is at or below it (where the scroll stops), then fills over 24px as the edge passes under.
+        // is at or below it, then fills over 24px as the edge scrolls under.
         assertEquals(1f, marqueeBarOverArtwork(heroBottom = 400, sheetOverlap = 24f, barHeight = 100, edgePx = 24f), 0.001f)
         assertEquals(1f, marqueeBarOverArtwork(heroBottom = 124, sheetOverlap = 24f, barHeight = 100, edgePx = 24f), 0.001f)
         assertEquals(0.5f, marqueeBarOverArtwork(heroBottom = 112, sheetOverlap = 24f, barHeight = 100, edgePx = 24f), 0.001f)
