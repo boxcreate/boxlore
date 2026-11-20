@@ -4,42 +4,35 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.repeatOnLifecycle
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.R
@@ -47,110 +40,68 @@ import cx.aswin.boxlore.feature.info.branded.BrandedCopyrightButton
 import cx.aswin.boxlore.feature.info.branded.BrandedDescription
 import cx.aswin.boxlore.feature.info.branded.BrandedDescriptionExtras
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
-import java.time.Duration
-import java.time.LocalDate
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
-import kotlinx.coroutines.delay
+import cx.aswin.boxlore.feature.info.branded.daily.DailyHorizon.drawFirstLight
+
+/** The © button's width; an empty space as wide sits before the masthead so the masthead stays centred. */
+private val CopyrightWidth = 26.dp
 
 /**
- * Front page: the official wordmark; a double rule; today's dateline with the Times' masthead and
- * the ©; then the description and the usual chips, set like the paper.
+ * First light: the cover's dawn sky from the top of the screen, with the Times' masthead (© beside
+ * it) and the official wordmark in white, centred under the seal. The sun peeks over the middle of
+ * the horizon, and the page rises into the sky as the curve of a planet ([DailyHorizon]). On the page:
+ * the description, centred, which opens on tap, then the usual chips.
  */
 @Composable
 internal fun DailyHeader(podcast: Podcast, description: BrandedDescription, chips: @Composable () -> Unit, modifier: Modifier) {
     val p = DailyColors.current
-    Column(modifier.fillMaxWidth()) {
-        Column(Modifier.padding(horizontal = 16.dp)) {
+    val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    Column(
+        modifier
+            .fillMaxWidth()
+            .drawBehind { drawFirstLight(skyTop = -(statusBar + DailyPage.headerTop).toPx(), page = p.page) },
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(Modifier.height(26.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Spacer(Modifier.width(CopyrightWidth))
             Image(
-                painter = painterResource(R.drawable.daily_wordmark),
-                contentDescription = podcast.title,
-                colorFilter = ColorFilter.tint(p.ink),
+                painter = painterResource(R.drawable.daily_nyt_masthead),
+                contentDescription = stringResource(R.string.daily_masthead_description),
+                colorFilter = ColorFilter.tint(Color.White),
                 contentScale = ContentScale.FillBounds,
-                modifier = Modifier.align(Alignment.CenterHorizontally).size(width = 193.dp, height = 38.dp).semantics { heading() },
+                modifier = Modifier.size(width = 100.dp, height = 14.dp),
             )
-            Spacer(Modifier.height(9.dp))
-            Box(Modifier.fillMaxWidth().height(2.dp).background(p.ink))
-            Spacer(Modifier.height(2.dp))
-            Box(Modifier.fillMaxWidth().height(1.dp).background(p.ink))
-            Dateline()
-            Box(Modifier.fillMaxWidth().height(1.dp).background(p.ink))
-            if (description.text.isNotEmpty()) DailyDescription(description)
-            BrandedDescriptionExtras(description)
+            BrandedCopyrightButton(p.copyright.copy(icon = Color.White), stringResource(R.string.daily_copyright))
         }
-        Spacer(Modifier.height(if (description.text.isNotEmpty()) 16.dp else 14.dp))
-        Box(Modifier.fillMaxWidth()) { chips() }
-    }
-}
-
-/** Today's date, turning over at midnight and checked again whenever the page comes back into view. */
-@Composable
-private fun rememberToday(): State<LocalDate> {
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    return produceState(LocalDate.now(), lifecycle) {
-        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            while (true) {
-                value = LocalDate.now()
-                delay(millisUntilNextDay(ZonedDateTime.now()))
-            }
-        }
-    }
-}
-
-/** How long from [now] until the next day starts where [now] is, through clock changes. */
-internal fun millisUntilNextDay(now: ZonedDateTime): Long =
-    Duration.between(now, now.toLocalDate().plusDays(1).atStartOfDay(now.zone)).toMillis().coerceAtLeast(1)
-
-/** "SATURDAY, OCTOBER 31, 2026" on the left; the Times' masthead and the © on the right. */
-@Composable
-private fun Dateline() {
-    val p = DailyColors.current
-    val locale = LocalConfiguration.current.locales[0]
-    val date by rememberToday()
-    val today = remember(date, locale) { date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale)) }
-    Row(Modifier.fillMaxWidth().heightIn(min = 26.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            today.uppercase(locale),
-            style = brandedTextStyle(rememberDailyFranklin()[600], 10.sp, 12.sp, letterSpacing = 0.8.sp).copy(fontWeight = FontWeight.SemiBold),
-            color = p.ink,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
         Image(
-            painter = painterResource(R.drawable.daily_nyt_masthead),
-            contentDescription = stringResource(R.string.daily_masthead_description),
-            colorFilter = ColorFilter.tint(p.ink),
+            painter = painterResource(R.drawable.daily_wordmark),
+            contentDescription = podcast.title,
+            colorFilter = ColorFilter.tint(Color.White),
             contentScale = ContentScale.FillBounds,
-            modifier = Modifier.size(width = 93.dp, height = 13.dp),
+            modifier = Modifier.padding(top = 4.dp).size(width = 214.dp, height = 42.dp).semantics { heading() },
         )
-        BrandedCopyrightButton(
-            p.copyright,
-            stringResource(R.string.daily_copyright),
-            // The design's © is 26dp wide and reaches 6dp past the page margin: it takes 20dp.
-            Modifier.layout { measurable, constraints ->
-                val placeable = measurable.measure(constraints)
-                layout(20.dp.roundToPx(), placeable.height) { placeable.place(-(placeable.width - 26.dp.roundToPx()) / 2, 0) }
-            },
-        )
+        // The sky, the sun on the horizon and a little page, from the wordmark's foot to the description.
+        Spacer(Modifier.height(DailyHorizon.PageTop - DailyHorizon.LockupHeight))
+        if (description.text.isNotEmpty()) DailyDescription(description)
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) { BrandedDescriptionExtras(description) }
+        Spacer(Modifier.height(16.dp))
+        chips()
     }
 }
 
-/** The description, set in the paper's serif; tapping it opens the full text. */
+/** The description, centred in the paper's serif; tapping it opens the full text. */
 @Composable
 private fun DailyDescription(description: BrandedDescription) {
     Text(
         text = description.text,
-        style = brandedTextStyle(rememberDailySerif(400, 15f), 15.sp, 21.sp),
-        color = DailyColors.current.ink,
+        style = brandedTextStyle(rememberDailySerif(400, 15f), 15.sp, 22.sp),
+        color = DailyColors.current.sub,
+        textAlign = TextAlign.Center,
         maxLines = if (description.expanded) Int.MAX_VALUE else 2,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier
-            // 12dp on the board; the serif's line box sits 1dp lower here.
-            .padding(top = 11.dp)
+            .padding(horizontal = 28.dp)
             .fillMaxWidth()
             .animateContentSize(spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow))
-            .expressiveClickable(shape = RoundedCornerShape(2.dp)) { description.onToggle() },
+            .expressiveClickable(shape = RoundedCornerShape(8.dp)) { description.onToggle() },
     )
 }
