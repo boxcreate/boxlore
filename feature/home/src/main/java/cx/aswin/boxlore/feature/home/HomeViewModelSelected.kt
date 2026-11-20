@@ -5,6 +5,7 @@ import cx.aswin.boxlore.core.catalog.FollowedShowFeedRead
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
+import cx.aswin.boxlore.core.playback.dismissedEpisodeIds
 import cx.aswin.boxlore.core.playback.episodeGroupTokens
 import cx.aswin.boxlore.feature.home.logic.HomeChipFeedReads
 import cx.aswin.boxlore.feature.home.logic.HomeChipRefresh
@@ -104,9 +105,10 @@ internal fun HomeViewModel.observeSelectedPodcast() {
             frame,
             userPrefs.hideCompletedInHomeStream,
             playbackRepository.completedEpisodeIds,
-        ) { current, hideCompleted, completedIds ->
+            playbackRepository.dismissedEpisodeIds,
+        ) { current, hideCompleted, completedIds, dismissedIds ->
             val list =
-                current.pool?.let { HomeShowEpisodesLogic.build(it, completedIds, hideCompleted) }
+                current.pool?.let { HomeShowEpisodesLogic.build(it, completedIds, hideCompleted, dismissedIds) }
                     ?: ShowEpisodesList(emptyList())
             current to list
         }.distinctUntilChanged()

@@ -82,7 +82,21 @@ internal object HomeUiAssemblyLogic {
         )
     }
 
-    @Suppress("LongParameterList", "LongMethod")
+    /** [cache] without the episodes in [dismissed] (archived) and the shows they stood for. */
+    fun withoutArchived(cache: HomeMixtapeCache, dismissed: Set<String>): HomeMixtapeCache {
+        if (dismissed.isEmpty()) return cache
+        val podcasts = cache.podcasts.filterNot { it.latestEpisode?.id in dismissed }
+        val episodes = cache.episodes.filterNot { it.id in dismissed }
+        if (podcasts.size == cache.podcasts.size && episodes.size == cache.episodes.size) return cache
+        return cache.copy(
+            podcasts = podcasts,
+            episodes = episodes,
+            unplayedCount = podcasts.count { it.episodeStatus != EpisodeStatus.COMPLETED },
+        )
+    }
+
+    // One parameter per Home section source, so each test sets only what it needs (kotlin:S107).
+    @Suppress("LongParameterList", "LongMethod", "kotlin:S107")
     suspend fun assemble(
         trendingList: List<Podcast>,
         rankedRecommendations: List<Episode>,
@@ -109,6 +123,7 @@ internal object HomeUiAssemblyLogic {
         refreshShowsOrderFromScores: Boolean = false,
         episodeAliases: Map<String, Set<String>> = emptyMap(),
         installedAtMs: Long = 0L,
+        dismissedEpisodeIds: Set<String> = emptySet(),
     ): HomeUiAssemblyResult {
         // The review prompt's count: the same one that decides when it shows.
         val completedCount = allHistory.countFinishedSince(installedAtMs)
@@ -120,7 +135,10 @@ internal object HomeUiAssemblyLogic {
                 allHistory = historyByEveryId,
                 resolvedSerial = resolvedSerial,
                 completedEpisodeIds = completedEpisodeIds,
+                dismissedEpisodeIds = dismissedEpisodeIds,
             )
+        // Archived episodes leave every Home list: recommendations included.
+        val recommendations = rankedRecommendations.filter { it.id !in dismissedEpisodeIds }
 
         val orderToUse =
             HomeShowsOrderLogic.computeStableShowsOrder(
@@ -133,7 +151,8 @@ internal object HomeUiAssemblyLogic {
         val sortedSubs = HomeShowsOrderLogic.orderedSubs(orderToUse, subs)
 
         val currentSubIds = subs.map { it.id }.toSet()
-        val mixtapeCache = reusableMixtape(previousMixtape, currentSubIds, staleRestartEnabled)
+        // A kept mix loses an episode archived since it was built; no re-rank needed.
+        val mixtapeCache = reusableMixtape(previousMixtape, currentSubIds, staleRestartEnabled)?.let { withoutArchived(it, dismissedEpisodeIds) }
 
         val mixtapePodcasts: List<Podcast>
         val mixtapeCount: Int
@@ -146,7 +165,7 @@ internal object HomeUiAssemblyLogic {
             mixtapeEpisodes = mixtapeCache.episodes
             nextMixtape = mixtapeCache
         } else {
-            val result = buildMixtape(podcastScores, rankedRecommendations)
+            val result = buildMixtape(podcastScores, recommendations)
             mixtapePodcasts = result.podcasts
             mixtapeCount = result.unplayedCount
             mixtapeEpisodes = result.episodes
@@ -209,7 +228,7 @@ internal object HomeUiAssemblyLogic {
             completedEpisodeCount = completedCount,
             subscribedPodcasts = sortedSubs,
             discoverPodcasts = discover,
-            recommendations = rankedRecommendations,
+            recommendations = recommendations,
             episodePlaybackState = episodePlaybackState,
             softExpireProgressEpisodeIds = softExpireProgressEpisodeIds,
             showImportBanner = sortedSubs.isEmpty() && !hasDismissedImportBanner,

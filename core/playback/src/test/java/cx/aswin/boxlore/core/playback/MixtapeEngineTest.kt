@@ -73,6 +73,27 @@ class MixtapeEngineTest {
     }
 
     @Test
+    fun archivedEpisodesAreNeverInTheMixStartedOrNot() = runTest {
+        val subscriptions = listOf(
+            TestFixtures.podcast(id = "pod-1").copy(latestEpisode = episode("trailer", podcastId = "pod-1")),
+            TestFixtures.podcast(id = "pod-2").copy(latestEpisode = episode("fresh", podcastId = "pod-2")),
+            TestFixtures.podcast(id = "pod-3").copy(latestEpisode = episode("other", podcastId = "pod-3")),
+        )
+
+        val result =
+            MixtapeEngine.build(
+                subscriptions = subscriptions,
+                history = listOf(history("abandoned", podcastId = "pod-3")),
+                recommendations = listOf(episode("recommended-archived", podcastId = "pod-9")),
+                dismissedIds = setOf("trailer", "abandoned", "recommended-archived"),
+                nowMs = nowMs,
+            )
+
+        assertTrue(result.episodes.map { it.id }.containsAll(listOf("fresh")))
+        assertTrue(result.episodes.none { it.id in setOf("trailer", "abandoned", "recommended-archived") })
+    }
+
+    @Test
     fun anEpisodeFinishedOutsideRecentHistoryIsNotOfferedAsUnplayed() = runTest {
         // Regression: the mix read played state from recent history only, so after a Mark all of
         // 300+ episodes a finished latest episode with no row left in it came back as unplayed.

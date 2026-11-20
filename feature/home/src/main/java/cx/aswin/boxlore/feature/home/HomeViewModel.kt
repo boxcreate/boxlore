@@ -15,7 +15,9 @@ import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.lastSeenWithArchived
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
+import cx.aswin.boxlore.core.playback.dismissedEpisodeIds
 import cx.aswin.boxlore.core.playback.playQueue
 import cx.aswin.boxlore.core.playback.togglePlayPause
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
@@ -74,10 +76,12 @@ class HomeViewModel(
         combine(
             downloadRepository.completedDownloadItems,
             playbackRepository.completedEpisodeIds,
-        ) { items, completedEpisodeIds ->
+            playbackRepository.dismissedEpisodeIds,
+        ) { items, completedEpisodeIds, dismissedEpisodeIds ->
+            // Archived downloads leave the offline mix like finished ones.
             HomeMixModeLogic.eligibleOfflineItems(
                 items = items,
-                completedEpisodeIds = completedEpisodeIds,
+                completedEpisodeIds = completedEpisodeIds + dismissedEpisodeIds,
             )
         }
             .stateIn(
@@ -226,8 +230,9 @@ class HomeViewModel(
     private val eagerlyLoadedSubIds =
         java.util.Collections.synchronizedSet(mutableSetOf<String>())
 
+    /** The latest episode seen per show; an archived latest episode counts as seen ([lastSeenWithArchived]). */
     val lastSeenEpisodes: StateFlow<Map<String, String>> =
-        userPrefs.lastSeenEpisodesStream
+        combine(userPrefs.lastSeenEpisodesStream, subscriptionRepository.subscribedPodcasts, playbackRepository.dismissedEpisodeIds, ::lastSeenWithArchived)
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),

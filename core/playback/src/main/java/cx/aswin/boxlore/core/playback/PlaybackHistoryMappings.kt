@@ -29,6 +29,7 @@ internal fun ListeningHistoryEntity.toListeningHistoryItem(): ListeningHistoryIt
     episodeDescription = episodeDescription,
     firstPlayedAt = firstPlayedAt,
     finishedAt = finishedAt,
+    dismissedAt = dismissedAt,
 )
 
 internal fun ListeningHistoryItem.toListeningHistoryEntity(): ListeningHistoryEntity = ListeningHistoryEntity(
@@ -49,6 +50,7 @@ internal fun ListeningHistoryItem.toListeningHistoryEntity(): ListeningHistoryEn
     episodeDescription = episodeDescription,
     firstPlayedAt = firstPlayedAt,
     finishedAt = finishedAt,
+    dismissedAt = dismissedAt,
 )
 
 /** [this] row exactly as stored (raw completion flag, like time, sync state), for an Undo that restores it unchanged. */
@@ -71,6 +73,7 @@ internal fun ListeningHistoryEntity.toRowSnapshot(): ListeningHistoryRowSnapshot
         episodeDescription = episodeDescription,
         firstPlayedAt = firstPlayedAt,
         finishedAt = finishedAt,
+        dismissedAt = dismissedAt,
     ),
     likedAt = likedAt,
     isDirty = isDirty,
@@ -102,6 +105,7 @@ internal fun ListeningHistoryRowSnapshot.toListeningHistoryEntity(): ListeningHi
     episodeDescription = item.episodeDescription,
     firstPlayedAt = item.firstPlayedAt,
     finishedAt = item.finishedAt,
+    dismissedAt = item.dismissedAt,
 )
 
 internal fun EpisodeGroupStateEntity.toSnapshot(): ListeningGroupStateSnapshot = ListeningGroupStateSnapshot(
@@ -112,6 +116,8 @@ internal fun EpisodeGroupStateEntity.toSnapshot(): ListeningGroupStateSnapshot =
     completedAt = completedAt,
     completeClearedAt = completeClearedAt,
     version = version,
+    dismissedAt = dismissedAt,
+    dismissClearedAt = dismissClearedAt,
 )
 
 internal fun ListeningGroupStateSnapshot.toEntity(): EpisodeGroupStateEntity = EpisodeGroupStateEntity(
@@ -122,6 +128,8 @@ internal fun ListeningGroupStateSnapshot.toEntity(): EpisodeGroupStateEntity = E
     completedAt = completedAt,
     completeClearedAt = completeClearedAt,
     version = version,
+    dismissedAt = dismissedAt,
+    dismissClearedAt = dismissClearedAt,
 )
 
 internal fun ListeningSessionEntity.toListeningSessionSnapshot(): ListeningSessionSnapshot = ListeningSessionSnapshot(

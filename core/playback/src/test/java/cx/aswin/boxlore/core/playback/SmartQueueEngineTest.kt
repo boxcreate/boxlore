@@ -28,6 +28,7 @@ class SmartQueueEngineTest {
         val podcastDetails = mutableMapOf<String, Podcast>()
         var subscriptions: List<Podcast> = emptyList()
         var completedIds: Set<String> = emptySet()
+        var dismissedIds: Set<String> = emptySet()
         var recentlyPlayedPodcastIds: Set<String> = emptySet()
         var resumeCandidates: List<ListeningHistoryEntity> = emptyList()
         var recentHistory: List<ListeningHistoryEntity> = emptyList()
@@ -71,6 +72,7 @@ class SmartQueueEngineTest {
         override suspend fun getSubscribedPodcasts(): List<Podcast> = subscriptions
 
         override suspend fun getCompletedEpisodeIds(): Set<String> = completedIds
+        override suspend fun getDismissedEpisodeIds(): Set<String> = dismissedIds
 
         override suspend fun getRecentlyPlayedPodcastIds(sinceMs: Long): Set<String> = recentlyPlayedPodcastIds
 
@@ -264,7 +266,7 @@ class SmartQueueEngineTest {
     }
 
     @Test
-    fun `completed episodes and trailers are never suggested`() = runTest {
+    fun `completed, archived and trailer episodes are never suggested`() = runTest {
         val sources = FakeSources()
         sources.episodesByPodcast["pod1"] =
             listOf(
@@ -275,10 +277,11 @@ class SmartQueueEngineTest {
                 episode(5),
             )
         sources.completedIds = setOf("3")
+        sources.dismissedIds = setOf("5")
 
         val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
 
-        assertEquals(listOf("2", "5"), batch.map { it.episode.id.toString() })
+        assertEquals(listOf("2"), batch.map { it.episode.id.toString() })
     }
 
     @Test

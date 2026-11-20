@@ -7,9 +7,13 @@ import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.catalog.autoOrganizeFolderLook
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.listenerShowIds
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
+import cx.aswin.boxlore.core.playback.dismissedEpisodeCount
+import cx.aswin.boxlore.core.playback.dismissedEpisodeIds
 import cx.aswin.boxlore.core.playback.inProgressForEpisodeLookup
 import cx.aswin.boxlore.core.playback.likedEpisodeIds
+import cx.aswin.boxlore.core.playback.setEpisodesDismissed
 import cx.aswin.boxlore.core.prefs.HomePinnedShows
 import cx.aswin.boxlore.feature.info.PodcastInfoPageState.Companion.TAG
 import cx.aswin.boxlore.feature.info.logic.PodcastEpisodePlaybackStateLogic
@@ -27,6 +31,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -197,6 +203,32 @@ class PodcastInfoViewModel(
                 initialValue = emptySet(),
             )
     val completedEpisodesState: StateFlow<Set<String>> = completedEpisodeIds
+
+    private val archiver =
+        EpisodeArchiver(
+            scope = viewModelScope,
+            writeScope = markAllScope,
+            archivedIds = playbackRepository.dismissedEpisodeIds,
+            surface = EpisodeArchiver.SURFACE_SHOW_PAGE,
+            show = { (_uiState.value as? PodcastInfoUiState.Success)?.podcast?.let { ArchiveShow(it.id, it.title, it.imageUrl) } },
+        ) { show, episodes, archive ->
+            playbackRepository.setEpisodesDismissed(episodes, show.id, show.title, show.imageUrl, archive)
+        }
+
+    /** Archived episodes: hidden from the list unless Show archived is on, and marked when shown. */
+    val archivedEpisodesState: StateFlow<Set<String>> = archiver.archivedIds
+
+    /** How many of the show's episodes are archived, loaded or not: Show archived (N) in the menu. */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val archivedEpisodeCount: StateFlow<Int> =
+        _uiState.map { (it as? PodcastInfoUiState.Success)?.podcast?.listenerShowIds.orEmpty() }
+            .distinctUntilChanged()
+            .flatMapLatest { ids -> if (ids.isEmpty()) flowOf(0) else playbackRepository.dismissedEpisodeCount(ids) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    /** Archives [episodes] or brings them back; returns the ones it changed, for Undo ([EpisodeArchiver.setArchived]). */
+    fun setEpisodesArchived(episodes: List<Episode>, archive: Boolean, undo: Boolean = false): List<Episode> =
+        archiver.setArchived(episodes, archive, undo)
 
     private val userPrefs = userPreferencesRepository
 

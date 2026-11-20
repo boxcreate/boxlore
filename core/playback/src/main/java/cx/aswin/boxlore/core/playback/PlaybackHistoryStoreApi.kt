@@ -5,6 +5,7 @@ import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.EpisodeListenerStore
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningSessionEntity
+import cx.aswin.boxlore.core.database.isDismissed
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.HistoryItem
@@ -35,9 +36,9 @@ internal val PlaybackHistoryStore.resumeSessions: Flow<List<PlaybackSession>>
                 }
             }
 
-/** Resume rows with each episode once and its projected state; a projected completion drops it. */
+/** Resume rows with each episode once and its projected state; a projected completion or archive drops it. */
 private fun PlaybackHistoryStore.projectedResumeItems(): Flow<List<ListeningHistoryEntity>> =
-    listenerStore.projectedRows(data.listeningHistoryDao.getResumeItems()) { !it.isCompleted && it.progressMs > 0 }
+    listenerStore.projectedRows(data.listeningHistoryDao.getResumeItems()) { !it.isCompleted && it.progressMs > 0 && !it.isDismissed }
 
 internal val PlaybackHistoryStore.likedEpisodes: Flow<List<ListeningHistoryEntity>>
     get() = listenerStore.projectedRows(data.listeningHistoryDao.getLikedEpisodes()) { it.isLiked }
@@ -310,12 +311,13 @@ internal suspend fun PlaybackHistoryStore.savePlaybackState(input: ListeningHist
         "Saving playback state: ${input.episodeTitle}, pos=${input.positionMs}, completed=${input.isCompleted}",
     )
     val historyId = listenerStore.historyId(input.episodeId)
-    val entity = ListeningHistoryUpsertLogic.buildProgressSaveEntity(input.copy(episodeId = historyId))
+    val stored = data.listeningHistoryDao.getHistoryItem(historyId)
+    // A saved position is not a play: the archive decision stays as stored.
+    val entity = ListeningHistoryUpsertLogic.buildProgressSaveEntity(input.copy(episodeId = historyId)).copy(dismissedAt = stored?.dismissedAt ?: 0L)
     if (!listenerStore.group(input.episodeId).isShared) {
         data.listeningHistoryDao.upsert(entity)
         return
     }
-    val stored = data.listeningHistoryDao.getHistoryItem(historyId)
     val row =
         if (stored != null) {
             listenerStore.keepingOwnerMetadata(entity, stored).copy(isLiked = stored.isLiked, likedAt = stored.likedAt)

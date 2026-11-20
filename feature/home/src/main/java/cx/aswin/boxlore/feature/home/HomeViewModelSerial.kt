@@ -5,6 +5,7 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.listenerShowIds
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
+import cx.aswin.boxlore.core.playback.dismissedEpisodeIds
 import cx.aswin.boxlore.core.playback.episodeGroupTokens
 import cx.aswin.boxlore.feature.home.logic.HomeSerialLogic
 import cx.aswin.boxlore.feature.home.logic.HomeShowEpisodesLogic
@@ -26,10 +27,11 @@ internal fun HomeViewModel.startOldestSortResolution() {
         combine(
             subscriptionRepository.subscribedPodcasts,
             homeStatusHistory,
-            playbackRepository.completedEpisodeIds,
-        ) { subs, allHistory, completedEpisodeIds ->
-            Triple(subs, allHistory, completedEpisodeIds)
-        }.collect { (subs, allHistory, completedEpisodeIds) ->
+            combine(playbackRepository.completedEpisodeIds, playbackRepository.dismissedEpisodeIds, ::Pair),
+        ) { subs, allHistory, listenerIds ->
+            Triple(subs, allHistory, listenerIds)
+        }.collect { (subs, allHistory, listenerIds) ->
+            val (completedEpisodeIds, dismissedEpisodeIds) = listenerIds
             val progress = HomeSerialLogic.progressIds(allHistory, completedEpisodeIds)
             val serialPodsToResolve = findPendingSerialPodcasts(subs, allHistory, completedEpisodeIds)
 
@@ -55,9 +57,10 @@ internal fun HomeViewModel.startOldestSortResolution() {
                                                 playbackRepository.episodeGroupTokens(
                                                     loaded.episodes.map { it.id } + progress.inProgress,
                                                 )
+                                            // An archived episode is never next up, and never moves the listener's place.
                                             val nextEp =
                                                 HomeShowEpisodesLogic.nextUp(
-                                                    episodes = loaded.episodes,
+                                                    episodes = HomeShowEpisodesLogic.withoutArchived(loaded.episodes, dismissedEpisodeIds),
                                                     placeId = loaded.placeId,
                                                     completedIds = progress.completed,
                                                     inProgressIds = HomeSerialLogic.idsInList(progress.inProgress, loaded.episodes, tokens),

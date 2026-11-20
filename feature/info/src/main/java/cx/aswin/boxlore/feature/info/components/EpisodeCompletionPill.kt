@@ -21,7 +21,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.feature.info.R
 
-internal data class EpisodeCompletionState(val isCompleted: Boolean, val showTip: Boolean = false)
+/** The episode page's played row: the played state, the first-time tip, and Archive beside it (null leaves it out). */
+internal data class EpisodeCompletionState(val isCompleted: Boolean, val showTip: Boolean = false, val archive: EpisodeArchiveAction? = null)
 
 @Composable
 internal fun EpisodeCompletionPill(isCompleted: Boolean, onToggleCompletion: () -> Unit) {

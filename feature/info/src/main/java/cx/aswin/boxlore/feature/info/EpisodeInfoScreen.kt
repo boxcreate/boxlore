@@ -82,6 +82,7 @@ fun EpisodeInfoScreen(
     cx.aswin.boxlore.feature.info.components.ArtworkInfoTheme(listOf(pageEpisode?.imageUrl ?: episodeImageUrl, pageEpisode?.podcastImageUrl), isLoading = isLoadingPage) {
     val likedEpisodeIds by viewModel.likedEpisodeIds.collectAsState()
     val completedEpisodeIds by viewModel.completedEpisodeIds.collectAsState()
+    val archivedEpisodeIds by viewModel.archivedEpisodeIds.collectAsState()
     val queuedEpisodeIds by viewModel.queuedEpisodeIds.collectAsState()
     val listState = rememberLazyListState()
     val isMoreFromScrolling by remember {
@@ -246,6 +247,10 @@ fun EpisodeInfoScreen(
                                 completionState = cx.aswin.boxlore.feature.info.components.EpisodeCompletionState(
                                     isCompleted = state.episode.id in completedEpisodeIds,
                                     showTip = showMarkPlayedTip,
+                                    archive = cx.aswin.boxlore.feature.info.components.EpisodeArchiveAction(
+                                        isArchived = state.episode.id in archivedEpisodeIds,
+                                        onToggle = viewModel::onToggleArchive,
+                                    ),
                                 ),
                                 onToggleCompletion = viewModel::onToggleCompletion,
                                 modifier = Modifier.padding(horizontal = 22.dp),

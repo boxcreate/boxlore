@@ -13,6 +13,7 @@ import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.countsAsListening
 import cx.aswin.boxlore.core.database.episodeListenerStore
+import cx.aswin.boxlore.core.database.isDismissed
 import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -213,12 +214,12 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
         }
     }
 
-    /** The newest unplayed episode of each subscribed show, newest first. */
+    /** The newest unplayed episode of each subscribed show, newest first; archived episodes are left out. */
     private suspend fun newEpisodes(subscriptions: List<PodcastEntity>): List<Pair<Episode, PodcastEntity>> {
         if (subscriptions.isEmpty()) return emptyList()
-        val completedIds = completedIds()
+        val hiddenIds = completedIds() + dismissedIds()
         return subscriptions
-            .mapNotNull { entity -> entity.latestEpisode?.takeIf { it.id !in completedIds }?.let { it to entity } }
+            .mapNotNull { entity -> entity.latestEpisode?.takeIf { it.id !in hiddenIds }?.let { it to entity } }
             .sortedByDescending { (episode, _) -> episode.publishedDate }
             .take(NEW_EPISODES_LIMIT)
     }
@@ -269,9 +270,17 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
      * A show's episodes, newest first, with the ones in progress moved to the top under
      * "Jump back in". Rows say when the episode came out, not the show's name again.
      */
-    suspend fun getPodcastEpisodes(podcastId: String): List<MediaItem> {
+    suspend fun getPodcastEpisodes(podcastId: String): List<MediaItem> =
+        podcastEpisodeRows(podcastId, host.podcastRepository.getEpisodesPaginated(podcastId, limit = LIST_LIMIT, sort = "newest").episodes)
+
+    /**
+     * [getPodcastEpisodes]'s rows for the show's [listed] episodes. Archived episodes are left out:
+     * the car has no way to show them, as the phone's show page hides them by default.
+     */
+    internal suspend fun podcastEpisodeRows(podcastId: String, listed: List<Episode>): List<MediaItem> {
         val podcastEntity = host.database.podcastDao().getPodcast(podcastId)
-        val episodes = host.podcastRepository.getEpisodesPaginated(podcastId, limit = LIST_LIMIT, sort = "newest").episodes
+        val archived = dismissedIds()
+        val episodes = listed.filter { it.id !in archived }
         // Looked up by the listed ID: an episode stored under several IDs shows its state under any of them.
         val history = historyById(episodes.map { it.id })
         val downloaded = downloadedIds()
@@ -340,8 +349,9 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
         val subscriptions = subscriptionEntities.map { host.toAutoPodcast(it) }
         val history = listenerStore.projectRows(host.database.listeningHistoryDao().getRecentHistoryWithListeningList(HISTORY_WINDOW))
         val completedIds = completedIds()
+        val dismissedIds = dismissedIds()
         val ranking = MixtapeEngine.AdaptiveRanking(scorer = host.adaptiveCandidateScorer, surface = RankingSurface.ANDROID_AUTO)
-        var result = MixtapeEngine.build(subscriptions = subscriptions, history = history, completedIds = completedIds, adaptiveRanking = ranking)
+        var result = MixtapeEngine.build(subscriptions = subscriptions, history = history, completedIds = completedIds, adaptiveRanking = ranking, dismissedIds = dismissedIds)
         if (result.episodes.size < MIN_MIXTAPE_EPISODES) {
             val recommendations =
                 runCatching {
@@ -357,7 +367,14 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
                 }.onFailure {
                     android.util.Log.w("AutoBrowse", "Mixtape fallback unavailable", it)
                 }.getOrDefault(emptyList())
-            result = MixtapeEngine.build(subscriptions = subscriptions, history = history, completedIds = completedIds, recommendations = recommendations, adaptiveRanking = ranking)
+            result = MixtapeEngine.build(
+                subscriptions = subscriptions,
+                history = history,
+                completedIds = completedIds,
+                recommendations = recommendations,
+                adaptiveRanking = ranking,
+                dismissedIds = dismissedIds,
+            )
         }
         val downloaded = downloadedIds()
         val played = historyById(result.podcasts.mapNotNull { it.latestEpisode?.id })
@@ -418,7 +435,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
             } else {
                 emptyMap()
             }
-        val completedIds = listenerStore.projectCompletedIds(host.database.listeningHistoryDao().getCompletedEpisodeIds())
+        val completedIds = listenerStore.projectCompletedIds(host.database.listeningHistoryDao().getCompletedEpisodeIds()) + dismissedIds()
         val recentIds = host.database.listeningHistoryDao().getRecentHistoryList(30).mapTo(mutableSetOf()) { it.episodeId }
         val hidden = hiddenShowIds()
         val feedMap = (if (driveFeeds.values.any { it.isNotEmpty() }) driveFeeds else fallbackFeeds).mapValues { (_, podcasts) -> podcasts.withoutHiddenShows(hidden) }
@@ -580,7 +597,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
     // ── Shared reads ────────────────────────────────────────────────────────────────────────
 
     private suspend fun resumeItems(): List<ListeningHistoryEntity> = runCatching {
-        listenerStore.projectRows(host.database.listeningHistoryDao().getResumeItemsList()) { !it.isCompleted && it.progressMs > 0 }
+        listenerStore.projectRows(host.database.listeningHistoryDao().getResumeItemsList()) { !it.isCompleted && it.progressMs > 0 && !it.isDismissed }
     }.getOrDefault(emptyList())
 
     private suspend fun queueEpisodes(): List<Episode> = runCatching { host.queueRepository.getQueueEpisodeSnapshot() }.getOrNull().orEmpty()
@@ -599,6 +616,9 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
     private suspend fun completedIds(): Set<String> = runCatching {
         listenerStore.projectCompletedIds(host.database.listeningHistoryDao().getCompletedEpisodeIds())
     }.getOrDefault(emptySet())
+
+    /** Every archived episode ID, projected: no list offers them. */
+    private suspend fun dismissedIds(): Set<String> = runCatching { listenerStore.dismissedIds() }.getOrDefault(emptySet())
 
     /** IDs of the episodes saved on the phone, so every list can mark them as downloaded. */
     private suspend fun downloadedIds(): Set<String> = runCatching {

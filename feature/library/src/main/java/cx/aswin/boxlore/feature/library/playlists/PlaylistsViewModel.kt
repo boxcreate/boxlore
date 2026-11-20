@@ -36,7 +36,7 @@ class PlaylistPlaybackPorts(
     val followedShows: Flow<List<Podcast>>,
     /** Library folders, whose followed shows pre-fill a pick. */
     val folders: Flow<List<SubscriptionFolder>>,
-    /** Finished episode IDs; a change refreshes Coming up. */
+    /** Finished and archived episode IDs; a change refreshes Coming up. */
     val completedEpisodeIds: Flow<Set<String>>,
     /** Replaces the queue with a playlist's first batch (the app passes `QueueManager.playPlaylist`). */
     val startPlayback: (playlistId: String, episodes: List<Episode>) -> Unit,

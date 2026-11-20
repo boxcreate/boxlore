@@ -54,6 +54,7 @@ class InfoPhoneGoldenTest(configuration: PhoneGoldenConfiguration) {
         `when`(model.globalTrimSilence).thenReturn(MutableStateFlow(false))
         `when`(model.autoDownloadBackgroundChecksEnabled).thenReturn(MutableStateFlow(false))
         `when`(model.completedEpisodesState).thenReturn(MutableStateFlow(emptySet()))
+        stubArchive(model)
         `when`(model.likedEpisodesState).thenReturn(MutableStateFlow(emptySet()))
         `when`(model.episodePlaybackState).thenReturn(MutableStateFlow(emptyMap()))
         render("podcast-info") { PodcastInfoScreen("1", model, {}, { _, _, _ -> }, {}, {}) }
@@ -68,6 +69,7 @@ class InfoPhoneGoldenTest(configuration: PhoneGoldenConfiguration) {
         )
         `when`(model.likedEpisodeIds).thenReturn(MutableStateFlow(emptySet()))
         `when`(model.completedEpisodeIds).thenReturn(MutableStateFlow(emptySet()))
+        `when`(model.archivedEpisodeIds).thenReturn(MutableStateFlow(emptySet()))
         `when`(model.queuedEpisodeIds).thenReturn(MutableStateFlow(emptySet()))
         `when`(model.isDownloaded(episode.id)).thenReturn(flowOf(false))
         `when`(model.isDownloading(episode.id)).thenReturn(flowOf(false))

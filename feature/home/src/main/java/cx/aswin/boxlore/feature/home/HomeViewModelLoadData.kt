@@ -8,6 +8,7 @@ import cx.aswin.boxlore.core.model.withoutHiddenShowEpisodes
 import cx.aswin.boxlore.core.model.withoutHiddenShows
 import cx.aswin.boxlore.core.playback.MixtapeEngine
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
+import cx.aswin.boxlore.core.playback.dismissedEpisodeIds
 import cx.aswin.boxlore.core.playback.episodeAliasGroups
 import cx.aswin.boxlore.core.playback.inProgressHistory
 import cx.aswin.boxlore.core.playback.resumeSessions
@@ -121,17 +122,18 @@ internal fun HomeViewModel.loadData() {
                     combine(
                         combine(
                             _recommendations,
-                            playbackRepository.completedEpisodeIds,
+                            combine(playbackRepository.completedEpisodeIds, playbackRepository.dismissedEpisodeIds, ::Pair),
                             _isTrendingLoaded,
                             _isRecommendationsLoaded,
                             userPrefs.hasDismissedHomeImportBannerStream,
-                        ) { recommendations, completedEpisodeIds, isTrendingLoaded, isRecommendationsLoaded, hasDismissedImportBanner ->
+                        ) { recommendations, (completedEpisodeIds, dismissedEpisodeIds), isTrendingLoaded, isRecommendationsLoaded, hasDismissedImportBanner ->
                             HomeRecsSlice(
                                 recommendations,
                                 completedEpisodeIds,
                                 isTrendingLoaded,
                                 isRecommendationsLoaded,
                                 hasDismissedImportBanner,
+                                dismissedEpisodeIds = dismissedEpisodeIds,
                             )
                         },
                         userPrefs.restartForgottenEpisodesStream,
@@ -182,6 +184,7 @@ internal fun HomeViewModel.loadData() {
                             resolvedSerial = core.resolvedSerial,
                             recommendations = recs.recommendations,
                             completedEpisodeIds = recs.completedEpisodeIds,
+                            dismissedEpisodeIds = recs.dismissedEpisodeIds,
                             isTrendingLoaded = recs.isTrendingLoaded,
                             isRecommendationsLoaded = recs.isRecommendationsLoaded,
                             hasDismissedImportBanner = recs.hasDismissedImportBanner,
@@ -238,6 +241,7 @@ internal fun HomeViewModel.loadData() {
                         val subs = wrapper.subs
                         val resolvedSerial = wrapper.resolvedSerial
                         val completedEpisodeIds = wrapper.completedEpisodeIds
+                        val dismissedEpisodeIds = wrapper.dismissedEpisodeIds
 
                         // Prompts count only episodes finished here, so a restore or import can't trigger them.
                         val completedCount = allHistory.countFinishedSince(installedAtMs)
@@ -299,6 +303,7 @@ internal fun HomeViewModel.loadData() {
                                 installedAtMs = installedAtMs,
                                 resolvedSerial = resolvedSerial,
                                 completedEpisodeIds = completedEpisodeIds,
+                                dismissedEpisodeIds = dismissedEpisodeIds,
                                 region = region,
                                 editorialRows = editorialRows,
                                 previousStableOrder = rankingPlan.previousOrder,
@@ -319,6 +324,7 @@ internal fun HomeViewModel.loadData() {
                                             surface = RankingSurface.HOME,
                                         ),
                                         staleRestartEnabled = staleRestartEnabled,
+                                        dismissedIds = dismissedEpisodeIds,
                                     )
                                 },
                                 isTrendingLoaded = wrapper.isTrendingLoaded,

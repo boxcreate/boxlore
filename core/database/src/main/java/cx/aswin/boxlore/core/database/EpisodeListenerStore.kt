@@ -22,9 +22,9 @@ import kotlinx.coroutines.flow.mapLatest
  *   another ID played later, after a pull or a restore), liked and completed as the latest
  *   decision across the group settings and every ID's row. Lists count the episode once; lookups
  *   by ID ([projectRowsByMember], [projectedLikedIds]) find the episode under every one of its IDs.
- * - **Writes:** progress goes to the owner ([historyId]). Like and completion are absolute: the
- *   target is written to every trusted ID's row and to `episode_group_state`, so an older alias
- *   row can't bring a cleared like or completion back. Nothing changes ID.
+ * - **Writes:** progress goes to the owner ([historyId]). Like, completion and archive are
+ *   absolute: the target is written to every trusted ID's row and to `episode_group_state`, so an
+ *   older alias row can't bring a cleared one back. Nothing changes ID.
  * - **Downloads** stay where they are: playback reads the bytes of the ID that holds a completed
  *   download ([downloadHolder]) while history goes to the owner.
  *
@@ -105,6 +105,73 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
         val written = history.setLikeStatusForIds(group.memberIds, liked, if (group.isShared) at else nowMs)
         aliases.upsertGroupState(EpisodeListenerProjection.withLike(state, podcastId, catalogKey, liked, at))
         written
+    }
+
+    /**
+     * Sets the archive of [episodeId]'s episode to [dismissed] (an absolute target) on every trusted
+     * ID's row and in the group settings, as [setLiked] does for a like. Progress and completion stay
+     * as they are, so an archived episode never counts as listened. Returns the history rows
+     * written; 0 means no ID of the episode has a row yet, and the caller creates the owner's
+     * ([historyId]) carrying the decision.
+     */
+    suspend fun setDismissed(episodeId: String, dismissed: Boolean, nowMs: Long,): Int = database.withTransaction {
+        val group = resolve(episodeId, storeOwner = true)
+        if (!group.isKeyed) return@withTransaction history.setDismissedForIds(group.memberIds, dismissedAtValue(dismissed, nowMs))
+        val podcastId = group.podcastId!!
+        val catalogKey = group.catalogKey!!
+        val state = aliases.getGroupState(podcastId, catalogKey)
+        val at = EpisodeListenerProjection.dismissTime(nowMs, rows(group), state)
+        val written = history.setDismissedForIds(group.memberIds, dismissedAtValue(dismissed, at))
+        aliases.upsertGroupState(EpisodeListenerProjection.withDismiss(state, podcastId, catalogKey, dismissed, at))
+        written
+    }
+
+    /**
+     * [setDismissed] for every one of [episodeIds] in one transaction (a show page selection).
+     * Returns the IDs whose episode has no row yet; the caller creates their owners' rows. Episodes
+     * stored under one ID are read and written in batches of 500, as [recordCompletions] does; only
+     * an episode stored under several IDs costs its own queries.
+     */
+    suspend fun setDismissed(episodeIds: Collection<String>, dismissed: Boolean, nowMs: Long,): List<String> = database.withTransaction {
+        val ids = episodeIds.filter { it.isNotBlank() }.distinct()
+        val keyed = trustedKeyedAliases(ids)
+        val sharedIds = if (keyed.isEmpty()) emptySet() else sharedAliases(keyed.map { it.aliasId }).mapTo(HashSet()) { it.aliasId }
+        val (shared, single) = keyed.partition { it.aliasId in sharedIds }
+        val rowsById = (ids - sharedIds).chunked(MAX_IDS_PER_QUERY).flatMap { history.getHistoryItems(it) }.associateBy { it.episodeId }
+        // Episodes stored under one ID: the decision's time per row, after any recorded on it.
+        val keyedIds = keyed.mapTo(HashSet()) { it.aliasId }
+        val timeById = HashMap<String, Long>()
+        ids.filter { it !in keyedIds }.forEach { timeById[it] = nowMs }
+        val states = singleDismissStates(single, rowsById, dismissed, nowMs, timeById)
+        timeById.entries.filter { it.key in rowsById }.groupBy({ it.value }, { it.key }).forEach { (at, written) ->
+            written.chunked(MAX_IDS_PER_QUERY).forEach { history.setDismissedForIds(it, dismissedAtValue(dismissed, at)) }
+        }
+        if (states.isNotEmpty()) aliases.upsertGroupStates(states)
+        val missingShared = shared.map { it.aliasId }.filter { setDismissed(it, dismissed, nowMs) == 0 }.toSet()
+        ids.filter { if (it in sharedIds) it in missingShared else it !in rowsById }
+    }
+
+    /**
+     * Group settings recording an archive decision for episodes stored under one trusted ID, read
+     * in batches; [timeById] receives each ID's decision time for its row.
+     */
+    private suspend fun singleDismissStates(
+        single: List<EpisodeAliasEntity>,
+        rowsById: Map<String, ListeningHistoryEntity>,
+        dismissed: Boolean,
+        nowMs: Long,
+        timeById: MutableMap<String, Long>,
+    ): List<EpisodeGroupStateEntity> = single.groupBy { it.podcastId }.flatMap { (podcastId, showAliases) ->
+        val stored = showAliases.mapNotNull { it.catalogKey }.distinct().chunked(MAX_IDS_PER_QUERY)
+            .flatMap { aliases.getGroupStates(podcastId, it) }
+            .associateBy { it.catalogKey }
+        showAliases.distinctBy { it.catalogKey }.map { alias ->
+            val catalogKey = alias.catalogKey!!
+            val state = stored[catalogKey]
+            val at = EpisodeListenerProjection.dismissTime(nowMs, listOfNotNull(rowsById[alias.aliasId]), state)
+            timeById[alias.aliasId] = at
+            EpisodeListenerProjection.withDismiss(state, podcastId, catalogKey, dismissed, at)
+        }
     }
 
     /**
@@ -223,6 +290,13 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
     suspend fun clearGroupStates() = aliases.deleteAllGroupStates()
 
     /**
+     * Every row and group setting holding an archive decision, cut down to that decision
+     * ([archiveOnly]): what clearing history keeps, so every episode's archive projects as before.
+     */
+    suspend fun archiveOnlyState(): Pair<List<ListeningHistoryEntity>, List<EpisodeGroupStateEntity>> =
+        history.getDismissDecidedRows().map { it.archiveOnly() } to aliases.dismissDecidedGroupStates().map { it.archiveOnly() }
+
+    /**
      * The ID whose completed download plays [episodeId]: [episodeId] itself when it holds one, else
      * the owner, else another trusted ID of the episode. Null when none holds a completed download.
      */
@@ -250,6 +324,18 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
                 if (holder != id) put(id, holder)
             }
         }
+    }
+
+    /**
+     * How many episodes of the shows [podcastIds] are archived among [dismissedIds] (as
+     * [dismissedIds] projects them), each counted once however many IDs it has. An episode counts
+     * when one of its archived IDs has a row stored under one of the shows.
+     */
+    suspend fun dismissedEpisodeCount(dismissedIds: Set<String>, podcastIds: Set<String>): Int {
+        if (dismissedIds.isEmpty() || podcastIds.isEmpty()) return 0
+        val ids = dismissedIds.chunked(MAX_IDS_PER_QUERY).flatMap { history.getHistoryItems(it) }.filter { it.podcastId in podcastIds }.map { it.episodeId }
+        val tokens = groupTokens(ids)
+        return ids.mapTo(HashSet()) { tokens[it] ?: it }.size
     }
 
     /**
@@ -388,12 +474,7 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
     suspend fun ownerRow(seed: ListeningHistoryEntity, requestedId: String,): ListeningHistoryEntity {
         if (seed.episodeId == requestedId) return seed
         val ownerId = seed.episodeId
-        val showId =
-            history.getHistoryItem(ownerId)?.podcastId
-                ?: database.localEpisodeCatalogDao().getEpisode(ownerId)?.podcastId
-                ?: database.rssEpisodeDao().getEpisode(ownerId)?.podcastId
-                ?: aliases.getAlias(ownerId)?.podcastId
-                ?: return seed
+        val showId = showOf(ownerId) ?: return seed
         if (showId == seed.podcastId) return seed
         val show = database.podcastDao().getPodcast(showId)
         return seed.copy(
@@ -537,6 +618,37 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
             .mapLatest { (ids, shared) -> projectCompletedIds(ids, shared) }
 
     /**
+     * [dismissedIds] (IDs whose own row is archived) as projected archive, as [projectCompletedIds]
+     * does for completion: an episode stored under several IDs is archived for all of them or none,
+     * and one that only its group settings archive reads archived too.
+     */
+    suspend fun projectDismissedIds(dismissedIds: Collection<String>, shared: List<EpisodeAliasEntity>,): Set<String> {
+        val dismissed = dismissedIds.toSet()
+        if (shared.isEmpty()) return dismissed
+        val result = dismissed.toMutableSet()
+        val dismissedInSettings = aliases.dismissedGroupStates().mapTo(HashSet()) { EpisodeGroup.tokenOf(it.podcastId, it.catalogKey)!! }
+        val decided = shared
+            .filter { it.catalogKey != null && (it.aliasId in dismissed || EpisodeGroup.tokenOf(it.podcastId, it.catalogKey) in dismissedInSettings) }
+            .distinctBy { EpisodeGroup.tokenOf(it.podcastId, it.catalogKey) }
+        for (alias in decided) {
+            val group = resolve(alias.aliasId, storeOwner = false)
+            if (project(group)?.isDismissed == true) result.addAll(group.memberIds) else result.removeAll(group.memberIds.toSet())
+        }
+        return result
+    }
+
+    /** Every archived ID as projected, against the shared aliases stored now. */
+    suspend fun dismissedIds(): Set<String> =
+        projectDismissedIds(history.getDismissedEpisodeIds(), aliases.sharedTrustedAliasesFlow().first())
+
+    /** Every archived ID as projected, re-evaluated when an archive decision or the alias table changes. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun dismissedIdsFlow(): Flow<Set<String>> =
+        combine(history.getDismissedEpisodeIdsFlow(), sharedAliasesFlow()) { ids, shared -> ids to shared }
+            .mapLatest { (ids, shared) -> projectDismissedIds(ids, shared) }
+            .distinctUntilChanged()
+
+    /**
      * The shared trusted aliases, re-emitted only when they change: alias writes that leave them as
      * they were (a catalog refresh adding aliases of single-ID episodes) don't re-emit lists.
      */
@@ -578,6 +690,14 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
 
     private suspend fun trustedKeyedAliases(episodeIds: Collection<String>): List<EpisodeAliasEntity> =
         episodeIds.filter { it.isNotBlank() }.distinct().chunked(MAX_IDS_PER_QUERY).flatMap { aliases.getAliases(it) }.filter { it.isTrustedKeyed() }
+
+    /** [episodeId]'s show: from its history row, else its catalog row, else its RSS row, else its alias. */
+    private suspend fun showOf(episodeId: String): String? {
+        history.getHistoryItem(episodeId)?.let { return it.podcastId }
+        database.localEpisodeCatalogDao().getEpisode(episodeId)?.let { return it.podcastId }
+        database.rssEpisodeDao().getEpisode(episodeId)?.let { return it.podcastId }
+        return aliases.getAlias(episodeId)?.podcastId
+    }
 
     private suspend fun resolve(episodeId: String, storeOwner: Boolean,): EpisodeGroup {
         val alias = aliases.getAlias(episodeId)

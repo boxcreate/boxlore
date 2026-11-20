@@ -7,11 +7,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
+import androidx.compose.material.icons.rounded.Archive
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
+import androidx.compose.material.icons.rounded.Unarchive
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -39,6 +41,8 @@ internal data class EpisodeSelectionToolbarState(
     val selectedCount: Int,
     val canDownload: Boolean,
     val markAsUnplayed: Boolean,
+    /** Every selected episode is archived: the menu offers Unarchive instead of Archive. */
+    val unarchive: Boolean = false,
     val canAddToQueue: Boolean,
     val hasRangeAnchor: Boolean,
     val isLoadingFullSelection: Boolean,
@@ -52,6 +56,8 @@ internal data class EpisodeSelectionToolbarActions(
     val onToggleCompletion: () -> Unit,
     val onPlay: () -> Unit,
     val onAddToQueue: () -> Unit,
+    /** Archives the selection, or brings it back when [EpisodeSelectionToolbarState.unarchive]. */
+    val onToggleArchive: () -> Unit = {},
     val onSelectVisible: () -> Unit,
     val onSelectAll: () -> Unit,
     val onSelectOlder: () -> Unit,
@@ -164,6 +170,17 @@ private fun EpisodeSelectionRangeMenu(
             expanded = expanded,
             onDismissRequest = { onExpandedChange(false) },
         ) {
+            // Leaves the selection's lists without marking it played; Undo comes in a snackbar.
+            DropdownMenuItem(
+                text = { Text(stringResource(if (state.unarchive) R.string.episode_selection_unarchive else R.string.episode_selection_archive)) },
+                enabled = state.actionsEnabled,
+                leadingIcon = { Icon(if (state.unarchive) Icons.Rounded.Unarchive else Icons.Rounded.Archive, contentDescription = null) },
+                onClick = {
+                    onExpandedChange(false)
+                    actions.onToggleArchive()
+                },
+            )
+            HorizontalDivider()
             RangeMenuItem(
                 text = stringResource(R.string.episode_selection_select_visible),
                 onClick = {

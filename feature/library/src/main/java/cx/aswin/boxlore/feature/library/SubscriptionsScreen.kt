@@ -482,6 +482,7 @@ fun SubscriptionsScreen(
                                                 playAllBottomPadding = playAllBottomPadding,
                                                 isRefreshing = isRefreshingNewEpisodes,
                                                 pendingPlayedEpisodeIds = pendingPlayedEpisodeIds,
+                                                dismissedEpisodeIds = success.dismissedEpisodeIds,
                                             ),
                                             scoreEpisodes = viewModel::scoreLatestEpisodes,
                                             actions =

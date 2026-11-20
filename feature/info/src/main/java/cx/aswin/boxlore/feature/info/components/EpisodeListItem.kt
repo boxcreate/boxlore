@@ -53,7 +53,8 @@ import cx.aswin.boxlore.feature.info.branded.LocalBrandedPage
 import cx.aswin.boxlore.feature.info.sections.stripHtml
 
 @Composable
-@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
+// One row for every list style and state; splitting it up is its own change (kotlin:S3776).
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod", "kotlin:S3776")
 fun EpisodeListItem(
     episode: Episode,
     isLiked: Boolean,
@@ -69,6 +70,7 @@ fun EpisodeListItem(
     isQueued: Boolean,
     isCompleted: Boolean,
     isUpNext: Boolean = false,
+    isArchived: Boolean = false,
     selectionActive: Boolean = false,
     isSelected: Boolean = false,
     onClick: () -> Unit,
@@ -166,6 +168,7 @@ fun EpisodeListItem(
 
                 // Text Content
                 Column(modifier = Modifier.weight(1f)) {
+                    if (isArchived) EpisodeArchivedPill()
                     if (isUpNext) {
                         Surface(
                             shape = ExpressiveShapes.Pill,

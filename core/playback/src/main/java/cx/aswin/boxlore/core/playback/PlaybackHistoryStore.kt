@@ -9,8 +9,10 @@ import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningInsightsMaintenance
 import cx.aswin.boxlore.core.database.PlayedShowDao
+import cx.aswin.boxlore.core.database.archiveOnly
 import cx.aswin.boxlore.core.database.countsAsListening
 import cx.aswin.boxlore.core.database.episodeListenerStore
+import cx.aswin.boxlore.core.database.isDismissed
 import cx.aswin.boxlore.core.domain.ports.ListeningHistoryPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.ListeningCompletionLogic
@@ -133,6 +135,18 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
         listenerStore
             .projectedCompletedIds(data.listeningHistoryDao.getCompletedEpisodeIdsFlow())
             .distinctUntilChanged()
+            .flowOn(Dispatchers.Default)
+            .shareIn(player.scope, SharingStarted.WhileSubscribed(stopTimeoutMillis = 0L, replayExpirationMillis = 0L), replay = 1)
+    }
+
+    /**
+     * Every archived ID as projected ([EpisodeListenerStore.dismissedIdsFlow]): an episode stored
+     * under several IDs is archived for all or none of them. Shared like [completedEpisodeIds] and
+     * read again only when an archive decision changes.
+     */
+    internal val dismissedEpisodeIds: Flow<Set<String>> by lazy {
+        listenerStore
+            .dismissedIdsFlow()
             .flowOn(Dispatchers.Default)
             .shareIn(player.scope, SharingStarted.WhileSubscribed(stopTimeoutMillis = 0L, replayExpirationMillis = 0L), replay = 1)
     }
@@ -299,7 +313,8 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
      * Removes [episodeId]'s episode from history: its row and the rows of the episode's other
      * trusted IDs, with their listening sessions and daily totals, so the episode doesn't stay in
      * history through another ID, and the episode's shared like and completion settings, so they
-     * can't come back with a later row. The returned removal restores all of it unchanged.
+     * can't come back with a later row. An archived episode keeps only its archive, so it stays
+     * archived. The returned removal restores all of it unchanged.
      */
     override suspend fun removeHistoryItem(episodeId: String): ListeningHistoryRemoval? {
         val existing = data.listeningHistoryDao.getHistoryItem(episodeId) ?: return null
@@ -310,6 +325,7 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
             val removedIds = listOf(episodeId) + others.map { it.episodeId }
             val sessions = removedIds.flatMap { data.listeningSessionDao.getSessionsForEpisode(it) }
             val rollups = removedIds.flatMap { data.listeningRollupDao.getRollupsForEpisode(it) }
+            val archived = listenerStore.projectedHistory(episodeId, existing)?.isDismissed == true
             val groupState = listenerStore.removeGroupState(episodeId)
             val removal =
                 ListeningHistoryRemoval(
@@ -322,6 +338,11 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
             for (id in removedIds) {
                 data.listeningHistoryDao.delete(id)
                 data.listeningInsightsMaintenance.deleteEpisodeAnalytics(id)
+            }
+            // An archived episode leaves history but stays archived: its rows keep only the archive.
+            if (archived) {
+                data.listeningHistoryDao.upsertAll((listOf(existing) + others).map { it.archiveOnly() })
+                groupState?.let { listenerStore.restoreGroupState(it.archiveOnly()) }
             }
             removal
         }
@@ -351,13 +372,20 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
         }
     }
 
-    /** Deletes all history, its analytics and every episode's shared like and completion settings. */
+    /**
+     * Deletes all history, its analytics and every episode's shared like and completion settings.
+     * Archive decisions stay ([EpisodeListenerStore.archiveOnlyState]): clearing history never
+     * brings archived episodes back into the lists.
+     */
     override suspend fun clearHistory() {
         val database = BoxLoreDatabase.getDatabase(player.context)
         database.withTransaction {
+            val (archiveRows, archiveStates) = listenerStore.archiveOnlyState()
             data.listeningHistoryDao.deleteAll()
             data.listeningInsightsMaintenance.clearAllAnalytics()
             listenerStore.clearGroupStates()
+            if (archiveRows.isNotEmpty()) data.listeningHistoryDao.upsertAll(archiveRows)
+            archiveStates.forEach { listenerStore.restoreGroupState(it) }
         }
         data.rankingFeedbackRepository.reset()
     }

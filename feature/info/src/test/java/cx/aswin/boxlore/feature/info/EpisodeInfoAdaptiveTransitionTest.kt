@@ -14,6 +14,7 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -59,6 +60,7 @@ class EpisodeInfoAdaptiveTransitionTest {
     private val window = mutableStateOf(COMPACT)
     private val uiState = MutableStateFlow<EpisodeInfoUiState>(EpisodeInfoUiState.Loading)
     private val model = mock(EpisodeInfoViewModel::class.java)
+    private val archived = MutableStateFlow(emptySet<String>())
     private lateinit var restoration: StateRestorationTester
     private val openedShows = mutableListOf<String>()
     private var backs = 0
@@ -143,6 +145,29 @@ class EpisodeInfoAdaptiveTransitionTest {
         }
     }
 
+    @Test
+    fun `the episode's Archive toggle keeps its state across window changes and acts once per tap`() {
+        render()
+        val episode = TestFixtures.episode(id = LINK_ID, title = "A trailer", podcastId = "920666", podcastTitle = "Curious world")
+        uiState.value = EpisodeInfoUiState.Success(episode, "920666", "Curious world", relatedEpisodesLoading = false, similarEpisodesLoading = false)
+        fixture.compose.waitForIdle()
+        acrossWindowChanges { assertTrue("Archive is offered", labelled("Archive")) }
+
+        fixture.compose.onAllNodes(hasContentDescription("Archive"), useUnmergedTree = true).onFirst().performClick()
+        fixture.compose.waitForIdle()
+        org.mockito.Mockito.verify(model, org.mockito.Mockito.times(1)).onToggleArchive()
+
+        // The archive lands: the toggle now brings the episode back, in every layout and after recreation.
+        archived.value = setOf(LINK_ID)
+        acrossWindowChanges {
+            assertTrue("Unarchive is offered", labelled("Unarchive"))
+            assertTrue("Mark played is unchanged", labelled("Mark played"))
+        }
+        recreate(FOLD_TABLETOP)
+        assertTrue(labelled("Unarchive"))
+        org.mockito.Mockito.verify(model, org.mockito.Mockito.times(1)).onToggleArchive()
+    }
+
     private fun labelled(label: String): Boolean =
         fixture.compose.onAllNodes(hasContentDescription(label) or hasText(label), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
 
@@ -193,6 +218,7 @@ class EpisodeInfoAdaptiveTransitionTest {
         `when`(model.moreLikeThisOn).thenReturn(MutableStateFlow(false))
         `when`(model.likedEpisodeIds).thenReturn(MutableStateFlow(emptySet()))
         `when`(model.completedEpisodeIds).thenReturn(MutableStateFlow(emptySet()))
+        `when`(model.archivedEpisodeIds).thenReturn(archived)
         `when`(model.queuedEpisodeIds).thenReturn(MutableStateFlow(emptySet()))
         `when`(model.isDownloaded(LINK_ID)).thenReturn(flowOf(false))
         `when`(model.isDownloading(LINK_ID)).thenReturn(flowOf(false))

@@ -50,4 +50,20 @@ class PlaylistRepositorySelectionTest {
 
         assertEquals(listOf("long-trailer", "ok"), picked.map { it.id })
     }
+
+    @Test
+    fun `archived episodes never play though they are unplayed, started or not`() {
+        val inProgress = listOf(episode("started-archived", 9L), episode("started", 8L))
+        val released = listOf(episode("trailer-archived", 6L), episode("ok", 5L))
+        val history = mapOf(
+            "started-archived" to finished("started-archived").copy(isCompleted = false, progressMs = 60_000L, dismissedAt = 20L),
+            "trailer-archived" to finished("trailer-archived").copy(isCompleted = false, dismissedAt = 21L),
+            // Brought back from the archive: plays again.
+            "ok" to finished("ok").copy(isCompleted = false, dismissedAt = -22L),
+        )
+
+        val picked = PlaylistEpisodeSelection.select(inProgress, released, history, emptySet(), 10)
+
+        assertEquals(listOf("started", "ok"), picked.map { it.id })
+    }
 }

@@ -9,6 +9,7 @@ import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.episodeListenerStore
+import cx.aswin.boxlore.core.database.isDismissed
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.AutoCollageFolderLogic
@@ -80,7 +81,8 @@ internal class AutoCollagePrewarmer(
         // The newest rows and the newest listening, as the Daily Mix in Android Auto reads them.
         val history = listenerStore.projectRows(database.listeningHistoryDao().getRecentHistoryWithListeningList(300))
         val completedIds = listenerStore.projectCompletedIds(database.listeningHistoryDao().getCompletedEpisodeIds())
-        val resumeItems = listenerStore.projectRows(database.listeningHistoryDao().getResumeItemsList()) { !it.isCompleted && it.progressMs > 0 }
+        val dismissedIds = listenerStore.dismissedIds()
+        val resumeItems = listenerStore.projectRows(database.listeningHistoryDao().getResumeItemsList()) { !it.isCompleted && it.progressMs > 0 && !it.isDismissed }
         val subscriptions = database.podcastDao().getSubscribedPodcastsList()
         val liked = listenerStore.projectRows(database.listeningHistoryDao().getLikedEpisodesList(8)) { it.isLiked }
         val downloads = database.downloadedEpisodeDao().getCompletedDownloads(8)
@@ -88,6 +90,7 @@ internal class AutoCollagePrewarmer(
         return PrewarmSnapshot(
             history = history,
             completedIds = completedIds,
+            dismissedIds = dismissedIds,
             resumeItems = resumeItems,
             liked = liked,
             subscriptions = subscriptions,
@@ -102,6 +105,7 @@ internal class AutoCollagePrewarmer(
                 subscriptions = snapshot.subscriptions.map(toAutoPodcast),
                 history = snapshot.history,
                 completedIds = snapshot.completedIds,
+                dismissedIds = snapshot.dismissedIds,
                 adaptiveRanking =
                 MixtapeEngine.AdaptiveRanking(
                     scorer = adaptiveCandidateScorer,
@@ -126,6 +130,7 @@ internal class AutoCollagePrewarmer(
             subscriptions = snapshot.subscriptions.map(toAutoPodcast),
             history = snapshot.history,
             completedIds = snapshot.completedIds,
+            dismissedIds = snapshot.dismissedIds,
             recommendations = recommendations,
             adaptiveRanking =
             MixtapeEngine.AdaptiveRanking(
@@ -153,6 +158,7 @@ internal class AutoCollagePrewarmer(
         val downloads: List<DownloadedEpisodeEntity>,
         val queue: List<Episode>,
         val completedIds: Set<String> = emptySet(),
+        val dismissedIds: Set<String> = emptySet(),
     ) {
         fun buildFolderInputs(mixtape: MixtapeEngine.Result): Map<String, List<AutoCollageFolderLogic.ArtPair>> {
             val historyPairs =

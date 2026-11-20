@@ -853,6 +853,8 @@ object AnalyticsHelper : Analytics {
 
     fun trackEpisodeMarkPlayed(episodeId: String, podcastId: String, isPlayed: Boolean, surface: String? = null,) = LibraryAnalyticsTracks.trackEpisodeMarkPlayed(episodeId, podcastId, isPlayed, surface)
 
+    fun trackEpisodeArchived(isArchived: Boolean, surface: String, itemsCount: Int,) = LibraryAnalyticsTracks.trackEpisodeArchived(isArchived, surface, itemsCount)
+
     fun trackSearchResultTapped(
         surface: String,
         resultType: String,

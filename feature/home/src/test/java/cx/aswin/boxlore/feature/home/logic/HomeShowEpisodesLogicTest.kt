@@ -299,4 +299,17 @@ class HomeShowEpisodesLogicTest {
     private companion object {
         const val DAY = 86_400L
     }
+
+    @Test
+    fun `archived episodes leave the show's Home list and never move the place`() {
+        val newestFirst = HomeShowEpisodesLogic.build(newestPool(show(6).asReversed()), completed(), hideCompleted = true, dismissedIds = completed(6, 4))
+        assertEquals(ids(5, 3, 2, 1), ids(newestFirst.episodes))
+
+        // In order, at episode 2: archiving episode 5 neither skips 3 and 4 nor shows 5.
+        val inOrder = HomeShowEpisodesLogic.build(inOrderPool(show(6), placeId = "ep-2"), completed(1), hideCompleted = true, dismissedIds = completed(5))
+        assertTrue(ids(inOrder.episodes).containsAll(ids(3, 4)))
+        assertFalse("ep-5" in ids(inOrder.episodes))
+        // Daily mix's next up skips an archived episode without counting it played.
+        assertEquals("ep-4", HomeShowEpisodesLogic.nextUp(HomeShowEpisodesLogic.withoutArchived(show(6), completed(3)), "ep-2", completed(1, 2), emptySet())?.id)
+    }
 }

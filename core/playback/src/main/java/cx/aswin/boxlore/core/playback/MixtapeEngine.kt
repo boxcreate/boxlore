@@ -44,8 +44,10 @@ object MixtapeEngine {
      *   it is never offered as unplayed, even when [history] no longer holds its row.
      * @param inProgress started episodes [history] may not hold (rows behind many marked played):
      *   resume picks and progress only, never ranking.
+     * @param dismissedIds every archived episode ID (projected): never in the mix, started or not.
      */
-    @Suppress("LongParameterList", "CyclomaticComplexMethod")
+    // Each input is one signal the mix weighs; tests pass them one by one (kotlin:S107).
+    @Suppress("LongParameterList", "CyclomaticComplexMethod", "kotlin:S107")
     suspend fun build(
         subscriptions: List<Podcast>,
         history: List<ListeningHistoryEntity>,
@@ -60,6 +62,7 @@ object MixtapeEngine {
         adaptiveRanking: AdaptiveRanking? = null,
         nowMs: Long = System.currentTimeMillis(),
         staleRestartEnabled: Boolean = true,
+        dismissedIds: Set<String> = emptySet(),
     ): Result {
         val statusRows = history.withInProgress(inProgress)
         val historyByEpisode = statusRows.associateBy(ListeningHistoryEntity::episodeId)
@@ -76,10 +79,11 @@ object MixtapeEngine {
             podcastScores = podcastScores,
             nowMs = nowMs,
         ).filter { it.episode.id !in completedIds }
-        var ordered = orderCandidates(candidates).toMutableList()
+        var ordered = orderCandidates(candidates.filter { it.episode.id !in dismissedIds }).toMutableList()
         addRecommendationFallbacks(
             candidates = ordered,
-            recommendations = recommendations.filter { it.id !in completedIds },
+            // Finished and archived episodes are never offered as fallbacks.
+            recommendations = recommendations.filter { it.id !in completedIds + dismissedIds },
             subscriptionsById = subscriptionsById,
             historyByEpisode = historyByEpisode,
         )

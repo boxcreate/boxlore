@@ -238,8 +238,8 @@ class SmartDownloadManager(
             }
         }
         if (resolvedSerial.isEmpty()) return resolvedSerial
-        // Paging can take a while: an episode finished meanwhile is not offered.
-        val finishedNow = projectedCompletedEpisodeIds()
+        // Paging can take a while: an episode finished or archived meanwhile is not offered.
+        val finishedNow = projectedCompletedEpisodeIds() + projectedDismissedEpisodeIds()
         return resolvedSerial.filterValues { it.id !in finishedNow }
     }
 
@@ -266,7 +266,7 @@ class SmartDownloadManager(
                         languages = languages,
                     )
 
-                val completedEpisodeIds = projectedCompletedEpisodeIds()
+                val completedEpisodeIds = projectedCompletedEpisodeIds() + projectedDismissedEpisodeIds()
 
                 val filteredRecs =
                     recs
@@ -289,6 +289,9 @@ class SmartDownloadManager(
     private suspend fun projectedCompletedEpisodeIds(): Set<String> =
         database.episodeListenerStore().projectCompletedIds(database.listeningHistoryDao().getCompletedEpisodeIds())
 
+    /** Archived episode IDs, projected the same way: Smart Downloads never picks one, started or not. */
+    private suspend fun projectedDismissedEpisodeIds(): Set<String> = database.episodeListenerStore().dismissedIds()
+
     private suspend fun fetchTrendingEpisodes(chosenSubsIds: Set<String>, chosenRecsIds: Set<String>, targetSize: Int,): List<Episode> {
         val chosenTrends = mutableListOf<Episode>()
         if (targetSize > 0) {
@@ -298,7 +301,7 @@ class SmartDownloadManager(
 
                 val trendingEpisodes = trendingPods.mapNotNull { it.latestEpisode }
 
-                val completedEpisodeIds = projectedCompletedEpisodeIds()
+                val completedEpisodeIds = projectedCompletedEpisodeIds() + projectedDismissedEpisodeIds()
 
                 val filteredTrends =
                     trendingEpisodes
@@ -514,6 +517,8 @@ class SmartDownloadManager(
             val allHistory = listenerStore.projectRows(recentHistory)
             // Every finished episode, under each of its IDs: not only those in the latest rows.
             val completedEpisodeIds = projectedCompletedEpisodeIds()
+            // Archived episodes are skipped like finished ones, and never resumed.
+            val dismissedEpisodeIds = projectedDismissedEpisodeIds()
 
             // Looked up by a candidate's ID: an episode stored under several IDs is found under any of them.
             val historyByEpisode = listenerStore.projectRowsByMember(recentHistory).associateBy { it.episodeId }
@@ -536,9 +541,9 @@ class SmartDownloadManager(
                         includeAutoDownloadBoost = false,
                     )
                 }
-            val resolvedSerial = resolveOldestSerialNextEpisodes(subs, completedEpisodeIds, podScoresMap)
+            val resolvedSerial = resolveOldestSerialNextEpisodes(subs, completedEpisodeIds + dismissedEpisodeIds, podScoresMap)
             // Read again after the serial paging, so an episode finished meanwhile isn't picked.
-            val completedAfterPaging = projectedCompletedEpisodeIds()
+            val completedAfterPaging = projectedCompletedEpisodeIds() + dismissedEpisodeIds
 
             val initialCandidates =
                 SmartDownloadCandidateLogic.generateMixtapeCandidates(
@@ -549,7 +554,7 @@ class SmartDownloadManager(
                     completedEpisodeIds = completedAfterPaging,
                     podScoresMap = podScoresMap,
                     nowMs = nowMs,
-                )
+                ).withoutArchived(dismissedEpisodeIds)
             val adaptiveScores =
                 try {
                     adaptiveScorer.scoreEpisodes(

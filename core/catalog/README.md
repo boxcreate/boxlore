@@ -68,7 +68,7 @@ It does not own playback, downloads, Compose UI, Room schema ([`:core:database`]
 
 - `sync.UserSyncCoordinator`: bounded dirty-row pushes, pulls, account-switch purge, `deleteCloudSyncData`; results: `SyncResult`, `CloudSyncUiStatus`. Watch link: `linkedDeviceRows` (follows, newest history), `applyLinkedDeviceChanges` (merged by pull rules, marked dirty).
 - `SubscriptionSyncResolver`, `HistorySyncResolver` (shields the playing episode) and `QueueSyncResolver` (one entry per episode) merge pulls; `QueueItemHydration` builds pulled queue rows.
-- Pulled placeholder rows (`STUB_TITLE`) fill in while the budget has room, the rest via `healStubRows`.
+- Pulled placeholder rows (`STUB_TITLE`) fill in while budget allows, the rest via `healStubRows`.
 - `SyncEpisodeIdentity` carries identity beside each row's stored ID; catch-up runs once after upgrade or account switch, again on `requestIdentityCatchUp()`. Rules: [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md) §5.
 - `sync.ListeningSync`: uses the listening device ID, not the sync one; days count as sent once accepted. Wire fields: [`core/network/README.md`](../network/README.md).
 
@@ -147,7 +147,7 @@ Never rename these:
 | 8 | `listening`; history `firstPlayedAt` and `finishedAt` |
 | 9 | Richer daily summary totals |
 | 10 | Each summary's `releaseKnownMs` |
-| 11 | Each show's `playbackSpeedOverride` and `skipSilenceOverride`; `playlists` |
+| 11 | Each show's `playbackSpeedOverride` and `skipSilenceOverride`; `playlists`; history `dismissedAt` |
 
 - `LibraryBackupFieldPolicy` keeps the feed identity and address columns out of exports.
 

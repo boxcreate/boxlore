@@ -15,6 +15,7 @@ import cx.aswin.boxlore.core.database.PlaylistDao
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.dao.QueueDao
+import cx.aswin.boxlore.core.database.dismissDecisionAt
 import cx.aswin.boxlore.core.database.entities.QueueItem
 import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
 import cx.aswin.boxlore.core.database.entities.QueueRemovalIdentity
@@ -508,11 +509,12 @@ open class UserSyncCoordinator(
             isLiked = h.isLiked,
             likedAt = h.likedAt,
             lastPlayedAt = h.lastPlayedAt,
-            updatedAt = maxOf(h.lastPlayedAt, h.likedAt, now),
+            updatedAt = maxOf(h.lastPlayedAt, h.likedAt, h.dismissDecisionAt, now),
             recipeId = identity?.recipeId,
             catalogKey = identity?.catalogKey,
             firstPlayedAt = h.firstPlayedAt,
             finishedAt = h.finishedAt,
+            dismissedAt = h.dismissedAt,
         )
 
     private suspend fun buildQueueDto(
@@ -599,6 +601,7 @@ open class UserSyncCoordinator(
                 snapshotIsCompleted = h.isCompleted,
                 snapshotIsLiked = h.isLiked,
                 syncedAt = syncedAt,
+                snapshotDismissedAt = h.dismissedAt,
             )
         }
 

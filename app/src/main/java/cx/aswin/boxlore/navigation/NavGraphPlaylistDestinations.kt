@@ -4,6 +4,8 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
+import cx.aswin.boxlore.core.playback.dismissedEpisodeIds
+import kotlinx.coroutines.flow.combine
 
 /**
  * Library › Playlists and one playlist's page. Storage is `:core:catalog`'s `PlaylistRepository`;
@@ -24,7 +26,8 @@ internal fun androidx.navigation.NavGraphBuilder.addPlaylistDestinations(w: NavG
                 cx.aswin.boxlore.feature.library.playlists.PlaylistPlaybackPorts(
                     followedShows = w.subscriptionRepository.subscribedPodcasts,
                     folders = w.folderRepository.folders,
-                    completedEpisodeIds = playbackRepository.completedEpisodeIds,
+                    // An archived episode leaves Coming up like a finished one.
+                    completedEpisodeIds = combine(playbackRepository.completedEpisodeIds, playbackRepository.dismissedEpisodeIds) { done, archived -> done + archived },
                     startPlayback = { id, episodes ->
                         val first = episodes.first()
                         val fallback =

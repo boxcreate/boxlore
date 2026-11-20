@@ -72,7 +72,7 @@ class RoomV44UpgradeTest {
         val db = upgrade()
         val dao = db.playlistDao()
 
-        assertEquals(44, db.openHelper.writableDatabase.version)
+        assertEquals(45, db.openHelper.writableDatabase.version)
         val playlists = dao.getAllPlaylists().associateBy { it.playlistId }
         assertEquals(setOf("pl-1", "pl-2", "pl-empty"), playlists.keys)
         assertEquals("Road trip", playlists.getValue("pl-1").name)
@@ -121,7 +121,8 @@ class RoomV44UpgradeTest {
                 assertEquals(table, tableInfo(exported, table), tableInfo(upgraded, table))
             }
         }
-        val identity = JsonParser.parseString(schemaJson(44).readText()).asJsonObject
+        // Room opens at the latest version: v45 only adds archive columns ([RoomV45UpgradeTest]).
+        val identity = JsonParser.parseString(schemaJson(45).readText()).asJsonObject
             .getAsJsonObject("database").get("identityHash").asString
         assertEquals(identity, RoomSchemaFixture.string(upgraded, "SELECT identity_hash FROM room_master_table WHERE id = 42"))
     }

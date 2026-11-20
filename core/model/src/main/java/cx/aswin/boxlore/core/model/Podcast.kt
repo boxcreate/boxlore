@@ -82,6 +82,17 @@ fun Podcast.isLatestEpisodeNew(lastSeenId: String?): Boolean {
 }
 
 /**
+ * [lastSeen] (show ID to the latest episode the listener saw) with every show of [podcasts] whose
+ * latest episode is archived ([dismissedIds]) counted as seen, so an archived trailer never makes
+ * its show "new" ([isLatestEpisodeNew]) while New Episodes leaves it out.
+ */
+fun lastSeenWithArchived(lastSeen: Map<String, String>, podcasts: List<Podcast>, dismissedIds: Set<String>): Map<String, String> {
+    if (dismissedIds.isEmpty()) return lastSeen
+    val archivedLatest = podcasts.mapNotNull { podcast -> podcast.latestEpisode?.id?.takeIf { it in dismissedIds }?.let { podcast.id to it } }
+    return if (archivedLatest.isEmpty()) lastSeen else lastSeen + archivedLatest
+}
+
+/**
  * The shows whose listener rows (history, downloads, queue) count as this show's: the show itself
  * and, for an RSS show the listener switched to from a Podcast Index show, that Podcast Index show.
  * The switch keeps every row under its stored show and ID (docs/EPISODE_IDS.md §5), so per-show

@@ -92,16 +92,22 @@ internal object HomeShowEpisodesLogic {
         inProgressIds: Set<String>,
     ): Episode? = ahead(episodes, placeId, completedIds).firstOrNull { it.id !in inProgressIds }
 
+    /** [episodes] without the archived ones ([dismissedIds]): they are in no Home list, and never move the place. */
+    fun withoutArchived(episodes: List<Episode>, dismissedIds: Set<String>): List<Episode> =
+        if (dismissedIds.isEmpty()) episodes else episodes.filter { it.id !in dismissedIds }
+
     fun build(
         pool: ShowEpisodesPool,
         completedIds: Set<String>,
         hideCompleted: Boolean,
+        dismissedIds: Set<String> = emptySet(),
     ): ShowEpisodesList {
         val newestIds = pool.newest.take(NEW_TAG_COUNT).mapTo(HashSet()) { it.id }
-        return if (pool.inOrder) {
-            buildInOrder(pool, completedIds, hideCompleted, newestIds)
+        val listed = pool.copy(episodes = withoutArchived(pool.episodes, dismissedIds))
+        return if (listed.inOrder) {
+            buildInOrder(listed, completedIds, hideCompleted, newestIds)
         } else {
-            buildNewestFirst(pool.episodes, completedIds, hideCompleted, newestIds)
+            buildNewestFirst(listed.episodes, completedIds, hideCompleted, newestIds)
         }
     }
 

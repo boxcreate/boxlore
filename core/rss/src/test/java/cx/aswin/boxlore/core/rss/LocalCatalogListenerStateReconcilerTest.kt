@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.rss
 
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
+import cx.aswin.boxlore.core.database.EpisodeGroupStateEntity
 import cx.aswin.boxlore.core.database.ListeningDayTotals
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
@@ -92,6 +93,23 @@ class LocalCatalogListenerStateReconcilerTest {
         assertTrue(merged.isLiked)
         assertTrue(merged.isDirty)
         assertEquals(0L, merged.syncedAt)
+    }
+
+    @Test
+    fun historyMergeKeepsTheLatestArchiveDecision() {
+        val target = localEpisode(id = "1")
+        val unplayedOrphan = history(id = "-9", progress = 0L, completed = false, liked = false)
+
+        // Archived on the catalog row; an orphan that never decided doesn't lose it.
+        val archived = history(id = "1", progress = 0L, completed = false, liked = false).copy(dismissedAt = 500L)
+        assertEquals(500L, mergeHistory(unplayedOrphan, archived, target).dismissedAt)
+        // Brought back later on the catalog row; the orphan's older archive doesn't come back.
+        val broughtBack = archived.copy(dismissedAt = -900L)
+        assertEquals(-900L, mergeHistory(unplayedOrphan.copy(dismissedAt = 500L), broughtBack, target).dismissedAt)
+        // A later clear in the group settings wins over both rows.
+        val state = EpisodeGroupStateEntity(podcastId = "9926", catalogKey = "key", dismissClearedAt = 1_000L)
+        assertEquals(-1_000L, mergeHistory(unplayedOrphan.copy(dismissedAt = 500L), archived, target, state).dismissedAt)
+        assertEquals(0L, mergeHistory(unplayedOrphan, unplayedOrphan.copy(episodeId = "1"), target).dismissedAt)
     }
 
     @Test

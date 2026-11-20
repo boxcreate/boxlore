@@ -359,6 +359,21 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
+    /**
+     * One archive or unarchive action ([isArchived]) by the listener, however many episodes it
+     * covered ([itemsCount]), from [surface] (`show_page` or `episode_page`). Never one per episode.
+     */
+    fun trackEpisodeArchived(isArchived: Boolean, surface: String, itemsCount: Int,) {
+        AnalyticsEmit.event(
+            "episode_archived",
+            mapOf(
+                "is_archived" to isArchived,
+                "surface" to surface,
+                "items_count" to itemsCount,
+            ),
+        )
+    }
+
     fun trackSearchResultTapped(
         surface: String,
         resultType: String,

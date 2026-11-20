@@ -78,6 +78,7 @@ import cx.aswin.boxlore.feature.info.components.InfoArtworkBackground
 import cx.aswin.boxlore.feature.info.components.MissingEpisodesChip
 import cx.aswin.boxlore.feature.info.components.MissingEpisodesConfirmDialog
 import cx.aswin.boxlore.feature.info.components.PodcastGenreEditSheet
+import cx.aswin.boxlore.feature.info.components.PodcastInfoArchiveMenu
 import cx.aswin.boxlore.feature.info.components.PodcastInfoJumpPillOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoLoadError
 import cx.aswin.boxlore.feature.info.components.PodcastInfoMarkDialogs
@@ -89,6 +90,7 @@ import cx.aswin.boxlore.feature.info.components.areAppNotificationsEnabled
 import cx.aswin.boxlore.feature.info.components.handleAutoDownloadToggle
 import cx.aswin.boxlore.feature.info.components.handleNotificationsToggle
 import cx.aswin.boxlore.feature.info.components.handleToolbarWarningAction
+import cx.aswin.boxlore.feature.info.logic.EpisodeArchiveLogic
 import cx.aswin.boxlore.feature.info.logic.EpisodeSelectionRange
 import cx.aswin.boxlore.feature.info.logic.FeedItem
 import cx.aswin.boxlore.feature.info.logic.PodcastEpisodeSelectionLogic
@@ -101,6 +103,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
+// The show page's root composable; splitting it up is its own change (kotlin:S3776).
+@Suppress("LongMethod", "CyclomaticComplexMethod", "kotlin:S3776")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PodcastInfoScreen(
@@ -280,6 +284,11 @@ fun PodcastInfoScreen(
     var targetJumpEpisode by remember(podcastId) { mutableStateOf<Episode?>(null) }
     var isTargetOngoing by remember(podcastId) { mutableStateOf(false) }
     val completedEpisodeIds by viewModel.completedEpisodesState.collectAsState()
+    val archivedEpisodeIds by viewModel.archivedEpisodesState.collectAsState()
+    val archivedInShow by viewModel.archivedEpisodeCount.collectAsState()
+    // Show archived survives window changes and recreation, like the selection.
+    var showArchived by rememberSaveable(podcastId) { mutableStateOf(false) }
+    val archiveSelection = rememberSelectionArchive(viewModel, snackbarHostState)
 
     // Scroll-linked header and floating title, like Episode Info.
     val titleMotion = rememberShowPageTitleMotion(listState)
@@ -324,14 +333,11 @@ fun PodcastInfoScreen(
 
                 // Content
                 val displayEpisodes =
-                    remember(isSearchActive, state.searchQuery, state.searchResults, state.episodes, hideCompleted, completedEpisodeIds) {
+                    remember(isSearchActive, state.searchQuery, state.searchResults, state.episodes, hideCompleted, completedEpisodeIds, showArchived, archivedEpisodeIds) {
                         val rawList = podcastSearchDisplayEpisodes(isSearchActive, state.searchQuery, state.searchResults, state.episodes)
-                        if (hideCompleted && !(isSearchActive && state.searchQuery.isNotBlank())) {
-                            rawList.filter { it.id !in completedEpisodeIds }
-                        } else {
-                            rawList
-                        }
+                        EpisodeArchiveLogic.listEpisodes(rawList, isSearchActive && state.searchQuery.isNotBlank(), hideCompleted, completedEpisodeIds, showArchived, archivedEpisodeIds)
                     }
+                val isHiddenFromList = { id: String -> EpisodeArchiveLogic.isHidden(id, hideCompleted, completedEpisodeIds, showArchived, archivedEpisodeIds) }
                 val hideCompletedFill = rememberHideCompletedFill(
                     hideCompleted = hideCompleted,
                     searching = isSearchActive && state.searchQuery.isNotBlank(),
@@ -411,12 +417,7 @@ fun PodcastInfoScreen(
                                 selectionSortName = rangeSort.name
                                 // A loaded window can also settle a restore that failed earlier.
                                 selectionRestoreFailedOn = null
-                                val eligibleEpisodes =
-                                    if (hideCompleted) {
-                                        window.episodes.filter { it.id !in completedEpisodeIds }
-                                    } else {
-                                        window.episodes
-                                    }
+                                val eligibleEpisodes = window.episodes.filterNot { isHiddenFromList(it.id) }
                                 addRange(range, eligibleEpisodes, window.newestFirst)
                             } finally {
                                 if (requestGeneration == selectionRequestGeneration) {
@@ -524,6 +525,7 @@ fun PodcastInfoScreen(
                         downloadedEpisodeIds,
                         downloadingEpisodeIds,
                         completedEpisodeIds,
+                        archivedEpisodeIds,
                     ) {
                         EpisodeListIndicators(
                             likedEpisodeIds = likedEpisodeIds,
@@ -531,11 +533,16 @@ fun PodcastInfoScreen(
                             downloadedEpisodeIds = downloadedEpisodeIds,
                             downloadingEpisodeIds = downloadingEpisodeIds,
                             completedEpisodeIds = completedEpisodeIds,
+                            archivedEpisodeIds = archivedEpisodeIds,
                         )
                     }
 
+                // The branded spotlight skips what the list hides: finished (when hidden) and archived episodes.
+                val spotlightHiddenIds = remember(hideCompleted, completedEpisodeIds, showArchived, archivedEpisodeIds) {
+                    (if (hideCompleted) completedEpisodeIds else emptySet()) + (if (showArchived) emptySet() else archivedEpisodeIds)
+                }
                 val spotlightEpisode = brandedPage?.let {
-                    brandedSpotlightEpisode(state.episodes, state.currentSort, isSearchActive, hiddenIds = if (hideCompleted) completedEpisodeIds else emptySet())
+                    brandedSpotlightEpisode(state.episodes, state.currentSort, isSearchActive, hiddenIds = spotlightHiddenIds)
                 }
                 val listFeedItems = remember(feedItems, spotlightEpisode) { feedItemsWithoutSpotlight(feedItems, spotlightEpisode) }
                 val hideShow = rememberPodcastInfoHideShow(viewModel, state, snackbarHostState)
@@ -710,6 +717,7 @@ fun PodcastInfoScreen(
                         onMarkAllPlayed = { showMarkAllPlayedDialog = true },
                         onMarkAllUnplayed = { showMarkAllUnplayedDialog = true },
                         onToggleHideCompleted = { viewModel.toggleHideCompleted() },
+                        archive = PodcastInfoArchiveMenu(maxOf(archivedInShow, EpisodeArchiveLogic.archivedCount(state.episodes, archivedEpisodeIds)), showArchived) { showArchived = !showArchived },
                         onPlaybackSettings = { showPodcastPlaybackSettings = true },
                         titlesOnly = titlesOnly,
                         onToggleTitlesOnly = viewModel::toggleEpisodeTitlesOnly,
@@ -764,6 +772,7 @@ fun PodcastInfoScreen(
                                 it.id !in downloadedEpisodeIds && it.id !in downloadingEpisodeIds
                             },
                             markAsUnplayed = markSelectionAsUnplayed,
+                            unarchive = EpisodeArchiveLogic.shouldUnarchive(selectedEpisodes, archivedEpisodeIds),
                             canAddToQueue = selectedEpisodes.any { it.id !in queuedEpisodeIds },
                             hasRangeAnchor =
                             selectionAnchorEpisodeId != null &&
@@ -793,6 +802,10 @@ fun PodcastInfoScreen(
                                 viewModel.playEpisodes(selectedEpisodes)
                                 clearEpisodeSelection()
                             },
+                            onToggleArchive = {
+                                archiveSelection(selectedEpisodes, !EpisodeArchiveLogic.shouldUnarchive(selectedEpisodes, archivedEpisodeIds))
+                                clearEpisodeSelection()
+                            },
                             onAddToQueue = {
                                 viewModel.addEpisodesToQueue(selectedEpisodes)
                                 clearEpisodeSelection()
@@ -805,7 +818,7 @@ fun PodcastInfoScreen(
                                 val visibleEpisodes =
                                     PodcastEpisodeSelectionLogic
                                         .visibleEpisodes(feedItems, visibleItemKeys)
-                                        .filterNot { hideCompleted && it.id in completedEpisodeIds }
+                                        .filterNot { isHiddenFromList(it.id) }
                                 noteSelectionSort()
                                 selectionEpisodePool =
                                     (selectionEpisodePool + visibleEpisodes).distinctBy(Episode::id)
