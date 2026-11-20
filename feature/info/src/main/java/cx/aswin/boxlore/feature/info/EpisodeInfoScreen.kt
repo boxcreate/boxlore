@@ -251,10 +251,7 @@ fun EpisodeInfoScreen(
                                 completionState = cx.aswin.boxlore.feature.info.components.EpisodeCompletionState(
                                     isCompleted = state.episode.id in completedEpisodeIds,
                                     showTip = showMarkPlayedTip,
-                                    archive = cx.aswin.boxlore.feature.info.components.EpisodeArchiveAction(
-                                        isArchived = state.episode.id in archivedEpisodeIds,
-                                        onToggle = viewModel::onToggleArchive,
-                                    ),
+                                    isArchived = state.episode.id in archivedEpisodeIds,
                                 ),
                                 onToggleCompletion = viewModel::onToggleCompletion,
                                 modifier = Modifier.padding(horizontal = 22.dp),
