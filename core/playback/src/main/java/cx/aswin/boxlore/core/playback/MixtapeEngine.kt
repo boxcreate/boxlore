@@ -46,7 +46,8 @@ object MixtapeEngine {
      *   resume picks and progress only, never ranking.
      * @param dismissedIds every archived episode ID (projected): never in the mix, started or not.
      */
-    @Suppress("LongParameterList", "CyclomaticComplexMethod")
+    // Each input is one signal the mix weighs; tests pass them one by one (kotlin:S107).
+    @Suppress("LongParameterList", "CyclomaticComplexMethod", "kotlin:S107")
     suspend fun build(
         subscriptions: List<Podcast>,
         history: List<ListeningHistoryEntity>,

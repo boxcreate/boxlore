@@ -474,12 +474,7 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
     suspend fun ownerRow(seed: ListeningHistoryEntity, requestedId: String,): ListeningHistoryEntity {
         if (seed.episodeId == requestedId) return seed
         val ownerId = seed.episodeId
-        val showId =
-            history.getHistoryItem(ownerId)?.podcastId
-                ?: database.localEpisodeCatalogDao().getEpisode(ownerId)?.podcastId
-                ?: database.rssEpisodeDao().getEpisode(ownerId)?.podcastId
-                ?: aliases.getAlias(ownerId)?.podcastId
-                ?: return seed
+        val showId = showOf(ownerId) ?: return seed
         if (showId == seed.podcastId) return seed
         val show = database.podcastDao().getPodcast(showId)
         return seed.copy(
@@ -695,6 +690,14 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
 
     private suspend fun trustedKeyedAliases(episodeIds: Collection<String>): List<EpisodeAliasEntity> =
         episodeIds.filter { it.isNotBlank() }.distinct().chunked(MAX_IDS_PER_QUERY).flatMap { aliases.getAliases(it) }.filter { it.isTrustedKeyed() }
+
+    /** [episodeId]'s show: from its history row, else its catalog row, else its RSS row, else its alias. */
+    private suspend fun showOf(episodeId: String): String? {
+        history.getHistoryItem(episodeId)?.let { return it.podcastId }
+        database.localEpisodeCatalogDao().getEpisode(episodeId)?.let { return it.podcastId }
+        database.rssEpisodeDao().getEpisode(episodeId)?.let { return it.podcastId }
+        return aliases.getAlias(episodeId)?.podcastId
+    }
 
     private suspend fun resolve(episodeId: String, storeOwner: Boolean,): EpisodeGroup {
         val alias = aliases.getAlias(episodeId)
