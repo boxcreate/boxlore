@@ -104,7 +104,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 // The show page's root composable; splitting it up is its own change (kotlin:S3776).
-@Suppress("kotlin:S3776")
+@Suppress("LongMethod", "CyclomaticComplexMethod", "kotlin:S3776")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PodcastInfoScreen(
