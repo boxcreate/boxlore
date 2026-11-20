@@ -31,12 +31,21 @@ object PlaybackPowerPolicy {
         }
     }
 
-    fun audioOffloadPreferences(): TrackSelectionParameters.AudioOffloadPreferences = TrackSelectionParameters.AudioOffloadPreferences
-        .Builder()
-        .setAudioOffloadMode(
-            TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_ENABLED,
-        ).setIsSpeedChangeSupportRequired(true)
-        .build()
+    /**
+     * Offload saves battery with the screen off, but skips the audio processing that trims silence,
+     * so offload stays off while [trimSilence] is on.
+     */
+    fun audioOffloadPreferences(trimSilence: Boolean = false): TrackSelectionParameters.AudioOffloadPreferences =
+        TrackSelectionParameters.AudioOffloadPreferences
+            .Builder()
+            .setAudioOffloadMode(
+                if (trimSilence) {
+                    TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_DISABLED
+                } else {
+                    TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_ENABLED
+                },
+            ).setIsSpeedChangeSupportRequired(true)
+            .build()
 }
 
 /**

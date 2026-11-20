@@ -50,8 +50,8 @@ import cx.aswin.boxlore.feature.settings.pages.AppearanceHeroPreview
 import cx.aswin.boxlore.feature.settings.pages.AppearanceHomePage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceNavigationPage
 import cx.aswin.boxlore.feature.settings.pages.AppearancePlayerPage
-import cx.aswin.boxlore.feature.settings.pages.AppearanceSection
 import cx.aswin.boxlore.feature.settings.pages.AppearanceSettingsPage
+import cx.aswin.boxlore.feature.settings.pages.AppearanceShowPagesPage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceTextPage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceThemePage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceUiState
@@ -107,6 +107,8 @@ data class RegionSettings(
     val savedShows: cx.aswin.boxlore.feature.settings.pages.SavedShowsControl = cx.aswin.boxlore.feature.settings.pages.SavedShowsControl(),
     val discoverySections: DiscoverySections = DiscoverySections(),
     val onSetDiscoverySection: (DiscoverySection, Boolean) -> Unit = { _, _ -> },
+    /** The shows hidden everywhere, listed on LeaveMeAlone. */
+    val hiddenShows: cx.aswin.boxlore.feature.settings.pages.HiddenShowsControl = cx.aswin.boxlore.feature.settings.pages.HiddenShowsControl(),
 )
 
 /** RSS + ranking ports needed by [SettingsViewModel] (keeps [SettingsScreen] ≤7 params). */
@@ -485,11 +487,13 @@ private fun SettingsDestinationContent(
                 sections = contentBundle.regionSettings.discoverySections,
                 onSet = trackedDiscoverySectionSetter(contentBundle.regionSettings.discoverySections, contentBundle.regionSettings.onSetDiscoverySection),
                 onBack = actions.onReturnToHub,
+                hiddenShows = contentBundle.regionSettings.hiddenShows,
             )
 
         ProfileSettingsDestination.Appearance,
         ProfileSettingsDestination.Theme,
         ProfileSettingsDestination.AppearanceHome,
+        ProfileSettingsDestination.AppearanceShowPages,
         ProfileSettingsDestination.AppearancePlayer,
         ProfileSettingsDestination.AppearanceNavigation,
         ProfileSettingsDestination.AppearanceText,
@@ -761,6 +765,7 @@ internal fun AppearanceActions.trackedForAnalytics(currentState: () -> Appearanc
             report("mini_player_seek_buttons_toggled", it) { state -> state.miniPlayerSeekButtonsEnabled }
             onSetMiniPlayerSeekButtonsEnabled(it)
         },
+        onSetEpisodeTitlesOnly = tracked("episode_titles_only_toggled", { it.episodeTitlesOnly }, onSetEpisodeTitlesOnly),
         onSetFullPlayerStyle = {
             report("full_player_style_changed", it) { state -> state.fullPlayerStyle }
             onSetFullPlayerStyle(it)
@@ -850,6 +855,7 @@ private fun AppearanceDestinationContent(
             AppearanceThemePage(state, tracked, onBack = actions.onReturnToHub, onEditCustomTheme = { actions.onNavigate(ProfileSettingsDestination.CustomTheme) })
         ProfileSettingsDestination.AppearanceHome ->
             AppearanceHomePage(state, tracked, appearance.heroPreview, onBack = actions.onReturnToHub, onOpenRecommendations = actions.onOpenRecommendationsFromHome)
+        ProfileSettingsDestination.AppearanceShowPages -> AppearanceShowPagesPage(state, tracked, onBack = actions.onReturnToHub)
         ProfileSettingsDestination.AppearancePlayer -> AppearancePlayerPage(state, tracked, onBack = actions.onReturnToHub)
         ProfileSettingsDestination.AppearanceNavigation -> AppearanceNavigationPage(state, tracked, onBack = actions.onReturnToHub)
         ProfileSettingsDestination.AppearanceText -> AppearanceTextPage(state, tracked, onBack = actions.onReturnToHub)
@@ -859,18 +865,7 @@ private fun AppearanceDestinationContent(
                 state = state,
                 actions = tracked,
                 onBack = actions.onReturnToHub,
-                onOpenSection = { section ->
-                    actions.onNavigate(
-                        when (section) {
-                            AppearanceSection.Theme -> ProfileSettingsDestination.Theme
-                            AppearanceSection.Home -> ProfileSettingsDestination.AppearanceHome
-                            AppearanceSection.Player -> ProfileSettingsDestination.AppearancePlayer
-                            AppearanceSection.Navigation -> ProfileSettingsDestination.AppearanceNavigation
-                            AppearanceSection.Text -> ProfileSettingsDestination.AppearanceText
-                            AppearanceSection.Widgets -> ProfileSettingsDestination.AppearanceWidgets
-                        },
-                    )
-                },
+                onOpenSection = { section -> actions.onNavigate(appearanceSectionDestination(section)) },
             )
     }
 }

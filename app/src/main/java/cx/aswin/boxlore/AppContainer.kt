@@ -95,6 +95,7 @@ import cx.aswin.boxlore.util.installOrigin
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -279,6 +280,8 @@ class AppContainer(
             onShowRenumbered = { oldId, answer -> subscriptionRepository.renumberedFollows.adoptAnswer(oldId, answer) },
             // Recommendations order follows after recent plays by when they were followed, never by title.
             followedAt = { database.podcastDao().getFollowedAtTimes().associate { it.podcastId to it.subscribedAt } },
+            // Shows hidden everywhere stay out of every discovery answer.
+            hiddenShows = { userPreferencesRepository.hiddenShows.matchIds() },
         )
     }
 
@@ -444,6 +447,7 @@ class AppContainer(
             podcastRepository = podcastRepository,
             rankingFeedbackRepository = rankingFeedbackRepository,
             userPreferencesRepository = userPreferencesRepository,
+            showPlaybackStore = cx.aswin.boxlore.core.playback.RoomShowPlaybackSettingsStore(database.podcastDao()),
         ).also { repository ->
             deferredCastSession.attach { isActive -> repository.synchronizeCastSession(isActive) }
         }
@@ -481,6 +485,8 @@ class AppContainer(
             folderRepository = folderRepository,
             userPreferencesRepository = userPreferencesRepository,
             autoDownloadDao = database.autoDownloadDao(),
+            // A renumbered show keeps its playlist places.
+            playlistRepository = playlistRepository,
             rssNotificationConsent = cx.aswin.boxlore.core.catalog.DeviceRssNotificationConsent(
                 java.io.File(appContext.noBackupFilesDir, "rss_notification_consent"),
             ),
@@ -608,6 +614,20 @@ class AppContainer(
             resolveGenreIconKey = { genre ->
                 cx.aswin.boxlore.core.designsystem.icon.findExactGenreIconKey(genre)
             },
+        )
+    }
+
+    /**
+     * Playlists of shows (Room v44). What one plays reads listening state across an episode's
+     * stored IDs, as the queue does, and skips shows hidden everywhere.
+     */
+    override val playlistRepository: cx.aswin.boxlore.core.catalog.PlaylistRepository by lazy {
+        val listeners = database.episodeListenerStore()
+        cx.aswin.boxlore.core.catalog.RoomPlaylistRepository(
+            dao = database.playlistDao(),
+            projectedHistory = listeners::projectedHistoryOf,
+            withAliases = listeners::withAllAliases,
+            hiddenShowIds = userPreferencesRepository.hiddenShows.matchIdsStream,
         )
     }
 
@@ -767,6 +787,10 @@ class AppContainer(
     /** The scope a page hands work that must finish after the page closes, such as Mark all on a show. */
     val pageWorkScope: CoroutineScope get() = syncScope
 
+    /** Episode titles only, read once for the process so a show page opens with the stored choice rather than full rows first. */
+    val episodeTitlesOnly: kotlinx.coroutines.flow.StateFlow<Boolean> =
+        userPreferencesRepository.episodeTitlesOnlyStream.stateIn(syncScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, initialValue = false)
+
     /** The phone's end of the Wear OS link; it stays idle until boxlore on a watch makes contact. */
     val phoneWearLink: cx.aswin.boxlore.core.wearlink.PhoneWearLink by lazy {
         cx.aswin.boxlore.core.wearlink.PhoneWearLink(
@@ -866,6 +890,7 @@ class AppContainer(
             playedShowDao = database.playedShowDao(),
             listeningInsightsMaintenance = database.listeningInsightsMaintenance(),
             pendingOpmlImports = pendingOpmlImports,
+            playlistDao = database.playlistDao(),
         )
     }
 

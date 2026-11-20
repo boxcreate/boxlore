@@ -35,6 +35,10 @@ internal object NavRoutes {
     const val LIBRARY_DOWNLOADS = "library/downloads"
     const val LIBRARY_SUBSCRIPTIONS = "library/subscriptions"
     const val LIBRARY_DOWNLOADS_SETTINGS = "library/downloads/settings"
+    const val LIBRARY_PLAYLISTS = "library/playlists"
+    const val LIBRARY_PLAYLIST = "library/playlists/{playlistId}"
+
+    fun libraryPlaylist(playlistId: String) = "library/playlists/${android.net.Uri.encode(playlistId)}"
 }
 
 internal fun bottomNavTabRoutePattern(tab: String): String? = when (tab) {
@@ -228,6 +232,7 @@ internal class NavGraphWiring(
     val queueManager get() = container.queueManager
     val smartDownloadManager get() = container.smartDownloadManager
     val folderRepository get() = container.folderRepository
+    val playlistRepository get() = container.playlistRepository
 }
 
 // ---------------------------------------------------------------------------

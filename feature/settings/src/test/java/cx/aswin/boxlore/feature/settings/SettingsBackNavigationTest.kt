@@ -109,6 +109,7 @@ class SettingsBackNavigationTest {
         listOf(
             ProfileSettingsDestination.Theme,
             ProfileSettingsDestination.AppearanceHome,
+            ProfileSettingsDestination.AppearanceShowPages,
             ProfileSettingsDestination.AppearancePlayer,
             ProfileSettingsDestination.AppearanceNavigation,
             ProfileSettingsDestination.AppearanceText,

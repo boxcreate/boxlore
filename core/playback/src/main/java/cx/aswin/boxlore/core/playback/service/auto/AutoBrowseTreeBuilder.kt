@@ -17,6 +17,7 @@ import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.isTrailer
+import cx.aswin.boxlore.core.model.withoutHiddenShows
 import cx.aswin.boxlore.core.playback.MixtapeEngine
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
@@ -419,7 +420,8 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
             }
         val completedIds = listenerStore.projectCompletedIds(host.database.listeningHistoryDao().getCompletedEpisodeIds())
         val recentIds = host.database.listeningHistoryDao().getRecentHistoryList(30).mapTo(mutableSetOf()) { it.episodeId }
-        val feedMap = if (driveFeeds.values.any { it.isNotEmpty() }) driveFeeds else fallbackFeeds
+        val hidden = hiddenShowIds()
+        val feedMap = (if (driveFeeds.values.any { it.isNotEmpty() }) driveFeeds else fallbackFeeds).mapValues { (_, podcasts) -> podcasts.withoutHiddenShows(hidden) }
         val episodes =
             (driveVibes + feedMap.keys.sorted())
                 .distinct()
@@ -507,7 +509,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
                 region(),
                 languages = withTimeoutOrNull(PREFS_TIMEOUT_MS) { host.userPreferencesRepository.contentLanguagesStream.first() },
             )
-        return buildPodcastFolderItems(curatedPodcasts.take(LIST_LIMIT))
+        return buildPodcastFolderItems(curatedPodcasts.withoutHiddenShows(hiddenShowIds()).take(LIST_LIMIT))
     }
 
     suspend fun getGenreChildren(category: String): List<MediaItem> {
@@ -515,7 +517,16 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
             withTimeoutOrNull(NETWORK_TIMEOUT_MS) {
                 host.podcastRepository.getTrendingPodcasts(country = region(), limit = LIST_LIMIT, category = category.lowercase())
             }.orEmpty()
-        return buildPodcastFolderItems(podcasts)
+        return buildPodcastFolderItems(podcasts.withoutHiddenShows(hiddenShowIds()))
+    }
+
+    /** The shows hidden everywhere, or none when they can't be read in time. */
+    private suspend fun hiddenShowIds(): Set<String> = try {
+        withTimeoutOrNull(PREFS_TIMEOUT_MS) { host.userPreferencesRepository.hiddenShows.matchIds() }.orEmpty()
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        emptySet()
     }
 
     private fun buildPodcastFolderItems(podcasts: List<Podcast>): List<MediaItem> = podcasts.map { podcast ->

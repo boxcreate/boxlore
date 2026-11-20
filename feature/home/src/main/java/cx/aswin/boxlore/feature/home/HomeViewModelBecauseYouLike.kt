@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.home
 
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.HiddenShows
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.getRecentHistoryList
 import cx.aswin.boxlore.core.prefs.collectDiscoverySection
@@ -29,6 +30,7 @@ internal suspend fun HomeViewModel.resolveFavoritePodcast(
     subscriptions: List<Podcast>,
     historyList: List<HomeListeningHistoryItem>,
     clock: Clock = Clock.systemDefaultZone(),
+    hiddenIds: Set<String> = emptySet(),
 ): Podcast? {
     val historySignals = historyList.map { HomeBecauseYouLikeLogic.toAffinitySignal(it) }
     if (overriddenId != null) {
@@ -64,13 +66,12 @@ internal suspend fun HomeViewModel.resolveFavoritePodcast(
         BecauseYouLikeRotationLogic.filterEligibleCandidates(
             scores = scores,
             lastPlayedMap = lastPlayedMap,
-        )
+        ).filterNot { HiddenShows.hidesShow(hiddenIds, it) }
     if (candidateIds.isEmpty()) return null
 
     val candidatePodcasts = candidateIds.map { podId ->
-        subscriptions.find { it.id == podId }
-            ?: localCatalog.getLocalPodcast(podId)
-            ?: Podcast(
+        val known: Podcast? = subscriptions.find { it.id == podId } ?: localCatalog.getLocalPodcast(podId)
+        known ?: Podcast(
                 id = podId,
                 title = podcastNameMap[podId] ?: "Podcast",
                 artist = "",
@@ -109,14 +110,19 @@ internal fun HomeViewModel.observeBecauseYouLike() {
                 userPrefs.overriddenRecPodcastIdStream,
                 userPrefs.regionStream,
                 userPrefs.contentLanguagesStream,
+                userPrefs.hiddenShows.matchIdsStream,
             ),
             on = sectionOn { it.becauseYouLike },
             clear = { clearBecauseYouLike() },
-        ) { (overriddenId, region, languages) ->
+        ) { request ->
+            val region = request.region
+            val languages = request.languages
             val activeSubs = subscriptionRepository.subscribedPodcasts.first()
             val activeHistory = allHomeHistory.first()
 
-            val resolvedPodcast = resolveFavoritePodcast(overriddenId, activeSubs, activeHistory)
+            // A hidden show is never the show Because you like starts from, even when it was picked.
+            val overriddenId = request.overriddenId?.takeUnless { HiddenShows.hidesShow(request.hiddenIds, it) }
+            val resolvedPodcast = resolveFavoritePodcast(overriddenId, activeSubs, activeHistory, hiddenIds = request.hiddenIds)
             _seemsToLikePodcast.value = resolvedPodcast
 
             if (resolvedPodcast != null) {

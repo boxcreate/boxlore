@@ -104,7 +104,7 @@ class PlaybackQueueCoordinatorTest {
                 playerDismissedKey = "player_dismissed",
                 queueMaxSize = 50,
                 checkSavedProgress = { _, _, _, _ -> Pair(0L, false) },
-                onPlaybackStarted = {},
+                onPlaybackStarted = { playbackStarts++ },
                 storePendingEntryPoint = {},
                 ensureCurrentHistoryRow = {},
                 stopProgressTicker = {},
@@ -114,6 +114,9 @@ class PlaybackQueueCoordinatorTest {
 
     /** Listener-started queues counted through the coordinator's hook. */
     private var queueStarts = 0
+
+    /** Play starts the coordinator reported. */
+    private var playbackStarts = 0
 
     @After
     fun tearDown() {
@@ -228,6 +231,34 @@ class PlaybackQueueCoordinatorTest {
         advanceUntilIdle()
 
         assertEquals(3, queueStarts)
+    }
+
+    @Test
+    fun aQueueLoadedPausedNeverPlaysOrReportsAPlayStart() = runTest(testDispatcher) {
+        // Regression: Undo of a paused queue played it, then paused it: a burst of audio and an extra play start.
+        val controller = checkNotNull(mediaHandle.controller)
+        val calls = mutableListOf<String>()
+        val record = org.mockito.stubbing.Answer<Any?> {
+            calls += it.method.name
+            null
+        }
+        org.mockito.Mockito.doAnswer(record).`when`(controller).pause()
+        org.mockito.Mockito.doAnswer(record).`when`(controller).setMediaItems(
+            org.mockito.ArgumentMatchers.anyList(),
+            org.mockito.ArgumentMatchers.anyInt(),
+            org.mockito.ArgumentMatchers.anyLong(),
+        )
+        org.mockito.Mockito.doAnswer(record).`when`(controller).prepare()
+        org.mockito.Mockito.doAnswer(record).`when`(controller).play()
+        val podcast = cx.aswin.boxlore.core.model.Podcast("pod-1", "Show", "Host", "https://example.com/a.jpg")
+
+        queueCoordinator.loadQueuePaused(listOf(testEpisode("1", "pod-1"), testEpisode("2", "pod-1")), podcast, 1, 42_000L)
+        advanceUntilIdle()
+
+        assertEquals(listOf("pause", "setMediaItems", "prepare"), calls.toList())
+        assertEquals(0, playbackStarts)
+        assertEquals(false, playerStateFlow.value.isPlaying)
+        assertEquals(listOf("1", "2"), queueRepository.getQueueEpisodeSnapshot().map { it.id })
     }
 
     @Test

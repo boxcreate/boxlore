@@ -56,12 +56,14 @@ import cx.aswin.boxlore.core.playback.removeFromQueue
 import cx.aswin.boxlore.core.playback.resume
 import cx.aswin.boxlore.core.playback.setPlaybackSpeed
 import cx.aswin.boxlore.core.playback.setSleepTimer
+import cx.aswin.boxlore.core.playback.setTrimSilence
 import cx.aswin.boxlore.core.playback.skipBackward
 import cx.aswin.boxlore.core.playback.skipForward
 import cx.aswin.boxlore.core.playback.skipToNextEpisode
 import cx.aswin.boxlore.core.playback.toggleCompletion
 import cx.aswin.boxlore.core.playback.toggleLike
 import cx.aswin.boxlore.core.playback.undoQueueRemoval
+import cx.aswin.boxlore.core.playback.useAppSpeedForPlayingShow
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.feature.player.ChaptersSheetContent
 import cx.aswin.boxlore.feature.player.QueueSheetActions
@@ -247,7 +249,8 @@ internal fun FullPlayerSecondaryControls(
         playback = SecondaryPlaybackState(
             model.state.playbackSpeed,
             model.state.sleepTimerEnd,
-            model.state.sleepAtEndOfEpisode
+            model.state.sleepAtEndOfEpisode,
+            audio = PlayerSpeedAudio.from(model.state)
         ),
         availability = SecondaryAvailabilityState(
             hasChapters = !model.episode.chaptersUrl.isNullOrEmpty() ||
@@ -288,7 +291,9 @@ internal fun fullPlayerSelectionActions(
             value = minutes.toString()
         )
         playbackRepository.setSleepTimer(minutes)
-    }
+    },
+    onTrimSilenceChange = { enabled -> playbackRepository.setTrimSilence(enabled) },
+    onUseAppSpeed = { playbackRepository.useAppSpeedForPlayingShow() }
 )
 
 internal fun fullPlayerClickActions(

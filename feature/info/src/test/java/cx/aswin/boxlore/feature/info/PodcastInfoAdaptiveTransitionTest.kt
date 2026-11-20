@@ -26,6 +26,7 @@ import androidx.compose.ui.test.hasProgressBarRangeInfo
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
+import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.longClick
@@ -112,6 +113,8 @@ class PodcastInfoAdaptiveTransitionTest {
     private val uiState = MutableStateFlow<PodcastInfoUiState>(PodcastInfoUiState.Success(podcast, firstPage, isSubscribed = true))
     private val pageShow = MutableStateFlow(cx.aswin.boxlore.feature.info.logic.PodcastInfoPageShow())
     private val hideCompleted = MutableStateFlow(false)
+    private val hidden = MutableStateFlow(false)
+    private val titlesOnly = MutableStateFlow(false)
     private val completed = MutableStateFlow(emptySet<String>())
     private val model = mock(PodcastInfoViewModel::class.java)
     private lateinit var restoration: StateRestorationTester
@@ -621,6 +624,59 @@ class PodcastInfoAdaptiveTransitionTest {
     }
 
     @Test
+    fun `hide show dialog keeps its content and runs each exit once on both hosts`() {
+        render()
+        var confirms = 0
+        forEachHostAndExit(ALERT_EXITS) { host, exit ->
+            openMenuItem("Hide show everywhere")
+            acrossWindowChanges { fixture.compose.onNodeWithText("Hide this show everywhere?").assertExists() }
+            recreate(host)
+            fixture.compose.onNodeWithText("Hide this show everywhere?").assertExists()
+            // A followed show says that hiding it unsubscribes too.
+            fixture.compose.onNodeWithText(HIDE_SUBSCRIBED_MESSAGE).assertExists()
+
+            exitAlert(exit, confirm = "Hide and unsubscribe", cancel = "Cancel")
+            if (exit == Exit.CONFIRM) confirms += 1
+            fixture.compose.onNodeWithText("Hide this show everywhere?").assertDoesNotExist()
+            verify(model, times(confirms)).hideShowEverywhere()
+        }
+        verify(model, never()).unhideShow()
+    }
+
+    @Test
+    fun `a hidden show keeps its note and Unhide across window changes and recreation`() {
+        uiState.value = success(isSubscribed = false)
+        render()
+        openMenuItem("Hide show everywhere")
+        fixture.compose.onNodeWithText(HIDE_MESSAGE).assertExists()
+        fixture.compose.onNodeWithText("Hide show").performClick()
+        fixture.compose.waitForIdle()
+        verify(model, times(1)).hideShowEverywhere()
+        // Hidden everywhere, with Undo.
+        fixture.compose.onNodeWithText("Undo").performClick()
+        verify(model, times(1)).undoHideShow()
+
+        hidden.value = true
+        // Short windows can push the note below the header, so each step scrolls the list to it.
+        acrossWindowChanges { hiddenNoteShown() }
+        recreate(FOLD_TABLETOP)
+        hiddenNoteShown()
+        recreate(COMPACT)
+        fixture.compose.onNodeWithTag(LIST_TAG).performScrollToIndex(0)
+        // The menu now unhides at once, with no question.
+        openMenuItem("Unhide show")
+        fixture.compose.onNodeWithText("Hide this show everywhere?").assertDoesNotExist()
+        verify(model, times(1)).unhideShow()
+        fixture.compose.onNodeWithText("Unhide").performClick()
+        verify(model, times(2)).unhideShow()
+
+        hidden.value = false
+        fixture.compose.waitForIdle()
+        fixture.compose.onNodeWithTag(HIDDEN_NOTE_TAG).assertDoesNotExist()
+        verify(model, times(1)).hideShowEverywhere()
+    }
+
+    @Test
     fun `a restored missing episodes dialog waits until the reloaded page offers the check again`() {
         uiState.value = success(directFeedChip = DirectFeedChipState.Offer, isSubscribed = false)
         render()
@@ -668,6 +724,56 @@ class PodcastInfoAdaptiveTransitionTest {
             acrossWindowChanges { fixture.compose.onNodeWithText("Use app defaults").assertDoesNotExist() }
             verify(model, times(toggles)).setUseAppPlaybackDefaults(anyBoolean())
         }
+    }
+
+    @Test
+    fun `show playback sheet keeps the show's speed and trim silence across window changes and saves each pick once`() {
+        uiState.value = success().let { it.copy(podcast = it.podcast.copy(playbackSpeedOverride = 1.5f)) }
+        render()
+        openMenuItem("Playback for this show")
+        acrossWindowChanges {
+            fixture.compose.onNode(hasText("1.5×") and isSelected()).assertExists()
+            fixture.compose.onNodeWithText("App speed (1×)").assertExists()
+            fixture.compose.onNode(hasText("App setting (off)") and isSelected()).assertExists()
+        }
+        recreate(TABLET)
+        fixture.compose.onNode(hasText("1.5×") and isSelected()).assertExists()
+
+        fixture.compose.onNodeWithText("2×").performScrollTo().performClick()
+        fixture.compose.onNodeWithText("On").performScrollTo().performClick()
+        verify(model, times(1)).setPlaybackSpeedOverride(2f)
+        verify(model, times(1)).setTrimSilenceOverride(true)
+
+        uiState.update { (it as PodcastInfoUiState.Success).copy(podcast = it.podcast.copy(playbackSpeedOverride = 2f, skipSilenceOverride = true)) }
+        acrossWindowChanges {
+            fixture.compose.onNode(hasText("2×") and isSelected()).assertExists()
+            fixture.compose.onNode(hasText("On") and isSelected()).assertExists()
+        }
+        recreate(COMPACT)
+        fixture.compose.onNode(hasText("2×") and isSelected()).assertExists()
+        // A window change or recreation never saves a pick again.
+        verify(model, times(1)).setPlaybackSpeedOverride(2f)
+        verify(model, times(1)).setTrimSilenceOverride(true)
+    }
+
+    @Test
+    fun `show playback sheet re-reads the stored settings when it opens and lets a show on app defaults pick a speed`() {
+        render()
+        openMenuItem("Playback for this show")
+        verify(model, times(1)).refreshShowPlayback()
+        acrossWindowChanges {
+            fixture.compose.onNode(hasText("App speed (1×)") and isSelected()).assertExists()
+            fixture.compose.onNodeWithText("1.5×").assertIsEnabled()
+            fixture.compose.onNodeWithText("On").assertIsEnabled()
+        }
+        // The skips still follow the app until "Use app defaults" is switched off.
+        fixture.compose.onNodeWithContentDescription("Skip beginning, Off").assertIsNotEnabled()
+
+        fixture.compose.onNodeWithText("1.5×").performScrollTo().performClick()
+        verify(model, times(1)).setPlaybackSpeedOverride(1.5f)
+        verify(model, never()).setUseAppPlaybackDefaults(anyBoolean())
+        recreate(TABLET)
+        verify(model, times(1)).setPlaybackSpeedOverride(1.5f)
     }
 
     @Test
@@ -767,6 +873,74 @@ class PodcastInfoAdaptiveTransitionTest {
             fixture.compose.onNodeWithText("You’ve finished every episode").assertDoesNotExist()
         }
         verify(model, never()).loadMoreEpisodes()
+    }
+
+    @Test
+    fun `titles only rows keep scroll, selection and the menu toggle across window changes and recreation`() {
+        titlesOnly.value = true
+        render()
+        titleRows(shown = true)
+        // Episode 9 at the top of the list, then two rows picked.
+        fixture.compose.onNodeWithTag(LIST_TAG).performScrollToIndex(RESULT_ROW + 9)
+        fixture.compose.onNodeWithText("Episode 9").performTouchInput { longClick() }
+        fixture.compose.onNodeWithText("Episode 11").performClick()
+        selectionCount("2")
+        val held = {
+            selectionCount("2")
+            fixture.compose.onNodeWithText("Episode 9").assertIsDisplayed()
+            titleRows(shown = true)
+        }
+        acrossWindowChanges(held)
+        recreate(FOLD_TABLETOP)
+        held()
+        acrossWindowChanges(held)
+        fixture.compose.onNodeWithContentDescription("Play selected episodes").performClick()
+        assertEquals(listOf(listOf("e9", "e11")), playedIds())
+
+        // The menu brings the full cards back at the same place, and its label follows the choice.
+        openMenuItem("Show full episodes")
+        verify(model, times(1)).toggleEpisodeTitlesOnly()
+        val fullCards = {
+            fixture.compose.onNodeWithText("Episode 9").assertIsDisplayed()
+            titleRows(shown = false)
+        }
+        acrossWindowChanges(fullCards)
+        recreate(TABLET)
+        fullCards()
+        openMenuItem("Show titles only")
+        verify(model, times(2)).toggleEpisodeTitlesOnly()
+        acrossWindowChanges {
+            fixture.compose.onNodeWithText("Episode 9").assertIsDisplayed()
+            titleRows(shown = true)
+        }
+        verify(model, never()).toggleHideCompleted()
+    }
+
+    @Test
+    fun `titles only search results and loading rows stay short across window changes and recreation`() {
+        titlesOnly.value = true
+        uiState.value = success().copy(isLoadingMore = true)
+        render()
+        acrossWindowChanges {
+            fixture.compose.onNodeWithTag(LIST_TAG).performScrollToNode(hasTestTag(TITLE_ROW_SKELETON_TAG))
+            fixture.compose.onAllNodesWithTag(TITLE_ROW_SKELETON_TAG).onFirst().assertIsDisplayed()
+            fixture.compose.onNodeWithTag(EPISODE_SKELETON_TAG).assertDoesNotExist()
+        }
+        fixture.compose.runOnIdle { uiState.update { state -> (state as PodcastInfoUiState.Success).copy(isLoadingMore = false) } }
+        fixture.compose.onNodeWithTag(LIST_TAG).performScrollToIndex(0)
+        fixture.compose.onNodeWithContentDescription("Search episodes").performClick()
+        searchField().performTextInput("Episode 1")
+        val results = {
+            searchField().assert(hasText("Episode 1"))
+            fixture.compose.onNodeWithTag(LIST_TAG).performScrollToNode(hasText("Episode 14"))
+            fixture.compose.onNodeWithText("Episode 14").assertIsDisplayed()
+            titleRows(shown = true)
+            // Search's Mark played chip belongs to the full cards.
+            fixture.compose.onNodeWithText("Mark played").assertDoesNotExist()
+        }
+        acrossWindowChanges(results)
+        recreate(FOLD_TABLETOP)
+        results()
     }
 
     @Test
@@ -901,10 +1075,28 @@ class PodcastInfoAdaptiveTransitionTest {
         }
     }
 
+    /** Short title rows are on screen with no full card's buttons, or the other way round. */
+    private fun titleRows(shown: Boolean) {
+        val rows = fixture.compose.onAllNodesWithTag(TITLE_ROW_TAG).fetchSemanticsNodes().size
+        val likeButtons = fixture.compose.onAllNodes(androidx.compose.ui.test.hasContentDescription("Like"), useUnmergedTree = true).fetchSemanticsNodes().size
+        if (shown) {
+            assertTrue("Title rows on screen", rows > 0)
+            assertEquals("Full cards' Like buttons", 0, likeButtons)
+        } else {
+            assertEquals("Title rows on screen", 0, rows)
+            assertTrue("Full cards' Like buttons", likeButtons > 0)
+        }
+    }
+
     private fun refreshIndicatorShown() {
         fixture.compose
             .onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate) and hasAnyAncestor(hasTestTag(REFRESH_TAG)), useUnmergedTree = true)
             .assertExists()
+    }
+
+    private fun hiddenNoteShown() {
+        fixture.compose.onNodeWithTag(LIST_TAG).performScrollToNode(hasTestTag(HIDDEN_NOTE_TAG))
+        fixture.compose.onNodeWithTag(HIDDEN_NOTE_TAG).assertIsDisplayed()
     }
 
     private fun androidx.compose.ui.test.junit4.ComposeTestRule.onAllNodesWithTextCount(text: String): Int =
@@ -1043,10 +1235,14 @@ class PodcastInfoAdaptiveTransitionTest {
         `when`(model.downloadingEpisodeIds).thenReturn(MutableStateFlow(emptySet()))
         `when`(model.episodePendingDownloadRemoval).thenReturn(MutableStateFlow(null))
         `when`(model.hideCompletedInShowDetails).thenReturn(hideCompleted)
+        `when`(model.episodeTitlesOnly).thenReturn(titlesOnly)
         `when`(model.isPinnedToHome).thenReturn(MutableStateFlow(false))
+        `when`(model.isHidden).thenReturn(hidden)
         `when`(model.pageShow).thenReturn(pageShow)
         `when`(model.globalSkipBeginningMs).thenReturn(MutableStateFlow(0L))
         `when`(model.globalSkipEndingMs).thenReturn(MutableStateFlow(0L))
+        `when`(model.globalPlaybackSpeed).thenReturn(MutableStateFlow(1f))
+        `when`(model.globalTrimSilence).thenReturn(MutableStateFlow(false))
         `when`(model.autoDownloadBackgroundChecksEnabled).thenReturn(MutableStateFlow(true))
         `when`(model.completedEpisodesState).thenReturn(completed)
         `when`(model.likedEpisodesState).thenReturn(MutableStateFlow(emptySet()))
@@ -1073,6 +1269,10 @@ class PodcastInfoAdaptiveTransitionTest {
             played += invocation.getArgument<List<Episode>>(0).map(Episode::id)
             null
         }.`when`(model).playEpisodes(anyList())
+        doAnswer {
+            titlesOnly.update { !it }
+            null
+        }.`when`(model).toggleEpisodeTitlesOnly()
         // Runs [selectionWindow] on the caller's coroutine, so it can suspend, throw or be cancelled.
         val stubbing = doAnswer { invocation ->
             val sort = invocation.getArgument<EpisodeSort?>(0)
@@ -1093,9 +1293,14 @@ class PodcastInfoAdaptiveTransitionTest {
         const val LOADING_TAG = "podcast_info_loading"
         const val SKELETON_TAG = "podcast_info_skeleton"
         const val EPISODE_SKELETON_TAG = "podcast_info_episode_skeleton"
+        const val TITLE_ROW_TAG = "podcast_info_episode_title_row"
+        const val TITLE_ROW_SKELETON_TAG = "podcast_info_episode_title_row_skeleton"
         const val REFRESH_TAG = "podcast_info_refresh_indicator"
         const val FEED_STATUS_TAG = "podcast_info_feed_status"
         const val RESULT_ROW = 2
+        const val HIDDEN_NOTE_TAG = "podcast_info_hidden_note"
+        const val HIDE_MESSAGE = "boxlore won’t suggest it on Home, Explore, Lore or in Smart Queue. You can still find it with Find a show and unhide it here or in LeaveMeAlone."
+        const val HIDE_SUBSCRIBED_MESSAGE = "This also unsubscribes you from it. boxlore won’t suggest it on Home, Explore, Lore or in Smart Queue. You can still find it with Find a show and unhide it here or in LeaveMeAlone."
         const val SEARCH_FAILED = "Couldn’t search this show’s episodes. Check your connection."
         const val NO_MATCHES = "No matching episodes. Try another title or keyword."
         const val SEARCHED_NEWEST = "Searched only the newest 11,000 episodes of this show."

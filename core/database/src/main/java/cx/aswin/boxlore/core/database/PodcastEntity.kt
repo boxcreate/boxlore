@@ -55,6 +55,10 @@ data class PodcastEntity(
     // Null inherits the global playback setting; zero explicitly disables trimming.
     val skipBeginningOverrideMs: Long? = null,
     val skipEndingOverrideMs: Long? = null,
+    // Null uses the app's playback speed (Room v43).
+    val playbackSpeedOverride: Float? = null,
+    // Null uses the app's trim silence setting; true or false sets it for this show (Room v43).
+    val skipSilenceOverride: Boolean? = null,
 
     // Catalog source. Podcast Index remains the default for existing rows.
     val sourceType: String = SOURCE_PODCAST_INDEX,

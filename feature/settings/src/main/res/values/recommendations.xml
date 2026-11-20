@@ -23,4 +23,15 @@
     <!-- The episode pages' similar-episodes section is titled "Try these episodes" there. Off makes no request. -->
     <string name="recommendations_more_like_this">Try these episodes</string>
     <string name="recommendations_more_like_this_description">Similar episodes at the end of each episode page</string>
+    <!-- Shows hidden from a show page with Hide show everywhere; Unhide lets boxlore suggest them again. -->
+    <string name="recommendations_hidden_title">Hidden shows</string>
+    <string name="recommendations_hidden_footer">Hidden shows stay out of Home, Explore, Lore and Smart Queue. Find a show still finds them.</string>
+    <string name="recommendations_hidden_empty">No hidden shows</string>
+    <!-- "Hide show everywhere" is the show page menu item, quoted as it reads there. -->
+    <string name="recommendations_hidden_empty_description">To hide one, open the show and choose Hide show everywhere from its menu.</string>
+    <!-- A hidden show whose name wasn't saved. -->
+    <string name="recommendations_hidden_unknown">Unknown show</string>
+    <string name="recommendations_hidden_unhide">Unhide</string>
+    <!-- Screen reader label of a row's Unhide button; %1$s is the show's name. -->
+    <string name="recommendations_hidden_unhide_description">Unhide %1$s</string>
 </resources>

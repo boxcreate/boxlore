@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.navigation
 
 import androidx.compose.animation.EnterTransition
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -128,16 +129,8 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
                 onSetEnglishOff = { off -> scope.launch { w.userPrefs.setContentEnglishOff(off) } },
                 savedShows = savedShowsControl(container),
                 discoverySections = settingsState.discoverySections,
-                onSetDiscoverySection = { section, on ->
-                    scope.launch {
-                        // A failed write keeps the stored value, which the switch keeps showing.
-                        try {
-                            w.userPrefs.setDiscoverySection(section, on)
-                        } catch (e: java.io.IOException) {
-                            android.util.Log.w("Settings", "LeaveMeAlone switch ${section.name} was not saved", e)
-                        }
-                    }
-                },
+                onSetDiscoverySection = discoverySectionSetter(w),
+                hiddenShows = rememberHiddenShowsControl(w),
             ),
             appearanceSettings = buildAppearanceSettings(w),
             playbackSettings = buildPlaybackSettings(w),
@@ -203,7 +196,10 @@ private fun widgetPreview(w: NavGraphWiring): AppearanceWidgetPreview = { widget
     HomeScreenWidgetPreview(widget.key, DpSize(widget.previewWidthDp.dp, widget.previewHeightDp.dp), look, modifier)
 }
 
+/** Appearance's state and actions; Episode titles only is read here, beside the page that sets it. */
+@Composable
 private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
+    val episodeTitlesOnly by w.userPrefs.episodeTitlesOnlyStream.collectAsState(initial = false)
     val scope = w.scope
     val userPrefs = w.userPrefs
     val settingsState = w.settingsState
@@ -225,6 +221,7 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
             currentSubscriptionsDefaultTab = settingsState.subscriptionsDefaultTab,
             currentSubscriptionsTabStyle = settingsState.subscriptionsTabStyle,
             miniPlayerSeekButtonsEnabled = settingsState.miniPlayerSeekButtonsEnabled,
+            episodeTitlesOnly = episodeTitlesOnly,
             fullPlayerStyle = settingsState.fullPlayerStyle,
             artworkColorsEnabled = settingsState.artworkColorsEnabled,
             navigationBlurLevel = settingsState.navigationBlurLevel,
@@ -284,6 +281,7 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
             onSetFullPlayerStyle = { style ->
                 scope.launch { userPrefs.setFullPlayerStyle(style) }
             },
+            onSetEpisodeTitlesOnly = { enabled -> scope.launch { userPrefs.setEpisodeTitlesOnly(enabled) } },
         ),
         // Appearance previews draw Home's real hero cards from the listener's recent episodes.
         heroPreview = { style, coverShade, collection, modifier ->
@@ -294,10 +292,12 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
     )
 }
 
+@androidx.compose.runtime.Composable
 private fun buildPlaybackSettings(w: NavGraphWiring): PlaybackSettings {
     val scope = w.scope
     val userPrefs = w.userPrefs
     val settingsState = w.settingsState
+    val trimSilenceEnabled by userPrefs.trimSilenceEnabledStream.collectAsState(initial = false)
 
     // Reported only when the value changes, so re-picking the current length sends nothing.
     fun trackAndPersistPlaybackDuration(eventName: String, value: Long, previous: Long, persist: suspend (Long) -> Unit) {
@@ -320,6 +320,7 @@ private fun buildPlaybackSettings(w: NavGraphWiring): PlaybackSettings {
             hideCompletedInShowDetails = settingsState.hideCompletedInShowDetails,
             restartForgottenEpisodes = settingsState.restartForgottenEpisodes,
             sameShowQueueOnly = settingsState.sameShowQueueOnly,
+            trimSilenceEnabled = trimSilenceEnabled,
         ),
         actions = PlaybackActions(
             onSetSkipBehavior = { behavior -> scope.launch { userPrefs.setSkipBehavior(behavior) } },
@@ -343,6 +344,13 @@ private fun buildPlaybackSettings(w: NavGraphWiring): PlaybackSettings {
             },
             onSetSameShowQueueOnly = { enabled ->
                 scope.launch { userPrefs.setSameShowQueueOnly(enabled) }
+            },
+            onSetTrimSilenceEnabled = { enabled ->
+                if (enabled != trimSilenceEnabled) {
+                    cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                        .trackSettingsInteraction("trim_silence_toggled", enabled.toString())
+                }
+                scope.launch { userPrefs.setTrimSilenceEnabled(enabled) }
             },
         ),
     )

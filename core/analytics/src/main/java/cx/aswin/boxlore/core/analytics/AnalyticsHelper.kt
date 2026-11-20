@@ -238,6 +238,7 @@ object AnalyticsHelper : Analytics {
         AnalyticsEmit.event("identity_reset", mapOf("reason" to "user_reset"))
         PostHogStartup.runWhenReady { PostHog.reset() }
         AppearanceAnalyticsTracks.resendHomeHeroStyleAfterIdentityReset()
+        FeatureAdoptionAnalytics.resendAfterIdentityReset()
     }
 
     /** Empty until PostHog finishes setting up; callers already fall back when blank. */
@@ -887,6 +888,10 @@ object AnalyticsHelper : Analytics {
         source: String? = null,
         itemsCount: Int? = null,
     ) = QueueContentAnalyticsTracks.trackQueueModified(action, episodeId, podcastId, queueSize, source, itemsCount)
+
+    /** A playlist change: [action] create/delete/add_show/remove_show/play, from [source] (library or show_page). */
+    fun trackPlaylistModified(action: String, source: String, itemsCount: Int? = null, playlistSize: Int? = null,) =
+        QueueContentAnalyticsTracks.trackPlaylistModified(action, source, itemsCount, playlistSize)
 
     fun trackNavTabClicked(tabName: String, previousTab: String? = null,) = QueueContentAnalyticsTracks.trackNavTabClicked(tabName, previousTab)
 

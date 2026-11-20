@@ -229,7 +229,7 @@ internal suspend fun PodcastRepository.v2HomeRecommendations(
     languages: List<String>,
 ): HomeRecommendations {
     val personal = v2RecommendationRequest(history, interests, country, subscribedPodcastIds, languages)
-    val recsRequest = personal ?: countryDefaultRecommendationRequest(country, languages)
+    val recsRequest = personal ?: countryDefaultRecommendationRequest(country, languages).copy(excludedPodcastIds = hiddenPodcastIndexIds(hiddenShowIds()))
     val isFallback = personal == null
     val deviceUuid = getOrCreateDeviceUuid()
     val request =

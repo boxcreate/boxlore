@@ -899,10 +899,13 @@ class UserSyncCoordinatorTest {
             activePlaybackSyncPort = fakePlayback,
             ioDispatcher = testDispatcher,
             pendingOpmlImports = pendingImports,
+            playlistDao = database.playlistDao(),
         )
 
         // Seed data belonging to Account A
         podcastDao.upsert(createTestPodcastEntity("pod-account-a", "Account A Show", isSubscribed = true))
+        val playlists = cx.aswin.boxlore.core.catalog.RoomPlaylistRepository(database.playlistDao())
+        playlists.createPlaylist("Account A list", listOf("pod-account-a"))
         listeningHistoryDao.upsert(createTestHistoryEntity("ep-account-a", "pod-account-a"))
         fakeQueueSyncPort.applyRemoteQueueState(
             items = listOf(
@@ -951,6 +954,7 @@ class UserSyncCoordinatorTest {
         assertTrue(fakeQueueSyncPort.getQueueSnapshot().isEmpty())
         assertTrue(fakePlayback.stopAndClearActiveSessionCalled)
         assertTrue("Account A's unfinished import is forgotten", pendingImports.all().isEmpty())
+        assertTrue("Account A's playlists are deleted, as its folders are", playlists.getPlaylists().isEmpty())
         assertEquals("account-b", prefs.getLastSyncedUserId())
         assertEquals(2000L, prefs.getLastSyncTimestamp())
     }

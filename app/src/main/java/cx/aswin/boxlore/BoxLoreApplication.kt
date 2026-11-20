@@ -188,6 +188,8 @@ class BoxLoreApplication :
             adaptiveScorer = { container.adaptiveCandidateScorer },
             awaitStartupReady = { startupWorkGate.awaitReady() },
         )
+        // Feature-adoption person properties: sent only when they change, across launches.
+        cx.aswin.boxlore.analytics.FeatureAdoptionWiring.start(this, applicationScope, container, userPreferencesRepository) { startupWorkGate.awaitReady() }
         engagementPromptCoordinator =
             EngagementPromptCoordinator(userPreferencesRepository, cx.aswin.boxlore.core.prefs.NpsSurveyStore(this))
         // Each finish is also kept on disk, so the NPS survey's moment outlives a restart.

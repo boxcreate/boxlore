@@ -165,6 +165,26 @@ class PlaybackTelemetrySessionListenTest {
     }
 
     @Test
+    fun `trim_silence follows the local player, and a Cast listen never trims`() {
+        startListen()
+        play(5)
+        session.end(reason = PlaybackListenValues.END_PAUSED)
+        assertEquals(false, ended().last()["trim_silence"])
+
+        session.listens.trimSilence = { true }
+        startListen()
+        play(5)
+        session.end(reason = PlaybackListenValues.END_PAUSED)
+        assertEquals(true, ended().last()["trim_silence"])
+
+        session.listens.analyticsOutput = { PlaybackListenValues.OUTPUT_CAST }
+        startListen()
+        play(5)
+        session.end(reason = PlaybackListenValues.END_PAUSED)
+        assertEquals(false, ended().last()["trim_silence"])
+    }
+
+    @Test
     fun `the wait before sound counts from the first request of a press, resumption included`() {
         session.listens.notePlayRequested()
         now += 3_000L

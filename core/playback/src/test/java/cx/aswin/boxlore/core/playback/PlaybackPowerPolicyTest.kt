@@ -126,6 +126,20 @@ class PlaybackPowerPolicyTest {
     }
 
     @Test
+    fun `trimming silence turns audio offload off, since offload skips the trimming`() {
+        val preferences = PlaybackPowerPolicy.audioOffloadPreferences(trimSilence = true)
+
+        assertEquals(
+            TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_DISABLED,
+            preferences.audioOffloadMode,
+        )
+        assertEquals(
+            TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_ENABLED,
+            PlaybackPowerPolicy.audioOffloadPreferences(trimSilence = false).audioOffloadMode,
+        )
+    }
+
+    @Test
     fun `resumed playback is not torn down after suspended progress persistence`() = runTest {
         val persistenceStarted = CompletableDeferred<Unit>()
         val allowPersistenceToFinish = CompletableDeferred<Unit>()

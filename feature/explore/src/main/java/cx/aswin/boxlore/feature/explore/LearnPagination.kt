@@ -23,30 +23,33 @@ internal sealed interface InitialCuriosityDeckResult {
 }
 
 /**
- * The first page from [startPage] with cards outside [dismissedIds], reading up to [maxAttempts]
- * pages: [InitialCuriosityDeckResult.Exhausted] only when the server's list ends, and
+ * The first page from [startPage] with cards outside [dismissedIds] that [isHidden] keeps, reading up
+ * to [maxAttempts] pages: [InitialCuriosityDeckResult.Exhausted] only when the server's list ends, and
  * [InitialCuriosityDeckResult.Capped] when the limit stops the scan first. A scan that starts past
- * page 1 reads page 1 first, within the same limit, since new cards arrive there.
+ * page 1 reads page 1 first, within the same limit, since new cards arrive there. Cards from hidden
+ * shows count as seen, so a page that holds only those is skipped like a fully dismissed one.
  */
 internal suspend fun findFirstUnseenCuriosityDeck(
     dismissedIds: Set<String>,
     startPage: Int = 1,
     maxAttempts: Int = MAX_CURIOSITY_SCAN_PAGES,
+    isHidden: (LearnCuriosityCard) -> Boolean = { false },
     fetchPage: suspend (Int) -> List<LearnCuriosityCard>?
 ): InitialCuriosityDeckResult {
     val firstPage = startPage.coerceAtLeast(1)
     var attempts = maxAttempts.coerceAtLeast(1)
+    val unseen: (LearnCuriosityCard) -> Boolean = { it.episodeId !in dismissedIds && !isHidden(it) }
     if (firstPage > 1) {
-        val top = scanCuriosityPages(dismissedIds, fromPage = 1, attempts = 1, fetchPage = fetchPage)
+        val top = scanCuriosityPages(unseen, fromPage = 1, attempts = 1, fetchPage = fetchPage)
         if (top !is InitialCuriosityDeckResult.Capped) return top
         attempts--
         if (attempts == 0) return InitialCuriosityDeckResult.Capped(firstPage - 1)
     }
-    return scanCuriosityPages(dismissedIds, firstPage, attempts, fetchPage)
+    return scanCuriosityPages(unseen, firstPage, attempts, fetchPage)
 }
 
 private suspend fun scanCuriosityPages(
-    dismissedIds: Set<String>,
+    unseen: (LearnCuriosityCard) -> Boolean,
     fromPage: Int,
     attempts: Int,
     fetchPage: suspend (Int) -> List<LearnCuriosityCard>?
@@ -58,9 +61,8 @@ private suspend fun scanCuriosityPages(
             return InitialCuriosityDeckResult.Exhausted(page)
         }
 
-        val unseenItems = questionsStack.filterNot {
-            it.episodeId in dismissedIds
-        }
+        // The raw page decides the end of the list; only unseen cards make a deck.
+        val unseenItems = questionsStack.filter(unseen)
         if (unseenItems.isNotEmpty()) {
             return InitialCuriosityDeckResult.Found(page, unseenItems)
         }

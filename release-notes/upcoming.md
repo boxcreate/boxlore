@@ -30,6 +30,11 @@ Announcement title:
 - A tile and a watch-face shortcut resume your last episode in one tap. (#1258)
 - Sign in on your watch with one tap from your phone. (#1258)
 - On your watch, a show's page now says when its episodes are loading or couldn't load, with Try again, and gets a fresh list from your phone when the one it has is old.
+- Hide a show everywhere from the menu on its page. boxlore stops suggesting it on Home, Explore, Lore, Smart Queue and Android Auto. Unhide it from the same menu or in LeaveMeAlone.
+- Give a show its own speed in Playback for this show, in the menu on its page. After that, changing the speed in the player while that show plays updates its own speed.
+- Trim silence skips quiet gaps in episodes. Turn it on in Settings › Playback or the player's speed controls, or just for one show in Playback for this show. It doesn't work while casting.
+- Episode titles only shows a show's episodes as a short list of titles. Turn it on from the menu on a show's page or in Settings › Appearance › Show pages.
+- Make playlists in Library from the shows you follow, like one for comedy and one for history. Each keeps its place, picks up new episodes by itself, and you can switch between them any time.
 
 ## Improved
 

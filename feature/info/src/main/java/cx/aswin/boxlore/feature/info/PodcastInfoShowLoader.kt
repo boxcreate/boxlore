@@ -326,7 +326,7 @@ internal class PodcastInfoShowLoader(
         RenumberedShowPageLogic.isFollowed(
             shownFollowed = subscriptionRepository.isSubscribed(shownPodcastId),
             routeFollowed = routePodcastId != shownPodcastId && subscriptionRepository.isSubscribed(routePodcastId),
-            formerFollowed = subscriptionRepository.renumberedFollows.isFollowedUnderFormerId(shownPodcastId),
+            formerFollowed = subscriptionRepository.renumberedFollows.followedFormerIdOf(shownPodcastId) != null,
         )
 
     private suspend fun fetchPodcastAndEpisodes(

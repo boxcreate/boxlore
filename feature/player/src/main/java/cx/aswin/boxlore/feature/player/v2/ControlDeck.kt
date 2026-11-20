@@ -61,6 +61,7 @@ import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.AutoTranscriptState
 import cx.aswin.boxlore.core.model.SleepTimerConstants
+import cx.aswin.boxlore.core.playback.ShowPlaybackPolicy
 import cx.aswin.boxlore.feature.player.v2.logic.formatSpeedLabel
 import cx.aswin.boxlore.feature.player.v2.logic.targetControlWeight
 import kotlinx.coroutines.delay
@@ -338,7 +339,8 @@ internal data class QuickControlShapes(
 data class SecondaryPlaybackState(
     val playbackSpeed: Float,
     val sleepTimerEnd: Long?,
-    val sleepAtEndOfEpisode: Boolean
+    val sleepAtEndOfEpisode: Boolean,
+    val audio: PlayerSpeedAudio = PlayerSpeedAudio()
 )
 
 data class SecondaryAvailabilityState(
@@ -359,7 +361,9 @@ data class SecondaryLibraryState(
 
 data class SecondarySelectionActions(
     val onSpeedSelected: (Float) -> Unit,
-    val onSleepTimerSelected: (Int) -> Unit
+    val onSleepTimerSelected: (Int) -> Unit,
+    val onTrimSilenceChange: (Boolean) -> Unit = {},
+    val onUseAppSpeed: () -> Unit = {}
 )
 
 data class SecondaryClickActions(
@@ -514,7 +518,12 @@ fun SecondaryRail(
                     colorScheme = colorScheme,
                     shapes = selectorShapes,
                     onBack = { controlMode = QuickControlMode.ACTIONS },
-                    onSpeedSelected = selectionActions.onSpeedSelected
+                    onSpeedSelected = selectionActions.onSpeedSelected,
+                    audio = InlineSpeedAudio(
+                        state = playback.audio,
+                        onUseAppSpeed = selectionActions.onUseAppSpeed,
+                        onTrimSilenceChange = selectionActions.onTrimSilenceChange
+                    )
                 )
 
                 QuickControlMode.SLEEP -> InlineSleepSelector(
@@ -536,7 +545,10 @@ fun SpeedSheet(
     currentSpeed: Float,
     colorScheme: ColorScheme,
     onSpeedSelected: (Float) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    audio: PlayerSpeedAudio = PlayerSpeedAudio(),
+    onUseAppSpeed: () -> Unit = {},
+    onTrimSilenceChange: (Boolean) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
@@ -558,7 +570,7 @@ fun SpeedSheet(
                 fontWeight = GoogleSansWeight.bold
             )
             Spacer(Modifier.height(16.dp))
-            val speeds = listOf(0.5f, 0.8f, 0.9f, 1f, 1.1f, 1.2f, 1.25f, 1.5f, 1.75f, 2f, 2.5f, 3f)
+            val speeds = ShowPlaybackPolicy.SPEED_OPTIONS
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(speeds) { speed ->
                     val selected = speed == currentSpeed
@@ -580,6 +592,12 @@ fun SpeedSheet(
                     }
                 }
             }
+            SpeedSheetAudioSection(
+                audio = audio,
+                colorScheme = colorScheme,
+                onUseAppSpeed = onUseAppSpeed,
+                onTrimSilenceChange = onTrimSilenceChange
+            )
         }
     }
 }

@@ -23,7 +23,7 @@ Used by `:app`:
 ## Player styles
 
 - Appearance → **Player style** stores `FullPlayerStyle` (`standard` or `bunpod`) in `:core:prefs`. `useMinimalPlayer` picks the bunpod layout for audio only; video always uses Standard.
-- **Standard** (`FullPlayerV2`, `ControlDeck`): artwork or Cast hero, seekbar, transport and a quick-action tray (speed, sleep, queue, chapters, transcript), with Up next and show notes below.
+- **Standard** (`FullPlayerV2`, `ControlDeck`): artwork or Cast hero, seekbar, transport and a quick-action tray (speed with trim silence, sleep, queue, chapters, transcript), with Up next and show notes below.
 - **bunpod** (`Minimal*.kt`): show, title, remaining time, a thin seekbar and five controls, without artwork. The **Up next** arrow or an upward swipe at the end opens the queue sheet once per gesture (`MinimalQueueSwipe`).
 - Chapter and transcript quick actions stay available offline when a downloaded file, live playback state or timestamped show notes provide them (`SecondaryAvailabilityState`).
 - Tapping download on an already downloaded episode asks before removing it (`RemoveDownloadConfirmationDialog` from `:core:designsystem`).

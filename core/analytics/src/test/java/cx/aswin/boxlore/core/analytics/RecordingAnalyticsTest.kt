@@ -167,8 +167,8 @@ class DeriveGenrePersonaTest {
 class AnalyticsGlossaryAllowlistTest {
     @Test
     fun `phase A union B has expected cardinality`() {
-        // 40 Phase A (with onboarding_similar_choice, the two listen events and the two screen events) + 1 A/B + 29 Phase B + 5 Support + 2 custom-theme + 1 hero-style + 1 LeaveMeAlone events.
-        assertEquals(85, AnalyticsGlossary.PHASE_A_UNION_B.size)
+        // 40 Phase A (with onboarding_similar_choice, the two listen events and the two screen events) + 1 A/B + 30 Phase B (with playlist_modified) + 5 Support + 2 custom-theme + 1 hero-style + 1 LeaveMeAlone events.
+        assertEquals(86, AnalyticsGlossary.PHASE_A_UNION_B.size)
     }
 
     @Test
@@ -323,6 +323,8 @@ class AnalyticsRawTextAndEntryPointTest {
         assertEquals("queue_auto_advance", AnalyticsGlossary.normalizeEntryPoint("queue_auto_advance"))
         assertEquals("queue_skip", AnalyticsGlossary.normalizeEntryPoint("queue_skip"))
         assertEquals("library_latest_episodes", AnalyticsGlossary.normalizeEntryPoint("library_latest_episodes"))
+        // A playing playlist: one value for every playlist, never its ID.
+        assertEquals("playlist", AnalyticsGlossary.normalizeEntryPoint("playlist"))
     }
 
     @Test

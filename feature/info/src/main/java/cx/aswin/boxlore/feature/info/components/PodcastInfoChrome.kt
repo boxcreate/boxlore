@@ -34,6 +34,8 @@ import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.SyncProblem
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.ViewAgenda
+import androidx.compose.material.icons.rounded.ViewHeadline
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.AlertDialog
@@ -220,6 +222,8 @@ internal data class EpisodeFeedRowUi(
     val autoScrolledEpisodeId: String?,
     val podcastImageUrl: String?,
     val isSearchActive: Boolean = false,
+    /** Episode titles only: short [EpisodeTitleRow]s instead of full cards. Trailer cards are already short and stay. */
+    val titlesOnly: Boolean = false,
 )
 
 @Composable
@@ -240,41 +244,46 @@ internal fun EpisodeFeedItemRow(
                 episodeId = episode.id,
                 playbackStateFlow = viewModel.episodePlaybackState,
             ) { playState ->
-                EpisodeListItem(
-                    episode = episode,
-                    isLiked = ui.indicators.likedEpisodeIds.contains(episode.id),
-                    accentColor = ui.accentColor,
-                    podcastImageUrl = ui.podcastImageUrl,
-                    // Playback State
-                    isPlaying = playState?.isPlaying == true,
-                    isResume = playState?.isResume == true,
-                    progress = playState?.progress ?: 0f,
-                    timeLeft = playState?.timeLeft,
-                    // Download State
-                    isDownloaded = ui.indicators.downloadedEpisodeIds.contains(episode.id),
-                    isDownloading = ui.indicators.downloadingEpisodeIds.contains(episode.id),
-                    isQueued = ui.indicators.queuedEpisodeIds.contains(episode.id),
-                    isCompleted = ui.indicators.completedEpisodeIds.contains(episode.id),
-                    isUpNext = episode.id == ui.autoScrolledEpisodeId,
-                    selectionActive = selection.isActive,
-                    isSelected = episode.id in selection.selectedEpisodeIds,
-                    onClick = {
-                        if (selection.isActive) {
-                            selection.onToggle(episode)
-                        } else {
-                            viewModel.recordEpisodeClick(episode.id)
-                            onEpisodeClick(episode, if (ui.isSearchActive) "podcast_info_search_results" else "podcast_info_episodes_list", index)
-                        }
-                    },
-                    onLongClick = { selection.onLongPress(episode) },
-                    onPlayClick = { viewModel.onPlayClick(episode) },
-                    onToggleLike = { viewModel.onToggleLike(episode) },
-                    onQueueClick = { viewModel.toggleQueue(episode) },
-                    onDownloadClick = { viewModel.toggleDownload(episode) },
-                    onMarkPlayedClick = { viewModel.onToggleCompletion(episode) },
-                    showMarkPlayedButton = ui.isSearchActive,
-                    modifier = modifier.padding(horizontal = 16.dp),
-                )
+                val onRowClick = {
+                    if (selection.isActive) {
+                        selection.onToggle(episode)
+                    } else {
+                        viewModel.recordEpisodeClick(episode.id)
+                        onEpisodeClick(episode, if (ui.isSearchActive) "podcast_info_search_results" else "podcast_info_episodes_list", index)
+                    }
+                }
+                if (ui.titlesOnly) {
+                    NormalEpisodeTitleRow(episode, playState, ui, selection, onRowClick, viewModel, modifier.padding(horizontal = 16.dp))
+                } else {
+                    EpisodeListItem(
+                        episode = episode,
+                        isLiked = ui.indicators.likedEpisodeIds.contains(episode.id),
+                        accentColor = ui.accentColor,
+                        podcastImageUrl = ui.podcastImageUrl,
+                        // Playback State
+                        isPlaying = playState?.isPlaying == true,
+                        isResume = playState?.isResume == true,
+                        progress = playState?.progress ?: 0f,
+                        timeLeft = playState?.timeLeft,
+                        // Download State
+                        isDownloaded = ui.indicators.downloadedEpisodeIds.contains(episode.id),
+                        isDownloading = ui.indicators.downloadingEpisodeIds.contains(episode.id),
+                        isQueued = ui.indicators.queuedEpisodeIds.contains(episode.id),
+                        isCompleted = ui.indicators.completedEpisodeIds.contains(episode.id),
+                        isUpNext = episode.id == ui.autoScrolledEpisodeId,
+                        selectionActive = selection.isActive,
+                        isSelected = episode.id in selection.selectedEpisodeIds,
+                        onClick = onRowClick,
+                        onLongClick = { selection.onLongPress(episode) },
+                        onPlayClick = { viewModel.onPlayClick(episode) },
+                        onToggleLike = { viewModel.onToggleLike(episode) },
+                        onQueueClick = { viewModel.toggleQueue(episode) },
+                        onDownloadClick = { viewModel.toggleDownload(episode) },
+                        onMarkPlayedClick = { viewModel.onToggleCompletion(episode) },
+                        showMarkPlayedButton = ui.isSearchActive,
+                        modifier = modifier.padding(horizontal = 16.dp),
+                    )
+                }
             }
         }
         is FeedItem.SingleTrailer -> {
@@ -314,12 +323,20 @@ internal data class PodcastInfoTopOverlayActions(
     val onMarkAllUnplayed: () -> Unit,
     val onToggleHideCompleted: () -> Unit,
     val onPlaybackSettings: () -> Unit,
+    /** Episode titles only is on: the menu offers full episodes back. */
+    val titlesOnly: Boolean = false,
+    val onToggleTitlesOnly: () -> Unit = {},
     val isSubscribed: Boolean = false,
+    /** Opens Add to playlist; null hides it (the show isn't followed, or there are no playlists). */
+    val onAddToPlaylist: (() -> Unit)? = null,
     val isPinnedToHome: Boolean = false,
     val onToggleHomePin: () -> Unit = {},
     val onEditGenre: () -> Unit = {},
     /** Mark all is reading the show: both Mark all items wait until it ends. */
     val markAllRunning: Boolean = false,
+    /** The show is hidden everywhere: the menu offers Unhide show instead of Hide show everywhere. */
+    val isHidden: Boolean = false,
+    val onToggleHidden: () -> Unit = {},
 )
 
 internal data class MissingEpisodesChip(
@@ -491,6 +508,19 @@ private fun PodcastInfoOverflowMenuItems(
         },
     )
     DropdownMenuItem(
+        text = { Text(if (actions.titlesOnly) "Show full episodes" else "Show titles only") },
+        onClick = {
+            onDismiss()
+            actions.onToggleTitlesOnly()
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = if (actions.titlesOnly) Icons.Rounded.ViewAgenda else Icons.Rounded.ViewHeadline,
+                contentDescription = null,
+            )
+        },
+    )
+    DropdownMenuItem(
         text = { Text("Playback for this show") },
         onClick = {
             onDismiss()
@@ -500,6 +530,7 @@ private fun PodcastInfoOverflowMenuItems(
             Icon(Icons.Rounded.Tune, contentDescription = null)
         },
     )
+    actions.onAddToPlaylist?.let { AddToPlaylistMenuItem(onDismiss, it) }
     if (actions.isSubscribed) {
         DropdownMenuItem(
             text = { Text("Change tag / genre") },
@@ -526,6 +557,17 @@ private fun PodcastInfoOverflowMenuItems(
             },
         )
     }
+    // Followed or not: hiding a followed show unsubscribes from it after a confirmation.
+    DropdownMenuItem(
+        text = { Text(stringResource(if (actions.isHidden) R.string.podcast_info_unhide_show else R.string.podcast_info_hide_show)) },
+        onClick = {
+            onDismiss()
+            actions.onToggleHidden()
+        },
+        leadingIcon = {
+            Icon(if (actions.isHidden) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff, contentDescription = null)
+        },
+    )
 }
 
 @Composable

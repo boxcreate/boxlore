@@ -28,6 +28,10 @@ data class InfoSharedDeps(
     val folderRepository: cx.aswin.boxlore.core.catalog.FolderRepository? = null,
     /** The app's own scope, for work that must outlive the page (Mark all); the page's scope when null. */
     val applicationScope: CoroutineScope? = null,
+    /** Playlists for the show page's Add to playlist; null hides it. */
+    val playlistRepository: cx.aswin.boxlore.core.catalog.PlaylistRepository? = null,
+    /** Episode titles only, kept running by the app so a new show page opens with the stored choice; the page reads prefs itself when null. */
+    val episodeTitlesOnly: kotlinx.coroutines.flow.StateFlow<Boolean>? = null,
 )
 
 data class PodcastInfoRouteArgs(

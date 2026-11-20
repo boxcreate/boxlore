@@ -420,6 +420,41 @@ class SubscriptionSyncResolverTest {
         assertTrue(unchanged.isDirty)
     }
 
+    /** The cloud doesn't carry a show's own playback settings, so no pull may wipe them. */
+    @Test
+    fun resolveSubscription_pullsKeepTheShowsOwnPlaybackSettings() = runTest {
+        val settings = { row: PodcastEntity ->
+            row.copy(skipBeginningOverrideMs = 30_000L, skipEndingOverrideMs = 0L, playbackSpeedOverride = 1.5f, skipSilenceOverride = false)
+        }
+        podcastDao.upsert(settings(createPodcast("clean", isSubscribed = true, subscribedAt = 1000L, syncedAt = 1000L)))
+        podcastDao.upsert(settings(createPodcast("left", subscribedAt = 0L, unsubscribedAt = 1000L, syncedAt = 1000L)))
+        podcastDao.upsert(settings(createPodcast("dropped", isSubscribed = true, subscribedAt = 1000L, syncedAt = 1000L)))
+
+        resolver.resolveSubscription(
+            UserSubscriptionSyncDto(podcastId = "clean", isSubscribed = true, subscribedAt = 1000L, autoDownloadEnabled = true, updatedAt = 2000L),
+            syncedAt = 3000L,
+        )
+        resolver.resolveSubscription(
+            UserSubscriptionSyncDto(podcastId = "left", isSubscribed = true, subscribedAt = 2000L, updatedAt = 2000L),
+            syncedAt = 3000L,
+        )
+        resolver.resolveSubscription(
+            UserSubscriptionSyncDto(podcastId = "dropped", isSubscribed = false, subscribedAt = 1000L, unsubscribedAt = 2000L, updatedAt = 2000L),
+            syncedAt = 3000L,
+        )
+
+        val clean = podcastDao.getPodcast("clean")!!
+        assertTrue("the pull was merged", clean.autoDownloadEnabled)
+        assertTrue(podcastDao.getPodcast("left")!!.isSubscribed)
+        assertFalse(podcastDao.getPodcast("dropped")!!.isSubscribed)
+        for (id in listOf("clean", "left", "dropped")) {
+            val row = podcastDao.getPodcast(id)!!
+            assertEquals(id, 1.5f, row.playbackSpeedOverride)
+            assertEquals(id, false, row.skipSilenceOverride)
+            assertEquals(id, 30_000L to 0L, row.skipBeginningOverrideMs to row.skipEndingOverrideMs)
+        }
+    }
+
     @Suppress("LongParameterList")
     private fun createPodcast(
         podcastId: String,

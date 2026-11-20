@@ -252,4 +252,34 @@ class AppearanceActionsTrackedTest {
             restore()
         }
     }
+
+    @Test
+    fun `episode titles only reaches the app and reports each change once`() {
+        val events = mutableListOf<Pair<String, Map<String, Any>>>()
+        val restore = AnalyticsHelper.installRecordingSink(events)
+        try {
+            var state = AppearanceUiState("system", false, "violet", "standard")
+            val saved = mutableListOf<Boolean>()
+            val actions = AppearanceActions(
+                onSetThemeConfig = {},
+                onToggleDynamicColor = {},
+                onSetThemeBrand = {},
+                onSetSurfaceStyle = {},
+                onSetEpisodeTitlesOnly = {
+                    saved += it
+                    state = state.copy(episodeTitlesOnly = it)
+                },
+            ).trackedForAnalytics { state }
+
+            actions.onSetEpisodeTitlesOnly(true)
+            actions.onSetEpisodeTitlesOnly(true)
+            actions.onSetEpisodeTitlesOnly(false)
+
+            assertEquals(listOf(true, true, false), saved)
+            val keys = events.filter { it.first == "settings_interaction" }.map { it.second["setting_key"] to it.second["value"] }
+            assertEquals(listOf("episode_titles_only_toggled" to "true", "episode_titles_only_toggled" to "false"), keys)
+        } finally {
+            restore()
+        }
+    }
 }

@@ -76,6 +76,8 @@ object RenumberedFollowMerge {
             type = if (keepsOwnSort) current.type else old.type,
             skipBeginningOverrideMs = current.skipBeginningOverrideMs ?: old.skipBeginningOverrideMs,
             skipEndingOverrideMs = current.skipEndingOverrideMs ?: old.skipEndingOverrideMs,
+            playbackSpeedOverride = current.playbackSpeedOverride ?: old.playbackSpeedOverride,
+            skipSilenceOverride = current.skipSilenceOverride ?: old.skipSilenceOverride,
             feedUrl = current.feedUrl ?: old.feedUrl,
         )
     }
@@ -95,6 +97,8 @@ object RenumberedFollowMerge {
             autoDownloadEnabled = old.autoDownloadEnabled,
             skipBeginningOverrideMs = old.skipBeginningOverrideMs ?: shown.skipBeginningOverrideMs,
             skipEndingOverrideMs = old.skipEndingOverrideMs ?: shown.skipEndingOverrideMs,
+            playbackSpeedOverride = old.playbackSpeedOverride ?: shown.playbackSpeedOverride,
+            skipSilenceOverride = old.skipSilenceOverride ?: shown.skipSilenceOverride,
             sourceType = PodcastEntity.SOURCE_PODCAST_INDEX,
             customGenre = old.customGenre,
             customGenreIcon = old.customGenreIcon,

@@ -44,6 +44,7 @@ import cx.aswin.boxlore.feature.info.R
 
 internal const val SHOW_PAGE_SKELETON_TAG = "podcast_info_skeleton"
 internal const val EPISODE_CARD_SKELETON_TAG = "podcast_info_episode_skeleton"
+internal const val EPISODE_TITLE_ROW_SKELETON_TAG = "podcast_info_episode_title_row_skeleton"
 internal const val SHOW_CAUGHT_UP_TAG = "podcast_info_caught_up"
 internal const val SHOW_COMPLETED_BUTTON_TAG = "podcast_info_show_completed"
 
@@ -85,12 +86,39 @@ internal fun EpisodeCardSkeleton(modifier: Modifier = Modifier) {
     }
 }
 
+/** A loading row in [EpisodeTitleRow]'s geometry: a title line, a details line and the round play button. */
+@Composable
+internal fun EpisodeTitleRowSkeleton(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.fillMaxWidth().testTag(EPISODE_TITLE_ROW_SKELETON_TAG).clearAndSetSemantics {},
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        ShimmerScope(active = true) {
+            Row(Modifier.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp).height(48.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Block(null, 16.dp, RoundedCornerShape(8.dp), Modifier.padding(end = 24.dp))
+                    Block(120.dp, 11.dp, RoundedCornerShape(6.dp))
+                }
+                Spacer(Modifier.width(8.dp))
+                Block(42.dp, 42.dp, RoundedCornerShape(21.dp), Modifier.padding(3.dp))
+            }
+        }
+    }
+}
+
+/** Loading rows in the shape the list will take: title rows for Episode titles only, else episode cards. */
+@Composable
+internal fun EpisodeListSkeleton(titlesOnly: Boolean, modifier: Modifier = Modifier) {
+    if (titlesOnly) EpisodeTitleRowSkeleton(modifier) else EpisodeCardSkeleton(modifier)
+}
+
 /**
  * Opening a show: the page in its own shape (cover, title, chips, description, buttons and
  * episode cards) while it loads, instead of a lone loader in an empty page.
  */
 @Composable
-internal fun ShowPageSkeleton(modifier: Modifier = Modifier) {
+internal fun ShowPageSkeleton(modifier: Modifier = Modifier, titlesOnly: Boolean = false) {
     val loading = stringResource(R.string.podcast_info_loading)
     ShimmerScope(active = true) {
         Column(
@@ -118,11 +146,14 @@ internal fun ShowPageSkeleton(modifier: Modifier = Modifier) {
                 Block(52.dp, 48.dp, RoundedCornerShape(24.dp))
             }
             Column(Modifier.padding(top = 16.dp).boxloreCardWidth(BoxloreCardFamily.Reading), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                repeat(2) { EpisodeCardSkeleton() }
+                if (titlesOnly) repeat(TITLE_ROW_SKELETONS) { EpisodeTitleRowSkeleton() } else repeat(2) { EpisodeCardSkeleton() }
             }
         }
     }
 }
+
+/** Title rows are about a third of a card's height, so the opening page shows more of them. */
+private const val TITLE_ROW_SKELETONS = 4
 
 /**
  * Completed episodes are hidden and the show has none left: says so, and offers to show them

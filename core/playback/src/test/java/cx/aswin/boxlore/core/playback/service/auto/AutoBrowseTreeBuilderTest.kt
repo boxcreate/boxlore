@@ -338,6 +338,35 @@ class AutoBrowseTreeBuilderTest {
         assertEquals((1..50).map { "subscription:$it" }, tiles.map { it.mediaId })
     }
 
+    @Test
+    fun curatedListsGenresAndDrivePicksLeaveHiddenShowsOut() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val realPrefs = cx.aswin.boxlore.core.prefs.UserPreferencesRepository(context)
+        realPrefs.hiddenShows.setAll(listOf(cx.aswin.boxlore.core.model.HiddenShow("2"), cx.aswin.boxlore.core.model.HiddenShow("rss:x", aliasIds = setOf("3"))))
+        try {
+            val prefs = mock(cx.aswin.boxlore.core.prefs.UserPreferencesRepository::class.java)
+            val repository = mock(cx.aswin.boxlore.core.catalog.PodcastRepository::class.java)
+            `when`(prefs.regionStream).thenReturn(kotlinx.coroutines.flow.flowOf("us"))
+            `when`(prefs.contentLanguagesStream).thenReturn(kotlinx.coroutines.flow.flowOf(listOf("en")))
+            `when`(prefs.hiddenShows).thenReturn(realPrefs.hiddenShows)
+            `when`(host.userPreferencesRepository).thenReturn(prefs)
+            `when`(host.podcastRepository).thenReturn(repository)
+            val shows = (1..4).map { cx.aswin.boxlore.core.model.Podcast(id = "$it", title = "Show $it", artist = "", imageUrl = "", latestEpisode = episode("ep$it", durationSeconds = 2_400)) }
+            `when`(repository.getCuratedPodcasts(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyList()))
+                .thenReturn(shows)
+            `when`(repository.getTrendingPodcasts(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyInt()))
+                .thenReturn(shows)
+            `when`(repository.getCuratedVibes(org.mockito.ArgumentMatchers.anyList(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.isNull()))
+                .thenReturn(mapOf("any" to shows))
+
+            assertEquals(listOf("subscription:1", "subscription:4"), treeBuilder.getCuratedChildren("morning_news").map { it.mediaId })
+            assertEquals(listOf("subscription:1", "subscription:4"), treeBuilder.getGenreChildren("Comedy").map { it.mediaId })
+            assertEquals(listOf("episode:ep1", "episode:ep4"), treeBuilder.getDrivePicksChildren().map { it.mediaId })
+        } finally {
+            realPrefs.hiddenShows.setAll(emptyList())
+        }
+    }
+
     private fun mediaItems(count: Int) = (0 until count).map { androidx.media3.common.MediaItem.Builder().setMediaId("item:$it").build() }
 
     private fun episode(id: String, publishedSeconds: Long = 0L, durationSeconds: Int = 1_800) = Episode(

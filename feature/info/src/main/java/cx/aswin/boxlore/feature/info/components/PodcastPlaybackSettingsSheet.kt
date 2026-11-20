@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -26,7 +28,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
-import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import kotlin.math.roundToInt
 
@@ -37,13 +38,23 @@ data class PodcastPlaybackSettingsState(
     val globalSkipEndingMs: Long,
     val skipBeginningOverrideMs: Long?,
     val skipEndingOverrideMs: Long?,
-)
+    val globalPlaybackSpeed: Float = 1f,
+    val playbackSpeedOverride: Float? = null,
+    val globalTrimSilence: Boolean = false,
+    val trimSilenceOverride: Boolean? = null,
+) {
+    /** "Use app defaults" is on while the show keeps none of its own settings. */
+    val usesDefaults: Boolean
+        get() = listOf(skipBeginningOverrideMs, skipEndingOverrideMs, playbackSpeedOverride, trimSilenceOverride).all { it == null }
+}
 
 data class PodcastPlaybackSettingsActions(
     val onUseAppDefaultsChange: (Boolean) -> Unit,
     val onSkipBeginningOverrideChange: (Long) -> Unit,
     val onSkipEndingOverrideChange: (Long) -> Unit,
     val onDismissRequest: () -> Unit,
+    val onPlaybackSpeedOverrideChange: (Float?) -> Unit = {},
+    val onTrimSilenceOverrideChange: (Boolean?) -> Unit = {},
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,13 +64,14 @@ fun PodcastPlaybackSettingsSheet(
     actions: PodcastPlaybackSettingsActions,
 ) {
     TrackScreenView("podcast_playback_settings")
-    val usesDefaults =
-        state.skipBeginningOverrideMs == null && state.skipEndingOverrideMs == null
+    val usesDefaults = state.usesDefaults
     ModalBottomSheet(onDismissRequest = actions.onDismissRequest) {
         Column(
             modifier =
             Modifier
-                .fillMaxWidth().tabletSheetScroll()
+                .fillMaxWidth()
+                // Scrolls on phones too: with speed and trim silence it can outgrow a short screen.
+                .verticalScroll(rememberScrollState())
                 .navigationBarsPadding()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 24.dp),
@@ -88,9 +100,7 @@ fun PodcastPlaybackSettingsSheet(
                     Text(
                         text =
                         if (state.isSubscribed) {
-                            "Beginning ${durationLabel(
-                                state.globalSkipBeginningMs,
-                            )} · Ending ${durationLabel(state.globalSkipEndingMs)}"
+                            appDefaultsSummary(state)
                         } else {
                             "Subscribe to customize playback for this show"
                         },
@@ -105,6 +115,17 @@ fun PodcastPlaybackSettingsSheet(
                 )
             }
             HorizontalDivider()
+            // Each has its own "App" choice, so picking one never freezes the show's skips.
+            PodcastSpeedChoice(
+                state = state,
+                enabled = state.isSubscribed,
+                onChange = actions.onPlaybackSpeedOverrideChange,
+            )
+            PodcastTrimSilenceChoice(
+                state = state,
+                enabled = state.isSubscribed,
+                onChange = actions.onTrimSilenceOverrideChange,
+            )
             PodcastDurationSlider(
                 title = "Skip beginning",
                 valueMs = state.skipBeginningOverrideMs ?: state.globalSkipBeginningMs,
@@ -167,4 +188,4 @@ private fun PodcastDurationSlider(
     }
 }
 
-private fun durationLabel(valueMs: Long): String = if (valueMs <= 0L) "Off" else "${valueMs / 1_000L}s"
+internal fun durationLabel(valueMs: Long): String = if (valueMs <= 0L) "Off" else "${valueMs / 1_000L}s"

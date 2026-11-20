@@ -144,6 +144,7 @@ fun BoxLoreNavHost(
         addDebugDestination(wiring)
         addExploreDestination(wiring)
         addLibraryDestinations(wiring)
+        addPlaylistDestinations(wiring)
         addPodcastDestination(wiring)
         addEpisodeFullPathDestination(wiring)
         addEpisodeDeepLinkDestination(wiring)

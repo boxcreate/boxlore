@@ -112,7 +112,8 @@ class EpisodeInfoViewModel(
             val result = cx.aswin.boxlore.core.catalog.crosspromo.CrossPromotionDetector().detect(episode, hostTitle, notes)
             val name = result.extractedShowName
             if (result.isCrossPromotion && name != null) {
-                crossPromotionResolver.resolve(name, hostId, notes.links)?.let { target ->
+                // A promoted show the listener hid is never offered.
+                crossPromotionResolver.resolve(name, hostId, notes.links)?.takeUnless { cx.aswin.boxlore.core.model.HiddenShows.hides(userPrefs.hiddenShows.matchIds(), it) }?.let { target ->
                     cx.aswin.boxlore.core.model.ResolvedCrossPromotion(name, result.confidence, target, result.matchedIndicators)
                 }
             } else {

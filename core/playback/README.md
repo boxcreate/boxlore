@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Owns playback: the UI-facing `PlaybackRepository`, the saved queue and Smart Queue, history writes and listening records, the Media3 playback service and its notification, the offline download foreground service, Android Auto browsing and artwork, and Cast.
+Owns playback: the UI-facing `PlaybackRepository`, the queue and Smart Queue, history and listening records, the Media3 and download services, Android Auto and Cast.
 
 It does not own the Room schema ([`:core:database`](../database/README.md)), preference storage ([`:core:prefs`](../prefs/README.md)), catalog and cloud sync ([`:core:catalog`](../catalog/README.md)), download workers ([`:core:downloads`](../downloads/README.md)), ranking storage or any Compose UI.
 
@@ -19,12 +19,13 @@ It does not own the Room schema ([`:core:database`](../database/README.md)), pre
 - `PlaybackSkipPolicy`: with "Restart forgotten episodes" on, implicit plays restart an episode not played for `STALE_RESUME_MS`; Jump Back In and History always resume. Progress is never wiped.
 - `PlaybackChaptersTranscriptController`: chapters and transcripts, a download's saved copy before the network; a briefing missing its links gets them from `:core:catalog`'s `BriefingLinks`.
 - `PlaybackRouteState` mirrors the active route's device name and volume into `PlayerState`; `PlaybackControlSync` keeps speed and skip lengths aligned with Media3.
+- Speed and trim silence: a show's value beats the app's (`ShowPlaybackPolicy`, `PlayerAudioSettings`); only `service.ShowPlaybackApplier` applies them.
 - `PlaybackMediaIdPolicy` sets session IDs and cache keys; `PlaybackArtworkMetadata` picks the artwork to save.
 
 ### Queue and Smart Queue
 
 - `QueueRepository`: the saved queue and the `QueueSyncPort` for cloud sync. Each mutation is one Room transaction that calls `QueueDao.bumpQueueVersion` (version, device, dirty mark, removal tombstones).
-- `QueueManager` orchestrates queues for screens, such as `playContextEpisodes` for a visible list like New Episodes.
+- `QueueManager` orchestrates screen queues: `playContextEpisodes` (New Episodes), `playPlaylist`, `upNextSnapshot`/`restoreUpNext` (Undo).
 - The queue holds at most `PlaybackRepository.QUEUE_LIMIT` (50) episodes. `addToQueue` returns false past the limit or for an episode already queued; screens read the constant to say which.
 - "Play next" on a queued episode moves it after the current item (`QueueMath.placeNext`).
 - `QueueShowPolicy`: every entry plays under its own show; another show's fields only fill gaps. An entry with no show plays under "Unknown Podcast".
@@ -33,8 +34,8 @@ It does not own the Room schema ([`:core:database`](../database/README.md)), pre
 - Same-show continuation reads a bounded window around the current episode, never a whole feed; `SmartQueueEngine.SHOW_BINGE_SOURCES` lists sources allowed deep same-show runs. Trailers (`Episode.isTrailer`) and episodes without audio are never refilled.
 - With the Smart Queue setting off, refill offers same-show continuation only; turning it on again refills at once when the queue is low.
 - `SameShowContinuation*`: the optional "more from this show" offer, capped at `MAX_CONTINUATION_OFFER`.
-- Smart Queue refill is owned by `BoxLorePlaybackService` (`service.SmartQueueRefillCoordinator`, `service.ContextQueueContinuationCoordinator`); screens and workers never refill.
-- A context queue refills only after its final episode completes and is saved, and ignores a late result once the session is paused, sleeping or replaced.
+- Only `BoxLorePlaybackService` refills (`service.SmartQueueRefillCoordinator`, `ContextQueueContinuationCoordinator`, `PlaylistQueueContinuation`), never screens or workers.
+- A context queue (New Episodes, playlists) refills only after its last episode completes and saves, ignoring late results once paused, sleeping or replaced. A playlist tops up from itself, then Smart Queue.
 
 ### History and listening records
 
@@ -129,7 +130,7 @@ src/main/java/cx/aswin/boxlore/core/data/service/   # stubs for legacy service n
 - `PlaybackMediaControllerHandle.awaitController()` returns null on a rejected connection and reconnects with growing delays, at most `MediaControllerReconnectPolicy.MAX_ATTEMPTS` times.
 - `BoxLorePlaybackService` resolves shared dependencies lazily; its service-scoped players keep playback and transfers going without an Activity.
 - Idle handoff: a local session paused in the background for `PlaybackPowerPolicy.PAUSED_IDLE_TIMEOUT_MS` saves progress, rechecks eligibility and stops the service, unless playing, buffering, in the foreground or casting.
-- The local player keeps `WAKE_MODE_NETWORK` for screen-off streaming and enables audio offload only where playback speed still works.
+- The local player keeps `WAKE_MODE_NETWORK` for screen-off streaming and enables audio offload only where speed works, never while trimming silence.
 - Natural completion is event-driven; outro polling runs only while playing with a real trim.
 
 ## Persistence & identity
@@ -148,12 +149,12 @@ Never rename these:
 
 ## Testing notes
 
-Tests live in `core/playback/src/test` (JUnit 5, Robolectric for Room and SharedPreferences, Mockito, no MockK); `EpisodeAliasFixtures` builds episodes under several IDs. Install the shared dependency holders before testing service code.
+Tests in `core/playback/src/test` use JUnit 5, Robolectric and Mockito (no MockK); `EpisodeAliasFixtures` builds multi-ID episodes. Install the shared holders before testing service code.
 
 | Area | Test classes |
 | :--- | :--- |
 | Queue | `QueueRepositoryTest`, `QueueManagerPlaybackTest`, `PlaybackQueueCoordinatorTest`, `QueueShowPolicyTest`, `QueueEntryShowTest` |
-| Smart Queue, mixtapes | `SmartQueueEngineTest`, `service/SmartQueueRefillCoordinatorTest`, `service/ContextQueueContinuationCoordinatorTest`, `SameShowContinuation*Test`, `MixtapeEngine*Test` |
+| Smart Queue, mixtapes | `SmartQueueEngineTest`, `service/SmartQueueRefillCoordinatorTest`, `service/ContextQueueContinuationCoordinatorTest`, `service/PlaylistQueueContinuationTest`, `SameShowContinuation*Test`, `MixtapeEngine*Test` |
 | Start position, skips | `PlaybackIntroOutroControllerTest`, `PlaybackSkipPolicyTest`, `PlaybackControllerStatePolicyTest`, `PlaybackProgressPersistencePolicyTest` |
 | History, insights | `HistoryBeyondScreenLimitTest`, `ListeningInsightsLogicTest`, `IdleSessionHandoffTest`, `PlaybackSessionRestoreHelperTest` |
 | Several IDs | `EpisodeAlias*Test`, `QueueAliasPolicyTest`, `SwitchedShowPlaybackWritesTest`, `service/auto/AutoEpisodeAlias*Test` |

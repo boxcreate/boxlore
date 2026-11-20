@@ -42,6 +42,7 @@ internal object ListenAnalyticsFixtures {
         bufferingCount = 3,
         bufferingMs = 4_500L,
         queueSize = 4,
+        trimSilence = true,
     )
 
     fun interrupted() =
@@ -97,6 +98,7 @@ class ListenAnalyticsTest {
                 "controlled_by" to "app",
                 "output" to "wired",
                 "speed" to 1.5f,
+                "trim_silence" to true,
                 "seeks_forward" to 2,
                 "seeks_back" to 1,
                 "skipped_forward_seconds" to 90f,

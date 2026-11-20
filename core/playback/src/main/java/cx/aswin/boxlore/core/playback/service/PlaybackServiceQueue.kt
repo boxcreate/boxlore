@@ -64,9 +64,26 @@ internal suspend fun BoxLorePlaybackService.refillQueueForSession(
 ): Boolean {
     val activation = queueActivationGeneration
     val transportGeneration = PlaybackActivationRequest.generation
-    return smartQueueRefillCoordinator.refillQueue(player, contextExhausted) {
-        activation == queueActivationGeneration && transportGeneration == PlaybackActivationRequest.generation && isCurrent()
-    }
+    val current = { activation == queueActivationGeneration && transportGeneration == PlaybackActivationRequest.generation && isCurrent() }
+    return refillPlaylistFirst(
+        contextExhausted = contextExhausted,
+        playlistTopUp = playlistQueueContinuation()?.let { continuation -> { continuation.refill(player, current) } },
+        smartQueue = { smartQueueRefillCoordinator.refillQueue(player, contextExhausted, current) },
+    )
+}
+
+/** The playlist top-up ([PlaylistQueueContinuation]), or null when the app provides no playlists. */
+private fun BoxLorePlaybackService.playlistQueueContinuation(): PlaylistQueueContinuation? {
+    val playlists = cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder.instance?.playlistRepository ?: return null
+    return PlaylistQueueContinuation(
+        database = database,
+        queueRepository = queueRepository,
+        nextEpisodes = playlists::nextEpisodes,
+        mainDispatcher = mainDispatcher,
+        ioDispatcher = ioDispatcher,
+        queueMaxSize = cx.aswin.boxlore.core.playback.PlaybackRepository.QUEUE_LIMIT,
+        mediaIdPrefixStripper = cx.aswin.boxlore.core.playback.SmartQueueRefillPolicy::stripQueuePrefixes,
+    )
 }
 
 internal fun BoxLorePlaybackService.clearEndOfEpisodeSleep() {

@@ -4,6 +4,8 @@ import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.database.withInProgress
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.withoutHiddenShowEpisodes
+import cx.aswin.boxlore.core.model.withoutHiddenShows
 import cx.aswin.boxlore.core.playback.MixtapeEngine
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
 import cx.aswin.boxlore.core.playback.episodeAliasGroups
@@ -11,6 +13,7 @@ import cx.aswin.boxlore.core.playback.inProgressHistory
 import cx.aswin.boxlore.core.playback.resumeSessions
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
+import cx.aswin.boxlore.feature.home.logic.HomeHiddenShowsLogic
 import cx.aswin.boxlore.feature.home.logic.HomeUiAssemblyLogic
 import cx.aswin.boxlore.feature.home.logic.discoverPodcastsExcluding
 import cx.aswin.boxlore.feature.home.logic.withCurrentCategoryDiscovery
@@ -196,13 +199,14 @@ internal fun HomeViewModel.loadData() {
                     },
                     _editorialRows,
                     _isEditorialRowsLoading,
-                    userPrefs.homePinnedPodcastIdsStream,
+                    combine(userPrefs.homePinnedPodcastIdsStream, userPrefs.hiddenShows.matchIdsStream, ::Pair),
                     showsOrderRefreshGeneration,
-                ) { wrapper, editorialRows, isEditorialRowsLoading, pinnedIds, refreshGeneration ->
+                ) { wrapper, editorialRows, isEditorialRowsLoading, (pinnedIds, hiddenIds), refreshGeneration ->
                     wrapper.copy(
                         editorialRows = editorialRows,
                         isEditorialRowsLoading = isEditorialRowsLoading,
                         pinnedPodcastIds = pinnedIds,
+                        hiddenShowIds = hiddenIds,
                         showsOrderRefreshGeneration = refreshGeneration,
                     )
                 }.debounce(100L).collect { wrapper ->
@@ -225,8 +229,11 @@ internal fun HomeViewModel.loadData() {
                                 rankingPass = rankingPlan.discoveryPass,
                             ),
                         ) { input -> rankDiscovery(input, scoringHistory, subscribedIds) }
-                        val trendingList = ranked.trending
-                        val rankedRecommendations = ranked.recommendations
+                        // Hidden shows leave after ranking, so hiding one never ranks again.
+                        val hiddenIds = wrapper.hiddenShowIds
+                        val trendingList = ranked.trending.withoutHiddenShows(hiddenIds)
+                        val rankedRecommendations = ranked.recommendations.withoutHiddenShowEpisodes(hiddenIds)
+                        val editorialRows = HomeHiddenShowsLogic.editorialRows(wrapper.editorialRows, hiddenIds)
                         val resumeList = wrapper.resume
                         val subs = wrapper.subs
                         val resolvedSerial = wrapper.resolvedSerial
@@ -293,10 +300,10 @@ internal fun HomeViewModel.loadData() {
                                 resolvedSerial = resolvedSerial,
                                 completedEpisodeIds = completedEpisodeIds,
                                 region = region,
-                                editorialRows = wrapper.editorialRows,
+                                editorialRows = editorialRows,
                                 previousStableOrder = rankingPlan.previousOrder,
                                 podcastScores = podScoresMap,
-                                previousMixtape = rankingPlan.previousMixtape,
+                                previousMixtape = HomeHiddenShowsLogic.mixtape(rankingPlan.previousMixtape, hiddenIds),
                                 buildMixtape = { scores, recommendations ->
                                     MixtapeEngine.build(
                                         subscriptions = subs,
@@ -365,11 +372,13 @@ internal fun HomeViewModel.loadData() {
                                 becauseYouLikePodcasts = wrapper.becauseYouLikePodcasts,
                                 isBecauseYouLikeLoading = wrapper.isBecauseYouLikeLoading,
                                 isRecommendationsFallback = wrapper.isRecommendationsFallback,
-                                editorialRows = wrapper.editorialRows,
+                                editorialRows = editorialRows,
                                 isEditorialRowsLoading = wrapper.isEditorialRowsLoading,
                                 pinnedPodcastIds = wrapper.pinnedPodcastIds.toSet(),
                             )
-                        _uiState.update { previous -> nextState.withCurrentCategoryDiscovery(previous).withSelectedShowFrom(previous) }
+                        _uiState.update { previous ->
+                            HomeHiddenShowsLogic.discovery(nextState.withCurrentCategoryDiscovery(previous).withSelectedShowFrom(previous), hiddenIds)
+                        }
                     }
                 }
             }

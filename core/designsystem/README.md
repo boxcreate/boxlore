@@ -52,6 +52,7 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 - `ContentLanguagesSheet`: the content-languages sheet. English can be switched off only when `ContentRegions.canSwitchEnglishOff` allows it.
 - `BoxloreDialog`, `BoxloreModalBottomSheet`, `BoxloreAlertDialogOverride`, `EngagementBottomSheetScaffold`: phone dialogs and sheets that become bounded, fold-safe dialogs on tablets.
 - `RemoveDownloadConfirmationDialog`, `PrivacyConsentDialog`, `RepairProgressPopup`: shared confirmation, consent and repair-status UI; the caller owns visibility. `fromWatch` words the first for a copy on the watch.
+- `AddToPlaylistSheet` (a show's playlists with toggling checks; draft in `AddToPlaylistSheetState`), `PlaylistNameDialog`, `DeletePlaylistDialog`, `PlaylistCover` (up to four shows): stateless playlist UI; `PlaylistCopy` and `AddToPlaylistCopy` hold the wording.
 - `SendToWatchIcon`, `WatchEpisodeActions`, `LocalWatchEpisodeActions`: Send to watch for one episode and its state on the watch (`WatchEpisodeCopy`). The local is null without a linked watch, which hides the icon.
 - `SleepTimerPopup`: the late-night sleep timer prompt; reports `SleepTimerPopupDismissReason`. With `onPlayOnWatch` it also offers a just-paused watch back and waits longer.
 - `PlayingOnPill`, `PlaybackPlaceNotice`, `LocalWatchPlayOffer`: where an episode plays while a watch with boxlore is in reach of the phone, and the offer to hand playback to the watch. `LocalWatchPlayOffer` is null without one, which hides them.

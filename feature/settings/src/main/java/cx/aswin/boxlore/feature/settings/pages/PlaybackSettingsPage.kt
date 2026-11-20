@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.settings.pages
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.LastPage
 import androidx.compose.material.icons.rounded.FastForward
+import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.NewReleases
 import androidx.compose.material.icons.rounded.Podcasts
@@ -33,6 +34,7 @@ data class PlaybackUiState(
     val hideCompletedInShowDetails: Boolean,
     val restartForgottenEpisodes: Boolean = true,
     val sameShowQueueOnly: Boolean = false,
+    val trimSilenceEnabled: Boolean = false,
 )
 
 /** Callbacks for [PlaybackSettingsPage], grouped to keep the page's parameter count small. */
@@ -47,6 +49,7 @@ data class PlaybackActions(
     val onSetHideCompletedInShowDetails: (Boolean) -> Unit,
     val onSetRestartForgottenEpisodes: (Boolean) -> Unit = {},
     val onSetSameShowQueueOnly: (Boolean) -> Unit = {},
+    val onSetTrimSilenceEnabled: (Boolean) -> Unit = {},
 )
 
 @Composable
@@ -88,9 +91,17 @@ internal fun PlaybackSettingsPage(
                 onValueCommitted = { actions.onSetSkipEndingMs(it * 1_000L) },
                 icon = SettingsDurationSliderIcon(Icons.AutoMirrored.Rounded.LastPage),
             )
+            SettingsDivider()
+            SettingsSwitchRow(
+                title = "Trim silence",
+                supportingText = "Skip long pauses so episodes finish sooner",
+                checked = state.trimSilenceEnabled,
+                onCheckedChange = actions.onSetTrimSilenceEnabled,
+                icon = Icons.Rounded.GraphicEq,
+            )
         }
         SettingsInfoTip(
-            text = "Set different beginning and ending skip times for an individual podcast from the ⋮ menu on its podcast info page. Resume positions always take priority.",
+            text = "Set a different speed, trim silence or skip times for one show from the ⋮ menu on its show page. Resume positions always take priority.",
         )
 
         SettingsGroup(

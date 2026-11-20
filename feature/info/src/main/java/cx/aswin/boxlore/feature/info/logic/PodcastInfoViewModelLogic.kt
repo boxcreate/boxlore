@@ -40,6 +40,7 @@ object PodcastInfoEnrichLogic {
     ): Podcast {
         val effectiveSubscribed = (currentPodcast?.subscribedAt ?: 0L) > 0L || (localPodcast?.subscribedAt ?: 0L) > 0L
         val (skipBeginning, skipEnding) = resolveSkips(currentPodcast ?: apiPodcast, localPodcast, apiPodcast)
+        val (speed, skipSilence) = resolveShowPlayback(currentPodcast ?: apiPodcast, localPodcast, apiPodcast)
         return apiPodcast.copy(
             fallbackImageUrl = resolveEnrichedFallbackImage(currentPodcast, localPodcast, apiPodcast, pageEpisodes),
             subscribedAt = currentPodcast?.subscribedAt?.takeIf { it > 0L } ?: localPodcast?.subscribedAt ?: 0L,
@@ -47,6 +48,8 @@ object PodcastInfoEnrichLogic {
             autoDownloadEnabled = effectiveSubscribed && (localPodcast?.autoDownloadEnabled == true || currentPodcast?.autoDownloadEnabled == true),
             skipBeginningOverrideMs = skipBeginning,
             skipEndingOverrideMs = skipEnding,
+            playbackSpeedOverride = speed,
+            skipSilenceOverride = skipSilence,
             preferredSort = resolvePreferredSort(currentPodcast ?: apiPodcast, localPodcast, apiPodcast),
             feedUrl = resolveFeedUrl(apiPodcast, currentPodcast, localPodcast),
             latestEpisode = resolveEnrichedLatestEpisode(localPodcast, currentPodcast, apiPodcast, pageEpisodes, sortParam),
@@ -109,6 +112,7 @@ object PodcastInfoEnrichLogic {
         val effectiveSubscribed =
             isSubscribed ?: (latestPodcast.subscribedAt > 0L || (localPodcast?.subscribedAt ?: 0L) > 0L)
         val (skipBeginning, skipEnding) = resolveSkips(latestPodcast, localPodcast, refreshedPodcast)
+        val (speed, skipSilence) = resolveShowPlayback(latestPodcast, localPodcast, refreshedPodcast)
         return refreshedPodcast.copy(
             notificationsEnabled = resolvePreservedToggle(
                 effectiveSubscribed,
@@ -125,6 +129,8 @@ object PodcastInfoEnrichLogic {
             subscribedAt = resolveSubscribedAt(effectiveSubscribed, latestPodcast, localPodcast, refreshedPodcast),
             skipBeginningOverrideMs = skipBeginning,
             skipEndingOverrideMs = skipEnding,
+            playbackSpeedOverride = speed,
+            skipSilenceOverride = skipSilence,
             fallbackImageUrl = resolveFallbackImage(latestPodcast, localPodcast, refreshedPodcast),
             preferredSort = resolvePreferredSort(latestPodcast, localPodcast, refreshedPodcast),
             feedUrl = resolveFeedUrl(refreshedPodcast, latestPodcast, localPodcast),
@@ -188,6 +194,17 @@ object PodcastInfoEnrichLogic {
                 ?: local?.skipEndingOverrideMs
                 ?: refreshed.skipEndingOverrideMs
         return beginning to ending
+    }
+
+    /** This show's own speed and trim silence, from the newest copy that has them (like [resolveSkips]). */
+    private fun resolveShowPlayback(
+        latest: Podcast,
+        local: Podcast?,
+        refreshed: Podcast,
+    ): Pair<Float?, Boolean?> {
+        val speed = latest.playbackSpeedOverride ?: local?.playbackSpeedOverride ?: refreshed.playbackSpeedOverride
+        val skipSilence = latest.skipSilenceOverride ?: local?.skipSilenceOverride ?: refreshed.skipSilenceOverride
+        return speed to skipSilence
     }
 
     private fun resolveFallbackImage(

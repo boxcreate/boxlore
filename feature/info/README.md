@@ -14,7 +14,7 @@ Used by `:app` navigation:
 - `PodcastInfoUiState`: the show page's state; navigation reads the loaded show's ID and title from `Success`.
 - `EpisodeInfoScreen` / `EpisodeInfoViewModel`: the episode page.
 - `EpisodeInfoUiState`: `Loading`, `Success`, `Error`, `ReadingFeed` and `NotFound`. `Success.requestedEpisodeId` is the ID the page was opened with, which deep-link autoplay matches on.
-- `InfoViewModelAssembler`: `podcastInfoFactory` and `episodeInfoFactory` build both ViewModels from `InfoSharedDeps` and `PodcastInfoRouteArgs`.
+- `InfoViewModelAssembler`: `podcastInfoFactory` and `episodeInfoFactory` build both ViewModels from `InfoSharedDeps` and `PodcastInfoRouteArgs`
 - `EpisodeSort`, `ShowFeedStatus`, `DirectFeedChipState`, `InfoListeningProgressItem`: shared models.
 
 ## Show page
@@ -28,9 +28,10 @@ Used by `:app` navigation:
 - **After following.** `SubscriptionForegroundSync.requestCatalogIngest` refreshes the show's catalog on the application scope, so leaving the page never cancels it; `PodcastInfoPostSubscribeLogic` sets the status line meanwhile.
 - **Pull to refresh.** `PodcastInfoPullRefreshLogic.Target` picks one path: RSS catalog, feed-first read, subscribed direct feed, opted-in direct feed, or a catalog reload. A pull while the post-follow refresh runs does nothing. Subscribed pulls use `MANUAL` to skip the automatic cooldown.
 - **Hide completed.** While fewer than `HideCompletedFill.MIN_VISIBLE` unfinished episodes show and the show has more, the page loads further pages by itself; when it runs out it shows `ShowCaughtUpCard`. Search ignores this rule.
+- **Episode titles only.** An app-wide choice (overflow menu or Appearance › Show pages, `InfoSharedDeps.episodeTitlesOnly`) that draws `EpisodeTitleRow` in regular and Showcase lists.
 - **Selection.** Long-press starts multi-selection. Select all / older / newer read the whole show through `loadPodcastEpisodeSelectionWindow`, page by page with no cap; any failed page leaves the selection unchanged. Mark all as played or unplayed uses the same read and runs on `InfoSharedDeps.applicationScope`, so leaving the page doesn't stop it; a failed page marks nothing. While searching, ranges act on the results on screen (`PodcastEpisodeSelectionLogic.searchRangeEpisodes`).
 - **Duplicates.** Lists never repeat an episode ID: offset pages overlap when episodes publish between requests, and rows are keyed by ID.
-- **Settings.** Notifications and auto-download are independent toggles; `logic/PodcastNotificationActions` applies the repository's actual activation result. RSS-only shows confirm `RssNotificationDisclosureDialog` before turning notifications on. Home pin, tag/genre edits (`PodcastGenreEditSheet`, then `PodcastInfoFolderSyncLogic`) and per-show playback settings live in the overflow menu.
+- **Settings.** Notifications and auto-download are independent toggles; `logic/PodcastNotificationActions` applies the repository's actual activation result. RSS-only shows confirm `RssNotificationDisclosureDialog` before turning notifications on. Home pin, tag/genre edits (`PodcastGenreEditSheet`, then `PodcastInfoFolderSyncLogic`), per-show playback settings, Add to playlist (followed shows only: designsystem's `AddToPlaylistSheet` through `InfoPlaylists`, a check per playlist that toggles the show, and New playlist) and Hide show everywhere (`PodcastInfoHideShow`: confirm, unfollow, Undo; a hidden show gets a note with Unhide) live in the overflow menu.
 - **Renumbered shows.** A route recorded as renumbered opens as the new show, and a follow under the old number moves first. Follow state counts the shown, route and former shows (`RenumberedShowPageLogic`), so Subscribe never creates a second follow. See [renumbered shows](../../docs/EPISODE_IDS.md#renumbered-shows).
 - **Helpers.** The ViewModel delegates to same-package helpers sharing one `PodcastInfoPageState`; a result for a show the page has left is dropped.
 
@@ -113,7 +114,7 @@ src/main/java/cx/aswin/boxlore/feature/info/
 ## Persistence & identity
 
 - This module owns no storage files or keys of its own.
-- Keys it uses through `:core:prefs`: `home_pinned_podcast_ids` (Home pin), `content_languages` and region (Try these episodes), `has_requested_notification_permission` (`BoxcastPrefs`).
+- Keys it uses through `:core:prefs`: `home_pinned_podcast_ids` (Home pin), `episode_titles_only` (Episode titles only), `content_languages` and region (Try these episodes), `has_requested_notification_permission` (`BoxcastPrefs`).
 - Episode and show identity, aliases and `rss:` IDs come from core modules. Likes, progress, downloads and queue state are read through alias-aware lookups (`PlaybackRepository.likedEpisodeIds`, `inProgressForEpisodeLookup`, `withEpisodeAliases`), so an episode stored under several IDs shows one state. See [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md).
 - `:app` owns route patterns and deep links.
 - Screen names: `podcast_detail`, `podcast_showcase`, `episode_detail`; show-page playback passes `podcast_detail` as its entry point. See [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md).

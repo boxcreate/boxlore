@@ -20,6 +20,7 @@ internal object ListenAnalyticsTracks {
                 "controlled_by" to listen.controlledBy,
                 "output" to listen.output,
                 "speed" to listen.speed,
+                "trim_silence" to listen.trimSilence,
                 "seeks_forward" to listen.seeks.forward,
                 "seeks_back" to listen.seeks.back,
                 "skipped_forward_seconds" to listen.seeks.forwardMs / MS_PER_SECOND,
