@@ -107,8 +107,6 @@
     <plurals name="episode_unarchive_done"><item quantity="one">%d episódio desarquivado</item><item quantity="other">%d episódios desarquivados</item></plurals>
     <string name="episode_archive_undo">Desfazer</string>
     <string name="episode_archived">Arquivado</string>
-    <string name="episode_archive">Arquivar</string>
-    <string name="episode_unarchive">Desarquivar</string>
     <string name="podcast_info_show_archived">Mostrar episódios arquivados (%d)</string>
     <string name="podcast_info_hide_archived">Ocultar episódios arquivados</string>
     <string name="episode_selection_failed">Não foi possível carregar todos os episódios. Verifique sua conexão e tente de novo.</string>

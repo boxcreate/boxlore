@@ -159,14 +159,8 @@ class EpisodeInfoViewModel(
             playbackRepository.setEpisodesDismissed(episodes, show.id, show.title, show.imageUrl, archive)
         }
 
-    /** Archived episodes: this page's Archive toggle reads its episode here, under any of its IDs. */
+    /** Archived episodes, under any of their IDs: the page marks its episode when it is one. */
     val archivedEpisodeIds: StateFlow<Set<String>> = archiver.archivedIds
-
-    /** Archives this page's episode, or brings it back; it is never marked played. */
-    fun onToggleArchive() {
-        val page = _uiState.value as? EpisodeInfoUiState.Success ?: return
-        archiver.setArchived(listOf(page.episode), archive = page.episode.id !in archivedEpisodeIds.value)
-    }
 
     private val _showRemoveDownloadDialog = MutableStateFlow(false)
     val showRemoveDownloadDialog: StateFlow<Boolean> = _showRemoveDownloadDialog.asStateFlow()
