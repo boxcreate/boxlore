@@ -103,8 +103,6 @@
     <plurals name="episode_unarchive_done"><item quantity="one">%d episodio desarchivado</item><item quantity="many">%d episodios desarchivados</item><item quantity="other">%d episodios desarchivados</item></plurals>
     <string name="episode_archive_undo">Deshacer</string>
     <string name="episode_archived">Archivado</string>
-    <string name="episode_archive">Archivar</string>
-    <string name="episode_unarchive">Desarchivar</string>
     <string name="podcast_info_show_archived">Ver episodios archivados (%d)</string>
     <string name="podcast_info_hide_archived">Ocultar episodios archivados</string>
     <string name="episode_selection_failed">No se pudieron cargar todos los episodios. Revisa tu conexión e inténtalo de nuevo.</string>

@@ -89,7 +89,7 @@ internal fun EpisodeInfoHero(
         }
         EpisodeExpandableTitle(episode.id, episode.title)
         Spacer(Modifier.height(8.dp))
-        EpisodeMetadata(episode, completionState.isCompleted, onToggleCompletion, completionState.archive)
+        EpisodeMetadata(episode, completionState.isCompleted, onToggleCompletion, completionState.isArchived)
         if (completionState.showTip) {
             Text(stringResource(R.string.episode_info_mark_tip), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             LaunchedEffect(episode.id) {
@@ -101,7 +101,7 @@ internal fun EpisodeInfoHero(
 }
 
 @Composable
-private fun EpisodeMetadata(episode: Episode, isCompleted: Boolean, onToggleCompletion: () -> Unit, archive: EpisodeArchiveAction?) {
+private fun EpisodeMetadata(episode: Episode, isCompleted: Boolean, onToggleCompletion: () -> Unit, isArchived: Boolean) {
     val locale = currentLocale()
     val date = remember(episode.publishedDate, locale) {
         episode.publishedDate.takeIf { it > 0L }?.let { LocaleFormats.date(it * 1_000L, LocaleFormats.DateStyle.DAY_MONTH_YEAR, locale) }
@@ -128,13 +128,11 @@ private fun EpisodeMetadata(episode: Episode, isCompleted: Boolean, onToggleComp
         } else {
             Spacer(Modifier.weight(1f))
         }
+        // Archiving is done from the show page's selection menu; here an archived episode is only marked.
+        if (isArchived) EpisodeArchivedPill()
         EpisodeCompletionPill(isCompleted, onToggleCompletion)
-        archive?.let { EpisodeArchiveToggle(it.isArchived, it.onToggle) }
     }
 }
-
-/** The episode page's archive state and its toggle ([EpisodeArchiveToggle]). */
-internal data class EpisodeArchiveAction(val isArchived: Boolean, val onToggle: () -> Unit)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

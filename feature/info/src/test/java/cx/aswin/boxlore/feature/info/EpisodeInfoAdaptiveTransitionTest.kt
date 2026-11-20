@@ -14,7 +14,6 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -146,26 +145,25 @@ class EpisodeInfoAdaptiveTransitionTest {
     }
 
     @Test
-    fun `the episode's Archive toggle keeps its state across window changes and acts once per tap`() {
+    fun `the episode page offers no Archive button and only marks an archived episode, in every layout`() {
         render()
         val episode = TestFixtures.episode(id = LINK_ID, title = "A trailer", podcastId = "920666", podcastTitle = "Curious world")
         uiState.value = EpisodeInfoUiState.Success(episode, "920666", "Curious world", relatedEpisodesLoading = false, similarEpisodesLoading = false)
         fixture.compose.waitForIdle()
-        acrossWindowChanges { assertTrue("Archive is offered", labelled("Archive")) }
+        acrossWindowChanges {
+            assertTrue("no Archive button", !labelled("Archive") && !labelled("Unarchive"))
+            assertTrue("not marked yet", !labelled("Archived"))
+        }
 
-        fixture.compose.onAllNodes(hasContentDescription("Archive"), useUnmergedTree = true).onFirst().performClick()
-        fixture.compose.waitForIdle()
-        org.mockito.Mockito.verify(model, org.mockito.Mockito.times(1)).onToggleArchive()
-
-        // The archive lands: the toggle now brings the episode back, in every layout and after recreation.
+        // Archived from the show page: this page only says so.
         archived.value = setOf(LINK_ID)
         acrossWindowChanges {
-            assertTrue("Unarchive is offered", labelled("Unarchive"))
+            assertTrue("marked archived", labelled("Archived"))
+            assertTrue("still no Unarchive button", !labelled("Unarchive"))
             assertTrue("Mark played is unchanged", labelled("Mark played"))
         }
         recreate(FOLD_TABLETOP)
-        assertTrue(labelled("Unarchive"))
-        org.mockito.Mockito.verify(model, org.mockito.Mockito.times(1)).onToggleArchive()
+        assertTrue(labelled("Archived"))
     }
 
     private fun labelled(label: String): Boolean =

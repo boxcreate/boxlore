@@ -107,8 +107,6 @@
     <plurals name="episode_unarchive_done"><item quantity="one">%d Folge aus dem Archiv geholt</item><item quantity="other">%d Folgen aus dem Archiv geholt</item></plurals>
     <string name="episode_archive_undo">Rückgängig</string>
     <string name="episode_archived">Archiviert</string>
-    <string name="episode_archive">Archivieren</string>
-    <string name="episode_unarchive">Aus Archiv holen</string>
     <string name="podcast_info_show_archived">Archivierte Folgen anzeigen (%d)</string>
     <string name="podcast_info_hide_archived">Archivierte Folgen ausblenden</string>
     <string name="episode_selection_failed">Nicht alle Folgen konnten geladen werden. Prüf deine Verbindung und versuch es noch mal.</string>

@@ -107,8 +107,6 @@
     <plurals name="episode_unarchive_done"><item quantity="one">Unarchived %d episode</item><item quantity="other">Unarchived %d episodes</item></plurals>
     <string name="episode_archive_undo">Undo</string>
     <string name="episode_archived">Archived</string>
-    <string name="episode_archive">Archive</string>
-    <string name="episode_unarchive">Unarchive</string>
     <string name="podcast_info_show_archived">Show archived episodes (%d)</string>
     <string name="podcast_info_hide_archived">Hide archived episodes</string>
     <string name="episode_selection_failed">Couldn’t load every episode. Check your connection and try again.</string>
