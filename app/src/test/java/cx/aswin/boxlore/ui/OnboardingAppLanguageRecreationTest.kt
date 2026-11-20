@@ -17,13 +17,11 @@ import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.feature.onboarding.OnboardingStep
 import cx.aswin.boxlore.feature.onboarding.OnboardingViewModel
 import cx.aswin.boxlore.feature.onboarding.chooseAppLanguage
-import cx.aswin.boxlore.feature.onboarding.showAllAppLanguages
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,7 +33,7 @@ import org.robolectric.annotation.Config
 
 /**
  * Onboarding's language question in a real activity: it opens onboarding when the phone suggests a
- * translation, an open "Other languages" list and the answer both survive the recreation a language
+ * translation, the question and its answer both survive the recreation a language
  * change causes, and the pick is reported once with the existing settings event.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -98,11 +96,10 @@ class OnboardingAppLanguageRecreationTest {
         assertEquals(OnboardingStep.APP_LANGUAGE, before.uiState.value.currentStep)
         assertEquals(AppLanguage.SPANISH, before.uiState.value.appLanguageQuestion?.suggested)
 
-        before.showAllAppLanguages(true)
         controller.recreate()
         val reopened = showOnboarding()
         assertSame(before, reopened)
-        assertTrue(reopened.uiState.value.appLanguageQuestion!!.showsAll)
+        assertEquals(AppLanguage.SPANISH, reopened.uiState.value.appLanguageQuestion?.suggested)
 
         reopened.chooseAppLanguage(AppLanguage.SPANISH)
         controller.recreate()

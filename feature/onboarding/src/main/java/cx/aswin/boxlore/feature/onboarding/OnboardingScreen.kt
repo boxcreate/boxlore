@@ -40,7 +40,7 @@ fun OnboardingScreen(
     val isRootStep =
         uiState.currentStep == OnboardingStep.WELCOME ||
             uiState.currentStep == OnboardingStep.AI_ONBOARDING ||
-            (uiState.currentStep == OnboardingStep.APP_LANGUAGE && uiState.appLanguageQuestion?.showsAll != true)
+            uiState.currentStep == OnboardingStep.APP_LANGUAGE
 
     BackHandler(
         enabled =
@@ -61,8 +61,7 @@ fun OnboardingScreen(
         } else {
             when (uiState.currentStep) {
                 OnboardingStep.APP_LANGUAGE -> {
-                    // Back closes the full language list; on the question itself it leaves the app.
-                    viewModel.showAllAppLanguages(false)
+                    // A root step: Back leaves the app, as on Welcome.
                 }
                 OnboardingStep.WELCOME -> {
                     // Handled above
@@ -128,7 +127,6 @@ fun OnboardingScreen(
                             viewModel.chooseAppLanguage(language)
                             onAppLanguageChosen(language)
                         },
-                        onShowAll = { viewModel.showAllAppLanguages(true) },
                     )
                 }
             }

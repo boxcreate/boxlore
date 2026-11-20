@@ -16,8 +16,3 @@ fun OnboardingViewModel.chooseAppLanguage(language: AppLanguage) {
     AnalyticsHelper.trackSettingsInteraction(OnboardingAppLanguage.ANALYTICS_KEY, OnboardingAppLanguage.analyticsValue(language))
     _uiState.update(OnboardingAppLanguage::answered)
 }
-
-/** Opens or closes the full language list ("Other languages"). */
-fun OnboardingViewModel.showAllAppLanguages(showsAll: Boolean) {
-    _uiState.update { OnboardingAppLanguage.showingAll(it, showsAll) }
-}

@@ -7,7 +7,7 @@ Owns first-run onboarding: the Welcome screen, Echo (the AI-guided conversation 
 ## Public API
 
 - `OnboardingScreen`: the whole flow, shown by `:app` on the `onboarding` route. It switches on `OnboardingUiState.currentStep` and calls `onComplete`, `onBack`, `onImportClick` and `onAppLanguageChosen`.
-- `OnboardingViewModel`: an `AndroidViewModel` built by `:app` from `PodcastRepository`, `SubscriptionRepository`, `UserPreferencesRepository` and an `appLanguageSuggestion`; it exposes `uiState`. `chooseAppLanguage` and `showAllAppLanguages` drive the language question (`AppLanguageQuestion`).
+- `OnboardingViewModel`: an `AndroidViewModel` built by `:app` from `PodcastRepository`, `SubscriptionRepository`, `UserPreferencesRepository` and an `appLanguageSuggestion`; it exposes `uiState`. `chooseAppLanguage` answers the language question (`AppLanguageQuestion`).
 - `markOnboardingCompletedSilent` and `generateRecommendationsFromOpml`: extensions the app calls to finish without the flow, or to hand imported shows to the similar-shows choice.
 - `OnboardingUiState`, `OnboardingStep` (`APP_LANGUAGE`, `WELCOME`, `GENRES`, `SUB_GENRES`, `ACTIVITY_PICKER`, `LENGTH_PICKER`, `SEARCH`, `AI_ONBOARDING`, `AI_SUGGESTIONS`) and `AiLoadingStage`: the flow's state.
 - `ONBOARDING_GENRES` / `GenreItem` and `SEARCH_CATEGORIES` / `SearchCategoryItem`: the picker and search chip lists. Each item pairs a label resource with the English key sent to the server; keys never change.
@@ -15,7 +15,7 @@ Owns first-run onboarding: the Welcome screen, Echo (the AI-guided conversation 
 
 ## Flow
 
-- **Language** (`AppLanguageQuestionContent`, step `APP_LANGUAGE`): first, only while onboarding is unfinished, no App language was picked and the phone's languages or region suggest a translation (`AppLanguageMatcher`). It offers that language, then English, then **Other languages**. A pick moves on to Welcome and the app applies it at once; the activity's recreation keeps this view model, so nothing is lost. Echo's replies stay as the server sends them.
+- **Language** (`AppLanguageQuestionContent`, step `APP_LANGUAGE`): first, only while onboarding is unfinished, no App language was picked and the phone's languages or region suggest a translation (`AppLanguageMatcher`). The screen stays in English and names each language in itself: the suggested one as the main button, then English and the other translations, while the greeting above cycles through every language. System default is left to Settings. A pick moves on to Welcome and the app applies it at once; the activity's recreation keeps this view model, so nothing is lost. Echo's server text follows the app's language through `appLanguage` (below).
 - **Welcome** (`WelcomeScreen`): a cover reel, a rotating reply line and Echo peeking over the **Find shows for me** button; the actions start Echo, search, library import (handled by the app) or skip.
 - **Echo** (`AiOnboardingScreen` → `EchoOnboardingScreen`): one question per turn with fixed areas for the top bar, Echo, the question, its answers and a buttons-only footer. The screen never scrolls; `EchoLayout` picks a height tier from the space available.
 - The opening turn is app-owned and sends no request: the eight `EchoInitialTopic` answers plus **Something else**, a text box for free answers.
@@ -31,7 +31,7 @@ Owns first-run onboarding: the Welcome screen, Echo (the AI-guided conversation 
 ## Client contracts
 
 - Echo calls `onboarding/next-turn`, `onboarding/probe-deck` and `onboarding/synthesize`; the topic and seed paths call `onboarding/curriculum`, `onboarding/genre-synth` and `onboarding/similar-shows` (routes in `:core:network`).
-- Next-turn requests send the features `finish_hint` (`GuidedOnboardingLogic.FINISH_HINT_FEATURE`) and `show_probe` (`EchoDeckLogic.FEATURE`) with `country` and `languages`.
+- Next-turn requests send the features `finish_hint` (`GuidedOnboardingLogic.FINISH_HINT_FEATURE`) and `show_probe` (`EchoDeckLogic.FEATURE`) with `country` and `languages`. Next-turn, show deck and synthesize requests also send `appLanguage`, the translation the screens show (from `echoLanguageTag`), so Echo writes in it; English sends none.
 - Suggestion requests send `recommendationFormat = "discovery_v2"`; lanes keep server order. `discoveryLocaleForRegion` keeps `country` and `languages` canonical together.
 - A failed turn whose API error code is in `ApiErrorCodes.AI_UNAVAILABLE` hands over to the topic pickers (`EchoRequestPolicy.picksTopicsAfter`), since Try again cannot succeed. Other failures offer Try again.
 - Synthesis and genre builds fall back to charts on failure, so no path blocks the listener.

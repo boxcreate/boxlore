@@ -187,7 +187,7 @@ private fun WelcomeInvitation(clock: WelcomeMotionClock, width: Dp) {
 }
 
 @Composable
-private fun WelcomeEntryText(
+internal fun WelcomeEntryText(
     text: String,
     clock: WelcomeMotionClock,
     delayMillis: Long,
@@ -287,7 +287,7 @@ private fun WelcomeActions(
 }
 
 @Composable
-private fun WelcomeStatusBars(panelColor: Color, coverVisible: Boolean) {
+internal fun WelcomeStatusBars(panelColor: Color, coverVisible: Boolean) {
     val view = LocalView.current
     val window = (view.context as? Activity)?.window ?: return
     val controller = WindowCompat.getInsetsController(window, view)
@@ -319,7 +319,7 @@ internal fun welcomeEchoCell(room: Dp): Dp? {
  * resting pose, looking straight out.
  */
 @Composable
-private fun WelcomeEchoPeek(clock: WelcomeMotionClock, buttonPress: InteractionSource, cell: Dp, modifier: Modifier) {
+internal fun WelcomeEchoPeek(clock: WelcomeMotionClock, buttonPress: InteractionSource, cell: Dp, modifier: Modifier) {
     // Echo ducks a little while the button is held and pops back up when it is released.
     val pressed by buttonPress.collectIsPressedAsState()
     val duck = animateFloatAsState(if (pressed) 1f else 0f, spring(dampingRatio = 0.55f, stiffness = 650f), label = "echoDuck")
@@ -371,7 +371,7 @@ private fun WelcomeEchoPeek(clock: WelcomeMotionClock, buttonPress: InteractionS
 private val WelcomeActionsGap = 24.dp
 
 /** Draws [extra] above the element's top without taking any layout height. */
-private fun Modifier.reachUp(extra: Dp): Modifier = layout { measurable, constraints ->
+internal fun Modifier.reachUp(extra: Dp): Modifier = layout { measurable, constraints ->
     val reach = extra.roundToPx()
     val placeable = measurable.measure(constraints.copy(minHeight = constraints.minHeight + reach, maxHeight = constraints.maxHeight + reach))
     layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(0, -reach) }
