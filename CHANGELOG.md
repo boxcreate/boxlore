@@ -11,7 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Marquee's hero scrolls with Home as one piece (no fold-over, scroll stop or sheet handle), its words fade under the top bar, and its backdrop keeps the cover sharp at the top with a light, eased progressive blur toward the words. `MarqueeDetentConnection`, `marqueePinned` and `MarqueeSheetHandle` are removed. ([#1287](https://github.com/boxcreate/boxlore/pull/1287)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- `feature/info` `branded/daily`: The Daily's Showcase page is redrawn as First light. `DailyHorizon` draws the cover's dawn sky behind the status and top bars, the sun peeking over the apex and a planet-curve page edge with a sunlit rim; the curve's drop follows the window width (20–40dp). ([#1288](https://github.com/boxcreate/boxlore/pull/1288)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- `DailySpotlight` shows the episode's own square picture whole beside up to 7 lines of notes, or 5 lines under the title without a picture of its own; `DailyHeader` centres the masthead, wordmark and description. ([#1288](https://github.com/boxcreate/boxlore/pull/1288)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- `DailyPage` uses `DailyColors.accent` for primary, Subscribe, checked toggles, Play and the episode time, uses pill chips, and keeps white header icons over the sky by day. ([#1288](https://github.com/boxcreate/boxlore/pull/1288)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `:wear` declares `com.google.android.gms.permission.AD_ID`, matching `:app`, so Play's advertising ID check passes for the watch bundle; `WatchManifestTest` guards both manifests. ([#1286](https://github.com/boxcreate/boxlore/pull/1286)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+### Removed
+- The Daily's dateline (`millisUntilNextDay`) and the unused `daily_horizon` drawable. ([#1288](https://github.com/boxcreate/boxlore/pull/1288)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 ## [v0.0.32] - 2026-11-20
 
 ### Added

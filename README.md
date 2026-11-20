@@ -66,6 +66,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <b>⚡ Improved:</b>
 <ul align="left">
 <li>The Marquee style on Home now scrolls with the page in one go, and its cover stays clear behind the words.</li>
+<li>The Daily's show page now opens under the dawn sky from its cover, with the sun peeking over the horizon, and its latest episode shows its whole picture beside the episode description.</li>
 </ul>
 <!-- release-upcoming:end -->
 
