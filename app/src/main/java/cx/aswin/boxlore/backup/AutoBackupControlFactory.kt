@@ -2,16 +2,21 @@ package cx.aswin.boxlore.backup
 
 import android.app.Application
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import cx.aswin.boxlore.R
+import cx.aswin.boxlore.core.prefs.AutoBackupSettings
 import cx.aswin.boxlore.core.prefs.AutoBackupStore
 import cx.aswin.boxlore.feature.settings.pages.AutoBackupControl
 import cx.aswin.boxlore.feature.settings.pages.AutoBackupUiState
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -32,25 +37,54 @@ internal object AutoBackupControlFactory {
      */
     internal val folderChanges = Mutex()
 
+    private const val TAG = "AutoBackupControl"
+
     /** One control for the Settings route's life, so its state flow isn't rebuilt on each recomposition. */
     @Composable
     fun rememberControl(application: Application): AutoBackupControl = remember(application) { create(application) }
 
+    /**
+     * [settings] follows the store only while it reads, so a failed read never shows backups as off and later
+     * changes still arrive (Settings waits for the first read). A change that can't be saved says so.
+     */
     fun create(
         application: Application,
         store: AutoBackupStore = AutoBackupStore(application),
         scope: CoroutineScope = processScope,
-    ): AutoBackupControl =
-        AutoBackupControl(
-            state = combine(store.settings, AutoBackupScheduling.isBackingUp(application)) { settings, running ->
-                AutoBackupUiState(settings, running)
-            },
-            onFolderPicked = { uri -> scope.launch { adoptFolder(application, store, uri) } },
-            onTurnOff = { scope.launch { turnOff(application, store) } },
-            onSetFrequency = { frequency -> scope.launch { store.setFrequency(frequency) } },
-            onSetKeepCount = { count -> scope.launch { store.setKeepCount(count) } },
+        settings: Flow<AutoBackupSettings> = store.settingsWhenReadable,
+        running: Flow<Boolean> = AutoBackupScheduling.isBackingUp(application),
+    ): AutoBackupControl {
+        fun change(write: suspend () -> Unit) {
+            scope.launch { saveOrSay({ showNotSaved(application) }, write) }
+        }
+        return AutoBackupControl(
+            state = combine(settings, running) { current, isRunning -> AutoBackupUiState(current, isRunning) },
+            onFolderPicked = { uri -> change { adoptFolder(application, store, uri) } },
+            onTurnOff = { change { turnOff(application, store) } },
+            onSetFrequency = { frequency -> change { store.setFrequency(frequency) } },
+            onSetKeepCount = { count -> change { store.setKeepCount(count) } },
             onBackUpNow = { AutoBackupScheduling.backUpNow(application) },
         )
+    }
+
+    /**
+     * Runs one settings change. A store that can't be written ([IOException]) is told to the listener through
+     * [onNotSaved] instead of escaping the process scope and closing the app; cancellation still propagates.
+     */
+    internal suspend fun saveOrSay(onNotSaved: suspend () -> Unit, write: suspend () -> Unit) {
+        try {
+            write()
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: IOException) {
+            Log.w(TAG, "An automatic backup setting wasn't saved: ${error.javaClass.simpleName}")
+            onNotSaved()
+        }
+    }
+
+    private suspend fun showNotSaved(application: Application) = withContext(Dispatchers.Main.immediate) {
+        Toast.makeText(application, application.getString(R.string.auto_backup_change_not_saved), Toast.LENGTH_LONG).show()
+    }
 
     /**
      * Keeps access to the picked folder, lets go of the previous one, turns backups on and saves the first

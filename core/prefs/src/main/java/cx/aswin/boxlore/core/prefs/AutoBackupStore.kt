@@ -87,6 +87,14 @@ class AutoBackupStore internal constructor(private val dataStore: DataStore<Pref
 
     suspend fun current(): AutoBackupSettings = settings.first()
 
+    /** One read of the settings, or null when the file can't be read now (never the "off" defaults). */
+    suspend fun readable(): AutoBackupSettings? =
+        try {
+            dataStore.data.map(::read).first()
+        } catch (error: IOException) {
+            null
+        }
+
     /**
      * Like [settings], but an unreadable file emits nothing instead of reading as "off", so the schedule that
      * follows it is left as it was rather than cancelled. The file is read again after a pause (longer each

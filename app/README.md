@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`:app` is the Android application shell and the only production composition root. It owns `BoxLoreApplication`, `MainActivity`, `AppContainer`, the navigation host and adaptive shell, push and App Link entry points, in-app announcements and updates, the library import overlay, API-session setup, and WorkManager jobs needing the whole graph. Screens and engines live in `:feature:*` and `:core:*`; `:app` only wires them.
+`:app` is the Android application shell and only production composition root. It owns `BoxLoreApplication`, `MainActivity`, `AppContainer`, the navigation host and adaptive shell, push and App Link entry points, announcements and updates, the library import overlay, API-session setup, and WorkManager jobs that need the whole graph. Screens and engines live in `:feature:*` and `:core:*`; `:app` only wires them.
 
 ## Public API
 
@@ -31,7 +31,7 @@
 - `resolveStartDestination` picks the cold-start route: incomplete onboarding, then offline Downloads, then **Open app to**, then Home. Deep links and push `target_route` win over Open app to; a landing it opened goes Back to Home.
 - Floating and Classic navigation share Home, Explore, Library and Lore (`learn`). Reselecting Explore while it shows opens search (`ExploreSearchRequestKey`).
 - `AdaptivePlayerChrome` compacts the Floating bar and docks the mini player while browsing; Lore forces compact. Screens read `LocalAdaptivePlayerCompactProgress` ([product surfaces](../ARCHITECTURE.md#product-surfaces)).
-- `TabletAppShell` keeps primary and detail NavHosts (`TabletDetailNavigation`) alive while resizing, with a rail on tablets and a context pane for player and details in split windows. A hidden detail host drops to CREATED so it cannot take Back.
+- `TabletAppShell` keeps primary and detail NavHosts (`TabletDetailNavigation`) alive while resizing, with a rail on tablets and a context pane for player and details in split windows; a hidden detail host drops to CREATED, so it can't take Back.
 - `ArtworkNavigationHostTheme` lets detail destinations publish artwork colours per back-stack entry; regular pages use the saved theme from their first frame, including during predictive Back.
 - Email sign-in opens Settings on Account (`ACCOUNT_PAGE_ROUTE`) once per request; Account and onboarding hide the player overlay.
 - Window gates, state retention and transition coverage follow the [adaptive UI and state contract](../ARCHITECTURE.md#adaptive-ui-and-state).
@@ -44,11 +44,11 @@
 - `MainActivity` handles email sign-in links (`AppContainer.emailLinkSignIn`): it clears the intent data, refuses replay across recreation, and asks for the address (`CrossDeviceEmailDialog`) when opened on another device.
 - `BoxLoreFcmService` saves each new-episode push as unique `NewEpisodeDeliveryWorker` work before any network call. Download scheduling and notification display fail independently.
 - `NewEpisodePushHydration` matches a push by GUID or enclosure, then catalog key, then show and recipe ID; without a match the notification opens the push's own IDs.
-- New-episode notifications are tagged by show ID and grouped under `boxlore_new_episodes` (a silent summary from two; at most 16, the newest replacing the oldest). Taps open `MainActivity` with `target_route`; the show ID in the intent identifier keeps each PendingIntent distinct, and without quota it posts with no tap action.
+- New-episode notifications are tagged by show ID and grouped under `boxlore_new_episodes` (silent summary from two; at most 16, newest replacing oldest). Taps open `MainActivity` with `target_route`; the show ID in the intent identifier keeps each PendingIntent distinct; without quota it posts with no tap action.
 - `dispatchPushAction` routes push actions on cold and warm launches: allowlisted routes navigate, registered links use Navigation, update targets open the updater, and other web links open externally with boxlore excluded from the chooser.
 - An `rss:` push shows only if it matches the saved feed URL and local consent; `RssNotificationSyncWorker` reconciles registrations and topics.
 - Announcements are native Compose surfaces with a Markdown subset; payload HTML stays text. Only release alerts are filtered by install channel and version.
-- `AndroidAutoTip` shows a non-Play install, once, how to put boxlore on the car's screen (a `TIP` announcement if opened while driving, else a notification when a drive starts during playback), never after Android Auto has opened boxlore's lists; its record (`boxlore_android_auto_tip`) stays out of backups.
+- `AndroidAutoTip` shows a non-Play install once how to put boxlore on the car's screen (a `TIP` announcement if opened while driving, else a notification when a drive starts mid-playback), never after Android Auto opened boxlore's lists; its record (`boxlore_android_auto_tip`) isn't backed up.
 - `SupportPushTopicSync` keeps support topics in step with each conversation refresh. A reply push opens `feedback?thread=<id>`, closing an open tablet detail first.
 - `ShareManager.episodeShareTargets` comes from `AppContainer.episodeSharePreparer`; `EpisodeShareRegistrationWorker` retries a registration that misses its short wait.
 
@@ -62,7 +62,7 @@
 ## API sessions
 
 - `ApiSessionSetup.install` starts the `:core:network` session manager behind the splash, sets version and channel headers, supplies App Check (`FirebaseAppCheckTokenSource`) to the session exchange only, and forwards foreground and connectivity. Details: [`core/network/README.md`](../core/network/README.md).
-- `session/turnstile` runs the check the API can request on AI onboarding routes: an invisible, origin-locked WebView page, shown in the shared modal sheet only when it needs interaction. Failure, timeout or Skip continues without AI; a remote switch decides whether it runs.
+- `session/turnstile` runs the check the API can request on AI onboarding routes: an invisible, origin-locked WebView page, shown in the shared modal sheet only when it needs interaction. Failure, timeout or Skip continues without AI; a remote switch turns it on.
 
 ## Sync, switches and repair jobs
 

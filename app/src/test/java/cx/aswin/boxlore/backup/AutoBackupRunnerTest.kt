@@ -37,7 +37,7 @@ class AutoBackupRunnerTest {
         )
         val outcome = runner(folder).run(keep = 2)
         assertEquals(AutoBackupOutcome.Saved("boxlore_auto_backup_2026-12-15_0905.json", 4, pruned = 3), outcome)
-        assertEquals(listOf("boxlore_auto_backup_2026-12-15_0905.json" to "boxlore_auto_backup_2026-12-15_0905.json.tmp"), folder.writes)
+        assertEquals(listOf("boxlore_auto_backup_2026-12-15_0905.json" to "boxlore_auto_backup_2026-12-15_0905.tmp.json"), folder.writes)
         assertArrayEquals(bytes, folder.files.getValue("boxlore_auto_backup_2026-12-15_0905.json"))
         assertEquals(
             setOf("boxlore_auto_backup_2026-12-08_0900.json", "boxlore_auto_backup_2026-12-15_0905.json", "boxlore_backup_1765000000000.json", "keep-me.txt"),

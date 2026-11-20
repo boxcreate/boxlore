@@ -12,18 +12,21 @@ import java.util.Locale
 internal object AutoBackupFiles {
     const val PREFIX = "boxlore_auto_backup_"
     private const val EXTENSION = ".json"
-    private const val TEMP_SUFFIX = ".tmp"
+    private const val TEMP_MARK = ".tmp"
     private const val ASIDE_SUFFIX = ".old"
     private val BACKUP_NAME = Regex("^boxlore_auto_backup_\\d{4}-\\d{2}-\\d{2}_\\d{4}\\.json$")
-    private val LEFTOVER_NAME = Regex("^boxlore_auto_backup_\\d{4}-\\d{2}-\\d{2}_\\d{4}\\.json\\.(tmp|old)$")
+    private val LEFTOVER_NAME = Regex("^boxlore_auto_backup_\\d{4}-\\d{2}-\\d{2}_\\d{4}(\\.tmp\\.json|\\.json\\.tmp|\\.json\\.old)$")
     private val STAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmm", Locale.US)
 
     /** `boxlore_auto_backup_YYYY-MM-DD_HHmm.json` in local time, so names sort oldest to newest. */
     fun fileName(nowMs: Long, zone: ZoneId = ZoneId.systemDefault()): String =
         PREFIX + STAMP.withZone(zone).format(Instant.ofEpochMilli(nowMs)) + EXTENSION
 
-    /** Written first and renamed when done, so a sync app never copies a half-written backup. */
-    fun tempName(fileName: String): String = fileName + TEMP_SUFFIX
+    /**
+     * Written first and renamed when done, so a sync app never copies a half-written backup. It keeps the
+     * `.json` ending, so a provider never adds one of its own to match the file's JSON type.
+     */
+    fun tempName(fileName: String): String = fileName.removeSuffix(EXTENSION) + TEMP_MARK + EXTENSION
 
     /** An earlier backup with the same name, kept aside until the new one is in place. */
     fun asideName(fileName: String): String = fileName + ASIDE_SUFFIX

@@ -19,6 +19,7 @@ import cx.aswin.boxlore.core.prefs.AutoBackupStore
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -85,15 +86,27 @@ internal object AutoBackupScheduling {
         scope.launch { follow(context, AutoBackupStore(context).settingsWhenReadable) }
     }
 
-    /** Follows [settings] for the life of the process, reconciling only when the plan changes. */
-    suspend fun follow(context: Context, settings: Flow<AutoBackupSettings>) {
+    /**
+     * Follows [settings] for the life of the process, reconciling only when the plan changes. A failed update
+     * is tried again after a growing pause ([RECONCILE_TRIES] tries in all); a newer plan cancels the wait.
+     */
+    suspend fun follow(
+        context: Context,
+        settings: Flow<AutoBackupSettings>,
+        apply: suspend (Context, Plan) -> Unit = ::reconcile,
+        retryDelayMs: Long = RECONCILE_RETRY_MS,
+    ) {
         settings.map(::planOf).distinctUntilChanged().collectLatest { plan ->
-            try {
-                reconcile(context, plan)
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
-                Log.w(TAG, "The automatic backup schedule wasn't updated", error)
+            repeat(RECONCILE_TRIES) { attempt ->
+                try {
+                    apply(context, plan)
+                    return@collectLatest
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    Log.w(TAG, "The automatic backup schedule wasn't updated", error)
+                    if (attempt < RECONCILE_TRIES - 1) delay(retryDelayMs shl attempt)
+                }
             }
         }
     }
@@ -127,6 +140,8 @@ internal object AutoBackupScheduling {
             now.any { it.state == WorkInfo.State.RUNNING || (it.state == WorkInfo.State.ENQUEUED && it.runAttemptCount > 0) }
 
     private const val TAG = "AutoBackupScheduling"
+    internal const val RECONCILE_TRIES = 5
+    private const val RECONCILE_RETRY_MS = 1_000L
     private const val DAILY_FLEX_HOURS = 4L
     private const val WEEKLY_FLEX_HOURS = 24L
     private const val RETRY_MINUTES = 15L

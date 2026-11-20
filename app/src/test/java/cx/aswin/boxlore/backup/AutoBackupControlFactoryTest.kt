@@ -7,11 +7,18 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.work.WorkManager
 import androidx.work.testing.WorkManagerTestInitHelper
 import cx.aswin.boxlore.core.prefs.AutoBackupProblem
+import cx.aswin.boxlore.core.prefs.AutoBackupSettings
 import cx.aswin.boxlore.core.prefs.AutoBackupStore
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -99,5 +106,25 @@ class AutoBackupControlFactoryTest {
         pick.join()
         assertEquals(1, taken)
         assertEquals(sync.toString(), store.current().folderUri)
+    }
+
+    @Test fun `the control waits for readable settings instead of showing backups as off`() = runBlocking {
+        val settings = MutableSharedFlow<AutoBackupSettings>(replay = 1)
+        val control = AutoBackupControlFactory.create(application, store, settings = settings, running = flowOf(false))
+        assertNull(withTimeoutOrNull(300) { control.state.first() })
+        settings.emit(AutoBackupSettings(enabled = true, folderUri = sync.toString()))
+        assertTrue(control.state.first().settings.isActive)
+    }
+
+    @Test fun `a change the store can't save is told to the listener instead of closing the app`() = runBlocking {
+        var told = 0
+        AutoBackupControlFactory.saveOrSay({ told++ }) { throw IOException("disk full") }
+        assertEquals(1, told)
+        AutoBackupControlFactory.saveOrSay({ told++ }) { store.setKeepCount(10) }
+        assertEquals(1, told)
+        assertEquals(10, store.current().keepCount)
+        val cancelled = runCatching { AutoBackupControlFactory.saveOrSay({ told++ }) { throw CancellationException("left") } }
+        assertTrue(cancelled.exceptionOrNull() is CancellationException)
+        assertEquals(1, told)
     }
 }

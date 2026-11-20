@@ -6,6 +6,7 @@ import androidx.core.net.toUri
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.prefs.AutoBackupSettings
 import cx.aswin.boxlore.core.prefs.AutoBackupStore
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
@@ -30,8 +31,12 @@ class AutoBackupWorker(context: Context, params: WorkerParameters) : CoroutineWo
     internal var writeStore: suspend (suspend AutoBackupStore.() -> Unit) -> Unit = { write -> store.write() }
     internal var storeRetryDelayMs: Long = STORE_RETRY_DELAY_MS
 
+    /** The settings, or null when the store can't be read right now; tests swap it. */
+    internal var readSettings: suspend () -> AutoBackupSettings? = { store.readable() }
+
     override suspend fun doWork(): Result {
-        val settings = store.current()
+        // Unreadable isn't "off": the run is tried again rather than skipped as if backups were turned off.
+        val settings = readSettings() ?: return if (runAttemptCount < AutoBackupScheduling.MAX_ATTEMPTS - 1) Result.retry() else Result.failure()
         val folderUri = settings.folderUri
         // Turned off or the folder was cleared after this run was scheduled.
         if (!settings.isActive || folderUri == null) return Result.success()

@@ -147,6 +147,15 @@ class AutoBackupWorkerTest {
         assertEquals(listOf(AutoBackupOutcome.Failed(AutoBackupProblem.PERMISSION_LOST, false)), reports)
     }
 
+    @Test fun `unreadable settings are tried again, never skipped as if backups were off`() = runBlocking {
+        val first = worker(attempt = 0).apply { readSettings = { null } }
+        assertEquals(ListenableWorker.Result.retry(), first.doWork())
+        val last = worker(attempt = AutoBackupScheduling.MAX_ATTEMPTS - 1).apply { readSettings = { null } }
+        assertEquals(ListenableWorker.Result.failure(), last.doWork())
+        assertEquals(0, exports)
+        assertTrue(folder.writes.isEmpty())
+    }
+
     @Test fun `every problem code is an allowed analytics error code`() {
         val allowed = setOf(
             LibraryBackupAnalyticsErrors.PERMISSION_LOST,

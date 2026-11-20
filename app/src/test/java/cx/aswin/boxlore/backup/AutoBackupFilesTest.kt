@@ -21,7 +21,8 @@ class AutoBackupFilesTest {
         assertEquals(name, AutoBackupFiles.fileName(LocalDateTime.of(2026, 12, 15, 3, 35).toInstant(ZoneOffset.UTC).toEpochMilli(), zone))
         val names = listOf(at(2027, 1, 2, 0, 0), at(2026, 12, 31, 23, 59), at(2026, 12, 15, 9, 5)).map { AutoBackupFiles.fileName(it, zone) }
         assertEquals(names.reversed(), names.sorted())
-        assertEquals("boxlore_auto_backup_2026-12-15_0905.json.tmp", AutoBackupFiles.tempName(name))
+        assertEquals("boxlore_auto_backup_2026-12-15_0905.tmp.json", AutoBackupFiles.tempName(name))
+        assertFalse(AutoBackupFiles.isBackup(AutoBackupFiles.tempName(name)))
         assertTrue(AutoBackupFiles.isBackup(name))
         assertTrue(AutoBackupFiles.isLeftoverTemp(AutoBackupFiles.tempName(name)))
     }

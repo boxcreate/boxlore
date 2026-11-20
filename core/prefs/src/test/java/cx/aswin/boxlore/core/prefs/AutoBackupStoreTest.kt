@@ -137,6 +137,8 @@ class AutoBackupStoreTest {
             override suspend fun updateData(transform: suspend (t: Preferences) -> Preferences): Preferences = throw IOException("disk")
         }
         assertEquals(AutoBackupSettings(), AutoBackupStore(broken).settings.first())
+        // The worker's single read says it couldn't read, rather than "off".
+        assertNull(AutoBackupStore(broken).readable())
         // Never "turned off" while unreadable: the schedule's flow emits nothing...
         assertNull(withTimeoutOrNull(60 * 60 * 1000L) { AutoBackupStore(broken).settingsWhenReadable.first() })
     }

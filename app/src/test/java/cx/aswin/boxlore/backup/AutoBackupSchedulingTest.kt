@@ -14,8 +14,10 @@ import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -147,5 +149,27 @@ class AutoBackupSchedulingTest {
             check(System.currentTimeMillis() < deadline) { "Work didn't reach the expected state" }
             Thread.sleep(20)
         }
+    }
+
+    @Test fun `a failed schedule update is tried again, and a newer plan replaces the wait`(): Unit = runBlocking {
+        val tried = mutableListOf<AutoBackupScheduling.Plan>()
+        val settings = MutableStateFlow(active())
+        val follow = launch {
+            AutoBackupScheduling.follow(context, settings, apply = { _, plan ->
+                tried += plan
+                if (tried.size < 3) error("work database busy")
+            }, retryDelayMs = 1L)
+        }
+        withTimeout(5_000) { while (tried.size < 3) delay(5) }
+        assertEquals(List(3) { AutoBackupScheduling.planOf(active()) }, tried)
+        follow.cancel()
+
+        // A plan that keeps failing stops after its tries.
+        val failing = mutableListOf<AutoBackupScheduling.Plan>()
+        AutoBackupScheduling.follow(context, flowOf(active()), apply = { _, plan ->
+            failing += plan
+            error("still busy")
+        }, retryDelayMs = 1L)
+        assertEquals(AutoBackupScheduling.RECONCILE_TRIES, failing.size)
     }
 }

@@ -51,7 +51,8 @@ internal class SafAutoBackupFolder(context: Context, private val treeUri: Uri) :
 
     override fun write(name: String, tempName: String, bytes: ByteArray) {
         children().filter { it.first == tempName }.forEach { (_, uri) -> deleteDocument(uri) }
-        val temp = DocumentsContract.createDocument(resolver, directory, BINARY_MIME, tempName)
+        // JSON from the start: a provider may keep the type a file was created with, and restore lists only JSON.
+        val temp = DocumentsContract.createDocument(resolver, directory, JSON_MIME, tempName)
             ?: throw IOException("Couldn't create the backup file")
         if (supportsRename(temp)) writeThroughRename(temp, name, bytes) else writeInPlace(temp, name, bytes)
     }
@@ -138,7 +139,6 @@ internal class SafAutoBackupFolder(context: Context, private val treeUri: Uri) :
 
     private companion object {
         const val TAG = "AutoBackupFolder"
-        const val BINARY_MIME = "application/octet-stream"
         const val JSON_MIME = "application/json"
     }
 }

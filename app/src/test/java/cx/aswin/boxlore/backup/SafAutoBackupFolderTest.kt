@@ -47,12 +47,17 @@ class SafAutoBackupFolderTest {
     private fun folder() = SafAutoBackupFolder(application, tree)
 
     @Test fun `writes through the temporary name and renames it when the provider can rename`() {
-        provider.add("boxlore_auto_backup_2026-12-15_0905.json.tmp") // left by a stopped run
+        provider.add(AutoBackupFiles.tempName(name)) // left by a stopped run
         folder().checkReachable()
         folder().write(name, AutoBackupFiles.tempName(name), bytes)
         assertEquals(listOf(name), folder().listNames())
         assertArrayEquals(bytes, provider.bytesOf(name))
         assertEquals(1, provider.renames)
+    }
+
+    @Test fun `the backup is created as JSON, so restore lists it after the rename`() {
+        folder().write(name, AutoBackupFiles.tempName(name), bytes)
+        assertEquals("application/json", provider.mimeOf(name))
     }
 
     @Test fun `writes the file directly when the provider can't rename`() {
@@ -138,6 +143,10 @@ class FakeDocumentsProvider : ContentProvider() {
         File(dir, id).writeBytes(content)
     }
 
+    private val mimes = mutableMapOf<String, String>()
+
+    fun mimeOf(name: String): String? = mimes[names.entries.single { it.value == name }.key]
+
     fun bytesOf(name: String): ByteArray = File(dir, names.entries.single { it.value == name }.key).readBytes()
 
     override fun onCreate() = true
@@ -164,7 +173,11 @@ class FakeDocumentsProvider : ContentProvider() {
         val target = extras?.getParcelable<Uri>(EXTRA_URI) ?: return null
         val id = DocumentsContract.getDocumentId(target)
         return when (method) {
-            "android:createDocument" -> uriBundle(target, add(extras.getString(Document.COLUMN_DISPLAY_NAME).orEmpty()))
+            "android:createDocument" -> {
+                val created = add(extras.getString(Document.COLUMN_DISPLAY_NAME).orEmpty())
+                extras.getString(Document.COLUMN_MIME_TYPE)?.let { mimes[created] = it }
+                uriBundle(target, created)
+            }
             "android:renameDocument" -> {
                 if (names[id] != null && names[id] == failRenameOf) error("rename refused")
                 renames++
