@@ -230,7 +230,8 @@ class PlaylistPagesAdaptiveTest {
         compose.onNodeWithText("No limit").performScrollTo().performClick()
         compose.runOnIdle {
             assertEquals(
-                listOf(PlaylistMix.NEWEST_FIRST to PLAYLIST_DEFAULT_PER_SHOW_LIMIT, PlaylistMix.TAKE_TURNS to null),
+                // The page's playlist never updates here, as before a save lands: the second change keeps the first.
+                listOf(PlaylistMix.NEWEST_FIRST to PLAYLIST_DEFAULT_PER_SHOW_LIMIT, PlaylistMix.NEWEST_FIRST to null),
                 playbacks,
             )
         }

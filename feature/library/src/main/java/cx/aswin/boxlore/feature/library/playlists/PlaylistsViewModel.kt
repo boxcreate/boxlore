@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /** One playlist's page: loading, gone (deleted, or a stale link), or its shows and what plays next. */
 sealed interface PlaylistDetailState {
@@ -70,6 +72,12 @@ class PlaylistsViewModel(
 
     val folders: StateFlow<List<SubscriptionFolder>> =
         ports.folders.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
+
+    /** The newest Play request; an older one whose read finishes later must not replace its queue. */
+    private var playRequest = 0
+
+    /** How it plays is saved one change at a time, in the order the listener made them. */
+    private val playbackWrites = Mutex()
 
     /** Bumped by [refreshComingUp]: stored episodes and in-progress plays change without a cheap signal. */
     private val refreshes = MutableStateFlow(0)
@@ -136,7 +144,7 @@ class PlaylistsViewModel(
     fun setPlayback(mix: PlaylistMix, perShowLimit: Int?) {
         val id = playlistId ?: return
         viewModelScope.launch {
-            if (repository.setPlayback(id, mix, perShowLimit)) {
+            if (playbackWrites.withLock { repository.setPlayback(id, mix, perShowLimit) }) {
                 AnalyticsHelper.trackSettingsInteraction("playlist_playback", "${mix.stored}:${perShowLimit ?: "all"}")
                 refreshComingUp()
             }
@@ -168,14 +176,16 @@ class PlaylistsViewModel(
     }
 
     /**
-     * Replaces the queue with this playlist's next episodes. [onReplaced] gets what the queue held,
-     * for Undo, when there was anything; [onNothingToPlay] runs when the playlist has nothing to play.
+     * Replaces the queue with [target]'s next episodes (this page's playlist unless given, as from a card
+     * on the Playlists page). [onReplaced] gets what the queue held, for Undo, when there was anything;
+     * [onNothingToPlay] runs when the playlist has nothing to play. Only the newest request acts.
      */
-    /** Plays [target] (this page's playlist unless given, as from a card on the Playlists page). */
     fun play(target: String? = playlistId, onReplaced: (UpNextSnapshot) -> Unit = {}, onNothingToPlay: () -> Unit = {}) {
         val id = target ?: return
+        val request = ++playRequest
         viewModelScope.launch {
             val episodes = repository.nextEpisodes(id, minOf(batchSize, queueLimit))
+            if (request != playRequest) return@launch
             if (episodes.isEmpty()) {
                 onNothingToPlay()
                 return@launch

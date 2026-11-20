@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.library.playlists
 
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -22,5 +23,12 @@ class PlaylistGridCellsTest {
         assertEquals(4, columns(641)) // unfolded foldable
         assertEquals(4, columns(768)) // tablet, portrait
         assertEquals(7, columns(1248)) // tablet, landscape
+    }
+
+    @Test
+    fun `a playlist page fits its show covers to the width, never fewer than one`() {
+        assertEquals(2, playlistShowColumns(320.dp)) // 360dp phone
+        assertEquals(3, playlistShowColumns(372.dp)) // 412dp phone
+        assertEquals(1, playlistShowColumns(80.dp))
     }
 }

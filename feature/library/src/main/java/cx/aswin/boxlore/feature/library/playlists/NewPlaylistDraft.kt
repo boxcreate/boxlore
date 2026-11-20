@@ -242,8 +242,10 @@ internal val NewPlaylistDraftSaver: Saver<NewPlaylistDraft, Any> = listSaver(
         )
     },
     restore = { v ->
+        // Anything in another layout (an older version saved its picked show IDs here) is dropped, not misread.
+        if (v.size < DRAFT_SAVED_FIELDS || NewPlaylistMode.entries.none { it.name == v[0] }) return@listSaver null
         NewPlaylistDraft(
-            mode = NewPlaylistMode.entries.firstOrNull { it.name == v[0] } ?: NewPlaylistMode.Create,
+            mode = NewPlaylistMode.valueOf(v[0] as String),
             playlistId = v[1] as? String,
             step = v[2] as? Int ?: NewPlaylistDraft.START,
             pickedIds = (v[3] as? List<*>)?.filterIsInstance<String>().orEmpty(),
@@ -256,7 +258,10 @@ internal val NewPlaylistDraftSaver: Saver<NewPlaylistDraft, Any> = listSaver(
             mix = PlaylistMix.fromStored(v[10] as? String),
             perShowLimit = (v[11] as? Int)?.takeIf { it > 0 },
             fromSuggestion = v[12] as? Boolean ?: false,
-            origin = v.getOrNull(13) as? String ?: NewPlaylistDraft.ORIGIN_OWN,
+            origin = v[13] as? String ?: NewPlaylistDraft.ORIGIN_OWN,
         )
     },
 )
+
+/** How many values [NewPlaylistDraftSaver] saves. */
+private const val DRAFT_SAVED_FIELDS = 14

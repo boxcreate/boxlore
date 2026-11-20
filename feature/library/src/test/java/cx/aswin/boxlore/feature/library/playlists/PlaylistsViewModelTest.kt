@@ -6,6 +6,7 @@ import cx.aswin.boxlore.core.model.PlaylistMix
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.UpNextSnapshot
 import cx.aswin.boxlore.core.testing.MainDispatcherExtension
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -156,5 +157,41 @@ class PlaylistsViewModelTest {
 
         val fresh = vm.detail.first { (it as? PlaylistDetailState.Ready)?.comingUp?.size == 2 } as PlaylistDetailState.Ready
         assertEquals(listOf("new", "1"), fresh.comingUp.map { it.id })
+    }
+
+    @Test
+    fun `only the newest Play acts when an earlier playlist's read finishes after it`() = runTest {
+        repository.createPlaylist("Slow", listOf("a"))
+        repository.createPlaylist("Fast", listOf("a"))
+        repository.next = listOf(episode("1"))
+        queue = UpNextSnapshot(listOf(episode("old")), 0, 5L, true, Podcast("s", "S", "", ""))
+        val slowRead = CompletableDeferred<Unit>()
+        repository.readGates["p1"] = slowRead
+        val vm = viewModel()
+        val replacedFor = mutableListOf<String>()
+        var nothingToPlay = 0
+
+        vm.play("p1", onReplaced = { replacedFor += "p1" }, onNothingToPlay = { nothingToPlay++ })
+        vm.play("p2", onReplaced = { replacedFor += "p2" }, onNothingToPlay = { nothingToPlay++ })
+        slowRead.complete(Unit)
+
+        assertEquals(listOf("p2"), played.map { it.first })
+        assertEquals(listOf("p2"), replacedFor)
+        assertEquals(0, nothingToPlay)
+    }
+
+    @Test
+    fun `how it plays is saved in the order it was changed, even when a save is slow`() = runTest {
+        repository.createPlaylist("Mix", listOf("a"))
+        val slowSave = CompletableDeferred<Unit>()
+        repository.playbackGates += slowSave
+        val vm = viewModel("p1")
+
+        vm.setPlayback(PlaylistMix.NEWEST_FIRST, 3)
+        vm.setPlayback(PlaylistMix.NEWEST_FIRST, 2)
+        slowSave.complete(Unit)
+
+        val stored = repository.getPlaylists().single()
+        assertEquals(PlaylistMix.NEWEST_FIRST to 2, stored.mix to stored.perShowLimit)
     }
 }

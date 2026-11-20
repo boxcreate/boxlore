@@ -5,6 +5,7 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Playlist
 import cx.aswin.boxlore.core.model.PlaylistMix
 import cx.aswin.boxlore.core.model.PlaylistShow
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -16,6 +17,12 @@ internal class FakePlaylistRepository : PlaylistRepository {
     private var ids = 0
     var next: List<Episode> = emptyList()
     val asked = mutableListOf<Int>()
+
+    /** Each held gate makes the next [setPlayback] wait for it, as a slow save would. */
+    val playbackGates = ArrayDeque<CompletableDeferred<Unit>>()
+
+    /** A gate per playlist makes [nextEpisodes] for it wait, as a slow read would. */
+    val readGates = mutableMapOf<String, CompletableDeferred<Unit>>()
 
     override val playlists: Flow<List<Playlist>> = lists.map { all -> all.map { it.withCount() } }
 
@@ -42,6 +49,7 @@ internal class FakePlaylistRepository : PlaylistRepository {
     }
 
     override suspend fun setPlayback(playlistId: String, mix: PlaylistMix, perShowLimit: Int?): Boolean {
+        playbackGates.removeFirstOrNull()?.await()
         lists.value = lists.value.map { if (it.id == playlistId) it.copy(mix = mix, perShowLimit = perShowLimit?.takeIf { limit -> limit > 0 }) else it }
         return true
     }
@@ -80,6 +88,7 @@ internal class FakePlaylistRepository : PlaylistRepository {
 
     override suspend fun nextEpisodes(playlistId: String, limit: Int, excludeIds: Collection<String>): List<Episode> {
         asked += limit
+        readGates.remove(playlistId)?.await()
         return next.take(limit)
     }
 

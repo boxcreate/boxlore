@@ -59,4 +59,13 @@ class PlaylistPagesStateTest {
         // A dialog saved by the old sheet reads as nothing open.
         assertNull(PlaylistEditor.decode("create"))
     }
+
+    @Test
+    fun `a state saved by an older version, with picked show IDs where the draft goes, opens with no draft`() {
+        listOf(arrayListOf<String>(), arrayListOf("a", "b"), ArrayList((1..20).map { "show$it" })).forEach { legacyPicks ->
+            val restored = PlaylistPagesState.Saver.restore(listOf("", "", legacyPicks))!!
+            assertNull(restored.newDraft)
+        }
+        assertNull(PlaylistPagesState.Saver.restore(listOf("create", "Old name", arrayListOf("a")))!!.newDraft)
+    }
 }

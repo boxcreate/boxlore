@@ -2,9 +2,8 @@ package cx.aswin.boxlore.feature.library.playlists
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -49,6 +49,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -66,6 +67,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -232,13 +234,17 @@ internal fun PlaylistDetailContent(
                         onExploreClick = { state.openAddShows(ready.playlist.id) },
                     )
                 }
-                else -> LazyColumn(
-                    modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxSize().testTag(PLAYLIST_DETAIL_TAG),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = playlistChromeBottom(isPlayerActive)),
-                ) {
-                    item(key = "header", contentType = "header") { PlaylistHeader(ready, actions, onOpenSettings = { settingsOpen = true }) }
-                    comingUp(ready.comingUp)
-                    shows(ready, onAdd = { state.openAddShows(ready.playlist.id) }, onRemove = actions::removeShow)
+                else -> BoxWithConstraints(Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxSize()) {
+                    // The list's 16dp sides and the rows' 4dp sides.
+                    val columns = playlistShowColumns(maxWidth - 40.dp)
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().testTag(PLAYLIST_DETAIL_TAG),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = playlistChromeBottom(isPlayerActive)),
+                    ) {
+                        item(key = "header", contentType = "header") { PlaylistHeader(ready, actions, onOpenSettings = { settingsOpen = true }) }
+                        comingUp(ready.comingUp)
+                        shows(ready, columns, onAdd = { state.openAddShows(ready.playlist.id) }, onRemove = actions::removeShow)
+                    }
                 }
             }
         }
@@ -303,8 +309,15 @@ private fun HowItPlaysSheet(playlist: Playlist, onChange: (PlaylistMix, Int?) ->
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
+        // The sheet holds the latest choice itself, so a second change made before the first is saved builds on it.
+        var mix by rememberSaveable(playlist.id) { mutableStateOf(playlist.mix) }
+        var perShowLimit by rememberSaveable(playlist.id) { mutableStateOf(playlist.perShowLimit) }
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(start = 20.dp, end = 20.dp, bottom = 24.dp)) {
-            PlaylistPlaybackSettings(playlist.mix, playlist.perShowLimit, onChange)
+            PlaylistPlaybackSettings(mix, perShowLimit, onChange = { newMix, newLimit ->
+                mix = newMix
+                perShowLimit = newLimit
+                onChange(newMix, newLimit)
+            })
         }
     }
 }
@@ -363,8 +376,7 @@ private fun episodeLine(episode: Episode): String {
     return if (show.isBlank()) length else "$show · $length"
 }
 
-@OptIn(ExperimentalLayoutApi::class)
-private fun LazyListScope.shows(ready: PlaylistDetailState.Ready, onAdd: () -> Unit, onRemove: (PlaylistShow) -> Unit) {
+private fun LazyListScope.shows(ready: PlaylistDetailState.Ready, columns: Int, onAdd: () -> Unit, onRemove: (PlaylistShow) -> Unit) {
     item(key = "shows", contentType = "section") {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) { Section(PlaylistDetailCopy.SHOWS) }
@@ -374,13 +386,10 @@ private fun LazyListScope.shows(ready: PlaylistDetailState.Ready, onAdd: () -> U
             }
         }
     }
-    item(key = "show_grid", contentType = "shows") {
-        FlowRow(
-            Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            ready.shows.forEach { show -> ShowTile(show, onRemove = { onRemove(show) }) }
+    // One lazy row of covers per item, so a playlist with many shows only builds the rows on screen.
+    items(ready.shows.chunked(columns), key = { row -> "show_row:${row.first().podcastId}" }, contentType = { "show_row" }) { row ->
+        Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 7.dp), horizontalArrangement = Arrangement.spacedBy(ShowTileGap)) {
+            row.forEach { show -> key(show.podcastId) { ShowTile(show, onRemove = { onRemove(show) }) } }
         }
     }
 }
@@ -427,6 +436,10 @@ private fun Artwork(url: String?, fallback: String?, size: androidx.compose.ui.u
 
 private const val SKIPPED_ALPHA = 0.5f
 private val ShowTileSize = 100.dp
+private val ShowTileGap = 12.dp
+
+/** How many show covers fit across [width] on a playlist's page (at least one). */
+internal fun playlistShowColumns(width: Dp): Int = ((width + ShowTileGap) / (ShowTileSize + ShowTileGap)).toInt().coerceAtLeast(1)
 
 /** The playback chrome under a playlist page (mini player, floating navigation), which its list and snackbars stay above. */
 @Composable

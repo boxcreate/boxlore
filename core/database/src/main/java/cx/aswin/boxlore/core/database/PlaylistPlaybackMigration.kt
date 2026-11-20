@@ -6,10 +6,12 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * Room migration 45→46: each playlist's mix, episodes per show and icon ([PlaylistEntity]).
  *
  * Adds `mix` (`take_turns` by default), `perShowLimit` (3 by default, 0 means no limit) and the
- * nullable `iconKey` to `playlists`. Playlists made before keep playing as they did: an `oldest`
- * order becomes `one_show` and any other `newest_first`, both with no limit. `episodeOrder` stays
- * as a column nothing reads. Runs inside Room's migration transaction and uses nothing but the
- * database. Never edit it once a phone may have run it; later changes go to v47.
+ * nullable `iconKey` to `playlists`. Playlists made before get no limit and the nearest mix: any
+ * `newest` order becomes `newest_first`, which plays as it did. An `oldest` order becomes `one_show`,
+ * which changes its order: no mix merges every show oldest first by release date as `oldest` did,
+ * so these play one show at a time from its oldest unheard episode. `episodeOrder` stays as a column
+ * nothing reads. Runs inside Room's migration transaction and uses nothing but the database. Never
+ * edit its SQL once a phone may have run it; later changes take a new version.
  */
 internal object PlaylistPlaybackMigration {
     fun migrate(db: SupportSQLiteDatabase) {

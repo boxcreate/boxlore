@@ -142,7 +142,7 @@ Schema versions (the current version is 46):
 
 Migration rules:
 
-- Never edit a shipped migration or exported schema: Room refuses to open a file whose schema differs at the same version. Any schema change takes a new version (47 next) and a new exported schema.
+- Never edit a shipped migration or exported schema: Room refuses to open a file whose schema differs at the same version. Any schema change takes a new version and a new exported schema.
 - Migrations only add (43→44 alone converts and drops `playlist_items`; 45→46 sets the new playlist columns from the old order): no stored ID or value changes, and new columns carry defaults so existing rows need no rewrite.
 - Add each new migration to `BoxLoreDatabase.ALL_MIGRATIONS`. `BoxLoreDatabase.builder` is the one configuration, used by `getDatabase` and the upgrade tests.
 - A version from 12 on with no path fails to open instead of erasing data. Only versions 1–11 and downgrades still recreate the database empty.
