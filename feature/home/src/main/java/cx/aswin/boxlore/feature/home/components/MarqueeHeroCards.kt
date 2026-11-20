@@ -169,8 +169,7 @@ internal fun MarqueeHero(
                 touches++
             }, onRelease = { holding = false }),
     ) {
-        // Everything but the sheet's edge stays still as Home scrolls, so the body slides over it.
-        Box(Modifier.fillMaxSize().marqueePinned(scroll)) {
+        // The whole hero scrolls with Home; only the words fade as they slide under the top bar.
         HorizontalPager(pager, Modifier.fillMaxSize()) { page ->
             val item = items[page]
             if (item.type == HeroType.RESUME_GRID || item.type == HeroType.NEW_EPISODES_GRID) {
@@ -200,8 +199,11 @@ internal fun MarqueeHero(
                 )
             }
         }
-        MarqueePageDots(items.size, pager.currentPage, Modifier.align(Alignment.BottomCenter).padding(bottom = MarqueeSheetOverlap + MarqueeDotsBottom))
-        }
+        MarqueePageDots(
+            items.size,
+            pager.currentPage,
+            Modifier.align(Alignment.BottomCenter).marqueeFadesUnderBar().padding(bottom = MarqueeSheetOverlap + MarqueeDotsBottom),
+        )
         // Your shows' sheet begins over the hero's foot, so the hero reads as Home's backdrop.
         MarqueeSheetEdge(Modifier.align(Alignment.BottomCenter))
     }
@@ -246,8 +248,8 @@ private fun marqueeUpNext(items: List<SmartHeroItem>, page: Int): List<MarqueeNe
 }
 
 /**
- * Marquee's single-episode card: [MarqueeBackdrop] in [rememberMarqueeLook]'s colours (the whole cover
- * melting into a wash of its own colours, a soft fade under the top bar), a shade behind the words, Cover's
+ * Marquee's single-episode card: [MarqueeBackdrop] in [rememberMarqueeLook]'s colours (the cover, sharp
+ * at the top and softening behind the title, in a glow of its own colours), a shade behind the words, Cover's
  * words, and Play with a fixed width, details beside it, and covers of the next cards in the room left
  * over. While [active], it tells the top bar which words read over its cover.
  */
@@ -282,7 +284,8 @@ internal fun MarqueeHeroCard(
         MarqueeBackdrop(imageUrl, heroArtworkSources(item), look)
         if (active) MarqueeReportTone(look.topContent)
         Column(
-            Modifier.align(Alignment.BottomStart).fillMaxWidth().coverScrim(shade.deep.copy(alpha = MarqueeWordsScrim), fade = MarqueeWordsFade)
+            Modifier.align(Alignment.BottomStart).fillMaxWidth().marqueeWordsScrim(shade.deep)
+                .marqueeFadesUnderBar()
                 .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = MarqueeCopyBottom),
         ) {
             MarqueeChip(marqueeContext(item), shade, tag = "home_hero_marquee_chip")

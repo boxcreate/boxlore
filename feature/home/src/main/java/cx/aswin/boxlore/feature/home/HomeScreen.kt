@@ -4,10 +4,7 @@ import android.content.pm.PackageManager
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,8 +26,6 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -52,23 +47,12 @@ import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.feature.home.components.ChangeRecommendationPodcastSheet
 import cx.aswin.boxlore.feature.home.components.LocalHeroCardStyle
 import cx.aswin.boxlore.feature.home.components.LocalHeroCoverShade
-import cx.aswin.boxlore.feature.home.components.LocalHeroScrollOffset
 import cx.aswin.boxlore.feature.home.components.LocalHeroTideProgress
-import cx.aswin.boxlore.feature.home.components.LocalHeroTopInset
 import cx.aswin.boxlore.feature.home.components.LocalLastSeenEpisodes
-import cx.aswin.boxlore.feature.home.components.LocalMarqueeCardFrost
-import cx.aswin.boxlore.feature.home.components.LocalMarqueeTopTone
-import cx.aswin.boxlore.feature.home.components.MarqueeBarFrost
-import cx.aswin.boxlore.feature.home.components.MarqueeDetentConnection
-import cx.aswin.boxlore.feature.home.components.MarqueeSheetOverlap
 import cx.aswin.boxlore.feature.home.components.MarqueeTopTone
 import cx.aswin.boxlore.feature.home.components.TopControlBar
 import cx.aswin.boxlore.feature.home.components.homeHeroStyle
-import cx.aswin.boxlore.feature.home.components.marqueeBarOverArtwork
-import cx.aswin.boxlore.feature.home.components.marqueeDetent
 import cx.aswin.boxlore.feature.home.logic.HomeMixMode
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
@@ -595,12 +579,6 @@ private fun HomeTopBar(
     )
 }
 
-/** The expanded bar below the status bar: 16dp above and below its 33dp shortcuts. */
-private val HomeTopBarEstimate = 65.dp
-
-/** The bar fills over this distance as the body's edge passes under it. */
-private val MarqueeBarEdge = 24.dp
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
@@ -639,47 +617,21 @@ fun HomeScreen(
     }
     Box(modifier = modifier.fillMaxSize()) {
         if (HeroCardStyle.sanitize(LocalHeroCardStyle.current) == HeroCardStyle.MARQUEE) {
-            // Marquee's hero runs under the top bar, so the feed starts at the top of the screen and the
-            // bar floats over it; the hero leaves room for the bar's height (LocalHeroTopInset).
-            var topBarHeight by remember { androidx.compose.runtime.mutableIntStateOf(0) }
-            val estimate = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + HomeTopBarEstimate
-            val topInset = if (topBarHeight > 0) with(LocalDensity.current) { topBarHeight.toDp() } else estimate
-            val topTone = remember { MarqueeTopTone() }
-            val overlapPx = with(LocalDensity.current) { MarqueeSheetOverlap.toPx() }
-            val edgePx = with(LocalDensity.current) { MarqueeBarEdge.toPx() }
-            // The hero keeps its cover still while it scrolls away.
-            val heroScroll: () -> Int = remember(gridState) {
-                { if (gridState.firstVisibleItemIndex == 0) gridState.firstVisibleItemScrollOffset else Int.MAX_VALUE }
-            }
-            val heroItem = { gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == "hero" } }
-            // The page stops where the body's edge meets the bar; the next swipe carries it under.
-            val detent = remember(gridState, overlapPx) {
-                MarqueeDetentConnection(
-                    detent = { heroItem()?.let { marqueeDetent(it.size.height, overlapPx, topBarHeight) } },
-                    scrolled = { if (heroItem() == null) null else heroScroll() },
-                )
-            }
-            // The bar stays clear over the cover, and fills with the body's colour as the body passes under it.
-            val overArtwork: () -> Float = remember(gridState, overlapPx, edgePx) {
-                { marqueeBarOverArtwork(heroItem()?.let { it.offset.y + it.size.height }, overlapPx, topBarHeight, edgePx) }
-            }
-            val marqueeFrost = remember { HazeState() }
-            CompositionLocalProvider(
-                LocalHeroTopInset provides topInset,
-                LocalHeroScrollOffset provides heroScroll,
-                LocalMarqueeTopTone provides topTone,
-                LocalMarqueeCardFrost provides false,
-            ) { Box(Modifier.fillMaxSize().nestedScroll(detent).hazeSource(marqueeFrost)) { feed() } }
-            // The bar's frost blurs the live page under it, fixed to the top at the bar's full height.
-            MarqueeBarFrost(marqueeFrost, topInset, topTone, overArtwork)
-            HomeTopBar(
-                scrollFractionProvider = { scrollFraction },
-                showTopBarShortcuts = showTopBarShortcuts,
-                callbacks = callbacks,
-                overArtwork = overArtwork,
-                artworkTone = topTone,
+            MarqueeHomeLayout(
+                gridState = gridState,
                 // Keep the expanded height: the bar shrinks as Home scrolls, the hero must not.
-                modifier = Modifier.onSizeChanged { if (scrollFraction == 0f) topBarHeight = it.height },
+                barExpanded = { scrollFraction == 0f },
+                feed = feed,
+                topBar = { overArtwork, tone, barModifier ->
+                    HomeTopBar(
+                        scrollFractionProvider = { scrollFraction },
+                        showTopBarShortcuts = showTopBarShortcuts,
+                        callbacks = callbacks,
+                        overArtwork = overArtwork,
+                        artworkTone = tone,
+                        modifier = barModifier,
+                    )
+                },
             )
         } else {
             Column(modifier = Modifier.fillMaxSize()) {

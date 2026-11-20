@@ -42,7 +42,7 @@ The carousel shows Resume, then new episodes (newest first, grouped into a colle
 - **Duotone** (`DuotoneHeroCards.kt`): the cover redrawn in two tones of one colour, with the words on it.
 - **Tide** (`TideHeroCards.kt`): the whole cover above a wavy panel with a Play disc ringed by progress.
 - **Halo** (`HaloHeroCards.kt`): a cookie-shaped cover inside a progress ring on a tinted card.
-- **Marquee** (`Marquee*.kt`): one full-width card under a floating, frosted top bar, with the next cards' covers beside Play. Home's body scrolls up over a still cover and pauses where the sheet edge meets the bar (`MarqueeDetentConnection`). Cards advance on their own except while touched, scrolled away, under TalkBack or with animations off.
+- **Marquee** (`Marquee*.kt`): one full-width card under a floating, frosted top bar, with the next cards' covers beside Play. The hero scrolls with Home as one piece under the bar, its words fading as they slide under it, and Home's body overlaps its foot with a rounded edge. The cover stays sharp at the top and softens lightly behind the title (`MarqueeBackdrop`). Cards advance on their own except while touched, scrolled away, under TalkBack or with animations off.
 
 Shared rules:
 

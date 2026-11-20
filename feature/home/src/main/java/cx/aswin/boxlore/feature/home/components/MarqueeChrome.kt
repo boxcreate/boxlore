@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -19,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -26,12 +26,22 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -43,7 +53,8 @@ import cx.aswin.boxlore.feature.home.SmartHeroItem
 
 /**
  * How far Home has scrolled Marquee's hero up off the screen, in pixels (Int.MAX_VALUE once it has
- * gone). The hero reads it while drawing to keep its cover still as Home's body slides over it.
+ * gone). The hero reads it while drawing, to fade its words as they slide under Home's top bar, and to
+ * stop moving on by itself once it is mostly scrolled away.
  */
 val LocalHeroScrollOffset = compositionLocalOf<() -> Int> { { 0 } }
 
@@ -68,9 +79,8 @@ internal fun marqueeTopContent(average: Int?): Color =
 
 /**
  * How much of Home's top bar ([barHeight] px) sits over Marquee's cover: 1 while the body's rounded edge
- * ([sheetOverlap] px above the hero's foot at [heroBottom]) is at or below the bar, including where the
- * scroll stops, then down to 0 over [edgePx] as a second swipe takes the edge under the bar, and 0 once
- * the hero has scrolled away (null).
+ * ([sheetOverlap] px above the hero's foot at [heroBottom]) is at or below the bar, then down to 0 over
+ * [edgePx] as the edge scrolls under the bar, and 0 once the hero has scrolled away (null).
  */
 internal fun marqueeBarOverArtwork(heroBottom: Int?, sheetOverlap: Float, barHeight: Int, edgePx: Float): Float {
     if (heroBottom == null || edgePx <= 0f) return 0f
@@ -80,33 +90,72 @@ internal fun marqueeBarOverArtwork(heroBottom: Int?, sheetOverlap: Float, barHei
 /** How strongly the frost under the top bar leans toward the words' opposite: stronger when the cover's tone is unknown. */
 internal fun marqueeVeilAlpha(toneKnown: Boolean): Float = if (toneKnown) 0.16f else 0.3f
 
-/** The words' scrim over Marquee's backdrop: a long, nearly solid fade of the card's deep shade. */
-internal const val MarqueeWordsScrim = 0.9f
-internal val MarqueeWordsFade = 190.dp
+/**
+ * The words' scrim over Marquee's backdrop: the card's deep shade, light enough that the cover stays in
+ * view behind the words and dark enough for them to read.
+ */
+internal const val MarqueeWordsScrim = 0.72f
+internal val MarqueeWordsFade = 150.dp
+private val MarqueeWordsSolid = 40.dp
 
 /**
- * Keeps the hero's cover still while Home scrolls: the content moves down by as much as the hero has
- * scrolled up, clipped to the hero, so Home's body and its rounded edge slide up over the cover.
+ * Fades the backdrop above this block of Marquee's words into [color] at [MarqueeWordsScrim]: clear
+ * [MarqueeWordsFade] above the block, full [MarqueeWordsSolid] into it, along an S-curve so the shade
+ * never shows a line where it starts or settles. Draws outside the block's bounds; the card clips it.
  */
-internal fun Modifier.marqueePinned(scroll: () -> Int): Modifier = graphicsLayer {
-    translationY = scroll().toFloat().coerceIn(0f, size.height)
+internal fun Modifier.marqueeWordsScrim(color: Color): Modifier = drawBehind {
+    val fade = MarqueeWordsFade.toPx()
+    val total = fade + size.height
+    if (total <= 0f) return@drawBehind
+    val settled = ((fade + MarqueeWordsSolid.toPx()) / total).coerceAtMost(1f)
+    val stops = marqueeEasedFade(0f, settled, 0f, MarqueeWordsScrim).map { (at, alpha) -> at to color.copy(alpha = alpha) } + (1f to color.copy(alpha = MarqueeWordsScrim))
+    drawRect(Brush.verticalGradient(*stops.toTypedArray(), startY = -fade, endY = size.height), topLeft = Offset(0f, -fade), size = Size(size.width, total))
 }
 
-/** The top of Home's body over Marquee's hero: the sheet's rounded edge with a handle line in its middle. */
+/** The top of Home's body over Marquee's hero: the sheet's rounded edge, which scrolls with the page. */
 @Composable
 internal fun MarqueeSheetEdge(modifier: Modifier = Modifier) {
-    Box(modifier.fillMaxWidth().height(MarqueeSheetOverlap).background(MaterialTheme.colorScheme.surface, MarqueeSheetShape)) {
-        MarqueeSheetHandle(Modifier.align(Alignment.TopCenter).padding(top = 10.dp))
-    }
+    Box(modifier.fillMaxWidth().height(MarqueeSheetOverlap).background(MaterialTheme.colorScheme.surface, MarqueeSheetShape).testTag("home_hero_sheet_edge"))
 }
 
-/** A short line marking the sheet's edge, in a quiet tone of the page's text. */
+/**
+ * Where a part of Marquee's words is fully faded and where fully shown, down its own height in px, as
+ * Home scrolls it under the floating top bar: [barBottom] is the bar's foot on screen, [scroll] how far
+ * the hero has scrolled up and [top] where the part starts in the hero. It fades over [fade] px above
+ * the bar's foot, so words thin out as they slide under the bar instead of being cut by its edge. Null
+ * while none of it is under the bar, or once the hero has gone, so it draws as it is.
+ */
+internal fun marqueeFadeUnderBar(barBottom: Float, scroll: Int, top: Float, fade: Float): Pair<Float, Float>? {
+    if (scroll <= 0 || scroll == Int.MAX_VALUE) return null
+    val shown = barBottom + scroll - top
+    return if (shown <= 0f) null else (shown - fade) to shown
+}
+
+/**
+ * Fades this part of Marquee's words as Home scrolls it under the floating top bar
+ * ([marqueeFadeUnderBar]). Reads the scroll and its own position only while drawing, so scrolling never
+ * recomposes the card, and a move without a scroll still redraws the fade.
+ */
 @Composable
-internal fun MarqueeSheetHandle(modifier: Modifier = Modifier) {
-    Box(
-        modifier.size(width = 32.dp, height = 4.dp).clip(CircleShape)
-            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)).testTag("home_hero_sheet_handle"),
-    )
+internal fun Modifier.marqueeFadesUnderBar(): Modifier {
+    val scroll = LocalHeroScrollOffset.current
+    val density = LocalDensity.current
+    val barBottom = with(density) { LocalHeroTopInset.current.toPx() }
+    val fade = with(density) { MarqueeWordsUnderBarFade.toPx() }
+    // State, so a move without a scroll (a resize, a different card height) redraws the fade too.
+    val top = remember { mutableFloatStateOf(0f) }
+    return this
+        .onPlaced { top.floatValue = it.positionInParent().y }
+        .graphicsLayer {
+            val fading = marqueeFadeUnderBar(barBottom, scroll(), top.floatValue, fade) != null
+            compositingStrategy = if (fading) CompositingStrategy.Offscreen else CompositingStrategy.Auto
+        }
+        .drawWithContent {
+            drawContent()
+            val band = marqueeFadeUnderBar(barBottom, scroll(), top.floatValue, fade) ?: return@drawWithContent
+            val stops = marqueeEasedFade(0f, 1f, 0f, 1f).map { (at, alpha) -> at to Color.Black.copy(alpha = alpha) }
+            drawRect(Brush.verticalGradient(*stops.toTypedArray(), startY = band.first, endY = band.second), blendMode = BlendMode.DstIn)
+        }
 }
 
 /** Which card the hero shows: a pill for the current one and dots for the rest, light on the cover's deep shade. */
@@ -185,4 +234,7 @@ private const val MarqueeCardMillis = 6_000L
 internal val MarqueeDotsReserve = 32.dp
 internal val MarqueeDotsBottom = 12.dp
 private val MarqueeDotSize = 6.dp
+
+/** Words fade out over this much as they slide under Home's top bar. */
+private val MarqueeWordsUnderBarFade = 56.dp
 private const val MarqueeLightCover = 0.6f
