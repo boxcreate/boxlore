@@ -1,6 +1,6 @@
-# boxlore on Wear OS: a first look
+# boxlore on Wear OS
 
-boxlore is coming to Wear OS watches. This is an early look at the watch app before its first release. You can't install it yet; [how to install it](#how-to-install-it) covers the steps for when you can.
+boxlore is on Wear OS watches. The watch app is out now on [GitHub Releases](https://github.com/boxcreate/boxlore/releases/latest), starting with boxlore 0.0.32, and it's coming to Google Play very soon. [How to install it](#how-to-install-it) has the steps.
 
 <table>
   <tr>
@@ -37,13 +37,14 @@ boxlore is coming to Wear OS watches. This is an early look at the watch app bef
 - **Player extras.** Playback speed, a sleep timer and Up next.
 - **Made for round screens.** Home's top card follows the curve of the watch, on large and small watches.
 
-## When can I get it?
+## Where can I get it?
 
-There is no date yet. The watch app will arrive with a coming boxlore release.
+- **GitHub Releases: out now.** Every boxlore release from 0.0.32 on includes the watch app next to the phone app.
+- **Google Play: very soon.** The watch app is on its way to Google Play. If your phone app is from Google Play, you can wait for it there, or install the watch app from GitHub now and use it on its own (see [why](#get-both-apps-from-the-same-place)).
 
 ## How to install it
 
-These steps apply from the first release that includes the watch app. The watch needs Wear OS 4 or later. boxlore on your phone is optional: the watch app also works on its own.
+The watch needs Wear OS 4 or later. boxlore on your phone is optional: the watch app also works on its own.
 
 ### Get both apps from the same place
 
@@ -51,15 +52,10 @@ The watch app and the phone app link only when both come from the same place:
 
 | boxlore on your phone is from | Install the watch app from |
 | :--- | :--- |
-| Google Play | Google Play |
+| Google Play | Google Play (very soon) |
 | GitHub Releases or Obtainium | GitHub Releases |
 
 If the two don't match, each app still works on its own, but they can't share shows and progress, control each other's player, or sign the watch in.
-
-### From Google Play
-
-1. On your watch, open the Play Store and search for **boxlore**. Or, on your phone, open [boxlore on Google Play](https://play.google.com/store/apps/details?id=cx.aswin.boxlore) and choose your watch from the install menu.
-2. Install it, then open boxlore on the watch.
 
 ### From GitHub Releases
 
@@ -72,6 +68,13 @@ Wear OS has no file manager to install from, so this route uses a computer with 
 5. Open boxlore on the watch. You can turn the debugging options off again.
 
 Menu names differ slightly between watch makers.
+
+### From Google Play
+
+The watch app isn't on Google Play yet. Once it is:
+
+1. On your watch, open the Play Store and search for **boxlore**. Or, on your phone, open [boxlore on Google Play](https://play.google.com/store/apps/details?id=cx.aswin.boxlore) and choose your watch from the install menu.
+2. Install it, then open boxlore on the watch.
 
 ### Set it up
 
