@@ -91,4 +91,9 @@
     <string name="library_genre_family">Familia</string>
     <string name="library_genre_leisure">Ocio</string>
     <string name="library_genre_govt">Gobierno</string>
+    <string name="library_genre_full_tech">Tecnología</string>
+    <string name="library_genre_full_society">Sociedad y cultura</string>
+    <string name="library_genre_full_religion">Religión y espiritualidad</string>
+    <string name="library_genre_full_family">Niños y familia</string>
+    <string name="library_genre_full_govt">Gobierno</string>
 </resources>

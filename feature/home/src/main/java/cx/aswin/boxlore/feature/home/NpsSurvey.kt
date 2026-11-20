@@ -57,6 +57,12 @@ internal data class NpsSurveySession(
     fun isExpired(nowMs: Long): Boolean = !manual && expiresAtMs != null && nowMs > expiresAtMs
 }
 
+/** Reads survey text in English, whatever the App language, for the question titles sent to PostHog. */
+internal fun npsEnglishStrings(context: android.content.Context): (Int) -> String {
+    val english = android.content.res.Configuration(context.resources.configuration).apply { setLocale(java.util.Locale.ENGLISH) }
+    return context.createConfigurationContext(english).resources::getString
+}
+
 /**
  * The survey's wording: [strings] reads the app's text (by resource id) and any key in [overrides], from
  * [NpsSurveyDefinition.COPY_FLAG]'s payload, replaces it; an empty `ideaTag` hides the tag on the idea step.

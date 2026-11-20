@@ -60,6 +60,8 @@
     <string name="auto_time_left">%1$s restantes</string>
     <string name="auto_almost_done">Presque fini</string>
     <string name="auto_duration_under_minute">&lt; 1 min</string>
+    <string name="auto_length_hours_minutes">%1$d h %2$d min</string>
+    <string name="auto_length_minutes">%1$d min</string>
     <string name="auto_genre_news">Actualités</string>
     <string name="auto_genre_technology">Tech</string>
     <string name="auto_genre_business">Business</string>

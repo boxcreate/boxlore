@@ -154,6 +154,26 @@ object LocaleFormats {
         return formatter.formatNumeric((sign * amount).toDouble(), unit)
     }
 
+    /**
+     * A compact age for tight rows. English keeps boxlore's own "5m ago", "3h ago", "2d ago", "1w ago",
+     * "3mo ago", "1y ago" (the same steps as [relativeTime]); other languages use [relativeTime]'s
+     * narrow style. Under a minute callers show their own "Just now".
+     */
+    fun compactAgo(epochMillis: Long, nowMillis: Long, locale: Locale): String {
+        if (locale.language != "en") return relativeTime(epochMillis, nowMillis, locale, RelativeStyle.NARROW)
+        val seconds = ((nowMillis - epochMillis) / MILLIS_PER_SECOND).coerceAtLeast(0L)
+        val days = seconds / SECONDS_PER_DAY
+        val (amount, unit) = when {
+            seconds < SECONDS_PER_HOUR -> seconds / SECONDS_PER_MINUTE to "m"
+            seconds < SECONDS_PER_DAY -> seconds / SECONDS_PER_HOUR to "h"
+            days < DAYS_PER_WEEK -> days to "d"
+            days < DAYS_PER_MONTH -> days / DAYS_PER_WEEK to "w"
+            days < DAYS_PER_YEAR -> days / DAYS_PER_MONTH to "mo"
+            else -> days / DAYS_PER_YEAR to "y"
+        }
+        return "$amount$unit ago" // i18n-ignore: English-only compact form; other languages use ICU above
+    }
+
     /** A whole number with the language's grouping: "12,345" or "12.345". */
     fun number(value: Long, locale: Locale): String = NumberFormat.getInstance(locale).format(value)
 

@@ -215,4 +215,13 @@ class NpsSurveyControllerTest {
         assertEquals("How likely are you to recommend boxlore to a friend?", copy.question)
         assertEquals("You picked 4", englishCopy().picked(4))
     }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `question titles sent with the answers stay in English in another app language`() {
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        assertEquals("What's the one thing we should fix first?", NpsSurveyCopy(strings = npsEnglishStrings(app)).fixTitle)
+        // The sheet itself shows the translation.
+        assertFalse(app.getString(R.string.home_nps_fix_title).startsWith("What"))
+    }
 }

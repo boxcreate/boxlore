@@ -59,4 +59,10 @@ class OnboardingAppLanguageTest {
         assertEquals("pt-BR", OnboardingAppLanguage.analyticsValue(AppLanguage.PORTUGUESE_BRAZIL))
         assertEquals("system", OnboardingAppLanguage.analyticsValue(AppLanguage.SYSTEM))
     }
+
+    @Test
+    fun `the language question reports its own step index, leaving Welcome's 0 to Welcome`() {
+        assertEquals(Triple(OnboardingAppLanguage.STEP_NAME, -1, "welcome"), onboardingStepAnalytics(OnboardingStep.APP_LANGUAGE))
+        assertEquals(Triple("welcome", 0, "welcome"), onboardingStepAnalytics(OnboardingStep.WELCOME))
+    }
 }

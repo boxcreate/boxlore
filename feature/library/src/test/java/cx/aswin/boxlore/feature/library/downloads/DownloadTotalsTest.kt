@@ -72,11 +72,9 @@ class DownloadTotalsTest {
         val nowMs = System.currentTimeMillis()
         val nowSeconds = nowMs / 1000
         assertEquals("Just now", formatRelativeDate(nowSeconds + 100, Locale.US, nowMs)!!.en())
-        // ICU writes the short units ("2m ago" or "2 min. ago", by version); each names its amount and reads as past.
-        listOf(120L to "2", 7_200L to "2", 172_800L to "2", 1_209_600L to "2", 5_184_000L to "2", 63_072_000L to "2").forEach { (ago, amount) ->
-            val text = formatRelativeDate(nowSeconds - ago, Locale.US, nowMs)!!.en()
-            assertTrue(text, text.startsWith(amount) && text.endsWith("ago"))
-        }
+        // English keeps boxlore's compact wording on every Android version.
+        val english = listOf(120L, 7_200L, 172_800L, 1_209_600L, 5_184_000L, 63_072_000L).map { formatRelativeDate(nowSeconds - it, Locale.US, nowMs)!!.en() }
+        assertEquals(listOf("2m ago", "2h ago", "2d ago", "2w ago", "2mo ago", "2y ago"), english)
         assertTrue(formatRelativeDate(nowSeconds - 172_800, Locale.GERMANY, nowMs)!!.en().startsWith("vor"))
     }
 }

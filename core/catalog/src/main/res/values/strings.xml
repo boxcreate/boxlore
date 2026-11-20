@@ -62,6 +62,9 @@
     <string name="auto_almost_done">Almost done</string>
     <!-- Android Auto: an episode shorter than one minute. Keep it short. -->
     <string name="auto_duration_under_minute">&lt; 1 min</string>
+    <!-- Android Auto row: an episode length or time left, in hours and minutes ("1h 5m") or minutes only ("35 min"). Keep it short; car rows are narrow. -->
+    <string name="auto_length_hours_minutes">%1$dh %2$dm</string>
+    <string name="auto_length_minutes">%1$d min</string>
     <!-- Android Auto Explore genre rows: short names; the car cuts long ones. -->
     <string name="auto_genre_news">News</string>
     <string name="auto_genre_technology">Tech</string>

@@ -137,13 +137,19 @@ class OnboardingViewModel(
 
     /** Called when the welcome screen composable first loads */
     fun onWelcomeScreenViewed() {
-        if (!onboardingStartedFired) {
-            onboardingStartMs = System.currentTimeMillis()
-            welcomeScreenStartMs = System.currentTimeMillis()
-            currentStepStartMs = System.currentTimeMillis()
-            AnalyticsHelper.trackOnboardingStarted()
-            onboardingStartedFired = true
-        }
+        markOnboardingStarted()
+        if (welcomeScreenStartMs == 0L) welcomeScreenStartMs = System.currentTimeMillis()
+    }
+
+    /** The app language question, when shown, is where onboarding starts, so leaving there counts as abandoning. */
+    fun onAppLanguageQuestionViewed() = markOnboardingStarted()
+
+    private fun markOnboardingStarted() {
+        if (onboardingStartedFired) return
+        onboardingStartMs = System.currentTimeMillis()
+        currentStepStartMs = System.currentTimeMillis()
+        AnalyticsHelper.trackOnboardingStarted()
+        onboardingStartedFired = true
     }
 
     /** Called when the genre screen composable first loads */

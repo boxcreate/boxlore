@@ -148,8 +148,6 @@
     <string name="account_sync_never">Ainda não sincronizado</string>
     <string name="account_sync_just_now">Sincronizado agora</string>
     <string name="account_sync_yesterday">Sincronizado ontem</string>
-    <!-- %1$s is a short relative time from the system, e.g. "15 min. ago" or "4 days ago". -->
-    <string name="account_sync_ago">Sincronizado %1$s</string>
     <string name="account_error_no_browser">Não foi possível abrir o navegador</string>
     <string name="account_error_no_email_app">Não foi possível abrir o app de e-mail</string>
     <!-- Clipboard label for the copied account deletion link. -->
@@ -158,4 +156,7 @@
     <!-- %1$s is the email address. -->
     <string name="account_toast_reset_sent_to">E-mail de redefinição de senha enviado para %1$s</string>
     <string name="account_toast_signed_out">Você saiu</string>
+    <plurals name="account_sync_minutes_ago"><item quantity="one">Sincronizado há %d min</item><item quantity="many">Sincronizado há %d min</item><item quantity="other">Sincronizado há %d min</item></plurals>
+    <plurals name="account_sync_hours_ago"><item quantity="one">Sincronizado há %d h</item><item quantity="many">Sincronizado há %d h</item><item quantity="other">Sincronizado há %d h</item></plurals>
+    <plurals name="account_sync_days_ago"><item quantity="one">Sincronizado há %d dia</item><item quantity="many">Sincronizado há %d dias</item><item quantity="other">Sincronizado há %d dias</item></plurals>
 </resources>

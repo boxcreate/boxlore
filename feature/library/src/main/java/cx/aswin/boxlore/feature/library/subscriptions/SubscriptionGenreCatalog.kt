@@ -41,23 +41,32 @@ internal data class SubscriptionGenreItem(
     val icon: ImageVector,
     /** The short name shown on pills for a catalog genre. */
     @StringRes val labelRes: Int? = null,
+    /** The full name for sentences, when the pill shortens it ("Government" for "Govt"). */
+    @StringRes val fullNameRes: Int? = null,
 )
 
 /** The name to show for this genre: the translated catalog name, or the listener's own genre text. */
 @Composable
 internal fun SubscriptionGenreItem.displayLabel(): String = labelRes?.let { stringResource(it) } ?: label
 
-/** The name to show for a stored genre such as a folder's linked genre ("Tech", "Technology" or a custom one). */
+/**
+ * The name to show in a sentence for a stored genre such as a folder's linked genre ("Tech",
+ * "Technology" or a custom one): the full catalog name for a stored full name, the pill name for a
+ * stored pill name, or the listener's own text.
+ */
 @Composable
-internal fun subscriptionGenreDisplayName(genre: String): String =
-    SUBSCRIPTION_GENRE_CATALOG
-        .find { it.value.equals(genre, ignoreCase = true) || it.label.equals(genre, ignoreCase = true) }
-        ?.displayLabel()
-        ?: genre
+internal fun subscriptionGenreDisplayName(genre: String): String = subscriptionGenreNameRes(genre)?.let { stringResource(it) } ?: genre
+
+/** [subscriptionGenreDisplayName]'s resource: null for a genre outside the catalog. */
+@StringRes
+internal fun subscriptionGenreNameRes(genre: String): Int? {
+    val item = SUBSCRIPTION_GENRE_CATALOG.find { it.value.equals(genre, ignoreCase = true) || it.label.equals(genre, ignoreCase = true) } ?: return null
+    return item.fullNameRes?.takeIf { item.value.equals(genre, ignoreCase = true) } ?: item.labelRes
+}
 
 internal val SUBSCRIPTION_GENRE_CATALOG = listOf(
     SubscriptionGenreItem("News", "News", Icons.Rounded.Newspaper, R.string.library_genre_news),
-    SubscriptionGenreItem("Tech", "Technology", Icons.Rounded.Computer, R.string.library_genre_tech),
+    SubscriptionGenreItem("Tech", "Technology", Icons.Rounded.Computer, R.string.library_genre_tech, R.string.library_genre_full_tech),
     SubscriptionGenreItem("Business", "Business", Icons.Rounded.Work, R.string.library_genre_business),
     SubscriptionGenreItem("Comedy", "Comedy", Icons.Rounded.SentimentVerySatisfied, R.string.library_genre_comedy),
     SubscriptionGenreItem("True Crime", "True Crime", Icons.Rounded.Fingerprint, R.string.library_genre_true_crime),
@@ -65,16 +74,16 @@ internal val SUBSCRIPTION_GENRE_CATALOG = listOf(
     SubscriptionGenreItem("Health", "Health", Icons.Rounded.FavoriteBorder, R.string.library_genre_health),
     SubscriptionGenreItem("History", "History", Icons.Rounded.AccountBalance, R.string.library_genre_history),
     SubscriptionGenreItem("Arts", "Arts", Icons.Rounded.Palette, R.string.library_genre_arts),
-    SubscriptionGenreItem("Society", "Society & Culture", Icons.Rounded.Person, R.string.library_genre_society),
+    SubscriptionGenreItem("Society", "Society & Culture", Icons.Rounded.Person, R.string.library_genre_society, R.string.library_genre_full_society),
     SubscriptionGenreItem("Education", "Education", Icons.Rounded.School, R.string.library_genre_education),
     SubscriptionGenreItem("Science", "Science", Icons.Rounded.Science, R.string.library_genre_science),
     SubscriptionGenreItem("TV & Film", "TV & Film", Icons.Rounded.Movie, R.string.library_genre_tv_film),
     SubscriptionGenreItem("Fiction", "Fiction", Icons.Rounded.AutoStories, R.string.library_genre_fiction),
     SubscriptionGenreItem("Music", "Music", Icons.Rounded.MusicNote, R.string.library_genre_music),
-    SubscriptionGenreItem("Religion", "Religion & Spirituality", Icons.Rounded.Star, R.string.library_genre_religion),
-    SubscriptionGenreItem("Family", "Kids & Family", Icons.Rounded.Face, R.string.library_genre_family),
+    SubscriptionGenreItem("Religion", "Religion & Spirituality", Icons.Rounded.Star, R.string.library_genre_religion, R.string.library_genre_full_religion),
+    SubscriptionGenreItem("Family", "Kids & Family", Icons.Rounded.Face, R.string.library_genre_family, R.string.library_genre_full_family),
     SubscriptionGenreItem("Leisure", "Leisure", Icons.Rounded.Weekend, R.string.library_genre_leisure),
-    SubscriptionGenreItem("Govt", "Government", Icons.Rounded.Gavel, R.string.library_genre_govt),
+    SubscriptionGenreItem("Govt", "Government", Icons.Rounded.Gavel, R.string.library_genre_govt, R.string.library_genre_full_govt),
 )
 
 internal val AllGenreIcon: ImageVector = Icons.Rounded.Apps

@@ -72,16 +72,16 @@ class AccountSettingsPageTest {
     @Test
     fun formatRelativeSyncTime_minutesAgo() {
         val now = 10_000_000L
-        assertEquals("Synced 1 min. ago", formatRelativeSyncTime(now - 60_000L, now = now).text())
-        assertEquals("Synced 15 min. ago", formatRelativeSyncTime(now - 15 * 60_000L, now = now).text())
-        assertEquals("Synced 59 min. ago", formatRelativeSyncTime(now - 59 * 60_000L, now = now).text())
+        assertEquals("Synced 1 min ago", formatRelativeSyncTime(now - 60_000L, now = now).text())
+        assertEquals("Synced 15 min ago", formatRelativeSyncTime(now - 15 * 60_000L, now = now).text())
+        assertEquals("Synced 59 min ago", formatRelativeSyncTime(now - 59 * 60_000L, now = now).text())
     }
 
     @Test
     fun formatRelativeSyncTime_hoursAgo() {
         val now = 100_000_000L
-        assertEquals("Synced 1 hr. ago", formatRelativeSyncTime(now - 3600_000L, now = now).text())
-        assertEquals("Synced 23 hr. ago", formatRelativeSyncTime(now - 23 * 3600_000L, now = now).text())
+        assertEquals("Synced 1 hr ago", formatRelativeSyncTime(now - 3600_000L, now = now).text())
+        assertEquals("Synced 23 hr ago", formatRelativeSyncTime(now - 23 * 3600_000L, now = now).text())
     }
 
     @Test
@@ -90,6 +90,8 @@ class AccountSettingsPageTest {
         val oneDay = 24 * 3600_000L
         assertEquals("Synced yesterday", formatRelativeSyncTime(now - oneDay, now = now).text())
         assertEquals("Synced 4 days ago", formatRelativeSyncTime(now - 4 * oneDay, now = now).text())
+        // Stays in days rather than switching to weeks or months.
+        assertEquals("Synced 40 days ago", formatRelativeSyncTime(100 * oneDay - 40 * oneDay, now = 100 * oneDay).text())
     }
 
     @Test

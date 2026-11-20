@@ -27,12 +27,17 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import kotlinx.coroutines.launch
 
-/** The show name and author a Lore episode is queued with when it carries no show of its own. */
+/**
+ * The show name and author a Lore episode is queued with when it carries no show of its own. These
+ * are the playback layer's stored sentinels ("Unknown Podcast" is recognised by QueueShowPolicy and
+ * Home), so they stay English and are never translated here.
+ */
 internal data class LoreShowFallback(val title: String, val author: String)
 
 @Composable
-internal fun rememberLoreShowFallback(): LoreShowFallback =
-    LoreShowFallback(stringResource(R.string.app_unknown_podcast), stringResource(R.string.app_unknown_author))
+internal fun rememberLoreShowFallback(): LoreShowFallback = LORE_SHOW_FALLBACK
+
+private val LORE_SHOW_FALLBACK = LoreShowFallback("Unknown Podcast", "Unknown") // i18n-ignore: stored sentinel
 
 /** The show a Lore card's episode joins the queue under, built from what the episode carries. */
 internal fun loreQueuePodcast(episode: Episode, fallback: LoreShowFallback): Podcast = Podcast(

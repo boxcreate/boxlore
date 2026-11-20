@@ -3,28 +3,9 @@
     <!-- Privacy page title -->
     <string name="settings_privacy_title">Privacidade</string>
     <!-- Card title and action on the Privacy page -->
-    <string name="settings_privacy_reset_recs_title">Redefinir recomendações</string>
-    <string name="settings_privacy_reset_recs_body">Esquece os gostos aprendidos e começa a aprender de novo. Isso não remove os podcasts seguidos, downloads, curtidas nem o histórico de reprodução.</string>
     <!-- Button that resets recommendations -->
-    <string name="settings_privacy_reset_recs_action">Redefinir</string>
-    <string name="settings_privacy_analytics_id_title">Seu ID de análise</string>
-    <string name="settings_privacy_new_id_title">Criar um novo ID de análise</string>
-    <string name="settings_privacy_new_id_body">Os próximos eventos usam um novo ID. O que já foi enviado continua como está.</string>
     <!-- Button, keep short -->
-    <string name="settings_privacy_new_id_action">Novo ID</string>
-    <string name="settings_privacy_deletion_title">Pedir a exclusão dos dados de análise</string>
-    <string name="settings_privacy_deletion_body">Abre um rascunho de e-mail com seu ID do PostHog. Você ainda precisa tocar em enviar.</string>
     <!-- Button that hides the analytics ID panel -->
-    <string name="settings_privacy_deletion_hide">Ocultar</string>
     <!-- Button that shows the analytics ID panel -->
-    <string name="settings_privacy_deletion_show">Mostrar ID</string>
-    <string name="settings_privacy_deletion_note">O rascunho inclui este ID do PostHog. Você pode copiá-lo se quiser.</string>
     <!-- Screen-reader label for the copy button -->
-    <string name="settings_privacy_copy_id">Copiar ID do PostHog</string>
-    <string name="settings_privacy_open_email">Abrir rascunho de e-mail</string>
-    <string name="settings_reset_analytics_title">Criar um novo ID de análise?</string>
-    <string name="settings_reset_analytics_body">Os próximos eventos do PostHog vão usar um novo ID anônimo. Isso não exclui os eventos já enviados com o ID atual.</string>
-    <string name="settings_reset_analytics_kept_title">Os dados no app não são excluídos</string>
-    <string name="settings_reset_analytics_kept_body">Seu histórico de reprodução, podcasts seguidos, downloads e configurações continuam disponíveis.</string>
-    <string name="settings_reset_analytics_device_id">Isso não redefine o ID de dispositivo separado usado para recomendações e transcrições. Para excluir dados do PostHog, envie um pedido de exclusão em Privacidade.</string>
 </resources>

@@ -485,9 +485,13 @@ internal fun navigateHomeExplore(navController: NavHostController, category: Str
 
 internal fun podcastIdFromInfoUiState(state: cx.aswin.boxlore.feature.info.PodcastInfoUiState, fallback: String,): String = (state as? cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success)?.podcast?.id ?: fallback
 
-/** Stands in for a show's name in an episode route until the episode page loads the show. */
+/**
+ * Stands in for a show's name in an episode route until the episode page loads the show. It is the
+ * episode page's fixed marker, never translated: the page swaps it for the real name, or shows its
+ * own translated stand-in.
+ */
 internal val NavGraphWiring.podcastTitleFallback: String
-    get() = context.getString(cx.aswin.boxlore.R.string.app_podcast_title_fallback)
+    get() = cx.aswin.boxlore.feature.info.logic.EpisodeShowTitle.PLACEHOLDER
 
 internal fun podcastTitleFromInfoUiState(state: cx.aswin.boxlore.feature.info.PodcastInfoUiState, fallback: String,): String = (state as? cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success)?.podcast?.title ?: fallback
 

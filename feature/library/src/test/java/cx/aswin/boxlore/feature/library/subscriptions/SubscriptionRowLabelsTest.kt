@@ -83,4 +83,16 @@ class SubscriptionRowLabelsTest {
         assertTrue(english.isNotBlank())
         assertTrue(english != german)
     }
+
+    @Test
+    fun folderSentencesNameAStoredGenreInFull() {
+        val app = RuntimeEnvironment.getApplication()
+        fun name(genre: String) = subscriptionGenreNameRes(genre)?.let(app::getString) ?: genre
+        assertEquals("Government", name("Government"))
+        assertEquals("Society & Culture", name("Society & Culture"))
+        assertEquals("Kids & Family", name("Kids & Family"))
+        assertEquals("Govt", name("Govt"))
+        assertEquals("Comedy", name("Comedy"))
+        assertEquals("Knitting", name("Knitting"))
+    }
 }

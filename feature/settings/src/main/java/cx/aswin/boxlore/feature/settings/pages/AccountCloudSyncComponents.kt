@@ -47,14 +47,11 @@ import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.BoxLoreUser
-import cx.aswin.boxlore.core.model.text.LocaleFormats
-import cx.aswin.boxlore.core.model.text.LocaleFormats.RelativeStyle
 import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsActionRow
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
-import java.util.Locale
 
 /**
  * Where sync stands, in one solid panel: seafoam when it is on or up to date, primary while a sync runs
@@ -113,7 +110,7 @@ internal fun AccountSyncPanel(syncStatus: CloudSyncUiStatus, onSyncNow: () -> Un
 private fun accountSyncCopy(status: CloudSyncUiStatus): Pair<String, String> = when (status) {
     is CloudSyncUiStatus.Error -> stringResource(R.string.account_sync_error) to stringResource(R.string.account_sync_error_body)
     CloudSyncUiStatus.Syncing -> stringResource(R.string.account_sync_busy) to stringResource(R.string.account_sync_busy_body)
-    is CloudSyncUiStatus.Success -> stringResource(R.string.account_sync_done) to formatRelativeSyncTime(status.syncedAt, locale = currentLocale()).asString()
+    is CloudSyncUiStatus.Success -> stringResource(R.string.account_sync_done) to formatRelativeSyncTime(status.syncedAt).asString()
     CloudSyncUiStatus.Idle -> stringResource(R.string.account_sync_on) to stringResource(R.string.account_sync_on_body)
 }
 
@@ -183,14 +180,17 @@ internal fun resolveProviderLine(providerId: String?): Int = when (providerId) {
 }
 
 /** When the library last synced, for the status panel. */
-internal fun formatRelativeSyncTime(timestamp: Long, now: Long = System.currentTimeMillis(), locale: Locale = Locale.getDefault()): UiText {
+internal fun formatRelativeSyncTime(timestamp: Long, now: Long = System.currentTimeMillis()): UiText {
     if (timestamp <= 0L) return UiText.res(R.string.account_sync_never)
-    val elapsed = (now - timestamp).coerceAtLeast(0L)
-    val days = elapsed / 86_400_000L
+    val minutes = (now - timestamp).coerceAtLeast(0L) / 60_000L
+    val hours = minutes / 60
+    val days = hours / 24
     return when {
-        elapsed < 60_000L -> UiText.res(R.string.account_sync_just_now)
+        minutes < 1 -> UiText.res(R.string.account_sync_just_now)
+        minutes < 60 -> UiText.plural(R.plurals.account_sync_minutes_ago, minutes.toInt(), minutes.toInt())
+        hours < 24 -> UiText.plural(R.plurals.account_sync_hours_ago, hours.toInt(), hours.toInt())
         days == 1L -> UiText.res(R.string.account_sync_yesterday)
-        else -> UiText.res(R.string.account_sync_ago, LocaleFormats.relativeTime(now - elapsed, now, locale, RelativeStyle.SHORT))
+        else -> UiText.plural(R.plurals.account_sync_days_ago, days.toInt(), days.toInt())
     }
 }
 

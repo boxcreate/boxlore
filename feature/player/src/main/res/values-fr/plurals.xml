@@ -17,7 +17,7 @@
         <item quantity="other">%1$d épisodes ajoutés à la file d’attente</item>
     </plurals>
     <plurals name="player_same_show_add_next">
-        <item quantity="one">Ajouter le suivant de ce podcast</item>
+        <item quantity="one">Ajouter %1$d épisode suivant de ce podcast</item>
         <item quantity="other">Ajouter les %1$d suivants de ce podcast</item>
     </plurals>
     <plurals name="player_same_show_preview">

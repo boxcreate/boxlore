@@ -148,8 +148,6 @@
     <string name="account_sync_never">Noch nicht synchronisiert</string>
     <string name="account_sync_just_now">Gerade eben synchronisiert</string>
     <string name="account_sync_yesterday">Gestern synchronisiert</string>
-    <!-- %1$s is a short relative time from the system, e.g. "15 min. ago" or "4 days ago". -->
-    <string name="account_sync_ago">Synchronisiert %1$s</string>
     <string name="account_error_no_browser">Browser konnte nicht geöffnet werden</string>
     <string name="account_error_no_email_app">E-Mail-App konnte nicht geöffnet werden</string>
     <!-- Clipboard label for the copied account deletion link. -->
@@ -158,4 +156,7 @@
     <!-- %1$s is the email address. -->
     <string name="account_toast_reset_sent_to">E-Mail zum Zurücksetzen des Passworts an %1$s gesendet</string>
     <string name="account_toast_signed_out">Abgemeldet</string>
+    <plurals name="account_sync_minutes_ago"><item quantity="one">Vor %d Min. synchronisiert</item><item quantity="other">Vor %d Min. synchronisiert</item></plurals>
+    <plurals name="account_sync_hours_ago"><item quantity="one">Vor %d Std. synchronisiert</item><item quantity="other">Vor %d Std. synchronisiert</item></plurals>
+    <plurals name="account_sync_days_ago"><item quantity="one">Vor %d Tag synchronisiert</item><item quantity="other">Vor %d Tagen synchronisiert</item></plurals>
 </resources>

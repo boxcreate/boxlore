@@ -29,9 +29,9 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * Lengths, ages and dates on episode rows and Showcase cards come from the language's own formats
- * (android.icu), so they read right in every language; English is checked here, with German to show
- * the language is followed.
+ * Lengths, ages and dates on episode rows and Showcase cards: English keeps boxlore's compact
+ * wording ("1h 0m", "55m ago"), other languages use their own formats (android.icu); German shows the
+ * language is followed.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
@@ -64,16 +64,16 @@ class EpisodeDurationFormatterTest {
     fun listLengthsHideOnlyAnUnknownLength() {
         assertEquals("", formatEpisodeListDuration(-1, en))
         assertEquals("59m", formatEpisodeListDuration(3_599, en))
-        assertEquals("1h", formatEpisodeListDuration(3_600, en))
+        assertEquals("1h 0m", formatEpisodeListDuration(3_600, en))
         assertEquals("1h 5m", formatEpisodeListDuration(3_900, en))
     }
 
     @Test
     fun agesStepFromMinutesToYears() {
         assertEquals("", formatEpisodeRelativeDate(0, en, now))
-        // The language's narrow style; this ICU (Robolectric's Android 13) writes days out in English.
+        // English keeps boxlore's compact wording; other languages use their own narrow style.
         val ages = listOf(55 * 60, 20 * 3600, 3 * 86400, 14 * 86400, 60 * 86400, 365 * 86400).map { formatEpisodeRelativeDate(now - it, en, now) }
-        assertEquals(listOf("55 min. ago", "20 hr. ago", "3 days ago", "2 wk. ago", "2 mo. ago", "1 yr. ago"), ages)
+        assertEquals(listOf("55m ago", "20h ago", "3d ago", "2w ago", "2mo ago", "1y ago"), ages)
         assertEquals("vor 3 Tagen", formatEpisodeRelativeDate(now - 3 * 86400, de, now))
     }
 
@@ -100,7 +100,7 @@ class EpisodeDurationFormatterTest {
     @Test
     fun showcaseCardsTypeTheLengthAndSayPlayedOnceFinished() {
         assertEquals("45 min", brandedLength(45 * 60, en))
-        assertEquals("1 hr, 5 min", brandedLength(65 * 60, en))
+        assertEquals("1 hr 5 min", brandedLength(65 * 60, en))
         assertEquals("", brandedLength(30, en))
         assertEquals("1 Std., 5 Min.", brandedLength(65 * 60, de))
         assertEquals("2d ago · 55 min", brandedDetails("2d ago", 55 * 60, completed = false, played = "Played", locale = en))
@@ -111,7 +111,7 @@ class EpisodeDurationFormatterTest {
     @Test
     fun conspiracyTypesDetailsAndTheFiledDateInCapitals() {
         assertEquals("2D AGO · 55 MIN", typedDetails("2d ago", 55 * 60, en))
-        assertEquals("3H AGO · 1 HR, 5 MIN", typedDetails("3h ago", 65 * 60, en))
+        assertEquals("3H AGO · 1 HR 5 MIN", typedDetails("3h ago", 65 * 60, en))
         assertEquals("1W AGO", typedDetails("1w ago", 30, en))
         assertEquals("", typedDetails("", 0, en))
         assertEquals("28 OCT 2026", filedDate(1_793_188_800L, Locale.UK))

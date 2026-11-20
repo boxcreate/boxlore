@@ -107,19 +107,7 @@ fun OnboardingScreen(
         label = "onboarding_step",
     ) { step ->
         val (stepName, stepIndex, flowType) =
-            remember(step) {
-                when (step) {
-                    OnboardingStep.APP_LANGUAGE -> Triple(OnboardingAppLanguage.STEP_NAME, 0, "welcome")
-                    OnboardingStep.WELCOME -> Triple("welcome", 0, "welcome")
-                    OnboardingStep.GENRES -> Triple("genres", 1, "manual_genre")
-                    OnboardingStep.SUB_GENRES -> Triple("sub_genres", 2, "manual_genre")
-                    OnboardingStep.ACTIVITY_PICKER -> Triple("activities", 3, "manual_genre")
-                    OnboardingStep.LENGTH_PICKER -> Triple("lengths", 4, "manual_genre")
-                    OnboardingStep.SEARCH -> Triple("search", 5, "search")
-                    OnboardingStep.AI_ONBOARDING -> Triple("ai_chat", 1, "ai_chat")
-                    OnboardingStep.AI_SUGGESTIONS -> Triple("ai_suggestions", 6, "ai_chat")
-                }
-            }
+            remember(step) { onboardingStepAnalytics(step) }
         TrackScreenView("onboarding_$stepName") {
             cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackOnboardingStepViewed(
                 stepName = stepName,
@@ -129,6 +117,9 @@ fun OnboardingScreen(
         }
         when (step) {
             OnboardingStep.APP_LANGUAGE -> {
+                LaunchedEffect(Unit) {
+                    viewModel.onAppLanguageQuestionViewed()
+                }
                 // The question is gone once answered; the step changes with it.
                 uiState.appLanguageQuestion?.let { question ->
                     AppLanguageQuestionContent(
@@ -278,4 +269,18 @@ fun OnboardingScreen(
             }
         }
     }
+}
+
+/** The name, index and flow type each onboarding step reports to analytics. */
+internal fun onboardingStepAnalytics(step: OnboardingStep): Triple<String, Int, String> = when (step) {
+    // Before Welcome, with its own index so funnels keyed on Welcome's 0 count Welcome only.
+    OnboardingStep.APP_LANGUAGE -> Triple(OnboardingAppLanguage.STEP_NAME, -1, "welcome")
+    OnboardingStep.WELCOME -> Triple("welcome", 0, "welcome")
+    OnboardingStep.GENRES -> Triple("genres", 1, "manual_genre")
+    OnboardingStep.SUB_GENRES -> Triple("sub_genres", 2, "manual_genre")
+    OnboardingStep.ACTIVITY_PICKER -> Triple("activities", 3, "manual_genre")
+    OnboardingStep.LENGTH_PICKER -> Triple("lengths", 4, "manual_genre")
+    OnboardingStep.SEARCH -> Triple("search", 5, "search")
+    OnboardingStep.AI_ONBOARDING -> Triple("ai_chat", 1, "ai_chat")
+    OnboardingStep.AI_SUGGESTIONS -> Triple("ai_suggestions", 6, "ai_chat")
 }

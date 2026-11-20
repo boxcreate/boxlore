@@ -1,23 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_privacy_title">Privacidad</string>
-    <string name="settings_privacy_reset_recs_title">Restablecer recomendaciones</string>
-    <string name="settings_privacy_reset_recs_body">Olvida los gustos deducidos y empieza a aprender de nuevo. No elimina los podcasts que sigues, las descargas, los me gusta ni el historial.</string>
-    <string name="settings_privacy_reset_recs_action">Restablecer</string>
-    <string name="settings_privacy_analytics_id_title">Tu ID de analíticas</string>
-    <string name="settings_privacy_new_id_title">Empezar con un ID de analíticas nuevo</string>
-    <string name="settings_privacy_new_id_body">Los eventos futuros usarán un ID nuevo. Lo que ya se envió se queda como está.</string>
-    <string name="settings_privacy_new_id_action">Nuevo ID</string>
-    <string name="settings_privacy_deletion_title">Pedir que se borren los datos de analíticas</string>
-    <string name="settings_privacy_deletion_body">Abre un borrador de correo con tu ID de PostHog. Aún tienes que enviarlo tú.</string>
-    <string name="settings_privacy_deletion_hide">Ocultar</string>
-    <string name="settings_privacy_deletion_show">Mostrar ID</string>
-    <string name="settings_privacy_deletion_note">El borrador incluye este ID de PostHog. Puedes copiarlo si quieres.</string>
-    <string name="settings_privacy_copy_id">Copiar ID de PostHog</string>
-    <string name="settings_privacy_open_email">Abrir borrador de correo</string>
-    <string name="settings_reset_analytics_title">¿Empezar con un ID de analíticas nuevo?</string>
-    <string name="settings_reset_analytics_body">Los eventos futuros de PostHog usarán un ID anónimo nuevo. No se borran los eventos ya enviados con el ID actual.</string>
-    <string name="settings_reset_analytics_kept_title">Los datos de la app no se borran</string>
-    <string name="settings_reset_analytics_kept_body">Tu historial, los podcasts que sigues, tus descargas y tus ajustes siguen disponibles.</string>
-    <string name="settings_reset_analytics_device_id">Esto no restablece el ID de dispositivo aparte que se usa para recomendaciones y transcripciones. Para borrar datos de PostHog, envía una solicitud de eliminación desde Privacidad.</string>
 </resources>

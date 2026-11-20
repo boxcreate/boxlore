@@ -139,11 +139,13 @@
     <string name="account_sync_never">Aún sin sincronizar</string>
     <string name="account_sync_just_now">Sincronizado hace un momento</string>
     <string name="account_sync_yesterday">Sincronizado ayer</string>
-    <string name="account_sync_ago">Sincronizado %1$s</string>
     <string name="account_error_no_browser">No se pudo abrir el navegador</string>
     <string name="account_error_no_email_app">No se pudo abrir la app de correo</string>
     <string name="account_deletion_clip_label">URL de eliminación de cuenta</string>
     <string name="account_link_copied">Enlace copiado al portapapeles</string>
     <string name="account_toast_reset_sent_to">Correo para restablecer la contraseña enviado a %1$s</string>
     <string name="account_toast_signed_out">Sesión cerrada</string>
+    <plurals name="account_sync_minutes_ago"><item quantity="one">Sincronizado hace %d min</item><item quantity="many">Sincronizado hace %d min</item><item quantity="other">Sincronizado hace %d min</item></plurals>
+    <plurals name="account_sync_hours_ago"><item quantity="one">Sincronizado hace %d h</item><item quantity="many">Sincronizado hace %d h</item><item quantity="other">Sincronizado hace %d h</item></plurals>
+    <plurals name="account_sync_days_ago"><item quantity="one">Sincronizado hace %d día</item><item quantity="many">Sincronizado hace %d días</item><item quantity="other">Sincronizado hace %d días</item></plurals>
 </resources>

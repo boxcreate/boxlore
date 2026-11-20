@@ -59,6 +59,8 @@
     <string name="auto_time_left">Noch %1$s</string>
     <string name="auto_almost_done">Fast fertig</string>
     <string name="auto_duration_under_minute">&lt; 1 Min.</string>
+    <string name="auto_length_hours_minutes">%1$d Std. %2$d Min.</string>
+    <string name="auto_length_minutes">%1$d Min.</string>
     <string name="auto_genre_news">Nachrichten</string>
     <string name="auto_genre_technology">Technik</string>
     <string name="auto_genre_business">Wirtschaft</string>

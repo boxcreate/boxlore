@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Library import: where the listener's shows are now. -->
     <string name="import_pick_title">Traga seus podcasts</string>
     <string name="import_pick_body">Onde estão seus podcasts agora?</string>
@@ -68,7 +68,8 @@
         <item quantity="one">%d podcast não pôde ser adicionado agora. O boxlore continua tentando enquanto estiver aberto.</item>
         <item quantity="other">%d podcasts não puderam ser adicionados agora. O boxlore continua tentando enquanto estiver aberto.</item>
     </plurals>
-    <plurals name="import_done_subscribed">
+    <!-- A label under the count, which is shown on its own; the singular is right for 0 and 1 here. -->
+    <plurals name="import_done_subscribed" tools:ignore="ImpliedQuantity">
         <item quantity="one">podcast seguido</item>
         <item quantity="other">podcasts seguidos</item>
     </plurals>

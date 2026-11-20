@@ -13,9 +13,7 @@ import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeMediaCacheKey
-import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.core.playback.PlaybackQueueContext
-import java.util.Locale
 
 internal data class AutoPlayableSpec(
     val mediaId: String,
@@ -240,24 +238,26 @@ internal object AutoMediaItemFactory {
     /** Joins the parts of a row's second line, leaving out blank ones. */
     fun joinSubtitle(vararg parts: String?): String = parts.filterNot { it.isNullOrBlank() }.joinToString(" · ")
 
-    /** "35 min left", "1 hr, 5 min left" or "Almost done" for an episode that has been started, in the car's language. */
+    /** "35 min left", "1h 5m left" or "Almost done" for an episode that has been started, in the car's language. */
     fun formatTimeLeft(resources: Resources, progressMs: Long, durationMs: Long): String {
         val remainingMin = (durationMs - progressMs).coerceAtLeast(0) / MS_PER_MINUTE
         if (remainingMin <= 0) return resources.getString(R.string.auto_almost_done)
-        val length = LocaleFormats.duration(remainingMin * SECONDS_PER_MINUTE, resources.locale())
+        // Up to an hour stays in minutes ("60 min left").
+        val length = if (remainingMin > MINUTES_PER_HOUR) hoursMinutes(resources, remainingMin) else resources.getString(R.string.auto_length_minutes, remainingMin)
         return resources.getString(R.string.auto_time_left, length)
     }
 
-    /** An episode's length: "35 min", "1 hr, 5 min", "< 1 min", or blank when unknown. */
+    /** An episode's length: "35 min", "1h 5m", "< 1 min", or blank when unknown. */
     fun formatDuration(resources: Resources, durationMs: Long): String {
         if (durationMs <= 0) return ""
         val totalMinutes = durationMs / MS_PER_MINUTE
         if (totalMinutes <= 0) return resources.getString(R.string.auto_duration_under_minute)
-        return LocaleFormats.duration(totalMinutes * SECONDS_PER_MINUTE, resources.locale())
+        return if (totalMinutes >= MINUTES_PER_HOUR) hoursMinutes(resources, totalMinutes) else resources.getString(R.string.auto_length_minutes, totalMinutes)
     }
 
-    private fun Resources.locale(): Locale = configuration.locales.get(0) ?: Locale.getDefault()
+    private fun hoursMinutes(resources: Resources, totalMinutes: Long): String =
+        resources.getString(R.string.auto_length_hours_minutes, totalMinutes / MINUTES_PER_HOUR, totalMinutes % MINUTES_PER_HOUR)
 
     private const val MS_PER_MINUTE = 60_000L
-    private const val SECONDS_PER_MINUTE = 60L
+    private const val MINUTES_PER_HOUR = 60L
 }

@@ -6,7 +6,7 @@
     <string name="suggestions_echo_finding">Procurando podcasts que combinam com o que você me contou.</string>
     <!-- Search flow: the shows picked on the search screen are already in the library. -->
     <plurals name="suggestions_search_seeds">
-        <item quantity="one">Sua escolha já está na sua biblioteca</item>
+        <item quantity="one">%d escolha já está na sua biblioteca</item>
         <item quantity="other">Suas %d escolhas já estão na sua biblioteca</item>
     </plurals>
     <!-- Library import flow. -->

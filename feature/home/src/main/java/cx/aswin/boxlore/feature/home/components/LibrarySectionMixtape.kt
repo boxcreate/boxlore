@@ -71,17 +71,13 @@ import cx.aswin.boxlore.feature.home.StablePlaybackStateMap
 import cx.aswin.boxlore.feature.home.logic.HomeMixMode
 import cx.aswin.boxlore.feature.home.logic.HomeMixModeLogic
 
-/** How long ago [timestampSeconds] was ("3h ago"), in the app language; blank when unknown. */
+/** How long ago [timestampSeconds] was ("Just now", "3h ago"), in the app language; blank when unknown. */
 @Composable
 internal fun formatRelativeDate(timestampSeconds: Long): String {
     if (timestampSeconds == 0L) return ""
-    return LocaleFormats.relativeTime(
-        epochMillis = timestampSeconds * 1000L,
-        nowMillis = System.currentTimeMillis(),
-        locale = currentLocale(),
-        style = LocaleFormats.RelativeStyle.NARROW,
-        capitalized = true,
-    )
+    val nowMillis = System.currentTimeMillis()
+    if (nowMillis - timestampSeconds * 1000L < 60_000L) return stringResource(R.string.home_relative_just_now)
+    return LocaleFormats.compactAgo(timestampSeconds * 1000L, nowMillis, currentLocale())
 }
 
 @Composable

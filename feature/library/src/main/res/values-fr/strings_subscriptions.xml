@@ -129,4 +129,9 @@
     <string name="library_genre_family">Famille</string>
     <string name="library_genre_leisure">Loisirs</string>
     <string name="library_genre_govt">Politique</string>
+    <string name="library_genre_full_tech">Technologie</string>
+    <string name="library_genre_full_society">Société et culture</string>
+    <string name="library_genre_full_religion">Religion et spiritualité</string>
+    <string name="library_genre_full_family">Enfants et famille</string>
+    <string name="library_genre_full_govt">Politique</string>
 </resources>

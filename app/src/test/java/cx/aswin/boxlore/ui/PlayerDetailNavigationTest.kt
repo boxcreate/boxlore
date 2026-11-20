@@ -31,9 +31,8 @@ class PlayerDetailNavigationTest {
     }
 
     @Test
-    fun `an episode without a show name opens with the app's own stand-in`() {
-        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<Application>()
-        val fallback = context.getString(cx.aswin.boxlore.R.string.app_podcast_title_fallback)
+    fun `an episode without a show name opens with the episode page's untranslated marker`() {
+        val fallback = cx.aswin.boxlore.feature.info.logic.EpisodeShowTitle.PLACEHOLDER
         assertEquals("Podcast", fallback)
         val episode = TestFixtures.episode().copy(podcastTitle = null)
         assertEquals(fallback, Uri.decode(playerEpisodeDetailRoute(episode, null, fallback).substringBefore('?').substringAfterLast('/')))

@@ -20,8 +20,9 @@ import java.util.Locale
  *   setting as the system's Settings › Apps › boxlore › Language. Android applies it to every part of
  *   the app and recreates the activity itself.
  * - Android 12/12L: the choice is stored in [BoxcastPrefs] and applied to the activity through
- *   [localeOverride] in `MainActivity.attachBaseContext`; [set] recreates the activity. Notifications, widgets and
- *   Android Auto keep following the phone's language there.
+ *   [localeOverride] in `MainActivity.attachBaseContext`; [set] recreates the activity. The application
+ *   context follows it from the next app start ([applicationBase]); text built in services
+ *   (notifications, Android Auto) and widgets keeps following the phone's language there.
  *
  * Either way the choice is also stored, so onboarding knows the listener has answered.
  *
@@ -65,12 +66,28 @@ class AppLanguageController(
         prefs.setAppLanguageTag(language.tag)
         val manager = perAppLocales
         if (manager != null) {
+            prefs.markAppLanguageWithFramework()
             if (changed) {
                 manager.applicationLocales =
                     if (language == AppLanguage.SYSTEM) LocaleList.getEmptyLocaleList() else LocaleList.forLanguageTags(language.tag)
             }
         } else if (changed) {
             recreate()
+        }
+    }
+
+    /**
+     * Android 13+: hands a language picked on Android 12 (before an OS update, or restored from its
+     * backup) to the per-app language once, so it isn't silently lost. Later changes made in the
+     * system's own per-app setting are left alone. Called at app start.
+     */
+    fun adoptStoredChoice() {
+        val manager = perAppLocales ?: return
+        if (prefs.isAppLanguageWithFramework()) return
+        prefs.markAppLanguageWithFramework()
+        val tag = prefs.getAppLanguageTag()
+        if (!tag.isNullOrEmpty() && manager.applicationLocales.isEmpty) {
+            manager.applicationLocales = LocaleList.forLanguageTags(tag)
         }
     }
 
@@ -93,6 +110,14 @@ class AppLanguageController(
             if (tag.isNullOrEmpty()) return null
             return Configuration().apply { setLocales(LocaleList.forLanguageTags(tag)) }
         }
+
+        /**
+         * The Application's base context on Android 12/12L, in the stored App language, so text
+         * resolved through the application context (toasts, queue titles built in view models)
+         * matches the screens. A new pick reaches it the next time the app starts.
+         */
+        fun applicationBase(base: Context, sdkInt: Int = Build.VERSION.SDK_INT): Context =
+            localeOverride(base, sdkInt)?.let(base::createConfigurationContext) ?: base
     }
 }
 

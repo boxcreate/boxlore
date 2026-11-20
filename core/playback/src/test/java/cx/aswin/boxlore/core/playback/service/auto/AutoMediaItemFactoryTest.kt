@@ -28,9 +28,9 @@ class AutoMediaItemFactoryTest {
     @Test
     fun `time left is in minutes up to an hour, then hours and minutes`() {
         assertEquals("35 min left", AutoMediaItemFactory.formatTimeLeft(english, progressMs = 25 * minute, durationMs = 60 * minute))
-        assertEquals("1 hr left", AutoMediaItemFactory.formatTimeLeft(english, progressMs = 0L, durationMs = 60 * minute))
-        assertEquals("1 hr, 1 min left", AutoMediaItemFactory.formatTimeLeft(english, progressMs = 0L, durationMs = 61 * minute))
-        assertEquals("2 hr left", AutoMediaItemFactory.formatTimeLeft(english, progressMs = 30 * minute, durationMs = 150 * minute))
+        assertEquals("60 min left", AutoMediaItemFactory.formatTimeLeft(english, progressMs = 0L, durationMs = 60 * minute))
+        assertEquals("1h 1m left", AutoMediaItemFactory.formatTimeLeft(english, progressMs = 0L, durationMs = 61 * minute))
+        assertEquals("2h 0m left", AutoMediaItemFactory.formatTimeLeft(english, progressMs = 30 * minute, durationMs = 150 * minute))
     }
 
     @Test
@@ -42,7 +42,7 @@ class AutoMediaItemFactoryTest {
     @Test
     fun `an episode's length uses the language's units, with a floor under a minute and blank when unknown`() {
         assertEquals("28 min", AutoMediaItemFactory.formatDuration(english, 28 * minute))
-        assertEquals("1 hr, 5 min", AutoMediaItemFactory.formatDuration(english, 65 * minute))
+        assertEquals("1h 5m", AutoMediaItemFactory.formatDuration(english, 65 * minute))
         assertEquals("< 1 min", AutoMediaItemFactory.formatDuration(english, 30_000L))
         assertEquals("", AutoMediaItemFactory.formatDuration(english, 0L))
         assertEquals("28 Min.", AutoMediaItemFactory.formatDuration(resourcesFor(Locale.GERMANY), 28 * minute))

@@ -70,6 +70,45 @@ class AppLanguageControllerTest {
     }
 
     @Test
+    @Config(sdk = [33])
+    fun `a pick stored on Android 12 is handed to Android 13 once, and a later system reset is kept`() {
+        val manager = context.getSystemService(LocaleManager::class.java)
+        manager.applicationLocales = LocaleList.getEmptyLocaleList()
+        BoxcastPrefs(context).setAppLanguageTag("fr")
+
+        AppLanguageController(context).adoptStoredChoice()
+        assertEquals("fr", manager.applicationLocales.toLanguageTags())
+        assertEquals(AppLanguage.FRENCH, AppLanguageController(context).current())
+
+        // The listener then resets it in the system's per-app language setting: it stays reset.
+        manager.applicationLocales = LocaleList.getEmptyLocaleList()
+        AppLanguageController(context).adoptStoredChoice()
+        assertTrue(manager.applicationLocales.isEmpty)
+    }
+
+    @Test
+    @Config(sdk = [31])
+    fun `Android 12 gives the application context the stored language too`() {
+        assertEquals(context, AppLanguageController.applicationBase(context))
+        BoxcastPrefs(context).setAppLanguageTag("de")
+        val wrapped = AppLanguageController.applicationBase(context)
+        assertEquals("de", wrapped.resources.configuration.locales.get(0).language)
+        assertEquals(context, AppLanguageController.applicationBase(context, sdkInt = 33))
+    }
+
+    @Test
+    @Config(sdk = [33])
+    fun `a pick made on Android 13 is never handed over again`() {
+        val manager = context.getSystemService(LocaleManager::class.java)
+        manager.applicationLocales = LocaleList.getEmptyLocaleList()
+        val controller = AppLanguageController(context)
+        controller.set(AppLanguage.SPANISH) { recreated++ }
+        manager.applicationLocales = LocaleList.getEmptyLocaleList()
+        controller.adoptStoredChoice()
+        assertTrue(manager.applicationLocales.isEmpty)
+    }
+
+    @Test
     @Config(sdk = [31])
     fun `Android 12 stores the pick, recreates once per change and overrides the activity's language`() {
         val controller = AppLanguageController(context)

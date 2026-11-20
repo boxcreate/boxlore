@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Privacy page explanation stays English for now (maintainer decision): translatable="false". Do not reword without approval. Controls on the page are translatable. -->
+    <!-- Privacy page explanation stays English for now (maintainer decision): translatable="false". Do not reword without approval. Its controls stay English too until their translations are approved; only the page title is translated. -->
     <!-- Privacy page title -->
     <string name="settings_privacy_title">Privacy</string>
     <string name="settings_privacy_sketch_title" translatable="false">What this can look like — and what it isn’t</string>
@@ -33,22 +33,22 @@
     <string name="settings_privacy_on_device_title" translatable="false">On-device recommendations</string>
     <string name="settings_privacy_on_device_footer" translatable="false">Your learned taste profile and ranking model stay on this device. They are not uploaded. JSON backups you create include this state so an imported install can continue with the same learning.</string>
     <!-- Card title and action on the Privacy page -->
-    <string name="settings_privacy_reset_recs_title">Reset recommendations</string>
-    <string name="settings_privacy_reset_recs_body">Forget inferred tastes and start learning again. This does not remove subscriptions, downloads, likes, or listening history.</string>
+    <string name="settings_privacy_reset_recs_title" translatable="false">Reset recommendations</string>
+    <string name="settings_privacy_reset_recs_body" translatable="false">Forget inferred tastes and start learning again. This does not remove subscriptions, downloads, likes, or listening history.</string>
     <!-- Button that resets recommendations -->
-    <string name="settings_privacy_reset_recs_action">Reset</string>
-    <string name="settings_privacy_analytics_id_title">Your analytics ID</string>
+    <string name="settings_privacy_reset_recs_action" translatable="false">Reset</string>
+    <string name="settings_privacy_analytics_id_title" translatable="false">Your analytics ID</string>
     <string name="settings_privacy_analytics_id_footer" translatable="false">Analytics starts with the app and there’s no in-app opt-out. These actions only touch PostHog — not your library, downloads, or data sent for recommendations / transcripts.</string>
-    <string name="settings_privacy_new_id_title">Start a new analytics ID</string>
-    <string name="settings_privacy_new_id_body">Future events use a new ID. Anything already sent stays as-is.</string>
+    <string name="settings_privacy_new_id_title" translatable="false">Start a new analytics ID</string>
+    <string name="settings_privacy_new_id_body" translatable="false">Future events use a new ID. Anything already sent stays as-is.</string>
     <!-- Button, keep short -->
-    <string name="settings_privacy_new_id_action">Reset ID</string>
-    <string name="settings_privacy_deletion_title">Request deletion of analytics data</string>
-    <string name="settings_privacy_deletion_body">Opens an email draft with your PostHog ID. You still have to hit send.</string>
+    <string name="settings_privacy_new_id_action" translatable="false">Reset ID</string>
+    <string name="settings_privacy_deletion_title" translatable="false">Request deletion of analytics data</string>
+    <string name="settings_privacy_deletion_body" translatable="false">Opens an email draft with your PostHog ID. You still have to hit send.</string>
     <!-- Button that hides the analytics ID panel -->
-    <string name="settings_privacy_deletion_hide">Hide</string>
+    <string name="settings_privacy_deletion_hide" translatable="false">Hide</string>
     <!-- Button that shows the analytics ID panel -->
-    <string name="settings_privacy_deletion_show">Show ID</string>
+    <string name="settings_privacy_deletion_show" translatable="false">Show ID</string>
     <string name="settings_privacy_promise_title" translatable="false">Our promise</string>
     <string name="settings_privacy_promise_subtitle" translatable="false">From the people building boxlore</string>
     <string name="settings_privacy_promise_body" translatable="false">boxlore isn’t meant for monetary gain. It’s a few friends finishing a childhood dream — watching code turn into magic on screens.</string>
@@ -61,13 +61,13 @@
     <string name="settings_privacy_field_collected" translatable="false">What we collect</string>
     <string name="settings_privacy_field_why" translatable="false">Why</string>
     <string name="settings_privacy_example_label" translatable="false">Example from real usage</string>
-    <string name="settings_privacy_deletion_note">The draft includes this PostHog ID. You can copy it if you want.</string>
+    <string name="settings_privacy_deletion_note" translatable="false">The draft includes this PostHog ID. You can copy it if you want.</string>
     <!-- Screen-reader label for the copy button -->
-    <string name="settings_privacy_copy_id">Copy PostHog ID</string>
-    <string name="settings_privacy_open_email">Open email draft</string>
-    <string name="settings_reset_analytics_title">Start a new analytics ID?</string>
-    <string name="settings_reset_analytics_body">Future PostHog events will use a new anonymous ID. This does not delete events already sent under the current ID.</string>
-    <string name="settings_reset_analytics_kept_title">Data in the app is not deleted</string>
-    <string name="settings_reset_analytics_kept_body">Your listening history, subscriptions, downloads, and settings remain available.</string>
-    <string name="settings_reset_analytics_device_id">This does not reset the separate device ID used for recommendations and transcripts. To delete PostHog data, send a deletion request from Privacy.</string>
+    <string name="settings_privacy_copy_id" translatable="false">Copy PostHog ID</string>
+    <string name="settings_privacy_open_email" translatable="false">Open email draft</string>
+    <string name="settings_reset_analytics_title" translatable="false">Start a new analytics ID?</string>
+    <string name="settings_reset_analytics_body" translatable="false">Future PostHog events will use a new anonymous ID. This does not delete events already sent under the current ID.</string>
+    <string name="settings_reset_analytics_kept_title" translatable="false">Data in the app is not deleted</string>
+    <string name="settings_reset_analytics_kept_body" translatable="false">Your listening history, subscriptions, downloads, and settings remain available.</string>
+    <string name="settings_reset_analytics_device_id" translatable="false">This does not reset the separate device ID used for recommendations and transcripts. To delete PostHog data, send a deletion request from Privacy.</string>
 </resources>

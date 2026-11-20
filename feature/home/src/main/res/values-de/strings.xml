@@ -91,4 +91,5 @@
     <string name="home_setup_suggestions_description">Hol dir Empfehlungen nach deinem Geschmack.</string>
     <string name="home_setup_search_description">Finde einen Podcast, ein Thema oder eine Folge.</string>
     <string name="home_setup_import_description">Hol deine Abos aus einer anderen Podcast-App.</string>
+    <string name="home_relative_just_now">Gerade eben</string>
 </resources>

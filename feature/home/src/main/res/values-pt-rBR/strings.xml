@@ -100,4 +100,5 @@
     <string name="home_setup_suggestions_description">Receba recomendações com base no que você curte.</string>
     <string name="home_setup_search_description">Encontre um podcast, tema ou episódio.</string>
     <string name="home_setup_import_description">Traga os podcasts que você segue em outro app.</string>
+    <string name="home_relative_just_now">Agora mesmo</string>
 </resources>

@@ -113,7 +113,7 @@
         <item quantity="other">%1$d de %2$d concluídos</item>
     </plurals>
     <plurals name="history_show_all_finished">
-        <item quantity="one">Concluído</item>
+        <item quantity="one">%1$d concluído</item>
         <item quantity="other">Todos os %1$d concluídos</item>
     </plurals>
     <string name="history_scroll_to_date">Percorrer seu histórico</string>

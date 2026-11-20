@@ -16,7 +16,7 @@
     <string name="library_downloads_empty_body">Nenhum episódio baixado ainda. Ative os Downloads inteligentes acima ou encontre podcasts para baixar manualmente.</string>
     <string name="library_downloads_delete_title">Excluir downloads?</string>
     <plurals name="library_downloads_delete_podcasts_body">
-        <item quantity="one">Tem certeza de que quer excluir todos os episódios baixados do podcast selecionado?</item>
+        <item quantity="one">Tem certeza de que quer excluir todos os episódios baixados de %1$d podcast selecionado?</item>
         <item quantity="other">Tem certeza de que quer excluir todos os episódios baixados dos %1$d podcasts selecionados?</item>
     </plurals>
     <string name="library_downloads_delete_episodes_title">Excluir downloads?</string>

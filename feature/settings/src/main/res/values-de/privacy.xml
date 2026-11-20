@@ -4,28 +4,9 @@
     <!-- Privacy page title -->
     <string name="settings_privacy_title">Datenschutz</string>
     <!-- Card title and action on the Privacy page -->
-    <string name="settings_privacy_reset_recs_title">Empfehlungen zurücksetzen</string>
-    <string name="settings_privacy_reset_recs_body">Erkannten Geschmack vergessen und neu lernen. Abos, Downloads, Likes und Hörverlauf bleiben erhalten.</string>
     <!-- Button that resets recommendations -->
-    <string name="settings_privacy_reset_recs_action">Zurücksetzen</string>
-    <string name="settings_privacy_analytics_id_title">Deine Analyse-ID</string>
-    <string name="settings_privacy_new_id_title">Neue Analyse-ID starten</string>
-    <string name="settings_privacy_new_id_body">Künftige Ereignisse nutzen eine neue ID. Bereits Gesendetes bleibt, wie es ist.</string>
     <!-- Button, keep short -->
-    <string name="settings_privacy_new_id_action">ID zurücksetzen</string>
-    <string name="settings_privacy_deletion_title">Löschung der Analysedaten anfordern</string>
-    <string name="settings_privacy_deletion_body">Öffnet einen E-Mail-Entwurf mit deiner PostHog-ID. Senden musst du ihn selbst.</string>
     <!-- Button that hides the analytics ID panel -->
-    <string name="settings_privacy_deletion_hide">Ausblenden</string>
     <!-- Button that shows the analytics ID panel -->
-    <string name="settings_privacy_deletion_show">ID anzeigen</string>
-    <string name="settings_privacy_deletion_note">Der Entwurf enthält diese PostHog-ID. Du kannst sie bei Bedarf kopieren.</string>
     <!-- Screen-reader label for the copy button -->
-    <string name="settings_privacy_copy_id">PostHog-ID kopieren</string>
-    <string name="settings_privacy_open_email">E-Mail-Entwurf öffnen</string>
-    <string name="settings_reset_analytics_title">Neue Analyse-ID starten?</string>
-    <string name="settings_reset_analytics_body">Künftige PostHog-Ereignisse nutzen eine neue anonyme ID. Ereignisse, die bereits unter der aktuellen ID gesendet wurden, werden dadurch nicht gelöscht.</string>
-    <string name="settings_reset_analytics_kept_title">Daten in der App werden nicht gelöscht</string>
-    <string name="settings_reset_analytics_kept_body">Dein Hörverlauf, deine Abos, Downloads und Einstellungen bleiben verfügbar.</string>
-    <string name="settings_reset_analytics_device_id">Die separate Geräte-ID für Empfehlungen und Transkripte wird dadurch nicht zurückgesetzt. Um PostHog-Daten zu löschen, sende unter Datenschutz eine Löschanfrage.</string>
 </resources>

@@ -90,4 +90,5 @@
     <string name="home_setup_suggestions_description">Recevez des recommandations selon ce que vous aimez.</string>
     <string name="home_setup_search_description">Trouvez un podcast, un sujet ou un épisode.</string>
     <string name="home_setup_import_description">Récupérez vos abonnements depuis une autre appli de podcasts.</string>
+    <string name="home_relative_just_now">À l’instant</string>
 </resources>

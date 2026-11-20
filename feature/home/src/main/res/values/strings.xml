@@ -100,4 +100,6 @@
     <string name="home_setup_suggestions_description">Get recommendations based on what you enjoy.</string>
     <string name="home_setup_search_description">Find a show, topic, or episode.</string>
     <string name="home_setup_import_description">Bring subscriptions from another podcast app.</string>
+    <!-- An episode published under a minute ago, where a row shows "3h ago". -->
+    <string name="home_relative_just_now">Just now</string>
 </resources>

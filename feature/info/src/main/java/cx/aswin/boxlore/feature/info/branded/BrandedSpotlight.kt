@@ -97,8 +97,14 @@ private fun pictureAddress(url: String): String {
 internal fun brandedDetails(age: String, durationSeconds: Int, completed: Boolean, played: String, locale: Locale): String =
     listOf(age, if (completed) played else brandedLength(durationSeconds, locale)).filter(String::isNotBlank).joinToString(" · ")
 
-internal fun brandedLength(durationSeconds: Int, locale: Locale): String =
-    if (durationSeconds < 60) "" else LocaleFormats.duration(durationSeconds.toLong(), locale, LocaleFormats.DurationWidth.SHORT)
+/** "1 hr 5 min" / "55 min" in English, as the Showcase cards always wrote it; other languages use ICU's short units. */
+internal fun brandedLength(durationSeconds: Int, locale: Locale): String {
+    if (durationSeconds < 60) return ""
+    if (locale.language != "en") return LocaleFormats.duration(durationSeconds.toLong(), locale, LocaleFormats.DurationWidth.SHORT)
+    val hours = durationSeconds / 3600
+    val minutes = (durationSeconds % 3600) / 60
+    return if (hours > 0) "$hours hr $minutes min" else "$minutes min" // i18n-ignore: English-only form
+}
 
 /** The spotlight's episode is not repeated in the list below it. */
 internal fun feedItemsWithoutSpotlight(items: List<FeedItem>, spotlight: Episode?): List<FeedItem> =

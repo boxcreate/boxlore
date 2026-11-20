@@ -104,7 +104,7 @@
         <item quantity="other">%1$d sur %2$d terminés</item>
     </plurals>
     <plurals name="history_show_all_finished">
-        <item quantity="one">Terminé</item>
+        <item quantity="one">%1$d terminé</item>
         <item quantity="other">Les %1$d terminés</item>
     </plurals>
     <string name="history_scroll_to_date">Parcourir votre historique</string>
@@ -388,7 +388,7 @@
     <string name="history_weekday_plural_sunday">dimanches</string>
     <string name="history_list_pair">%1$s, %2$s</string>
     <plurals name="history_story_earlier_all">
-        <item quantity="one">Voir la story</item>
+        <item quantity="one">Voir %d story</item>
         <item quantity="other">Voir les %d stories</item>
     </plurals>
     <string name="history_story_earlier_fewer">Voir moins de stories</string>

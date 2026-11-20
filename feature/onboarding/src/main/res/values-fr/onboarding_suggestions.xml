@@ -4,7 +4,7 @@
     <string name="suggestions_echo_found">Voici ce que j’ai trouvé. Appuyez pour ajouter, maintenez pour les détails.</string>
     <string name="suggestions_echo_finding">Je cherche des podcasts qui correspondent à ce que vous m’avez dit.</string>
     <plurals name="suggestions_search_seeds">
-        <item quantity="one">Votre choix est dans votre bibliothèque</item>
+        <item quantity="one">%d choix est dans votre bibliothèque</item>
         <item quantity="other">Vos %d choix sont dans votre bibliothèque</item>
     </plurals>
     <plurals name="suggestions_library_seeds">

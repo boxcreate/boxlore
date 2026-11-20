@@ -96,7 +96,7 @@ internal fun formatRelativeDate(timestampSeconds: Long, locale: Locale, nowMs: L
     if (timestampSeconds == 0L) return null
     val diffSeconds = nowMs / 1000 - timestampSeconds
     if (diffSeconds < 60) return UiText.res(R.string.library_relative_just_now)
-    return UiText.raw(LocaleFormats.relativeTime(timestampSeconds * 1000L, nowMs, locale, LocaleFormats.RelativeStyle.NARROW))
+    return UiText.raw(LocaleFormats.compactAgo(timestampSeconds * 1000L, nowMs, locale))
 }
 
 @Composable

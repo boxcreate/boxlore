@@ -147,8 +147,6 @@
     <string name="account_sync_never">Not synced yet</string>
     <string name="account_sync_just_now">Synced just now</string>
     <string name="account_sync_yesterday">Synced yesterday</string>
-    <!-- %1$s is a short relative time from the system, e.g. "15 min. ago" or "4 days ago". -->
-    <string name="account_sync_ago">Synced %1$s</string>
     <string name="account_error_no_browser">Could not open browser</string>
     <string name="account_error_no_email_app">Could not open email app</string>
     <!-- Clipboard label for the copied account deletion link. -->
@@ -157,4 +155,8 @@
     <!-- %1$s is the email address. -->
     <string name="account_toast_reset_sent_to">Password reset email sent to %1$s</string>
     <string name="account_toast_signed_out">Signed out</string>
+    <!-- Sync status under the account panel; N minutes, hours or days since the last sync (1 day shows "Synced yesterday"). -->
+    <plurals name="account_sync_minutes_ago"><item quantity="one">Synced %d min ago</item><item quantity="other">Synced %d min ago</item></plurals>
+    <plurals name="account_sync_hours_ago"><item quantity="one">Synced %d hr ago</item><item quantity="other">Synced %d hr ago</item></plurals>
+    <plurals name="account_sync_days_ago"><item quantity="one">Synced %d day ago</item><item quantity="other">Synced %d days ago</item></plurals>
 </resources>

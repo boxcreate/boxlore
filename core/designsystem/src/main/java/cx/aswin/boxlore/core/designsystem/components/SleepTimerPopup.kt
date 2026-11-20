@@ -561,7 +561,11 @@ private fun Modifier.collapseBy(fraction: () -> Float): Modifier = layout { meas
 @Composable
 private fun pausingText(minutes: Int): String = when (val badge = sleepTimerBadge(minutes)) {
     SleepTimerBadge.EndOfEpisode -> stringResource(R.string.sleep_prompt_pausing_episode)
-    is SleepTimerBadge.Time -> stringResource(R.string.sleep_prompt_pausing_in, LocaleFormats.duration(minutes * SECONDS_PER_MINUTE, currentLocale()))
+    // The same number and unit as the badge beside it ("45 min", "1 hr").
+    is SleepTimerBadge.Time -> {
+        val unit = pluralStringResource(if (badge.hours) R.plurals.sleep_prompt_unit_hours else R.plurals.sleep_prompt_unit_minutes, badge.amount)
+        stringResource(R.string.sleep_prompt_pausing_in, "${LocaleFormats.number(badge.amount.toLong(), currentLocale())} $unit")
+    }
 }
 
 /** A time choice's label, "45m" or "1h" in English, or "End of episode". */

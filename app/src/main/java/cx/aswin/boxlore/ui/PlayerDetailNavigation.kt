@@ -2,10 +2,10 @@ package cx.aswin.boxlore.ui
 
 import android.net.Uri
 import androidx.navigation.NavController
-import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.feature.info.logic.EpisodeShowTitle
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetActions
 
 internal fun playerSheetActions(
@@ -16,8 +16,7 @@ internal fun playerSheetActions(
 ): PlayerSheetActions = PlayerSheetActions(
     onSheetInteractionChanged = onSheetInteractionChanged,
     onEpisodeInfoClick = { episode ->
-        val fallbackTitle = navController.context.getString(R.string.app_podcast_title_fallback)
-        navigate(playerEpisodeDetailRoute(episode, playbackRepository.playerState.value.currentPodcast, fallbackTitle))
+        navigate(playerEpisodeDetailRoute(episode, playbackRepository.playerState.value.currentPodcast, EpisodeShowTitle.PLACEHOLDER))
     },
     onPodcastInfoClick = { podcast ->
         navigate(playerPodcastDetailRoute(podcast))

@@ -212,7 +212,7 @@ class AccountAuthHelpersTest {
         originalState.passwordVisible = true
         originalState.confirmPasswordVisible = true
         originalState.magicLinkSent = true
-        originalState.errorMessage = "Previous attempt error"
+        originalState.errorMessage = cx.aswin.boxlore.core.model.text.UiText.raw("Previous attempt error")
         originalState.isAwaitingVerification = true
         originalState.resendCooldownSeconds = 25
 
@@ -237,9 +237,14 @@ class AccountAuthHelpersTest {
         org.junit.Assert.assertTrue(restored.passwordVisible)
         org.junit.Assert.assertTrue(restored.confirmPasswordVisible)
         org.junit.Assert.assertTrue(restored.magicLinkSent)
-        assertEquals("Previous attempt error", restored.errorMessage)
+        assertEquals(cx.aswin.boxlore.core.model.text.UiText.raw("Previous attempt error"), restored.errorMessage)
         org.junit.Assert.assertTrue(restored.isAwaitingVerification)
         assertEquals(25, restored.resendCooldownSeconds)
+
+        // A resource error is saved by id, so it comes back in whatever language the page now uses.
+        originalState.errorMessage = cx.aswin.boxlore.core.model.text.UiText.res(cx.aswin.boxlore.feature.settings.R.string.account_error_reset_failed)
+        val savedRes = with(saver) { saverScope.save(originalState) }!!
+        assertEquals(originalState.errorMessage, (saver.restore(savedRes) as AccountAuthState).errorMessage)
     }
 
     @Test
@@ -463,7 +468,7 @@ class AccountAuthHelpersTest {
 
         org.junit.Assert.assertTrue(state.isAwaitingVerification)
         org.junit.Assert.assertFalse(successCalled)
-        assertEquals("We haven't received verification yet. Please tap the link in your email and try again.", state.errorMessage)
+        assertEquals("We haven't received verification yet. Please tap the link in your email and try again.", state.errorMessage?.text())
     }
 
     @Test
@@ -547,7 +552,7 @@ class AccountAuthHelpersTest {
         org.junit.Assert.assertTrue(state.isAwaitingVerification)
         assertEquals(1, fakeRepo.signUpCallCount)
         assertEquals(1, fakeRepo.sendVerificationCallCount)
-        assertEquals("Send verification failed", state.errorMessage)
+        assertEquals("Send verification failed", state.errorMessage?.text())
         assertEquals(0, state.resendCooldownSeconds)
     }
 
@@ -624,7 +629,7 @@ class AccountAuthHelpersTest {
         testScheduler.advanceUntilIdle()
 
         org.junit.Assert.assertTrue(state.isAwaitingVerification)
-        assertEquals("Reload failed", state.errorMessage)
+        assertEquals("Reload failed", state.errorMessage?.text())
     }
 
     @Test

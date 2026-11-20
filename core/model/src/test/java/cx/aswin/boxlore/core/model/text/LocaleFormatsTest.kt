@@ -6,6 +6,7 @@ import cx.aswin.boxlore.core.model.text.LocaleFormats.RelativeStyle
 import java.util.Locale
 import java.util.TimeZone
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -67,6 +68,14 @@ class LocaleFormatsTest {
         assertEquals("jetzt", LocaleFormats.relativeTime(now, now, german))
         assertEquals("Now", LocaleFormats.relativeTime(now, now, english, capitalized = true))
         assertEquals("3 hr. ago", LocaleFormats.relativeTime(now - 3 * HOUR, now, english, RelativeStyle.SHORT))
+    }
+
+    @Test
+    fun compactAgeKeepsEnglishWordingAndUsesTheLanguageElsewhere() {
+        val now = 1_700_000_000_000L
+        val english = listOf(5 * 60_000L, 3 * HOUR, 2 * DAY, 8 * DAY, 65 * DAY, 400 * DAY).map { LocaleFormats.compactAgo(now - it, now, Locale.UK) }
+        assertEquals(listOf("5m ago", "3h ago", "2d ago", "1w ago", "2mo ago", "1y ago"), english)
+        assertTrue(LocaleFormats.compactAgo(now - 3 * HOUR, now, Locale.GERMAN).startsWith("vor 3"))
     }
 
     @Test

@@ -26,7 +26,7 @@ import androidx.credentials.exceptions.GetCredentialException
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import cx.aswin.boxlore.core.auth.AuthRepository
-import cx.aswin.boxlore.core.model.text.resolve
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.feature.settings.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -46,7 +46,7 @@ internal data class EmailInputState(
     val email: String,
     val isSignUp: Boolean,
     val isLoading: Boolean,
-    val errorMessage: String?,
+    val errorMessage: UiText?,
 )
 
 internal data class EmailInputActions(
@@ -64,7 +64,7 @@ internal data class PasswordInputState(
     val confirmPasswordVisible: Boolean = false,
     val isSignUp: Boolean,
     val isLoading: Boolean,
-    val errorMessage: String?,
+    val errorMessage: UiText?,
 )
 
 internal data class PasswordInputActions(
@@ -141,7 +141,7 @@ internal data class SavedAccountAuthState(
     val passwordVisible: Boolean = false,
     val confirmPasswordVisible: Boolean = false,
     val magicLinkSent: Boolean = false,
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
     val isAwaitingVerification: Boolean = false,
     val resendCooldownSeconds: Int = 0,
     val methodChosen: Boolean = false,
@@ -173,7 +173,7 @@ internal class AccountAuthState(
     val isAnyLoading: Boolean get() = isGoogleLoading || isEmailLoading
 
     var magicLinkSent by mutableStateOf(initialState.magicLinkSent)
-    var errorMessage by mutableStateOf<String?>(initialState.errorMessage)
+    var errorMessage by mutableStateOf<UiText?>(initialState.errorMessage)
 
     var isAwaitingVerification by mutableStateOf(
         initialState.isAwaitingVerification ||
@@ -247,12 +247,12 @@ internal class AccountAuthState(
         val trimmedEmail = email.trim()
         email = trimmedEmail
         if (trimmedEmail.isBlank()) {
-            errorMessage = context.getString(R.string.account_error_enter_email)
+            errorMessage = UiText.res(R.string.account_error_enter_email)
             return
         }
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSettingsInteraction("account_sign_in_email_link")
         if (!isValidEmail(trimmedEmail)) {
-            errorMessage = context.getString(ERROR_INVALID_EMAIL)
+            errorMessage = UiText.res(ERROR_INVALID_EMAIL)
             return
         }
         focusManager.clearFocus()
@@ -265,7 +265,7 @@ internal class AccountAuthState(
             if (result?.isSuccess == true) {
                 magicLinkSent = true
             } else {
-                errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage).resolve(context)
+                errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage)
             }
         }
     }
@@ -277,7 +277,7 @@ internal class AccountAuthState(
 
         val validationError = validatePasswordInputs(trimmedEmail, password, isSignUp, confirmPassword)
         if (validationError != null) {
-            errorMessage = validationError.resolve(context)
+            errorMessage = validationError
             return
         }
 
@@ -312,7 +312,7 @@ internal class AccountAuthState(
             if (verifyResult?.isSuccess == true) {
                 startResendCooldownTimer(30)
             } else {
-                errorMessage = cleanAccountError(verifyResult?.exceptionOrNull()?.localizedMessage).resolve(context)
+                errorMessage = cleanAccountError(verifyResult?.exceptionOrNull()?.localizedMessage)
             }
         } else {
             isEmailLoading = false
@@ -339,7 +339,7 @@ internal class AccountAuthState(
                 if (verifyResult.isSuccess) {
                     startResendCooldownTimer(30)
                 } else {
-                    errorMessage = cleanAccountError(verifyResult.exceptionOrNull()?.localizedMessage).resolve(context)
+                    errorMessage = cleanAccountError(verifyResult.exceptionOrNull()?.localizedMessage)
                 }
                 isEmailLoading = false
                 return true
@@ -364,7 +364,7 @@ internal class AccountAuthState(
         }
 
         isEmailLoading = false
-        errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage).resolve(context)
+        errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage)
     }
 
     fun checkVerificationStatus(
@@ -391,9 +391,9 @@ internal class AccountAuthState(
                 } else if (!silentOnFailure) {
                     val error = result?.exceptionOrNull()
                     if (error != null) {
-                        errorMessage = cleanAccountError(error.localizedMessage).resolve(context)
+                        errorMessage = cleanAccountError(error.localizedMessage)
                     } else {
-                        errorMessage = context.getString(R.string.account_error_not_verified_yet)
+                        errorMessage = UiText.res(R.string.account_error_not_verified_yet)
                     }
                 }
             } finally {
@@ -413,7 +413,7 @@ internal class AccountAuthState(
                 startResendCooldownTimer(30)
                 showAccountToast(context, context.getString(R.string.account_toast_verification_resent))
             } else {
-                errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage).resolve(context)
+                errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage)
             }
         }
     }
@@ -450,7 +450,7 @@ internal class AccountAuthState(
                 }
                 GoogleAuthOutcome.Cancelled -> Unit
                 is GoogleAuthOutcome.Failure -> {
-                    errorMessage = outcome.message
+                    errorMessage = UiText.raw(outcome.message)
                 }
             }
             isGoogleLoading = false
@@ -461,11 +461,11 @@ internal class AccountAuthState(
         val trimmedEmail = email.trim()
         email = trimmedEmail
         if (trimmedEmail.isBlank()) {
-            errorMessage = context.getString(R.string.account_error_reset_needs_email)
+            errorMessage = UiText.res(R.string.account_error_reset_needs_email)
             return
         }
         if (!isValidEmail(trimmedEmail)) {
-            errorMessage = context.getString(ERROR_INVALID_EMAIL)
+            errorMessage = UiText.res(ERROR_INVALID_EMAIL)
             return
         }
         focusManager.clearFocus()
@@ -474,7 +474,7 @@ internal class AccountAuthState(
             if (result?.isSuccess == true) {
                 showAccountToast(context, context.getString(R.string.account_toast_reset_sent))
             } else {
-                errorMessage = result?.exceptionOrNull()?.localizedMessage ?: context.getString(R.string.account_error_reset_failed)
+                errorMessage = result?.exceptionOrNull()?.localizedMessage?.let(UiText::raw) ?: UiText.res(R.string.account_error_reset_failed)
             }
         }
     }
@@ -495,7 +495,7 @@ internal class AccountAuthState(
                     state.passwordVisible,
                     state.confirmPasswordVisible,
                     state.magicLinkSent,
-                    state.errorMessage,
+                    state.errorMessage?.let(SavedAuthError::save),
                     state.isAwaitingVerification,
                     state.resendCooldownSeconds,
                     state.methodChosen,
@@ -546,11 +546,29 @@ private fun restoreSavedAccountAuthState(list: List<*>): SavedAccountAuthState {
         passwordVisible = list.flagAt(3 + legacy),
         confirmPasswordVisible = list.flagAt(4 + legacy),
         magicLinkSent = list.flagAt(5 + legacy),
-        errorMessage = list.getOrNull(6 + legacy) as? String,
+        errorMessage = SavedAuthError.restore(list.getOrNull(6 + legacy)),
         isAwaitingVerification = legacy == 0 && list.flagAt(7),
         resendCooldownSeconds = if (legacy == 0) (list.getOrNull(8) as? Number)?.toInt() ?: 0 else 0,
         methodChosen = legacy == 0 && list.flagAt(9),
     )
+}
+
+/**
+ * A sign-in error as it is saved across recreation: its resource id, so it comes back in the current
+ * App language, or the text itself when it came from the server or Google.
+ */
+private object SavedAuthError {
+    fun save(error: UiText): Any? = when (error) {
+        is UiText.Res -> error.id.takeIf { error.args.isEmpty() }
+        is UiText.Raw -> error.value
+        is UiText.Plural -> null
+    }
+
+    fun restore(saved: Any?): UiText? = when (saved) {
+        is Int -> UiText.res(saved)
+        is String -> UiText.raw(saved)
+        else -> null
+    }
 }
 
 private fun List<*>.flagAt(index: Int): Boolean = getOrNull(index) as? Boolean ?: false

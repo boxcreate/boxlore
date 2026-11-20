@@ -18,12 +18,6 @@
     <string name="app_library_export_json_failed">No se pudo exportar: %1$s</string>
     <string name="app_library_export_opml_success">Podcasts seguidos exportados como OPML</string>
     <string name="app_library_export_opml_failed">No se pudo exportar el OPML: %1$s</string>
-
-    <!-- Stands in for a show's name on an episode page until the show loads. -->
-    <string name="app_podcast_title_fallback">Podcast</string>
-    <!-- Show name and author for a Lore episode queued without show details. -->
-    <string name="app_unknown_podcast">Podcast desconocido</string>
-    <string name="app_unknown_author">Desconocido</string>
     <!-- Episode page text shown while an episode opened from History loads its description. -->
     <string name="app_history_resume_description">Reanudando desde el historial</string>
 </resources>

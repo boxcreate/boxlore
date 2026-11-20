@@ -19,11 +19,11 @@
     </plurals>
     <!-- Same-show banner button -->
     <plurals name="player_same_show_add_next">
-        <item quantity="one">Adicionar o próximo episódio deste podcast</item>
+        <item quantity="one">Adicionar %1$d próximo episódio deste podcast</item>
         <item quantity="other">Adicionar os próximos %1$d deste podcast</item>
     </plurals>
     <plurals name="player_same_show_preview">
-        <item quantity="one">Prévia do próximo episódio</item>
+        <item quantity="one">Prévia de %1$d episódio seguinte</item>
         <item quantity="other">Prévia dos %1$d episódios seguintes</item>
     </plurals>
 </resources>

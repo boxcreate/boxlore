@@ -94,4 +94,4 @@ Pick one in **Settings › System › Languages** (developer options must be on 
 4. Add a glossary column and its formality line here, and its plural forms to `TranslationResources` in `:core:testing`.
 5. Run the checks above and look through the app in that language, including a tablet window.
 
-On Android 13 and later the system's per-app language list comes from the translated folders automatically. On Android 12 the App language applies to the app's screens; notifications, widgets and Android Auto follow the phone's language there.
+On Android 13 and later the system's per-app language list comes from the translated folders automatically. On Android 12 the App language applies to the app's screens at once and to text built through the application context from the next app start; notifications, widgets and Android Auto follow the phone's language there.

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="import_pick_title">Importez vos podcasts</string>
     <string name="import_pick_body">Où sont vos podcasts actuellement ?</string>
     <string name="import_option_account">Dans mon compte boxlore</string>
@@ -59,7 +59,8 @@
         <item quantity="one">%d podcast n’a pas pu être ajouté tout de suite. boxlore continue d’essayer tant qu’il est ouvert.</item>
         <item quantity="other">%d podcasts n’ont pas pu être ajoutés tout de suite. boxlore continue d’essayer tant qu’il est ouvert.</item>
     </plurals>
-    <plurals name="import_done_subscribed">
+    <!-- A label under the count, which is shown on its own; the singular is right for 0 and 1 here. -->
+    <plurals name="import_done_subscribed" tools:ignore="ImpliedQuantity">
         <item quantity="one">abonnement</item>
         <item quantity="other">abonnements</item>
     </plurals>

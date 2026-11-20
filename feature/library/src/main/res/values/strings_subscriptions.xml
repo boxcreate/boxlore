@@ -129,4 +129,10 @@
     <string name="library_genre_family">Family</string>
     <string name="library_genre_leisure">Leisure</string>
     <string name="library_genre_govt">Govt</string>
+    <!-- A genre's full name inside sentences ("No Government shows yet"), where the pill uses the short name. -->
+    <string name="library_genre_full_tech">Technology</string>
+    <string name="library_genre_full_society">Society &amp; Culture</string>
+    <string name="library_genre_full_religion">Religion &amp; Spirituality</string>
+    <string name="library_genre_full_family">Kids &amp; Family</string>
+    <string name="library_genre_full_govt">Government</string>
 </resources>

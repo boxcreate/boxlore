@@ -4,28 +4,9 @@
     <!-- Privacy page title -->
     <string name="settings_privacy_title">Confidentialité</string>
     <!-- Card title and action on the Privacy page -->
-    <string name="settings_privacy_reset_recs_title">Réinitialiser les recommandations</string>
-    <string name="settings_privacy_reset_recs_body">Oublier les goûts déduits et recommencer l’apprentissage. Cela ne supprime ni les abonnements, ni les téléchargements, ni les j’aime, ni l’historique d’écoute.</string>
     <!-- Button that resets recommendations -->
-    <string name="settings_privacy_reset_recs_action">Réinitialiser</string>
-    <string name="settings_privacy_analytics_id_title">Votre ID d’analyse</string>
-    <string name="settings_privacy_new_id_title">Utiliser un nouvel ID d’analyse</string>
-    <string name="settings_privacy_new_id_body">Les prochains événements utiliseront un nouvel ID. Ce qui a déjà été envoyé reste tel quel.</string>
     <!-- Button, keep short -->
-    <string name="settings_privacy_new_id_action">Nouvel ID</string>
-    <string name="settings_privacy_deletion_title">Demander la suppression des données d’analyse</string>
-    <string name="settings_privacy_deletion_body">Ouvre un brouillon d’e-mail avec votre ID PostHog. Il vous restera à l’envoyer.</string>
     <!-- Button that hides the analytics ID panel -->
-    <string name="settings_privacy_deletion_hide">Masquer</string>
     <!-- Button that shows the analytics ID panel -->
-    <string name="settings_privacy_deletion_show">Afficher l’ID</string>
-    <string name="settings_privacy_deletion_note">Le brouillon contient cet ID PostHog. Vous pouvez le copier si vous le souhaitez.</string>
     <!-- Screen-reader label for the copy button -->
-    <string name="settings_privacy_copy_id">Copier l’ID PostHog</string>
-    <string name="settings_privacy_open_email">Ouvrir le brouillon d’e-mail</string>
-    <string name="settings_reset_analytics_title">Utiliser un nouvel ID d’analyse ?</string>
-    <string name="settings_reset_analytics_body">Les prochains événements PostHog utiliseront un nouvel ID anonyme. Les événements déjà envoyés avec l’ID actuel ne sont pas supprimés.</string>
-    <string name="settings_reset_analytics_kept_title">Les données de l’appli ne sont pas supprimées</string>
-    <string name="settings_reset_analytics_kept_body">Votre historique d’écoute, vos abonnements, vos téléchargements et vos paramètres restent disponibles.</string>
-    <string name="settings_reset_analytics_device_id">Cela ne réinitialise pas l’ID d’appareil distinct utilisé pour les recommandations et les transcriptions. Pour supprimer les données PostHog, envoyez une demande de suppression depuis Confidentialité.</string>
 </resources>

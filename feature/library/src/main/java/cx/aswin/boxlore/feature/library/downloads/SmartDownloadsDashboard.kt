@@ -505,7 +505,7 @@ private fun lastSyncLabel(lastSyncTime: Long): String {
     val locale = currentLocale()
     val whenText = when {
         diff < 60_000 -> stringResource(R.string.library_relative_just_now)
-        diff < 86_400_000 -> LocaleFormats.relativeTime(lastSyncTime, nowMs, locale, LocaleFormats.RelativeStyle.NARROW)
+        diff < 86_400_000 -> LocaleFormats.compactAgo(lastSyncTime, nowMs, locale)
         else -> stringResource(
             R.string.library_date_and_time,
             LocaleFormats.date(lastSyncTime, LocaleFormats.DateStyle.DAY_MONTH, locale),
