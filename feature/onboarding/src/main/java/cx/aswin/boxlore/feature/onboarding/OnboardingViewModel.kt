@@ -34,6 +34,8 @@ class OnboardingViewModel(
      * model is built and only while onboarding is unfinished; non-null opens with the language question.
      */
     appLanguageSuggestion: () -> AppLanguage? = { null },
+    /** The translation the screens show ("es", "pt-BR"), sent so Echo writes in it; null for English. */
+    internal val echoLanguageTag: () -> String? = { null },
 ) : AndroidViewModel(application) {
     internal val boxcastPrefs = BoxcastPrefs(application)
 

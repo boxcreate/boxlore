@@ -57,6 +57,9 @@ class AppLanguageController(
      */
     fun onboardingSuggestion(): AppLanguage? = if (hasChosen()) null else AppLanguageMatcher.suggest(systemLocales())
 
+    /** The tag of the translation boxlore's screens show now, for Echo's server text; null for English. */
+    fun shownTranslationTag(): String? = AppLanguageMatcher.shown(current(), systemLocales())?.tag
+
     /**
      * Picks [language]. Android 13+ recreates the activity when the language really changes;
      * on Android 12 [recreate] is called so [localeOverride] applies the new choice.

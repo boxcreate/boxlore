@@ -106,5 +106,20 @@ class AppLanguageTest {
         assertEquals("de", BoxcastPrefs(context).getAppLanguageTag())
     }
 
+    @Test
+    fun `the screens show the picked translation, or with System default the first phone language boxlore has`() {
+        fun shown(choice: AppLanguage, vararg tags: String) = AppLanguageMatcher.shown(choice, tags.map(Locale::forLanguageTag))
+        assertEquals(AppLanguage.GERMAN, shown(AppLanguage.GERMAN, "en-IN"))
+        assertNull(shown(AppLanguage.ENGLISH, "es-ES"))
+        assertEquals(AppLanguage.SPANISH, shown(AppLanguage.SYSTEM, "es-MX", "en-US"))
+        // English comes first, so the screens are English even with Spanish lower in the list.
+        assertNull(shown(AppLanguage.SYSTEM, "en-IN", "es-ES"))
+        // A language boxlore lacks is skipped, as Android does.
+        assertEquals(AppLanguage.FRENCH, shown(AppLanguage.SYSTEM, "hi-IN", "fr-FR"))
+        assertNull(shown(AppLanguage.SYSTEM, "hi-IN"))
+        assertNull(shown(AppLanguage.SYSTEM, "pt-PT"))
+        assertNull(shown(AppLanguage.SYSTEM))
+    }
+
     private fun suggest(tags: List<String>): AppLanguage? = AppLanguageMatcher.suggest(tags.map(Locale::forLanguageTag))
 }

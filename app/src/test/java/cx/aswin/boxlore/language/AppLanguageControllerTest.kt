@@ -148,4 +148,29 @@ class AppLanguageControllerTest {
     fun `a phone with no translation is asked nothing`() {
         assertNull(AppLanguageController(context).onboardingSuggestion())
     }
+
+    @Test
+    @Config(sdk = [33], qualifiers = "en-rIN")
+    fun `Echo is told the translation the screens show, and nothing in English`() {
+        val manager = context.getSystemService(LocaleManager::class.java)
+        val controller = AppLanguageController(context)
+        manager.applicationLocales = LocaleList.getEmptyLocaleList()
+        assertNull(controller.shownTranslationTag())
+        controller.set(AppLanguage.GERMAN) { recreated++ }
+        assertEquals("de", controller.shownTranslationTag())
+        controller.set(AppLanguage.PORTUGUESE_BRAZIL) { recreated++ }
+        assertEquals("pt-BR", controller.shownTranslationTag())
+        controller.set(AppLanguage.ENGLISH) { recreated++ }
+        assertNull(controller.shownTranslationTag())
+        manager.applicationLocales = LocaleList.getEmptyLocaleList()
+    }
+
+    @Test
+    @Config(sdk = [31], qualifiers = "fr-rFR")
+    fun `on Android 12 a phone in French tells Echo French until English is picked`() {
+        val controller = AppLanguageController(context)
+        assertEquals("fr", controller.shownTranslationTag())
+        controller.set(AppLanguage.ENGLISH) { recreated++ }
+        assertNull(controller.shownTranslationTag())
+    }
 }

@@ -249,6 +249,8 @@ fun BoxLoreAppRoot(
                 userPrefs,
                 // Asked only while onboarding is unfinished: a suggested translation opens with the language question.
                 appLanguageSuggestion = { application.container.appLanguage.onboardingSuggestion() },
+                // Read per request, so Echo follows a language picked during onboarding.
+                echoLanguageTag = { application.container.appLanguage.shownTranslationTag() },
             )
         }
 

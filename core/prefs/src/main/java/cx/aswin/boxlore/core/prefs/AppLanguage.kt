@@ -58,6 +58,19 @@ object AppLanguageMatcher {
         return forRegion(deviceLocales.firstOrNull()?.country.orEmpty())
     }
 
+    /**
+     * The translation boxlore's screens are in for [choice], or null for English. With [AppLanguage.SYSTEM]
+     * it is the first phone language boxlore has, English included, as Android picks resources.
+     */
+    fun shown(choice: AppLanguage, systemLocales: List<Locale>): AppLanguage? = when (choice) {
+        AppLanguage.SYSTEM ->
+            systemLocales
+                .firstNotNullOfOrNull { if (it.language == AppLanguage.ENGLISH.tag) AppLanguage.ENGLISH else forLocale(it) }
+                ?.takeIf { it != AppLanguage.ENGLISH }
+        AppLanguage.ENGLISH -> null
+        else -> choice
+    }
+
     /** The translation for this locale's language, or null (English, Portuguese outside Brazil, others). */
     internal fun forLocale(locale: Locale): AppLanguage? = when (locale.language) {
         "es" -> AppLanguage.SPANISH

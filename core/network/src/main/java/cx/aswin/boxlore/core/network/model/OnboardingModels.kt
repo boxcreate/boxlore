@@ -26,6 +26,11 @@ data class OnboardingNextTurnRequest(
     @SerialName("languages") val languages: List<String>? = null,
     /** How the listener reacted to show deck cards; sent with next-turn, synthesize and probe-deck. */
     @SerialName("probeReactions") val probeReactions: List<OnboardingProbeReaction>? = null,
+    /**
+     * The app's own language when it is a translation ("es", "pt-BR"): Echo writes its replies, show
+     * cards and row titles in it. Omitted for English. Never decides which shows are picked.
+     */
+    @SerialName("appLanguage") val appLanguage: String? = null,
 )
 
 /** `reaction` is `listen`, `like`, `dislike` or `unknown`; the API keeps up to 12. */

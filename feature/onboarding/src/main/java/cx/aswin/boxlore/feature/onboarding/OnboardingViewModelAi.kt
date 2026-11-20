@@ -141,6 +141,7 @@ internal fun OnboardingViewModel.sendAiTurnInput() {
                                         country = locale.country,
                                         languages = locale.languages,
                                         probeReactions = reactions,
+                                        appLanguage = echoLanguageTag(),
                                     ),
                                 ).execute()
                         }
@@ -375,6 +376,7 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
                                             history = newHistoryList,
                                             recommendationFormat = "discovery_v2",
                                             probeReactions = EchoDeckLogic.requestReactions(currentState.aiDeck),
+                                            appLanguage = echoLanguageTag(),
                                         ),
                                     ).execute()
                             }
