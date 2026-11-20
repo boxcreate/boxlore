@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.32] - 2026-11-20
+
 ### Added
 - `:wear`: the Wear OS app, with its own player (`WatchPlaybackService`), downloads (`FileWatchDownloads`, `StoragePolicy`) and library (`WatchLibraryStore`). ([#1256](https://github.com/boxcreate/boxlore/pull/1256)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - `:core:wearlink`: the phone–watch link (`PhoneWearLink`, `GmsWearLinkTransport`, `WearLinkCodec`), and `UserSyncCoordinator.applyLinkedDeviceChanges` to merge watch changes on the phone. ([#1256](https://github.com/boxcreate/boxlore/pull/1256)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
@@ -147,6 +149,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `WatchLibraryState.merged` prefers the copy under the episode's own ID over one saved under the phone's older ID for the same audio. ([#1262](https://github.com/boxcreate/boxlore/pull/1262)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - `LiveWatchPlayback.play` keeps a newer saved place when the still player holds the same episode (`PlaybackRules.savesPlaceBeforeStart`). ([#1262](https://github.com/boxcreate/boxlore/pull/1262)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - The episode page's watch button follows `WearLinkStatus.inReach` and is hidden while the watch cannot be reached. ([#1263](https://github.com/boxcreate/boxlore/pull/1263)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+
 ## [v0.0.31] - 2026-11-07
 
 ### Added
