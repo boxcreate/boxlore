@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `:wear` declares `com.google.android.gms.permission.AD_ID`, matching `:app`, so Play's advertising ID check passes for the watch bundle; `WatchManifestTest` guards both manifests. ([#1286](https://github.com/boxcreate/boxlore/pull/1286)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ## [v0.0.32] - 2026-11-20
 
 ### Added
