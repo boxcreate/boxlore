@@ -95,7 +95,8 @@ internal object HomeUiAssemblyLogic {
         )
     }
 
-    @Suppress("LongParameterList", "LongMethod")
+    // One parameter per Home section source, so each test sets only what it needs (kotlin:S107).
+    @Suppress("LongParameterList", "LongMethod", "kotlin:S107")
     suspend fun assemble(
         trendingList: List<Podcast>,
         rankedRecommendations: List<Episode>,
