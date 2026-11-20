@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.info.branded.daily
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,18 +7,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -43,23 +41,30 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
-private val StoryShape = RoundedCornerShape(2.dp)
+private val StoryShape = RoundedCornerShape(12.dp)
+private val PictureShape = RoundedCornerShape(12.dp)
 
-/** About the deck's five lines tall. */
-private val PhotoSize = 112.dp
+/** Seven lines of the notes tall, so the picture and the notes beside it end together. */
+private val PictureSize = 147.dp
+
+/** Lines of the episode's notes: beside the picture, or under the title when there is none. */
+private const val NOTES_BESIDE_PICTURE = 7
+private const val NOTES_WITHOUT_PICTURE = 5
 
 /**
- * The lead story: "Latest episode" with the day and length, the title as a headline, the episode's
- * own notes as the deck beside its photo, and the episode cards' buttons between two fine rules.
- * An episode without a photo of its own shows the show's cover; the show's dawn horizon stands in
- * while either loads, or if neither arrives.
+ * The latest episode: "Latest episode" with the day and length, the title, then the episode's own
+ * picture, square as the feed has it and shown whole, with its notes beside it. News needs its
+ * notes, so they always show. An episode without a picture of its own shows no picture: its notes
+ * run under the title instead. The show's dawn stands in while the picture loads or if it fails.
  */
 @Composable
 internal fun DailySpotlight(spotlight: BrandedSpotlight, modifier: Modifier) {
     val p = DailyColors.current
     val episode = spotlight.episode
+    val picture = spotlight.episodePicture
     val franklin = rememberDailyFranklin()
     val selectLabel = stringResource(R.string.podcast_episode_select)
+    val notes = remember(episode.description) { stripHtml(episode.description) }
     Column(
         modifier
             .fillMaxWidth()
@@ -68,55 +73,57 @@ internal fun DailySpotlight(spotlight: BrandedSpotlight, modifier: Modifier) {
             .background(if (spotlight.isSelected) p.control else p.page)
             .expressiveClickable(shape = StoryShape, onLongClickLabel = selectLabel, onLongClick = spotlight.onLongPress, onClick = spotlight.onOpen),
     ) {
-        Box(Modifier.fillMaxWidth().height(1.dp).background(p.ink))
         Kicker(spotlight, franklin)
+        val (titleSize, titleLine) = if (picture != null) 24 to 28 else 26 to 30
         Text(
             episode.title,
-            style = brandedTextStyle(rememberDailySerif(600, 25f), 25.sp, 29.sp, letterSpacing = (-0.2).sp),
+            style = brandedTextStyle(rememberDailySerif(600, titleSize.toFloat()), titleSize.sp, titleLine.sp, letterSpacing = (-0.2).sp),
             color = p.ink,
             maxLines = 3,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 6.dp),
         )
-        Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            val deck = remember(episode.description) { stripHtml(episode.description) }
-            Text(
-                deck,
-                style = brandedTextStyle(rememberDailySerif(400, 15f), 15.sp, 21.sp),
-                color = p.sub,
-                maxLines = 5,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            Photo(spotlight.episodePicture, spotlight.showPicture ?: episode.podcastImageUrl)
+        if (picture != null) {
+            Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.Top) {
+                Picture(picture)
+                if (notes.isNotEmpty()) Notes(notes, NOTES_BESIDE_PICTURE, Modifier.weight(1f))
+            }
+        } else if (notes.isNotEmpty()) {
+            Notes(notes, NOTES_WITHOUT_PICTURE, Modifier.padding(top = 8.dp))
         }
-        Box(Modifier.padding(top = 10.dp).fillMaxWidth().height(1.dp).background(p.soft))
-        BrandedEpisodeActions(spotlight, p.actions, Modifier.padding(vertical = 6.dp), showProgress = true)
-        Box(Modifier.fillMaxWidth().height(1.dp).background(p.soft))
+        BrandedEpisodeActions(spotlight, p.actions, Modifier.padding(top = 14.dp), showProgress = true)
     }
 }
 
-/** The episode's photo, or the show's cover, over the dawn horizon, which shows until one arrives. */
 @Composable
-private fun Photo(picture: String?, cover: String?) {
-    Box(Modifier.size(PhotoSize)) {
-        Image(painterResource(R.drawable.daily_horizon), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        if (picture != null || cover != null) {
-            OptimizedImage(
-                url = picture ?: cover,
-                fallbackUrls = listOf(cover),
-                proxyWidth = 400,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                errorContent = {},
-                showLoadingPlaceholder = false,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
+private fun Notes(text: String, lines: Int, modifier: Modifier) {
+    Text(
+        text,
+        style = brandedTextStyle(rememberDailySerif(400, 15f), 15.sp, 21.sp),
+        color = DailyColors.current.sub,
+        maxLines = lines,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier,
+    )
+}
+
+/** The episode's own picture, square and whole, over the show's dawn, which shows until it arrives. */
+@Composable
+private fun Picture(url: String) {
+    Box(Modifier.size(PictureSize).clip(PictureShape).background(DailyColors.dawn())) {
+        OptimizedImage(
+            url = url,
+            proxyWidth = 480,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            errorContent = {},
+            showLoadingPlaceholder = false,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }
 
-/** "LATEST EPISODE · 31 OCT 2026 · 49 MIN": the label in the show's blue, then the day it came out and its length, or that you played it. */
+/** "LATEST EPISODE · NOV 20, 2026 · 28 MIN": the label in the sky's blue, then the day it came out and its length, or that you played it. */
 @Composable
 private fun Kicker(spotlight: BrandedSpotlight, franklin: VariableWeights) {
     val p = DailyColors.current
@@ -134,7 +141,7 @@ private fun Kicker(spotlight: BrandedSpotlight, franklin: VariableWeights) {
     val details = listOf(date, length).filter(String::isNotBlank).joinToString(" · ")
     Text(
         buildAnnotatedString {
-            withStyle(SpanStyle(color = p.kicker, fontFamily = franklin[700], fontWeight = FontWeight.Bold)) {
+            withStyle(SpanStyle(color = p.accent, fontFamily = franklin[700], fontWeight = FontWeight.Bold)) {
                 append(stringResource(R.string.branded_latest_episode).uppercase(locale))
             }
             if (details.isNotEmpty()) append(" · ${details.uppercase(locale)}")
@@ -143,6 +150,6 @@ private fun Kicker(spotlight: BrandedSpotlight, franklin: VariableWeights) {
         color = p.sub,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.padding(top = 12.dp),
+        modifier = Modifier.padding(top = 2.dp),
     )
 }

@@ -14,9 +14,9 @@ import cx.aswin.boxlore.feature.info.branded.VariableWeights
 import cx.aswin.boxlore.feature.info.branded.rememberVariableFont
 import cx.aswin.boxlore.feature.info.branded.rememberVariableWeights
 
-/** The Daily as a front page: newsprint and ink by day, a warm night edition in the dark, and the show's dawn. */
+/** The Daily at first light: the cover's dawn above newsprint by day, above a warm night page in the dark. */
 internal object DailyColors {
-    /** The show's dawn, from the cover's sky: deep blue at the top to yellow at the horizon. */
+    /** The show's dawn, from the cover's sky: deep blue at the top to yellow at the horizon. Daybreak rises through it. */
     val Dawn = listOf(
         0f to Color(0xFF0054B7),
         0.17f to Color(0xFF006AB8),
@@ -38,8 +38,9 @@ internal object DailyColors {
         control = Color(0xFFE7E2D5),
         card = Color(0xFFEDE9DD),
         chipLine = Color(0xFF121212),
-        kicker = Color(0xFF0054B7),
-        soft = Color(0xFFD8D2C2),
+        accent = Color(0xFF0054B7),
+        onAccent = Color(0xFFFFFFFF),
+        variant = Color(0xFFD8D2C2),
         navigation = Color(0xFFE7E2D5),
         navigationText = Color(0xFF2A2925),
         copyright = BrandedCopyrightStyle(
@@ -67,8 +68,9 @@ internal object DailyColors {
         control = Color(0xFF2B2A27),
         card = Color(0xFF232220),
         chipLine = Color(0xFF5C5850),
-        kicker = Color(0xFF7CC3E6),
-        soft = Color(0xFF353330),
+        accent = Color(0xFF7CC3E6),
+        onAccent = Color(0xFF0A1F33),
+        variant = Color(0xFF353330),
         navigation = Color(0xFF262522),
         navigationText = Color(0xFFD8D3C8),
         copyright = BrandedCopyrightStyle(
@@ -95,7 +97,7 @@ internal object DailyColors {
         get() = if (LocalEffectiveDarkTheme.current) Dark else Light
 }
 
-/** One edition's colours. Ink is the accent: buttons, the genre chip, Play and the navbar's selected tab. */
+/** One edition's colours. The sky's blue is the accent: Subscribe, the genre chip, Play, "Latest episode" and the navbar's selected tab. */
 internal data class DailyPalette(
     val page: Color,
     val ink: Color,
@@ -104,17 +106,18 @@ internal data class DailyPalette(
     /** The episode cards in the list. */
     val card: Color,
     val chipLine: Color,
-    /** "Latest episode", and each card's release time. */
-    val kicker: Color,
-    /** The fine rules around the lead story's buttons, and a day still to come in the week's boxes. */
-    val soft: Color,
+    /** The sky's blue: Subscribe, the genre chip, Play, "Latest episode" and each card's release time. */
+    val accent: Color,
+    val onAccent: Color,
+    /** Material's surface variant, a colour of its own so cards and chips keep the ink as their content colour. */
+    val variant: Color,
     val navigation: Color,
     val navigationText: Color,
     val copyright: BrandedCopyrightStyle,
 ) {
-    /** The lead story's buttons, as on the episode cards. */
+    /** The latest episode's buttons, as on the episode cards. */
     val actions: BrandedActionColors
-        get() = BrandedActionColors(toggle = control, onToggle = ink, checked = ink, onChecked = page, play = ink, onPlay = page)
+        get() = BrandedActionColors(toggle = control, onToggle = ink, checked = accent, onChecked = onAccent, play = accent, onPlay = onAccent)
 }
 
 /** Newsreader at [weight], set for [opticalSize] like the board's serif, which sizes its optical axis to the text. */

@@ -27,5 +27,6 @@ Announcement title:
 ## Improved
 
 - The Marquee style on Home now scrolls with the page in one go, and its cover stays clear behind the words.
+- The Daily's show page now opens under the dawn sky from its cover, with the sun peeking over the horizon, and its latest episode shows its whole picture beside the episode description.
 
 ## Fixed
