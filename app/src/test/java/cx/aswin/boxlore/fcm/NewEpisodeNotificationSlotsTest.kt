@@ -327,10 +327,10 @@ class NewEpisodeNotificationSlotsTest {
 
     @Test
     fun onlyTheShowsOwnOlderBuildCopyIsCleared() {
-        val title = NewEpisodeFcmLogic.episodeNotificationTitle("Show A")
+        val title = NewEpisodeFcmLogic.legacyEpisodeNotificationTitle("Show A")
         val id = NewEpisodeFcmLogic.EPISODE_NOTIFICATION_ID_BASE + NewEpisodeFcmLogic.episodeSlot("Aa")
         val own = NewEpisodeFcmLogic.LegacyEpisodeNotification(id, title)
-        val other = NewEpisodeFcmLogic.LegacyEpisodeNotification(id, NewEpisodeFcmLogic.episodeNotificationTitle("Show B"))
+        val other = NewEpisodeFcmLogic.LegacyEpisodeNotification(id, NewEpisodeFcmLogic.legacyEpisodeNotificationTitle("Show B"))
         val elsewhere = NewEpisodeFcmLogic.LegacyEpisodeNotification(id + 1, title)
         assertEquals(id, NewEpisodeFcmLogic.legacyCopyToClear("Aa", title, listOf(own)))
         assertNull(NewEpisodeFcmLogic.legacyCopyToClear("Aa", title, listOf(other)))
@@ -403,7 +403,7 @@ class NewEpisodeNotificationSlotsTest {
     private fun legacyNotification(context: Context, podcastTitle: String, tap: android.app.PendingIntent?): android.app.Notification =
         androidx.core.app.NotificationCompat.Builder(context, "boxlore_new_episodes_v1")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(NewEpisodeFcmLogic.episodeNotificationTitle(podcastTitle))
+            .setContentTitle(NewEpisodeFcmLogic.legacyEpisodeNotificationTitle(podcastTitle))
             .apply { if (tap != null) setContentIntent(tap) }
             .build()
 }

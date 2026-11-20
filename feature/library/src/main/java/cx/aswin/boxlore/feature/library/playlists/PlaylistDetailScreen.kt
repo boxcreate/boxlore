@@ -48,7 +48,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -60,41 +62,46 @@ import cx.aswin.boxlore.core.designsystem.components.PlaylistCopy
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.PlaylistOrder
 import cx.aswin.boxlore.core.model.PlaylistShow
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.core.model.text.resolve
 import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
+import cx.aswin.boxlore.feature.library.R
 import kotlinx.coroutines.launch
 
 /** A playlist page's wording. */
 internal object PlaylistDetailCopy {
-    const val NEWEST = "Newest first"
-    const val OLDEST = "Oldest first"
-    const val PLAY = "Play"
-    const val COMING_UP = "Coming up"
-    const val SHOWS = "Shows"
-    const val ADD_SHOWS = "Add shows"
-    const val NOTHING_TO_PLAY = "Nothing to play right now. New episodes from these shows will appear here."
-    const val NOT_FOLLOWING = "Not following, skipped"
-    const val HIDDEN = "Hidden, skipped"
-    const val EMPTY_TITLE = "No shows yet"
-    const val EMPTY_BODY = "Add shows you follow here, or use Add to playlist on a show’s page."
-    const val DELETE_PLAYLIST = "Delete playlist"
-    const val UNDO = "Undo"
-    const val UP_NEXT_REPLACED = "Up next replaced"
-    const val UNKNOWN_SHOW = "Unknown show"
-    const val SHOW_REMOVED = "Show removed"
+    val NEWEST: String @Composable get() = stringResource(R.string.library_playlist_newest_first)
+    val OLDEST: String @Composable get() = stringResource(R.string.library_playlist_oldest_first)
+    val PLAY: String @Composable get() = stringResource(R.string.library_play)
+    val COMING_UP: String @Composable get() = stringResource(R.string.library_playlist_coming_up)
+    val SHOWS: String @Composable get() = stringResource(R.string.library_tab_shows)
+    val ADD_SHOWS: String @Composable get() = stringResource(R.string.library_add_shows)
+    val NOTHING_TO_PLAY: String @Composable get() = stringResource(R.string.library_playlist_nothing_to_play)
+    val EMPTY_TITLE: String @Composable get() = stringResource(R.string.library_playlist_empty_title)
+    val EMPTY_BODY: String @Composable get() = stringResource(R.string.library_playlist_empty_body)
+    val DELETE_PLAYLIST: String @Composable get() = stringResource(R.string.library_playlist_delete)
+    val UP_NEXT_REPLACED: UiText = UiText.res(R.string.library_playlist_up_next_replaced)
 
-    /** [show]'s title, or [UNKNOWN_SHOW] when this phone has no details for it (a show restored from a backup). */
-    fun title(show: PlaylistShow) = show.title.ifBlank { UNKNOWN_SHOW }
-    fun remove(show: PlaylistShow) = "Remove ${title(show)}"
-    fun removed(show: PlaylistShow) = if (show.title.isBlank()) SHOW_REMOVED else "Removed ${show.title}"
+    /** [show]'s title, or "Unknown show" when this phone has no details for it (a show restored from a backup). */
+    @Composable
+    fun title(show: PlaylistShow): String = show.title.ifBlank { stringResource(R.string.library_playlist_unknown_show) }
+
+    @Composable
+    fun remove(show: PlaylistShow): String = stringResource(R.string.library_playlist_remove_show, title(show))
+
+    fun removed(show: PlaylistShow): UiText =
+        if (show.title.isBlank()) UiText.res(R.string.library_playlist_show_removed) else UiText.res(R.string.library_playlist_removed_show, show.title)
 
     /** Why a show's episodes don't play, or null when they do. */
+    @Composable
     fun skipped(show: PlaylistShow): String? = when {
-        !show.isFollowed -> NOT_FOLLOWING
-        show.isHidden -> HIDDEN
+        !show.isFollowed -> stringResource(R.string.library_playlist_not_following_skipped)
+        show.isHidden -> stringResource(R.string.library_playlist_hidden_skipped)
         else -> null
     }
 }
@@ -121,10 +128,12 @@ fun PlaylistDetailScreen(
     val state = rememberPlaylistPagesState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    fun showUndo(message: String, onUndo: () -> Unit) {
+    val context = LocalContext.current
+    fun showUndo(message: UiText, onUndo: () -> Unit) {
         scope.launch {
             snackbarHostState.currentSnackbarData?.dismiss()
-            if (snackbarHostState.showSnackbar(message, PlaylistDetailCopy.UNDO, duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed) onUndo()
+            val undo = context.getString(R.string.library_undo)
+            if (snackbarHostState.showSnackbar(message.resolve(context), undo, duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed) onUndo()
         }
     }
     val actions = remember(viewModel, onBack) {
@@ -230,7 +239,7 @@ internal fun PlaylistDetailContent(
 @Composable
 private fun PlaylistHeader(ready: PlaylistDetailState.Ready, actions: PlaylistDetailActions) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(PlaylistCopy.showCount(ready.shows.size), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(PlaylistCopy.showCount(ready.shows.size).asString(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         val orders = listOf(PlaylistOrder.NEWEST to PlaylistDetailCopy.NEWEST, PlaylistOrder.OLDEST to PlaylistDetailCopy.OLDEST)
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
             orders.forEachIndexed { index, (order, label) ->

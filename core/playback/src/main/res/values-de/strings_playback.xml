@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="playback_error_stop_cast">Diese Folgen konnten auf diesem Cast-Gerät nicht abgespielt werden. Die Wiedergabe ist pausiert.</string>
+    <string name="playback_error_stop">Diese Folgen konnten nicht abgespielt werden. Prüf deine Verbindung und versuch es dann noch mal.</string>
+    <string name="playback_error_skip_paused_cast">Diese Folge konnte auf diesem Cast-Gerät nicht abgespielt werden. Die nächste ist bereit.</string>
+    <string name="playback_error_skip_paused">Diese Folge konnte nicht abgespielt werden. Die nächste ist bereit.</string>
+    <string name="playback_error_skip_cast">Diese Folge konnte auf diesem Cast-Gerät nicht abgespielt werden.</string>
+    <string name="playback_error_skip">Stream nicht verfügbar, wird übersprungen…</string>
+    <string name="playback_cast_device_fallback">Cast-Gerät</string>
+</resources>

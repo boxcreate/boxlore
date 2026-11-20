@@ -1,79 +1,86 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+import androidx.test.core.app.ApplicationProvider
+import cx.aswin.boxlore.feature.settings.text
 import cx.aswin.boxlore.feature.settings.toSettingsDestination
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 class AccountAuthHelpersTest {
 
     @Test
     fun cleanAccountError_nullInput_returnsDefaultMessage() {
-        assertEquals("An unexpected error occurred", cleanAccountError(null))
+        assertEquals("An unexpected error occurred", cleanAccountError(null).text())
     }
 
     @Test
     fun cleanAccountError_userNotFound_returnsFriendlySignUpPrompt() {
-        val result = cleanAccountError("com.google.firebase.auth.FirebaseAuthInvalidUserException: user-not-found")
+        val result = cleanAccountError("com.google.firebase.auth.FirebaseAuthInvalidUserException: user-not-found").text()
         assertEquals("No account found with this email. Try signing up instead.", result)
     }
 
     @Test
     fun cleanAccountError_wrongPassword_returnsIncorrectCredentials() {
-        val result = cleanAccountError("wrong-password")
+        val result = cleanAccountError("wrong-password").text()
         assertEquals("Incorrect password or credentials. Please try again.", result)
     }
 
     @Test
     fun cleanAccountError_emailAlreadyInUse_returnsSignInPrompt() {
-        val result = cleanAccountError("The email-already-in-use by another account")
+        val result = cleanAccountError("The email-already-in-use by another account").text()
         assertEquals("This email is already registered. Try signing in instead.", result)
     }
 
     @Test
     fun cleanAccountError_alreadyInUseMessage_returnsSignInPrompt() {
-        val result = cleanAccountError("The email address is already in use by another account.")
+        val result = cleanAccountError("The email address is already in use by another account.").text()
         assertEquals("This email is already registered. Try signing in instead.", result)
     }
 
     @Test
     fun cleanAccountError_weakPassword_returnsPasswordRequirement() {
-        val result = cleanAccountError("weak-password")
+        val result = cleanAccountError("weak-password").text()
         assertEquals("Password is too weak. Please use at least 6 characters.", result)
     }
 
     @Test
     fun cleanAccountError_invalidEmail_returnsValidEmailPrompt() {
-        val result = cleanAccountError("invalid-email format")
+        val result = cleanAccountError("invalid-email format").text()
         assertEquals("Please enter a valid email address.", result)
     }
 
     @Test
     fun cleanAccountError_networkIssue_returnsNetworkMessage() {
-        val result = cleanAccountError("network connection failed")
+        val result = cleanAccountError("network connection failed").text()
         assertEquals("Network error. Check your connection and try again.", result)
     }
 
     @Test
     fun cleanAccountError_tooManyRequests_returnsUserFriendlyMessage() {
-        val result = cleanAccountError("Firebase: We have blocked all requests from this device due to unusual activity (too-many-requests)")
+        val result = cleanAccountError("Firebase: We have blocked all requests from this device due to unusual activity (too-many-requests)").text()
         assertEquals("Too many attempts. Please wait a few minutes before trying again.", result)
     }
 
     @Test
     fun cleanAccountError_userDisabled_returnsDisabledMessage() {
-        val result = cleanAccountError("com.google.firebase.auth.FirebaseAuthInvalidUserException: The user account has been disabled by an administrator. (user-disabled)")
+        val result = cleanAccountError("com.google.firebase.auth.FirebaseAuthInvalidUserException: The user account has been disabled by an administrator. (user-disabled)").text()
         assertEquals("This account has been disabled. Please contact support.", result)
     }
 
     @Test
     fun cleanAccountError_unknownError_preservesMessage() {
         val message = "Custom error from identity provider"
-        assertEquals(message, cleanAccountError(message))
+        assertEquals(message, cleanAccountError(message).text())
     }
 
     @Test
     fun cleanAccountError_recentLogin_returnsRecentLoginPrompt() {
-        val result = cleanAccountError("com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException: This operation is sensitive and requires recent authentication.")
+        val result = cleanAccountError("com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException: This operation is sensitive and requires recent authentication.").text()
         assertEquals("For security, please sign out and sign in again before deleting your account.", result)
     }
 
@@ -110,25 +117,25 @@ class AccountAuthHelpersTest {
 
     @Test
     fun validatePasswordInputs_emptyEmail_returnsEmailPrompt() {
-        assertEquals("Please enter your email address", validatePasswordInputs("", "123456", isSignUp = false))
-        assertEquals("Please enter your email address", validatePasswordInputs("   ", "123456", isSignUp = true))
+        assertEquals("Please enter your email address", validatePasswordInputs("", "123456", isSignUp = false)?.text())
+        assertEquals("Please enter your email address", validatePasswordInputs("   ", "123456", isSignUp = true)?.text())
     }
 
     @Test
     fun validatePasswordInputs_invalidEmail_returnsValidEmailPrompt() {
-        assertEquals("Please enter a valid email address", validatePasswordInputs("not-an-email", "123456", isSignUp = false))
-        assertEquals("Please enter a valid email address", validatePasswordInputs("missing@domain", "123456", isSignUp = true))
+        assertEquals("Please enter a valid email address", validatePasswordInputs("not-an-email", "123456", isSignUp = false)?.text())
+        assertEquals("Please enter a valid email address", validatePasswordInputs("missing@domain", "123456", isSignUp = true)?.text())
     }
 
     @Test
     fun validatePasswordInputs_emptyPassword_returnsPasswordPrompt() {
-        assertEquals("Please enter your password", validatePasswordInputs("test@boxlore.example", "", isSignUp = false))
-        assertEquals("Please enter your password", validatePasswordInputs("test@boxlore.example", "   ", isSignUp = true))
+        assertEquals("Please enter your password", validatePasswordInputs("test@boxlore.example", "", isSignUp = false)?.text())
+        assertEquals("Please enter your password", validatePasswordInputs("test@boxlore.example", "   ", isSignUp = true)?.text())
     }
 
     @Test
     fun validatePasswordInputs_shortPasswordSignUp_returnsMinLengthPrompt() {
-        assertEquals("Password must be at least 6 characters", validatePasswordInputs("test@boxlore.example", "12345", isSignUp = true))
+        assertEquals("Password must be at least 6 characters", validatePasswordInputs("test@boxlore.example", "12345", isSignUp = true)?.text())
     }
 
     @Test
@@ -155,21 +162,21 @@ class AccountAuthHelpersTest {
     fun validatePasswordInputs_signUpConfirmPasswordValidation() {
         assertEquals(
             "Please confirm your password",
-            validatePasswordInputs("test@boxlore.example", "123456", isSignUp = true, confirmPassword = ""),
+            validatePasswordInputs("test@boxlore.example", "123456", isSignUp = true, confirmPassword = "")?.text(),
         )
         assertEquals(
             "Passwords do not match",
-            validatePasswordInputs("test@boxlore.example", "123456", isSignUp = true, confirmPassword = "654321"),
+            validatePasswordInputs("test@boxlore.example", "123456", isSignUp = true, confirmPassword = "654321")?.text(),
         )
         org.junit.Assert.assertNull(
-            validatePasswordInputs("test@boxlore.example", "123456", isSignUp = true, confirmPassword = "123456"),
+            validatePasswordInputs("test@boxlore.example", "123456", isSignUp = true, confirmPassword = "123456")?.text(),
         )
     }
 
     @Test
     fun validatePasswordInputs_validInputs_returnsNull() {
-        org.junit.Assert.assertNull(validatePasswordInputs("test@boxlore.example", "123456", isSignUp = true, confirmPassword = "123456"))
-        org.junit.Assert.assertNull(validatePasswordInputs("test@boxlore.example", "pass", isSignUp = false))
+        org.junit.Assert.assertNull(validatePasswordInputs("test@boxlore.example", "123456", isSignUp = true, confirmPassword = "123456")?.text())
+        org.junit.Assert.assertNull(validatePasswordInputs("test@boxlore.example", "pass", isSignUp = false)?.text())
     }
 
     @Test
@@ -186,7 +193,7 @@ class AccountAuthHelpersTest {
 
     @Test
     fun accountAuthState_saver_preservesAllCriticalFields() {
-        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
         val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
         val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
 
@@ -205,7 +212,7 @@ class AccountAuthHelpersTest {
         originalState.passwordVisible = true
         originalState.confirmPasswordVisible = true
         originalState.magicLinkSent = true
-        originalState.errorMessage = "Previous attempt error"
+        originalState.errorMessage = cx.aswin.boxlore.core.model.text.UiText.raw("Previous attempt error")
         originalState.isAwaitingVerification = true
         originalState.resendCooldownSeconds = 25
 
@@ -230,14 +237,19 @@ class AccountAuthHelpersTest {
         org.junit.Assert.assertTrue(restored.passwordVisible)
         org.junit.Assert.assertTrue(restored.confirmPasswordVisible)
         org.junit.Assert.assertTrue(restored.magicLinkSent)
-        assertEquals("Previous attempt error", restored.errorMessage)
+        assertEquals(cx.aswin.boxlore.core.model.text.UiText.raw("Previous attempt error"), restored.errorMessage)
         org.junit.Assert.assertTrue(restored.isAwaitingVerification)
         assertEquals(25, restored.resendCooldownSeconds)
+
+        // A resource error is saved by id, so it comes back in whatever language the page now uses.
+        originalState.errorMessage = cx.aswin.boxlore.core.model.text.UiText.res(cx.aswin.boxlore.feature.settings.R.string.account_error_reset_failed)
+        val savedRes = with(saver) { saverScope.save(originalState) }!!
+        assertEquals(originalState.errorMessage, (saver.restore(savedRes) as AccountAuthState).errorMessage)
     }
 
     @Test
     fun accountAuthState_saver_legacyListWithPasswords_discardsPasswords() {
-        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
         val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
         val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
 
@@ -273,7 +285,7 @@ class AccountAuthHelpersTest {
 
     @Test
     fun accountAuthState_saver_withPartialOrCorruptedList_fallsBackToDefaultsSafely() {
-        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
         val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
         val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
 
@@ -356,7 +368,7 @@ class AccountAuthHelpersTest {
 
     @Test
     fun accountAuthState_submitPasswordAuth_signUp_triggersEmailVerificationAndAwaitingState() = kotlinx.coroutines.test.runTest {
-        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
         val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
         val fakeRepo = TestAuthRepository()
 
@@ -383,7 +395,7 @@ class AccountAuthHelpersTest {
 
     @Test
     fun accountAuthState_submitPasswordAuth_signIn_doesNotAwaitVerification() = kotlinx.coroutines.test.runTest {
-        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
         val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
         val fakeRepo = TestAuthRepository()
 
@@ -408,7 +420,7 @@ class AccountAuthHelpersTest {
 
     @Test
     fun accountAuthState_checkVerificationStatus_whenVerified_clearsAwaitingAndCallsOnSuccess() = kotlinx.coroutines.test.runTest {
-        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
         val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
         val user = cx.aswin.boxlore.core.model.BoxLoreUser(uid = "uid", email = "test@boxlore.example", displayName = null, isEmailVerified = false)
         val fakeRepo = TestAuthRepository(initialUser = user)
@@ -435,7 +447,7 @@ class AccountAuthHelpersTest {
 
     @Test
     fun accountAuthState_checkVerificationStatus_whenUnverified_setsErrorMessage() = kotlinx.coroutines.test.runTest {
-        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
         val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
         val user = cx.aswin.boxlore.core.model.BoxLoreUser(uid = "uid", email = "test@boxlore.example", displayName = null, isEmailVerified = false)
         val fakeRepo = TestAuthRepository(initialUser = user)
@@ -456,12 +468,12 @@ class AccountAuthHelpersTest {
 
         org.junit.Assert.assertTrue(state.isAwaitingVerification)
         org.junit.Assert.assertFalse(successCalled)
-        assertEquals("We haven't received verification yet. Please tap the link in your email and try again.", state.errorMessage)
+        assertEquals("We haven't received verification yet. Please tap the link in your email and try again.", state.errorMessage?.text())
     }
 
     @Test
     fun accountAuthState_signOutAndResetToSignUp_preservesEmailAndResetsMode() {
-        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
         val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
         val user = cx.aswin.boxlore.core.model.BoxLoreUser(uid = "uid", email = "typo@boxlore.example", displayName = null, isEmailVerified = false)
         val fakeRepo = TestAuthRepository(initialUser = user)
@@ -492,7 +504,7 @@ class AccountAuthHelpersTest {
 
     @Test
     fun accountAuthState_resendVerificationEmail_respectsCooldownAndDispatches() = kotlinx.coroutines.test.runTest {
-        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
         val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
         val fakeRepo = TestAuthRepository()
 
@@ -517,7 +529,7 @@ class AccountAuthHelpersTest {
 
     @Test
     fun accountAuthState_submitPasswordAuth_signUp_whenVerificationFails_showsErrorAndNoCooldown() = kotlinx.coroutines.test.runTest {
-        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
         val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
         val fakeRepo = TestAuthRepository()
         fakeRepo.shouldFailVerification = true
@@ -540,13 +552,13 @@ class AccountAuthHelpersTest {
         org.junit.Assert.assertTrue(state.isAwaitingVerification)
         assertEquals(1, fakeRepo.signUpCallCount)
         assertEquals(1, fakeRepo.sendVerificationCallCount)
-        assertEquals("Send verification failed", state.errorMessage)
+        assertEquals("Send verification failed", state.errorMessage?.text())
         assertEquals(0, state.resendCooldownSeconds)
     }
 
     @Test
     fun accountAuthState_submitPasswordAuth_signUp_trimsEmailInState() = kotlinx.coroutines.test.runTest {
-        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
         val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
         val fakeRepo = TestAuthRepository()
 
@@ -570,7 +582,7 @@ class AccountAuthHelpersTest {
 
     @Test
     fun accountAuthState_signOutAndResetToSignUp_recoversEmailFromCurrentUserIfBlank() {
-        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
         val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
         val user = cx.aswin.boxlore.core.model.BoxLoreUser(uid = "uid", email = "recovered@boxlore.example", displayName = null, isEmailVerified = false)
         val fakeRepo = TestAuthRepository(initialUser = user)
@@ -598,7 +610,7 @@ class AccountAuthHelpersTest {
 
     @Test
     fun accountAuthState_checkVerificationStatus_whenReloadFails_displaysCleanError() = kotlinx.coroutines.test.runTest {
-        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
         val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
         val user = cx.aswin.boxlore.core.model.BoxLoreUser(uid = "uid", email = "test@boxlore.example", displayName = null, isEmailVerified = false)
         val fakeRepo = TestAuthRepository(initialUser = user)
@@ -617,12 +629,12 @@ class AccountAuthHelpersTest {
         testScheduler.advanceUntilIdle()
 
         org.junit.Assert.assertTrue(state.isAwaitingVerification)
-        assertEquals("Reload failed", state.errorMessage)
+        assertEquals("Reload failed", state.errorMessage?.text())
     }
 
     @Test
     fun accountAuthState_selectAuthMode_signUpForcesPasswordAuthAndClearsInputFocus() {
-        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
         val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
         val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
 
@@ -646,7 +658,7 @@ class AccountAuthHelpersTest {
 
     @Test
     fun accountAuthState_submitPasswordAuth_clearsInputFocus() = kotlinx.coroutines.test.runTest {
-        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
         val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
         val fakeRepo = TestAuthRepository()
 
@@ -670,7 +682,7 @@ class AccountAuthHelpersTest {
 
     @Test
     fun accountAuthState_submitEmailLink_clearsInputFocus() = kotlinx.coroutines.test.runTest {
-        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
         val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
         val fakeRepo = TestAuthRepository()
 

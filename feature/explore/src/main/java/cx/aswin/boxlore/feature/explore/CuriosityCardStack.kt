@@ -75,7 +75,7 @@ fun CuriosityCardStack(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "No more curiosities for today!",
+                text = stringResource(R.string.lore_deck_empty),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

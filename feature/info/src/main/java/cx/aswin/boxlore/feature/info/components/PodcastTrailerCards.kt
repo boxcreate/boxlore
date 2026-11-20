@@ -40,16 +40,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
+import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.logic.FeedItem
+import java.util.Locale
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -109,7 +115,7 @@ private fun SingleTrailerContent(
             .fillMaxWidth()
             .expressiveClickable(
                 shape = RoundedCornerShape(24.dp),
-                onLongClickLabel = "Select episode",
+                onLongClickLabel = stringResource(R.string.podcast_episode_select),
                 onLongClick = { selection.onLongPress(episode) },
                 onClick = {
                     if (selection.isActive) selection.onToggle(episode) else onEpisodeClick(episode, globalIndex)
@@ -214,16 +220,16 @@ private fun TrailerStackHeader(
             }
             Column {
                 Text(
-                    text = "Promotional Trailers",
+                    text = stringResource(R.string.podcast_info_trailers_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = GoogleSansWeight.bold,
                 )
                 Text(
                     text =
                     if (selectedCount > 0) {
-                        "$selectedCount of $trailerCount selected"
+                        pluralStringResource(R.plurals.podcast_info_trailers_selected, trailerCount, selectedCount, trailerCount)
                     } else {
-                        "$trailerCount trailers"
+                        pluralStringResource(R.plurals.podcast_info_trailers_count, trailerCount, trailerCount)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -232,7 +238,7 @@ private fun TrailerStackHeader(
         }
         Icon(
             imageVector = if (isExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
-            contentDescription = if (isExpanded) "Collapse" else "Expand",
+            contentDescription = stringResource(if (isExpanded) R.string.podcast_info_trailers_collapse else R.string.podcast_info_trailers_expand),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
@@ -290,7 +296,7 @@ private fun TrailerStackRow(
                 .background(if (isSelected) selected.container else Color.Transparent)
                 .expressiveClickable(
                     shape = RoundedCornerShape(24.dp),
-                    onLongClickLabel = "Select episode",
+                    onLongClickLabel = stringResource(R.string.podcast_episode_select),
                     onLongClick = { selection.onLongPress(episode) },
                     onClick = {
                         if (selection.isActive) selection.onToggle(episode) else onEpisodeClick(episode, globalIndex)
@@ -370,7 +376,7 @@ private fun trailerLeadVisuals(
         TrailerLeadVisuals(
             containerColor = MaterialTheme.colorScheme.primary,
             icon = Icons.Rounded.Check,
-            contentDescription = "Selected",
+            contentDescription = stringResource(R.string.podcast_episode_selected),
             iconTint = MaterialTheme.colorScheme.onPrimary,
         )
     selectionActive ->
@@ -384,21 +390,21 @@ private fun trailerLeadVisuals(
         TrailerLeadVisuals(
             containerColor = MaterialTheme.colorScheme.primary,
             icon = Icons.Rounded.Pause,
-            contentDescription = "Pause",
+            contentDescription = stringResource(R.string.episode_info_pause),
             iconTint = MaterialTheme.colorScheme.onPrimary,
         )
     playback.isResume ->
         TrailerLeadVisuals(
             containerColor = MaterialTheme.colorScheme.primary,
             icon = Icons.Rounded.PlayArrow,
-            contentDescription = "Play",
+            contentDescription = stringResource(R.string.episode_info_play),
             iconTint = MaterialTheme.colorScheme.onPrimary,
         )
     else ->
         TrailerLeadVisuals(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
             icon = Icons.Rounded.PlayArrow,
-            contentDescription = "Play",
+            contentDescription = stringResource(R.string.episode_info_play),
             iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 }
@@ -425,7 +431,7 @@ private fun TrailerSummary(
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 ) {
                     Text(
-                        text = "Trailer",
+                        text = stringResource(R.string.episode_info_trailer),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = GoogleSansWeight.bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -436,7 +442,7 @@ private fun TrailerSummary(
             }
             if (!showBadge || episode.duration > 0) {
                 Text(
-                    text = trailerDurationText(episode),
+                    text = trailerDurationText(episode, stringResource(R.string.episode_info_trailer), currentLocale()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -449,12 +455,9 @@ private fun TrailerSummary(
 private fun trailerBorder(isSelected: Boolean): BorderStroke? =
     if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
 
-private fun trailerDurationText(episode: Episode): String {
-    if (episode.duration <= 0) return "Trailer"
-    val hours = episode.duration / 3600
-    val minutes = (episode.duration % 3600) / 60
-    return if (hours > 0) "${hours}hr ${minutes}min" else "${minutes}min"
-}
+/** The trailer's length ("2 min"), or [trailer] when the feed gives none. */
+private fun trailerDurationText(episode: Episode, trailer: String, locale: Locale): String =
+    if (episode.duration <= 0) trailer else LocaleFormats.duration(episode.duration.toLong(), locale, LocaleFormats.DurationWidth.SHORT)
 
 @Composable
 fun EpisodePlayStateWrapper(

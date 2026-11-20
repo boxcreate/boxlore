@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+// i18n-ignore-file: no screen shows this avatar today; translate its words if it comes back.
+
 import androidx.compose.ui.graphics.Color
 import kotlin.random.Random
 

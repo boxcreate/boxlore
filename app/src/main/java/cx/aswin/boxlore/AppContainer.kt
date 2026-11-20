@@ -128,6 +128,9 @@ class AppContainer(
 
     private val syncScope = applicationScope
     val appUpdates by lazy { cx.aswin.boxlore.updates.createAppUpdates(appContext, syncScope) }
+
+    /** The App language: Settings › Appearance and onboarding's first question. */
+    val appLanguage by lazy { cx.aswin.boxlore.language.AppLanguageController(appContext) }
     private val legacyRssRepairLaunchDecision =
         runCatching {
             @Suppress("DEPRECATION")

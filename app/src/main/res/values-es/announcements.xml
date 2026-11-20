@@ -1,0 +1,20 @@
+<resources>
+    <string name="announcement_open">Abrir</string>
+    <string name="announcement_close">Cerrar anuncio</string>
+    <string name="announcement_dismiss">Descartar</string>
+    <string name="announcement_download">Descargar actualización</string>
+    <string name="announcement_github">Ver en GitHub</string>
+    <string name="announcement_play">Actualizar en Google Play</string>
+    <string name="updates_test_build">Actualizar versión de prueba. Las actualizaciones vienen del feed de prueba local de este teléfono.</string>
+    <!-- Android Auto tip for installs that didn't come from Google Play -->
+    <string name="android_auto_tip_title">Usa boxlore en tu auto</string>
+    <string name="android_auto_tip_body">boxlore funciona con Android Auto. Si lo instalaste desde GitHub u otra tienda, Android Auto lo oculta hasta que actives un ajuste:\n- Abre **Ajustes** en tu teléfono y busca **Android Auto**\n- Desplázate hasta el final y toca **Versión** unas 10 veces; luego toca **Aceptar**\n- Toca el menú **⋮** y abre **Configuración para desarrolladores**\n- Activa **Fuentes desconocidas** y vuelve a conectar tu auto</string>
+    <string name="android_auto_tip_action">Muéstrame cómo</string>
+    <string name="android_auto_tip_notification_title">¿Quieres boxlore en tu auto?</string>
+    <string name="android_auto_tip_notification_text">Android Auto oculta boxlore hasta que actives un ajuste. Toca para ver cómo.</string>
+
+    <!-- Full-screen Android Auto announcement. The line above the Android Auto logo, set in spaced small letters. -->
+    <string name="app_feature_announcement_auto_kicker">ya funciona con</string>
+    <string name="app_feature_announcement_auto_body">boxlore ya se reproduce en Android Auto. Escucha con manos libres mientras conduces.</string>
+    <string name="app_feature_announcement_continue">Continuar</string>
+</resources>

@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Home -->
+    <string name="wear_home_ready">Listo cuando quieras</string>
+    <string name="wear_home_on_phone">En el teléfono</string>
+    <!-- Where it is playing or that it is paused, then the time left: "On phone · 29 min left". -->
+    <string name="wear_home_state_and_time">%1$s · %2$s</string>
+    <string name="wear_home_paused">En pausa</string>
+    <string name="wear_your_shows">Tus podcasts</string>
+    <string name="wear_jump_back_in">Retomar</string>
+    <string name="wear_new_episodes">Episodios nuevos</string>
+    <string name="wear_search">Buscar</string>
+    <string name="wear_daily_mix">Mezcla diaria</string>
+    <string name="wear_downloads">Descargas</string>
+    <string name="wear_settings">Ajustes</string>
+    <string name="wear_up_next">A continuación</string>
+    <!-- Read aloud for the playing episode on Home: the episode's title, the show's name, then what a tap does. -->
+    <string name="wear_now_playing_label">%1$s. %2$s. Abrir reproductor</string>
+
+    <!-- Episode and show details -->
+    <string name="wear_minutes">%1$d min</string>
+    <string name="wear_minutes_left">Quedan %1$d min</string>
+    <string name="wear_date_and_minutes">%1$s · %2$s</string>
+    <plurals name="wear_new_episode_count">
+        <item quantity="one">%1$d episodio nuevo</item>
+        <item quantity="many">%1$d episodios nuevos</item>
+        <item quantity="other">%1$d episodios nuevos</item>
+    </plurals>
+    <!-- Read aloud for a show in Your shows: the show's name, then how many new episodes it has ("3 new episodes"). -->
+    <string name="wear_show_with_new_episodes">%1$s, %2$s</string>
+    <!-- File sizes on small screens; %1$s is the number already formatted for the language. -->
+    <string name="wear_size_megabytes">%1$s MB</string>
+    <string name="wear_size_gigabytes">%1$s GB</string>
+    <string name="wear_downloads_usage">En este reloj · %1$s de %2$s</string>
+    <string name="wear_over_limit_title">No hay espacio suficiente</string>
+    <string name="wear_over_limit_body">Este episodio supera tu límite de almacenamiento. Súbelo en Ajustes.</string>
+    <string name="wear_watch_full_title">El almacenamiento del reloj está lleno</string>
+    <string name="wear_watch_full_body">Libera espacio en tu reloj y vuelve a intentarlo.</string>
+    <string name="wear_downloaded">Descargado</string>
+    <string name="wear_downloading">Descargando</string>
+    <string name="wear_subscribe">Seguir</string>
+    <string name="wear_subscribed">Siguiendo</string>
+    <string name="wear_play">Reproducir</string>
+    <string name="wear_pause">Pausar</string>
+    <string name="wear_resume">Reanudar</string>
+    <!-- The tile's button when nothing is in progress. -->
+    <string name="wear_tile_open">Abrir</string>
+    <!-- Read aloud for the watch-face shortcut: the episode, then its time left. -->
+    <string name="wear_complication_description">boxlore: %1$s, %2$s</string>
+    <string name="wear_download">Descargar</string>
+    <string name="wear_percent">%1$d%%</string>
+    <string name="wear_downloading_percent">Descargando, %1$s. Detener y quitar</string>
+    <string name="wear_downloaded_remove">Descargado. Quitar descarga</string>
+    <string name="wear_remove_download_title">¿Quitar la descarga?</string>
+    <string name="wear_remove_download_body">Puedes volver a descargarlo después.</string>
+    <string name="wear_play_next">Siguiente</string>
+    <string name="wear_played">Escuchado</string>
+    <string name="wear_mark_played">Marcar como escuchado</string>
+
+    <!-- Player -->
+    <plurals name="wear_seek_back">
+        <item quantity="one">Atrás %1$d segundo</item>
+        <item quantity="many">Atrás %1$d segundos</item>
+        <item quantity="other">Atrás %1$d segundos</item>
+    </plurals>
+    <plurals name="wear_seek_forward">
+        <item quantity="one">Adelante %1$d segundo</item>
+        <item quantity="many">Adelante %1$d segundos</item>
+        <item quantity="other">Adelante %1$d segundos</item>
+    </plurals>
+    <string name="wear_volume">Volumen</string>
+    <string name="wear_could_not_play">No se pudo reproducir. Revisa tu conexión.</string>
+    <string name="wear_more_controls">Más controles</string>
+    <string name="wear_playback_speed">Velocidad</string>
+    <string name="wear_speed_value">%1$s×</string>
+    <string name="wear_speed_slower">Más lento</string>
+    <string name="wear_speed_faster">Más rápido</string>
+    <string name="wear_sleep_timer">Temporizador</string>
+    <string name="wear_sleep_off">Desactivado</string>
+    <string name="wear_sleep_minutes">%1$d min</string>
+    <string name="wear_sleep_hours">%1$d h</string>
+    <string name="wear_sleep_end_of_episode">Al final del episodio</string>
+    <string name="wear_play_on_phone">En el teléfono</string>
+    <string name="wear_play_on_watch">En el reloj</string>
+    <!-- Shown above the two choices when Play is pressed on the watch while the phone is playing. -->
+    <string name="wear_phone_is_playing">Tu teléfono está reproduciendo</string>
+
+    <!-- Search -->
+    <string name="wear_search_title">Buscar podcasts</string>
+    <string name="wear_search_query">«%1$s»</string>
+    <string name="wear_search_no_results">Sin resultados</string>
+    <string name="wear_search_no_results_body">Prueba con otras palabras.</string>
+    <string name="wear_no_connection">Sin conexión</string>
+    <string name="wear_no_connection_body">Para buscar necesitas Wi-Fi o tener el teléfono cerca. Tus descargas siguen funcionando.</string>
+
+    <!-- Empty lists -->
+    <string name="wear_shows_empty">Aún no hay podcasts</string>
+    <string name="wear_shows_empty_body">Sigue podcasts en tu teléfono o búscalos aquí.</string>
+    <string name="wear_jump_back_in_empty">Nada en curso</string>
+    <string name="wear_jump_back_in_empty_body">Aquí aparecen los episodios que empiezas.</string>
+    <string name="wear_new_episodes_empty">No hay episodios nuevos</string>
+    <string name="wear_downloads_empty">Aún no hay descargas</string>
+    <string name="wear_downloads_empty_body">Descarga un episodio para escucharlo sin el teléfono.</string>
+    <string name="wear_up_next_empty">Nada a continuación</string>
+    <string name="wear_episodes_empty">Aún no hay episodios</string>
+    <string name="wear_episodes_loading">Cargando episodios</string>
+    <string name="wear_episodes_failed">No se pudieron cargar los episodios</string>
+    <string name="wear_show_failed">No se pudo cargar este podcast</string>
+    <string name="wear_load_failed_body">Revisa tu conexión o acerca tu teléfono.</string>
+    <string name="wear_try_again">Reintentar</string>
+
+    <!-- Settings -->
+    <string name="wear_shows_layout">Diseño de tus podcasts</string>
+    <string name="wear_storage_limit">Límite de almacenamiento</string>
+    <string name="wear_account">Cuenta</string>
+    <string name="wear_account_sign_in">Iniciar sesión con el teléfono</string>
+    <string name="wear_account_signing_in">Iniciando sesión…</string>
+    <string name="wear_account_sign_in_detail">Sincroniza podcasts y escuchas</string>
+    <string name="wear_account_signed_in">Sesión iniciada</string>
+    <string name="wear_account_signed_out">Sin sesión iniciada</string>
+    <string name="wear_account_syncing">Sincronizando con tu cuenta</string>
+    <string name="wear_account_sign_out">Cerrar sesión</string>
+    <string name="wear_account_sign_out_detail">Tus podcasts se quedan en este reloj</string>
+    <string name="wear_account_phone_away">Tu teléfono no está al alcance. Acércalo y vuelve a intentarlo.</string>
+    <string name="wear_account_phone_signed_out">Primero inicia sesión en boxlore en tu teléfono.</string>
+    <string name="wear_account_failed">No se pudo iniciar sesión. Vuelve a intentarlo.</string>
+    <string name="wear_shows_layout_honeycomb">Panal</string>
+    <string name="wear_shows_layout_list">Lista</string>
+</resources>

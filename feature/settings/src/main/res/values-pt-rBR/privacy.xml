@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Privacy page title -->
+    <string name="settings_privacy_title">Privacidade</string>
+    <!-- Card title and action on the Privacy page -->
+    <!-- Button that resets recommendations -->
+    <!-- Button, keep short -->
+    <!-- Button that hides the analytics ID panel -->
+    <!-- Button that shows the analytics ID panel -->
+    <!-- Screen-reader label for the copy button -->
+</resources>

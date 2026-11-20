@@ -11,6 +11,7 @@ import cx.aswin.boxlore.core.model.EpisodeShareTargetSource
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.ShareLinkBuilder
 import cx.aswin.boxlore.core.model.ShareTarget
+import cx.aswin.boxlore.core.model.text.displayLocale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -27,7 +28,7 @@ object ShareManager {
         val text = ShareCardText(
             title = podcast.title,
             subtitle = podcast.artist,
-            details = sharePodcastDetails(podcast.effectiveGenre, podcast.updateFrequency),
+            details = sharePodcastDetails(podcast.effectiveGenre, podcast.updateFrequency, context.resources),
         )
         shareWithCompositeImage(
             context = context,
@@ -64,7 +65,7 @@ object ShareManager {
                 title = episode.title,
                 subtitle = podcastTitle,
                 moment = shareMomentLabel(context, moment),
-                details = shareEpisodeDetails(episode.duration, episode.publishedDate),
+                details = shareEpisodeDetails(episode.duration, episode.publishedDate, locale = context.displayLocale()),
             )
             shareWithCompositeImage(
                 context = context,

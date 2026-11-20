@@ -2,6 +2,8 @@ package cx.aswin.boxlore.feature.library.subscriptions
 
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.text.UiText
+import java.util.Locale
 
 internal suspend fun scoreLatestIfNeeded(
     useSmartRank: Boolean,
@@ -23,8 +25,9 @@ internal fun sortLatestDisplayPodcasts(
 internal fun groupLatestByDateHeader(
     podcasts: List<Podcast>,
     useSmartRank: Boolean,
-): Map<String, List<Podcast>> = if (useSmartRank) {
+    locale: Locale,
+): Map<UiText, List<Podcast>> = if (useSmartRank) {
     emptyMap()
 } else {
-    podcasts.groupBy { getChronologicalHeader(it.latestEpisode!!.publishedDate) }
+    podcasts.groupBy { getChronologicalHeader(it.latestEpisode!!.publishedDate, locale) }
 }

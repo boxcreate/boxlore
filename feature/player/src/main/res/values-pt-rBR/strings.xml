@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared player actions and labels -->
+    <string name="player_close">Fechar</string>
+    <string name="player_dismiss">Dispensar</string>
+    <string name="player_share">Compartilhar</string>
+    <string name="player_undo">Desfazer</string>
+    <string name="player_chapters">Capítulos</string>
+    <string name="player_transcript">Transcrição</string>
+    <string name="player_queue">Fila</string>
+    <string name="player_off">Desativado</string>
+    <string name="player_on">Ativado</string>
+    <string name="player_playing">Tocando</string>
+    <string name="player_paused">Pausado</string>
+    <string name="player_loading">Carregando</string>
+    <string name="player_playback_speed">Velocidade de reprodução</string>
+    <string name="player_episode_artwork">Arte do episódio</string>
+    <!-- Content description of the show's artwork in the player hero -->
+    <string name="player_album_art">Arte do podcast</string>
+    <!-- Content description of the next episode's artwork peeking beside the current one. %1$s: episode title -->
+    <string name="player_hero_up_next">A seguir: %1$s</string>
+    <string name="player_show_artwork">Arte do podcast</string>
+
+    <!-- Chapters sheet -->
+    <string name="player_no_chapters">Nenhum capítulo disponível</string>
+
+    <!-- Transcript -->
+    <!-- Toggle that keeps the transcript scrolled to the spoken line -->
+    <string name="player_transcript_sync_scroll">Rolagem sincronizada</string>
+    <!-- Phone inline transcript; the tablet pane uses player_open_fullscreen_transcript -->
+    <string name="player_inline_open_fullscreen_transcript">Abrir transcrição em tela cheia</string>
+
+    <!-- Full player top bar -->
+    <string name="player_collapse">Recolher player</string>
+    <!-- One-time tip in place of "Now playing" -->
+    <string name="player_swipe_down_tip">Deslize para baixo para minimizar</string>
+    <!-- Accessibility label of the bar that opens the full player -->
+    <string name="player_open_player">Abrir player</string>
+
+    <!-- Hero and video -->
+    <string name="player_swipe_next_episode">Deslize para o próximo episódio</string>
+    <string name="player_switch_to_video">Mudar para vídeo</string>
+    <string name="player_audio_only">Só áudio</string>
+    <string name="player_fullscreen">Tela cheia</string>
+    <string name="player_exit_fullscreen">Sair da tela cheia</string>
+    <string name="player_toggle_orientation">Girar orientação</string>
+
+    <!-- Quick actions under the transport controls; short, shown under icons -->
+    <string name="player_speed_trim_on">%1$s, cortar silêncio ativado</string>
+    <string name="player_like">Curtir</string>
+    <string name="player_liked">Curtido</string>
+    <string name="player_complete">Concluir</string>
+    <string name="player_played">Ouvido</string>
+    <string name="player_download">Baixar</string>
+    <string name="player_downloading">Salvando</string>
+    <string name="player_downloaded">Salvo</string>
+    <string name="player_back_to_quick_actions">Voltar às ações rápidas</string>
+    <string name="player_slower">Mais lento</string>
+    <string name="player_faster">Mais rápido</string>
+    <!-- Sleep quick action; short -->
+    <string name="player_sleep">Timer</string>
+    <!-- Sleep at end of episode, short chip label -->
+    <string name="player_sleep_end">Fim</string>
+    <string name="player_sleep_end_of_episode">Fim do episódio</string>
+
+    <!-- Speed and trim silence controls -->
+    <string name="player_trim_silence">Cortar silêncio</string>
+    <string name="player_trim_silence_hint">Pular pausas longas</string>
+    <string name="player_not_available_casting">Indisponível durante a transmissão</string>
+    <!-- %1$s: show title -->
+    <string name="player_saved_for_show">Salvo para %1$s</string>
+    <string name="player_saved_for_this_show">Salvo para este podcast</string>
+    <string name="player_use_app_speed">Usar a velocidade do app</string>
+    <string name="player_speed_saved_for_show">Velocidade salva para este podcast</string>
+    <!-- Accessibility label of a tile. %1$s: title, %2$s: subtitle -->
+    <string name="player_tile_description">%1$s, %2$s</string>
+
+    <!-- Up next card and show notes -->
+    <string name="player_view_queue">Ver fila</string>
+    <string name="player_play_next_episode">Tocar próximo episódio</string>
+    <string name="player_show_notes">Notas do episódio</string>
+    <string name="player_episode_details">Detalhes do episódio</string>
+    <string name="player_read_more">Ler mais</string>
+    <string name="player_show_less">Mostrar menos</string>
+
+    <!-- Queue sheet -->
+    <string name="player_queue_title">A seguir</string>
+    <string name="player_close_queue">Fechar fila</string>
+    <string name="player_queue_empty">A fila está vazia</string>
+    <string name="player_smart_queue_off">A Fila inteligente está desativada, então nada é adicionado automaticamente.</string>
+    <string name="player_turn_on">Ativar</string>
+    <string name="player_unknown_podcast">Podcast desconhecido</string>
+    <!-- Fallback show title when a queued episode has none -->
+    <string name="player_unknown_show">Desconhecido</string>
+    <string name="player_remove_from_queue">Remover da fila</string>
+    <string name="player_reorder">Reordenar</string>
+    <string name="player_removed_from_queue">Removido da fila</string>
+
+    <!-- Why an episode is in the queue; one short line under the show name -->
+    <string name="player_queue_source_lore">Do Lore</string>
+    <string name="player_queue_source_same_podcast">Continuação da série</string>
+    <string name="player_queue_source_resume">Continue de onde parou</string>
+    <string name="player_queue_source_resume_stale">Recomeçando</string>
+    <string name="player_queue_source_subscription">Dos podcasts que você segue</string>
+    <string name="player_queue_source_recommended">Recomendado para você</string>
+    <string name="player_queue_source_similar_episode">Com base no que você está ouvindo</string>
+    <string name="player_queue_source_similar_liked">Com base em algo que você curtiu</string>
+    <!-- %1$s: genre name -->
+    <string name="player_queue_source_trending_in">Em alta em %1$s</string>
+    <string name="player_queue_source_trending">Em alta agora</string>
+    <string name="player_queue_source_added">Adicionado para você</string>
+
+    <!-- Banner above Up next offering the rest of the same show -->
+    <!-- %1$s: show title -->
+    <string name="player_same_show_title">Continuar %1$s?</string>
+    <string name="player_same_show_title_fallback">Continuar este podcast?</string>
+    <string name="player_same_show_explanation">Pulamos episódios mais novos deste podcast porque você o ouviu pelas recomendações.</string>
+    <string name="player_same_show_hide_preview">Ocultar prévia</string>
+
+    <!-- Cast -->
+    <string name="player_cast">Transmitir</string>
+    <string name="player_change_cast_device">Trocar dispositivo de transmissão</string>
+    <string name="player_show_cast_controls">Mostrar controles de transmissão</string>
+    <!-- Section header; shown in capitals -->
+    <string name="player_cast_available_devices">Dispositivos disponíveis</string>
+    <string name="player_cast_this_phone">Este celular</string>
+    <string name="player_cast_move_back_here">Trazer a reprodução de volta para cá</string>
+    <string name="player_cast_same_wifi">Os dispositivos precisam estar na mesma rede Wi‑Fi.</string>
+    <string name="player_cast_choose_where">Escolha onde ouvir</string>
+    <string name="player_cast_connecting">Conectando…</string>
+    <!-- %1$s: Cast device name -->
+    <string name="player_cast_connecting_to">Conectando a %1$s…</string>
+    <string name="player_cast_looking">Procurando dispositivos por perto…</string>
+    <string name="player_cast_awake">Confira se o seu dispositivo de transmissão está ligado.</string>
+    <string name="player_cast_connected">Conectado</string>
+    <string name="player_cast_ready">Pronto para transmitir</string>
+    <!-- Hero label above the device name; shown in capitals -->
+    <string name="player_cast_playing_on">Tocando em</string>
+    <string name="player_cast_change_device">Trocar dispositivo</string>
+    <!-- Short label under a button -->
+    <string name="player_cast_device">Dispositivo</string>
+    <string name="player_next_episode">Próximo episódio</string>
+    <!-- Short label under a button -->
+    <string name="player_next">Próximo</string>
+    <string name="player_stop_casting">Parar transmissão</string>
+    <!-- Short label under a button -->
+    <string name="player_stop">Parar</string>
+    <!-- Fallback when the Cast device has no name -->
+    <string name="player_cast_device_fallback">Dispositivo de transmissão</string>
+    <!-- %1$s: Cast device name -->
+    <string name="player_casting_to">Transmitindo para %1$s</string>
+    <!-- Mini player state for accessibility. %1$s: Playing/Paused/Loading, %2$s: device name -->
+    <string name="player_state_casting_to">%1$s, transmitindo para %2$s</string>
+
+    <!-- Mini player -->
+    <!-- %1$s: remaining duration, such as 23m or 1h 5m -->
+    <string name="player_mini_time_left">Faltam %1$s</string>
+    <string name="player_mini_swipe_to_dismiss">← Deslize para dispensar →</string>
+</resources>

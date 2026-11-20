@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -46,12 +47,11 @@ import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,8 +82,8 @@ fun LearnHistoryScreen(
         TrackScreenView("learn_history_clear_confirmation")
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
-            title = { Text("Clear card history?") },
-            text = { Text("This removes your swiped and queued cards from history. It does not affect listening history.") },
+            title = { Text(stringResource(R.string.lore_history_clear_title)) },
+            text = { Text(stringResource(R.string.lore_history_clear_body)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -91,12 +91,12 @@ fun LearnHistoryScreen(
                         showClearDialog = false
                     }
                 ) {
-                    Text("Clear")
+                    Text(stringResource(R.string.lore_history_clear_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showClearDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.lore_history_cancel))
                 }
             }
         )
@@ -118,14 +118,14 @@ fun LearnHistoryScreen(
                         modifier = Modifier.align(Alignment.CenterStart)
                     ) {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.explore_back))
                         }
                     }
                     androidx.compose.foundation.Image(
                         painter = androidx.compose.ui.res.painterResource(
                             id = cx.aswin.boxlore.core.designsystem.R.drawable.logo_lore
                         ),
-                        contentDescription = "Lore",
+                        contentDescription = stringResource(R.string.lore_name),
                         colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
                             MaterialTheme.colorScheme.primary
                         ),
@@ -143,7 +143,7 @@ fun LearnHistoryScreen(
                             modifier = Modifier.align(Alignment.CenterEnd)
                         ) {
                             IconButton(onClick = { showClearDialog = true }) {
-                                Icon(Icons.Rounded.ClearAll, contentDescription = "Clear history")
+                                Icon(Icons.Rounded.ClearAll, contentDescription = stringResource(R.string.lore_history_clear))
                             }
                         }
                     }
@@ -194,13 +194,13 @@ fun LearnHistoryScreen(
                                     )
                                 ) {
                                     Text(
-                                        text = "Your Lore history",
+                                        text = stringResource(R.string.lore_history_title),
                                         style = MaterialTheme.typography.headlineMedium,
                                         fontWeight = GoogleSansWeight.bold
                                     )
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Text(
-                                        text = "Questions you dismissed or queued, ready to rediscover.",
+                                        text = stringResource(R.string.lore_history_subtitle),
                                         style = MaterialTheme.typography.bodyLarge,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -254,7 +254,7 @@ private fun LearnHistoryEmptyState(modifier: Modifier = Modifier) {
                 }
                 Spacer(modifier = Modifier.height(20.dp))
                 Text(
-                    text = "No Lore to revisit yet",
+                    text = stringResource(R.string.lore_history_empty_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = GoogleSansWeight.bold,
                     textAlign = TextAlign.Center,
@@ -262,7 +262,7 @@ private fun LearnHistoryEmptyState(modifier: Modifier = Modifier) {
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = "Questions you dismiss or queue will wait here, ready for another look.",
+                    text = stringResource(R.string.lore_history_empty_body),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -281,14 +281,15 @@ private fun LearnHistoryRow(
 ) {
     val imageUrl = loreArtworkSources(entry.imageUrl, entry.feedImage).firstOrNull()
     val actionLabel = when (entry.action) {
-        LearnHistoryAction.DISMISS -> "Dismissed"
-        LearnHistoryAction.QUEUE -> "Queued"
+        LearnHistoryAction.DISMISS -> stringResource(R.string.lore_history_dismissed)
+        LearnHistoryAction.QUEUE -> stringResource(R.string.lore_history_queued)
     }
-    val dateLabel = remember(entry.dismissedAtMs) {
+    val locale = currentLocale()
+    val dateLabel = remember(entry.dismissedAtMs, locale) {
         if (entry.dismissedAtMs <= 0L) {
             ""
         } else {
-            SimpleDateFormat("MMM d", Locale.getDefault()).format(Date(entry.dismissedAtMs))
+            LocaleFormats.date(entry.dismissedAtMs, LocaleFormats.DateStyle.DAY_MONTH, locale)
         }
     }
 
@@ -362,7 +363,7 @@ private fun LearnHistoryRow(
             }
             Spacer(modifier = Modifier.width(8.dp))
             androidx.compose.material3.FilledTonalIconButton(onClick = onRestore) {
-                Icon(Icons.AutoMirrored.Rounded.Undo, contentDescription = "Restore card")
+                Icon(Icons.AutoMirrored.Rounded.Undo, contentDescription = stringResource(R.string.lore_history_restore))
             }
         }
     }

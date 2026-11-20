@@ -46,4 +46,79 @@
     <string name="lore_button_play">Play</string>
     <string name="lore_button_resume">Resume</string>
     <string name="lore_button_pause">Pause</string>
+    <!-- Explore error state; %1$s is the error detail. -->
+    <string name="explore_error_message">Error: %1$s</string>
+    <string name="explore_change_region">Change content region</string>
+    <string name="explore_search_results">Search results</string>
+    <string name="explore_video_badge">Video</string>
+    <string name="explore_taste_growing_title">Your Taste Profile is Growing</string>
+    <string name="explore_taste_growing_body">As you listen to more episodes and subscribe to shows, we\'ll curate personalized recommendations here tailored to your taste.</string>
+    <!-- Top tab heading with no genre picked. -->
+    <string name="explore_top_charts">Top charts</string>
+    <!-- Top tab heading for a genre; %1$s is the genre name, e.g. "Top in Technology". -->
+    <string name="explore_top_in_genre">Top in %1$s</string>
+    <string name="explore_genre_browse_title">Browse Genres</string>
+    <!-- Genre chip that clears the genre filter. Short: shown in a chip. -->
+    <string name="explore_genre_all">All</string>
+    <!-- Chip that opens the full genre list. Short: shown in a chip. -->
+    <string name="explore_genre_more">More</string>
+    <!-- Genre chip labels: short, shown in chips. -->
+    <string name="explore_genre_news">News</string>
+    <string name="explore_genre_tech">Tech</string>
+    <string name="explore_genre_business">Business</string>
+    <string name="explore_genre_comedy">Comedy</string>
+    <string name="explore_genre_true_crime">True Crime</string>
+    <string name="explore_genre_sports">Sports</string>
+    <string name="explore_genre_health">Health</string>
+    <string name="explore_genre_history">History</string>
+    <string name="explore_genre_arts">Arts</string>
+    <string name="explore_genre_society">Society</string>
+    <string name="explore_genre_education">Education</string>
+    <string name="explore_genre_science">Science</string>
+    <string name="explore_genre_tv_film">TV &amp; Film</string>
+    <string name="explore_genre_fiction">Fiction</string>
+    <string name="explore_genre_music">Music</string>
+    <string name="explore_genre_religion">Religion</string>
+    <string name="explore_genre_family">Family</string>
+    <string name="explore_genre_leisure">Leisure</string>
+    <string name="explore_genre_govt">Govt</string>
+    <!-- Full genre names, used in the "Top in %1$s" heading where the chip label is shortened. -->
+    <string name="explore_genre_name_technology">Technology</string>
+    <string name="explore_genre_name_society">Society &amp; Culture</string>
+    <string name="explore_genre_name_religion">Religion &amp; Spirituality</string>
+    <string name="explore_genre_name_family">Kids &amp; Family</string>
+    <string name="explore_genre_name_government">Government</string>
+    <!-- Example questions on the Ask anything search landing. -->
+    <string name="explore_concept_example_rome">Why did the Roman empire fall?</string>
+    <string name="explore_concept_example_black_holes">How do black holes actually work?</string>
+    <string name="explore_concept_example_conspiracies">Why do people believe conspiracies?</string>
+    <string name="explore_concept_example_money">How does money actually work?</string>
+    <!-- Lore is a name: never translate it. Logo description. -->
+    <string name="lore_name" translatable="false">Lore</string>
+    <string name="lore_history">Lore history</string>
+    <string name="lore_caught_up_title">You’re all caught up</string>
+    <string name="lore_caught_up_body">New curiosities arrive daily. Restore a favorite from your Lore history whenever inspiration strikes.</string>
+    <string name="lore_check_new_cards">Check for new cards</string>
+    <string name="lore_open_history">Open Lore history</string>
+    <string name="lore_error_title">Lore lost the thread</string>
+    <string name="lore_error_load_failed">Failed to load curiosity curation</string>
+    <string name="lore_error_refresh_failed">Failed to refresh curiosity curation</string>
+    <string name="lore_error_unknown">Unknown error occurred</string>
+    <!-- Artist shown for a Lore episode whose show name is missing. -->
+    <string name="lore_unknown_artist">Unknown</string>
+    <string name="lore_deck_empty">No more curiosities for today!</string>
+    <string name="lore_history_title">Your Lore history</string>
+    <string name="lore_history_subtitle">Questions you dismissed or queued, ready to rediscover.</string>
+    <string name="lore_history_empty_title">No Lore to revisit yet</string>
+    <string name="lore_history_empty_body">Questions you dismiss or queue will wait here, ready for another look.</string>
+    <string name="lore_history_clear">Clear history</string>
+    <string name="lore_history_clear_title">Clear card history?</string>
+    <string name="lore_history_clear_body">This removes your swiped and queued cards from history. It does not affect listening history.</string>
+    <string name="lore_history_clear_confirm">Clear</string>
+    <string name="lore_history_cancel">Cancel</string>
+    <string name="lore_history_restore">Restore card</string>
+    <!-- History row status: the card was swiped away. -->
+    <string name="lore_history_dismissed">Dismissed</string>
+    <!-- History row status: the card's episode was added to the queue. -->
+    <string name="lore_history_queued">Queued</string>
 </resources>

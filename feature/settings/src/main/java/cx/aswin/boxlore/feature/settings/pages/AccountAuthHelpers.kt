@@ -26,6 +26,8 @@ import androidx.credentials.exceptions.GetCredentialException
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import cx.aswin.boxlore.core.auth.AuthRepository
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.settings.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
@@ -44,7 +46,7 @@ internal data class EmailInputState(
     val email: String,
     val isSignUp: Boolean,
     val isLoading: Boolean,
-    val errorMessage: String?,
+    val errorMessage: UiText?,
 )
 
 internal data class EmailInputActions(
@@ -62,7 +64,7 @@ internal data class PasswordInputState(
     val confirmPasswordVisible: Boolean = false,
     val isSignUp: Boolean,
     val isLoading: Boolean,
-    val errorMessage: String?,
+    val errorMessage: UiText?,
 )
 
 internal data class PasswordInputActions(
@@ -113,20 +115,20 @@ internal suspend fun performGoogleSignIn(
     } catch (_: GetCredentialCancellationException) {
         return GoogleAuthOutcome.Cancelled
     } catch (e: GetCredentialException) {
-        return GoogleAuthOutcome.Failure(e.localizedMessage ?: "Google sign-in error")
+        return GoogleAuthOutcome.Failure(e.localizedMessage ?: context.getString(R.string.account_error_google))
     } catch (e: Exception) {
-        return GoogleAuthOutcome.Failure(e.localizedMessage ?: "Google sign-in timed out")
+        return GoogleAuthOutcome.Failure(e.localizedMessage ?: context.getString(R.string.account_error_google_timeout))
     }
 
     val idToken = extractGoogleIdToken(response.credential)
-        ?: return GoogleAuthOutcome.Failure("Unexpected credential received")
+        ?: return GoogleAuthOutcome.Failure(context.getString(R.string.account_error_google_credential))
 
     val result = authRepository?.signInWithGoogle(idToken)
     if (result?.isSuccess == true) {
         return GoogleAuthOutcome.Success
     }
     return GoogleAuthOutcome.Failure(
-        result?.exceptionOrNull()?.localizedMessage ?: "Google sign-in failed",
+        result?.exceptionOrNull()?.localizedMessage ?: context.getString(R.string.account_error_google_failed),
     )
 }
 
@@ -139,7 +141,7 @@ internal data class SavedAccountAuthState(
     val passwordVisible: Boolean = false,
     val confirmPasswordVisible: Boolean = false,
     val magicLinkSent: Boolean = false,
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
     val isAwaitingVerification: Boolean = false,
     val resendCooldownSeconds: Int = 0,
     val methodChosen: Boolean = false,
@@ -171,7 +173,7 @@ internal class AccountAuthState(
     val isAnyLoading: Boolean get() = isGoogleLoading || isEmailLoading
 
     var magicLinkSent by mutableStateOf(initialState.magicLinkSent)
-    var errorMessage by mutableStateOf<String?>(initialState.errorMessage)
+    var errorMessage by mutableStateOf<UiText?>(initialState.errorMessage)
 
     var isAwaitingVerification by mutableStateOf(
         initialState.isAwaitingVerification ||
@@ -245,12 +247,12 @@ internal class AccountAuthState(
         val trimmedEmail = email.trim()
         email = trimmedEmail
         if (trimmedEmail.isBlank()) {
-            errorMessage = "Please enter your email address"
+            errorMessage = UiText.res(R.string.account_error_enter_email)
             return
         }
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSettingsInteraction("account_sign_in_email_link")
         if (!isValidEmail(trimmedEmail)) {
-            errorMessage = ERROR_INVALID_EMAIL
+            errorMessage = UiText.res(ERROR_INVALID_EMAIL)
             return
         }
         focusManager.clearFocus()
@@ -316,7 +318,7 @@ internal class AccountAuthState(
             isEmailLoading = false
             isAwaitingVerification = false
             AccountVerificationStorage.setPref(context, false)
-            showAccountToast(context, "Signed in!")
+            showAccountToast(context, context.getString(R.string.account_toast_signed_in))
         }
     }
 
@@ -384,14 +386,14 @@ internal class AccountAuthState(
                     cooldownJob?.cancel()
                     resendCooldownSeconds = 0
                     errorMessage = null
-                    showAccountToast(context, "Email verified! Welcome to boxlore.")
+                    showAccountToast(context, context.getString(R.string.account_toast_email_verified))
                     onSuccess()
                 } else if (!silentOnFailure) {
                     val error = result?.exceptionOrNull()
                     if (error != null) {
                         errorMessage = cleanAccountError(error.localizedMessage)
                     } else {
-                        errorMessage = "We haven't received verification yet. Please tap the link in your email and try again."
+                        errorMessage = UiText.res(R.string.account_error_not_verified_yet)
                     }
                 }
             } finally {
@@ -409,7 +411,7 @@ internal class AccountAuthState(
             isEmailLoading = false
             if (result?.isSuccess == true) {
                 startResendCooldownTimer(30)
-                showAccountToast(context, "Verification email resent")
+                showAccountToast(context, context.getString(R.string.account_toast_verification_resent))
             } else {
                 errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage)
             }
@@ -444,11 +446,11 @@ internal class AccountAuthState(
                 GoogleAuthOutcome.Success -> {
                     isAwaitingVerification = false
                     AccountVerificationStorage.setPref(context, false)
-                    showAccountToast(context, "Signed in with Google!")
+                    showAccountToast(context, context.getString(R.string.account_toast_signed_in_google))
                 }
                 GoogleAuthOutcome.Cancelled -> Unit
                 is GoogleAuthOutcome.Failure -> {
-                    errorMessage = outcome.message
+                    errorMessage = UiText.raw(outcome.message)
                 }
             }
             isGoogleLoading = false
@@ -459,20 +461,20 @@ internal class AccountAuthState(
         val trimmedEmail = email.trim()
         email = trimmedEmail
         if (trimmedEmail.isBlank()) {
-            errorMessage = "Enter your email address above to reset password"
+            errorMessage = UiText.res(R.string.account_error_reset_needs_email)
             return
         }
         if (!isValidEmail(trimmedEmail)) {
-            errorMessage = ERROR_INVALID_EMAIL
+            errorMessage = UiText.res(ERROR_INVALID_EMAIL)
             return
         }
         focusManager.clearFocus()
         scope.launch {
             val result = authRepository?.sendPasswordReset(trimmedEmail)
             if (result?.isSuccess == true) {
-                showAccountToast(context, "Password reset email sent")
+                showAccountToast(context, context.getString(R.string.account_toast_reset_sent))
             } else {
-                errorMessage = result?.exceptionOrNull()?.localizedMessage ?: "Failed to send reset email"
+                errorMessage = result?.exceptionOrNull()?.localizedMessage?.let(UiText::raw) ?: UiText.res(R.string.account_error_reset_failed)
             }
         }
     }
@@ -493,7 +495,7 @@ internal class AccountAuthState(
                     state.passwordVisible,
                     state.confirmPasswordVisible,
                     state.magicLinkSent,
-                    state.errorMessage,
+                    state.errorMessage?.let(SavedAuthError::save),
                     state.isAwaitingVerification,
                     state.resendCooldownSeconds,
                     state.methodChosen,
@@ -544,11 +546,29 @@ private fun restoreSavedAccountAuthState(list: List<*>): SavedAccountAuthState {
         passwordVisible = list.flagAt(3 + legacy),
         confirmPasswordVisible = list.flagAt(4 + legacy),
         magicLinkSent = list.flagAt(5 + legacy),
-        errorMessage = list.getOrNull(6 + legacy) as? String,
+        errorMessage = SavedAuthError.restore(list.getOrNull(6 + legacy)),
         isAwaitingVerification = legacy == 0 && list.flagAt(7),
         resendCooldownSeconds = if (legacy == 0) (list.getOrNull(8) as? Number)?.toInt() ?: 0 else 0,
         methodChosen = legacy == 0 && list.flagAt(9),
     )
+}
+
+/**
+ * A sign-in error as it is saved across recreation: its resource id, so it comes back in the current
+ * App language, or the text itself when it came from the server or Google.
+ */
+private object SavedAuthError {
+    fun save(error: UiText): Any? = when (error) {
+        is UiText.Res -> error.id.takeIf { error.args.isEmpty() }
+        is UiText.Raw -> error.value
+        is UiText.Plural -> null
+    }
+
+    fun restore(saved: Any?): UiText? = when (saved) {
+        is Int -> UiText.res(saved)
+        is String -> UiText.raw(saved)
+        else -> null
+    }
 }
 
 private fun List<*>.flagAt(index: Int): Boolean = getOrNull(index) as? Boolean ?: false

@@ -19,13 +19,17 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.text.LocaleFormats
+import cx.aswin.boxlore.core.model.text.UiText
 import java.net.URI
 
 internal fun formatChapterTime(seconds: Long): String {
@@ -34,17 +38,19 @@ internal fun formatChapterTime(seconds: Long): String {
     return String.format(java.util.Locale.US, "%d:%02d", mins, secs)
 }
 
+/** Time left in the brief ("3m left"), in the app language; null once nothing is left. */
+@Composable
 internal fun formatRemaining(totalSeconds: Long): String? {
     if (totalSeconds <= 0) return null
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    return if (hours > 0) "${hours}h ${minutes}m left" else "${minutes}m left"
+    val length = LocaleFormats.duration(totalSeconds, currentLocale(), LocaleFormats.DurationWidth.NARROW)
+    return stringResource(R.string.briefing_screen_time_left, length)
 }
 
-internal fun formatBriefingListenDuration(durationMs: Long): String? {
+/** The brief's length, rounded to whole minutes ("4 min listen"); null when it is unknown. */
+internal fun formatBriefingListenDuration(durationMs: Long): UiText? {
     if (durationMs <= 0) return null
-    val minutes = ((durationMs + 30_000L) / 60_000L).coerceAtLeast(1)
-    return "$minutes min listen"
+    val minutes = ((durationMs + 30_000L) / 60_000L).coerceAtLeast(1).toInt()
+    return UiText.plural(R.plurals.briefing_screen_listen_minutes, minutes, minutes)
 }
 
 internal fun getDomainName(url: String): String = try {
@@ -174,18 +180,11 @@ private fun CompactEpisodeInfo(
     )
 }
 
-private fun compactEpisodeInfoText(episode: Episode): String = listOfNotNull(
-    episode.duration.takeIf { it > 0 }?.let { "${it / 60} min" },
-    formattedEpisodeDate(episode.publishedDate),
-).joinToString(" • ")
-
-private fun formattedEpisodeDate(publishedDate: Long): String? {
-    if (publishedDate <= 0) return null
-    return try {
-        val instant = java.time.Instant.ofEpochSecond(publishedDate)
-        val date = java.time.LocalDateTime.ofInstant(instant, java.time.ZoneId.systemDefault()).toLocalDate()
-        date.format(java.time.format.DateTimeFormatter.ofPattern("MMM d"))
-    } catch (e: Exception) {
-        null
-    }
+@Composable
+private fun compactEpisodeInfoText(episode: Episode): String {
+    val locale = currentLocale()
+    return listOfNotNull(
+        episode.duration.takeIf { it > 0 }?.let { LocaleFormats.duration(it / 60 * 60L, locale) },
+        episode.publishedDate.takeIf { it > 0 }?.let { LocaleFormats.date(it * 1000L, LocaleFormats.DateStyle.DAY_MONTH, locale) },
+    ).joinToString(" • ")
 }

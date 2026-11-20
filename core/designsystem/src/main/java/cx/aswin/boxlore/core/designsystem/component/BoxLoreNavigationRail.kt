@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -55,7 +56,8 @@ fun BoxLoreNavigationRail(currentRoute: String, onNavigate: (String) -> Unit, mo
     val position = animateFloatAsState(
         navigationIndicatorTargetIndex(selectedIndex, retained.intValue).toFloat(),
         FloatingNavigationIndicatorMotion,
-        label = "rail selection",
+        // Animation label for tooling, never shown.
+        label = "rail selection", // i18n-ignore
     )
     val scheme = MaterialTheme.colorScheme
     val accents = navigationAccentColors(scheme)
@@ -86,7 +88,7 @@ fun BoxLoreNavigationRail(currentRoute: String, onNavigate: (String) -> Unit, mo
                             // The tint follows the moving indicator in the draw phase, so the rail does not recompose per frame.
                             Box(Modifier.size(24.dp).drawBehind { drawRailIcon(painter, railIconTint(index, position.value, scheme, accents)) })
                         }
-                        Text(destination.label, color = if (selected) scheme.onSurface else scheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+                        Text(stringResource(destination.label), color = if (selected) scheme.onSurface else scheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
                     }
                 }
             }

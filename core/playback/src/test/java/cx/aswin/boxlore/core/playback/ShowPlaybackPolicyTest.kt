@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.playback
 
+import java.util.Locale
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -44,8 +45,10 @@ class ShowPlaybackPolicyTest {
     @Test
     fun `the offered speeds and their labels match the player's`() {
         assertEquals(listOf(0.5f, 0.8f, 0.9f, 1f, 1.1f, 1.2f, 1.25f, 1.5f, 1.75f, 2f, 2.5f, 3f), ShowPlaybackPolicy.SPEED_OPTIONS)
-        assertEquals("1×", ShowPlaybackPolicy.speedLabel(1f))
-        assertEquals("1.25×", ShowPlaybackPolicy.speedLabel(1.25f))
+        assertEquals("1×", ShowPlaybackPolicy.speedLabel(1f, Locale.US))
+        assertEquals("1.25×", ShowPlaybackPolicy.speedLabel(1.25f, Locale.US))
+        assertEquals("1,25×", ShowPlaybackPolicy.speedLabel(1.25f, Locale.GERMANY))
+        assertEquals("2×", ShowPlaybackPolicy.speedLabel(2f, Locale.GERMANY))
     }
 
     @Test

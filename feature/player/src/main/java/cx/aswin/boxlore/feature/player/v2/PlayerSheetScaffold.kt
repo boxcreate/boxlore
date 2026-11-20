@@ -50,6 +50,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -72,6 +73,7 @@ import cx.aswin.boxlore.core.playback.resume
 import cx.aswin.boxlore.core.playback.skipBackward
 import cx.aswin.boxlore.core.playback.skipForward
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import cx.aswin.boxlore.feature.player.R
 import cx.aswin.boxlore.feature.player.v2.logic.AdaptivePlayerBounds
 import cx.aswin.boxlore.feature.player.v2.logic.AdaptivePlayerBoundsInput
 import cx.aswin.boxlore.feature.player.v2.logic.PlayerSheetGeometryInput
@@ -477,7 +479,7 @@ private fun PlayerSheetSurface(
                             !content.isFullscreenVideo,
                         interactionSource = expansionInteractionSource,
                         indication = null,
-                        onClickLabel = "Open player",
+                        onClickLabel = stringResource(R.string.player_open_player),
                     ) {
                         resources.haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         callbacks.onExpand()

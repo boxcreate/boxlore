@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Playlist dialogs, shared by the show page and Library. -->
+    <string name="playlist_new">New playlist</string>
+    <string name="playlist_rename">Rename playlist</string>
+    <string name="playlist_name_label">Name</string>
+    <string name="playlist_create">Create</string>
+    <string name="playlist_save">Save</string>
+    <string name="playlist_cancel">Cancel</string>
+    <string name="playlist_delete">Delete</string>
+    <string name="playlist_delete_title">Delete playlist?</string>
+    <!-- %1$s is the playlist's name, which the listener chose. -->
+    <string name="playlist_delete_body">“%1$s” will be deleted. This can’t be undone. The shows, your downloads and your listening history stay as they are.</string>
+    <!-- Under a playlist's name when it has no shows. -->
+    <string name="playlist_no_shows">No shows yet</string>
+    <!-- Under a playlist's name: how many shows it holds. -->
+    <plurals name="playlist_show_count">
+        <item quantity="one">%1$d show</item>
+        <item quantity="other">%1$d shows</item>
+    </plurals>
+
+    <!-- The show page's Add to playlist sheet. -->
+    <string name="add_to_playlist_title">Add to playlist</string>
+    <string name="add_to_playlist_none">You don’t have any playlists yet.</string>
+    <string name="add_to_playlist_create_and_add">Create and add</string>
+    <!-- Confirmations after a tap in the sheet. %1$s is the playlist's name. -->
+    <string name="add_to_playlist_added">Added to %1$s</string>
+    <string name="add_to_playlist_removed">Removed from %1$s</string>
+</resources>

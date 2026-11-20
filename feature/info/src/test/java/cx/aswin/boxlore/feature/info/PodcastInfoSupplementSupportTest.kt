@@ -4,6 +4,7 @@ import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.testing.TestFixtures
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -43,7 +44,7 @@ class PodcastInfoSupplementSupportTest {
             )
         val refresh = support.refreshMissingEpisodes(state, announceResult = true)
         assertEquals(7, refresh.pageSourceCount)
-        assertEquals("Added 2 episodes", refresh.state.userMessage)
+        assertEquals(UiText.plural(R.plurals.podcast_info_supplement_added, 2, 2), refresh.state.userMessage)
         assertEquals("-1", refresh.libraryTip?.id)
         assertEquals(DirectFeedChipState.Updated, refresh.state.directFeedChip)
     }
@@ -114,8 +115,9 @@ class PodcastInfoSupplementSupportTest {
             )
         assertNull(support.autoOptInOnSubscribeIfDisconnected(state, announce = false))
         val announced = support.autoOptInOnSubscribeIfDisconnected(state, announce = true)
+        // The domain layer's own reason is passed on as it is.
         assertEquals(
-            "Couldn't update episodes from the feed",
+            UiText.raw("Couldn't update episodes from the feed"),
             announced?.state?.userMessage,
         )
     }
@@ -183,7 +185,7 @@ class PodcastInfoSupplementSupportTest {
             )
         val refresh = support.refreshMissingEpisodes(state, announceResult = true)
         assertEquals(
-            "Couldn't update episodes from the feed",
+            UiText.raw("Couldn't update episodes from the feed"),
             refresh.state.userMessage,
         )
         assertEquals(4, refresh.pageSourceCount)

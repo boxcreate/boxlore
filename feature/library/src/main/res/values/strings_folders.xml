@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_folder_new">New folder</string>
+    <string name="library_folder_edit">Edit folder</string>
+    <string name="library_folder_delete">Delete folder</string>
+    <string name="library_folder_delete_title">Delete folder?</string>
+    <!-- %1$s is the folder's name -->
+    <string name="library_folder_delete_body">Shows in \'%1$s\' will stay in your library and won\'t be deleted or unsubscribed.</string>
+    <string name="library_folder_delete_note">Its shows stay in your library</string>
+    <string name="library_folder_create">Create folder</string>
+    <string name="library_folder_create_new">Create new folder</string>
+    <!-- Screen-reader label -->
+    <string name="library_folder_open">Open folder</string>
+    <!-- Screen-reader label for the mark on folders that fill from a genre -->
+    <string name="library_folder_auto">Auto</string>
+    <string name="library_folder_add_to">Add to folder</string>
+    <string name="library_folder_remove_from">Remove from folder</string>
+    <string name="library_folder_move_to_another">Move to another folder</string>
+    <string name="library_folder_move_title">Move to Folder</string>
+    <string name="library_folder_add_title">Add to Folder</string>
+    <string name="library_folder_no_other_folders">No other folders yet</string>
+    <!-- %1$s is the folder's name -->
+    <string name="library_folder_add_shows_to">Add Shows to %1$s</string>
+    <!-- %1$s is the show's name -->
+    <string name="library_folder_new_with_show">New folder with %1$s</string>
+    <!-- Beside a genre folder that already holds the show -->
+    <string name="library_folder_member_in_it">In it</string>
+    <!-- %1$s is a genre such as News -->
+    <string name="library_folder_only_genre_shows">Only %1$s shows</string>
+    <!-- %1$s is the show's name -->
+    <string name="library_folder_genre_change_hint">To put %1$s in a genre folder, change its genre from its page.</string>
+    <string name="library_folder_not_in_any">Not in a folder yet</string>
+    <plurals name="library_folder_in_count">
+        <item quantity="one">In %1$d folder</item>
+        <item quantity="other">In %1$d folders</item>
+    </plurals>
+    <!-- %2$s is the folder's size, such as 2×1 -->
+    <plurals name="library_folder_shows_and_dimensions">
+        <item quantity="one">%1$d show • %2$s</item>
+        <item quantity="other">%1$d shows • %2$s</item>
+    </plurals>
+    <!-- Pill beside a folder: how many new episodes it has -->
+    <plurals name="library_folder_new_count">
+        <item quantity="one">%1$d new</item>
+        <item quantity="other">%1$d new</item>
+    </plurals>
+    <!-- Small badge on a folder; all capitals where the language uses them -->
+    <plurals name="library_folder_new_episodes_badge">
+        <item quantity="one">%1$d NEW EPISODE</item>
+        <item quantity="other">%1$d NEW EPISODES</item>
+    </plurals>
+    <string name="library_folder_empty_tap_to_add">Folder is empty • Tap to add shows</string>
+    <string name="library_folder_empty_title">No shows in this folder</string>
+    <!-- Add shows is a button's name -->
+    <string name="library_folder_empty_body">Use Add shows to fill it.</string>
+    <!-- %1$s is a genre such as News -->
+    <string name="library_folder_empty_genre_title">No %1$s shows yet</string>
+    <!-- %1$s is a genre such as News -->
+    <string name="library_folder_empty_genre_body">%1$s shows you follow will appear here.</string>
+    <!-- A folder's summary: %1$s is its show count, %2$s its new episodes -->
+    <string name="library_folder_summary_with_new">%1$s · %2$s</string>
+    <!-- %1$s is a show count, %2$s a folder look such as 1 row, in lower case -->
+    <string name="library_folder_count_and_look">%1$s · %2$s</string>
+    <!-- %1$s is a genre, %2$s a show count such as 4 shows -->
+    <string name="library_folder_genre_and_count">%1$s · %2$s</string>
+    <!-- A genre chip: the genre and how many shows match it -->
+    <string name="library_folder_genre_chip_count">%1$s · %2$d</string>
+    <!-- Section title with the number of shows in the folder -->
+    <string name="library_folder_shows_count">Shows · %1$d</string>
+    <!-- Screen-reader label; %1$s is the show's name -->
+    <string name="library_folder_remove_show">Remove %1$s from this folder</string>
+    <string name="library_folder_remove_show_note">Removing a show here keeps it in your library.</string>
+    <string name="library_folder_how_it_looks">How it looks</string>
+    <string name="library_folder_icon">Icon</string>
+    <string name="library_folder_genre">Genre</string>
+    <!-- Text field label -->
+    <string name="library_folder_name">Name</string>
+    <string name="library_folder_name_it">Name it</string>
+    <!-- %1$s is the name the listener typed -->
+    <string name="library_folder_name_is_genre">%1$s is a genre, so this is an auto folder.</string>
+    <!-- Under the name field when the listener types Technology; Tech is the stored genre name -->
+    <string name="library_folder_saved_as_tech">Saved as Tech</string>
+    <!-- Stands in for a folder with no name -->
+    <string name="library_folder_fallback_name">Folder</string>
+    <string name="library_folder_what_goes_in">What goes in it?</string>
+    <!-- Tab: pick shows by hand -->
+    <string name="library_folder_mode_shows">Shows</string>
+    <!-- Tab: fill from one genre -->
+    <string name="library_folder_mode_genre">Genre</string>
+    <!-- Tab: a folder for every genre -->
+    <string name="library_folder_mode_auto">Auto</string>
+    <string name="library_folder_pick_at_least_one">Pick at least one</string>
+    <string name="library_folder_pick_stays_elsewhere">They stay in any other folder too</string>
+    <!-- Screen-reader label: %1$s is the show, %2$s the folder it is already in -->
+    <string name="library_folder_pick_show_in_folder">%1$s, in %2$s</string>
+    <string name="library_folder_step_of">Step %1$d of %2$d</string>
+    <string name="library_folder_choose_look">Choose a look</string>
+    <!-- %1$s is the folder's name -->
+    <string name="library_folder_look_intro_named">How %1$s shows up on your Shows tab.</string>
+    <string name="library_folder_look_intro_unnamed">How this folder shows up on your Shows tab.</string>
+    <!-- +N is the overflow tile, such as +3 -->
+    <string name="library_folder_look_overflow_note">More shows than that? The last spot becomes +N and opens the folder. You can change the look later.</string>
+    <!-- %1$s is the look's description, such as Pinned on top. Tap up to 3 directly. -->
+    <string name="library_folder_look_description_with_overflow">%1$s With more shows, the last spot becomes +N and opens the folder.</string>
+    <!-- Folder look: one square among the shows -->
+    <string name="library_folder_look_tile">Tile</string>
+    <!-- Folder look: a block of rows pinned on top -->
+    <plurals name="library_folder_look_rows">
+        <item quantity="one">%1$d row</item>
+        <item quantity="other">%1$d rows</item>
+    </plurals>
+    <!-- Small caption under a folder look; lower case -->
+    <plurals name="library_folder_look_tap_up_to">
+        <item quantity="one">tap up to %1$d</item>
+        <item quantity="other">tap up to %1$d</item>
+    </plurals>
+    <plurals name="library_folder_look_pinned_description">
+        <item quantity="one">Pinned on top. Tap up to %1$d directly.</item>
+        <item quantity="other">Pinned on top. Tap up to %1$d directly.</item>
+    </plurals>
+    <plurals name="library_folder_look_among_description">
+        <item quantity="one">Among your shows. Tap up to %1$d directly.</item>
+        <item quantity="other">Among your shows. Tap up to %1$d directly.</item>
+    </plurals>
+    <string name="library_folder_tile_show_icon">Show the icon</string>
+    <string name="library_folder_tile_show_icon_note">A tap opens the folder</string>
+    <string name="library_folder_tile_show_covers">Show covers</string>
+    <plurals name="library_folder_tile_show_covers_note">
+        <item quantity="one">Tap up to %1$d show</item>
+        <item quantity="other">Tap up to %1$d shows</item>
+    </plurals>
+    <string name="library_auto_organize">Auto-organize</string>
+    <string name="library_auto_organize_is_on">Auto-organize is on</string>
+    <string name="library_auto_organize_turn_on">Turn on auto-organize</string>
+    <string name="library_auto_organize_turn_off">Turn off auto-organize</string>
+    <string name="library_auto_organize_turn_off_title">Turn off auto-organize?</string>
+    <string name="library_auto_organize_turn_off_body">boxlore stops making new genre folders. The genre folders you have stay, and new shows of their genre still join them.</string>
+    <string name="library_auto_organize_turn_off_hint">To get rid of one, delete the folder. Its shows stay in your library.</string>
+    <string name="library_auto_organize_summary_off">Off · Sort every show into genre folders</string>
+    <plurals name="library_auto_organize_summary_on">
+        <item quantity="one">On · %1$d genre folder</item>
+        <item quantity="other">On · %1$d genre folders</item>
+    </plurals>
+    <plurals name="library_auto_organize_status">
+        <item quantity="one">%1$d genre folder, kept up to date as you follow shows</item>
+        <item quantity="other">%1$d genre folders, kept up to date as you follow shows</item>
+    </plurals>
+    <plurals name="library_auto_organize_apply_to_all">
+        <item quantity="one">Apply to %1$d genre folder</item>
+        <item quantity="other">Apply to all %1$d genre folders</item>
+    </plurals>
+    <string name="library_auto_organize_apply_note">New genre folders get this look. Apply it to change the ones you have too.</string>
+    <string name="library_auto_organize_folders_you_get">Folders you\'ll get</string>
+    <string name="library_auto_organize_already_there">Already there</string>
+    <plurals name="library_auto_organize_no_genre_note">
+        <item quantity="one">%1$d show with no genre stays in your main grid.</item>
+        <item quantity="other">%1$d shows with no genre stay in your main grid.</item>
+    </plurals>
+    <string name="library_auto_organize_how_folders_look">How folders look</string>
+    <string name="library_auto_organize_let_boxlore_choose">Let boxlore choose</string>
+    <string name="library_auto_organize_choose_description">Each folder gets the look that fits its size. 1–2 shows get a tile, 3–5 get 1 row, 6 or more get 2 rows.</string>
+    <string name="library_auto_organize_one_look">Use one look for all</string>
+    <string name="library_auto_organize_one_look_body">Every genre folder is a tile, 1 row, 2 rows or 3 rows.</string>
+    <string name="library_auto_organize_note">Every genre gets a folder, and shows you follow later are added automatically. A folder you already have for a genre is filled too.</string>
+    <!-- Manage is a button's name -->
+    <string name="library_auto_organize_already_on_note">Each genre already has a folder, and shows you follow later are added automatically. Manage changes how they look.</string>
+    <!-- Sort and organize is a sheet's title -->
+    <string name="library_auto_organize_change_later">You can change this or turn it off any time in Sort and organize.</string>
+    <!-- %1$s is a genre such as News -->
+    <string name="library_genre_auto_add_note">Shows you follow later in %1$s are added automatically.</string>
+    <string name="library_genre_auto_add_note_this_genre">Shows you follow later in this genre are added automatically.</string>
+</resources>

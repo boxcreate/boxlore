@@ -35,6 +35,11 @@ class OnboardingGuidedContractTest {
         assertNull(response.guided?.response)
     }
 
+    @Test fun `the app language is sent for a translation and left out for English`() {
+        assertFalse(json.encodeToString(OnboardingNextTurnRequest(emptyList())).contains("appLanguage"))
+        assertTrue(json.encodeToString(OnboardingNextTurnRequest(emptyList(), appLanguage = "pt-BR")).contains("\"appLanguage\":\"pt-BR\""))
+    }
+
     @Test fun `finish hint opt in sends features and locale and decodes the hint`() {
         val legacy = json.encodeToString(OnboardingNextTurnRequest(emptyList(), responseFormat = "guided_v1"))
         listOf("features", "country", "languages").forEach { assertFalse(legacy.contains(it)) }

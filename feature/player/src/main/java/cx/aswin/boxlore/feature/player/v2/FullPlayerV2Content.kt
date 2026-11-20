@@ -406,7 +406,8 @@ internal data class PlayerQueueSheetModel(
 internal data class PlayerQueueSheetResources(
     val scope: CoroutineScope,
     val snackbarHostState: SnackbarHostState,
-    val sheetState: SheetState
+    val sheetState: SheetState,
+    val text: PlayerQueueText,
 )
 
 internal data class PlayerQueueSheetCallbacks(
@@ -475,14 +476,14 @@ internal fun queueSheetActions(
     onPlayEpisode = { episode ->
         resources.scope.launch {
             val freshQueue = playbackRepository.playerState.value.queue
-            val episodePodcast = resolveQueuePodcast(episode, podcast)
+            val episodePodcast = resolveQueuePodcast(episode, podcast, resources.text.unknownShow)
             playbackRepository.playFromQueueIndex(episode.id, freshQueue, episodePodcast)
             ui.showQueueSheet = false
         }
     },
     onRemoveEpisode = { episode ->
         resources.scope.launch {
-            handleQueueRemoval(playbackRepository, episode.id, resources.snackbarHostState)
+            handleQueueRemoval(playbackRepository, episode.id, resources.snackbarHostState, resources.text)
         }
     },
     onClose = { ui.showQueueSheet = false },
@@ -515,12 +516,13 @@ internal fun queueSheetActions(
 internal suspend fun handleQueueRemoval(
     playbackRepository: PlaybackRepository,
     episodeId: String,
-    snackbarHostState: SnackbarHostState
+    snackbarHostState: SnackbarHostState,
+    text: PlayerQueueText,
 ) {
     val removed = playbackRepository.removeFromQueue(episodeId, deferSkipSignal = true) ?: return
     val result = snackbarHostState.showSnackbar(
-        message = "Removed from queue",
-        actionLabel = "Undo",
+        message = text.removed,
+        actionLabel = text.undo,
         duration = SnackbarDuration.Short
     )
     if (result == SnackbarResult.ActionPerformed) {

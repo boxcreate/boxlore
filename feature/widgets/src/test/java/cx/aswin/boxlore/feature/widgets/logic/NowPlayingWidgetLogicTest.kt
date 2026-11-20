@@ -1,6 +1,8 @@
 package cx.aswin.boxlore.feature.widgets.logic
 
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.feature.widgets.NowPlayingWidgetSnapshot
+import cx.aswin.boxlore.feature.widgets.R
 import cx.aswin.boxlore.feature.widgets.WidgetControl
 import cx.aswin.boxlore.feature.widgets.WidgetPlaybackState
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -141,11 +143,22 @@ class NowPlayingWidgetLogicTest {
                 positionMs = 24 * minute,
                 durationMs = 60 * minute,
             )
-        assertEquals("Episode from Show, playing, 36 minutes left", WidgetSemantics.contentDescription(snapshot))
         assertEquals(
-            "Episode from Show, paused, 1 minute left",
+            UiText.plural(R.plurals.widget_description_playing_from_left, 36, "Episode", "Show", 36),
+            WidgetSemantics.contentDescription(snapshot),
+        )
+        assertEquals(
+            UiText.plural(R.plurals.widget_description_paused_from_left, 1, "Episode", "Show", 1),
             WidgetSemantics.contentDescription(snapshot.copy(isPlaying = false, positionMs = 59 * minute + 30_000L)),
         )
-        assertEquals("Episode from Show, playing", WidgetSemantics.contentDescription(snapshot.copy(durationMs = 0L)))
+        assertEquals(
+            UiText.res(R.string.widget_description_playing_from, "Episode", "Show"),
+            WidgetSemantics.contentDescription(snapshot.copy(durationMs = 0L)),
+        )
+        assertEquals(
+            UiText.plural(R.plurals.widget_description_paused_left, 36, "Episode", 36),
+            WidgetSemantics.contentDescription(snapshot.copy(isPlaying = false, podcastTitle = " ")),
+        )
+        assertEquals(UiText.res(R.string.widget_description_empty), WidgetSemantics.contentDescription(NowPlayingWidgetSnapshot()))
     }
 }

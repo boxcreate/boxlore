@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="episode_list_season_episode_short">T%1$d E%2$d</string>
+    <string name="episode_list_season_short">T%1$d</string>
+    <string name="episode_list_episode_short">E%1$d</string>
+    <string name="episode_list_time_left_hours">Quedan %1$d h %2$d min</string>
+    <string name="episode_list_time_left_minutes">Quedan %1$d min</string>
+    <string name="episode_options_title">Opciones del episodio</string>
+    <string name="episode_options_play">Reproducir episodio</string>
+    <string name="episode_options_add_queue">Añadir a la cola</string>
+    <string name="episode_options_share">Compartir</string>
+    <string name="episode_info_license_cc0">Dominio público (CC0)</string>
+    <string name="episode_info_license_cc">Creative Commons %1$s</string>
+    <string name="episode_info_license_cc_generic">Licencia Creative Commons</string>
+    <string name="episode_info_license_all_rights">Todos los derechos reservados</string>
+    <string name="episode_info_license_public_domain">Dominio público</string>
+    <string name="episode_info_link_description">%1$s, %2$s</string>
+    <string name="episode_info_show_placeholder">Podcast</string>
+</resources>

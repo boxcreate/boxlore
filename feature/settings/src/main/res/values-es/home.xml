@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hero_card_look_title">Estilo %1$s</string>
+    <string name="hero_card_style_title">Tarjetas destacadas</string>
+    <string name="hero_card_style_footer">Las tarjetas grandes de la parte superior de Inicio.</string>
+    <string name="hero_card_style_block">Bloque</string>
+    <string name="hero_card_style_block_description">Texto grande sobre un bloque de color sólido, con la portada al lado.</string>
+    <string name="hero_card_style_cover">Portada</string>
+    <string name="hero_card_style_cover_description">Portada completa, con el texto sobre un velo.</string>
+    <string name="hero_card_style_tide">Marea</string>
+    <string name="hero_card_style_tide_description">La portada entera sobre un panel ondulado, con un botón de reproducir redondo.</string>
+    <string name="hero_card_style_duotone">Duotono</string>
+    <string name="hero_card_style_duotone_description">Portada en dos tonos, para que el texto siempre destaque.</string>
+    <string name="hero_card_style_halo">Halo</string>
+    <string name="hero_card_style_halo_description">Portada con forma y tu progreso en un anillo a su alrededor.</string>
+    <string name="hero_duotone_colors_title">Colores del duotono</string>
+    <string name="hero_duotone_colors_footer">Oscuro redibuja las portadas en blanco y negro. Arte usa el color propio de cada una. Tema de la app usa tu color de acento.</string>
+    <string name="hero_card_style_marquee">Marquesina</string>
+    <string name="hero_card_style_marquee_description">Una portada a todo el ancho bajo la barra superior, con las siguientes tarjetas junto a Reproducir.</string>
+    <string name="hero_card_style_marquee_description_tablet">Una portada a todo el ancho en teléfonos. Las tablets muestran tarjetas Portada.</string>
+    <string name="hero_marquee_colors_title">Colores de portada</string>
+    <string name="hero_marquee_colors_footer">A todo color muestra las portadas tal cual. Arte las redibuja en dos tonos de su propio color. Tema de la app usa tu color de acento.</string>
+    <string name="hero_marquee_colors_full">A todo color</string>
+    <string name="hero_card_colors_title">Color de la tarjeta</string>
+    <string name="hero_card_colors_footer">Oscuro mantiene las tarjetas casi negras. Arte toma el color propio de cada una. Tema de la app usa tu color de acento.</string>
+    <string name="hero_tide_progress_title">Anillo de progreso</string>
+    <string name="hero_tide_progress_footer">Ondas mientras se reproduce un episodio. Círculo se mantiene liso.</string>
+    <string name="hero_tide_progress_wavy">Ondulado</string>
+    <string name="hero_tide_progress_circle">Círculo</string>
+    <string name="hero_cover_shade_title">Velo detrás del texto</string>
+    <string name="hero_cover_shade_footer">Arte toma un tono profundo del color propio de cada una. Tema de la app usa tu color de acento.</string>
+    <string name="hero_cover_shade_dark">Oscuro</string>
+    <string name="hero_cover_shade_artwork">Arte</string>
+    <string name="hero_cover_shade_theme">Tema de la app</string>
+</resources>

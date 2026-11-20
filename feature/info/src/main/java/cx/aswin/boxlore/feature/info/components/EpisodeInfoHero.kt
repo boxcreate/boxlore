@@ -35,12 +35,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.effectiveEpisodeType
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.feature.info.R
-import java.text.DateFormat
-import java.util.Date
 import kotlinx.coroutines.delay
 
 @Composable
@@ -102,11 +102,12 @@ internal fun EpisodeInfoHero(
 
 @Composable
 private fun EpisodeMetadata(episode: Episode, isCompleted: Boolean, onToggleCompletion: () -> Unit, archive: EpisodeArchiveAction?) {
-    val date = remember(episode.publishedDate) {
-        episode.publishedDate.takeIf { it > 0L }?.let { DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it * 1_000L)) }
+    val locale = currentLocale()
+    val date = remember(episode.publishedDate, locale) {
+        episode.publishedDate.takeIf { it > 0L }?.let { LocaleFormats.date(it * 1_000L, LocaleFormats.DateStyle.DAY_MONTH_YEAR, locale) }
     }
     val number = episodeNumberLabel(episode)
-    val metadata = listOfNotNull(date, formatEpisodeDuration(episode.duration).takeIf(String::isNotBlank), number).joinToString(" · ")
+    val metadata = listOfNotNull(date, formatEpisodeDuration(episode.duration, locale).takeIf(String::isNotBlank), number).joinToString(" · ")
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         if (metadata.isNotEmpty()) {
             Text(

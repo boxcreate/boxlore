@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="model_folder_size_compact_title">Compact</string>
+    <string name="model_folder_size_wide_title">Large</string>
+    <string name="model_folder_size_featured_title">Vedette</string>
+    <string name="model_folder_size_tall_title">Haut</string>
+    <string name="model_folder_size_shelf_title">Étagère</string>
+    <string name="model_folder_size_panel_title">Panneau</string>
+    <string name="model_folder_size_showcase_title">Showcase</string>
+    <string name="model_folder_size_compact_subtitle">1 case • Appuyez pour les podcasts</string>
+    <string name="model_folder_size_wide_subtitle">2 colonnes • Cliquable</string>
+    <string name="model_folder_size_featured_subtitle">2×2 • Cliquable + plus</string>
+    <string name="model_folder_size_tall_subtitle">2×3 en hauteur • Cliquable</string>
+    <string name="model_folder_size_shelf_subtitle">Ligne entière • Cliquable</string>
+    <string name="model_folder_size_panel_subtitle">Panneau 3×2 • Cliquable</string>
+    <string name="model_folder_size_showcase_subtitle">3×3 max • Grille complète</string>
+    <string name="model_folder_size_placement_anywhere">Peut être placé n’importe où dans la grille</string>
+    <string name="model_folder_size_placement_top">Épinglé en haut de la page</string>
+</resources>

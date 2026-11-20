@@ -339,6 +339,7 @@ fun OnboardingViewModel.generateRecommendationsFromOpml(importedPodcasts: List<P
 internal fun OnboardingViewModel.skipOnboarding(onDone: () -> Unit) {
     val currentScreen =
         when (_uiState.value.currentStep) {
+            OnboardingStep.APP_LANGUAGE -> "app_language_screen"
             OnboardingStep.WELCOME -> "welcome_screen"
             OnboardingStep.GENRES -> "genre_screen"
             OnboardingStep.SUB_GENRES -> "sub_genres_screen"

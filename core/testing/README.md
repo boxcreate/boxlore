@@ -32,6 +32,9 @@ src/test/java/cx/aswin/boxlore/core/testing/
     BrandNameGuardTest.kt          # listener-facing text spells boxlore in lowercase
     ModuleReadmeBudgetTest.kt      # README length, history markers, nothing after See also
     ScreenViewCoverageTest.kt      # every screen, page, sheet, dialog and tab sends a page view
+  i18n/
+    TranslationResources(GuardTest).kt  # translations keep placeholders, plural forms and lowercase boxlore
+    HardcodedText(GuardTest).kt         # listener text in Kotlin, held to docs/i18n/hardcoded-text-baseline.txt
   fakes/FakePortsTest.kt
 src/test/resources/module-readme-budget.txt   # allowances for READMEs not yet rewritten
 ```
@@ -52,7 +55,7 @@ src/test/resources/module-readme-budget.txt   # allowances for READMEs not yet r
 ## Persistence & identity
 
 - No app persistence is owned here.
-- Architecture guards read project files (`settings.gradle.kts`, build files, sources, module READMEs, `docs/analytics/*.csv`) and define no app storage.
+- Architecture guards read project files (`settings.gradle.kts`, build files, sources, resources, module READMEs, `docs/analytics/*.csv`, `docs/i18n/hardcoded-text-baseline.txt`) and define no app storage. Translation rules: [`docs/i18n/TRANSLATING.md`](../../docs/i18n/TRANSLATING.md).
 - System properties: `boxlore.projectRoot`, `boxlore.phoneGoldens` (`record` / `verify`) and `boxlore.tabletCaptures` (`before` / `after`), set by the root build from `-PphoneGoldens` and `-PtabletCaptures`.
 
 ## Testing notes
@@ -64,6 +67,8 @@ src/test/resources/module-readme-budget.txt   # allowances for READMEs not yet r
 | Lowercase boxlore in resources, manifest labels and Kotlin literals; User-Agent tokens allowlisted by file | `BrandNameGuardTest` |
 | Module README budget and template rules | `ModuleReadmeBudgetTest` |
 | Page views on every named screen | `ScreenViewCoverageTest` |
+| Translations in every module's `res/values-<language>` | `TranslationResourcesGuardTest` |
+| Hard-coded listener text, against a baseline that only shrinks (`BOXLORE_I18N_BASELINE=write` regenerates it) | `HardcodedTextGuardTest` |
 | Fakes and fixtures | `FakePortsTest` |
 
 ```bash

@@ -64,7 +64,7 @@ internal fun PlayingBars(moving: Boolean, color: Color, modifier: Modifier = Mod
     val animate = moving && !LocalReduceMotion.current
     val heights =
         if (animate) {
-            val phase by rememberInfiniteTransition(label = "playing bars").animateFloat(
+            val phase by rememberInfiniteTransition(label = BARS_ANIMATION).animateFloat(
                 initialValue = 0f,
                 targetValue = 1f,
                 animationSpec = infiniteRepeatable(tween(durationMillis = 900, easing = LinearEasing), RepeatMode.Restart),
@@ -102,6 +102,9 @@ internal fun ArtworkWithPlaying(url: String?, playing: PlayingEpisode?, modifier
 }
 
 private const val SCRIM = 0.55f
+
+/** The animation's name in Compose tooling; never shown. */
+private const val BARS_ANIMATION = "playing bars"
 private const val BARS_SHARE = 0.46f
 private val SCRIM_CORNER = androidx.compose.ui.unit.Dp(9f)
 

@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.settings.pages.supportworlds
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -49,12 +50,15 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.model.text.UiText
 
 /** Everything a world (or today's page) needs to explain that payments aren't live yet. */
 internal data class SupportNoticeContent(
@@ -64,13 +68,13 @@ internal data class SupportNoticeContent(
     val content: Color,
     val muted: Color,
     val scrim: Color,
-    val chip: String,
+    @StringRes val chip: Int,
     val chipColor: Color,
     val chipFont: SupportWorldFont?,
-    val title: String,
+    @StringRes val title: Int,
     val titleFont: SupportWorldFont?,
-    val body: String,
-    val dismiss: String,
+    val body: UiText,
+    @StringRes val dismiss: Int,
     val badge: ImageVector,
     val badgeContainer: Color,
     val badgeContent: Color,
@@ -137,6 +141,7 @@ private fun NoticeCard(
     modifier: Modifier = Modifier,
 ) {
     val bob by rememberSupportLoop(enabled = !reducedMotion, durationMillis = 900, label = "support_notice_badge")
+    val title = stringResource(content.title)
     Column(
         modifier = modifier
             .shadow(30.dp, NoticeShape, ambientColor = Color.Black, spotColor = Color.Black)
@@ -154,7 +159,7 @@ private fun NoticeCard(
                 )
             }
             .pointerInput(Unit) { detectTapGestures { } }
-            .semantics { paneTitle = content.title }
+            .semantics { paneTitle = title }
             .padding(start = 22.dp, end = 22.dp, bottom = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top,
@@ -166,7 +171,7 @@ private fun NoticeCard(
         }
         Spacer(Modifier.height(14.dp))
         Text(
-            text = content.chip,
+            text = stringResource(content.chip),
             style = MaterialTheme.typography.labelSmall.copy(
                 fontFamily = content.chipFont?.family,
                 fontWeight = content.chipFont?.weight ?: GoogleSansWeight.bold,
@@ -182,7 +187,7 @@ private fun NoticeCard(
         )
         Spacer(Modifier.height(12.dp))
         Text(
-            text = content.title,
+            text = title,
             style = MaterialTheme.typography.titleLarge.copy(
                 fontFamily = content.titleFont?.family,
                 fontWeight = content.titleFont?.weight ?: GoogleSansWeight.bold,
@@ -194,7 +199,7 @@ private fun NoticeCard(
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = content.body,
+            text = content.body.asString(),
             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp, lineHeight = 22.sp),
             color = content.muted,
             textAlign = TextAlign.Center,
@@ -207,7 +212,7 @@ private fun NoticeCard(
             modifier = Modifier.fillMaxWidth().height(54.dp),
         ) {
             Text(
-                text = content.dismiss,
+                text = stringResource(content.dismiss),
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = GoogleSansWeight.bold, fontSize = 16.sp),
             )
         }

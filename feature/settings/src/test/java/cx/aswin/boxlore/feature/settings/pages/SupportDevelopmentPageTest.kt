@@ -1,11 +1,20 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+import android.content.Context
 import androidx.compose.ui.graphics.Color
+import androidx.test.core.app.ApplicationProvider
+import cx.aswin.boxlore.feature.settings.text
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 class SupportDevelopmentPageTest {
+    private val resources get() = ApplicationProvider.getApplicationContext<Context>().resources
 
     @Test
     fun supportTierCards_containsAllFiveTiersInOrder() {
@@ -23,7 +32,7 @@ class SupportDevelopmentPageTest {
             titles,
         )
 
-        val impacts = SUPPORT_TIER_CARDS.map { it.powerImpact }
+        val impacts = SUPPORT_TIER_CARDS.map { text(it.powerImpact) }
         assertEquals(
             listOf(
                 "Powers the boxlore servers for 3 hours",
@@ -60,7 +69,7 @@ class SupportDevelopmentPageTest {
 
     @Test
     fun supportTierCards_loreDescriptionsAreValidAndPresent() {
-        val loreDescriptions = SUPPORT_TIER_CARDS.map { it.loreDescription }
+        val loreDescriptions = SUPPORT_TIER_CARDS.map { it.loreDescription?.let { id -> text(id) } }
         assertEquals(
             listOf(
                 "Made when a forbidden energy core was sealed inside a rune-bound casing.",
@@ -77,8 +86,8 @@ class SupportDevelopmentPageTest {
     fun supportTierCards_costsAndIconsAreValid() {
         SUPPORT_TIER_CARDS.forEach { tier ->
             assertTrue("Cost should start with USD dollar sign", tier.cost.startsWith("$"))
-            assertTrue("Power impact should not be blank", tier.powerImpact.isNotBlank())
-            assertTrue("Short duration should not be blank", tier.shortDuration.isNotBlank())
+            assertTrue("Power impact should not be blank", text(tier.powerImpact).isNotBlank())
+            assertTrue("Short duration should not be blank", text(tier.shortDuration).isNotBlank())
             assertTrue("Energy segments must be between 1 and 5", tier.energySegments in 1..5)
             assertTrue("Icon resource must be non-zero", tier.iconRes != 0)
         }
@@ -107,16 +116,16 @@ class SupportDevelopmentPageTest {
         val expected = "Software that helps people learn, listen, and explore should simply exist without a catch. " +
             "No ads, no paywalls. Backing a power cell helps fund our servers and keep boxlore open for everyone."
 
-        assertEquals(expected, getSupportMissionText(null))
-        assertEquals(expected, getSupportMissionText(0L))
-        assertEquals(expected, getSupportMissionText(1L))
-        assertEquals(expected, getSupportMissionText(4L))
+        assertEquals(expected, getSupportMissionText(resources, null))
+        assertEquals(expected, getSupportMissionText(resources, 0L))
+        assertEquals(expected, getSupportMissionText(resources, 1L))
+        assertEquals(expected, getSupportMissionText(resources, 4L))
     }
 
     @Test
     fun supportMissionText_fiveHoursOrMore_returnsCompanionCopyHighlightingListeningTime() {
-        val text5h = getSupportMissionText(5L)
-        val text42h = getSupportMissionText(42L)
+        val text5h = getSupportMissionText(resources, 5L)
+        val text42h = getSupportMissionText(resources, 42L)
 
         assertTrue(text5h.contains("across your 5 hours of listening"))
         assertTrue(text5h.contains("Software that helps people learn, listen, and explore should simply exist without a catch."))
@@ -129,17 +138,17 @@ class SupportDevelopmentPageTest {
     @Test
     fun supportMissionText_neverMentionsZeroTracking() {
         listOf(null, 0L, 3L, 5L, 20L).forEach { hours ->
-            val copy = getSupportMissionText(hours)
+            val copy = getSupportMissionText(resources, hours)
             assertTrue("Copy should never falsely claim zero tracking", !copy.contains("tracking", ignoreCase = true))
         }
     }
 
     @Test
     fun buildSupportMissionAnnotatedString_stylesHoursSpanWhenEligible() {
-        val annotatedUnderFive = buildSupportMissionAnnotatedString(4L)
+        val annotatedUnderFive = buildSupportMissionAnnotatedString(resources, 4L)
         assertTrue(annotatedUnderFive.spanStyles.isEmpty())
 
-        val annotatedFive = buildSupportMissionAnnotatedString(5L)
+        val annotatedFive = buildSupportMissionAnnotatedString(resources, 5L)
         val span = annotatedFive.spanStyles.firstOrNull()
         assertTrue("Should have styled span for hours", span != null)
         val styledSubstring = annotatedFive.text.substring(span!!.start, span.end)

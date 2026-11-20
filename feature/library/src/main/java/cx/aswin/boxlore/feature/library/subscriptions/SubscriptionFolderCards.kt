@@ -39,6 +39,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -49,6 +51,7 @@ import cx.aswin.boxlore.core.designsystem.components.rememberNewEpisodeBadgeShim
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.boxloreCombinedClickable as combinedClickable
 import cx.aswin.boxlore.core.model.Podcast
@@ -56,6 +59,7 @@ import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.core.model.isLatestEpisodeNew
 import cx.aswin.boxlore.feature.library.LocalLastSeenEpisodes
+import cx.aswin.boxlore.feature.library.R
 
 /**
  * Callbacks for interacting with folder cards in the Subscriptions grid.
@@ -219,7 +223,7 @@ private fun PinnedFolderHeader(
                     Spacer(modifier = Modifier.width(4.dp))
                 }
                 Text(
-                    text = showCountLabel(podcasts.size),
+                    text = showCountLabel(podcasts.size).asString(),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -236,7 +240,7 @@ private fun PinnedFolderHeader(
                 contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
             ) {
                 Text(
-                    text = "$newCount new",
+                    text = pluralStringResource(R.plurals.library_folder_new_count, newCount, newCount),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = GoogleSansWeight.semiBold,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
@@ -248,7 +252,7 @@ private fun PinnedFolderHeader(
 
         Icon(
             imageVector = Icons.Rounded.ChevronRight,
-            contentDescription = "Open folder",
+            contentDescription = stringResource(R.string.library_folder_open),
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             modifier = Modifier.size(18.dp),
         )
@@ -344,7 +348,7 @@ private fun RowScope.FolderCoverSlot(
                     } else {
                         Modifier.combinedClickable(
                             onClick = { actions.onFolderClick(folder.id) },
-                            onClickLabel = "Open folder",
+                            onClickLabel = stringResource(R.string.library_folder_open),
                             onLongClick = { actions.onFolderLongClick(folder) },
                         )
                     },
@@ -478,7 +482,7 @@ private fun FolderOverflowSlotCard(
                 modifier = Modifier.padding(horizontal = 4.dp),
             ) {
                 Text(
-                    text = "+$overflowCount",
+                    text = stringResource(R.string.library_overflow_count, overflowCount),
                     style = if (newEpisodesCount > 0) {
                         MaterialTheme.typography.titleMedium
                     } else {
@@ -501,7 +505,7 @@ private fun OverflowNewEpisodesChip(
     newCount: Int,
     modifier: Modifier = Modifier,
 ) {
-    val text = if (newCount == 1) "1 NEW EPISODE" else "$newCount NEW EPISODES"
+    val text = pluralStringResource(R.plurals.library_folder_new_episodes_badge, newCount, newCount)
     val shape = RoundedCornerShape(100.dp)
     val brush = rememberNewEpisodeBadgeShimmerBrush()
     Surface(
@@ -564,7 +568,7 @@ private fun EmptyFolderPlaceholder(
                 modifier = Modifier.size(16.dp),
             )
             Text(
-                text = "Folder is empty • Tap to add shows",
+                text = stringResource(R.string.library_folder_empty_tap_to_add),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = GoogleSansWeight.medium,
@@ -578,7 +582,7 @@ private fun EmptyFolderPlaceholder(
 internal fun AutoFolderMark(size: Dp, modifier: Modifier = Modifier) {
     Icon(
         imageVector = Icons.Rounded.AutoAwesome,
-        contentDescription = "Auto",
+        contentDescription = stringResource(R.string.library_folder_auto),
         tint = MaterialTheme.colorScheme.primary,
         modifier = modifier.size(size),
     )

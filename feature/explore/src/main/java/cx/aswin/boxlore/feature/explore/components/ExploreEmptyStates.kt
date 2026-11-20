@@ -140,14 +140,14 @@ fun ExploreRecommendationsEmptyState(
         }
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Your Taste Profile is Growing",
+            text = stringResource(R.string.explore_taste_growing_title),
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = "As you listen to more episodes and subscribe to shows, we'll curate personalized recommendations here tailored to your taste.",
+            text = stringResource(R.string.explore_taste_growing_body),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

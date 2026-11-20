@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="seek_back_seconds">
+        <item quantity="one">Retroceder %1$d segundo</item>
+        <item quantity="many">Retroceder %1$d segundos</item>
+        <item quantity="other">Retroceder %1$d segundos</item>
+    </plurals>
+    <plurals name="seek_forward_seconds">
+        <item quantity="one">Adelantar %1$d segundo</item>
+        <item quantity="many">Adelantar %1$d segundos</item>
+        <item quantity="other">Adelantar %1$d segundos</item>
+    </plurals>
+    <!-- Queue sheet header count -->
+    <plurals name="player_queue_episode_count">
+        <item quantity="one">%1$d episodio</item>
+        <item quantity="many">%1$d episodios</item>
+        <item quantity="other">%1$d episodios</item>
+    </plurals>
+    <plurals name="player_episodes_queued">
+        <item quantity="one">%1$d episodio en cola</item>
+        <item quantity="many">%1$d episodios en cola</item>
+        <item quantity="other">%1$d episodios en cola</item>
+    </plurals>
+    <!-- Same-show banner button -->
+    <plurals name="player_same_show_add_next">
+        <item quantity="one">Añadir el siguiente de este podcast</item>
+        <item quantity="many">Añadir los %1$d siguientes de este podcast</item>
+        <item quantity="other">Añadir los %1$d siguientes de este podcast</item>
+    </plurals>
+    <plurals name="player_same_show_preview">
+        <item quantity="one">Ver %1$d próximo episodio</item>
+        <item quantity="many">Ver los %1$d próximos episodios</item>
+        <item quantity="other">Ver los %1$d próximos episodios</item>
+    </plurals>
+</resources>

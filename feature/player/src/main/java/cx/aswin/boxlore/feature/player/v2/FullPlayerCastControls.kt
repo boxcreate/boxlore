@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -53,6 +54,9 @@ import com.google.android.gms.cast.framework.CastContext
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
+import cx.aswin.boxlore.feature.player.R
 import kotlinx.coroutines.delay
 
 @OptIn(UnstableApi::class)
@@ -85,7 +89,7 @@ internal fun BoxLoreCastRouteButton(
     ) {
         Icon(
             imageVector = if (isCasting) Icons.Rounded.CastConnected else Icons.Rounded.Cast,
-            contentDescription = if (isCasting) "Change Cast device" else "Cast",
+            contentDescription = stringResource(if (isCasting) R.string.player_change_cast_device else R.string.player_cast),
             tint = effectiveTint,
             modifier = Modifier.size(20.dp),
         )
@@ -282,7 +286,7 @@ private fun CastRoutePickerContent(
             Spacer(modifier = Modifier.height(18.dp))
         }
         Text(
-            text = "AVAILABLE DEVICES",
+            text = stringResource(R.string.player_cast_available_devices).uppercase(currentLocale()),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.SemiBold,
@@ -290,8 +294,8 @@ private fun CastRoutePickerContent(
         Spacer(modifier = Modifier.height(8.dp))
         if (isCasting) {
             CastRouteRow(
-                title = "This phone",
-                subtitle = "Move playback back here",
+                title = stringResource(R.string.player_cast_this_phone),
+                subtitle = stringResource(R.string.player_cast_move_back_here),
                 selected = false,
                 icon = {
                     Icon(
@@ -313,7 +317,7 @@ private fun CastRoutePickerContent(
                     isPending ||
                         route.connectionState == MediaRouter.RouteInfo.CONNECTION_STATE_CONNECTING,
                     description = route.description,
-                ),
+                ).asString(),
                 selected = route.isSelected,
                 enabled = connectingRouteId == null,
                 connecting = isPending,
@@ -330,7 +334,7 @@ private fun CastRoutePickerContent(
         Spacer(modifier = Modifier.height(8.dp))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         Text(
-            text = "Devices must be on the same Wi‑Fi network.",
+            text = stringResource(R.string.player_cast_same_wifi),
             modifier = Modifier.padding(top = 14.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -356,7 +360,7 @@ private fun CastPickerHeader() {
         }
         Spacer(modifier = Modifier.width(14.dp))
         Text(
-            text = "Choose where to listen",
+            text = stringResource(R.string.player_cast_choose_where),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold,
         )
@@ -428,14 +432,14 @@ private fun CastRouteRow(
         }
         if (connecting) {
             Text(
-                text = "Connecting…",
+                text = stringResource(R.string.player_cast_connecting),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold,
             )
         } else if (selected) {
             Text(
-                text = "Playing",
+                text = stringResource(R.string.player_playing),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold,
@@ -465,7 +469,7 @@ private fun CastConnectingIndicator(deviceName: String) {
                 trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
             )
             Text(
-                text = "Connecting to $deviceName…",
+                text = stringResource(R.string.player_cast_connecting_to, deviceName),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -489,11 +493,11 @@ private fun CastRouteEmptyState() {
             trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         )
         Text(
-            text = "Looking for nearby devices…",
+            text = stringResource(R.string.player_cast_looking),
             style = MaterialTheme.typography.titleSmall,
         )
         Text(
-            text = "Make sure your Cast device is awake.",
+            text = stringResource(R.string.player_cast_awake),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

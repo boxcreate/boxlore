@@ -9,6 +9,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.pages.SupportTierCardData
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -28,13 +30,13 @@ internal fun supportControlNoticeContent(
     content = Color.White,
     muted = Color(0xFFA6A6B4),
     scrim = Color(0xBD000000),
-    chip = "DEPLOYMENT PAUSED",
+    chip = R.string.settings_support_notice_control_chip,
     chipColor = Color(0xFFFFB347),
     chipFont = null,
-    title = "The power grid isn't connected yet",
+    title = R.string.settings_support_notice_control_title,
     titleFont = null,
-    body = "Your $priceLabel is still yours. Payments aren't set up yet, so nothing was charged.",
-    dismiss = "Stand by",
+    body = UiText.res(R.string.settings_support_notice_control_body, priceLabel),
+    dismiss = R.string.settings_support_notice_control_dismiss,
     badge = Icons.Rounded.PowerOff,
     badgeContainer = Color(0xFF1E1E26),
     badgeContent = Color.White,

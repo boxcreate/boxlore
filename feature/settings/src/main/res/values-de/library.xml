@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_library_charts_title">Charts</string>
+    <string name="settings_library_charts_footer">Legt die Top-Charts in Entdecken fest.</string>
+    <string name="settings_library_country">Land</string>
+    <string name="settings_library_recommendations_title">Empfehlungen</string>
+    <string name="settings_library_recommendations_footer">Für dich, Suche und Stimmungen nutzen diese Sprachen.</string>
+    <string name="settings_library_languages">Sprachen</string>
+    <string name="settings_library_add_rss">Podcast per RSS-Feed hinzufügen</string>
+    <string name="settings_library_add_rss_description">Für Podcasts, die nicht im Katalog sind</string>
+    <string name="settings_library_country_faq_toggle">Warum ist mein Land nicht aufgeführt?</string>
+    <string name="settings_collapse">Einklappen</string>
+    <string name="settings_expand">Ausklappen</string>
+    <string name="settings_library_country_faq_title">Warum ist mein Land nicht aufgeführt?</string>
+    <string name="settings_library_country_faq_intro">Wir arbeiten daran, mehr Länder abzudecken! Neue Länder kommen derzeit vor allem dort dazu, wo viele aktiv danach fragen.</string>
+    <string name="settings_library_country_faq_effects">Was das für dich bedeutet:</string>
+    <string name="settings_library_country_faq_search">Die Suche bleibt weltweit: Du kannst weiterhin alle Inhalte suchen, finden und öffnen, auch wenn dein Land noch nicht offiziell aufgeführt ist.</string>
+    <string name="settings_library_country_faq_recommendations">Smarte Empfehlungen funktionieren trotzdem: Die Empfehlungen schlagen dir weiterhin passende Podcasts auf Basis deiner Hörgewohnheiten vor, unabhängig vom gewählten Land.</string>
+    <string name="settings_library_country_faq_changes">Was das Land ändert: die Top-Charts in Entdecken. Deine Sprachen bleiben, wie sie sind.</string>
+    <string name="settings_library_country_faq_languages">Sprachen sind getrennt: Wähle sie unter Empfehlungen › Sprachen für Für dich, Suche und Stimmungen. Charts richten sich nach dem Land und werden nicht nach Sprache gefiltert.</string>
+    <string name="settings_library_country_faq_more">Du wünschst dir ein anderes Land oder eine andere Sprache?</string>
+    <string name="settings_library_country_faq_tell_us">Sag es uns per Feedback oder auf GitHub – wir erweitern das Angebot nach Nachfrage.</string>
+    <string name="settings_library_saved_shows_counting">Wird gezählt…</string>
+    <string name="settings_library_saved_shows_none">Nichts gespeichert für Podcasts, die du nicht abonniert hast</string>
+    <string name="settings_library_storage_title">Speicher</string>
+    <string name="settings_library_clear_saved_shows">Gespeicherte Podcasts löschen</string>
+    <string name="settings_clear_saved_shows_title">Gespeicherte Podcasts löschen?</string>
+    <string name="settings_clear_saved_shows_kept">Abonnierte Podcasts, dein Hörverlauf, Downloads und die Warteschlange bleiben unberührt.</string>
+    <string name="settings_clear_saved_shows_confirm">Löschen</string>
+    <string name="settings_cancel">Abbrechen</string>
+    <!-- Under Clear saved shows: how many shows you don't follow have saved episode lists. -->
+    <plurals name="settings_library_saved_shows_count">
+        <item quantity="one">Folgenlisten von %1$d Podcast, den du nicht abonniert hast</item>
+        <item quantity="other">Folgenlisten von %1$d Podcasts, die du nicht abonniert hast</item>
+    </plurals>
+    <plurals name="settings_clear_saved_shows_body">
+        <item quantity="one">Folgenlisten von %1$d Podcast, den du nicht abonniert hast, werden von diesem Handy entfernt. Sie werden wieder geladen, wenn du den Podcast öffnest.</item>
+        <item quantity="other">Folgenlisten von %1$d Podcasts, die du nicht abonniert hast, werden von diesem Handy entfernt. Sie werden wieder geladen, wenn du einen Podcast öffnest.</item>
+    </plurals>
+</resources>

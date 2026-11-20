@@ -16,7 +16,8 @@
     <string name="wear_downloads">Downloads</string>
     <string name="wear_settings">Settings</string>
     <string name="wear_up_next">Up next</string>
-    <string name="wear_open_player">Open player</string>
+    <!-- Read aloud for the playing episode on Home: the episode's title, the show's name, then what a tap does. -->
+    <string name="wear_now_playing_label">%1$s. %2$s. Open player</string>
 
     <!-- Episode and show details -->
     <string name="wear_minutes">%1$d min</string>
@@ -26,6 +27,11 @@
         <item quantity="one">%1$d new episode</item>
         <item quantity="other">%1$d new episodes</item>
     </plurals>
+    <!-- Read aloud for a show in Your shows: the show's name, then how many new episodes it has ("3 new episodes"). -->
+    <string name="wear_show_with_new_episodes">%1$s, %2$s</string>
+    <!-- File sizes on small screens; %1$s is the number already formatted for the language. -->
+    <string name="wear_size_megabytes">%1$s MB</string>
+    <string name="wear_size_gigabytes">%1$s GB</string>
     <string name="wear_downloads_usage">On this watch · %1$s of %2$s</string>
     <string name="wear_over_limit_title">Not enough space</string>
     <string name="wear_over_limit_body">This episode is larger than your storage limit. Raise the limit in Settings.</string>

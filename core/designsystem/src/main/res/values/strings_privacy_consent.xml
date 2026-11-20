@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The data and privacy consent dialog. Privacy wording stays in English for now: every string here is
+    translatable="false". Translating it needs the maintainer's approval of the exact wording, one
+    language at a time (docs/i18n/TRANSLATING.md).
+-->
+<resources>
+    <string name="privacy_consent_title" translatable="false">Data &amp; Privacy</string>
+    <string name="privacy_consent_subtitle" translatable="false">Customize your data sharing settings</string>
+    <string name="privacy_consent_why_title" translatable="false">Why we collect data</string>
+    <string name="privacy_consent_why_body" translatable="false">The data shared helps us improve the product by understanding user behaviour. No user-specific targeted personalization will be done, and no data collected will ever be user-identifiable.</string>
+    <string name="privacy_consent_view_data" translatable="false">View Data Collected</string>
+    <string name="privacy_consent_data_crash_title" translatable="false">Crash Reports</string>
+    <string name="privacy_consent_data_crash_body" translatable="false">Stack traces, device state, and crash logs to identify stability issues.</string>
+    <string name="privacy_consent_data_usage_title" translatable="false">Usage Statistics</string>
+    <string name="privacy_consent_data_usage_body" translatable="false">Events such as play, subscribe, search, screen views, and playback state.</string>
+    <string name="privacy_consent_agree_all" translatable="false">Agree to All</string>
+    <string name="privacy_consent_agree_all_body" translatable="false">Enables Crash Reporting, Usage Analytics, and accepts Privacy Policy.</string>
+    <string name="privacy_consent_individual" translatable="false">Individual Settings</string>
+    <string name="privacy_consent_crash_toggle" translatable="false">Crash Reports (Optional)</string>
+    <string name="privacy_consent_crash_toggle_body" translatable="false">Share stack traces when the app crashes so we can fix bugs.</string>
+    <string name="privacy_consent_usage_toggle" translatable="false">Usage Statistics (Optional)</string>
+    <string name="privacy_consent_usage_toggle_body" translatable="false">Share anonymous interaction data to help us identify popular features.</string>
+    <string name="privacy_consent_policy" translatable="false">Privacy Policy</string>
+    <string name="privacy_consent_policy_agree" translatable="false">I have read and agree to the Privacy Policy</string>
+    <string name="privacy_consent_read_policy" translatable="false">Read Policy</string>
+    <string name="privacy_consent_accept" translatable="false">Accept &amp; Continue</string>
+</resources>

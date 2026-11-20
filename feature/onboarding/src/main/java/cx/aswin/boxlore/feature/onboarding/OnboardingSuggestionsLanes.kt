@@ -1,20 +1,28 @@
 package cx.aswin.boxlore.feature.onboarding
 
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumRowDto
 import cx.aswin.boxlore.core.network.model.toPodcast
 
-/** One selectable lane on the suggestions screen (curriculum row or charts). */
+/**
+ * One selectable lane on the suggestions screen (curriculum row or charts). A server row title stays
+ * as the server sent it ([UiText.Raw]); titles and purposes the app writes are resources.
+ */
 internal data class OnboardingSuggestionsLane(
     val id: String,
-    val title: String,
-    val purpose: String,
+    val title: UiText,
+    val purpose: UiText,
     val isCharts: Boolean,
     val podcasts: List<Podcast>,
 )
 
 internal object OnboardingSuggestionsLanes {
     const val CHARTS_LANE_ID = "charts"
+
+    /** Row titles the app writes itself when synthesis falls back to charts; shown in the app's language. */
+    const val FALLBACK_TRENDING_TITLE = "Trending Hits"
+    const val FALLBACK_GENRES_TITLE = "Trending in your Genres"
 
     fun build(
         curriculumRows: List<OnboardingCurriculumRowDto>,
@@ -25,7 +33,7 @@ internal object OnboardingSuggestionsLanes {
             curriculumRows.mapIndexed { index, row ->
                 OnboardingSuggestionsLane(
                     id = "curriculum_$index",
-                    title = row.rowTitle.ifBlank { "For you" },
+                    title = titleForCurriculumRow(row.rowTitle),
                     purpose = purposeForCurriculumTitle(row.rowTitle),
                     isCharts = false,
                     podcasts = row.podcasts.map { it.toPodcast() },
@@ -35,7 +43,7 @@ internal object OnboardingSuggestionsLanes {
         return lanes +
             OnboardingSuggestionsLane(
                 id = CHARTS_LANE_ID,
-                title = "Popular now",
+                title = UiText.res(R.string.suggestions_lane_popular_now),
                 purpose = chartsPurpose(selectedGenres),
                 isCharts = true,
                 podcasts = chartsPodcasts,
@@ -61,32 +69,44 @@ internal object OnboardingSuggestionsLanes {
         subscribedIds: Set<String>,
     ): Int = lane.podcasts.count { it.id in subscribedIds }
 
-    fun purposeForCurriculumTitle(title: String): String {
+    /** A server row title as sent; a blank one, or one of the app's own fallback titles, from resources. */
+    fun titleForCurriculumRow(rowTitle: String): UiText = when (rowTitle.trim()) {
+        "" -> UiText.res(R.string.suggestions_lane_for_you)
+        FALLBACK_TRENDING_TITLE -> UiText.res(R.string.suggestions_lane_trending_hits)
+        FALLBACK_GENRES_TITLE -> UiText.res(R.string.suggestions_lane_trending_genres)
+        else -> UiText.raw(rowTitle)
+    }
+
+    /** Matches the server's English row titles; the result is in the app's language. */
+    fun purposeForCurriculumTitle(title: String): UiText {
         val lower = title.trim().lowercase()
-        if (lower.isEmpty()) return "Shows matched to this taste lane."
-        return CURRICULUM_PURPOSE_RULES
-            .firstOrNull { (keys, _) -> keys.any { key -> lower.contains(key) } }
-            ?.second
-            ?: "A themed set based on what you told us."
+        if (lower.isEmpty()) return UiText.res(R.string.suggestions_lane_purpose_matched)
+        return UiText.res(
+            CURRICULUM_PURPOSE_RULES
+                .firstOrNull { (keys, _) -> keys.any { key -> lower.contains(key) } }
+                ?.second
+                ?: R.string.suggestions_lane_purpose_themed,
+        )
     }
 
     private val CURRICULUM_PURPOSE_RULES =
         listOf(
-            listOf("wind", "sleep", "calm", "relax") to "Softer shows for winding down.",
-            listOf("news", "daily", "brief") to "Stay current without the noise.",
-            listOf("deep", "learn", "curious") to "Longer listens that go further.",
-            listOf("laugh", "comedy", "fun") to "Lighter shows when you want a lift.",
-            listOf("crime", "mystery", "true") to "Stories with tension and payoff.",
-            listOf("similar", "selection") to "More like the shows you already picked.",
-            listOf("curated", "feed") to "A starter mix from your preferences.",
+            listOf("wind", "sleep", "calm", "relax") to R.string.suggestions_lane_purpose_wind_down,
+            listOf("news", "daily", "brief") to R.string.suggestions_lane_purpose_news,
+            listOf("deep", "learn", "curious") to R.string.suggestions_lane_purpose_deep,
+            listOf("laugh", "comedy", "fun") to R.string.suggestions_lane_purpose_lighter,
+            listOf("crime", "mystery", "true") to R.string.suggestions_lane_purpose_tension,
+            listOf("similar", "selection") to R.string.suggestions_lane_purpose_similar,
+            listOf("curated", "feed") to R.string.suggestions_lane_purpose_starter,
         )
 
-    private fun chartsPurpose(selectedGenres: Set<String>): String {
-        if (selectedGenres.isEmpty()) return "Charting shows in your region right now."
-        val label =
-            selectedGenres
-                .take(2)
-                .joinToString(" · ")
-        return "Trending in $label for your country."
+    /** Genre keys become their names in the app's language; one or two of them, as whole sentences. */
+    private fun chartsPurpose(selectedGenres: Set<String>): UiText {
+        val names = selectedGenres.take(2).map { key -> onboardingGenreNameRes(key)?.let { UiText.res(it) } ?: UiText.raw(key) }
+        return when (names.size) {
+            0 -> UiText.res(R.string.suggestions_lane_purpose_charts_region)
+            1 -> UiText.res(R.string.suggestions_lane_purpose_charts_one, names[0])
+            else -> UiText.res(R.string.suggestions_lane_purpose_charts_two, names[0], names[1])
+        }
     }
 }

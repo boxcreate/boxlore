@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Onboarding show search: pick shows to follow before suggestions (or during Echo's chat). -->
+    <string name="onboarding_search_placeholder">Search titles, hosts, or topics…</string>
+    <!-- Clears the search box. -->
+    <string name="onboarding_search_clear">Clear</string>
+    <!-- First category chip: what's popular across all genres. -->
+    <string name="onboarding_search_trending">Trending</string>
+    <!-- Heading above the popular shows when no genre chip is picked. -->
+    <string name="onboarding_search_trending_shows">Trending Shows</string>
+    <!-- Heading above the popular shows for one genre chip. %1$s is the chip's label, for example "Comedy". -->
+    <string name="onboarding_search_popular_in">Popular in %1$s</string>
+    <string name="onboarding_search_no_popular">No recommendations found</string>
+    <string name="onboarding_search_empty_title">No Podcasts Found</string>
+    <string name="onboarding_search_empty_body">Please try searching for the exact word or name of the podcast you are looking for, and double-check spacing and spelling.</string>
+    <!-- Section headings in the results: shows from boxlore's catalog, then other shows the search found. -->
+    <string name="onboarding_search_matches">Matches</string>
+    <string name="onboarding_search_also_found">Also found</string>
+    <!-- Above the row of picked shows at the bottom. -->
+    <plurals name="onboarding_search_selected_shows">
+        <item quantity="one">Selected Shows (%d)</item>
+        <item quantity="other">Selected Shows (%d)</item>
+    </plurals>
+    <!-- Screen-reader label of the small badge that removes a picked show. -->
+    <string name="onboarding_search_remove">Remove</string>
+    <!-- Screen-reader state of a show's pick button. -->
+    <string name="onboarding_search_selected">Selected</string>
+    <string name="onboarding_search_select">Select</string>
+    <!-- When search was opened from Echo's chat. -->
+    <string name="onboarding_search_side_trip_note">These shows will be added to your library, and you\'ll hop back into the chat to keep building your feed.</string>
+    <plurals name="onboarding_search_subscribe_continue_chat">
+        <item quantity="one">Subscribe &amp; Continue Chat (%d)</item>
+        <item quantity="other">Subscribe &amp; Continue Chat (%d)</item>
+    </plurals>
+    <!-- Bottom button: continue with this many picked shows. -->
+    <plurals name="onboarding_search_continue_with">
+        <item quantity="one">Continue with %d</item>
+        <item quantity="other">Continue with %d</item>
+    </plurals>
+    <string name="onboarding_search_failed_title">Couldn’t search right now</string>
+    <string name="onboarding_search_failed_body">Check your connection and try again.</string>
+    <string name="onboarding_search_try_again">Try again</string>
+</resources>

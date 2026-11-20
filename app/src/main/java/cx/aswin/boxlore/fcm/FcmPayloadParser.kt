@@ -35,19 +35,31 @@ data class ParsedFcmNotification(
     val releaseUrl: String? = null,
 )
 
+/** The listener-language text an announcement push falls back to when it leaves its own out. */
+data class PushTextFallbacks(val title: String, val body: String, val actionLabel: String) {
+    companion object {
+        fun from(context: android.content.Context): PushTextFallbacks = PushTextFallbacks(
+            title = context.getString(cx.aswin.boxlore.R.string.app_push_fallback_title),
+            body = context.getString(cx.aswin.boxlore.R.string.app_push_fallback_body),
+            actionLabel = context.getString(cx.aswin.boxlore.R.string.app_push_fallback_action),
+        )
+    }
+}
+
 /**
  * Pure Kotlin parser to extract notification configurations from raw FCM map data.
  * Built to be cleanly testable under JVM unit tests.
  */
 object FcmPayloadParser {
-    fun parse(data: Map<String, String>): ParsedFcmNotification {
-        val title = data["title"] ?: "boxlore Update"
-        val body = data["body"] ?: "Check out what's new in boxlore!"
+    /** Reads [data]; a title, text or button label the push leaves out comes from [fallbacks]. */
+    fun parse(data: Map<String, String>, fallbacks: PushTextFallbacks): ParsedFcmNotification {
+        val title = data["title"] ?: fallbacks.title
+        val body = data["body"] ?: fallbacks.body
         val type = data["type"] ?: "both"
         val route = data["route"]
         val imageUrl = data["image"]
         val sound = data["sound"] ?: "default"
-        val actionLabel = data["action_label"] ?: "View"
+        val actionLabel = data["action_label"] ?: fallbacks.actionLabel
         val showActionInPush = data["show_action_in_push"] != "false"
         val showActionInApp = data["show_action_in_app"] != "false"
         val category = data["category"] ?: "WHAT'S NEW"

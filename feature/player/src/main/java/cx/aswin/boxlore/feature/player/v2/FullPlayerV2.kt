@@ -53,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -68,6 +69,7 @@ import cx.aswin.boxlore.core.playback.skipBackward
 import cx.aswin.boxlore.core.playback.skipForward
 import cx.aswin.boxlore.core.playback.skipToNextEpisode
 import cx.aswin.boxlore.core.playback.stopCasting
+import cx.aswin.boxlore.feature.player.R
 import cx.aswin.boxlore.feature.player.v2.logic.PlayerMetadataStylingLogic
 import cx.aswin.boxlore.feature.player.v2.logic.calculateResponsiveHeroLayout
 import cx.aswin.boxlore.feature.player.v2.logic.useMinimalPlayer
@@ -294,7 +296,7 @@ fun FullPlayerV2(
                 ui = ui,
                 resources = TabletPlayerResources(
                     FullPlayerBodyResources(scope, queueSnackbarHostState, statusBarPadding, navBarPadding, modifier),
-                    PlayerQueueSheetResources(scope, queueSnackbarHostState, queueSheetState),
+                    PlayerQueueSheetResources(scope, queueSnackbarHostState, queueSheetState, playerQueueText()),
                     minimalPlayerActions(dependencies, state, ui, playerActions),
                     useMinimalPlayer(style, isVideoPodcast),
                 ),
@@ -793,7 +795,7 @@ private fun CastHeroModeToggle(
         ) {
             Icon(
                 imageVector = if (showCastControls) Icons.Rounded.Image else Icons.Rounded.CastConnected,
-                contentDescription = if (showCastControls) "Show artwork" else "Show Cast controls",
+                contentDescription = stringResource(if (showCastControls) R.string.player_show_artwork else R.string.player_show_cast_controls),
             )
         }
     }

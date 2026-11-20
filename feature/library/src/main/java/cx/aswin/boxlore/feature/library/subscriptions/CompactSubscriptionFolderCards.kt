@@ -36,6 +36,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,6 +48,7 @@ import cx.aswin.boxlore.core.designsystem.components.rememberNewEpisodeBadgeShim
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.boxloreCombinedClickable as combinedClickable
 import cx.aswin.boxlore.core.model.Podcast
@@ -54,6 +56,7 @@ import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.core.model.isLatestEpisodeNew
 import cx.aswin.boxlore.feature.library.LocalLastSeenEpisodes
+import cx.aswin.boxlore.feature.library.R
 
 /**
  * 1×1 compact folder card rendered in the Subscriptions grid, sharing the same 1:1 cell size
@@ -222,7 +225,7 @@ private fun CompactFolderIconContent(
                 textAlign = TextAlign.Center,
             )
             Text(
-                text = "$podcastCount shows",
+                text = showCountLabel(podcastCount).asString(),
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -357,7 +360,7 @@ private fun CompactOverflowSlot(
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = "+$count",
+            text = stringResource(R.string.library_overflow_count, count),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = GoogleSansWeight.bold,
             color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -481,7 +484,7 @@ private fun MiniPodcastSlot(
                     } else {
                         Modifier.combinedClickable(
                             onClick = onEmptyClick,
-                            onClickLabel = "Open folder",
+                            onClickLabel = stringResource(R.string.library_folder_open),
                             onLongClick = onLongClick,
                         )
                     }
@@ -506,7 +509,7 @@ private fun BoxScope.MiniNewEpisodeBadge(
             .background(brush, shape),
     ) {
         Text(
-            text = "NEW",
+            text = stringResource(R.string.library_new_badge),
             style = MaterialTheme.typography.labelSmall.copy(
                 fontSize = 6.sp,
                 fontWeight = GoogleSansWeight.extraBold,

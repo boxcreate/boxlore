@@ -36,6 +36,7 @@ Announcement title:
 - Episode titles only shows a show's episodes as a short list of titles. Turn it on from the menu on a show's page or in Settings › Appearance › Show pages.
 - Archive episodes you don't plan to hear, like trailers, from a show's page or an episode's page. They leave your lists without being marked as played, and you can bring them back any time.
 - Make playlists in Library from the shows you follow, like one for comedy and one for history. Each keeps its place, picks up new episodes by itself, and you can switch between them any time.
+- boxlore now comes in Spanish, Brazilian Portuguese, German and French. It follows your phone's language, and you can pick another in Settings › Appearance › App language.
 
 ## Improved
 

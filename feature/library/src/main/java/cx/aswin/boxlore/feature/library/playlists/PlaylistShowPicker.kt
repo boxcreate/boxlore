@@ -34,6 +34,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -49,16 +51,19 @@ import cx.aswin.boxlore.core.model.PLAYLIST_NAME_MAX_LENGTH
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.model.normalizePlaylistName
+import cx.aswin.boxlore.feature.library.R
 
 /** The show picker's wording. */
 internal object PlaylistPickerCopy {
-    const val ADD_SHOWS = "Add shows"
-    const val ADD = "Add"
-    const val FROM_FOLDERS = "Add a folder’s shows"
-    const val SHOWS_YOU_FOLLOW = "Shows you follow"
-    const val NO_FOLLOWED = "Follow some shows first, then add them here."
-    const val ALL_ADDED = "Every show you follow is already in this playlist."
-    fun picked(count: Int) = if (count == 1) "1 show picked" else "$count shows picked"
+    val ADD_SHOWS: String @Composable get() = stringResource(R.string.library_add_shows)
+    val ADD: String @Composable get() = stringResource(R.string.library_add)
+    val FROM_FOLDERS: String @Composable get() = stringResource(R.string.library_playlist_from_folders)
+    val SHOWS_YOU_FOLLOW: String @Composable get() = stringResource(R.string.library_shows_you_follow)
+    val NO_FOLLOWED: String @Composable get() = stringResource(R.string.library_playlist_no_followed)
+    val ALL_ADDED: String @Composable get() = stringResource(R.string.library_playlist_all_added)
+
+    @Composable
+    fun picked(count: Int): String = pluralStringResource(R.plurals.library_shows_picked, count, count)
 }
 
 /** Pure rules for the show picker, unit-tested without Compose. */
@@ -111,19 +116,19 @@ internal fun PlaylistShowPicker(
         Column(Modifier.fillMaxWidth().navigationBarsPadding().testTag(PLAYLIST_SHOW_PICKER_TAG)) {
             Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(if (creating) PlaylistCopy.NEW_PLAYLIST else PlaylistPickerCopy.ADD_SHOWS, style = MaterialTheme.typography.titleLarge, fontWeight = GoogleSansWeight.bold)
+                    Text(if (creating) stringResource(PlaylistCopy.NEW_PLAYLIST) else PlaylistPickerCopy.ADD_SHOWS, style = MaterialTheme.typography.titleLarge, fontWeight = GoogleSansWeight.bold)
                     Text(PlaylistPickerCopy.picked(state.picked.size), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                TextButton(onClick = state::closeEditor) { Text(PlaylistCopy.CANCEL) }
+                TextButton(onClick = state::closeEditor) { Text(stringResource(PlaylistCopy.CANCEL)) }
                 Button(onClick = confirm, enabled = canConfirm, modifier = Modifier.padding(start = 4.dp).heightIn(min = 48.dp)) {
-                    Text(if (creating) PlaylistCopy.CREATE else PlaylistPickerCopy.ADD)
+                    Text(if (creating) stringResource(PlaylistCopy.CREATE) else PlaylistPickerCopy.ADD)
                 }
             }
             if (creating) {
                 OutlinedTextField(
                     value = state.nameDraft,
                     onValueChange = { state.nameDraft = it.take(PLAYLIST_NAME_MAX_LENGTH) },
-                    label = { Text(PlaylistCopy.NAME_LABEL) },
+                    label = { Text(stringResource(PlaylistCopy.NAME_LABEL)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp).testTag(PLAYLIST_NAME_FIELD_TAG),

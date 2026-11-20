@@ -44,7 +44,7 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 
 - Cards and panels use solid Material 3 surfaces and colour roles, never hard-coded colours, so every theme and Pure style applies.
 - `OptimizedImage`: the artwork composable, with `fallbackUrls`, `errorContent`, `showLoadingPlaceholder` and `onLoaded` options.
-- `FeedMediaCard`, `ExpressiveFeedMediaCard`, `CuratedEpisodeCard`, `EqualHeightPosterGrid`: discovery cards. `FeedMediaCardSkeleton` shares the loaded layout, so placeholders match cards at any font scale.
+- `FeedMediaCard`, `ExpressiveFeedMediaCard`, `CuratedEpisodeCard`, `EqualHeightPosterGrid`: discovery cards. `FeedMediaCardSkeleton` shares the loaded layout at any font scale.
 - `TabletFeaturedRow`, `AdaptiveOverflowRow`: a feature card beside equal-height posters, and a chip row that packs to the available width.
 - `DiscoveryTabSwitcher`: the Explore and Subscriptions tab capsule; pages keep selection.
 - `TopBarUtilityActions`: connected Update, Feedback and Settings segments. Update shows only when `LocalUpdateAvailableAction` is set; `LocalFeedbackReplyWaiting` marks Feedback with a dot. Owners keep placement and callbacks.
@@ -52,7 +52,7 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 - `ContentLanguagesSheet`: the content-languages sheet. English can be switched off only when `ContentRegions.canSwitchEnglishOff` allows it.
 - `BoxloreDialog`, `BoxloreModalBottomSheet`, `BoxloreAlertDialogOverride`, `EngagementBottomSheetScaffold`: phone dialogs and sheets that become bounded, fold-safe dialogs on tablets.
 - `RemoveDownloadConfirmationDialog`, `PrivacyConsentDialog`, `RepairProgressPopup`: shared confirmation, consent and repair-status UI; the caller owns visibility. `fromWatch` words the first for a copy on the watch.
-- `AddToPlaylistSheet` (a show's playlists with toggling checks; draft in `AddToPlaylistSheetState`), `PlaylistNameDialog`, `DeletePlaylistDialog`, `PlaylistCover` (up to four shows): stateless playlist UI; `PlaylistCopy` and `AddToPlaylistCopy` hold the wording.
+- `AddToPlaylistSheet` (a show's playlists with toggling checks; draft in `AddToPlaylistSheetState`), `PlaylistNameDialog`, `DeletePlaylistDialog`, `PlaylistCover` (up to four shows): stateless playlist UI; `PlaylistCopy` and `AddToPlaylistCopy` hold its resources.
 - `SendToWatchIcon`, `WatchEpisodeActions`, `LocalWatchEpisodeActions`: Send to watch for one episode and its state on the watch (`WatchEpisodeCopy`). The local is null without a linked watch, which hides the icon.
 - `SleepTimerPopup`: the late-night sleep timer prompt; reports `SleepTimerPopupDismissReason`. With `onPlayOnWatch` it also offers a just-paused watch back and waits longer.
 - `PlayingOnPill`, `PlaybackPlaceNotice`, `LocalWatchPlayOffer`: where an episode plays while a watch with boxlore is in reach of the phone, and the offer to hand playback to the watch. `LocalWatchPlayOffer` is null without one, which hides them.
@@ -95,12 +95,13 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 - `ShareManager`: share cards and the system share sheet; reports `share_content` through `:core:analytics`.
 - `ShareManager.episodeShareLink`, `copyEpisodeLink`: episode links resolved through the app-installed `EpisodeShareTargetSource`, falling back to the episode's own fields.
 - `ShareBottomSheet`: the share sheet, with a preview of the card it sends; short windows show a name row instead.
-- `ShareCardRenderer`, `shareCardColors`: the card bitmap, drawn as a boxlore player in tones of the artwork's seed colour (boxlore indigo when the cover has none). The artwork is shown whole with rounded corners, and the words line up with its edges. `shareEpisodeDetails` and `sharePodcastDetails` give the card's details line: an episode's length and date, or a show's genre and how often it posts.
+- `ShareCardRenderer`, `shareCardColors`: the card bitmap, a boxlore player in tones of the artwork's seed colour (boxlore indigo without one), artwork whole with rounded corners. `shareEpisodeDetails` and `sharePodcastDetails` give its details line: an episode's length and date, or a show's genre and rhythm.
 - `startFirstAvailable`, `openLink`, `SafeUriHandler` (`links/`): open the first intent an installed app handles; never throw when none can.
 
-### Analytics helper
+### Analytics and text helpers
 
 - `TrackScreenView`: the one page-view helper for screens, tabs, sheets and dialogs. It sends once per visit, survives rotation and resizing, and registers with `ScreenViews` from `:core:analytics`.
+- `UiText.asString()`, `currentLocale()` (`text/`): resolve `:core:model`'s `UiText` and give `LocaleFormats` the screen's language ([translating](../../docs/i18n/TRANSLATING.md)); `contentLanguageName` and `contentRegionName` name languages and regions in it.
 
 ## Brand identity
 
@@ -128,6 +129,7 @@ src/main/java/cx/aswin/boxlore/core/designsystem/
   links/        safe link and intent launching
   list/         lazy-list keys, progressive search scrolling
   share/        ShareManager, ShareCardRenderer, ShareCardModel, ShareCardDetails
+  text/         UiText.asString, currentLocale
   theme/        theme, presets, artwork colour, typography, shapes, motion, shimmer, tablet input
 src/main/res/
   drawable/, drawable-nodpi/   brand vectors, placeholder covers, brief artwork
@@ -162,7 +164,7 @@ src/main/assets/echo-character/  manifest.json, stills (WebP), clips (MP4)
 
 ## Testing notes
 
-Tests live in `src/test`; Compose tests use Robolectric. Some shared components are tested in their main consumer, as noted. Phone goldens are local-only; see [`docs/TESTING.md`](../../docs/TESTING.md#screenshots).
+Tests live in `src/test`; Compose tests use Robolectric. Some components are tested in their main consumer, as noted. Phone goldens are local-only ([`docs/TESTING.md`](../../docs/TESTING.md#screenshots)).
 
 | Area | Test classes |
 | :--- | :--- |
@@ -175,7 +177,7 @@ Tests live in `src/test`; Compose tests use Robolectric. Some shared components 
 | Press feedback, top bar, cards, tabs | `ExpressivePressFeedbackTest`, `TopBarUtilityActionsTest`, `HomeDiscoveryCardTest`, `DiscoveryTabSwitcherTest` in `:feature:home` |
 | Sleep prompt, playing on a watch, languages | `SleepPromptMotionTest`, `SleepTimerPopupTest`, `PlaceMenuTest`, `RemoveDownloadCopyTest`, `ContentLanguagesSheetCopyTest` |
 | Echo, brief | `EchoCharacterModelTest`, `EchoMotionModelTest`, `BriefingArtworkTest`; `BriefingShowTest` in `:feature:briefing` |
-| Share, links, page views | `EpisodeShareLinkTest`, `ShareCardModelTest`, `ShareSheetBodyTest`, `SafeLinksTest`, `TrackScreenViewTest`; `ScreenViewCoverageTest` in `:core:testing` |
+| Share, links, page views, text | `EpisodeShareLinkTest`, `ShareCardModelTest`, `ShareCardDetailsTest`, `ShareSheetBodyTest`, `SafeLinksTest`, `TrackScreenViewTest`, `UiTextComposeTest`; `ScreenViewCoverageTest` in `:core:testing` |
 | Genres and lists | `GenreIconsTest`, `GenreSuggestionsTest`, `LazyListKeyPolicyTest`, `ProgressiveSearchScrollLogicTest` |
 
 ```bash

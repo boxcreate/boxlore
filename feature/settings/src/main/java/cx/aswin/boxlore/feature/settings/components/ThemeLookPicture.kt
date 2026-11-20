@@ -17,15 +17,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.pages.ThemePreviewColors
 
 /** A theme look in both modes side by side, for its picture tile. Picking a look never resets customized colors. */
 @Composable
 internal fun ThemeLookPicture(colors: ThemePreviewColors, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        BasicThemePreview("Light", colors.light, Modifier.weight(1f))
-        BasicThemePreview("Dark", colors.dark, Modifier.weight(1f))
+        BasicThemePreview(stringResource(R.string.theme_editor_light), colors.light, Modifier.weight(1f))
+        BasicThemePreview(stringResource(R.string.theme_editor_dark), colors.dark, Modifier.weight(1f))
     }
 }
 

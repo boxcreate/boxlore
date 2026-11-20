@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shown as the show name while every download plays -->
+    <string name="library_downloads_all">Tous les téléchargements</string>
+    <string name="library_downloads_error_loading">Erreur de chargement des téléchargements</string>
+    <!-- Screen-reader label -->
+    <string name="library_downloads_select_podcasts">Sélectionner des podcasts</string>
+    <!-- Screen-reader label -->
+    <string name="library_downloads_select_episodes">Sélectionner des épisodes</string>
+    <string name="library_downloads_offline_title">Mode hors ligne</string>
+    <string name="library_downloads_offline_body">Pas de connexion Internet. Lecture des épisodes téléchargés.</string>
+    <!-- Playful empty-state title; a light pun is welcome -->
+    <string name="library_downloads_empty_title">Le vide, version zen</string>
+    <string name="library_downloads_empty_offline_body">Aucun épisode téléchargé. Activez le Wi-Fi et branchez le chargeur pour synchroniser automatiquement vos téléchargements intelligents !</string>
+    <!-- Smart Downloads is a feature name -->
+    <string name="library_downloads_empty_body">Aucun épisode téléchargé pour l’instant. Activez les Téléchargements intelligents ci-dessus ou trouvez des podcasts à télécharger vous-même.</string>
+    <string name="library_downloads_delete_title">Supprimer les téléchargements ?</string>
+    <plurals name="library_downloads_delete_podcasts_body">
+        <item quantity="one">Voulez-vous vraiment supprimer tous les épisodes téléchargés du podcast sélectionné (%1$d) ?</item>
+        <item quantity="other">Voulez-vous vraiment supprimer tous les épisodes téléchargés des %1$d podcasts sélectionnés ?</item>
+    </plurals>
+    <string name="library_downloads_delete_episodes_title">Supprimer les téléchargements ?</string>
+    <plurals name="library_downloads_delete_episodes_body">
+        <item quantity="one">Supprimer %1$d épisode téléchargé sélectionné ?</item>
+        <item quantity="other">Supprimer %1$d épisodes téléchargés sélectionnés ?</item>
+    </plurals>
+    <string name="library_downloads_delete_show_title">Supprimer les téléchargements du podcast ?</string>
+    <!-- %1$s is the show's name -->
+    <string name="library_downloads_delete_show_body">Supprimer tous les épisodes téléchargés de « %1$s » ?</string>
+    <!-- Screen-reader label -->
+    <string name="library_downloads_play_show">Lire les téléchargements du podcast</string>
+    <!-- When the newest download was saved; %1$s is a short time such as 5m ago -->
+    <string name="library_downloads_latest">Dernier : %1$s</string>
+    <!-- Screen-reader label -->
+    <string name="library_downloads_status_queued">En attente</string>
+    <!-- Screen-reader label -->
+    <string name="library_downloads_status_failed">Échec</string>
+    <string name="library_downloads_failed_line">Échec du téléchargement</string>
+    <string name="library_downloads_download_again">Télécharger à nouveau</string>
+    <string name="library_remove_download">Supprimer le téléchargement</string>
+    <plurals name="library_downloads_failed_count">
+        <item quantity="one">%1$d échec de téléchargement</item>
+        <item quantity="other">%1$d échecs de téléchargement</item>
+    </plurals>
+    <!-- %2$s is a size such as 420.0 MB -->
+    <plurals name="library_downloads_count_line">
+        <item quantity="one">%1$d épisode • %2$s</item>
+        <item quantity="other">%1$d épisodes • %2$s</item>
+    </plurals>
+    <!-- %2$s is a size such as 420.0 MB -->
+    <plurals name="library_downloads_count_line_used">
+        <item quantity="one">%1$d épisode • %2$s utilisés</item>
+        <item quantity="other">%1$d épisodes • %2$s utilisés</item>
+    </plurals>
+    <!-- %2$s is a size such as 420.0 MB -->
+    <plurals name="library_downloads_count_line_saved">
+        <item quantity="one">%1$d épisode • %2$s enregistrés</item>
+        <item quantity="other">%1$d épisodes • %2$s enregistrés</item>
+    </plurals>
+    <!-- Count line, then how many downloads failed -->
+    <string name="library_downloads_count_and_failed">%1$s • %2$s</string>
+    <!-- File size in bytes -->
+    <string name="library_size_bytes">%1$s o</string>
+    <string name="library_size_kilobytes">%1$s Ko</string>
+    <string name="library_size_megabytes">%1$s Mo</string>
+    <string name="library_size_gigabytes">%1$s Go</string>
+    <string name="library_size_terabytes">%1$s To</string>
+    <!-- Feature name -->
+    <string name="library_smart_downloads">Téléchargements intelligents</string>
+    <string name="library_smart_downloads_enable">Activer les Téléchargements intelligents</string>
+    <string name="library_smart_downloads_subtitle">Bibliothèque hors ligne automatique</string>
+    <!-- Screen-reader label -->
+    <string name="library_smart_downloads_settings">Paramètres des Téléchargements intelligents</string>
+    <string name="library_smart_downloads_status_syncing">Synchronisation des épisodes</string>
+    <string name="library_smart_downloads_status_checking">Recherche de mises à jour</string>
+    <string name="library_smart_downloads_status_ready">File hors ligne prête</string>
+    <!-- One line: status, smart episodes on the phone out of the most allowed (the count that picks the form), and their size; eps is short for episodes -->
+    <plurals name="library_smart_downloads_collapsed_summary">
+        <item quantity="one">%1$s • %2$d/%3$d ép. (%4$d Mo)</item>
+        <item quantity="other">%1$s • %2$d/%3$d ép. (%4$d Mo)</item>
+    </plurals>
+    <!-- %1$s is a short time such as 5m ago, or a date and time -->
+    <string name="library_smart_downloads_last_sync">Dernière synchro : %1$s</string>
+    <string name="library_smart_downloads_last_sync_never">Dernière synchro : jamais</string>
+    <string name="library_smart_downloads_syncing">Synchronisation</string>
+    <string name="library_smart_downloads_sync_now">Synchroniser</string>
+    <plurals name="library_smart_downloads_downloading">
+        <item quantity="one">%1$d épisode en téléchargement en arrière-plan</item>
+        <item quantity="other">%1$d épisodes en téléchargement en arrière-plan</item>
+    </plurals>
+    <string name="library_smart_downloads_syncing_cloud">Synchronisation avec le cloud…</string>
+    <!-- Smart episodes on the phone out of the most allowed -->
+    <string name="library_smart_downloads_episodes_progress">Épisodes de la mixtape (%1$d / %2$d)</string>
+    <!-- Space used out of the space allowed -->
+    <string name="library_smart_downloads_storage_progress">Espace alloué (%1$d Mo / %2$d Mo)</string>
+    <string name="library_smart_downloads_storage_used">Espace utilisé</string>
+    <string name="library_smart_downloads_storage_unlimited">%1$d Mo (illimité)</string>
+</resources>

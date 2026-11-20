@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
@@ -46,6 +48,7 @@ import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.prefs.WidgetAppearance
 import cx.aswin.boxlore.core.prefs.WidgetShowsArtwork
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsActionRow
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
@@ -72,14 +75,14 @@ internal fun AppearanceWidgetsPage(
     preview: AppearanceWidgetPreview? = null,
 ) {
     TrackScreenView("appearance_widgets")
-    SettingsScaffold(title = "Widgets", onBack = onBack) {
+    SettingsScaffold(title = stringResource(R.string.settings_page_widgets), onBack = onBack) {
         SettingsGroup(
-            title = "Colors",
-            footer = "App theme matches your chosen colors and mode. System follows your phone’s mode and wallpaper colors.",
+            title = stringResource(R.string.settings_widgets_colors_title),
+            footer = stringResource(R.string.settings_widgets_colors_footer),
         ) {
             SettingsContent {
                 ConnectedOptionSelector(
-                    options = listOf(WidgetAppearance.APP to "App theme", WidgetAppearance.SYSTEM to "System"),
+                    options = listOf(WidgetAppearance.APP to stringResource(R.string.settings_widgets_colors_app_theme), WidgetAppearance.SYSTEM to stringResource(R.string.settings_widgets_colors_system)),
                     selected = WidgetAppearance.sanitize(state.currentWidgetAppearance),
                     onSelect = actions.onSetWidgetAppearance,
                 )
@@ -89,8 +92,8 @@ internal fun AppearanceWidgetsPage(
         val coverChoiceInGallery = preview != null && state.addableWidgets.any { it.usesShowsCoverStyle }
         if (!coverChoiceInGallery) {
             SettingsGroup(
-                title = "Your Shows covers",
-                footer = "Whole covers shows each cover uncropped. Shapes cuts covers into circles, arches and scallops.",
+                title = stringResource(R.string.settings_widgets_shows_covers_title),
+                footer = stringResource(R.string.settings_widgets_shows_covers_footer),
             ) {
                 SettingsContent { ShowsCoverChoice(state, actions) }
             }
@@ -101,7 +104,7 @@ internal fun AppearanceWidgetsPage(
             when {
                 preview != null -> WidgetGallery(state, actions, canAdd, preview)
                 canAdd -> WidgetRows(state.addableWidgets, actions.onAddWidget)
-                else -> SettingsInfoTip(ADD_WIDGETS_BY_HAND)
+                else -> SettingsInfoTip(stringResource(ADD_WIDGETS_BY_HAND))
             }
         }
     }
@@ -110,7 +113,7 @@ internal fun AppearanceWidgetsPage(
 @Composable
 private fun ShowsCoverChoice(state: AppearanceUiState, actions: AppearanceActions) {
     ConnectedOptionSelector(
-        options = listOf(WidgetShowsArtwork.ROUNDED to "Whole covers", WidgetShowsArtwork.SHAPES to "Shapes"),
+        options = listOf(WidgetShowsArtwork.ROUNDED to stringResource(R.string.settings_widgets_shows_covers_whole), WidgetShowsArtwork.SHAPES to stringResource(R.string.settings_widgets_shows_covers_shapes)),
         selected = WidgetShowsArtwork.sanitize(state.currentWidgetShowsArtwork),
         onSelect = actions.onSetWidgetShowsArtwork,
     )
@@ -129,10 +132,10 @@ private fun WidgetGallery(
 ) {
     val add = rememberAddWidgetRequest(actions.onAddWidget, actions.addedWidgets)
     SettingsTileSection(
-        title = if (canAdd) "Add to home screen" else "boxlore widgets",
-        footer = if (canAdd) ADD_WIDGETS_CONFIRM else null,
+        title = if (canAdd) stringResource(R.string.settings_widgets_add_title) else stringResource(R.string.settings_widgets_by_hand_title),
+        footer = if (canAdd) stringResource(ADD_WIDGETS_CONFIRM) else null,
     ) {
-        if (!canAdd) SettingsInfoTip(ADD_WIDGETS_BY_HAND)
+        if (!canAdd) SettingsInfoTip(stringResource(ADD_WIDGETS_BY_HAND))
         for (row in widgetGalleryRows(state.addableWidgets)) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 row.forEach { widget ->
@@ -253,9 +256,9 @@ private fun AddWidgetUnanswered() {
         modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        SettingsInfoTip(ADD_WIDGET_UNANSWERED)
+        SettingsInfoTip(stringResource(ADD_WIDGET_UNANSWERED))
         TextButton(onClick = { openAppPermissionSettings(context) }, modifier = Modifier.align(Alignment.End)) {
-            Text("Open app settings")
+            Text(stringResource(R.string.settings_widgets_open_app_settings))
         }
     }
 }
@@ -270,21 +273,21 @@ private fun WidgetCardText(widget: AddableWidget, modifier: Modifier = Modifier)
 
 @Composable
 private fun AddWidgetButton(widget: AddableWidget, onAdd: (String) -> Unit, modifier: Modifier = Modifier) {
-    val label = "Add ${widget.name} to home screen"
+    val label = stringResource(R.string.settings_widgets_add_description, widget.name)
     FilledTonalButton(
         onClick = { onAdd(widget.key) },
         modifier = modifier.semantics { contentDescription = label },
         contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
     ) {
         Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
-        Text("Add", modifier = Modifier.padding(start = ButtonDefaults.IconSpacing))
+        Text(stringResource(R.string.settings_widgets_add), modifier = Modifier.padding(start = ButtonDefaults.IconSpacing))
     }
 }
 
 /** Without pictures: one row per widget that asks the home screen app to add it. */
 @Composable
 private fun WidgetRows(widgets: List<AddableWidget>, onAdd: (String) -> Unit) {
-    SettingsGroup(title = "Add to home screen", footer = ADD_WIDGETS_CONFIRM) {
+    SettingsGroup(title = stringResource(R.string.settings_widgets_add_title), footer = stringResource(ADD_WIDGETS_CONFIRM)) {
         widgets.forEachIndexed { index, widget ->
             if (index > 0) SettingsDivider()
             SettingsActionRow(
@@ -320,11 +323,13 @@ private const val SMALL_WIDGET_MAX_WIDTH_DP = 200
 /** How long the home screen app has to open its confirmation before a request counts as unanswered. */
 internal const val ADD_WIDGET_ANSWER_MS = 1_500L
 
-internal const val ADD_WIDGET_UNANSWERED =
-    "Nothing opened? Your phone may be blocking this. Turn on Home screen shortcuts for boxlore in your phone’s app settings, then try again. " +
-        "Or touch and hold an empty spot on your home screen and choose Widgets."
+@StringRes
+internal val ADD_WIDGET_UNANSWERED =
+    R.string.settings_widgets_unanswered
 
-internal const val ADD_WIDGETS_CONFIRM = "Your home screen app asks you to confirm."
+@StringRes
+internal val ADD_WIDGETS_CONFIRM = R.string.settings_widgets_confirm
 
-internal const val ADD_WIDGETS_BY_HAND =
-    "To add a boxlore widget, touch and hold an empty spot on your home screen, then choose Widgets."
+@StringRes
+internal val ADD_WIDGETS_BY_HAND =
+    R.string.settings_widgets_by_hand

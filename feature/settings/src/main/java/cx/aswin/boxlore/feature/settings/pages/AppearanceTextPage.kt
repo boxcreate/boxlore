@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -21,6 +22,7 @@ import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
 import cx.aswin.boxlore.core.designsystem.theme.buildGoogleSansFamily
 import cx.aswin.boxlore.core.designsystem.theme.buildSectionHeaderFontFamily
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsPictureGrid
@@ -39,12 +41,12 @@ internal fun AppearanceTextPage(state: AppearanceUiState, actions: AppearanceAct
     val bodyFamily = remember(context, axis) { buildGoogleSansFamily(context, axis, weight = 400) }
     val captionFamily = remember(context, axis) { buildGoogleSansFamily(context, axis, weight = 500) }
     val headerFamily = remember(context, axis) { buildSectionHeaderFontFamily(context, axis) }
-    SettingsScaffold(title = "Text", onBack = onBack) {
-        SettingsTileSection(title = "Letter shape", footer = "How rounded letters look across the app. Most visible in large titles; smaller text changes less.") {
+    SettingsScaffold(title = stringResource(R.string.settings_page_text), onBack = onBack) {
+        SettingsTileSection(title = stringResource(R.string.settings_text_letter_shape_title), footer = stringResource(R.string.settings_text_letter_shape_footer)) {
             SettingsPictureGrid(FontRoundness.entries, columns = 3) { entry, modifier ->
                 val family = remember(context, entry.axis) { buildGoogleSansFamily(context, entry.axis, weight = 600) }
                 SettingsPictureTile(
-                    label = entry.label,
+                    label = stringResource(fontRoundnessLabel(entry.key)),
                     selected = entry.key == selectedKey,
                     onClick = { actions.onSetFontRoundness(entry.key) },
                     modifier = modifier,
@@ -55,7 +57,7 @@ internal fun AppearanceTextPage(state: AppearanceUiState, actions: AppearanceAct
                 }
             }
         }
-        SettingsGroup(title = "Preview", footer = "Some phones, such as Xiaomi with HyperOS, may show the system font instead.") {
+        SettingsGroup(title = stringResource(R.string.settings_text_preview_title), footer = stringResource(R.string.settings_text_preview_footer)) {
             SettingsContent {
                 LetteringPreviewSamples(titleFamily = titleFamily, bodyFamily = bodyFamily, captionFamily = captionFamily, headerFamily = headerFamily)
             }
@@ -74,10 +76,10 @@ private fun LetteringPreviewSamples(
         modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 4.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        LetteringPreviewLine("Section", "Your morning stack", headerFamily, 22f, 26f)
-        LetteringPreviewLine("Title", "The Daily Briefing", titleFamily, 18f, 22f)
-        LetteringPreviewLine("Body", "A short episode about curiosity, craft, and listening habits.", bodyFamily, 15f, 22f)
-        LetteringPreviewLine("Caption", "Updated just now · 24 min", captionFamily, 12f, 16f)
+        LetteringPreviewLine(stringResource(R.string.settings_text_sample_section_label), stringResource(R.string.settings_text_sample_section), headerFamily, 22f, 26f)
+        LetteringPreviewLine(stringResource(R.string.settings_text_sample_title_label), stringResource(R.string.settings_text_sample_title), titleFamily, 18f, 22f)
+        LetteringPreviewLine(stringResource(R.string.settings_text_sample_body_label), stringResource(R.string.settings_text_sample_body), bodyFamily, 15f, 22f)
+        LetteringPreviewLine(stringResource(R.string.settings_text_sample_caption_label), stringResource(R.string.settings_text_sample_caption), captionFamily, 12f, 16f)
     }
 }
 

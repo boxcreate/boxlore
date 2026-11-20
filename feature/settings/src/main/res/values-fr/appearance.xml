@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_display_mode_title">Mode d’affichage</string>
+    <string name="settings_navigation_bar_title">Barre de navigation</string>
+    <string name="settings_navigation_blur_title">Flou derrière la barre</string>
+    <string name="settings_navigation_blur_off">Désactivé</string>
+    <string name="settings_navigation_blur_soft">Léger</string>
+    <string name="settings_navigation_blur_medium">Moyen</string>
+    <string name="settings_navigation_blur_strong">Fort</string>
+    <string name="settings_navigation_start_title">Page de démarrage et onglets</string>
+    <string name="settings_navigation_start_footer">La page de démarrage s’applique quand vous relancez boxlore. Les liens peuvent ouvrir une autre page ou un autre onglet.</string>
+    <string name="settings_navigation_start_page">Page de démarrage</string>
+    <string name="settings_navigation_start_home">Accueil</string>
+    <string name="settings_navigation_start_subscriptions">Abonnements</string>
+    <string name="settings_navigation_start_downloads">Téléchargements</string>
+    <string name="settings_navigation_explore_opens_to">Explorer s’ouvre sur</string>
+    <string name="settings_navigation_explore_for_you">Pour vous</string>
+    <!-- Explore opens to its Top tab; also the Subscriptions tabs sitting at the top -->
+    <string name="settings_navigation_tab_top">Top</string>
+    <string name="settings_navigation_subscriptions_opens_to">Abonnements s’ouvre sur</string>
+    <string name="settings_navigation_subscriptions_shows">Podcasts</string>
+    <string name="settings_navigation_subscriptions_new_episodes">Nouveaux épisodes</string>
+    <string name="settings_navigation_subscriptions_tab_position">Position des onglets d’Abonnements</string>
+    <string name="settings_navigation_tab_floating">Flottants</string>
+    <string name="settings_player_miniplayer_title">Mini-lecteur</string>
+    <string name="settings_player_seek_buttons">Boutons d’avance et de retour</string>
+    <string name="settings_player_seek_buttons_description">Afficher les commandes de retour et d’avance à côté de lecture et pause</string>
+    <string name="settings_show_pages_episode_lists">Listes d’épisodes</string>
+    <string name="settings_show_pages_titles_only">Titres des épisodes seulement</string>
+    <string name="settings_show_pages_titles_only_description">Des lignes courtes avec le titre, la date, la durée et le bouton de lecture de chaque épisode</string>
+    <string name="settings_home_top_bar_title">Barre du haut</string>
+    <string name="settings_home_shortcuts_in_library">Déplacer les raccourcis de l’accueil vers la bibliothèque</string>
+    <string name="settings_home_shortcuts_in_library_description">Afficher Paramètres et Avis dans Bibliothèque plutôt que dans Accueil</string>
+    <!-- Appearance overview: what each row shows under its title. -->
+    <!-- %1$s is the theme look's name, e.g. "boxlore classic". -->
+    <string name="settings_appearance_summary_theme_artwork">%1$s · couleurs de l’illustration activées</string>
+    <!-- %1$s is the hero card style name (e.g. Block), %2$s what its colour choice does (e.g. dark cards). -->
+    <string name="settings_appearance_summary_home">Cartes à la une : %1$s, %2$s</string>
+    <!-- %1$s is the player style name. -->
+    <string name="settings_appearance_summary_player_seek">%1$s · boutons d’avance et de retour activés</string>
+    <!-- %1$s is the bar style (Floating or Classic), %2$s the start page (Home, Subscriptions or Downloads). -->
+    <string name="settings_appearance_summary_navigation">Barre %1$s · démarre sur %2$s</string>
+    <!-- %1$s is the letter shape: Crisp, Soft or Round. -->
+    <string name="settings_appearance_summary_letters">Lettres : %1$s</string>
+    <string name="settings_appearance_summary_widgets_theme_covers">Couleurs du thème de l’appli · pochettes entières</string>
+    <string name="settings_appearance_summary_widgets_theme_shapes">Couleurs du thème de l’appli · formes</string>
+    <string name="settings_appearance_summary_widgets_system_covers">Couleurs du système · pochettes entières</string>
+    <string name="settings_appearance_summary_widgets_system_shapes">Couleurs du système · formes</string>
+    <!-- What the hero colour choice does, shown after "<style> hero cards, ". Lowercase in English. -->
+    <string name="settings_hero_summary_dark_shade">fond sombre</string>
+    <string name="settings_hero_summary_theme_shade">fond aux couleurs du thème</string>
+    <string name="settings_hero_summary_artwork_shade">fond aux couleurs de l’illustration</string>
+    <string name="settings_hero_summary_black_white">noir et blanc</string>
+    <string name="settings_hero_summary_theme_tones">tons du thème de l’appli</string>
+    <string name="settings_hero_summary_artwork_tones">tons de l’illustration</string>
+    <string name="settings_hero_summary_full_color">toutes les couleurs</string>
+    <string name="settings_hero_summary_dark_cards">cartes sombres</string>
+    <string name="settings_hero_summary_theme_color">couleur du thème de l’appli</string>
+    <string name="settings_hero_summary_artwork_color">couleur de l’illustration</string>
+    <!-- Screen-reader text for the hero preview. %1$s is the style name. -->
+    <string name="settings_hero_preview_description">Aperçu des cartes à la une %1$s</string>
+    <string name="settings_display_mode_system">Système</string>
+    <string name="settings_display_mode_light">Clair</string>
+    <string name="settings_display_mode_dark">Sombre</string>
+    <string name="settings_show_pages_full_rows">Lignes d’épisode complètes</string>
+    <!-- Letter shape names (Appearance › Text). -->
+    <string name="settings_letters_crisp">Net</string>
+    <string name="settings_letters_soft">Doux</string>
+    <string name="settings_letters_round">Arrondi</string>
+    <!-- Navigation bar style names. -->
+    <string name="settings_navigation_style_floating">Flottante</string>
+    <string name="settings_navigation_style_classic">Classique</string>
+    <string name="settings_widgets_colors_title">Couleurs</string>
+    <string name="settings_widgets_colors_footer">Thème de l’appli suit les couleurs et le mode que vous avez choisis. Système suit le mode et les couleurs du fond d’écran de votre téléphone.</string>
+    <string name="settings_widgets_colors_app_theme">Thème de l’appli</string>
+    <string name="settings_widgets_colors_system">Système</string>
+    <!-- Your Shows is the name of a widget. -->
+    <string name="settings_widgets_shows_covers_title">Pochettes de Vos podcasts</string>
+    <string name="settings_widgets_shows_covers_footer">Pochettes entières affiche chaque pochette sans recadrage. Formes découpe les pochettes en cercles, en arches et en festons.</string>
+    <string name="settings_widgets_shows_covers_whole">Pochettes entières</string>
+    <string name="settings_widgets_shows_covers_shapes">Formes</string>
+    <string name="settings_widgets_add_title">Ajouter à l’écran d’accueil</string>
+    <string name="settings_widgets_by_hand_title">Widgets boxlore</string>
+    <string name="settings_widgets_open_app_settings">Ouvrir les paramètres de l’appli</string>
+    <!-- Screen-reader label for a widget's Add button. %1$s is the widget name. -->
+    <string name="settings_widgets_add_description">Ajouter %1$s à l’écran d’accueil</string>
+    <string name="settings_widgets_add">Ajouter</string>
+    <string name="settings_widgets_unanswered">Rien ne s’est ouvert ? Votre téléphone bloque peut-être cette action. Activez les raccourcis sur l’écran d’accueil pour boxlore dans les paramètres des applis de votre téléphone, puis réessayez. Ou appuyez de manière prolongée sur un espace vide de votre écran d’accueil et choisissez Widgets.</string>
+    <string name="settings_widgets_confirm">Votre écran d’accueil vous demande de confirmer.</string>
+    <string name="settings_widgets_by_hand">Pour ajouter un widget boxlore, appuyez de manière prolongée sur un espace vide de votre écran d’accueil, puis choisissez Widgets.</string>
+    <string name="settings_text_letter_shape_title">Forme des lettres</string>
+    <string name="settings_text_letter_shape_footer">L’arrondi des lettres dans toute l’appli. Plus visible sur les grands titres ; le petit texte change moins.</string>
+    <string name="settings_text_preview_title">Aperçu</string>
+    <string name="settings_text_preview_footer">Certains téléphones, comme les Xiaomi sous HyperOS, peuvent afficher la police du système à la place.</string>
+    <!-- Label above a sample line of a section header -->
+    <string name="settings_text_sample_section_label">Section</string>
+    <string name="settings_text_sample_section">Votre sélection du matin</string>
+    <string name="settings_text_sample_title_label">Titre</string>
+    <string name="settings_text_sample_title">Le brief du jour</string>
+    <string name="settings_text_sample_body_label">Corps</string>
+    <string name="settings_text_sample_body">Un court épisode sur la curiosité, le savoir-faire et les habitudes d’écoute.</string>
+    <string name="settings_text_sample_caption_label">Légende</string>
+    <string name="settings_text_sample_caption">Mis à jour à l’instant · 24 min</string>
+    <string name="settings_theme_edit_custom">Modifier le thème personnalisé</string>
+    <string name="settings_theme_create_custom">Créer un thème personnalisé</string>
+    <string name="settings_theme_custom_description">Choisissez vos couleurs avec un aperçu clair et sombre</string>
+    <string name="settings_theme_artwork_colors">Utiliser les couleurs de l’illustration</string>
+    <string name="settings_theme_artwork_colors_description">Accorder les pages d’épisode et de podcast à leur illustration</string>
+    <string name="settings_theme_colors_title">Couleurs</string>
+    <string name="settings_theme_look_classic">boxlore classique</string>
+    <string name="settings_theme_look_classic_description">Les couleurs signature sur des fonds neutres et froids.</string>
+    <string name="settings_theme_look_pure">Pur</string>
+    <string name="settings_theme_look_pure_description">Blanc en mode clair. Noir profond en mode sombre.</string>
+    <string name="settings_theme_look_material_description">Les couleurs du fond d’écran, avec des fonds légèrement teintés.</string>
+    <string name="settings_theme_look_custom">Personnalisé</string>
+    <string name="settings_theme_look_custom_description">Choisissez vos couleurs et le style du fond.</string>
+    <string name="settings_theme_section_title">Thème</string>
+</resources>

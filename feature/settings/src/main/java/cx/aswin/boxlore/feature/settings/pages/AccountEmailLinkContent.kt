@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.auth.EmailLinkSignInStatus
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.feature.settings.R
 
 /** An emailed sign-in link's progress on the Account page, with what to do when it fails. */
@@ -115,7 +116,7 @@ internal fun ColumnScope.AccountLinkFailedContent(
             }
         }
     }
-    state.errorMessage?.let { AuthErrorBanner(message = it) }
+    state.errorMessage?.let { AuthErrorBanner(message = it.asString()) }
     AccountEcho(syncing = false, modifier = Modifier.align(Alignment.CenterHorizontally).size(AccountLinkEchoSize))
 }
 

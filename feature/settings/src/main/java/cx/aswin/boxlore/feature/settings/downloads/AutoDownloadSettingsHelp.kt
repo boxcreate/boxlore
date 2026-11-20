@@ -13,39 +13,41 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.settings.R
 
 @Composable
 internal fun AutoDownloadSettingsHelp(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Rounded.CloudDownload, contentDescription = null) },
-        title = { Text("How automatic downloads work") },
+        title = { Text(stringResource(R.string.settings_auto_download_help_title)) },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 AutoDownloadHelpSection(
-                    "Choose your shows",
-                    "Turn on auto-download from a podcast's page. It picks up new episodes, rather than downloading the show's archive.",
+                    stringResource(R.string.settings_auto_download_help_shows_title),
+                    stringResource(R.string.settings_auto_download_help_shows),
                 )
                 AutoDownloadHelpSection(
-                    "While boxlore is closed",
-                    "Show notifications can trigger downloads when new episodes arrive. Backup background checks are optional: they catch new episodes if notifications are off or don't arrive. They check about every 6 hours, and Android may delay them.",
+                    stringResource(R.string.settings_auto_download_background_title),
+                    stringResource(R.string.settings_auto_download_help_closed),
                 )
                 AutoDownloadHelpSection(
-                    "Battery and network limits",
-                    "Background checks use extra battery and data and always pause on low battery. Their network and charging limits also apply to the downloads they start. The Downloads Wi-Fi setting applies to audio files from every discovery method.",
+                    stringResource(R.string.settings_auto_download_help_limits_title),
+                    stringResource(R.string.settings_auto_download_help_limits),
                 )
                 AutoDownloadHelpSection(
-                    "Keeping episodes",
-                    "The per-show limit replaces only older, completed automatic downloads; manually saved files are protected from that limit. Remove after listening deletes downloaded files when you finish an episode.",
+                    stringResource(R.string.settings_auto_download_help_keeping_title),
+                    stringResource(R.string.settings_auto_download_help_keeping),
                 )
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Got it") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_got_it)) } },
     )
 }
 

@@ -18,10 +18,30 @@
     <string name="widget_skip_forward">Seek forward</string>
     <string name="widget_play">Play</string>
     <string name="widget_pause">Pause</string>
-    <!-- Time left in the playing episode. Kept short so it fits beside the show name. -->
-    <string name="widget_time_left_minutes">%1$dm left</string>
-    <string name="widget_time_left_hours">%1$dh left</string>
-    <string name="widget_time_left_hours_minutes">%1$dh %2$dm left</string>
+    <!-- Time left in the playing episode; %1$s is a short length such as "36m" or "1h 5m". Kept short so it fits beside the show name. -->
+    <string name="widget_time_left">%1$s left</string>
+    <!-- Screen-reader text for the whole now playing widget. %1$s is the episode title, %2$s the show name. -->
+    <string name="widget_description_empty">boxlore now playing widget, no episode</string>
+    <string name="widget_description_playing_from">%1$s from %2$s, playing</string>
+    <string name="widget_description_paused_from">%1$s from %2$s, paused</string>
+    <string name="widget_description_playing">%1$s, playing</string>
+    <string name="widget_description_paused">%1$s, paused</string>
+    <plurals name="widget_description_playing_from_left">
+        <item quantity="one">%1$s from %2$s, playing, %3$d minute left</item>
+        <item quantity="other">%1$s from %2$s, playing, %3$d minutes left</item>
+    </plurals>
+    <plurals name="widget_description_paused_from_left">
+        <item quantity="one">%1$s from %2$s, paused, %3$d minute left</item>
+        <item quantity="other">%1$s from %2$s, paused, %3$d minutes left</item>
+    </plurals>
+    <plurals name="widget_description_playing_left">
+        <item quantity="one">%1$s, playing, %2$d minute left</item>
+        <item quantity="other">%1$s, playing, %2$d minutes left</item>
+    </plurals>
+    <plurals name="widget_description_paused_left">
+        <item quantity="one">%1$s, paused, %2$d minute left</item>
+        <item quantity="other">%1$s, paused, %2$d minutes left</item>
+    </plurals>
     <!-- Time left, then the show name. The show name is cut off first when space runs out. -->
     <string name="widget_meta_time_and_show">%1$s · %2$s</string>
     <string name="widget_preview_episode">Why curiosity compounds</string>

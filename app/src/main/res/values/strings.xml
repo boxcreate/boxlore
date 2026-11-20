@@ -1,8 +1,24 @@
 <resources>
-    <string name="app_name">boxlore</string>
+    <string name="app_name" translatable="false">boxlore</string>
     <!-- Shown after a Lore card's queue action when an existing non-Lore queue would be replaced. -->
     <string name="lore_queue_conflict_title">Start a Lore queue?</string>
     <string name="lore_queue_conflict_message">You already have episodes in your queue. Starting a Lore queue stops playback and replaces your current queue with this episode. Swipe right on other Lore cards to add more.\n\nTo add episodes to your existing queue instead, choose Keep current queue. Then tap a card to open its details and choose Add to queue.</string>
     <string name="lore_queue_conflict_replace">Start Lore queue</string>
     <string name="lore_queue_conflict_keep">Keep current queue</string>
+
+    <!-- Sign-in dialog when an email sign-in link is opened on another device. -->
+    <string name="app_cross_device_email_title">Sign in to boxlore</string>
+    <string name="app_cross_device_email_body">Enter the email address you used to request this sign-in link.</string>
+    <string name="app_cross_device_email_label">Email address</string>
+    <string name="app_cross_device_email_invalid">Please enter a valid email address</string>
+    <string name="app_cross_device_email_sign_in">Sign In</string>
+    <string name="app_cross_device_email_cancel">Cancel</string>
+
+    <!-- Toasts after exporting the library from Settings. %1$s is the error from the system. -->
+    <string name="app_library_export_json_success">Library Exported Successfully</string>
+    <string name="app_library_export_json_failed">Failed to export: %1$s</string>
+    <string name="app_library_export_opml_success">Subscriptions Exported as OPML</string>
+    <string name="app_library_export_opml_failed">Failed to export OPML: %1$s</string>
+    <!-- Episode page text shown while an episode opened from History loads its description. -->
+    <string name="app_history_resume_description">Resuming from History</string>
 </resources>

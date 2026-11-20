@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.player.v2.logic
 
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.player.R
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -14,21 +16,21 @@ class QueueLabelLogicTest {
 
     @Test
     fun loreItemsAreIdentified() {
-        assertEquals("From Lore", queueSourceLabel(episode(contextType = "LORE")))
+        assertEquals(UiText.res(R.string.player_queue_source_lore), queueSourceLabel(episode(contextType = "LORE")))
     }
 
     @Test
     fun knownAutoFillSourcesHaveSpecificLabels() {
         val expectations =
             mapOf(
-                "same_podcast" to "Continuing series",
-                "resume" to "Pick up where you left off",
-                "resume_stale" to "Starting over",
-                "subscription" to "From your subscriptions",
-                "server_rec" to "Recommended for you",
-                "personalized_rec" to "Recommended for you",
-                "similar_episode" to "Based on what you're playing",
-                "similar_liked" to "Based on something you liked",
+                "same_podcast" to UiText.res(R.string.player_queue_source_same_podcast),
+                "resume" to UiText.res(R.string.player_queue_source_resume),
+                "resume_stale" to UiText.res(R.string.player_queue_source_resume_stale),
+                "subscription" to UiText.res(R.string.player_queue_source_subscription),
+                "server_rec" to UiText.res(R.string.player_queue_source_recommended),
+                "personalized_rec" to UiText.res(R.string.player_queue_source_recommended),
+                "similar_episode" to UiText.res(R.string.player_queue_source_similar_episode),
+                "similar_liked" to UiText.res(R.string.player_queue_source_similar_liked),
             )
 
         expectations.forEach { (source, expected) ->
@@ -42,7 +44,7 @@ class QueueLabelLogicTest {
     @Test
     fun trendingSourceUsesMeaningfulGenre() {
         assertEquals(
-            "Trending in Technology",
+            UiText.res(R.string.player_queue_source_trending_in, "Technology"),
             queueSourceLabel(
                 episode(
                     contextType = "AUTO_FILL",
@@ -56,7 +58,7 @@ class QueueLabelLogicTest {
     @Test
     fun trendingSourceFallsBackForGenericOrMissingGenre() {
         assertEquals(
-            "Trending now",
+            UiText.res(R.string.player_queue_source_trending),
             queueSourceLabel(
                 episode(
                     contextType = "AUTO_FILL",
@@ -66,7 +68,7 @@ class QueueLabelLogicTest {
             ),
         )
         assertEquals(
-            "Trending now",
+            UiText.res(R.string.player_queue_source_trending),
             queueSourceLabel(
                 episode(
                     contextType = "AUTO_FILL",
@@ -76,7 +78,7 @@ class QueueLabelLogicTest {
             ),
         )
         assertEquals(
-            "Trending now",
+            UiText.res(R.string.player_queue_source_trending),
             queueSourceLabel(
                 episode(
                     contextType = "AUTO_FILL",
@@ -90,13 +92,13 @@ class QueueLabelLogicTest {
     @Test
     fun unknownAutoFillSourceUsesGenericLabel() {
         assertEquals(
-            "Added for you",
+            UiText.res(R.string.player_queue_source_added),
             queueSourceLabel(
                 episode(contextType = "AUTO_FILL", contextSourceId = "future_source"),
             ),
         )
         assertEquals(
-            "Added for you",
+            UiText.res(R.string.player_queue_source_added),
             queueSourceLabel(episode(contextType = "AUTO_FILL", contextSourceId = null)),
         )
     }

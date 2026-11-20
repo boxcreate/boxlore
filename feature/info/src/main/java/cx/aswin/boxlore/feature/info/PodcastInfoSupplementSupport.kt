@@ -5,6 +5,7 @@ import cx.aswin.boxlore.core.catalog.ShowListSchemes
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.feature.info.logic.EpisodeSupplementEligibility
 import cx.aswin.boxlore.feature.info.logic.EpisodeSupplementMergeLogic
 
@@ -80,7 +81,7 @@ internal class PodcastInfoSupplementSupport(
         piEpisodes: List<Episode>,
         hasMoreEpisodes: Boolean = state.hasMoreEpisodes,
         isLoadingMore: Boolean = state.isLoadingMore,
-        userMessage: String? = state.userMessage,
+        userMessage: UiText? = state.userMessage,
         isFetchingFromFeed: Boolean = false,
         // A failed check stays failed through later reloads until a check succeeds.
         feedCheckFailed: Boolean = state.directFeedChip == DirectFeedChipState.CheckFailed,
@@ -128,7 +129,7 @@ internal class PodcastInfoSupplementSupport(
         state: PodcastInfoUiState.Success,
         page: PodcastRepository.EpisodePage,
         isLoadingMore: Boolean = false,
-        userMessage: String? = state.userMessage,
+        userMessage: UiText? = state.userMessage,
         isFetchingFromFeed: Boolean = false,
         feedCheckFailed: Boolean = state.directFeedChip == DirectFeedChipState.CheckFailed,
     ): PodcastInfoUiState.Success = if (page.failed) {
@@ -180,12 +181,13 @@ internal class PodcastInfoSupplementSupport(
                 when (outcome) {
                     is EpisodeSupplementOutcome.Success ->
                         if (outcome.addedCount > 0) {
-                            "Added ${outcome.addedCount} episodes"
+                            UiText.plural(R.plurals.podcast_info_supplement_added, outcome.addedCount, outcome.addedCount)
                         } else {
-                            "Episode list updated"
+                            UiText.res(R.string.podcast_info_supplement_updated)
                         }
-                    is EpisodeSupplementOutcome.NoDisconnect -> "Episode list updated"
-                    is EpisodeSupplementOutcome.Failure -> outcome.message
+                    is EpisodeSupplementOutcome.NoDisconnect -> UiText.res(R.string.podcast_info_supplement_updated)
+                    // The supplement's own reason, as the domain layer words it.
+                    is EpisodeSupplementOutcome.Failure -> UiText.raw(outcome.message)
                 }
             }
         val tip =
@@ -237,7 +239,7 @@ internal class PodcastInfoSupplementSupport(
                     null
                 } else {
                     MissingEpisodesRefresh(
-                        state = state.copy(userMessage = outcome.message),
+                        state = state.copy(userMessage = UiText.raw(outcome.message)),
                         libraryTip = null,
                     )
                 }
@@ -253,9 +255,9 @@ internal class PodcastInfoSupplementSupport(
                         userMessage =
                         if (announce) {
                             if (outcome.addedCount > 0) {
-                                "Added ${outcome.addedCount} episodes from the feed"
+                                UiText.plural(R.plurals.podcast_info_feed_added, outcome.addedCount, outcome.addedCount)
                             } else {
-                                "Episode list updated from the feed"
+                                UiText.res(R.string.podcast_info_feed_updated)
                             }
                         } else {
                             null
@@ -319,7 +321,7 @@ internal class PodcastInfoSupplementSupport(
         const val SUPPLEMENT_BASELINE_LIMIT = 1000
 
         /** Pull to refresh's message when the feed check threw instead of answering. */
-        const val FEED_CHECK_FAILED_MESSAGE = "Couldn't update episodes from the feed"
+        val FEED_CHECK_FAILED_MESSAGE: UiText = UiText.res(R.string.podcast_info_feed_check_failed)
         private const val DISPLAY_PAGE_SIZE = 20
 
         private const val OLDEST_PAGE_SIZE = 50

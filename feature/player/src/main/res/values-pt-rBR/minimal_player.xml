@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="minimal_play">Tocar</string>
+    <string name="minimal_pause">Pausar</string>
+    <string name="minimal_buffering">Carregando</string>
+    <string name="minimal_sleep">Timer de sono</string>
+    <string name="minimal_speed">Velocidade de reprodução: %1$s</string>
+    <string name="minimal_up_next">A seguir</string>
+    <string name="minimal_collapse">Minimizar player</string>
+    <string name="minimal_full_title">Mostrar o título completo do episódio</string>
+    <string name="minimal_done">Concluir</string>
+    <string name="minimal_unknown_duration">—</string>
+    <!-- Time left, shown as a negative count. %1$s: narrow duration such as 1h 14m -->
+    <string name="minimal_remaining">−%1$s</string>
+    <string name="player_seek">Posição da reprodução</string>
+</resources>

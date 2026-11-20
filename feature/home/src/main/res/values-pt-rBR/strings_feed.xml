@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Discovery header on Home; changes with the time of day. Title case is part of the style in English. -->
+    <string name="home_greeting_morning_title">Bom dia</string>
+    <string name="home_greeting_morning_weekday">Comece o dia com estas novidades.</string>
+    <string name="home_greeting_morning_weekend">Coloque a semana em dia.</string>
+    <string name="home_greeting_afternoon_title">Pausa da tarde</string>
+    <string name="home_greeting_afternoon_subtitle">Conversas inteligentes para manter o ritmo.</string>
+    <string name="home_greeting_evening_title">Fim de tarde tranquilo</string>
+    <string name="home_greeting_evening_friday">Comece bem o fim de semana.</string>
+    <string name="home_greeting_evening_other">Relaxe, ria e fique em dia.</string>
+    <string name="home_greeting_late_night_title">Escuta da madrugada</string>
+    <string name="home_greeting_late_night_subtitle">Histórias para altas horas.</string>
+    <string name="home_error_loading">Erro ao carregar o conteúdo</string>
+    <!-- Episode description of the daily news brief; the argument is the region code, e.g. "US". -->
+    <string name="home_briefing_episode_description">Seu resumo diário de notícias gerado por IA para %1$s.</string>
+    <!-- Queue started from the Home mix; shown as the show name in the player. -->
+    <string name="home_mix_offline_queue_title">Mix offline</string>
+    <string name="home_mix_shows_queue_title">Mix dos seus podcasts</string>
+    <string name="home_mix_queue_artist">Vários artistas</string>
+    <string name="home_mix_offline_queue_description">Episódios baixados em ordem de lançamento</string>
+    <string name="home_mix_shows_queue_description">Playlist misturada de episódios não ouvidos</string>
+    <!-- Eyebrow on the featured episode card; shown in capitals. -->
+    <string name="home_featured_eyebrow">Destaque do dia</string>
+    <!-- Home genre filter chips; keep short. The genre value behind each one never changes. -->
+    <string name="home_genre_news">Notícias</string>
+    <string name="home_genre_tech">Tecnologia</string>
+    <string name="home_genre_business">Negócios</string>
+    <string name="home_genre_comedy">Comédia</string>
+    <string name="home_genre_true_crime">True crime</string>
+    <string name="home_genre_sports">Esportes</string>
+    <string name="home_genre_health">Saúde</string>
+    <string name="home_genre_history">História</string>
+    <string name="home_genre_arts">Artes</string>
+    <string name="home_genre_society">Sociedade</string>
+    <string name="home_genre_education">Educação</string>
+    <string name="home_genre_science">Ciência</string>
+    <string name="home_genre_tv_film">TV e cinema</string>
+    <string name="home_genre_fiction">Ficção</string>
+    <string name="home_genre_music">Música</string>
+    <string name="home_genre_religion">Religião</string>
+    <string name="home_genre_family">Família</string>
+    <string name="home_genre_leisure">Lazer</string>
+    <string name="home_genre_govt">Governo</string>
+    <!-- Sheet to pick the show behind "Because you like". -->
+    <string name="home_change_recs_title">Personalizar recomendações</string>
+    <string name="home_change_recs_body">Selecione um podcast para encontrar episódios parecidos ou volte à detecção automática com base no que você ouve.</string>
+    <string name="home_change_recs_auto">Detectar automaticamente (padrão)</string>
+    <string name="home_change_recs_auto_body">Atualiza sozinho com base no seu histórico de reprodução</string>
+</resources>

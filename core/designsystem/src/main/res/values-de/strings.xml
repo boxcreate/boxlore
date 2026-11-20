@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="engagement_sheet_close">Schließen</string>
+    <string name="repair_progress_title">Bibliothek wird repariert</string>
+    <string name="repair_progress_body">Bitte lass boxlore geöffnet, bis das abgeschlossen ist.</string>
+    <string name="feed_media_new">Neu</string>
+    <string name="share_listen_on">Anhören auf</string>
+    <!-- Titles of the system share sheet. -->
+    <string name="share_chooser_podcast">Podcast teilen</string>
+    <string name="share_chooser_episode">Folge teilen</string>
+    <!-- On share cards and in share messages: where a shared episode starts. %1$s is a time such as 12:34. -->
+    <string name="share_starts_at">Ab %1$s</string>
+    <!-- On share cards and in share messages: a shared clip. %1$s and %2$s are times such as 1:02 and 2:30. -->
+    <string name="share_clip">Clip %1$s–%2$s</string>
+    <!-- The share sheet. -->
+    <string name="share_sheet_title_podcast">Diesen Podcast teilen</string>
+    <string name="share_sheet_title_episode">Diese Folge teilen</string>
+    <string name="share_sheet_body">Teile eine Karte mit dem Cover per Nachricht oder Story, oder kopiere den Link.</string>
+    <!-- Switch title: share the episode from this point. %1$s is a time such as 12:34. -->
+    <string name="share_sheet_start_at">Ab %1$s starten</string>
+    <string name="share_sheet_start_at_body">Deine aktuelle Position mitsenden</string>
+    <!-- Section label, shown in capitals. -->
+    <string name="share_sheet_choose">Wie möchtest du teilen?</string>
+    <string name="share_sheet_send_card">Cover-Karte senden</string>
+    <string name="share_sheet_send_card_body">Cover und Link</string>
+    <!-- Half-width button; keep it short. -->
+    <string name="share_sheet_copy_link">Link kopieren</string>
+    <string name="share_sheet_copy_link_body">Nur der Link</string>
+    <!-- Half-width button; "Instagram Story" is Instagram's own feature name. -->
+    <string name="share_sheet_instagram">Instagram Story</string>
+    <string name="share_sheet_instagram_body">Cover + kopierter Link</string>
+    <!-- How often a show posts, on its share card after the genre ("Technology · Daily"). -->
+    <string name="share_frequency_daily">Täglich</string>
+    <string name="share_frequency_several_weekly">Mehrmals pro Woche</string>
+    <string name="share_frequency_weekly">Wöchentlich</string>
+    <string name="share_frequency_every_two_weeks">Alle 2 Wochen</string>
+    <string name="share_frequency_monthly">Monatlich</string>
+    <string name="share_link_copied">Link kopiert</string>
+    <string name="share_instagram_unavailable">Instagram ist nicht verfügbar. Wähle eine andere App.</string>
+    <string name="share_instagram_link_copied">Link kopiert. Füge ihn mit dem Link-Sticker von Instagram zu deiner Story hinzu.</string>
+    <!-- Accessibility description of the share card preview. %1$s is the podcast or episode name. -->
+    <string name="share_preview_description">Teilen-Karte für %1$s</string>
+    <!-- Shown briefly when no app on the phone can open a link (no browser, say). -->
+    <string name="link_unavailable">Keine App kann diesen Link öffnen</string>
+    <!-- The late-night sleep timer prompt, shown once a night when playback starts after 10:30 PM. -->
+    <string name="sleep_prompt_title">Noch spät am Hören?</string>
+    <string name="sleep_prompt_body">Stell einen Sleep-Timer, damit Folgen nicht die ganze Nacht weiterlaufen.</string>
+    <string name="sleep_prompt_dismiss">Schließen</string>
+    <!-- The last time choice. -->
+    <string name="sleep_prompt_end_of_episode">Ende der Folge</string>
+    <!-- After a time is picked: when playback will pause. %1$s is a length such as "45 min" or "1 hr". -->
+    <string name="sleep_prompt_pausing_in">Pause in %1$s</string>
+    <string name="sleep_prompt_pausing_episode">Pause nach dieser Folge</string>
+    <string name="sleep_prompt_good_night">Gute Nacht.</string>
+    <!-- Under the number on the picked time's badge: "45" over "min", "1" over "hr". -->
+    <plurals name="sleep_prompt_unit_minutes">
+        <item quantity="one">Min.</item>
+        <item quantity="other">Min.</item>
+    </plurals>
+    <plurals name="sleep_prompt_unit_hours">
+        <item quantity="one">Std.</item>
+        <item quantity="other">Std.</item>
+    </plurals>
+    <!-- Where the episode plays, at the top of the player while a watch with boxlore is in reach. A phone icon follows the label. -->
+    <string name="playing_on_label">Wiedergabe auf</string>
+    <string name="playing_on_description">Wiedergabe auf diesem Handy. Wiedergabeort ändern</string>
+    <string name="playing_on_this_phone">Dieses Handy</string>
+    <string name="play_on_watch">Auf der Uhr abspielen</string>
+    <!-- Shown right after this phone started playing while the watch was playing. -->
+    <string name="watch_notice_title">Wiedergabe auf diesem Handy</string>
+    <string name="watch_notice_body">Deine Uhr wurde pausiert.</string>
+    <string name="play_on_watch_instead">Lieber auf der Uhr abspielen</string>
+    <!-- Asked before removing a downloaded episode, from this phone or from a linked watch. %1$s is the episode's title. -->
+    <string name="remove_download_title">Download entfernen?</string>
+    <string name="remove_download_title_watch">Von der Uhr entfernen?</string>
+    <string name="remove_download_body_named">Heruntergeladene Folge „%1$s“ entfernen? Um sie wieder zu hören, brauchst du dann eine Internetverbindung.</string>
+    <string name="remove_download_body">Diese heruntergeladene Folge entfernen? Um sie wieder zu hören, brauchst du dann eine Internetverbindung.</string>
+    <string name="remove_download_body_watch_named">„%1$s“ von deiner Uhr entfernen? Du kannst sie jederzeit wieder senden.</string>
+    <string name="remove_download_body_watch">Diese Folge von deiner Uhr entfernen? Du kannst sie jederzeit wieder senden.</string>
+    <string name="remove_download_confirm">Entfernen</string>
+    <string name="remove_download_cancel">Abbrechen</string>
+    <!-- Screen-reader labels of the player's extra controls. -->
+    <string name="player_control_mark_played">Als gehört markieren</string>
+    <string name="player_control_mark_unplayed">Als ungehört markieren</string>
+    <string name="player_control_share">Teilen</string>
+    <string name="player_control_chapters">Kapitel</string>
+    <string name="player_control_transcript">Transkript</string>
+    <string name="player_control_like">Gefällt mir</string>
+    <string name="player_control_download">Herunterladen</string>
+    <string name="player_control_queued">Zur Warteschlange hinzugefügt</string>
+    <string name="player_control_add_to_queue">Zur Warteschlange hinzufügen</string>
+    <string name="player_control_queue">Warteschlange</string>
+    <!-- Screen-reader labels of the download button's states. -->
+    <string name="download_button_download">Herunterladen</string>
+    <string name="download_button_cancel">Download abbrechen</string>
+    <string name="download_button_downloaded">Heruntergeladen</string>
+    <!-- The large play button on show and episode pages. -->
+    <string name="play_button_play">Abspielen</string>
+    <string name="play_button_pause">Pause</string>
+    <string name="play_button_loading">Lädt</string>
+    <string name="play_button_resume">Weiter</string>
+    <!-- %1$s is the time left or the position, such as "12 min left", worked out by the page. -->
+    <string name="play_button_resume_at">Weiter • %1$s</string>
+    <!-- Bottom bar and tablet rail tabs. "Lore" is a name and stays as it is. -->
+    <string name="navigation_home">Start</string>
+    <string name="navigation_explore">Entdecken</string>
+    <string name="navigation_library">Bibliothek</string>
+    <!-- The bottom bar's two looks, named in Settings › Appearance. -->
+    <string name="navigation_style_floating">Schwebend</string>
+    <string name="navigation_style_classic">Klassisch</string>
+    <!-- Tiny badge on a new episode's artwork, shown in capitals at 7sp: keep it to about 4 letters. -->
+    <string name="new_episode_badge">Neu</string>
+    <!-- Screen-reader labels of the top bar's Feedback and Settings buttons. -->
+    <string name="top_bar_feedback">Feedback senden</string>
+    <string name="top_bar_feedback_reply">Feedback, neue Antwort</string>
+    <string name="top_bar_settings">Einstellungen</string>
+</resources>

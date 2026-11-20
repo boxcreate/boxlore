@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared player actions and labels -->
+    <string name="player_close">Schließen</string>
+    <string name="player_dismiss">Ausblenden</string>
+    <string name="player_share">Teilen</string>
+    <string name="player_undo">Rückgängig</string>
+    <string name="player_chapters">Kapitel</string>
+    <string name="player_transcript">Transkript</string>
+    <string name="player_queue">Warteschlange</string>
+    <string name="player_off">Aus</string>
+    <string name="player_on">An</string>
+    <string name="player_playing">Wird abgespielt</string>
+    <string name="player_paused">Pausiert</string>
+    <string name="player_loading">Wird geladen</string>
+    <string name="player_playback_speed">Wiedergabegeschwindigkeit</string>
+    <string name="player_episode_artwork">Cover der Folge</string>
+    <string name="player_album_art">Cover</string>
+    <string name="player_hero_up_next">Als Nächstes: %1$s</string>
+    <string name="player_show_artwork">Cover des Podcasts</string>
+
+    <!-- Chapters sheet -->
+    <string name="player_no_chapters">Keine Kapitel verfügbar</string>
+
+    <!-- Transcript -->
+    <string name="player_transcript_sync_scroll">Mitscrollen</string>
+    <string name="player_inline_open_fullscreen_transcript">Transkript im Vollbild öffnen</string>
+
+    <!-- Full player top bar -->
+    <string name="player_collapse">Player einklappen</string>
+    <string name="player_swipe_down_tip">Nach unten wischen zum Minimieren</string>
+    <string name="player_open_player">Player öffnen</string>
+
+    <!-- Hero and video -->
+    <string name="player_swipe_next_episode">Wischen für die nächste Folge</string>
+    <string name="player_switch_to_video">Zum Video wechseln</string>
+    <string name="player_audio_only">Nur Audio</string>
+    <string name="player_fullscreen">Vollbild</string>
+    <string name="player_exit_fullscreen">Vollbild beenden</string>
+    <string name="player_toggle_orientation">Ausrichtung wechseln</string>
+
+    <!-- Quick actions under the transport controls; short, shown under icons -->
+    <string name="player_speed_trim_on">%1$s, Stille kürzen an</string>
+    <string name="player_like">Gefällt mir</string>
+    <string name="player_liked">Gefällt dir</string>
+    <string name="player_complete">Abhaken</string>
+    <string name="player_played">Gehört</string>
+    <string name="player_download">Laden</string>
+    <string name="player_downloading">Lädt</string>
+    <string name="player_downloaded">Gespeichert</string>
+    <string name="player_back_to_quick_actions">Zurück zu den Schnellaktionen</string>
+    <string name="player_slower">Langsamer</string>
+    <string name="player_faster">Schneller</string>
+    <string name="player_sleep">Timer</string>
+    <string name="player_sleep_end">Ende</string>
+    <string name="player_sleep_end_of_episode">Ende der Folge</string>
+
+    <!-- Speed and trim silence controls -->
+    <string name="player_trim_silence">Stille kürzen</string>
+    <string name="player_trim_silence_hint">Lange Pausen überspringen</string>
+    <string name="player_not_available_casting">Beim Streamen nicht verfügbar</string>
+    <string name="player_saved_for_show">Gespeichert für %1$s</string>
+    <string name="player_saved_for_this_show">Für diesen Podcast gespeichert</string>
+    <string name="player_use_app_speed">App-Geschwindigkeit nutzen</string>
+    <string name="player_speed_saved_for_show">Geschwindigkeit für diesen Podcast gespeichert</string>
+    <string name="player_tile_description">%1$s, %2$s</string>
+
+    <!-- Up next card and show notes -->
+    <string name="player_view_queue">Warteschlange ansehen</string>
+    <string name="player_play_next_episode">Nächste Folge abspielen</string>
+    <string name="player_show_notes">Shownotes</string>
+    <string name="player_episode_details">Folgendetails</string>
+    <string name="player_read_more">Mehr lesen</string>
+    <string name="player_show_less">Weniger anzeigen</string>
+
+    <!-- Queue sheet -->
+    <string name="player_queue_title">Als Nächstes</string>
+    <string name="player_close_queue">Warteschlange schließen</string>
+    <string name="player_queue_empty">Warteschlange ist leer</string>
+    <string name="player_smart_queue_off">Die Smarte Warteschlange ist aus, also wird nichts automatisch hinzugefügt.</string>
+    <string name="player_turn_on">Einschalten</string>
+    <string name="player_unknown_podcast">Unbekannter Podcast</string>
+    <string name="player_unknown_show">Unbekannt</string>
+    <string name="player_remove_from_queue">Aus der Warteschlange entfernen</string>
+    <string name="player_reorder">Neu anordnen</string>
+    <string name="player_removed_from_queue">Aus der Warteschlange entfernt</string>
+
+    <!-- Why an episode is in the queue; one short line under the show name -->
+    <string name="player_queue_source_lore">Aus Lore</string>
+    <string name="player_queue_source_same_podcast">Weiter im selben Podcast</string>
+    <string name="player_queue_source_resume">Weiter, wo du aufgehört hast</string>
+    <string name="player_queue_source_resume_stale">Von vorn</string>
+    <string name="player_queue_source_subscription">Aus deinen Abos</string>
+    <string name="player_queue_source_recommended">Für dich empfohlen</string>
+    <string name="player_queue_source_similar_episode">Passend zu dem, was du hörst</string>
+    <string name="player_queue_source_similar_liked">Passend zu etwas, das dir gefallen hat</string>
+    <string name="player_queue_source_trending_in">Im Trend in %1$s</string>
+    <string name="player_queue_source_trending">Gerade im Trend</string>
+    <string name="player_queue_source_added">Für dich hinzugefügt</string>
+
+    <!-- Banner above Up next offering the rest of the same show -->
+    <string name="player_same_show_title">Mit %1$s weitermachen?</string>
+    <string name="player_same_show_title_fallback">Mit diesem Podcast weitermachen?</string>
+    <string name="player_same_show_explanation">Wir haben neuere Folgen dieses Podcasts übersprungen, weil du ihn über Empfehlungen gestartet hast.</string>
+    <string name="player_same_show_hide_preview">Vorschau ausblenden</string>
+
+    <!-- Cast -->
+    <string name="player_cast">Streamen</string>
+    <string name="player_change_cast_device">Cast-Gerät wechseln</string>
+    <string name="player_show_cast_controls">Cast-Steuerung anzeigen</string>
+    <string name="player_cast_available_devices">Verfügbare Geräte</string>
+    <string name="player_cast_this_phone">Dieses Handy</string>
+    <string name="player_cast_move_back_here">Wiedergabe hierher zurückholen</string>
+    <string name="player_cast_same_wifi">Die Geräte müssen im selben WLAN sein.</string>
+    <string name="player_cast_choose_where">Wähle, wo du hören möchtest</string>
+    <string name="player_cast_connecting">Verbindung wird hergestellt…</string>
+    <string name="player_cast_connecting_to">Verbinde mit %1$s…</string>
+    <string name="player_cast_looking">Suche nach Geräten in der Nähe…</string>
+    <string name="player_cast_awake">Achte darauf, dass dein Cast-Gerät eingeschaltet ist.</string>
+    <string name="player_cast_connected">Verbunden</string>
+    <string name="player_cast_ready">Bereit zum Streamen</string>
+    <string name="player_cast_playing_on">Wiedergabe auf</string>
+    <string name="player_cast_change_device">Gerät wechseln</string>
+    <string name="player_cast_device">Gerät</string>
+    <string name="player_next_episode">Nächste Folge</string>
+    <string name="player_next">Weiter</string>
+    <string name="player_stop_casting">Streamen beenden</string>
+    <string name="player_stop">Stopp</string>
+    <string name="player_cast_device_fallback">Cast-Gerät</string>
+    <string name="player_casting_to">Streamt auf %1$s</string>
+    <string name="player_state_casting_to">%1$s, streamt auf %2$s</string>
+
+    <!-- Mini player -->
+    <string name="player_mini_time_left">Noch %1$s</string>
+    <string name="player_mini_swipe_to_dismiss">← Zum Schließen wischen →</string>
+</resources>

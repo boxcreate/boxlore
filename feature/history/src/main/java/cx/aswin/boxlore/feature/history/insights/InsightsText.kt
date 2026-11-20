@@ -5,10 +5,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import cx.aswin.boxlore.core.model.ListeningPeriod
 import cx.aswin.boxlore.feature.history.R
-import cx.aswin.boxlore.feature.history.timeline.currentLocale
 import cx.aswin.boxlore.feature.history.timeline.durationText
 import java.time.DayOfWeek
-import java.time.format.TextStyle
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -84,7 +82,7 @@ internal fun finishFact(rate: Float): String {
     if (rate <= 0f) return stringResource(R.string.history_finish_none)
     if (rate < InsightsWording.FEW_BELOW) return stringResource(R.string.history_finish_few)
     val (finished, of) = InsightsWording.nearestFraction(rate)
-    return stringResource(R.string.history_finish_rate, finished, of)
+    return pluralStringResource(R.plurals.history_finish_rate, of, finished, of)
 }
 
 @Composable
@@ -135,9 +133,19 @@ internal fun perDayText(perDayMs: Long): String {
     return if (minutes <= 0) stringResource(R.string.history_ins_per_day_under_minute) else pluralStringResource(R.plurals.history_ins_per_day_minutes, minutes, minutes)
 }
 
-/** "Wednesdays": the weekday's plural, from a string so each language can say it its own way. */
+/** "Wednesdays": the weekday's plural, one string per day so each language can say it its own way. */
 @Composable
-internal fun weekdayPlural(day: DayOfWeek): String = stringResource(R.string.history_weekday_plural, day.getDisplayName(TextStyle.FULL_STANDALONE, currentLocale()))
+internal fun weekdayPlural(day: DayOfWeek): String = stringResource(
+    when (day) {
+        DayOfWeek.MONDAY -> R.string.history_weekday_plural_monday
+        DayOfWeek.TUESDAY -> R.string.history_weekday_plural_tuesday
+        DayOfWeek.WEDNESDAY -> R.string.history_weekday_plural_wednesday
+        DayOfWeek.THURSDAY -> R.string.history_weekday_plural_thursday
+        DayOfWeek.FRIDAY -> R.string.history_weekday_plural_friday
+        DayOfWeek.SATURDAY -> R.string.history_weekday_plural_saturday
+        DayOfWeek.SUNDAY -> R.string.history_weekday_plural_sunday
+    },
+)
 
 /** "4 h 23 min on Wednesdays this month". */
 @Composable

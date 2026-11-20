@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.feature.settings.R
 
 /** What the email in the listener's inbox does: sign them in, or confirm a new password account. */
@@ -110,7 +111,7 @@ internal fun ColumnScope.AccountCheckEmailContent(kind: AccountEmailCheck, state
             }
         }
     }
-    state.errorMessage?.let { AuthErrorBanner(message = it) }
+    state.errorMessage?.let { AuthErrorBanner(message = it.asString()) }
     Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Icon(Icons.Rounded.Info, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(stringResource(R.string.account_spam_hint), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

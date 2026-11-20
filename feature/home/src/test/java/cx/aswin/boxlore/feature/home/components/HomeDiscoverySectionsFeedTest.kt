@@ -126,7 +126,7 @@ class HomeDiscoverySectionsFeedTest {
 
     private fun assertSectionsShown(shown: Boolean, size: BoxloreWindowLayout) {
         val message = "window ${size.widthDp}x${size.heightDp}"
-        listOf(greeting.title, rows.single().title, label(R.string.home_picked_for_you), label(R.string.home_because_you_like)).forEach { text ->
+        listOf(label(greeting.title), rows.single().title, label(R.string.home_picked_for_you), label(R.string.home_because_you_like)).forEach { text ->
             val nodes = composeRule.onAllNodesWithTextFetched(text)
             assertEquals("$text, $message", shown, nodes > 0)
         }

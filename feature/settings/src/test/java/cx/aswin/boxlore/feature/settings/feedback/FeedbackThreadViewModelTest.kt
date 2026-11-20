@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.settings.feedback
 
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.support.ConversationResult
 import cx.aswin.boxlore.core.support.ReplyResult
 import cx.aswin.boxlore.core.support.SupportConversation
@@ -7,6 +8,7 @@ import cx.aswin.boxlore.core.support.SupportEnding
 import cx.aswin.boxlore.core.support.SupportMessage
 import cx.aswin.boxlore.core.support.SupportStatus
 import cx.aswin.boxlore.core.support.SupportThread
+import cx.aswin.boxlore.feature.settings.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -131,7 +133,7 @@ class FeedbackThreadViewModelTest {
         vm.onReplyChanged("  Still happening  ")
         vm.sendReply()
         advanceUntilIdle()
-        assertEquals("Couldn't send your reply. Check your connection and try again.", vm.uiState.value.replyError)
+        assertEquals(UiText.res(R.string.feedback_thread_error_reply), vm.uiState.value.replyError)
         assertEquals("  Still happening  ", vm.uiState.value.reply)
 
         fake.replyResult = ReplyResult.Sent(null, null)
@@ -154,7 +156,7 @@ class FeedbackThreadViewModelTest {
         vm.onReplyChanged("More")
         vm.sendReply()
         advanceUntilIdle()
-        assertEquals("Try again tomorrow.", vm.uiState.value.replyError)
+        assertEquals(UiText.raw("Try again tomorrow."), vm.uiState.value.replyError)
 
         fake.replyResult = ReplyResult.Closed(null)
         vm.sendReply()

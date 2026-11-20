@@ -37,7 +37,8 @@ fun ShimmerScope(active: Boolean, content: @Composable () -> Unit) {
 
 @Composable
 internal fun rememberShimmerPhase(): State<Float> {
-    val transition = rememberInfiniteTransition(label = "Shimmer")
+    // Animation label for tooling, never shown.
+    val transition = rememberInfiniteTransition(label = "Shimmer") // i18n-ignore
     return transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,

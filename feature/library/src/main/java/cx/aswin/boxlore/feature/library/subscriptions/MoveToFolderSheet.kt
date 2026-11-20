@@ -34,6 +34,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -44,6 +46,7 @@ import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.model.artworkUrls
+import cx.aswin.boxlore.feature.library.R
 
 /**
  * Modal bottom sheet displaying available subscription folders to move or add a [podcast].
@@ -160,7 +163,7 @@ private fun MoveToFolderHeader(
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = if (isMoving) "Move to Folder" else "Add to Folder",
+                text = stringResource(if (isMoving) R.string.library_folder_move_title else R.string.library_folder_add_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -177,7 +180,7 @@ private fun MoveToFolderHeader(
         IconButton(onClick = onDismissRequest) {
             Icon(
                 imageVector = Icons.Rounded.Close,
-                contentDescription = "Close",
+                contentDescription = stringResource(R.string.library_close),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -197,7 +200,7 @@ private fun MoveToFolderList(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "No other folders yet",
+                text = stringResource(R.string.library_folder_no_other_folders),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -244,7 +247,7 @@ private fun CreateNewFolderActionRow(
                 modifier = Modifier.size(20.dp),
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Create new folder")
+            Text(stringResource(R.string.library_folder_create_new))
         }
     }
 }
@@ -291,7 +294,7 @@ private fun FolderPickRow(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = "${folder.podcastCount} shows • ${folder.displaySize.dimensionsLabel}",
+                text = pluralStringResource(R.plurals.library_folder_shows_and_dimensions, folder.podcastCount, folder.podcastCount, folder.displaySize.dimensionsLabel),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

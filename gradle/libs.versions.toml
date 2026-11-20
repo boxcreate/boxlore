@@ -66,6 +66,7 @@ androidx-wear-input = { group = "androidx.wear", name = "wear-input", version = 
 haze = { group = "dev.chrisbanes.haze", name = "haze", version.ref = "haze" }
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
 posthog-android = { group = "com.posthog", name = "posthog-android", version.ref = "posthog" }
+androidx-annotation = { group = "androidx.annotation", name = "annotation", version = "1.10.0" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version = "1.2.0" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

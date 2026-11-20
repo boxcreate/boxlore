@@ -486,19 +486,18 @@ class HomeViewModel(
         cx.aswin.boxlore.core.analytics.AnalyticsHelper
             .trackPlayMixClicked(episodes.size, mode.analyticsValue)
 
+        val app = getApplication<Application>()
         val dummyPodcast =
             Podcast(
                 id = if (mode == HomeMixMode.OFFLINE) "offline_mix" else "unplayed_mix",
-                title = if (mode == HomeMixMode.OFFLINE) "Offline Mix" else "Your Shows Mix",
-                artist = "Various Artists",
+                title = app.getString(if (mode == HomeMixMode.OFFLINE) R.string.home_mix_offline_queue_title else R.string.home_mix_shows_queue_title),
+                artist = app.getString(R.string.home_mix_queue_artist),
                 imageUrl = "",
                 fallbackImageUrl = null,
                 description =
-                if (mode == HomeMixMode.OFFLINE) {
-                    "Downloaded episodes ordered by release time"
-                } else {
-                    "Mixed playlist of unplayed episodes"
-                },
+                app.getString(
+                    if (mode == HomeMixMode.OFFLINE) R.string.home_mix_offline_queue_description else R.string.home_mix_shows_queue_description,
+                ),
                 genre = "Mix",
             )
         viewModelScope.launch {
@@ -650,9 +649,16 @@ class HomeViewModel(
         npsSurvey.open(manual = true, copy = npsSurveyCopy())
     }
 
-    /** The survey's wording, with any overrides from its PostHog flag. */
+    /**
+     * The survey's wording, with any overrides from its PostHog flag. It is read in English: the
+     * question titles sent with the answers must match PostHog's survey whatever the App language;
+     * the sheet shows its own translated wording ([NpsSurveyCopy.withStrings]).
+     */
     internal fun npsSurveyCopy() =
-        NpsSurveyCopy(cx.aswin.boxlore.core.analytics.AnalyticsHelper.surveyCopyOverrides(NpsSurveyDefinition.COPY_FLAG))
+        NpsSurveyCopy(
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.surveyCopyOverrides(NpsSurveyDefinition.COPY_FLAG),
+            npsEnglishStrings(getApplication()),
+        )
 
     fun triggerPostReview() {
         _showReviewPrompt.value = false

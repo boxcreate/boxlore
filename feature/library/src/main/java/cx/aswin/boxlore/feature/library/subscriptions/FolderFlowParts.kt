@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -41,6 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.library.R
 
 /** Top of a folder flow page: close or back, a title, an optional "Step 1 of 3" and step bars. */
 @Composable
@@ -63,7 +65,7 @@ internal fun FolderFlowTopBar(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = if (showClose) Icons.Rounded.Close else Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = if (showClose) "Close" else "Back",
+                    contentDescription = stringResource(if (showClose) R.string.library_close else R.string.library_back),
                 )
             }
             Text(
@@ -76,7 +78,7 @@ internal fun FolderFlowTopBar(
             )
             if (step != null && stepCount != null && stepCount > 1) {
                 Text(
-                    text = "Step ${step + 1} of $stepCount",
+                    text = stringResource(R.string.library_folder_step_of, step + 1, stepCount),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -167,7 +169,7 @@ internal fun FolderNameField(
         OutlinedTextField(
             value = name,
             onValueChange = onNameChange,
-            label = { Text(text = "Name") },
+            label = { Text(text = stringResource(R.string.library_folder_name)) },
             singleLine = true,
             supportingText = helper?.let { { Text(text = it) } },
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),

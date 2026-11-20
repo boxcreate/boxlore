@@ -6,6 +6,7 @@ import cx.aswin.boxlore.core.model.persistableArtworkUrl
 import cx.aswin.boxlore.core.playback.PlaybackSession
 import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.SmartHeroItem
+import java.util.Locale
 
 internal object HomeHeroLogic {
     fun sessionToPodcast(
@@ -54,6 +55,8 @@ internal object HomeHeroLogic {
         )
     }
 
+    // A hero's `label` is a state key ("RESUME", "JUMP BACK IN", "#1 IN US"), not listener text: the cards
+    // word it with heroStateLabel / heroSpotlightContext.
     fun appendResumeHeroItems(
         heroList: MutableList<SmartHeroItem>,
         usedPodcastIds: MutableSet<String>,
@@ -70,7 +73,7 @@ internal object HomeHeroLogic {
                 SmartHeroItem(
                     type = HeroType.RESUME,
                     podcast = firstPodcast,
-                    label = "RESUME • ${timeLeft}m left",
+                    label = "RESUME • ${timeLeft}m left", // i18n-ignore
                     description = first.episodeTitle,
                 ),
             )
@@ -88,7 +91,7 @@ internal object HomeHeroLogic {
                     SmartHeroItem(
                         type = HeroType.RESUME,
                         podcast = secondPodcast,
-                        label = "RESUME • ${timeLeft}m left",
+                        label = "RESUME • ${timeLeft}m left", // i18n-ignore
                         description = second.episodeTitle,
                     ),
                 )
@@ -112,7 +115,7 @@ internal object HomeHeroLogic {
                     SmartHeroItem(
                         type = HeroType.RESUME_GRID,
                         podcast = gridPodcasts.first(),
-                        label = "JUMP BACK IN",
+                        label = "JUMP BACK IN", // i18n-ignore
                         description = null,
                         gridItems = gridPodcasts,
                     ),
@@ -175,7 +178,7 @@ internal object HomeHeroLogic {
                 SmartHeroItem(
                     type = HeroType.NEW_EPISODES_GRID,
                     podcast = gridDrops.first(),
-                    label = "NEW EPISODES",
+                    label = "NEW EPISODES", // i18n-ignore
                     description = null,
                     gridItems = gridDrops,
                 ),
@@ -191,7 +194,7 @@ internal object HomeHeroLogic {
     ): String = when {
         spotlightAddedCount == 0 -> "#1 IN ${marketLabelForRegion(region)}"
         genre.isNotEmpty() && !genre.equals("Podcast", ignoreCase = true) ->
-            "TRENDING IN ${genre.uppercase()}"
+            "TRENDING IN ${genre.uppercase(Locale.ROOT)}"
         else -> "TRENDING"
     }
 

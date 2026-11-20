@@ -16,7 +16,7 @@ import java.util.Locale
 @Immutable
 internal data class SerialSeason(val number: Int, val name: String?, @DrawableRes val cover: Int?, val picture: String?) {
     /** The card's label: "18 · METRO", or [unnamed] ("Season 19") while a new season's name is unknown; in capitals. */
-    fun label(unnamed: String, locale: Locale = Locale.getDefault()): String =
+    fun label(unnamed: String, locale: Locale): String =
         (name?.let { String.format(Locale.ROOT, "%02d · %s", number, it) } ?: unnamed).uppercase(locale)
 }
 

@@ -27,6 +27,7 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.info.PodcastInfoScreen
 import cx.aswin.boxlore.feature.info.PodcastInfoUiState
@@ -196,7 +197,7 @@ class BrandedPagesPhoneGoldenTest(private val show: String, private val dark: Bo
         `when`(model.likedEpisodesState).thenReturn(MutableStateFlow(emptySet()))
         // "-partway": the latest episode is 38% heard.
         val partway = if (show.endsWith("-partway")) {
-            mapOf(episodes.first().id to PodcastInfoViewModel.EpisodePlaybackState(isResume = true, progress = 0.38f, timeLeft = "28m left"))
+            mapOf(episodes.first().id to PodcastInfoViewModel.EpisodePlaybackState(isResume = true, progress = 0.38f, timeLeft = UiText.raw("28m left")))
         } else {
             emptyMap()
         }

@@ -1,6 +1,8 @@
 package cx.aswin.boxlore.feature.library.subscriptions
 
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.testing.TestFixtures
+import cx.aswin.boxlore.feature.library.R
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -107,23 +109,23 @@ class SubscriptionReorderControlsTest {
     @Test
     fun `resolveReorderBarContent produces expressive title with folder name`() {
         val folderContent = resolveReorderBarContent(ReorderMode.Folders)
-        assertEquals("Reordering: Folders", folderContent.title)
-        assertEquals("Drag to arrange", folderContent.subtitle)
-        assertEquals("Switches to manual sort", folderContent.note)
+        assertEquals(UiText.res(R.string.library_reorder_title_folders), folderContent.title)
+        assertEquals(UiText.res(R.string.library_reorder_drag_to_arrange), folderContent.subtitle)
+        assertEquals(UiText.res(R.string.library_reorder_switches_to_manual), folderContent.note)
 
         val namedFolderShows = resolveReorderBarContent(ReorderMode.FolderShows("f1", "Tech News"))
-        assertEquals("Reordering: Tech News", namedFolderShows.title)
-        assertEquals("Drag to arrange", namedFolderShows.subtitle)
-        assertEquals("Switches to manual sort", namedFolderShows.note)
+        assertEquals(UiText.res(R.string.library_reorder_title_named, UiText.raw("Tech News")), namedFolderShows.title)
+        assertEquals(UiText.res(R.string.library_reorder_drag_to_arrange), namedFolderShows.subtitle)
+        assertEquals(UiText.res(R.string.library_reorder_switches_to_manual), namedFolderShows.note)
 
         val unnamedFolderShows = resolveReorderBarContent(ReorderMode.FolderShows("f1", ""))
-        assertEquals("Reordering: Folder", unnamedFolderShows.title)
-        assertEquals("Drag to arrange", unnamedFolderShows.subtitle)
-        assertEquals("Switches to manual sort", unnamedFolderShows.note)
+        assertEquals(UiText.res(R.string.library_reorder_title_named, UiText.res(R.string.library_folder_fallback_name)), unnamedFolderShows.title)
+        assertEquals(UiText.res(R.string.library_reorder_drag_to_arrange), unnamedFolderShows.subtitle)
+        assertEquals(UiText.res(R.string.library_reorder_switches_to_manual), unnamedFolderShows.note)
 
         val rootShowsContent = resolveReorderBarContent(ReorderMode.RootShows)
-        assertEquals("Reordering: Shows", rootShowsContent.title)
-        assertEquals("Drag to arrange", rootShowsContent.subtitle)
-        assertEquals("Switches to manual sort", rootShowsContent.note)
+        assertEquals(UiText.res(R.string.library_reorder_title_shows), rootShowsContent.title)
+        assertEquals(UiText.res(R.string.library_reorder_drag_to_arrange), rootShowsContent.subtitle)
+        assertEquals(UiText.res(R.string.library_reorder_switches_to_manual), rootShowsContent.note)
     }
 }

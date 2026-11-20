@@ -15,10 +15,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.settings.R
 
 object SettingsResetAnalyticsTestTags {
     const val CONFIRM = "settings_reset_analytics_confirm"
@@ -41,12 +43,12 @@ internal fun ResetAnalyticsDialog(
             )
         },
         title = {
-            Text("Start a new analytics ID?")
+            Text(stringResource(R.string.settings_reset_analytics_title))
         },
         text = {
             Column(Modifier.tabletSheetScroll(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    text = "Future PostHog events will use a new anonymous ID. This does not delete events already sent under the current ID.",
+                    text = stringResource(R.string.settings_reset_analytics_body),
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Surface(
@@ -58,19 +60,19 @@ internal fun ResetAnalyticsDialog(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         Text(
-                            text = "Data in the app is not deleted",
+                            text = stringResource(R.string.settings_reset_analytics_kept_title),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = GoogleSansWeight.bold,
                             color = MaterialTheme.colorScheme.primary,
                         )
                         Text(
-                            text = "Your listening history, subscriptions, downloads, and settings remain available.",
+                            text = stringResource(R.string.settings_reset_analytics_kept_body),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
                 }
                 Text(
-                    text = "This does not reset the separate device ID used for recommendations and transcripts. To delete PostHog data, send a deletion request from Privacy.",
+                    text = stringResource(R.string.settings_reset_analytics_device_id),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
@@ -80,7 +82,7 @@ internal fun ResetAnalyticsDialog(
                 onClick = onConfirm,
                 modifier = Modifier.testTag(SettingsResetAnalyticsTestTags.CONFIRM),
             ) {
-                Text("Reset ID")
+                Text(stringResource(R.string.settings_privacy_new_id_action))
             }
         },
         dismissButton = {
@@ -88,7 +90,7 @@ internal fun ResetAnalyticsDialog(
                 onClick = onDismiss,
                 modifier = Modifier.testTag(SettingsResetAnalyticsTestTags.CANCEL),
             ) {
-                Text("Cancel")
+                Text(stringResource(R.string.settings_cancel))
             }
         },
     )

@@ -59,6 +59,7 @@ internal fun OnboardingViewModel.requestShowDeckIfDue(history: List<OnboardingHi
                                 features = listOf(EchoDeckLogic.FEATURE),
                                 country = locale.country,
                                 languages = locale.languages,
+                                appLanguage = echoLanguageTag(),
                             ),
                         ).execute()
                 }

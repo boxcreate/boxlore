@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.history.story
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import cx.aswin.boxlore.feature.history.R
 import cx.aswin.boxlore.feature.history.insights.DayPart
@@ -76,6 +77,6 @@ internal object StoryText {
         if (rate <= 0f) return stringResource(R.string.history_story_type_finish_none, share, part)
         if (rate < InsightsWording.FEW_BELOW) return stringResource(R.string.history_story_type_finish_few, share, part)
         val (finished, of) = InsightsWording.nearestFraction(rate)
-        return stringResource(R.string.history_story_type_finish, share, part, finished, of)
+        return pluralStringResource(R.plurals.history_story_type_finish, of, share, part, finished, of)
     }
 }

@@ -5,6 +5,7 @@ import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
 import cx.aswin.boxlore.core.domain.ports.LocalCatalogPort
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.info.PodcastInfoSupplementSupportTest.FakePort
@@ -101,7 +102,7 @@ class PodcastInfoFeedCheckFailureTest {
 
         val after = pageState.uiState.value as PodcastInfoUiState.Success
         assertEquals(DirectFeedChipState.CheckFailed, after.directFeedChip)
-        assertEquals("Couldn't update episodes from the feed", after.userMessage)
+        assertEquals(UiText.raw("Couldn't update episodes from the feed"), after.userMessage)
         assertEquals(false, after.isRssRefreshing)
     }
 

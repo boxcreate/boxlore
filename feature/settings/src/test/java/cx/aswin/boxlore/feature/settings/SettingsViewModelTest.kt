@@ -5,6 +5,7 @@ import cx.aswin.boxlore.core.domain.RssSubscriptionResult
 import cx.aswin.boxlore.core.domain.ports.RankingResetPort
 import cx.aswin.boxlore.core.domain.ports.RssSubscriptionPort
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.testing.MainDispatcherExtension
 import cx.aswin.boxlore.core.testing.TestFixtures
 import java.io.IOException
@@ -38,8 +39,7 @@ class SettingsViewModelTest {
             vm.addSubscription()
 
             val toast = awaitItem() as SettingsEvent.ShowToast
-            assertTrue(toast.message.contains("Feed A"))
-            assertTrue(toast.message.contains("12"))
+            assertEquals(UiText.plural(R.plurals.settings_rss_added_with_episodes, 12, "Feed A", 12), toast.message)
             cancelAndIgnoreRemainingEvents()
         }
 
@@ -90,7 +90,7 @@ class SettingsViewModelTest {
         assertTrue(state.showAddRssDialog)
         assertFalse(state.isAddingRss)
         assertEquals(
-            "The RSS feed could not be downloaded. Check your connection and try again.",
+            UiText.res(R.string.settings_rss_error_download),
             state.rssError,
         )
     }
@@ -116,7 +116,7 @@ class SettingsViewModelTest {
         vm.events.test {
             vm.confirmPodcastIndexLink()
             val toast = awaitItem() as SettingsEvent.ShowToast
-            assertTrue(toast.message.contains("Linked Show"))
+            assertEquals(UiText.res(R.string.settings_rss_using_rss_source, "Linked Show"), toast.message)
             cancelAndIgnoreRemainingEvents()
         }
 
@@ -134,7 +134,7 @@ class SettingsViewModelTest {
         vm.events.test {
             vm.resetRecommendations()
             assertEquals(
-                SettingsEvent.ShowToast("Recommendations reset"),
+                SettingsEvent.ShowToast(UiText.res(R.string.settings_recommendations_reset_done)),
                 awaitItem(),
             )
             cancelAndIgnoreRemainingEvents()
@@ -150,7 +150,7 @@ class SettingsViewModelTest {
         vm.events.test {
             vm.resetRecommendations()
             assertEquals(
-                SettingsEvent.ShowToast("Couldn't reset recommendations"),
+                SettingsEvent.ShowToast(UiText.res(R.string.settings_recommendations_reset_failed)),
                 awaitItem(),
             )
             cancelAndIgnoreRemainingEvents()
@@ -190,7 +190,7 @@ class SettingsViewModelTest {
         vm.events.test {
             vm.keepRssMatchSeparate()
             assertEquals(
-                SettingsEvent.ShowToast("Kept both subscriptions separate."),
+                SettingsEvent.ShowToast(UiText.res(R.string.settings_rss_kept_separate)),
                 awaitItem(),
             )
             cancelAndIgnoreRemainingEvents()

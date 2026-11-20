@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -45,8 +46,10 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.icon.findExactGenreIconKey
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.feature.library.R
 
 /** Step 1 of New folder for picked shows and for one genre. */
 @OptIn(ExperimentalFoundationApi::class)
@@ -93,10 +96,7 @@ private fun PickableCover(
     otherFolder: String?,
     onToggle: () -> Unit,
 ) {
-    val label = buildString {
-        append(podcast.title)
-        if (otherFolder != null) append(", in $otherFolder")
-    }
+    val label = otherFolder?.let { stringResource(R.string.library_folder_pick_show_in_folder, podcast.title, it) } ?: podcast.title
     Surface(
         onClick = onToggle,
         shape = RoundedCornerShape(16.dp),
@@ -144,7 +144,7 @@ private fun ShowSearchField(query: String, onQueryChange: (String) -> Unit) {
     TextField(
         value = query,
         onValueChange = onQueryChange,
-        placeholder = { Text(text = "Search your shows") },
+        placeholder = { Text(text = stringResource(R.string.library_search_your_shows)) },
         leadingIcon = { Icon(imageVector = Icons.Rounded.Search, contentDescription = null) },
         singleLine = true,
         shape = CircleShape,
@@ -166,13 +166,13 @@ internal fun OneGenreContent(
     data: NewFolderFlowData,
 ) {
     val genres = remember(data.podcasts) { extractDistinctGenres(data.podcasts) }
-    AutoAddNote(text = genreAutoAddNote(draft.genre))
+    AutoAddNote(text = genreAutoAddNote(draft.genre).asString())
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         genres.forEach { genre ->
             val item = resolveSubscriptionGenreItem(genre, data.podcasts)
             val count = matchingShows(data.podcasts, genre).size
             SubscriptionChip(
-                label = "${item.label} · $count",
+                label = stringResource(R.string.library_folder_genre_chip_count, item.displayLabel(), count),
                 selected = draft.genre.equals(item.label, ignoreCase = true),
                 onClick = { onDraftChange(NewFolderFlowLogic.withGenre(draft, item.label, findExactGenreIconKey(item.label))) },
                 icon = item.icon,
@@ -185,7 +185,7 @@ internal fun OneGenreContent(
         name = draft.name,
         onNameChange = { onDraftChange(NewFolderFlowLogic.withName(draft, it, findExactGenreIconKey(it))) },
         iconKey = draft.icon,
-        helper = NewFolderFlowLogic.savedNameNote(draft.name),
+        helper = NewFolderFlowLogic.savedNameNote(draft.name)?.let { stringResource(it) },
     )
 }
 
@@ -214,7 +214,7 @@ private fun GenreJoinsCard(genre: String, data: NewFolderFlowData) {
             AutoFolderMark(size = 18.dp)
             Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text = showCountLabel(joining.size),
+                text = showCountLabel(joining.size).asString(),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = GoogleSansWeight.semiBold,
             )

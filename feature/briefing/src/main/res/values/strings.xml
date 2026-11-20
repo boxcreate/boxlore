@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Daily brief screen. Story text, titles and sources come from the server and are not translated. -->
+    <!-- Above the story pager, e.g. "Story 2 of 6". -->
+    <string name="briefing_screen_story_position">Story %1$d of %2$d</string>
+    <string name="briefing_screen_previous_story">Previous story</string>
+    <string name="briefing_screen_next_story">Next story</string>
+    <string name="briefing_screen_stories_loading">Loading stories…</string>
+    <string name="briefing_screen_stories_unavailable">Story text is unavailable. You can still listen to the brief.</string>
+    <!-- Header of the related episodes under a story. -->
+    <string name="briefing_screen_listen_further">Listen further</string>
+    <!-- Time left in the brief; the argument is a length such as "3m". -->
+    <string name="briefing_screen_time_left">%1$s left</string>
+    <!-- The brief's length in the header line, e.g. "4 min listen". -->
+    <plurals name="briefing_screen_listen_minutes">
+        <item quantity="one">%1$d min listen</item>
+        <item quantity="other">%1$d min listen</item>
+    </plurals>
+    <!-- Episode description of the brief in the player; the argument is the region code, e.g. "US". -->
+    <string name="briefing_screen_episode_description">Your daily AI-generated news briefing for %1$s.</string>
+    <!-- Heading above the brief's source links in the episode description. -->
+    <string name="briefing_screen_sources_heading">References &amp; Sources</string>
+</resources>

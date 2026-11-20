@@ -27,12 +27,12 @@ import cx.aswin.boxlore.feature.settings.components.SettingsTileSection
 @Composable
 internal fun AppearancePlayerPage(state: AppearanceUiState, actions: AppearanceActions, onBack: () -> Unit) {
     TrackScreenView("appearance_player")
-    SettingsScaffold(title = "Player", onBack = onBack) {
+    SettingsScaffold(title = stringResource(R.string.settings_page_player), onBack = onBack) {
         PlayerStyleSection(state.fullPlayerStyle, actions.onSetFullPlayerStyle)
-        SettingsGroup(title = "Miniplayer") {
+        SettingsGroup(title = stringResource(R.string.settings_player_miniplayer_title)) {
             SettingsSwitchRow(
-                title = "Seek buttons",
-                supportingText = "Show back and forward controls beside play and pause",
+                title = stringResource(R.string.settings_player_seek_buttons),
+                supportingText = stringResource(R.string.settings_player_seek_buttons_description),
                 checked = state.miniPlayerSeekButtonsEnabled,
                 onCheckedChange = actions.onSetMiniPlayerSeekButtonsEnabled,
                 icon = Icons.Rounded.Replay,

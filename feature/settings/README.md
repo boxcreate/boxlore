@@ -23,7 +23,8 @@ Owns the Settings hub and its pages, sign-in, the Smart and automatic download s
 
 ## Appearance
 
-- The overview shows Display mode, then one row per page with its current choice (`appearanceSummary`): **Theme & colors**, **Home**, **Show pages**, **Player**, **Navigation**, **Text** and **Widgets**.
+- The overview shows Display mode, **App language**, then one row per page with its current choice (`appearanceSummary`): **Theme & colors**, **Home**, **Show pages**, **Player**, **Navigation**, **Text** and **Widgets**.
+- App language (`AppearanceLanguagePage`) lists System default and each `AppLanguage` (`:core:prefs`) in its own words, with a note that translations are made with AI help. `AppearanceActions.onSetAppLanguage` hands a pick to the app, which applies it at once; it is reported as `app_language_changed`.
 - Theme & colors offers four looks (boxlore classic, Pure, Material 3, Custom) and **Use artwork colors** (on by default). Legacy palettes show as Custom without changing stored values (`ThemeSettingsLogic.kt`).
 - The custom theme editor is a full page. Drafts change only its preview; Save applies the palette in one write, and Back discards it.
 - Widgets holds the home screen widgets' colours (App theme or System) and every widget (`AddableWidget`, supplied by the app) as a card: its real look drawn by the app through `AppearanceWidgetPreview`, scaled to fit and never enlarged, its name, and an Add button that asks the home screen app to add it. The two round players share a row, and the Your Shows card carries the cover choice (whole covers or shapes) under its picture. When nothing answers the latest request within `ADD_WIDGET_ANSWER_MS` (the app is not paused by a confirmation and `AppearanceActions.addedWidgets` reports nothing), that card offers help and a way to the app's permission settings; the help goes away when an answer arrives. When the home screen app cannot add widgets (`AppearanceActions.canAddWidgets`), the cards stay without buttons, with the steps for adding one by hand.
@@ -41,7 +42,7 @@ Owns the Settings hub and its pages, sign-in, the Smart and automatic download s
 - Signed in from Settings shows the sync panel (`AccountSyncPanel`) and the account group (sign out, reset password for password accounts, delete account). Backend error text is never shown.
 - Echo (`AccountEcho`, the shared `EchoCharacter`) is decorative; tapping it cycles outfits (`AccountEchoOutfits`), except while syncing.
 - Cloud Sync & Backups exports and imports a full JSON backup or subscriptions only (OPML) through `LibraryBackupWriters`; its copy names exactly what the JSON holds (`FULL_LIBRARY_EXPORT_SUMMARY`).
-- Account copy lives in `res/values/account.xml`.
+- Listener-facing text lives in `res/values/` by area. The Privacy explanation stays English (`translatable="false"`), as do Support tier names and codenames, which are also analytics values.
 
 ## Feedback and support conversations
 
@@ -131,7 +132,7 @@ Hermetic JVM tests live in `feature/settings/src/test`, using fakes from [`:core
 | :--- | :--- |
 | Hub, Back and tablet split | `SettingsBackNavigationTest`, `TabletSettingsLayoutTest`, `TabletSettingsDialogTest`, `TabletSettingsCaptureTest`, `SettingsHeaderTitleTest` |
 | RSS and reset dialogs | `SettingsViewModelTest`, `SettingsViewModelDialogTest`, `SettingsGoldenRoborazziTest` |
-| Appearance | `AppearancePagesTest`, `AppearanceActionsTrackedTest`, `SettingsPictureRowTest`, `PlayerStyleSectionTest`, `AppearanceWidgetsPageTest` |
+| Appearance | `AppearancePagesTest`, `AppearanceActionsTrackedTest`, `SettingsPictureRowTest`, `PlayerStyleSectionTest`, `AppearanceWidgetsPageTest`, `AppearanceLanguagePageTest` |
 | Themes | `CustomThemeEditorTest`, `CustomThemeEditorOptionsTest`, `ThemeEditorPressFeedbackTest`, `ThemeSettingsLogicTest`, `ThemePresetResolutionTest`, `AccentSwatchLayoutTest` |
 | Account and sync | `AccountPagePresentationTest`, `AccountPageAdaptiveTest`, `AccountSettingsPageTest`, `AccountAuthHelpersTest`, `AccountLinkFailedContentTest`, `SyncAndBackupsPageTest` |
 | Library | `LibraryLanguagesAdaptiveTest`, `ClearSavedShowsAdaptiveTest` |

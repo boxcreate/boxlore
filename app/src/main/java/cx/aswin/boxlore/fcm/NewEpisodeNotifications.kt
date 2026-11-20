@@ -10,6 +10,7 @@ import android.net.Uri
 import android.os.Build
 import android.service.notification.StatusBarNotification
 import androidx.core.app.NotificationCompat
+import cx.aswin.boxlore.R
 
 internal object NewEpisodeNotifications {
     private const val RELEASE_KEY = "boxlore_release_key"
@@ -38,6 +39,7 @@ internal object NewEpisodeNotifications {
     )
 
     fun resolveNewEpisodeDetails(
+        context: Context,
         podcastId: String,
         data: Map<String, String>,
         local: cx.aswin.boxlore.core.model.Episode?,
@@ -53,12 +55,12 @@ internal object NewEpisodeNotifications {
             data["podcastTitle"]?.takeIf { it.isNotBlank() }
                 ?: data["podcast_title"]?.takeIf { it.isNotBlank() }
                 ?: local?.podcastTitle?.takeIf { it.isNotBlank() }
-                ?: "New Release"
+                ?: context.getString(R.string.app_new_episode_show_fallback)
         val episodeTitle =
             local?.title?.takeIf { it.isNotBlank() }
                 ?: data["episodeTitle"]?.takeIf { it.isNotBlank() }
                 ?: data["episode_title"]?.takeIf { it.isNotBlank() }
-                ?: "New Episode"
+                ?: context.getString(R.string.app_new_episode_episode_fallback)
         val imageUrl = local?.imageUrl ?: data["image"] ?: data["imageUrl"]
         val duration =
             NewEpisodeFcmLogic.durationMinutes(local?.duration, data["duration"])
@@ -84,7 +86,7 @@ internal object NewEpisodeNotifications {
         val channelId = "boxlore_new_episodes_v1"
         val soundUri = Uri.parse("android.resource://${context.packageName}/raw/boxlore_chime")
 
-        createChannel(notificationManager, channelId, soundUri)
+        createChannel(context, notificationManager, channelId, soundUri)
 
         // One notification per show, tagged with its ID; its tap slot is chosen from what is showing,
         // counting this process's own posts and cancels Android does not list yet.
@@ -135,12 +137,12 @@ internal object NewEpisodeNotifications {
                 null
             }
 
-        val title = NewEpisodeFcmLogic.episodeNotificationTitle(podcastTitle)
+        val title = context.getString(R.string.app_new_episode_notification_title, podcastTitle)
         val bodyText =
             if (durationMinutes > 0) {
-                "\"$episodeTitle\" ($durationMinutes mins)"
+                context.resources.getQuantityString(R.plurals.app_new_episode_notification_body, durationMinutes, episodeTitle, durationMinutes)
             } else {
-                "\"$episodeTitle\""
+                context.getString(R.string.app_new_episode_notification_body_no_duration, episodeTitle)
             }
 
         val notificationBuilder =
@@ -176,14 +178,14 @@ internal object NewEpisodeNotifications {
         notificationManager.notify(podcastId, NewEpisodeFcmLogic.EPISODE_NOTIFICATION_ID_BASE, notificationBuilder.build())
         recentPosts.recordPost(NewEpisodeFcmLogic.PostedEpisodeNotification(podcastId, placement.slot, placement.order, releaseKey), now)
         // An older build's untagged copy of this show would now show twice; it was never grouped.
-        NewEpisodeFcmLogic.legacyCopyToClear(podcastId, title, legacyEpisodeNotifications(active))?.let { notificationManager.cancel(it) }
+        NewEpisodeFcmLogic.legacyCopyToClear(podcastId, NewEpisodeFcmLogic.legacyEpisodeNotificationTitle(podcastTitle), legacyEpisodeNotifications(active))?.let { notificationManager.cancel(it) }
         summaryPlan.summaryCount?.let {
             postSummary(context, notificationManager, channelId, it)
             recentPosts.recordSummary(showing = true, now)
         }
     }
 
-    private fun createChannel(notificationManager: NotificationManager, channelId: String, soundUri: Uri) {
+    private fun createChannel(context: Context, notificationManager: NotificationManager, channelId: String, soundUri: Uri) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val audioAttributes =
             AudioAttributes
@@ -194,10 +196,10 @@ internal object NewEpisodeNotifications {
         val channel =
             NotificationChannel(
                 channelId,
-                "New Episodes",
+                context.getString(R.string.app_channel_new_episodes),
                 NotificationManager.IMPORTANCE_DEFAULT,
             ).apply {
-                description = "Alerts for new podcast episodes"
+                description = context.getString(R.string.app_channel_new_episodes_description)
                 setSound(soundUri, audioAttributes)
             }
         notificationManager.createNotificationChannel(channel)
@@ -253,8 +255,8 @@ internal object NewEpisodeNotifications {
                 .Builder(context, channelId)
                 .setSmallIcon(cx.aswin.boxlore.R.drawable.ic_notification_custom)
                 .setColor(android.graphics.Color.parseColor("#5B5BD6"))
-                .setContentTitle("New Episodes")
-                .setContentText("$showing shows have new episodes")
+                .setContentTitle(context.getString(R.string.app_new_episodes_summary_title))
+                .setContentText(context.resources.getQuantityString(R.plurals.app_new_episodes_summary_text, showing, showing))
                 .setGroup(NewEpisodeFcmLogic.EPISODE_GROUP_KEY)
                 .setGroupSummary(true)
                 .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
@@ -268,7 +270,7 @@ internal object NewEpisodeNotifications {
     fun show(context: Context, podcastId: String, data: Map<String, String>, local: cx.aswin.boxlore.core.model.Episode? = null, fetchArtwork: Boolean = false, canPresent: () -> Boolean = { true }) {
         val releaseKey = NewEpisodeDeliveryWorker.workName(data + ("podcastId" to podcastId))
         if (fetchArtwork && !isCurrentRelease(context, podcastId, releaseKey)) return
-        val details = resolveNewEpisodeDetails(podcastId, data, local)
+        val details = resolveNewEpisodeDetails(context, podcastId, data, local)
         val bitmap = if (fetchArtwork) {
             kotlinx.coroutines.runBlocking {
             kotlinx.coroutines.withTimeoutOrNull(6_000) {

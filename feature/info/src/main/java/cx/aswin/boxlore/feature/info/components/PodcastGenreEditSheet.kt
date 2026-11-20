@@ -47,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -81,8 +82,9 @@ internal fun PodcastGenreEditSheet(
         buildGenreSuggestionsWithFolders(folderNames)
     }
 
-    val editState = remember(genreText, selectedIconKey, catalogGenre, customGenre, customGenreIcon) {
-        resolveGenreEditState(genreText, selectedIconKey, catalogGenre, customGenre, customGenreIcon)
+    val fallbackGenre = stringResource(R.string.genre_edit_fallback_genre)
+    val editState = remember(genreText, selectedIconKey, catalogGenre, customGenre, customGenreIcon, fallbackGenre) {
+        resolveGenreEditState(genreText, selectedIconKey, catalogGenre, customGenre, customGenreIcon, fallbackGenre)
     }
 
     val suggestedIcons = remember(genreText, allSuggestions) {
@@ -182,10 +184,13 @@ private fun resolveGenreEditState(
     catalogGenre: String,
     customGenre: String?,
     customGenreIcon: String?,
+    fallbackGenre: String,
 ): GenreEditState {
     val trimmed = genreText.trim()
-    val effectiveGenre = trimmed.ifEmpty { catalogGenre.ifEmpty { "Podcast" } }
-    val effectiveIcon = GenreIcons.findIcon(selectedIconKey) ?: GenreIcons.defaultGenreIcon(effectiveGenre)
+    // The icon is looked up by the English genre key; only the shown name is translated.
+    val genreKey = trimmed.ifEmpty { catalogGenre.ifEmpty { "Podcast" } } // i18n-ignore
+    val effectiveGenre = trimmed.ifEmpty { catalogGenre.ifEmpty { fallbackGenre } }
+    val effectiveIcon = GenreIcons.findIcon(selectedIconKey) ?: GenreIcons.defaultGenreIcon(genreKey)
     val hasCustomizations = !customGenre.isNullOrBlank() || !customGenreIcon.isNullOrBlank()
     val isDirty = trimmed != (customGenre ?: "") || selectedIconKey != customGenreIcon
     val canReset = hasCustomizations || trimmed.isNotEmpty() || selectedIconKey != null
@@ -220,13 +225,13 @@ private fun GenreEditTopBar(
         ) {
             Icon(
                 imageVector = Icons.Rounded.Close,
-                contentDescription = "Close",
+                contentDescription = stringResource(R.string.genre_edit_close),
                 tint = MaterialTheme.colorScheme.onSurface,
             )
         }
 
         Text(
-            text = "Tag & Icon",
+            text = stringResource(R.string.genre_edit_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = GoogleSansWeight.bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -248,7 +253,7 @@ private fun GenreEditTopBar(
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                 ) {
                     Text(
-                        text = "Reset",
+                        text = stringResource(R.string.genre_edit_reset),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = GoogleSansWeight.medium,
                     )
@@ -262,7 +267,7 @@ private fun GenreEditTopBar(
                 contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp),
             ) {
                 Text(
-                    text = "Save",
+                    text = stringResource(R.string.genre_edit_save),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = GoogleSansWeight.bold,
                 )
@@ -297,14 +302,14 @@ private fun GenreEditLivePreview(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = "Live preview",
+                        text = stringResource(R.string.genre_edit_live_preview),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline,
                         fontWeight = GoogleSansWeight.bold,
                     )
                     if (isCustomized && catalogGenre.isNotBlank()) {
                         Text(
-                            text = "Catalog: $catalogGenre",
+                            text = stringResource(R.string.genre_edit_catalog, catalogGenre),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         )
@@ -345,7 +350,7 @@ private fun GenreEditInputField(
         leadingIcon = {
             Icon(
                 imageVector = effectiveIcon,
-                contentDescription = "Selected icon",
+                contentDescription = stringResource(R.string.genre_edit_selected_icon),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp),
             )
@@ -358,7 +363,7 @@ private fun GenreEditInputField(
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Clear,
-                        contentDescription = "Clear tag input",
+                        contentDescription = stringResource(R.string.genre_edit_clear_input),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp),
                     )
@@ -401,7 +406,7 @@ private fun GenreEditSuggestionsRow(
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = if (genreText.isBlank()) "Quick suggestions" else "Matching tags (${suggestions.size})",
+            text = if (genreText.isBlank()) stringResource(R.string.genre_edit_quick_suggestions) else pluralStringResource(R.plurals.genre_edit_matching_tags, suggestions.size, suggestions.size),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = GoogleSansWeight.bold,
@@ -434,7 +439,7 @@ private fun GenreEditSuggestedIconsRow(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = "Suggested icons",
+            text = stringResource(R.string.genre_edit_suggested_icons),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = GoogleSansWeight.bold,
@@ -470,14 +475,14 @@ private fun GenreEditAllIconsGrid(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "All icons",
+                text = stringResource(R.string.genre_edit_all_icons),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = GoogleSansWeight.bold,
             )
             if (selectedIconKey != null) {
                 Text(
-                    text = "Clear icon",
+                    text = stringResource(R.string.genre_edit_clear_icon),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = GoogleSansWeight.medium,

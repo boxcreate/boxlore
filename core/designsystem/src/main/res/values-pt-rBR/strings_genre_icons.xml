@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Screen-reader names of the icons a folder or genre tag can wear. -->
+    <string name="genre_icon_mic">Microfone</string>
+    <string name="genre_icon_headphones">Fones de ouvido</string>
+    <string name="genre_icon_music">Música</string>
+    <string name="genre_icon_movie">Filme</string>
+    <string name="genre_icon_gaming">Games</string>
+    <string name="genre_icon_code">Código</string>
+    <string name="genre_icon_tech">Tecnologia</string>
+    <string name="genre_icon_bulb">Ideias</string>
+    <string name="genre_icon_star">Estrela</string>
+    <string name="genre_icon_fire">Fogo</string>
+    <string name="genre_icon_science">Ciência</string>
+    <string name="genre_icon_book">Livro</string>
+    <string name="genre_icon_health">Saúde</string>
+    <string name="genre_icon_finance">Finanças</string>
+    <string name="genre_icon_news">Notícias</string>
+    <string name="genre_icon_sports">Esportes</string>
+    <string name="genre_icon_comedy">Comédia</string>
+    <string name="genre_icon_history">História</string>
+    <string name="genre_icon_art">Arte</string>
+    <string name="genre_icon_education">Educação</string>
+    <string name="genre_icon_crime">True crime</string>
+    <string name="genre_icon_chat">Conversa</string>
+    <string name="genre_icon_travel">Viagem</string>
+    <string name="genre_icon_food">Comida</string>
+    <string name="genre_icon_nature">Natureza</string>
+    <string name="genre_icon_family">Família</string>
+    <string name="genre_icon_business">Negócios</string>
+    <string name="genre_icon_government">Governo</string>
+    <string name="genre_icon_tag">Etiqueta</string>
+    <string name="genre_icon_category">Categoria</string>
+    <string name="genre_icon_folder">Pasta</string>
+</resources>

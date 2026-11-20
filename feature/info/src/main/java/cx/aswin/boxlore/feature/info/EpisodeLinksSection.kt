@@ -76,7 +76,7 @@ private fun EpisodeLinkPill(link: EpisodeLink, showName: String, modifier: Modif
     val accessibleLabel = if (profile != null) {
         stringResource(R.string.episode_info_link_view_on, profile, link.platform ?: link.host)
     } else {
-        "$label, ${link.host}"
+        stringResource(R.string.episode_info_link_description, label, link.host)
     }
     val brand = episodeLinkBrandIcon(link.host)
     val colors = MaterialTheme.colorScheme

@@ -131,7 +131,7 @@ internal fun EchoOnboardingScreen(uiState: OnboardingUiState, callbacks: EchoCal
                     targetState = kind == EchoScreenKind.Deck,
                     transitionSpec = EchoMotion.handoff(),
                     contentAlignment = Alignment.BottomCenter,
-                    label = "Echo footer",
+                    label = "echoFooter",
                 ) { deck ->
                     if (deck) {
                         EchoDeckReactions(uiState.aiDeck.reactions.size, metrics, callbacks.onDeckReaction)

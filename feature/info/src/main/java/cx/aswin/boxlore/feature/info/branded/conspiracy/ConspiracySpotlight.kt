@@ -36,16 +36,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedEpisodeActions
 import cx.aswin.boxlore.feature.info.branded.BrandedSpotlight
 import cx.aswin.boxlore.feature.info.branded.boxShadow
+import cx.aswin.boxlore.feature.info.branded.brandedLength
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
 import cx.aswin.boxlore.feature.info.components.formatEpisodeRelativeDate
 import cx.aswin.boxlore.feature.info.sections.stripHtml
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
 private val CardShape = RoundedCornerShape(topStart = 0.dp, topEnd = 20.dp, bottomEnd = 20.dp, bottomStart = 20.dp)
@@ -60,7 +61,8 @@ internal fun ConspiracySpotlight(spotlight: BrandedSpotlight, modifier: Modifier
     val palette = conspiracyPalette()
     val fonts = rememberConspiracyFonts()
     val episode = spotlight.episode
-    val filed = remember(episode.publishedDate) { filedDate(episode.publishedDate) }
+    val locale = currentLocale()
+    val filed = remember(episode.publishedDate, locale) { filedDate(episode.publishedDate, locale) }
     // The card is drawn 2dp up over its tab, so the column ends 2dp short and the list keeps its gap.
     Column(modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         FolderTab(stringResource(R.string.conspiracy_latest_filed, filed), fonts, Modifier.widthIn(min = 214.dp).heightIn(min = 25.dp))
@@ -110,7 +112,7 @@ private fun FolderTab(label: String, fonts: ConspiracyFonts, modifier: Modifier)
     Box(modifier.clip(TabShape), contentAlignment = Alignment.Center) {
         Image(painterResource(R.drawable.conspiracy_grain_manila), null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
         Text(
-            label.uppercase(Locale.getDefault()),
+            label.uppercase(currentLocale()),
             style = brandedTextStyle(fonts.courier, 11.sp, 13.sp, letterSpacing = 1.5.sp).copy(fontWeight = FontWeight.Bold),
             color = ConspiracyColors.Ink,
             maxLines = 1,
@@ -136,7 +138,7 @@ private fun StampLine(spotlight: BrandedSpotlight, fonts: ConspiracyFonts) {
             fresh -> Stamp(stringResource(R.string.conspiracy_new), ConspiracyColors.Stamp, fonts)
         }
         Text(
-            typedDetails(formatEpisodeRelativeDate(episode.publishedDate), episode.duration),
+            typedDetails(formatEpisodeRelativeDate(episode.publishedDate, currentLocale()), episode.duration, currentLocale()),
             style = brandedTextStyle(fonts.courier, 13.sp, 16.sp, letterSpacing = 1.sp).copy(fontWeight = FontWeight.Bold),
             color = ConspiracyColors.Ink,
             maxLines = 1,
@@ -155,25 +157,19 @@ private fun Stamp(label: String, color: Color, fonts: ConspiracyFonts) {
             .padding(horizontal = 7.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(label.uppercase(Locale.getDefault()), style = brandedTextStyle(fonts.typewriter, 13.sp, 16.sp, letterSpacing = 1.5.sp), color = color, maxLines = 1)
+        Text(label.uppercase(currentLocale()), style = brandedTextStyle(fonts.typewriter, 13.sp, 16.sp, letterSpacing = 1.5.sp), color = color, maxLines = 1)
     }
 }
 
 /** "2D AGO · 55 MIN", typed. */
-internal fun typedDetails(age: String, durationSeconds: Int): String {
-    val hours = durationSeconds / 3600
-    val minutes = (durationSeconds % 3600) / 60
-    val length = when {
-        durationSeconds < 60 -> ""
-        hours > 0 -> "$hours HR $minutes MIN"
-        else -> "$minutes MIN"
-    }
-    return listOf(age, length).filter { it.isNotBlank() }.joinToString(" · ").uppercase(Locale.getDefault())
+internal fun typedDetails(age: String, durationSeconds: Int, locale: Locale): String {
+    val length = brandedLength(durationSeconds, locale)
+    return listOf(age, length).filter { it.isNotBlank() }.joinToString(" · ").uppercase(locale)
 }
 
-/** "28 OCT 2026" for the folder's tab. */
-internal fun filedDate(publishedSeconds: Long, locale: Locale = Locale.getDefault()): String =
-    if (publishedSeconds <= 0) "" else SimpleDateFormat("d MMM yyyy", locale).format(Date(publishedSeconds * 1000)).uppercase(locale)
+/** "28 OCT 2026" for the folder's tab, in the language's own date order. */
+internal fun filedDate(publishedSeconds: Long, locale: Locale): String =
+    if (publishedSeconds <= 0) "" else LocaleFormats.date(publishedSeconds * 1000, LocaleFormats.DateStyle.DAY_MONTH_YEAR, locale).uppercase(locale)
 
 @Composable
 private fun TypedProgress(progress: Float, timeLeft: String?, fonts: ConspiracyFonts) {
@@ -194,7 +190,7 @@ private fun TypedProgress(progress: Float, timeLeft: String?, fonts: ConspiracyF
         )
         if (!timeLeft.isNullOrBlank()) {
             Text(
-                timeLeft.uppercase(Locale.getDefault()),
+                timeLeft.uppercase(currentLocale()),
                 style = brandedTextStyle(fonts.courier, 12.sp, 16.sp, letterSpacing = 1.sp).copy(fontWeight = FontWeight.Bold),
                 color = ConspiracyColors.Ink,
                 maxLines = 1,

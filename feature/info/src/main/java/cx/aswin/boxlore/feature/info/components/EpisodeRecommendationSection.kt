@@ -41,6 +41,7 @@ import cx.aswin.boxlore.core.designsystem.components.FeedMediaCard
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardPresentation
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardSkeleton
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
@@ -110,7 +111,7 @@ internal fun EpisodeRecommendationSection(
                         presentation = FeedMediaCardPresentation.ExpressivePoster,
                         modifier = Modifier.width(160.dp).semantics { contentDescription = accessibleTitle },
                         imageChrome = {
-                            val duration = formatEpisodeDuration(episode.duration)
+                            val duration = formatEpisodeDuration(episode.duration, currentLocale())
                             if (duration.isNotBlank()) {
                                 Surface(
                                 modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),

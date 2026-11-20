@@ -59,7 +59,7 @@ internal fun AddRssFeedDialog(
             )
         },
         title = {
-            Text("Add RSS feed")
+            Text(stringResource(R.string.settings_rss_dialog_title))
         },
         text = {
             Column(
@@ -83,7 +83,7 @@ internal fun AddRssFeedDialog(
                     enabled = !isAdding,
                     singleLine = true,
                     shape = MaterialTheme.shapes.medium,
-                    label = { Text("Feed URL") },
+                    label = { Text(stringResource(R.string.settings_rss_feed_url)) },
                     placeholder = { Text("https://example.com/feed.xml") },
                     isError = error != null,
                     trailingIcon =
@@ -92,7 +92,7 @@ internal fun AddRssFeedDialog(
                             IconButton(onClick = { onUrlChange("") }) {
                                 Icon(
                                     imageVector = Icons.Rounded.Clear,
-                                    contentDescription = "Clear",
+                                    contentDescription = stringResource(R.string.settings_rss_clear),
                                 )
                             }
                         }
@@ -117,7 +117,7 @@ internal fun AddRssFeedDialog(
                     ) {
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                         Text(
-                            text = "Subscribing\u2026",
+                            text = stringResource(R.string.settings_rss_subscribing),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -131,7 +131,7 @@ internal fun AddRssFeedDialog(
                 enabled = !isAdding && url.isNotBlank(),
                 modifier = Modifier.testTag(SettingsRssTestTags.CONFIRM),
             ) {
-                Text("Add")
+                Text(stringResource(R.string.settings_rss_add))
             }
         },
         dismissButton = {
@@ -140,7 +140,7 @@ internal fun AddRssFeedDialog(
                 enabled = !isAdding,
                 modifier = Modifier.testTag(SettingsRssTestTags.CANCEL),
             ) {
-                Text("Cancel")
+                Text(stringResource(R.string.settings_cancel))
             }
         },
     )
@@ -166,19 +166,17 @@ internal fun RssMatchConfirmationDialog(
                 tint = MaterialTheme.colorScheme.primary,
             )
         },
-        title = { Text("Is this the same show?") },
+        title = { Text(stringResource(R.string.settings_rss_match_title)) },
         text = {
             Column(Modifier.tabletSheetScroll(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     text =
-                    "“$rssTitle” looks like your existing subscription to " +
-                        "“$podcastIndexTitle”.",
+                    stringResource(R.string.settings_rss_match_body, rssTitle, podcastIndexTitle),
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Text(
                     text =
-                    "Use the RSS source to keep one library entry. boxlore will carry " +
-                        "over matched progress, likes, completed episodes, downloads, and queue items.",
+                    stringResource(R.string.settings_rss_match_explanation),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -192,7 +190,7 @@ internal fun RssMatchConfirmationDialog(
                 onClick = onUseRssSource,
                 enabled = !isLinking,
             ) {
-                Text("Use RSS source")
+                Text(stringResource(R.string.settings_rss_match_use_rss))
             }
         },
         dismissButton = {
@@ -200,7 +198,7 @@ internal fun RssMatchConfirmationDialog(
                 onClick = onKeepSeparate,
                 enabled = !isLinking,
             ) {
-                Text("Keep separate")
+                Text(stringResource(R.string.settings_rss_match_keep_separate))
             }
         },
     )

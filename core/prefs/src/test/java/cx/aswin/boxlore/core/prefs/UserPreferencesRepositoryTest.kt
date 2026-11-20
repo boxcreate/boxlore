@@ -99,6 +99,19 @@ class UserPreferencesRepositoryTest {
     }
 
     @Test
+    @Config(qualifiers = "en-rIN")
+    fun regionFollowsThePhoneCountryWhenABareAppLanguageReplacesTheDefaultLocale() = runTest {
+        // Android 13+ applies a picked App language ("es") as the process default, without a country.
+        val saved = java.util.Locale.getDefault()
+        try {
+            java.util.Locale.setDefault(java.util.Locale.forLanguageTag("es"))
+            assertEquals("in", repository.regionStream.first())
+        } finally {
+            java.util.Locale.setDefault(saved)
+        }
+    }
+
+    @Test
     fun setRegionNormalizesAliasesAndDismissesNudge() = runTest {
         repository.setRegion("IND")
         assertEquals("in", repository.regionStream.first())

@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -42,8 +43,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.BoxLoreUser
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsActionRow
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
@@ -106,7 +110,7 @@ internal fun AccountSyncPanel(syncStatus: CloudSyncUiStatus, onSyncNow: () -> Un
 private fun accountSyncCopy(status: CloudSyncUiStatus): Pair<String, String> = when (status) {
     is CloudSyncUiStatus.Error -> stringResource(R.string.account_sync_error) to stringResource(R.string.account_sync_error_body)
     CloudSyncUiStatus.Syncing -> stringResource(R.string.account_sync_busy) to stringResource(R.string.account_sync_busy_body)
-    is CloudSyncUiStatus.Success -> stringResource(R.string.account_sync_done) to formatRelativeSyncTime(status.syncedAt)
+    is CloudSyncUiStatus.Success -> stringResource(R.string.account_sync_done) to formatRelativeSyncTime(status.syncedAt).asString()
     CloudSyncUiStatus.Idle -> stringResource(R.string.account_sync_on) to stringResource(R.string.account_sync_on_body)
 }
 
@@ -144,14 +148,14 @@ private fun AccountIdentityRow(user: BoxLoreUser) {
     val title = name ?: user.email ?: stringResource(R.string.account_listener)
     Row(Modifier.fillMaxWidth().padding(16.dp).testTag("account_identity"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         Box(Modifier.size(44.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape), contentAlignment = Alignment.Center) {
-            Text(title.take(1).uppercase(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Text(title.take(1).uppercase(currentLocale()), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (name != null && !user.email.isNullOrBlank()) {
                 Text(user.email.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
-            Text(resolveProviderLine(user.providerId), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(resolveProviderLine(user.providerId)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -168,24 +172,25 @@ internal fun AccountFooterLinks(onOpenAccountDeletionInfo: () -> Unit) {
 }
 
 /** How the account signs in, as a line under the listener's name. */
-internal fun resolveProviderLine(providerId: String?): String = when (providerId) {
-    PROVIDER_GOOGLE -> "Signed in with Google"
-    PROVIDER_EMAIL_LINK -> "Signed in with an email link"
-    else -> "Signed in with a password"
+@StringRes
+internal fun resolveProviderLine(providerId: String?): Int = when (providerId) {
+    PROVIDER_GOOGLE -> R.string.account_provider_google
+    PROVIDER_EMAIL_LINK -> R.string.account_provider_email_link
+    else -> R.string.account_provider_password
 }
 
 /** When the library last synced, for the status panel. */
-internal fun formatRelativeSyncTime(timestamp: Long, now: Long = System.currentTimeMillis()): String {
-    if (timestamp <= 0L) return "Not synced yet"
+internal fun formatRelativeSyncTime(timestamp: Long, now: Long = System.currentTimeMillis()): UiText {
+    if (timestamp <= 0L) return UiText.res(R.string.account_sync_never)
     val minutes = (now - timestamp).coerceAtLeast(0L) / 60_000L
     val hours = minutes / 60
     val days = hours / 24
     return when {
-        minutes < 1 -> "Synced just now"
-        minutes < 60 -> "Synced $minutes min ago"
-        hours < 24 -> "Synced $hours hr ago"
-        days == 1L -> "Synced yesterday"
-        else -> "Synced $days days ago"
+        minutes < 1 -> UiText.res(R.string.account_sync_just_now)
+        minutes < 60 -> UiText.plural(R.plurals.account_sync_minutes_ago, minutes.toInt(), minutes.toInt())
+        hours < 24 -> UiText.plural(R.plurals.account_sync_hours_ago, hours.toInt(), hours.toInt())
+        days == 1L -> UiText.res(R.string.account_sync_yesterday)
+        else -> UiText.plural(R.plurals.account_sync_days_ago, days.toInt(), days.toInt())
     }
 }
 

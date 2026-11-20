@@ -20,10 +20,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.catalog.TranscriptSegment
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.player.R
 import cx.aswin.boxlore.feature.player.TranscriptView
 import kotlinx.coroutines.flow.Flow
 
@@ -69,13 +71,13 @@ fun InlineTranscriptHero(
                 OptimizedImage(
                     url = content.artworkUrl,
                     proxyWidth = 160,
-                    contentDescription = "Show artwork",
+                    contentDescription = stringResource(R.string.player_show_artwork),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
             }
             Text(
-                text = "Transcript",
+                text = stringResource(R.string.player_transcript),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = GoogleSansWeight.bold,
                 color = colorScheme.onSurface,
@@ -90,7 +92,7 @@ fun InlineTranscriptHero(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Fullscreen,
-                    contentDescription = "Open fullscreen transcript",
+                    contentDescription = stringResource(R.string.player_inline_open_fullscreen_transcript),
                     tint = colorScheme.onSurface,
                 )
             }

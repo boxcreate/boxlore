@@ -2,12 +2,14 @@ package cx.aswin.boxlore.feature.library.subscriptions
 
 import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.SubscriptionFolder
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.library.R
 
 /** Summary on the Sort sheet's auto-organize row. */
-internal fun autoOrganizeSummary(enabled: Boolean, genreFolderCount: Int): String = when {
-    !enabled -> "Off · Sort every show into genre folders"
-    genreFolderCount == 1 -> "On · 1 genre folder"
-    else -> "On · $genreFolderCount genre folders"
+internal fun autoOrganizeSummary(enabled: Boolean, genreFolderCount: Int): UiText = if (enabled) {
+    UiText.plural(R.plurals.library_auto_organize_summary_on, genreFolderCount, genreFolderCount)
+} else {
+    UiText.res(R.string.library_auto_organize_summary_off)
 }
 
 /** Folders that fill themselves from a genre (made by auto-organize or by "One genre"). */
@@ -29,14 +31,29 @@ internal fun showsSectionLabels(folders: List<SubscriptionFolder>, isFoldersReor
 }
 
 /** "5 shows", plus "· 2 new episodes" when some have one. */
-internal fun folderPageSummary(showCount: Int, newCount: Int): String {
-    val shows = if (showCount == 1) "1 show" else "$showCount shows"
-    return when (newCount) {
-        0 -> shows
-        1 -> "$shows · 1 new episode"
-        else -> "$shows · $newCount new episodes"
+internal fun folderPageSummary(showCount: Int, newCount: Int): UiText {
+    val shows = showCountLabel(showCount)
+    return if (newCount == 0) {
+        shows
+    } else {
+        UiText.res(
+            R.string.library_folder_summary_with_new,
+            shows,
+            UiText.plural(R.plurals.library_new_episode_count, newCount, newCount),
+        )
     }
 }
+
+/** "1 show" / "12 shows". */
+internal fun showCountLabel(count: Int): UiText = UiText.plural(R.plurals.library_show_count, count, count)
+
+/** A stored genre as shown: the translated catalog name, or the listener's own genre text. */
+internal fun genreDisplayText(genre: String): UiText =
+    SUBSCRIPTION_GENRE_CATALOG
+        .find { it.value.equals(genre, ignoreCase = true) || it.label.equals(genre, ignoreCase = true) }
+        ?.labelRes
+        ?.let { UiText.res(it) }
+        ?: UiText.raw(genre)
 
 /** The four looks a folder can pick, in the order they are offered. */
 internal val FolderLookOptions: List<FolderDisplaySize> = listOf(
@@ -47,12 +64,12 @@ internal val FolderLookOptions: List<FolderDisplaySize> = listOf(
 )
 
 /** Listener-facing look names; older saved sizes keep their own titles. */
-internal fun folderLookName(size: FolderDisplaySize): String = when (size) {
-    FolderDisplaySize.COMPACT -> "Tile"
-    FolderDisplaySize.SHELF -> "1 row"
-    FolderDisplaySize.PANEL -> "2 rows"
-    FolderDisplaySize.SHOWCASE -> "3 rows"
-    else -> size.title
+internal fun folderLookName(size: FolderDisplaySize): UiText = when (size) {
+    FolderDisplaySize.COMPACT -> UiText.res(R.string.library_folder_look_tile)
+    FolderDisplaySize.SHELF -> UiText.plural(R.plurals.library_folder_look_rows, 1, 1)
+    FolderDisplaySize.PANEL -> UiText.plural(R.plurals.library_folder_look_rows, 2, 2)
+    FolderDisplaySize.SHOWCASE -> UiText.plural(R.plurals.library_folder_look_rows, 3, 3)
+    else -> UiText.raw(size.title)
 }
 
 /** Covers a folder card shows; with more shows than this, the last spot becomes the +N tile. */
@@ -67,19 +84,20 @@ internal fun folderSlotCount(displaySize: FolderDisplaySize): Int = when (displa
 }
 
 /** "Among your shows. Tap up to 4 directly." / "Pinned on top. Tap up to 3 directly." */
-internal fun folderLookDescription(size: FolderDisplaySize): String {
-    val place = if (size.isPinnedToTop) "Pinned on top." else "Among your shows."
-    return "$place Tap up to ${folderSlotCount(size)} directly."
+internal fun folderLookDescription(size: FolderDisplaySize): UiText {
+    val slots = folderSlotCount(size)
+    val id = if (size.isPinnedToTop) R.plurals.library_folder_look_pinned_description else R.plurals.library_folder_look_among_description
+    return UiText.plural(id, slots, slots)
 }
 
 /** Mirrors the size auto-organize picks when the listener lets boxlore choose. */
-internal const val AUTO_ORGANIZE_CHOOSE_DESCRIPTION =
-    "Each folder gets the look that fits its size. 1–2 shows get a tile, 3–5 get 1 row, 6 or more get 2 rows."
+internal val AUTO_ORGANIZE_CHOOSE_DESCRIPTION: Int = R.string.library_auto_organize_choose_description
 
 /** Genre step of New folder: shows followed later join on their own. */
-internal fun genreAutoAddNote(genre: String?): String =
-    "Shows you follow later in ${genre?.trim()?.takeIf { it.isNotEmpty() } ?: "this genre"} are added automatically."
+internal fun genreAutoAddNote(genre: String?): UiText =
+    genre?.trim()?.takeIf { it.isNotEmpty() }
+        ?.let { UiText.res(R.string.library_genre_auto_add_note, genreDisplayText(it)) }
+        ?: UiText.res(R.string.library_genre_auto_add_note_this_genre)
 
 /** Auto: what auto-organize does, said once wherever it is set up. */
-internal const val AUTO_ORGANIZE_NOTE =
-    "Every genre gets a folder, and shows you follow later are added automatically. A folder you already have for a genre is filled too."
+internal val AUTO_ORGANIZE_NOTE: Int = R.string.library_auto_organize_note

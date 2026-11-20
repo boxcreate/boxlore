@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.feature.info.R
@@ -70,7 +71,6 @@ import cx.aswin.boxlore.feature.info.branded.rememberBrandedAnton
 import cx.aswin.boxlore.feature.info.branded.rememberBrandedOswald
 import cx.aswin.boxlore.feature.info.components.formatEpisodeDuration
 import cx.aswin.boxlore.feature.info.components.formatEpisodeRelativeDate
-import java.util.Locale
 import kotlin.math.abs
 
 private val PanelShape = RoundedCornerShape(18.dp)
@@ -201,8 +201,8 @@ private fun BoxScope.LatestLabel(details: String) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(stringResource(R.string.branded_latest_episode).uppercase(Locale.getDefault()), style = style, color = JreColors.Orange, maxLines = 1)
-        Text(details.uppercase(Locale.getDefault()), style = style, color = JreColors.LabelMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(stringResource(R.string.branded_latest_episode).uppercase(currentLocale()), style = style, color = JreColors.Orange, maxLines = 1)
+        Text(details.uppercase(currentLocale()), style = style, color = JreColors.LabelMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -213,9 +213,9 @@ private fun latestDetails(spotlight: BrandedSpotlight): String {
     val length = when {
         spotlight.isCompleted -> stringResource(R.string.episode_info_played)
         spotlight.progress != null && !spotlight.timeLeft.isNullOrBlank() -> spotlight.timeLeft
-        else -> formatEpisodeDuration(episode.duration)
+        else -> formatEpisodeDuration(episode.duration, currentLocale())
     }
-    return listOf(formatEpisodeRelativeDate(episode.publishedDate), length).filter(String::isNotBlank).joinToString(" · ")
+    return listOf(formatEpisodeRelativeDate(episode.publishedDate, currentLocale()), length).filter(String::isNotBlank).joinToString(" · ")
 }
 
 /**
@@ -239,7 +239,8 @@ private fun NoPicture(episode: Episode) {
             val measurer = rememberTextMeasurer()
             fun type(board: Float) = with(density) { (board * unit).dp.toSp() }
             fun nameStyle(scale: Float) = brandedTextStyle(anton, type(48f * scale), type(50f * scale), letterSpacing = type(0.2f * scale))
-            val name = remember(title.name) { jreGuestLines(title.name).uppercase(Locale.getDefault()) }
+            val locale = currentLocale()
+            val name = remember(title.name, locale) { jreGuestLines(title.name).uppercase(locale) }
             val nameWidth = constraints.maxWidth - with(density) { (30.dp * unit).roundToPx() }
             // Two guests are set smaller, as the pictures set them, so each line fits whole.
             val nameScale = remember(name, nameWidth, unit, anton) { fittingScale(measurer, name, nameWidth, ::nameStyle) }

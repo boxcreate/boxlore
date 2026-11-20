@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.briefing
 
+import cx.aswin.boxlore.core.model.text.UiText
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -85,8 +86,8 @@ class BriefingStoryTextTest {
 
     @Test
     fun `formats known briefing durations without a fixed fallback`() {
-        assertEquals("4 min listen", formatBriefingListenDuration(229_000L))
-        assertEquals("1 min listen", formatBriefingListenDuration(1L))
+        assertEquals(UiText.plural(R.plurals.briefing_screen_listen_minutes, 4, 4), formatBriefingListenDuration(229_000L))
+        assertEquals(UiText.plural(R.plurals.briefing_screen_listen_minutes, 1, 1), formatBriefingListenDuration(1L))
         assertEquals(null, formatBriefingListenDuration(0L))
     }
 }

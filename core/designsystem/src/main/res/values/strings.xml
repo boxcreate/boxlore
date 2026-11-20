@@ -12,6 +12,29 @@
     <string name="share_starts_at">Starts at %1$s</string>
     <!-- On share cards and in share messages: a shared clip. %1$s and %2$s are times such as 1:02 and 2:30. -->
     <string name="share_clip">Clip %1$s–%2$s</string>
+    <!-- The share sheet. -->
+    <string name="share_sheet_title_podcast">Share this podcast</string>
+    <string name="share_sheet_title_episode">Share this episode</string>
+    <string name="share_sheet_body">Share an artwork card by message or story, or copy its link.</string>
+    <!-- Switch title: share the episode from this point. %1$s is a time such as 12:34. -->
+    <string name="share_sheet_start_at">Start at %1$s</string>
+    <string name="share_sheet_start_at_body">Include your current position</string>
+    <!-- Section label, shown in capitals. -->
+    <string name="share_sheet_choose">Choose how to share</string>
+    <string name="share_sheet_send_card">Send artwork card</string>
+    <string name="share_sheet_send_card_body">Artwork and link</string>
+    <!-- Half-width button; keep it short. -->
+    <string name="share_sheet_copy_link">Copy link</string>
+    <string name="share_sheet_copy_link_body">Link only</string>
+    <!-- Half-width button; "Instagram Story" is Instagram's own feature name. -->
+    <string name="share_sheet_instagram">Instagram Story</string>
+    <string name="share_sheet_instagram_body">Artwork + copied link</string>
+    <!-- How often a show posts, on its share card after the genre ("Technology · Daily"). -->
+    <string name="share_frequency_daily">Daily</string>
+    <string name="share_frequency_several_weekly">Several times a week</string>
+    <string name="share_frequency_weekly">Weekly</string>
+    <string name="share_frequency_every_two_weeks">Every 2 weeks</string>
+    <string name="share_frequency_monthly">Monthly</string>
     <string name="share_link_copied">Link copied</string>
     <string name="share_instagram_unavailable">Instagram isn\'t available. Choose another app.</string>
     <string name="share_instagram_link_copied">Link copied. Add it to your story with Instagram\'s link sticker.</string>
@@ -23,14 +46,21 @@
     <string name="sleep_prompt_title">Late night listening?</string>
     <string name="sleep_prompt_body">Set a sleep timer so episodes don\'t keep playing overnight.</string>
     <string name="sleep_prompt_dismiss">Dismiss</string>
-    <!-- After a time is picked: when playback will pause. -->
-    <string name="sleep_prompt_pausing_minutes">Pausing in %1$d min</string>
-    <string name="sleep_prompt_pausing_hours">Pausing in %1$d hr</string>
+    <!-- The last time choice. -->
+    <string name="sleep_prompt_end_of_episode">End of episode</string>
+    <!-- After a time is picked: when playback will pause. %1$s is a length such as "45 min" or "1 hr". -->
+    <string name="sleep_prompt_pausing_in">Pausing in %1$s</string>
     <string name="sleep_prompt_pausing_episode">Pausing after this episode</string>
     <string name="sleep_prompt_good_night">Good night.</string>
     <!-- Under the number on the picked time's badge: "45" over "min", "1" over "hr". -->
-    <string name="sleep_prompt_unit_minutes">min</string>
-    <string name="sleep_prompt_unit_hours">hr</string>
+    <plurals name="sleep_prompt_unit_minutes">
+        <item quantity="one">min</item>
+        <item quantity="other">min</item>
+    </plurals>
+    <plurals name="sleep_prompt_unit_hours">
+        <item quantity="one">hr</item>
+        <item quantity="other">hr</item>
+    </plurals>
     <!-- Where the episode plays, at the top of the player while a watch with boxlore is in reach. A phone icon follows the label. -->
     <string name="playing_on_label">Playing on</string>
     <string name="playing_on_description">Playing on this phone. Change where it plays</string>
@@ -40,4 +70,49 @@
     <string name="watch_notice_title">Playing on this phone</string>
     <string name="watch_notice_body">Your watch was paused.</string>
     <string name="play_on_watch_instead">Play on watch instead</string>
+    <!-- Asked before removing a downloaded episode, from this phone or from a linked watch. %1$s is the episode's title. -->
+    <string name="remove_download_title">Remove download?</string>
+    <string name="remove_download_title_watch">Remove from watch?</string>
+    <string name="remove_download_body_named">Remove downloaded episode \"%1$s\"? You\'ll need an internet connection to listen to it again.</string>
+    <string name="remove_download_body">Remove this downloaded episode? You\'ll need an internet connection to listen to it again.</string>
+    <string name="remove_download_body_watch_named">Remove \"%1$s\" from your watch? You can send it again anytime.</string>
+    <string name="remove_download_body_watch">Remove this episode from your watch? You can send it again anytime.</string>
+    <string name="remove_download_confirm">Remove</string>
+    <string name="remove_download_cancel">Cancel</string>
+    <!-- Screen-reader labels of the player's extra controls. -->
+    <string name="player_control_mark_played">Mark Played</string>
+    <string name="player_control_mark_unplayed">Mark Unplayed</string>
+    <string name="player_control_share">Share</string>
+    <string name="player_control_chapters">Chapters</string>
+    <string name="player_control_transcript">Transcript</string>
+    <string name="player_control_like">Like</string>
+    <string name="player_control_download">Download</string>
+    <string name="player_control_queued">Added to Queue</string>
+    <string name="player_control_add_to_queue">Add to Queue</string>
+    <string name="player_control_queue">Queue</string>
+    <!-- Screen-reader labels of the download button's states. -->
+    <string name="download_button_download">Download</string>
+    <string name="download_button_cancel">Cancel Download</string>
+    <string name="download_button_downloaded">Downloaded</string>
+    <!-- The large play button on show and episode pages. -->
+    <string name="play_button_play">Play</string>
+    <string name="play_button_pause">Pause</string>
+    <string name="play_button_loading">Loading</string>
+    <string name="play_button_resume">Resume</string>
+    <!-- %1$s is the time left or the position, such as "12 min left", worked out by the page. -->
+    <string name="play_button_resume_at">Resume • %1$s</string>
+    <!-- Bottom bar and tablet rail tabs. "Lore" is a name and stays as it is. -->
+    <string name="navigation_home">Home</string>
+    <string name="navigation_explore">Explore</string>
+    <string name="navigation_library">Library</string>
+    <string name="navigation_lore" translatable="false">Lore</string>
+    <!-- The bottom bar's two looks, named in Settings › Appearance. -->
+    <string name="navigation_style_floating">Floating</string>
+    <string name="navigation_style_classic">Classic</string>
+    <!-- Tiny badge on a new episode's artwork, shown in capitals at 7sp: keep it to about 4 letters. -->
+    <string name="new_episode_badge">New</string>
+    <!-- Screen-reader labels of the top bar's Feedback and Settings buttons. -->
+    <string name="top_bar_feedback">Send Feedback</string>
+    <string name="top_bar_feedback_reply">Feedback, new reply</string>
+    <string name="top_bar_settings">Settings</string>
 </resources>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings › Wear OS -->
+    <string name="settings_wear_connected">Your watch is connected. Changes here reach it right away.</string>
+    <string name="settings_wear_not_connected">Your watch isn\'t connected right now. Changes here reach it the next time it connects.</string>
+    <string name="settings_wear_size_mb">%1$d MB</string>
+    <string name="settings_wear_size_gb">%1$d GB</string>
+    <string name="settings_wear_no_downloads">No downloads on your watch yet.</string>
+    <!-- %1$d is the episode count, %2$s the space used in MB as a number, %3$s the limit like "500 MB". -->
+    <plurals name="settings_wear_usage">
+        <item quantity="one">On your watch: %1$d episode, %2$s MB of %3$s.</item>
+        <item quantity="other">On your watch: %1$d episodes, %2$s MB of %3$s.</item>
+    </plurals>
+    <string name="settings_wear_your_shows">Your shows</string>
+    <string name="settings_wear_layout_title">Layout on the watch</string>
+    <!-- Watch layout that sets shows in a honeycomb of round covers. -->
+    <string name="settings_wear_layout_honeycomb">Honeycomb</string>
+    <string name="settings_wear_layout_list">List</string>
+    <string name="settings_wear_downloads_title">Downloads on the watch</string>
+    <string name="settings_wear_downloads_footer">When downloads reach the limit, the watch removes the ones you played or downloaded longest ago.</string>
+    <string name="settings_wear_storage_limit">Storage limit</string>
+</resources>

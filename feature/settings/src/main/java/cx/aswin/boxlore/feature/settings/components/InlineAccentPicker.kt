@@ -33,12 +33,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.theme.SurfaceStyles
 import cx.aswin.boxlore.core.designsystem.theme.generateBrandColorScheme
 import cx.aswin.boxlore.core.designsystem.theme.toExactThemeBrandKey
 import cx.aswin.boxlore.core.designsystem.theme.toThemeBrandHex
+import cx.aswin.boxlore.feature.settings.R
 import kotlinx.coroutines.delay
 
 /** Debounce before recomputing the harmonized Material 3 preview while dragging. */
@@ -83,7 +85,7 @@ internal fun InlineAccentPicker(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("Custom button & icon color", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.theme_accent_title), style = MaterialTheme.typography.titleMedium)
         Column(
             modifier =
             Modifier
@@ -94,14 +96,14 @@ internal fun InlineAccentPicker(
             ConnectedOptionSelector(
                 options =
                 listOf(
-                    "m3" to "Adjusted",
-                    "exact" to "Exact",
+                    "m3" to stringResource(R.string.theme_accent_adjusted),
+                    "exact" to stringResource(R.string.theme_accent_exact),
                 ),
                 selected = if (useExact) "exact" else "m3",
                 onSelect = { useExact = it == "exact" },
             )
             CustomAccentPreview(useExact, selectedColor, matchedPrimary)
-            Text("Move the marker to choose a shade. Use the strip below to change the color.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.theme_accent_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             SaturationValuePanel(
                 hue = hue,
                 saturation = saturation,
@@ -136,10 +138,10 @@ internal fun InlineAccentPicker(
                     onConfirm(key)
                 },
             ) {
-                Text("Use color")
+                Text(stringResource(R.string.theme_accent_use))
             }
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.settings_cancel))
             }
         }
     }
@@ -150,9 +152,9 @@ private fun CustomAccentPreview(useExact: Boolean, selectedColor: Color, matched
     Text(
         text =
         if (useExact) {
-            "Uses your color unchanged. Text may be harder to read."
+            stringResource(R.string.theme_accent_exact_description)
         } else {
-            "Adjusts your chosen color for the app’s light and dark modes."
+            stringResource(R.string.theme_accent_adjusted_description)
         },
         style = MaterialTheme.typography.bodySmall,
         color =
@@ -164,7 +166,7 @@ private fun CustomAccentPreview(useExact: Boolean, selectedColor: Color, matched
     )
     if (useExact) {
         ColorSwatchPreview(
-            label = "Button color",
+            label = stringResource(R.string.theme_accent_button_color),
             color = selectedColor,
             hex = selectedColor.toThemeBrandHex(),
         )
@@ -175,7 +177,7 @@ private fun CustomAccentPreview(useExact: Boolean, selectedColor: Color, matched
             verticalAlignment = Alignment.CenterVertically,
         ) {
             ColorSwatchPreview(
-                label = "Chosen color",
+                label = stringResource(R.string.theme_accent_chosen_color),
                 color = selectedColor,
                 hex = selectedColor.toThemeBrandHex(),
             )
@@ -185,7 +187,7 @@ private fun CustomAccentPreview(useExact: Boolean, selectedColor: Color, matched
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             ColorSwatchPreview(
-                label = "Button color",
+                label = stringResource(R.string.theme_accent_button_color),
                 color = matchedPrimary,
                 hex = matchedPrimary.toThemeBrandHex(),
             )

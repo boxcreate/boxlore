@@ -1,6 +1,8 @@
 package cx.aswin.boxlore.feature.player.v2
 
 import androidx.compose.ui.graphics.Color
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.player.R
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -54,7 +56,7 @@ class CastRoutePickerLogicTest {
     @Test
     fun connectionStateTakesPriorityOverDeviceDescription() {
         assertEquals(
-            "Connected",
+            UiText.res(R.string.player_cast_connected),
             castRouteSubtitle(
                 isSelected = true,
                 isConnecting = true,
@@ -62,7 +64,7 @@ class CastRoutePickerLogicTest {
             ),
         )
         assertEquals(
-            "Connecting…",
+            UiText.res(R.string.player_cast_connecting),
             castRouteSubtitle(
                 isSelected = false,
                 isConnecting = true,
@@ -70,7 +72,7 @@ class CastRoutePickerLogicTest {
             ),
         )
         assertEquals(
-            "Living room TV",
+            UiText.raw("Living room TV"),
             castRouteSubtitle(
                 isSelected = false,
                 isConnecting = false,
@@ -78,7 +80,7 @@ class CastRoutePickerLogicTest {
             ),
         )
         assertEquals(
-            "Ready to cast",
+            UiText.res(R.string.player_cast_ready),
             castRouteSubtitle(
                 isSelected = false,
                 isConnecting = false,

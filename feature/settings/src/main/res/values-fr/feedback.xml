@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Feedback: built-in types, shown when the server sends none. -->
+    <string name="feedback_category_feature">Idée de fonctionnalité</string>
+    <string name="feedback_category_feature_hint">Décrivez la fonctionnalité ou l’amélioration que vous aimeriez voir…</string>
+    <string name="feedback_category_bug">Signalement de bug</string>
+    <string name="feedback_category_bug_hint">Que s’est-il passé, et à quoi vous attendiez-vous ?</string>
+    <string name="feedback_category_audio">Audio / Streaming</string>
+    <string name="feedback_category_audio_hint">Décrivez le problème de lecture (mise en mémoire tampon, coupures, son déformé)…</string>
+    <string name="feedback_category_other">Général</string>
+    <string name="feedback_category_other_hint">Dites-nous ce que vous avez en tête…</string>
+    <!-- %1$d is the character limit, e.g. 2,000. -->
+    <string name="feedback_over_limit">Votre message dépasse la limite de %1$,d caractères. Raccourcissez-le pour l’envoyer.</string>
+    <string name="feedback_paused_notice">L’envoi est suspendu pour le moment. Votre message reste enregistré ici.</string>
+    <string name="feedback_error_empty">Écrivez d’abord un message.</string>
+    <string name="feedback_error_photos">Impossible de joindre vos photos. Vérifiez votre connexion et réessayez.</string>
+    <string name="feedback_error_send">Impossible d’envoyer votre avis. Vérifiez votre connexion et réessayez.</string>
+    <string name="feedback_no_diagnostics">Aucun diagnostic disponible.</string>
+    <string name="feedback_diagnostics_share_subject">Diagnostics et journaux boxlore</string>
+    <string name="feedback_diagnostics_share_title">Partager les diagnostics et journaux</string>
+    <!-- Screen-reader label of the type menu. %1$s is the picked type. -->
+    <string name="feedback_type_change_description">Type : %1$s. Modifier</string>
+    <string name="feedback_message_label">Votre message</string>
+    <string name="feedback_add_photo">Ajouter une photo ou une capture d’écran</string>
+    <string name="feedback_add">Ajouter</string>
+    <!-- Screen-reader label of an attached photo. %1$d is its position. -->
+    <string name="feedback_photo_number">Photo %1$d</string>
+    <string name="feedback_remove_photo">Retirer la photo %1$d</string>
+    <string name="feedback_include_diagnostics">Inclure les diagnostics de l’appareil</string>
+    <string name="feedback_send_feedback">Envoyer un avis</string>
+    <string name="feedback_sending">Envoi</string>
+    <string name="feedback_how_we_handle">Comment nous traitons les avis</string>
+    <string name="feedback_diagnostics">Diagnostics</string>
+    <string name="feedback_send">Envoyer</string>
+    <string name="feedback_form_title">Donnez votre avis</string>
+    <string name="feedback_form_subtitle">Bugs, idées, tout ce que vous voulez. L’équipe boxlore lit chaque message.</string>
+    <string name="settings_navigate_back">Revenir en arrière</string>
+    <string name="feedback_more_options">Plus d’options</string>
+    <string name="feedback_preview_diagnostics">Aperçu des diagnostics</string>
+    <string name="feedback_rate_on_play">Noter sur Play</string>
+    <string name="feedback_report_on_github">Signaler sur GitHub</string>
+    <string name="feedback_discard_draft">Supprimer le brouillon</string>
+    <string name="feedback_title">Avis</string>
+    <string name="feedback_list_title">Vos avis</string>
+    <string name="feedback_list_error">Impossible de charger vos avis. Vérifiez votre connexion et réessayez.</string>
+    <string name="feedback_try_again">Réessayer</string>
+    <string name="feedback_thread_gone">Cette conversation n’est plus disponible.</string>
+    <string name="feedback_thread_error">Impossible de charger cette conversation. Vérifiez votre connexion et réessayez.</string>
+    <string name="feedback_thread_refresh_error">Impossible d’actualiser cette conversation.</string>
+    <string name="feedback_thread_loading">Chargement…</string>
+    <string name="feedback_thread_show_earlier">Afficher les messages précédents</string>
+    <string name="feedback_thread_reply">Répondre</string>
+    <string name="feedback_thread_mark_solved">Marquer comme résolu</string>
+    <!-- Name shown on the team's replies. -->
+    <string name="feedback_thread_team">Équipe boxlore</string>
+    <string name="feedback_thread_diagnostics_included">Diagnostics inclus</string>
+    <string name="feedback_thread_reply_placeholder">Écrivez votre réponse</string>
+    <string name="feedback_thread_reply_label">Votre réponse</string>
+    <string name="feedback_thread_send_reply">Envoyer la réponse</string>
+    <string name="feedback_sent_body_replies">Merci de nous en avoir parlé. L’équipe boxlore lit chaque message, et la réponse apparaîtra dans Avis.</string>
+    <string name="feedback_sent_body">Merci de nous en avoir parlé. L’équipe boxlore lit chaque message.</string>
+    <string name="feedback_close">Fermer</string>
+    <string name="feedback_sent_title">Avis envoyé</string>
+    <string name="feedback_done">OK</string>
+    <string name="feedback_sent_notify_title">Sachez quand l’équipe répond</string>
+    <string name="feedback_sent_notify_body">Les réponses peuvent prendre un jour ou deux. Activez les notifications pour ne pas en manquer.</string>
+    <string name="feedback_sent_notify_turn_on">Activer les notifications</string>
+    <string name="feedback_not_now">Plus tard</string>
+    <string name="feedback_logs_title">Aperçu des diagnostics et journaux</string>
+    <string name="feedback_logs_body">Ces diagnostics et journaux nettoyés seront joints à votre envoi si les diagnostics sont activés.\nAstuce : reproduisez d’abord le problème pour que les journaux d’erreur utiles apparaissent.</string>
+    <string name="feedback_logs_none">Aucun journal enregistré.</string>
+    <string name="feedback_logs_clip_label">Diagnostics boxlore</string>
+    <string name="feedback_logs_copied">Diagnostics et journaux copiés dans le presse-papiers</string>
+    <string name="feedback_logs_copy">Copier le texte</string>
+    <string name="feedback_logs_share">Partager le texte</string>
+    <string name="feedback_sent_body_replies_no_photos">Merci de nous en avoir parlé. L’équipe boxlore lit chaque message, et la réponse apparaîtra dans Avis. Vos photos n’ont pas pu être envoyées cette fois-ci.</string>
+    <string name="feedback_sent_body_no_photos">Merci de nous en avoir parlé. L’équipe boxlore lit chaque message. Vos photos n’ont pas pu être envoyées cette fois-ci.</string>
+    <string name="feedback_thread_error_reply">Impossible d’envoyer votre réponse. Vérifiez votre connexion et réessayez.</string>
+    <!-- Feedback times. %1$s is a clock time like 11:02. -->
+    <string name="feedback_time_yesterday">Hier</string>
+    <string name="feedback_time_today_at">Aujourd’hui, %1$s</string>
+    <string name="feedback_time_yesterday_at">Hier, %1$s</string>
+    <!-- %1$s is a date like "2 Nov", %2$s a clock time. -->
+    <string name="feedback_time_date_at">%1$s, %2$s</string>
+    <!-- Under the photo tiles: how many photos a message can carry. -->
+    <plurals name="feedback_photos_limit">
+        <item quantity="one">Jusqu’à %1$d</item>
+        <item quantity="other">Jusqu’à %1$d</item>
+    </plurals>
+    <!-- Screen-reader label of the photo button. -->
+    <plurals name="feedback_photos_attached_description">
+        <item quantity="one">Photos et captures d’écran, %1$d jointe</item>
+        <item quantity="other">Photos et captures d’écran, %1$d jointes</item>
+    </plurals>
+    <!-- The listener's own messages when the server sends no name. -->
+    <string name="feedback_thread_you">Vous</string>
+    <!-- %1$s is who wrote the message, %2$s when. -->
+    <string name="feedback_thread_author_time">%1$s · %2$s</string>
+</resources>

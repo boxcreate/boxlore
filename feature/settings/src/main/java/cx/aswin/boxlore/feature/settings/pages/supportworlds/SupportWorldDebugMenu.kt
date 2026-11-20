@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.settings.pages.supportworlds
 
+// i18n-ignore-file: debug builds only; listeners never see this menu.
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check

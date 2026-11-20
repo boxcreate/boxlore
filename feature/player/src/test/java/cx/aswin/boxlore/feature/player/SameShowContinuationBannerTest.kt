@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.player
 
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.playback.SameShowContinuationState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -16,42 +17,31 @@ class SameShowContinuationBannerTest {
     )
 
     @Test
-    fun `button copy formats availableCount correctly`() {
-        listOf(1, 2, 3, 4, 5).forEach { count ->
-            val expected = "Add next $count from this show"
-            val actual = SameShowContinuationBannerDefaults.buttonText(count)
-            assertEquals(expected, actual)
+    fun `button copy counts the episodes it adds`() {
+        listOf(1, 2, 5).forEach { count ->
+            assertEquals(
+                UiText.plural(R.plurals.player_same_show_add_next, count, count),
+                SameShowContinuationBannerDefaults.buttonText(count),
+            )
         }
     }
 
     @Test
-    fun `titleText formats correctly with or without podcast title`() {
-        assertEquals("Continue Tech Talk?", SameShowContinuationBannerDefaults.titleText("Tech Talk"))
-        assertEquals("Continue this show?", SameShowContinuationBannerDefaults.titleText(""))
+    fun `titleText names the show or falls back without a title`() {
+        assertEquals(UiText.res(R.string.player_same_show_title, "Tech Talk"), SameShowContinuationBannerDefaults.titleText("Tech Talk"))
+        assertEquals(UiText.res(R.string.player_same_show_title_fallback), SameShowContinuationBannerDefaults.titleText(""))
     }
 
     @Test
-    fun `explanationText matches requested copy`() {
+    fun `preview toggle counts upcoming episodes when collapsed and hides when expanded`() {
         assertEquals(
-            "We skipped newer episodes from this show as you played it from recommendations.",
-            SameShowContinuationBannerDefaults.EXPLANATION_TEXT,
+            UiText.plural(R.plurals.player_same_show_preview, 3, 3),
+            SameShowContinuationBannerDefaults.previewToggleText(3, isExpanded = false),
         )
-    }
-
-    @Test
-    fun `preview toggle text formats correctly when collapsed and expanded`() {
-        assertEquals("Preview 1 upcoming episode", SameShowContinuationBannerDefaults.previewToggleText(1, isExpanded = false))
-        assertEquals("Preview 3 upcoming episodes", SameShowContinuationBannerDefaults.previewToggleText(3, isExpanded = false))
-        assertEquals("Preview 5 upcoming episodes", SameShowContinuationBannerDefaults.previewToggleText(5, isExpanded = false))
-        assertEquals("Hide preview", SameShowContinuationBannerDefaults.previewToggleText(3, isExpanded = true))
-    }
-
-    @Test
-    fun `formatDuration formats seconds correctly`() {
-        assertEquals("", SameShowContinuationBannerDefaults.formatDuration(0))
-        assertEquals("", SameShowContinuationBannerDefaults.formatDuration(-10))
-        assertEquals("45 min", SameShowContinuationBannerDefaults.formatDuration(2700))
-        assertEquals("1h 15m", SameShowContinuationBannerDefaults.formatDuration(4500))
+        assertEquals(
+            UiText.res(R.string.player_same_show_hide_preview),
+            SameShowContinuationBannerDefaults.previewToggleText(3, isExpanded = true),
+        )
     }
 
     @Test

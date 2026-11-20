@@ -1,17 +1,28 @@
 package cx.aswin.boxlore.core.playback
 
+import java.text.NumberFormat
+import java.util.Locale
+
 /**
  * The speeds boxlore offers, and how a show's own speed and trim silence combine with the app's.
  * The player and the show page read the same list, so a show's speed is always one the player shows.
  */
 object ShowPlaybackPolicy {
+    private const val MAX_SPEED_DECIMALS = 2
+
     val SPEED_OPTIONS: List<Float> = listOf(0.5f, 0.8f, 0.9f, 1f, 1.1f, 1.2f, 1.25f, 1.5f, 1.75f, 2f, 2.5f, 3f)
 
     /** Where a speed or trim silence change from the player is saved. */
     enum class ChangeTarget { SHOW, APP }
 
-    /** "1×", "1.25×". */
-    fun speedLabel(speed: Float): String = if (speed == speed.toInt().toFloat()) "${speed.toInt()}×" else "$speed×"
+    /** "1×", "1.25×" ("1,25×" where the language writes a decimal comma). */
+    fun speedLabel(speed: Float, locale: Locale = Locale.getDefault()): String {
+        val number = NumberFormat.getInstance(locale).apply {
+            minimumFractionDigits = 0
+            maximumFractionDigits = MAX_SPEED_DECIMALS
+        }
+        return "${number.format(speed.toBigDecimal())}×"
+    }
 
     /** The show's own speed when it has one, else the app speed; an unusable stored speed falls back to the app speed. */
     fun effectiveSpeed(appSpeed: Float, showSpeed: Float?): Float {

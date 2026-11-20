@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="briefing_screen_story_position">Meldung %1$d von %2$d</string>
+    <string name="briefing_screen_previous_story">Vorherige Meldung</string>
+    <string name="briefing_screen_next_story">Nächste Meldung</string>
+    <string name="briefing_screen_stories_loading">Meldungen werden geladen…</string>
+    <string name="briefing_screen_stories_unavailable">Der Text der Meldung ist nicht verfügbar. Du kannst das Briefing trotzdem anhören.</string>
+    <string name="briefing_screen_listen_further">Mehr dazu hören</string>
+    <string name="briefing_screen_time_left">Noch %1$s</string>
+    <plurals name="briefing_screen_listen_minutes">
+        <item quantity="one">%1$d Min. Hörzeit</item>
+        <item quantity="other">%1$d Min. Hörzeit</item>
+    </plurals>
+    <string name="briefing_screen_episode_description">Dein tägliches KI-generiertes Nachrichten-Briefing für %1$s.</string>
+    <string name="briefing_screen_sources_heading">Referenzen &amp; Quellen</string>
+</resources>

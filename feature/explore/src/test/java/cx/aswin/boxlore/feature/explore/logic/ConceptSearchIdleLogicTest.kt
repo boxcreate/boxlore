@@ -10,7 +10,8 @@ class ConceptSearchIdleLogicTest {
         val examples = ConceptSearchIdleLogic.examples
         assertEquals(4, examples.size)
         assertEquals(examples.size, examples.map { it.query }.toSet().size)
-        assertTrue(examples.all { it.query.isNotBlank() && it.label.endsWith("?") })
+        assertTrue(examples.all { it.query.isNotBlank() })
+        assertEquals(examples.size, examples.map { it.label }.toSet().size)
     }
 
     @Test

@@ -15,7 +15,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
@@ -284,11 +283,10 @@ private fun NavGraphBuilder.listRoutes(container: WatchContainer, navController:
 private fun storageUsage(container: WatchContainer): String {
     val used by container.library.storedBytes.collectAsStateWithLifecycle()
     val limitMb by container.settings.storageLimitMb.collectAsStateWithLifecycle()
-    val locale = LocalConfiguration.current.locales[0]
     return stringResource(
         R.string.wear_downloads_usage,
-        WatchFormat.megabytes(used, locale),
-        WatchFormat.megabytes(StoragePolicy.limitBytes(limitMb), locale),
+        fileSizeText(used),
+        fileSizeText(StoragePolicy.limitBytes(limitMb)),
     )
 }
 

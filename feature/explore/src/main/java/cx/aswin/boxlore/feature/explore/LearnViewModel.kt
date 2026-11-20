@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.ranking.CandidateFeatureBuilder
 import cx.aswin.boxlore.core.ranking.CandidateSignals
 import cx.aswin.boxlore.core.ranking.CandidateSource
@@ -39,7 +40,7 @@ sealed interface LearnUiState {
 
     data class CaughtUp(val isRefreshing: Boolean = false) : LearnUiState
 
-    data class Error(val message: String) : LearnUiState
+    data class Error(val message: UiText) : LearnUiState
 }
 
 class LearnViewModel(
@@ -357,11 +358,11 @@ class LearnViewModel(
                     is InitialCuriosityDeckResult.Exhausted,
                     is InitialCuriosityDeckResult.Capped -> showCaughtUp()
                     is InitialCuriosityDeckResult.Failed -> {
-                        _uiState.value = LearnUiState.Error("Failed to load curiosity curation")
+                        _uiState.value = LearnUiState.Error(UiText.res(R.string.lore_error_load_failed))
                     }
                 }
             } catch (e: Exception) {
-                _uiState.value = LearnUiState.Error(e.message ?: "Unknown error occurred")
+                _uiState.value = LearnUiState.Error(e.message?.let(UiText::raw) ?: UiText.res(R.string.lore_error_unknown))
             }
         }
     }
@@ -386,7 +387,7 @@ class LearnViewModel(
                         _uiState.value = when (current) {
                             is LearnUiState.Success -> current.copy(isRefreshing = false)
                             is LearnUiState.CaughtUp -> current.copy(isRefreshing = false)
-                            else -> LearnUiState.Error("Failed to refresh curiosity curation")
+                            else -> LearnUiState.Error(UiText.res(R.string.lore_error_refresh_failed))
                         }
                     }
                 }
@@ -394,7 +395,7 @@ class LearnViewModel(
                 _uiState.value = when (current) {
                     is LearnUiState.Success -> current.copy(isRefreshing = false)
                     is LearnUiState.CaughtUp -> current.copy(isRefreshing = false)
-                    else -> LearnUiState.Error(e.message ?: "Unknown error occurred")
+                    else -> LearnUiState.Error(e.message?.let(UiText::raw) ?: UiText.res(R.string.lore_error_unknown))
                 }
             }
         }

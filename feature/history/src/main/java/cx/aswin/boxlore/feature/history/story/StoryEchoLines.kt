@@ -9,9 +9,9 @@ import cx.aswin.boxlore.feature.history.insights.ListeningOutput
 import cx.aswin.boxlore.feature.history.insights.TypeTime
 import cx.aswin.boxlore.feature.history.insights.outputName
 import cx.aswin.boxlore.feature.history.insights.weekdayPlural
+import cx.aswin.boxlore.feature.history.timeline.TimelineTime
 import cx.aswin.boxlore.feature.history.timeline.currentLocale
 import cx.aswin.boxlore.feature.history.timeline.durationText
-import java.time.format.DateTimeFormatter
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -305,7 +305,7 @@ private fun storyEchoValues(story: MonthStory, genre: String?): Map<String, Stri
         if (previous != null && previous > 0L) put("diff", durationText(abs(story.totalMs - previous)))
         putCount("episodes", story.counts.episodes)
         putCount("shows", story.shows)
-        put("bigDay", story.biggestDay.first.format(DateTimeFormatter.ofPattern("EEE, MMM d", locale)))
+        put("bigDay", TimelineTime.shortWeekdayDate(story.biggestDay.first, locale))
         put("bigDayTime", durationText(story.biggestDay.second))
         putCount("best", story.bestRunEver)
         top?.let {

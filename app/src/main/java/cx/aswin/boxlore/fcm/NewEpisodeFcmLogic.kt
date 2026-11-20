@@ -78,8 +78,11 @@ internal object NewEpisodeFcmLogic {
         return EpisodeNotificationPlacement(oldest.slot, nextOrder, oldest.podcastId)
     }
 
-    /** The title of a show's new-episode notification; older builds used the same one. */
-    fun episodeNotificationTitle(podcastTitle: String): String = "New Episode • $podcastTitle"
+    /**
+     * The title older builds gave a show's new-episode notification. Those builds were English only,
+     * so their copies are matched by this English title whatever language this build shows.
+     */
+    fun legacyEpisodeNotificationTitle(podcastTitle: String): String = "New Episode • $podcastTitle" // i18n-ignore
 
     /** An untagged notification an older build left in the new-episode id range, with its title. */
     data class LegacyEpisodeNotification(val id: Int, val title: String?)

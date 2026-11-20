@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home
 
+// i18n-ignore-file: debug-only screen, not shown to listeners.
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth

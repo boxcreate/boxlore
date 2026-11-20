@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -52,6 +53,7 @@ import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreConfigurationWindowSize
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 import cx.aswin.boxlore.core.model.Episode
@@ -104,6 +106,8 @@ fun LearnScreen(
     val fallbackAccent = MaterialTheme.colorScheme.primary
     val activeArtwork = cards.firstOrNull()?.artworkSources.orEmpty()
     val baseAccentColor = artworkColors[activeArtwork]?.let { Color(it) } ?: fallbackAccent
+    val podcastFallback = stringResource(R.string.lore_podcast_fallback)
+    val unknownArtist = stringResource(R.string.lore_unknown_artist)
     val handleLearnCardAction: (String, LearnCuriosityCard) -> Unit = { action, card ->
         val mappedEpisode = card.toEpisode()
         when (action) {
@@ -126,7 +130,7 @@ fun LearnScreen(
             "play" -> {
                 viewModel.trackPlayClicked(card)
                 trackLearnCardAction("play", mappedEpisode)
-                playLoreEpisode(mappedEpisode, playerState, playbackRepository, coroutineScope)
+                playLoreEpisode(mappedEpisode, playerState, playbackRepository, coroutineScope, podcastFallback to unknownArtist)
             }
             "podcast" -> {
                 viewModel.trackPodcastClicked(card)
@@ -135,7 +139,7 @@ fun LearnScreen(
                     mappedEpisode.podcastId?.toLongOrNull(),
                     null,
                     "",
-                    mappedEpisode.podcastTitle ?: "Podcast"
+                    mappedEpisode.podcastTitle ?: podcastFallback
                 )
             }
         }
@@ -199,17 +203,17 @@ fun LearnScreen(
                     is LearnUiState.CaughtUp -> {
                         LoreStateCard(
                             accentColor = accentTransition.color,
-                            title = "You’re all caught up",
-                            description = "New curiosities arrive daily. Restore a favorite from your Lore history whenever inspiration strikes."
+                            title = stringResource(R.string.lore_caught_up_title),
+                            description = stringResource(R.string.lore_caught_up_body)
                         ) {
                             FilledTonalButton(
                                 onClick = viewModel::refresh,
                                 shape = CircleShape
                             ) {
-                                Text("Check for new cards")
+                                Text(stringResource(R.string.lore_check_new_cards))
                             }
                             TextButton(onClick = onNavigateToHistory) {
-                                Text("Open Lore history")
+                                Text(stringResource(R.string.lore_open_history))
                             }
                         }
                     }
@@ -244,7 +248,7 @@ fun LearnScreen(
                                     IconButton(onClick = onNavigateToHistory) {
                                         Icon(
                                             imageVector = Icons.Rounded.History,
-                                            contentDescription = "Lore history",
+                                            contentDescription = stringResource(R.string.lore_history),
                                             tint = MaterialTheme.colorScheme.onSurface
                                         )
                                     }
@@ -278,14 +282,14 @@ fun LearnScreen(
                     is LearnUiState.Error -> {
                         LoreStateCard(
                             accentColor = accentTransition.color,
-                            title = "Lore lost the thread",
-                            description = state.message
+                            title = stringResource(R.string.lore_error_title),
+                            description = state.message.asString()
                         ) {
                             FilledTonalButton(
                                 onClick = viewModel::refresh,
                                 shape = CircleShape
                             ) {
-                                Text("Try again")
+                                Text(stringResource(R.string.explore_try_again))
                             }
                         }
                     }
@@ -304,14 +308,15 @@ private fun playLoreEpisode(
     playerState: PlayerState,
     playbackRepository: PlaybackRepository,
     scope: CoroutineScope,
+    fallbackTitleAndArtist: Pair<String, String>,
 ) {
     if (playerState.currentEpisode?.id == episode.id) {
         playbackRepository.togglePlayPause()
     } else {
         val podcast = cx.aswin.boxlore.core.model.Podcast(
             id = episode.podcastId ?: "learn_fallback",
-            title = episode.podcastTitle ?: "Podcast",
-            artist = episode.podcastTitle ?: "Unknown",
+            title = episode.podcastTitle ?: fallbackTitleAndArtist.first,
+            artist = episode.podcastTitle ?: fallbackTitleAndArtist.second,
             imageUrl = episode.imageUrl ?: ""
         )
         scope.launch {
@@ -379,7 +384,7 @@ private fun LoreStateCard(
 private fun LoreLogo(accentColor: State<Color>, modifier: Modifier = Modifier) {
     Image(
         painter = painterResource(id = cx.aswin.boxlore.core.designsystem.R.drawable.logo_lore),
-        contentDescription = "Lore",
+        contentDescription = stringResource(R.string.lore_name),
         colorFilter = ColorFilter.tint(accentColor.value),
         modifier = modifier,
     )

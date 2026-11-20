@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Library tab title -->
+    <string name="library_title">Bibliothèque</string>
+    <string name="library_error_loading">Erreur de chargement de la bibliothèque</string>
+    <!-- Library hub card and Subscriptions page title -->
+    <string name="library_hub_subscriptions">Abonnements</string>
+    <!-- Library hub card and Liked page title -->
+    <string name="library_hub_liked_episodes">Épisodes aimés</string>
+    <!-- Library hub card and Downloads page title -->
+    <string name="library_hub_downloads">Téléchargements</string>
+    <!-- Library hub card -->
+    <string name="library_hub_listening_history">Historique d’écoute</string>
+    <!-- Library hub card and Playlists page title -->
+    <string name="library_hub_playlists">Playlists</string>
+    <string name="library_empty_title">Votre bibliothèque est vide</string>
+    <!-- Two short lines -->
+    <string name="library_empty_body">L’univers est vaste.\nPartez à sa découverte.</string>
+    <!-- Button that opens Explore -->
+    <string name="library_empty_action">Explorer</string>
+    <!-- Button that opens Explore -->
+    <string name="library_find_podcasts">Trouver des podcasts</string>
+    <!-- Button that opens Explore -->
+    <string name="library_discover_shows">Découvrir des podcasts</string>
+    <!-- Screen-reader label for the video badge on a show cover -->
+    <string name="library_video_badge">Vidéo</string>
+    <string name="library_liked_empty_title">Aucun épisode aimé</string>
+    <string name="library_liked_empty_body">Mettez un cœur aux épisodes que vous adorez pour les retrouver ici.</string>
+    <!-- Floating button that plays every listed episode -->
+    <string name="library_play_all">Tout lire</string>
+    <!-- Screen-reader label for the back button -->
+    <string name="library_back">Retour</string>
+    <!-- Screen-reader label for a close button -->
+    <string name="library_close">Fermer</string>
+    <string name="library_cancel">Annuler</string>
+    <string name="library_save">Enregistrer</string>
+    <string name="library_done">OK</string>
+    <string name="library_delete">Supprimer</string>
+    <string name="library_rename">Renommer</string>
+    <string name="library_next">Suivant</string>
+    <string name="library_add">Ajouter</string>
+    <string name="library_manage">Gérer</string>
+    <string name="library_turn_off">Désactiver</string>
+    <!-- Snackbar action -->
+    <string name="library_undo">Annuler</string>
+    <!-- Screen-reader label that clears the search text -->
+    <string name="library_clear">Effacer</string>
+    <!-- Screen-reader label for the search button -->
+    <string name="library_search">Rechercher</string>
+    <!-- Screen-reader label for the sort button -->
+    <string name="library_sort">Trier</string>
+    <!-- Screen-reader label for the tick beside the chosen menu option -->
+    <string name="library_selected">Sélectionné</string>
+    <!-- Screen-reader name of the long-press action that starts selecting -->
+    <string name="library_select">Sélectionner</string>
+    <!-- Screen-reader label -->
+    <string name="library_select_all">Tout sélectionner</string>
+    <!-- Screen-reader label -->
+    <string name="library_cancel_selection">Annuler la sélection</string>
+    <!-- Screen-reader label -->
+    <string name="library_delete_selected">Supprimer la sélection</string>
+    <string name="library_delete_all">Tout supprimer</string>
+    <!-- Under a sheet title: how many shows are ticked -->
+    <plurals name="library_selected_count">
+        <item quantity="one">%1$d sélectionné</item>
+        <item quantity="other">%1$d sélectionnés</item>
+    </plurals>
+    <!-- Top bar title while selecting -->
+    <plurals name="library_selected_count_title">
+        <item quantity="one">%1$d sélectionné</item>
+        <item quantity="other">%1$d sélectionnés</item>
+    </plurals>
+    <!-- Screen-reader label for the ⋮ button -->
+    <string name="library_more_options">Plus d’options</string>
+    <!-- Screen-reader label for a playlist's ⋮ button; %1$s is the playlist name -->
+    <string name="library_more_options_for">Plus d’options pour %1$s</string>
+    <!-- Screen-reader label for an episode's ⋮ button -->
+    <string name="library_options">Options</string>
+    <string name="library_play">Lire</string>
+    <string name="library_play_next">Lire ensuite</string>
+    <!-- Screen-reader label -->
+    <string name="library_play_episode">Lire l’épisode</string>
+    <!-- Screen-reader label for the played tick -->
+    <string name="library_played">Écouté</string>
+    <!-- Screen-reader label for the pin icon -->
+    <string name="library_pinned">Épinglé</string>
+    <!-- Swipe hint and screen-reader action on a New Episodes row -->
+    <string name="library_add_to_queue">Ajouter à la file d’attente</string>
+    <!-- Menu item -->
+    <string name="library_add_to_queue_menu">Ajouter à la file d’attente</string>
+    <!-- Swipe hint and screen-reader action on a New Episodes row -->
+    <string name="library_mark_as_played">Marquer comme écouté</string>
+    <!-- Snackbar -->
+    <string name="library_marked_as_played">Marqué comme écouté</string>
+    <!-- Snackbar -->
+    <string name="library_queue_added">Ajouté à la file d’attente</string>
+    <!-- Snackbar -->
+    <string name="library_queue_already_queued">Déjà dans votre file d’attente</string>
+    <!-- Snackbar -->
+    <string name="library_queue_full">Votre file d’attente est pleine. Retirez un épisode pour ajouter celui-ci.</string>
+    <!-- Tiny badge on a show or folder with a new episode; keep it very short, all capitals where the language uses them -->
+    <string name="library_new_badge">NOUV.</string>
+    <!-- Small tag beside a folder auto-organize will make -->
+    <string name="library_new_tag">Nouveau</string>
+    <!-- The last spot of a folder: how many more shows it holds -->
+    <string name="library_overflow_count">+%1$d</string>
+    <!-- Shown when a show has no author -->
+    <string name="library_podcast_fallback_artist">Podcast</string>
+    <!-- Screen-reader label -->
+    <string name="library_collapse">Réduire</string>
+    <!-- Screen-reader label -->
+    <string name="library_expand">Développer</string>
+    <!-- A date then a time of day, such as Mar 5, 9:30 AM -->
+    <string name="library_date_and_time">%1$s, %2$s</string>
+    <string name="library_relative_just_now">À l’instant</string>
+    <!-- How long ago an episode came out, on a line of its own -->
+    <string name="library_relative_today">Aujourd’hui</string>
+    <!-- How long ago an episode came out, on a line of its own -->
+    <string name="library_relative_yesterday">Hier</string>
+    <!-- How long ago an episode came out (2 to 6 days) -->
+    <plurals name="library_relative_days_ago">
+        <item quantity="one">Il y a %1$d jour</item>
+        <item quantity="other">Il y a %1$d jours</item>
+    </plurals>
+    <!-- How long ago an episode came out (1 to 4 weeks) -->
+    <plurals name="library_relative_weeks_ago">
+        <item quantity="one">Il y a %1$d semaine</item>
+        <item quantity="other">Il y a %1$d semaines</item>
+    </plurals>
+    <!-- Time left in an episode; %1$s is a short length such as 1h 5m -->
+    <string name="library_time_left">%1$s restantes</string>
+    <plurals name="library_show_count">
+        <item quantity="one">%1$d podcast</item>
+        <item quantity="other">%1$d podcasts</item>
+    </plurals>
+    <plurals name="library_new_episode_count">
+        <item quantity="one">%1$d nouvel épisode</item>
+        <item quantity="other">%1$d nouveaux épisodes</item>
+    </plurals>
+    <plurals name="library_shows_picked">
+        <item quantity="one">%1$d podcast choisi</item>
+        <item quantity="other">%1$d podcasts choisis</item>
+    </plurals>
+    <string name="library_add_shows">Ajouter des podcasts</string>
+    <string name="library_shows_you_follow">Vos abonnements</string>
+    <!-- Shows that are not in a folder -->
+    <string name="library_your_shows">Vos podcasts</string>
+    <!-- Label above the folders on the Shows tab -->
+    <string name="library_folders">Dossiers</string>
+    <string name="library_your_folders">Vos dossiers</string>
+    <string name="library_genre_folders">Dossiers par genre</string>
+    <string name="library_playlists_empty_title">Aucune playlist pour l’instant</string>
+    <string name="library_playlists_empty_body">Créez-en une à partir de vos abonnements, par exemple une pour l’humour et une pour l’histoire. Chacune garde votre progression, pour passer de l’une à l’autre quand vous voulez.</string>
+    <!-- A playlist card's second line; %1$s is its show count, such as 3 shows -->
+    <string name="library_playlist_summary_oldest_first">%1$s · Plus anciens d’abord</string>
+    <string name="library_playlist_newest_first">Plus récents d’abord</string>
+    <string name="library_playlist_oldest_first">Plus anciens d’abord</string>
+    <!-- Section title: the episodes Play would queue -->
+    <string name="library_playlist_coming_up">Prochainement</string>
+    <string name="library_playlist_nothing_to_play">Rien à lire pour le moment. Les nouveaux épisodes de ces podcasts apparaîtront ici.</string>
+    <string name="library_playlist_not_following_skipped">Sans abonnement, ignoré</string>
+    <string name="library_playlist_hidden_skipped">Masqué, ignoré</string>
+    <string name="library_playlist_empty_title">Aucun podcast pour l’instant</string>
+    <!-- Add to playlist is the name of the button on a show's page -->
+    <string name="library_playlist_empty_body">Ajoutez ici des podcasts auxquels vous êtes abonné, ou utilisez Ajouter à une playlist sur la page d’un podcast.</string>
+    <string name="library_playlist_delete">Supprimer la playlist</string>
+    <!-- Snackbar; Up next is the queue's name -->
+    <string name="library_playlist_up_next_replaced">À suivre remplacé</string>
+    <!-- Shown for a show restored from a backup whose details are not on this phone -->
+    <string name="library_playlist_unknown_show">Podcast inconnu</string>
+    <!-- Snackbar -->
+    <string name="library_playlist_show_removed">Podcast retiré</string>
+    <!-- Snackbar; %1$s is the show's name -->
+    <string name="library_playlist_removed_show">%1$s retiré</string>
+    <!-- Screen-reader label; %1$s is the show's name -->
+    <string name="library_playlist_remove_show">Retirer %1$s</string>
+    <string name="library_playlist_from_folders">Ajouter les podcasts d’un dossier</string>
+    <string name="library_playlist_no_followed">Abonnez-vous d’abord à des podcasts, puis ajoutez-les ici.</string>
+    <string name="library_playlist_all_added">Tous vos abonnements sont déjà dans cette playlist.</string>
+</resources>

@@ -103,6 +103,15 @@ class SleepTimerPopupTest {
     }
 
     @Test
+    @Config(qualifiers = "en-rGB-w900dp-h900dp-mdpi")
+    fun `British English says the same units as the badge`() {
+        show()
+        compose.onNodeWithText("2h").performClick()
+        compose.mainClock.advanceTimeBy(1_800L)
+        compose.onNodeWithText("Pausing in 2 hr").assertExists()
+    }
+
+    @Test
     fun `picking a time sets it at once, confirms when playback will pause, then lets go`() {
         show()
         compose.onNodeWithText("Late night listening?").assertExists()

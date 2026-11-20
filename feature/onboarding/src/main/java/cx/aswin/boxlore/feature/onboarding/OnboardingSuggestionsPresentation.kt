@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.onboarding
 
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumRowDto
 import cx.aswin.boxlore.core.network.model.toPodcast
 
@@ -77,7 +78,7 @@ internal object OnboardingSuggestionsPresentation {
      * answer, or a search mid-chat) lead in their own lane, selected, and leave the other lanes so
      * nothing shows twice. Nothing else starts selected.
      */
-    fun lanes(uiState: OnboardingUiState, picksTitle: String): List<OnboardingSuggestionsLane> {
+    fun lanes(uiState: OnboardingUiState): List<OnboardingSuggestionsLane> {
         val base = OnboardingSuggestionsLanes.deduplicateLanes(
             OnboardingSuggestionsLanes.build(uiState.aiCurriculumRows, uiState.genreChartsPodcasts, uiState.selectedGenres),
         ).map { lane -> lane.copy(podcasts = OnboardingSuggestionsLanes.deduplicatePodcasts(lane.podcasts)) }
@@ -85,7 +86,7 @@ internal object OnboardingSuggestionsPresentation {
         if (origin(uiState) != SuggestionsOrigin.Echo || picks.isEmpty()) return base
         val pickIds = picks.map { it.id }.toSet()
         val rest = base.map { lane -> lane.copy(podcasts = lane.podcasts.filter { it.id !in pickIds }) }.filter { it.isCharts || it.podcasts.isNotEmpty() }
-        return listOf(OnboardingSuggestionsLane(PICKS_LANE_ID, picksTitle, purpose = "", isCharts = false, podcasts = picks)) + rest
+        return listOf(OnboardingSuggestionsLane(PICKS_LANE_ID, UiText.res(R.string.suggestions_picks_lane), purpose = UiText.raw(""), isCharts = false, podcasts = picks)) + rest
     }
 
     const val PICKS_LANE_ID = "picks"

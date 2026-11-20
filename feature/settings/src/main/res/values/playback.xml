@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_trimming_title">Automatic episode trimming</string>
+    <string name="settings_playback_skip_beginning">Skip beginning</string>
+    <string name="settings_playback_skip_beginning_description">Jump past intros or opening ads on a fresh start</string>
+    <string name="settings_playback_skip_ending">Skip ending</string>
+    <string name="settings_playback_skip_ending_description">Finish naturally before credits or closing ads</string>
+    <string name="settings_playback_trim_silence">Trim silence</string>
+    <string name="settings_playback_trim_silence_description">Skip long pauses so episodes finish sooner</string>
+    <!-- ⋮ is the show page's overflow menu icon. -->
+    <string name="settings_playback_trimming_footer">Set a different speed, trim silence or skip times for one show from the ⋮ menu on its show page. Resume positions always take priority.</string>
+    <string name="settings_playback_seek_title">Seek controls</string>
+    <string name="settings_playback_seek_footer">Used by the player, transcript, notification, headset, and Android Auto controls.</string>
+    <string name="settings_playback_seek_backward">Seek backward</string>
+    <string name="settings_playback_seek_forward">Seek forward</string>
+    <string name="settings_playback_skip_title">When skipping an episode</string>
+    <string name="settings_playback_skip_footer">Applies when you skip to the next episode.</string>
+    <string name="settings_playback_skip_only">Skip only</string>
+    <string name="settings_playback_skip_only_description">Leave the current episode unfinished</string>
+    <string name="settings_playback_mark_complete">Mark complete and skip</string>
+    <string name="settings_playback_mark_complete_description">Mark the current episode complete first</string>
+    <string name="settings_playback_resume_title">Resume</string>
+    <string name="settings_playback_resume_footer">When on, queue and mixtape start from the beginning if you haven’t played an episode in 7 days. Jump Back In and History always resume where you left off.</string>
+    <string name="settings_playback_restart_forgotten">Restart forgotten episodes</string>
+    <string name="settings_playback_restart_forgotten_description">Queue and mixtape after 7 idle days</string>
+    <string name="settings_playback_queue_title">Queue</string>
+    <string name="settings_playback_queue_footer">When this is off, the queue only auto-adds newer episodes of the show you’re playing, if any are available. You can always add episodes yourself.</string>
+    <string name="settings_playback_smart_queue">Smart queue</string>
+    <string name="settings_playback_smart_queue_description">Fill the queue from your library and recommendations</string>
+    <string name="settings_playback_hide_completed_title">Hide completed episodes from</string>
+    <string name="settings_playback_hide_completed_footer">Completed episodes stay in your library; they are only hidden in these places.</string>
+    <string name="settings_playback_hide_home">Home show episodes</string>
+    <string name="settings_playback_hide_home_description">When you tap a show on the Home tab</string>
+    <string name="settings_playback_hide_latest">Subscriptions · Latest</string>
+    <string name="settings_playback_hide_latest_description">The Latest tab under Library → Subscriptions</string>
+    <string name="settings_playback_hide_podcast_pages">Podcast pages</string>
+    <string name="settings_playback_hide_podcast_pages_description">The full episode list on a show’s page</string>
+</resources>

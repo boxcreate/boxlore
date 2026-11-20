@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="echo_back">Retour</string>
+    <string name="echo_search">Rechercher des podcasts</string>
+    <string name="echo_more_options">Plus d’options</string>
+    <string name="echo_progress">Progression de la configuration</string>
+    <string name="echo_about">À propos d’Echo</string>
+    <string name="echo_about_body">Echo utilise l’IA pour suggérer des podcasts à partir de vos réponses.</string>
+    <string name="echo_anonymous_note">Les réponses de l’IA sont anonymes, enregistrées et utilisées pour améliorer l’expérience. N’indiquez jamais d’informations personnelles dans la discussion. Voir %1$s.</string>
+    <string name="echo_privacy_policy">Politique de confidentialité</string>
+    <string name="echo_pick_topics">Choisir des sujets plutôt</string>
+    <string name="echo_intro">Bonjour, je suis Echo. Dites-moi ce que vous aimez, et je ferai comme si je l’avais toujours su.</string>
+    <string name="echo_initial_question">Où votre esprit aime-t-il vagabonder ?</string>
+    <string name="echo_topic_science">Sciences</string>
+    <string name="echo_topic_tech">Tech</string>
+    <string name="echo_topic_history">Histoire</string>
+    <string name="echo_topic_true_crime">Faits divers</string>
+    <string name="echo_topic_comedy">Humour</string>
+    <string name="echo_topic_news">Actualités</string>
+    <string name="echo_topic_business">Business</string>
+    <string name="echo_topic_health">Santé</string>
+    <string name="echo_something_else">Autre chose</string>
+    <string name="echo_your_answer">Votre réponse</string>
+    <string name="echo_answer_placeholder">Répondez avec vos propres mots</string>
+    <string name="echo_use_choices">Utiliser les choix</string>
+    <string name="echo_language_hint">Vous pouvez répondre dans votre langue. Le choix de podcasts est plus large en anglais.</string>
+    <string name="echo_search_show">Rechercher « %1$s »</string>
+    <string name="echo_continue">Continuer</string>
+    <string name="echo_find_shows">Trouver mes podcasts</string>
+    <string name="echo_see_shows">Voir mes podcasts</string>
+    <string name="echo_change_answers">Modifier mes réponses</string>
+    <string name="echo_try_again">Réessayer</string>
+    <string name="echo_tell_more">En dire plus à Echo</string>
+    <string name="echo_find_shows_now">J’ai fini</string>
+    <string name="echo_confirm_title">Trouver vos podcasts maintenant ?</string>
+    <string name="echo_confirm_body">Quelques réponses de plus aident Echo à mieux choisir. Vous choisirez toujours les podcasts à ajouter.</string>
+    <string name="echo_keep_answering">Continuer à répondre</string>
+    <plurals name="echo_note_questions_left">
+        <item quantity="one">Jusqu’à %d question de plus</item>
+        <item quantity="other">Jusqu’à %d questions de plus</item>
+    </plurals>
+    <string name="echo_note_last_question">Dernière question</string>
+    <string name="echo_thinking">Echo réfléchit</string>
+    <string-array name="echo_wait_next_question">
+        <item>Je taille un tout petit crayon…</item>
+        <item>Je relis mes notes. Deux fois.</item>
+        <item>Je cherche une question qui vaut votre temps…</item>
+        <item>Oups, j’ai fait tomber mon bloc-notes. Une seconde.</item>
+        <item>Je réfléchis si fort que mon antenne chauffe.</item>
+        <item>Je raye une question un peu trop indiscrète.</item>
+    </string-array>
+    <string-array name="echo_wait_gathering">
+        <item>Echo relit vos réponses dans sa tête.</item>
+        <item>Echo souligne les meilleurs passages.</item>
+        <item>Echo transforme vos réponses en liste d’envies de podcasts.</item>
+    </string-array>
+    <string-array name="echo_wait_finding">
+        <item>Echo fouille une très haute pile de podcasts.</item>
+        <item>Echo inspecte chaque étagère à la recherche de vos podcasts.</item>
+        <item>Echo dépoussière quelques pépites cachées.</item>
+    </string-array>
+    <string-array name="echo_wait_sorting">
+        <item>Echo range vos podcasts en jolies rangées.</item>
+        <item>Echo met les meilleurs sur le dessus.</item>
+        <item>Echo aligne les dernières cartes.</item>
+    </string-array>
+    <plurals name="echo_wait_seconds_left">
+        <item quantity="one">Encore environ %d seconde</item>
+        <item quantity="other">Encore environ %d secondes</item>
+    </plurals>
+    <string name="echo_wait_overdue_answer">Un peu plus long que d’habitude. Votre réponse est enregistrée.</string>
+    <string name="echo_wait_overdue_build">Plus long que d’habitude. Vos réponses sont enregistrées.</string>
+    <string name="echo_error_title">Impossible de charger la question suivante</string>
+    <string name="echo_error_body">Vérifiez votre connexion, puis réessayez.</string>
+    <string name="echo_ready_title">Vos podcasts sont prêts</string>
+    <string name="echo_ready_body">Jetez un œil et choisissez ce que vous voulez ajouter.</string>
+    <string name="echo_ready_pending">J’en sais assez pour trouver vos podcasts.</string>
+    <string-array name="echo_thinking_words">
+        <item>Je réfléchis…</item>
+        <item>Je médite…</item>
+        <item>Je soupèse…</item>
+        <item>Je relie les points…</item>
+        <item>Je me branche…</item>
+        <item>Je fouille…</item>
+        <item>Je cogite…</item>
+    </string-array>
+    <string name="echo_deck_like">Ça me plaît</string>
+    <string name="echo_deck_dislike">Pas pour moi</string>
+    <string name="echo_deck_listen">Je l’écoute déjà</string>
+    <string name="echo_deck_unknown">Je ne sais pas</string>
+    <string name="echo_deck_position">%1$d sur %2$d</string>
+    <string name="echo_deck_core">Test de goût</string>
+    <string name="echo_deck_related">Joker</string>
+    <string name="echo_deck_tag">%1$s · %2$02d/%3$02d</string>
+    <string name="echo_deck_tag_description">%1$s, %2$s</string>
+    <string name="echo_deck_play">Écouter un extrait</string>
+    <string name="echo_deck_play_length">Écouter un extrait · %1$s</string>
+    <string name="echo_deck_pause">Pause</string>
+</resources>

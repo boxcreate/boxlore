@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_auto_download_background_title">While boxlore is closed</string>
+    <string name="settings_auto_download_background_checks">Backup background checks</string>
+    <string name="settings_auto_download_background_checks_description">Find new episodes if show notifications are off or don\'t arrive.</string>
+    <string name="settings_auto_download_background_wifi">Check on Wi-Fi only</string>
+    <string name="settings_auto_download_background_wifi_description">Applies to checks and the downloads they start.</string>
+    <string name="settings_auto_download_background_charging">Only while charging</string>
+    <string name="settings_auto_download_background_on_footer">Checks about every 6 hours; Android may delay them. Uses extra battery and data and pauses on low battery.</string>
+    <string name="settings_auto_download_background_off_footer">Show notifications can still start downloads while boxlore is closed. Otherwise, new episodes are picked up when you open and refresh.</string>
+    <string name="settings_auto_download_help_title">How automatic downloads work</string>
+    <string name="settings_auto_download_help_shows_title">Choose your shows</string>
+    <string name="settings_auto_download_help_shows">Turn on auto-download from a podcast\'s page. It picks up new episodes, rather than downloading the show\'s archive.</string>
+    <string name="settings_auto_download_help_closed">Show notifications can trigger downloads when new episodes arrive. Backup background checks are optional: they catch new episodes if notifications are off or don\'t arrive. They check about every 6 hours, and Android may delay them.</string>
+    <string name="settings_auto_download_help_limits_title">Battery and network limits</string>
+    <string name="settings_auto_download_help_limits">Background checks use extra battery and data and always pause on low battery. Their network and charging limits also apply to the downloads they start. The Downloads Wi-Fi setting applies to audio files from every discovery method.</string>
+    <string name="settings_auto_download_help_keeping_title">Keeping episodes</string>
+    <string name="settings_auto_download_help_keeping">The per-show limit replaces only older, completed automatic downloads; manually saved files are protected from that limit. Remove after listening deletes downloaded files when you finish an episode.</string>
+    <string name="settings_got_it">Got it</string>
+    <string name="settings_auto_download_title">Automatic downloads</string>
+    <string name="settings_auto_download_shows_title">For the shows you choose</string>
+    <string name="settings_auto_download_shows_footer">Turn on auto-download from each show\'s page.</string>
+    <string name="settings_auto_download_wifi_only">Wi-Fi only</string>
+    <string name="settings_auto_download_wifi_only_description">Audio files wait for an unmetered connection.</string>
+    <string name="settings_auto_download_keep_per_show">Keep episodes per show</string>
+    <string name="settings_auto_download_keep_per_show_description">Replace the oldest automatic download when this limit is reached.</string>
+    <string name="settings_auto_download_remove_after">Remove after listening</string>
+    <string name="settings_auto_download_remove_after_description">Delete downloaded files after an episode is finished.</string>
+    <string name="settings_downloads_offline_title">Keep episodes offline</string>
+    <string name="settings_downloads_offline_footer">Choose which episodes boxlore keeps ready to play offline.</string>
+    <string name="settings_downloads_smart">Smart downloads</string>
+    <string name="settings_downloads_smart_description">Keep a rotating set of episodes offline based on listening</string>
+    <string name="settings_downloads_auto_description">Download new episodes from selected subscriptions</string>
+    <string name="settings_smart_downloads_title">Smart Downloads</string>
+    <string name="settings_smart_downloads_enable">Enable Smart Downloads</string>
+    <string name="settings_smart_downloads_about">About Smart Downloads</string>
+    <string name="settings_smart_downloads_active">Active</string>
+    <string name="settings_smart_downloads_inactive">Inactive</string>
+    <string name="settings_smart_downloads_description">Automatically syncs episodes you might like to your device based on your listening history, so that you can enjoy them even when you\'re offline.</string>
+    <string name="settings_smart_downloads_max_episodes">Max Auto-Downloaded Episodes</string>
+    <string name="settings_smart_downloads_storage_limit">Storage Limit</string>
+    <string name="settings_smart_downloads_unlimited">Unlimited</string>
+    <string name="settings_smart_downloads_conflict_description">Conflict warning</string>
+    <string name="settings_smart_downloads_enabled">Enabled</string>
+    <string name="settings_smart_downloads_mobile_data">Use mobile data</string>
+    <string name="settings_smart_downloads_charging_only">Charging only</string>
+    <string name="settings_smart_downloads_on_battery">Download on battery</string>
+    <string name="settings_smart_downloads_auto_delete">Auto-delete played episodes</string>
+    <string name="settings_smart_downloads_delete_immediately">Immediately</string>
+    <string name="settings_smart_downloads_delete_24h">After 24 hours</string>
+    <string name="settings_smart_downloads_delete_7d">After 7 days</string>
+    <string name="settings_smart_downloads_delete_never">Never</string>
+    <string name="settings_smart_downloads_background">Background Downloads</string>
+    <string name="settings_smart_downloads_background_allowed">Allowed to download in the background, bypassing aggressive device battery savings. This won\'t affect battery life as background sync runs efficiently only once every 24 hours.</string>
+    <string name="settings_smart_downloads_background_blocked">boxlore will try to download automatically, but devices like Xiaomi, OnePlus, or Samsung may block downloads due to aggressive battery saving restrictions. Allowing this won\'t affect battery life, as background sync runs efficiently only once every 24 hours.</string>
+    <string name="settings_smart_downloads_allowed">Allowed</string>
+    <string name="settings_smart_downloads_allow">Allow</string>
+    <!-- Smart Downloads chip: how many episodes to keep. -->
+    <plurals name="settings_smart_downloads_episode_count">
+        <item quantity="one">%1$d episode</item>
+        <item quantity="other">%1$d episodes</item>
+    </plurals>
+    <!-- %1$s is a storage size like "250 MB", %2$d the episode count. -->
+    <plurals name="settings_smart_downloads_conflict">
+        <item quantity="one">Your %1$s storage limit may be too small for %2$d episode. Sync will pause once the storage budget is hit.</item>
+        <item quantity="other">Your %1$s storage limit may be too small for %2$d episodes. Sync will pause once the storage budget is hit.</item>
+    </plurals>
+    <!-- Storage sizes. %1$s is an already formatted number. -->
+    <string name="settings_smart_downloads_size_mb">%1$s MB</string>
+    <string name="settings_smart_downloads_size_gb">%1$s GB</string>
+</resources>

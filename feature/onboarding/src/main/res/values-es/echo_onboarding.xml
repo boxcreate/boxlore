@@ -1,0 +1,122 @@
+<resources>
+    <!-- Top bar -->
+    <string name="echo_back">Atrás</string>
+    <string name="echo_search">Buscar podcasts</string>
+    <string name="echo_more_options">Más opciones</string>
+    <string name="echo_progress">Progreso de la configuración</string>
+    <string name="echo_about">Acerca de Echo</string>
+    <string name="echo_about_body">Echo usa IA para sugerirte podcasts según tus respuestas.</string>
+    <string name="echo_anonymous_note">Las respuestas de la IA son anónimas, se registran y se usan para mejorar la experiencia. Nunca escribas información personal en el chat. Consulta la %1$s.</string>
+    <string name="echo_privacy_policy">Política de privacidad</string>
+    <string name="echo_pick_topics">Mejor elegir temas</string>
+
+    <!-- Opening turn. Topic labels are shown; EchoInitialTopic sends its own answer text. -->
+    <string name="echo_intro">Hola, soy Echo. Cuéntame qué te gusta y fingiré que ya lo sabía.</string>
+    <string name="echo_initial_question">¿Hacia dónde le gusta divagar a tu mente?</string>
+    <string name="echo_topic_science">Ciencia</string>
+    <string name="echo_topic_tech">Tecnología</string>
+    <string name="echo_topic_history">Historia</string>
+    <string name="echo_topic_true_crime">True crime</string>
+    <string name="echo_topic_comedy">Comedia</string>
+    <string name="echo_topic_news">Noticias</string>
+    <string name="echo_topic_business">Negocios</string>
+    <string name="echo_topic_health">Salud</string>
+
+    <!-- Answers -->
+    <string name="echo_something_else">Otra cosa</string>
+    <string name="echo_your_answer">Tu respuesta</string>
+    <string name="echo_answer_placeholder">Escríbelo con tus palabras</string>
+    <string name="echo_use_choices">Usar las opciones</string>
+    <string name="echo_language_hint">Puedes responder en tu idioma. Hay más podcasts disponibles en inglés.</string>
+    <!-- %1$s is a show name the listener mentioned. -->
+    <string name="echo_search_show">Buscar «%1$s»</string>
+
+    <!-- Footer actions -->
+    <string name="echo_continue">Continuar</string>
+    <string name="echo_find_shows">Buscar mis podcasts</string>
+    <string name="echo_see_shows">Ver mis podcasts</string>
+    <string name="echo_change_answers">Cambiar mis respuestas</string>
+    <string name="echo_try_again">Reintentar</string>
+    <string name="echo_tell_more">Cuéntale más a Echo</string>
+    <string name="echo_find_shows_now">Ya terminé</string>
+    <!-- Confirmation after "Enough questions". -->
+    <string name="echo_confirm_title">¿Buscar tus podcasts ya?</string>
+    <string name="echo_confirm_body">Unas cuantas respuestas más ayudan a Echo a elegir mejor. Tú decides qué podcasts añadir.</string>
+    <string name="echo_keep_answering">Seguir respondiendo</string>
+    <!-- One-line pill above the main button: the note, then the optional action in colour. -->
+    <!-- A ceiling, not a promise: Echo often stops sooner. -->
+    <plurals name="echo_note_questions_left">
+        <item quantity="one">Hasta %d pregunta más</item>
+        <item quantity="many">Hasta %d preguntas más</item>
+        <item quantity="other">Hasta %d preguntas más</item>
+    </plurals>
+    <string name="echo_note_last_question">Última pregunta</string>
+
+    <!-- Status -->
+    <string name="echo_thinking">Echo está pensando</string>
+    <!-- Slow requests: after 4 seconds Echo shows one of these (rotating every 5 seconds) with a countdown. -->
+    <string-array name="echo_wait_next_question">
+        <item>Afilando un lápiz muy pequeñito…</item>
+        <item>Repasando mis notas. Dos veces.</item>
+        <item>Eligiendo una pregunta que valga tu tiempo…</item>
+        <item>Uy, se me cayó la libreta. Un segundo.</item>
+        <item>Pensando tanto que se me calienta la antena.</item>
+        <item>Tachando una pregunta demasiado indiscreta.</item>
+    </string-array>
+    <string-array name="echo_wait_gathering">
+        <item>Echo está releyendo tus respuestas.</item>
+        <item>Echo está subrayando lo mejor.</item>
+        <item>Echo está convirtiendo tus respuestas en una lista de deseos.</item>
+    </string-array>
+    <string-array name="echo_wait_finding">
+        <item>Echo está buscando en una pila altísima de podcasts.</item>
+        <item>Echo está revisando cada estante para encontrar lo tuyo.</item>
+        <item>Echo está quitándole el polvo a unas cuantas joyas ocultas.</item>
+    </string-array>
+    <string-array name="echo_wait_sorting">
+        <item>Echo está ordenando tus podcasts en filas.</item>
+        <item>Echo está poniendo los mejores arriba.</item>
+        <item>Echo está acomodando las últimas tarjetas.</item>
+    </string-array>
+    <plurals name="echo_wait_seconds_left">
+        <item quantity="one">Queda %d segundo</item>
+        <item quantity="many">Quedan unos %d segundos</item>
+        <item quantity="other">Quedan unos %d segundos</item>
+    </plurals>
+    <string name="echo_wait_overdue_answer">Está tardando un poco más de lo normal. Tu respuesta está guardada.</string>
+    <string name="echo_wait_overdue_build">Está tardando más de lo normal. Tus respuestas están guardadas.</string>
+    <string name="echo_error_title">No se pudo cargar la siguiente pregunta</string>
+    <string name="echo_error_body">Revisa tu conexión y vuelve a intentarlo.</string>
+    <string name="echo_ready_title">Tus podcasts están listos</string>
+    <string name="echo_ready_body">Échales un vistazo y elige cuáles añadir.</string>
+    <string name="echo_ready_pending">Ya tengo suficiente para encontrar tus podcasts.</string>
+    <!-- Shown inside the main button while Echo works on the next question, one at a time. -->
+    <string-array name="echo_thinking_words">
+        <item>Pensando…</item>
+        <item>Reflexionando…</item>
+        <item>Dándole vueltas…</item>
+        <item>Atando cabos…</item>
+        <item>Sintonizando…</item>
+        <item>Rebuscando…</item>
+        <item>Cavilando…</item>
+    </string-array>
+    <!-- Show deck: Echo asks about a few well-known shows, one card at a time. The card's question is in Echo's bubble. -->
+    <string name="echo_deck_like">Me interesa</string>
+    <string name="echo_deck_dislike">No es para mí</string>
+    <!-- Adds the show to the shows the listener will follow. -->
+    <string name="echo_deck_listen">Ya lo escucho</string>
+    <string name="echo_deck_unknown">No sé</string>
+    <!-- Card position, for example "1 of 3". -->
+    <string name="echo_deck_position">%1$d de %2$d</string>
+    <!-- Badges on the card art. The deck is a taste test inside the chat, not recommendations yet: "core" shows fit what the listener said; "related" ones are a step away. -->
+    <string name="echo_deck_core">Prueba de gustos</string>
+    <string name="echo_deck_related">Comodín</string>
+    <!-- The sticker on the card's art: the badge above in capitals, then the card's place in the deck, for example "TASTE TEST · 01/03". -->
+    <string name="echo_deck_tag">%1$s · %2$02d/%3$02d</string>
+    <!-- Screen-reader label of that sticker: the badge, then the card position, for example "Taste test, 1 of 3". -->
+    <string name="echo_deck_tag_description">%1$s, %2$s</string>
+    <string name="echo_deck_play">Escuchar un fragmento</string>
+    <!-- The clip button with the clip's length, for example "Play a clip · 0:45". -->
+    <string name="echo_deck_play_length">Escuchar un fragmento · %1$s</string>
+    <string name="echo_deck_pause">Pausar</string>
+</resources>

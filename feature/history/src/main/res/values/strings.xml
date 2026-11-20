@@ -107,7 +107,11 @@
     <string name="history_remove_from_history">Remove from history</string>
     <string name="history_open_show">Open %1$s</string>
     <!-- Segment bar of a show's episodes, e.g. "6 of 9 finished". -->
-    <string name="history_show_finished_of">%1$d of %2$d finished</string>
+    <!-- Quantity is the second number, the show's episodes. -->
+    <plurals name="history_show_finished_of">
+        <item quantity="one">%1$d of %2$d finished</item>
+        <item quantity="other">%1$d of %2$d finished</item>
+    </plurals>
     <plurals name="history_show_all_finished">
         <item quantity="one">Finished</item>
         <item quantity="other">All %1$d finished</item>
@@ -182,7 +186,11 @@
     <string name="history_part_share_evening">%1$d%% of your listening happens in the evening.</string>
     <string name="history_part_share_night">%1$d%% of your listening happens at night.</string>
     <!-- How many episodes you finish, e.g. "You finish about 3 in 4 episodes you start." -->
-    <string name="history_finish_rate">You finish about %1$d in %2$d episodes you start.</string>
+    <!-- Quantity is the second number. -->
+    <plurals name="history_finish_rate">
+        <item quantity="one">You finish about %1$d in %2$d episode you start.</item>
+        <item quantity="other">You finish about %1$d in %2$d episodes you start.</item>
+    </plurals>
     <string name="history_finish_almost_all">You finish almost every episode you start.</string>
     <string name="history_finish_few">You finish a few of the episodes you start.</string>
     <string name="history_finish_none">You haven\'t finished an episode you started yet.</string>
@@ -220,8 +228,11 @@
     <string name="history_ins_weekday_chart">Listening by weekday: %1$s highest</string>
     <!-- E.g. "Your October". -->
     <string name="history_ins_your_month">Your %1$s</string>
-    <!-- E.g. "19 of 30 days". -->
-    <string name="history_ins_days_of">%1$d of %2$d days</string>
+    <!-- E.g. "19 of 30 days"; the quantity is the second number, the days so far. -->
+    <plurals name="history_ins_days_of">
+        <item quantity="one">%1$d of %2$d day</item>
+        <item quantity="other">%1$d of %2$d days</item>
+    </plurals>
     <string name="history_ins_mosaic_hint">Each day shows the show you played most. Tap a day to open it.</string>
     <string name="history_ins_records">Records</string>
     <string name="history_rec_biggest_day">Biggest day</string>
@@ -262,10 +273,18 @@
     <string name="history_ins_from_smart_queue">%1$d%% added by Smart queue</string>
     <string name="history_ins_genre_other">Other</string>
     <!-- E.g. "178 finished". -->
-    <string name="history_ins_finished_count">%1$d finished</string>
+    <!-- Episodes finished all time; quantity is the number shown. -->
+    <plurals name="history_ins_finished_count">
+        <item quantity="one">%1$d finished</item>
+        <item quantity="other">%1$d finished</item>
+    </plurals>
     <string name="history_ins_all_time">all time</string>
     <!-- E.g. "22 more to reach 200." -->
-    <string name="history_ins_to_milestone">%1$d more to reach %2$d.</string>
+    <!-- Episodes left to the next milestone; quantity is the first number. -->
+    <plurals name="history_ins_to_milestone">
+        <item quantity="one">%1$d more to reach %2$d.</item>
+        <item quantity="other">%1$d more to reach %2$d.</item>
+    </plurals>
     <plurals name="history_ins_in_progress_title">
         <item quantity="one">%1$d episode in progress</item>
         <item quantity="other">%1$d episodes in progress</item>
@@ -295,7 +314,11 @@
         <item quantity="one">Listen on %1$d more day to see when you listen most.</item>
         <item quantity="other">Listen on %1$d more days to see when you listen most.</item>
     </plurals>
-    <string name="history_early_clock_progress">%1$d of %2$d days</string>
+    <!-- Quantity is the second number, the days needed. -->
+    <plurals name="history_early_clock_progress">
+        <item quantity="one">%1$d of %2$d day</item>
+        <item quantity="other">%1$d of %2$d days</item>
+    </plurals>
 
     <!-- Monthly story (boards A7–A12) -->
     <string name="history_story_close">Close</string>
@@ -329,7 +352,11 @@
     <string name="history_story_type_afternoon">in the afternoon</string>
     <string name="history_story_type_evening">in the evening</string>
     <string name="history_story_type_night">at night</string>
-    <string name="history_story_type_finish">%1$d%% of your listening was %2$s, and you finished about %3$d in %4$d episodes you started.</string>
+    <!-- Quantity is the fourth number, the episodes started. -->
+    <plurals name="history_story_type_finish">
+        <item quantity="one">%1$d%% of your listening was %2$s, and you finished about %3$d in %4$d episode you started.</item>
+        <item quantity="other">%1$d%% of your listening was %2$s, and you finished about %3$d in %4$d episodes you started.</item>
+    </plurals>
     <string name="history_story_type_finish_all">%1$d%% of your listening was %2$s, and you finished almost every episode you started.</string>
     <string name="history_story_type_finish_few">%1$d%% of your listening was %2$s, and you finished a few of the episodes you started.</string>
     <string name="history_story_type_finish_none">%1$d%% of your listening was %2$s. You haven\'t finished an episode you started yet.</string>
@@ -341,7 +368,10 @@
     </plurals>
     <string name="history_story_run_line">in a row, %1$s to %2$s.</string>
     <string name="history_story_run_line_best">in a row, %1$s to %2$s. Your best run yet.</string>
-    <string name="history_story_run_pills">%1$d listening days in a row</string>
+    <plurals name="history_story_run_pills">
+        <item quantity="one">%1$d listening day in a row</item>
+        <item quantity="other">%1$d listening days in a row</item>
+    </plurals>
     <string name="history_story_biggest_only">on %1$s, your biggest day.</string>
     <plurals name="history_story_episodes">
         <item quantity="one">%1$d episode</item>
@@ -381,12 +411,23 @@
     <string name="history_story_share_finished">finished</string>
     <string name="history_story_new">New</string>
     <string name="history_story_entry_title">Your %1$s story</string>
-    <string name="history_story_entry_meta">%1$d cards · 1 min</string>
+    <plurals name="history_story_entry_meta">
+        <item quantity="one">%1$d card · 1 min</item>
+        <item quantity="other">%1$d cards · 1 min</item>
+    </plurals>
     <string name="history_story_entry_top">%1$s on top</string>
     <string name="history_story_watch">Watch your %1$s story</string>
     <string name="history_story_earlier">Earlier stories</string>
-    <!-- A weekday's plural ("Wednesdays"); %1$s is the weekday's name. -->
-    <string name="history_weekday_plural">%1$ss</string>
+    <!-- A weekday's plural, as in "Wednesdays are your big day" and "4 h 23 min on Wednesdays this month". -->
+    <string name="history_weekday_plural_monday">Mondays</string>
+    <string name="history_weekday_plural_tuesday">Tuesdays</string>
+    <string name="history_weekday_plural_wednesday">Wednesdays</string>
+    <string name="history_weekday_plural_thursday">Thursdays</string>
+    <string name="history_weekday_plural_friday">Fridays</string>
+    <string name="history_weekday_plural_saturday">Saturdays</string>
+    <string name="history_weekday_plural_sunday">Sundays</string>
+    <!-- Two labels read together by a screen reader, e.g. "New 40%, Older 60%". -->
+    <string name="history_list_pair">%1$s, %2$s</string>
     <plurals name="history_story_earlier_all">
         <item quantity="one">Show all %d story</item>
         <item quantity="other">Show all %d stories</item>

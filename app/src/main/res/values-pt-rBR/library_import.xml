@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Library import: where the listener's shows are now. -->
+    <string name="import_pick_title">Traga seus podcasts</string>
+    <string name="import_pick_body">Onde estão seus podcasts agora?</string>
+    <string name="import_option_account">Na minha conta do boxlore</string>
+    <string name="import_option_account_body">Entre para sincronizar seus podcasts, sua fila e seu progresso</string>
+    <string name="import_option_backup">Em um backup do boxlore</string>
+    <string name="import_option_backup_body">Um arquivo .json que você salvou no boxlore</string>
+    <string name="import_option_opml">Em outro app de podcast</string>
+    <string name="import_option_opml_body">Um arquivo OPML do Pocket Casts, AntennaPod ou da maioria dos outros apps</string>
+    <string name="import_opml_hint">Procure Exportar OPML nas configurações do seu app de podcast.</string>
+    <string name="import_close">Fechar</string>
+
+    <!-- Library import: working. -->
+    <string name="import_reading_title">Lendo seu arquivo</string>
+    <string name="import_importing_title">Importando seus podcasts</string>
+    <string name="import_restoring_title">Restaurando seu backup</string>
+    <string name="import_marking_title">Marcando episódios antigos como ouvidos</string>
+    <plurals name="import_progress_count">
+        <item quantity="one">%1$d de %2$d podcast</item>
+        <item quantity="other">%1$d de %2$d podcasts</item>
+    </plurals>
+    <string name="import_progress_percent">%d%%</string>
+    <string name="import_now_subscribing">Seguindo %s</string>
+    <string name="import_now_marking">Marcando %s como ouvido</string>
+    <string name="import_now_refreshing">Buscando episódios de %s</string>
+    <string name="import_step_read">Ler seu arquivo</string>
+    <plurals name="import_step_read_done">
+        <item quantity="one">%d podcast encontrado</item>
+        <item quantity="other">%d podcasts encontrados</item>
+    </plurals>
+    <string name="import_step_subscribe">Seguir seus podcasts</string>
+    <plurals name="import_step_subscribe_done">
+        <item quantity="one">%d podcast seguido</item>
+        <item quantity="other">%d podcasts seguidos</item>
+    </plurals>
+    <string name="import_step_choose">Escolher o que marcar como ouvido</string>
+    <string name="import_step_mark">Marcar episódios antigos como ouvidos</string>
+    <string name="import_step_restore">Restaurar seus podcasts e histórico</string>
+    <string name="import_step_latest">Buscar os episódios mais recentes</string>
+    <string name="import_step_status_done">Concluído</string>
+    <string name="import_step_status_now">Em andamento</string>
+    <string name="import_step_status_next">A seguir</string>
+
+    <!-- Library import: marking old episodes played. -->
+    <string name="import_fresh_title">Começar do zero?</string>
+    <string name="import_fresh_body">Marque episódios antigos como ouvidos para sua fila começar pelas novidades.</string>
+    <plurals name="import_fresh_all">
+        <item quantity="one">%d podcast</item>
+        <item quantity="other">Todos os %d podcasts</item>
+    </plurals>
+    <string name="import_fresh_selected">%d selecionados</string>
+    <plurals name="import_fresh_confirm">
+        <item quantity="one">Marcar %d podcast como ouvido</item>
+        <item quantity="other">Marcar %d podcasts como ouvidos</item>
+    </plurals>
+    <string name="import_fresh_skip">Manter tudo como não ouvido</string>
+
+    <!-- Library import: done. -->
+    <string name="import_done_title">Seus podcasts chegaram</string>
+    <!-- Shown instead of import_done_title when no show could be added yet but boxlore keeps trying to add them. -->
+    <string name="import_done_title_pending">Adicionando seus podcasts</string>
+    <string name="import_done_backup_title">Seu backup foi restaurado</string>
+    <string name="import_done_body">Tudo pronto quando você quiser.</string>
+    <!-- Shown instead of import_done_body when some OPML shows couldn't be added yet; boxlore keeps adding them while it is open. -->
+    <plurals name="import_done_body_pending">
+        <item quantity="one">%d podcast não pôde ser adicionado agora. O boxlore continua tentando enquanto estiver aberto.</item>
+        <item quantity="other">%d podcasts não puderam ser adicionados agora. O boxlore continua tentando enquanto estiver aberto.</item>
+    </plurals>
+    <!-- A label under the count, which is shown on its own; the singular is right for 0 and 1 here. -->
+    <plurals name="import_done_subscribed" tools:ignore="ImpliedQuantity">
+        <item quantity="one">podcast seguido</item>
+        <item quantity="other">podcasts seguidos</item>
+    </plurals>
+    <string name="import_done_marked">marcados como ouvidos</string>
+    <string name="import_notify_body">Alguns podcasts têm alertas ou downloads automáticos. Eles precisam de notificações para funcionar.</string>
+    <string name="import_notify_allow">Permitir notificações</string>
+    <string name="import_notify_settings">Abrir configurações</string>
+    <string name="import_continue">Continuar</string>
+
+    <!-- Library import: failed. -->
+    <string name="import_failed_unreadable_title">Não foi possível abrir esse arquivo</string>
+    <string name="import_failed_unreadable_body">O boxlore não conseguiu ler o arquivo.</string>
+    <string name="import_failed_no_feeds_title">Nenhum podcast nesse arquivo</string>
+    <string name="import_failed_no_feeds_body">Ele não lista nenhum feed de podcast.</string>
+    <string name="import_failed_unreachable_title">Não foi possível adicionar esses podcasts</string>
+    <string name="import_failed_unreachable_body">Não foi possível acessar nenhum dos podcasts desse arquivo. Verifique sua conexão e tente de novo.</string>
+    <string name="import_failed_stopped_title">A importação parou no meio</string>
+    <string name="import_failed_stopped_body">Os podcasts adicionados antes da parada estão na sua biblioteca. Tente de novo para adicionar o resto.</string>
+    <string name="import_failed_marking_title">Não foi possível marcar tudo como ouvido</string>
+    <string name="import_failed_marking_body">Você já segue seus podcasts, mas alguns episódios antigos continuam como não ouvidos.</string>
+    <string name="import_failed_backup_title">Não foi possível restaurar esse backup</string>
+    <string name="import_failed_backup_body">Confira se é um backup .json do boxlore e tente de novo.</string>
+    <string name="import_unchanged">Nada mudou na sua biblioteca.</string>
+    <string name="import_file_hint">Use um arquivo .opml do seu app de podcast ou um backup .json do boxlore.</string>
+    <string name="import_choose_another">Escolher outro arquivo</string>
+    <string name="import_try_again">Tentar de novo</string>
+</resources>

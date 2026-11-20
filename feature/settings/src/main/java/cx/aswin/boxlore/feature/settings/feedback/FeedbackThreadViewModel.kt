@@ -6,10 +6,12 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.support.ConversationResult
 import cx.aswin.boxlore.core.support.ReplyResult
 import cx.aswin.boxlore.core.support.SupportConversation
 import cx.aswin.boxlore.core.support.SupportRepository
+import cx.aswin.boxlore.feature.settings.R
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +34,7 @@ data class FeedbackThreadUiState(
     val replyOpen: Boolean = false,
     val reply: String = "",
     val sending: Boolean = false,
-    val replyError: String? = null,
+    val replyError: UiText? = null,
     val solving: Boolean = false,
 ) {
     val canReply: Boolean get() = conversation?.thread?.canReply == true
@@ -181,9 +183,9 @@ class FeedbackThreadViewModel internal constructor(
                     }
                     reload()
                 }
-                is ReplyResult.Refused -> _uiState.update { it.copy(sending = false, replyError = result.message) }
+                is ReplyResult.Refused -> _uiState.update { it.copy(sending = false, replyError = UiText.raw(result.message)) }
                 ReplyResult.Failed -> _uiState.update {
-                    it.copy(sending = false, replyError = "Couldn't send your reply. Check your connection and try again.")
+                    it.copy(sending = false, replyError = UiText.res(R.string.feedback_thread_error_reply))
                 }
             }
         }

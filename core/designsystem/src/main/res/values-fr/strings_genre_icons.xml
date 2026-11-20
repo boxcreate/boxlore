@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Screen-reader names of the icons a folder or genre tag can wear. -->
+    <string name="genre_icon_mic">Micro</string>
+    <string name="genre_icon_headphones">Casque</string>
+    <string name="genre_icon_music">Musique</string>
+    <string name="genre_icon_movie">Film</string>
+    <string name="genre_icon_gaming">Jeux vidéo</string>
+    <string name="genre_icon_code">Code</string>
+    <string name="genre_icon_tech">Tech</string>
+    <string name="genre_icon_bulb">Idées</string>
+    <string name="genre_icon_star">Étoile</string>
+    <string name="genre_icon_fire">Feu</string>
+    <string name="genre_icon_science">Sciences</string>
+    <string name="genre_icon_book">Livre</string>
+    <string name="genre_icon_health">Santé</string>
+    <string name="genre_icon_finance">Finance</string>
+    <string name="genre_icon_news">Actualités</string>
+    <string name="genre_icon_sports">Sport</string>
+    <string name="genre_icon_comedy">Humour</string>
+    <string name="genre_icon_history">Histoire</string>
+    <string name="genre_icon_art">Art</string>
+    <string name="genre_icon_education">Éducation</string>
+    <string name="genre_icon_crime">Faits divers</string>
+    <string name="genre_icon_chat">Discussion</string>
+    <string name="genre_icon_travel">Voyage</string>
+    <string name="genre_icon_food">Cuisine</string>
+    <string name="genre_icon_nature">Nature</string>
+    <string name="genre_icon_family">Famille</string>
+    <string name="genre_icon_business">Business</string>
+    <string name="genre_icon_government">Politique</string>
+    <string name="genre_icon_tag">Étiquette</string>
+    <string name="genre_icon_category">Catégorie</string>
+    <string name="genre_icon_folder">Dossier</string>
+</resources>

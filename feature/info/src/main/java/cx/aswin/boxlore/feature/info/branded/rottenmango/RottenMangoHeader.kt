@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.R
@@ -44,7 +45,6 @@ import cx.aswin.boxlore.feature.info.branded.BrandedCopyrightButton
 import cx.aswin.boxlore.feature.info.branded.BrandedDescription
 import cx.aswin.boxlore.feature.info.branded.BrandedDescriptionExtras
 import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
-import java.util.Locale
 
 /** The room photo's height for its width: the official art cut to the room above her lap. */
 private const val PHOTO_ASPECT = 1800f / 2048f
@@ -135,7 +135,7 @@ private fun DrawScope.drawRoom(room: Painter, width: Dp, height: Dp) {
 private fun PublisherLine(podcast: Podcast) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-            podcast.artist.uppercase(Locale.getDefault()),
+            podcast.artist.uppercase(currentLocale()),
             style = brandedSansStyle(11.sp, 14.sp, weight = 600).copy(letterSpacing = 1.8.sp),
             color = RottenMangoColors.Sub,
             maxLines = 1,

@@ -2,10 +2,7 @@ package cx.aswin.boxlore.feature.history.timeline
 
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.YearMonth
-import java.time.ZoneOffset
-import java.util.Locale
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -61,13 +58,6 @@ class TimelinePiecesTest {
         val today = LocalDate.of(2026, 10, 30)
         assertEquals(TimelineTime.DayTitle.Today, TimelineTime.dayTitleParts(today, today))
         assertEquals(TimelineTime.DayTitle.Yesterday, TimelineTime.dayTitleParts(today.minusDays(1), today))
-        assertEquals("Wednesday, Oct 28", TimelineTime.dayTitleText(LocalDate.of(2026, 10, 28), false, Locale.US))
-        assertEquals("October", TimelineTime.monthTitle(YearMonth.of(2026, 10), today, Locale.US))
-        assertEquals("December 2025", TimelineTime.monthTitle(YearMonth.of(2025, 12), today, Locale.US))
-        val india = ZoneOffset.ofHoursMinutes(5, 30)
-        val evening = LocalDateTime.of(2026, 10, 30, 20, 12).toInstant(india).toEpochMilli()
-        assertEquals("8:12 pm", TimelineTime.clockTime(evening, india, false, Locale.US))
-        assertEquals("20:12", TimelineTime.clockTime(evening, india, true, Locale.US))
     }
 
     @Test

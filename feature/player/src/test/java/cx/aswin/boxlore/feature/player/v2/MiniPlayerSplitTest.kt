@@ -7,11 +7,11 @@ import org.junit.jupiter.api.Test
 class MiniPlayerSplitTest {
     @Test
     fun `time left rounds up to whole minutes and shows hours past an hour`() {
-        assertEquals("23m left", miniPlayerTimeLeft(positionMs = 7 * 60_000L, durationMs = 30 * 60_000L))
-        assertEquals("1m left", miniPlayerTimeLeft(positionMs = 29 * 60_000L + 59_000L, durationMs = 30 * 60_000L))
-        assertEquals("1h 5m left", miniPlayerTimeLeft(positionMs = 0L, durationMs = 65 * 60_000L))
-        assertEquals("30m left", miniPlayerTimeLeft(positionMs = -5L, durationMs = 30 * 60_000L))
-        assertNull(miniPlayerTimeLeft(positionMs = 0L, durationMs = 0L))
+        assertEquals(23L, miniPlayerMinutesLeft(positionMs = 7 * 60_000L, durationMs = 30 * 60_000L))
+        assertEquals(1L, miniPlayerMinutesLeft(positionMs = 29 * 60_000L + 59_000L, durationMs = 30 * 60_000L))
+        assertEquals(65L, miniPlayerMinutesLeft(positionMs = 0L, durationMs = 65 * 60_000L))
+        assertEquals(30L, miniPlayerMinutesLeft(positionMs = -5L, durationMs = 30 * 60_000L))
+        assertNull(miniPlayerMinutesLeft(positionMs = 0L, durationMs = 0L))
     }
 
     @Test

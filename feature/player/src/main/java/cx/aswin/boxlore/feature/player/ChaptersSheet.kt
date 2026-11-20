@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -31,13 +32,13 @@ private fun ChaptersHeader(onClose: () -> Unit, colorScheme: ColorScheme) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Chapters",
+            text = stringResource(R.string.player_chapters),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = GoogleSansWeight.bold,
             color = colorScheme.onSurface
         )
         TextButton(onClick = onClose) {
-            Text("Close", color = colorScheme.primary)
+            Text(stringResource(R.string.player_close), color = colorScheme.primary)
         }
     }
 }
@@ -54,7 +55,7 @@ private fun ChaptersEmptyPlaceholder(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "No chapters available",
+            text = stringResource(R.string.player_no_chapters),
             style = MaterialTheme.typography.bodyMedium,
             color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         )

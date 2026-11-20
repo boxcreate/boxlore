@@ -322,7 +322,7 @@ class HomeDiscoveryHeaderTest {
     private fun title(): String = when (scenario.value.chapter) {
         HomeDiscoveryChapter.LIBRARY -> label(R.string.home_your_shows_heading)
         HomeDiscoveryChapter.PERSONAL -> label(R.string.home_popular_region)
-        HomeDiscoveryChapter.MOMENT -> discoveryGreetingFor(scenario.value.daypart).title
+        HomeDiscoveryChapter.MOMENT -> label(discoveryGreetingFor(scenario.value.daypart).title)
         HomeDiscoveryChapter.EXPLORE -> label(R.string.home_explore_shows)
     }
 

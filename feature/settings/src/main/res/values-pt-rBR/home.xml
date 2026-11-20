@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Appearance > Home: the hero card style picker. Block is the solid colour card; Cover fills the card with the artwork. -->
+    <!-- Header above the non-interactive preview of the picked hero card style. -->
+    <!-- Heads the picked hero style's live preview and its options, for example "Tide look". -->
+    <string name="hero_card_look_title">Visual %1$s</string>
+    <string name="hero_card_style_title">Cards de destaque</string>
+    <string name="hero_card_style_footer">Os cards grandes no topo do Início.</string>
+    <string name="hero_card_style_block">Bloco</string>
+    <string name="hero_card_style_block_description">Letras grandes sobre um bloco de cor sólida, com a arte ao lado.</string>
+    <string name="hero_card_style_cover">Capa</string>
+    <string name="hero_card_style_cover_description">Arte inteira, com o texto sobre um sombreado.</string>
+    <string name="hero_card_style_tide">Maré</string>
+    <string name="hero_card_style_tide_description">A capa inteira acima de um painel ondulado, com um botão de tocar redondo.</string>
+    <string name="hero_card_style_duotone">Duotone</string>
+    <string name="hero_card_style_duotone_description">Arte em dois tons, para o texto sempre se destacar.</string>
+    <string name="hero_card_style_halo">Halo</string>
+    <string name="hero_card_style_halo_description">Arte recortada com seu progresso num anel em volta.</string>
+    <!-- Shown under the picker when Duotone is chosen: the two tones the artwork is redrawn in. Same choice as Cover's shade. -->
+    <string name="hero_duotone_colors_title">Cores do duotone</string>
+    <string name="hero_duotone_colors_footer">Escuro redesenha as capas em preto e branco. Arte usa a cor de cada capa. Tema do app usa sua cor de destaque.</string>
+    <string name="hero_card_style_marquee">Letreiro</string>
+    <string name="hero_card_style_marquee_description">Uma capa de largura total sob a barra superior, com os próximos cards ao lado do Tocar.</string>
+    <!-- Marquee's tile on tablets, where Home shows Cover cards instead. -->
+    <string name="hero_card_style_marquee_description_tablet">Uma capa de largura total no celular. Tablets mostram cards Capa.</string>
+    <!-- Shown under the picker when Marquee is chosen: covers in full colour or redrawn in two tones. Same choice as Cover's shade. -->
+    <string name="hero_marquee_colors_title">Cores da capa</string>
+    <string name="hero_marquee_colors_footer">Cores originais mostra as capas como são. Arte redesenha as capas em dois tons da cor delas. Tema do app usa sua cor de destaque.</string>
+    <!-- Marquee's name for the Dark choice: the cover keeps all its colours. -->
+    <string name="hero_marquee_colors_full">Cores originais</string>
+    <!-- Shown under the picker when Tide or Halo is chosen: the colour of the card around the artwork. Same choice as Cover's shade. -->
+    <string name="hero_card_colors_title">Cor do card</string>
+    <string name="hero_card_colors_footer">Escuro deixa os cards quase pretos. Arte usa a cor de cada capa. Tema do app usa sua cor de destaque.</string>
+    <!-- Shown under the picker only when Cover is chosen: the colour the artwork fades into behind the card's text. -->
+    <!-- Tide hero cards ring their Play button with listening progress; this picks the ring's shape. -->
+    <string name="hero_tide_progress_title">Anel de progresso</string>
+    <string name="hero_tide_progress_footer">Ondulado mostra ondas enquanto um episódio toca. Círculo fica sempre liso.</string>
+    <string name="hero_tide_progress_wavy">Ondulado</string>
+    <string name="hero_tide_progress_circle">Círculo</string>
+    <string name="hero_cover_shade_title">Sombreado atrás do texto</string>
+    <string name="hero_cover_shade_footer">Arte usa um tom escuro da cor de cada capa. Tema do app usa sua cor de destaque.</string>
+    <string name="hero_cover_shade_dark">Escuro</string>
+    <!-- Each card takes a deep shade of its own cover's colour. -->
+    <string name="hero_cover_shade_artwork">Arte</string>
+    <!-- A deep shade of the app's accent colour. Matches "App theme" in the Widgets picker. -->
+    <string name="hero_cover_shade_theme">Tema do app</string>
+</resources>

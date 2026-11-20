@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="briefing_brand_name">Le brief boxlore</string>
+    <string name="briefing_show_author">boxlore</string>
+    <string name="briefing_show_all_stories">Afficher les %1$d sujets</string>
+    <string name="briefing_show_fewer_stories">Afficher moins de sujets</string>
+    <string name="briefing_all_stories_inline">Les %1$d</string>
+    <string name="briefing_less_inline">Moins</string>
+    <string name="briefing_story_label">Sujet %1$d</string>
+    <string name="briefing_play_story">Écouter le sujet</string>
+    <string name="briefing_pause_story">Mettre le sujet en pause</string>
+    <string name="briefing_play_story_named">Écouter le sujet : %1$s</string>
+    <string name="briefing_pause_story_named">Mettre en pause le sujet : %1$s</string>
+    <string name="briefing_original_reporting">Article d’origine</string>
+    <string name="briefing_region_us">États-Unis</string>
+    <string name="briefing_region_india">Inde</string>
+    <string name="briefing_region_uk">Royaume-Uni</string>
+    <string name="briefing_region_global">Monde</string>
+    <string name="briefing_choose_edition">Choisir l’édition du Brief</string>
+    <string name="briefing_region_edition">Édition %1$s</string>
+    <string name="briefing_loading_edition">Chargement de l’édition %1$s…</string>
+    <string name="briefing_back">Retour</string>
+    <string name="briefing_preferences">Préférences du Brief</string>
+    <string name="briefing_sources">Sources</string>
+    <string name="briefing_open_sources">Ouvrir les sources</string>
+    <string name="briefing_try_again">Réessayer</string>
+    <string name="briefing_pause">Mettre le brief en pause</string>
+    <string name="briefing_resume">Reprendre le brief</string>
+    <string name="briefing_listen">Écouter le brief</string>
+    <string name="briefing_finished">Terminé</string>
+    <string name="briefing_default_region">Région par défaut du Brief</string>
+    <string name="briefing_default_region_description">L’accueil et le Brief s’ouvrent sur cette édition. Vous pouvez changer d’édition sans modifier votre choix par défaut.</string>
+    <string name="briefing_follow_app_region">Suivre la région de l’appli</string>
+    <string name="briefing_done">OK</string>
+    <string name="briefing_disclaimer">Ce brief utilise des résumés et une narration générés par IA. Consultez les sources d’origine pour l’article complet.</string>
+    <string name="briefing_report_issue">Signaler un problème</string>
+    <string name="briefing_unavailable">Cette édition n’est pas disponible. Réessayez ou choisissez une autre région.</string>
+    <string name="briefing_load_error">Impossible de charger cette édition. Vérifiez votre connexion et réessayez.</string>
+    <string name="briefing_hide">Masquer le brief</string>
+    <string name="briefing_cancel_hide">Ne plus masquer le brief</string>
+    <string name="briefing_listen_minutes">~%1$d min d’écoute</string>
+    <string name="briefing_remaining_minutes">~%1$d min restantes</string>
+    <string name="briefing_hide_today_title">Masquer le brief du jour ?</string>
+    <string name="briefing_hide_today_description">Il reviendra avec la prochaine édition quotidienne.</string>
+    <string name="briefing_hide_today">Masquer aujourd’hui</string>
+    <string name="briefing_always_hide">Toujours masquer le Brief</string>
+    <string name="briefing_always_hide_title">Toujours masquer le Brief ?</string>
+    <string name="briefing_always_hide_description">Le Brief n’apparaîtra plus sur l’accueil. Vous pouvez le réactiver dans Paramètres → Bibliothèque → LeaveMeAlone.</string>
+    <string name="briefing_confirm_always_hide">Toujours masquer</string>
+    <string name="briefing_send_feedback">Envoyer un avis</string>
+    <string name="briefing_card_pause">Pause</string>
+    <string name="briefing_card_resume">Reprendre</string>
+    <string name="briefing_card_listen">Écouter</string>
+    <string name="briefing_open">Ouvrir le brief</string>
+    <plurals name="briefing_story_count">
+        <item quantity="one">%d sujet</item>
+        <item quantity="other">%d sujets</item>
+    </plurals>
+    <plurals name="briefing_source_count">
+        <item quantity="one">%d source</item>
+        <item quantity="other">%d sources</item>
+    </plurals>
+</resources>

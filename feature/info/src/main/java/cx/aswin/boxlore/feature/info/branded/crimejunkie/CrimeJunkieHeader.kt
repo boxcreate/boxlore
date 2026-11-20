@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.R
@@ -41,7 +42,6 @@ import cx.aswin.boxlore.feature.info.branded.BrandedCopyrightButton
 import cx.aswin.boxlore.feature.info.branded.BrandedDescription
 import cx.aswin.boxlore.feature.info.branded.BrandedDescriptionExtras
 import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
-import java.util.Locale
 
 /**
  * Fingerprint: the official splatter mark over a fingerprint drawn in code, the wordmark, the
@@ -96,7 +96,7 @@ private fun Fingerprint(alpha: Float, modifier: Modifier) {
 private fun PublisherLine(podcast: Podcast, palette: CrimeJunkiePalette) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-            podcast.artist.uppercase(Locale.getDefault()),
+            podcast.artist.uppercase(currentLocale()),
             style = brandedSansStyle(11.sp, 14.sp, weight = 600).copy(letterSpacing = 1.8.sp),
             color = palette.sub,
             maxLines = 1,

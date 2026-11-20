@@ -27,6 +27,7 @@ It does not own analytics event storage, playback behaviour, ranking storage, ca
 - `AutoDownloadBackgroundSettings`: installation-local consent for background auto-download checks (off, unmetered-only, charging optional by default).
 - `NpsSurveySchedule`, `NpsSurveyRule`, `NpsSurveyStore`: pure survey timing rules and their backup-excluded store.
 - `PlaybackSkipBounds`, `EngagementPromptConstants`: shared bounds and thresholds.
+- `AppLanguage`: the App language choices (system default, English, Spanish, Brazilian Portuguese, German, French) with stable BCP 47 `tag`s and each language's `nativeName`; `fromTag` maps stored and system tags. `AppLanguageMatcher.suggest` picks the translation onboarding offers from the phone's language list, then its region. `:app` applies the choice; see [translating](../../docs/i18n/TRANSLATING.md).
 - `BoxcastPrefs.resolveLearnerLogEnabled(isDebugBuild)`: on by default in debug; off in release unless explicitly stored as `true`.
 
 ## Internal structure
@@ -57,6 +58,7 @@ src/main/java/cx/aswin/boxlore/core/prefs/
   AutoDownloadBackgroundSettings.kt
   PlaybackSkipBounds.kt, PlaybackAudioPreferences.kt   # skip bounds; trim silence (`trim_silence_enabled`, off by default)
   BoxcastPrefs.kt
+  AppLanguage.kt                     # AppLanguage, AppLanguageMatcher
   PrefsFileMigrator.kt               # file names, legacy reads, DualReadSharedPreferences
 ```
 
@@ -108,6 +110,7 @@ Contracts:
 - `sync_device_id` is backed up with `boxlore_prefs`; the listening device ID is not, so two phones restored from one backup stay distinct. `getListeningLegacyOrigin()` is `legacy-` plus the sync device ID.
 - Sync cursors in `boxlore_prefs`: `sync_last_timestamp`, `sync_last_user_id`, `sync_metadata_version`, `sync_listening_pulled_until`, `sync_listening_dates_sent_after`, `sync_listening_dates_sent`, `sync_listening_totals_sent`, `sync_listening_release_known_sent`.
 - Other `boxlore_prefs` keys include `onboarding_completed`, `user_genres`, `cached_byl_*`, `pending_auth_email`, `feedback_draft_*`, `featured_video_showcase_dismissed`, `tablet_ui_alpha_notice_acknowledged`, `has_requested_notification_permission`, `learner_log_enabled`.
+- `app_language` in `boxlore_prefs` holds the picked `AppLanguage.tag` (empty for the phone's language); absent means never picked. Android 12 applies the language from it.
 - `AutoDownloadBackgroundSettings` is enabled only by its explicit setter; auto-download preferences and per-show flags never grant consent.
 
 ## Testing notes
@@ -124,6 +127,7 @@ Tests live in `core/prefs/src/test` (JUnit 5, Robolectric for DataStore and Shar
 | Content and discovery | `ContentLanguagePreferencesTest`, `BriefingEditionTest`, `DiscoverySectionPreferencesTest`, `DiscoverySectionLoaderTest` |
 | Prompts and survey | `ReviewPromptPreferencesTest`, `NpsSurveyScheduleTest`, `NpsSurveyStoreTest`, `AnnouncementPreferencesTest` |
 | Files and facade | `BoxcastPrefsTest`, `PrefsFileMigratorTest`, `AutoDownloadBackgroundSettingsTest` |
+| App language and its matching table | `AppLanguageTest` |
 
 ```bash
 ./gradlew :core:prefs:testDebugUnitTest

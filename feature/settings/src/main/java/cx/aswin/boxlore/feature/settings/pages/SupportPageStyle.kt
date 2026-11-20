@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+import android.content.res.Resources
+import androidx.annotation.StringRes
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -30,12 +32,13 @@ internal data class SupportPageStyle(
     val codenameFont: SupportWorldFont,
     /** Null keeps the app's text font for tier names. */
     val titleFont: SupportWorldFont?,
-    val featuredChip: String,
-    val ctaVerb: String,
+    @StringRes val featuredChip: Int,
+    /** The pay button: "Deploy %1$s", where %1$s is the tier's name. */
+    @StringRes val ctaVerb: Int,
     /** Null keeps the power cell's bolt and heart. */
     val ctaIcon: ImageVector?,
-    /** Completes "… helps fund our servers", e.g. "backing a power cell" or "every snack". */
-    val supportPhrase: String,
+    /** The mission lines, which name what a contribution backs, e.g. "backing a power cell" or "every snack". */
+    val mission: SupportMissionCopy,
     val cardSurface: Color,
     val notice: (index: Int, accent: Color) -> SupportNoticeContent,
     /** Backdrop, platform, particles and props of a world. Null is today's power-cell page. */
@@ -50,10 +53,10 @@ internal val ControlSupportPageStyle = SupportPageStyle(
     background = Color.Black,
     codenameFont = StalinistOne,
     titleFont = null,
-    featuredChip = "★ SUPREME PATRON UNIT",
-    ctaVerb = "Deploy",
+    featuredChip = R.string.settings_support_featured_control,
+    ctaVerb = R.string.settings_support_cta_control,
     ctaIcon = null,
-    supportPhrase = "backing a power cell",
+    mission = SupportMissionCopy(R.string.settings_support_mission_companion_control, R.string.settings_support_mission_open_control),
     cardSurface = Color(0xFF0D0D14),
     notice = { index, accent ->
         val tier = SUPPORT_TIER_CARDS[index]
@@ -78,16 +81,16 @@ internal fun supportWorldPageStyle(skin: SupportWorldSkin): SupportPageStyle = S
             iconRes = skin.tierArt[index],
             codenameLine1 = words.first(),
             codenameLine2 = words.drop(1).joinToString(" "),
-            loreDescription = "",
+            loreDescription = null,
         )
     },
     background = skin.palette.background,
     codenameFont = skin.display,
     titleFont = skin.name,
-    featuredChip = "★ LEGENDARY",
+    featuredChip = R.string.settings_support_featured_world,
     ctaVerb = skin.ctaVerb,
     ctaIcon = skin.ctaIcon,
-    supportPhrase = "every ${skin.missionNoun}",
+    mission = skin.mission,
     cardSurface = skin.palette.surface,
     notice = { index, accent -> skin.noticeContent(index, accent) },
     skin = skin,
@@ -100,31 +103,41 @@ internal fun supportWorldPageStyle(skin: SupportWorldSkin): SupportPageStyle = S
 internal fun supportCodenameFontSize(fullSize: Float, measuredWidth: Float, availableWidth: Float): Float =
     if (measuredWidth <= availableWidth || measuredWidth <= 0f) fullSize else fullSize * availableWidth / measuredWidth
 
-/** [supportPhrase] names what a contribution backs, e.g. "backing a power cell" or "every snack". */
+/** A world's two mission lines: one for listeners with five or more hours, one for everyone else. */
+internal data class SupportMissionCopy(
+    /** "If boxlore has been a great companion across your %1$s of listening, …"; %1$s is the hours. */
+    @StringRes val companion: Int,
+    @StringRes val open: Int,
+)
+
+/** The mission paragraph, with the listening hours in bold once there are five or more. */
 internal fun buildSupportMissionAnnotatedString(
+    resources: Resources,
     totalListeningHours: Long?,
-    supportPhrase: String = ControlSupportPageStyle.supportPhrase,
+    mission: SupportMissionCopy = ControlSupportPageStyle.mission,
 ): AnnotatedString =
     buildAnnotatedString {
-        append("Software that helps people learn, listen, and explore should simply exist without a catch. ")
+        append(resources.getString(R.string.settings_support_mission_intro))
+        append(" ")
         if (totalListeningHours != null && totalListeningHours >= 5L) {
-            append("If boxlore has been a great companion across your ")
-            withStyle(
-                SpanStyle(
-                    fontWeight = GoogleSansWeight.bold,
-                    color = Color.White,
-                ),
-            ) {
-                append("$totalListeningHours hours")
+            val hoursCount = totalListeningHours.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+            val hours = resources.getQuantityString(R.plurals.settings_support_listening_hours, hoursCount, hoursCount)
+            val sentence = resources.getString(mission.companion, hours)
+            val start = sentence.indexOf(hours)
+            if (start < 0) {
+                append(sentence)
+            } else {
+                append(sentence.substring(0, start))
+                withStyle(SpanStyle(fontWeight = GoogleSansWeight.bold, color = Color.White)) { append(hours) }
+                append(sentence.substring(start + hours.length))
             }
-            append(" of listening, $supportPhrase helps keep the app free and ad-free for everyone.")
         } else {
-            append("No ads, no paywalls. ${supportPhrase.replaceFirstChar { it.uppercaseChar() }} ")
-            append("helps fund our servers and keep boxlore open for everyone.")
+            append(resources.getString(mission.open))
         }
     }
 
 internal fun getSupportMissionText(
+    resources: Resources,
     totalListeningHours: Long?,
-    supportPhrase: String = ControlSupportPageStyle.supportPhrase,
-): String = buildSupportMissionAnnotatedString(totalListeningHours, supportPhrase).text
+    mission: SupportMissionCopy = ControlSupportPageStyle.mission,
+): String = buildSupportMissionAnnotatedString(resources, totalListeningHours, mission).text

@@ -14,18 +14,22 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.auth.AuthRepository
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.core.model.text.resolve
+import cx.aswin.boxlore.feature.settings.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 internal sealed interface AccountDeletionOutcome {
     data object Success : AccountDeletionOutcome
     data object ReauthRequired : AccountDeletionOutcome
-    data class Failure(val message: String) : AccountDeletionOutcome
+    data class Failure(val message: UiText) : AccountDeletionOutcome
 }
 
 internal fun resolveAccountDeletionOutcome(result: Result<*>?): AccountDeletionOutcome {
@@ -49,13 +53,13 @@ internal fun handleDeleteAccount(
     scope.launch {
         when (val outcome = resolveAccountDeletionOutcome(authRepository?.deleteAccount())) {
             AccountDeletionOutcome.Success -> {
-                Toast.makeText(context, "Account deleted", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, R.string.account_deleted_toast, Toast.LENGTH_SHORT).show()
             }
             AccountDeletionOutcome.ReauthRequired -> {
                 onReauthRequired()
             }
             is AccountDeletionOutcome.Failure -> {
-                Toast.makeText(context, outcome.message, Toast.LENGTH_LONG).show()
+                Toast.makeText(context, outcome.message.resolve(context), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -96,17 +100,15 @@ private fun DeleteAccountConfirmationDialog(
     TrackScreenView("delete_account_confirmation")
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete Account", fontWeight = GoogleSansWeight.bold) },
+        title = { Text(stringResource(R.string.account_delete_dialog_title), fontWeight = GoogleSansWeight.bold) },
         text = {
             Column(Modifier.tabletSheetScroll()) {
                 Text(
-                    "Are you sure you want to delete your boxlore account? " +
-                        "This permanently removes your cloud profile and cross-device sync data. " +
-                        "Your local downloads and podcast catalog on this device will not be erased.",
+                    stringResource(R.string.account_delete_dialog_body),
                 )
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = "Learn how your data is handled after deletion",
+                    text = stringResource(R.string.account_delete_dialog_learn_more),
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = GoogleSansWeight.medium,
@@ -119,12 +121,12 @@ private fun DeleteAccountConfirmationDialog(
                 onClick = onConfirmDelete,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
             ) {
-                Text("Delete Permanently")
+                Text(stringResource(R.string.account_delete_dialog_confirm))
             }
         },
         dismissButton = {
             OutlinedButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.settings_cancel))
             }
         },
     )
@@ -138,21 +140,20 @@ private fun ReauthRequiredDialog(
     TrackScreenView("account_reauthentication_required")
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Recent Sign-In Required", fontWeight = GoogleSansWeight.bold) },
+        title = { Text(stringResource(R.string.account_reauth_dialog_title), fontWeight = GoogleSansWeight.bold) },
         text = {
             Text(
-                "For your security, deleting your account requires recent authentication. " +
-                    "Please sign out and sign back in, then try deleting your account again.",
+                stringResource(R.string.account_reauth_dialog_body),
             )
         },
         confirmButton = {
             Button(onClick = onSignOutToReauth) {
-                Text("Sign Out to Re-authenticate")
+                Text(stringResource(R.string.account_reauth_dialog_confirm))
             }
         },
         dismissButton = {
             OutlinedButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.settings_cancel))
             }
         },
     )

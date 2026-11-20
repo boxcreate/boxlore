@@ -104,6 +104,7 @@ import cx.aswin.boxlore.feature.explore.components.ExploreVibeCard
 import cx.aswin.boxlore.feature.explore.components.ExploreVibeChipRow
 import cx.aswin.boxlore.feature.explore.components.SearchTabSelector
 import cx.aswin.boxlore.feature.explore.components.exploreNextPageFooter
+import cx.aswin.boxlore.feature.explore.components.exploreTopHeaderTitle
 import cx.aswin.boxlore.feature.explore.components.exploreTopicResults
 import cx.aswin.boxlore.feature.explore.components.rememberExploreTabPagerState
 import cx.aswin.boxlore.feature.explore.logic.ExploreBrowseLogic
@@ -194,7 +195,7 @@ fun ExploreContent(
         }
         is ExploreUiState.Error -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = "Error: ${uiState.message}")
+                Text(text = stringResource(R.string.explore_error_message, uiState.message))
             }
             return
         }
@@ -684,11 +685,7 @@ fun ExploreContent(
                             // Scrollable headings remain part of the feed.
                             if (browseTab == 0) {
                                 item(span = StaggeredGridItemSpan.FullLine) {
-                                    val headerTitle = if (state.currentCategory == "All") {
-                                        "Top charts"
-                                    } else {
-                                        "Top in ${state.currentCategory}"
-                                    }
+                                    val headerTitle = exploreTopHeaderTitle(state.currentCategory)
                                     ExploreSectionHeader(
                                         title = headerTitle,
                                         regionLabel = regionDisplayLabel(activeRegionCode),

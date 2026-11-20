@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.explore.components
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -52,36 +53,44 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.AdaptiveOverflowRow
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryExpressiveTheme
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
+import cx.aswin.boxlore.feature.explore.R
 
 // Synced with GenreSelector.kt / onboarding search icons.
-internal data class ExploreGenreItem(val label: String, val value: String, val icon: ImageVector)
+/** [value] is the category key sent to the API and analytics; [labelRes] the chip text; [nameRes] the full name for headings. */
+internal data class ExploreGenreItem(
+    @StringRes val labelRes: Int,
+    val value: String,
+    val icon: ImageVector,
+    @StringRes val nameRes: Int = labelRes,
+)
 
 internal val EXPLORE_GENRES = listOf(
-    ExploreGenreItem("News", "News", Icons.Rounded.Newspaper),
-    ExploreGenreItem("Tech", "Technology", Icons.Rounded.Computer),
-    ExploreGenreItem("Business", "Business", Icons.Rounded.Work),
-    ExploreGenreItem("Comedy", "Comedy", Icons.Rounded.SentimentVerySatisfied),
-    ExploreGenreItem("True Crime", "True Crime", Icons.Rounded.Fingerprint),
-    ExploreGenreItem("Sports", "Sports", Icons.Rounded.SportsBaseball),
-    ExploreGenreItem("Health", "Health", Icons.Rounded.FavoriteBorder),
-    ExploreGenreItem("History", "History", Icons.Rounded.AccountBalance),
-    ExploreGenreItem("Arts", "Arts", Icons.Rounded.Palette),
-    ExploreGenreItem("Society", "Society & Culture", Icons.Rounded.Person),
-    ExploreGenreItem("Education", "Education", Icons.Rounded.School),
-    ExploreGenreItem("Science", "Science", Icons.Rounded.Science),
-    ExploreGenreItem("TV & Film", "TV & Film", Icons.Rounded.Movie),
-    ExploreGenreItem("Fiction", "Fiction", Icons.Rounded.AutoStories),
-    ExploreGenreItem("Music", "Music", Icons.Rounded.MusicNote),
-    ExploreGenreItem("Religion", "Religion & Spirituality", Icons.Rounded.Star),
-    ExploreGenreItem("Family", "Kids & Family", Icons.Rounded.Face),
-    ExploreGenreItem("Leisure", "Leisure", Icons.Rounded.Weekend),
-    ExploreGenreItem("Govt", "Government", Icons.Rounded.Gavel),
+    ExploreGenreItem(R.string.explore_genre_news, "News", Icons.Rounded.Newspaper),
+    ExploreGenreItem(R.string.explore_genre_tech, "Technology", Icons.Rounded.Computer, R.string.explore_genre_name_technology),
+    ExploreGenreItem(R.string.explore_genre_business, "Business", Icons.Rounded.Work),
+    ExploreGenreItem(R.string.explore_genre_comedy, "Comedy", Icons.Rounded.SentimentVerySatisfied),
+    ExploreGenreItem(R.string.explore_genre_true_crime, "True Crime", Icons.Rounded.Fingerprint),
+    ExploreGenreItem(R.string.explore_genre_sports, "Sports", Icons.Rounded.SportsBaseball),
+    ExploreGenreItem(R.string.explore_genre_health, "Health", Icons.Rounded.FavoriteBorder),
+    ExploreGenreItem(R.string.explore_genre_history, "History", Icons.Rounded.AccountBalance),
+    ExploreGenreItem(R.string.explore_genre_arts, "Arts", Icons.Rounded.Palette),
+    ExploreGenreItem(R.string.explore_genre_society, "Society & Culture", Icons.Rounded.Person, R.string.explore_genre_name_society),
+    ExploreGenreItem(R.string.explore_genre_education, "Education", Icons.Rounded.School),
+    ExploreGenreItem(R.string.explore_genre_science, "Science", Icons.Rounded.Science),
+    ExploreGenreItem(R.string.explore_genre_tv_film, "TV & Film", Icons.Rounded.Movie),
+    ExploreGenreItem(R.string.explore_genre_fiction, "Fiction", Icons.Rounded.AutoStories),
+    ExploreGenreItem(R.string.explore_genre_music, "Music", Icons.Rounded.MusicNote),
+    ExploreGenreItem(R.string.explore_genre_religion, "Religion & Spirituality", Icons.Rounded.Star, R.string.explore_genre_name_religion),
+    ExploreGenreItem(R.string.explore_genre_family, "Kids & Family", Icons.Rounded.Face, R.string.explore_genre_name_family),
+    ExploreGenreItem(R.string.explore_genre_leisure, "Leisure", Icons.Rounded.Weekend),
+    ExploreGenreItem(R.string.explore_genre_govt, "Government", Icons.Rounded.Gavel, R.string.explore_genre_name_government),
 )
 
 /**
@@ -136,10 +145,10 @@ private fun ExploreGenreSelectorContent(
             modifier = Modifier.padding(horizontal = 6.dp),
             item = { index ->
                 if (index == 0) {
-                    ExploreGenreFilterChip("All", selectedCategory == "All", { onCategorySelected("All") }, Icons.Rounded.Apps)
+                    ExploreGenreFilterChip(stringResource(R.string.explore_genre_all), selectedCategory == "All", { onCategorySelected("All") }, Icons.Rounded.Apps)
                 } else {
                     val genre = EXPLORE_GENRES[index - 1]
-                    ExploreGenreFilterChip(genre.label, selectedCategory == genre.value, { onCategorySelected(genre.value) }, genre.icon)
+                    ExploreGenreFilterChip(stringResource(genre.labelRes), selectedCategory == genre.value, { onCategorySelected(genre.value) }, genre.icon)
                 }
             },
             onWidthChanged = { showSheet = false },
@@ -154,7 +163,7 @@ private fun ExploreGenreSelectorContent(
         ) {
             item {
                 ExploreGenreFilterChip(
-                    label = "All",
+                    label = stringResource(R.string.explore_genre_all),
                     selected = selectedCategory == "All",
                     onClick = { onCategorySelected("All") },
                     icon = Icons.Rounded.Apps,
@@ -163,7 +172,7 @@ private fun ExploreGenreSelectorContent(
 
             items(displayGenres, key = { it.value }) { genre ->
                 ExploreGenreFilterChip(
-                    label = genre.label,
+                    label = stringResource(genre.labelRes),
                     selected = selectedCategory == genre.value,
                     onClick = { onCategorySelected(genre.value) },
                     icon = genre.icon,
@@ -172,7 +181,7 @@ private fun ExploreGenreSelectorContent(
 
             item {
                 AssistChip(
-                    label = { Text("More") },
+                    label = { Text(stringResource(R.string.explore_genre_more)) },
                     onClick = { showSheet = true },
                     trailingIcon = { Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null) },
                     modifier = Modifier.heightIn(min = 48.dp),
@@ -201,7 +210,7 @@ private fun ExploreGenreSelectorContent(
 @Composable
 private fun ExploreMoreGenresChip(onClick: () -> Unit) {
     AssistChip(
-        label = { Text("More") },
+        label = { Text(stringResource(R.string.explore_genre_more)) },
         onClick = onClick,
         trailingIcon = { Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null) },
         modifier = Modifier.heightIn(min = 48.dp),
@@ -243,7 +252,7 @@ private fun ExploreGenreSheetContent(selectedCategory: String, genres: List<Expl
             .padding(bottom = 48.dp),
     ) {
         Text(
-            text = "Browse Genres",
+            text = stringResource(R.string.explore_genre_browse_title),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 16.dp),
@@ -256,7 +265,7 @@ private fun ExploreGenreSheetContent(selectedCategory: String, genres: List<Expl
         ) {
             if (includeAll) {
                 ExploreGenreFilterChip(
-                label = "All",
+                label = stringResource(R.string.explore_genre_all),
                 selected = selectedCategory == "All",
                 onClick = {
                     onCategorySelected("All")
@@ -267,7 +276,7 @@ private fun ExploreGenreSheetContent(selectedCategory: String, genres: List<Expl
 
             genres.forEach { genre ->
                 ExploreGenreFilterChip(
-                    label = genre.label,
+                    label = stringResource(genre.labelRes),
                     selected = selectedCategory == genre.value,
                     onClick = {
                         onCategorySelected(genre.value)
@@ -277,4 +286,12 @@ private fun ExploreGenreSheetContent(selectedCategory: String, genres: List<Expl
             }
         }
     }
+}
+
+/** The Top tab heading: "Top charts", or "Top in" a genre's full name (an unknown category key shows as given). */
+@Composable
+internal fun exploreTopHeaderTitle(category: String): String {
+    if (category == "All") return stringResource(R.string.explore_top_charts)
+    val genre = EXPLORE_GENRES.find { it.value == category }
+    return stringResource(R.string.explore_top_in_genre, genre?.let { stringResource(it.nameRes) } ?: category)
 }

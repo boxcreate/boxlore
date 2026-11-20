@@ -1,0 +1,40 @@
+# Listener text still hard-coded in Kotlin (HardcodedTextGuardTest). This list may only shrink.
+# Regenerate after moving text into resources: docs/i18n/TRANSLATING.md. Format: file<TAB>literal.
+# Total 37. Per module: core/catalog 27, core/designsystem 2, core/model 7, feature/settings 1
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/ContentContextEngine.kt	A balanced mix for whenever you’re listening.
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/ContentContextEngine.kt	Anytime picks
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	A brighter start
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	A good laugh
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	Business in focus
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	Clear answers to curious questions
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	Comedy and conversation for winding down
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	Creative spark
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	Film, television, and culture worth talking about
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	Fresh perspectives from art and design
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	Game time
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	Ideas and stories with a little lift
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	Investigations that keep you listening
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	Markets, technology, and the people moving them
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	Mystery & suspense
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	On screen
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	Stories and analysis from across sport
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	Stories from history
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	Tech right now
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	The ideas changing how we live and work
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	The past, told like it happened yesterday
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	The stories shaping today
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	True crime after dark
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	Twists, tension, and stories for the night
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	What's happening
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/content/CuratedMoods.kt	Worth knowing
+core/catalog/src/main/java/cx/aswin/boxlore/core/catalog/sync/QueueItemHydration.kt	Episode ${dto.episodeId}
+core/designsystem/src/main/java/cx/aswin/boxlore/core/designsystem/component/BoxLoreNavigationBar.kt	Classic
+core/designsystem/src/main/java/cx/aswin/boxlore/core/designsystem/component/BoxLoreNavigationBar.kt	Floating
+core/model/src/main/java/cx/aswin/boxlore/core/model/FolderDisplaySize.kt	Compact
+core/model/src/main/java/cx/aswin/boxlore/core/model/FolderDisplaySize.kt	Featured
+core/model/src/main/java/cx/aswin/boxlore/core/model/FolderDisplaySize.kt	Panel
+core/model/src/main/java/cx/aswin/boxlore/core/model/FolderDisplaySize.kt	Shelf
+core/model/src/main/java/cx/aswin/boxlore/core/model/FolderDisplaySize.kt	Showcase
+core/model/src/main/java/cx/aswin/boxlore/core/model/FolderDisplaySize.kt	Tall
+core/model/src/main/java/cx/aswin/boxlore/core/model/FolderDisplaySize.kt	Wide
+feature/settings/src/main/java/cx/aswin/boxlore/feature/settings/pages/AppearanceTextPage.kt	Aa

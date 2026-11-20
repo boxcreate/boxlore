@@ -35,6 +35,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -143,7 +144,7 @@ private fun Bubble(
     val diameter = with(LocalDensity.current) { diameterPx.toDp() }
     val label =
         if (show.newEpisodes > 0) {
-            "${show.title}, ${pluralStringResource(R.plurals.wear_new_episode_count, show.newEpisodes, show.newEpisodes)}"
+            stringResource(R.string.wear_show_with_new_episodes, show.title, pluralStringResource(R.plurals.wear_new_episode_count, show.newEpisodes, show.newEpisodes))
         } else {
             show.title
         }

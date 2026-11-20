@@ -44,6 +44,8 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -52,6 +54,7 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
 import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.LocalBrandedPage
+import java.util.Locale
 
 internal const val EPISODE_TITLE_ROW_TAG = "podcast_info_episode_title_row"
 internal const val EPISODE_TITLE_ROW_PLAY_TAG = "podcast_info_episode_title_row_play"
@@ -152,7 +155,7 @@ internal fun NormalEpisodeTitleRow(
             isPlaying = playState?.isPlaying == true,
             isResume = playState?.isResume == true,
             progress = playState?.progress ?: 0f,
-            timeLeft = playState?.timeLeft,
+            timeLeft = playState?.timeLeft?.asString(),
             isCompleted = episode.id in ui.indicators.completedEpisodeIds,
             isUpNext = episode.id == ui.autoScrolledEpisodeId,
             isArchived = episode.id in ui.indicators.archivedEpisodeIds,
@@ -200,7 +203,12 @@ private fun EpisodeTitleRowDetails(episode: Episode, state: EpisodeTitleRowState
         }
         Text(
             text = episodeDetailsLine(
-                parts = episodeTitleRowDetailParts(episode, timeLeft = state.timeLeft.takeIf { underway }),
+                parts = episodeTitleRowDetailParts(
+                    episode,
+                    timeLeft = state.timeLeft.takeIf { underway },
+                    seasonEpisode = seasonEpisodeShort(episode.seasonNumber, episode.episodeNumber)?.asString().orEmpty(),
+                    locale = currentLocale(),
+                ),
                 highlightIndex = 1,
                 highlight = timeHighlight?.let { SpanStyle(color = it, fontFamily = highlightFamily) },
             ),
@@ -281,23 +289,11 @@ private fun EpisodeTitleRowSelectionMark(isSelected: Boolean) {
 internal fun episodeTitleRowDetailParts(
     episode: Episode,
     timeLeft: String?,
+    seasonEpisode: String,
+    locale: Locale,
     nowSeconds: Long = System.currentTimeMillis() / 1000,
-): List<String> {
-    val seasonEpisode = buildString {
-        episode.seasonNumber?.let { append("S$it ") }
-        episode.episodeNumber?.let { append("E$it") }
-    }.trim()
-    return listOf(
-        seasonEpisode,
-        formatEpisodeRelativeDate(episode.publishedDate, nowSeconds),
-        timeLeft?.takeIf { it.isNotBlank() } ?: formatEpisodeListDuration(episode.duration),
-    )
-}
-
-/** "1h 5m" or "45m", as the full episode card writes it; blank when the length is unknown. */
-internal fun formatEpisodeListDuration(seconds: Int): String {
-    if (seconds <= 0) return ""
-    val hours = seconds / 3600
-    val minutes = (seconds % 3600) / 60
-    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
-}
+): List<String> = listOf(
+    seasonEpisode,
+    formatEpisodeRelativeDate(episode.publishedDate, locale, nowSeconds),
+    timeLeft?.takeIf { it.isNotBlank() } ?: formatEpisodeListDuration(episode.duration, locale),
+)

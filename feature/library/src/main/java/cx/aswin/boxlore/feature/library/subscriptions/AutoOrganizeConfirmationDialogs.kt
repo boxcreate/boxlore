@@ -10,10 +10,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.library.R
 
 /** Asks before auto-organize is turned off, from its page; turning it on is done on that page. */
 @Composable
@@ -26,7 +28,7 @@ internal fun AutoOrganizeDisableDialog(
         onDismissRequest = onCancel,
         title = {
             Text(
-                text = "Turn off auto-organize?",
+                text = stringResource(R.string.library_auto_organize_turn_off_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = GoogleSansWeight.bold,
             )
@@ -38,12 +40,12 @@ internal fun AutoOrganizeDisableDialog(
             ) {
                 // Genre folders keep their genre link, so they keep filling after this (by design).
                 Text(
-                    text = "boxlore stops making new genre folders. The genre folders you have stay, and new shows of their genre still join them.",
+                    text = stringResource(R.string.library_auto_organize_turn_off_body),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "To get rid of one, delete the folder. Its shows stay in your library.",
+                    text = stringResource(R.string.library_auto_organize_turn_off_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -54,14 +56,14 @@ internal fun AutoOrganizeDisableDialog(
                 onClick = onProceed,
                 shape = ExpressiveShapes.Pill,
             ) {
-                Text("Turn off", fontWeight = GoogleSansWeight.bold)
+                Text(stringResource(R.string.library_turn_off), fontWeight = GoogleSansWeight.bold)
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onCancel,
             ) {
-                Text("Cancel", fontWeight = GoogleSansWeight.medium)
+                Text(stringResource(R.string.library_cancel), fontWeight = GoogleSansWeight.medium)
             }
         },
     )

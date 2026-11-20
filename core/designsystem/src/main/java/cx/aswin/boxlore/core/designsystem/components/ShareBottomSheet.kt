@@ -60,6 +60,7 @@ import cx.aswin.boxlore.core.designsystem.share.shareEpisodeDetails
 import cx.aswin.boxlore.core.designsystem.share.shareMoment
 import cx.aswin.boxlore.core.designsystem.share.sharePreviewSizeDp
 import cx.aswin.boxlore.core.designsystem.share.shareProgress
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.ShareLinkBuilder
@@ -84,7 +85,7 @@ fun ShareBottomSheet(
      * The card's details line ([sharePodcastDetails] for a show). For an episode it defaults to the
      * episode's length and date, as [ShareManager.shareEpisode] draws it.
      */
-    details: String? = episode?.let { shareEpisodeDetails(it.duration, it.publishedDate) },
+    details: String? = episode?.let { shareEpisodeDetails(it.duration, it.publishedDate, locale = currentLocale()) },
     onShare: (
         id: String,
         type: String,
@@ -154,7 +155,6 @@ internal fun ShareSheetBody(
     // The position captured when the switch turned on; null while it is off.
     var startsAtMs by rememberSaveable { mutableStateOf<Long?>(null) }
     val includeTimestamp = startsAtMs != null
-    val contentLabel = if (type == "podcast") "podcast" else "episode"
     val canStartAtTime = type == "episode" && showTimestampOption
     // The position decides whether a start time can be picked; once picked, it stays even if
     // playback goes back to the start.
@@ -185,13 +185,13 @@ internal fun ShareSheetBody(
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Share this $contentLabel",
+                    text = stringResource(if (type == "podcast") R.string.share_sheet_title_podcast else R.string.share_sheet_title_episode),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = GoogleSansWeight.bold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = "Share an artwork card by message or story, or copy its link.",
+                    text = stringResource(R.string.share_sheet_body),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -260,13 +260,13 @@ internal fun ShareSheetBody(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Start at ${formatShareTime(startsAtMs ?: currentPositionMs)}",
+                            text = stringResource(R.string.share_sheet_start_at, formatShareTime(startsAtMs ?: currentPositionMs)),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = GoogleSansWeight.bold,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
-                            text = "Include your current position",
+                            text = stringResource(R.string.share_sheet_start_at_body),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -286,7 +286,7 @@ internal fun ShareSheetBody(
 
         Spacer(modifier = Modifier.height(22.dp))
         Text(
-            text = "CHOOSE HOW TO SHARE",
+            text = stringResource(R.string.share_sheet_choose).uppercase(currentLocale()),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = GoogleSansWeight.bold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -294,8 +294,8 @@ internal fun ShareSheetBody(
         Spacer(modifier = Modifier.height(10.dp))
         SharePrimaryAction(
             icon = Icons.Rounded.ChatBubble,
-            title = "Send artwork card",
-            subtitle = "Artwork and link",
+            title = stringResource(R.string.share_sheet_send_card),
+            subtitle = stringResource(R.string.share_sheet_send_card_body),
             onClick = {
                 onShare(id, type, sharedStartMs, ShareTarget.MESSAGE)
                 onDismissRequest()
@@ -308,8 +308,8 @@ internal fun ShareSheetBody(
         ) {
             ShareSecondaryAction(
                 icon = Icons.Rounded.ContentCopy,
-                title = "Copy link",
-                subtitle = "Link only",
+                title = stringResource(R.string.share_sheet_copy_link),
+                subtitle = stringResource(R.string.share_sheet_copy_link_body),
                 onClick = {
                     copyShareLink(context, id, type, episode, sharedStartMs)
                     onDismissRequest()
@@ -318,8 +318,8 @@ internal fun ShareSheetBody(
             )
             ShareSecondaryAction(
                 icon = Icons.Rounded.AutoAwesome,
-                title = "Instagram Story",
-                subtitle = "Artwork + copied link",
+                title = stringResource(R.string.share_sheet_instagram),
+                subtitle = stringResource(R.string.share_sheet_instagram_body),
                 onClick = {
                     onShare(id, type, sharedStartMs, ShareTarget.INSTAGRAM_STORY)
                     onDismissRequest()

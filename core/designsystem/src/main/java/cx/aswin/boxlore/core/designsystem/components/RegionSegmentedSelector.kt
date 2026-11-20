@@ -34,15 +34,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.R
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.ContentRegion
 import cx.aswin.boxlore.core.model.ContentRegions
+import java.util.Locale
 
 /**
  * Content region picker (11 chart storefronts). Opens a Material 3 bottom sheet list.
@@ -54,10 +58,10 @@ fun RegionSegmentedSelector(
     activeRegion: String,
     onSwitchRegion: (String) -> Unit,
     modifier: Modifier = Modifier,
-    supportingText: String = "Charts and regional ranking",
+    supportingText: String = stringResource(R.string.content_region_supporting),
 ) {
     val selected = ContentRegions.canonicalize(activeRegion)
-    val label = ContentRegions.displayLabel(selected)
+    val label = contentRegionName(selected, currentLocale())
     var showSheet by remember { mutableStateOf(false) }
 
     RegionPickerTrigger(
@@ -99,8 +103,8 @@ fun ContentRegionPickerSheet(activeRegion: String, onSwitchRegion: (String) -> U
 /** Canonicalizes any known alias, or `null` if unknown. */
 fun canonicalRegionCode(code: String): String? = ContentRegions.canonicalizeOrNull(code)
 
-/** Display label for a stored region code (e.g. charts header chip). */
-fun regionDisplayLabel(code: String): String = ContentRegions.displayLabel(code)
+/** Display label for a stored region code (e.g. charts header chip) in [locale]; see [contentRegionName]. */
+fun regionDisplayLabel(code: String, locale: Locale = Locale.ENGLISH): String = contentRegionName(code, locale)
 
 @Composable
 private fun RegionPickerTrigger(label: String, supportingText: String, onClick: () -> Unit, modifier: Modifier = Modifier,) {
@@ -127,7 +131,7 @@ private fun RegionPickerTrigger(label: String, supportingText: String, onClick: 
             PreferenceGlyph(icon = Icons.Rounded.Public)
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Content region",
+                    text = stringResource(R.string.content_region_label),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -149,7 +153,7 @@ private fun RegionPickerTrigger(label: String, supportingText: String, onClick: 
             }
             Icon(
                 imageVector = Icons.Rounded.ExpandMore,
-                contentDescription = "Choose content region",
+                contentDescription = stringResource(R.string.content_region_choose),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -174,13 +178,13 @@ private fun RegionPickerBottomSheet(selectedCode: String, onSelect: (String) -> 
                 .padding(bottom = 28.dp),
         ) {
             Text(
-                text = "Content region",
+                text = stringResource(R.string.content_region_label),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = GoogleSansWeight.bold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                text = "Sets the top charts in Explore. Your languages stay as they are.",
+                text = stringResource(R.string.content_region_sheet_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
@@ -208,10 +212,11 @@ private fun RegionPickerBottomSheet(selectedCode: String, onSelect: (String) -> 
 
 @Composable
 private fun RegionPickerOptionRow(region: ContentRegion, selected: Boolean, onSelect: (String) -> Unit,) {
+    val locale = currentLocale()
     val recommended =
         region.recommendedLanguages
-            .mapNotNull { ContentRegions.LANGUAGE_LABELS[it] }
-            .joinToString(" · ")
+            .filter { it in ContentRegions.LANGUAGE_LABELS }
+            .joinToString(" · ") { capitalizedIn(contentLanguageName(it, locale), locale) }
     val scheme = MaterialTheme.colorScheme
     val containerColor = if (selected) scheme.primaryContainer else scheme.surfaceContainerHigh
     val contentColor = if (selected) scheme.onPrimaryContainer else scheme.onSurface
@@ -237,7 +242,7 @@ private fun RegionPickerOptionRow(region: ContentRegion, selected: Boolean, onSe
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             RegionPickerOptionCopy(
-                label = region.label,
+                label = contentRegionName(region.code, locale),
                 recommended = recommended,
                 selected = selected,
                 modifier = Modifier.weight(1f),
@@ -266,7 +271,7 @@ private fun RegionPickerOptionCopy(label: String, recommended: String, selected:
                     MaterialTheme.colorScheme.onSurfaceVariant
                 }
             Text(
-                text = "Suggested: $recommended",
+                text = stringResource(R.string.content_region_suggested, recommended),
                 style = MaterialTheme.typography.bodySmall,
                 color = suggestedColor,
             )

@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.R
@@ -45,7 +46,6 @@ import cx.aswin.boxlore.feature.info.branded.BrandedDescription
 import cx.aswin.boxlore.feature.info.branded.BrandedDescriptionExtras
 import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
-import java.util.Locale
 
 /**
  * Signal: the traced logo across the top over a faint pattern of the show's gadget icons, the
@@ -106,7 +106,7 @@ private fun PublisherLine() {
     val barlow = rememberWaveformBarlow()
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-            stringResource(R.string.waveform_publisher).uppercase(Locale.getDefault()),
+            stringResource(R.string.waveform_publisher).uppercase(currentLocale()),
             style = brandedTextStyle(barlow, 10.5.sp, 14.sp, letterSpacing = 2.4.sp).copy(fontWeight = FontWeight.SemiBold),
             color = WaveformColors.Publisher,
             maxLines = 1,

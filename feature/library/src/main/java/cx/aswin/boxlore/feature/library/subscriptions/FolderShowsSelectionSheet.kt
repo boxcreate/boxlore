@@ -40,6 +40,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,6 +51,7 @@ import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.model.artworkUrls
+import cx.aswin.boxlore.feature.library.R
 
 /**
  * Modal bottom sheet allowing users to add or remove subscribed shows from a [folder]
@@ -180,7 +183,7 @@ private fun FolderShowsSelectionHeader(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Add Shows to $folderName",
+                text = stringResource(R.string.library_folder_add_shows_to, folderName),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -188,7 +191,7 @@ private fun FolderShowsSelectionHeader(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = "$selectedCount selected",
+                text = pluralStringResource(R.plurals.library_selected_count, selectedCount, selectedCount),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Medium,
@@ -198,7 +201,7 @@ private fun FolderShowsSelectionHeader(
         IconButton(onClick = onDismissRequest) {
             Icon(
                 imageVector = Icons.Rounded.Close,
-                contentDescription = "Close",
+                contentDescription = stringResource(R.string.library_close),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -213,7 +216,7 @@ private fun FolderShowsSelectionSearchBar(
     OutlinedTextField(
         value = searchQuery,
         onValueChange = onSearchQueryChange,
-        placeholder = { Text("Search subscribed shows...") },
+        placeholder = { Text(stringResource(R.string.library_search_subscribed_shows)) },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Rounded.Search,
@@ -226,7 +229,7 @@ private fun FolderShowsSelectionSearchBar(
                 IconButton(onClick = { onSearchQueryChange("") }) {
                     Icon(
                         imageVector = Icons.Rounded.Close,
-                        contentDescription = "Clear",
+                        contentDescription = stringResource(R.string.library_clear),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -256,7 +259,7 @@ private fun FolderShowsSelectionFooter(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TextButton(onClick = onDismissRequest) {
-            Text("Cancel")
+            Text(stringResource(R.string.library_cancel))
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -265,7 +268,7 @@ private fun FolderShowsSelectionFooter(
             onClick = onSave,
             shape = RoundedCornerShape(14.dp),
         ) {
-            Text("Save")
+            Text(stringResource(R.string.library_save))
         }
     }
 }

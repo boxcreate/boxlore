@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_display_mode_title">Modo de exibição</string>
+    <string name="settings_navigation_bar_title">Barra de navegação</string>
+    <string name="settings_navigation_blur_title">Desfoque atrás da barra</string>
+    <string name="settings_navigation_blur_off">Desativado</string>
+    <string name="settings_navigation_blur_soft">Suave</string>
+    <string name="settings_navigation_blur_medium">Médio</string>
+    <string name="settings_navigation_blur_strong">Forte</string>
+    <string name="settings_navigation_start_title">Página inicial e abas</string>
+    <string name="settings_navigation_start_footer">A página inicial vale quando você abre o boxlore de novo. Links podem abrir outra página ou aba.</string>
+    <string name="settings_navigation_start_page">Página inicial</string>
+    <string name="settings_navigation_start_home">Início</string>
+    <string name="settings_navigation_start_subscriptions">Seguindo</string>
+    <string name="settings_navigation_start_downloads">Downloads</string>
+    <string name="settings_navigation_explore_opens_to">Explorar abre em</string>
+    <string name="settings_navigation_explore_for_you">Para você</string>
+    <!-- Explore opens to its Top tab; also the Subscriptions tabs sitting at the top -->
+    <string name="settings_navigation_tab_top">Top</string>
+    <string name="settings_navigation_subscriptions_opens_to">Seguindo abre em</string>
+    <string name="settings_navigation_subscriptions_shows">Podcasts</string>
+    <string name="settings_navigation_subscriptions_new_episodes">Episódios novos</string>
+    <string name="settings_navigation_subscriptions_tab_position">Posição das abas de Seguindo</string>
+    <string name="settings_navigation_tab_floating">Flutuante</string>
+    <string name="settings_player_miniplayer_title">Miniplayer</string>
+    <string name="settings_player_seek_buttons">Botões de avançar e voltar</string>
+    <string name="settings_player_seek_buttons_description">Mostra os controles de voltar e avançar ao lado de tocar e pausar</string>
+    <string name="settings_show_pages_episode_lists">Listas de episódios</string>
+    <string name="settings_show_pages_titles_only">Só os títulos dos episódios</string>
+    <string name="settings_show_pages_titles_only_description">Linhas curtas com título, data, duração e botão de tocar de cada episódio</string>
+    <string name="settings_home_top_bar_title">Barra superior</string>
+    <string name="settings_home_shortcuts_in_library">Mover atalhos do Início para a Biblioteca</string>
+    <string name="settings_home_shortcuts_in_library_description">Mostra Configurações e Feedback na Biblioteca em vez do Início</string>
+    <!-- Appearance overview: what each row shows under its title. -->
+    <!-- %1$s is the theme look's name, e.g. "boxlore classic". -->
+    <string name="settings_appearance_summary_theme_artwork">%1$s · cores da arte ativadas</string>
+    <!-- %1$s is the hero card style name (e.g. Block), %2$s what its colour choice does (e.g. dark cards). -->
+    <string name="settings_appearance_summary_home">Cards de destaque %1$s, %2$s</string>
+    <!-- %1$s is the player style name. -->
+    <string name="settings_appearance_summary_player_seek">%1$s · botões de avançar e voltar ativados</string>
+    <!-- %1$s is the bar style (Floating or Classic), %2$s the start page (Home, Subscriptions or Downloads). -->
+    <string name="settings_appearance_summary_navigation">Barra %1$s · abre em %2$s</string>
+    <!-- %1$s is the letter shape: Crisp, Soft or Round. -->
+    <string name="settings_appearance_summary_letters">Letras: %1$s</string>
+    <string name="settings_appearance_summary_widgets_theme_covers">Cores do tema do app · capas inteiras</string>
+    <string name="settings_appearance_summary_widgets_theme_shapes">Cores do tema do app · formas</string>
+    <string name="settings_appearance_summary_widgets_system_covers">Cores do sistema · capas inteiras</string>
+    <string name="settings_appearance_summary_widgets_system_shapes">Cores do sistema · formas</string>
+    <!-- What the hero colour choice does, shown after "<style> hero cards, ". Lowercase in English. -->
+    <string name="settings_hero_summary_dark_shade">sombreado escuro</string>
+    <string name="settings_hero_summary_theme_shade">sombreado do tema do app</string>
+    <string name="settings_hero_summary_artwork_shade">sombreado da arte</string>
+    <string name="settings_hero_summary_black_white">preto e branco</string>
+    <string name="settings_hero_summary_theme_tones">tons do tema do app</string>
+    <string name="settings_hero_summary_artwork_tones">tons da arte</string>
+    <string name="settings_hero_summary_full_color">cores originais</string>
+    <string name="settings_hero_summary_dark_cards">cards escuros</string>
+    <string name="settings_hero_summary_theme_color">cor do tema do app</string>
+    <string name="settings_hero_summary_artwork_color">cor da arte</string>
+    <!-- Screen-reader text for the hero preview. %1$s is the style name. -->
+    <string name="settings_hero_preview_description">Prévia dos cards de destaque %1$s</string>
+    <string name="settings_display_mode_system">Sistema</string>
+    <string name="settings_display_mode_light">Claro</string>
+    <string name="settings_display_mode_dark">Escuro</string>
+    <string name="settings_show_pages_full_rows">Linhas completas de episódios</string>
+    <!-- Letter shape names (Appearance › Text). -->
+    <string name="settings_letters_crisp">Nítidas</string>
+    <string name="settings_letters_soft">Suaves</string>
+    <string name="settings_letters_round">Redondas</string>
+    <!-- Navigation bar style names. -->
+    <string name="settings_navigation_style_floating">Flutuante</string>
+    <string name="settings_navigation_style_classic">Clássica</string>
+    <string name="settings_widgets_colors_title">Cores</string>
+    <string name="settings_widgets_colors_footer">Tema do app segue as cores e o modo que você escolheu. Sistema segue o modo e as cores do papel de parede do celular.</string>
+    <string name="settings_widgets_colors_app_theme">Tema do app</string>
+    <string name="settings_widgets_colors_system">Sistema</string>
+    <!-- Your Shows is the name of a widget. -->
+    <string name="settings_widgets_shows_covers_title">Capas do widget Seus podcasts</string>
+    <string name="settings_widgets_shows_covers_footer">Capas inteiras mostra cada capa sem cortes. Formas recorta as capas em círculos, arcos e bordas onduladas.</string>
+    <string name="settings_widgets_shows_covers_whole">Capas inteiras</string>
+    <string name="settings_widgets_shows_covers_shapes">Formas</string>
+    <string name="settings_widgets_add_title">Adicionar à tela inicial</string>
+    <string name="settings_widgets_by_hand_title">Widgets do boxlore</string>
+    <string name="settings_widgets_open_app_settings">Abrir configurações do app</string>
+    <!-- Screen-reader label for a widget's Add button. %1$s is the widget name. -->
+    <string name="settings_widgets_add_description">Adicionar %1$s à tela inicial</string>
+    <string name="settings_widgets_add">Adicionar</string>
+    <string name="settings_widgets_unanswered">Nada abriu? Seu celular pode estar bloqueando isso. Ative os atalhos da tela inicial para o boxlore nas configurações de apps do celular e tente de novo. Ou toque e segure um espaço vazio na tela inicial e escolha Widgets.</string>
+    <string name="settings_widgets_confirm">O app da tela inicial pede que você confirme.</string>
+    <string name="settings_widgets_by_hand">Para adicionar um widget do boxlore, toque e segure um espaço vazio na tela inicial e escolha Widgets.</string>
+    <string name="settings_text_letter_shape_title">Formato das letras</string>
+    <string name="settings_text_letter_shape_footer">Quão arredondadas as letras ficam em todo o app. Aparece mais nos títulos grandes; textos menores mudam menos.</string>
+    <string name="settings_text_preview_title">Prévia</string>
+    <string name="settings_text_preview_footer">Alguns celulares, como os Xiaomi com HyperOS, podem mostrar a fonte do sistema.</string>
+    <!-- Label above a sample line of a section header -->
+    <string name="settings_text_sample_section_label">Seção</string>
+    <string name="settings_text_sample_section">Sua seleção da manhã</string>
+    <string name="settings_text_sample_title_label">Título</string>
+    <string name="settings_text_sample_title">O resumo do dia</string>
+    <string name="settings_text_sample_body_label">Corpo</string>
+    <string name="settings_text_sample_body">Um episódio curto sobre curiosidade, ofício e hábitos de escuta.</string>
+    <string name="settings_text_sample_caption_label">Legenda</string>
+    <string name="settings_text_sample_caption">Atualizado agora · 24 min</string>
+    <string name="settings_theme_edit_custom">Editar tema personalizado</string>
+    <string name="settings_theme_create_custom">Criar tema personalizado</string>
+    <string name="settings_theme_custom_description">Escolha cores com prévia clara e escura</string>
+    <string name="settings_theme_artwork_colors">Usar cores da arte</string>
+    <string name="settings_theme_artwork_colors_description">Combina as páginas de episódios e podcasts com a arte deles</string>
+    <string name="settings_theme_colors_title">Cores</string>
+    <string name="settings_theme_look_classic">boxlore clássico</string>
+    <string name="settings_theme_look_classic_description">Cores marcantes sobre fundos neutros e frios.</string>
+    <string name="settings_theme_look_pure">Puro</string>
+    <string name="settings_theme_look_pure_description">Branco no modo claro. Preto total no modo escuro.</string>
+    <string name="settings_theme_look_material_description">Cores do papel de parede com fundos levemente tingidos.</string>
+    <string name="settings_theme_look_custom">Personalizado</string>
+    <string name="settings_theme_look_custom_description">Escolha suas cores e o estilo do fundo.</string>
+    <string name="settings_theme_section_title">Tema</string>
+</resources>

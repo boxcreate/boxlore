@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 
 /**
@@ -15,7 +16,7 @@ data class LibraryPlaylistsCard(val coverUrls: List<String> = emptyList(), val o
 @Composable
 internal fun LibraryPlaylistsMenuCard(card: LibraryPlaylistsCard) {
     LibraryMenuCard(
-        title = "Playlists",
+        title = stringResource(R.string.library_hub_playlists),
         icon = Icons.AutoMirrored.Rounded.PlaylistPlay,
         onClick = card.onClick,
         containerColor = MaterialTheme.colorScheme.secondaryContainer,

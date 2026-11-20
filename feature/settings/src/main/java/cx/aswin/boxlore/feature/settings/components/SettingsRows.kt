@@ -38,6 +38,8 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -47,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
+import cx.aswin.boxlore.feature.settings.R
 import kotlin.math.roundToInt
 
 private val CategoryCardHeight = 104.dp
@@ -240,7 +243,7 @@ internal fun SettingsDurationSliderRow(
     modifier: Modifier = Modifier,
     supportingText: String? = null,
     icon: SettingsDurationSliderIcon? = null,
-    zeroLabel: String = "Off",
+    zeroLabel: String = stringResource(R.string.settings_duration_off),
 ) {
     var pendingValue by remember(value.seconds) {
         mutableFloatStateOf(value.seconds.toFloat())
@@ -248,7 +251,7 @@ internal fun SettingsDurationSliderRow(
     val snappedSeconds =
         ((pendingValue / value.stepSeconds).roundToInt() * value.stepSeconds)
             .coerceIn(value.range.first, value.range.last)
-    val valueLabel = if (snappedSeconds == 0) zeroLabel else "$snappedSeconds seconds"
+    val valueLabel = if (snappedSeconds == 0) zeroLabel else pluralStringResource(R.plurals.settings_duration_seconds, snappedSeconds, snappedSeconds)
 
     Column(
         modifier =

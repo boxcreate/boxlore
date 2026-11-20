@@ -41,7 +41,6 @@ import cx.aswin.boxlore.feature.history.R
 import cx.aswin.boxlore.feature.history.timeline.TimelineTime
 import cx.aswin.boxlore.feature.history.timeline.currentLocale
 import cx.aswin.boxlore.feature.history.timeline.durationText
-import java.time.format.DateTimeFormatter
 
 /** A spot on the 400 × 890 story frame, in frame dp. */
 internal fun Modifier.at(x: Float, y: Float): Modifier = offset(x.dp, y.dp)
@@ -278,7 +277,7 @@ private fun StoryMonthBars(story: MonthStory, previousMs: Long, fg: Color, clock
 /** "Mon, Sep 14 · 2 h 32 min" above the chart, on the side away from Echo. */
 @Composable
 private fun BoxScope.StoryBiggestDayChip(story: MonthStory, palette: StoryPalette, clock: StoryClock, echoOnRight: Boolean) {
-    val day = story.biggestDay.first.format(DateTimeFormatter.ofPattern("EEE, MMM d", currentLocale()))
+    val day = TimelineTime.shortWeekdayDate(story.biggestDay.first, currentLocale())
     val text = stringResource(R.string.history_story_time_bubble, day, durationText(story.biggestDay.second))
     Box(
         Modifier.zIndex(StoryLayers.FRONT).at(if (echoOnRight) 22f else 200f, 604f).width(178.dp),

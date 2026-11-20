@@ -4,6 +4,7 @@ import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.PodcastEntity
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.info.components.PodcastPlaybackSettingsState
 import cx.aswin.boxlore.feature.info.components.appDefaultsSummary
@@ -164,10 +165,10 @@ class PodcastShowPlaybackWriterTest {
             skipEndingOverrideMs = null,
             globalPlaybackSpeed = 1.2f,
         )
-        assertEquals("1.2× · Beginning 30s · Ending Off", appDefaultsSummary(state))
-        assertEquals("1.2× · Beginning 30s · Ending Off · Trim silence on", appDefaultsSummary(state.copy(globalTrimSilence = true)))
-        assertEquals("App speed (1.2×)", appSpeedChoiceLabel(1.2f))
-        assertEquals("App setting (off)", appTrimSilenceChoiceLabel(false))
+        // The English of these lines is checked in EpisodeDurationFormatterTest, with resources.
+        assertEquals(UiText.res(R.string.podcast_playback_app_speed, "1.2×"), appSpeedChoiceLabel(1.2f))
+        assertEquals(UiText.res(R.string.podcast_playback_app_setting_off), appTrimSilenceChoiceLabel(false))
+        assertEquals(4, appDefaultsSummary(state.copy(globalTrimSilence = true)).size)
         assertTrue(state.usesDefaults)
         assertFalse(state.copy(playbackSpeedOverride = 1.5f).usesDefaults)
         assertFalse(state.copy(trimSilenceOverride = false).usesDefaults)

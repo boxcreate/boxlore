@@ -27,16 +27,4 @@ class EpisodeDetailsLineTest {
     fun `no highlight style leaves the line plain`() {
         assertTrue(episodeDetailsLine(listOf("3h ago", "40m"), highlightIndex = 0).spanStyles.isEmpty())
     }
-
-    @Test
-    fun `relative dates step from minutes to years`() {
-        val now = 100_000_000L
-        assertEquals("", formatEpisodeRelativeDate(0, now))
-        assertEquals("55m ago", formatEpisodeRelativeDate(now - 55 * 60, now))
-        assertEquals("20h ago", formatEpisodeRelativeDate(now - 20 * 3600, now))
-        assertEquals("3d ago", formatEpisodeRelativeDate(now - 3 * 86400, now))
-        assertEquals("2w ago", formatEpisodeRelativeDate(now - 14 * 86400, now))
-        assertEquals("2mo ago", formatEpisodeRelativeDate(now - 60 * 86400, now))
-        assertEquals("1y ago", formatEpisodeRelativeDate(now - 365 * 86400, now))
-    }
 }

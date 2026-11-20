@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_library_charts_title">Rankings</string>
+    <string name="settings_library_charts_footer">Define los rankings principales de Explorar.</string>
+    <string name="settings_library_country">País</string>
+    <string name="settings_library_recommendations_title">Recomendaciones</string>
+    <string name="settings_library_recommendations_footer">Para ti, la búsqueda y los vibes usan estos idiomas.</string>
+    <string name="settings_library_languages">Idiomas</string>
+    <string name="settings_library_add_rss">Añadir podcast por feed RSS</string>
+    <string name="settings_library_add_rss_description">Para podcasts que no están en el catálogo</string>
+    <string name="settings_library_country_faq_toggle">¿Por qué no aparece mi país?</string>
+    <string name="settings_collapse">Contraer</string>
+    <string name="settings_expand">Expandir</string>
+    <string name="settings_library_country_faq_title">¿Por qué no aparece mi país?</string>
+    <string name="settings_library_country_faq_intro">¡Estamos trabajando para ampliar nuestra cobertura global! Por ahora, añadimos países nuevos según la demanda de usuarios activos.</string>
+    <string name="settings_library_country_faq_effects">Cómo afecta a tu experiencia:</string>
+    <string name="settings_library_country_faq_search">La búsqueda sigue siendo global: puedes buscar, encontrar y escuchar todo el contenido, aunque tu país aún no aparezca oficialmente.</string>
+    <string name="settings_library_country_faq_recommendations">Las recomendaciones inteligentes siguen funcionando: el motor de recomendaciones sugiere lo más parecido según tus hábitos de escucha, sin importar el país que elijas.</string>
+    <string name="settings_library_country_faq_changes">Qué cambia con el país: los rankings principales de Explorar. Tus idiomas se quedan como están.</string>
+    <string name="settings_library_country_faq_languages">Los idiomas van aparte: elígelos en Recomendaciones › Idiomas para Para ti, la búsqueda y los vibes. Los rankings dependen del país y no se filtran por idioma.</string>
+    <string name="settings_library_country_faq_more">¿Quieres otro país o idioma?</string>
+    <string name="settings_library_country_faq_tell_us">Cuéntanoslo en Comentarios o en GitHub: ampliamos la cobertura según la demanda.</string>
+    <string name="settings_library_saved_shows_counting">Contando…</string>
+    <string name="settings_library_saved_shows_none">No hay nada guardado de podcasts que no sigues</string>
+    <string name="settings_library_storage_title">Almacenamiento</string>
+    <string name="settings_library_clear_saved_shows">Borrar podcasts guardados</string>
+    <string name="settings_clear_saved_shows_title">¿Borrar podcasts guardados?</string>
+    <string name="settings_clear_saved_shows_kept">Los podcasts que sigues, tu historial, tus descargas y tu cola no se ven afectados.</string>
+    <string name="settings_clear_saved_shows_confirm">Borrar</string>
+    <string name="settings_cancel">Cancelar</string>
+    <plurals name="settings_library_saved_shows_count">
+        <item quantity="one">Listas de episodios de %1$d podcast que no sigues</item>
+        <item quantity="many">Listas de episodios de %1$d podcasts que no sigues</item>
+        <item quantity="other">Listas de episodios de %1$d podcasts que no sigues</item>
+    </plurals>
+    <plurals name="settings_clear_saved_shows_body">
+        <item quantity="one">Las listas de episodios de %1$d podcast que no sigues se eliminarán de este teléfono. Se vuelven a cargar al abrir un podcast.</item>
+        <item quantity="many">Las listas de episodios de %1$d podcasts que no sigues se eliminarán de este teléfono. Se vuelven a cargar al abrir un podcast.</item>
+        <item quantity="other">Las listas de episodios de %1$d podcasts que no sigues se eliminarán de este teléfono. Se vuelven a cargar al abrir un podcast.</item>
+    </plurals>
+</resources>

@@ -57,7 +57,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
             return
         }
 
-        val parsed = FcmPayloadParser.parse(data)
+        val parsed = FcmPayloadParser.parse(data, PushTextFallbacks.from(this))
         if (applicationContext.shouldSuppressAnnouncement(parsed.toAnnouncement())) return
 
         if (parsed.type == "in-app" || parsed.type == "both") {
@@ -130,7 +130,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel =
                 NotificationChannel(config.id, config.name, config.importance).apply {
-                    description = "boxlore news and updates"
+                    description = getString(cx.aswin.boxlore.R.string.app_channel_announcements_description)
                     if (config.soundUri != null) {
                         val audioAttributes =
                             AudioAttributes
@@ -206,21 +206,21 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         "chime" ->
             PushChannelConfig(
                 id = "boxlore_new_episodes_v1",
-                name = "New Episode Alerts",
+                name = getString(cx.aswin.boxlore.R.string.app_channel_new_episode_alerts),
                 soundUri = Uri.parse("android.resource://$packageName/raw/boxlore_chime"),
                 importance = NotificationManager.IMPORTANCE_DEFAULT,
             )
         "silent" ->
             PushChannelConfig(
                 id = "boxlore_silent_v1",
-                name = "Silent Notifications",
+                name = getString(cx.aswin.boxlore.R.string.app_channel_silent),
                 soundUri = null,
                 importance = NotificationManager.IMPORTANCE_LOW,
             )
         else ->
             PushChannelConfig(
                 id = "boxlore_announcements_v2",
-                name = "Announcements",
+                name = getString(cx.aswin.boxlore.R.string.app_channel_announcements),
                 soundUri = Uri.parse("android.resource://$packageName/raw/boxlore_announcement_chime"),
                 importance = NotificationManager.IMPORTANCE_DEFAULT,
             )

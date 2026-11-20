@@ -55,7 +55,7 @@ class DailyBriefingCardTest {
 
     @Test fun `single story edition uses a singular localized metadata count`() {
         render(chapters.take(1))
-        compose.onNodeWithText("11 Oct · 1 story · ~1m listen", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithText("Oct 11 · 1 story · ~1m listen", useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test fun `play open and inline story expansion keep independent actions`() {

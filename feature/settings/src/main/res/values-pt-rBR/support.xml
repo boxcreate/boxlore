@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_support_one_time">Contribuição única • Sem assinatura recorrente</string>
+    <!-- In capitals; under a tier's story. -->
+    <string name="settings_support_tap_to_return">TOQUE PARA VOLTAR</string>
+    <!-- In capitals. -->
+    <string name="settings_support_mission_label">UM COMPANHEIRO TRANQUILO</string>
+    <string name="settings_support_mission_title">Mantendo o boxlore rápido, aberto e sem anúncios</string>
+    <!-- Support boxlore. Tier names and codenames (Micro Energy Cell, WITCH CELL…) are product names and stay in English. -->
+    <!-- Support tier 1: how long it runs the servers. -->
+    <string name="settings_support_tier1_impact">Mantém os servidores do boxlore por 3 horas</string>
+    <string name="settings_support_tier2_impact">Mantém os servidores do boxlore por 8 horas</string>
+    <string name="settings_support_tier3_impact">Mantém os servidores do boxlore por 1 dia inteiro</string>
+    <string name="settings_support_tier4_impact">Mantém os servidores do boxlore por 3 dias inteiros</string>
+    <string name="settings_support_tier5_impact">Mantém os servidores do boxlore por 1 semana inteira</string>
+    <!-- Short label on the tier picker; at most 4 characters. -->
+    <string name="settings_support_tier1_short">3h</string>
+    <string name="settings_support_tier2_short">8h</string>
+    <string name="settings_support_tier3_short">1d</string>
+    <string name="settings_support_tier4_short">3d</string>
+    <string name="settings_support_tier5_short">7d</string>
+    <string name="settings_support_tier1_lore">Criada quando um núcleo de energia proibido foi selado num invólucro de runas.</string>
+    <string name="settings_support_tier2_lore">Montada com unidades de campo mortas, resgatadas após a última guerra das máquinas.</string>
+    <string name="settings_support_tier3_lore">Forjada em volta de um fragmento arrancado de um antigo reator solar.</string>
+    <string name="settings_support_tier4_lore">Criada quando uma torre de servidores foi reconstruída para tirar energia de matéria escura instável.</string>
+    <string name="settings_support_tier5_lore">Nascida do coração de uma arma orbital fracassada, ainda pulsando com sua carga original.</string>
+    <!-- Badge on the featured tier, in capitals. -->
+    <string name="settings_support_featured_control">★ UNIDADE PATRONO SUPREMO</string>
+    <!-- Pay button. %1$s is the tier's English product name, e.g. Micro Energy Cell. -->
+    <string name="settings_support_cta_control">Ativar %1$s</string>
+    <string name="settings_support_featured_world">★ LENDÁRIO</string>
+    <string name="settings_support_mission_intro">Um software que ajuda as pessoas a aprender, ouvir e explorar deveria simplesmente existir, sem pegadinhas.</string>
+    <!-- %1$s is the listening time, e.g. "42 hours". -->
+    <string name="settings_support_mission_companion_control">Se o boxlore foi um ótimo companheiro ao longo de %1$s de escuta, apoiar uma célula de energia ajuda a manter o app gratuito e sem anúncios para todo mundo.</string>
+    <string name="settings_support_mission_open_control">Sem anúncios, sem paywalls. Apoiar uma célula de energia ajuda a pagar nossos servidores e manter o boxlore aberto para todo mundo.</string>
+    <string name="settings_support_mission_companion_neon">Se o boxlore foi um ótimo companheiro ao longo de %1$s de escuta, cada lanchinho ajuda a manter o app gratuito e sem anúncios para todo mundo.</string>
+    <string name="settings_support_mission_open_neon">Sem anúncios, sem paywalls. Cada lanchinho ajuda a pagar nossos servidores e manter o boxlore aberto para todo mundo.</string>
+    <string name="settings_support_mission_companion_orbit">Se o boxlore foi um ótimo companheiro ao longo de %1$s de escuta, cada lançamento ajuda a manter o app gratuito e sem anúncios para todo mundo.</string>
+    <string name="settings_support_mission_open_orbit">Sem anúncios, sem paywalls. Cada lançamento ajuda a pagar nossos servidores e manter o boxlore aberto para todo mundo.</string>
+    <string name="settings_support_mission_companion_alchemy">Se o boxlore foi um ótimo companheiro ao longo de %1$s de escuta, cada relíquia ajuda a manter o app gratuito e sem anúncios para todo mundo.</string>
+    <string name="settings_support_mission_open_alchemy">Sem anúncios, sem paywalls. Cada relíquia ajuda a pagar nossos servidores e manter o boxlore aberto para todo mundo.</string>
+    <string name="settings_support_mission_companion_abyss">Se o boxlore foi um ótimo companheiro ao longo de %1$s de escuta, cada criatura ajuda a manter o app gratuito e sem anúncios para todo mundo.</string>
+    <string name="settings_support_mission_open_abyss">Sem anúncios, sem paywalls. Cada criatura ajuda a pagar nossos servidores e manter o boxlore aberto para todo mundo.</string>
+    <string name="settings_support_mission_companion_sky">Se o boxlore foi um ótimo companheiro ao longo de %1$s de escuta, cada ilha ajuda a manter o app gratuito e sem anúncios para todo mundo.</string>
+    <string name="settings_support_mission_open_sky">Sem anúncios, sem paywalls. Cada ilha ajuda a pagar nossos servidores e manter o boxlore aberto para todo mundo.</string>
+    <string name="settings_support_cta_neon">Comprar %1$s</string>
+    <string name="settings_support_notice_neon_chip">FICHA DEVOLVIDA</string>
+    <string name="settings_support_notice_neon_title">A entrada de fichas ainda não está conectada</string>
+    <string name="settings_support_notice_neon_dismiss">Devolver minha ficha</string>
+    <!-- %1$s is the price, e.g. $6.99. -->
+    <string name="settings_support_notice_neon_body">Seus %1$s voltaram direto para você. Os pagamentos ainda não estão configurados, então nada foi cobrado.</string>
+    <string name="settings_support_cta_orbit">Lançar %1$s</string>
+    <string name="settings_support_notice_orbit_chip">LANÇAMENTO EM ESPERA</string>
+    <string name="settings_support_notice_orbit_title">O controle da missão ainda não está on-line</string>
+    <string name="settings_support_notice_orbit_dismiss">Abortar missão</string>
+    <string name="settings_support_notice_orbit_body">Seus %1$s nem saíram da plataforma de lançamento. Os pagamentos ainda não estão configurados, então nada foi cobrado.</string>
+    <string name="settings_support_cta_alchemy">Conjurar %1$s</string>
+    <string name="settings_support_notice_alchemy_chip">O FEITIÇO FALHOU</string>
+    <string name="settings_support_notice_alchemy_title">O caldeirão ainda não está aceso</string>
+    <string name="settings_support_notice_alchemy_dismiss">Tampar o frasco</string>
+    <string name="settings_support_notice_alchemy_body">Seus %1$s ficaram na sua bolsa. Os pagamentos ainda não estão configurados, então nada foi cobrado.</string>
+    <string name="settings_support_cta_abyss">Invocar %1$s</string>
+    <string name="settings_support_notice_abyss_chip">SEM SINAL</string>
+    <string name="settings_support_notice_abyss_title">As profundezas ainda não estão conectadas</string>
+    <string name="settings_support_notice_abyss_dismiss">De volta às profundezas</string>
+    <string name="settings_support_notice_abyss_body">Seus %1$s ficaram em terra firme. Os pagamentos ainda não estão configurados, então nada foi cobrado.</string>
+    <string name="settings_support_cta_sky">Erguer %1$s</string>
+    <string name="settings_support_notice_sky_chip">PORTO CELESTE FECHADO</string>
+    <string name="settings_support_notice_sky_title">O porto celeste ainda não abriu</string>
+    <string name="settings_support_notice_sky_dismiss">De volta às nuvens</string>
+    <string name="settings_support_notice_sky_body">Seus %1$s ficaram no chão. Os pagamentos ainda não estão configurados, então nada foi cobrado.</string>
+    <string name="settings_support_notice_control_chip">ATIVAÇÃO PAUSADA</string>
+    <string name="settings_support_notice_control_title">A rede de energia ainda não está conectada</string>
+    <string name="settings_support_notice_control_body">Seus %1$s continuam com você. Os pagamentos ainda não estão configurados, então nada foi cobrado.</string>
+    <string name="settings_support_notice_control_dismiss">Aguardar</string>
+    <!-- Listening time inside the mission line. -->
+    <plurals name="settings_support_listening_hours">
+        <item quantity="one">%1$d hora</item>
+        <item quantity="other">%1$d horas</item>
+    </plurals>
+</resources>

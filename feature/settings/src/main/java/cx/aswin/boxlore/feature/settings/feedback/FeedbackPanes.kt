@@ -2,11 +2,14 @@ package cx.aswin.boxlore.feature.settings.feedback
 
 import androidx.compose.runtime.saveable.Saver
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.model.text.LocaleFormats
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.settings.R
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Locale
+import java.util.TimeZone
 
 /** What Feedback shows: the conversation list, a new message, or one conversation. */
 sealed interface FeedbackPane {
@@ -61,34 +64,39 @@ internal fun feedbackUsesSplit(paneWidthDp: Float, layout: BoxloreWindowLayout):
 }
 
 private fun clock(at: Instant, zone: ZoneId, locale: Locale, is24Hour: Boolean): String =
-    DateTimeFormatter.ofPattern(if (is24Hour) "HH:mm" else "h:mm a", locale).format(at.atZone(zone))
+    LocaleFormats.time(at.toEpochMilli(), locale, use24Hour = is24Hour, timeZone = TimeZone.getTimeZone(zone))
 
-private fun day(date: LocalDate, today: LocalDate, locale: Locale): String =
-    DateTimeFormatter.ofPattern(if (date.year == today.year) "d MMM" else "d MMM yyyy", locale).format(date)
+private fun day(at: Instant, date: LocalDate, today: LocalDate, zone: ZoneId, locale: Locale): String =
+    LocaleFormats.date(
+        at.toEpochMilli(),
+        if (date.year == today.year) LocaleFormats.DateStyle.DAY_MONTH else LocaleFormats.DateStyle.DAY_MONTH_YEAR,
+        locale,
+        TimeZone.getTimeZone(zone),
+    )
 
 /** The list's time: the clock today, "Yesterday", then the date. */
-internal fun feedbackListTime(atMs: Long, nowMs: Long, zone: ZoneId, locale: Locale, is24Hour: Boolean): String {
+internal fun feedbackListTime(atMs: Long, nowMs: Long, zone: ZoneId, locale: Locale, is24Hour: Boolean): UiText {
     val at = Instant.ofEpochMilli(atMs)
     val date = at.atZone(zone).toLocalDate()
     val today = Instant.ofEpochMilli(nowMs).atZone(zone).toLocalDate()
     return when (date) {
-        today -> clock(at, zone, locale, is24Hour)
-        today.minusDays(1) -> "Yesterday"
-        else -> day(date, today, locale)
+        today -> UiText.raw(clock(at, zone, locale, is24Hour))
+        today.minusDays(1) -> UiText.res(R.string.feedback_time_yesterday)
+        else -> UiText.raw(day(at, date, today, zone, locale))
     }
 }
 
 /** A message's time: "Today, 11:02", "Yesterday, 18:20" or "2 Nov, 09:41". */
-internal fun feedbackMessageTime(atMs: Long, nowMs: Long, zone: ZoneId, locale: Locale, is24Hour: Boolean): String {
+internal fun feedbackMessageTime(atMs: Long, nowMs: Long, zone: ZoneId, locale: Locale, is24Hour: Boolean): UiText {
     val at = Instant.ofEpochMilli(atMs)
     val date = at.atZone(zone).toLocalDate()
     val today = Instant.ofEpochMilli(nowMs).atZone(zone).toLocalDate()
-    val dayPart = when (date) {
-        today -> "Today"
-        today.minusDays(1) -> "Yesterday"
-        else -> day(date, today, locale)
+    val time = clock(at, zone, locale, is24Hour)
+    return when (date) {
+        today -> UiText.res(R.string.feedback_time_today_at, time)
+        today.minusDays(1) -> UiText.res(R.string.feedback_time_yesterday_at, time)
+        else -> UiText.res(R.string.feedback_time_date_at, day(at, date, today, zone, locale), time)
     }
-    return "$dayPart, ${clock(at, zone, locale, is24Hour)}"
 }
 
 /** A status line: the server's label, and the time when the server says it matters. */

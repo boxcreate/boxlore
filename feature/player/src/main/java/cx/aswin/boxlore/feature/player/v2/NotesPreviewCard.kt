@@ -28,11 +28,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.player.R
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
 
 /**
@@ -88,7 +90,7 @@ fun NotesPreviewCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Show notes",
+                    text = stringResource(R.string.player_show_notes),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
                     color = colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
@@ -97,7 +99,7 @@ fun NotesPreviewCard(
                     onClick = onOpenEpisodeInfo,
                     colors = ButtonDefaults.textButtonColors(contentColor = colorScheme.primary)
                 ) {
-                    Text("Episode details")
+                    Text(stringResource(R.string.player_episode_details))
                 }
             }
 
@@ -120,7 +122,7 @@ fun NotesPreviewCard(
                 colors = ButtonDefaults.textButtonColors(contentColor = colorScheme.primary)
             ) {
                 Text(
-                    text = if (expanded) "Show less" else "Read more",
+                    text = stringResource(if (expanded) R.string.player_show_less else R.string.player_read_more),
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.semiBold)
                 )
                 Icon(

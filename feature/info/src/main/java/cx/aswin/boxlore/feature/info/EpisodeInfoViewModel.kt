@@ -22,6 +22,7 @@ import cx.aswin.boxlore.core.playback.toggleLike
 import cx.aswin.boxlore.core.playback.togglePlayPause
 import cx.aswin.boxlore.core.playback.withEpisodeAliases
 import cx.aswin.boxlore.feature.info.logic.EpisodeOfflineMergeLogic
+import cx.aswin.boxlore.feature.info.logic.EpisodeShowTitle
 import cx.aswin.boxlore.feature.info.logic.collectSimilarEpisodes
 import cx.aswin.boxlore.feature.info.logic.sharedLookup
 import kotlinx.coroutines.Job
@@ -328,9 +329,9 @@ class EpisodeInfoViewModel(
                         currentEpisode = fullEpisode
                         if (finalPodcastId.isEmpty()) finalPodcastId = fullEpisode.podcastId ?: "unknown"
                         if (finalPodcastTitle.isEmpty() ||
-                            finalPodcastTitle == "Podcast"
+                            finalPodcastTitle == EpisodeShowTitle.PLACEHOLDER
                         ) {
-                            finalPodcastTitle = fullEpisode.podcastTitle ?: "Podcast"
+                            finalPodcastTitle = fullEpisode.podcastTitle ?: EpisodeShowTitle.PLACEHOLDER
                         }
                         if (finalEpisodeTitle.isEmpty()) finalEpisodeTitle = fullEpisode.title
                         if (finalEpisodeImageUrl.isEmpty()) finalEpisodeImageUrl = fullEpisode.imageUrl ?: ""
@@ -371,12 +372,12 @@ class EpisodeInfoViewModel(
                 val initialLocation = localPodcast?.location
                 val initialLicense = localPodcast?.license
 
-                if (localPodcast != null && (finalPodcastTitle.isEmpty() || finalPodcastTitle == "Podcast")) {
+                if (localPodcast != null && (finalPodcastTitle.isEmpty() || finalPodcastTitle == EpisodeShowTitle.PLACEHOLDER)) {
                     finalPodcastTitle = localPodcast.title
                 }
 
                 // If finalPodcastTitle is empty/generic, try to fetch podcast details from network
-                if (finalPodcastId.isNotEmpty() && (finalPodcastTitle.isEmpty() || finalPodcastTitle == "Podcast")) {
+                if (finalPodcastId.isNotEmpty() && (finalPodcastTitle.isEmpty() || finalPodcastTitle == EpisodeShowTitle.PLACEHOLDER)) {
                     val podcast = podcastRepository.getPodcastDetails(finalPodcastId)
                     if (podcast != null) {
                         finalPodcastTitle = podcast.title

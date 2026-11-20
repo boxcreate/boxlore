@@ -162,12 +162,7 @@ class UserPreferencesRepository(context: Context,) {
                 if (stored != null) {
                     normalizeRegionCode(stored)
                 } else {
-                    val localeCountry =
-                        java.util.Locale
-                            .getDefault()
-                            .country
-                            .lowercase()
-                    ContentRegions.localeDefaultRegion(localeCountry)
+                    ContentRegions.localeDefaultRegion(deviceCountry())
                 }
             }.distinctUntilChanged()
 
@@ -212,7 +207,24 @@ class UserPreferencesRepository(context: Context,) {
 
     /** The stored chart country, else the device locale's. */
     private fun regionOf(preferences: Preferences): String = preferences[Keys.REGION]?.let { normalizeRegionCode(it) }
-        ?: ContentRegions.localeDefaultRegion(java.util.Locale.getDefault().country.lowercase())
+        ?: ContentRegions.localeDefaultRegion(deviceCountry())
+
+    /**
+     * The phone's own country, lowercase. Read from the system configuration because an App language
+     * picked on Android 13+ (a bare tag such as "es") replaces [java.util.Locale.getDefault] and drops
+     * its country; falls back to the default locale where system resources aren't available.
+     */
+    private fun deviceCountry(): String {
+        val system =
+            runCatching {
+                android.content.res.Resources
+                    .getSystem()
+                    .configuration.locales
+                    .get(0)
+                    ?.country
+            }.getOrNull()
+        return (system?.takeIf { it.isNotEmpty() } ?: java.util.Locale.getDefault().country).lowercase()
+    }
 
     /**
      * Changes the chart country. The listener's languages and English choice stay as they are; a

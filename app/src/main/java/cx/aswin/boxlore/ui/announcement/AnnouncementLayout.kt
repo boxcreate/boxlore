@@ -35,7 +35,7 @@ data class AnnouncementLayoutStyle(
 )
 
 fun resolveAnnouncementLayout(category: String): AnnouncementLayout {
-    val c = category.trim().uppercase().replace('’', '\'')
+    val c = category.trim().uppercase(java.util.Locale.ROOT).replace('’', '\'')
     return when {
         c == "WHAT'S NEW" || c == "WHATS NEW" || c == "NEW RELEASE" -> AnnouncementLayout.WhatsNew
         c == "NEW FEATURE" -> AnnouncementLayout.NewFeature

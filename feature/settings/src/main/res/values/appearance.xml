@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_display_mode_title">Display mode</string>
+    <string name="settings_navigation_bar_title">Navigation bar</string>
+    <string name="settings_navigation_blur_title">Blur behind the bar</string>
+    <string name="settings_navigation_blur_off">Off</string>
+    <string name="settings_navigation_blur_soft">Soft</string>
+    <string name="settings_navigation_blur_medium">Medium</string>
+    <string name="settings_navigation_blur_strong">Strong</string>
+    <string name="settings_navigation_start_title">Start page &amp; tabs</string>
+    <string name="settings_navigation_start_footer">Start page applies when you relaunch boxlore. Links can open a different page or tab.</string>
+    <string name="settings_navigation_start_page">Start page</string>
+    <string name="settings_navigation_start_home">Home</string>
+    <string name="settings_navigation_start_subscriptions">Subscriptions</string>
+    <string name="settings_navigation_start_downloads">Downloads</string>
+    <string name="settings_navigation_explore_opens_to">Explore opens to</string>
+    <string name="settings_navigation_explore_for_you">For You</string>
+    <!-- Explore opens to its Top tab; also the Subscriptions tabs sitting at the top -->
+    <string name="settings_navigation_tab_top">Top</string>
+    <string name="settings_navigation_subscriptions_opens_to">Subscriptions opens to</string>
+    <string name="settings_navigation_subscriptions_shows">Shows</string>
+    <string name="settings_navigation_subscriptions_new_episodes">New episodes</string>
+    <string name="settings_navigation_subscriptions_tab_position">Subscriptions tab position</string>
+    <string name="settings_navigation_tab_floating">Floating</string>
+    <string name="settings_player_miniplayer_title">Miniplayer</string>
+    <string name="settings_player_seek_buttons">Seek buttons</string>
+    <string name="settings_player_seek_buttons_description">Show back and forward controls beside play and pause</string>
+    <string name="settings_show_pages_episode_lists">Episode lists</string>
+    <string name="settings_show_pages_titles_only">Episode titles only</string>
+    <string name="settings_show_pages_titles_only_description">Short rows with each episode’s title, date, length and play button</string>
+    <string name="settings_home_top_bar_title">Top bar</string>
+    <string name="settings_home_shortcuts_in_library">Move Home shortcuts to Library</string>
+    <string name="settings_home_shortcuts_in_library_description">Show Settings and Feedback in Library instead of Home</string>
+    <!-- Appearance overview: what each row shows under its title. -->
+    <!-- %1$s is the theme look's name, e.g. "boxlore classic". -->
+    <string name="settings_appearance_summary_theme_artwork">%1$s · artwork colors on</string>
+    <!-- %1$s is the hero card style name (e.g. Block), %2$s what its colour choice does (e.g. dark cards). -->
+    <string name="settings_appearance_summary_home">%1$s hero cards, %2$s</string>
+    <!-- %1$s is the player style name. -->
+    <string name="settings_appearance_summary_player_seek">%1$s · seek buttons on</string>
+    <!-- %1$s is the bar style (Floating or Classic), %2$s the start page (Home, Subscriptions or Downloads). -->
+    <string name="settings_appearance_summary_navigation">%1$s bar · starts on %2$s</string>
+    <!-- %1$s is the letter shape: Crisp, Soft or Round. -->
+    <string name="settings_appearance_summary_letters">%1$s letters</string>
+    <string name="settings_appearance_summary_widgets_theme_covers">App theme colors · whole covers</string>
+    <string name="settings_appearance_summary_widgets_theme_shapes">App theme colors · shapes</string>
+    <string name="settings_appearance_summary_widgets_system_covers">System colors · whole covers</string>
+    <string name="settings_appearance_summary_widgets_system_shapes">System colors · shapes</string>
+    <!-- What the hero colour choice does, shown after "<style> hero cards, ". Lowercase in English. -->
+    <string name="settings_hero_summary_dark_shade">dark shade</string>
+    <string name="settings_hero_summary_theme_shade">app theme shade</string>
+    <string name="settings_hero_summary_artwork_shade">artwork shade</string>
+    <string name="settings_hero_summary_black_white">black and white</string>
+    <string name="settings_hero_summary_theme_tones">app theme tones</string>
+    <string name="settings_hero_summary_artwork_tones">artwork tones</string>
+    <string name="settings_hero_summary_full_color">full color</string>
+    <string name="settings_hero_summary_dark_cards">dark cards</string>
+    <string name="settings_hero_summary_theme_color">app theme color</string>
+    <string name="settings_hero_summary_artwork_color">artwork color</string>
+    <!-- Screen-reader text for the hero preview. %1$s is the style name. -->
+    <string name="settings_hero_preview_description">Preview of %1$s hero cards</string>
+    <string name="settings_display_mode_system">System</string>
+    <string name="settings_display_mode_light">Light</string>
+    <string name="settings_display_mode_dark">Dark</string>
+    <string name="settings_show_pages_full_rows">Full episode rows</string>
+    <!-- Letter shape names (Appearance › Text). -->
+    <string name="settings_letters_crisp">Crisp</string>
+    <string name="settings_letters_soft">Soft</string>
+    <string name="settings_letters_round">Round</string>
+    <!-- Navigation bar style names. -->
+    <string name="settings_navigation_style_floating">Floating</string>
+    <string name="settings_navigation_style_classic">Classic</string>
+    <string name="settings_widgets_colors_title">Colors</string>
+    <string name="settings_widgets_colors_footer">App theme matches your chosen colors and mode. System follows your phone’s mode and wallpaper colors.</string>
+    <string name="settings_widgets_colors_app_theme">App theme</string>
+    <string name="settings_widgets_colors_system">System</string>
+    <!-- Your Shows is the name of a widget. -->
+    <string name="settings_widgets_shows_covers_title">Your Shows covers</string>
+    <string name="settings_widgets_shows_covers_footer">Whole covers shows each cover uncropped. Shapes cuts covers into circles, arches and scallops.</string>
+    <string name="settings_widgets_shows_covers_whole">Whole covers</string>
+    <string name="settings_widgets_shows_covers_shapes">Shapes</string>
+    <string name="settings_widgets_add_title">Add to home screen</string>
+    <string name="settings_widgets_by_hand_title">boxlore widgets</string>
+    <string name="settings_widgets_open_app_settings">Open app settings</string>
+    <!-- Screen-reader label for a widget's Add button. %1$s is the widget name. -->
+    <string name="settings_widgets_add_description">Add %1$s to home screen</string>
+    <string name="settings_widgets_add">Add</string>
+    <string name="settings_widgets_unanswered">Nothing opened? Your phone may be blocking this. Turn on Home screen shortcuts for boxlore in your phone’s app settings, then try again. Or touch and hold an empty spot on your home screen and choose Widgets.</string>
+    <string name="settings_widgets_confirm">Your home screen app asks you to confirm.</string>
+    <string name="settings_widgets_by_hand">To add a boxlore widget, touch and hold an empty spot on your home screen, then choose Widgets.</string>
+    <string name="settings_text_letter_shape_title">Letter shape</string>
+    <string name="settings_text_letter_shape_footer">How rounded letters look across the app. Most visible in large titles; smaller text changes less.</string>
+    <string name="settings_text_preview_title">Preview</string>
+    <string name="settings_text_preview_footer">Some phones, such as Xiaomi with HyperOS, may show the system font instead.</string>
+    <!-- Label above a sample line of a section header -->
+    <string name="settings_text_sample_section_label">Section</string>
+    <string name="settings_text_sample_section">Your morning stack</string>
+    <string name="settings_text_sample_title_label">Title</string>
+    <string name="settings_text_sample_title">The Daily Briefing</string>
+    <string name="settings_text_sample_body_label">Body</string>
+    <string name="settings_text_sample_body">A short episode about curiosity, craft, and listening habits.</string>
+    <string name="settings_text_sample_caption_label">Caption</string>
+    <string name="settings_text_sample_caption">Updated just now · 24 min</string>
+    <string name="settings_theme_edit_custom">Edit custom theme</string>
+    <string name="settings_theme_create_custom">Create custom theme</string>
+    <string name="settings_theme_custom_description">Choose colors with a light and dark preview</string>
+    <string name="settings_theme_artwork_colors">Use artwork colors</string>
+    <string name="settings_theme_artwork_colors_description">Match episode and podcast pages to their artwork</string>
+    <string name="settings_theme_colors_title">Colors</string>
+    <string name="settings_theme_look_classic">boxlore classic</string>
+    <string name="settings_theme_look_classic_description">Signature colors on cool neutral backgrounds.</string>
+    <string name="settings_theme_look_pure">Pure</string>
+    <string name="settings_theme_look_pure_description">White in light mode. True black in dark mode.</string>
+    <!-- Name of Google's design system -->
+    <string name="settings_theme_look_material" translatable="false">Material 3</string>
+    <string name="settings_theme_look_material_description">Wallpaper colors with softly tinted backgrounds.</string>
+    <string name="settings_theme_look_custom">Custom</string>
+    <string name="settings_theme_look_custom_description">Choose your colors and background style.</string>
+    <string name="settings_theme_section_title">Theme</string>
+</resources>

@@ -1,8 +1,10 @@
 package cx.aswin.boxlore.feature.library.subscriptions
 
+import androidx.annotation.StringRes
 import androidx.compose.material3.SwipeToDismissBoxValue
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.feature.library.R
 
 /** What a swipe on a New Episodes row does. */
 internal enum class LatestSwipeAction { AddToQueue, MarkPlayed }
@@ -28,10 +30,11 @@ internal fun latestQueueOutcome(added: Boolean, wasQueued: Boolean, queueSize: I
     else -> LatestQueueOutcome.AlreadyQueued
 }
 
-internal fun latestQueueMessage(outcome: LatestQueueOutcome): String = when (outcome) {
-    LatestQueueOutcome.Added -> "Added to queue"
-    LatestQueueOutcome.AlreadyQueued -> "Already in your queue"
-    LatestQueueOutcome.QueueFull -> "Your queue is full. Remove an episode to add this one."
+@StringRes
+internal fun latestQueueMessage(outcome: LatestQueueOutcome): Int = when (outcome) {
+    LatestQueueOutcome.Added -> R.string.library_queue_added
+    LatestQueueOutcome.AlreadyQueued -> R.string.library_queue_already_queued
+    LatestQueueOutcome.QueueFull -> R.string.library_queue_full
 }
 
 /** Shows with a latest episode New Episodes can list: an archived one ([dismissedIds]) never is. */

@@ -26,6 +26,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -34,10 +36,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.artworkUrls
+import cx.aswin.boxlore.feature.library.R
 
 /** Four look choices in a row, each a small drawing plus "tap up to N". */
 @Composable
@@ -70,9 +74,9 @@ internal fun FolderLookRow(
                     Box(modifier = Modifier.height(40.dp), contentAlignment = Alignment.Center) {
                         LookDiagram(size = size, highlighted = isSelected)
                     }
-                    Text(text = folderLookName(size), style = MaterialTheme.typography.labelLarge, fontWeight = GoogleSansWeight.semiBold)
+                    Text(text = folderLookName(size).asString(), style = MaterialTheme.typography.labelLarge, fontWeight = GoogleSansWeight.semiBold)
                     Text(
-                        text = "tap up to ${folderSlotCount(size)}",
+                        text = pluralStringResource(R.plurals.library_folder_look_tap_up_to, folderSlotCount(size), folderSlotCount(size)),
                         style = MaterialTheme.typography.labelSmall,
                         color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -121,16 +125,16 @@ internal fun TileCoverChoice(
     Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         TileCoverOption(
             selected = !showsCovers,
-            title = "Show the icon",
-            subtitle = "A tap opens the folder",
+            title = stringResource(R.string.library_folder_tile_show_icon),
+            subtitle = stringResource(R.string.library_folder_tile_show_icon_note),
             icon = GenreIcons.folderIconOrFallback(iconKey),
             onClick = { onChange(false) },
             modifier = Modifier.weight(1f),
         )
         TileCoverOption(
             selected = showsCovers,
-            title = "Show covers",
-            subtitle = "Tap up to 4 shows",
+            title = stringResource(R.string.library_folder_tile_show_covers),
+            subtitle = pluralStringResource(R.plurals.library_folder_tile_show_covers_note, 4, 4),
             icon = Icons.Rounded.GridView,
             onClick = { onChange(true) },
             modifier = Modifier.weight(1f),
@@ -233,9 +237,9 @@ private fun FolderLookCard(
                     }
                 }
                 Column {
-                    Text(text = folderLookName(size), style = MaterialTheme.typography.titleSmall, fontWeight = GoogleSansWeight.semiBold)
+                    Text(text = folderLookName(size).asString(), style = MaterialTheme.typography.titleSmall, fontWeight = GoogleSansWeight.semiBold)
                     Text(
-                        text = folderLookDescription(size),
+                        text = folderLookDescription(size).asString(),
                         style = MaterialTheme.typography.bodySmall,
                         color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -321,7 +325,7 @@ private fun RowsPreview(size: FolderDisplaySize, shows: List<Podcast>) {
                                 modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerHighest),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Text(text = "+${spot.count}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface)
+                                Text(text = stringResource(R.string.library_overflow_count, spot.count), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface)
                             }
                             PreviewCell.Empty -> Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerHigh))
                         }

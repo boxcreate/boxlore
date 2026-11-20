@@ -47,7 +47,7 @@ class PushAnnouncementActionTest {
 
     private fun show(route: String, release: Boolean = false): Notification {
         val service = Robolectric.buildService(BoxLoreFcmService::class.java).create().get()
-        val parsed = FcmPayloadParser.parse(mapOf("title" to "Action test", "body" to "Body", "route" to route, "category" to "ANNOUNCEMENT", "release_alert" to release.toString(), "show_action_in_push" to "true", "sound" to "silent"))
+        val parsed = FcmPayloadParser.parse(mapOf("title" to "Action test", "body" to "Body", "route" to route, "category" to "ANNOUNCEMENT", "release_alert" to release.toString(), "show_action_in_push" to "true", "sound" to "silent"), PushTextFallbacks.from(service))
         service.showPushNotification(parsed)
         val manager = service.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val id = NewEpisodeFcmLogic.ANNOUNCEMENT_NOTIFICATION_ID_BASE + NewEpisodeFcmLogic.announcementSlot(route)

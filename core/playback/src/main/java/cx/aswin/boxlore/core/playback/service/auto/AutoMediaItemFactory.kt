@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.playback.service.auto
 
+import android.content.res.Resources
 import android.net.Uri
 import android.os.Bundle
 import androidx.annotation.OptIn
@@ -7,6 +8,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaConstants
+import cx.aswin.boxlore.core.catalog.R
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.model.Episode
@@ -179,6 +181,7 @@ internal object AutoMediaItemFactory {
     }
 
     fun fromEpisode(
+        resources: Resources,
         episode: Episode,
         source: String,
         artworkUri: Uri?,
@@ -189,7 +192,7 @@ internal object AutoMediaItemFactory {
             mediaId = "${row.mediaIdPrefix}${episode.id}",
             title = episode.title,
             podcastTitle = podcastTitle,
-            subtitle = row.subtitle ?: buildDurationSubtitle(podcastTitle, episode.duration.toLong() * 1_000L),
+            subtitle = row.subtitle ?: buildDurationSubtitle(resources, podcastTitle, episode.duration.toLong() * 1_000L),
             artworkUri = artworkUri,
             uri = episode.audioUrl,
             durationMs = episode.duration.toLong() * 1_000L,
@@ -208,12 +211,12 @@ internal object AutoMediaItemFactory {
         ).build()
     }
 
-    fun fromDownload(download: DownloadedEpisodeEntity, artworkUri: Uri?, uri: String?, groupTitle: String?,): MediaItem = playable(
+    fun fromDownload(resources: Resources, download: DownloadedEpisodeEntity, artworkUri: Uri?, uri: String?, groupTitle: String?,): MediaItem = playable(
         AutoPlayableSpec(
             mediaId = "episode:${download.episodeId}",
             title = download.episodeTitle,
             podcastTitle = download.podcastName,
-            subtitle = buildDurationSubtitle(download.podcastName, download.durationMs),
+            subtitle = buildDurationSubtitle(resources, download.podcastName, download.durationMs),
             artworkUri = artworkUri,
             uri = uri,
             durationMs = download.durationMs,
@@ -224,8 +227,8 @@ internal object AutoMediaItemFactory {
         ),
     )
 
-    fun buildDurationSubtitle(podcastTitle: String?, durationMs: Long,): String {
-        val duration = formatDuration(durationMs)
+    fun buildDurationSubtitle(resources: Resources, podcastTitle: String?, durationMs: Long,): String {
+        val duration = formatDuration(resources, durationMs)
         return listOfNotNull(
             podcastTitle?.takeIf(String::isNotBlank),
             duration.takeIf(String::isNotBlank),
@@ -235,23 +238,26 @@ internal object AutoMediaItemFactory {
     /** Joins the parts of a row's second line, leaving out blank ones. */
     fun joinSubtitle(vararg parts: String?): String = parts.filterNot { it.isNullOrBlank() }.joinToString(" · ")
 
-    /** "35 min left", "1h 5m left" or "Almost done" for an episode that has been started. */
-    fun formatTimeLeft(progressMs: Long, durationMs: Long): String {
-        val remainingMin = (durationMs - progressMs).coerceAtLeast(0) / 60_000L
-        return when {
-            remainingMin > 60 -> "${remainingMin / 60}h ${remainingMin % 60}m left"
-            remainingMin > 0 -> "$remainingMin min left"
-            else -> "Almost done"
-        }
+    /** "35 min left", "1h 5m left" or "Almost done" for an episode that has been started, in the car's language. */
+    fun formatTimeLeft(resources: Resources, progressMs: Long, durationMs: Long): String {
+        val remainingMin = (durationMs - progressMs).coerceAtLeast(0) / MS_PER_MINUTE
+        if (remainingMin <= 0) return resources.getString(R.string.auto_almost_done)
+        // Up to an hour stays in minutes ("60 min left").
+        val length = if (remainingMin > MINUTES_PER_HOUR) hoursMinutes(resources, remainingMin) else resources.getString(R.string.auto_length_minutes, remainingMin)
+        return resources.getString(R.string.auto_time_left, length)
     }
 
-    fun formatDuration(durationMs: Long): String {
+    /** An episode's length: "35 min", "1h 5m", "< 1 min", or blank when unknown. */
+    fun formatDuration(resources: Resources, durationMs: Long): String {
         if (durationMs <= 0) return ""
-        val totalMinutes = durationMs / 60_000L
-        return when {
-            totalMinutes >= 60 -> "${totalMinutes / 60}h ${totalMinutes % 60}m"
-            totalMinutes > 0 -> "$totalMinutes min"
-            else -> "< 1 min"
-        }
+        val totalMinutes = durationMs / MS_PER_MINUTE
+        if (totalMinutes <= 0) return resources.getString(R.string.auto_duration_under_minute)
+        return if (totalMinutes >= MINUTES_PER_HOUR) hoursMinutes(resources, totalMinutes) else resources.getString(R.string.auto_length_minutes, totalMinutes)
     }
+
+    private fun hoursMinutes(resources: Resources, totalMinutes: Long): String =
+        resources.getString(R.string.auto_length_hours_minutes, totalMinutes / MINUTES_PER_HOUR, totalMinutes % MINUTES_PER_HOUR)
+
+    private const val MS_PER_MINUTE = 60_000L
+    private const val MINUTES_PER_HOUR = 60L
 }

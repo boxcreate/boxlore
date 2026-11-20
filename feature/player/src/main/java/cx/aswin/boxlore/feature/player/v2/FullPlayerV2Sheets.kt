@@ -135,7 +135,8 @@ internal fun FullPlayerModalSheets(
             resources = PlayerQueueSheetResources(
                 resources.scope,
                 resources.snackbarHostState,
-                resources.queueSheetState
+                resources.queueSheetState,
+                playerQueueText(),
             ),
             ui = ui,
             actions = actions,

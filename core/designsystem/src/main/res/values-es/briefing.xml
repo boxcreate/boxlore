@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="briefing_brand_name">The boxlore brief</string>
+    <string name="briefing_show_author">boxlore</string>
+    <string name="briefing_show_all_stories">Ver las %1$d noticias</string>
+    <string name="briefing_show_fewer_stories">Ver menos noticias</string>
+    <string name="briefing_all_stories_inline">Todas (%1$d)</string>
+    <string name="briefing_less_inline">Menos</string>
+    <string name="briefing_story_label">Noticia %1$d</string>
+    <string name="briefing_play_story">Reproducir noticia</string>
+    <string name="briefing_pause_story">Pausar noticia</string>
+    <string name="briefing_play_story_named">Reproducir noticia: %1$s</string>
+    <string name="briefing_pause_story_named">Pausar noticia: %1$s</string>
+    <string name="briefing_original_reporting">Fuente original</string>
+    <string name="briefing_region_us">EE. UU.</string>
+    <string name="briefing_region_india">India</string>
+    <string name="briefing_region_uk">Reino Unido</string>
+    <string name="briefing_region_global">Global</string>
+    <string name="briefing_choose_edition">Elegir edición de The Brief</string>
+    <string name="briefing_region_edition">Edición %1$s</string>
+    <string name="briefing_loading_edition">Cargando la edición %1$s…</string>
+    <string name="briefing_back">Atrás</string>
+    <string name="briefing_preferences">Preferencias de The Brief</string>
+    <string name="briefing_sources">Fuentes</string>
+    <string name="briefing_open_sources">Abrir fuentes</string>
+    <string name="briefing_try_again">Reintentar</string>
+    <string name="briefing_pause">Pausar The Brief</string>
+    <string name="briefing_resume">Reanudar The Brief</string>
+    <string name="briefing_listen">Escuchar The Brief</string>
+    <string name="briefing_finished">Terminado</string>
+    <string name="briefing_default_region">Región predeterminada de The Brief</string>
+    <string name="briefing_default_region_description">Inicio y The Brief abren esta edición. Puedes cambiar de edición sin cambiar tu predeterminada.</string>
+    <string name="briefing_follow_app_region">Usar la región de la app</string>
+    <string name="briefing_done">Listo</string>
+    <string name="briefing_disclaimer">Este resumen usa textos y narración generados con IA. Consulta las fuentes originales para ver la información completa.</string>
+    <string name="briefing_report_issue">Informar de un problema</string>
+    <string name="briefing_unavailable">Esta edición no está disponible. Vuelve a intentarlo o elige otra región.</string>
+    <string name="briefing_load_error">No se pudo cargar esta edición. Revisa tu conexión e inténtalo de nuevo.</string>
+    <string name="briefing_hide">Ocultar resumen</string>
+    <string name="briefing_cancel_hide">Cancelar ocultar resumen</string>
+    <string name="briefing_listen_minutes">~%1$d min de escucha</string>
+    <string name="briefing_remaining_minutes">Quedan ~%1$d min</string>
+    <string name="briefing_hide_today_title">¿Ocultar el resumen de hoy?</string>
+    <string name="briefing_hide_today_description">Volverá con la próxima edición diaria.</string>
+    <string name="briefing_hide_today">Ocultar hoy</string>
+    <string name="briefing_always_hide">Ocultar siempre The Brief</string>
+    <string name="briefing_always_hide_title">¿Ocultar siempre The Brief?</string>
+    <string name="briefing_always_hide_description">The Brief no aparecerá en Inicio. Puedes volver a activarlo en Ajustes → Biblioteca → LeaveMeAlone.</string>
+    <string name="briefing_confirm_always_hide">Ocultar siempre</string>
+    <string name="briefing_send_feedback">Enviar comentarios</string>
+    <string name="briefing_card_pause">Pausar</string>
+    <string name="briefing_card_resume">Reanudar</string>
+    <string name="briefing_card_listen">Escuchar</string>
+    <string name="briefing_open">Abrir The Brief</string>
+    <plurals name="briefing_story_count">
+        <item quantity="one">%d noticia</item>
+        <item quantity="many">%d noticias</item>
+        <item quantity="other">%d noticias</item>
+    </plurals>
+    <plurals name="briefing_source_count">
+        <item quantity="one">%d fuente</item>
+        <item quantity="many">%d fuentes</item>
+        <item quantity="other">%d fuentes</item>
+    </plurals>
+</resources>

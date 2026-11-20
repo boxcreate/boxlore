@@ -119,7 +119,7 @@ private fun showMeta(show: TimelineShow, listenedText: String?): String {
 
 @Composable
 private fun TimelineShowSegments(show: TimelineShow) {
-    val description = stringResource(R.string.history_show_finished_of, show.finishedCount, show.episodeCount)
+    val description = pluralStringResource(R.plurals.history_show_finished_of, show.episodeCount, show.finishedCount, show.episodeCount)
     Row(
         modifier = Modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = description },
         horizontalArrangement = Arrangement.spacedBy(3.dp),

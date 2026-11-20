@@ -24,6 +24,7 @@ import cx.aswin.boxlore.core.auth.EmailLinkSignInStatus
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.model.BoxLoreUser
+import cx.aswin.boxlore.feature.settings.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -71,8 +72,8 @@ private fun openAccountDeletionInfo(context: Context, uriHandler: UriHandler) {
         }.getOrDefault(false)
         if (!fallbackOpened) {
             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
-            clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("Account Deletion URL", ACCOUNT_DELETION_URL))
-            android.widget.Toast.makeText(context, "Link copied to clipboard", android.widget.Toast.LENGTH_SHORT).show()
+            clipboard?.setPrimaryClip(android.content.ClipData.newPlainText(context.getString(R.string.account_deletion_clip_label), ACCOUNT_DELETION_URL))
+            android.widget.Toast.makeText(context, R.string.account_link_copied, android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 }
@@ -266,9 +267,9 @@ private fun sendResetPasswordEmail(
     scope.launch {
         val res = authRepository?.sendPasswordReset(email)
         val message = if (res?.isSuccess == true) {
-            "Password reset email sent to $email"
+            context.getString(R.string.account_toast_reset_sent_to, email)
         } else {
-            res?.exceptionOrNull()?.localizedMessage ?: "Failed to send reset email"
+            res?.exceptionOrNull()?.localizedMessage ?: context.getString(R.string.account_error_reset_failed)
         }
         val duration = if (res?.isSuccess == true) Toast.LENGTH_SHORT else Toast.LENGTH_LONG
         Toast.makeText(context, message, duration).show()
@@ -282,7 +283,7 @@ private fun handleSignOut(
 ) {
     authRepository?.signOut()
     authState.resetToNewEmail()
-    Toast.makeText(context, "Signed out", Toast.LENGTH_SHORT).show()
+    Toast.makeText(context, R.string.account_toast_signed_out, Toast.LENGTH_SHORT).show()
 }
 
 internal data class SignedInActions(

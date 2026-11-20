@@ -74,7 +74,7 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun EchoFooterBar(footer: EchoFooter, onAction: (EchoAction) -> Unit) {
-    val alpha by animateFloatAsState(if (footer.visible) 1f else 0f, tween(if (footer.visible) 220 else 120), label = "Echo footer")
+    val alpha by animateFloatAsState(if (footer.visible) 1f else 0f, tween(if (footer.visible) 220 else 120), label = "echoFooter")
     Column(
         Modifier
             .fillMaxWidth()
@@ -90,7 +90,7 @@ internal fun EchoFooterBar(footer: EchoFooter, onAction: (EchoAction) -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             transitionSpec = EchoMotion.handoff(),
             contentAlignment = Alignment.BottomCenter,
-            label = "Echo secondary action",
+            label = "echoSecondaryAction",
         ) { (secondary, note) ->
             when {
                 secondary == null -> Box(Modifier.fillMaxWidth())
@@ -129,7 +129,7 @@ private fun echoMainButtonColors(busy: Boolean, enabled: Boolean): Pair<Color, C
             enabled -> colors.primary
             else -> colors.onSurface.copy(alpha = 0.12f)
         },
-        label = "Echo main button",
+        label = "echoMainButton",
     )
     val content by animateColorAsState(
         when {
@@ -137,14 +137,14 @@ private fun echoMainButtonColors(busy: Boolean, enabled: Boolean): Pair<Color, C
             enabled -> colors.onPrimary
             else -> colors.onSurface.copy(alpha = 0.38f)
         },
-        label = "Echo main button text",
+        label = "echoMainButtonText",
     )
     return container to content
 }
 
 @Composable
 private fun EchoMainButtonLabel(footer: EchoFooter) {
-    AnimatedContent(targetState = footer.busy, transitionSpec = EchoMotion.handoff(), contentAlignment = Alignment.Center, label = "Echo main label") { busy ->
+    AnimatedContent(targetState = footer.busy, transitionSpec = EchoMotion.handoff(), contentAlignment = Alignment.Center, label = "echoMainLabel") { busy ->
         if (busy) {
             EchoThinkingLabel()
         } else {
@@ -173,11 +173,11 @@ internal fun EchoThinkingLabel(words: Array<String> = stringArrayResource(R.arra
             index = (index + 1) % words.size
         }
     }
-    val sweep by rememberInfiniteTransition(label = "Thinking shimmer").animateFloat(
+    val sweep by rememberInfiniteTransition(label = "thinkingShimmer").animateFloat(
         initialValue = -0.4f,
         targetValue = 1.4f,
         animationSpec = infiniteRepeatable(tween(EchoThinkingSweepMillis, easing = LinearEasing)),
-        label = "Thinking sweep",
+        label = "thinkingSweep",
     )
     val glint = MaterialTheme.colorScheme.primary
     Row(
@@ -192,7 +192,7 @@ internal fun EchoThinkingLabel(words: Array<String> = stringArrayResource(R.arra
                 (slideInVertically(spring(dampingRatio = 0.8f, stiffness = 500f)) { it / 2 } + fadeIn(tween(160))) togetherWith
                     (slideOutVertically(tween(140)) { -it / 2 } + fadeOut(tween(120)))
             },
-            label = "Thinking word",
+            label = "thinkingWord",
         ) { word ->
             Text(
                 word,

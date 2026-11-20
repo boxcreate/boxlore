@@ -44,18 +44,18 @@ class WearOsSettingsTest {
     private val picked = ArrayList<String>()
 
     @Test fun `limits read as the watch shows them`() {
-        assertEquals(listOf("250 MB", "500 MB", "1 GB", "2 GB"), WearOsUiState.STORAGE_LIMITS_MB.map(WearOsCopy::limit))
+        assertEquals(listOf("250 MB", "500 MB", "1 GB", "2 GB"), WearOsUiState.STORAGE_LIMITS_MB.map { WearOsCopy.limit(it).text() })
     }
 
     @Test fun `usage says what the watch holds against the limit`() {
-        assertEquals("On your watch: 6 episodes, 243 MB of 250 MB.", WearOsCopy.usage(state.value, Locale.US))
-        assertEquals("On your watch: 1 episode, 30 MB of 1 GB.", WearOsCopy.usage(WearOsUiState(watchStoredBytes = 30L * 1024 * 1024, watchDownloads = 1, storageLimitMb = 1000), Locale.US))
-        assertEquals("No downloads on your watch yet.", WearOsCopy.usage(WearOsUiState(), Locale.US))
+        assertEquals("On your watch: 6 episodes, 243 MB of 250 MB.", WearOsCopy.usage(state.value, Locale.US).text())
+        assertEquals("On your watch: 1 episode, 30 MB of 1 GB.", WearOsCopy.usage(WearOsUiState(watchStoredBytes = 30L * 1024 * 1024, watchDownloads = 1, storageLimitMb = 1000), Locale.US).text())
+        assertEquals("No downloads on your watch yet.", WearOsCopy.usage(WearOsUiState(), Locale.US).text())
     }
 
     @Test fun `the connection line says when a change will arrive`() {
-        assertTrue(WearOsCopy.connection(reachable = true).contains("right away"))
-        assertTrue(WearOsCopy.connection(reachable = false).contains("next time it connects"))
+        assertTrue(WearOsCopy.connection(reachable = true).text().contains("right away"))
+        assertTrue(WearOsCopy.connection(reachable = false).text().contains("next time it connects"))
     }
 
     @Test fun `links and the split know the Wear OS page`() {
@@ -86,12 +86,12 @@ class WearOsSettingsTest {
         fixture.compose.onNodeWithTag("wear_os_usage").assertIsDisplayed()
         fixture.compose.runOnIdle { state.value = state.value.copy(watchReachable = false) }
         settle()
-        fixture.compose.onNodeWithText(WearOsCopy.connection(reachable = false)).assertIsDisplayed()
+        fixture.compose.onNodeWithText(WearOsCopy.connection(reachable = false).text()).assertIsDisplayed()
 
         fixture.compose.runOnIdle { paneWidth.value = 1200 }
         settle()
         fixture.compose.onAllNodesWithText("Wear OS")[0].assertIsSelected()
-        fixture.compose.onNodeWithText(WearOsCopy.connection(reachable = false)).assertIsDisplayed()
+        fixture.compose.onNodeWithText(WearOsCopy.connection(reachable = false).text()).assertIsDisplayed()
         assertEquals(ProfileSettingsDestination.WearOs, selected.value)
     }
 

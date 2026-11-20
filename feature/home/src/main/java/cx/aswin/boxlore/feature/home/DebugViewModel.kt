@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home
 
+// i18n-ignore-file: debug-only screen, not shown to listeners.
+
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope

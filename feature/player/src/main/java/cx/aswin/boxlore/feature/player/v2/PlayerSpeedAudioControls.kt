@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -29,8 +30,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.playback.PlayerState
+import cx.aswin.boxlore.feature.player.R
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
 
 /** What the speed controls show about trim silence and the playing show's own speed. */
@@ -53,13 +57,17 @@ data class PlayerSpeedAudio(
 }
 
 /** "Saved for The Daily", or "Saved for this show" when the title isn't known yet. */
-internal fun savedForShowLabel(showTitle: String): String = "Saved for ${showTitle.ifBlank { "this show" }}"
+internal fun savedForShowLabel(showTitle: String): UiText = if (showTitle.isBlank()) {
+    UiText.res(R.string.player_saved_for_this_show)
+} else {
+    UiText.res(R.string.player_saved_for_show, showTitle)
+}
 
 /** The line under Trim silence: casting first, since nothing is trimmed on a Cast device. */
-internal fun trimSilenceSupportingText(audio: PlayerSpeedAudio): String = when {
-    audio.isCasting -> "Not available while casting"
+internal fun trimSilenceSupportingText(audio: PlayerSpeedAudio): UiText = when {
+    audio.isCasting -> UiText.res(R.string.player_not_available_casting)
     audio.hasShowTrimSilence -> savedForShowLabel(audio.showTitle)
-    else -> "Skip long pauses"
+    else -> UiText.res(R.string.player_trim_silence_hint)
 }
 
 /** The speed chip's hint: highlighted for a custom speed or while silence is trimmed. */
@@ -78,14 +86,14 @@ internal fun SpeedSheetAudioSection(
         if (audio.hasShowSpeed) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = savedForShowLabel(audio.showTitle),
+                    text = savedForShowLabel(audio.showTitle).asString(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                TextButton(onClick = onUseAppSpeed) { Text("Use app speed") }
+                TextButton(onClick = onUseAppSpeed) { Text(stringResource(R.string.player_use_app_speed)) }
             }
         }
         Row(
@@ -103,13 +111,13 @@ internal fun SpeedSheetAudioSection(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Trim silence",
+                    text = stringResource(R.string.player_trim_silence),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = GoogleSansWeight.semiBold,
                     color = colorScheme.onSurface,
                 )
                 Text(
-                    text = trimSilenceSupportingText(audio),
+                    text = trimSilenceSupportingText(audio).asString(),
                     style = MaterialTheme.typography.bodySmall,
                     color = colorScheme.onSurfaceVariant,
                     maxLines = 2,
@@ -137,8 +145,14 @@ internal fun InlineSpeedAudioRow(
 ) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
         val trimOn = audio.trimSilence && !audio.isCasting
+        val trimState = stringResource(if (trimOn) R.string.player_on else R.string.player_off)
         InlineAudioTile(
-            tile = InlineAudioTileState("Trim silence", trimSilenceSupportingText(audio), active = trimOn, enabled = !audio.isCasting),
+            tile = InlineAudioTileState(
+                stringResource(R.string.player_trim_silence),
+                trimSilenceSupportingText(audio).asString(),
+                active = trimOn,
+                enabled = !audio.isCasting,
+            ),
             colorScheme = colorScheme,
             shape = if (audio.hasShowSpeed) shapes.start else shapes.full,
             onClick = { onTrimSilenceChange(!audio.trimSilence) },
@@ -146,12 +160,15 @@ internal fun InlineSpeedAudioRow(
                 .weight(1f)
                 .semantics {
                     role = Role.Switch
-                    stateDescription = if (trimOn) "On" else "Off"
+                    stateDescription = trimState
                 },
         )
         if (audio.hasShowSpeed) {
             InlineAudioTile(
-                tile = InlineAudioTileState("Use app speed", "Speed saved for this show"),
+                tile = InlineAudioTileState(
+                    stringResource(R.string.player_use_app_speed),
+                    stringResource(R.string.player_speed_saved_for_show),
+                ),
                 colorScheme = colorScheme,
                 shape = shapes.end,
                 onClick = onUseAppSpeed,
@@ -194,6 +211,7 @@ private fun InlineAudioTile(
 ) {
     val active = tile.active
     val enabled = tile.enabled
+    val tileDescription = stringResource(R.string.player_tile_description, tile.title, tile.subtitle)
     val container by animateColorAsState(
         targetValue = if (active) colorScheme.primary else colorScheme.surfaceContainerHigh,
         animationSpec = tween(180),
@@ -214,7 +232,7 @@ private fun InlineAudioTile(
             .clip(shape)
             .background(container)
             .quickActionClickable(enabled = enabled, shape = shape, onClick = onClick)
-            .semantics(mergeDescendants = true) { contentDescription = "${tile.title}, ${tile.subtitle}" }
+            .semantics(mergeDescendants = true) { contentDescription = tileDescription }
             .padding(horizontal = 12.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,

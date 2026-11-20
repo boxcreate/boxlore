@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_wear_connected">Tu reloj está conectado. Los cambios que hagas aquí le llegan al momento.</string>
+    <string name="settings_wear_not_connected">Tu reloj no está conectado ahora. Los cambios que hagas aquí le llegarán la próxima vez que se conecte.</string>
+    <string name="settings_wear_size_mb">%1$d MB</string>
+    <string name="settings_wear_size_gb">%1$d GB</string>
+    <string name="settings_wear_no_downloads">Aún no hay descargas en tu reloj.</string>
+    <plurals name="settings_wear_usage">
+        <item quantity="one">En tu reloj: %1$d episodio, %2$s MB de %3$s.</item>
+        <item quantity="many">En tu reloj: %1$d episodios, %2$s MB de %3$s.</item>
+        <item quantity="other">En tu reloj: %1$d episodios, %2$s MB de %3$s.</item>
+    </plurals>
+    <string name="settings_wear_your_shows">Tus podcasts</string>
+    <string name="settings_wear_layout_title">Diseño en el reloj</string>
+    <string name="settings_wear_layout_honeycomb">Panal</string>
+    <string name="settings_wear_layout_list">Lista</string>
+    <string name="settings_wear_downloads_title">Descargas en el reloj</string>
+    <string name="settings_wear_downloads_footer">Cuando las descargas llegan al límite, el reloj quita las que escuchaste o descargaste hace más tiempo.</string>
+    <string name="settings_wear_storage_limit">Límite de almacenamiento</string>
+</resources>

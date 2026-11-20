@@ -22,7 +22,7 @@ object EpisodeOfflineMergeLogic {
         snapshot: OfflineEpisodeSnapshot?,
     ): EpisodeFieldSeed {
         if (snapshot == null) return seed
-        val genericTitle = seed.podcastTitle.isEmpty() || seed.podcastTitle == "Podcast"
+        val genericTitle = seed.podcastTitle.isEmpty() || seed.podcastTitle == EpisodeShowTitle.PLACEHOLDER
         return seed.copy(
             podcastId = seed.podcastId.ifEmpty { snapshot.podcastId },
             podcastTitle = if (genericTitle) snapshot.podcastName else seed.podcastTitle,

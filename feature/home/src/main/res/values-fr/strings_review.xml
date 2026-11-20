@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_review_pro_title">Vous êtes un pro des podcasts</string>
+    <plurals name="home_review_pro_body">
+        <item quantity="one">%1$d épisode et ce n’est pas fini : votre avis compterait énormément pour nous.</item>
+        <item quantity="other">%1$d épisodes et ce n’est pas fini : votre avis compterait énormément pour nous.</item>
+    </plurals>
+    <string name="home_review_regular_title">Fidèle à l’écoute</string>
+    <plurals name="home_review_regular_body">
+        <item quantity="one">Vous avez terminé %1$d épisode. Une petite note, ça vous dit ?</item>
+        <item quantity="other">Vous avez terminé %1$d épisodes. Une petite note, ça vous dit ?</item>
+    </plurals>
+    <string name="home_review_roll_title">Quelle série !</string>
+    <plurals name="home_review_roll_body">
+        <item quantity="one">Vous avez terminé %1$d épisode. Comment se passe votre expérience avec boxlore ?</item>
+        <item quantity="other">Vous avez terminé %1$d épisodes. Comment se passe votre expérience avec boxlore ?</item>
+    </plurals>
+    <string name="home_review_rate_boxlore">Noter boxlore</string>
+    <string name="home_review_loving_it">J’adore</string>
+    <string name="home_review_not_right_now">Pas maintenant</string>
+    <string name="home_review_could_be_better">Peut mieux faire</string>
+    <string name="home_post_review_title">Ravis que boxlore vous plaise</string>
+    <string name="home_post_review_body">Si vous n’avez pas eu le temps de laisser une note, pas de souci. Nous aimons aussi recevoir vos idées de fonctionnalités !</string>
+    <string name="home_post_review_share_idea">Partager une idée</string>
+    <string name="home_post_review_maybe_later">Plus tard</string>
+    <string name="home_review_rate_on_play">Noter sur Google Play</string>
+    <string name="home_feedback_title">Donnez votre avis</string>
+    <string name="home_feedback_close">Fermer</string>
+    <string name="home_feedback_sent">Envoyé, merci !</string>
+    <string name="home_feedback_category_label">De quoi s’agit-il ?</string>
+    <string name="home_feedback_category_feature">Idée</string>
+    <string name="home_feedback_category_bug">Bug</string>
+    <string name="home_feedback_category_other">Autre</string>
+    <string name="home_feedback_hint_feature">Décrivez la fonctionnalité que vous aimeriez voir…</string>
+    <string name="home_feedback_hint_bug">Que s’est-il passé, et comment pouvons-nous le reproduire ?</string>
+    <string name="home_feedback_hint_other">Dites-nous ce que vous avez en tête…</string>
+    <string name="home_feedback_char_count">%1$d/%2$d</string>
+    <string name="home_feedback_email_feature">Vous voulez bien partager votre e-mail ? Nous aimerions revenir vers vous pour parler de votre idée.</string>
+    <string name="home_feedback_email_bug">Vous voulez bien partager votre e-mail ? Nous aurons peut-être besoin de quelques détails pour corriger ce bug.</string>
+    <string name="home_feedback_email_other">Vous voulez bien partager votre e-mail ? Nous apprécions vraiment vos retours et pourrions vous recontacter.</string>
+    <string name="home_feedback_email_hint">vous@exemple.com (facultatif)</string>
+    <string name="home_feedback_anonymous" formatted="false">Les avis sont 100 % anonymes : aucune info de compte n’est partagée.</string>
+    <string name="home_feedback_error_empty">Écrivez d’abord un message</string>
+    <string name="home_feedback_error_send">Envoi impossible pour le moment. Réessayez.</string>
+    <string name="home_feedback_sending">Envoi…</string>
+    <string name="home_feedback_send">Envoyer</string>
+</resources>

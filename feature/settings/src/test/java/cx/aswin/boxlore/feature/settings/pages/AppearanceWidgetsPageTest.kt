@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.prefs.WidgetShowsArtwork
+import cx.aswin.boxlore.feature.settings.text
 import kotlinx.coroutines.flow.MutableSharedFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -76,7 +77,7 @@ class AppearanceWidgetsPageTest {
         compose.onNodeWithContentDescription("Add Library · Your Shows to home screen").performScrollTo().performClick()
         compose.onNodeWithContentDescription("Add Now Playing · Round to home screen").performScrollTo().performClick()
         assertEquals(listOf("shows", "round"), added)
-        compose.onNodeWithText(ADD_WIDGETS_BY_HAND).assertDoesNotExist()
+        compose.onNodeWithText(text(ADD_WIDGETS_BY_HAND)).assertDoesNotExist()
     }
 
     @Test
@@ -110,7 +111,7 @@ class AppearanceWidgetsPageTest {
     @Test
     fun `a home screen that cannot add widgets still shows them, with the steps to add one by hand`() {
         render(canAdd = false)
-        compose.onNodeWithText(ADD_WIDGETS_BY_HAND).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(text(ADD_WIDGETS_BY_HAND)).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("boxlore widgets").assertExists()
         compose.onNodeWithText("Add to home screen").assertDoesNotExist()
         compose.onNodeWithTag("picture-full", useUnmergedTree = true).assertExists()
@@ -140,9 +141,9 @@ class AppearanceWidgetsPageTest {
         compose.onNodeWithContentDescription("Add Now Playing · Full Controls to home screen").performScrollTo().performClick()
         // Nothing covered the app: the phone turned the request down without a word.
         compose.mainClock.advanceTimeBy(ADD_WIDGET_ANSWER_MS + 100)
-        compose.onNodeWithText(ADD_WIDGET_UNANSWERED).assertExists()
+        compose.onNodeWithText(text(ADD_WIDGET_UNANSWERED)).assertExists()
         compose.onNodeWithText("Open app settings").assertExists()
-        val tip = compose.onNodeWithText(ADD_WIDGET_UNANSWERED).getUnclippedBoundsInRoot()
+        val tip = compose.onNodeWithText(text(ADD_WIDGET_UNANSWERED)).getUnclippedBoundsInRoot()
         val nextCard = compose.onNodeWithTag("picture-round", useUnmergedTree = true).getUnclippedBoundsInRoot()
         assertTrue("inside the card that was tapped", tip.bottom <= nextCard.top)
         assertEquals(listOf("full"), added)
@@ -154,7 +155,7 @@ class AppearanceWidgetsPageTest {
         compose.mainClock.autoAdvance = false
         compose.onNodeWithContentDescription("Add Now Playing · Full Controls to home screen").performScrollTo().performClick()
         compose.mainClock.advanceTimeBy(ADD_WIDGET_ANSWER_MS + 100)
-        compose.onNodeWithText(ADD_WIDGET_UNANSWERED).assertExists()
+        compose.onNodeWithText(text(ADD_WIDGET_UNANSWERED)).assertExists()
 
         compose.onNodeWithContentDescription("Add Now Playing · Full Controls to home screen").performClick()
         // The home screen app's confirmation covers the app, then the listener comes back.
@@ -162,7 +163,7 @@ class AppearanceWidgetsPageTest {
         compose.mainClock.advanceTimeBy(ADD_WIDGET_ANSWER_MS + 100)
         compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
         compose.mainClock.advanceTimeBy(100)
-        compose.onNodeWithText(ADD_WIDGET_UNANSWERED).assertDoesNotExist()
+        compose.onNodeWithText(text(ADD_WIDGET_UNANSWERED)).assertDoesNotExist()
         assertEquals(listOf("full", "full"), added)
     }
 
@@ -174,7 +175,7 @@ class AppearanceWidgetsPageTest {
         // No confirmation covered the app, but the home screen says the widget is there.
         addedByHomeScreen.tryEmit("full")
         compose.mainClock.advanceTimeBy(ADD_WIDGET_ANSWER_MS + 100)
-        compose.onNodeWithText(ADD_WIDGET_UNANSWERED).assertDoesNotExist()
+        compose.onNodeWithText(text(ADD_WIDGET_UNANSWERED)).assertDoesNotExist()
     }
 
     @Test
@@ -183,13 +184,13 @@ class AppearanceWidgetsPageTest {
         compose.mainClock.autoAdvance = false
         compose.onNodeWithContentDescription("Add Now Playing · Full Controls to home screen").performScrollTo().performClick()
         compose.mainClock.advanceTimeBy(ADD_WIDGET_ANSWER_MS + 100)
-        compose.onNodeWithText(ADD_WIDGET_UNANSWERED).assertExists()
+        compose.onNodeWithText(text(ADD_WIDGET_UNANSWERED)).assertExists()
 
         // The confirmation opens after all, a little late.
         compose.activityRule.scenario.moveToState(Lifecycle.State.STARTED)
         compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
         compose.mainClock.advanceTimeBy(100)
-        compose.onNodeWithText(ADD_WIDGET_UNANSWERED).assertDoesNotExist()
+        compose.onNodeWithText(text(ADD_WIDGET_UNANSWERED)).assertDoesNotExist()
     }
 
     @Test
@@ -204,10 +205,10 @@ class AppearanceWidgetsPageTest {
 
         // The first request's wait ends here; it no longer counts once the second has begun.
         compose.mainClock.advanceTimeBy(800)
-        compose.onNodeWithText(ADD_WIDGET_UNANSWERED).assertDoesNotExist()
+        compose.onNodeWithText(text(ADD_WIDGET_UNANSWERED)).assertDoesNotExist()
 
         compose.mainClock.advanceTimeBy(800)
-        val help = compose.onNodeWithText(ADD_WIDGET_UNANSWERED).getUnclippedBoundsInRoot()
+        val help = compose.onNodeWithText(text(ADD_WIDGET_UNANSWERED)).getUnclippedBoundsInRoot()
         val firstCardPicture = compose.onNodeWithTag("picture-round", useUnmergedTree = true).getUnclippedBoundsInRoot()
         assertTrue("the help is in the second card, the one asked last", help.left > firstCardPicture.right)
         assertEquals(listOf("round", "round_next"), added)
@@ -225,7 +226,7 @@ class AppearanceWidgetsPageTest {
     fun `with no widgets to offer the page is only the options`() {
         render(canAdd = true, state = state.copy(addableWidgets = emptyList()))
         compose.onNodeWithText("Add to home screen").assertDoesNotExist()
-        compose.onNodeWithText(ADD_WIDGETS_BY_HAND).assertDoesNotExist()
+        compose.onNodeWithText(text(ADD_WIDGETS_BY_HAND)).assertDoesNotExist()
         compose.onNodeWithText("Whole covers").assertExists()
     }
 

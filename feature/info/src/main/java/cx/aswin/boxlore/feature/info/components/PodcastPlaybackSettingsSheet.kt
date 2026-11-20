@@ -23,12 +23,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.info.R
 import kotlin.math.roundToInt
 
 data class PodcastPlaybackSettingsState(
@@ -78,7 +83,7 @@ fun PodcastPlaybackSettingsSheet(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
-                text = "Playback for this show",
+                text = stringResource(R.string.podcast_info_playback_for_show),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = GoogleSansWeight.bold,
             )
@@ -96,13 +101,13 @@ fun PodcastPlaybackSettingsSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Use app defaults", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.podcast_playback_use_app_defaults), style = MaterialTheme.typography.titleMedium)
                     Text(
                         text =
                         if (state.isSubscribed) {
-                            appDefaultsSummary(state)
+                            appDefaultsSummary(state).map { it.asString() }.joinToString(" · ")
                         } else {
-                            "Subscribe to customize playback for this show"
+                            stringResource(R.string.podcast_playback_subscribe_hint)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -127,20 +132,20 @@ fun PodcastPlaybackSettingsSheet(
                 onChange = actions.onTrimSilenceOverrideChange,
             )
             PodcastDurationSlider(
-                title = "Skip beginning",
+                title = stringResource(R.string.podcast_playback_skip_beginning),
                 valueMs = state.skipBeginningOverrideMs ?: state.globalSkipBeginningMs,
                 enabled = state.isSubscribed && !usesDefaults,
                 onValueCommitted = actions.onSkipBeginningOverrideChange,
             )
             PodcastDurationSlider(
-                title = "Skip ending",
+                title = stringResource(R.string.podcast_playback_skip_ending),
                 valueMs = state.skipEndingOverrideMs ?: state.globalSkipEndingMs,
                 enabled = state.isSubscribed && !usesDefaults,
                 onValueCommitted = actions.onSkipEndingOverrideChange,
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "Seek-button increments are app-wide and can be changed in Settings → Playback.",
+                text = stringResource(R.string.podcast_playback_seek_note),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -158,8 +163,9 @@ private fun PodcastDurationSlider(
     val valueSeconds = (valueMs / 1_000L).toInt().coerceIn(0, 300)
     var pendingValue by remember(valueSeconds) { mutableFloatStateOf(valueSeconds.toFloat()) }
     val snappedSeconds = ((pendingValue / 5f).roundToInt() * 5).coerceIn(0, 300)
-    val label = if (snappedSeconds == 0) "Off" else "$snappedSeconds seconds"
+    val label = if (snappedSeconds == 0) stringResource(R.string.podcast_playback_off) else pluralStringResource(R.plurals.podcast_playback_seconds, snappedSeconds, snappedSeconds)
 
+    val sliderDescription = stringResource(R.string.podcast_playback_slider_description, title, label)
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -182,10 +188,15 @@ private fun PodcastDurationSlider(
             steps = 0,
             modifier =
             Modifier.semantics {
-                contentDescription = "$title, $label"
+                contentDescription = sliderDescription
             },
         )
     }
 }
 
-internal fun durationLabel(valueMs: Long): String = if (valueMs <= 0L) "Off" else "${valueMs / 1_000L}s"
+/** A skip's length as the summary line types it: "Off" or "30s". */
+internal fun durationLabel(valueMs: Long): UiText = if (valueMs <= 0L) {
+    UiText.res(R.string.podcast_playback_off)
+} else {
+    (valueMs / 1_000L).toInt().let { UiText.plural(R.plurals.podcast_playback_seconds_short, it, it) }
+}

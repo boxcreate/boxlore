@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -85,7 +86,7 @@ fun BoxScope.PlayAllFab(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Play All",
+                text = stringResource(R.string.library_play_all),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = GoogleSansWeight.bold
             )

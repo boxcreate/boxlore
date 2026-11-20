@@ -57,31 +57,27 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.downloads.CompletedDownloadItem
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.StableCompletedDownloadList
 import cx.aswin.boxlore.feature.home.StablePlaybackStateMap
 import cx.aswin.boxlore.feature.home.logic.HomeMixMode
 import cx.aswin.boxlore.feature.home.logic.HomeMixModeLogic
 
+/** How long ago [timestampSeconds] was ("Just now", "3h ago"), in the app language; blank when unknown. */
+@Composable
 internal fun formatRelativeDate(timestampSeconds: Long): String {
     if (timestampSeconds == 0L) return ""
-    val now = System.currentTimeMillis() / 1000
-    val diff = now - timestampSeconds
-    return when {
-        diff < 60 -> "Just now"
-        diff < 3600 -> "${diff / 60}m ago"
-        diff < 86400 -> "${diff / 3600}h ago"
-        diff < 604800 -> "${diff / 86400}d ago"
-        diff < 2592000 -> "${diff / 604800}w ago"
-        diff < 31536000 -> "${diff / 2592000}mo ago"
-        else -> "${diff / 31536000}y ago"
-    }
+    val nowMillis = System.currentTimeMillis()
+    if (nowMillis - timestampSeconds * 1000L < 60_000L) return stringResource(R.string.home_relative_just_now)
+    return LocaleFormats.compactAgo(timestampSeconds * 1000L, nowMillis, currentLocale())
 }
 
 @Composable

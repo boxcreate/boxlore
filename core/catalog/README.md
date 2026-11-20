@@ -110,7 +110,7 @@ src/main/java/cx/aswin/boxlore/core/catalog/
   PodcastNotificationRegistrar.kt, PendingNotificationRegistrations.kt, RssNotification*.kt
   SharedAppDependencies.kt, InstallReferrerManager.kt, ChapterRepository.kt, TranscriptRepository.kt, RemoteText.kt, SharedLoads.kt
   backup/  content/  crosspromo/  logic/  ports/  privacy/  shownotes/  sync/
-src/main/res/                  # auto_* strings and Android Auto drawables
+src/main/res/                  # auto_*, download_*, mood_* strings; Auto drawables
 ```
 
 ## Dependencies

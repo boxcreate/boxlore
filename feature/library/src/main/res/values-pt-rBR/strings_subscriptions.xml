@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_subscriptions_error_loading">Erro ao carregar os podcasts seguidos</string>
+    <string name="library_subscriptions_empty_title">Você ainda não segue nenhum podcast</string>
+    <string name="library_subscriptions_empty_body">Siga seus podcasts favoritos para vê-los aqui.</string>
+    <string name="library_latest_empty_title">Nenhum episódio novo</string>
+    <string name="library_latest_empty_body">Você está em dia! Explore para descobrir mais.</string>
+    <string name="library_latest_all_hidden_title">Você está em dia</string>
+    <string name="library_latest_all_hidden_body">Os episódios ouvidos estão ocultos. Desative Ocultar episódios ouvidos em Ordenar para vê-los de novo.</string>
+    <!-- Search field placeholder -->
+    <string name="library_search_shows">Pesquisar podcasts…</string>
+    <!-- Search field placeholder -->
+    <string name="library_search_subscribed_shows">Pesquisar podcasts seguidos…</string>
+    <!-- Search field placeholder -->
+    <string name="library_search_your_shows">Pesquisar seus podcasts</string>
+    <!-- Screen-reader label -->
+    <string name="library_close_search">Fechar pesquisa</string>
+    <!-- Screen-reader label -->
+    <string name="library_clear_search">Limpar pesquisa</string>
+    <!-- Screen-reader label for the button that switches to a list -->
+    <string name="library_list_view">Ver em lista</string>
+    <!-- Screen-reader label for the button that switches to a grid -->
+    <string name="library_grid_view">Ver em grade</string>
+    <!-- Tab -->
+    <string name="library_tab_shows">Podcasts</string>
+    <!-- Tab -->
+    <string name="library_tab_new_episodes">Episódios novos</string>
+    <!-- Short tab label in the floating selector; keep it under about 10 characters -->
+    <string name="library_tab_new_episodes_short">Novos</string>
+    <!-- Date group heading in New Episodes -->
+    <string name="library_header_today">Hoje</string>
+    <!-- Date group heading in New Episodes -->
+    <string name="library_header_yesterday">Ontem</string>
+    <!-- Date group heading in New Episodes -->
+    <string name="library_header_older">Mais antigos</string>
+    <!-- Under a show in the list: when its latest episode came out -->
+    <string name="library_updated_just_now">Atualizado agora</string>
+    <string name="library_updated_today">Atualizado hoje</string>
+    <string name="library_updated_yesterday">Atualizado ontem</string>
+    <plurals name="library_updated_days_ago">
+        <item quantity="one">Atualizado há %1$d dia</item>
+        <item quantity="other">Atualizado há %1$d dias</item>
+    </plurals>
+    <plurals name="library_updated_weeks_ago">
+        <item quantity="one">Atualizado há %1$d semana</item>
+        <item quantity="other">Atualizado há %1$d semanas</item>
+    </plurals>
+    <!-- %1$s is a date such as Mar 5, 2026 -->
+    <string name="library_updated_on_date">Atualizado em %1$s</string>
+    <!-- Sort choice chip -->
+    <string name="library_sort_smart">Inteligente</string>
+    <!-- Short sort name -->
+    <string name="library_sort_updated_short">Atualizados</string>
+    <!-- Short sort name -->
+    <string name="library_sort_listened_short">Mais ouvidos</string>
+    <!-- Sort choice chip: alphabetical -->
+    <string name="library_sort_a_to_z">A–Z</string>
+    <!-- Sort choice: the listener's own order -->
+    <string name="library_sort_manual">Manual</string>
+    <!-- Sort choice -->
+    <string name="library_sort_chronological">Cronológica</string>
+    <!-- Menu item -->
+    <string name="library_sort_smart_sort">Ordem inteligente</string>
+    <!-- Menu item -->
+    <string name="library_sort_recently_updated_menu">Atualizados recentemente</string>
+    <!-- Menu item: alphabetical -->
+    <string name="library_sort_a_to_z_menu">A-Z</string>
+    <!-- Menu item -->
+    <string name="library_sort_most_listened_menu">Mais ouvidos</string>
+    <!-- Sort choice chip -->
+    <string name="library_sort_recently_updated">Atualizados recentemente</string>
+    <!-- Sort choice chip -->
+    <string name="library_sort_most_listened">Mais ouvidos</string>
+    <!-- Sort choice chip for folders -->
+    <string name="library_sort_most_shows">Mais podcasts</string>
+    <!-- Sort choice chip: follow the order chosen for shows -->
+    <string name="library_sort_same_as_shows">Igual aos podcasts</string>
+    <!-- Sort choice chip: the order the listener arranged by hand -->
+    <string name="library_sort_your_order">Sua ordem</string>
+    <!-- Menu item -->
+    <string name="library_sort_auto_organize_into_folders">Organizar em pastas automaticamente</string>
+    <!-- Menu item -->
+    <string name="library_hide_played_episodes">Ocultar episódios ouvidos</string>
+    <!-- Sheet title -->
+    <string name="library_sort_and_organize">Ordenar e organizar</string>
+    <string name="library_sort_your_shows_description">Podcasts que não estão em uma pasta</string>
+    <string name="library_sort_order_of_folders">Ordem das pastas</string>
+    <string name="library_sort_order_of_folders_description">Onde cada pasta fica na aba Podcasts</string>
+    <string name="library_sort_shows_inside_folders">Podcasts dentro das pastas</string>
+    <string name="library_sort_shows_inside_folders_description">A ordem das capas em cada pasta</string>
+    <!-- Reorder is a menu item's name -->
+    <string name="library_sort_reorder_hint">Para mover podcasts ou pastas manualmente, toque e segure um deles e escolha Reordenar.</string>
+    <string name="library_unsubscribe">Deixar de seguir</string>
+    <string name="library_unsubscribe_title">Deixar de seguir?</string>
+    <!-- %1$s is the show's name -->
+    <string name="library_unsubscribe_body">Tem certeza de que quer deixar de seguir \"%1$s\"? Ele será removido dos podcasts seguidos e das pastas.</string>
+    <!-- %1$s is the show's author, %2$s the folder's name -->
+    <string name="library_show_artist_in_folder">%1$s • Em %2$s</string>
+    <string name="library_reorder_folders">Reordenar pastas</string>
+    <string name="library_reorder_shows">Reordenar podcasts</string>
+    <string name="library_reorder_shows_in_folder">Reordenar podcasts na pasta</string>
+    <string name="library_reorder_title_folders">Reordenando: pastas</string>
+    <string name="library_reorder_title_shows">Reordenando: podcasts</string>
+    <!-- %1$s is the folder's name -->
+    <string name="library_reorder_title_named">Reordenando: %1$s</string>
+    <string name="library_reorder_drag_to_arrange">Arraste para organizar</string>
+    <string name="library_reorder_switches_to_manual">Muda para a ordem manual</string>
+    <!-- Screen-reader label -->
+    <string name="library_reorder_cancel">Cancelar reordenação</string>
+    <!-- Screen-reader label -->
+    <string name="library_reorder_save">Salvar nova ordem</string>
+    <!-- Short genre name on a filter pill -->
+    <string name="library_genre_news">Notícias</string>
+    <string name="library_genre_tech">Tecnologia</string>
+    <string name="library_genre_business">Negócios</string>
+    <string name="library_genre_comedy">Comédia</string>
+    <string name="library_genre_true_crime">True crime</string>
+    <string name="library_genre_sports">Esportes</string>
+    <string name="library_genre_health">Saúde</string>
+    <string name="library_genre_history">História</string>
+    <string name="library_genre_arts">Artes</string>
+    <string name="library_genre_society">Sociedade</string>
+    <string name="library_genre_education">Educação</string>
+    <string name="library_genre_science">Ciência</string>
+    <string name="library_genre_tv_film">TV e cinema</string>
+    <string name="library_genre_fiction">Ficção</string>
+    <string name="library_genre_music">Música</string>
+    <string name="library_genre_religion">Religião</string>
+    <string name="library_genre_family">Família</string>
+    <string name="library_genre_leisure">Lazer</string>
+    <string name="library_genre_govt">Governo</string>
+    <string name="library_genre_full_tech">Tecnologia</string>
+    <string name="library_genre_full_society">Sociedade e cultura</string>
+    <string name="library_genre_full_religion">Religião e espiritualidade</string>
+    <string name="library_genre_full_family">Crianças e família</string>
+    <string name="library_genre_full_govt">Governo</string>
+</resources>

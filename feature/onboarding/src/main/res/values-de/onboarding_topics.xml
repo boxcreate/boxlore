@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_back">Zurück</string>
+    <string name="onboarding_continue">Weiter</string>
+    <plurals name="onboarding_continue_selected">
+        <item quantity="one">Weiter (%d ausgewählt)</item>
+        <item quantity="other">Weiter (%d ausgewählt)</item>
+    </plurals>
+    <string name="onboarding_pick_at_least_one">Mindestens 1 wählen</string>
+    <string name="onboarding_select_at_least_one">Mindestens 1 auswählen</string>
+    <string name="onboarding_select_all_that_apply">Alles Zutreffende auswählen</string>
+    <string name="onboarding_target_genres">Ziel-Genres (zum Umschalten tippen):</string>
+
+    <string name="onboarding_genres_title">Dürfen wir dich besser kennenlernen?</string>
+    <string name="onboarding_genres_body">Wähle die Themen, die dich interessieren</string>
+    <string name="onboarding_subgenres_title">Etwas tiefer eintauchen</string>
+    <string name="onboarding_subgenres_body">Bestimmte Themen auswählen (optional)</string>
+    <string name="onboarding_subgenres_empty">Keine Genres ausgewählt. Geh zurück und wähle welche aus.</string>
+    <string name="onboarding_activities_title">Wann hörst du?</string>
+    <string name="onboarding_lengths_title">Bevorzugte Folgenlänge</string>
+    <string name="onboarding_lengths_generate">Meinen Feed erstellen</string>
+
+    <!-- Genre chips (short labels, one line in a chip). -->
+    <string name="onboarding_genre_news">Nachrichten</string>
+    <string name="onboarding_genre_tech">Technik</string>
+    <string name="onboarding_genre_business">Wirtschaft</string>
+    <string name="onboarding_genre_comedy">Comedy</string>
+    <string name="onboarding_genre_true_crime">True Crime</string>
+    <string name="onboarding_genre_sports">Sport</string>
+    <string name="onboarding_genre_health">Gesundheit</string>
+    <string name="onboarding_genre_history">Geschichte</string>
+    <string name="onboarding_genre_arts">Kunst</string>
+    <string name="onboarding_genre_society">Gesellschaft</string>
+    <string name="onboarding_genre_education">Bildung</string>
+    <string name="onboarding_genre_science">Wissenschaft</string>
+    <string name="onboarding_genre_tv_film">TV &amp; Film</string>
+    <string name="onboarding_genre_fiction">Fiktion</string>
+    <string name="onboarding_genre_music">Musik</string>
+    <string name="onboarding_genre_religion">Religion</string>
+    <string name="onboarding_genre_family">Familie</string>
+    <string name="onboarding_genre_leisure">Freizeit</string>
+    <string name="onboarding_genre_government_short">Politik</string>
+    <string name="onboarding_genre_technology">Technologie</string>
+    <string name="onboarding_genre_society_culture">Gesellschaft &amp; Kultur</string>
+    <string name="onboarding_genre_religion_spirituality">Religion &amp; Spiritualität</string>
+    <string name="onboarding_genre_kids_family">Kinder &amp; Familie</string>
+    <string name="onboarding_genre_government">Staat &amp; Politik</string>
+
+    <!-- News -->
+    <string name="onboarding_subgenre_daily_news">Tagesnachrichten</string>
+    <string name="onboarding_subgenre_politics">Politik</string>
+    <string name="onboarding_subgenre_world_news">Weltnachrichten</string>
+    <string name="onboarding_subgenre_tech_news">Tech-News</string>
+    <string name="onboarding_subgenre_local_news">Lokalnachrichten</string>
+    <!-- Technology -->
+    <string name="onboarding_subgenre_software">Software</string>
+    <string name="onboarding_subgenre_gadgets">Gadgets</string>
+    <string name="onboarding_subgenre_ai_and_tech">KI &amp; Technik</string>
+    <string name="onboarding_subgenre_startups">Start-ups</string>
+    <string name="onboarding_subgenre_cybersecurity">Cybersicherheit</string>
+    <!-- Business -->
+    <string name="onboarding_subgenre_investing">Geldanlage</string>
+    <string name="onboarding_subgenre_marketing">Marketing</string>
+    <string name="onboarding_subgenre_personal_finance">Persönliche Finanzen</string>
+    <string name="onboarding_subgenre_management">Management</string>
+    <string name="onboarding_subgenre_real_estate">Immobilien</string>
+    <!-- Comedy -->
+    <string name="onboarding_subgenre_standup">Stand-up</string>
+    <string name="onboarding_subgenre_improv">Impro</string>
+    <string name="onboarding_subgenre_pop_culture_comedy">Popkultur-Comedy</string>
+    <string name="onboarding_subgenre_storytelling_comedy">Erzähl-Comedy</string>
+    <!-- True Crime -->
+    <string name="onboarding_subgenre_investigative">Investigativ</string>
+    <string name="onboarding_subgenre_cold_cases">Cold Cases</string>
+    <string name="onboarding_subgenre_serial_killers">Serienmörder</string>
+    <string name="onboarding_subgenre_history_crime">Historische Kriminalfälle</string>
+    <!-- Sports -->
+    <string name="onboarding_subgenre_football">Fußball</string>
+    <string name="onboarding_subgenre_basketball">Basketball</string>
+    <string name="onboarding_subgenre_f1_and_racing">F1 &amp; Motorsport</string>
+    <string name="onboarding_subgenre_fantasy_sports">Fantasy Sports</string>
+    <string name="onboarding_subgenre_fitness">Fitness</string>
+    <!-- Health -->
+    <string name="onboarding_subgenre_mental_health">Mentale Gesundheit</string>
+    <string name="onboarding_subgenre_nutrition">Ernährung</string>
+    <string name="onboarding_subgenre_medicine">Medizin</string>
+    <string name="onboarding_subgenre_biohacking">Biohacking</string>
+    <string name="onboarding_subgenre_yoga_and_meditation">Yoga &amp; Meditation</string>
+    <!-- History -->
+    <string name="onboarding_subgenre_ancient_history">Antike</string>
+    <string name="onboarding_subgenre_modern_history">Neuere Geschichte</string>
+    <string name="onboarding_subgenre_military_history">Militärgeschichte</string>
+    <string name="onboarding_subgenre_biographies">Biografien</string>
+    <!-- Arts -->
+    <string name="onboarding_subgenre_design">Design</string>
+    <string name="onboarding_subgenre_literature">Literatur</string>
+    <string name="onboarding_subgenre_visual_arts">Bildende Kunst</string>
+    <string name="onboarding_subgenre_performing_arts">Darstellende Kunst</string>
+    <string name="onboarding_subgenre_fashion">Mode</string>
+    <!-- Society & Culture -->
+    <string name="onboarding_subgenre_philosophy">Philosophie</string>
+    <string name="onboarding_subgenre_relationships">Beziehungen</string>
+    <string name="onboarding_subgenre_pop_culture">Popkultur</string>
+    <string name="onboarding_subgenre_personal_journals">Persönliche Tagebücher</string>
+    <!-- Education -->
+    <string name="onboarding_subgenre_language_learning">Sprachen lernen</string>
+    <string name="onboarding_subgenre_self_improvement">Selbstoptimierung</string>
+    <string name="onboarding_subgenre_how_to">Anleitungen</string>
+    <string name="onboarding_subgenre_courses">Kurse</string>
+    <!-- Science -->
+    <string name="onboarding_subgenre_space_and_physics">Weltall &amp; Physik</string>
+    <string name="onboarding_subgenre_biology">Biologie</string>
+    <string name="onboarding_subgenre_psychology">Psychologie</string>
+    <string name="onboarding_subgenre_nature">Natur</string>
+    <string name="onboarding_subgenre_earth_sciences">Geowissenschaften</string>
+    <!-- TV & Film -->
+    <string name="onboarding_subgenre_movie_reviews">Filmkritiken</string>
+    <string name="onboarding_subgenre_tv_show_reviews">Serienkritiken</string>
+    <string name="onboarding_subgenre_anime">Anime</string>
+    <!-- Fiction -->
+    <string name="onboarding_subgenre_sci_fi_and_fantasy">Sci-Fi &amp; Fantasy</string>
+    <string name="onboarding_subgenre_drama">Drama</string>
+    <string name="onboarding_subgenre_mystery_and_thriller">Krimi &amp; Thriller</string>
+    <string name="onboarding_subgenre_comedy_fiction">Comedy-Fiktion</string>
+    <!-- Music -->
+    <string name="onboarding_subgenre_music_history">Musikgeschichte</string>
+    <string name="onboarding_subgenre_songwriting">Songwriting</string>
+    <string name="onboarding_subgenre_interviews">Interviews</string>
+    <string name="onboarding_subgenre_music_commentary">Musikkommentar</string>
+    <!-- Religion & Spirituality -->
+    <string name="onboarding_subgenre_mindfulness">Achtsamkeit</string>
+    <string name="onboarding_subgenre_spirituality">Spiritualität</string>
+    <string name="onboarding_subgenre_religion">Religion</string>
+    <!-- Kids & Family -->
+    <string name="onboarding_subgenre_parenting">Elternsein</string>
+    <string name="onboarding_subgenre_bedtime_stories">Gutenachtgeschichten</string>
+    <string name="onboarding_subgenre_education_for_kids">Lernen für Kinder</string>
+    <string name="onboarding_subgenre_family_activity">Familienaktivitäten</string>
+    <!-- Leisure -->
+    <string name="onboarding_subgenre_gaming">Gaming</string>
+    <string name="onboarding_subgenre_hobbies">Hobbys</string>
+    <string name="onboarding_subgenre_travel">Reisen</string>
+    <string name="onboarding_subgenre_food_and_drink">Essen &amp; Trinken</string>
+    <string name="onboarding_subgenre_automotive">Autos</string>
+    <!-- Government -->
+    <string name="onboarding_subgenre_law_and_justice">Recht &amp; Justiz</string>
+    <string name="onboarding_subgenre_public_policy">Politikgestaltung</string>
+    <string name="onboarding_subgenre_municipal_news">Kommunalnachrichten</string>
+    <string name="onboarding_subgenre_national_politics">Innenpolitik</string>
+
+    <!-- Listening moments. -->
+    <string name="onboarding_activity_commuting">Pendeln</string>
+    <string name="onboarding_activity_working">Arbeiten</string>
+    <string name="onboarding_activity_meditating">Meditieren / Entspannen</string>
+    <string name="onboarding_activity_winding_down">Abschalten</string>
+    <string name="onboarding_activity_working_out">Training</string>
+    <string name="onboarding_activity_chores">Hausarbeit</string>
+
+    <!-- Episode lengths, each with its range. -->
+    <string name="onboarding_length_short">Kurz</string>
+    <string name="onboarding_length_short_range">Unter 15 Minuten</string>
+    <string name="onboarding_length_medium">Mittel</string>
+    <string name="onboarding_length_medium_range">15 bis 45 Minuten</string>
+    <string name="onboarding_length_long">Lang</string>
+    <string name="onboarding_length_long_range">Über 45 Minuten</string>
+</resources>

@@ -63,15 +63,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.components.LocalWatchPlayOffer
 import cx.aswin.boxlore.core.designsystem.components.PlayingOnPill
 import cx.aswin.boxlore.core.designsystem.layout.boxloreVisibleWindowSize
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.LocalFontRoundness
 import cx.aswin.boxlore.core.designsystem.theme.buildBoxLoreTypography
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.feature.player.R
 import cx.aswin.boxlore.feature.player.v2.logic.MinimalQueueSwipe
 import cx.aswin.boxlore.feature.player.v2.logic.minimalRemainingTime
-import java.util.Locale
 import kotlin.math.max
 
 /** Original Compose presentation inspired by BunPod; uses boxlore's unchanged player services. */
@@ -188,7 +189,7 @@ private fun MinimalPlayerHeading(state: PlayerState, colors: ColorScheme, action
     val titleHeight = with(LocalDensity.current) { 160.sp.toDp() }
     Column {
         Text(
-            show.uppercase(Locale.getDefault()),
+            show.uppercase(currentLocale()),
             Modifier.fillMaxWidth().padding(bottom = 8.dp).clickable(role = Role.Button, onClick = actions.onPodcastInfo),
             color = colors.onSurfaceVariant,
             style = MaterialTheme.typography.labelSmall.copy(lineHeight = 1.25.em),
@@ -225,8 +226,10 @@ private fun MinimalPlayerProgress(state: PlayerState, flows: PlayerProgressFlows
     val time = minimalRemainingTime(state.duration, position)
     val label = when {
         state.duration <= 0 -> stringResource(R.string.minimal_unknown_duration)
-        time.hours > 0 -> stringResource(R.string.minimal_remaining_hours, time.hours, time.minutes)
-        else -> stringResource(R.string.minimal_remaining_minutes, time.minutes)
+        else -> stringResource(
+            R.string.minimal_remaining,
+            LocaleFormats.duration((time.hours * 60L + time.minutes) * 60L, currentLocale(), LocaleFormats.DurationWidth.NARROW),
+        )
     }
     Column(horizontalAlignment = Alignment.End) {
         Text(

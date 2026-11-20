@@ -48,11 +48,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.feature.player.R
 import kotlin.math.absoluteValue
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -210,7 +212,7 @@ private fun PlayerArtworkPager(
                     (pagerState.currentPage - index) + pagerState.currentPageOffsetFraction
                     ).absoluteValue.coerceIn(0f, 1f)
                 val pageArtwork = if (index == 0) artworkUrl else artwork.nextArtworkUrl
-                val contentDescription = if (index == 0) "Album Art" else "Up next: ${artwork.nextEpisodeTitle}"
+                val contentDescription = if (index == 0) stringResource(R.string.player_album_art) else stringResource(R.string.player_hero_up_next, artwork.nextEpisodeTitle.orEmpty())
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     PlayerArtworkCard(
                         artworkUrl = pageArtwork,
@@ -264,7 +266,7 @@ private fun NextEpisodeHint(height: Dp, colorScheme: ColorScheme) {
             // Foreground M3 accent icon
             Icon(
                 imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                contentDescription = "Swipe for next episode",
+                contentDescription = stringResource(R.string.player_swipe_next_episode),
                 tint = colorScheme.primary,
                 modifier = Modifier.size(32.dp)
             )
@@ -277,7 +279,7 @@ private fun PlayerArtworkCard(
     artworkUrl: String?,
     fallbackArtworkUrls: List<String?>,
     colorScheme: ColorScheme,
-    contentDescription: String = "Album Art",
+    contentDescription: String = stringResource(R.string.player_album_art),
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -336,7 +338,7 @@ fun VideoModeButtons(
                 ) {
                     Icon(Icons.Rounded.Videocam, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Switch to Video", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.player_switch_to_video), style = MaterialTheme.typography.labelLarge)
                 }
             } else {
                 FilledTonalButton(
@@ -348,7 +350,7 @@ fun VideoModeButtons(
                 ) {
                     Icon(Icons.Rounded.Headset, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Audio Only", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.player_audio_only), style = MaterialTheme.typography.labelLarge)
                 }
                 FilledTonalButton(
                     onClick = onFullscreenClick,
@@ -359,7 +361,7 @@ fun VideoModeButtons(
                 ) {
                     Icon(Icons.Rounded.Fullscreen, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Fullscreen", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.player_fullscreen), style = MaterialTheme.typography.labelLarge)
                 }
             }
         }

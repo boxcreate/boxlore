@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -35,7 +36,6 @@ import cx.aswin.boxlore.feature.info.branded.BrandedCopyrightButton
 import cx.aswin.boxlore.feature.info.branded.BrandedDescription
 import cx.aswin.boxlore.feature.info.branded.BrandedDescriptionExtras
 import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
-import java.util.Locale
 
 /**
  * Their crime board ([DesiCrimeBoard]), the hosts' names with the © beside them, then the
@@ -79,7 +79,7 @@ private fun HostsLine(modifier: Modifier) {
     Row(modifier.heightIn(min = 26.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
         Spacer(Modifier.width(30.dp))
         Text(
-            stringResource(R.string.desicrime_hosts).uppercase(Locale.getDefault()),
+            stringResource(R.string.desicrime_hosts).uppercase(currentLocale()),
             style = brandedSansStyle(10.5.sp, 13.sp, weight = 700).copy(letterSpacing = 1.8.sp),
             color = DesiCrimeColors.Muted,
             textAlign = TextAlign.Center,

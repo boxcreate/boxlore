@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_downloads_all">Todas las descargas</string>
+    <string name="library_downloads_error_loading">Error al cargar las descargas</string>
+    <string name="library_downloads_select_podcasts">Seleccionar podcasts</string>
+    <string name="library_downloads_select_episodes">Seleccionar episodios</string>
+    <string name="library_downloads_offline_title">Modo sin conexión</string>
+    <string name="library_downloads_offline_body">Sin conexión a internet. Reproduciendo episodios descargados.</string>
+    <string name="library_downloads_empty_title">Un vacío de lo más zen</string>
+    <string name="library_downloads_empty_offline_body">No hay episodios descargados. ¡Activa el Wi-Fi y pon a cargar el teléfono para sincronizar tus descargas inteligentes!</string>
+    <string name="library_downloads_empty_body">Aún no hay episodios descargados. Activa Descargas inteligentes arriba o busca podcasts para descargarlos a mano.</string>
+    <string name="library_downloads_delete_title">¿Eliminar descargas?</string>
+    <plurals name="library_downloads_delete_podcasts_body">
+        <item quantity="one">¿Seguro que quieres eliminar todos los episodios descargados de %1$d podcast seleccionado?</item>
+        <item quantity="many">¿Seguro que quieres eliminar todos los episodios descargados de los %1$d podcasts seleccionados?</item>
+        <item quantity="other">¿Seguro que quieres eliminar todos los episodios descargados de los %1$d podcasts seleccionados?</item>
+    </plurals>
+    <string name="library_downloads_delete_episodes_title">¿Eliminar descargas?</string>
+    <plurals name="library_downloads_delete_episodes_body">
+        <item quantity="one">¿Quitar %1$d episodio descargado seleccionado?</item>
+        <item quantity="many">¿Quitar %1$d episodios descargados seleccionados?</item>
+        <item quantity="other">¿Quitar %1$d episodios descargados seleccionados?</item>
+    </plurals>
+    <string name="library_downloads_delete_show_title">¿Eliminar las descargas del podcast?</string>
+    <string name="library_downloads_delete_show_body">¿Quitar todos los episodios descargados de «%1$s»?</string>
+    <string name="library_downloads_play_show">Reproducir descargas del podcast</string>
+    <string name="library_downloads_latest">Última: %1$s</string>
+    <string name="library_downloads_status_queued">En cola</string>
+    <string name="library_downloads_status_failed">Error</string>
+    <string name="library_downloads_failed_line">No se pudo descargar</string>
+    <string name="library_downloads_download_again">Volver a descargar</string>
+    <string name="library_remove_download">Quitar descarga</string>
+    <plurals name="library_downloads_failed_count">
+        <item quantity="one">%1$d no se pudo descargar</item>
+        <item quantity="many">%1$d no se pudieron descargar</item>
+        <item quantity="other">%1$d no se pudieron descargar</item>
+    </plurals>
+    <plurals name="library_downloads_count_line">
+        <item quantity="one">%1$d episodio • %2$s</item>
+        <item quantity="many">%1$d episodios • %2$s</item>
+        <item quantity="other">%1$d episodios • %2$s</item>
+    </plurals>
+    <plurals name="library_downloads_count_line_used">
+        <item quantity="one">%1$d episodio • %2$s usados</item>
+        <item quantity="many">%1$d episodios • %2$s usados</item>
+        <item quantity="other">%1$d episodios • %2$s usados</item>
+    </plurals>
+    <plurals name="library_downloads_count_line_saved">
+        <item quantity="one">%1$d episodio • %2$s guardados</item>
+        <item quantity="many">%1$d episodios • %2$s guardados</item>
+        <item quantity="other">%1$d episodios • %2$s guardados</item>
+    </plurals>
+    <string name="library_downloads_count_and_failed">%1$s • %2$s</string>
+    <string name="library_size_bytes">%1$s B</string>
+    <string name="library_size_kilobytes">%1$s KB</string>
+    <string name="library_size_megabytes">%1$s MB</string>
+    <string name="library_size_gigabytes">%1$s GB</string>
+    <string name="library_size_terabytes">%1$s TB</string>
+    <string name="library_smart_downloads">Descargas inteligentes</string>
+    <string name="library_smart_downloads_enable">Activar Descargas inteligentes</string>
+    <string name="library_smart_downloads_subtitle">Biblioteca sin conexión automática</string>
+    <string name="library_smart_downloads_settings">Ajustes de Descargas inteligentes</string>
+    <string name="library_smart_downloads_status_syncing">Sincronizando candidatos</string>
+    <string name="library_smart_downloads_status_checking">Buscando actualizaciones</string>
+    <string name="library_smart_downloads_status_ready">Cola sin conexión lista</string>
+    <plurals name="library_smart_downloads_collapsed_summary">
+        <item quantity="one">%1$s • %2$d/%3$d ep. (%4$d MB)</item>
+        <item quantity="many">%1$s • %2$d/%3$d ep. (%4$d MB)</item>
+        <item quantity="other">%1$s • %2$d/%3$d ep. (%4$d MB)</item>
+    </plurals>
+    <string name="library_smart_downloads_last_sync">Última sincronización: %1$s</string>
+    <string name="library_smart_downloads_last_sync_never">Última sincronización: nunca</string>
+    <string name="library_smart_downloads_syncing">Sincronizando</string>
+    <string name="library_smart_downloads_sync_now">Sincronizar ahora</string>
+    <plurals name="library_smart_downloads_downloading">
+        <item quantity="one">%1$d episodio descargándose en segundo plano</item>
+        <item quantity="many">%1$d episodios descargándose en segundo plano</item>
+        <item quantity="other">%1$d episodios descargándose en segundo plano</item>
+    </plurals>
+    <string name="library_smart_downloads_syncing_cloud">Sincronizando con la nube…</string>
+    <string name="library_smart_downloads_episodes_progress">Episodios de Mixtape (%1$d / %2$d)</string>
+    <string name="library_smart_downloads_storage_progress">Límite de almacenamiento (%1$d MB / %2$d MB)</string>
+    <string name="library_smart_downloads_storage_used">Espacio usado</string>
+    <string name="library_smart_downloads_storage_unlimited">%1$d MB (ilimitado)</string>
+</resources>

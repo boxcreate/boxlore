@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.FeedbackDraft
 import cx.aswin.boxlore.core.support.OutgoingFeedback
@@ -11,6 +12,7 @@ import cx.aswin.boxlore.core.support.PhotoUpload
 import cx.aswin.boxlore.core.support.SendResult
 import cx.aswin.boxlore.core.support.SupportCategory
 import cx.aswin.boxlore.core.support.SupportMeta
+import cx.aswin.boxlore.feature.settings.text
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -184,7 +186,7 @@ class FeedbackViewModelTest {
             val state = vm.uiState.value
             assertFalse(state.isSuccess)
             assertFalse(state.isSubmitting)
-            assertEquals("You've sent a lot today. Try again tomorrow.", state.errorMessage)
+            assertEquals("You've sent a lot today. Try again tomorrow.", state.errorMessage?.text())
             assertEquals("Another one", prefs.getFeedbackDraft()?.message)
             assertTrue(events.none { it.first == "feedback_sent" })
         } finally {
@@ -200,7 +202,7 @@ class FeedbackViewModelTest {
 
         vm.onSubmit()
         advanceUntilIdle()
-        assertEquals("Couldn't send your feedback. Check your connection and try again.", vm.uiState.value.errorMessage)
+        assertEquals("Couldn't send your feedback. Check your connection and try again.", vm.uiState.value.errorMessage?.text())
         assertEquals("Try me twice", vm.uiState.value.message)
 
         support.result = SendResult.Sent("t2")
@@ -290,7 +292,7 @@ class FeedbackViewModelTest {
         advanceUntilIdle()
 
         assertTrue(support.sent.isEmpty())
-        assertEquals("Write a message first.", vm.uiState.value.errorMessage)
+        assertEquals("Write a message first.", vm.uiState.value.errorMessage?.text())
     }
 
     @Test
@@ -334,7 +336,7 @@ class FeedbackViewModelTest {
 
         assertTrue(support.sent.isEmpty())
         assertFalse(vm.uiState.value.isSuccess)
-        assertEquals("Couldn't attach your photos. Check your connection and try again.", vm.uiState.value.errorMessage)
+        assertEquals("Couldn't attach your photos. Check your connection and try again.", vm.uiState.value.errorMessage?.text())
         assertEquals(2, vm.uiState.value.photos.size)
     }
 
@@ -361,11 +363,11 @@ class FeedbackViewModelTest {
         vm.onMessageChanged("Waiting")
 
         assertFalse(vm.uiState.value.canSend)
-        assertEquals(PAUSED_NOTICE, vm.uiState.value.shownNotice)
+        assertEquals(text(PAUSED_NOTICE), vm.uiState.value.shownNotice?.text())
 
         support.meta.value = SupportMeta.Offline.copy(canStartNew = false, notice = "Back on Monday.")
         advanceUntilIdle()
-        assertEquals("Back on Monday.", vm.uiState.value.shownNotice)
+        assertEquals("Back on Monday.", vm.uiState.value.shownNotice?.text())
     }
 
     @Test
@@ -398,7 +400,7 @@ class FeedbackViewModelTest {
         assertEquals(joined, vm.uiState.value.message)
         assertTrue(vm.uiState.value.overLimit)
         assertFalse(vm.uiState.value.canSend)
-        assertEquals("This is over the 2,000-character limit. Shorten it to send.", vm.uiState.value.limitMessage)
+        assertEquals("This is over the 2,000-character limit. Shorten it to send.", vm.uiState.value.limitMessage?.text())
 
         // Nothing is cut off behind the listener's back: a category change saves it whole, typing can't grow it.
         vm.onCategorySelected(FeedbackCategory.AUDIO.id)
@@ -493,14 +495,14 @@ class FeedbackViewModelTest {
             val vm = viewModel(support)
             advanceUntilIdle()
             val state = vm.uiState.value
-            assertEquals(listOf("Something broke", "Account and sync"), state.choices.map { it.label })
+            assertEquals(listOf("Something broke", "Account and sync"), state.choices.map { it.label.text() })
             // The default "feature" isn't offered any more, so the first choice stands in.
             assertEquals("bug", state.choice.id)
 
             vm.onCategorySelected("account")
             vm.onCategorySelected("not-offered")
             assertEquals("account", vm.uiState.value.choice.id)
-            assertEquals(FeedbackCategory.OTHER.placeholder, vm.uiState.value.choice.placeholder)
+            assertEquals(UiText.res(FeedbackCategory.OTHER.placeholder), vm.uiState.value.choice.placeholder)
             vm.onMessageChanged("Sync stopped")
             vm.onSubmit()
             advanceUntilIdle()

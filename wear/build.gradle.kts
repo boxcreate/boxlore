@@ -62,6 +62,8 @@ android {
 
     buildTypes {
         debug {
+            // en-XA (longer, accented text) and ar-XB (right to left) for layout checks: docs/i18n/TRANSLATING.md.
+            isPseudoLocalesEnabled = true
             // `-Pwear.sample=true` builds a debug app that runs on sample shows.
             val sample = providers.gradleProperty("wear.sample").orNull == "true"
             buildConfigField("boolean", "WATCH_SAMPLE_DATA", sample.toString())
@@ -80,6 +82,17 @@ android {
                 "proguard-rules.pro",
             )
         }
+    }
+
+    androidResources {
+        // The watch follows the watch's system language; this lists the languages it has (res/resources.properties).
+        generateLocaleConfig = true
+        localeFilters += listOf("en", "es", "pt-rBR", "de", "fr", "en-rXA", "ar-rXB")
+    }
+
+    lint {
+        // Translations land after the strings move into resources; until then a missing one only warns.
+        warning += "MissingTranslation"
     }
 
     buildFeatures {
@@ -144,4 +157,7 @@ dependencies {
     testRuntimeOnly(libs.junit.vintage.engine)
     testRuntimeOnly(libs.junit.platform.launcher)
     testImplementation(libs.kotlinx.coroutines.test)
+    // Dates format through android.icu, which Robolectric provides on the JVM.
+    testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
 }

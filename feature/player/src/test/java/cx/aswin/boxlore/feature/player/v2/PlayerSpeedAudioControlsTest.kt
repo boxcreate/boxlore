@@ -11,6 +11,7 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.text.resolve
 import cx.aswin.boxlore.core.playback.PlaybackAudioState
 import cx.aswin.boxlore.core.playback.PlaybackRouteState
 import cx.aswin.boxlore.core.playback.PlayerState
@@ -21,6 +22,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
@@ -39,14 +41,17 @@ class PlayerSpeedAudioControlsTest {
     private var appSpeedUses = 0
     private val speeds = mutableListOf<Float>()
 
+    private fun supportingLine(audio: PlayerSpeedAudio): String =
+        trimSilenceSupportingText(audio).resolve(RuntimeEnvironment.getApplication())
+
     @Test
     fun `the supporting line says casting first, then the show's own setting`() {
-        assertEquals("Skip long pauses", trimSilenceSupportingText(PlayerSpeedAudio()))
-        assertEquals("Saved for Serial", trimSilenceSupportingText(PlayerSpeedAudio(showTitle = "Serial", hasShowTrimSilence = true)))
-        assertEquals("Saved for this show", trimSilenceSupportingText(PlayerSpeedAudio(hasShowTrimSilence = true)))
+        assertEquals("Skip long pauses", supportingLine(PlayerSpeedAudio()))
+        assertEquals("Saved for Serial", supportingLine(PlayerSpeedAudio(showTitle = "Serial", hasShowTrimSilence = true)))
+        assertEquals("Saved for this show", supportingLine(PlayerSpeedAudio(hasShowTrimSilence = true)))
         assertEquals(
             "Not available while casting",
-            trimSilenceSupportingText(PlayerSpeedAudio(hasShowTrimSilence = true, isCasting = true)),
+            supportingLine(PlayerSpeedAudio(hasShowTrimSilence = true, isCasting = true)),
         )
     }
 

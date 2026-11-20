@@ -33,6 +33,7 @@ import cx.aswin.boxlore.core.model.PlaylistOrder
 import cx.aswin.boxlore.core.model.PlaylistShow
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
+import cx.aswin.boxlore.core.model.text.resolve
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -43,6 +44,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
@@ -283,7 +285,7 @@ class PlaylistPagesAdaptiveTest {
         compose.onNodeWithTag(PLAYLIST_DETAIL_TAG).performScrollToNode(hasText("Unknown show"))
         compose.onNodeWithContentDescription("Remove Unknown show").performClick()
         compose.runOnIdle { assertEquals(listOf("restored"), removed) }
-        assertEquals("Show removed", PlaylistDetailCopy.removed(unknown))
-        assertEquals("Removed Alpha", PlaylistDetailCopy.removed(shows.first()))
+        assertEquals("Show removed", PlaylistDetailCopy.removed(unknown).resolve(RuntimeEnvironment.getApplication()))
+        assertEquals("Removed Alpha", PlaylistDetailCopy.removed(shows.first()).resolve(RuntimeEnvironment.getApplication()))
     }
 }

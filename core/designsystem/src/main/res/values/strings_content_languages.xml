@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Joining names into a list, built from the end: "German, French and Spanish" is list_middle(German, list_end_and(French, Spanish)). -->
+    <string name="list_middle">%1$s, %2$s</string>
+    <string name="list_end_and">%1$s and %2$s</string>
+    <string name="list_end_or">%1$s or %2$s</string>
+
+    <!-- The content languages sheet (Library settings › Recommendations › Languages). -->
+    <string name="content_languages_title">Languages</string>
+    <!-- Beside the title: how many languages are picked. %1$d is the number picked, %2$d the most allowed (4). -->
+    <string name="content_languages_picked">%1$d of %2$d picked</string>
+    <string name="content_languages_include_english">Include English</string>
+    <!-- Heading over language chips. %1$s is a country or region name, such as Germany. -->
+    <string name="content_languages_suggested_for">Suggested for %1$s</string>
+    <string name="content_languages_other">Other languages</string>
+    <string name="content_languages_done">Done</string>
+    <!-- Under "Include English" when it is off and one language is picked. %1$s is that language's name as used inside a sentence (German, allemand). -->
+    <string name="content_languages_english_off_one">There are far fewer %1$s shows, so recommendations won’t match your taste as closely. If there aren’t enough, boxlore adds a few in English.</string>
+    <string name="content_languages_english_off_many">There are far fewer shows in your languages, so recommendations won’t match your taste as closely. If there aren’t enough, boxlore adds a few in English.</string>
+    <!-- %1$s is a list of language names, such as "German and French". -->
+    <string name="content_languages_english_can_turn_off">Turn it off to get only shows in %1$s.</string>
+    <!-- %1$s lists the picked languages that keep English on ("Hindi and Chinese"); %2$s lists the languages that can stand alone, joined with "or". -->
+    <string name="content_languages_english_kept_on">Stays on with %1$s. You can turn it off when you pick only %2$s.</string>
+    <!-- %1$s lists the languages that can stand alone, joined with "or". -->
+    <string name="content_languages_english_only">You can turn it off when you pick only %1$s.</string>
+
+    <!-- The content region picker, shared by settings and onboarding. -->
+    <string name="content_region_label">Content region</string>
+    <string name="content_region_supporting">Charts and regional ranking</string>
+    <string name="content_region_choose">Choose content region</string>
+    <string name="content_region_sheet_body">Sets the top charts in Explore. Your languages stay as they are.</string>
+    <!-- Under a country in the picker. %1$s lists that country's suggested languages, such as "English · Hindi". -->
+    <string name="content_region_suggested">Suggested: %1$s</string>
+</resources>

@@ -24,7 +24,28 @@ import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.Podcast
 import kotlinx.coroutines.launch
+
+/**
+ * The show name and author a Lore episode is queued with when it carries no show of its own. These
+ * are the playback layer's stored sentinels ("Unknown Podcast" is recognised by QueueShowPolicy and
+ * Home), so they stay English and are never translated here.
+ */
+internal data class LoreShowFallback(val title: String, val author: String)
+
+@Composable
+internal fun rememberLoreShowFallback(): LoreShowFallback = LORE_SHOW_FALLBACK
+
+private val LORE_SHOW_FALLBACK = LoreShowFallback("Unknown Podcast", "Unknown") // i18n-ignore: stored sentinel
+
+/** The show a Lore card's episode joins the queue under, built from what the episode carries. */
+internal fun loreQueuePodcast(episode: Episode, fallback: LoreShowFallback): Podcast = Podcast(
+    id = episode.podcastId ?: "unknown",
+    title = episode.podcastTitle ?: fallback.title,
+    artist = episode.podcastTitle ?: fallback.author,
+    imageUrl = episode.podcastImageUrl ?: episode.imageUrl ?: "",
+)
 
 /** Conflict dialog when starting a Lore queue over an existing normal queue. */
 @Composable

@@ -53,7 +53,7 @@ internal fun LazyStaggeredGridScope.curatedForYouItems(
             onEpisodeClick = { episode, podcast ->
                 callbacks.onEpisodeClick?.invoke(episode, podcast, "home_for_you")
             },
-            discoveryContextTitle = feedState.discoveryGreeting.title,
+            discoveryContextTitle = feedState.discoveryGreeting.analyticsTitle,
             onBrowseRecommendations = {
                 callbacks.onNavigateToExplore?.invoke(null, "home_for_you_see_all", "foryou")
             },
@@ -239,7 +239,7 @@ private fun DiscoveryGreetingHeader(
     modifier: Modifier = Modifier,
 ) {
     HomeTopLevelSectionHeader(
-        title = greeting.title,
+        title = stringResource(greeting.title),
         seeAllContentDescription = stringResource(R.string.home_discovery_see_all),
         onSeeAllClick = onSeeAllClick,
         chapter = HomeDiscoveryChapter.MOMENT,

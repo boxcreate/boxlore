@@ -67,7 +67,7 @@ internal data class HeroProgressState(val value: Float, val playing: Boolean)
 @Composable
 internal fun HeroProgress(progress: Float, color: Color, track: Color, modifier: Modifier = Modifier, playing: Boolean = false) {
     val description = stringResource(R.string.home_hero_listening_progress)
-    val animatedProgress = animateFloatAsState(progress, WavyProgressIndicatorDefaults.ProgressAnimationSpec, label = "hero progress")
+    val animatedProgress = animateFloatAsState(progress, WavyProgressIndicatorDefaults.ProgressAnimationSpec, label = "heroProgress")
     val stroke = Stroke(with(LocalDensity.current) { 4.dp.toPx() }, cap = StrokeCap.Round)
     LinearWavyProgressIndicator(
         progress = { animatedProgress.value },

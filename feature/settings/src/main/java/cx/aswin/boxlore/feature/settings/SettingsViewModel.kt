@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.domain.RssSubscriptionResult
 import cx.aswin.boxlore.core.domain.ports.RankingResetPort
 import cx.aswin.boxlore.core.domain.ports.RssSubscriptionPort
+import cx.aswin.boxlore.core.model.text.UiText
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -18,7 +19,7 @@ import kotlinx.coroutines.launch
 data class SettingsRssUiState(
     val showAddRssDialog: Boolean = false,
     val rssUrl: String = "",
-    val rssError: String? = null,
+    val rssError: UiText? = null,
     val isAddingRss: Boolean = false,
     val pendingRssMatch: RssSubscriptionResult? = null,
     val isLinkingRssMatch: Boolean = false,
@@ -27,7 +28,7 @@ data class SettingsRssUiState(
 /** One-off UI events (e.g. toasts) that [SettingsScreen] surfaces on behalf of the ViewModel. */
 sealed interface SettingsEvent {
     data class ShowToast(
-        val message: String,
+        val message: UiText,
     ) : SettingsEvent
 }
 
@@ -57,7 +58,7 @@ class SettingsViewModel(
             val reset = rankingFeedbackRepository.reset()
             _events.emit(
                 SettingsEvent.ShowToast(
-                    if (reset) "Recommendations reset" else "Couldn't reset recommendations",
+                    UiText.res(if (reset) R.string.settings_recommendations_reset_done else R.string.settings_recommendations_reset_failed),
                 ),
             )
         }
@@ -117,7 +118,7 @@ class SettingsViewModel(
                 _uiState.value = _uiState.value.copy(pendingRssMatch = null)
                 _events.emit(
                     SettingsEvent.ShowToast(
-                        "Using the RSS source for ${subscription.podcast.title}.",
+                        UiText.res(R.string.settings_rss_using_rss_source, subscription.podcast.title),
                     ),
                 )
             } catch (error: CancellationException) {
@@ -133,24 +134,24 @@ class SettingsViewModel(
     fun keepRssMatchSeparate() {
         if (_uiState.value.pendingRssMatch == null) return
         _uiState.value = _uiState.value.copy(pendingRssMatch = null)
-        _events.tryEmit(SettingsEvent.ShowToast("Kept both subscriptions separate."))
+        _events.tryEmit(SettingsEvent.ShowToast(UiText.res(R.string.settings_rss_kept_separate)))
     }
 }
 
-private fun subscriptionAddedMessage(subscription: RssSubscriptionResult): String = when {
+private fun subscriptionAddedMessage(subscription: RssSubscriptionResult): UiText = when {
     subscription.linkedPodcastIndexId != null ->
-        "Switched ${subscription.podcast.title} to its RSS source."
+        UiText.res(R.string.settings_rss_switched_to_rss, subscription.podcast.title)
     subscription.automaticUpdateChecksSupported ->
-        "Added ${subscription.podcast.title} (${subscription.episodeCount} episodes)."
+        UiText.plural(R.plurals.settings_rss_added_with_episodes, subscription.episodeCount, subscription.podcast.title, subscription.episodeCount)
     else ->
-        "Added ${subscription.podcast.title}. To check for new episodes, open the podcast and refresh."
+        UiText.res(R.string.settings_rss_added_refresh, subscription.podcast.title)
 }
 
-private fun Throwable.toRssErrorMessage(): String = when (this) {
+private fun Throwable.toRssErrorMessage(): UiText = when (this) {
     is IllegalArgumentException ->
-        "Check that this is a valid HTTPS podcast RSS feed."
+        UiText.res(R.string.settings_rss_error_invalid)
     is IOException ->
-        "The RSS feed could not be downloaded. Check your connection and try again."
+        UiText.res(R.string.settings_rss_error_download)
     else ->
-        "We couldn't add this RSS feed."
+        UiText.res(R.string.settings_rss_error_generic)
 }

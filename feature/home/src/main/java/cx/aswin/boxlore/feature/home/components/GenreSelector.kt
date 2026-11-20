@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.home.components
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -105,7 +106,7 @@ fun GenreSelector(
                     HomeGenreFilterChip(stringResource(R.string.home_genres_top), selectedCategory == null, { onCategorySelected(null) }, Icons.Rounded.Whatshot)
                 } else {
                     val genre = GENRES[index - 1]
-                    HomeGenreFilterChip(genre.label, selectedCategory == genre.value, { onCategorySelected(genre.value) }, genre.icon)
+                    HomeGenreFilterChip(stringResource(genre.label), selectedCategory == genre.value, { onCategorySelected(genre.value) }, genre.icon)
                 }
             },
             onWidthChanged = { showSheet = false },
@@ -128,7 +129,7 @@ fun GenreSelector(
 
             displayGenres.forEach { genre ->
                 HomeGenreFilterChip(
-                    label = genre.label,
+                    label = stringResource(genre.label),
                     selected = selectedCategory == genre.value,
                     onClick = { onCategorySelected(genre.value) },
                     icon = genre.icon,
@@ -208,7 +209,7 @@ private fun HomeGenreSheetContent(selectedCategory: String?, genres: List<GenreI
 
             genres.forEach { genre ->
                 HomeGenreFilterChip(
-                    label = genre.label,
+                    label = stringResource(genre.label),
                     selected = selectedCategory == genre.value,
                     onClick = {
                         onCategorySelected(genre.value)
@@ -248,30 +249,30 @@ private fun HomeGenreFilterChip(
 
 // Synced with ExploreGenreSelector / onboarding search icons. TODO: Move to core:model
 private data class GenreItem(
-    val label: String,
+    @StringRes val label: Int,
     val value: String,
     val icon: ImageVector,
 )
 
 private val GENRES =
     listOf(
-        GenreItem("News", "News", Icons.Rounded.Newspaper),
-        GenreItem("Tech", "Technology", Icons.Rounded.Computer),
-        GenreItem("Business", "Business", Icons.Rounded.Work),
-        GenreItem("Comedy", "Comedy", Icons.Rounded.SentimentVerySatisfied),
-        GenreItem("True Crime", "True Crime", Icons.Rounded.Fingerprint),
-        GenreItem("Sports", "Sports", Icons.Rounded.SportsBaseball),
-        GenreItem("Health", "Health", Icons.Rounded.FavoriteBorder),
-        GenreItem("History", "History", Icons.Rounded.AccountBalance),
-        GenreItem("Arts", "Arts", Icons.Rounded.Palette),
-        GenreItem("Society", "Society & Culture", Icons.Rounded.Person),
-        GenreItem("Education", "Education", Icons.Rounded.School),
-        GenreItem("Science", "Science", Icons.Rounded.Science),
-        GenreItem("TV & Film", "TV & Film", Icons.Rounded.Movie),
-        GenreItem("Fiction", "Fiction", Icons.Rounded.AutoStories),
-        GenreItem("Music", "Music", Icons.Rounded.MusicNote),
-        GenreItem("Religion", "Religion & Spirituality", Icons.Rounded.Star),
-        GenreItem("Family", "Kids & Family", Icons.Rounded.Face),
-        GenreItem("Leisure", "Leisure", Icons.Rounded.Weekend),
-        GenreItem("Govt", "Government", Icons.Rounded.Gavel),
+        GenreItem(R.string.home_genre_news, "News", Icons.Rounded.Newspaper),
+        GenreItem(R.string.home_genre_tech, "Technology", Icons.Rounded.Computer),
+        GenreItem(R.string.home_genre_business, "Business", Icons.Rounded.Work),
+        GenreItem(R.string.home_genre_comedy, "Comedy", Icons.Rounded.SentimentVerySatisfied),
+        GenreItem(R.string.home_genre_true_crime, "True Crime", Icons.Rounded.Fingerprint),
+        GenreItem(R.string.home_genre_sports, "Sports", Icons.Rounded.SportsBaseball),
+        GenreItem(R.string.home_genre_health, "Health", Icons.Rounded.FavoriteBorder),
+        GenreItem(R.string.home_genre_history, "History", Icons.Rounded.AccountBalance),
+        GenreItem(R.string.home_genre_arts, "Arts", Icons.Rounded.Palette),
+        GenreItem(R.string.home_genre_society, "Society & Culture", Icons.Rounded.Person),
+        GenreItem(R.string.home_genre_education, "Education", Icons.Rounded.School),
+        GenreItem(R.string.home_genre_science, "Science", Icons.Rounded.Science),
+        GenreItem(R.string.home_genre_tv_film, "TV & Film", Icons.Rounded.Movie),
+        GenreItem(R.string.home_genre_fiction, "Fiction", Icons.Rounded.AutoStories),
+        GenreItem(R.string.home_genre_music, "Music", Icons.Rounded.MusicNote),
+        GenreItem(R.string.home_genre_religion, "Religion & Spirituality", Icons.Rounded.Star),
+        GenreItem(R.string.home_genre_family, "Kids & Family", Icons.Rounded.Face),
+        GenreItem(R.string.home_genre_leisure, "Leisure", Icons.Rounded.Weekend),
+        GenreItem(R.string.home_genre_govt, "Government", Icons.Rounded.Gavel),
     )

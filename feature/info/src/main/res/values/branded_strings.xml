@@ -2,6 +2,8 @@
 <resources>
     <!-- Branded show pages: a boxlore pick shown in the show's own style. -->
     <!-- The Showcase seal in the top bar ("The best of" around boxlore's mark) and the note it opens. -->
+    <!-- Drawn in capitals along the top arc of the Showcase seal, above boxlore's mark ("THE BEST OF [boxlore mark]"). Keep it about 11 characters so it fits the arc. -->
+    <string name="branded_seal_words">The best of</string>
     <string name="branded_seal_label">About this Showcase page</string>
     <string name="branded_seal_title">A Showcase page</string>
     <string name="branded_seal_body">A show boxlore picked, on a page made in its own style with its own art.</string>

@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.designsystem.links.openLink
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.rememberGoogleSansFamily
@@ -43,19 +45,21 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.isTrailer
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.feature.info.EpisodeSort
 import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedChipRowHeight
 import cx.aswin.boxlore.feature.info.branded.BrandedChipStyle
 import cx.aswin.boxlore.feature.info.branded.LocalBrandedPage
+import java.util.Locale
 
 internal fun calculateUpdateFrequencyData(
     podcast: Podcast,
     episodes: List<Episode>,
     currentSort: EpisodeSort,
     searchQuery: String,
-    cachedFrequencyData: Pair<String, ImageVector>?,
-): Pair<String, ImageVector>? {
+    cachedFrequencyData: Pair<UiText, ImageVector>?,
+): Pair<UiText, ImageVector>? {
     // If sorted by oldest or searching, use the cached calculation (to prevent "Inactive / Ended" bug)
     if (currentSort != EpisodeSort.NEWEST || searchQuery.isNotEmpty()) {
         return cachedFrequencyData
@@ -94,11 +98,11 @@ internal fun computeDaysSinceLatest(
     return (System.currentTimeMillis() / 1000 - latest.publishedDate) / (60 * 60 * 24)
 }
 
-internal fun dormancyStatus(daysSinceLatest: Long?): Pair<String, ImageVector>? {
+internal fun dormancyStatus(daysSinceLatest: Long?): Pair<UiText, ImageVector>? {
     if (daysSinceLatest == null || daysSinceLatest <= 0) return null
     return when {
-        daysSinceLatest > 365 -> Pair("Inactive / Ended", Icons.Rounded.PauseCircle)
-        daysSinceLatest > 180 -> Pair("On Hiatus", Icons.Rounded.PauseCircle)
+        daysSinceLatest > 365 -> Pair(UiText.res(R.string.podcast_info_frequency_inactive), Icons.Rounded.PauseCircle)
+        daysSinceLatest > 180 -> Pair(UiText.res(R.string.podcast_info_frequency_hiatus), Icons.Rounded.PauseCircle)
         else -> null
     }
 }
@@ -134,44 +138,47 @@ internal fun computeMedianIntervalDays(
 internal fun betweenSeasonsStatus(
     medianIntervalDays: Long?,
     daysSinceLatest: Long?,
-): Pair<String, ImageVector>? {
+): Pair<UiText, ImageVector>? {
     if (medianIntervalDays == null || medianIntervalDays <= 3 || daysSinceLatest == null) return null
     return if (daysSinceLatest > (medianIntervalDays * 2)) {
-        Pair("Between Seasons", Icons.Rounded.HourglassBottom)
+        Pair(UiText.res(R.string.podcast_info_frequency_between_seasons), Icons.Rounded.HourglassBottom)
     } else {
         null
     }
 }
 
-internal fun explicitFrequencyTag(tag: String?): Pair<String, ImageVector>? {
+internal fun explicitFrequencyTag(tag: String?): Pair<UiText, ImageVector>? {
     if (tag.isNullOrBlank()) return null
-    val cleanText = tag.trim().lowercase()
-    val parsedDouble = cleanText.toDoubleOrNull()
-    val formattedText =
-        if (parsedDouble != null) {
-            when {
-                parsedDouble >= 7.0 -> "Releases Daily"
-                parsedDouble >= 2.0 -> "Releases Multi-Weekly"
-                parsedDouble >= 1.0 -> "Releases Weekly"
-                parsedDouble >= 0.5 -> "Releases Every 2 Weeks"
-                parsedDouble >= 0.1 -> "Releases Monthly"
-                else -> "Releases Occasionally"
-            }
-        } else {
-            when (cleanText) {
-                "daily" -> "Releases Daily"
-                "weekly" -> "Releases Weekly"
-                "monthly" -> "Releases Monthly"
-                "biweekly", "bi-weekly" -> "Releases Every 2 Weeks"
-                else -> tag.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-            }
-        }
-    val icon = if (formattedText.contains("Daily", ignoreCase = true)) Icons.Rounded.Bolt else Icons.Rounded.CalendarMonth
-    return Pair(formattedText, icon)
+    val cleanText = tag.trim().lowercase(Locale.ROOT)
+    val known: Int? = cleanText.toDoubleOrNull()?.let(::frequencyForEpisodesPerWeek) ?: NamedFrequencies[cleanText]
+    // A tag the app doesn't know is the feed's own text, shown as the feed wrote it.
+    val text = known?.let { UiText.res(it) } ?: UiText.raw(tag.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() })
+    val daily = if (known != null) known == R.string.podcast_info_frequency_daily else cleanText.contains("daily")
+    val icon = if (daily) Icons.Rounded.Bolt else Icons.Rounded.CalendarMonth
+    return Pair(text, icon)
 }
 
-/** Most common weekday name across [validEpisodes], if at least half of them share one. */
-internal fun commonReleaseDayName(validEpisodes: List<Episode>): String? {
+/** The frequency chip for a feed that gives episodes per week as a number. */
+private fun frequencyForEpisodesPerWeek(perWeek: Double): Int = when {
+    perWeek >= 7.0 -> R.string.podcast_info_frequency_daily
+    perWeek >= 2.0 -> R.string.podcast_info_frequency_multi_weekly
+    perWeek >= 1.0 -> R.string.podcast_info_frequency_weekly
+    perWeek >= 0.5 -> R.string.podcast_info_frequency_biweekly
+    perWeek >= 0.1 -> R.string.podcast_info_frequency_monthly
+    else -> R.string.podcast_info_frequency_occasionally
+}
+
+/** The feed's own frequency words the app knows, keyed in lower case. */
+private val NamedFrequencies = mapOf(
+    "daily" to R.string.podcast_info_frequency_daily,
+    "weekly" to R.string.podcast_info_frequency_weekly,
+    "monthly" to R.string.podcast_info_frequency_monthly,
+    "biweekly" to R.string.podcast_info_frequency_biweekly,
+    "bi-weekly" to R.string.podcast_info_frequency_biweekly,
+)
+
+/** Most common weekday ([java.util.Calendar.DAY_OF_WEEK]) across [validEpisodes], if at least half of them share one. */
+internal fun commonReleaseDay(validEpisodes: List<Episode>): Int? {
     val calendar = java.util.Calendar.getInstance()
     val dayCounts = IntArray(8)
     for (ep in validEpisodes) {
@@ -187,37 +194,40 @@ internal fun commonReleaseDayName(validEpisodes: List<Episode>): String? {
         }
     }
     if (maxCount < (validEpisodes.size * 0.5).toInt()) return null
-    return when (maxDay) {
-        java.util.Calendar.SUNDAY -> "Sundays"
-        java.util.Calendar.MONDAY -> "Mondays"
-        java.util.Calendar.TUESDAY -> "Tuesdays"
-        java.util.Calendar.WEDNESDAY -> "Wednesdays"
-        java.util.Calendar.THURSDAY -> "Thursdays"
-        java.util.Calendar.FRIDAY -> "Fridays"
-        java.util.Calendar.SATURDAY -> "Saturdays"
-        else -> null
-    }
+    return maxDay.takeIf { it in 1..7 }
 }
+
+/** "Weekly on Mondays" and "Every 2 weeks on Mondays" as whole sentences, one per weekday. */
+private val WeeklyOnDay = mapOf(
+    java.util.Calendar.SUNDAY to R.string.podcast_info_frequency_weekly_sunday,
+    java.util.Calendar.MONDAY to R.string.podcast_info_frequency_weekly_monday,
+    java.util.Calendar.TUESDAY to R.string.podcast_info_frequency_weekly_tuesday,
+    java.util.Calendar.WEDNESDAY to R.string.podcast_info_frequency_weekly_wednesday,
+    java.util.Calendar.THURSDAY to R.string.podcast_info_frequency_weekly_thursday,
+    java.util.Calendar.FRIDAY to R.string.podcast_info_frequency_weekly_friday,
+    java.util.Calendar.SATURDAY to R.string.podcast_info_frequency_weekly_saturday,
+)
+private val BiweeklyOnDay = mapOf(
+    java.util.Calendar.SUNDAY to R.string.podcast_info_frequency_biweekly_sunday,
+    java.util.Calendar.MONDAY to R.string.podcast_info_frequency_biweekly_monday,
+    java.util.Calendar.TUESDAY to R.string.podcast_info_frequency_biweekly_tuesday,
+    java.util.Calendar.WEDNESDAY to R.string.podcast_info_frequency_biweekly_wednesday,
+    java.util.Calendar.THURSDAY to R.string.podcast_info_frequency_biweekly_thursday,
+    java.util.Calendar.FRIDAY to R.string.podcast_info_frequency_biweekly_friday,
+    java.util.Calendar.SATURDAY to R.string.podcast_info_frequency_biweekly_saturday,
+)
 
 internal fun predictedFrequencyFromPattern(
     validEpisodes: List<Episode>,
     medianIntervalDays: Long,
-): Pair<String, ImageVector>? {
-    val commonDayName = commonReleaseDayName(validEpisodes)
+): Pair<UiText, ImageVector>? {
+    val commonDay = commonReleaseDay(validEpisodes)
     return when (medianIntervalDays) {
-        in 0..1 -> Pair("Releases Daily", Icons.Rounded.Bolt)
-        in 2..4 -> Pair("Releases Multi-Weekly", Icons.Rounded.CalendarMonth)
-        in 5..8 ->
-            Pair(
-                if (commonDayName != null) "Weekly on $commonDayName" else "Releases Weekly",
-                Icons.Rounded.CalendarMonth,
-            )
-        in 12..16 ->
-            Pair(
-                if (commonDayName != null) "Every 2 Weeks on $commonDayName" else "Releases Every 2 Weeks",
-                Icons.Rounded.CalendarMonth,
-            )
-        in 25..35 -> Pair("Releases Monthly", Icons.Rounded.CalendarMonth)
+        in 0..1 -> Pair(UiText.res(R.string.podcast_info_frequency_daily), Icons.Rounded.Bolt)
+        in 2..4 -> Pair(UiText.res(R.string.podcast_info_frequency_multi_weekly), Icons.Rounded.CalendarMonth)
+        in 5..8 -> Pair(UiText.res(WeeklyOnDay[commonDay] ?: R.string.podcast_info_frequency_weekly), Icons.Rounded.CalendarMonth)
+        in 12..16 -> Pair(UiText.res(BiweeklyOnDay[commonDay] ?: R.string.podcast_info_frequency_biweekly), Icons.Rounded.CalendarMonth)
+        in 25..35 -> Pair(UiText.res(R.string.podcast_info_frequency_monthly), Icons.Rounded.CalendarMonth)
         else -> null
     }
 }
@@ -258,10 +268,23 @@ internal fun mediumIconFor(medium: String): ImageVector = when (medium.lowercase
     else -> Icons.Rounded.Headphones
 }
 
+/** The Podcasting 2.0 medium as a chip names it; null for a medium the app doesn't know, shown as the feed wrote it. */
+internal fun mediumLabelFor(medium: String): Int? = when (medium.lowercase(Locale.ROOT)) {
+    "music" -> R.string.podcast_info_medium_music
+    "video" -> R.string.podcast_info_medium_video
+    "film" -> R.string.podcast_info_medium_film
+    "audiobook" -> R.string.podcast_info_medium_audiobook
+    "newsletter" -> R.string.podcast_info_medium_newsletter
+    "blog" -> R.string.podcast_info_medium_blog
+    else -> null
+}
+
 @Composable
 internal fun CompactPersonChip(person: Person, onClick: () -> Unit) {
+    val locale = currentLocale()
     val displayText = if (!person.role.isNullOrBlank()) {
-        "${person.name} (${person.role!!.replaceFirstChar { it.uppercaseChar() }})"
+        // The role comes from the feed (Podcasting 2.0 person tag), so only the pattern is translated.
+        stringResource(R.string.podcast_info_person_role, person.name, person.role!!.replaceFirstChar { it.titlecase(locale) })
     } else {
         person.name
     }
@@ -286,12 +309,12 @@ internal fun CompactPersonChip(person: Person, onClick: () -> Unit) {
 
 @Composable
 internal fun RssFeedChip() {
-    PodcastMetadataChip(label = "RSS", icon = Icons.Rounded.RssFeed)
+    PodcastMetadataChip(label = stringResource(R.string.podcast_info_rss_chip), icon = Icons.Rounded.RssFeed)
 }
 
 @Composable
-internal fun UpdateFrequencyChip(frequencyData: Pair<String, ImageVector>) {
-    PodcastMetadataChip(label = frequencyData.first, icon = frequencyData.second)
+internal fun UpdateFrequencyChip(frequencyData: Pair<UiText, ImageVector>) {
+    PodcastMetadataChip(label = frequencyData.first.asString(), icon = frequencyData.second)
 }
 
 @Composable
@@ -306,7 +329,8 @@ internal fun PlayTrailerChip(onClick: () -> Unit) {
 
 @Composable
 internal fun MediumChip(medium: String) {
-    PodcastMetadataChip(label = medium.replaceFirstChar { it.uppercaseChar() }, icon = mediumIconFor(medium))
+    val label = mediumLabelFor(medium)?.let { stringResource(it) } ?: medium.replaceFirstChar { it.titlecase(currentLocale()) }
+    PodcastMetadataChip(label = label, icon = mediumIconFor(medium))
 }
 
 @Composable
@@ -397,7 +421,7 @@ internal fun PodcastInfoMetadataChipsRow(
     podcast: Podcast,
     sortedPersons: List<Person>,
     trailerEpisode: Episode?,
-    frequencyData: Pair<String, ImageVector>?,
+    frequencyData: Pair<UiText, ImageVector>?,
     onEditGenre: (() -> Unit)? = null,
     onPlayTrailer: (Episode) -> Unit,
 ) {
@@ -441,7 +465,7 @@ private fun openPersonLink(
 
 private fun LazyListScope.podcastIdentityChips(
     podcast: Podcast,
-    frequencyData: Pair<String, ImageVector>?,
+    frequencyData: Pair<UiText, ImageVector>?,
     onEditGenre: (() -> Unit)? = null,
 ) {
     if (podcast.isRss) {
