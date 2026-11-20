@@ -81,7 +81,8 @@ object MixtapeEngine {
         var ordered = orderCandidates(candidates.filter { it.episode.id !in dismissedIds }).toMutableList()
         addRecommendationFallbacks(
             candidates = ordered,
-            recommendations = recommendations.filter { it.id !in completedIds && it.id !in dismissedIds },
+            // Finished and archived episodes are never offered as fallbacks.
+            recommendations = recommendations.filter { it.id !in completedIds + dismissedIds },
             subscriptionsById = subscriptionsById,
             historyByEpisode = historyByEpisode,
         )
