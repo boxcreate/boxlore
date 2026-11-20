@@ -152,7 +152,7 @@ class PlaylistPagesAdaptiveTest {
     @Test
     fun `a suggested playlist keeps its name and how it plays across window changes, then creates`() {
         compose.setContent { listPage() }
-        compose.onNodeWithContentDescription("New playlist").performClick()
+        compose.onNodeWithTag(NEW_PLAYLIST_TILE_TAG).performClick()
         compose.onNodeWithText("Made from your shows").assertExists()
         compose.onNodeWithTag("playlist_suggestion_genre:Sports").performClick()
         compose.onNode(hasSetTextAction()).assertTextContains("Sports")
@@ -179,7 +179,7 @@ class PlaylistPagesAdaptiveTest {
     fun `picking shows yourself survives recreation, then names the playlist after their genre`() {
         val restoration = StateRestorationTester(compose)
         restoration.setContent { listPage() }
-        compose.onNodeWithContentDescription("New playlist").performClick()
+        compose.onNodeWithTag(NEW_PLAYLIST_TILE_TAG).performClick()
         compose.onNodeWithText("Pick shows yourself").performClick()
         compose.onNodeWithContentDescription("Charlie").performClick()
 

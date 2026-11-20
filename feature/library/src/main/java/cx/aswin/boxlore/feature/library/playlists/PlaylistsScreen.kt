@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.library.playlists
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -14,6 +13,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
@@ -29,12 +29,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -44,7 +43,6 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,7 +51,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -203,9 +200,6 @@ internal fun PlaylistsContent(
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = PlaylistsCopy.BACK) }
                 },
-                actions = {
-                    IconButton(onClick = state::openCreate) { Icon(Icons.Rounded.Add, contentDescription = stringResource(PlaylistCopy.NEW_PLAYLIST)) }
-                },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
@@ -233,7 +227,7 @@ internal fun PlaylistsContent(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    item(key = "new_playlist") { NewPlaylistTile(onClick = state::openCreate) }
+                    item(key = "new_playlist", span = { GridItemSpan(maxLineSpan) }) { NewPlaylistButton(onClick = state::openCreate) }
                     items(playlists, key = { it.id }) { playlist ->
                         PlaylistCard(
                             playlist = playlist,
@@ -276,34 +270,15 @@ private fun PlaylistCard(playlist: Playlist, onClick: () -> Unit, onPlay: () -> 
     }
 }
 
-/** The first cell of the grid: a playlist-sized tile that starts New playlist. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+/** New playlist, as one compact tonal button across the top of the grid. */
 @Composable
-private fun NewPlaylistTile(onClick: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Surface(
+private fun NewPlaylistButton(onClick: () -> Unit) {
+    FilledTonalButton(
         onClick = onClick,
-        color = colors.primaryContainer,
-        contentColor = colors.onPrimaryContainer,
-        shape = RoundedCornerShape(28.dp),
-        modifier = Modifier.fillMaxWidth().testTag(NEW_PLAYLIST_TILE_TAG),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag(NEW_PLAYLIST_TILE_TAG),
     ) {
-        Column(Modifier.padding(10.dp)) {
-            Box(Modifier.fillMaxWidth().aspectRatio(1f), contentAlignment = Alignment.Center) {
-                Box(
-                    Modifier.fillMaxSize(0.56f).clip(MaterialShapes.Cookie9Sided.toShape()).background(colors.primary),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(Icons.Rounded.Add, contentDescription = null, tint = colors.onPrimary, modifier = Modifier.size(36.dp))
-                }
-            }
-            Text(
-                stringResource(PlaylistCopy.NEW_PLAYLIST),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = GoogleSansWeight.bold,
-                modifier = Modifier.heightIn(min = CardTextHeight).padding(start = 6.dp, top = 12.dp),
-            )
-        }
+        Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(20.dp))
+        Text(stringResource(PlaylistCopy.NEW_PLAYLIST), modifier = Modifier.padding(start = 8.dp), style = MaterialTheme.typography.titleSmall)
     }
 }
 
@@ -402,9 +377,9 @@ internal fun PlaylistEditorDialogs(
 
 private val PlaylistCardMinWidth = 168.dp
 
-/** The name and summary area under a card's cover, shared with the New playlist tile so a row lines up. */
+/** The name and summary area under a card's cover, so cards in a row line up. */
 private val CardTextHeight = 76.dp
 
-/** The Playlists grid and its New playlist tile, for tests. */
+/** The Playlists grid and its New playlist button, for tests. */
 internal const val PLAYLISTS_GRID_TAG = "playlists_grid"
 internal const val NEW_PLAYLIST_TILE_TAG = "new_playlist_tile"
