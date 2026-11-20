@@ -73,6 +73,11 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>A tile and a watch-face shortcut resume your last episode in one tap. <a href="https://github.com/boxcreate/boxlore/pull/1258"><img src="https://img.shields.io/badge/PR-1258-6750A4?style=flat-square" alt="PR #1258" height="18"/></a></li>
 <li>Sign in on your watch with one tap from your phone. <a href="https://github.com/boxcreate/boxlore/pull/1258"><img src="https://img.shields.io/badge/PR-1258-6750A4?style=flat-square" alt="PR #1258" height="18"/></a></li>
 <li>On your watch, a show's page now says when its episodes are loading or couldn't load, with Try again, and gets a fresh list from your phone when the one it has is old.</li>
+<li>Hide a show everywhere from the menu on its page. boxlore stops suggesting it on Home, Explore, Lore, Smart Queue and Android Auto. Unhide it from the same menu or in LeaveMeAlone.</li>
+<li>Give a show its own speed in Playback for this show, in the menu on its page. After that, changing the speed in the player while that show plays updates its own speed.</li>
+<li>Trim silence skips quiet gaps in episodes. Turn it on in Settings › Playback or the player's speed controls, or just for one show in Playback for this show. It doesn't work while casting.</li>
+<li>Episode titles only shows a show's episodes as a short list of titles. Turn it on from the menu on a show's page or in Settings › Appearance › Show pages.</li>
+<li>Make playlists in Library from the shows you follow, like one for comedy and one for history. Each keeps its place, picks up new episodes by itself, and you can switch between them any time.</li>
 </ul>
 <b>⚡ Improved:</b>
 <ul align="left">
