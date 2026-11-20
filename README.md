@@ -241,7 +241,7 @@ New features and improvements for the next release are currently in development.
 
 - **Android Auto.** Browse Home, Library, Downloads and Discover in the car. Playback picks up when you reconnect.
 - **Google Cast.** Play on TVs and speakers, with the player in the app kept in sync.
-- **Wear OS (coming soon).** boxlore on your watch plays with or without your phone. [Take a first look](docs/WEAR_OS.md).
+- **Wear OS.** boxlore on your watch plays with or without your phone. Out now on GitHub, coming to Google Play very soon. [boxlore on Wear OS](docs/WEAR_OS.md).
 - **Widgets.** Now Playing, playback controls, Your Shows and New Episodes.
 
 ### Sync and backup
@@ -324,7 +324,7 @@ Android may ask you to allow installation from your browser or file manager when
 
 Using Android Auto with the GitHub or Obtainium version? Turn on one setting first: [Use boxlore with Android Auto](docs/ANDROID_AUTO.md).
 
-A Wear OS watch app is on its way. [boxlore on Wear OS](docs/WEAR_OS.md) shows what it does and how you'll install it.
+The Wear OS watch app is out now on GitHub Releases and coming to Google Play very soon. [boxlore on Wear OS](docs/WEAR_OS.md) shows what it does and how to install it.
 
 ## Project
 
