@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Toast when the picked folder refuses a lasting write grant (Settings › Cloud Sync & Backups). -->
+    <string name="auto_backup_folder_refused">boxlore can\'t save to this folder. Choose another one.</string>
+</resources>

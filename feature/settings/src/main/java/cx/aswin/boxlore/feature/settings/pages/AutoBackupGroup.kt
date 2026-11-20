@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -38,14 +39,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.model.text.LocaleFormats
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.prefs.AutoBackupFrequency
 import cx.aswin.boxlore.core.prefs.AutoBackupProblem
 import cx.aswin.boxlore.core.prefs.AutoBackupSettings
 import cx.aswin.boxlore.core.prefs.AutoBackupStore
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsActionRow
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
@@ -111,7 +118,7 @@ internal fun rememberAutoBackupPage(control: AutoBackupControl?): AutoBackupPage
     val active = control ?: return null
     val openPicker = { initial: Uri? ->
         launchFolderPicker(picker, initial) {
-            Toast.makeText(context, NO_FOLDER_PICKER_MESSAGE, Toast.LENGTH_LONG).show()
+            Toast.makeText(context, context.getString(R.string.settings_auto_backup_no_picker), Toast.LENGTH_LONG).show()
         }
     }
     val chooseFolder = {
@@ -152,8 +159,6 @@ internal fun rememberAutoBackupPage(control: AutoBackupControl?): AutoBackupPage
     )
 }
 
-internal const val NO_FOLDER_PICKER_MESSAGE = "This device has no folder picker, so boxlore can't choose a folder."
-
 /**
  * Opens the system folder picker. Some stripped-down Android builds have none, so [onUnavailable] runs
  * instead of the tap crashing the app.
@@ -172,18 +177,20 @@ internal object AutoBackupTestTags {
 }
 
 /** Says what the folder needs, or null when nothing is wrong. */
-internal fun autoBackupProblemText(settings: AutoBackupSettings): String? = when (settings.lastError) {
+@StringRes
+internal fun autoBackupProblemText(settings: AutoBackupSettings): Int? = when (settings.lastError) {
     null -> null
-    AutoBackupProblem.PERMISSION_LOST -> "boxlore can't save to this folder anymore."
-    AutoBackupProblem.FOLDER_MISSING -> "This folder was moved or deleted."
-    else -> "The last backup didn't save. boxlore will try again next time."
+    AutoBackupProblem.PERMISSION_LOST -> R.string.settings_auto_backup_problem_permission
+    AutoBackupProblem.FOLDER_MISSING -> R.string.settings_auto_backup_problem_missing
+    else -> R.string.settings_auto_backup_problem_other
 }
 
 /** The fix shown beside [autoBackupProblemText]. */
-internal fun autoBackupFixLabel(settings: AutoBackupSettings): String? = when {
+@StringRes
+internal fun autoBackupFixLabel(settings: AutoBackupSettings): Int? = when {
     settings.lastError == null -> null
-    AutoBackupProblem.needsNewFolder(settings.lastError) -> "Choose folder again"
-    else -> "Try again"
+    AutoBackupProblem.needsNewFolder(settings.lastError) -> R.string.settings_auto_backup_fix_folder
+    else -> R.string.settings_auto_backup_fix_retry
 }
 
 /** The line under Back up now. */
@@ -191,36 +198,38 @@ internal fun autoBackupStatusText(
     state: AutoBackupUiState,
     zone: ZoneId = ZoneId.systemDefault(),
     locale: Locale = Locale.getDefault(),
-): String {
+): UiText {
     val last = state.settings.lastSuccessAt
     return when {
-        state.isBackingUp -> "Backing up…"
-        last == null -> "No backups yet"
-        else -> "Last backup: " + DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
-            .withLocale(locale)
-            .withZone(zone)
-            .format(Instant.ofEpochMilli(last))
+        state.isBackingUp -> UiText.res(R.string.settings_auto_backup_status_running)
+        last == null -> UiText.res(R.string.settings_auto_backup_status_none)
+        else -> UiText.res(
+            R.string.settings_auto_backup_status_last,
+            DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+                .withLocale(locale)
+                .withZone(zone)
+                .format(Instant.ofEpochMilli(last)),
+        )
     }
 }
 
-internal fun autoBackupFrequencyLabel(frequency: AutoBackupFrequency): String = when (frequency) {
-    AutoBackupFrequency.DAILY -> "Daily"
-    AutoBackupFrequency.WEEKLY -> "Weekly"
+@StringRes
+internal fun autoBackupFrequencyLabel(frequency: AutoBackupFrequency): Int = when (frequency) {
+    AutoBackupFrequency.DAILY -> R.string.settings_auto_backup_daily
+    AutoBackupFrequency.WEEKLY -> R.string.settings_auto_backup_weekly
 }
-
-internal const val AUTO_BACKUP_FOOTER = "boxlore deletes only its own older automatic backups. Other files in the folder stay."
 
 @Composable
 internal fun AutoBackupGroup(page: AutoBackupPage) {
     val settings = page.state.settings
     val actions = page.actions
     SettingsGroup(
-        title = "Automatic backup",
-        footer = if (settings.enabled) AUTO_BACKUP_FOOTER else null,
+        title = stringResource(R.string.settings_auto_backup_title),
+        footer = if (settings.enabled) stringResource(R.string.settings_auto_backup_footer) else null,
     ) {
         SettingsSwitchRow(
-            title = "Back up automatically",
-            supportingText = "Saves a full library backup to a folder you choose",
+            title = stringResource(R.string.settings_auto_backup_toggle),
+            supportingText = stringResource(R.string.settings_auto_backup_toggle_summary),
             icon = Icons.Rounded.Backup,
             checked = settings.enabled,
             onCheckedChange = actions.onSetEnabled,
@@ -233,29 +242,31 @@ internal fun AutoBackupGroup(page: AutoBackupPage) {
             Column {
                 SettingsDivider()
                 SettingsNavigationRow(
-                    title = "Folder",
-                    supportingText = settings.folderName ?: if (settings.folderUri == null) "Choose a folder" else "Chosen folder",
+                    title = stringResource(R.string.settings_auto_backup_folder),
+                    supportingText = settings.folderName ?: stringResource(
+                        if (settings.folderUri == null) R.string.settings_auto_backup_folder_choose else R.string.settings_auto_backup_folder_chosen,
+                    ),
                     icon = Icons.Rounded.Folder,
                     onClick = actions.onChooseFolder,
                 )
                 AutoBackupProblemRow(settings, actions)
                 SettingsDivider()
                 AutoBackupChoices(
-                    title = "How often",
-                    options = AutoBackupFrequency.entries.map { it to autoBackupFrequencyLabel(it) },
+                    title = stringResource(R.string.settings_auto_backup_how_often),
+                    options = AutoBackupFrequency.entries.map { it to stringResource(autoBackupFrequencyLabel(it)) },
                     selected = settings.frequency,
                     onSelect = actions.onSetFrequency,
                 )
                 AutoBackupChoices(
-                    title = "Backups to keep",
-                    options = AutoBackupStore.KEEP_CHOICES.map { it to it.toString() },
+                    title = stringResource(R.string.settings_auto_backup_keep),
+                    options = AutoBackupStore.KEEP_CHOICES.map { it to LocaleFormats.number(it.toLong(), currentLocale()) },
                     selected = settings.keepCount,
                     onSelect = actions.onSetKeepCount,
                 )
                 SettingsDivider()
                 SettingsActionRow(
-                    title = "Back up now",
-                    supportingText = autoBackupStatusText(page.state),
+                    title = stringResource(R.string.settings_auto_backup_now),
+                    supportingText = autoBackupStatusText(page.state, locale = currentLocale()).asString(),
                     icon = Icons.Rounded.Backup,
                     onClick = actions.onBackUpNow,
                     modifier = Modifier.testTag(AutoBackupTestTags.STATUS),
@@ -267,8 +278,8 @@ internal fun AutoBackupGroup(page: AutoBackupPage) {
 
 @Composable
 private fun AutoBackupProblemRow(settings: AutoBackupSettings, actions: AutoBackupActions) {
-    val problem = autoBackupProblemText(settings) ?: return
-    val fixLabel = autoBackupFixLabel(settings)
+    val problem = autoBackupProblemText(settings)?.let { stringResource(it) } ?: return
+    val fixLabel = autoBackupFixLabel(settings)?.let { stringResource(it) }
     Row(
         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,

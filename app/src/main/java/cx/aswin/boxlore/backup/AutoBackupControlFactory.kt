@@ -5,6 +5,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.prefs.AutoBackupStore
 import cx.aswin.boxlore.feature.settings.pages.AutoBackupControl
 import cx.aswin.boxlore.feature.settings.pages.AutoBackupUiState
@@ -63,7 +64,7 @@ internal object AutoBackupControlFactory {
     ): Unit = folderChanges.withLock {
         if (!takeGrant(uri)) {
             withContext(Dispatchers.Main.immediate) {
-                Toast.makeText(application, "boxlore can't save to this folder. Choose another one.", Toast.LENGTH_LONG).show()
+                Toast.makeText(application, application.getString(R.string.auto_backup_folder_refused), Toast.LENGTH_LONG).show()
             }
             return@withLock
         }

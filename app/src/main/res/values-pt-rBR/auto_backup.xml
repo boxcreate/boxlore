@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="auto_backup_folder_refused">O boxlore não consegue salvar nesta pasta. Escolha outra.</string>
+</resources>

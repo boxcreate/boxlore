@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_auto_backup_title">Sauvegarde automatique</string>
+    <string name="settings_auto_backup_toggle">Sauvegarder automatiquement</string>
+    <string name="settings_auto_backup_toggle_summary">Enregistre une sauvegarde complète de la bibliothèque dans le dossier de votre choix</string>
+    <string name="settings_auto_backup_folder">Dossier</string>
+    <string name="settings_auto_backup_folder_choose">Choisissez un dossier</string>
+    <string name="settings_auto_backup_folder_chosen">Dossier choisi</string>
+    <string name="settings_auto_backup_how_often">Fréquence</string>
+    <string name="settings_auto_backup_daily">Tous les jours</string>
+    <string name="settings_auto_backup_weekly">Toutes les semaines</string>
+    <string name="settings_auto_backup_keep">Sauvegardes à conserver</string>
+    <string name="settings_auto_backup_now">Sauvegarder maintenant</string>
+    <string name="settings_auto_backup_status_running">Sauvegarde en cours…</string>
+    <string name="settings_auto_backup_status_none">Aucune sauvegarde pour l’instant</string>
+    <string name="settings_auto_backup_status_last">Dernière sauvegarde : %1$s</string>
+    <string name="settings_auto_backup_problem_permission">boxlore ne peut plus enregistrer dans ce dossier.</string>
+    <string name="settings_auto_backup_problem_missing">Ce dossier a été déplacé ou supprimé.</string>
+    <string name="settings_auto_backup_problem_other">La dernière sauvegarde n’a pas été enregistrée. boxlore réessaiera la prochaine fois.</string>
+    <string name="settings_auto_backup_fix_folder">Choisir à nouveau le dossier</string>
+    <string name="settings_auto_backup_fix_retry">Réessayer</string>
+    <string name="settings_auto_backup_footer">boxlore supprime uniquement ses propres anciennes sauvegardes automatiques. Les autres fichiers du dossier restent en place.</string>
+    <string name="settings_auto_backup_no_picker">Cet appareil n’a pas de sélecteur de dossiers : boxlore ne peut donc pas en choisir un.</string>
+</resources>

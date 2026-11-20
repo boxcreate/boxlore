@@ -147,6 +147,27 @@ class BoxLoreApplication :
         super.attachBaseContext(cx.aswin.boxlore.language.AppLanguageController.applicationBase(base))
     }
 
+    /** The NPS survey's coordinator: it counts launches and finishes, which it keeps on disk. */
+    private fun setUpEngagementPrompts() {
+        engagementPromptCoordinator =
+            EngagementPromptCoordinator(userPreferencesRepository, cx.aswin.boxlore.core.prefs.NpsSurveyStore(this))
+        // Each finish is also kept on disk, so the NPS survey's moment outlives a restart.
+        cx.aswin.boxlore.core.playback.PlaybackFinishes.onRecorded = engagementPromptCoordinator::recordFinish
+        applicationScope.launch {
+            // Updated after installing: this install ran an older version (a fresh or restored install has not).
+            val updatedInstall =
+                runCatching { packageManager.getPackageInfo(packageName, 0).let { it.lastUpdateTime > it.firstInstallTime } }.getOrDefault(false)
+            try {
+                engagementPromptCoordinator.onAppLaunched(updatedInstall)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // A disk error here only skips one launch count; it must never crash startup.
+                android.util.Log.w("BoxLoreApplication", "Failed to record the launch for the NPS survey", e)
+            }
+        }
+    }
+
     @OptIn(UnstableApi::class)
     override fun onCreate() {
         super.onCreate()
@@ -203,23 +224,7 @@ class BoxLoreApplication :
         )
         // Feature-adoption person properties: sent only when they change, across launches.
         cx.aswin.boxlore.analytics.FeatureAdoptionWiring.start(this, applicationScope, container, userPreferencesRepository) { startupWorkGate.awaitReady() }
-        engagementPromptCoordinator =
-            EngagementPromptCoordinator(userPreferencesRepository, cx.aswin.boxlore.core.prefs.NpsSurveyStore(this))
-        // Each finish is also kept on disk, so the NPS survey's moment outlives a restart.
-        cx.aswin.boxlore.core.playback.PlaybackFinishes.onRecorded = engagementPromptCoordinator::recordFinish
-        applicationScope.launch {
-            // Updated after installing: this install ran an older version (a fresh or restored install has not).
-            val updatedInstall =
-                runCatching { packageManager.getPackageInfo(packageName, 0).let { it.lastUpdateTime > it.firstInstallTime } }.getOrDefault(false)
-            try {
-                engagementPromptCoordinator.onAppLaunched(updatedInstall)
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                // A disk error here only skips one launch count; it must never crash startup.
-                android.util.Log.w("BoxLoreApplication", "Failed to record the launch for the NPS survey", e)
-            }
-        }
+        setUpEngagementPrompts()
         scheduleOptionalStartup()
 
         // Live learner signal log: on by default in debug; release stays off unless the
