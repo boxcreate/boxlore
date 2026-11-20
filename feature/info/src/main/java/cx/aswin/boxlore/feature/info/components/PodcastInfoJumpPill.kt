@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.info.components
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -29,9 +30,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.info.R
 
 @Composable
 internal fun PodcastInfoJumpPillOverlay(
@@ -106,7 +109,7 @@ internal fun PodcastInfoJumpPill(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = resolveJumpPillPrefix(isOngoing),
+                text = stringResource(resolveJumpPillPrefix(isOngoing)),
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.medium),
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
             )
@@ -124,5 +127,7 @@ internal fun PodcastInfoJumpPill(
     }
 }
 
-internal fun resolveJumpPillPrefix(isOngoing: Boolean): String =
-    if (isOngoing) "Resume: " else "Jump to: "
+/** The label before the episode title in the jump pill, styled apart from the title. */
+@StringRes
+internal fun resolveJumpPillPrefix(isOngoing: Boolean): Int =
+    if (isOngoing) R.string.podcast_info_jump_resume else R.string.podcast_info_jump_to

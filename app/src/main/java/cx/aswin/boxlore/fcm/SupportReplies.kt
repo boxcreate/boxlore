@@ -70,8 +70,8 @@ object SupportReplyNotifications {
         }
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, "Feedback replies", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = "Replies from the boxlore team to your feedback"
+            NotificationChannel(CHANNEL_ID, context.getString(cx.aswin.boxlore.R.string.app_channel_feedback_replies), NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = context.getString(cx.aswin.boxlore.R.string.app_channel_feedback_replies_description)
             },
         )
         val slot = Math.floorMod((threadId ?: "").hashCode(), SLOTS)
@@ -82,7 +82,7 @@ object SupportReplyNotifications {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(cx.aswin.boxlore.R.drawable.ic_notification_custom)
             .setColor(android.graphics.Color.parseColor("#5B5BD6"))
-            .setContentTitle(title?.takeIf { it.isNotBlank() } ?: "New reply to your feedback")
+            .setContentTitle(title?.takeIf { it.isNotBlank() } ?: context.getString(cx.aswin.boxlore.R.string.app_feedback_reply_fallback_title))
             .setContentText(body.orEmpty())
             .setStyle(NotificationCompat.BigTextStyle().bigText(body.orEmpty()))
             .setAutoCancel(true)

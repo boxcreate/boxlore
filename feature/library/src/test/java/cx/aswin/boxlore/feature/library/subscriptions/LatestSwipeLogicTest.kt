@@ -4,6 +4,7 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.feature.library.R
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -51,9 +52,9 @@ class LatestSwipeLogicTest {
 
     @Test
     fun queueMessagesSayWhatHappened() {
-        assertEquals("Added to queue", latestQueueMessage(LatestQueueOutcome.Added))
-        assertEquals("Already in your queue", latestQueueMessage(LatestQueueOutcome.AlreadyQueued))
-        assertTrue(latestQueueMessage(LatestQueueOutcome.QueueFull).startsWith("Your queue is full"))
+        assertEquals(R.string.library_queue_added, latestQueueMessage(LatestQueueOutcome.Added))
+        assertEquals(R.string.library_queue_already_queued, latestQueueMessage(LatestQueueOutcome.AlreadyQueued))
+        assertEquals(R.string.library_queue_full, latestQueueMessage(LatestQueueOutcome.QueueFull))
     }
 
     @Test

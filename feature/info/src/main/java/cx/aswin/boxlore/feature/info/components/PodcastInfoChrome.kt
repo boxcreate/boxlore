@@ -75,6 +75,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.links.startFirstAvailable
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
@@ -266,7 +267,7 @@ internal fun EpisodeFeedItemRow(
                         isPlaying = playState?.isPlaying == true,
                         isResume = playState?.isResume == true,
                         progress = playState?.progress ?: 0f,
-                        timeLeft = playState?.timeLeft,
+                        timeLeft = playState?.timeLeft?.asString(),
                         // Download State
                         isDownloaded = ui.indicators.downloadedEpisodeIds.contains(episode.id),
                         isDownloading = ui.indicators.downloadingEpisodeIds.contains(episode.id),
@@ -396,7 +397,7 @@ internal fun PodcastInfoTopOverlay(
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.episode_info_back),
                 tint = iconTint,
             )
         }
@@ -434,7 +435,7 @@ private fun PodcastInfoHeaderOverflow(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Share,
-                    contentDescription = "Share Podcast",
+                    contentDescription = stringResource(R.string.podcast_info_share),
                     tint = iconTint,
                 )
             }
@@ -443,7 +444,7 @@ private fun PodcastInfoHeaderOverflow(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.MoreVert,
-                    contentDescription = "More Options",
+                    contentDescription = stringResource(R.string.podcast_info_more_options),
                     tint = iconTint,
                 )
             }
@@ -490,7 +491,7 @@ private fun PodcastInfoOverflowMenuItems(
     actions: PodcastInfoTopOverlayActions,
 ) {
     DropdownMenuItem(
-        text = { Text("Mark all as played") },
+        text = { Text(stringResource(R.string.podcast_info_mark_all_played)) },
         enabled = !actions.markAllRunning,
         onClick = {
             onDismiss()
@@ -501,7 +502,7 @@ private fun PodcastInfoOverflowMenuItems(
         },
     )
     DropdownMenuItem(
-        text = { Text("Mark all as unplayed") },
+        text = { Text(stringResource(R.string.podcast_info_mark_all_unplayed)) },
         enabled = !actions.markAllRunning,
         onClick = {
             onDismiss()
@@ -512,7 +513,7 @@ private fun PodcastInfoOverflowMenuItems(
         },
     )
     DropdownMenuItem(
-        text = { Text(if (hideCompleted) "Show completed episodes" else "Hide completed episodes") },
+        text = { Text(stringResource(if (hideCompleted) R.string.podcast_info_show_completed else R.string.podcast_info_hide_completed)) },
         onClick = {
             onDismiss()
             actions.onToggleHideCompleted()
@@ -526,7 +527,7 @@ private fun PodcastInfoOverflowMenuItems(
     )
     if (actions.archive.offered) ArchivedEpisodesMenuItem(actions.archive, onDismiss)
     DropdownMenuItem(
-        text = { Text(if (actions.titlesOnly) "Show full episodes" else "Show titles only") },
+        text = { Text(stringResource(if (actions.titlesOnly) R.string.podcast_info_show_full_episodes else R.string.podcast_info_show_titles_only)) },
         onClick = {
             onDismiss()
             actions.onToggleTitlesOnly()
@@ -539,7 +540,7 @@ private fun PodcastInfoOverflowMenuItems(
         },
     )
     DropdownMenuItem(
-        text = { Text("Playback for this show") },
+        text = { Text(stringResource(R.string.podcast_info_playback_for_show)) },
         onClick = {
             onDismiss()
             actions.onPlaybackSettings()
@@ -551,7 +552,7 @@ private fun PodcastInfoOverflowMenuItems(
     actions.onAddToPlaylist?.let { AddToPlaylistMenuItem(onDismiss, it) }
     if (actions.isSubscribed) {
         DropdownMenuItem(
-            text = { Text("Change tag / genre") },
+            text = { Text(stringResource(R.string.podcast_info_change_genre)) },
             onClick = {
                 onDismiss()
                 actions.onEditGenre()
@@ -561,7 +562,7 @@ private fun PodcastInfoOverflowMenuItems(
             },
         )
         DropdownMenuItem(
-            text = { Text(if (actions.isPinnedToHome) "Unpin from Home screen" else "Pin to Home screen") },
+            text = { Text(stringResource(if (actions.isPinnedToHome) R.string.podcast_info_unpin_home else R.string.podcast_info_pin_home)) },
             onClick = {
                 onDismiss()
                 actions.onToggleHomePin()
@@ -675,7 +676,7 @@ internal fun MarkAllEpisodesDialog(
         },
         title = {
             Text(
-                text = if (markAsPlayed) "Mark all as played?" else "Mark all as unplayed?",
+                text = stringResource(if (markAsPlayed) R.string.podcast_info_mark_all_played_title else R.string.podcast_info_mark_all_unplayed_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = GoogleSansWeight.bold,
                 textAlign = TextAlign.Center,
@@ -686,9 +687,9 @@ internal fun MarkAllEpisodesDialog(
             Text(
                 text =
                 if (markAsPlayed) {
-                    "This will mark all episodes of \"$podcastTitle\" as played."
+                    stringResource(R.string.podcast_info_mark_all_played_body, podcastTitle)
                 } else {
-                    "This will reset all episodes of \"$podcastTitle\" to unplayed."
+                    stringResource(R.string.podcast_info_mark_all_unplayed_body, podcastTitle)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -705,12 +706,12 @@ internal fun MarkAllEpisodesDialog(
                 ),
                 shape = ExpressiveShapes.Pill,
             ) {
-                Text("Confirm")
+                Text(stringResource(R.string.podcast_info_confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.podcast_info_hide_cancel))
             }
         },
         shape = MaterialTheme.shapes.extraLarge,

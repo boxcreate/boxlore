@@ -8,6 +8,7 @@ import cx.aswin.boxlore.core.catalog.autoOrganizeFolderLook
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.listenerShowIds
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
 import cx.aswin.boxlore.core.playback.dismissedEpisodeCount
 import cx.aswin.boxlore.core.playback.dismissedEpisodeIds
@@ -515,7 +516,7 @@ class PodcastInfoViewModel(
             val result = userPrefs.toggleHomePinnedPodcastId(podcastId)
             if (result == HomePinnedShows.ToggleResult.AtCapacity) {
                 val state = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
-                _uiState.value = state.copy(userMessage = HomePinnedShows.capacityUserMessage())
+                _uiState.value = state.copy(userMessage = UiText.res(R.string.podcast_info_pin_capacity, HomePinnedShows.MAX))
             }
         }
     }
@@ -560,7 +561,7 @@ class PodcastInfoViewModel(
                 _uiState.value =
                     latest.copy(
                         directFeedChip = DirectFeedChipState.Offer,
-                        userMessage = "Couldn't update episodes from the feed",
+                        userMessage = PodcastInfoSupplementSupport.FEED_CHECK_FAILED_MESSAGE,
                     )
             }
         }
@@ -753,7 +754,7 @@ class PodcastInfoViewModel(
         val isPlaying: Boolean = false,
         val isResume: Boolean = false,
         val progress: Float = 0f,
-        val timeLeft: String? = null,
+        val timeLeft: UiText? = null,
     )
 
     // Combine player state and history to provide per-episode state

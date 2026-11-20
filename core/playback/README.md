@@ -18,7 +18,7 @@ It does not own the Room schema ([`:core:database`](../database/README.md)), pre
 - `PlaybackActivationRequest` carries a one-shot start position; `PlaybackIntroOutroController` applies resume, intro skip and outro trim to automatic starts, while explicit positions and route transfers keep theirs.
 - `PlaybackSkipPolicy`: with "Restart forgotten episodes" on, implicit plays restart an episode not played for `STALE_RESUME_MS`; Jump Back In and History always resume. Progress is never wiped.
 - `PlaybackChaptersTranscriptController`: chapters and transcripts, a download's saved copy before the network; a briefing missing its links gets them from `:core:catalog`'s `BriefingLinks`.
-- `PlaybackRouteState` mirrors the active route's device name and volume into `PlayerState`; `PlaybackControlSync` keeps speed and skip lengths aligned with Media3.
+- `PlaybackRouteState` mirrors the active route's device name (`displayNameText` if unnamed) and volume into `PlayerState`; `PlaybackControlSync` keeps speed and skip lengths aligned with Media3.
 - Speed and trim silence: a show's value beats the app's (`ShowPlaybackPolicy`, `PlayerAudioSettings`); only `service.ShowPlaybackApplier` applies them.
 - `PlaybackMediaIdPolicy` sets session IDs and cache keys; `PlaybackArtworkMetadata` picks the artwork to save.
 
@@ -76,7 +76,7 @@ It does not own the Room schema ([`:core:database`](../database/README.md)), pre
 - `CarSignals` tells `:app` when a drive starts while the player service runs (`service.DriveStartWatcher`), when Auto first browses during a drive, and when it opens New episodes or Shows.
 - `service.AutoCollageProvider` serves `content://` covers and collages (`AutoCollagePrewarmer`, `AutoCollageGenerator`, `AutoCollageLayouts`), fetched by `AutoArtworkDownloader` over validated HTTPS, cached at car size (`AutoArtworkScaler`).
 - The show's cover replaces a failed episode image; saved artwork is `PlaybackArtworkMetadata.savedArtworkUrl`, never a collage link.
-- Browse root title: `:core:catalog`'s `auto_app_name`; the generic tile spells `boxlore` lowercase.
+- `:core:catalog` holds car and download strings; `auto_app_name` is `boxlore`.
 
 ### Cast
 

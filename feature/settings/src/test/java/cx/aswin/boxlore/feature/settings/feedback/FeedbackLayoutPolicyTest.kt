@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.settings.feedback
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
+import cx.aswin.boxlore.feature.settings.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -42,9 +43,10 @@ class FeedbackLayoutPolicyTest {
     }
 
     @Test fun `only a conversation promises a reply in Feedback, and dropped photos are mentioned`() {
-        assertTrue(feedbackSentBody(repliesInApp = true).contains("reply will show up in Feedback"))
-        assertFalse(feedbackSentBody(repliesInApp = false).contains("reply"))
-        assertTrue(feedbackSentBody(repliesInApp = false, photosDropped = true).endsWith("Your photos couldn't be sent this time."))
+        assertEquals(R.string.feedback_sent_body_replies, feedbackSentBody(repliesInApp = true))
+        assertEquals(R.string.feedback_sent_body, feedbackSentBody(repliesInApp = false))
+        assertEquals(R.string.feedback_sent_body_no_photos, feedbackSentBody(repliesInApp = false, photosDropped = true))
+        assertEquals(R.string.feedback_sent_body_replies_no_photos, feedbackSentBody(repliesInApp = true, photosDropped = true))
     }
 
     @Test fun `typing stops at the limit, and text already past it can only shrink`() {

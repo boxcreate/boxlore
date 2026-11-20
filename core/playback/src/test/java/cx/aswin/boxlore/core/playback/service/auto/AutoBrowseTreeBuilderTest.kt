@@ -302,6 +302,8 @@ class AutoBrowseTreeBuilderTest {
 
         assertEquals("discover_curated_morning_news", tiles.first().mediaId)
         assertEquals(19, tiles.count { it.mediaId.startsWith(AutoBrowseContract.GENRE_PREFIX) })
+        // The id keeps the chart category the server knows; the row shows the short name from resources.
+        assertEquals("Tech", tiles.first { it.mediaId == "${AutoBrowseContract.GENRE_PREFIX}Technology" }.mediaMetadata.title.toString())
         assertFalse(tiles.any { it.mediaId == AutoBrowseContract.DISCOVER_GENRES_ID })
         assertTrue(tiles.all { it.mediaMetadata.artworkUri?.scheme == "android.resource" })
     }

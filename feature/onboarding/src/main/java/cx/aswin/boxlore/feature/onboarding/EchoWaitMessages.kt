@@ -110,7 +110,7 @@ internal fun EchoBuildWaitNote(uiState: OnboardingUiState, modifier: Modifier = 
     val key = if (uiState.isSynthesizing) "build:${uiState.aiHistory.size}" else null
     val copy = rememberEchoWaitCopy(EchoWaitStep.forBuild(uiState.aiLoadingStage), key) ?: return
     Column(modifier.testTag("echo_build_wait"), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        AnimatedContent(targetState = copy.line, transitionSpec = EchoMotion.handoff(), label = "Build wait line") { line ->
+        AnimatedContent(targetState = copy.line, transitionSpec = EchoMotion.handoff(), label = "buildWaitLine") { line ->
             Text(
                 line,
                 Modifier.semantics { liveRegion = LiveRegionMode.Polite },

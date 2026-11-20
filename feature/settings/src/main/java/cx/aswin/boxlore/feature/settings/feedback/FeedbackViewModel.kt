@@ -3,10 +3,12 @@ package cx.aswin.boxlore.feature.settings.feedback
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.FeedbackDraft
 import cx.aswin.boxlore.core.support.OutgoingFeedback
@@ -15,6 +17,7 @@ import cx.aswin.boxlore.core.support.PhotoUpload
 import cx.aswin.boxlore.core.support.SendResult
 import cx.aswin.boxlore.core.support.SupportMeta
 import cx.aswin.boxlore.core.support.SupportRepository
+import cx.aswin.boxlore.feature.settings.R
 import java.net.URLEncoder
 import java.security.MessageDigest
 import java.util.UUID
@@ -30,28 +33,36 @@ import kotlinx.coroutines.withContext
 /** The app's own list: shown when the server sends none, and the icons and hints for the ids it knows. */
 enum class FeedbackCategory(
     val id: String,
-    val label: String,
-    val placeholder: String,
+    @StringRes val label: Int,
+    @StringRes val placeholder: Int,
+    /** The label in GitHub issue titles, which the team reads in English. */
+    val issueLabel: String,
 ) {
-    FEATURE("feature", "Feature idea", "Describe the feature or improvement you'd like to see..."),
-    BUG("bug", "Bug report", "What happened and what did you expect to happen?"),
-    AUDIO("audio", "Audio / Stream", "Describe the playback issue (buffering, cut-off, audio distortion)..."),
-    OTHER("other", "General", "Tell us what's on your mind..."),
+    FEATURE("feature", R.string.feedback_category_feature, R.string.feedback_category_feature_hint, "Feature idea"), // i18n-ignore
+    BUG("bug", R.string.feedback_category_bug, R.string.feedback_category_bug_hint, "Bug report"), // i18n-ignore
+    AUDIO("audio", R.string.feedback_category_audio, R.string.feedback_category_audio_hint, "Audio / Stream"), // i18n-ignore
+    OTHER("other", R.string.feedback_category_other, R.string.feedback_category_other_hint, "General"), // i18n-ignore
 }
 
 val FeedbackCategory.isBugReport: Boolean
     get() = this == FeedbackCategory.BUG || this == FeedbackCategory.AUDIO
 
-/** One choice of what a message is about: the server's id and label, with the app's hint when it knows the id. */
-data class FeedbackChoice(val id: String, val label: String) {
+/**
+ * One choice of what a message is about: the server's id and label (shown as the server sends it),
+ * or a built-in category's own words, with the app's hint when it knows the id.
+ */
+data class FeedbackChoice(val id: String, val label: UiText) {
     val known: FeedbackCategory? get() = FeedbackCategory.entries.find { it.id == id }
-    val placeholder: String get() = known?.placeholder ?: FeedbackCategory.OTHER.placeholder
+    val placeholder: UiText get() = UiText.res(known?.placeholder ?: FeedbackCategory.OTHER.placeholder)
+
+    /** The label for a GitHub issue title: the server's own label, or the built-in English name. */
+    val issueLabel: String get() = (label as? UiText.Raw)?.value ?: known?.issueLabel ?: id
 
     /** Bug reports start with diagnostics on. */
     val isBugReport: Boolean get() = known?.isBugReport == true
 }
 
-internal val DEFAULT_CHOICES = FeedbackCategory.entries.map { FeedbackChoice(it.id, it.label) }
+internal val DEFAULT_CHOICES = FeedbackCategory.entries.map { FeedbackChoice(it.id, UiText.res(it.label)) }
 
 /** A photo or screenshot picked for the message; uploaded only when the message is sent. */
 data class PickedPhoto(val uri: Uri)
@@ -70,25 +81,26 @@ data class FeedbackUiState(
     val repliesInApp: Boolean = false,
     /** Support wasn't available, so the message went without its photos. */
     val photosDropped: Boolean = false,
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
     val diagnosticInfo: DiagnosticInfo? = null,
     val logsPreview: String? = null,
     val isLoadingLogs: Boolean = false,
 ) {
-    val choices: List<FeedbackChoice> get() = meta.categories.map { FeedbackChoice(it.id, it.label) }.ifEmpty { DEFAULT_CHOICES }
+    val choices: List<FeedbackChoice> get() = meta.categories.map { FeedbackChoice(it.id, UiText.raw(it.label)) }.ifEmpty { DEFAULT_CHOICES }
     val choice: FeedbackChoice get() = choices.firstOrNull { it.id == categoryId } ?: choices.first()
     val canAddPhotos: Boolean get() = meta.photosEnabled && photos.size < meta.maxPhotos && !isSubmitting
 
     /** An older draft can be longer than the limit; it must be shortened before it can be sent. */
     val overLimit: Boolean get() = message.length > meta.maxBody
     val canSend: Boolean get() = message.isNotBlank() && !overLimit && !isSubmitting && meta.canStartNew
-    val limitMessage: String? get() = if (overLimit) "This is over the ${"%,d".format(meta.maxBody)}-character limit. Shorten it to send." else null
+    val limitMessage: UiText? get() = if (overLimit) UiText.res(R.string.feedback_over_limit, meta.maxBody) else null
 
     /** The server's notice, or a plain one when new messages are paused without one. */
-    val shownNotice: String? get() = meta.notice ?: PAUSED_NOTICE.takeUnless { meta.canStartNew }
+    val shownNotice: UiText? get() = meta.notice?.let(UiText::raw) ?: UiText.res(PAUSED_NOTICE).takeUnless { meta.canStartNew }
 }
 
-internal const val PAUSED_NOTICE = "Sending is paused for now. Your message stays saved here."
+@StringRes
+internal val PAUSED_NOTICE = R.string.feedback_paused_notice
 
 /**
  * The message after an edit: typing stops at [limit], and text already past it (an older, longer
@@ -319,7 +331,7 @@ class FeedbackViewModel internal constructor(
         if (state.isSubmitting || state.overLimit) return
         val body = state.message.trim()
         if (body.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Write a message first.") }
+            _uiState.update { it.copy(errorMessage = UiText.res(R.string.feedback_error_empty)) }
             return
         }
         val choice = state.choice
@@ -331,7 +343,7 @@ class FeedbackViewModel internal constructor(
             val (diagnosticsReport, sanitizedLogs) = prepareDiagnosticPayload(state, diagnosticsInfo)
             val photos = uploadPhotos(state)
             if (photos is PhotoBatch.Failed) {
-                _uiState.update { it.copy(isSubmitting = false, errorMessage = "Couldn't attach your photos. Check your connection and try again.") }
+                _uiState.update { it.copy(isSubmitting = false, errorMessage = UiText.res(R.string.feedback_error_photos)) }
                 return@launch
             }
             val result = support.send(
@@ -406,9 +418,9 @@ class FeedbackViewModel internal constructor(
                     )
                 }
             }
-            is SendResult.Refused -> _uiState.update { it.copy(isSubmitting = false, errorMessage = result.message) }
+            is SendResult.Refused -> _uiState.update { it.copy(isSubmitting = false, errorMessage = UiText.raw(result.message)) }
             SendResult.Failed -> _uiState.update {
-                it.copy(isSubmitting = false, errorMessage = "Couldn't send your feedback. Check your connection and try again.")
+                it.copy(isSubmitting = false, errorMessage = UiText.res(R.string.feedback_error_send))
             }
         }
     }
@@ -441,7 +453,7 @@ private fun analyticsCategory(choice: FeedbackChoice): String = when (choice.kno
 }
 
 fun buildFeedbackGitHubIssueUrl(state: FeedbackUiState): String {
-    val title = "[${state.choice.label}]: " + state.message.take(60).replace("\n", " ").trim()
+    val title = "[${state.choice.issueLabel}]: " + state.message.take(60).replace("\n", " ").trim()
     val body = buildString {
         append("### Description\n")
         append(state.message.ifBlank { "Describe the issue or feature request here." })
@@ -464,14 +476,14 @@ fun buildFeedbackGitHubIssueUrl(state: FeedbackUiState): String {
 
 fun shareFeedbackDiagnostics(context: Context, state: FeedbackUiState) {
     val report = state.diagnosticInfo?.toMarkdownReport(state.logsPreview)
-        ?: "No diagnostics available."
+        ?: context.getString(R.string.feedback_no_diagnostics)
 
     val sendIntent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
-        putExtra(Intent.EXTRA_SUBJECT, "boxlore Diagnostics & Logs")
+        putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.feedback_diagnostics_share_subject))
         putExtra(Intent.EXTRA_TEXT, report)
     }
-    val shareIntent = Intent.createChooser(sendIntent, "Share Diagnostics & Logs")
+    val shareIntent = Intent.createChooser(sendIntent, context.getString(R.string.feedback_diagnostics_share_title))
     shareIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     context.startActivity(shareIntent)
 }

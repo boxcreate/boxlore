@@ -1,11 +1,13 @@
 package cx.aswin.boxlore.feature.library.subscriptions
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.PodcastGenres
 import cx.aswin.boxlore.feature.library.FolderEditLogic
 import cx.aswin.boxlore.feature.library.FolderSaveParams
+import cx.aswin.boxlore.feature.library.R
 
 /** What goes in a new folder: shows the listener picks, one genre, or every genre (auto-organize). */
 internal enum class NewFolderMode { PickShows, OneGenre, AllGenres }
@@ -94,7 +96,8 @@ internal object NewFolderFlowLogic {
         name.trim().equals("Tech", ignoreCase = true)
 
     /** "Technology" is saved as "Tech". */
-    fun savedNameNote(name: String): String? = if (FolderEditLogic.isTechnologyDisallowed(name)) "Saved as Tech" else null
+    @StringRes
+    fun savedNameNote(name: String): Int? = if (FolderEditLogic.isTechnologyDisallowed(name)) R.string.library_folder_saved_as_tech else null
 }
 
 internal val NewFolderDraftSaver: Saver<NewFolderDraft, Any> = listSaver(

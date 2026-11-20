@@ -110,13 +110,14 @@ internal fun NewOrCatchingUpCard(sources: ListeningSources, newShare: Float) {
     val olderPercent = 100 - newPercent
     val newLabel = stringResource(R.string.history_ins_fresh_new, newPercent)
     val olderLabel = stringResource(R.string.history_ins_fresh_older, olderPercent)
+    val pairLabel = stringResource(R.string.history_list_pair, newLabel, olderLabel)
     InsightsCard {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(stringResource(R.string.history_ins_fresh), style = TimelineType.header, color = colors.onSurface)
             Text(freshHeadline(newShare), style = InsightsType.title18, color = colors.onSurface)
         }
         Row(
-            modifier = Modifier.fillMaxWidth().height(16.dp).clearAndSetSemantics { contentDescription = "$newLabel, $olderLabel" },
+            modifier = Modifier.fillMaxWidth().height(16.dp).clearAndSetSemantics { contentDescription = pairLabel },
             horizontalArrangement = Arrangement.spacedBy(3.dp),
         ) {
             if (newPercent > 0) SplitPart(newShare, colors.primary, start = true, end = olderPercent == 0)

@@ -225,7 +225,7 @@ val LocalHeroTideProgress = staticCompositionLocalOf { HeroTideProgress.DEFAULT 
 @Suppress("LongParameterList")
 private fun TidePlayDisc(icon: TideDiscIcon, label: String, progress: HeroProgressState?, shade: ArtworkShade, ground: Color, onClick: () -> Unit) {
     val description = stringResource(R.string.home_hero_listening_progress)
-    val animated by animateFloatAsState(progress?.value ?: 0f, WavyProgressIndicatorDefaults.ProgressAnimationSpec, label = "tide progress")
+    val animated by animateFloatAsState(progress?.value ?: 0f, WavyProgressIndicatorDefaults.ProgressAnimationSpec, label = "tideProgress")
     Box(Modifier.size(TideDiscSize).background(ground, CircleShape), contentAlignment = Alignment.Center) {
         if (progress != null) {
             val ring = Modifier.size(76.dp).testTag("home_hero_progress").semantics { contentDescription = description }

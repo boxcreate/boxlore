@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
@@ -34,13 +35,17 @@ import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
 import cx.aswin.boxlore.feature.library.LibraryPlaybackLayout
 import cx.aswin.boxlore.feature.library.LocalLastSeenEpisodes
 import cx.aswin.boxlore.feature.library.PlayAllFab
+import cx.aswin.boxlore.feature.library.R
 import cx.aswin.boxlore.feature.library.SubscriptionSort
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.ReorderableLazyListState
@@ -146,9 +151,9 @@ internal fun ShowsTabContent(
 ) {
     if (podcasts.isEmpty()) {
         ExpressiveSolarSystemEmptyState(
-            title = "No Subscriptions Yet",
-            description = "Follow your favorite podcasts to see them here.",
-            actionText = "Find Podcasts",
+            title = stringResource(R.string.library_subscriptions_empty_title),
+            description = stringResource(R.string.library_subscriptions_empty_body),
+            actionText = stringResource(R.string.library_find_podcasts),
             onExploreClick = actions.onExploreClick,
         )
         return
@@ -489,18 +494,18 @@ internal fun LatestTabContent(
             allWithLatest.isEmpty() ->
                 PullableEmptyState {
                     ExpressiveSolarSystemEmptyState(
-                        title = "No New Episodes",
-                        description = "You're all caught up! Explore for more content.",
-                        actionText = "Discover Shows",
+                        title = stringResource(R.string.library_latest_empty_title),
+                        description = stringResource(R.string.library_latest_empty_body),
+                        actionText = stringResource(R.string.library_discover_shows),
                         onExploreClick = actions.onExploreClick,
                     )
                 }
             episodePodcasts.isEmpty() ->
                 PullableEmptyState {
                     ExpressiveSolarSystemEmptyState(
-                        title = "You're all caught up",
-                        description = "Hidden played episodes are out of the way. Turn off Hide played in Sort to see them again.",
-                        actionText = "Discover Shows",
+                        title = stringResource(R.string.library_latest_all_hidden_title),
+                        description = stringResource(R.string.library_latest_all_hidden_body),
+                        actionText = stringResource(R.string.library_discover_shows),
                         onExploreClick = actions.onExploreClick,
                     )
                 }
@@ -560,8 +565,9 @@ private fun LatestEpisodesList(
     val displayPodcasts = remember(filteredEpisodePodcasts, config.useSmartRank, episodeScores) {
         sortLatestDisplayPodcasts(filteredEpisodePodcasts, config.useSmartRank, episodeScores)
     }
-    val groupedEpisodes = remember(displayPodcasts, config.useSmartRank) {
-        groupLatestByDateHeader(displayPodcasts, config.useSmartRank)
+    val locale = currentLocale()
+    val groupedEpisodes = remember(displayPodcasts, config.useSmartRank, locale) {
+        groupLatestByDateHeader(displayPodcasts, config.useSmartRank, locale)
     }
 
     LibraryPlaybackLayout(modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxSize(), content = {
@@ -607,7 +613,7 @@ private fun LatestEpisodesList(
 private fun androidx.compose.foundation.lazy.LazyListScope.latestEpisodeItems(
     useSmartRank: Boolean,
     displayPodcasts: List<Podcast>,
-    groupedEpisodes: Map<String, List<Podcast>>,
+    groupedEpisodes: Map<UiText, List<Podcast>>,
     pendingPlayedEpisodeIds: Set<String>,
     actions: LatestTabActions,
 ) {
@@ -618,7 +624,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.latestEpisodeItems(
         return
     }
     groupedEpisodes.forEach { (header, podcastsInGroup) ->
-        stickyHeader { DateHeader(text = header) }
+        stickyHeader { DateHeader(text = header.asString()) }
         items(items = podcastsInGroup, key = { "${it.id}_latest_chrono" }) { podcast ->
             LatestEpisodeListRow(podcast, displayPodcasts, pendingPlayedEpisodeIds, actions)
         }

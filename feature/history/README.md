@@ -61,7 +61,7 @@ src/main/res/values/story_echo_lines.xml
 ## Dependencies
 
 - → `:core:model`, `:core:domain`, `:core:designsystem`, `:core:analytics`.
-- Libraries: Compose, Material 3, lifecycle, Material Color Utilities (story palette), Coil through `OptimizedImage`.
+- Libraries: Compose, Material 3, lifecycle, Material Color Utilities (story palette), Coil through `OptimizedImage`; tests add Robolectric for dates written in the listener's language.
 - Feature modules never depend on other features, and never call PostHog directly; analytics go through `:core:analytics`.
 
 ## Threading / lifecycle
@@ -85,7 +85,7 @@ Hermetic JVM tests live in `feature/history/src/test`, using fakes from [`:core:
 | Area | Tests |
 | :--- | :--- |
 | ViewModel, tabs and stories shelf | `HistoryViewModelTest` |
-| Timeline | `HistoryTimelineLogicTest`, `TimelinePiecesTest`, `TimelineScrollFollowTest` |
+| Timeline | `HistoryTimelineLogicTest`, `TimelinePiecesTest`, `TimelineTimeFormatTest`, `TimelineScrollFollowTest` |
 | Insights | `InsightsLogicTest` |
 | Story content and entry card | `StoryLogicTest`, `StoryEntryLayoutTest` |
 | Echo lines, assets and handoff | `StoryEchoLinesTest`, `StoryEchoAssetsTest`, `StoryEchoHandoffTest` |

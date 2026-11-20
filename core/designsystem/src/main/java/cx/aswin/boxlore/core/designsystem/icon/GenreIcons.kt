@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.designsystem.icon
 
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalance
 import androidx.compose.material.icons.rounded.AttachMoney
@@ -33,46 +34,52 @@ import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Whatshot
 import androidx.compose.material.icons.rounded.Work
 import androidx.compose.ui.graphics.vector.ImageVector
+import cx.aswin.boxlore.core.designsystem.R
 
+/**
+ * An icon a folder or genre tag can wear. [key] is stored; [label] is its English name, which icon
+ * search matches; [labelRes] names it for the listener (the icon's screen-reader label).
+ */
 data class GenreIconItem(
     val key: String,
     val icon: ImageVector,
     val label: String,
+    @StringRes val labelRes: Int,
 )
 
 object GenreIcons {
     val all: List<GenreIconItem> = listOf(
-        GenreIconItem("mic", Icons.Rounded.Mic, "Mic"),
-        GenreIconItem("headphones", Icons.Rounded.Headphones, "Headphones"),
-        GenreIconItem("music", Icons.Rounded.MusicNote, "Music"),
-        GenreIconItem("movie", Icons.Rounded.Movie, "Movie"),
-        GenreIconItem("gaming", Icons.Rounded.SportsEsports, "Gaming"),
-        GenreIconItem("code", Icons.Rounded.Code, "Code"),
-        GenreIconItem("tech", Icons.Rounded.Computer, "Tech"),
-        GenreIconItem("bulb", Icons.Rounded.Lightbulb, "Ideas"),
-        GenreIconItem("star", Icons.Rounded.Star, "Star"),
-        GenreIconItem("fire", Icons.Rounded.Whatshot, "Fire"),
-        GenreIconItem("science", Icons.Rounded.Science, "Science"),
-        GenreIconItem("book", Icons.Rounded.AutoStories, "Book"),
-        GenreIconItem("health", Icons.Rounded.Favorite, "Health"),
-        GenreIconItem("finance", Icons.Rounded.AttachMoney, "Finance"),
-        GenreIconItem("news", Icons.Rounded.Newspaper, "News"),
-        GenreIconItem("sports", Icons.Rounded.SportsBaseball, "Sports"),
-        GenreIconItem("comedy", Icons.Rounded.SentimentVerySatisfied, "Comedy"),
-        GenreIconItem("history", Icons.Rounded.AccountBalance, "History"),
-        GenreIconItem("art", Icons.Rounded.Palette, "Art"),
-        GenreIconItem("education", Icons.Rounded.School, "Education"),
-        GenreIconItem("crime", Icons.Rounded.Fingerprint, "True Crime"),
-        GenreIconItem("chat", Icons.Rounded.Forum, "Chat"),
-        GenreIconItem("travel", Icons.Rounded.Explore, "Travel"),
-        GenreIconItem("food", Icons.Rounded.Restaurant, "Food"),
-        GenreIconItem("nature", Icons.Rounded.Park, "Nature"),
-        GenreIconItem("family", Icons.Rounded.Face, "Family"),
-        GenreIconItem("business", Icons.Rounded.Work, "Business"),
-        GenreIconItem("government", Icons.Rounded.Gavel, "Government"),
-        GenreIconItem("tag", Icons.Rounded.LocalOffer, "Tag"),
-        GenreIconItem("category", Icons.Rounded.Category, "Category"),
-        GenreIconItem("folder", Icons.Rounded.Folder, "Folder"),
+        GenreIconItem("mic", Icons.Rounded.Mic, "Mic", R.string.genre_icon_mic),
+        GenreIconItem("headphones", Icons.Rounded.Headphones, "Headphones", R.string.genre_icon_headphones),
+        GenreIconItem("music", Icons.Rounded.MusicNote, "Music", R.string.genre_icon_music),
+        GenreIconItem("movie", Icons.Rounded.Movie, "Movie", R.string.genre_icon_movie),
+        GenreIconItem("gaming", Icons.Rounded.SportsEsports, "Gaming", R.string.genre_icon_gaming),
+        GenreIconItem("code", Icons.Rounded.Code, "Code", R.string.genre_icon_code),
+        GenreIconItem("tech", Icons.Rounded.Computer, "Tech", R.string.genre_icon_tech),
+        GenreIconItem("bulb", Icons.Rounded.Lightbulb, "Ideas", R.string.genre_icon_bulb),
+        GenreIconItem("star", Icons.Rounded.Star, "Star", R.string.genre_icon_star),
+        GenreIconItem("fire", Icons.Rounded.Whatshot, "Fire", R.string.genre_icon_fire),
+        GenreIconItem("science", Icons.Rounded.Science, "Science", R.string.genre_icon_science),
+        GenreIconItem("book", Icons.Rounded.AutoStories, "Book", R.string.genre_icon_book),
+        GenreIconItem("health", Icons.Rounded.Favorite, "Health", R.string.genre_icon_health),
+        GenreIconItem("finance", Icons.Rounded.AttachMoney, "Finance", R.string.genre_icon_finance),
+        GenreIconItem("news", Icons.Rounded.Newspaper, "News", R.string.genre_icon_news),
+        GenreIconItem("sports", Icons.Rounded.SportsBaseball, "Sports", R.string.genre_icon_sports),
+        GenreIconItem("comedy", Icons.Rounded.SentimentVerySatisfied, "Comedy", R.string.genre_icon_comedy),
+        GenreIconItem("history", Icons.Rounded.AccountBalance, "History", R.string.genre_icon_history),
+        GenreIconItem("art", Icons.Rounded.Palette, "Art", R.string.genre_icon_art),
+        GenreIconItem("education", Icons.Rounded.School, "Education", R.string.genre_icon_education),
+        GenreIconItem("crime", Icons.Rounded.Fingerprint, "True Crime", R.string.genre_icon_crime),
+        GenreIconItem("chat", Icons.Rounded.Forum, "Chat", R.string.genre_icon_chat),
+        GenreIconItem("travel", Icons.Rounded.Explore, "Travel", R.string.genre_icon_travel),
+        GenreIconItem("food", Icons.Rounded.Restaurant, "Food", R.string.genre_icon_food),
+        GenreIconItem("nature", Icons.Rounded.Park, "Nature", R.string.genre_icon_nature),
+        GenreIconItem("family", Icons.Rounded.Face, "Family", R.string.genre_icon_family),
+        GenreIconItem("business", Icons.Rounded.Work, "Business", R.string.genre_icon_business),
+        GenreIconItem("government", Icons.Rounded.Gavel, "Government", R.string.genre_icon_government),
+        GenreIconItem("tag", Icons.Rounded.LocalOffer, "Tag", R.string.genre_icon_tag),
+        GenreIconItem("category", Icons.Rounded.Category, "Category", R.string.genre_icon_category),
+        GenreIconItem("folder", Icons.Rounded.Folder, "Folder", R.string.genre_icon_folder),
     )
 
     private val byKey: Map<String, ImageVector> = all.associate { it.key.lowercase() to it.icon }

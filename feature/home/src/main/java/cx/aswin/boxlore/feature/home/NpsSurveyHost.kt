@@ -7,6 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -34,9 +36,12 @@ internal fun NpsSurveyHost(controller: NpsSurveyController, isPlaying: Boolean, 
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) { controller.onDisplayed() }
     }
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val resources = context.resources
+    val copy = controller.copy ?: return
     NpsSurveySheet(
         session = current,
-        copy = controller.copy,
+        copy = remember(copy, configuration) { copy.withStrings(resources::getString) },
         onScore = controller::onScore,
         onFollowUpDone = controller::onFollowUpDone,
         onClose = controller::onClose,

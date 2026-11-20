@@ -14,13 +14,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.EngagementBottomSheetScaffold
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.links.startFirstAvailable
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.home.R
 import kotlinx.coroutines.launch
 
 /**
@@ -37,10 +41,10 @@ fun ReviewPromptSheet(
 ) {
     TrackScreenView("review_prompt", send = {}) // the prompt is counted when it is decided
     val copy = reviewPromptCopy(completedCount)
-    val title = copy.title
-    val body = copy.body
-    val primaryLabel = copy.primary
-    val secondaryLabel = copy.secondary
+    val title = copy.title.asString()
+    val body = copy.body.asString()
+    val primaryLabel = copy.primary.asString()
+    val secondaryLabel = copy.secondary.asString()
     val onSecondaryClick = if (copy.secondaryDismisses) onDismissRequest else onNavigateToFeedback
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -137,28 +141,28 @@ fun ReviewPromptSheet(
 }
 
 /** The milestone review prompt's words for [completedCount] finished episodes; at 30 the second button only closes it. */
-internal data class ReviewPromptCopy(val title: String, val body: String, val primary: String, val secondary: String, val secondaryDismisses: Boolean)
+internal data class ReviewPromptCopy(val title: UiText, val body: UiText, val primary: UiText, val secondary: UiText, val secondaryDismisses: Boolean)
 
 internal fun reviewPromptCopy(completedCount: Int): ReviewPromptCopy = when {
     completedCount >= 30 -> ReviewPromptCopy(
-        title = "You're a podcast pro",
-        body = "$completedCount episodes and counting — your review would mean the world to us.",
-        primary = "Rate boxlore",
-        secondary = "Not right now",
+        title = UiText.res(R.string.home_review_pro_title),
+        body = UiText.plural(R.plurals.home_review_pro_body, completedCount, completedCount),
+        primary = UiText.res(R.string.home_review_rate_boxlore),
+        secondary = UiText.res(R.string.home_review_not_right_now),
         secondaryDismisses = true,
     )
     completedCount >= 15 -> ReviewPromptCopy(
-        title = "You're a regular listener",
-        body = "You've finished $completedCount episodes. Mind leaving a quick rating?",
-        primary = "Rate boxlore",
-        secondary = "Could be better",
+        title = UiText.res(R.string.home_review_regular_title),
+        body = UiText.plural(R.plurals.home_review_regular_body, completedCount, completedCount),
+        primary = UiText.res(R.string.home_review_rate_boxlore),
+        secondary = UiText.res(R.string.home_review_could_be_better),
         secondaryDismisses = false,
     )
     else -> ReviewPromptCopy(
-        title = "You're on a roll",
-        body = "You've completed $completedCount episodes. How's boxlore treating you?",
-        primary = "Loving it",
-        secondary = "Could be better",
+        title = UiText.res(R.string.home_review_roll_title),
+        body = UiText.plural(R.plurals.home_review_roll_body, completedCount, completedCount),
+        primary = UiText.res(R.string.home_review_loving_it),
+        secondary = UiText.res(R.string.home_review_could_be_better),
         secondaryDismisses = false,
     )
 }
@@ -208,7 +212,7 @@ fun PostReviewSheet(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "Glad you're enjoying boxlore",
+                text = stringResource(R.string.home_post_review_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = GoogleSansWeight.semiBold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -218,7 +222,7 @@ fun PostReviewSheet(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "If you didn't get a chance to leave a rating, no worries. We also love hearing your feature ideas!",
+                text = stringResource(R.string.home_post_review_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -244,7 +248,7 @@ fun PostReviewSheet(
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Share an idea", style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.home_post_review_share_idea), style = MaterialTheme.typography.labelLarge)
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -273,7 +277,7 @@ fun PostReviewSheet(
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Rate on Google Play", style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.home_review_rate_on_play), style = MaterialTheme.typography.labelLarge)
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -286,7 +290,7 @@ fun PostReviewSheet(
                     .height(48.dp),
             ) {
                 Text(
-                    text = "Maybe later",
+                    text = stringResource(R.string.home_post_review_maybe_later),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -312,7 +316,7 @@ fun FeedbackSheet(
     var selectedCategory by remember { mutableStateOf("feature") }
     var isSubmitting by remember { mutableStateOf(false) }
     var isSuccess by remember { mutableStateOf(false) }
-    var errorMsg by remember { mutableStateOf<String?>(null) }
+    var errorMsg by remember { mutableStateOf<Int?>(null) }
 
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -347,7 +351,7 @@ fun FeedbackSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Share your thoughts",
+                    text = stringResource(R.string.home_feedback_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = GoogleSansWeight.semiBold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -355,7 +359,7 @@ fun FeedbackSheet(
                 IconButton(onClick = onDismissRequest) {
                     Icon(
                         Icons.Rounded.Close,
-                        contentDescription = "Close",
+                        contentDescription = stringResource(R.string.home_feedback_close),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -389,7 +393,7 @@ fun FeedbackSheet(
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Sent — thank you!",
+                            text = stringResource(R.string.home_feedback_sent),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = GoogleSansWeight.semiBold,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -399,7 +403,7 @@ fun FeedbackSheet(
             } else {
                 // Category selector
                 Text(
-                    text = "What's this about?",
+                    text = stringResource(R.string.home_feedback_category_label),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -412,9 +416,9 @@ fun FeedbackSheet(
                 ) {
                     val categories =
                         listOf(
-                            "feature" to "Feature idea",
-                            "bug" to "Bug report",
-                            "other" to "Other",
+                            "feature" to stringResource(R.string.home_feedback_category_feature),
+                            "bug" to stringResource(R.string.home_feedback_category_bug),
+                            "other" to stringResource(R.string.home_feedback_category_other),
                         )
 
                     categories.forEach { (id, label) ->
@@ -432,7 +436,7 @@ fun FeedbackSheet(
                 // Message input
                 OutlinedTextField(
                     value = message,
-                    onValueChange = { if (it.length <= 2000) message = it },
+                    onValueChange = { if (it.length <= FEEDBACK_MAX_LENGTH) message = it },
                     modifier =
                     Modifier
                         .fillMaxWidth()
@@ -441,9 +445,9 @@ fun FeedbackSheet(
                         Text(
                             text =
                             when (selectedCategory) {
-                                "feature" -> "Describe the feature you'd like to see..."
-                                "bug" -> "What happened and how can we reproduce it?"
-                                else -> "Tell us what's on your mind..."
+                                "feature" -> stringResource(R.string.home_feedback_hint_feature)
+                                "bug" -> stringResource(R.string.home_feedback_hint_bug)
+                                else -> stringResource(R.string.home_feedback_hint_other)
                             },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
@@ -460,7 +464,7 @@ fun FeedbackSheet(
 
                 // Character count
                 Text(
-                    text = "${message.length}/2000",
+                    text = stringResource(R.string.home_feedback_char_count, message.length, FEEDBACK_MAX_LENGTH),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     modifier =
@@ -475,9 +479,9 @@ fun FeedbackSheet(
                 Text(
                     text =
                     when (selectedCategory) {
-                        "feature" -> "Mind sharing your email? We'd love to follow up and chat more about your idea."
-                        "bug" -> "Mind sharing your email? We may need a few more details to help squash this bug."
-                        else -> "Mind sharing your email? We really appreciate the feedback and may reach out."
+                        "feature" -> stringResource(R.string.home_feedback_email_feature)
+                        "bug" -> stringResource(R.string.home_feedback_email_bug)
+                        else -> stringResource(R.string.home_feedback_email_other)
                     },
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -496,7 +500,7 @@ fun FeedbackSheet(
                         .height(52.dp),
                     placeholder = {
                         Text(
-                            text = "you@example.com (optional)",
+                            text = stringResource(R.string.home_feedback_email_hint),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         )
@@ -514,7 +518,7 @@ fun FeedbackSheet(
                 if (errorMsg != null) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = errorMsg!!,
+                        text = stringResource(errorMsg!!),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                     )
@@ -523,7 +527,7 @@ fun FeedbackSheet(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Feedback is 100% anonymous — no account info is shared.",
+                    text = stringResource(R.string.home_feedback_anonymous),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     textAlign = TextAlign.Center,
@@ -536,7 +540,7 @@ fun FeedbackSheet(
                 Button(
                     onClick = {
                         if (message.isBlank()) {
-                            errorMsg = "Please write a message first"
+                            errorMsg = R.string.home_feedback_error_empty
                             return@Button
                         }
 
@@ -548,7 +552,7 @@ fun FeedbackSheet(
                             if (success) {
                                 isSuccess = true
                             } else {
-                                errorMsg = "Couldn't send right now. Please try again."
+                                errorMsg = R.string.home_feedback_error_send
                                 isSubmitting = false
                             }
                         }
@@ -571,9 +575,9 @@ fun FeedbackSheet(
                             color = MaterialTheme.colorScheme.onPrimary,
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Sending...", style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(R.string.home_feedback_sending), style = MaterialTheme.typography.labelLarge)
                     } else {
-                        Text("Send feedback", style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(R.string.home_feedback_send), style = MaterialTheme.typography.labelLarge)
                     }
                 }
 
@@ -593,9 +597,11 @@ fun FeedbackSheet(
                         modifier = Modifier.size(18.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Rate on Google Play", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.home_review_rate_on_play), style = MaterialTheme.typography.labelLarge)
                 }
             }
         }
     }
 }
+
+private const val FEEDBACK_MAX_LENGTH = 2000

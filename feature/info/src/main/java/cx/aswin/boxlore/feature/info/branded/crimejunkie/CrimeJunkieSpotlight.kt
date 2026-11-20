@@ -44,7 +44,9 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedEpisodeActions
 import cx.aswin.boxlore.feature.info.branded.BrandedSpotlight
@@ -54,8 +56,6 @@ import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
 import cx.aswin.boxlore.feature.info.branded.rememberBrandedOswald
 import cx.aswin.boxlore.feature.info.sections.stripHtml
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
 /**
@@ -96,7 +96,7 @@ internal fun CrimeJunkieSpotlight(spotlight: BrandedSpotlight, modifier: Modifie
         Column(Modifier.absolutePadding(left = 46.dp, top = 14.dp, right = 14.dp, bottom = 14.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    stringResource(R.string.branded_latest_episode).uppercase(Locale.getDefault()),
+                    stringResource(R.string.branded_latest_episode).uppercase(currentLocale()),
                     style = condensed(oswald, 13.sp, 16.sp, 600, 1.2.sp),
                     color = palette.accent,
                     maxLines = 1,
@@ -114,7 +114,7 @@ internal fun CrimeJunkieSpotlight(spotlight: BrandedSpotlight, modifier: Modifie
                 Column(Modifier.weight(1f)) {
                     case.stamp?.let { CaseStamp(it, palette, oswald) }
                     Text(
-                        case.name.uppercase(Locale.getDefault()),
+                        case.name.uppercase(currentLocale()),
                         style = condensed(oswald, 28.sp, 30.sp, 700, 0.3.sp),
                         color = palette.ink,
                         maxLines = 3,
@@ -155,7 +155,7 @@ internal fun CrimeJunkieSpotlight(spotlight: BrandedSpotlight, modifier: Modifie
 @Composable
 private fun CaseStamp(stamp: String, palette: CrimeJunkiePalette, oswald: VariableWeights) {
     Text(
-        stamp.uppercase(Locale.getDefault()),
+        stamp.uppercase(currentLocale()),
         style = condensed(oswald, 12.sp, 15.sp, 600, 1.4.sp),
         color = palette.accent,
         maxLines = 1,
@@ -172,9 +172,9 @@ private fun CaseStamp(stamp: String, palette: CrimeJunkiePalette, oswald: Variab
 @Composable
 private fun spotlightDetails(spotlight: BrandedSpotlight): String {
     val episode = spotlight.episode
-    val length = if (spotlight.isCompleted) stringResource(R.string.episode_info_played) else brandedLength(episode.duration)
-    val aired = airedDate(episode.publishedDate)?.let { stringResource(R.string.crimejunkie_aired, it) }.orEmpty()
-    return listOf(aired, length).filter(String::isNotBlank).joinToString(" · ").uppercase(Locale.getDefault())
+    val length = if (spotlight.isCompleted) stringResource(R.string.episode_info_played) else brandedLength(episode.duration, currentLocale())
+    val aired = airedDate(episode.publishedDate, currentLocale())?.let { stringResource(R.string.crimejunkie_aired, it) }.orEmpty()
+    return listOf(aired, length).filter(String::isNotBlank).joinToString(" · ").uppercase(currentLocale())
 }
 
 private fun condensed(oswald: VariableWeights, size: TextUnit, lineHeight: TextUnit, weight: Int, letterSpacing: TextUnit): TextStyle =
@@ -220,5 +220,5 @@ internal fun crimeJunkieCaseTitle(title: String): CrimeJunkieCaseTitle {
 }
 
 /** "Oct 26", or null when the date is unknown. */
-internal fun airedDate(publishedSeconds: Long, locale: Locale = Locale.getDefault()): String? =
-    if (publishedSeconds <= 0) null else SimpleDateFormat("MMM d", locale).format(Date(publishedSeconds * 1000))
+internal fun airedDate(publishedSeconds: Long, locale: Locale): String? =
+    if (publishedSeconds <= 0) null else LocaleFormats.date(publishedSeconds * 1000, LocaleFormats.DateStyle.DAY_MONTH, locale)

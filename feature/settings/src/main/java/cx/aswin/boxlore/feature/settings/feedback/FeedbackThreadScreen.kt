@@ -56,6 +56,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -64,11 +65,13 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.support.SupportEnding
 import cx.aswin.boxlore.core.support.SupportMessage
+import cx.aswin.boxlore.feature.settings.R
 import java.time.ZoneId
-import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -116,9 +119,9 @@ internal fun FeedbackThreadScreen(
         ) {
             Column(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility)) {
                 Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    if (actions.onBack != null) FeedbackIconButton(Icons.AutoMirrored.Rounded.ArrowBack, "Navigate back", actions.onBack) else Spacer(Modifier.width(16.dp))
+                    if (actions.onBack != null) FeedbackIconButton(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.settings_navigate_back), actions.onBack) else Spacer(Modifier.width(16.dp))
                     Text(
-                        state.conversation?.thread?.categoryLabel ?: "Feedback",
+                        state.conversation?.thread?.categoryLabel ?: stringResource(R.string.feedback_title),
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.weight(1f).padding(start = 4.dp),
                     )
@@ -126,8 +129,8 @@ internal fun FeedbackThreadScreen(
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     when {
                         state.conversation != null -> Messages(state, actions)
-                        state.gone -> Notice("This conversation isn't available any more.", actions.onBack?.let { "Back" to it }, Modifier.align(Alignment.Center))
-                        state.loadFailed -> Notice("Couldn't load this conversation. Check your connection and try again.", "Try again" to actions.onRetry, Modifier.align(Alignment.Center))
+                        state.gone -> Notice(stringResource(R.string.feedback_thread_gone), actions.onBack?.let { stringResource(R.string.settings_back) to it }, Modifier.align(Alignment.Center))
+                        state.loadFailed -> Notice(stringResource(R.string.feedback_thread_error), stringResource(R.string.feedback_try_again) to actions.onRetry, Modifier.align(Alignment.Center))
                         else -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                     }
                 }
@@ -146,45 +149,45 @@ private fun Messages(state: FeedbackThreadUiState, actions: FeedbackThreadAction
     val is24Hour = DateFormat.is24HourFormat(context)
     val now = System.currentTimeMillis()
     val zone = ZoneId.systemDefault()
-    val locale = Locale.getDefault()
+    val locale = currentLocale()
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         if (state.loadFailed) {
             item(key = "refresh_failed") {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        "Couldn't refresh this conversation.",
+                        stringResource(R.string.feedback_thread_refresh_error),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.weight(1f),
                     )
-                    TextButton(onClick = actions.onRetry) { Text("Try again", fontWeight = GoogleSansWeight.semiBold) }
+                    TextButton(onClick = actions.onRetry) { Text(stringResource(R.string.feedback_try_again), fontWeight = GoogleSansWeight.semiBold) }
                 }
             }
         }
         if (conversation.earlier != null) {
             item(key = "earlier") {
                 TextButton(onClick = actions.onLoadEarlier, enabled = !state.loadingEarlier, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (state.loadingEarlier) "Loading…" else "Show earlier messages", fontWeight = GoogleSansWeight.semiBold)
+                    Text(if (state.loadingEarlier) stringResource(R.string.feedback_thread_loading) else stringResource(R.string.feedback_thread_show_earlier), fontWeight = GoogleSansWeight.semiBold)
                 }
             }
         }
         items(conversation.messages, key = { it.id }) { message ->
-            MessageCard(message, feedbackMessageTime(message.createdAt, now, zone, locale, is24Hour), actions.photo)
+            MessageCard(message, feedbackMessageTime(message.createdAt, now, zone, locale, is24Hour).asString(), actions.photo)
         }
         conversation.ending?.let { ending ->
             item(key = "ending") {
-                EndingCard(ending, feedbackListTime(ending.at, now, zone, locale, is24Hour), onReply = { actions.onReplyOpen(true) }, onNew = actions.onNewFeedback, canReply = state.canReply && !state.replyOpen)
+                EndingCard(ending, feedbackListTime(ending.at, now, zone, locale, is24Hour).asString(), onReply = { actions.onReplyOpen(true) }, onNew = actions.onNewFeedback, canReply = state.canReply && !state.replyOpen)
             }
         }
         if (conversation.ending == null && state.canReply && !state.replyOpen) {
             item(key = "actions") {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Button(onClick = { actions.onReplyOpen(true) }, shape = CircleShape, modifier = Modifier.heightIn(min = 48.dp)) {
-                        Text("Reply", fontWeight = GoogleSansWeight.semiBold)
+                        Text(stringResource(R.string.feedback_thread_reply), fontWeight = GoogleSansWeight.semiBold)
                     }
                     if (state.canSolve) {
                         TextButton(onClick = actions.onSolve, enabled = !state.solving, modifier = Modifier.heightIn(min = 48.dp)) {
-                            Text("Mark solved", fontWeight = GoogleSansWeight.semiBold)
+                            Text(stringResource(R.string.feedback_thread_mark_solved), fontWeight = GoogleSansWeight.semiBold)
                         }
                     }
                 }
@@ -212,11 +215,11 @@ private fun MessageCard(message: SupportMessage, time: String, photo: suspend (S
                     ) {
                         Text("b", color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.labelLarge, fontWeight = GoogleSansWeight.semiBold)
                     }
-                    Text(message.author.ifBlank { "boxlore team" }, style = MaterialTheme.typography.titleSmall)
+                    Text(message.author.ifBlank { stringResource(R.string.feedback_thread_team) }, style = MaterialTheme.typography.titleSmall)
                     Text("· $time", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f, fill = false))
                 }
             } else {
-                Text("${message.author.ifBlank { "You" }} · $time", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.feedback_thread_author_time, message.author.ifBlank { stringResource(R.string.feedback_thread_you) }, time), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(message.body, style = MaterialTheme.typography.bodyLarge)
             if (message.photoIds.isNotEmpty()) {
@@ -226,7 +229,7 @@ private fun MessageCard(message: SupportMessage, time: String, photo: suspend (S
                 }
             }
             if (message.diagnostics) {
-                Text("Diagnostics included", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.feedback_thread_diagnostics_included), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -244,11 +247,12 @@ private fun PhotoThumb(id: String, index: Int, photo: suspend (String) -> ByteAr
             }
         }
     }
+    val a11yLabel = stringResource(R.string.feedback_photo_number, index + 1)
     Box(
         Modifier
             .size(width = 64.dp, height = 112.dp)
             .background(MaterialTheme.colorScheme.surfaceContainerHighest, RoundedCornerShape(12.dp))
-            .semantics { contentDescription = "Photo ${index + 1}" },
+            .semantics { contentDescription = a11yLabel },
     ) {
         image?.let { Image(it, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
     }
@@ -308,8 +312,9 @@ private fun ReplyBar(state: FeedbackThreadUiState, actions: FeedbackThreadAction
         Column(Modifier.padding(start = 18.dp, end = 10.dp, top = 14.dp, bottom = 8.dp)) {
             Box(Modifier.fillMaxWidth().heightIn(min = 72.dp, max = 180.dp)) {
                 if (state.reply.isEmpty()) {
-                    Text("Write your reply", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.feedback_thread_reply_placeholder), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                val a11yLabel2 = stringResource(R.string.feedback_thread_reply_label)
                 BasicTextField(
                     value = state.reply,
                     onValueChange = actions.onReplyChanged,
@@ -320,15 +325,15 @@ private fun ReplyBar(state: FeedbackThreadUiState, actions: FeedbackThreadAction
                         .fillMaxWidth()
                         .focusRequester(focus)
                         .testTag(FEEDBACK_REPLY_FIELD_TAG)
-                        .semantics { contentDescription = "Your reply" },
+                        .semantics { contentDescription = a11yLabel2 },
                 )
             }
             state.replyError?.let { error ->
-                Text(error, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 4.dp, end = 8.dp))
+                Text(error.asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 4.dp, end = 8.dp))
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = { actions.onReplyOpen(false) }, enabled = !state.sending, modifier = Modifier.heightIn(min = 48.dp)) {
-                    Text("Cancel", fontWeight = GoogleSansWeight.semiBold)
+                    Text(stringResource(R.string.settings_cancel), fontWeight = GoogleSansWeight.semiBold)
                 }
                 Button(
                     onClick = actions.onSendReply,
@@ -336,7 +341,7 @@ private fun ReplyBar(state: FeedbackThreadUiState, actions: FeedbackThreadAction
                     shape = CircleShape,
                     modifier = Modifier.heightIn(min = 48.dp).testTag(FEEDBACK_REPLY_SEND_TAG),
                 ) {
-                    Text(if (state.sending) "Sending" else "Send reply", fontWeight = GoogleSansWeight.semiBold)
+                    Text(if (state.sending) stringResource(R.string.feedback_sending) else stringResource(R.string.feedback_thread_send_reply), fontWeight = GoogleSansWeight.semiBold)
                 }
             }
         }

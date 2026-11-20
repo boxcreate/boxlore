@@ -135,7 +135,11 @@
     <string name="podcast_info_close_search">Close episode search</string>
     <string name="podcast_info_clear_search">Clear search</string>
     <string name="podcast_info_no_search_results">No matching episodes. Try another title or keyword.</string>
-    <string name="podcast_info_search_newest_only">Searched only the newest %1$s episodes of this show.</string>
+    <!-- %1$s is the number of episodes searched, already formatted for the language (1,000). -->
+    <plurals name="podcast_info_search_newest_only">
+        <item quantity="one">Searched only the newest %1$s episode of this show.</item>
+        <item quantity="other">Searched only the newest %1$s episodes of this show.</item>
+    </plurals>
     <string name="podcast_info_search_failed">Couldn’t search this show’s episodes. Check your connection.</string>
     <string name="podcast_info_missing_offer">Missing episodes?</string>
     <string name="podcast_info_missing_fetching">Updating…</string>

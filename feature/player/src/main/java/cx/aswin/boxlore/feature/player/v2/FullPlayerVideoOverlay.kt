@@ -48,12 +48,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreFoldSafeViewport
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.player.R
 import cx.aswin.boxlore.feature.player.formatTime
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -237,7 +239,7 @@ internal fun VideoHudTopBar(
                     .size(40.dp)
                     .background(Color.White.copy(alpha = 0.2f), CircleShape)
             ) {
-                Icon(Icons.Rounded.FullscreenExit, contentDescription = "Exit Fullscreen", tint = Color.White)
+                Icon(Icons.Rounded.FullscreenExit, contentDescription = stringResource(R.string.player_exit_fullscreen), tint = Color.White)
             }
             Spacer(modifier = Modifier.width(16.dp))
             Text(
@@ -254,7 +256,7 @@ internal fun VideoHudTopBar(
                 .size(40.dp)
                 .background(Color.White.copy(alpha = 0.2f), CircleShape)
         ) {
-            Icon(Icons.Rounded.ScreenRotation, contentDescription = "Toggle Orientation", tint = Color.White)
+            Icon(Icons.Rounded.ScreenRotation, contentDescription = stringResource(R.string.player_toggle_orientation), tint = Color.White)
         }
     }
 }
@@ -293,7 +295,7 @@ internal fun VideoTransportControls(
         ) {
             Icon(
                 imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = if (isPlaying) "Pause" else "Play",
+                contentDescription = stringResource(if (isPlaying) R.string.minimal_pause else R.string.minimal_play),
                 modifier = Modifier.size(36.dp),
                 tint = colorScheme.onPrimaryContainer
             )

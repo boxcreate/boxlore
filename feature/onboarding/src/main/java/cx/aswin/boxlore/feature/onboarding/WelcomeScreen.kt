@@ -322,7 +322,7 @@ internal fun welcomeEchoCell(room: Dp): Dp? {
 private fun WelcomeEchoPeek(clock: WelcomeMotionClock, buttonPress: InteractionSource, cell: Dp, modifier: Modifier) {
     // Echo ducks a little while the button is held and pops back up when it is released.
     val pressed by buttonPress.collectIsPressedAsState()
-    val duck = animateFloatAsState(if (pressed) 1f else 0f, spring(dampingRatio = 0.55f, stiffness = 650f), label = "Echo duck")
+    val duck = animateFloatAsState(if (pressed) 1f else 0f, spring(dampingRatio = 0.55f, stiffness = 650f), label = "echoDuck")
     fun Density.lift(): Float {
         // The clock keeps counting after the text reveal and never replays, so it alone decides
         // the rise; the reveal flag flips at 1.4s, mid-rise.

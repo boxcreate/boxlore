@@ -7,10 +7,15 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class FcmPayloadParserTest {
+    private companion object {
+        /** The English fallbacks the app's resources hold ([PushTextFallbacksTest] checks them). */
+        val FALLBACKS = PushTextFallbacks("boxlore Update", "Check out what's new in boxlore!", "View")
+    }
+
     @Test
     fun testParse_emptyPayloadResolvesDefaults() {
         val payload = emptyMap<String, String>()
-        val parsed = FcmPayloadParser.parse(payload)
+        val parsed = FcmPayloadParser.parse(payload, FALLBACKS)
 
         assertEquals("boxlore Update", parsed.title)
         assertEquals("Check out what's new in boxlore!", parsed.body)
@@ -39,7 +44,7 @@ class FcmPayloadParserTest {
                 "show_action_in_app" to "true",
                 "category" to "UPDATE",
             )
-        val parsed = FcmPayloadParser.parse(payload)
+        val parsed = FcmPayloadParser.parse(payload, FALLBACKS)
 
         assertEquals("Custom Title", parsed.title)
         assertEquals("Custom body content", parsed.body)
@@ -60,7 +65,7 @@ class FcmPayloadParserTest {
                 "show_action_in_push" to "true",
                 "show_action_in_app" to "false",
             )
-        val parsed = FcmPayloadParser.parse(payload)
+        val parsed = FcmPayloadParser.parse(payload, FALLBACKS)
 
         assertTrue(parsed.showActionInPush)
         assertFalse(parsed.showActionInApp)
@@ -92,6 +97,7 @@ class FcmPayloadParserTest {
                     "podcast_id" to "pod-1",
                     "episodeId" to "ep-9",
                 ),
+                FALLBACKS,
             )
         assertEquals("new_episode", parsed.type)
         assertEquals("pod-1", parsed.podcastId)
@@ -109,6 +115,7 @@ class FcmPayloadParserTest {
                     "guid" to "guid-new",
                     "enclosureUrl" to "https://cdn.example.com/ep.mp3",
                 ),
+                FALLBACKS,
             )
         assertEquals("https://feeds.example/show.xml", parsed.feedUrl)
         assertEquals("guid-new", parsed.guid)
@@ -119,6 +126,7 @@ class FcmPayloadParserTest {
     fun newEpisodePushIdentityFieldsAreReadOnlyWhenValid() {
         val parsed = FcmPayloadParser.parse(
             mapOf("type" to "new_episode", "recipeId" to "4503599627370500", "showId" to "920666", "catalogKey" to " guid-1\n"),
+            FALLBACKS,
         )
         assertEquals(4_503_599_627_370_500L, parsed.recipeId)
         assertEquals("guid-1", parsed.catalogKey)
@@ -133,6 +141,6 @@ class FcmPayloadParserTest {
         }
         listOf("0920666", "rss:abc", "4503599627370500", "").forEach { assertNull(FcmPayloadParser.showId(mapOf("showId" to it)), it) }
         assertNull(FcmPayloadParser.catalogKey(mapOf("catalogKey" to "  ")))
-        assertNull(FcmPayloadParser.parse(emptyMap()).recipeId)
+        assertNull(FcmPayloadParser.parse(emptyMap(), FALLBACKS).recipeId)
     }
 }

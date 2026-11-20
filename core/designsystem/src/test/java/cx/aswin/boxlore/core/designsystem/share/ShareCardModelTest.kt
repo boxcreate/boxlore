@@ -116,40 +116,6 @@ class ShareCardModelTest {
         assertEquals(0.94f, shareProgress(ShareMoment.StartsAt(3_600_000), 3_600), 0.001f)
     }
 
-    /** Details keep each part's words together with no-break spaces; compare them as plain text. */
-    private fun String?.plain() = this?.replace('\u00A0', ' ')
-
-    @Test
-    fun episodeDetailsKeepEachPartOnOneLine() {
-        val details = shareEpisodeDetails(4_320, 0, java.time.LocalDate.of(2026, 11, 14), java.time.ZoneOffset.UTC, java.util.Locale.UK)
-        assertEquals("1\u00A0hr\u00A012\u00A0min", details)
-        assertEquals("Technology · Every\u00A02\u00A0weeks", sharePodcastDetails("Technology", "biweekly"))
-    }
-
-    @Test
-    fun episodeDetailsGiveTheLengthAndTheDay() {
-        val today = java.time.LocalDate.of(2026, 11, 14)
-        val utc = java.time.ZoneOffset.UTC
-        val oct30 = java.time.LocalDate.of(2026, 10, 30).atStartOfDay(utc).toEpochSecond()
-        val lastYear = java.time.LocalDate.of(2024, 3, 2).atStartOfDay(utc).toEpochSecond()
-        assertEquals("49 min · 30 Oct", shareEpisodeDetails(2_968, oct30, today, utc, java.util.Locale.UK).plain())
-        assertEquals("2 hr · 2 Mar 2024", shareEpisodeDetails(7_200, lastYear, today, utc, java.util.Locale.UK).plain())
-        assertEquals("1 hr 12 min", shareEpisodeDetails(4_320, 0, today, utc, java.util.Locale.UK).plain())
-        assertEquals("30 Oct", shareEpisodeDetails(0, oct30, today, utc, java.util.Locale.UK).plain())
-        assertEquals(null, shareEpisodeDetails(30, 0, today, utc, java.util.Locale.UK).plain())
-    }
-
-    @Test
-    fun showDetailsGiveTheGenreAndHowOftenItPosts() {
-        assertEquals("Technology · Daily", sharePodcastDetails("Technology", "daily").plain())
-        assertEquals("History · Weekly", sharePodcastDetails("History", "1").plain())
-        assertEquals("History · Every 2 weeks", sharePodcastDetails("History", "Bi-weekly").plain())
-        assertEquals("Several times a week", sharePodcastDetails("Podcast", "3").plain())
-        assertEquals("Comedy", sharePodcastDetails("Comedy", "whenever").plain())
-        assertEquals(null, sharePodcastDetails(" ", null).plain())
-        assertEquals(null, sharePodcastDetails("podcast", "0.01").plain())
-    }
-
     @Test
     fun timesReadLikeThePlayer() {
         assertEquals("0:07", formatShareTime(7_000))

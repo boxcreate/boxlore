@@ -69,9 +69,13 @@ data class OnboardingUiState(
     val popularPodcasts: List<Podcast> = emptyList(),
     val isPopularLoading: Boolean = false,
     val selectedSearchGenre: String? = null,
+    /** Onboarding's first question, while [currentStep] is [OnboardingStep.APP_LANGUAGE]. */
+    val appLanguageQuestion: AppLanguageQuestion? = null,
 )
 
 enum class OnboardingStep {
+    /** The language question, before Welcome, only when the phone suggests a translation. */
+    APP_LANGUAGE,
     WELCOME,
     GENRES,
     SUB_GENRES,

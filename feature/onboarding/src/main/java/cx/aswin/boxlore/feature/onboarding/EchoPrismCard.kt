@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.SpaceMonoFamily
 import cx.aswin.boxlore.core.network.model.OnboardingProbeCard
 import cx.aswin.boxlore.core.network.model.toPodcast
@@ -93,7 +94,8 @@ internal fun EchoPrismCard(
         val measure = rememberPrismTextMeasure()
         // The display faces arrive from the font provider; re-plan once they have, so the fit is real.
         val fontsReady by rememberPrismFontsReady()
-        val title = remember(card.title) { card.title.uppercase() }
+        val locale = currentLocale()
+        val title = remember(card.title, locale) { card.title.uppercase(locale) }
         val plan = remember(title, card.hook, card.author, constraints.maxWidth, constraints.maxHeight, density, measure, fontsReady) {
             EchoPrismLayout.plan(
                 title = title,
@@ -280,6 +282,8 @@ private fun PrismTag(card: OnboardingProbeCard, index: Int, count: Int, sticker:
     val related = card.role == "related"
     val role = stringResource(if (related) R.string.echo_deck_related else R.string.echo_deck_core)
     val position = stringResource(R.string.echo_deck_position, index + 1, count)
+    val description = stringResource(R.string.echo_deck_tag_description, role, position)
+    val upperRole = role.uppercase(currentLocale())
     val edge = if (sticker) Modifier.shadow(PrismStickerShadow, CircleShape).border(PrismStickerEdge, Color.White, CircleShape) else Modifier
     Row(
         modifier
@@ -287,14 +291,14 @@ private fun PrismTag(card: OnboardingProbeCard, index: Int, count: Int, sticker:
             .background(PrismColors.Tag, CircleShape)
             .heightIn(min = EchoPrismLayout.TagMinHeight.dp)
             .padding(start = 8.dp, end = 11.dp, top = 3.dp, bottom = 3.dp)
-            .clearAndSetSemantics { contentDescription = "$role, $position" }
+            .clearAndSetSemantics { contentDescription = description }
             .testTag("echo_deck_tag"),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(if (related) Icons.Rounded.AutoAwesome else Icons.Rounded.Star, null, Modifier.size(14.dp), tint = PrismColors.TagInk)
         Text(
             // The compact card (short screens, large text) has little room beside the art: the role alone.
-            if (sticker) stringResource(R.string.echo_deck_tag, role.uppercase(), index + 1, count) else role.uppercase(),
+            if (sticker) stringResource(R.string.echo_deck_tag, upperRole, index + 1, count) else upperRole,
             Modifier.padding(start = 4.dp),
             style = TextStyle(fontFamily = SpaceMonoFamily, fontWeight = FontWeight.Bold, fontSize = 10.5.sp, lineHeight = EchoPrismLayout.TagLineSp.sp, letterSpacing = 1.4.sp),
             color = PrismColors.TagInk,
@@ -328,7 +332,7 @@ private fun PrismTitle(upper: String, title: String, plan: PrismPlan, align: Tex
 @Composable
 private fun PrismPublisher(author: String) {
     Text(
-        author.uppercase(),
+        author.uppercase(currentLocale()),
         Modifier.padding(top = EchoPrismLayout.PublisherGap.dp).widthIn(max = PrismPublisherMaxWidth),
         style = TextStyle(fontFamily = SpaceMonoFamily, fontSize = 10.5.sp, lineHeight = EchoPrismLayout.PublisherLineSp.sp, letterSpacing = 1.6.sp, textAlign = TextAlign.Center),
         color = PrismColors.Muted,

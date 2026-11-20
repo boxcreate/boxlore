@@ -27,6 +27,7 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.model.isTrailer
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.feature.info.PodcastInfoUiState
 import cx.aswin.boxlore.feature.info.components.ExpandableInfoTitle
 import cx.aswin.boxlore.feature.info.components.PodcastInfoMetadataChipsRow
@@ -123,7 +124,7 @@ internal fun PodcastInfoChipsRow(
     // Update Frequency Calculation — filters/sorts episodes and analyzes release intervals,
     // which can be expensive for large RSS catalogs, so it runs off the composition thread
     // and is cancelled/restarted automatically as its keys change.
-    var cachedFrequencyData by remember(state.podcast.id) { mutableStateOf<Pair<String, ImageVector>?>(null) }
+    var cachedFrequencyData by remember(state.podcast.id) { mutableStateOf<Pair<UiText, ImageVector>?>(null) }
 
     val frequencyData by produceState(
         initialValue = cachedFrequencyData,

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shown as the show name while every download plays -->
+    <string name="library_downloads_all">All Downloads</string>
+    <string name="library_downloads_error_loading">Error loading downloads</string>
+    <!-- Screen-reader label -->
+    <string name="library_downloads_select_podcasts">Select podcasts</string>
+    <!-- Screen-reader label -->
+    <string name="library_downloads_select_episodes">Select episodes</string>
+    <string name="library_downloads_offline_title">Offline Mode</string>
+    <string name="library_downloads_offline_body">No internet connection. Playing downloaded episodes.</string>
+    <!-- Playful empty-state title; a light pun is welcome -->
+    <string name="library_downloads_empty_title">Buddha woulda coulda</string>
+    <string name="library_downloads_empty_offline_body">No downloaded episodes found. Turn on Wi-Fi and charging to auto-sync your smart downloads!</string>
+    <!-- Smart Downloads is a feature name -->
+    <string name="library_downloads_empty_body">No downloaded episodes yet. Turn on Smart Downloads above or find podcasts to download manually.</string>
+    <string name="library_downloads_delete_title">Delete downloads?</string>
+    <plurals name="library_downloads_delete_podcasts_body">
+        <item quantity="one">Are you sure you want to delete all downloaded episodes for the %1$d selected podcast?</item>
+        <item quantity="other">Are you sure you want to delete all downloaded episodes for the %1$d selected podcasts?</item>
+    </plurals>
+    <string name="library_downloads_delete_episodes_title">Delete Downloads?</string>
+    <plurals name="library_downloads_delete_episodes_body">
+        <item quantity="one">Remove %1$d selected downloaded episode?</item>
+        <item quantity="other">Remove %1$d selected downloaded episodes?</item>
+    </plurals>
+    <string name="library_downloads_delete_show_title">Delete Show Downloads?</string>
+    <!-- %1$s is the show's name -->
+    <string name="library_downloads_delete_show_body">Remove all downloaded episodes for \'%1$s\'?</string>
+    <!-- Screen-reader label -->
+    <string name="library_downloads_play_show">Play Show Downloads</string>
+    <!-- When the newest download was saved; %1$s is a short time such as 5m ago -->
+    <string name="library_downloads_latest">Latest: %1$s</string>
+    <!-- Screen-reader label -->
+    <string name="library_downloads_status_queued">Queued</string>
+    <!-- Screen-reader label -->
+    <string name="library_downloads_status_failed">Failed</string>
+    <string name="library_downloads_failed_line">Couldn’t download</string>
+    <string name="library_downloads_download_again">Download Again</string>
+    <string name="library_remove_download">Remove Download</string>
+    <plurals name="library_downloads_failed_count">
+        <item quantity="one">%1$d couldn’t download</item>
+        <item quantity="other">%1$d couldn’t download</item>
+    </plurals>
+    <!-- %2$s is a size such as 420.0 MB -->
+    <plurals name="library_downloads_count_line">
+        <item quantity="one">%1$d episode • %2$s</item>
+        <item quantity="other">%1$d episodes • %2$s</item>
+    </plurals>
+    <!-- %2$s is a size such as 420.0 MB -->
+    <plurals name="library_downloads_count_line_used">
+        <item quantity="one">%1$d episode • %2$s used</item>
+        <item quantity="other">%1$d episodes • %2$s used</item>
+    </plurals>
+    <!-- %2$s is a size such as 420.0 MB -->
+    <plurals name="library_downloads_count_line_saved">
+        <item quantity="one">%1$d episode • %2$s saved</item>
+        <item quantity="other">%1$d episodes • %2$s saved</item>
+    </plurals>
+    <!-- Count line, then how many downloads failed -->
+    <string name="library_downloads_count_and_failed">%1$s • %2$s</string>
+    <!-- File size in bytes -->
+    <string name="library_size_bytes">%1$s B</string>
+    <string name="library_size_kilobytes">%1$s KB</string>
+    <string name="library_size_megabytes">%1$s MB</string>
+    <string name="library_size_gigabytes">%1$s GB</string>
+    <string name="library_size_terabytes">%1$s TB</string>
+    <!-- Feature name -->
+    <string name="library_smart_downloads">Smart Downloads</string>
+    <string name="library_smart_downloads_enable">Enable Smart Downloads</string>
+    <string name="library_smart_downloads_subtitle">Automated offline library</string>
+    <!-- Screen-reader label -->
+    <string name="library_smart_downloads_settings">Smart Downloads Settings</string>
+    <string name="library_smart_downloads_status_syncing">Syncing candidates</string>
+    <string name="library_smart_downloads_status_checking">Checking for updates</string>
+    <string name="library_smart_downloads_status_ready">Offline queue ready</string>
+    <!-- One line: status, smart episodes on the phone out of the most allowed (the count that picks the form), and their size; eps is short for episodes -->
+    <plurals name="library_smart_downloads_collapsed_summary">
+        <item quantity="one">%1$s • %2$d/%3$d eps (%4$d MB)</item>
+        <item quantity="other">%1$s • %2$d/%3$d eps (%4$d MB)</item>
+    </plurals>
+    <!-- %1$s is a short time such as 5m ago, or a date and time -->
+    <string name="library_smart_downloads_last_sync">Last sync: %1$s</string>
+    <string name="library_smart_downloads_last_sync_never">Last sync: Never</string>
+    <string name="library_smart_downloads_syncing">Syncing</string>
+    <string name="library_smart_downloads_sync_now">Sync Now</string>
+    <plurals name="library_smart_downloads_downloading">
+        <item quantity="one">%1$d episode downloading in background</item>
+        <item quantity="other">%1$d episodes downloading in background</item>
+    </plurals>
+    <string name="library_smart_downloads_syncing_cloud">Syncing with cloud endpoints…</string>
+    <!-- Smart episodes on the phone out of the most allowed -->
+    <string name="library_smart_downloads_episodes_progress">Mixtape Episodes (%1$d / %2$d)</string>
+    <!-- Space used out of the space allowed -->
+    <string name="library_smart_downloads_storage_progress">Storage Budget (%1$d MB / %2$d MB)</string>
+    <string name="library_smart_downloads_storage_used">Storage Used</string>
+    <string name="library_smart_downloads_storage_unlimited">%1$d MB (Unlimited)</string>
+</resources>

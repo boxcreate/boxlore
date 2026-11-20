@@ -10,6 +10,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
@@ -78,7 +79,7 @@ internal fun OpenFolderPage(state: FolderPagesState, data: FolderPagesData, acti
     SubscriptionFolderPage(
         folder = folder,
         podcasts = shows,
-        config = FolderPageConfig(isReorderMode = reordering, orderLabel = data.intraFolderSort.label, bottomPadding = bottomPadding),
+        config = FolderPageConfig(isReorderMode = reordering, orderLabel = stringResource(data.intraFolderSort.label), bottomPadding = bottomPadding),
         actions = FolderPageActions(
             onBack = onBack,
             onPodcastClick = actions::openShow,

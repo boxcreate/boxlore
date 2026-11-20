@@ -143,7 +143,7 @@ internal fun Modifier.haloCookieClip(rotation: State<Float>): Modifier = drawWit
 @Composable
 internal fun HaloRing(geometry: HaloGeometry, progress: HeroProgressState?, rotation: State<Float>, track: Color, color: Color, modifier: Modifier) {
     val description = stringResource(R.string.home_hero_listening_progress)
-    val animated by animateFloatAsState(progress?.value ?: 0f, WavyProgressIndicatorDefaults.ProgressAnimationSpec, label = "halo progress")
+    val animated by animateFloatAsState(progress?.value ?: 0f, WavyProgressIndicatorDefaults.ProgressAnimationSpec, label = "haloProgress")
     val semantics = if (progress != null) Modifier.testTag("home_hero_progress").semantics { contentDescription = description } else Modifier
     Canvas(modifier.then(semantics)) {
         val turn = rotation.value

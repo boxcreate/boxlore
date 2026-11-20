@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Onboarding's first question, shown only when the phone suggests one of boxlore's translations. Headline. -->
+    <string name="onboarding_app_language_title">Choose your language</string>
+    <!-- Under the headline. "Settings › Appearance" names the page that holds App language. -->
+    <string name="onboarding_app_language_body">boxlore shows its menus and buttons in this language. Shows and episodes keep their own. You can change it anytime in Settings › Appearance.</string>
+    <!-- Text button that opens the full language list. -->
+    <string name="onboarding_app_language_other">Other languages</string>
+    <!-- The full list's first choice: follow the phone's language. -->
+    <string name="onboarding_app_language_system">System default</string>
+</resources>

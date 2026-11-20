@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.library.subscriptions
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,17 +25,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryTab
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryTabSwitcher
 import cx.aswin.boxlore.core.designsystem.icon.findExactGenreIconKey
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.PodcastGenres
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.feature.library.FolderSaveParams
+import cx.aswin.boxlore.feature.library.R
 
 /** What the New folder flow needs from Subscriptions. */
 internal data class NewFolderFlowData(
@@ -76,7 +81,7 @@ internal fun NewFolderFlow(
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding().imePadding()) {
             FolderFlowTopBar(
-                title = "New folder",
+                title = stringResource(R.string.library_folder_new),
                 onBack = onBack,
                 showClose = draft.step == 0,
                 step = draft.step,
@@ -104,18 +109,18 @@ private fun NewFolderBottomBar(
     val canGoNext = NewFolderFlowLogic.canGoNext(draft)
     when {
         draft.mode == NewFolderMode.AllGenres && data.autoOrganizeOn -> FolderFlowBottomBar(
-            primaryLabel = "Manage",
+            primaryLabel = stringResource(R.string.library_manage),
             primaryEnabled = true,
             onPrimary = actions.onManageAutoOrganize,
-            title = "Auto-organize is on",
+            title = stringResource(R.string.library_auto_organize_is_on),
         )
         draft.mode == NewFolderMode.AllGenres -> FolderFlowBottomBar(
-            primaryLabel = "Turn on auto-organize",
+            primaryLabel = stringResource(R.string.library_auto_organize_turn_on),
             primaryEnabled = true,
             onPrimary = { actions.onTurnOnAutoOrganize(draft.autoFixedLook, draft.tileShowsCovers) },
         )
         draft.isLastStep -> FolderFlowBottomBar(
-            primaryLabel = "Create folder",
+            primaryLabel = stringResource(R.string.library_folder_create),
             primaryEnabled = canGoNext,
             onPrimary = {
                 val ids = if (draft.mode == NewFolderMode.PickShows) draft.pickedIds else emptyList()
@@ -123,22 +128,26 @@ private fun NewFolderBottomBar(
             },
         )
         draft.mode == NewFolderMode.PickShows && draft.step == 0 -> FolderFlowBottomBar(
-            primaryLabel = "Next",
+            primaryLabel = stringResource(R.string.library_next),
             primaryEnabled = canGoNext,
             onPrimary = { onDraftChange(NewFolderFlowLogic.next(draft)) },
-            title = pickedShowsTitle(draft.pickedIds.size),
-            subtitle = if (draft.pickedIds.isEmpty()) "Pick at least one" else "They stay in any other folder too",
+            title = pluralStringResource(R.plurals.library_shows_picked, draft.pickedIds.size, draft.pickedIds.size),
+            subtitle = stringResource(if (draft.pickedIds.isEmpty()) R.string.library_folder_pick_at_least_one else R.string.library_folder_pick_stays_elsewhere),
         )
         else -> FolderFlowBottomBar(
-            primaryLabel = "Next",
+            primaryLabel = stringResource(R.string.library_next),
             primaryEnabled = canGoNext,
             onPrimary = { onDraftChange(NewFolderFlowLogic.next(draft)) },
-            title = draft.genre?.let { genre -> "$genre · ${matchingShows(data.podcasts, genre).size} shows" },
+            title = draft.genre?.let { genre ->
+                stringResource(
+                    R.string.library_folder_genre_and_count,
+                    subscriptionGenreDisplayName(genre),
+                    showCountLabel(matchingShows(data.podcasts, genre).size).asString(),
+                )
+            },
         )
     }
 }
-
-private fun pickedShowsTitle(count: Int): String = if (count == 1) "1 show picked" else "$count shows picked"
 
 /** Shows a genre folder for [genre] would hold: the same matching the folder fills by. */
 internal fun matchingShows(podcasts: List<Podcast>, genre: String): List<Podcast> =
@@ -153,7 +162,7 @@ private fun WhatGoesInStep(
     val header: @Composable () -> Unit = {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text(
-                text = "What goes in it?",
+                text = stringResource(R.string.library_folder_what_goes_in),
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(top = 18.dp),
             )
@@ -187,17 +196,18 @@ private fun ScrollingStep(header: @Composable () -> Unit, content: @Composable (
 private fun ModeSelector(selected: NewFolderMode, onSelect: (NewFolderMode) -> Unit) {
     val modes = NewFolderMode.entries
     DiscoveryTabSwitcher(
-        tabs = modes.map { mode -> DiscoveryTab(label = newFolderModeLabel(mode), icon = newFolderModeIcon(mode)) },
+        tabs = modes.map { mode -> DiscoveryTab(label = stringResource(newFolderModeLabel(mode)), icon = newFolderModeIcon(mode)) },
         selectedIndex = modes.indexOf(selected),
         onTabSelected = { index -> onSelect(modes[index]) },
         floating = false,
     )
 }
 
-internal fun newFolderModeLabel(mode: NewFolderMode): String = when (mode) {
-    NewFolderMode.PickShows -> "Shows"
-    NewFolderMode.OneGenre -> "Genre"
-    NewFolderMode.AllGenres -> "Auto"
+@StringRes
+internal fun newFolderModeLabel(mode: NewFolderMode): Int = when (mode) {
+    NewFolderMode.PickShows -> R.string.library_folder_mode_shows
+    NewFolderMode.OneGenre -> R.string.library_folder_mode_genre
+    NewFolderMode.AllGenres -> R.string.library_folder_mode_auto
 }
 
 private fun newFolderModeIcon(mode: NewFolderMode) = when (mode) {
@@ -213,7 +223,7 @@ private fun AllGenresContent(
     data: NewFolderFlowData,
 ) {
     if (data.autoOrganizeOn) {
-        AutoAddNote(text = "Each genre already has a folder, and shows you follow later are added automatically. Manage changes how they look.")
+        AutoAddNote(text = stringResource(R.string.library_auto_organize_already_on_note))
         return
     }
     AutoOrganizeSetupContent(
@@ -225,7 +235,7 @@ private fun AllGenresContent(
         onTileShowsCoversChange = { onDraftChange(draft.copy(tileShowsCovers = it)) },
     )
     Text(
-        text = "You can change this or turn it off any time in Sort and organize.",
+        text = stringResource(R.string.library_auto_organize_change_later),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -241,25 +251,25 @@ private fun NameStep(draft: NewFolderDraft, onDraftChange: (NewFolderDraft) -> U
             .padding(top = 18.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(text = "Name it", style = MaterialTheme.typography.headlineSmall)
+        Text(text = stringResource(R.string.library_folder_name_it), style = MaterialTheme.typography.headlineSmall)
         FolderNameField(
             name = draft.name,
             onNameChange = { onDraftChange(NewFolderFlowLogic.withName(draft, it, findExactGenreIconKey(it))) },
             iconKey = draft.icon,
-            helper = NewFolderFlowLogic.savedNameNote(draft.name),
+            helper = NewFolderFlowLogic.savedNameNote(draft.name)?.let { stringResource(it) },
         )
         if (NewFolderFlowLogic.nameIsGenre(draft.name)) {
             // A folder named after a genre links to it (a folder rule), so it says it is an auto folder.
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 AutoFolderMark(size = 18.dp)
                 Text(
-                    text = "${draft.name.trim()} is a genre, so this is an auto folder.",
+                    text = stringResource(R.string.library_folder_name_is_genre, draft.name.trim()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
-        Text(text = "Icon", style = MaterialTheme.typography.titleSmall)
+        Text(text = stringResource(R.string.library_folder_icon), style = MaterialTheme.typography.titleSmall)
         FolderIconGrid(selectedKey = draft.icon, onSelect = { onDraftChange(NewFolderFlowLogic.withIcon(draft, it)) })
     }
 }
@@ -280,9 +290,11 @@ private fun LookStep(draft: NewFolderDraft, onDraftChange: (NewFolderDraft) -> U
             .padding(top = 18.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Text(text = "Choose a look", style = MaterialTheme.typography.headlineSmall)
+        Text(text = stringResource(R.string.library_folder_choose_look), style = MaterialTheme.typography.headlineSmall)
         Text(
-            text = "How ${draft.name.trim().ifEmpty { "this folder" }} shows up on your Shows tab.",
+            text = draft.name.trim().takeIf { it.isNotEmpty() }
+                ?.let { stringResource(R.string.library_folder_look_intro_named, it) }
+                ?: stringResource(R.string.library_folder_look_intro_unnamed),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -301,7 +313,7 @@ private fun LookStep(draft: NewFolderDraft, onDraftChange: (NewFolderDraft) -> U
             )
         }
         Text(
-            text = "More shows than that? The last spot becomes +N and opens the folder. You can change the look later.",
+            text = stringResource(R.string.library_folder_look_overflow_note),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

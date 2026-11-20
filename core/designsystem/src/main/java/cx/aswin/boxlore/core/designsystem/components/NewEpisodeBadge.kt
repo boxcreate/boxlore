@@ -22,8 +22,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.R
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 @Composable
@@ -70,7 +73,7 @@ fun BoxScope.NewEpisodeBadge(modifier: Modifier = Modifier) {
             .background(brush, RoundedCornerShape(6.dp)),
     ) {
         Text(
-            text = "NEW",
+            text = stringResource(R.string.new_episode_badge).uppercase(currentLocale()),
             style = MaterialTheme.typography.labelSmall.copy(
                 fontSize = 7.sp,
                 fontWeight = GoogleSansWeight.extraBold,

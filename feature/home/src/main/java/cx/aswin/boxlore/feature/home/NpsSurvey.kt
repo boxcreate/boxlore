@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.home
 
+import androidx.annotation.StringRes
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.analytics.SurveyQuestionRef
 import java.util.UUID
@@ -57,40 +58,45 @@ internal data class NpsSurveySession(
 }
 
 /**
- * The survey's wording. Any key here can be replaced from [NpsSurveyDefinition.COPY_FLAG]'s payload;
- * an empty `ideaTag` hides the tag on the idea step.
+ * The survey's wording: [strings] reads the app's text (by resource id) and any key in [overrides], from
+ * [NpsSurveyDefinition.COPY_FLAG]'s payload, replaces it; an empty `ideaTag` hides the tag on the idea step.
  */
-internal class NpsSurveyCopy(private val overrides: Map<String, String> = emptyMap()) {
-    private fun text(key: String, default: String) = overrides[key] ?: default
+internal class NpsSurveyCopy(
+    private val overrides: Map<String, String> = emptyMap(),
+    private val strings: (Int) -> String,
+) {
+    private fun text(key: String, @StringRes id: Int) = overrides[key] ?: strings(id)
 
-    val eyebrow = text("eyebrow", "A quick sound check")
-    val question = text("question", "How likely are you to recommend boxlore to a friend?")
-    val notLikely = text("notLikely", "Not likely")
-    val veryLikely = text("veryLikely", "Very likely")
-    val notNow = text("notNow", "Not now")
-    private val picked = text("picked", "You picked {score}")
-    val fixTitle = text("fixTitle", "What's the one thing we should fix first?")
-    val fixHelper = text("fixHelper", "Every answer is read. Be as specific as you like.")
-    val tenTitle = text("tenTitle", "What would turn this up to a 10?")
-    val tenHelper = text("tenHelper", "A missing feature, a rough edge, anything.")
-    val ideaTitle = text("ideaTitle", "What should we queue up next?")
-    val ideaTag = text("ideaTag", "Most listener ideas get built within a few weeks")
-    val answerLabel = text("answerLabel", "Your answer (optional)")
-    val answerHint = text("answerHint", "Type your answer…")
-    val ideaLabel = text("ideaLabel", "Your idea (optional)")
-    val ideaHint = text("ideaHint", "Type your idea…")
-    val skip = text("skip", "Skip")
-    val send = text("send", "Send")
-    val sendIdea = text("sendIdea", "Send idea")
-    val thanksLowTitle = text("thanksLowTitle", "Thank you for telling us")
-    val thanksLowBody = text("thanksLowBody", "We read every answer, and yours helps us decide what to fix first.")
-    val thanksMiddleTitle = text("thanksMiddleTitle", "Received, loud and clear.")
-    val thanksMiddleBody = text("thanksMiddleBody", "Every answer gets a proper listen, and it shapes what comes next.")
-    val thanksHighTitle = text("thanksHighTitle", "Music to our ears.")
-    val thanksHighBody =
-        text("thanksHighBody", "Want to pass the mic? A rating on Google Play helps other listeners tune in to boxlore.")
-    val done = text("done", "Done")
-    val rateOnPlay = text("rateOnPlay", "Rate on Google Play")
+    /** The same overrides, worded by [strings] (the sheet's own resources, so it follows the app language). */
+    fun withStrings(strings: (Int) -> String) = NpsSurveyCopy(overrides, strings)
+
+    val eyebrow = text("eyebrow", R.string.home_nps_eyebrow)
+    val question = text("question", R.string.home_nps_question)
+    val notLikely = text("notLikely", R.string.home_nps_not_likely)
+    val veryLikely = text("veryLikely", R.string.home_nps_very_likely)
+    val notNow = text("notNow", R.string.home_nps_not_now)
+    private val picked = text("picked", R.string.home_nps_picked)
+    val fixTitle = text("fixTitle", R.string.home_nps_fix_title)
+    val fixHelper = text("fixHelper", R.string.home_nps_fix_helper)
+    val tenTitle = text("tenTitle", R.string.home_nps_ten_title)
+    val tenHelper = text("tenHelper", R.string.home_nps_ten_helper)
+    val ideaTitle = text("ideaTitle", R.string.home_nps_idea_title)
+    val ideaTag = text("ideaTag", R.string.home_nps_idea_tag)
+    val answerLabel = text("answerLabel", R.string.home_nps_answer_label)
+    val answerHint = text("answerHint", R.string.home_nps_answer_hint)
+    val ideaLabel = text("ideaLabel", R.string.home_nps_idea_label)
+    val ideaHint = text("ideaHint", R.string.home_nps_idea_hint)
+    val skip = text("skip", R.string.home_nps_skip)
+    val send = text("send", R.string.home_nps_send)
+    val sendIdea = text("sendIdea", R.string.home_nps_send_idea)
+    val thanksLowTitle = text("thanksLowTitle", R.string.home_nps_thanks_low_title)
+    val thanksLowBody = text("thanksLowBody", R.string.home_nps_thanks_low_body)
+    val thanksMiddleTitle = text("thanksMiddleTitle", R.string.home_nps_thanks_middle_title)
+    val thanksMiddleBody = text("thanksMiddleBody", R.string.home_nps_thanks_middle_body)
+    val thanksHighTitle = text("thanksHighTitle", R.string.home_nps_thanks_high_title)
+    val thanksHighBody = text("thanksHighBody", R.string.home_nps_thanks_high_body)
+    val done = text("done", R.string.home_nps_done)
+    val rateOnPlay = text("rateOnPlay", R.string.home_nps_rate_on_play)
 
     fun picked(score: Int) = picked.replace("{score}", score.toString())
 
@@ -124,7 +130,7 @@ internal class NpsSurveyController(
     private val _session = MutableStateFlow<NpsSurveySession?>(null)
     val session: StateFlow<NpsSurveySession?> = _session.asStateFlow()
     private val displayed = AtomicBoolean(false)
-    var copy: NpsSurveyCopy = NpsSurveyCopy()
+    var copy: NpsSurveyCopy? = null
         private set
 
     val isOpen: Boolean get() = _session.value != null
@@ -183,6 +189,7 @@ internal class NpsSurveyController(
 
     private fun send(session: NpsSurveySession, answer: String?, completed: Boolean) {
         val score = session.score ?: return
+        val wording = copy ?: return
         val band = NpsScoreBand.of(score)
         val followUpId = NpsSurveyCopy.followUpQuestionId(band)
         AnalyticsHelper.trackSurveySent(
@@ -190,10 +197,10 @@ internal class NpsSurveyController(
             submissionId = session.submissionId,
             // Every question in the survey's order, as PostHog's own SDKs send them: its queries read answers by position.
             questions = listOf(
-                SurveyQuestionRef(NpsSurveyDefinition.SCORE_QUESTION_ID, copy.question),
-                SurveyQuestionRef(NpsSurveyDefinition.FIX_QUESTION_ID, copy.fixTitle),
-                SurveyQuestionRef(NpsSurveyDefinition.TEN_QUESTION_ID, copy.tenTitle),
-                SurveyQuestionRef(NpsSurveyDefinition.IDEA_QUESTION_ID, copy.ideaTitle),
+                SurveyQuestionRef(NpsSurveyDefinition.SCORE_QUESTION_ID, wording.question),
+                SurveyQuestionRef(NpsSurveyDefinition.FIX_QUESTION_ID, wording.fixTitle),
+                SurveyQuestionRef(NpsSurveyDefinition.TEN_QUESTION_ID, wording.tenTitle),
+                SurveyQuestionRef(NpsSurveyDefinition.IDEA_QUESTION_ID, wording.ideaTitle),
             ),
             responses = buildMap {
                 put(NpsSurveyDefinition.SCORE_QUESTION_ID, score)

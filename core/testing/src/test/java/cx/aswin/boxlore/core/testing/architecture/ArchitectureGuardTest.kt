@@ -252,6 +252,11 @@ class ArchitectureGuardTest {
                         "Calendar",
                         "java\\.util\\.Calendar",
                         "MessageDigest",
+                        // ICU formatter factories for LocaleFormats (:core:model text/); each call builds a new formatter.
+                        "MeasureFormat",
+                        "RelativeDateTimeFormatter",
+                        "NumberFormat",
+                        "CompactDecimalFormat",
                         // JCA factories for the API session device key (Android Keystore).
                         "KeyStore",
                         "KeyPairGenerator",

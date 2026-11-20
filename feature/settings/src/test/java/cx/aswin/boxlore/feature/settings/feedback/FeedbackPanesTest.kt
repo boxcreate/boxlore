@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.settings.feedback
 
 import androidx.compose.runtime.saveable.SaverScope
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.feature.settings.text
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.Locale
@@ -10,8 +11,13 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /** Which pane Feedback opens on, where Back goes, when it splits, and how times read. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 class FeedbackPanesTest {
     private val id = "0123456789abcdef01234567"
 
@@ -50,13 +56,13 @@ class FeedbackPanesTest {
         val zone = ZoneId.of("Asia/Kolkata")
         val now = ZonedDateTime.of(2026, 11, 2, 15, 0, 0, 0, zone).toInstant().toEpochMilli()
         fun at(month: Int, day: Int, hour: Int, minute: Int, year: Int = 2026) = ZonedDateTime.of(year, month, day, hour, minute, 0, 0, zone).toInstant().toEpochMilli()
-        assertEquals("11:02", feedbackListTime(at(11, 2, 11, 2), now, zone, Locale.UK, is24Hour = true))
-        assertEquals("Yesterday", feedbackListTime(at(11, 1, 23, 0), now, zone, Locale.UK, is24Hour = true))
-        assertEquals("28 Oct", feedbackListTime(at(10, 28, 10, 5), now, zone, Locale.UK, is24Hour = true))
-        assertEquals("28 Oct 2025", feedbackListTime(at(10, 28, 10, 5, year = 2025), now, zone, Locale.UK, is24Hour = true))
-        assertEquals("Today, 11:02", feedbackMessageTime(at(11, 2, 11, 2), now, zone, Locale.UK, is24Hour = true))
-        assertEquals("28 Oct, 10:05 AM", feedbackMessageTime(at(10, 28, 10, 5), now, zone, Locale.US, is24Hour = false))
-        assertEquals("Yesterday, 23:00", feedbackMessageTime(at(11, 1, 23, 0), now, zone, Locale.UK, is24Hour = true))
+        assertEquals("11:02", feedbackListTime(at(11, 2, 11, 2), now, zone, Locale.UK, is24Hour = true).text().replace('\u202F', ' '))
+        assertEquals("Yesterday", feedbackListTime(at(11, 1, 23, 0), now, zone, Locale.UK, is24Hour = true).text().replace('\u202F', ' '))
+        assertEquals("28 Oct", feedbackListTime(at(10, 28, 10, 5), now, zone, Locale.UK, is24Hour = true).text().replace('\u202F', ' '))
+        assertEquals("28 Oct 2025", feedbackListTime(at(10, 28, 10, 5, year = 2025), now, zone, Locale.UK, is24Hour = true).text().replace('\u202F', ' '))
+        assertEquals("Today, 11:02", feedbackMessageTime(at(11, 2, 11, 2), now, zone, Locale.UK, is24Hour = true).text().replace('\u202F', ' '))
+        assertEquals("Oct 28, 10:05 AM", feedbackMessageTime(at(10, 28, 10, 5), now, zone, Locale.US, is24Hour = false).text().replace('\u202F', ' '))
+        assertEquals("Yesterday, 23:00", feedbackMessageTime(at(11, 1, 23, 0), now, zone, Locale.UK, is24Hour = true).text().replace('\u202F', ' '))
         assertEquals("Sent · Waiting for a reply", feedbackStatusLine("Sent · Waiting for a reply", showTime = false, time = "11:02"))
         assertEquals("New reply · 11:02", feedbackStatusLine("New reply", showTime = true, time = "11:02"))
     }

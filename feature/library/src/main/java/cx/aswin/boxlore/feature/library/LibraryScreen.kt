@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -187,7 +188,7 @@ fun LibraryContent(
                 modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                 title = {
                     Text(
-                        text = "Library",
+                        text = stringResource(R.string.library_title),
                         style = titleStyle,
                     )
                 },
@@ -229,7 +230,7 @@ fun LibraryContent(
                         .padding(innerPadding),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("Error loading library")
+                    Text(stringResource(R.string.library_error_loading))
                 }
             }
             is LibraryUiState.Success -> {
@@ -257,7 +258,7 @@ fun LibraryContent(
                         )
 
                         LibraryMenuCard(
-                            title = "Subscriptions",
+                            title = stringResource(R.string.library_hub_subscriptions),
                             icon = Icons.Rounded.Add,
                             onClick = onNavigateToSubscriptions,
                             containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -277,7 +278,7 @@ fun LibraryContent(
                         )
 
                         LibraryMenuCard(
-                            title = "Liked Episodes",
+                            title = stringResource(R.string.library_hub_liked_episodes),
                             icon = Icons.Rounded.Favorite,
                             onClick = onNavigateToLiked,
                             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
@@ -297,7 +298,7 @@ fun LibraryContent(
                         )
 
                         LibraryMenuCard(
-                            title = "Downloads",
+                            title = stringResource(R.string.library_hub_downloads),
                             icon = Icons.Rounded.DownloadDone,
                             onClick = onNavigateToDownloads,
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -316,7 +317,7 @@ fun LibraryContent(
                             ExpressiveShapes.Sunny,
                         )
                         LibraryMenuCard(
-                            title = "Listening History",
+                            title = stringResource(R.string.library_hub_listening_history),
                             icon = Icons.Rounded.History,
                             onClick = onNavigateToHistory,
                             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -454,10 +455,10 @@ private fun LibraryCardCollage(
 
 @Composable
 fun ExpressiveSolarSystemEmptyState(
-    title: String = "Your library is empty",
-    description: String = "It's a big universe out there.\nStart exploring.",
+    title: String = stringResource(R.string.library_empty_title),
+    description: String = stringResource(R.string.library_empty_body),
     icon: ImageVector = Icons.Rounded.AutoAwesome,
-    actionText: String? = "Go Explore",
+    actionText: String? = stringResource(R.string.library_empty_action),
     modifier: Modifier = Modifier.verticalScroll(rememberScrollState()),
     onExploreClick: () -> Unit = {}
 ) {
@@ -566,7 +567,7 @@ fun LibraryPodcastCard(
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Videocam,
-                                contentDescription = "Video",
+                                contentDescription = stringResource(R.string.library_video_badge),
                                 tint = Color.White,
                                 modifier = Modifier.size(16.dp)
                             )

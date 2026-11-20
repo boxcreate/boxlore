@@ -30,7 +30,6 @@ import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.SmartHeroItem
-import java.util.Locale
 
 @Composable
 internal fun heroWideContextHeight(item: SmartHeroItem, width: Dp): Dp {
@@ -53,7 +52,7 @@ internal fun heroWideContextHeight(item: SmartHeroItem, width: Dp): Dp {
         when (val context = heroSpotlightContext(item.label, item.podcast.genre)) {
             is HeroSpotlightContext.Rank -> {
                 val number = height(stringResource(R.string.home_hero_rank_number, context.number), HeroContextTypography.rank(wide = true).copy(fontSize = 42.sp), contentWidth * 0.35f, 1)
-                val market = height(stringResource(R.string.home_hero_rank_market, context.market), HeroContextTypography.market(), contentWidth * 0.65f, 1)
+                val market = height(stringResource(R.string.home_hero_rank_market, heroMarketName(context.market)), HeroContextTypography.market(), contentWidth * 0.65f, 1)
                 maxOf(number, market)
             }
             is HeroSpotlightContext.Genre -> {
@@ -64,7 +63,7 @@ internal fun heroWideContextHeight(item: SmartHeroItem, width: Dp): Dp {
                     height(context.name, HeroContextTypography.genre(), genreWidth, heroGenreMaxLines(context.name)) + 4.dp
                 )
             }
-            is HeroSpotlightContext.General -> 56.dp + height(context.label, HeroContextTypography.label(), width, 1)
+            is HeroSpotlightContext.General -> 56.dp + height(heroStateLabel(context.label), HeroContextTypography.label(), width, 1)
         }
     }
     return result + 4.dp
@@ -101,10 +100,7 @@ private fun EpisodeContext(item: SmartHeroItem, foreground: Color, wide: Boolean
 @Composable
 internal fun episodeContextLabel(item: SmartHeroItem) = when {
         item.type == HeroType.RESUME -> stringResource(R.string.home_hero_resume)
-        item.label == "FRESH DROP" -> stringResource(R.string.home_hero_fresh_drop)
-        item.label == "NEW EPISODE" -> stringResource(R.string.home_hero_new_episode)
-        item.label == "NEXT" -> stringResource(R.string.home_hero_next_episode)
-        else -> item.label.lowercase(Locale.ROOT).replaceFirstChar { it.titlecase(Locale.ROOT) }
+        else -> heroStateLabel(item.label)
 }
 
 private val NewEpisodeLabels = setOf("FRESH DROP", "NEW EPISODE", "NEXT")
@@ -169,7 +165,7 @@ private fun SpotlightContext(context: HeroSpotlightContext, foreground: Color, w
         is HeroSpotlightContext.Genre -> TrendingContext(context.name, foreground, wide, modifier)
         is HeroSpotlightContext.General -> Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically)) {
             Icon(Icons.AutoMirrored.Rounded.TrendingUp, null, Modifier.size(48.dp), tint = foreground)
-            ContextLabel(context.label, foreground, Modifier.fillMaxWidth())
+            ContextLabel(heroStateLabel(context.label), foreground, Modifier.fillMaxWidth())
         }
     }
 }
@@ -206,7 +202,7 @@ private fun RankNumber(number: String, foreground: Color, wide: Boolean, modifie
 @Composable
 private fun RankMarket(market: String, foreground: Color, modifier: Modifier) {
     Text(
-        stringResource(R.string.home_hero_rank_market, market),
+        stringResource(R.string.home_hero_rank_market, heroMarketName(market)),
         style = HeroContextTypography.market(),
         color = foreground.copy(alpha = 0.9f),
         maxLines = 1,

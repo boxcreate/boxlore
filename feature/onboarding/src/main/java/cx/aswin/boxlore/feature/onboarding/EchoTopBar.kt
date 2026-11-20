@@ -66,7 +66,7 @@ internal fun EchoTopBar(progress: Float, busy: Boolean, searchEnabled: Boolean, 
     val onMenuOpenChange = menu.onMenuOpenChange
     val aboutOpen = menu.aboutOpen
     val onAboutOpenChange = menu.onAboutOpenChange
-    val animated by animateFloatAsState(progress, WavyProgressIndicatorDefaults.ProgressAnimationSpec, label = "Echo progress")
+    val animated by animateFloatAsState(progress, WavyProgressIndicatorDefaults.ProgressAnimationSpec, label = "echoProgress")
     val progressLabel = stringResource(R.string.echo_progress)
     Row(
         Modifier.fillMaxWidth().statusBarsPadding().height(56.dp).padding(horizontal = 4.dp),

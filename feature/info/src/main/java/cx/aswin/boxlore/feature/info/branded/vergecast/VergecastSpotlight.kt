@@ -40,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.rememberGoogleSansFamily
 import cx.aswin.boxlore.feature.info.R
@@ -108,8 +109,8 @@ private fun SpotlightCard(spotlight: BrandedSpotlight, anton: FontFamily, modifi
             Text(
                 text = episodeDetailsLine(
                     parts = listOf(
-                        formatEpisodeRelativeDate(episode.publishedDate),
-                        formatEpisodeDuration(episode.duration),
+                        formatEpisodeRelativeDate(episode.publishedDate, currentLocale()),
+                        formatEpisodeDuration(episode.duration, currentLocale()),
                         if (spotlight.isCompleted) stringResource(R.string.episode_info_played) else "",
                     ),
                     highlightIndex = 0,

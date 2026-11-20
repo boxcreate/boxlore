@@ -104,7 +104,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
             )
         val openEpisode: (cx.aswin.boxlore.core.model.ListeningHistoryItem) -> Unit = { item ->
             fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-            val desc = "Resuming from History"
+            val desc = w.context.getString(cx.aswin.boxlore.R.string.app_history_resume_description)
             w.navigate(
                 "episode/${item.episodeId}/${encode(item.episodeTitle)}/" +
                     "${encode(desc)}/" +

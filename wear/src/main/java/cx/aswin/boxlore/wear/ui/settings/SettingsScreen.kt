@@ -8,7 +8,6 @@ import androidx.compose.material.icons.rounded.SdStorage
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
@@ -29,7 +28,7 @@ import cx.aswin.boxlore.wear.R
 import cx.aswin.boxlore.wear.cloud.WatchAccountState
 import cx.aswin.boxlore.wear.data.StoragePolicy
 import cx.aswin.boxlore.wear.model.ShowsLayout
-import cx.aswin.boxlore.wear.ui.WatchFormat
+import cx.aswin.boxlore.wear.ui.fileSizeText
 
 /** Settings' pages; the first screen lists them, each with what is chosen now. */
 internal enum class SettingsPage { Account, ShowsLayout, StorageLimit }
@@ -42,7 +41,6 @@ internal fun SettingsScreen(
     storageLimitMb: Int,
     onOpen: (SettingsPage) -> Unit,
 ) {
-    val locale = LocalConfiguration.current.locales[0]
     val summary = AccountCopy.summary(account)
     SettingsList(R.string.wear_settings) { spec ->
         item(key = SettingsPage.Account.name) {
@@ -69,7 +67,7 @@ internal fun SettingsScreen(
             SettingsRow(
                 icon = Icons.Rounded.SdStorage,
                 label = stringResource(R.string.wear_storage_limit),
-                value = WatchFormat.megabytes(StoragePolicy.limitBytes(storageLimitMb), locale),
+                value = fileSizeText(StoragePolicy.limitBytes(storageLimitMb)),
                 spec = spec,
                 onClick = { onOpen(SettingsPage.StorageLimit) },
             )
@@ -102,7 +100,6 @@ internal fun ShowsLayoutSettingsScreen(showsLayout: ShowsLayout, onShowsLayout: 
 
 @Composable
 internal fun StorageLimitSettingsScreen(storageLimitMb: Int, onStorageLimitMb: (Int) -> Unit) {
-    val locale = LocalConfiguration.current.locales[0]
     SettingsList(R.string.wear_storage_limit) { spec ->
         StoragePolicy.LIMIT_CHOICES_MB.forEach { choice ->
             item(key = "limit-$choice") {
@@ -111,7 +108,7 @@ internal fun StorageLimitSettingsScreen(storageLimitMb: Int, onStorageLimitMb: (
                     onSelect = { onStorageLimitMb(choice) },
                     modifier = Modifier.transformedHeight(this, spec),
                     transformation = SurfaceTransformation(spec),
-                    label = { Text(WatchFormat.megabytes(StoragePolicy.limitBytes(choice), locale)) },
+                    label = { Text(fileSizeText(StoragePolicy.limitBytes(choice))) },
                 )
             }
         }

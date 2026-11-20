@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -46,26 +47,35 @@ import cx.aswin.boxlore.core.designsystem.components.PlaylistCover
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Playlist
 import cx.aswin.boxlore.core.model.PlaylistOrder
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
+import cx.aswin.boxlore.feature.library.R
 
-/** The Playlists page's wording. */
+/** The Playlists page's wording, from the module's resources. */
 internal object PlaylistsCopy {
-    const val TITLE = "Playlists"
-    const val EMPTY_TITLE = "No playlists yet"
-    const val EMPTY_BODY = "Make one from the shows you follow, like one for comedy and one for history. Each keeps its place, so you can switch between them any time."
-    const val RENAME = "Rename"
-    const val DELETE = "Delete"
-    const val BACK = "Back"
-    fun moreFor(name: String) = "More options for $name"
+    val TITLE: String @Composable get() = stringResource(R.string.library_hub_playlists)
+    val EMPTY_TITLE: String @Composable get() = stringResource(R.string.library_playlists_empty_title)
+    val EMPTY_BODY: String @Composable get() = stringResource(R.string.library_playlists_empty_body)
+    val RENAME: String @Composable get() = stringResource(R.string.library_rename)
+    val DELETE: String @Composable get() = stringResource(R.string.library_delete)
+    val BACK: String @Composable get() = stringResource(R.string.library_back)
+
+    @Composable
+    fun moreFor(name: String): String = stringResource(R.string.library_more_options_for, name)
 
     /** A card's second line: its show count and, when it plays oldest first, that. */
+    @Composable
     fun summary(playlist: Playlist): String =
-        if (playlist.order == PlaylistOrder.OLDEST) "${PlaylistCopy.showCount(playlist.showCount)} · ${PlaylistDetailCopy.OLDEST}" else PlaylistCopy.showCount(playlist.showCount)
+        if (playlist.order == PlaylistOrder.OLDEST) {
+            stringResource(R.string.library_playlist_summary_oldest_first, PlaylistCopy.showCount(playlist.showCount).asString())
+        } else {
+            PlaylistCopy.showCount(playlist.showCount).asString()
+        }
 }
 
 /** What the Playlists page and its dialogs do; [PlaylistsScreen] implements it with [PlaylistsViewModel]. */
@@ -130,7 +140,7 @@ internal fun PlaylistsContent(
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = PlaylistsCopy.BACK) }
                 },
                 actions = {
-                    IconButton(onClick = state::openCreate) { Icon(Icons.Rounded.Add, contentDescription = PlaylistCopy.NEW_PLAYLIST) }
+                    IconButton(onClick = state::openCreate) { Icon(Icons.Rounded.Add, contentDescription = stringResource(PlaylistCopy.NEW_PLAYLIST)) }
                 },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -148,7 +158,7 @@ internal fun PlaylistsContent(
                         title = PlaylistsCopy.EMPTY_TITLE,
                         description = PlaylistsCopy.EMPTY_BODY,
                         icon = Icons.AutoMirrored.Rounded.PlaylistPlay,
-                        actionText = PlaylistCopy.NEW_PLAYLIST,
+                        actionText = stringResource(PlaylistCopy.NEW_PLAYLIST),
                         onExploreClick = state::openCreate,
                     )
                 }
@@ -235,10 +245,10 @@ internal fun PlaylistEditorDialogs(
             },
         )
         is PlaylistEditor.Rename -> cx.aswin.boxlore.core.designsystem.components.PlaylistNameDialog(
-            title = PlaylistCopy.RENAME_PLAYLIST,
+            title = stringResource(PlaylistCopy.RENAME_PLAYLIST),
             name = state.nameDraft,
             onNameChange = { state.nameDraft = it },
-            confirmLabel = PlaylistCopy.SAVE,
+            confirmLabel = stringResource(PlaylistCopy.SAVE),
             onConfirm = { name ->
                 state.closeEditor()
                 actions.rename(editor.playlistId, name)

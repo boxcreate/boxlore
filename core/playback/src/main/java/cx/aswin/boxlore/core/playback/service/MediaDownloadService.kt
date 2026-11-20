@@ -9,6 +9,8 @@ import androidx.media3.exoplayer.scheduler.PlatformScheduler
 import androidx.media3.exoplayer.scheduler.Scheduler
 import cx.aswin.boxlore.core.catalog.R
 import cx.aswin.boxlore.core.downloads.DownloadRepository
+import cx.aswin.boxlore.core.model.text.LocaleFormats
+import cx.aswin.boxlore.core.model.text.displayLocale
 
 open class MediaDownloadService :
     DownloadService(
@@ -65,7 +67,7 @@ open class MediaDownloadService :
                 } catch (e: Exception) {
                     null
                 }
-            } ?: "Mixtape episode"
+            } ?: getString(R.string.download_mixtape_episode_fallback)
 
         val activePercent =
             if (activeDownload != null && activeDownload.percentDownloaded >= 0f) {
@@ -77,16 +79,16 @@ open class MediaDownloadService :
         // Custom notification details
         val titleText =
             if (remainingCount > 0) {
-                "Syncing Mixtape ($remainingCount left)"
+                resources.getQuantityString(R.plurals.download_mixtape_title_remaining, remainingCount, remainingCount)
             } else {
-                "Syncing Mixtape"
+                getString(R.string.download_mixtape_title)
             }
 
         val contentText =
             if (activeDownload != null) {
-                "Downloading: $activeTitle ($activePercent%)"
+                getString(R.string.download_mixtape_progress, activeTitle, LocaleFormats.percent(activePercent / PERCENT, displayLocale()))
             } else {
-                "Preparing next episodes..."
+                getString(R.string.download_mixtape_preparing)
             }
 
         val builder =
@@ -107,5 +109,6 @@ open class MediaDownloadService :
         const val FOREGROUND_NOTIFICATION_ID = 1
         const val FOREGROUND_NOTIFICATION_UPDATE_INTERVAL_MS = 5_000L
         const val CHANNEL_ID = "download_channel"
+        private const val PERCENT = 100.0
     }
 }

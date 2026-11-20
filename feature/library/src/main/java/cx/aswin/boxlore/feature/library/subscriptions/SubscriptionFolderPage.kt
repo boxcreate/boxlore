@@ -42,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,11 +53,13 @@ import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.model.isLatestEpisodeNew
 import cx.aswin.boxlore.feature.library.LocalLastSeenEpisodes
+import cx.aswin.boxlore.feature.library.R
 import cx.aswin.boxlore.feature.library.logic.SubscriptionManualOrderLogic
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyGridState
@@ -198,15 +201,15 @@ private fun FolderPageTopBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onBack) {
-            Icon(imageVector = Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+            Icon(imageVector = Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.library_back))
         }
         Spacer(modifier = Modifier.weight(1f))
         if (showFolderActions) {
             IconButton(onClick = onEdit) {
-                Icon(imageVector = Icons.Rounded.Edit, contentDescription = "Edit folder")
+                Icon(imageVector = Icons.Rounded.Edit, contentDescription = stringResource(R.string.library_folder_edit))
             }
             IconButton(onClick = onMore) {
-                Icon(imageVector = Icons.Rounded.MoreVert, contentDescription = "More options")
+                Icon(imageVector = Icons.Rounded.MoreVert, contentDescription = stringResource(R.string.library_more_options))
             }
         }
     }
@@ -254,7 +257,7 @@ private fun FolderPageHeader(
                     Spacer(modifier = Modifier.width(6.dp))
                 }
                 Text(
-                    text = folderPageSummary(showCount, newCount),
+                    text = folderPageSummary(showCount, newCount).asString(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -281,7 +284,7 @@ private fun FolderPageActionsRow(orderLabel: String?, onOrderClick: () -> Unit, 
             )
         }
         if (onAddShows != null) {
-            SubscriptionActionChip(label = "Add shows", onClick = onAddShows, icon = Icons.Rounded.Add)
+            SubscriptionActionChip(label = stringResource(R.string.library_add_shows), onClick = onAddShows, icon = Icons.Rounded.Add)
         }
     }
 }
@@ -325,7 +328,7 @@ private fun FolderPagePodcastItem(
 
 @Composable
 private fun EmptyFolderPageContent(folder: SubscriptionFolder) {
-    val genre = folder.linkedGenre?.trim()?.takeIf { it.isNotEmpty() }
+    val genre = folder.linkedGenre?.trim()?.takeIf { it.isNotEmpty() }?.let { subscriptionGenreDisplayName(it) }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -334,13 +337,13 @@ private fun EmptyFolderPageContent(folder: SubscriptionFolder) {
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            text = if (genre != null) "No $genre shows yet" else "No shows in this folder",
+            text = if (genre != null) stringResource(R.string.library_folder_empty_genre_title, genre) else stringResource(R.string.library_folder_empty_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
         )
         Text(
-            text = if (genre != null) "$genre shows you follow will appear here." else "Use Add shows to fill it.",
+            text = if (genre != null) stringResource(R.string.library_folder_empty_genre_body, genre) else stringResource(R.string.library_folder_empty_body),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

@@ -49,10 +49,12 @@ import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.artworkUrls
+import cx.aswin.boxlore.core.model.text.UiText
 
 /** Stable Compose [testTag] ids for onboarding suggestion instrumentation / Maestro. */
 internal object SuggestedPodcastTestTags {
@@ -83,7 +85,7 @@ internal fun SuggestionShowCard(
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
-    val ring by animateDpAsState(if (selected) 3.dp else 0.dp, label = "Suggestion ring")
+    val ring by animateDpAsState(if (selected) 3.dp else 0.dp, label = "suggestionRing")
     Column(
         modifier
             .width(SuggestionCardWidth)
@@ -144,7 +146,7 @@ internal fun SuggestionPodcastDetailSheet(
     val description =
         remember(podcast.id, podcast.description, podcast.title, podcast.artist) {
             podcastDescription(podcast)
-        }
+        }.asString()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -247,7 +249,7 @@ private fun SuggestionDetailActions(
             onClick = onDismiss,
             modifier = Modifier.weight(1f),
         ) {
-            Text("Close")
+            Text(stringResource(R.string.suggestions_details_close))
         }
         FilledTonalButton(
             onClick = {
@@ -256,22 +258,19 @@ private fun SuggestionDetailActions(
             },
             modifier = Modifier.weight(1f),
         ) {
-            Text(if (isSubscribed) "Remove" else "Add show")
+            Text(stringResource(if (isSubscribed) R.string.suggestions_details_remove else R.string.suggestions_details_add))
         }
     }
 }
 
-internal fun podcastDescription(podcast: Podcast): String {
+/** The show's own description, or a sentence naming the show (and its host, when known) when it has none. */
+internal fun podcastDescription(podcast: Podcast): UiText {
     val rawDescription = podcast.description?.stripHtml()
-    return if (!rawDescription.isNullOrBlank()) {
-        rawDescription
-    } else {
-        "Explore episodes and topics from ${podcast.title}" +
-            if (podcast.artist.isNotBlank() && podcast.artist != "Unknown") {
-                " by ${podcast.artist}."
-            } else {
-                "."
-            }
+    return when {
+        !rawDescription.isNullOrBlank() -> UiText.raw(rawDescription)
+        podcast.artist.isNotBlank() && podcast.artist != "Unknown" ->
+            UiText.res(R.string.suggestions_details_fallback_with_host, podcast.title, podcast.artist)
+        else -> UiText.res(R.string.suggestions_details_fallback, podcast.title)
     }
 }
 

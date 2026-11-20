@@ -94,6 +94,8 @@ android {
     buildTypes {
         debug {
             buildConfigField("String", "BOXLORE_APPCHECK_DEBUG_SECRET", "\"$resolvedAppCheckDebugSecret\"")
+            // en-XA (longer, accented text) and ar-XB (right to left) for layout checks: docs/i18n/TRANSLATING.md.
+            isPseudoLocalesEnabled = true
         }
         release {
             signingConfig = signingConfigs.getByName("release")
@@ -136,10 +138,21 @@ android {
         }
     }
 
+    androidResources {
+        // The system's per-app language list (Android 13+) comes from the languages in res/;
+        // res/resources.properties names the language of the unqualified values/ folder.
+        generateLocaleConfig = true
+        // Keep only boxlore's own languages from libraries, so a screen never mixes in a language
+        // boxlore isn't translated into. The pseudo-locales exist only in debug builds.
+        localeFilters += listOf("en", "es", "pt-rBR", "de", "fr", "en-rXA", "ar-rXB")
+    }
+
     lint {
         checkReleaseBuilds = true
         abortOnError = true
         disable += "NullSafeMutableLiveData"
+        // Translations land after the strings move into resources; until then a missing one only warns.
+        warning += "MissingTranslation"
     }
 
     compileOptions {

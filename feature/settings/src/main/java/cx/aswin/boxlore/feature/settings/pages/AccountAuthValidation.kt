@@ -1,6 +1,9 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+import androidx.annotation.StringRes
 import cx.aswin.boxlore.core.auth.RecentLoginRequiredException
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.settings.R
 
 private val RECENT_LOGIN_KEYWORDS = listOf(
     "recent-login",
@@ -14,35 +17,37 @@ private val RECENT_LOGIN_KEYWORDS = listOf(
 
 private val ACCOUNT_ERROR_MAPPINGS = listOf(
     listOf("user-not-found", "no user") to
-        "No account found with this email. Try signing up instead.",
+        R.string.account_error_no_account,
     listOf("wrong-password", "invalid-credential") to
-        "Incorrect password or credentials. Please try again.",
+        R.string.account_error_wrong_password,
     listOf("email-already-in-use", "already registered", "already in use") to
-        "This email is already registered. Try signing in instead.",
+        R.string.account_error_email_in_use,
     listOf("weak-password") to
-        "Password is too weak. Please use at least 6 characters.",
+        R.string.account_error_weak_password,
     listOf("invalid-email") to
-        "Please enter a valid email address.",
+        R.string.account_error_invalid_email_server,
     listOf("too-many-requests") to
-        "Too many attempts. Please wait a few minutes before trying again.",
+        R.string.account_error_too_many,
     listOf("user-disabled") to
-        "This account has been disabled. Please contact support.",
+        R.string.account_error_disabled,
     RECENT_LOGIN_KEYWORDS to
-        "For security, please sign out and sign in again before deleting your account.",
+        R.string.account_error_recent_login,
     listOf("network") to
-        "Network error. Check your connection and try again.",
+        R.string.account_error_network,
 )
 
-internal const val ERROR_INVALID_EMAIL = "Please enter a valid email address"
+@StringRes
+internal val ERROR_INVALID_EMAIL = R.string.account_error_invalid_email
 
-internal fun cleanAccountError(raw: String?): String {
-    if (raw == null) return "An unexpected error occurred"
+/** Maps a sign-in error to boxlore's words; an error it does not recognise keeps its own text. */
+internal fun cleanAccountError(raw: String?): UiText {
+    if (raw == null) return UiText.res(R.string.account_error_unexpected)
     for ((keywords, message) in ACCOUNT_ERROR_MAPPINGS) {
         if (keywords.any { raw.contains(it, ignoreCase = true) }) {
-            return message
+            return UiText.res(message)
         }
     }
-    return raw
+    return UiText.raw(raw)
 }
 
 internal fun Throwable?.isRecentLoginRequired(): Boolean {
@@ -74,13 +79,13 @@ internal fun validatePasswordInputs(
     password: String,
     isSignUp: Boolean,
     confirmPassword: String = "",
-): String? = when {
-    email.isBlank() -> "Please enter your email address"
-    !isValidEmail(email) -> ERROR_INVALID_EMAIL
-    password.isBlank() -> "Please enter your password"
-    isSignUp && password.length < 6 -> "Password must be at least 6 characters"
-    isSignUp && confirmPassword.isBlank() -> "Please confirm your password"
-    isSignUp && password != confirmPassword -> "Passwords do not match"
+): UiText? = when {
+    email.isBlank() -> UiText.res(R.string.account_error_enter_email)
+    !isValidEmail(email) -> UiText.res(ERROR_INVALID_EMAIL)
+    password.isBlank() -> UiText.res(R.string.account_error_enter_password)
+    isSignUp && password.length < 6 -> UiText.res(R.string.account_error_password_short)
+    isSignUp && confirmPassword.isBlank() -> UiText.res(R.string.account_error_confirm_password)
+    isSignUp && password != confirmPassword -> UiText.res(R.string.account_error_passwords_differ)
     else -> null
 }
 

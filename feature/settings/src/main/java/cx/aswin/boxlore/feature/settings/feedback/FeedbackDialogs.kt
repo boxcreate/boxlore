@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -44,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.settings.R
 
 @Composable
 fun LogsPreviewDialog(
@@ -71,7 +73,7 @@ fun LogsPreviewDialog(
         },
         title = {
             Text(
-                text = "Diagnostics & Logs Preview",
+                text = stringResource(R.string.feedback_logs_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = GoogleSansWeight.semiBold,
             )
@@ -82,7 +84,7 @@ fun LogsPreviewDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text(
-                    text = "These diagnostics and sanitized logs will be included with your submission when diagnostics are enabled.\nTip: Reproduce the issue first so relevant error logs appear.",
+                    text = stringResource(R.string.feedback_logs_body),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -97,7 +99,7 @@ fun LogsPreviewDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismissRequest) {
-                Text("Close")
+                Text(stringResource(R.string.feedback_close))
             }
         },
         shape = MaterialTheme.shapes.extraLarge,
@@ -136,7 +138,7 @@ private fun LogsTextSurface(
                     .horizontalScroll(horizontalScroll),
             ) {
                 Text(
-                    text = logs ?: "No logs captured.",
+                    text = logs ?: stringResource(R.string.feedback_logs_none),
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontFamily = FontFamily.Monospace,
                         fontSize = 11.sp,
@@ -169,8 +171,8 @@ private fun LogsActionButtons(
             onClick = {
                 val report = diagnosticInfo?.toMarkdownReport(logs) ?: (logs ?: "")
                 val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                cm.setPrimaryClip(ClipData.newPlainText("boxlore diagnostics", report))
-                Toast.makeText(context, "Copied diagnostics & logs to clipboard", Toast.LENGTH_SHORT).show()
+                cm.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.feedback_logs_clip_label), report))
+                Toast.makeText(context, R.string.feedback_logs_copied, Toast.LENGTH_SHORT).show()
             },
             modifier = Modifier.weight(1f),
             enabled = isActionEnabled,
@@ -180,7 +182,7 @@ private fun LogsActionButtons(
             Icon(Icons.Rounded.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(6.dp))
             Text(
-                text = "Copy text",
+                text = stringResource(R.string.feedback_logs_copy),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -196,7 +198,7 @@ private fun LogsActionButtons(
             Icon(Icons.Rounded.Share, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(6.dp))
             Text(
-                text = "Share text",
+                text = stringResource(R.string.feedback_logs_share),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

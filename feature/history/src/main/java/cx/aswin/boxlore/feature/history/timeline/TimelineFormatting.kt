@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.history.timeline
 
+import android.icu.text.DateFormat as IcuDateFormat
+import android.icu.util.TimeZone as IcuTimeZone
 import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -7,14 +9,16 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.os.ConfigurationCompat
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.feature.history.R
-import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import java.time.ZoneOffset
 import java.time.format.TextStyle
+import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 /**
  * Listening history's words for time: lengths ("2 h 05 min", "23 min"), day and month titles and
@@ -38,31 +42,45 @@ object TimelineTime {
         else -> DayTitle.Date(date, showYear = date.year != today.year)
     }
 
-    fun dayTitleText(date: LocalDate, showYear: Boolean, locale: Locale): String {
-        val pattern = if (showYear) "EEEE, MMM d, yyyy" else "EEEE, MMM d"
-        return date.format(DateTimeFormatter.ofPattern(pattern, locale))
-    }
+    /** "Wednesday, Oct 28", or "Wednesday, Oct 28, 2025": written in [locale]'s order. */
+    fun dayTitleText(date: LocalDate, showYear: Boolean, locale: Locale): String =
+        skeletonDate(date, if (showYear) "yMMMEEEEd" else "MMMEEEEd", locale)
 
     /** "October", or "October 2025" outside the current year. */
-    fun monthTitle(month: YearMonth, today: LocalDate, locale: Locale): String {
-        val name = month.month.getDisplayName(TextStyle.FULL_STANDALONE, locale)
-        return if (month.year == today.year) name else "$name ${month.year}"
-    }
+    fun monthTitle(month: YearMonth, today: LocalDate, locale: Locale): String =
+        if (month.year == today.year) {
+            month.month.getDisplayName(TextStyle.FULL_STANDALONE, locale)
+        } else {
+            monthYearTitle(month, locale)
+        }
 
     /** "October 2026", the Jump to a day sheet's month. */
-    fun monthYearTitle(month: YearMonth, locale: Locale): String = month.month.getDisplayName(TextStyle.FULL_STANDALONE, locale) + " " + month.year
+    fun monthYearTitle(month: YearMonth, locale: Locale): String =
+        LocaleFormats.date(utcMillis(month.atDay(1)), LocaleFormats.DateStyle.MONTH_YEAR, locale, UTC)
 
     /** "Oct 27": the fast scroller's date and the calendar's day names. */
-    fun shortDate(date: LocalDate, locale: Locale): String = date.format(DateTimeFormatter.ofPattern("MMM d", locale))
+    fun shortDate(date: LocalDate, locale: Locale): String =
+        LocaleFormats.date(utcMillis(date), LocaleFormats.DateStyle.DAY_MONTH, locale, UTC)
 
-    /** "8:12 pm", or "20:12" when the phone uses a 24-hour clock. */
-    fun clockTime(epochMs: Long, zoneId: ZoneId, is24Hour: Boolean, locale: Locale): String {
-        val time = Instant.ofEpochMilli(epochMs).atZone(zoneId).toLocalTime()
-        return if (is24Hour) {
-            time.format(DateTimeFormatter.ofPattern("HH:mm", locale))
-        } else {
-            time.format(DateTimeFormatter.ofPattern("h:mm a", locale)).lowercase(locale)
-        }
+    /** "Mon, Sep 14": a short weekday with the day and month, for the story's biggest day. */
+    fun shortWeekdayDate(date: LocalDate, locale: Locale): String = skeletonDate(date, "MMMEd", locale)
+
+    /** "8:12 pm", or "20:12" when the phone uses a 24-hour clock; the day period is lower-cased as before. */
+    fun clockTime(epochMs: Long, zoneId: ZoneId, is24Hour: Boolean, locale: Locale): String =
+        LocaleFormats.time(epochMs, locale, is24Hour, TimeZone.getTimeZone(zoneId)).lowercase(locale)
+
+    private val UTC: TimeZone = TimeZone.getTimeZone("UTC")
+
+    private fun utcMillis(date: LocalDate): Long = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+
+    /**
+     * A date from an ICU skeleton, so each language picks its own order and punctuation. Used for the
+     * shapes [LocaleFormats.DateStyle] has no style for (weekday with a short month).
+     */
+    private fun skeletonDate(date: LocalDate, skeleton: String, locale: Locale): String {
+        val format = IcuDateFormat.getInstanceForSkeleton(skeleton, locale)
+        format.timeZone = IcuTimeZone.getTimeZone("UTC")
+        return format.format(Date(utcMillis(date)))
     }
 
     sealed interface DayTitle {

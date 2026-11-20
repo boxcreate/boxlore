@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -45,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.feature.home.NpsSurveyCopy
 import cx.aswin.boxlore.feature.home.NpsSurveyDefinition
+import cx.aswin.boxlore.feature.home.R
 
 /**
  * Two staggered rows, 0–5 then 6–10, each button sitting between two above it: same-size circles with
@@ -69,8 +71,8 @@ internal fun ScoreRow(scores: IntRange, button: Dp, onScore: (Int) -> Unit, copy
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(NPS_SCORE_GAP)) {
         scores.forEach { score ->
             val description = when (score) {
-                0 -> "0, ${copy.notLikely}"
-                10 -> "10, ${copy.veryLikely}"
+                0 -> stringResource(R.string.home_nps_score_bound, score, copy.notLikely)
+                10 -> stringResource(R.string.home_nps_score_bound, score, copy.veryLikely)
                 else -> score.toString()
             }
             Button(
@@ -184,7 +186,7 @@ internal fun AnswerField(
                     inner()
                 }
                 Text(
-                    text = "${value.length} / ${NpsSurveyDefinition.MAX_ANSWER_LENGTH}",
+                    text = stringResource(R.string.home_nps_char_count, value.length, NpsSurveyDefinition.MAX_ANSWER_LENGTH),
                     modifier = Modifier.align(Alignment.End),
                     style = MaterialTheme.typography.labelMedium,
                     color = colors.onSurfaceVariant,

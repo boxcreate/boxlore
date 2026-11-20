@@ -71,10 +71,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -85,6 +88,7 @@ import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.pages.supportworlds.LocalSupportPageSession
 import cx.aswin.boxlore.feature.settings.pages.supportworlds.SUPPORT_OFFERS
 import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportPaymentNotice
@@ -246,7 +250,7 @@ private fun SupportTopAppBar(
     CenterAlignedTopAppBar(
         title = {
             Text(
-                text = "Support boxlore",
+                text = stringResource(R.string.settings_page_support),
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = GoogleSansWeight.bold,
                     fontSize = 18.sp,
@@ -259,7 +263,7 @@ private fun SupportTopAppBar(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.settings_back),
                     tint = Color.White,
                 )
             }
@@ -541,7 +545,7 @@ private fun ArtifactLoreStoryContent(
         Spacer(modifier = Modifier.height(10.dp))
 
         Text(
-            text = tier.loreDescription,
+            text = tier.loreDescription?.let { stringResource(it) }.orEmpty(),
             style = MaterialTheme.typography.bodyMedium.copy(
                 fontWeight = GoogleSansWeight.medium,
                 fontSize = 14.sp,
@@ -556,7 +560,7 @@ private fun ArtifactLoreStoryContent(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "TAP TO RETURN",
+            text = stringResource(R.string.settings_support_tap_to_return),
             style = MaterialTheme.typography.labelSmall.copy(
                 fontWeight = GoogleSansWeight.semiBold,
                 fontSize = 9.sp,
@@ -726,7 +730,7 @@ private fun SupportStageTierInfo(
                         modifier = Modifier.padding(bottom = 5.dp),
                     ) {
                         Text(
-                            text = style.featuredChip,
+                            text = stringResource(style.featuredChip),
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
                             color = if (targetTier.auraColor.luminance() > 0.45f) Color.Black else Color.White,
                             modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
@@ -758,7 +762,7 @@ private fun SupportStageTierInfo(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = targetTier.powerImpact,
+                        text = stringResource(targetTier.powerImpact),
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = GoogleSansWeight.bold),
                         color = targetTier.auraColor,
                         textAlign = TextAlign.Center,
@@ -841,7 +845,7 @@ private fun SupportMissionCard(
                     modifier = Modifier.size(12.dp),
                 )
                 Text(
-                    text = "A QUIET COMPANION",
+                    text = stringResource(R.string.settings_support_mission_label),
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = GoogleSansWeight.bold,
                         letterSpacing = 1.1.sp,
@@ -854,7 +858,7 @@ private fun SupportMissionCard(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = "Keeping boxlore fast, open, and ad-free",
+                text = stringResource(R.string.settings_support_mission_title),
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = GoogleSansWeight.bold,
                     fontSize = 16.5.sp,
@@ -865,8 +869,10 @@ private fun SupportMissionCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            val missionText = remember(totalListeningHours, style.supportPhrase) {
-                buildSupportMissionAnnotatedString(totalListeningHours, style.supportPhrase)
+            val resources = LocalContext.current.resources
+            val configuration = LocalConfiguration.current
+            val missionText = remember(totalListeningHours, style.mission, configuration) {
+                buildSupportMissionAnnotatedString(resources, totalListeningHours, style.mission)
             }
 
             Text(

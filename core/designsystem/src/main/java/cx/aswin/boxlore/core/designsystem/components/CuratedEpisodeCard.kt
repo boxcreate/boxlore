@@ -13,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.R
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -53,7 +54,7 @@ fun CuratedEpisodeCard(
                         .align(Alignment.TopStart),
                 ) {
                     Text(
-                        text = if (presentation == FeedMediaCardPresentation.Default) "NEW" else stringResource(R.string.feed_media_new),
+                        text = stringResource(R.string.feed_media_new).let { if (presentation == FeedMediaCardPresentation.Default) it.uppercase(currentLocale()) else it },
                         style = if (presentation == FeedMediaCardPresentation.Default) {
                             MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, lineHeight = 8.sp)
                         } else {

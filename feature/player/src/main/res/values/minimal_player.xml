@@ -9,7 +9,7 @@
     <string name="minimal_full_title">Show full episode title</string>
     <string name="minimal_done">Done</string>
     <string name="minimal_unknown_duration">—</string>
-    <string name="minimal_remaining_hours">−%1$dh %2$dm</string>
-    <string name="minimal_remaining_minutes">−%1$dm</string>
+    <!-- Time left, shown as a negative count. %1$s: narrow duration such as 1h 14m -->
+    <string name="minimal_remaining">−%1$s</string>
     <string name="player_seek">Playback position</string>
 </resources>

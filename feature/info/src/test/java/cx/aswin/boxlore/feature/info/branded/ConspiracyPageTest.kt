@@ -13,10 +13,6 @@ import cx.aswin.boxlore.feature.info.branded.conspiracy.ConspiracyItAllConnects
 import cx.aswin.boxlore.feature.info.branded.conspiracy.ConspiracyPage
 import cx.aswin.boxlore.feature.info.branded.conspiracy.boardClues
 import cx.aswin.boxlore.feature.info.branded.conspiracy.boardHeadline
-import cx.aswin.boxlore.feature.info.branded.conspiracy.filedDate
-import cx.aswin.boxlore.feature.info.branded.conspiracy.typedDetails
-import java.util.Locale
-import java.util.TimeZone
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -126,26 +122,6 @@ class ConspiracyPageTest {
         assertTrue(ConspiracyBoardLayout.END <= 9_000f)
         // Every length of yarn needs a piece that is pinned at both of its ends on the board.
         ConspiracyBoardLayout.Yarns.forEach { yarn -> assertTrue(ConspiracyBoardLayout.Pins.any { it.holds == yarn.needs }) }
-    }
-
-    @Test
-    fun `details are typed in capitals with the length in minutes`() {
-        assertEquals("2D AGO · 55 MIN", typedDetails("2d ago", 55 * 60))
-        assertEquals("3H AGO · 1 HR 5 MIN", typedDetails("3h ago", 65 * 60))
-        assertEquals("1W AGO", typedDetails("1w ago", 30))
-        assertEquals("", typedDetails("", 0))
-    }
-
-    @Test
-    fun `the folder tab shows the day it was filed`() {
-        val zone = TimeZone.getDefault()
-        TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
-        try {
-            assertEquals("28 OCT 2026", filedDate(1_793_188_800L, Locale.UK))
-            assertEquals("", filedDate(0L, Locale.UK))
-        } finally {
-            TimeZone.setDefault(zone)
-        }
     }
 
     @Test

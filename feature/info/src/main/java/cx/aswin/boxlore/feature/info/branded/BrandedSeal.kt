@@ -48,6 +48,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.R as DesignR
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.feature.info.R
 import kotlin.math.PI
 import kotlin.math.cos
@@ -99,6 +100,7 @@ private fun SealArt() {
     val mark = painterResource(DesignR.drawable.ic_boxlore_app_mark)
     val typeface = rememberSealTypeface()
     val sheen = rememberSealSheen()
+    val words = stringResource(R.string.branded_seal_words).uppercase(currentLocale())
     Spacer(
         Modifier.size(BrandedSealShape.SIZE.dp).drawWithCache {
             val unit = size.width / BrandedSealShape.SIZE
@@ -127,7 +129,6 @@ private fun SealArt() {
                 letterSpacing = BrandedSealShape.TEXT_SPACING / BrandedSealShape.TEXT_SIZE
                 color = SealSoftInk.toArgb()
             }
-            val words = "THE BEST OF"
             val top = BrandedSealShape.topTextRadius * unit
             val bottom = BrandedSealShape.bottomTextRadius * unit
             val topArc = android.graphics.Path().apply { addArc(c - top, c - top, c + top, c + top, 180f, 180f) }

@@ -49,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -58,8 +59,10 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.support.SupportRepository
+import cx.aswin.boxlore.feature.settings.R
 import kotlinx.coroutines.launch
 
 /** Below this height the full layout scrolls instead of stretching the message card. */
@@ -257,7 +260,7 @@ private fun ColumnScope.ComposeFields(
             FeedbackMessageCard(
                 value = state.message,
                 onValueChange = actions.onMessageChanged,
-                placeholder = state.choice.placeholder,
+                placeholder = state.choice.placeholder.asString(),
                 maxChars = state.meta.maxBody,
                 readOnly = !editable,
                 onFocusChanged = onMessageFocused,
@@ -267,7 +270,7 @@ private fun ColumnScope.ComposeFields(
                     .then(if (stretch) Modifier.weight(1f) else Modifier.height(FEEDBACK_SHORT_MESSAGE_HEIGHT)),
             )
             if (!typing) AttachRows(state, onAddPhoto = onAddPhoto, actions = actions)
-            (state.errorMessage ?: state.limitMessage)?.let { error -> ErrorLine(error, small = typing) }
+            (state.errorMessage ?: state.limitMessage)?.let { error -> ErrorLine(error.asString(), small = typing) }
             if (!typing) SendFooter(state, onSubmit = actions.onSubmit, onPrivacy = { uriHandler.openUri(FEEDBACK_PRIVACY_URL) })
         }
     }
@@ -319,10 +322,10 @@ private fun ColumnScope.SendFooter(state: FeedbackUiState, onSubmit: () -> Unit,
 @Composable
 private fun Intro(state: FeedbackUiState) {
     Column(Modifier.padding(horizontal = 20.dp)) {
-        Text("Share your thoughts", style = MaterialTheme.typography.headlineMedium)
+        Text(stringResource(R.string.feedback_form_title), style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(4.dp))
         Text(
-            "Bugs, ideas, anything at all. The boxlore team reads every message.",
+            stringResource(R.string.feedback_form_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -330,7 +333,7 @@ private fun Intro(state: FeedbackUiState) {
             Spacer(Modifier.height(12.dp))
             Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
                 Text(
-                    notice,
+                    notice.asString(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -346,8 +349,8 @@ private fun TypingHeader(state: FeedbackUiState, actions: FeedbackComposeActions
         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        FeedbackIconButton(Icons.AutoMirrored.Rounded.ArrowBack, "Navigate back", actions.onBack)
-        Text("Share your thoughts", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+        FeedbackIconButton(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.settings_navigate_back), actions.onBack)
+        Text(stringResource(R.string.feedback_form_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
         Box(Modifier.padding(end = 8.dp)) {
             FeedbackTypeMenuPill(choices = state.choices, selected = state.choice, enabled = !state.isSubmitting, onSelect = actions.onCategorySelected)
         }
@@ -364,25 +367,25 @@ private fun TopRow(state: FeedbackUiState, actions: FeedbackComposeActions) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        FeedbackIconButton(Icons.AutoMirrored.Rounded.ArrowBack, "Navigate back", actions.onBack)
+        FeedbackIconButton(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.settings_navigate_back), actions.onBack)
         Box {
-            FeedbackIconButton(Icons.Rounded.MoreVert, "More options", { menuOpen = true })
+            FeedbackIconButton(Icons.Rounded.MoreVert, stringResource(R.string.feedback_more_options), { menuOpen = true })
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                DropdownMenuItem(text = { Text("Preview diagnostics") }, onClick = {
+                DropdownMenuItem(text = { Text(stringResource(R.string.feedback_preview_diagnostics)) }, onClick = {
                     menuOpen = false
                     actions.onPreviewDiagnostics()
                 })
-                DropdownMenuItem(text = { Text("Rate on Play") }, onClick = {
+                DropdownMenuItem(text = { Text(stringResource(R.string.feedback_rate_on_play)) }, onClick = {
                     menuOpen = false
                     AnalyticsHelper.trackStoreReviewOpened(method = "store_page", source = "feedback_screen")
                     openPlayStorePage(context)
                 })
-                DropdownMenuItem(text = { Text("Report on GitHub") }, onClick = {
+                DropdownMenuItem(text = { Text(stringResource(R.string.feedback_report_on_github)) }, onClick = {
                     menuOpen = false
                     uriHandler.openUri(buildFeedbackGitHubIssueUrl(state))
                 })
                 if (state.message.isNotBlank()) {
-                    DropdownMenuItem(text = { Text("Discard draft") }, onClick = {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.feedback_discard_draft)) }, onClick = {
                         menuOpen = false
                         actions.onDiscardDraft()
                     })

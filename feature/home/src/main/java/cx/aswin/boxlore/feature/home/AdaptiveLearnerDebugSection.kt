@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home
 
+// i18n-ignore-file: debug-only screen, not shown to listeners.
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween

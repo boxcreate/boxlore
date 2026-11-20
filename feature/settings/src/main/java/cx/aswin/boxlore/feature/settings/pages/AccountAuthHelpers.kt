@@ -26,6 +26,8 @@ import androidx.credentials.exceptions.GetCredentialException
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import cx.aswin.boxlore.core.auth.AuthRepository
+import cx.aswin.boxlore.core.model.text.resolve
+import cx.aswin.boxlore.feature.settings.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
@@ -113,20 +115,20 @@ internal suspend fun performGoogleSignIn(
     } catch (_: GetCredentialCancellationException) {
         return GoogleAuthOutcome.Cancelled
     } catch (e: GetCredentialException) {
-        return GoogleAuthOutcome.Failure(e.localizedMessage ?: "Google sign-in error")
+        return GoogleAuthOutcome.Failure(e.localizedMessage ?: context.getString(R.string.account_error_google))
     } catch (e: Exception) {
-        return GoogleAuthOutcome.Failure(e.localizedMessage ?: "Google sign-in timed out")
+        return GoogleAuthOutcome.Failure(e.localizedMessage ?: context.getString(R.string.account_error_google_timeout))
     }
 
     val idToken = extractGoogleIdToken(response.credential)
-        ?: return GoogleAuthOutcome.Failure("Unexpected credential received")
+        ?: return GoogleAuthOutcome.Failure(context.getString(R.string.account_error_google_credential))
 
     val result = authRepository?.signInWithGoogle(idToken)
     if (result?.isSuccess == true) {
         return GoogleAuthOutcome.Success
     }
     return GoogleAuthOutcome.Failure(
-        result?.exceptionOrNull()?.localizedMessage ?: "Google sign-in failed",
+        result?.exceptionOrNull()?.localizedMessage ?: context.getString(R.string.account_error_google_failed),
     )
 }
 
@@ -245,12 +247,12 @@ internal class AccountAuthState(
         val trimmedEmail = email.trim()
         email = trimmedEmail
         if (trimmedEmail.isBlank()) {
-            errorMessage = "Please enter your email address"
+            errorMessage = context.getString(R.string.account_error_enter_email)
             return
         }
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSettingsInteraction("account_sign_in_email_link")
         if (!isValidEmail(trimmedEmail)) {
-            errorMessage = ERROR_INVALID_EMAIL
+            errorMessage = context.getString(ERROR_INVALID_EMAIL)
             return
         }
         focusManager.clearFocus()
@@ -263,7 +265,7 @@ internal class AccountAuthState(
             if (result?.isSuccess == true) {
                 magicLinkSent = true
             } else {
-                errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage)
+                errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage).resolve(context)
             }
         }
     }
@@ -275,7 +277,7 @@ internal class AccountAuthState(
 
         val validationError = validatePasswordInputs(trimmedEmail, password, isSignUp, confirmPassword)
         if (validationError != null) {
-            errorMessage = validationError
+            errorMessage = validationError.resolve(context)
             return
         }
 
@@ -310,13 +312,13 @@ internal class AccountAuthState(
             if (verifyResult?.isSuccess == true) {
                 startResendCooldownTimer(30)
             } else {
-                errorMessage = cleanAccountError(verifyResult?.exceptionOrNull()?.localizedMessage)
+                errorMessage = cleanAccountError(verifyResult?.exceptionOrNull()?.localizedMessage).resolve(context)
             }
         } else {
             isEmailLoading = false
             isAwaitingVerification = false
             AccountVerificationStorage.setPref(context, false)
-            showAccountToast(context, "Signed in!")
+            showAccountToast(context, context.getString(R.string.account_toast_signed_in))
         }
     }
 
@@ -337,7 +339,7 @@ internal class AccountAuthState(
                 if (verifyResult.isSuccess) {
                     startResendCooldownTimer(30)
                 } else {
-                    errorMessage = cleanAccountError(verifyResult.exceptionOrNull()?.localizedMessage)
+                    errorMessage = cleanAccountError(verifyResult.exceptionOrNull()?.localizedMessage).resolve(context)
                 }
                 isEmailLoading = false
                 return true
@@ -362,7 +364,7 @@ internal class AccountAuthState(
         }
 
         isEmailLoading = false
-        errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage)
+        errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage).resolve(context)
     }
 
     fun checkVerificationStatus(
@@ -384,14 +386,14 @@ internal class AccountAuthState(
                     cooldownJob?.cancel()
                     resendCooldownSeconds = 0
                     errorMessage = null
-                    showAccountToast(context, "Email verified! Welcome to boxlore.")
+                    showAccountToast(context, context.getString(R.string.account_toast_email_verified))
                     onSuccess()
                 } else if (!silentOnFailure) {
                     val error = result?.exceptionOrNull()
                     if (error != null) {
-                        errorMessage = cleanAccountError(error.localizedMessage)
+                        errorMessage = cleanAccountError(error.localizedMessage).resolve(context)
                     } else {
-                        errorMessage = "We haven't received verification yet. Please tap the link in your email and try again."
+                        errorMessage = context.getString(R.string.account_error_not_verified_yet)
                     }
                 }
             } finally {
@@ -409,9 +411,9 @@ internal class AccountAuthState(
             isEmailLoading = false
             if (result?.isSuccess == true) {
                 startResendCooldownTimer(30)
-                showAccountToast(context, "Verification email resent")
+                showAccountToast(context, context.getString(R.string.account_toast_verification_resent))
             } else {
-                errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage)
+                errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage).resolve(context)
             }
         }
     }
@@ -444,7 +446,7 @@ internal class AccountAuthState(
                 GoogleAuthOutcome.Success -> {
                     isAwaitingVerification = false
                     AccountVerificationStorage.setPref(context, false)
-                    showAccountToast(context, "Signed in with Google!")
+                    showAccountToast(context, context.getString(R.string.account_toast_signed_in_google))
                 }
                 GoogleAuthOutcome.Cancelled -> Unit
                 is GoogleAuthOutcome.Failure -> {
@@ -459,20 +461,20 @@ internal class AccountAuthState(
         val trimmedEmail = email.trim()
         email = trimmedEmail
         if (trimmedEmail.isBlank()) {
-            errorMessage = "Enter your email address above to reset password"
+            errorMessage = context.getString(R.string.account_error_reset_needs_email)
             return
         }
         if (!isValidEmail(trimmedEmail)) {
-            errorMessage = ERROR_INVALID_EMAIL
+            errorMessage = context.getString(ERROR_INVALID_EMAIL)
             return
         }
         focusManager.clearFocus()
         scope.launch {
             val result = authRepository?.sendPasswordReset(trimmedEmail)
             if (result?.isSuccess == true) {
-                showAccountToast(context, "Password reset email sent")
+                showAccountToast(context, context.getString(R.string.account_toast_reset_sent))
             } else {
-                errorMessage = result?.exceptionOrNull()?.localizedMessage ?: "Failed to send reset email"
+                errorMessage = result?.exceptionOrNull()?.localizedMessage ?: context.getString(R.string.account_error_reset_failed)
             }
         }
     }

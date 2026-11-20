@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.library.subscriptions
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
@@ -7,9 +8,11 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.SubscriptionFolder
+import cx.aswin.boxlore.feature.library.R
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.ReorderableLazyGridState
 
@@ -25,19 +28,19 @@ internal fun LazyGridScope.folderGridItems(
         folderCardItems(folderItems.folders, folderItems, gridConfig, reorderableGridState, folderActions)
         return
     }
-    showsSectionLabel(key = ShowsFoldersLabelKey, text = "Folders")
+    showsSectionLabel(key = ShowsFoldersLabelKey, text = R.string.library_folders)
     folderCardItems(folderItems.folders.take(labels.yourShowsBeforeFolderIndex), folderItems, gridConfig, reorderableGridState, folderActions)
-    showsSectionLabel(key = ShowsYourShowsLabelKey, text = "Your shows")
+    showsSectionLabel(key = ShowsYourShowsLabelKey, text = R.string.library_your_shows)
     folderCardItems(folderItems.folders.drop(labels.yourShowsBeforeFolderIndex), folderItems, gridConfig, reorderableGridState, folderActions)
 }
 
 private const val ShowsFoldersLabelKey = "section_label_folders"
 private const val ShowsYourShowsLabelKey = "section_label_your_shows"
 
-private fun LazyGridScope.showsSectionLabel(key: String, text: String) {
+private fun LazyGridScope.showsSectionLabel(key: String, @StringRes text: Int) {
     item(key = key, span = { GridItemSpan(maxLineSpan) }) {
         Text(
-            text = text,
+            text = stringResource(text),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 4.dp, top = 4.dp),

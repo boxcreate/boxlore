@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Podcast
@@ -95,7 +96,7 @@ internal fun ExploreHeroCard(
                             .align(Alignment.TopStart)
                     ) {
                         Text(
-                            text = podcast.genre.uppercase(),
+                            text = podcast.genre.uppercase(currentLocale()),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = GoogleSansWeight.bold,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -119,7 +120,7 @@ internal fun ExploreHeroCard(
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Videocam,
-                                contentDescription = "Video",
+                                contentDescription = stringResource(R.string.explore_video_badge),
                                 tint = Color.White,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -231,7 +232,7 @@ internal fun ExploreSectionHeader(
                     )
                     Icon(
                         imageVector = Icons.Rounded.ChevronRight,
-                        contentDescription = "Change content region",
+                        contentDescription = stringResource(R.string.explore_change_region),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp),
                     )
@@ -323,7 +324,7 @@ internal fun ExploreSuggestedMoodsHeader(modifier: Modifier = Modifier, hasSugge
 @Composable
 internal fun ExploreSearchHeader() {
     ExploreIconTitleHeader(
-        title = "Search results",
+        title = stringResource(R.string.explore_search_results),
         icon = Icons.Rounded.Search,
         containerColor = MaterialTheme.colorScheme.primaryContainer,
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,

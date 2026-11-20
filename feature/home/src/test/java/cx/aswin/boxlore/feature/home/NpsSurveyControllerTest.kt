@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home
 
+import android.app.Application
+import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -8,8 +10,13 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /** One NPS survey's steps and PostHog events: shown once, the score kept at once, one submission, never shown-and-lost. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33], application = Application::class)
 class NpsSurveyControllerTest {
     private val events = mutableListOf<Pair<String, Map<String, Any>>>()
     private lateinit var restore: () -> Unit
@@ -30,16 +37,20 @@ class NpsSurveyControllerTest {
     @After
     fun tearDown() = restore()
 
+    private val english = ApplicationProvider.getApplicationContext<Application>()
+
+    private fun englishCopy() = NpsSurveyCopy(strings = english::getString)
+
     private fun sent() = events.filter { it.first == "survey sent" }.map { it.second }
 
     private fun openAndShow(manual: Boolean = false) {
-        controller.open(manual = manual, copy = NpsSurveyCopy())
+        controller.open(manual = manual, copy = englishCopy())
         controller.onDisplayed()
     }
 
     @Test
     fun `a scheduled survey counts as shown once, when it is on screen`() {
-        controller.open(manual = false, copy = NpsSurveyCopy())
+        controller.open(manual = false, copy = englishCopy())
         assertTrue(events.isEmpty())
         assertEquals(0, scheduledDisplays)
 
@@ -131,7 +142,7 @@ class NpsSurveyControllerTest {
 
     @Test
     fun `Not now before a score is a dismissal, only once the survey was seen`() {
-        controller.open(manual = false, copy = NpsSurveyCopy())
+        controller.open(manual = false, copy = englishCopy())
         controller.onClose() // decided but never on screen
         assertTrue(events.isEmpty())
 
@@ -165,7 +176,7 @@ class NpsSurveyControllerTest {
 
     @Test
     fun `a decided survey that never appeared before its finish moment passed is dropped silently`() {
-        controller.open(manual = false, copy = NpsSurveyCopy(), expiresAtMs = 1_000L)
+        controller.open(manual = false, copy = englishCopy(), expiresAtMs = 1_000L)
         val session = controller.session.value!!
         assertFalse(session.isExpired(1_000L))
         assertTrue(session.isExpired(1_001L))
@@ -179,7 +190,7 @@ class NpsSurveyControllerTest {
 
     @Test
     fun `a survey on screen, or opened by hand, never expires or gets dropped`() {
-        controller.open(manual = true, copy = NpsSurveyCopy(), expiresAtMs = 1_000L)
+        controller.open(manual = true, copy = englishCopy(), expiresAtMs = 1_000L)
         assertFalse(controller.session.value!!.isExpired(5_000L))
         controller.onClose()
 
@@ -190,18 +201,18 @@ class NpsSurveyControllerTest {
 
     @Test
     fun `a second open while one is up is ignored`() {
-        controller.open(manual = false, copy = NpsSurveyCopy())
+        controller.open(manual = false, copy = englishCopy())
         val first = controller.session.value
-        controller.open(manual = true, copy = NpsSurveyCopy())
+        controller.open(manual = true, copy = englishCopy())
         assertEquals(first, controller.session.value)
     }
 
     @Test
     fun `wording overrides replace only their keys and an empty tag hides it`() {
-        val copy = NpsSurveyCopy(mapOf("ideaTag" to "", "picked" to "Your score: {score}"))
+        val copy = NpsSurveyCopy(mapOf("ideaTag" to "", "picked" to "Your score: {score}"), english::getString)
         assertEquals("", copy.ideaTag)
         assertEquals("Your score: 8", copy.picked(8))
         assertEquals("How likely are you to recommend boxlore to a friend?", copy.question)
-        assertEquals("You picked 4", NpsSurveyCopy().picked(4))
+        assertEquals("You picked 4", englishCopy().picked(4))
     }
 }

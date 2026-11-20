@@ -101,7 +101,7 @@ internal fun EchoHeader(state: OnboardingUiState, kind: EchoScreenKind, metrics:
                 modifier = Modifier.weight(1f, fill = false),
                 transitionSpec = { echoBubbleTransform(TransformOrigin(0f, 0.5f)) },
                 contentAlignment = Alignment.CenterStart,
-                label = "Echo deck speech",
+                label = "echoDeckSpeech",
             ) { line ->
                 if (line != null) EchoBubble(line, null, EchoDeckBubbleLines, emphasis = true, side = EchoBubbleSide.Start)
             }
@@ -116,7 +116,7 @@ internal fun EchoHeader(state: OnboardingUiState, kind: EchoScreenKind, metrics:
             modifier = Modifier.fillMaxWidth(),
             transitionSpec = { echoBubbleTransform(TransformOrigin(0.5f, 0f)) },
             contentAlignment = Alignment.TopCenter,
-            label = "Echo speech",
+            label = "echoSpeech",
         ) { line ->
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
                 if (line != null) {
@@ -145,7 +145,7 @@ internal fun EchoSays(state: OnboardingUiState, kind: EchoScreenKind, avatarWidt
             modifier = Modifier.weight(1f, fill = false),
             transitionSpec = { echoBubbleTransform(TransformOrigin(0f, 0.5f)) },
             contentAlignment = Alignment.CenterStart,
-            label = "Echo says",
+            label = "echoSays",
         ) { text -> EchoBubble(text, detail, EchoDeckBubbleLines, side = EchoBubbleSide.Start) }
     }
 }
@@ -357,7 +357,7 @@ internal fun EchoQuestionArea(
         modifier = modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
         transitionSpec = EchoMotion.handoff(),
         contentAlignment = Alignment.TopStart,
-        label = "Echo question",
+        label = "echoQuestion",
     ) { target ->
         when {
             target == "waiting" -> EchoWaiting()

@@ -33,14 +33,17 @@ import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
+import cx.aswin.boxlore.feature.library.R
 
 /** Unsaved changes on the Edit folder page; kept in saved state across rotation, resize and fold. */
 internal data class EditFolderDraft(
@@ -119,12 +122,12 @@ internal fun EditFolderPage(
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding().imePadding()) {
             FolderFlowTopBar(
-                title = "Edit folder",
+                title = stringResource(R.string.library_folder_edit),
                 onBack = actions.onClose,
                 showClose = true,
                 action = {
                     Button(onClick = { actions.onSave(draft.applyTo(folder)) }, enabled = draft.canSave()) {
-                        Text(text = "Save")
+                        Text(text = stringResource(R.string.library_save))
                     }
                 },
             )
@@ -140,14 +143,14 @@ internal fun EditFolderPage(
                     name = draft.name,
                     onNameChange = { onDraftChange(draft.copy(name = it)) },
                     iconKey = draft.icon,
-                    helper = NewFolderFlowLogic.savedNameNote(draft.name),
+                    helper = NewFolderFlowLogic.savedNameNote(draft.name)?.let { stringResource(it) },
                 )
                 if (draft.genre != null) {
                     EditGenreSection(draft, onDraftChange, shows.library)
                 } else {
                     EditShowsSection(shows.inFolder, actions)
                 }
-                Text(text = "How it looks", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 10.dp))
+                Text(text = stringResource(R.string.library_folder_how_it_looks), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 10.dp))
                 FolderLookRow(selected = draft.size, onSelect = { onDraftChange(draft.copy(size = it)) })
                 if (draft.size == FolderDisplaySize.COMPACT) {
                     TileCoverChoice(
@@ -157,11 +160,11 @@ internal fun EditFolderPage(
                     )
                 }
                 Text(
-                    text = folderLookDescription(draft.size) + " With more shows, the last spot becomes +N and opens the folder.",
+                    text = stringResource(R.string.library_folder_look_description_with_overflow, folderLookDescription(draft.size).asString()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Text(text = "Icon", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 10.dp))
+                Text(text = stringResource(R.string.library_folder_icon), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 10.dp))
                 FolderIconGrid(selectedKey = draft.icon, onSelect = { onDraftChange(draft.copy(icon = it)) })
                 DeleteFolderRow(onDelete = actions.onDelete)
             }
@@ -179,13 +182,13 @@ private fun EditGenreSection(
     val genres = remember(libraryPodcasts) { extractDistinctGenres(libraryPodcasts) }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         AutoFolderMark(size = 16.dp)
-        Text(text = "Genre", style = MaterialTheme.typography.titleSmall)
+        Text(text = stringResource(R.string.library_folder_genre), style = MaterialTheme.typography.titleSmall)
     }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         genres.forEach { genre ->
             val item = resolveSubscriptionGenreItem(genre, libraryPodcasts)
             SubscriptionChip(
-                label = item.label,
+                label = item.displayLabel(),
                 selected = draft.genre.equals(item.label, ignoreCase = true),
                 onClick = { onDraftChange(draft.copy(genre = item.label)) },
                 icon = item.icon,
@@ -197,8 +200,8 @@ private fun EditGenreSection(
 @Composable
 private fun EditShowsSection(shows: List<Podcast>, actions: EditFolderActions) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(text = "Shows · ${shows.size}", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-        SubscriptionActionChip(label = "Add shows", onClick = actions.onAddShows, icon = Icons.Rounded.Add)
+        Text(text = stringResource(R.string.library_folder_shows_count, shows.size), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+        SubscriptionActionChip(label = stringResource(R.string.library_add_shows), onClick = actions.onAddShows, icon = Icons.Rounded.Add)
     }
     shows.forEach { show ->
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -213,12 +216,12 @@ private fun EditShowsSection(shows: List<Podcast>, actions: EditFolderActions) {
                 modifier = Modifier.weight(1f).padding(horizontal = 14.dp),
             )
             IconButton(onClick = { actions.onRemoveShow(show) }) {
-                Icon(imageVector = Icons.Rounded.RemoveCircleOutline, contentDescription = "Remove ${show.title} from this folder")
+                Icon(imageVector = Icons.Rounded.RemoveCircleOutline, contentDescription = stringResource(R.string.library_folder_remove_show, show.title))
             }
         }
     }
     Text(
-        text = "Removing a show here keeps it in your library.",
+        text = stringResource(R.string.library_folder_remove_show_note),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -237,13 +240,13 @@ private fun DeleteFolderRow(onDelete: () -> Unit) {
             Spacer(modifier = Modifier.width(14.dp))
             Column {
                 Text(
-                    text = "Delete folder",
+                    text = stringResource(R.string.library_folder_delete),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = GoogleSansWeight.semiBold,
                     color = MaterialTheme.colorScheme.error,
                 )
                 Text(
-                    text = "Its shows stay in your library",
+                    text = stringResource(R.string.library_folder_delete_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

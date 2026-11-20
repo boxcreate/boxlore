@@ -55,6 +55,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -69,9 +70,11 @@ import androidx.compose.ui.zIndex
 import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkMiniPlayerColors
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.feature.player.R
 import cx.aswin.boxlore.feature.player.v2.logic.ConfirmationVisibility
 import cx.aswin.boxlore.feature.player.v2.logic.confirmationTarget
 import cx.aswin.boxlore.feature.player.v2.logic.confirmationVisibility
@@ -305,12 +308,12 @@ private fun MiniDismissConfirmation(
             ) {
                 Icon(
                     Icons.Rounded.Close,
-                    contentDescription = "Dismiss",
+                    contentDescription = stringResource(R.string.player_dismiss),
                     tint = MaterialTheme.colorScheme.onErrorContainer,
                     modifier = Modifier.size(20.dp),
                 )
                 Text(
-                    "Dismiss",
+                    stringResource(R.string.player_dismiss),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = GoogleSansWeight.semiBold,
                     color = MaterialTheme.colorScheme.onErrorContainer,
@@ -340,6 +343,7 @@ private fun MiniPlayerCard(
     val compactFraction = morph.compactFraction
     val haptics = LocalHapticFeedback.current
     val chrome = navigationChromeMetrics(LocalNavigationStyle.current)
+    val compactStateDescription = miniPlayerCompactStateDescription(content).asString()
     val progress = animateFloatAsState(miniPlayerCompactProgress(content), tween(350, easing = LinearEasing), label = "miniProgress")
     Box(
         modifier =
@@ -363,7 +367,7 @@ private fun MiniPlayerCard(
                 } else if (compactFraction > 0.001f) {
                     Modifier.clearAndSetSemantics {
                         contentDescription = content.episode.title
-                        stateDescription = miniPlayerCompactStateDescription(content)
+                        stateDescription = compactStateDescription
                         if (miniPlayerCompactDuration(content) > 0L) {
                             progressBarRangeInfo = ProgressBarRangeInfo(
                                 miniPlayerCompactProgress(content),
@@ -496,7 +500,7 @@ private fun MiniPlayerArtwork(
             url = imageUrl,
             fallbackUrls = listOf(content.episode.podcastImageUrl, content.podcastImageUrl),
             proxyWidth = 160,
-            contentDescription = "Episode artwork",
+            contentDescription = stringResource(R.string.player_episode_artwork),
             contentScale = ContentScale.Crop,
             modifier =
             Modifier
@@ -552,7 +556,7 @@ private fun MiniPlayerSubtitle(
         val style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = 0.sp)
         if (content.isCasting) {
             Text(
-                text = "Casting to ${content.castDeviceName ?: "Cast device"}",
+                text = stringResource(R.string.player_casting_to, content.castDeviceName ?: stringResource(R.string.player_cast_device_fallback)),
                 style = style,
                 color = colors.onBarVariant,
                 maxLines = 1,
@@ -628,7 +632,7 @@ private fun SwipeDismissTip(
     ) {
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             Text(
-                text = "← Swipe to dismiss →",
+                text = stringResource(R.string.player_mini_swipe_to_dismiss),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = GoogleSansWeight.medium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),

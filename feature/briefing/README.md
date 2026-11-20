@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Owns the Brief page: loading a regional edition, the cover and headline, story paging with related episodes and sources, the edition and default-edition preferences, and Brief playback actions. Catalog retrieval, chapter fetching, queue and playback services, preference storage, the Brief's bundled artwork and strings, and route registration belong to core modules and `:app`.
+Owns the Brief page: loading a regional edition, the cover and headline, story paging with related episodes and sources, the edition and default-edition preferences, and Brief playback actions. Catalog retrieval, chapter fetching, queue and playback services, preference storage, the Brief's bundled artwork and the Brief strings shared with Home, and route registration belong to core modules and `:app`. Text used only on this page lives in this module's `res/values`.
 
 ## Public API
 

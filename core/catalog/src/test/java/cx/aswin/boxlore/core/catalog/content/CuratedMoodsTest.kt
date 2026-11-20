@@ -33,4 +33,11 @@ class CuratedMoodsTest {
         assertEquals("A good laugh", CuratedMoods.titleForId("comedy_gold"))
         assertTrue(CuratedMoods.titleForId("missing") == null)
     }
+
+    @Test
+    fun `every mood has its own title and subtitle text for listeners`() {
+        val ids = CuratedMoods.all.flatMap { listOf(it.titleRes, it.subtitleRes) }
+        assertTrue(ids.all { it != 0 })
+        assertEquals(ids.size, ids.toSet().size)
+    }
 }

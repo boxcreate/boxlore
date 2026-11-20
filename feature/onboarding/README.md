@@ -6,15 +6,16 @@ Owns first-run onboarding: the Welcome screen, Echo (the AI-guided conversation 
 
 ## Public API
 
-- `OnboardingScreen`: the whole flow, shown by `:app` on the `onboarding` route. It switches on `OnboardingUiState.currentStep` and calls `onComplete`, `onBack` and `onImportClick`.
-- `OnboardingViewModel`: an `AndroidViewModel` built by `:app` from `PodcastRepository`, `SubscriptionRepository` and `UserPreferencesRepository`; it exposes `uiState`.
+- `OnboardingScreen`: the whole flow, shown by `:app` on the `onboarding` route. It switches on `OnboardingUiState.currentStep` and calls `onComplete`, `onBack`, `onImportClick` and `onAppLanguageChosen`.
+- `OnboardingViewModel`: an `AndroidViewModel` built by `:app` from `PodcastRepository`, `SubscriptionRepository`, `UserPreferencesRepository` and an `appLanguageSuggestion`; it exposes `uiState`. `chooseAppLanguage` and `showAllAppLanguages` drive the language question (`AppLanguageQuestion`).
 - `markOnboardingCompletedSilent` and `generateRecommendationsFromOpml`: extensions the app calls to finish without the flow, or to hand imported shows to the similar-shows choice.
-- `OnboardingUiState`, `OnboardingStep` (`WELCOME`, `GENRES`, `SUB_GENRES`, `ACTIVITY_PICKER`, `LENGTH_PICKER`, `SEARCH`, `AI_ONBOARDING`, `AI_SUGGESTIONS`) and `AiLoadingStage`: the flow's state.
-- `ONBOARDING_GENRES` / `GenreItem` and `SEARCH_CATEGORIES` / `SearchCategoryItem`: the picker and search chip lists.
+- `OnboardingUiState`, `OnboardingStep` (`APP_LANGUAGE`, `WELCOME`, `GENRES`, `SUB_GENRES`, `ACTIVITY_PICKER`, `LENGTH_PICKER`, `SEARCH`, `AI_ONBOARDING`, `AI_SUGGESTIONS`) and `AiLoadingStage`: the flow's state.
+- `ONBOARDING_GENRES` / `GenreItem` and `SEARCH_CATEGORIES` / `SearchCategoryItem`: the picker and search chip lists. Each item pairs a label resource with the English key sent to the server; keys never change.
 - Everything else, including every step screen, is `internal`.
 
 ## Flow
 
+- **Language** (`AppLanguageQuestionContent`, step `APP_LANGUAGE`): first, only while onboarding is unfinished, no App language was picked and the phone's languages or region suggest a translation (`AppLanguageMatcher`). It offers that language, then English, then **Other languages**. A pick moves on to Welcome and the app applies it at once; the activity's recreation keeps this view model, so nothing is lost. Echo's replies stay as the server sends them.
 - **Welcome** (`WelcomeScreen`): a cover reel, a rotating reply line and Echo peeking over the **Find shows for me** button; the actions start Echo, search, library import (handled by the app) or skip.
 - **Echo** (`AiOnboardingScreen` → `EchoOnboardingScreen`): one question per turn with fixed areas for the top bar, Echo, the question, its answers and a buttons-only footer. The screen never scrolls; `EchoLayout` picks a height tier from the space available.
 - The opening turn is app-owned and sends no request: the eight `EchoInitialTopic` answers plus **Something else**, a text box for free answers.
@@ -52,15 +53,16 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
   EchoShowDeck.kt, EchoDeckViews.kt, EchoDeckPhysics.kt, EchoShowPreview.kt  # deck state, views, clips
   EchoPrism{Card,Layout,Foil,Support}.kt                                     # the deck's show card
   GuidedOnboardingLogic.kt, OnboardingAiStart.kt, OnboardingFallback.kt
-  GenreOnboardingScreen.kt, OnboardingGenreLimits.kt, OnboardingCurriculumLogic.kt
+  GenreOnboardingScreen.kt, OnboardingTopicCatalog.kt, OnboardingGenreLimits.kt, OnboardingCurriculumLogic.kt
   SearchOnboardingScreen.kt, OnboardingSearchBackStep.kt, OnboardingShowSearchCombine.kt
   SimilarShowsChoice.kt, SimilarShowsChoiceView.kt
   AiSuggestionsScreen.kt, AiSuggestionCards.kt, AiSuggestionIcons.kt
   OnboardingSuggestionsLanes.kt, OnboardingSuggestionsPresentation.kt, OnboardingDiscoveryLocale.kt
   AiOnboardingScreen.kt                # delegates to EchoOnboardingScreen
+  OnboardingAppLanguage.kt, OnboardingViewModelLanguage.kt, AppLanguageQuestionView.kt  # language question
   AiChatOnboardingScreen.kt, AiChatInputPanel.kt, AiChatMessageListLogic.kt,
   AiOnboardingComponents.kt, AiOnboardingOptionIcons.kt, ImportOnboardingScreen.kt  # not routed by OnboardingScreen
-src/main/res/values/                   # echo_onboarding.xml, onboarding_suggestions.xml, welcome.xml
+src/main/res/values/                   # echo_onboarding, onboarding_suggestions, onboarding_topics, onboarding_search, welcome, app_language
 ```
 
 ## Dependencies
@@ -84,6 +86,7 @@ src/main/res/values/                   # echo_onboarding.xml, onboarding_suggest
 
 - This module owns no storage files. It writes `onboarding_completed` and `user_genres` through `BoxcastPrefs`, and the region through `UserPreferencesRepository.setRegion`; both belong to `:core:prefs`.
 - Deck reaction wire values (`like`, `dislike`, `listen`, `unknown`) and request feature names (`finish_hint`, `show_probe`, `discovery_v2`) are client contracts with the API.
+- The language pick is reported as `settings_interaction` `onboarding_app_language_chosen` (tag, or `system`).
 - Page views go through `TrackScreenView`: each step as `onboarding_<step>`, plus `onboarding_echo_about`, `onboarding_echo_finish_confirmation` and `onboarding_podcast_detail`. Events are listed in [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md).
 
 ## Testing notes
@@ -101,6 +104,7 @@ Hermetic JVM tests live in `feature/onboarding/src/test`, using fakes from [`:co
 | Similar-shows choice | `SimilarShowsChoiceTest`, `SimilarShowsChoiceScreenTest` |
 | Suggestions | `OnboardingSuggestionsPresentationTest`, `OnboardingSuggestionsLanesTest`, `SuggestionsScreenTest`, `AiSuggestionIconsTest` |
 | Fallbacks | `OnboardingFallbackTest` |
+| Language question | `OnboardingAppLanguageTest`, `AppLanguageQuestionScreenTest`; recreation in `:app`'s `OnboardingAppLanguageRecreationTest` |
 | Unrouted chat screen | `AiChatMessageListLogicTest`, `AiOnboardingOptionIconsTest` |
 | Phone goldens (opt-in) | `EchoPhoneGoldenTest`; see [`docs/TESTING.md`](../../docs/TESTING.md#screenshots) |
 

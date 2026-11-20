@@ -61,6 +61,7 @@ import cx.aswin.boxlore.core.catalog.ShowListTooLongException
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 import cx.aswin.boxlore.core.model.Episode
@@ -868,8 +869,9 @@ fun PodcastInfoScreen(
                 }
 
                 // SNACKBAR HOST (Overlay) — placed after jump-pill visibility is known
+                val userMessage = state.userMessage?.asString()
                 LaunchedEffect(state.userMessage) {
-                    val message = state.userMessage ?: return@LaunchedEffect
+                    val message = userMessage ?: return@LaunchedEffect
                     snackbarHostState.showSnackbar(message)
                     viewModel.consumeUserMessage()
                 }

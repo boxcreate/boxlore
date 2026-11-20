@@ -6,6 +6,9 @@ import androidx.mediarouter.media.MediaRouteSelector
 import androidx.mediarouter.media.MediaRouter
 import com.google.android.gms.cast.CastMediaControlIntent
 import com.google.android.gms.cast.framework.CastContext
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.player.R
+import java.util.Locale
 
 internal fun availableCastRoutes(
     mediaRouter: MediaRouter,
@@ -18,7 +21,7 @@ internal fun availableCastRoutes(
             isBluetooth = route.isBluetooth,
             matchesSelector = route.matchesSelector(selector),
         )
-    }.sortedBy { it.name.lowercase() }
+    }.sortedBy { it.name.lowercase(Locale.ROOT) }
 
 @Suppress("DEPRECATION")
 internal fun resolveCastRouteSelector(context: Context): MediaRouteSelector = runCatching {
@@ -46,11 +49,11 @@ internal fun castRouteSubtitle(
     isSelected: Boolean,
     isConnecting: Boolean,
     description: String?,
-): String = when {
-    isSelected -> "Connected"
-    isConnecting -> "Connecting…"
-    !description.isNullOrBlank() -> description
-    else -> "Ready to cast"
+): UiText = when {
+    isSelected -> UiText.res(R.string.player_cast_connected)
+    isConnecting -> UiText.res(R.string.player_cast_connecting)
+    !description.isNullOrBlank() -> UiText.raw(description)
+    else -> UiText.res(R.string.player_cast_ready)
 }
 
 internal fun isCastConnectionComplete(

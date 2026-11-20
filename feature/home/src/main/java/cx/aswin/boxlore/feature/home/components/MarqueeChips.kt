@@ -94,17 +94,17 @@ internal fun marqueeContext(item: SmartHeroItem): MarqueeChipContent {
         return when (val context = remember(item.label, item.podcast.genre) { heroSpotlightContext(item.label, item.podcast.genre) }) {
             is HeroSpotlightContext.Rank -> {
                 val number = stringResource(R.string.home_hero_rank_number, context.number)
-                val market = stringResource(R.string.home_hero_rank_market, context.market)
+                val market = stringResource(R.string.home_hero_rank_market, heroMarketName(context.market))
                 MarqueeChipContent(listOf(MarqueeChipPart(number, MarqueeChipTone.Badge), MarqueeChipPart(market, MarqueeChipTone.Strong)), "$number $market")
             }
             is HeroSpotlightContext.Genre -> {
                 val trending = stringResource(R.string.home_hero_trending_in)
                 MarqueeChipContent(
                     listOf(MarqueeChipPart(trending, MarqueeChipTone.Soft), MarqueeChipPart(context.name, MarqueeChipTone.Strong)),
-                    "$trending ${context.name}",
+                    stringResource(R.string.home_hero_trending_in_genre, context.name),
                 )
             }
-            is HeroSpotlightContext.General -> MarqueeChipContent(listOf(MarqueeChipPart(context.label, MarqueeChipTone.Strong)), context.label)
+            is HeroSpotlightContext.General -> heroStateLabel(context.label).let { MarqueeChipContent(listOf(MarqueeChipPart(it, MarqueeChipTone.Strong)), it) }
         }
     }
     val label = episodeContextLabel(item)

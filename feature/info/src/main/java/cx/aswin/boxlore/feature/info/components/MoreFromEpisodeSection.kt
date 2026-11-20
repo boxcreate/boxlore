@@ -33,13 +33,13 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.feature.info.R
-import java.text.DateFormat
-import java.util.Date
 
 @Composable
 internal fun MoreFromEpisodeSection(
@@ -128,10 +128,11 @@ private fun moreFromRowShape(index: Int, count: Int) = RoundedCornerShape(
 
 @Composable
 private fun MoreFromEpisodeRow(episode: Episode, showName: String, fallbackImageUrl: String?, shape: RoundedCornerShape, onClick: () -> Unit) {
-    val date = remember(episode.publishedDate) {
-        episode.publishedDate.takeIf { it > 0L }?.let { DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it * 1_000L)) }
+    val locale = currentLocale()
+    val date = remember(episode.publishedDate, locale) {
+        episode.publishedDate.takeIf { it > 0L }?.let { LocaleFormats.date(it * 1_000L, LocaleFormats.DateStyle.DAY_MONTH_YEAR, locale) }
     }
-    val metadata = listOfNotNull(date, formatEpisodeDuration(episode.duration).takeIf(String::isNotBlank)).joinToString(" · ")
+    val metadata = listOfNotNull(date, formatEpisodeDuration(episode.duration, locale).takeIf(String::isNotBlank)).joinToString(" · ")
     val accessibleTitle = stringResource(R.string.episode_info_episode_from_show, episode.title, showName)
     Surface(
         shape = shape,

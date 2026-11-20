@@ -13,29 +13,34 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.playback.ShowPlaybackPolicy
+import cx.aswin.boxlore.feature.info.R
 
-/** "1.2× · Beginning 30s · Ending Off", plus "· Trim silence on" when the app trims silence. */
-internal fun appDefaultsSummary(state: PodcastPlaybackSettingsState): String = buildString {
-    append(ShowPlaybackPolicy.speedLabel(state.globalPlaybackSpeed))
-    append(" · Beginning ${durationLabel(state.globalSkipBeginningMs)}")
-    append(" · Ending ${durationLabel(state.globalSkipEndingMs)}")
-    if (state.globalTrimSilence) append(" · Trim silence on")
-}
+/** The parts of "1.2× · Beginning 30s · Ending Off", plus "Trim silence on" when the app trims silence; shown joined by " · ". */
+internal fun appDefaultsSummary(state: PodcastPlaybackSettingsState): List<UiText> = listOfNotNull(
+    UiText.raw(ShowPlaybackPolicy.speedLabel(state.globalPlaybackSpeed)),
+    UiText.res(R.string.podcast_playback_summary_beginning, durationLabel(state.globalSkipBeginningMs)),
+    UiText.res(R.string.podcast_playback_summary_ending, durationLabel(state.globalSkipEndingMs)),
+    UiText.res(R.string.podcast_playback_summary_trim_silence).takeIf { state.globalTrimSilence },
+)
 
 /** The label for the "use the app's value" choice, e.g. "App speed (1.2×)" or "App setting (off)". */
-internal fun appSpeedChoiceLabel(appSpeed: Float): String = "App speed (${ShowPlaybackPolicy.speedLabel(appSpeed)})"
+internal fun appSpeedChoiceLabel(appSpeed: Float): UiText = UiText.res(R.string.podcast_playback_app_speed, ShowPlaybackPolicy.speedLabel(appSpeed))
 
-internal fun appTrimSilenceChoiceLabel(appTrimSilence: Boolean): String = "App setting (${if (appTrimSilence) "on" else "off"})"
+internal fun appTrimSilenceChoiceLabel(appTrimSilence: Boolean): UiText =
+    UiText.res(if (appTrimSilence) R.string.podcast_playback_app_setting_on else R.string.podcast_playback_app_setting_off)
 
 /** The value shown beside a choice's title: the show's own value, or "App" while it follows the app. */
-internal fun speedChoiceValue(state: PodcastPlaybackSettingsState): String = state.playbackSpeedOverride
-    ?.let(ShowPlaybackPolicy::speedLabel)
-    ?: "App"
+internal fun speedChoiceValue(state: PodcastPlaybackSettingsState): UiText = state.playbackSpeedOverride
+    ?.let { UiText.raw(ShowPlaybackPolicy.speedLabel(it)) }
+    ?: UiText.res(R.string.podcast_playback_app)
 
 @Composable
 internal fun PodcastSpeedChoice(
@@ -44,8 +49,8 @@ internal fun PodcastSpeedChoice(
     onChange: (Float?) -> Unit,
 ) {
     val selected = state.playbackSpeedOverride
-    ChoiceGroup(title = "Speed", value = speedChoiceValue(state)) {
-        ChoiceChip(appSpeedChoiceLabel(state.globalPlaybackSpeed), selected == null, enabled) { onChange(null) }
+    ChoiceGroup(title = stringResource(R.string.podcast_playback_speed), value = speedChoiceValue(state).asString()) {
+        ChoiceChip(appSpeedChoiceLabel(state.globalPlaybackSpeed).asString(), selected == null, enabled) { onChange(null) }
         ShowPlaybackPolicy.SPEED_OPTIONS.forEach { speed ->
             ChoiceChip(ShowPlaybackPolicy.speedLabel(speed), selected == speed, enabled) { onChange(speed) }
         }
@@ -61,19 +66,21 @@ internal fun PodcastTrimSilenceChoice(
     val selected = state.trimSilenceOverride
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         ChoiceGroup(
-            title = "Trim silence",
-            value = when (selected) {
-                null -> "App"
-                true -> "On"
-                false -> "Off"
-            },
+            title = stringResource(R.string.podcast_playback_trim_silence),
+            value = stringResource(
+                when (selected) {
+                    null -> R.string.podcast_playback_app
+                    true -> R.string.podcast_playback_on
+                    false -> R.string.podcast_playback_off
+                },
+            ),
         ) {
-            ChoiceChip(appTrimSilenceChoiceLabel(state.globalTrimSilence), selected == null, enabled) { onChange(null) }
-            ChoiceChip("On", selected == true, enabled) { onChange(true) }
-            ChoiceChip("Off", selected == false, enabled) { onChange(false) }
+            ChoiceChip(appTrimSilenceChoiceLabel(state.globalTrimSilence).asString(), selected == null, enabled) { onChange(null) }
+            ChoiceChip(stringResource(R.string.podcast_playback_on), selected == true, enabled) { onChange(true) }
+            ChoiceChip(stringResource(R.string.podcast_playback_off), selected == false, enabled) { onChange(false) }
         }
         Text(
-            text = "Skip long pauses in this show’s episodes",
+            text = stringResource(R.string.podcast_playback_trim_silence_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

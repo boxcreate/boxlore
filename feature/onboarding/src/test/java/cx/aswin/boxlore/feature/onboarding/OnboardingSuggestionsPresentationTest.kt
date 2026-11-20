@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.onboarding
 
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumPodcastDto
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumRowDto
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -148,7 +149,7 @@ class OnboardingSuggestionsPresentationTest {
             aiCurriculumRows = rows(1, 1, 2),
             genreChartsPodcasts = listOf(show("3"), show("3"), show("4")),
         )
-        val lanes = OnboardingSuggestionsPresentation.lanes(state, "Your picks")
+        val lanes = OnboardingSuggestionsPresentation.lanes(state)
         assertEquals(listOf("1", "2"), lanes[0].podcasts.map { it.id })
         assertEquals(listOf("3", "4"), lanes[1].podcasts.map { it.id })
     }
@@ -195,16 +196,17 @@ class OnboardingSuggestionsPresentationTest {
             aiCurriculumRows = rows(1, 2),
             aiPicks = listOf(show("1"), show("7")),
         )
-        val lanes = OnboardingSuggestionsPresentation.lanes(echo, "Your picks")
+        val lanes = OnboardingSuggestionsPresentation.lanes(echo)
         assertEquals(OnboardingSuggestionsPresentation.PICKS_LANE_ID, lanes.first().id)
+        assertEquals(UiText.res(R.string.suggestions_picks_lane), lanes.first().title)
         assertEquals(listOf("1", "7"), lanes.first().podcasts.map { it.id })
         assertEquals(listOf("2"), lanes[1].podcasts.map { it.id })
 
         // Other flows never get a picks lane.
         val genres = echo.copy(reachedSuggestionsViaAiFlow = false)
-        assertTrue(OnboardingSuggestionsPresentation.lanes(genres, "Your picks").none { it.id == OnboardingSuggestionsPresentation.PICKS_LANE_ID })
+        assertTrue(OnboardingSuggestionsPresentation.lanes(genres).none { it.id == OnboardingSuggestionsPresentation.PICKS_LANE_ID })
         // A lane emptied by the picks disappears.
         val onlyPicked = echo.copy(aiCurriculumRows = rows(1))
-        assertEquals(1, OnboardingSuggestionsPresentation.lanes(onlyPicked, "Your picks").size)
+        assertEquals(1, OnboardingSuggestionsPresentation.lanes(onlyPicked).size)
     }
 }

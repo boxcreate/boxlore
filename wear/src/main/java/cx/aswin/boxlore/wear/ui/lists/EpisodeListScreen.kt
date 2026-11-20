@@ -7,7 +7,6 @@ import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -26,7 +25,6 @@ import androidx.wear.compose.material3.lazy.transformedHeight
 import cx.aswin.boxlore.wear.R
 import cx.aswin.boxlore.wear.model.WatchDownload
 import cx.aswin.boxlore.wear.model.WatchEpisode
-import cx.aswin.boxlore.wear.ui.WatchFormat
 import cx.aswin.boxlore.wear.ui.components.ArtworkWithPlaying
 import cx.aswin.boxlore.wear.ui.components.EmptyMessage
 import cx.aswin.boxlore.wear.ui.components.LocalPlayingEpisode
@@ -34,6 +32,7 @@ import cx.aswin.boxlore.wear.ui.components.RowDetail
 import cx.aswin.boxlore.wear.ui.components.ScreenFit
 import cx.aswin.boxlore.wear.ui.components.WatchRow
 import cx.aswin.boxlore.wear.ui.components.rememberScreenScale
+import cx.aswin.boxlore.wear.ui.fileSizeText
 
 /** What an episode list says when it has nothing in it. */
 internal data class ListEmpty(val icon: ImageVector, val title: Int, val body: Int? = null)
@@ -113,7 +112,7 @@ private fun EpisodeDetailLine(episode: WatchEpisode, detail: EpisodeDetail) {
                 stringResource(
                     R.string.wear_date_and_minutes,
                     stringResource(R.string.wear_minutes, episode.durationMinutes),
-                    WatchFormat.megabytes(episode.storedBytes, LocalConfiguration.current.locales[0]),
+                    fileSizeText(episode.storedBytes),
                 )
             // A length nobody knows yet, as for an episode the phone only queued, is left out rather than shown as 0.
             episode.durationMinutes <= 0 -> null

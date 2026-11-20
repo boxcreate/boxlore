@@ -46,6 +46,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.lerp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,6 +56,8 @@ import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.library.DownloadsSortOrder
@@ -62,6 +66,7 @@ import cx.aswin.boxlore.feature.library.LibraryPlaybackLayout
 import cx.aswin.boxlore.feature.library.LibraryUiState
 import cx.aswin.boxlore.feature.library.LibraryViewModel
 import cx.aswin.boxlore.feature.library.PlayAllFab
+import cx.aswin.boxlore.feature.library.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -158,7 +163,7 @@ fun DownloadedEpisodesScreen(
                     TopAppBar(
                         title = {
                             Text(
-                                text = "${selectedPodcastIds.size} Selected",
+                                text = pluralStringResource(R.plurals.library_selected_count_title, selectedPodcastIds.size, selectedPodcastIds.size),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = GoogleSansWeight.bold,
                             )
@@ -168,7 +173,7 @@ fun DownloadedEpisodesScreen(
                                 isSelectionMode = false
                                 selectedPodcastIds.clear()
                             }) {
-                                Icon(Icons.Rounded.Close, contentDescription = "Cancel selection")
+                                Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.library_cancel_selection))
                             }
                         },
                         actions = {
@@ -180,7 +185,7 @@ fun DownloadedEpisodesScreen(
                                     selectedPodcastIds.addAll(sortedGroups.map { it.podcastId })
                                 }
                             }) {
-                                Icon(Icons.Rounded.SelectAll, contentDescription = "Select All")
+                                Icon(Icons.Rounded.SelectAll, contentDescription = stringResource(R.string.library_select_all))
                             }
                             IconButton(
                                 onClick = { deleteConfirmSelectedDialog = true },
@@ -188,7 +193,7 @@ fun DownloadedEpisodesScreen(
                             ) {
                                 Icon(
                                     Icons.Rounded.Delete,
-                                    contentDescription = "Delete Selected",
+                                    contentDescription = stringResource(R.string.library_delete_selected),
                                     tint = if (selectedPodcastIds.isNotEmpty()) {
                                         MaterialTheme.colorScheme.error
                                     } else {
@@ -208,12 +213,12 @@ fun DownloadedEpisodesScreen(
                         title = {
                             Column {
                                 Text(
-                                    text = "Downloads",
+                                    text = stringResource(R.string.library_hub_downloads),
                                     style = titleStyle,
                                 )
                                 if (downloads.isNotEmpty() && scrollBehavior.state.collapsedFraction < 0.4f) {
                                     Text(
-                                        text = summary.countLine(sizeSuffix = " used"),
+                                        text = summary.countLine(DownloadSizeWording.Used, currentLocale()).asString(),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -222,13 +227,13 @@ fun DownloadedEpisodesScreen(
                         },
                         navigationIcon = {
                             IconButton(onClick = onBack) {
-                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.library_back))
                             }
                         },
                         actions = {
                             if (sortedGroups.isNotEmpty()) {
                                 IconButton(onClick = { isSelectionMode = true }) {
-                                    Icon(Icons.Rounded.Checklist, contentDescription = "Select podcasts")
+                                    Icon(Icons.Rounded.Checklist, contentDescription = stringResource(R.string.library_downloads_select_podcasts))
                                 }
                             }
                         },
@@ -262,12 +267,12 @@ fun DownloadedEpisodesScreen(
                             )
                             Column {
                                 Text(
-                                    text = "Offline Mode",
+                                    text = stringResource(R.string.library_downloads_offline_title),
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = GoogleSansWeight.bold
                                 )
                                 Text(
-                                    text = "No internet connection. Playing downloaded episodes.",
+                                    text = stringResource(R.string.library_downloads_offline_body),
                                     style = MaterialTheme.typography.bodySmall,
                                     fontSize = 12.sp
                                 )
@@ -288,7 +293,7 @@ fun DownloadedEpisodesScreen(
                 }
                 is LibraryUiState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Error loading downloads")
+                        Text(stringResource(R.string.library_downloads_error_loading))
                     }
                 }
                 is LibraryUiState.Success -> {
@@ -310,17 +315,17 @@ fun DownloadedEpisodesScreen(
 
                         if (downloads.isEmpty()) {
                             item {
-                                val emptyTitle = "Buddha woulda coulda"
+                                val emptyTitle = stringResource(R.string.library_downloads_empty_title)
                                 val emptyDescription = if (isOffline) {
-                                    "No downloaded episodes found. Turn on Wi-Fi and charging to auto-sync your smart downloads!"
+                                    stringResource(R.string.library_downloads_empty_offline_body)
                                 } else {
-                                    "No downloaded episodes yet. Turn on Smart Downloads above or find podcasts to download manually."
+                                    stringResource(R.string.library_downloads_empty_body)
                                 }
                                 ExpressiveSolarSystemEmptyState(
                                     title = emptyTitle,
                                     description = emptyDescription,
                                     icon = Icons.Rounded.CloudOff,
-                                    actionText = if (isOffline) null else "Find Podcasts",
+                                    actionText = if (isOffline) null else stringResource(R.string.library_find_podcasts),
                                     modifier = Modifier,
                                     onExploreClick = onExploreClick
                                 )
@@ -368,13 +373,14 @@ fun DownloadedEpisodesScreen(
         }, playbackAction = {
             // Play All FAB aligned to bottom right
             if (downloads.isNotEmpty() && !isSelectionMode) {
+                val allDownloadsTitle = stringResource(R.string.library_downloads_all)
                 PlayAllFab(
                     isPlayerActive = isPlayerActive,
                     onClick = {
                         val episodes = downloads.playableDownloads().map { it.toEpisode() }
                         val dummyPodcast = Podcast(
                             id = "downloads_all",
-                            title = "All Downloads",
+                            title = allDownloadsTitle,
                             artist = "",
                             imageUrl = "",
                             description = "",
@@ -388,10 +394,10 @@ fun DownloadedEpisodesScreen(
             if (deleteConfirmSelectedDialog) {
                 AlertDialog(
                     onDismissRequest = { deleteConfirmSelectedDialog = false },
-                    title = { Text("Delete downloads?") },
+                    title = { Text(stringResource(R.string.library_downloads_delete_title)) },
                     text = {
                         val selectedCount = selectedPodcastIds.size
-                        Text("Are you sure you want to delete all downloaded episodes for the $selectedCount selected ${if (selectedCount == 1) "podcast" else "podcasts"}?")
+                        Text(pluralStringResource(R.plurals.library_downloads_delete_podcasts_body, selectedCount, selectedCount))
                     },
                     confirmButton = {
                         Button(
@@ -410,12 +416,12 @@ fun DownloadedEpisodesScreen(
                                 contentColor = MaterialTheme.colorScheme.onError
                             )
                         ) {
-                            Text("Delete")
+                            Text(stringResource(R.string.library_delete))
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { deleteConfirmSelectedDialog = false }) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.library_cancel))
                         }
                     }
                 )

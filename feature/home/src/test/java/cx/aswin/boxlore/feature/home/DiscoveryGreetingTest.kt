@@ -17,38 +17,38 @@ class DiscoveryGreetingTest {
     @Test
     fun `morning weekday uses start-your-day subtitle`() {
         val greeting = discoveryGreetingFor(ContentDaypart.MORNING, weekday)
-        assertEquals("Good Morning", greeting.title)
-        assertEquals("Start your day with these updates.", greeting.subtitle)
+        assertEquals(R.string.home_greeting_morning_title, greeting.title)
+        assertEquals(R.string.home_greeting_morning_weekday, greeting.subtitle)
         assertEquals(ContentDaypart.MORNING, greeting.daypart)
     }
 
     @Test
     fun `morning weekend uses catch-up subtitle`() {
         val greeting = discoveryGreetingFor(ContentDaypart.MORNING, saturday)
-        assertEquals("Catch up on the week.", greeting.subtitle)
+        assertEquals(R.string.home_greeting_morning_weekend, greeting.subtitle)
     }
 
     @Test
     fun `evening friday kicks off the weekend`() {
         val greeting = discoveryGreetingFor(ContentDaypart.EVENING, friday)
-        assertEquals("Evening Unwind", greeting.title)
-        assertEquals("Kick off the weekend.", greeting.subtitle)
+        assertEquals(R.string.home_greeting_evening_title, greeting.title)
+        assertEquals(R.string.home_greeting_evening_friday, greeting.subtitle)
     }
 
     @Test
     fun `evening non-friday uses relax subtitle`() {
         val greeting = discoveryGreetingFor(ContentDaypart.EVENING, weekday)
-        assertEquals("Relax, laugh, and catch up.", greeting.subtitle)
+        assertEquals(R.string.home_greeting_evening_other, greeting.subtitle)
     }
 
     @Test
     fun `afternoon and late night copy is stable`() {
         assertEquals(
-            "Smart conversations to keep you going.",
+            R.string.home_greeting_afternoon_subtitle,
             discoveryGreetingFor(ContentDaypart.AFTERNOON, weekday).subtitle,
         )
         assertEquals(
-            "Stories for the dark hours.",
+            R.string.home_greeting_late_night_subtitle,
             discoveryGreetingFor(ContentDaypart.LATE_NIGHT, weekday).subtitle,
         )
     }

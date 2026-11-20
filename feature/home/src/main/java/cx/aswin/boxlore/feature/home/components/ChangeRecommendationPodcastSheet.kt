@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
@@ -20,6 +21,7 @@ import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.artworkUrls
+import cx.aswin.boxlore.feature.home.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,14 +48,14 @@ fun ChangeRecommendationPodcastSheet(
         ) {
             // Sheet Title
             Text(
-                text = "Personalize Recommendations",
+                text = stringResource(R.string.home_change_recs_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = GoogleSansWeight.bold,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
             )
 
             Text(
-                text = "Select a show to find similar episodes, or reset to auto-detect based on your listening habits.",
+                text = stringResource(R.string.home_change_recs_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
@@ -92,13 +94,13 @@ fun ChangeRecommendationPodcastSheet(
                         }
                         Column {
                             Text(
-                                text = "Auto-detect (Reset to default)",
+                                text = stringResource(R.string.home_change_recs_auto),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = GoogleSansWeight.semiBold,
                                 color = MaterialTheme.colorScheme.primary,
                             )
                             Text(
-                                text = "Update automatically based on your listening history",
+                                text = stringResource(R.string.home_change_recs_auto_body),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -46,6 +47,7 @@ import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsIconContainer
@@ -70,32 +72,28 @@ internal fun PrivacySettingsPage(
 ) {
     TrackScreenView("privacy")
     SettingsScaffold(
-        title = "Privacy",
+        title = stringResource(R.string.settings_privacy_title),
         onBack = onBack,
     ) {
         PromiseCard()
 
-        SettingsGroup(title = "What this can look like — and what it isn’t") {
+        SettingsGroup(title = stringResource(R.string.settings_privacy_sketch_title)) {
             SettingsContent {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Text(
                         text =
-                        "Analytics can suggest a rough sketch (rough place, device, podcast taste) — " +
-                            "never a precise profile, and never age or gender. Analytics never includes your " +
-                            "name or email. An account is optional and only backs up and syncs your library; " +
-                            "it’s never linked to your analytics.",
+                        stringResource(R.string.settings_privacy_sketch_body),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text =
-                        "The only personal details that show up are ones you type into search or " +
-                            "AI chat. Please don’t.",
+                        stringResource(R.string.settings_privacy_sketch_typed),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        text = "And again: never sold, never for ads. boxlore will never have ads.",
+                        text = stringResource(R.string.settings_privacy_sketch_never),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = GoogleSansWeight.medium,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -104,133 +102,96 @@ internal fun PrivacySettingsPage(
             }
         }
 
-        SettingsGroup(title = "1 · App use") {
+        SettingsGroup(title = stringResource(R.string.settings_privacy_app_use_title)) {
             PrivacyCategoryContent(
                 icon = Icons.Rounded.Analytics,
                 collected =
-                "Screen opens, feature taps, settings changes, and rough time spent. " +
-                    "Things like home carousel swipes, explore searches, library visits, " +
-                    "settings opens, mini-player taps — and a few more of that kind.",
+                stringResource(R.string.settings_privacy_app_use_collected),
                 reason =
-                "So we can see how many people are actually using boxlore, which parts feel alive, " +
-                    "and which ones flop — so we can make better product calls. " +
-                    "And honestly, so we can watch the charts and feel happy that people are using something we built.",
+                stringResource(R.string.settings_privacy_app_use_reason),
                 example =
-                "Earlier builds had a Radio feature. Usage showed almost nobody used it, " +
-                    "so we removed it instead of keeping dead weight in the app.",
+                stringResource(R.string.settings_privacy_app_use_example),
             )
         }
 
-        SettingsGroup(title = "2 · Search and onboarding text") {
+        SettingsGroup(title = stringResource(R.string.settings_privacy_search_title)) {
             PrivacyCategoryContent(
                 icon = Icons.Rounded.Search,
                 collected =
-                "Search queries and what the app returns, plus AI onboarding chat text. " +
-                    "AI onboarding runs on Groq using $GroqOnboardingModel.",
+                stringResource(R.string.settings_privacy_search_collected, GroqOnboardingModel),
                 reason =
-                "Podcast Index and Apple’s APIs lean hard on exact-word matching. " +
-                    "Search quality is one of the biggest pain points we’re trying to fix, " +
-                    "so seeing real queries and responses is critical. " +
-                    "Same for AI onboarding — we need to know whether prompts are understood " +
-                    "and answers stay relevant.",
+                stringResource(R.string.settings_privacy_search_reason),
                 example =
-                "A lot of people typed real podcast names and treated the AI like a search box. " +
-                    "The model kept asking generic taste questions instead of helping. " +
-                    "So we added a layer that checks if the text is basically a show name, " +
-                    "validates it against the chat context, and offers “use search instead” with that title " +
-                    "so you can subscribe — while the AI still uses it as a taste baseline and the chat continues.",
+                stringResource(R.string.settings_privacy_search_example),
             )
         }
 
-        SettingsGroup(title = "3 · Listening activity") {
+        SettingsGroup(title = stringResource(R.string.settings_privacy_listening_title)) {
             PrivacyCategoryContent(
                 icon = Icons.Rounded.Podcasts,
                 collected =
-                "Podcast and episode details, playback progress, likes, subscriptions, downloads, " +
-                    "and related listening signals.",
+                stringResource(R.string.settings_privacy_listening_collected),
                 reason =
-                "Podcast Index charts aren’t great for this, and Apple charts don’t really give us " +
-                    "the play-level signal we need. We use this to understand listening activity, " +
-                    "and to build community charts that are native to boxlore.",
+                stringResource(R.string.settings_privacy_listening_reason),
                 example = null,
             )
         }
 
-        SettingsGroup(title = "4 · App and device") {
+        SettingsGroup(title = stringResource(R.string.settings_privacy_device_title)) {
             PrivacyCategoryContent(
                 icon = Icons.Rounded.Devices,
                 collected =
-                "App version, OS, device details, local hour and day, your analytics ID, " +
-                    "and approximate location (country, region, city and postcode area) that PostHog " +
-                    "works out from your IP address. The IP address itself isn’t kept.",
+                stringResource(R.string.settings_privacy_device_collected),
                 reason =
-                "Most of this PostHog collects by default, and we don’t currently have a clean way " +
-                    "to turn that part off. We do use rough location to see which countries boxlore " +
-                    "is used in — for example, to check that support prices make sense in each country " +
-                    "once payments are on. boxlore never asks for or reads your phone’s location.",
+                stringResource(R.string.settings_privacy_device_reason),
                 example = null,
             )
         }
 
-        SettingsGroup(title = "5 · Crashes") {
+        SettingsGroup(title = stringResource(R.string.settings_privacy_crashes_title)) {
             PrivacyCategoryContent(
                 icon = Icons.Rounded.BugReport,
-                collected = "Technical errors and crash reports.",
-                reason = "Pretty obvious — if the app breaks, we need to know so we can fix it.",
+                collected = stringResource(R.string.settings_privacy_crashes_collected),
+                reason = stringResource(R.string.settings_privacy_crashes_reason),
                 example = null,
             )
         }
 
-        SettingsGroup(title = "6 · Support page test") {
+        SettingsGroup(title = stringResource(R.string.settings_privacy_support_title)) {
             PrivacyCategoryContent(
                 icon = Icons.Rounded.VolunteerActivism,
                 collected =
-                "Which of six Support boxlore designs you see, which support levels you look at, " +
-                    "whether you tap to pay, and how long you stay on that page.",
+                stringResource(R.string.settings_privacy_support_collected),
                 reason =
-                "This is part design survey, part our attempt to earn back what it costs to keep " +
-                    "boxlore running. We just want a rough idea of which designs lead more people to " +
-                    "support boxlore. It’s tied only to your anonymous analytics ID, never your name, " +
-                    "email or account.",
+                stringResource(R.string.settings_privacy_support_reason),
                 example = null,
             )
         }
 
-        SettingsGroup(title = "7 · Feedback") {
+        SettingsGroup(title = stringResource(R.string.settings_privacy_feedback_title)) {
             PrivacyCategoryContent(
                 icon = Icons.Rounded.Feedback,
                 collected =
-                "What you write when you send feedback, the type you pick, and the app version. " +
-                    "If you leave “Include device diagnostics” on: your phone model, Android version, " +
-                    "network type, audio output and language, plus boxlore’s own recent logs with keys, " +
-                    "sign-in details and email addresses removed. Any photos or screenshots you attach.",
+                stringResource(R.string.settings_privacy_feedback_collected),
                 reason =
-                "So the boxlore team can read it, reply, and fix what broke. Your conversations are kept " +
-                    "on our servers and tied to this phone (and to your account if you’re signed in), not to " +
-                    "your analytics ID. The team reads and answers in Telegram, which gets your message, its " +
-                    "type, your phone model, app version and photos — never your email, logs or analytics ID. " +
-                    "Photos are deleted 60 days after a conversation is solved or closed. To delete your " +
-                    "conversations, email privacy@aswin.cx.",
+                stringResource(R.string.settings_privacy_feedback_reason),
                 example = null,
             )
         }
 
         SettingsGroup(
-            title = "On-device recommendations",
+            title = stringResource(R.string.settings_privacy_on_device_title),
             footer =
-            "Your learned taste profile and ranking model stay on this device. " +
-                "They are not uploaded. JSON backups you create include this state so an " +
-                "imported install can continue with the same learning.",
+            stringResource(R.string.settings_privacy_on_device_footer),
         ) {
             SettingsContent {
                 AnalyticsControlCard(
-                    title = "Reset recommendations",
+                    title = stringResource(R.string.settings_privacy_reset_recs_title),
                     body =
-                    "Forget inferred tastes and start learning again. " +
-                        "This does not remove subscriptions, downloads, likes, or listening history.",
+                    stringResource(R.string.settings_privacy_reset_recs_body),
                     icon = Icons.Rounded.Refresh,
                     destructive = false,
-                    actionLabel = "Reset",
+                    actionLabel = stringResource(R.string.settings_privacy_reset_recs_action),
                     onAction = actions.onResetRecommendationsClick,
                     expansion = null,
                 )
@@ -238,30 +199,28 @@ internal fun PrivacySettingsPage(
         }
 
         SettingsGroup(
-            title = "Your analytics ID",
+            title = stringResource(R.string.settings_privacy_analytics_id_title),
             footer =
-            "Analytics starts with the app and there’s no in-app opt-out. " +
-                "These actions only touch PostHog — not your library, downloads, or data " +
-                "sent for recommendations / transcripts.",
+            stringResource(R.string.settings_privacy_analytics_id_footer),
         ) {
             SettingsContent {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     AnalyticsControlCard(
-                        title = "Start a new analytics ID",
-                        body = "Future events use a new ID. Anything already sent stays as-is.",
+                        title = stringResource(R.string.settings_privacy_new_id_title),
+                        body = stringResource(R.string.settings_privacy_new_id_body),
                         icon = Icons.Rounded.Refresh,
                         destructive = false,
-                        actionLabel = "Reset ID",
+                        actionLabel = stringResource(R.string.settings_privacy_new_id_action),
                         onAction = actions.onResetIdentityClick,
                         expansion = null,
                     )
 
                     AnalyticsControlCard(
-                        title = "Request deletion of analytics data",
-                        body = "Opens an email draft with your PostHog ID. You still have to hit send.",
+                        title = stringResource(R.string.settings_privacy_deletion_title),
+                        body = stringResource(R.string.settings_privacy_deletion_body),
                         icon = Icons.Rounded.DeleteForever,
                         destructive = true,
-                        actionLabel = if (isDeletionExpanded) "Hide" else "Show ID",
+                        actionLabel = if (isDeletionExpanded) stringResource(R.string.settings_privacy_deletion_hide) else stringResource(R.string.settings_privacy_deletion_show),
                         onAction = {
                             actions.onDeletionExpandedChange(!isDeletionExpanded)
                         },
@@ -311,12 +270,12 @@ private fun PromiseCard() {
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = "Our promise",
+                        text = stringResource(R.string.settings_privacy_promise_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = GoogleSansWeight.bold,
                     )
                     Text(
-                        text = "From the people building boxlore",
+                        text = stringResource(R.string.settings_privacy_promise_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.78f),
                     )
@@ -325,8 +284,7 @@ private fun PromiseCard() {
 
             Text(
                 text =
-                "boxlore isn’t meant for monetary gain. It’s a few friends finishing a childhood dream — " +
-                    "watching code turn into magic on screens.",
+                stringResource(R.string.settings_privacy_promise_body),
                 style = MaterialTheme.typography.bodyLarge,
             )
 
@@ -336,25 +294,22 @@ private fun PromiseCard() {
 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    text = "What that means for your data",
+                    text = stringResource(R.string.settings_privacy_promise_means),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = GoogleSansWeight.bold,
                 )
                 PromisePillRow(
                     pills =
                     listOf(
-                        "Never sold",
-                        "Never for ads",
-                        "No ads in boxlore",
-                        "Usage only",
+                        stringResource(R.string.settings_privacy_pill_never_sold),
+                        stringResource(R.string.settings_privacy_pill_never_ads),
+                        stringResource(R.string.settings_privacy_pill_no_ads),
+                        stringResource(R.string.settings_privacy_pill_usage_only),
                     ),
                 )
                 Text(
                     text =
-                    "Whatever we collect will never be sold, never used to push ads, " +
-                        "and never used for the other creepy things people do with data. " +
-                        "It’s only to understand how many people use the app, how they use it, " +
-                        "and which features work or don’t.",
+                    stringResource(R.string.settings_privacy_promise_detail),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.92f),
                 )
@@ -403,11 +358,11 @@ private fun PrivacyCategoryContent(
             )
 
             PrivacyField(
-                label = "What we collect",
+                label = stringResource(R.string.settings_privacy_field_collected),
                 body = collected,
             )
             PrivacyField(
-                label = "Why",
+                label = stringResource(R.string.settings_privacy_field_why),
                 body = reason,
             )
 
@@ -461,7 +416,7 @@ private fun ExampleCallout(text: String) {
             )
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "Example from real usage",
+                    text = stringResource(R.string.settings_privacy_example_label),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = GoogleSansWeight.bold,
                 )
@@ -644,7 +599,7 @@ private fun DeletionRequestPanel(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
-            text = "The draft includes this PostHog ID. You can copy it if you want.",
+            text = stringResource(R.string.settings_privacy_deletion_note),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.9f),
         )
@@ -675,7 +630,7 @@ private fun DeletionRequestPanel(
                 )
                 Icon(
                     imageVector = Icons.Rounded.ContentCopy,
-                    contentDescription = "Copy PostHog ID",
+                    contentDescription = stringResource(R.string.settings_privacy_copy_id),
                     modifier = Modifier.size(18.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -696,7 +651,7 @@ private fun DeletionRequestPanel(
                 modifier = Modifier.size(18.dp),
             )
             Text(
-                text = "Open email draft",
+                text = stringResource(R.string.settings_privacy_open_email),
                 modifier = Modifier.padding(start = 8.dp),
             )
         }

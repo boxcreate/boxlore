@@ -20,15 +20,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.library.R
 import kotlinx.coroutines.launch
-
-private const val ADD_TO_QUEUE_LABEL = "Add to queue"
-private const val MARK_PLAYED_LABEL = "Mark as played"
 
 /**
  * New Episodes row that acts on a swipe and then springs back: start to end adds to the queue,
@@ -41,6 +40,8 @@ internal fun LatestEpisodeSwipeRow(
     content: @Composable () -> Unit,
 ) {
     val resetScope = rememberCoroutineScope()
+    val addToQueueLabel = stringResource(R.string.library_add_to_queue)
+    val markPlayedLabel = stringResource(R.string.library_mark_as_played)
     val state = rememberSwipeToDismissBoxState()
     SwipeToDismissBox(
         state = state,
@@ -51,11 +52,11 @@ internal fun LatestEpisodeSwipeRow(
         backgroundContent = { LatestSwipeBackground(direction = state.dismissDirection) },
         modifier = Modifier.semantics {
             customActions = listOf(
-                CustomAccessibilityAction(ADD_TO_QUEUE_LABEL) {
+                CustomAccessibilityAction(addToQueueLabel) {
                     onAction(LatestSwipeAction.AddToQueue)
                     true
                 },
-                CustomAccessibilityAction(MARK_PLAYED_LABEL) {
+                CustomAccessibilityAction(markPlayedLabel) {
                     onAction(LatestSwipeAction.MarkPlayed)
                     true
                 },
@@ -72,14 +73,14 @@ internal fun LatestEpisodeSwipeRow(
 private fun LatestSwipeBackground(direction: SwipeToDismissBoxValue) {
     when (latestSwipeAction(direction)) {
         LatestSwipeAction.AddToQueue -> LatestSwipeHint(
-            label = ADD_TO_QUEUE_LABEL,
+            label = stringResource(R.string.library_add_to_queue),
             icon = Icons.AutoMirrored.Rounded.PlaylistAdd,
             alignEnd = false,
             container = MaterialTheme.colorScheme.primaryContainer,
             content = MaterialTheme.colorScheme.onPrimaryContainer,
         )
         LatestSwipeAction.MarkPlayed -> LatestSwipeHint(
-            label = MARK_PLAYED_LABEL,
+            label = stringResource(R.string.library_mark_as_played),
             icon = Icons.Rounded.CheckCircle,
             alignEnd = true,
             container = MaterialTheme.colorScheme.tertiaryContainer,

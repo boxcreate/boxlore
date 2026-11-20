@@ -11,7 +11,9 @@ import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material.icons.rounded.Update
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsChoiceRow
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsDurationSliderIcon
@@ -60,15 +62,15 @@ internal fun PlaybackSettingsPage(
 ) {
     TrackScreenView("playback_settings")
     SettingsScaffold(
-        title = "Playback",
+        title = stringResource(R.string.settings_page_playback),
         onBack = onBack,
     ) {
         SettingsGroup(
-            title = "Automatic episode trimming",
+            title = stringResource(R.string.settings_playback_trimming_title),
         ) {
             SettingsDurationSliderRow(
-                title = "Skip beginning",
-                supportingText = "Jump past intros or opening ads on a fresh start",
+                title = stringResource(R.string.settings_playback_skip_beginning),
+                supportingText = stringResource(R.string.settings_playback_skip_beginning_description),
                 value =
                 SettingsDurationSliderValue(
                     seconds = (state.skipBeginningMs / 1_000L).toInt(),
@@ -80,8 +82,8 @@ internal fun PlaybackSettingsPage(
             )
             SettingsDivider()
             SettingsDurationSliderRow(
-                title = "Skip ending",
-                supportingText = "Finish naturally before credits or closing ads",
+                title = stringResource(R.string.settings_playback_skip_ending),
+                supportingText = stringResource(R.string.settings_playback_skip_ending_description),
                 value =
                 SettingsDurationSliderValue(
                     seconds = (state.skipEndingMs / 1_000L).toInt(),
@@ -93,23 +95,23 @@ internal fun PlaybackSettingsPage(
             )
             SettingsDivider()
             SettingsSwitchRow(
-                title = "Trim silence",
-                supportingText = "Skip long pauses so episodes finish sooner",
+                title = stringResource(R.string.settings_playback_trim_silence),
+                supportingText = stringResource(R.string.settings_playback_trim_silence_description),
                 checked = state.trimSilenceEnabled,
                 onCheckedChange = actions.onSetTrimSilenceEnabled,
                 icon = Icons.Rounded.GraphicEq,
             )
         }
         SettingsInfoTip(
-            text = "Set a different speed, trim silence or skip times for one show from the ⋮ menu on its show page. Resume positions always take priority.",
+            text = stringResource(R.string.settings_playback_trimming_footer),
         )
 
         SettingsGroup(
-            title = "Seek controls",
-            footer = "Used by the player, transcript, notification, headset, and Android Auto controls.",
+            title = stringResource(R.string.settings_playback_seek_title),
+            footer = stringResource(R.string.settings_playback_seek_footer),
         ) {
             SettingsDurationSliderRow(
-                title = "Seek backward",
+                title = stringResource(R.string.settings_playback_seek_backward),
                 value =
                 SettingsDurationSliderValue(
                     seconds = (state.seekBackwardMs / 1_000L).toInt(),
@@ -121,7 +123,7 @@ internal fun PlaybackSettingsPage(
             )
             SettingsDivider()
             SettingsDurationSliderRow(
-                title = "Seek forward",
+                title = stringResource(R.string.settings_playback_seek_forward),
                 value =
                 SettingsDurationSliderValue(
                     seconds = (state.seekForwardMs / 1_000L).toInt(),
@@ -138,32 +140,32 @@ internal fun PlaybackSettingsPage(
         }
 
         SettingsGroup(
-            title = "When skipping an episode",
-            footer = "Applies when you skip to the next episode.",
+            title = stringResource(R.string.settings_playback_skip_title),
+            footer = stringResource(R.string.settings_playback_skip_footer),
         ) {
             SettingsChoiceRow(
-                title = "Skip only",
-                supportingText = "Leave the current episode unfinished",
+                title = stringResource(R.string.settings_playback_skip_only),
+                supportingText = stringResource(R.string.settings_playback_skip_only_description),
                 selected = state.skipBehavior == "just_skip",
                 onClick = { actions.onSetSkipBehavior("just_skip") },
             )
             SettingsDivider()
             SettingsChoiceRow(
-                title = "Mark complete and skip",
-                supportingText = "Mark the current episode complete first",
+                title = stringResource(R.string.settings_playback_mark_complete),
+                supportingText = stringResource(R.string.settings_playback_mark_complete_description),
                 selected = state.skipBehavior == "mark_completed_skip",
                 onClick = { actions.onSetSkipBehavior("mark_completed_skip") },
             )
         }
 
         SettingsGroup(
-            title = "Resume",
+            title = stringResource(R.string.settings_playback_resume_title),
             footer =
-            "When on, queue and mixtape start from the beginning if you haven’t played an episode in 7 days. Jump Back In and History always resume where you left off.",
+            stringResource(R.string.settings_playback_resume_footer),
         ) {
             SettingsSwitchRow(
-                title = "Restart forgotten episodes",
-                supportingText = "Queue and mixtape after 7 idle days",
+                title = stringResource(R.string.settings_playback_restart_forgotten),
+                supportingText = stringResource(R.string.settings_playback_restart_forgotten_description),
                 checked = state.restartForgottenEpisodes,
                 onCheckedChange = actions.onSetRestartForgottenEpisodes,
                 icon = Icons.Rounded.Update,
@@ -171,13 +173,13 @@ internal fun PlaybackSettingsPage(
         }
 
         SettingsGroup(
-            title = "Queue",
+            title = stringResource(R.string.settings_playback_queue_title),
             footer =
-            "When this is off, the queue only auto-adds newer episodes of the show you’re playing, if any are available. You can always add episodes yourself.",
+            stringResource(R.string.settings_playback_queue_footer),
         ) {
             SettingsSwitchRow(
-                title = "Smart queue",
-                supportingText = "Fill the queue from your library and recommendations",
+                title = stringResource(R.string.settings_playback_smart_queue),
+                supportingText = stringResource(R.string.settings_playback_smart_queue_description),
                 checked = !state.sameShowQueueOnly,
                 onCheckedChange = { enabled -> actions.onSetSameShowQueueOnly(!enabled) },
                 icon = Icons.Rounded.QueueMusic,
@@ -185,28 +187,28 @@ internal fun PlaybackSettingsPage(
         }
 
         SettingsGroup(
-            title = "Hide completed episodes from",
-            footer = "Completed episodes stay in your library; they are only hidden in these places.",
+            title = stringResource(R.string.settings_playback_hide_completed_title),
+            footer = stringResource(R.string.settings_playback_hide_completed_footer),
         ) {
             SettingsSwitchRow(
-                title = "Home show episodes",
-                supportingText = "When you tap a show on the Home tab",
+                title = stringResource(R.string.settings_playback_hide_home),
+                supportingText = stringResource(R.string.settings_playback_hide_home_description),
                 checked = state.hideCompletedInHome,
                 onCheckedChange = actions.onSetHideCompletedInHome,
                 icon = Icons.Rounded.Home,
             )
             SettingsDivider()
             SettingsSwitchRow(
-                title = "Subscriptions · Latest",
-                supportingText = "The Latest tab under Library → Subscriptions",
+                title = stringResource(R.string.settings_playback_hide_latest),
+                supportingText = stringResource(R.string.settings_playback_hide_latest_description),
                 checked = state.hideCompletedInSubs,
                 onCheckedChange = actions.onSetHideCompletedInSubs,
                 icon = Icons.Rounded.NewReleases,
             )
             SettingsDivider()
             SettingsSwitchRow(
-                title = "Podcast pages",
-                supportingText = "The full episode list on a show’s page",
+                title = stringResource(R.string.settings_playback_hide_podcast_pages),
+                supportingText = stringResource(R.string.settings_playback_hide_podcast_pages_description),
                 checked = state.hideCompletedInShowDetails,
                 onCheckedChange = actions.onSetHideCompletedInShowDetails,
                 icon = Icons.Rounded.Podcasts,

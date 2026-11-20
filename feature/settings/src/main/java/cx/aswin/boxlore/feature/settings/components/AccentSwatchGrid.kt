@@ -21,12 +21,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.contrastColor
+import cx.aswin.boxlore.feature.settings.R
 
 /** Adaptive accent grid with full touch targets and spoken color names. */
 internal fun accentSwatchColumnCount(widthDp: Float, maximumColumns: Int = 5): Int =
@@ -58,12 +60,13 @@ internal fun AccentSwatchGrid(
 @Composable
 private fun AccentSwatch(color: Color, name: String, selected: Boolean, onClick: () -> Unit) {
     val ringColor = MaterialTheme.colorScheme.primary
+    val selectedState = stringResource(if (selected) R.string.settings_state_selected else R.string.settings_state_not_selected)
     Box(
         modifier = Modifier.size(52.dp)
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
             .semantics {
                 contentDescription = name
-                stateDescription = if (selected) "Selected" else "Not selected"
+                stateDescription = selectedState
             },
         contentAlignment = Alignment.Center,
     ) {

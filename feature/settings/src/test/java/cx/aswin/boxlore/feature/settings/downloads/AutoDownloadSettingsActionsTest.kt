@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.settings.downloads
 
 import cx.aswin.boxlore.core.prefs.AutoDownloadBackgroundSettings
+import cx.aswin.boxlore.feature.settings.R
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -45,17 +46,14 @@ class AutoDownloadSettingsActionsTest {
     fun `disabled checks hide controls and describe remaining discovery paths`() {
         val presentation = autoDownloadBackgroundPresentation(AutoDownloadBackgroundSettings())
         assertFalse(presentation.controlsVisible)
-        assertTrue(presentation.footer.contains("notifications can still start downloads"))
-        assertTrue(presentation.footer.contains("open and refresh"))
+        assertEquals(R.string.settings_auto_download_background_off_footer, presentation.footer)
     }
 
     @Test
     fun `enabled checks show controls with cadence and battery costs`() {
         val presentation = autoDownloadBackgroundPresentation(AutoDownloadBackgroundSettings(enabled = true))
         assertTrue(presentation.controlsVisible)
-        assertTrue(presentation.footer.contains("6 hours"))
-        assertTrue(presentation.footer.contains("extra battery and data"))
-        assertTrue(presentation.footer.contains("Android may delay"))
+        assertEquals(R.string.settings_auto_download_background_on_footer, presentation.footer)
     }
 
     @Test

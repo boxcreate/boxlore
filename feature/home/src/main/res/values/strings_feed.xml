@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Discovery header on Home; changes with the time of day. Title case is part of the style in English. -->
+    <string name="home_greeting_morning_title">Good Morning</string>
+    <string name="home_greeting_morning_weekday">Start your day with these updates.</string>
+    <string name="home_greeting_morning_weekend">Catch up on the week.</string>
+    <string name="home_greeting_afternoon_title">Afternoon Break</string>
+    <string name="home_greeting_afternoon_subtitle">Smart conversations to keep you going.</string>
+    <string name="home_greeting_evening_title">Evening Unwind</string>
+    <string name="home_greeting_evening_friday">Kick off the weekend.</string>
+    <string name="home_greeting_evening_other">Relax, laugh, and catch up.</string>
+    <string name="home_greeting_late_night_title">Late Night Listen</string>
+    <string name="home_greeting_late_night_subtitle">Stories for the dark hours.</string>
+    <string name="home_error_loading">Error loading content</string>
+    <!-- Episode description of the daily news brief; the argument is the region code, e.g. "US". -->
+    <string name="home_briefing_episode_description">Your daily AI-generated news briefing for %1$s.</string>
+    <!-- Queue started from the Home mix; shown as the show name in the player. -->
+    <string name="home_mix_offline_queue_title">Offline Mix</string>
+    <string name="home_mix_shows_queue_title">Your Shows Mix</string>
+    <string name="home_mix_queue_artist">Various Artists</string>
+    <string name="home_mix_offline_queue_description">Downloaded episodes ordered by release time</string>
+    <string name="home_mix_shows_queue_description">Mixed playlist of unplayed episodes</string>
+    <!-- Eyebrow on the featured episode card; shown in capitals. -->
+    <string name="home_featured_eyebrow">Today\'s featured</string>
+    <!-- Home genre filter chips; keep short. The genre value behind each one never changes. -->
+    <string name="home_genre_news">News</string>
+    <string name="home_genre_tech">Tech</string>
+    <string name="home_genre_business">Business</string>
+    <string name="home_genre_comedy">Comedy</string>
+    <string name="home_genre_true_crime">True Crime</string>
+    <string name="home_genre_sports">Sports</string>
+    <string name="home_genre_health">Health</string>
+    <string name="home_genre_history">History</string>
+    <string name="home_genre_arts">Arts</string>
+    <string name="home_genre_society">Society</string>
+    <string name="home_genre_education">Education</string>
+    <string name="home_genre_science">Science</string>
+    <string name="home_genre_tv_film">TV &amp; Film</string>
+    <string name="home_genre_fiction">Fiction</string>
+    <string name="home_genre_music">Music</string>
+    <string name="home_genre_religion">Religion</string>
+    <string name="home_genre_family">Family</string>
+    <string name="home_genre_leisure">Leisure</string>
+    <string name="home_genre_govt">Govt</string>
+    <!-- Sheet to pick the show behind "Because you like". -->
+    <string name="home_change_recs_title">Personalize Recommendations</string>
+    <string name="home_change_recs_body">Select a show to find similar episodes, or reset to auto-detect based on your listening habits.</string>
+    <string name="home_change_recs_auto">Auto-detect (Reset to default)</string>
+    <string name="home_change_recs_auto_body">Update automatically based on your listening history</string>
+</resources>

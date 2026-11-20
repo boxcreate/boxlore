@@ -57,12 +57,16 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.settings.R
 
 internal const val FEEDBACK_MESSAGE_TAG = "feedback_message"
 internal const val FEEDBACK_SEND_TAG = "feedback_send"
@@ -87,7 +91,7 @@ internal fun FeedbackTypePill(choice: FeedbackChoice, selected: Boolean, enabled
         selected = selected,
         onClick = onClick,
         enabled = enabled,
-        label = { Text(choice.label, fontWeight = GoogleSansWeight.semiBold) },
+        label = { Text(choice.label.asString(), fontWeight = GoogleSansWeight.semiBold) },
         leadingIcon = { Icon(choice.icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
         modifier = modifier.heightIn(min = 48.dp),
         shape = CircleShape,
@@ -128,6 +132,7 @@ internal fun FeedbackTypePills(
 internal fun FeedbackTypeMenuPill(choices: List<FeedbackChoice>, selected: FeedbackChoice, enabled: Boolean, onSelect: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Box {
+        val a11yLabel = stringResource(R.string.feedback_type_change_description, selected.label.asString())
         Surface(
             onClick = { open = true },
             enabled = enabled,
@@ -136,7 +141,7 @@ internal fun FeedbackTypeMenuPill(choices: List<FeedbackChoice>, selected: Feedb
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             modifier = Modifier
                 .heightIn(min = 40.dp)
-                .semantics { contentDescription = "Type: ${selected.label}. Change" },
+                .semantics { contentDescription = a11yLabel },
         ) {
             Row(
                 modifier = Modifier.padding(start = 10.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
@@ -144,14 +149,14 @@ internal fun FeedbackTypeMenuPill(choices: List<FeedbackChoice>, selected: Feedb
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Icon(selected.icon, contentDescription = null, modifier = Modifier.size(16.dp))
-                Text(selected.label, style = MaterialTheme.typography.labelLarge, fontWeight = GoogleSansWeight.semiBold)
+                Text(selected.label.asString(), style = MaterialTheme.typography.labelLarge, fontWeight = GoogleSansWeight.semiBold)
                 Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null, modifier = Modifier.size(18.dp))
             }
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             choices.forEach { choice ->
                 DropdownMenuItem(
-                    text = { Text(choice.label) },
+                    text = { Text(choice.label.asString()) },
                     leadingIcon = { Icon(choice.icon, contentDescription = null) },
                     trailingIcon = if (choice.id == selected.id) {
                         { Icon(Icons.Rounded.Check, contentDescription = null) }
@@ -190,6 +195,7 @@ internal fun FeedbackMessageCard(
                 if (value.isEmpty()) {
                     Text(placeholder, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                val a11yLabel2 = stringResource(R.string.feedback_message_label)
                 BasicTextField(
                     value = value,
                     onValueChange = onValueChange,
@@ -199,7 +205,7 @@ internal fun FeedbackMessageCard(
                     modifier = Modifier
                         .fillMaxSize()
                         .testTag(FEEDBACK_MESSAGE_TAG)
-                        .semantics { contentDescription = "Your message" }
+                        .semantics { contentDescription = a11yLabel2 }
                         .onFocusChanged { onFocusChanged(it.isFocused) },
                 )
             }
@@ -237,12 +243,13 @@ internal fun FeedbackPhotoRow(
         ) {
             FeedbackPhotoTiles(photos, canAdd, canRemove, onAdd, onRemove)
         }
-        Text("Up to $maxPhotos", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(pluralStringResource(R.plurals.feedback_photos_limit, maxPhotos, maxPhotos), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
 @Composable
 private fun FeedbackPhotoTiles(photos: List<PickedPhoto>, canAdd: Boolean, canRemove: Boolean, onAdd: () -> Unit, onRemove: (PickedPhoto) -> Unit) {
+    val a11yLabel3 = stringResource(R.string.feedback_add_photo)
     Surface(
         onClick = onAdd,
         enabled = canAdd,
@@ -251,24 +258,25 @@ private fun FeedbackPhotoTiles(photos: List<PickedPhoto>, canAdd: Boolean, canRe
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
             .size(64.dp)
-            .semantics { contentDescription = "Add a photo or screenshot" },
+            .semantics { contentDescription = a11yLabel3 },
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Icon(Icons.Rounded.AddPhotoAlternate, contentDescription = null, modifier = Modifier.size(20.dp))
-            Text("Add", style = MaterialTheme.typography.labelSmall, fontWeight = GoogleSansWeight.semiBold)
+            Text(stringResource(R.string.feedback_add), style = MaterialTheme.typography.labelSmall, fontWeight = GoogleSansWeight.semiBold)
         }
     }
     photos.forEachIndexed { index, photo ->
         Box(Modifier.size(64.dp)) {
             AsyncImage(
                 model = photo.uri,
-                contentDescription = "Photo ${index + 1}",
+                contentDescription = stringResource(R.string.feedback_photo_number, index + 1),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(64.dp)
                     .clip(RoundedCornerShape(20.dp))
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest),
             )
+            val a11yLabel4 = stringResource(R.string.feedback_remove_photo, index + 1)
             Surface(
                 onClick = { onRemove(photo) },
                 enabled = canRemove,
@@ -279,7 +287,7 @@ private fun FeedbackPhotoTiles(photos: List<PickedPhoto>, canAdd: Boolean, canRe
                     .align(Alignment.TopEnd)
                     .padding(2.dp)
                     .size(24.dp)
-                    .semantics { contentDescription = "Remove photo ${index + 1}" },
+                    .semantics { contentDescription = a11yLabel4 },
             ) {
                 Icon(Icons.Rounded.Close, contentDescription = null, modifier = Modifier.padding(5.dp))
             }
@@ -291,21 +299,22 @@ private fun FeedbackPhotoTiles(photos: List<PickedPhoto>, canAdd: Boolean, canRe
 internal fun FeedbackDiagnosticsRow(checked: Boolean, enabled: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
     Row(modifier = modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(
-            text = "Include device diagnostics",
+            text = stringResource(R.string.feedback_include_diagnostics),
             style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.weight(1f),
         )
+        val a11yLabel5 = stringResource(R.string.feedback_include_diagnostics)
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             enabled = enabled,
-            modifier = Modifier.semantics { contentDescription = "Include device diagnostics" },
+            modifier = Modifier.semantics { contentDescription = a11yLabel5 },
         )
     }
 }
 
 @Composable
-internal fun FeedbackSendButton(enabled: Boolean, sending: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, label: String = "Send feedback") {
+internal fun FeedbackSendButton(enabled: Boolean, sending: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, label: String = stringResource(R.string.feedback_send_feedback)) {
     Button(
         onClick = onClick,
         enabled = enabled && !sending,
@@ -320,7 +329,7 @@ internal fun FeedbackSendButton(enabled: Boolean, sending: Boolean, onClick: () 
             Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = null, modifier = Modifier.size(20.dp))
         }
         Spacer(Modifier.width(10.dp))
-        Text(if (sending) "Sending" else label, style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.semiBold)
+        Text(if (sending) stringResource(R.string.feedback_sending) else label, style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.semiBold)
     }
 }
 
@@ -328,7 +337,7 @@ internal fun FeedbackSendButton(enabled: Boolean, sending: Boolean, onClick: () 
 internal fun FeedbackPrivacyLink(onOpen: () -> Unit, modifier: Modifier = Modifier) {
     TextButton(onClick = onOpen, modifier = modifier.heightIn(min = 40.dp)) {
         Text(
-            text = "How we handle feedback",
+            text = stringResource(R.string.feedback_how_we_handle),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = GoogleSansWeight.semiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -352,13 +361,14 @@ internal fun FeedbackTypingBar(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (state.meta.photosEnabled) {
+            val a11yLabel6 = pluralStringResource(R.plurals.feedback_photos_attached_description, state.photos.size, state.photos.size)
             Surface(
                 onClick = onAddPhoto,
                 enabled = state.canAddPhotos,
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceContainer,
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Photos and screenshots, ${state.photos.size} attached" },
+                modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = a11yLabel6 },
             ) {
                 Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Rounded.Image, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -373,7 +383,7 @@ internal fun FeedbackTypingBar(
             selected = state.attachDiagnostics,
             onClick = onToggleDiagnostics,
             enabled = !state.isSubmitting,
-            label = { Text("Diagnostics", fontWeight = GoogleSansWeight.semiBold) },
+            label = { Text(stringResource(R.string.feedback_diagnostics), fontWeight = GoogleSansWeight.semiBold) },
             leadingIcon = if (state.attachDiagnostics) {
                 { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
             } else {
@@ -391,7 +401,7 @@ internal fun FeedbackTypingBar(
             ),
         )
         Spacer(Modifier.weight(1f))
-        FeedbackSendButton(enabled = state.canSend, sending = state.isSubmitting, onClick = onSend, label = "Send", modifier = Modifier.heightIn(min = 48.dp))
+        FeedbackSendButton(enabled = state.canSend, sending = state.isSubmitting, onClick = onSend, label = stringResource(R.string.feedback_send), modifier = Modifier.heightIn(min = 48.dp))
     }
 }
 

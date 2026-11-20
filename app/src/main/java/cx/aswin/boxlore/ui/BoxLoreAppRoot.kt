@@ -57,7 +57,6 @@ import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
-import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.skipBackward
 import cx.aswin.boxlore.core.playback.skipForward
@@ -248,6 +247,8 @@ fun BoxLoreAppRoot(
                 podcastRepository,
                 subscriptionRepository,
                 userPrefs,
+                // Asked only while onboarding is unfinished: a suggested translation opens with the language question.
+                appLanguageSuggestion = { application.container.appLanguage.onboardingSuggestion() },
             )
         }
 
@@ -310,15 +311,9 @@ fun BoxLoreAppRoot(
     }
 
     var loreQueueConflictEpisode by remember { mutableStateOf<Episode?>(null) }
+    val loreShowFallback = rememberLoreShowFallback()
     val queueLoreEpisode: (Episode) -> Unit = { episode ->
-        val podcast =
-            Podcast(
-                id = episode.podcastId ?: "unknown",
-                title = episode.podcastTitle ?: "Unknown Podcast",
-                artist = episode.podcastTitle ?: "Unknown",
-                imageUrl = episode.podcastImageUrl ?: episode.imageUrl ?: "",
-            )
-        queueManager.addToQueue(episode, podcast, PlaybackEntryPoint.LEARN)
+        queueManager.addToQueue(episode, loreQueuePodcast(episode, loreShowFallback), PlaybackEntryPoint.LEARN)
     }
 
     val isOnline by container.connectivityObserver.isOnlineFlow.collectAsStateWithLifecycle()

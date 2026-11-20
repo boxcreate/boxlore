@@ -7,7 +7,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
@@ -28,22 +30,22 @@ import cx.aswin.boxlore.feature.settings.components.ThemeLookPicture
 internal fun AppearanceThemePage(state: AppearanceUiState, actions: AppearanceActions, onBack: () -> Unit, onEditCustomTheme: () -> Unit) {
     TrackScreenView("appearance_theme")
     val selected = state.selectedLookKey()
-    SettingsScaffold(title = "Theme & colors", onBack = onBack) {
-        SettingsGroup(title = "Display mode") {
+    SettingsScaffold(title = stringResource(R.string.settings_page_theme), onBack = onBack) {
+        SettingsGroup(title = stringResource(R.string.settings_display_mode_title)) {
             SettingsContent { DisplayModeSelector(state, actions) }
         }
         ThemeLookTiles(state, actions, onEditCustomTheme)
         SettingsGroup {
             SettingsNavigationRow(
-                title = if (selected == CUSTOM_THEME_KEY) "Edit custom theme" else "Create custom theme",
-                supportingText = "Choose colors with a light and dark preview",
+                title = if (selected == CUSTOM_THEME_KEY) stringResource(R.string.settings_theme_edit_custom) else stringResource(R.string.settings_theme_create_custom),
+                supportingText = stringResource(R.string.settings_theme_custom_description),
                 icon = Icons.Rounded.Palette,
                 onClick = onEditCustomTheme,
             )
             SettingsDivider()
             SettingsSwitchRow(
-                title = "Use artwork colors",
-                supportingText = "Match episode and podcast pages to their artwork",
+                title = stringResource(R.string.settings_theme_artwork_colors),
+                supportingText = stringResource(R.string.settings_theme_artwork_colors_description),
                 checked = state.artworkColorsEnabled,
                 onCheckedChange = actions.onSetArtworkColorsEnabled,
                 icon = Icons.Rounded.AutoAwesome,
@@ -58,15 +60,15 @@ private fun ThemeLookTiles(state: AppearanceUiState, actions: AppearanceActions,
     val selected = state.selectedLookKey()
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
-    SettingsTileSection(title = "Colors") {
+    SettingsTileSection(title = stringResource(R.string.settings_theme_colors_title)) {
         SettingsPictureGrid(looks, columns = 2) { look, modifier ->
             val colors = remember(look.key, state.currentThemeBrand, state.currentSurfaceStyle, state.isDynamicColorEnabled, state.savedCustomTheme, configuration, selected) {
                 themePreviewColors(context, state, look, selected == look.key)
             }
             SettingsPictureTile(
-                label = look.name,
+                label = stringResource(look.name),
                 selected = selected == look.key,
-                description = look.description,
+                description = stringResource(look.description),
                 onClick = {
                     // Custom without a saved theme, or tapped again, opens the editor.
                     if (look.key == CUSTOM_THEME_KEY && (selected == CUSTOM_THEME_KEY || state.savedCustomTheme == null)) onEdit() else selectThemeLook(look, state, actions)

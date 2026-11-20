@@ -198,7 +198,7 @@ private fun coverContext(item: SmartHeroItem, strong: Color): AnnotatedString {
         return when (val context = remember(item.label, item.podcast.genre) { heroSpotlightContext(item.label, item.podcast.genre) }) {
             is HeroSpotlightContext.Rank -> {
                 val number = stringResource(R.string.home_hero_rank_number, context.number)
-                val market = stringResource(R.string.home_hero_rank_market, context.market)
+                val market = stringResource(R.string.home_hero_rank_market, heroMarketName(context.market))
                 buildAnnotatedString {
                     withStyle(strongStyle) { append(number) }
                     append(" ")
@@ -213,7 +213,7 @@ private fun coverContext(item: SmartHeroItem, strong: Color): AnnotatedString {
                     withStyle(strongStyle) { append(context.name) }
                 }
             }
-            is HeroSpotlightContext.General -> buildAnnotatedString { withStyle(strongStyle) { append(context.label) } }
+            is HeroSpotlightContext.General -> buildAnnotatedString { withStyle(strongStyle) { append(heroStateLabel(context.label)) } }
         }
     }
     val label = episodeContextLabel(item)

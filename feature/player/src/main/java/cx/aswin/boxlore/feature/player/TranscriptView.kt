@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isSpecified
@@ -107,7 +108,7 @@ fun TranscriptView(
                 )
             } else {
                 Text(
-                    text = "No transcript available",
+                    text = stringResource(R.string.player_no_transcript),
                     style = MaterialTheme.typography.bodyMedium,
                     color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
@@ -273,7 +274,7 @@ private fun TranscriptSyncButton(
                     modifier = Modifier.size(14.dp)
                 )
                 Text(
-                    text = "Sync Scroll",
+                    text = stringResource(R.string.player_transcript_sync_scroll),
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = GoogleSansWeight.bold),
                     color = colorScheme.onSecondaryContainer
                 )
@@ -329,13 +330,13 @@ fun FullscreenTranscriptScreen(
             IconButton(onClick = onClose) {
                 Icon(
                     imageVector = Icons.Rounded.Close,
-                    contentDescription = "Close",
+                    contentDescription = stringResource(R.string.player_close),
                     tint = colorScheme.onSurface
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Transcript",
+                text = stringResource(R.string.player_transcript),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = GoogleSansWeight.bold,
                 color = colorScheme.onSurface

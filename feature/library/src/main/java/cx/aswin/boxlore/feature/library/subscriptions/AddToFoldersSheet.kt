@@ -33,6 +33,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -41,9 +43,11 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
+import cx.aswin.boxlore.feature.library.R
 
 /** Folders to add [podcast] to and take it out of, from the Add to folders sheet's ticks. */
 internal data class FolderMembershipChange(val addTo: List<String>, val removeFrom: List<String>)
@@ -111,7 +115,7 @@ internal fun AddToFoldersSheet(
                         }
                         Spacer(modifier = Modifier.width(16.dp))
                         Text(
-                            text = "New folder with ${podcast.title}",
+                            text = stringResource(R.string.library_folder_new_with_show, podcast.title),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.primary,
                             maxLines = 1,
@@ -120,12 +124,12 @@ internal fun AddToFoldersSheet(
                     }
                 }
                 if (pickable.isNotEmpty()) {
-                    SheetSectionLabel(text = "Your folders")
+                    SheetSectionLabel(text = stringResource(R.string.library_your_folders))
                     pickable.forEach { folder ->
                         val isTicked = folder.id in ticked
                         FolderTickRow(
                             folder = folder,
-                            detail = showCountLabel(folder.podcastCount),
+                            detail = showCountLabel(folder.podcastCount).asString(),
                             checked = isTicked,
                             enabled = true,
                             onToggle = { ticked = if (isTicked) ticked - folder.id else ticked + folder.id },
@@ -139,20 +143,20 @@ internal fun AddToFoldersSheet(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         AutoFolderMark(size = 16.dp)
-                        Text(text = "Genre folders", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(text = stringResource(R.string.library_genre_folders), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     genreFolders.forEach { folder ->
                         val member = podcast.id in folder.podcastIds
                         FolderTickRow(
                             folder = folder,
-                            detail = if (member) "In it" else "Only ${folder.linkedGenre} shows",
+                            detail = if (member) stringResource(R.string.library_folder_member_in_it) else stringResource(R.string.library_folder_only_genre_shows, subscriptionGenreDisplayName(folder.linkedGenre.orEmpty())),
                             checked = member,
                             enabled = false,
                             onToggle = {},
                         )
                     }
                     Text(
-                        text = "To put ${podcast.title} in a genre folder, change its genre from its page.",
+                        text = stringResource(R.string.library_folder_genre_change_hint, podcast.title),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
@@ -163,7 +167,7 @@ internal fun AddToFoldersSheet(
                 onClick = { onDone(folderMembershipChange(podcast.id, folders, ticked.toSet())) },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 12.dp).heightIn(min = 52.dp),
             ) {
-                Text(text = "Done")
+                Text(text = stringResource(R.string.library_done))
             }
         }
     }
@@ -186,10 +190,10 @@ private fun SheetShowHeader(podcast: Podcast, folderCount: Int) {
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = when (folderCount) {
-                    0 -> "Not in a folder yet"
-                    1 -> "In 1 folder"
-                    else -> "In $folderCount folders"
+                text = if (folderCount == 0) {
+                    stringResource(R.string.library_folder_not_in_any)
+                } else {
+                    pluralStringResource(R.plurals.library_folder_in_count, folderCount, folderCount)
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

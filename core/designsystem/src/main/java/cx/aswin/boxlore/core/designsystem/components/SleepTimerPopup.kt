@@ -67,6 +67,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -76,12 +77,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.R
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.model.SleepTimerConstants
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 
-/** A single selectable duration option in the sleep timer popup. 999 means "End of episode". */
-data class SleepTimerOption(val label: String, val minutes: Int)
+/**
+ * A single selectable duration option in the sleep timer popup. 999 means "End of episode". Its
+ * label is written where it is shown, in the screen's language ([sleepTimerOptionLabel]).
+ */
+data class SleepTimerOption(val minutes: Int)
 
 enum class SleepTimerPopupDismissReason {
     Manual,
@@ -93,11 +99,11 @@ enum class SleepTimerPopupDismissReason {
 }
 
 val DefaultSleepTimerOptions = listOf(
-    SleepTimerOption("30m", 30),
-    SleepTimerOption("45m", 45),
-    SleepTimerOption("1h", 60),
-    SleepTimerOption("2h", 120),
-    SleepTimerOption("End of episode", SleepTimerConstants.END_OF_EPISODE_MINUTES)
+    SleepTimerOption(30),
+    SleepTimerOption(45),
+    SleepTimerOption(60),
+    SleepTimerOption(120),
+    SleepTimerOption(SleepTimerConstants.END_OF_EPISODE_MINUTES)
 )
 
 /**
@@ -369,7 +375,7 @@ private fun TimeBadge(minutes: Int, cookie: androidx.compose.ui.graphics.Shape, 
             is SleepTimerBadge.Time -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(badge.amount.toString(), color = colors.onTertiary, fontSize = 20.sp, lineHeight = 20.sp, style = MaterialTheme.typography.titleLarge)
                 Text(
-                    stringResource(if (badge.hours) R.string.sleep_prompt_unit_hours else R.string.sleep_prompt_unit_minutes),
+                    pluralStringResource(if (badge.hours) R.plurals.sleep_prompt_unit_hours else R.plurals.sleep_prompt_unit_minutes, badge.amount),
                     color = colors.onTertiary,
                     style = MaterialTheme.typography.labelSmall,
                 )
@@ -434,7 +440,7 @@ private fun SleepPromptChoices(
             ) {
                 Icon(Icons.Rounded.SkipNext, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(endOfEpisode.label, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(sleepTimerOptionLabel(endOfEpisode), style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
         if (onPlayOnWatch != null) {
@@ -500,7 +506,7 @@ private fun androidx.compose.foundation.layout.RowScope.TimeButton(
                 scaleY = p.scale
             },
     ) {
-        Text(option.label, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Clip)
+        Text(sleepTimerOptionLabel(option), style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Clip)
     }
 }
 
@@ -555,11 +561,18 @@ private fun Modifier.collapseBy(fraction: () -> Float): Modifier = layout { meas
 @Composable
 private fun pausingText(minutes: Int): String = when (val badge = sleepTimerBadge(minutes)) {
     SleepTimerBadge.EndOfEpisode -> stringResource(R.string.sleep_prompt_pausing_episode)
-    is SleepTimerBadge.Time -> stringResource(
-        if (badge.hours) R.string.sleep_prompt_pausing_hours else R.string.sleep_prompt_pausing_minutes,
-        badge.amount,
-    )
+    is SleepTimerBadge.Time -> stringResource(R.string.sleep_prompt_pausing_in, LocaleFormats.duration(minutes * SECONDS_PER_MINUTE, currentLocale()))
 }
+
+/** A time choice's label, "45m" or "1h" in English, or "End of episode". */
+@Composable
+private fun sleepTimerOptionLabel(option: SleepTimerOption): String = if (option.minutes == SleepTimerConstants.END_OF_EPISODE_MINUTES) {
+    stringResource(R.string.sleep_prompt_end_of_episode)
+} else {
+    LocaleFormats.duration(option.minutes * SECONDS_PER_MINUTE, currentLocale(), LocaleFormats.DurationWidth.NARROW)
+}
+
+private const val SECONDS_PER_MINUTE = 60L
 
 /** What the badge shows for a picked time: whole hours as hours, anything else as minutes, or the end of the episode. */
 internal sealed interface SleepTimerBadge {

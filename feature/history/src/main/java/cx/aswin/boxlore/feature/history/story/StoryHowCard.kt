@@ -103,10 +103,11 @@ private fun StoryFresh(newShare: Float, palette: StoryPalette, clock: StoryClock
     val olderPercent = 100 - newPercent
     val newLabel = stringResource(R.string.history_ins_fresh_new, newPercent)
     val olderLabel = stringResource(R.string.history_ins_fresh_older, olderPercent)
+    val pairLabel = stringResource(R.string.history_list_pair, newLabel, olderLabel)
     Column(Modifier.padding(top = 22.dp).storyRise(clock, StoryMotion.D4), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(stringResource(R.string.history_ins_fresh), style = StoryType.eyebrow(), color = ink.copy(alpha = 0.85f))
         Text(freshHeadline(newShare), style = StoryType.of(28f, 32f, GoogleSansWeight.semiBold), color = ink)
-        Row(Modifier.fillMaxWidth().height(16.dp).storyGrowX(clock, StoryMotion.D4).clearAndSetSemantics { contentDescription = "$newLabel, $olderLabel" }, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+        Row(Modifier.fillMaxWidth().height(16.dp).storyGrowX(clock, StoryMotion.D4).clearAndSetSemantics { contentDescription = pairLabel }, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
             if (newPercent > 0) Box(Modifier.weight(newShare.coerceAtLeast(0.01f)).fillMaxHeight().clip(RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp, topEnd = 3.dp, bottomEnd = 3.dp)).background(palette.vivid))
             if (olderPercent > 0) Box(Modifier.weight((1f - newShare).coerceAtLeast(0.01f)).fillMaxHeight().clip(RoundedCornerShape(topStart = 3.dp, bottomStart = 3.dp, topEnd = 8.dp, bottomEnd = 8.dp)).background(palette.shareBlob))
         }

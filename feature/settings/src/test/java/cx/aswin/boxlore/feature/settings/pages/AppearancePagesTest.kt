@@ -26,6 +26,7 @@ import cx.aswin.boxlore.core.prefs.HeroTideProgress
 import cx.aswin.boxlore.core.prefs.OpenAppTo
 import cx.aswin.boxlore.core.prefs.WidgetAppearance
 import cx.aswin.boxlore.core.prefs.WidgetShowsArtwork
+import cx.aswin.boxlore.feature.settings.text
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -114,7 +115,7 @@ class AppearancePagesTest {
         compose.onNodeWithText("Episode titles only").performClick()
         compose.onNode(isToggleable()).assertIsOff()
         assertEquals(listOf(true, false), set)
-        assertEquals("Full episode rows", showPagesSummary(state.value))
+        assertEquals("Full episode rows", showPagesSummary(state.value).text())
     }
 
     @Test
@@ -191,32 +192,32 @@ class AppearancePagesTest {
 
     @Test
     fun `summary names the duotone, halo and tide colours`() {
-        assertEquals("Duotone hero cards, black and white", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.DUOTONE, heroCoverShade = HeroCoverShade.DARK)).home)
-        assertEquals("Duotone hero cards, artwork tones", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.DUOTONE)).home)
-        assertEquals("Halo hero cards, artwork color", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.HALO)).home)
-        assertEquals("Halo hero cards, dark cards", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.HALO, heroCoverShade = HeroCoverShade.DARK)).home)
-        assertEquals("Tide hero cards, app theme color", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.TIDE, heroCoverShade = HeroCoverShade.THEME)).home)
-        assertEquals("Marquee hero cards, full color", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.MARQUEE, heroCoverShade = HeroCoverShade.DARK)).home)
+        assertEquals("Duotone hero cards, black and white", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.DUOTONE, heroCoverShade = HeroCoverShade.DARK)).home.text())
+        assertEquals("Duotone hero cards, artwork tones", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.DUOTONE)).home.text())
+        assertEquals("Halo hero cards, artwork color", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.HALO)).home.text())
+        assertEquals("Halo hero cards, dark cards", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.HALO, heroCoverShade = HeroCoverShade.DARK)).home.text())
+        assertEquals("Tide hero cards, app theme color", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.TIDE, heroCoverShade = HeroCoverShade.THEME)).home.text())
+        assertEquals("Marquee hero cards, full color", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.MARQUEE, heroCoverShade = HeroCoverShade.DARK)).home.text())
     }
 
     @Test
     fun `summary names the look, letters and player choices`() {
         val summary = appearanceSummary(baseState.copy(artworkColorsEnabled = false, fullPlayerStyle = FullPlayerStyle.BUNPOD, miniPlayerSeekButtonsEnabled = true, currentFontRoundness = "crisp"))
-        assertEquals("boxlore classic", summary.theme)
-        assertEquals("Block hero cards, app theme color", summary.home)
-        assertEquals("Block hero cards, dark cards", appearanceSummary(baseState.copy(heroCoverShade = HeroCoverShade.DARK)).home)
-        assertEquals("Block hero cards, artwork color", appearanceSummary(baseState.copy(heroCoverShade = HeroCoverShade.ARTWORK)).home)
-        assertEquals("bunpod · seek buttons on", summary.player)
-        assertEquals("Crisp letters", summary.text)
-        assertEquals("App theme colors · whole covers", summary.widgets)
+        assertEquals("boxlore classic", summary.theme.text())
+        assertEquals("Block hero cards, app theme color", summary.home.text())
+        assertEquals("Block hero cards, dark cards", appearanceSummary(baseState.copy(heroCoverShade = HeroCoverShade.DARK)).home.text())
+        assertEquals("Block hero cards, artwork color", appearanceSummary(baseState.copy(heroCoverShade = HeroCoverShade.ARTWORK)).home.text())
+        assertEquals("bunpod · seek buttons on", summary.player.text())
+        assertEquals("Crisp letters", summary.text.text())
+        assertEquals("App theme colors · whole covers", summary.widgets.text())
         assertEquals(
             "System colors · shapes",
-            appearanceSummary(baseState.copy(currentWidgetAppearance = WidgetAppearance.SYSTEM, currentWidgetShowsArtwork = WidgetShowsArtwork.SHAPES)).widgets,
+            appearanceSummary(baseState.copy(currentWidgetAppearance = WidgetAppearance.SYSTEM, currentWidgetShowsArtwork = WidgetShowsArtwork.SHAPES)).widgets.text(),
         )
-        assertEquals("boxlore classic · artwork colors on", appearanceSummary(baseState).theme)
+        assertEquals("boxlore classic · artwork colors on", appearanceSummary(baseState).theme.text())
         // Listeners who never picked see Cover on the Artwork shade.
         val unpicked = AppearanceUiState(currentThemeConfig = "system", isDynamicColorEnabled = false, currentThemeBrand = "violet", currentSurfaceStyle = "classic_dynamic")
-        assertEquals("Cover hero cards, artwork shade", appearanceSummary(unpicked).home)
+        assertEquals("Cover hero cards, artwork shade", appearanceSummary(unpicked).home.text())
     }
 
     @Test

@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.info
 
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.text.UiText
 
 /** What Add to queue did with a selection ([addSelectionToQueue]). */
 internal data class QueueSelectionOutcome(
@@ -32,12 +33,12 @@ internal suspend fun addSelectionToQueue(
 }
 
 /** The show page's message after Add to queue, or null when everything fit. */
-internal fun queueSelectionMessage(outcome: QueueSelectionOutcome): String? = when {
+internal fun queueSelectionMessage(outcome: QueueSelectionOutcome): UiText? = when {
     outcome.didNotFit == 0 -> null
-    outcome.added == 0 -> "Your queue is full. Remove an episode to add more."
-    else -> {
-        val added = if (outcome.added == 1) "1 episode" else "${outcome.added} episodes"
-        val left = if (outcome.didNotFit == 1) "1 wasn’t added" else "${outcome.didNotFit} weren’t added"
-        "Added $added. Your queue is full, so $left."
-    }
+    outcome.added == 0 -> UiText.res(R.string.podcast_info_queue_full)
+    else -> UiText.res(
+        R.string.podcast_info_queue_partly_added,
+        UiText.plural(R.plurals.podcast_info_queue_added, outcome.added, outcome.added),
+        UiText.plural(R.plurals.podcast_info_queue_not_added, outcome.didNotFit, outcome.didNotFit),
+    )
 }

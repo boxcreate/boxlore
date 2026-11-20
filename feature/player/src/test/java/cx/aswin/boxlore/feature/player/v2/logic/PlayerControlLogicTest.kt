@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.player.v2.logic
 
+import cx.aswin.boxlore.feature.player.R
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -47,10 +48,10 @@ class PlayerControlLogicTest {
 
     @Test
     fun downloadLabelsPrioritizeActiveDownload() {
-        assertEquals("Download", downloadLabel(isDownloaded = false, isDownloading = false))
-        assertEquals("Saved", downloadLabel(isDownloaded = true, isDownloading = false))
-        assertEquals("Saving", downloadLabel(isDownloaded = false, isDownloading = true))
-        assertEquals("Saving", downloadLabel(isDownloaded = true, isDownloading = true))
+        assertEquals(R.string.player_download, downloadLabel(isDownloaded = false, isDownloading = false))
+        assertEquals(R.string.player_downloaded, downloadLabel(isDownloaded = true, isDownloading = false))
+        assertEquals(R.string.player_downloading, downloadLabel(isDownloaded = false, isDownloading = true))
+        assertEquals(R.string.player_downloading, downloadLabel(isDownloaded = true, isDownloading = true))
     }
 
     @Test

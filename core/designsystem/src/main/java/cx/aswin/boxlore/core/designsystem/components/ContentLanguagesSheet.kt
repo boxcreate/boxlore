@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.designsystem.components
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -26,15 +27,21 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.R
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.ContentLanguageSelection
 import cx.aswin.boxlore.core.model.ContentRegions
+import cx.aswin.boxlore.core.model.text.UiText
+import java.util.Locale
 
 /** Labels of the languages that can stand without English, in the order the sheet names them. */
 private val ENGLISH_OFF_LABELS = listOf("de", "fr", "es", "nl", "pt", "ru").filter { it in ContentRegions.ENGLISH_OFF_LANGUAGES }
@@ -61,6 +68,7 @@ fun ContentLanguagesSheet(
     val remainingSlots = (ContentRegions.MAX_LANGUAGES - effective.size).coerceAtLeast(0)
     val groups = ContentRegions.languageGroupsForCountry(resolvedCountry)
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val locale = currentLocale()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -79,14 +87,14 @@ fun ContentLanguagesSheet(
         ) {
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
-                    text = "Languages",
+                    text = stringResource(R.string.content_languages_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = GoogleSansWeight.bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f).semantics { heading() },
                 )
                 Text(
-                    text = "${effective.size} of ${ContentRegions.MAX_LANGUAGES} picked",
+                    text = stringResource(R.string.content_languages_picked, effective.size, ContentRegions.MAX_LANGUAGES),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -95,6 +103,7 @@ fun ContentLanguagesSheet(
             IncludeEnglishRow(
                 state = english,
                 picks = effective.filter { it != "en" },
+                locale = locale,
                 onEnglishOffChange = onEnglishOffChange,
             )
 
@@ -108,30 +117,37 @@ fun ContentLanguagesSheet(
             }
             if (suggested.isNotEmpty()) {
                 LanguageChips(
-                    title = "Suggested for ${ContentRegions.displayLabel(resolvedCountry)}",
+                    title = stringResource(R.string.content_languages_suggested_for, contentRegionName(resolvedCountry, locale)),
                     codes = suggested,
                     selected = effective,
                     remainingSlots = remainingSlots,
+                    locale = locale,
                     onToggle = onToggle,
                 )
             }
             LanguageChips(
-                title = if (suggested.isEmpty()) "Languages" else "Other languages",
+                title = stringResource(if (suggested.isEmpty()) R.string.content_languages_title else R.string.content_languages_other),
                 codes = others,
                 selected = effective,
                 remainingSlots = remainingSlots,
+                locale = locale,
                 onToggle = onToggle,
             )
 
             Button(onClick = onDismiss, modifier = Modifier.align(Alignment.End).heightIn(min = 48.dp)) {
-                Text("Done")
+                Text(stringResource(R.string.content_languages_done))
             }
         }
     }
 }
 
 @Composable
-private fun IncludeEnglishRow(state: ContentLanguageSelection.EnglishSwitch, picks: List<String>, onEnglishOffChange: (Boolean) -> Unit,) {
+private fun IncludeEnglishRow(
+    state: ContentLanguageSelection.EnglishSwitch,
+    picks: List<String>,
+    locale: Locale,
+    onEnglishOffChange: (Boolean) -> Unit,
+) {
     Surface(
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -152,9 +168,9 @@ private fun IncludeEnglishRow(state: ContentLanguageSelection.EnglishSwitch, pic
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(text = "Include English", style = MaterialTheme.typography.bodyLarge)
+                Text(text = stringResource(R.string.content_languages_include_english), style = MaterialTheme.typography.bodyLarge)
                 Text(
-                    text = includeEnglishSupportingText(state, picks),
+                    text = includeEnglishSupportingText(state, picks) { contentLanguageName(it, locale) }.asString(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -164,37 +180,41 @@ private fun IncludeEnglishRow(state: ContentLanguageSelection.EnglishSwitch, pic
     }
 }
 
-/** What the "Include English" row says for [state], with [picks] the languages in effect besides English. */
-internal fun includeEnglishSupportingText(state: ContentLanguageSelection.EnglishSwitch, picks: List<String>): String {
-    val deep = joinLabels(ENGLISH_OFF_LABELS, conjunction = "or")
+/**
+ * What the "Include English" row says for [state], with [picks] the languages in effect besides
+ * English and [name] a language's name as it reads inside a sentence.
+ */
+internal fun includeEnglishSupportingText(state: ContentLanguageSelection.EnglishSwitch, picks: List<String>, name: (String) -> String,): UiText {
+    val deep = joinNames(ENGLISH_OFF_LABELS.map(name), R.string.list_end_or)
     return when {
         // English off: the pool is far smaller, so say what that costs before how it is softened.
-        !state.checked && picks.size == 1 ->
-            "There are far fewer ${label(picks.single())} shows, so recommendations won’t match your taste as closely. " +
-                "If there aren’t enough, boxlore adds a few in English."
-        !state.checked ->
-            "There are far fewer shows in your languages, so recommendations won’t match your taste as closely. " +
-                "If there aren’t enough, boxlore adds a few in English."
-        state.enabled -> "Turn it off to get only shows in ${joinLabels(picks, conjunction = "and")}."
-        state.keptOnBy.isNotEmpty() -> "Stays on with ${joinLabels(state.keptOnBy, conjunction = "and")}. You can turn it off when you pick only $deep."
-        else -> "You can turn it off when you pick only $deep."
+        !state.checked && picks.size == 1 -> UiText.res(R.string.content_languages_english_off_one, name(picks.single()))
+        !state.checked -> UiText.res(R.string.content_languages_english_off_many)
+        state.enabled -> UiText.res(R.string.content_languages_english_can_turn_off, joinNames(picks.map(name), R.string.list_end_and))
+        state.keptOnBy.isNotEmpty() ->
+            UiText.res(R.string.content_languages_english_kept_on, joinNames(state.keptOnBy.map(name), R.string.list_end_and), deep)
+        else -> UiText.res(R.string.content_languages_english_only, deep)
     }
 }
 
-private fun label(code: String): String = ContentRegions.LANGUAGE_LABELS[code] ?: code
-
-private fun joinLabels(codes: List<String>, conjunction: String): String {
-    val labels = codes.map(::label)
-    return when (labels.size) {
-        0 -> ""
-        1 -> labels.single()
-        else -> labels.dropLast(1).joinToString(", ") + " $conjunction " + labels.last()
-    }
+/** [names] as one list, built from the end: "A, B and C" is list_middle(A, [end](B, C)). */
+internal fun joinNames(names: List<String>, @StringRes end: Int): UiText = when (names.size) {
+    0 -> UiText.raw("")
+    1 -> UiText.raw(names.single())
+    2 -> UiText.res(end, names[0], names[1])
+    else -> UiText.res(R.string.list_middle, names.first(), joinNames(names.drop(1), end))
 }
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-private fun LanguageChips(title: String, codes: List<String>, selected: List<String>, remainingSlots: Int, onToggle: (String) -> Unit,) {
+private fun LanguageChips(
+    title: String,
+    codes: List<String>,
+    selected: List<String>,
+    remainingSlots: Int,
+    locale: Locale,
+    onToggle: (String) -> Unit,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = title,
@@ -209,7 +229,7 @@ private fun LanguageChips(title: String, codes: List<String>, selected: List<Str
                     selected = isSelected,
                     onClick = { onToggle(code) },
                     enabled = isSelected || remainingSlots > 0,
-                    label = { Text(label(code)) },
+                    label = { Text(capitalizedIn(contentLanguageName(code, locale), locale)) },
                     leadingIcon =
                     if (isSelected) {
                         { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }

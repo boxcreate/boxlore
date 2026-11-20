@@ -291,7 +291,8 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
         newHistoryList.add(
             OnboardingHistoryEntry(
                 role = "user",
-                parts = listOf(OnboardingPart(text = "Recommend some top topics like True Crime or Tech")),
+                // A request to the server, never shown: the server reads English.
+                parts = listOf(OnboardingPart(text = "Recommend some top topics like True Crime or Tech")), // i18n-ignore
             ),
         )
     }
@@ -476,7 +477,7 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
 
                     val fallbackRow =
                         OnboardingCurriculumRowDto(
-                            rowTitle = "Trending Hits",
+                            rowTitle = OnboardingSuggestionsLanes.FALLBACK_TRENDING_TITLE,
                             podcasts = dummyPodcastDtos,
                             episodes = emptyList(),
                         )

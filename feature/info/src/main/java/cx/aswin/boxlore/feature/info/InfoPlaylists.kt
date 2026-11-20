@@ -10,6 +10,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.catalog.PlaylistRepository
@@ -18,6 +19,8 @@ import cx.aswin.boxlore.core.designsystem.components.AddToPlaylistSheet
 import cx.aswin.boxlore.core.designsystem.components.AddToPlaylistSheetState
 import cx.aswin.boxlore.core.model.Playlist
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.core.model.text.resolve
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
@@ -43,7 +46,7 @@ class InfoPlaylists internal constructor(
     fun memberIds(podcastId: String): Flow<Set<String>> = flow { emitAll(repository.playlistIdsForShow(followId(podcastId))) }
 
     /** Adds show [shownId] to [playlist], or removes it when [isMember]. */
-    fun toggle(playlist: Playlist, shownId: String, isMember: Boolean, onMessage: (String) -> Unit) {
+    fun toggle(playlist: Playlist, shownId: String, isMember: Boolean, onMessage: (UiText) -> Unit) {
         scope.launch {
             val podcastId = followId(shownId)
             if (isMember) {
@@ -59,7 +62,7 @@ class InfoPlaylists internal constructor(
     }
 
     /** Makes a playlist named [name] holding show [shownId]. */
-    fun create(name: String, shownId: String, onMessage: (String) -> Unit) {
+    fun create(name: String, shownId: String, onMessage: (UiText) -> Unit) {
         scope.launch {
             val created = repository.createPlaylist(name, listOf(followId(shownId)))
             AnalyticsHelper.trackPlaylistModified("create", SOURCE_SHOW_PAGE, playlistSize = created.showCount)
@@ -117,10 +120,11 @@ internal fun InfoPlaylistPickerHost(picker: InfoPlaylistPicker, playlists: InfoP
     if (!picker.open || playlists == null || show == null) return
     val all by playlists.playlists.collectAsStateWithLifecycle(initialValue = emptyList())
     val members by remember(playlists, show.id) { playlists.memberIds(show.id) }.collectAsStateWithLifecycle(initialValue = emptySet())
-    val showMessage: (String) -> Unit = { message ->
+    val context = LocalContext.current
+    val showMessage: (UiText) -> Unit = { message ->
         scope.launch {
             snackbarHostState.currentSnackbarData?.dismiss()
-            snackbarHostState.showSnackbar(message)
+            snackbarHostState.showSnackbar(message.resolve(context))
         }
     }
     AddToPlaylistSheet(

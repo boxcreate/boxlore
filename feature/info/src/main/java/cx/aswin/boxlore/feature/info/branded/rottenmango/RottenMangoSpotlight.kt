@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.feature.info.R
@@ -46,7 +47,6 @@ import cx.aswin.boxlore.feature.info.branded.boxShadow
 import cx.aswin.boxlore.feature.info.branded.brandedLength
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
 import cx.aswin.boxlore.feature.info.components.formatEpisodeRelativeDate
-import java.util.Locale
 
 private val FrameShape = RoundedCornerShape(2.dp)
 
@@ -125,8 +125,8 @@ internal fun RottenMangoSpotlight(spotlight: BrandedSpotlight, modifier: Modifie
 /** "LATEST EPISODE · 2D AGO · 48 MIN" typed small, the first words in dull red. */
 @Composable
 private fun LatestLine(spotlight: BrandedSpotlight, typewriter: FontFamily) {
-    val latest = stringResource(R.string.branded_latest_episode).uppercase(Locale.getDefault())
-    val details = latestDetails(spotlight).uppercase(Locale.getDefault())
+    val latest = stringResource(R.string.branded_latest_episode).uppercase(currentLocale())
+    val details = latestDetails(spotlight).uppercase(currentLocale())
     Text(
         buildAnnotatedString {
             withStyle(SpanStyle(color = RottenMangoColors.FrameRed)) { append(latest) }
@@ -143,8 +143,8 @@ private fun LatestLine(spotlight: BrandedSpotlight, typewriter: FontFamily) {
 @Composable
 private fun latestDetails(spotlight: BrandedSpotlight): String {
     val episode = spotlight.episode
-    val length = if (spotlight.isCompleted) stringResource(R.string.episode_info_played) else brandedLength(episode.duration)
-    return listOf(formatEpisodeRelativeDate(episode.publishedDate), length).filter(String::isNotBlank).joinToString(" · ")
+    val length = if (spotlight.isCompleted) stringResource(R.string.episode_info_played) else brandedLength(episode.duration, currentLocale())
+    return listOf(formatEpisodeRelativeDate(episode.publishedDate, currentLocale()), length).filter(String::isNotBlank).joinToString(" · ")
 }
 
 /** "No. 556" between two rivets on the brass plate, or "Bonus" for the few episodes the feed leaves unnumbered. */

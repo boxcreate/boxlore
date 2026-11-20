@@ -96,6 +96,7 @@ class LatestEpisodesDisplayLogicTest {
             groupLatestByDateHeader(
                 podcasts = listOf(podcast("a", System.currentTimeMillis() / 1000L)),
                 useSmartRank = true,
+                locale = java.util.Locale.US,
             )
         assertTrue(grouped.isEmpty())
     }
@@ -107,6 +108,7 @@ class LatestEpisodesDisplayLogicTest {
             groupLatestByDateHeader(
                 podcasts = listOf(podcast("a", todaySeconds), podcast("b", todaySeconds)),
                 useSmartRank = false,
+                locale = java.util.Locale.US,
             )
         assertEquals(1, grouped.size)
         assertEquals(listOf("a", "b"), grouped.values.single().map { it.id })

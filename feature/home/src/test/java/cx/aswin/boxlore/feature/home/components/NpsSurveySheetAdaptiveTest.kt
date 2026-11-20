@@ -23,6 +23,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.dp
+import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.echo.LocalEchoMotion
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFold
@@ -69,7 +70,7 @@ class NpsSurveySheetAdaptiveTest {
     private lateinit var restore: () -> Unit
     private var scheduledDisplays = 0
     private val controller = NpsSurveyController(onScheduledDisplay = { scheduledDisplays++ }, onScored = {})
-    private val copy = NpsSurveyCopy()
+    private val copy = NpsSurveyCopy(strings = ApplicationProvider.getApplicationContext<Application>()::getString)
 
     private val fold = BoxloreFold(BoxloreFoldState.HalfOpened, BoxloreFoldOrientation.Horizontal, BoxloreLayoutBounds(0f, 410f, 673f, 431f), true, true)
 

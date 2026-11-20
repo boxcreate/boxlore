@@ -21,9 +21,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import cx.aswin.boxlore.core.designsystem.R
 import cx.aswin.boxlore.core.designsystem.components.BoxloreDialog as Dialog
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -116,13 +118,13 @@ private fun PrivacyHeader() {
         }
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Data & Privacy",
+            text = stringResource(R.string.privacy_consent_title),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = GoogleSansWeight.bold,
             textAlign = TextAlign.Center
         )
         Text(
-            text = "Customize your data sharing settings",
+            text = stringResource(R.string.privacy_consent_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -137,13 +139,13 @@ private fun PrivacyInfo() {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Why we collect data",
+            text = stringResource(R.string.privacy_consent_why_title),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "The data shared helps us improve the product by understanding user behaviour. No user-specific targeted personalization will be done, and no data collected will ever be user-identifiable.",
+            text = stringResource(R.string.privacy_consent_why_body),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -170,7 +172,7 @@ private fun DataCollectedExpander() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "View Data Collected",
+                text = stringResource(R.string.privacy_consent_view_data),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = GoogleSansWeight.semiBold
             )
@@ -189,9 +191,9 @@ private fun DataCollectedExpander() {
             Column(modifier = Modifier.padding(top = 12.dp)) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                 Spacer(modifier = Modifier.height(12.dp))
-                DataPoint("Crash Reports", "Stack traces, device state, and crash logs to identify stability issues.")
+                DataPoint(stringResource(R.string.privacy_consent_data_crash_title), stringResource(R.string.privacy_consent_data_crash_body))
                 Spacer(modifier = Modifier.height(8.dp))
-                DataPoint("Usage Statistics", "Events such as play, subscribe, search, screen views, and playback state.")
+                DataPoint(stringResource(R.string.privacy_consent_data_usage_title), stringResource(R.string.privacy_consent_data_usage_body))
             }
         }
     }
@@ -238,12 +240,12 @@ private fun ConsentOptions(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = "Agree to All",
+                        text = stringResource(R.string.privacy_consent_agree_all),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = GoogleSansWeight.bold
                     )
                     Text(
-                        text = "Enables Crash Reporting, Usage Analytics, and accepts Privacy Policy.",
+                        text = stringResource(R.string.privacy_consent_agree_all_body),
                         style = MaterialTheme.typography.bodySmall,
                         color = if (allChecked) {
                             MaterialTheme.colorScheme.onPrimaryContainer.copy(
@@ -258,19 +260,19 @@ private fun ConsentOptions(
         }
 
         Spacer(modifier = Modifier.height(4.dp))
-        Text("Individual Settings", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.privacy_consent_individual), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         // Individual Cards
         ToggleCard(
-            title = "Crash Reports (Optional)",
-            description = "Share stack traces when the app crashes so we can fix bugs.",
+            title = stringResource(R.string.privacy_consent_crash_toggle),
+            description = stringResource(R.string.privacy_consent_crash_toggle_body),
             checked = crashReporting,
             onCheckedChange = onCrashChange
         )
 
         ToggleCard(
-            title = "Usage Statistics (Optional)",
-            description = "Share anonymous interaction data to help us identify popular features.",
+            title = stringResource(R.string.privacy_consent_usage_toggle),
+            description = stringResource(R.string.privacy_consent_usage_toggle_body),
             checked = usageAnalytics,
             onCheckedChange = onUsageChange
         )
@@ -296,17 +298,17 @@ private fun ConsentOptions(
                 val uriHandler = LocalUriHandler.current
                 Column {
                     Text(
-                        text = "Privacy Policy",
+                        text = stringResource(R.string.privacy_consent_policy),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = GoogleSansWeight.medium
                     )
                     Text(
-                        text = "I have read and agree to the Privacy Policy",
+                        text = stringResource(R.string.privacy_consent_policy_agree),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Read Policy",
+                        text = stringResource(R.string.privacy_consent_read_policy),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(top = 4.dp).clickable {
@@ -362,7 +364,7 @@ private fun ConsentActions(isEnabled: Boolean, onAccept: () -> Unit) {
                 contentColor = MaterialTheme.colorScheme.onPrimary
             )
         ) {
-            Text("Accept & Continue")
+            Text(stringResource(R.string.privacy_consent_accept))
         }
     }
 }

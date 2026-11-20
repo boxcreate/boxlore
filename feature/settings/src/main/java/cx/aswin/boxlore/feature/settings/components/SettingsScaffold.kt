@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
@@ -46,6 +47,7 @@ import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
 import cx.aswin.boxlore.feature.settings.LocalSettingsPaneBackVisible
 import cx.aswin.boxlore.feature.settings.LocalSettingsSplitPane
+import cx.aswin.boxlore.feature.settings.R
 
 private val SETTINGS_CONTENT_BOTTOM_PADDING = 220.dp
 
@@ -143,7 +145,7 @@ private fun SettingsScaffoldFrame(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.settings_back),
                         )
                     }
                 },
@@ -181,5 +183,5 @@ private fun SettingsScaffoldFrame(
 
 @Composable
 private fun SettingsBackButton(onBack: () -> Unit) {
-    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back") }
+    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.settings_back)) }
 }

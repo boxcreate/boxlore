@@ -136,6 +136,16 @@ class SubscriptionFolderTest {
         pinnedSizes.forEach { size ->
             assertTrue(size.isPinnedToTop, "Expected ${size.name} to be pinned to top")
             assertEquals("Pinned to the top of the page", size.placementLabel)
+            assertEquals(R.string.model_folder_size_placement_top, size.placementLabelRes)
         }
+        assertEquals(R.string.model_folder_size_placement_anywhere, FolderDisplaySize.COMPACT.placementLabelRes)
+    }
+
+    @Test
+    fun `every size has its own listener text`() {
+        val titles = FolderDisplaySize.entries.map { it.titleRes }
+        val subtitles = FolderDisplaySize.entries.map { it.subtitleRes }
+        assertEquals(titles.size, titles.toSet().size)
+        assertEquals(subtitles.size, subtitles.toSet().size)
     }
 }

@@ -169,11 +169,13 @@ class StoragePolicyTest {
 
     @Test
     fun `sizes read as megabytes, then gigabytes`() {
-        assertEquals("0 MB", WatchFormat.megabytes(0, Locale.UK))
-        assertEquals("30 MB", WatchFormat.megabytes(30 * mb + 200_000, Locale.UK))
-        assertEquals("500 MB", WatchFormat.megabytes(500 * mb, Locale.UK))
-        assertEquals("1 GB", WatchFormat.megabytes(1000 * mb, Locale.UK))
-        assertEquals("2 GB", WatchFormat.megabytes(2000 * mb, Locale.UK))
-        assertEquals("1.5 GB", WatchFormat.megabytes(1500 * mb, Locale.UK))
+        assertEquals(WatchFormat.Size("0", inGigabytes = false), WatchFormat.size(0, Locale.UK))
+        assertEquals(WatchFormat.Size("30", inGigabytes = false), WatchFormat.size(30 * mb + 200_000, Locale.UK))
+        assertEquals(WatchFormat.Size("500", inGigabytes = false), WatchFormat.size(500 * mb, Locale.UK))
+        assertEquals(WatchFormat.Size("1", inGigabytes = true), WatchFormat.size(1000 * mb, Locale.UK))
+        assertEquals(WatchFormat.Size("2", inGigabytes = true), WatchFormat.size(2000 * mb, Locale.UK))
+        assertEquals(WatchFormat.Size("1.5", inGigabytes = true), WatchFormat.size(1500 * mb, Locale.UK))
+        // The decimal mark follows the language.
+        assertEquals(WatchFormat.Size("1,5", inGigabytes = true), WatchFormat.size(1500 * mb, Locale.GERMANY))
     }
 }

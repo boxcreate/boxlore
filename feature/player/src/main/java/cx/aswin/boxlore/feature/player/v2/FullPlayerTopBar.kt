@@ -30,11 +30,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.LocalWatchPlayOffer
 import cx.aswin.boxlore.core.designsystem.components.PlayingOnPill
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.player.R
 import kotlinx.coroutines.delay
 
 internal data class PlayerTopBarActions(
@@ -89,7 +91,7 @@ internal fun PlayerTopBar(
             modifier =
             Modifier
                 .weight(1f)
-                .clickable(onClickLabel = "Collapse player", onClick = actions.onCollapse),
+                .clickable(onClickLabel = stringResource(R.string.player_collapse), onClick = actions.onCollapse),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             AnimatedContent(
@@ -103,7 +105,7 @@ internal fun PlayerTopBar(
                     PlayingOnPill(offer = watchOffer, colorScheme = colorScheme)
                 } else {
                     Text(
-                        text = if (isShowingTip) "Swipe down to minimize" else "Now playing",
+                        text = stringResource(if (isShowingTip) R.string.player_swipe_down_tip else R.string.player_now_playing),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = GoogleSansWeight.semiBold,
                         color = if (isShowingTip) colorScheme.primary.copy(alpha = 0.8f) else colorScheme.onSurface.copy(alpha = 0.7f),
@@ -115,7 +117,7 @@ internal fun PlayerTopBar(
             if (watchOffer == null) {
                 Icon(
                     imageVector = Icons.Rounded.KeyboardArrowDown,
-                    contentDescription = "Collapse player",
+                    contentDescription = stringResource(R.string.player_collapse),
                     tint = colorScheme.onSurface.copy(alpha = 0.7f),
                     modifier = Modifier.size(20.dp),
                 )
@@ -133,7 +135,7 @@ internal fun PlayerTopBar(
         ) {
             Icon(
                 imageVector = Icons.Rounded.Share,
-                contentDescription = "Share",
+                contentDescription = stringResource(R.string.player_share),
                 tint = colorScheme.onSurface,
                 modifier = Modifier.size(20.dp),
             )

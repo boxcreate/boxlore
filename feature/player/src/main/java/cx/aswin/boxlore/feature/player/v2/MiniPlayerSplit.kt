@@ -31,13 +31,17 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkMiniPlayerColors
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.model.text.LocaleFormats
+import cx.aswin.boxlore.feature.player.R
 
 /** The Play end of the split bar. */
 internal val MiniPlaySegmentWidth = 72.dp
@@ -51,11 +55,18 @@ internal val MiniSegmentInnerCorner = 8.dp
 /** The bar shows as two joined segments at rest and merges into one surface as it starts to shrink. */
 internal fun miniSplitAmount(compactFraction: Float): Float = (1f - compactFraction / 0.35f).coerceIn(0f, 1f)
 
-/** "1h 5m left" or "23m left"; null without a known duration. */
-internal fun miniPlayerTimeLeft(positionMs: Long, durationMs: Long): String? {
+/** Whole minutes left, rounded up and at least 1; null without a known duration. */
+internal fun miniPlayerMinutesLeft(positionMs: Long, durationMs: Long): Long? {
     if (durationMs <= 0L) return null
-    val remainingMinutes = ((durationMs - positionMs.coerceIn(0L, durationMs) + 59_999L) / 60_000L).coerceAtLeast(1L)
-    return if (remainingMinutes >= 60) "${remainingMinutes / 60}h ${remainingMinutes % 60}m left" else "${remainingMinutes}m left"
+    return ((durationMs - positionMs.coerceIn(0L, durationMs) + 59_999L) / 60_000L).coerceAtLeast(1L)
+}
+
+/** "1h 5m left" or "23m left" in the screen's language; null without a known duration. */
+@Composable
+internal fun miniPlayerTimeLeft(positionMs: Long, durationMs: Long): String? {
+    val minutes = miniPlayerMinutesLeft(positionMs, durationMs) ?: return null
+    val duration = LocaleFormats.duration(minutes * 60L, currentLocale(), LocaleFormats.DurationWidth.NARROW)
+    return stringResource(R.string.player_mini_time_left, duration)
 }
 
 /**
@@ -164,7 +175,7 @@ internal fun MiniPlaySegment(
                 Crossfade(targetState = isPlaying, animationSpec = tween(180), label = "miniPlayPause") { playing ->
                     Icon(
                         if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                        contentDescription = if (playing) "Pause" else "Play",
+                        contentDescription = stringResource(if (playing) R.string.minimal_pause else R.string.minimal_play),
                         tint = colors.onPlay,
                         modifier = Modifier.size(28.dp),
                     )

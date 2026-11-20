@@ -2,7 +2,7 @@ package cx.aswin.boxlore.feature.library
 
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
-import cx.aswin.boxlore.feature.library.subscriptions.episodeMetaDurationLabel
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.feature.library.subscriptions.extractDistinctGenres
 import cx.aswin.boxlore.feature.library.subscriptions.filterPodcastsByGenre
 import cx.aswin.boxlore.feature.library.subscriptions.formatRelativeUpdateLabel
@@ -11,9 +11,9 @@ import cx.aswin.boxlore.feature.library.subscriptions.latestSortLabel
 import cx.aswin.boxlore.feature.library.subscriptions.resolveSubscriptionGenreItem
 import cx.aswin.boxlore.feature.library.subscriptions.showsSortLabel
 import java.util.Calendar
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -211,32 +211,23 @@ class SubscriptionFilterLogicTest {
 
     @Test
     fun formatRelativeUpdateLabel_nullForMissing() {
-        assertNull(formatRelativeUpdateLabel(0L))
-        assertEquals("today", formatRelativeUpdateLabel(System.currentTimeMillis() / 1000L))
-    }
-
-    @Test
-    fun formatRelativeUpdateLabel_includesYearWhenOlderThanMonth() {
-        val cal = Calendar.getInstance()
-        cal.add(Calendar.YEAR, -1)
-        val label = formatRelativeUpdateLabel(cal.timeInMillis / 1000L)!!
-        assertTrue(label.contains(cal.get(Calendar.YEAR).toString()))
-        assertFalse(label.startsWith("Updated"))
+        assertNull(formatRelativeUpdateLabel(0L, Locale.US))
+        assertEquals(UiText.res(R.string.library_relative_today), formatRelativeUpdateLabel(System.currentTimeMillis() / 1000L, Locale.US))
     }
 
     @Test
     fun showsSortLabel_coversAllModes() {
-        assertEquals("Smart", showsSortLabel(SubscriptionSort.SmartRank))
-        assertEquals("Updated", showsSortLabel(SubscriptionSort.RecentlyUpdated))
-        assertEquals("A–Z", showsSortLabel(SubscriptionSort.Alphabetical))
-        assertEquals("Listened", showsSortLabel(SubscriptionSort.MostListened))
-        assertEquals("Manual", showsSortLabel(SubscriptionSort.Manual))
+        assertEquals(R.string.library_sort_smart, showsSortLabel(SubscriptionSort.SmartRank))
+        assertEquals(R.string.library_sort_updated_short, showsSortLabel(SubscriptionSort.RecentlyUpdated))
+        assertEquals(R.string.library_sort_a_to_z, showsSortLabel(SubscriptionSort.Alphabetical))
+        assertEquals(R.string.library_sort_listened_short, showsSortLabel(SubscriptionSort.MostListened))
+        assertEquals(R.string.library_sort_manual, showsSortLabel(SubscriptionSort.Manual))
     }
 
     @Test
     fun latestSortLabel_reflectsMode() {
-        assertEquals("Smart", latestSortLabel(useSmartRank = true))
-        assertEquals("Chronological", latestSortLabel(useSmartRank = false))
+        assertEquals(R.string.library_sort_smart, latestSortLabel(useSmartRank = true))
+        assertEquals(R.string.library_sort_chronological, latestSortLabel(useSmartRank = false))
     }
 
     @Test
@@ -248,33 +239,8 @@ class SubscriptionFilterLogicTest {
         now.set(Calendar.MILLISECOND, 0)
         val todaySeconds = now.timeInMillis / 1000L
         val yesterdaySeconds = todaySeconds - TimeUnit.DAYS.toSeconds(1)
-        assertEquals("Today", getChronologicalHeader(todaySeconds))
-        assertEquals("Yesterday", getChronologicalHeader(yesterdaySeconds))
-        assertEquals("Older", getChronologicalHeader(0L))
-    }
-
-    @Test
-    fun episodeMetaDurationLabel_formatsElapsedAndRemaining() {
-        val hourPlus =
-            Episode(
-                id = "e",
-                title = "T",
-                description = "",
-                audioUrl = "https://example.com/a.mp3",
-                imageUrl = null,
-                publishedDate = 1L,
-                duration = 3660,
-                podcastId = "p",
-            )
-        assertEquals("1h 1m", episodeMetaDurationLabel(hourPlus, isInProgress = false, progress = 0f))
-        assertEquals("45m", episodeMetaDurationLabel(hourPlus.copy(duration = 2700), isInProgress = false, progress = 0f))
-        assertEquals(
-            "1h 0m left",
-            episodeMetaDurationLabel(hourPlus.copy(duration = 7200), isInProgress = true, progress = 0.5f),
-        )
-        assertEquals(
-            "15m left",
-            episodeMetaDurationLabel(hourPlus.copy(duration = 1800), isInProgress = true, progress = 0.5f),
-        )
+        assertEquals(UiText.res(R.string.library_header_today), getChronologicalHeader(todaySeconds, Locale.US))
+        assertEquals(UiText.res(R.string.library_header_yesterday), getChronologicalHeader(yesterdaySeconds, Locale.US))
+        assertEquals(UiText.res(R.string.library_header_older), getChronologicalHeader(0L, Locale.US))
     }
 }

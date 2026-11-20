@@ -56,4 +56,41 @@
     <string name="auto_add_queue">Add to queue</string>
     <string name="auto_mark_complete">Mark complete</string>
     <string name="auto_skip_next">Next episode</string>
+    <!-- Android Auto row second line: %1$s is a length such as "35 min" or "1 hr, 5 min". -->
+    <string name="auto_time_left">%1$s left</string>
+    <!-- Android Auto: a started episode with under a minute to go. -->
+    <string name="auto_almost_done">Almost done</string>
+    <!-- Android Auto: an episode shorter than one minute. Keep it short. -->
+    <string name="auto_duration_under_minute">&lt; 1 min</string>
+    <!-- Android Auto Explore genre rows: short names; the car cuts long ones. -->
+    <string name="auto_genre_news">News</string>
+    <string name="auto_genre_technology">Tech</string>
+    <string name="auto_genre_business">Business</string>
+    <string name="auto_genre_comedy">Comedy</string>
+    <string name="auto_genre_true_crime">True Crime</string>
+    <string name="auto_genre_sports">Sports</string>
+    <string name="auto_genre_health">Health</string>
+    <string name="auto_genre_history">History</string>
+    <string name="auto_genre_arts">Arts</string>
+    <string name="auto_genre_society">Society</string>
+    <string name="auto_genre_education">Education</string>
+    <string name="auto_genre_science">Science</string>
+    <string name="auto_genre_tv_film">TV &amp; Film</string>
+    <string name="auto_genre_fiction">Fiction</string>
+    <string name="auto_genre_music">Music</string>
+    <string name="auto_genre_religion">Religion</string>
+    <string name="auto_genre_family">Family</string>
+    <string name="auto_genre_leisure">Leisure</string>
+    <string name="auto_genre_government">Government</string>
+    <!-- Ongoing notification while Mixtape episodes download for offline play. -->
+    <string name="download_mixtape_title">Syncing Mixtape</string>
+    <plurals name="download_mixtape_title_remaining">
+        <item quantity="one">Syncing Mixtape (%1$d left)</item>
+        <item quantity="other">Syncing Mixtape (%1$d left)</item>
+    </plurals>
+    <!-- %1$s is the episode title, %2$s the share done, such as "42%". -->
+    <string name="download_mixtape_progress">Downloading: %1$s (%2$s)</string>
+    <string name="download_mixtape_preparing">Preparing next episodes…</string>
+    <!-- Stands in for an episode title the download did not record. -->
+    <string name="download_mixtape_episode_fallback">Mixtape episode</string>
 </resources>

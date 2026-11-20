@@ -27,6 +27,7 @@ class NewEpisodeFcmLogicTest {
     fun notificationArtworkRetainsPayloadAndLocalShowAlternativesWithoutDuplicates() {
         val local = Episode("42", "Episode", "", "https://audio/42", imageUrl = " ", podcastImageUrl = "https://art/show")
         val details = NewEpisodeNotifications.resolveNewEpisodeDetails(
+            ApplicationProvider.getApplicationContext(),
             "123",
             mapOf("image" to "http://art/episode", "imageUrl" to "https://art/episode", "feedImage" to "https://art/show", "podcastImageUrl" to "https://art/alternate"),
             local,
@@ -37,27 +38,27 @@ class NewEpisodeFcmLogicTest {
 
     @Test
     fun aPushWithOnlyARecipeIdOpensThatEpisodeWithItsShow() {
-        val details = NewEpisodeNotifications.resolveNewEpisodeDetails("920666", mapOf("recipeId" to "4503599627370500", "podcastTitle" to "Show"), null)
+        val details = NewEpisodeNotifications.resolveNewEpisodeDetails(ApplicationProvider.getApplicationContext(), "920666", mapOf("recipeId" to "4503599627370500", "podcastTitle" to "Show"), null)
         assertEquals("4503599627370500", details.episodeId)
         assertEquals("boxlore://episode/4503599627370500?autoplay=false&podcastId=920666&podcastTitle=Show", details.route)
 
         // The phone's own row wins over the recipe ID.
         val local = Episode("-9", "Episode", "", "https://audio/9")
-        assertEquals("-9", NewEpisodeNotifications.resolveNewEpisodeDetails("920666", mapOf("recipeId" to "4503599627370500"), local).episodeId)
+        assertEquals("-9", NewEpisodeNotifications.resolveNewEpisodeDetails(ApplicationProvider.getApplicationContext(), "920666", mapOf("recipeId" to "4503599627370500"), local).episodeId)
     }
 
     @Test
     fun withNoLocalRowTheRecipeIdWinsOverThePushsServedId() {
         // The served ID of a Podcast Index episode is the ID older builds use; this build stores the
         // episode under its recipe ID, so opening it by the served ID would split its history.
-        val withBoth = NewEpisodeNotifications.resolveNewEpisodeDetails("920666", mapOf("episode_id" to "5001", "recipeId" to "4503599627370500"), null)
+        val withBoth = NewEpisodeNotifications.resolveNewEpisodeDetails(ApplicationProvider.getApplicationContext(), "920666", mapOf("episode_id" to "5001", "recipeId" to "4503599627370500"), null)
         assertEquals("4503599627370500", withBoth.episodeId)
         assertTrue(withBoth.route.startsWith("boxlore://episode/4503599627370500?"))
         assertTrue(withBoth.route.contains("podcastId=920666"))
 
         // A push without a valid recipe ID keeps its own episode ID.
-        assertEquals("5001", NewEpisodeNotifications.resolveNewEpisodeDetails("920666", mapOf("episode_id" to "5001"), null).episodeId)
-        assertEquals("5001", NewEpisodeNotifications.resolveNewEpisodeDetails("920666", mapOf("episode_id" to "5001", "recipeId" to "42"), null).episodeId)
+        assertEquals("5001", NewEpisodeNotifications.resolveNewEpisodeDetails(ApplicationProvider.getApplicationContext(), "920666", mapOf("episode_id" to "5001"), null).episodeId)
+        assertEquals("5001", NewEpisodeNotifications.resolveNewEpisodeDetails(ApplicationProvider.getApplicationContext(), "920666", mapOf("episode_id" to "5001", "recipeId" to "42"), null).episodeId)
     }
 
     @Test
@@ -481,6 +482,28 @@ class NewEpisodeFcmLogicTest {
         val notification = org.robolectric.Shadows.shadowOf(manager).getNotification("123", id)
         assertEquals("\"Publisher title\"", notification.extras.getString(android.app.Notification.EXTRA_TEXT))
         assertTrue(notification.flags and android.app.Notification.FLAG_ONLY_ALERT_ONCE != 0)
+    }
+
+    @Test
+    fun theNotificationTextCountsMinutesInWholeWordsAndStandsInForMissingNames() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val id = NewEpisodeFcmLogic.EPISODE_NOTIFICATION_ID_BASE
+        fun post(show: String, data: Map<String, String>): android.app.Notification {
+            NewEpisodeNotifications.show(context, show, data)
+            return org.robolectric.Shadows.shadowOf(manager).getNotification(show, id)
+        }
+
+        // One minute was "1 mins" before the text moved into resources.
+        val one = post("1", mapOf("podcastTitle" to "Show", "episodeTitle" to "Short", "duration" to "1", "guid" to "g1"))
+        assertEquals("\"Short\" (1 min)", one.extras.getString(android.app.Notification.EXTRA_TEXT))
+        assertEquals("New Episode • Show", one.extras.getString(android.app.Notification.EXTRA_TITLE))
+        val long = post("2", mapOf("podcastTitle" to "Show", "episodeTitle" to "Long", "duration" to "45", "guid" to "g2"))
+        assertEquals("\"Long\" (45 mins)", long.extras.getString(android.app.Notification.EXTRA_TEXT))
+
+        val unnamed = post("3", mapOf("guid" to "g3"))
+        assertEquals("New Episode • New Release", unnamed.extras.getString(android.app.Notification.EXTRA_TITLE))
+        assertEquals("\"New Episode\"", unnamed.extras.getString(android.app.Notification.EXTRA_TEXT))
     }
 
     @Test

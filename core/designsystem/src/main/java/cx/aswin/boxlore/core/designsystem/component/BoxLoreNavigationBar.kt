@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.designsystem.component
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -54,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -66,13 +68,18 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.R
 import cx.aswin.boxlore.core.designsystem.theme.rememberGoogleSansFamily
 import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
 import kotlin.math.roundToInt
 
-enum class NavigationStyle(val key: String, val label: String,) {
-    Floating(key = "floating", label = "Floating"),
-    Classic(key = "classic", label = "Classic"),
+/**
+ * The bottom bar's look, stored by [key]. [labelRes] names it in Settings; [label] is the same name
+ * in English, kept only until Settings words its row from [labelRes].
+ */
+enum class NavigationStyle(val key: String, val label: String, @StringRes val labelRes: Int,) {
+    Floating(key = "floating", label = "Floating", labelRes = R.string.navigation_style_floating),
+    Classic(key = "classic", label = "Classic", labelRes = R.string.navigation_style_classic),
     ;
 
     companion object {
@@ -183,7 +190,7 @@ private val NavSelectionShape = RoundedCornerShape(22.dp)
 
 data class NavDestination(
     val route: String,
-    val label: String,
+    @StringRes val label: Int,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector,
     @DrawableRes val selectedIconRes: Int? = null,
@@ -193,19 +200,19 @@ data class NavDestination(
 internal val primaryNavDestinations = listOf(
     NavDestination(
         route = "home",
-        label = "Home",
+        label = R.string.navigation_home,
         selectedIcon = Icons.Filled.Home,
         unselectedIcon = Icons.Outlined.Home,
     ),
     NavDestination(
         route = "explore",
-        label = "Explore",
+        label = R.string.navigation_explore,
         selectedIcon = Icons.Filled.Search,
         unselectedIcon = Icons.Outlined.Search,
     ),
     NavDestination(
         route = "library",
-        label = "Library",
+        label = R.string.navigation_library,
         selectedIcon = Icons.Filled.Bookmarks,
         unselectedIcon = Icons.Outlined.Bookmarks,
     ),
@@ -214,11 +221,11 @@ internal val primaryNavDestinations = listOf(
 internal val loreNavDestination =
     NavDestination(
         route = "learn",
-        label = "Lore",
+        label = R.string.navigation_lore,
         selectedIcon = Icons.Filled.Psychology,
         unselectedIcon = Icons.Outlined.Psychology,
-        selectedIconRes = cx.aswin.boxlore.core.designsystem.R.drawable.ic_lore_brand,
-        unselectedIconRes = cx.aswin.boxlore.core.designsystem.R.drawable.ic_lore_brand,
+        selectedIconRes = R.drawable.ic_lore_brand,
+        unselectedIconRes = R.drawable.ic_lore_brand,
     )
 
 private val classicNavDestinations = primaryNavDestinations + loreNavDestination
@@ -372,6 +379,7 @@ private fun FloatingPrimaryNavItem(
     compactProgress: State<Float>?,
     onClick: () -> Unit,
 ) {
+    val label = stringResource(destination.label)
     val interactionSource = remember { MutableInteractionSource() }
     val pressScale = rememberNavigationPressScale(interactionSource)
     val selection = animateFloatAsState(
@@ -400,7 +408,7 @@ private fun FloatingPrimaryNavItem(
                 indication = null,
                 onClick = onClick,
             )
-            .semantics { contentDescription = destination.label },
+            .semantics { contentDescription = label },
         shape = NavSelectionShape,
         color = Color.Transparent,
         contentColor = contentColor,
@@ -431,7 +439,7 @@ private fun FloatingPrimaryNavItem(
                     layout((22.dp.toPx() * selection.value).roundToInt(), icon.height) { icon.placeRelative(0, 0) }
                 }
                 Text(
-                    text = destination.label,
+                    text = label,
                     style = labelStyle,
                     maxLines = 1,
                     softWrap = false,
@@ -514,6 +522,7 @@ private fun LoreNavActionFab(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressScale = rememberNavigationPressScale(interactionSource)
+    val loreLabel = stringResource(loreNavDestination.label)
     val selection = animateFloatAsState(if (selected) 1f else 0f, tween(180), label = "loreSelection")
     val launchScale = animateFloatAsState(if (initialContentReady) 1f else 0.96f, tween(180), label = "loreLaunchScale")
     val scheme = MaterialTheme.colorScheme
@@ -528,7 +537,7 @@ private fun LoreNavActionFab(
             interactionSource = interactionSource,
             indication = null,
             onClick = onClick,
-        ).semantics { contentDescription = loreNavDestination.label },
+        ).semantics { contentDescription = loreLabel },
         shape = CircleShape,
         color = Color.Transparent,
         contentColor = contentColor,
@@ -584,10 +593,10 @@ private fun ClassicNavigationBar(currentRoute: String, onNavigate: (String) -> U
                     icon = {
                         Icon(
                             imageVector = destination.iconFor(selected = isSelected),
-                            contentDescription = destination.label,
+                            contentDescription = stringResource(destination.label),
                         )
                     },
-                    label = { Text(destination.label) },
+                    label = { Text(stringResource(destination.label)) },
                     iconPosition = NavigationItemIconPosition.Top,
                     colors = if (destination.route == loreNavDestination.route) {
                         ShortNavigationBarItemDefaults.colors()

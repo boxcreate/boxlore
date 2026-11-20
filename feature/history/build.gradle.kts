@@ -20,6 +20,7 @@ android {
         minSdk = 31
     }
     testOptions {
+        unitTests.isIncludeAndroidResources = true
         unitTests.all {
             it.useJUnitPlatform()
         }
@@ -60,4 +61,5 @@ dependencies {
     testRuntimeOnly(libs.junit.vintage.engine)
     testRuntimeOnly(libs.junit.platform.launcher)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
 }

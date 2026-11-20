@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,6 +43,7 @@ import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.PodrollItem
+import cx.aswin.boxlore.feature.info.R
 
 internal fun stripHtml(html: String?): String {
     if (html.isNullOrEmpty()) return ""
@@ -71,19 +73,19 @@ internal fun LockedFeedNotice() {
     ) {
         Icon(
             imageVector = Icons.Rounded.Lock,
-            contentDescription = "Locked",
+            contentDescription = stringResource(R.string.podcast_info_locked_icon),
             tint = MaterialTheme.colorScheme.error,
             modifier = Modifier.size(16.dp),
         )
         Text(
-            text = "Podcast feed is locked",
+            text = stringResource(R.string.podcast_info_locked_label),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = GoogleSansWeight.bold,
             color = MaterialTheme.colorScheme.error,
         )
         Icon(
             imageVector = Icons.Rounded.Info,
-            contentDescription = "Information",
+            contentDescription = stringResource(R.string.podcast_info_locked_info_icon),
             tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
             modifier = Modifier.size(14.dp),
         )
@@ -101,20 +103,20 @@ internal fun LockedFeedNotice() {
             },
             title = {
                 Text(
-                    text = "Podcast Locked",
+                    text = stringResource(R.string.podcast_info_locked_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = GoogleSansWeight.bold,
                 )
             },
             text = {
                 Text(
-                    text = "This podcast's feed has been locked by its publisher. According to the Podcasting 2.0 specification, a locked feed prevents other directory platforms or hosting services from importing or migrating this show's feed without the owner's explicit authorization.",
+                    text = stringResource(R.string.podcast_info_locked_body),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             },
             confirmButton = {
                 TextButton(onClick = { showLockedInfoDialog = false }) {
-                    Text("Got it")
+                    Text(stringResource(R.string.podcast_info_locked_ok))
                 }
             },
         )
@@ -134,7 +136,7 @@ internal fun PodrollRecommendations(
     Spacer(modifier = Modifier.height(12.dp))
 
     Text(
-        text = "Creator Recommends",
+        text = stringResource(R.string.podcast_info_podroll_title),
         style = MaterialTheme.typography.labelLarge,
         fontWeight = GoogleSansWeight.bold,
         color = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_library_charts_title">Charts</string>
+    <string name="settings_library_charts_footer">Sets the top charts in Explore.</string>
+    <string name="settings_library_country">Country</string>
+    <string name="settings_library_recommendations_title">Recommendations</string>
+    <string name="settings_library_recommendations_footer">For You, search and vibes use these languages.</string>
+    <string name="settings_library_languages">Languages</string>
+    <string name="settings_library_add_rss">Add podcast by RSS feed</string>
+    <string name="settings_library_add_rss_description">For podcasts that are not in the catalog</string>
+    <string name="settings_library_country_faq_toggle">Why is my country not listed?</string>
+    <string name="settings_collapse">Collapse</string>
+    <string name="settings_expand">Expand</string>
+    <string name="settings_library_country_faq_title">Why isn\'t my country listed?</string>
+    <string name="settings_library_country_faq_intro">We are actively working to expand our global coverage! Currently, we prioritize adding new countries based on active user demand.</string>
+    <string name="settings_library_country_faq_effects">How this affects your experience:</string>
+    <string name="settings_library_country_faq_search">Search is still global: You can still search for, find, and access all content, even if your country isn\'t officially listed yet.</string>
+    <string name="settings_library_country_faq_recommendations">Smart recommendations still work: The recommendation engine will still suggest the closest matches based on your listening habits, irrespective of your country selection.</string>
+    <string name="settings_library_country_faq_changes">What country changes: The top charts in Explore. Your languages stay as they are.</string>
+    <string name="settings_library_country_faq_languages">Languages are separate: Pick them under Recommendations › Languages for For You, search and vibes. Charts stay country-based and aren\'t filtered by language.</string>
+    <string name="settings_library_country_faq_more">Want another country or language?</string>
+    <string name="settings_library_country_faq_tell_us">Tell us via Feedback or GitHub — we expand coverage based on demand.</string>
+    <string name="settings_library_saved_shows_counting">Counting…</string>
+    <string name="settings_library_saved_shows_none">Nothing saved for shows you don’t follow</string>
+    <string name="settings_library_storage_title">Storage</string>
+    <string name="settings_library_clear_saved_shows">Clear saved shows</string>
+    <string name="settings_clear_saved_shows_title">Clear saved shows?</string>
+    <string name="settings_clear_saved_shows_kept">Shows you follow, your listening history, downloads and queue aren’t affected.</string>
+    <string name="settings_clear_saved_shows_confirm">Clear</string>
+    <string name="settings_cancel">Cancel</string>
+    <!-- Under Clear saved shows: how many shows you don't follow have saved episode lists. -->
+    <plurals name="settings_library_saved_shows_count">
+        <item quantity="one">Episode lists of %1$d show you don’t follow</item>
+        <item quantity="other">Episode lists of %1$d shows you don’t follow</item>
+    </plurals>
+    <plurals name="settings_clear_saved_shows_body">
+        <item quantity="one">Episode lists of %1$d show you don’t follow will be removed from this phone. They load again when you open a show.</item>
+        <item quantity="other">Episode lists of %1$d shows you don’t follow will be removed from this phone. They load again when you open a show.</item>
+    </plurals>
+    <string name="settings_library_rss_title" translatable="false">RSS</string>
+</resources>

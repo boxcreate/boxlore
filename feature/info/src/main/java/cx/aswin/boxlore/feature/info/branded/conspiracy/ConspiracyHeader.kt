@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -33,7 +34,6 @@ import cx.aswin.boxlore.feature.info.branded.BrandedDescription
 import cx.aswin.boxlore.feature.info.branded.BrandedDescriptionExtras
 import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
-import java.util.Locale
 
 /**
  * The evidence board ([EvidenceBoard]) with the publisher typed across its foot and the © beside it,
@@ -79,7 +79,7 @@ private fun PublisherLine(podcast: Podcast, palette: ConspiracyPalette, fonts: C
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            podcast.artist.uppercase(Locale.getDefault()),
+            podcast.artist.uppercase(currentLocale()),
             style = brandedTextStyle(fonts.courier, 11.sp, 14.sp, letterSpacing = 1.6.sp).copy(fontWeight = FontWeight.Bold),
             color = palette.textMuted,
             maxLines = 1,

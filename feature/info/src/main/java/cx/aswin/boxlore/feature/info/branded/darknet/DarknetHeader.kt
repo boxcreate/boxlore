@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.R
@@ -72,7 +73,6 @@ import cx.aswin.boxlore.feature.info.branded.BrandedDescriptionExtras
 import cx.aswin.boxlore.feature.info.branded.awaitPageSettled
 import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
 import cx.aswin.boxlore.feature.info.branded.rememberBrandedArt
-import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -123,7 +123,7 @@ private fun HostLine(podcast: Podcast, modifier: Modifier) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            podcast.artist.uppercase(Locale.getDefault()),
+            podcast.artist.uppercase(currentLocale()),
             style = brandedSansStyle(11.sp, 14.sp, weight = 700).copy(letterSpacing = 1.8.sp),
             color = DarknetColors.Muted,
             maxLines = 1,

@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportWorld
 import cx.aswin.boxlore.feature.settings.pages.supportworlds.supportWorldSkin
+import cx.aswin.boxlore.feature.settings.text
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -73,9 +74,9 @@ class SupportPageLayoutTest {
             compose.waitForIdle()
             compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).assertCountEquals(0)
             val rootBottom = compose.onRoot().fetchSemanticsNode().boundsInRoot.bottom
-            listOf("${next.ctaVerb} ${next.tiers[2].title}", "One-time contribution", next.tiers[2].powerImpact).forEach { text ->
-                val bounds = compose.onNodeWithText(text, substring = true).fetchSemanticsNode().boundsInRoot
-                assertTrue("$text is cut off in ${next.world}", bounds.top >= 0f && bounds.bottom <= rootBottom)
+            listOf(text(next.ctaVerb, next.tiers[2].title), "One-time contribution", text(next.tiers[2].powerImpact)).forEach { label ->
+                val bounds = compose.onNodeWithText(label, substring = true).fetchSemanticsNode().boundsInRoot
+                assertTrue("$label is cut off in ${next.world}", bounds.top >= 0f && bounds.bottom <= rootBottom)
             }
             val missionShown = compose.onAllNodesWithText("Keeping boxlore fast, open, and ad-free")
                 .fetchSemanticsNodes()

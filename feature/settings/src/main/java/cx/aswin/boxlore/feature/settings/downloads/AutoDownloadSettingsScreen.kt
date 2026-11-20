@@ -26,6 +26,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
@@ -33,6 +34,7 @@ import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.prefs.AutoDownloadBackgroundSettings
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
@@ -63,11 +65,11 @@ fun AutoDownloadSettingsScreen(
     }
 
     SettingsScaffold(
-        title = "Automatic downloads",
+        title = stringResource(R.string.settings_auto_download_title),
         onBack = onBack,
         actions = {
             IconButton(onClick = actions::showHelp) {
-                Icon(Icons.Rounded.Info, contentDescription = "How automatic downloads work")
+                Icon(Icons.Rounded.Info, contentDescription = stringResource(R.string.settings_auto_download_help_title))
             }
         },
     ) {
@@ -84,16 +86,16 @@ fun AutoDownloadSettingsScreen(
             ) {
                 Icon(Icons.Rounded.CloudDownload, contentDescription = null, modifier = Modifier.size(28.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.weight(1f)) {
-                    Text("For the shows you choose", style = MaterialTheme.typography.titleSmall, fontWeight = GoogleSansWeight.semiBold)
-                    Text("Turn on auto-download from each show's page.", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.settings_auto_download_shows_title), style = MaterialTheme.typography.titleSmall, fontWeight = GoogleSansWeight.semiBold)
+                    Text(stringResource(R.string.settings_auto_download_shows_footer), style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
 
-        SettingsGroup(title = "Downloads") {
+        SettingsGroup(title = stringResource(R.string.settings_page_downloads)) {
             SettingsSwitchRow(
-                title = "Wi-Fi only",
-                supportingText = "Audio files wait for an unmetered connection.",
+                title = stringResource(R.string.settings_auto_download_wifi_only),
+                supportingText = stringResource(R.string.settings_auto_download_wifi_only_description),
                 icon = Icons.Rounded.Wifi,
                 checked = wifiOnly,
                 onCheckedChange = {
@@ -103,12 +105,12 @@ fun AutoDownloadSettingsScreen(
             )
         }
 
-        SettingsGroup(title = "Storage") {
+        SettingsGroup(title = stringResource(R.string.settings_library_storage_title)) {
             SettingsContent {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Keep episodes per show", style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.settings_auto_download_keep_per_show), style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        "Replace the oldest automatic download when this limit is reached.",
+                        stringResource(R.string.settings_auto_download_keep_per_show_description),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -125,8 +127,8 @@ fun AutoDownloadSettingsScreen(
             }
             SettingsDivider()
             SettingsSwitchRow(
-                title = "Remove after listening",
-                supportingText = "Delete downloaded files after an episode is finished.",
+                title = stringResource(R.string.settings_auto_download_remove_after),
+                supportingText = stringResource(R.string.settings_auto_download_remove_after_description),
                 icon = Icons.Rounded.DeleteOutline,
                 checked = deleteCompleted,
                 onCheckedChange = {

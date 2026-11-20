@@ -213,7 +213,7 @@ private fun ShowsByEpisodesCard(shows: List<ShowByEpisodes>) {
 @Composable
 private fun ListeningClockProgressCard(early: EarlyInsights) {
     val colors = MaterialTheme.colorScheme
-    val description = stringResource(R.string.history_early_clock_progress, early.timedDays, InsightsLogic.TIMED_DAYS_FOR_INSIGHTS)
+    val description = pluralStringResource(R.plurals.history_early_clock_progress, InsightsLogic.TIMED_DAYS_FOR_INSIGHTS, early.timedDays, InsightsLogic.TIMED_DAYS_FOR_INSIGHTS)
     InsightsCard {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(stringResource(R.string.history_early_clock), style = TimelineType.header, color = colors.onSurface)

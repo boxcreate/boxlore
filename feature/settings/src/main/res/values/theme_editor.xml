@@ -46,4 +46,13 @@
     <string name="theme_editor_preview_duration">24 min</string>
     <string name="theme_editor_preview_remaining">8 min left</string>
     <string name="theme_editor_preview_new">New</string>
+    <string name="theme_accent_title">Custom button &amp; icon color</string>
+    <string name="theme_accent_adjusted">Adjusted</string>
+    <string name="theme_accent_exact">Exact</string>
+    <string name="theme_accent_hint">Move the marker to choose a shade. Use the strip below to change the color.</string>
+    <string name="theme_accent_use">Use color</string>
+    <string name="theme_accent_exact_description">Uses your color unchanged. Text may be harder to read.</string>
+    <string name="theme_accent_adjusted_description">Adjusts your chosen color for the app’s light and dark modes.</string>
+    <string name="theme_accent_button_color">Button color</string>
+    <string name="theme_accent_chosen_color">Chosen color</string>
 </resources>

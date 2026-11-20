@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedEpisodeActions
@@ -44,7 +45,6 @@ import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
 import cx.aswin.boxlore.feature.info.components.formatEpisodeDuration
 import cx.aswin.boxlore.feature.info.components.formatEpisodeRelativeDate
 import cx.aswin.boxlore.feature.info.sections.stripHtml
-import java.util.Locale
 
 private val CardShape = RoundedCornerShape(20.dp)
 
@@ -77,7 +77,7 @@ internal fun WaveformSpotlight(spotlight: BrandedSpotlight, modifier: Modifier) 
             Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 11.dp, bottom = 13.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        stringResource(R.string.waveform_latest).uppercase(Locale.getDefault()),
+                        stringResource(R.string.waveform_latest).uppercase(currentLocale()),
                         style = brandedTextStyle(rememberWaveformBarlow(), 11.sp, 14.sp, letterSpacing = 2.4.sp).copy(fontWeight = FontWeight.Bold),
                         color = WaveformColors.RedText,
                         maxLines = 1,
@@ -118,9 +118,9 @@ private fun spotlightDetails(spotlight: BrandedSpotlight): String {
     val length = when {
         spotlight.isCompleted -> stringResource(R.string.episode_info_played)
         spotlight.progress != null && !spotlight.timeLeft.isNullOrBlank() -> spotlight.timeLeft
-        else -> formatEpisodeDuration(episode.duration)
+        else -> formatEpisodeDuration(episode.duration, currentLocale())
     }
-    return listOf(formatEpisodeRelativeDate(episode.publishedDate), length).filter(String::isNotBlank).joinToString(" · ")
+    return listOf(formatEpisodeRelativeDate(episode.publishedDate, currentLocale()), length).filter(String::isNotBlank).joinToString(" · ")
 }
 
 /**

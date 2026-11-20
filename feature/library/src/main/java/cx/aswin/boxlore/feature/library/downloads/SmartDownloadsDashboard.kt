@@ -57,13 +57,20 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.model.text.LocaleFormats
+import cx.aswin.boxlore.core.model.text.formatTimeOfDay
+import cx.aswin.boxlore.feature.library.R
 
 @Composable
 fun SquigglyProgressLoader(
@@ -183,7 +190,7 @@ fun SmartDownloadsDashboardCard(
                         modifier = Modifier.size(24.dp)
                     )
                     Text(
-                        text = "Enable Smart Downloads",
+                        text = stringResource(R.string.library_smart_downloads_enable),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = GoogleSansWeight.bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -200,15 +207,15 @@ fun SmartDownloadsDashboardCard(
         return
     }
 
-    val statusText = remember(smartDownloadingCount, isSyncing) {
+    val statusText = stringResource(
         if (smartDownloadingCount > 0) {
-            "Syncing candidates"
+            R.string.library_smart_downloads_status_syncing
         } else if (isSyncing) {
-            "Checking for updates"
+            R.string.library_smart_downloads_status_checking
         } else {
-            "Offline queue ready"
-        }
-    }
+            R.string.library_smart_downloads_status_ready
+        },
+    )
 
     Card(
         colors = CardDefaults.cardColors(
@@ -257,15 +264,15 @@ fun SmartDownloadsDashboardCard(
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Smart Downloads",
+                            text = stringResource(R.string.library_smart_downloads),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = GoogleSansWeight.bold
                         )
                         Text(
                             text = if (isExpanded) {
-                                "Automated offline library"
+                                stringResource(R.string.library_smart_downloads_subtitle)
                             } else {
-                                "$statusText • $smartDownloadedCount/$maxEpisodes eps ($smartDownloadedSizeMb MB)"
+                                pluralStringResource(R.plurals.library_smart_downloads_collapsed_summary, maxEpisodes, statusText, smartDownloadedCount, maxEpisodes, smartDownloadedSizeMb)
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = if (!isExpanded && (smartDownloadingCount > 0 || isSyncing)) {
@@ -294,7 +301,7 @@ fun SmartDownloadsDashboardCard(
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Settings,
-                                contentDescription = "Smart Downloads Settings",
+                                contentDescription = stringResource(R.string.library_smart_downloads_settings),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -309,7 +316,7 @@ fun SmartDownloadsDashboardCard(
 
                     Icon(
                         imageVector = Icons.Rounded.ChevronRight,
-                        contentDescription = if (isExpanded) "Collapse" else "Expand",
+                        contentDescription = stringResource(if (isExpanded) R.string.library_collapse else R.string.library_expand),
                         modifier = Modifier
                             .size(24.dp)
                             .graphicsLayer(rotationZ = rotation),
@@ -335,17 +342,7 @@ fun SmartDownloadsDashboardCard(
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Last sync: " + if (lastSyncTime <= 0L) {
-                                "Never"
-                            } else {
-                                val diff = System.currentTimeMillis() - lastSyncTime
-                                when {
-                                    diff < 60_000 -> "Just now"
-                                    diff < 3600_000 -> "${diff / 60_000}m ago"
-                                    diff < 86400_000 -> "${diff / 3600_000}h ago"
-                                    else -> java.text.SimpleDateFormat("MMM dd, HH:mm", java.util.Locale.getDefault()).format(java.util.Date(lastSyncTime))
-                                }
-                            },
+                            text = lastSyncLabel(lastSyncTime),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -368,7 +365,7 @@ fun SmartDownloadsDashboardCard(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (isSyncing) "Syncing" else "Sync Now",
+                            text = stringResource(if (isSyncing) R.string.library_smart_downloads_syncing else R.string.library_smart_downloads_sync_now),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = GoogleSansWeight.bold
                         )
@@ -392,7 +389,11 @@ fun SmartDownloadsDashboardCard(
                             strokeWidth = 3.dp
                         )
                         Text(
-                            text = if (smartDownloadingCount > 0) "$smartDownloadingCount episode(s) downloading in background" else "Syncing with cloud endpoints...",
+                            text = if (smartDownloadingCount > 0) {
+                                pluralStringResource(R.plurals.library_smart_downloads_downloading, smartDownloadingCount, smartDownloadingCount)
+                            } else {
+                                stringResource(R.string.library_smart_downloads_syncing_cloud)
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = GoogleSansWeight.medium
@@ -420,12 +421,12 @@ fun SmartDownloadsDashboardCard(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Mixtape Episodes ($smartDownloadedCount / $maxEpisodes)",
+                                text = stringResource(R.string.library_smart_downloads_episodes_progress, smartDownloadedCount, maxEpisodes),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "${(countProgress * 100).toInt()}%",
+                                text = LocaleFormats.percent(countProgress.toDouble(), currentLocale()),
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = GoogleSansWeight.bold,
                                 color = MaterialTheme.colorScheme.primary
@@ -451,12 +452,12 @@ fun SmartDownloadsDashboardCard(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Storage Budget ($smartDownloadedSizeMb MB / $storageBudget MB)",
+                                    text = stringResource(R.string.library_smart_downloads_storage_progress, smartDownloadedSizeMb, storageBudget),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    text = "${(storageProgress * 100).toInt()}%",
+                                    text = LocaleFormats.percent(storageProgress.toDouble(), currentLocale()),
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = GoogleSansWeight.bold,
                                     color = MaterialTheme.colorScheme.secondary
@@ -478,12 +479,12 @@ fun SmartDownloadsDashboardCard(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "Storage Used",
+                                text = stringResource(R.string.library_smart_downloads_storage_used),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "$smartDownloadedSizeMb MB (Unlimited)",
+                                text = stringResource(R.string.library_smart_downloads_storage_unlimited, smartDownloadedSizeMb),
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = GoogleSansWeight.bold
                             )
@@ -493,4 +494,23 @@ fun SmartDownloadsDashboardCard(
             }
         }
     }
+}
+
+/** "Last sync: 5m ago", or the date and time once it is a day old. */
+@Composable
+private fun lastSyncLabel(lastSyncTime: Long): String {
+    if (lastSyncTime <= 0L) return stringResource(R.string.library_smart_downloads_last_sync_never)
+    val nowMs = System.currentTimeMillis()
+    val diff = nowMs - lastSyncTime
+    val locale = currentLocale()
+    val whenText = when {
+        diff < 60_000 -> stringResource(R.string.library_relative_just_now)
+        diff < 86_400_000 -> LocaleFormats.relativeTime(lastSyncTime, nowMs, locale, LocaleFormats.RelativeStyle.NARROW)
+        else -> stringResource(
+            R.string.library_date_and_time,
+            LocaleFormats.date(lastSyncTime, LocaleFormats.DateStyle.DAY_MONTH, locale),
+            LocalContext.current.formatTimeOfDay(lastSyncTime),
+        )
+    }
+    return stringResource(R.string.library_smart_downloads_last_sync, whenText)
 }

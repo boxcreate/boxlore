@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home.logic
 
+// i18n-ignore-file: show catalog records. Titles are show names and descriptions are show metadata, which stay as published.
+
 import cx.aswin.boxlore.core.model.Podcast
 
 /**

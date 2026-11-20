@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.onboarding
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -38,8 +41,9 @@ import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.artworkUrls
 
+/** A category chip on the onboarding search: [categoryValue] is the genre key sent to search, null for Trending. */
 data class SearchCategoryItem(
-    val label: String,
+    @StringRes val labelRes: Int,
     val categoryValue: String?,
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
     val containerColor: Color,
@@ -48,12 +52,12 @@ data class SearchCategoryItem(
 
 val SEARCH_CATEGORIES =
     listOf(
-        SearchCategoryItem("Trending", null, Icons.Rounded.Whatshot, Color(0xFFE0F7FA), Color(0xFF006064)),
-        SearchCategoryItem("Comedy", "Comedy", Icons.Rounded.SentimentVerySatisfied, Color(0xFFF3E5F5), Color(0xFF4A148C)),
-        SearchCategoryItem("True Crime", "True Crime", Icons.Rounded.Fingerprint, Color(0xFFFFEBEE), Color(0xFF880E4F)),
-        SearchCategoryItem("Tech", "Technology", Icons.Rounded.Computer, Color(0xFFE3F2FD), Color(0xFF0D47A1)),
-        SearchCategoryItem("News", "News", Icons.Rounded.Newspaper, Color(0xFFE8F5E9), Color(0xFF1B5E20)),
-        SearchCategoryItem("Business", "Business", Icons.Rounded.Work, Color(0xFFFFF3E0), Color(0xFFE65100)),
+        SearchCategoryItem(R.string.onboarding_search_trending, null, Icons.Rounded.Whatshot, Color(0xFFE0F7FA), Color(0xFF006064)),
+        SearchCategoryItem(R.string.onboarding_genre_comedy, "Comedy", Icons.Rounded.SentimentVerySatisfied, Color(0xFFF3E5F5), Color(0xFF4A148C)),
+        SearchCategoryItem(R.string.onboarding_genre_true_crime, "True Crime", Icons.Rounded.Fingerprint, Color(0xFFFFEBEE), Color(0xFF880E4F)),
+        SearchCategoryItem(R.string.onboarding_genre_tech, "Technology", Icons.Rounded.Computer, Color(0xFFE3F2FD), Color(0xFF0D47A1)),
+        SearchCategoryItem(R.string.onboarding_genre_news, "News", Icons.Rounded.Newspaper, Color(0xFFE8F5E9), Color(0xFF1B5E20)),
+        SearchCategoryItem(R.string.onboarding_genre_business, "Business", Icons.Rounded.Work, Color(0xFFFFF3E0), Color(0xFFE65100)),
     )
 
 @Composable
@@ -106,7 +110,7 @@ internal fun OnboardingSearchScreen(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.onboarding_back),
                     modifier = Modifier.size(24.dp),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
@@ -121,7 +125,7 @@ internal fun OnboardingSearchScreen(
                     .height(56.dp),
                 placeholder = {
                     Text(
-                        text = "Search titles, hosts, or topics...",
+                        text = stringResource(R.string.onboarding_search_placeholder),
                         style = MaterialTheme.typography.bodyLarge,
                     )
                 },
@@ -148,7 +152,7 @@ internal fun OnboardingSearchScreen(
                 trailingIcon = {
                     if (query.isNotEmpty()) {
                         IconButton(onClick = { onQueryChange("") }) {
-                            Icon(Icons.Rounded.Close, "Clear", modifier = Modifier.size(20.dp))
+                            Icon(Icons.Rounded.Close, stringResource(R.string.onboarding_search_clear), modifier = Modifier.size(20.dp))
                         }
                     }
                 },
@@ -164,7 +168,7 @@ internal fun OnboardingSearchScreen(
             ) {
                 items(SEARCH_CATEGORIES) { category ->
                     PillFilterChip(
-                        label = category.label,
+                        label = stringResource(category.labelRes),
                         selected = selectedSearchGenre == category.categoryValue,
                         onClick = { onGenreSelect(category.categoryValue) },
                         icon = category.icon,
@@ -190,8 +194,13 @@ internal fun OnboardingSearchScreen(
                         .fillMaxWidth()
                         .weight(1f),
                 ) {
-                    val titleLabel = SEARCH_CATEGORIES.find { it.categoryValue == selectedSearchGenre }?.label ?: "Trending"
-                    val sectionTitle = if (selectedSearchGenre == null) "Trending Shows" else "Popular in $titleLabel"
+                    val titleLabel = stringResource(SEARCH_CATEGORIES.find { it.categoryValue == selectedSearchGenre }?.labelRes ?: R.string.onboarding_search_trending)
+                    val sectionTitle =
+                        if (selectedSearchGenre == null) {
+                            stringResource(R.string.onboarding_search_trending_shows)
+                        } else {
+                            stringResource(R.string.onboarding_search_popular_in, titleLabel)
+                        }
                     Text(
                         text = sectionTitle,
                         style = MaterialTheme.typography.titleMedium,
@@ -211,7 +220,7 @@ internal fun OnboardingSearchScreen(
                             modifier = Modifier.fillMaxWidth().weight(1f),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text("No recommendations found", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.onboarding_search_no_popular), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     } else {
                         val distinctPopular = remember(popularPodcasts) {
@@ -256,14 +265,14 @@ internal fun OnboardingSearchScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "No Podcasts Found",
+                            text = stringResource(R.string.onboarding_search_empty_title),
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
                             color = MaterialTheme.colorScheme.onSurface,
                             textAlign = TextAlign.Center,
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Please try searching for the exact word or name of the podcast you are looking for, and double-check spacing and spelling.",
+                            text = stringResource(R.string.onboarding_search_empty_body),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
@@ -306,7 +315,7 @@ internal fun OnboardingSearchScreen(
                     if (distinctResults.isNotEmpty() && distinctAlsoFound.isNotEmpty()) {
                         item(key = "matches_header") {
                             Text(
-                                text = "Matches",
+                                text = stringResource(R.string.onboarding_search_matches),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = GoogleSansWeight.bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -327,7 +336,7 @@ internal fun OnboardingSearchScreen(
                     if (distinctAlsoFound.isNotEmpty()) {
                         item(key = "also_found_header") {
                             Text(
-                                text = "Also found",
+                                text = stringResource(R.string.onboarding_search_also_found),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = GoogleSansWeight.bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -366,7 +375,7 @@ internal fun OnboardingSearchScreen(
                         .padding(horizontal = 24.dp, vertical = 12.dp),
                 ) {
                     Text(
-                        text = "Selected Shows (${subscribedIds.size})",
+                        text = pluralStringResource(R.plurals.onboarding_search_selected_shows, subscribedIds.size, subscribedIds.size),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = GoogleSansWeight.bold,
                         color = MaterialTheme.colorScheme.primary,
@@ -414,7 +423,7 @@ internal fun OnboardingSearchScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Rounded.Close,
-                                        contentDescription = "Remove",
+                                        contentDescription = stringResource(R.string.onboarding_search_remove),
                                         tint = MaterialTheme.colorScheme.onError,
                                         modifier = Modifier.size(10.dp),
                                     )
@@ -425,7 +434,7 @@ internal fun OnboardingSearchScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     if (isAiSideTrip) {
                         Text(
-                            text = "These shows will be added to your library, and you'll hop back into the chat to keep building your feed.",
+                            text = stringResource(R.string.onboarding_search_side_trip_note),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
@@ -442,11 +451,11 @@ internal fun OnboardingSearchScreen(
                         shape = MaterialTheme.shapes.extraLarge,
                     ) {
                         Text(
-                            if (isAiSideTrip) {
-                                "Subscribe & Continue Chat (${subscribedIds.size})"
-                            } else {
-                                "Continue with ${subscribedIds.size}"
-                            },
+                            pluralStringResource(
+                                if (isAiSideTrip) R.plurals.onboarding_search_subscribe_continue_chat else R.plurals.onboarding_search_continue_with,
+                                subscribedIds.size,
+                                subscribedIds.size,
+                            ),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = GoogleSansWeight.bold,
                         )
@@ -521,7 +530,7 @@ private fun PopularPodcastGridItem(
                 ) {
                     Icon(
                         imageVector = if (isSubscribed) Icons.Rounded.Check else Icons.Rounded.Add,
-                        contentDescription = if (isSubscribed) "Selected" else "Select",
+                        contentDescription = stringResource(if (isSubscribed) R.string.onboarding_search_selected else R.string.onboarding_search_select),
                         modifier = Modifier.size(16.dp),
                     )
                 }
@@ -609,7 +618,7 @@ private fun SearchResultRow(
             ) {
                 Icon(
                     Icons.Rounded.Check,
-                    contentDescription = "Selected",
+                    contentDescription = stringResource(R.string.onboarding_search_selected),
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -620,7 +629,7 @@ private fun SearchResultRow(
             ) {
                 Icon(
                     Icons.Rounded.Add,
-                    contentDescription = "Select",
+                    contentDescription = stringResource(R.string.onboarding_search_select),
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -641,21 +650,21 @@ private fun OnboardingSearchFailed(onRetry: () -> Unit, modifier: Modifier = Mod
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Couldn’t search right now",
+                text = stringResource(R.string.onboarding_search_failed_title),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Check your connection and try again.",
+                text = stringResource(R.string.onboarding_search_failed_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
             Spacer(modifier = Modifier.height(16.dp))
             FilledTonalButton(onClick = onRetry, modifier = Modifier.heightIn(min = 48.dp)) {
-                Text("Try again")
+                Text(stringResource(R.string.onboarding_search_try_again))
             }
         }
     }

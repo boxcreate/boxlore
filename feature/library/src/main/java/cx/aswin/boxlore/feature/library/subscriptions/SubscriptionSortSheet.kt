@@ -34,9 +34,12 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.feature.library.R
 import cx.aswin.boxlore.feature.library.SubscriptionSort
 
 /**
@@ -107,28 +110,28 @@ internal fun SubscriptionSortSheetContent(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "Sort and organize",
+                text = stringResource(R.string.library_sort_and_organize),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
             )
             IconButton(onClick = actions.onDismiss) {
-                Icon(imageVector = Icons.Rounded.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(imageVector = Icons.Rounded.Close, contentDescription = stringResource(R.string.library_close), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        SortSection(title = "Your shows", description = "Shows that aren't in a folder") {
+        SortSection(title = stringResource(R.string.library_your_shows), description = stringResource(R.string.library_sort_your_shows_description)) {
             SubscriptionSortOptions.forEach { (sort, label) ->
-                SortChip(label = label, selected = config.currentSort == sort, onClick = { actions.onSortChange(sort) })
+                SortChip(label = stringResource(label), selected = config.currentSort == sort, onClick = { actions.onSortChange(sort) })
             }
         }
-        SortSection(title = "Order of folders", description = "Where each folder sits on the Shows tab") {
+        SortSection(title = stringResource(R.string.library_sort_order_of_folders), description = stringResource(R.string.library_sort_order_of_folders_description)) {
             FolderInterSort.entries.forEach { option ->
-                SortChip(label = option.label, selected = config.folderSort == option, onClick = { actions.onFolderSortChange(option) })
+                SortChip(label = stringResource(option.label), selected = config.folderSort == option, onClick = { actions.onFolderSortChange(option) })
             }
         }
-        SortSection(title = "Shows inside folders", description = "The order of covers in each folder") {
+        SortSection(title = stringResource(R.string.library_sort_shows_inside_folders), description = stringResource(R.string.library_sort_shows_inside_folders_description)) {
             FolderIntraSort.entries.forEach { option ->
-                SortChip(label = option.label, selected = config.intraFolderSort == option, onClick = { actions.onIntraFolderSortChange(option) })
+                SortChip(label = stringResource(option.label), selected = config.intraFolderSort == option, onClick = { actions.onIntraFolderSortChange(option) })
             }
         }
         Column(modifier = Modifier.padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -143,11 +146,11 @@ internal fun SubscriptionSortSheetContent(
 }
 
 private val SubscriptionSortOptions = listOf(
-    SubscriptionSort.SmartRank to "Smart",
-    SubscriptionSort.RecentlyUpdated to "Recently updated",
-    SubscriptionSort.Alphabetical to "A–Z",
-    SubscriptionSort.MostListened to "Most listened",
-    SubscriptionSort.Manual to "Manual",
+    SubscriptionSort.SmartRank to R.string.library_sort_smart,
+    SubscriptionSort.RecentlyUpdated to R.string.library_sort_recently_updated,
+    SubscriptionSort.Alphabetical to R.string.library_sort_a_to_z,
+    SubscriptionSort.MostListened to R.string.library_sort_most_listened,
+    SubscriptionSort.Manual to R.string.library_sort_manual,
 )
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -207,9 +210,9 @@ private fun AutoOrganizeRow(
                 )
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = "Auto-organize", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
+                Text(text = stringResource(R.string.library_auto_organize), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
                 Text(
-                    text = autoOrganizeSummary(autoOrganize, genreFolderCount),
+                    text = autoOrganizeSummary(autoOrganize, genreFolderCount).asString(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -233,7 +236,7 @@ private fun DragRepositionFootnote() {
             modifier = Modifier.size(18.dp),
         )
         Text(
-            text = "To move shows or folders by hand, press and hold one and choose Reorder.",
+            text = stringResource(R.string.library_sort_reorder_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

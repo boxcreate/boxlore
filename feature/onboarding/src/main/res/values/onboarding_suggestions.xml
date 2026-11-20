@@ -50,4 +50,33 @@
     <string name="suggestions_back">Back</string>
     <!-- Brief note on the show deck when a positive answer picks the show. %s is the show title. -->
     <string name="echo_deck_added">%s added to your picks</string>
+    <!-- Lane titles the app writes. Lanes from the server keep the server's title. -->
+    <string name="suggestions_lane_for_you">For you</string>
+    <string name="suggestions_lane_popular_now">Popular now</string>
+    <!-- Fallback lanes when suggestions fall back to the charts. -->
+    <string name="suggestions_lane_trending_hits">Trending Hits</string>
+    <string name="suggestions_lane_trending_genres">Trending in your Genres</string>
+    <!-- One line about what a lane is for. -->
+    <string name="suggestions_lane_purpose_matched">Shows matched to this taste lane.</string>
+    <string name="suggestions_lane_purpose_themed">A themed set based on what you told us.</string>
+    <string name="suggestions_lane_purpose_wind_down">Softer shows for winding down.</string>
+    <string name="suggestions_lane_purpose_news">Stay current without the noise.</string>
+    <string name="suggestions_lane_purpose_deep">Longer listens that go further.</string>
+    <string name="suggestions_lane_purpose_lighter">Lighter shows when you want a lift.</string>
+    <string name="suggestions_lane_purpose_tension">Stories with tension and payoff.</string>
+    <string name="suggestions_lane_purpose_similar">More like the shows you already picked.</string>
+    <string name="suggestions_lane_purpose_starter">A starter mix from your preferences.</string>
+    <string name="suggestions_lane_purpose_charts_region">Charting shows in your region right now.</string>
+    <!-- %1$s is a genre name, for example "Comedy". -->
+    <string name="suggestions_lane_purpose_charts_one">Trending in %1$s for your country.</string>
+    <!-- %1$s and %2$s are genre names. -->
+    <string name="suggestions_lane_purpose_charts_two">Trending in %1$s · %2$s for your country.</string>
+    <!-- Show details sheet. -->
+    <string name="suggestions_details_close">Close</string>
+    <string name="suggestions_details_add">Add show</string>
+    <string name="suggestions_details_remove">Remove</string>
+    <!-- When a show has no description. %1$s is the show's name. -->
+    <string name="suggestions_details_fallback">Explore episodes and topics from %1$s.</string>
+    <!-- When a show has no description. %1$s is the show's name, %2$s its host or publisher. -->
+    <string name="suggestions_details_fallback_with_host">Explore episodes and topics from %1$s by %2$s.</string>
 </resources>

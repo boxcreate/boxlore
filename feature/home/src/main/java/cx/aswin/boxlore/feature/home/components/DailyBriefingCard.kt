@@ -66,13 +66,16 @@ import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Chapter
 import cx.aswin.boxlore.core.model.EpisodeStatus
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import java.time.ZoneOffset
 import java.util.Locale
+import java.util.TimeZone
 
 // Kept as a public state name for callers and existing Home contracts.
 enum class DailyBriefingCardState { NORMAL, CONFIRM_DISMISS, CONFIRM_FOREVER }
@@ -95,10 +98,8 @@ fun DailyBriefingCard(
 ) {
     var expanded by remember(briefing.region, briefing.date) { mutableStateOf(false) }
     var cardState by remember(briefing.region, briefing.date) { mutableStateOf(DailyBriefingCardState.NORMAL) }
-    val displayDate = remember(briefing.date) {
-        runCatching { LocalDate.parse(briefing.date).format(DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())) }
-            .getOrDefault(briefing.date)
-    }
+    val locale = currentLocale()
+    val displayDate = remember(briefing.date, locale) { briefingCardDate(briefing.date, locale) }
     val durationMinutes = if (chapters.isNotEmpty()) ((chapters.last().startTime + 30) / 60).toInt().coerceAtLeast(1) else null
     val remainingMinutes = briefingRemainingMinutes(durationMinutes, playbackProgress)
     fun track(action: String) = AnalyticsHelper.trackDailyBriefingInteraction(action, briefing.region, briefing.date)
@@ -343,3 +344,9 @@ private fun DailyBriefingStories(
         }
     }
 }
+
+/** The brief's `yyyy-MM-dd` [date] as a short day and month in [locale] ("Nov 20"); as sent when unreadable. */
+internal fun briefingCardDate(date: String, locale: Locale): String = runCatching {
+    val millis = LocalDate.parse(date).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+    LocaleFormats.date(millis, LocaleFormats.DateStyle.DAY_MONTH, locale, TimeZone.getTimeZone("UTC"))
+}.getOrDefault(date)

@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCard
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardDensity
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardPresentation
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.R
@@ -59,7 +60,7 @@ fun PodcastCard(
                         .align(Alignment.TopStart),
                 ) {
                     Text(
-                        text = podcast.effectiveGenre.uppercase(),
+                        text = podcast.effectiveGenre.uppercase(currentLocale()),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                         fontWeight = GoogleSansWeight.bold,

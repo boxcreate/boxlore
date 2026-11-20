@@ -8,8 +8,6 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -17,43 +15,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.prefs.AppLanguage
 
-// Genre data matching GenreSelector.kt
-data class GenreItem(
-    val label: String,
-    val value: String,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector,
-)
-
-val ONBOARDING_GENRES =
-    listOf(
-        GenreItem("News", "News", Icons.Rounded.Newspaper),
-        GenreItem("Tech", "Technology", Icons.Rounded.Computer),
-        GenreItem("Business", "Business", Icons.Rounded.Work),
-        GenreItem("Comedy", "Comedy", Icons.Rounded.SentimentVerySatisfied),
-        GenreItem("True Crime", "True Crime", Icons.Rounded.Fingerprint),
-        GenreItem("Sports", "Sports", Icons.Rounded.EmojiEvents),
-        GenreItem("Health", "Health", Icons.Rounded.MonitorHeart),
-        GenreItem("History", "History", Icons.Rounded.AccountBalance),
-        GenreItem("Arts", "Arts", Icons.Rounded.Palette),
-        GenreItem("Society", "Society & Culture", Icons.Rounded.Groups),
-        GenreItem("Education", "Education", Icons.Rounded.School),
-        GenreItem("Science", "Science", Icons.Rounded.Science),
-        GenreItem("TV & Film", "TV & Film", Icons.Rounded.Movie),
-        GenreItem("Fiction", "Fiction", Icons.Rounded.AutoStories),
-        GenreItem("Music", "Music", Icons.Rounded.MusicNote),
-        GenreItem("Religion", "Religion & Spirituality", Icons.Rounded.SelfImprovement),
-        GenreItem("Family", "Kids & Family", Icons.Rounded.ChildCare),
-        GenreItem("Leisure", "Leisure", Icons.Rounded.Weekend),
-        GenreItem("Govt", "Government", Icons.Rounded.Gavel),
-    )
-
+/** The onboarding flow. [onAppLanguageChosen] applies a language picked in the first question and may recreate the activity. */
 @Composable
 fun OnboardingScreen(
     viewModel: OnboardingViewModel,
     onComplete: () -> Unit,
     onBack: () -> Unit = {},
     onImportClick: () -> Unit = {},
+    onAppLanguageChosen: (AppLanguage) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isOnboardingCompleted = remember { viewModel.isOnboardingCompleted() }
@@ -68,7 +39,8 @@ fun OnboardingScreen(
 
     val isRootStep =
         uiState.currentStep == OnboardingStep.WELCOME ||
-            uiState.currentStep == OnboardingStep.AI_ONBOARDING
+            uiState.currentStep == OnboardingStep.AI_ONBOARDING ||
+            (uiState.currentStep == OnboardingStep.APP_LANGUAGE && uiState.appLanguageQuestion?.showsAll != true)
 
     BackHandler(
         enabled =
@@ -88,6 +60,10 @@ fun OnboardingScreen(
             onBack()
         } else {
             when (uiState.currentStep) {
+                OnboardingStep.APP_LANGUAGE -> {
+                    // Back closes the full language list; on the question itself it leaves the app.
+                    viewModel.showAllAppLanguages(false)
+                }
                 OnboardingStep.WELCOME -> {
                     // Handled above
                 }
@@ -133,6 +109,7 @@ fun OnboardingScreen(
         val (stepName, stepIndex, flowType) =
             remember(step) {
                 when (step) {
+                    OnboardingStep.APP_LANGUAGE -> Triple(OnboardingAppLanguage.STEP_NAME, 0, "welcome")
                     OnboardingStep.WELCOME -> Triple("welcome", 0, "welcome")
                     OnboardingStep.GENRES -> Triple("genres", 1, "manual_genre")
                     OnboardingStep.SUB_GENRES -> Triple("sub_genres", 2, "manual_genre")
@@ -151,6 +128,19 @@ fun OnboardingScreen(
             )
         }
         when (step) {
+            OnboardingStep.APP_LANGUAGE -> {
+                // The question is gone once answered; the step changes with it.
+                uiState.appLanguageQuestion?.let { question ->
+                    AppLanguageQuestionContent(
+                        question = question,
+                        onChoose = { language ->
+                            viewModel.chooseAppLanguage(language)
+                            onAppLanguageChosen(language)
+                        },
+                        onShowAll = { viewModel.showAllAppLanguages(true) },
+                    )
+                }
+            }
             OnboardingStep.WELCOME -> {
                 LaunchedEffect(Unit) {
                     viewModel.onWelcomeScreenViewed()

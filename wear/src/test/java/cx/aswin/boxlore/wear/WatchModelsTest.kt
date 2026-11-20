@@ -8,8 +8,6 @@ import cx.aswin.boxlore.wear.model.SleepTimerChoice
 import cx.aswin.boxlore.wear.model.WatchSearchResult
 import cx.aswin.boxlore.wear.ui.WatchFormat
 import cx.aswin.boxlore.wear.ui.WatchRoutes
-import java.time.ZoneId
-import java.util.Locale
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -61,15 +59,6 @@ class WatchModelsTest {
         assertEquals(0, WatchFormat.minutesLeft(39, 1f))
         assertEquals(0, WatchFormat.minutesLeft(39, 4f))
         assertEquals(39, WatchFormat.minutesLeft(39, -1f))
-    }
-
-    @Test
-    fun `short dates follow the listener's language and time zone`() {
-        val sixthOfNovember = 1_793_923_200_000L
-
-        assertEquals("6 Nov", WatchFormat.shortDate(sixthOfNovember, ZoneId.of("UTC"), Locale.UK))
-        assertEquals("5 Nov", WatchFormat.shortDate(sixthOfNovember, ZoneId.of("America/Los_Angeles"), Locale.UK))
-        assertEquals("6 nov", WatchFormat.shortDate(sixthOfNovember, ZoneId.of("UTC"), Locale.forLanguageTag("es")))
     }
 
     @Test

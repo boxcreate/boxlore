@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.onboarding
 
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumPodcastDto
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumRowDto
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -29,11 +30,11 @@ class OnboardingSuggestionsLanesTest {
                 selectedGenres = setOf("News"),
             )
         assertEquals(2, lanes.size)
-        assertEquals("Deep Dives", lanes[0].title)
+        assertEquals(UiText.raw("Deep Dives"), lanes[0].title)
         assertFalse(lanes[0].isCharts)
         assertTrue(lanes[1].isCharts)
         assertEquals(OnboardingSuggestionsLanes.CHARTS_LANE_ID, lanes[1].id)
-        assertTrue(lanes[1].purpose.contains("News"))
+        assertEquals(UiText.res(R.string.suggestions_lane_purpose_charts_one, UiText.res(R.string.onboarding_genre_news)), lanes[1].purpose)
     }
 
     @Test
@@ -46,7 +47,7 @@ class OnboardingSuggestionsLanesTest {
             )
         assertEquals(1, lanes.size)
         assertFalse(lanes.single().isCharts)
-        assertTrue(lanes.single().purpose.contains("winding", ignoreCase = true))
+        assertEquals(UiText.res(R.string.suggestions_lane_purpose_wind_down), lanes.single().purpose)
     }
 
     @Test
@@ -59,13 +60,13 @@ class OnboardingSuggestionsLanesTest {
                 ),
                 chartsPodcasts = emptyList(),
             )
-        assertEquals("For you", lanes.single().title)
+        assertEquals(UiText.res(R.string.suggestions_lane_for_you), lanes.single().title)
     }
 
     @Test
     fun `unmatched curriculum title uses default purpose`() {
         val purpose = OnboardingSuggestionsLanes.purposeForCurriculumTitle("Quantum knitting hour")
-        assertEquals("A themed set based on what you told us.", purpose)
+        assertEquals(UiText.res(R.string.suggestions_lane_purpose_themed), purpose)
     }
 
     @Test
@@ -76,7 +77,29 @@ class OnboardingSuggestionsLanesTest {
                 chartsPodcasts = listOf(samplePodcast("c1")),
                 selectedGenres = emptySet(),
             )
-        assertEquals("Charting shows in your region right now.", lanes.single().purpose)
+        assertEquals(UiText.res(R.string.suggestions_lane_purpose_charts_region), lanes.single().purpose)
+        assertEquals(UiText.res(R.string.suggestions_lane_popular_now), lanes.single().title)
+    }
+
+    @Test
+    fun `charts purpose names two genres in a whole sentence, and keeps an unknown key as it is`() {
+        val lanes =
+            OnboardingSuggestionsLanes.build(
+                curriculumRows = emptyList(),
+                chartsPodcasts = listOf(samplePodcast("c1")),
+                selectedGenres = linkedSetOf("Technology", "Made-up genre", "News"),
+            )
+        assertEquals(
+            UiText.res(R.string.suggestions_lane_purpose_charts_two, UiText.res(R.string.onboarding_genre_technology), UiText.raw("Made-up genre")),
+            lanes.single().purpose,
+        )
+    }
+
+    @Test
+    fun `the app's own fallback row titles come from resources, server titles stay as sent`() {
+        assertEquals(UiText.res(R.string.suggestions_lane_trending_hits), OnboardingSuggestionsLanes.titleForCurriculumRow(OnboardingSuggestionsLanes.FALLBACK_TRENDING_TITLE))
+        assertEquals(UiText.res(R.string.suggestions_lane_trending_genres), OnboardingSuggestionsLanes.titleForCurriculumRow(OnboardingSuggestionsLanes.FALLBACK_GENRES_TITLE))
+        assertEquals(UiText.raw("Trending in Spain"), OnboardingSuggestionsLanes.titleForCurriculumRow("Trending in Spain"))
     }
 
     @Test
@@ -91,8 +114,8 @@ class OnboardingSuggestionsLanesTest {
         val lane =
             OnboardingSuggestionsLane(
                 id = "x",
-                title = "T",
-                purpose = "P",
+                title = UiText.raw("T"),
+                purpose = UiText.raw("P"),
                 isCharts = false,
                 podcasts = listOf(samplePodcast("1"), samplePodcast("2"), samplePodcast("3")),
             )
@@ -102,14 +125,14 @@ class OnboardingSuggestionsLanesTest {
     @Test
     fun `deduplicateLanes strips duplicate ids and blank ids`() {
         val lanes = listOf(
-            OnboardingSuggestionsLane(id = "lane_1", title = "First", purpose = "", isCharts = false, podcasts = emptyList()),
-            OnboardingSuggestionsLane(id = "lane_1", title = "Duplicate", purpose = "", isCharts = false, podcasts = emptyList()),
-            OnboardingSuggestionsLane(id = "   ", title = "Blank", purpose = "", isCharts = false, podcasts = emptyList()),
-            OnboardingSuggestionsLane(id = "lane_2", title = "Second", purpose = "", isCharts = false, podcasts = emptyList()),
+            OnboardingSuggestionsLane(id = "lane_1", title = UiText.raw("First"), purpose = UiText.raw(""), isCharts = false, podcasts = emptyList()),
+            OnboardingSuggestionsLane(id = "lane_1", title = UiText.raw("Duplicate"), purpose = UiText.raw(""), isCharts = false, podcasts = emptyList()),
+            OnboardingSuggestionsLane(id = "   ", title = UiText.raw("Blank"), purpose = UiText.raw(""), isCharts = false, podcasts = emptyList()),
+            OnboardingSuggestionsLane(id = "lane_2", title = UiText.raw("Second"), purpose = UiText.raw(""), isCharts = false, podcasts = emptyList()),
         )
         val deduplicated = OnboardingSuggestionsLanes.deduplicateLanes(lanes)
         assertEquals(listOf("lane_1", "lane_2"), deduplicated.map { it.id })
-        assertEquals("First", deduplicated[0].title)
+        assertEquals(UiText.raw("First"), deduplicated[0].title)
     }
 
     @Test

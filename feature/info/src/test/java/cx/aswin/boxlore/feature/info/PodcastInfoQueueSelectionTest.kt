@@ -1,11 +1,11 @@
 package cx.aswin.boxlore.feature.info
 
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.testing.TestFixtures
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /** Add to queue on a show page's selection fills the queue to its cap and says what didn't fit. */
@@ -34,7 +34,7 @@ class PodcastInfoQueueSelectionTest {
         assertEquals(QueueSelectionOutcome(added = 42, didNotFit = 178), outcome)
         assertEquals(50, queue.ids.size)
         assertEquals(selection.take(42).map { it.id }, queue.ids.drop(8), "the first ones selected, in order")
-        assertEquals("Added 42 episodes. Your queue is full, so 178 weren’t added.", queueSelectionMessage(outcome))
+        assertEquals(partlyAdded(42, 178), queueSelectionMessage(outcome))
     }
 
     @Test
@@ -45,7 +45,7 @@ class PodcastInfoQueueSelectionTest {
         val outcome = addSelectionToQueue(selection, queue.ids.toSet(), 50, { queue.ids.size }, queue::add)
 
         assertEquals(QueueSelectionOutcome(added = 1, didNotFit = 2), outcome)
-        assertEquals("Added 1 episode. Your queue is full, so 2 weren’t added.", queueSelectionMessage(outcome))
+        assertEquals(partlyAdded(1, 2), queueSelectionMessage(outcome))
     }
 
     @Test
@@ -61,7 +61,7 @@ class PodcastInfoQueueSelectionTest {
 
         assertEquals(QueueSelectionOutcome(added = 0, didNotFit = 3), outcome)
         assertEquals(0, calls)
-        assertEquals("Your queue is full. Remove an episode to add more.", queueSelectionMessage(outcome))
+        assertEquals(UiText.res(R.string.podcast_info_queue_full), queueSelectionMessage(outcome))
     }
 
     @Test
@@ -76,7 +76,13 @@ class PodcastInfoQueueSelectionTest {
 
     @Test
     fun `one left out reads in the singular`() {
-        val message = queueSelectionMessage(QueueSelectionOutcome(added = 2, didNotFit = 1))
-        assertTrue(message!!.endsWith("so 1 wasn’t added."))
+        // The plural follows each count on its own; the English is checked in EpisodeDurationFormatterTest.
+        assertEquals(partlyAdded(2, 1), queueSelectionMessage(QueueSelectionOutcome(added = 2, didNotFit = 1)))
     }
+
+    private fun partlyAdded(added: Int, left: Int) = UiText.res(
+        R.string.podcast_info_queue_partly_added,
+        UiText.plural(R.plurals.podcast_info_queue_added, added, added),
+        UiText.plural(R.plurals.podcast_info_queue_not_added, left, left),
+    )
 }

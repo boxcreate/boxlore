@@ -101,8 +101,6 @@ internal fun ColumnScope.SignedOutContent(state: AccountAuthState) {
     }
 
     PrivacyPolicyNotice(
-        prefix = stringResource(R.string.account_privacy_prefix),
-        suffix = ".",
         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
         style = MaterialTheme.typography.bodySmall,
     )

@@ -4,10 +4,12 @@ import androidx.compose.runtime.Immutable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.isTrailer
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.feature.info.EpisodeSort
 import cx.aswin.boxlore.feature.info.components.PodcastEpisodeActionsCallbacks
 import cx.aswin.boxlore.feature.info.components.PodcastEpisodeActionsState
 import cx.aswin.boxlore.feature.info.logic.FeedItem
+import java.util.Locale
 
 /** The latest episode's live state for a branded page's spotlight card. */
 @Immutable
@@ -92,18 +94,11 @@ private fun pictureAddress(url: String): String {
  * A Showcase card's details: when the episode came out and how long it is, or that you played it once
  * it is finished ("2d ago · 55 min", "2d ago · Played"). [played] is the localized "Played".
  */
-internal fun brandedDetails(age: String, durationSeconds: Int, completed: Boolean, played: String): String =
-    listOf(age, if (completed) played else brandedLength(durationSeconds)).filter(String::isNotBlank).joinToString(" · ")
+internal fun brandedDetails(age: String, durationSeconds: Int, completed: Boolean, played: String, locale: Locale): String =
+    listOf(age, if (completed) played else brandedLength(durationSeconds, locale)).filter(String::isNotBlank).joinToString(" · ")
 
-internal fun brandedLength(durationSeconds: Int): String {
-    val hours = durationSeconds / 3600
-    val minutes = (durationSeconds % 3600) / 60
-    return when {
-        durationSeconds < 60 -> ""
-        hours > 0 -> "$hours hr $minutes min"
-        else -> "$minutes min"
-    }
-}
+internal fun brandedLength(durationSeconds: Int, locale: Locale): String =
+    if (durationSeconds < 60) "" else LocaleFormats.duration(durationSeconds.toLong(), locale, LocaleFormats.DurationWidth.SHORT)
 
 /** The spotlight's episode is not repeated in the list below it. */
 internal fun feedItemsWithoutSpotlight(items: List<FeedItem>, spotlight: Episode?): List<FeedItem> =

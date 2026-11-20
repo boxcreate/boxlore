@@ -929,7 +929,7 @@ open class BoxLorePlaybackService :
         )
     }
 
-    override fun getTimeBasedGenres(hour: Int): List<Pair<String, String>> = CuratedMoods.forDaypart(CuratedMoods.daypartForHour(hour)).map { it.id to it.title }
+    override fun getTimeBasedGenres(hour: Int): List<Pair<String, String>> = CuratedMoods.forDaypart(CuratedMoods.daypartForHour(hour)).map { it.id to getString(it.titleRes) }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = mediaSession
 

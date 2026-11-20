@@ -1,18 +1,28 @@
 package cx.aswin.boxlore.feature.settings.pages.supportworlds
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.feature.settings.pages.ControlSupportPageStyle
 import cx.aswin.boxlore.feature.settings.pages.SUPPORT_TIER_CARDS
 import cx.aswin.boxlore.feature.settings.pages.getSupportMissionText
 import cx.aswin.boxlore.feature.settings.pages.supportCodenameFontSize
 import cx.aswin.boxlore.feature.settings.pages.supportWorldPageStyle
+import cx.aswin.boxlore.feature.settings.text
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 class SupportWorldsModelTest {
+    private val resources get() = ApplicationProvider.getApplicationContext<Context>().resources
+
     @Test
     fun `flag variants map to worlds case-insensitively and unknown values do not`() {
         assertEquals(SupportWorld.Orbit, SupportWorld.fromVariant("orbit"))
@@ -63,14 +73,14 @@ class SupportWorldsModelTest {
             assertEquals(5, skin.tierArt.size)
             assertTrue(skin.tierArt.all { it != 0 })
             assertEquals(5, skin.tierArt.toSet().size)
-            assertTrue(skin.ctaVerb.isNotBlank())
+            assertTrue(text(skin.ctaVerb, "Bolt Soda").contains("Bolt Soda"))
         }
     }
 
     @Test
     fun `every payments-off notice names the price and says nothing was charged`() {
-        val notices = SupportWorld.entries.mapNotNull { supportWorldSkin(it) }.map { it.notice.body("$6.99") } +
-            supportControlNoticeContent(art = 1, accent = SUPPORT_TIER_CARDS[3].auraColor, priceLabel = "$6.99").body
+        val notices = SupportWorld.entries.mapNotNull { supportWorldSkin(it) }.map { it.notice.body("$6.99").text() } +
+            supportControlNoticeContent(art = 1, accent = SUPPORT_TIER_CARDS[3].auraColor, priceLabel = "$6.99").body.text()
         assertEquals(6, notices.size)
         notices.forEach { body ->
             assertTrue(body, body.contains("$6.99"))
@@ -109,15 +119,18 @@ class SupportWorldsModelTest {
 
     @Test
     fun `mission copy keeps today's wording and only swaps what a contribution backs`() {
+        val snack = supportWorldSkin(SupportWorld.Neon)!!.mission
+        val island = supportWorldSkin(SupportWorld.Sky)!!.mission
+        val relic = supportWorldSkin(SupportWorld.Alchemy)!!.mission
         assertEquals(
             "Software that helps people learn, listen, and explore should simply exist without a catch. " +
                 "No ads, no paywalls. Every snack helps fund our servers and keep boxlore open for everyone.",
-            getSupportMissionText(4L, "every snack"),
+            getSupportMissionText(resources, 4L, snack),
         )
-        assertTrue(getSupportMissionText(42L, "every island").contains("42 hours of listening, every island helps keep"))
-        assertEquals(getSupportMissionText(4L), getSupportMissionText(4L, "backing a power cell"))
+        assertTrue(getSupportMissionText(resources, 42L, island).contains("42 hours of listening, every island helps keep"))
+        assertEquals(getSupportMissionText(resources, 4L), getSupportMissionText(resources, 4L, ControlSupportPageStyle.mission))
         listOf(null, 0L, 5L, 120L).forEach { hours ->
-            val copy = getSupportMissionText(hours, "every relic")
+            val copy = getSupportMissionText(resources, hours, relic)
             assertFalse(copy.contains("tracking", ignoreCase = true))
             assertFalse(copy.contains("privacy", ignoreCase = true))
         }

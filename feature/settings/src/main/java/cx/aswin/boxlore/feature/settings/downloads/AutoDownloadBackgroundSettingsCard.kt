@@ -11,7 +11,9 @@ import androidx.compose.material.icons.rounded.BatteryChargingFull
 import androidx.compose.material.icons.rounded.Update
 import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import cx.aswin.boxlore.core.prefs.AutoDownloadBackgroundSettings
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsSwitchRow
@@ -25,12 +27,12 @@ internal fun AutoDownloadBackgroundSettingsCard(
 ) {
     val presentation = autoDownloadBackgroundPresentation(settings)
     SettingsGroup(
-        title = "While boxlore is closed",
-        footer = presentation.footer,
+        title = stringResource(R.string.settings_auto_download_background_title),
+        footer = stringResource(presentation.footer),
     ) {
         SettingsSwitchRow(
-            title = "Backup background checks",
-            supportingText = "Find new episodes if show notifications are off or don't arrive.",
+            title = stringResource(R.string.settings_auto_download_background_checks),
+            supportingText = stringResource(R.string.settings_auto_download_background_checks_description),
             icon = Icons.Rounded.Update,
             checked = settings.enabled,
             onCheckedChange = onEnabledChange,
@@ -43,15 +45,15 @@ internal fun AutoDownloadBackgroundSettingsCard(
             Column {
                 SettingsDivider()
                 SettingsSwitchRow(
-                    title = "Check on Wi-Fi only",
-                    supportingText = "Applies to checks and the downloads they start.",
+                    title = stringResource(R.string.settings_auto_download_background_wifi),
+                    supportingText = stringResource(R.string.settings_auto_download_background_wifi_description),
                     icon = Icons.Rounded.Wifi,
                     checked = settings.wifiOnly,
                     onCheckedChange = onWifiOnlyChange,
                 )
                 SettingsDivider()
                 SettingsSwitchRow(
-                    title = "Only while charging",
+                    title = stringResource(R.string.settings_auto_download_background_charging),
                     icon = Icons.Rounded.BatteryChargingFull,
                     checked = settings.chargingOnly,
                     onCheckedChange = onChargingOnlyChange,

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`:app` is the Android application shell and the only production composition root. It owns `BoxLoreApplication`, `MainActivity`, `AppContainer`, the navigation host and adaptive shell, push and App Link entry points, in-app announcements and updates, the library import overlay, API-session setup, and the WorkManager jobs that need the whole object graph. Screens and engines live in `:feature:*` and `:core:*`; `:app` only wires them.
+`:app` is the Android application shell and the only production composition root. It owns `BoxLoreApplication`, `MainActivity`, `AppContainer`, the navigation host and adaptive shell, push and App Link entry points, in-app announcements and updates, the library import overlay, API-session setup, and WorkManager jobs needing the whole graph. Screens and engines live in `:feature:*` and `:core:*`; `:app` only wires them.
 
 ## Public API
 
@@ -19,11 +19,11 @@
 - `ui/rememberOnboardingViewModel` keeps the one `OnboardingViewModel` in the activity's `ViewModelStore`, so every onboarding flow shares it and it is cleared when the activity finishes; never create it with `remember`.
 - The one `PlaybackRepository` is built lazily. Cast state waits in `DeferredCastSessionState` until it exists, so widget, worker and notification starts never build playback on the main thread.
 - The container gives core modules ports instead of reverse dependencies: `feedTelemetry` for feed events, `rolloutSwitches`, and a `DownloadServiceLauncherHolder` that starts `MediaDownloadService`.
-- `onCreate` order: API sessions first, then the Coil image loader (before widgets and services), Media3 Cast from `BoxLoreCastOptionsProvider`, the shared `UserPreferencesRepository`, the container and its holders. PostHog starts later on a background thread through `PostHogStartup`, after `AnalyticsHelper.initPolicy`.
-- `StartupWorkGate` holds optional work (cloud sync, Smart Downloads reconciliation, address repair scheduling, foreground subscription sync, legacy RSS repair, the first widget preview publish) until the first screen commits, running initializers one at a time.
+- `onCreate` order: API sessions first, then the Coil image loader (before widgets and services), Media3 Cast from `BoxLoreCastOptionsProvider`, the shared `UserPreferencesRepository`, the container and its holders. PostHog starts later in the background (`PostHogStartup`), after `AnalyticsHelper.initPolicy`.
+- `StartupWorkGate` holds optional work (cloud sync, Smart Downloads reconciliation, address repair scheduling, foreground subscription sync, legacy RSS repair, the first widget preview) until the first screen commits, one initializer at a time.
 - Home releases the gate after its content and two frames, other routes after two frames, a headless worker or widget launch at the first idle main queue; an early Activity stop also releases it, recreation does not.
-- Missing DataStore appearance keys are filled from the theme fast cache off the main thread; existing choices are never overwritten.
-- `TabletAlphaStartupGate` shows a one-time notice on tablet windows of tablet-sized displays before the app root composes; update and survey prompts wait behind it.
+- Missing DataStore appearance keys are filled from the theme fast cache off the main thread, never overwriting existing choices.
+- `TabletAlphaStartupGate` shows a one-time notice on tablet-sized windows and displays before the root composes; update and survey prompts wait behind it.
 
 ## Navigation and adaptive shell
 
@@ -35,19 +35,20 @@
 - `ArtworkNavigationHostTheme` lets detail destinations publish artwork colours per back-stack entry; regular pages use the saved theme from their first frame, including during predictive Back.
 - Email sign-in opens Settings on Account (`ACCOUNT_PAGE_ROUTE`) once per request; Account and onboarding hide the player overlay.
 - Window gates, state retention and transition coverage follow the [adaptive UI and state contract](../ARCHITECTURE.md#adaptive-ui-and-state).
+- `AppLanguageController` (`AppContainer.appLanguage`) applies the App language: the per-app language on Android 13+; on 12/12L a stored choice applied in `MainActivity.attachBaseContext`, where notifications, widgets and Android Auto keep the phone's language ([translating](../docs/i18n/TRANSLATING.md)).
 
 ## Push, links and sharing
 
 - `navigation/WebAppLinks` lists the verified hosts and paths and must match the manifest's `autoVerify` filters (one host per filter): `boxlore.in` `/share`, `/auth`, `/__/auth/links`, and `aswin.cx` `/boxlore/share`, `/boxcast/share`, `/boxlore/auth` for links older builds shared.
 - `boxlore://` and `boxcast://` stay registered. Episode deep links live in `navigation/EpisodeShowLinks`; patterns are only added, and `show=` fills the route's `podcastId` ([episode IDs](../docs/EPISODE_IDS.md)).
-- `MainActivity` recognises email sign-in links through `AppContainer.emailLinkSignIn`, clears the intent data, refuses replay across recreation, and asks for the address (`CrossDeviceEmailDialog`) when the link was opened on another device.
+- `MainActivity` handles email sign-in links (`AppContainer.emailLinkSignIn`): it clears the intent data, refuses replay across recreation, and asks for the address (`CrossDeviceEmailDialog`) when opened on another device.
 - `BoxLoreFcmService` saves each new-episode push as unique `NewEpisodeDeliveryWorker` work before any network call. Download scheduling and notification display fail independently.
 - `NewEpisodePushHydration` matches a push by GUID or enclosure, then catalog key, then show and recipe ID; without a match the notification opens the push's own IDs.
-- New-episode notifications are tagged by show ID and grouped under `boxlore_new_episodes`, with a silent summary while two or more show; at most 16 show at once, a new show replacing the oldest. Taps open `MainActivity` with `target_route`, and the show ID in the intent identifier keeps each show's PendingIntent its own; without quota it posts with no tap action.
+- New-episode notifications are tagged by show ID and grouped under `boxlore_new_episodes` (a silent summary from two; at most 16, the newest replacing the oldest). Taps open `MainActivity` with `target_route`; the show ID in the intent identifier keeps each PendingIntent distinct, and without quota it posts with no tap action.
 - `dispatchPushAction` routes push actions on cold and warm launches: allowlisted routes navigate, registered links use Navigation, update targets open the updater, and other web links open externally with boxlore excluded from the chooser.
 - An `rss:` push shows only if it matches the saved feed URL and local consent; `RssNotificationSyncWorker` reconciles registrations and topics.
 - Announcements are native Compose surfaces with a Markdown subset; payload HTML stays text. Only release alerts are filtered by install channel and version.
-- `AndroidAutoTip` shows a non-Play install, once, how to put boxlore on the car's screen: a full-screen `TIP` announcement when boxlore opens during a drive, or a notification when a drive starts while its player service runs. Never once Android Auto has opened boxlore's lists; its record (`boxlore_android_auto_tip`) stays out of backups.
+- `AndroidAutoTip` shows a non-Play install, once, how to put boxlore on the car's screen (a `TIP` announcement if opened while driving, else a notification when a drive starts during playback), never after Android Auto has opened boxlore's lists; its record (`boxlore_android_auto_tip`) stays out of backups.
 - `SupportPushTopicSync` keeps support topics in step with each conversation refresh. A reply push opens `feedback?thread=<id>`, closing an open tablet detail first.
 - `ShareManager.episodeShareTargets` comes from `AppContainer.episodeSharePreparer`; `EpisodeShareRegistrationWorker` retries a registration that misses its short wait.
 
@@ -55,7 +56,7 @@
 
 - `InstallChannel` picks the flow: the Play build or a Play install uses Play Core (`PlayAppUpdateHelper`), anything else reads a versioned `update.json` from the GitHub Latest release; the same rule sets the API channel header.
 - Foreground checks are rate-limited with failure backoff; Settings → Check for updates bypasses the limit. Background checks never prompt or download.
-- Direct updates download, verify and install as separate actions, rechecking checksum, package, version, minimum Android version and signer before each installer handoff; sessions survive permission screens and process restart and stay out of backups.
+- Direct updates download, verify and install as separate steps, rechecking checksum, package, version, minimum Android version and signer before each handoff; sessions survive permission screens and restarts, outside backups.
 - Build types: `release` is the direct APK with the installer and `REQUEST_INSTALL_PACKAGES` (`src/direct`); `playRelease` is the Play AAB without either; `updateTest` is isolated and never published ([isolated testing](../docs/TESTING.md#isolated-update-and-announcement-testing)).
 
 ## API sessions
@@ -69,7 +70,7 @@
 - Feed fix switches (`FeedFixSwitches`) fail open: a fix runs unless its switch is on.
 - Job pause switches (`SavedKillSwitch`) follow the live answer and save it; until then the saved answer decides, and a job runs when none was saved.
 - The feed-first switch (`FeedFirstSwitch`) fails closed (saved answer, else off) and is fixed for the process. `RolloutFlagMemory` saves answers whenever flags load; all reach `:core:catalog` through `AppContainer.rolloutSwitches`.
-- `UpgradeRepairWorker.scheduleIfNeeded` runs on every launch, headless ones included, and enqueues the feed address repair only while stored state says work is left; a restore enqueues it again.
+- `UpgradeRepairWorker.scheduleIfNeeded` runs on every launch (headless too) and enqueues the feed address repair only while stored state says work is left; a restore enqueues it again.
 - `PodcastNotificationRegistrationWorker` registers a Podcast Index show's notifications again after its saved address changes.
 - `LegacyRssRepairLaunchGate` enables the legacy RSS repair only for upgraded installs of allow-listed versions; fresh installs settle without changes and anything else fails closed.
 - `AutoDownloadLifecycle` scans cached release claims only while the process is in the foreground; background discovery keeps its own consent.
@@ -81,6 +82,7 @@ src/main/java/cx/aswin/boxlore/
   BoxLoreApplication.kt  AppContainer.kt  MainActivity.kt  LegacyWorkerFactory.kt
   analytics/      PostHogWiring, FeatureAdoptionWiring
   connectivity/   AndroidConnectivityObserver
+  language/       AppLanguageController
   fcm/            BoxLoreFcmService, FcmPayloadParser, NewEpisodePushHydration,
                   delivery and registration workers, SupportReplies
   lifecycle/      AutoDownloadLifecycle, AutoDownloadForegroundScan
@@ -106,12 +108,12 @@ src/debug/        App Check debug provider, ADB-only notification preview receiv
 
 - Project: every `:feature:*` module, plus `:core:analytics`, `:core:auth`, `:core:catalog`, `:core:designsystem`, `:core:domain`, `:core:downloads`, `:core:model`, `:core:network`, `:core:playback`, `:core:ranking`, `:core:rss` and `:core:support`. Tests use `:core:testing`.
 - Libraries: Compose (Material 3 Adaptive, WindowManager), Navigation, Firebase, PostHog, WorkManager, Media3 Cast and Session, Coil, Retrofit, Haze, AndroidX WebKit and Play Core.
-- No core or feature module constructs an application graph; they receive instances from `AppContainer` or the dependency holders.
+- Core and feature modules never build an application graph; they get instances from `AppContainer` or the dependency holders.
 
 ## Threading / lifecycle
 
 - `AppContainer`, `StartupWorkGate`, the updater and sync coordinators are application-scoped; long work runs on IO.
-- Composition, navigation, import and player overlay state are Activity-scoped. Activity start and stop tell the shared `PlaybackRepository` whether UI position polling is needed.
+- Composition, navigation, import and player overlay state are Activity-scoped. Activity start and stop tell the shared `PlaybackRepository` whether to poll UI position.
 - Background audio, notifications, Cast and the MediaSession stay owned by `BoxLorePlaybackService`.
 - Widget transport calls hop to `Dispatchers.Main.immediate` before touching the MediaController; update UI actions are serialized on the main thread.
 
@@ -127,15 +129,17 @@ Shared contracts (application ID, IDs, deep-link schemes, core-owned preference 
 - `noBackupFilesDir` files: `feed_first_flag`, `kill_switch_<switch>`, `upgrade_repair_notifications`, `rss_notification_consent`, `rss_notification_registrations`, `fcm_topics_synced`.
 - Routes: `ACCOUNT_PAGE_ROUTE` (`settings?page=account`), `tablet_context_root`, and every route in `PushTargetRouteAllowlist`.
 - Backup and device transfer include Room, SharedPreferences and `files/datastore/`, excluding WorkManager's database, the API session, the NPS store, update state and background download consent (`res/xml/data_extraction_rules.xml`).
+- `generateLocaleConfig` (`res/resources.properties`) and `localeFilters` define the app's languages; debug adds en-XA and ar-XB pseudo-locales.
 - Build config reads `BOXLORE_API_BASE_URL`, `BOXLORE_PUBLIC_KEY` (both accept `BOXCAST_*` fallbacks) and `BOXLORE_CAST_RECEIVER_ID`; debug builds may read `BOXLORE_APPCHECK_DEBUG_SECRET` from `local.properties`.
 
 ## Testing notes
 
-JVM tests live in `app/src/test` and use `:core:testing` fixtures, Robolectric and real NavHosts. Feature UI behaviour is mostly covered in feature modules.
+JVM tests in `app/src/test` use `:core:testing` fixtures, Robolectric and real NavHosts; feature UI is mostly covered in feature modules.
 
 | Area | Test classes |
 | :--- | :--- |
 | Composition root and startup | `AppContainerSmokeTest`, `StartupWorkGateTest`, `LegacyWorkerFactoryTest`, `DeferredCastSessionStateTest`, `SplashHoldPolicyTest`, `TabletAlphaStartupDecisionTest` |
+| App language | `AppLanguageControllerTest`, `OnboardingAppLanguageRecreationTest` |
 | Navigation | `StartDestinationResolverTest`, `LaunchSubscriptionsBackDecisionTest`, `ExploreTabReselectTest`, `EpisodeNavRouteRegressionTest`, `AccountPageRouteTest`, `ArtworkNavigationHostThemeTest` |
 | Adaptive shell | `TabletAppShellTest`, `TabletPlayerReflowTest`, `TabletShellGeometryTest`, `TabletNavigationRailTest`, `BoxloreFoldAdapterTest`, `AdaptivePlayerChromeControllerTest` |
 | Links and push | `WebAppLinksTest`, `WebAppLinksManifestTest`, `EpisodeShowLinksTest`, `PushActionRouterTest`, `FcmPayloadParserTest`, `NewEpisodePushHydrationTest`, `AnnouncementPolicyTest` |
@@ -146,7 +150,7 @@ JVM tests live in `app/src/test` and use `:core:testing` fixtures, Robolectric a
 | Library import | `ImportFlowModelTest`, `ImportDialogAdaptiveTest`, `ImportAccountHandoffTest` |
 | Backup rules | `BackgroundCheckBackupRulesTest` |
 
-`ShellPhoneGoldenTest` is opt-in and excluded from ordinary runs; see [screenshots](../docs/TESTING.md#screenshots).
+`ShellPhoneGoldenTest` is opt-in ([screenshots](../docs/TESTING.md#screenshots)).
 
 ```bash
 ./gradlew :app:testDebugUnitTest
@@ -161,9 +165,7 @@ JVM tests live in `app/src/test` and use `:core:testing` fixtures, Robolectric a
 
 - [`ARCHITECTURE.md`](../ARCHITECTURE.md)
 - [`docs/TESTING.md`](../docs/TESTING.md)
-- [`docs/EPISODE_IDS.md`](../docs/EPISODE_IDS.md)
-- [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../docs/ANALYTICS_EVENT_GLOSSARY.md)
 - [`:core:network` README](../core/network/README.md)
 - [`:core:catalog` README](../core/catalog/README.md)
 - [`:core:playback` README](../core/playback/README.md)
-- [`:core:designsystem` README](../core/designsystem/README.md) for navigation chrome and brand marks
+- [`:core:designsystem` README](../core/designsystem/README.md)

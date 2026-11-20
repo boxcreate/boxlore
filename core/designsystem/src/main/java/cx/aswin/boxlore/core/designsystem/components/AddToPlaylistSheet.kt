@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.designsystem.components
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -50,21 +52,26 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.R
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.PLAYLIST_NAME_MAX_LENGTH
 import cx.aswin.boxlore.core.model.Playlist
 import cx.aswin.boxlore.core.model.normalizePlaylistName
+import cx.aswin.boxlore.core.model.text.UiText
 
 /** The show page's Add to playlist sheet wording and its confirmations. */
 object AddToPlaylistCopy {
-    const val TITLE = "Add to playlist"
-    const val NO_PLAYLISTS = "You don’t have any playlists yet."
-    const val CREATE_AND_ADD = "Create and add"
+    @StringRes val TITLE = R.string.add_to_playlist_title
 
-    fun added(playlistName: String) = "Added to $playlistName"
+    @StringRes val NO_PLAYLISTS = R.string.add_to_playlist_none
 
-    fun removed(playlistName: String) = "Removed from $playlistName"
+    @StringRes val CREATE_AND_ADD = R.string.add_to_playlist_create_and_add
+
+    fun added(playlistName: String): UiText = UiText.res(R.string.add_to_playlist_added, playlistName)
+
+    fun removed(playlistName: String): UiText = UiText.res(R.string.add_to_playlist_removed, playlistName)
 }
 
 /**
@@ -127,7 +134,7 @@ fun AddToPlaylistSheet(
     ) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp).testTag(ADD_TO_PLAYLIST_SHEET_TAG)) {
             Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-                Text(AddToPlaylistCopy.TITLE, style = MaterialTheme.typography.titleLarge, fontWeight = GoogleSansWeight.bold)
+                Text(stringResource(AddToPlaylistCopy.TITLE), style = MaterialTheme.typography.titleLarge, fontWeight = GoogleSansWeight.bold)
                 if (showTitle.isNotBlank()) {
                     Text(showTitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
@@ -140,7 +147,7 @@ fun AddToPlaylistSheet(
                     NewPlaylistRow(onClick = state::startCreating)
                     if (playlists.isEmpty()) {
                         Text(
-                            AddToPlaylistCopy.NO_PLAYLISTS,
+                            stringResource(AddToPlaylistCopy.NO_PLAYLISTS),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
@@ -163,16 +170,16 @@ private fun NewPlaylistField(name: String, onNameChange: (String) -> Unit, onCre
         OutlinedTextField(
             value = name,
             onValueChange = { onNameChange(it.take(PLAYLIST_NAME_MAX_LENGTH)) },
-            label = { Text(PlaylistCopy.NAME_LABEL) },
+            label = { Text(stringResource(PlaylistCopy.NAME_LABEL)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { create() }),
             modifier = Modifier.fillMaxWidth().testTag(PLAYLIST_NAME_FIELD_TAG),
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onCancel) { Text(PlaylistCopy.CANCEL) }
+            TextButton(onClick = onCancel) { Text(stringResource(PlaylistCopy.CANCEL)) }
             Button(onClick = create, enabled = normalized.isNotEmpty(), modifier = Modifier.padding(start = 8.dp).heightIn(min = 48.dp)) {
-                Text(AddToPlaylistCopy.CREATE_AND_ADD)
+                Text(stringResource(AddToPlaylistCopy.CREATE_AND_ADD))
             }
         }
     }
@@ -191,7 +198,7 @@ private fun NewPlaylistRow(onClick: () -> Unit) {
                     Icon(Icons.Rounded.Add, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
                 }
             }
-            Text(PlaylistCopy.NEW_PLAYLIST, style = MaterialTheme.typography.titleSmall, fontWeight = GoogleSansWeight.semiBold, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(PlaylistCopy.NEW_PLAYLIST), style = MaterialTheme.typography.titleSmall, fontWeight = GoogleSansWeight.semiBold, color = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -211,7 +218,7 @@ private fun PlaylistToggleRow(playlist: Playlist, checked: Boolean, onToggle: ()
         PlaylistCover(playlist.coverUrls)
         Column(Modifier.weight(1f)) {
             Text(playlist.name, style = MaterialTheme.typography.titleSmall, fontWeight = GoogleSansWeight.semiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(PlaylistCopy.showCount(playlist.showCount), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(PlaylistCopy.showCount(playlist.showCount).asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         // The row is the toggle; the box only shows its state.
         Checkbox(checked = checked, onCheckedChange = null)

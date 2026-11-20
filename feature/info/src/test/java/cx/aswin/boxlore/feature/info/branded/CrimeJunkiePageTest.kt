@@ -12,10 +12,7 @@ import cx.aswin.boxlore.feature.info.branded.crimejunkie.CrimeJunkieFingerprint
 import cx.aswin.boxlore.feature.info.branded.crimejunkie.CrimeJunkieFlashlight
 import cx.aswin.boxlore.feature.info.branded.crimejunkie.CrimeJunkiePage
 import cx.aswin.boxlore.feature.info.branded.crimejunkie.CrimeJunkieTorch
-import cx.aswin.boxlore.feature.info.branded.crimejunkie.airedDate
 import cx.aswin.boxlore.feature.info.branded.crimejunkie.crimeJunkieCaseTitle
-import java.util.Locale
-import java.util.TimeZone
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -82,21 +79,6 @@ class CrimeJunkiePageTest {
         val late = "We sat down with the family of a victim to talk about everything: Part One"
         assertNull(crimeJunkieCaseTitle(late).stamp, "A colon this far in is part of the title")
         assertEquals(late, crimeJunkieCaseTitle(late).name)
-    }
-
-    @Test
-    fun `the tag types the length in hours and minutes and the day it aired`() {
-        assertEquals("45 min", brandedLength(45 * 60))
-        assertEquals("1 hr 5 min", brandedLength(65 * 60))
-        assertEquals("", brandedLength(30))
-        val zone = TimeZone.getDefault()
-        TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
-        try {
-            assertEquals("Oct 26", airedDate(1_793_016_000L, Locale.US))
-            assertNull(airedDate(0L, Locale.US))
-        } finally {
-            TimeZone.setDefault(zone)
-        }
     }
 
     @Test

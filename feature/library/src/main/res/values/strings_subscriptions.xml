@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_subscriptions_error_loading">Error loading subscriptions</string>
+    <string name="library_subscriptions_empty_title">No Subscriptions Yet</string>
+    <string name="library_subscriptions_empty_body">Follow your favorite podcasts to see them here.</string>
+    <string name="library_latest_empty_title">No New Episodes</string>
+    <string name="library_latest_empty_body">You\'re all caught up! Explore for more content.</string>
+    <string name="library_latest_all_hidden_title">You\'re all caught up</string>
+    <string name="library_latest_all_hidden_body">Hidden played episodes are out of the way. Turn off Hide played in Sort to see them again.</string>
+    <!-- Search field placeholder -->
+    <string name="library_search_shows">Search shows…</string>
+    <!-- Search field placeholder -->
+    <string name="library_search_subscribed_shows">Search subscribed shows…</string>
+    <!-- Search field placeholder -->
+    <string name="library_search_your_shows">Search your shows</string>
+    <!-- Screen-reader label -->
+    <string name="library_close_search">Close Search</string>
+    <!-- Screen-reader label -->
+    <string name="library_clear_search">Clear search</string>
+    <!-- Screen-reader label for the button that switches to a list -->
+    <string name="library_list_view">List View</string>
+    <!-- Screen-reader label for the button that switches to a grid -->
+    <string name="library_grid_view">Grid View</string>
+    <!-- Tab -->
+    <string name="library_tab_shows">Shows</string>
+    <!-- Tab -->
+    <string name="library_tab_new_episodes">New Episodes</string>
+    <!-- Short tab label in the floating selector; keep it under about 10 characters -->
+    <string name="library_tab_new_episodes_short">New Eps</string>
+    <!-- Date group heading in New Episodes -->
+    <string name="library_header_today">Today</string>
+    <!-- Date group heading in New Episodes -->
+    <string name="library_header_yesterday">Yesterday</string>
+    <!-- Date group heading in New Episodes -->
+    <string name="library_header_older">Older</string>
+    <!-- Under a show in the list: when its latest episode came out -->
+    <string name="library_updated_just_now">Updated just now</string>
+    <string name="library_updated_today">Updated today</string>
+    <string name="library_updated_yesterday">Updated yesterday</string>
+    <plurals name="library_updated_days_ago">
+        <item quantity="one">Updated %1$d day ago</item>
+        <item quantity="other">Updated %1$d days ago</item>
+    </plurals>
+    <plurals name="library_updated_weeks_ago">
+        <item quantity="one">Updated %1$d week ago</item>
+        <item quantity="other">Updated %1$d weeks ago</item>
+    </plurals>
+    <!-- %1$s is a date such as Mar 5, 2026 -->
+    <string name="library_updated_on_date">Updated %1$s</string>
+    <!-- Sort choice chip -->
+    <string name="library_sort_smart">Smart</string>
+    <!-- Short sort name -->
+    <string name="library_sort_updated_short">Updated</string>
+    <!-- Short sort name -->
+    <string name="library_sort_listened_short">Listened</string>
+    <!-- Sort choice chip: alphabetical -->
+    <string name="library_sort_a_to_z">A–Z</string>
+    <!-- Sort choice: the listener's own order -->
+    <string name="library_sort_manual">Manual</string>
+    <!-- Sort choice -->
+    <string name="library_sort_chronological">Chronological</string>
+    <!-- Menu item -->
+    <string name="library_sort_smart_sort">Smart Sort</string>
+    <!-- Menu item -->
+    <string name="library_sort_recently_updated_menu">Recently Updated</string>
+    <!-- Menu item: alphabetical -->
+    <string name="library_sort_a_to_z_menu">A-Z</string>
+    <!-- Menu item -->
+    <string name="library_sort_most_listened_menu">Most Listened</string>
+    <!-- Sort choice chip -->
+    <string name="library_sort_recently_updated">Recently updated</string>
+    <!-- Sort choice chip -->
+    <string name="library_sort_most_listened">Most listened</string>
+    <!-- Sort choice chip for folders -->
+    <string name="library_sort_most_shows">Most shows</string>
+    <!-- Sort choice chip: follow the order chosen for shows -->
+    <string name="library_sort_same_as_shows">Same as shows</string>
+    <!-- Sort choice chip: the order the listener arranged by hand -->
+    <string name="library_sort_your_order">Your order</string>
+    <!-- Menu item -->
+    <string name="library_sort_auto_organize_into_folders">Auto-organize into folders</string>
+    <!-- Menu item -->
+    <string name="library_hide_played_episodes">Hide played episodes</string>
+    <!-- Sheet title -->
+    <string name="library_sort_and_organize">Sort and organize</string>
+    <string name="library_sort_your_shows_description">Shows that aren\'t in a folder</string>
+    <string name="library_sort_order_of_folders">Order of folders</string>
+    <string name="library_sort_order_of_folders_description">Where each folder sits on the Shows tab</string>
+    <string name="library_sort_shows_inside_folders">Shows inside folders</string>
+    <string name="library_sort_shows_inside_folders_description">The order of covers in each folder</string>
+    <!-- Reorder is a menu item's name -->
+    <string name="library_sort_reorder_hint">To move shows or folders by hand, press and hold one and choose Reorder.</string>
+    <string name="library_unsubscribe">Unsubscribe</string>
+    <string name="library_unsubscribe_title">Unsubscribe?</string>
+    <!-- %1$s is the show's name -->
+    <string name="library_unsubscribe_body">Are you sure you want to unsubscribe from \'%1$s\'? It will be removed from your subscriptions and folders.</string>
+    <!-- %1$s is the show's author, %2$s the folder's name -->
+    <string name="library_show_artist_in_folder">%1$s • In %2$s</string>
+    <string name="library_reorder_folders">Reorder folders</string>
+    <string name="library_reorder_shows">Reorder shows</string>
+    <string name="library_reorder_shows_in_folder">Reorder shows in folder</string>
+    <string name="library_reorder_title_folders">Reordering: Folders</string>
+    <string name="library_reorder_title_shows">Reordering: Shows</string>
+    <!-- %1$s is the folder's name -->
+    <string name="library_reorder_title_named">Reordering: %1$s</string>
+    <string name="library_reorder_drag_to_arrange">Drag to arrange</string>
+    <string name="library_reorder_switches_to_manual">Switches to manual sort</string>
+    <!-- Screen-reader label -->
+    <string name="library_reorder_cancel">Cancel reordering</string>
+    <!-- Screen-reader label -->
+    <string name="library_reorder_save">Save new order</string>
+    <!-- Short genre name on a filter pill -->
+    <string name="library_genre_news">News</string>
+    <string name="library_genre_tech">Tech</string>
+    <string name="library_genre_business">Business</string>
+    <string name="library_genre_comedy">Comedy</string>
+    <string name="library_genre_true_crime">True Crime</string>
+    <string name="library_genre_sports">Sports</string>
+    <string name="library_genre_health">Health</string>
+    <string name="library_genre_history">History</string>
+    <string name="library_genre_arts">Arts</string>
+    <string name="library_genre_society">Society</string>
+    <string name="library_genre_education">Education</string>
+    <string name="library_genre_science">Science</string>
+    <string name="library_genre_tv_film">TV &amp; Film</string>
+    <string name="library_genre_fiction">Fiction</string>
+    <string name="library_genre_music">Music</string>
+    <string name="library_genre_religion">Religion</string>
+    <string name="library_genre_family">Family</string>
+    <string name="library_genre_leisure">Leisure</string>
+    <string name="library_genre_govt">Govt</string>
+</resources>

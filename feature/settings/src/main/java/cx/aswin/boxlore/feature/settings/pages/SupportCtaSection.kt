@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
@@ -46,10 +47,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.settings.R
 
 internal fun getSupportButtonContentColor(backgroundColor: Color): Color =
     if (backgroundColor.luminance() > 0.45f) Color.Black else Color.White
@@ -59,7 +62,7 @@ internal fun SupportCtaSection(
     tier: SupportTierCardData,
     activeColor: Color,
     modifier: Modifier = Modifier,
-    verb: String = "Deploy",
+    @StringRes verb: Int = R.string.settings_support_cta_control,
     icon: ImageVector? = null,
     onDonateClick: (SupportTierCardData) -> Unit = {},
 ) {
@@ -81,7 +84,7 @@ internal fun SupportCtaSection(
         Spacer(modifier = Modifier.height(7.dp))
 
         Text(
-            text = "One-time contribution • No recurring subscription",
+            text = stringResource(R.string.settings_support_one_time),
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.medium),
             color = Color.White.copy(alpha = 0.70f),
             textAlign = TextAlign.Center,
@@ -94,7 +97,7 @@ private fun SupportDeployButton(
     tier: SupportTierCardData,
     activeColor: Color,
     contentColor: Color,
-    verb: String,
+    @StringRes verb: Int,
     icon: ImageVector?,
     onClick: () -> Unit,
 ) {
@@ -174,7 +177,7 @@ private fun SupportDeployButton(
 @Composable
 private fun DeployButtonMeterRoll(
     tier: SupportTierCardData,
-    verb: String,
+    @StringRes verb: Int,
     contentColor: Color,
 ) {
     AnimatedContent(
@@ -192,7 +195,7 @@ private fun DeployButtonMeterRoll(
             horizontalArrangement = Arrangement.Center,
         ) {
             Text(
-                text = "$verb ${currentTier.title}",
+                text = stringResource(verb, currentTier.title),
                 style = MaterialTheme.typography.titleSmall.copy(
                     fontWeight = GoogleSansWeight.bold,
                     letterSpacing = 0.2.sp,

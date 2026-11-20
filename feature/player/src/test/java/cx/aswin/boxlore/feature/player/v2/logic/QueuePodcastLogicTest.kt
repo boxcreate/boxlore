@@ -9,14 +9,14 @@ class QueuePodcastLogicTest {
     fun missingPodcastIdUsesCurrentPodcast() {
         val current = podcast()
 
-        assertSame(current, resolveQueuePodcast(episode(podcastId = null), current))
+        assertSame(current, resolveQueuePodcast(episode(podcastId = null), current, "Unknown"))
     }
 
     @Test
     fun matchingPodcastIdUsesCurrentPodcast() {
         val current = podcast(id = "same")
 
-        assertSame(current, resolveQueuePodcast(episode(podcastId = "same"), current))
+        assertSame(current, resolveQueuePodcast(episode(podcastId = "same"), current, "Unknown"))
     }
 
     @Test
@@ -31,6 +31,7 @@ class QueuePodcastLogicTest {
                     podcastGenre = "Science",
                 ),
                 podcast(),
+                "Unknown",
             )
 
         assertEquals("other", result.id)
@@ -52,6 +53,7 @@ class QueuePodcastLogicTest {
                     podcastGenre = null,
                 ),
                 podcast(),
+                "Unknown",
             )
 
         assertEquals("other", result.id)

@@ -13,9 +13,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
+import cx.aswin.boxlore.feature.settings.R
 
 object SettingsClearSavedShowsTestTags {
     const val CONFIRM = "settings_clear_saved_shows_confirm"
@@ -37,31 +40,28 @@ internal fun ClearSavedShowsDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(imageVector = Icons.Rounded.DeleteSweep, contentDescription = null) },
-        title = { Text("Clear saved shows?") },
+        title = { Text(stringResource(R.string.settings_clear_saved_shows_title)) },
         text = {
             Column(Modifier.tabletSheetScroll(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    text = "${savedShowsLabel(count)} you don’t follow will be removed from this phone. They load again when you open a show.",
+                    text = pluralStringResource(R.plurals.settings_clear_saved_shows_body, count, count),
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Text(
-                    text = "Shows you follow, your listening history, downloads and queue aren’t affected.",
+                    text = stringResource(R.string.settings_clear_saved_shows_kept),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
         },
         confirmButton = {
             Button(onClick = onConfirm, modifier = Modifier.testTag(SettingsClearSavedShowsTestTags.CONFIRM)) {
-                Text("Clear")
+                Text(stringResource(R.string.settings_clear_saved_shows_confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss, modifier = Modifier.testTag(SettingsClearSavedShowsTestTags.CANCEL)) {
-                Text("Cancel")
+                Text(stringResource(R.string.settings_cancel))
             }
         },
     )
 }
-
-/** "Episode lists of 1 show" / "Episode lists of 12 shows". */
-internal fun savedShowsLabel(count: Int): String = if (count == 1) "Episode lists of 1 show" else "Episode lists of $count shows"

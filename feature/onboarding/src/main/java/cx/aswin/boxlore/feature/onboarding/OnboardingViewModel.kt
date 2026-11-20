@@ -10,6 +10,7 @@ import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.OnboardingHistoryEntry
 import cx.aswin.boxlore.core.network.model.toPodcast
+import cx.aswin.boxlore.core.prefs.AppLanguage
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import java.util.concurrent.ConcurrentHashMap
@@ -28,10 +29,15 @@ class OnboardingViewModel(
     internal val podcastRepository: PodcastRepository,
     internal val subscriptionRepository: SubscriptionRepository,
     internal val userPrefs: UserPreferencesRepository,
+    /**
+     * The translation the phone suggests (the app's App language API), asked once when this view
+     * model is built and only while onboarding is unfinished; non-null opens with the language question.
+     */
+    appLanguageSuggestion: () -> AppLanguage? = { null },
 ) : AndroidViewModel(application) {
     internal val boxcastPrefs = BoxcastPrefs(application)
 
-    internal val _uiState = MutableStateFlow(OnboardingUiState())
+    internal val _uiState = MutableStateFlow(OnboardingAppLanguage.initialState(boxcastPrefs.isOnboardingCompleted(), appLanguageSuggestion))
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
     internal var searchJob: Job? = null
@@ -443,6 +449,7 @@ class OnboardingViewModel(
     }
 
     private fun lastStepName(step: OnboardingStep): String = when (step) {
+        OnboardingStep.APP_LANGUAGE -> OnboardingAppLanguage.STEP_NAME
         OnboardingStep.WELCOME -> "welcome"
         OnboardingStep.GENRES -> "genres"
         OnboardingStep.SUB_GENRES -> "sub_genres"
