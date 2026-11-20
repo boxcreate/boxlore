@@ -19,7 +19,6 @@
     <string name="library_playlist_per_show_none">Kein Limit</string>
     <string name="library_playlist_per_show_summary_none">Alle ungehörten Folgen jedes Podcasts</string>
     <string name="library_playlist_create_action">Playlist erstellen</string>
-    <string name="library_playlist_summary_mix">%1$s · %2$s</string>
     <plurals name="library_playlist_per_show_summary">
         <item quantity="one">Bis zu %1$d Folge pro Podcast</item>
         <item quantity="other">Bis zu %1$d Folgen pro Podcast</item>

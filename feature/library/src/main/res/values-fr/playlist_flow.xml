@@ -19,7 +19,6 @@
     <string name="library_playlist_per_show_none">Sans limite</string>
     <string name="library_playlist_per_show_summary_none">Tous les épisodes non écoutés de chaque podcast</string>
     <string name="library_playlist_create_action">Créer la playlist</string>
-    <string name="library_playlist_summary_mix">%1$s · %2$s</string>
     <plurals name="library_playlist_per_show_summary">
         <item quantity="one">Jusqu’à %1$d épisode par podcast</item>
         <item quantity="other">Jusqu’à %1$d épisodes par podcast</item>

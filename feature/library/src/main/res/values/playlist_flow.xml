@@ -28,7 +28,6 @@
     <string name="library_playlist_per_show_summary_none">Every unheard episode from each show</string>
     <string name="library_playlist_create_action">Create playlist</string>
     <!-- Playlist card line: %1$s is the show count, %2$s the mix name. -->
-    <string name="library_playlist_summary_mix">%1$s · %2$s</string>
     <!-- Under Episodes per show; %1$d is the chosen limit. -->
     <plurals name="library_playlist_per_show_summary">
         <item quantity="one">Up to %1$d episode from each show</item>

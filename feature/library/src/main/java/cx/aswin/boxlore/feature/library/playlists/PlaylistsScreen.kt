@@ -57,6 +57,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
@@ -88,14 +89,9 @@ internal object PlaylistsCopy {
     @Composable
     fun moreFor(name: String): String = stringResource(R.string.library_more_options_for, name)
 
-    /** A card's second line: its show count and how it plays. */
+    /** A card's second line: its show count (how it plays is on the playlist's page). */
     @Composable
-    fun summary(playlist: Playlist): String =
-        stringResource(
-            R.string.library_playlist_summary_mix,
-            PlaylistCopy.showCount(playlist.showCount).asString(),
-            stringResource(playlistMixCopy(playlist.mix).name),
-        )
+    fun summary(playlist: Playlist): String = PlaylistCopy.showCount(playlist.showCount).asString()
 }
 
 /** What the Playlists page and its dialogs do; [PlaylistsScreen] implements it with [PlaylistsViewModel]. */
@@ -221,11 +217,11 @@ internal fun PlaylistsContent(
                     )
                 }
                 else -> LazyVerticalGrid(
-                    columns = GridCells.Adaptive(PlaylistCardMinWidth),
+                    columns = PlaylistGridCells,
                     modifier = Modifier.fillMaxSize().testTag(PLAYLISTS_GRID_TAG),
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = boxloreContentBottomPadding(bottomPadding)),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(PlaylistGridSpacing),
+                    verticalArrangement = Arrangement.spacedBy(PlaylistGridSpacing),
                 ) {
                     item(key = "new_playlist", span = { GridItemSpan(maxLineSpan) }) { NewPlaylistButton(onClick = state::openCreate) }
                     items(playlists, key = { it.id }) { playlist ->
@@ -244,27 +240,33 @@ internal fun PlaylistsContent(
     PlaylistEditorDialogs(state, playlists.orEmpty(), actions, pickSource)
 }
 
-/** A playlist as a card: its cover across the top with a Play button on it, then its name, show count and mix. */
+/** A playlist as a small card, three across on a phone: its cover with a Play button on it, then its name and show count. */
 @Composable
 private fun PlaylistCard(playlist: Playlist, onClick: () -> Unit, onPlay: () -> Unit, onRename: () -> Unit, onDelete: () -> Unit) {
-    Surface(onClick = onClick, color = MaterialTheme.colorScheme.surfaceContainerLow, shape = RoundedCornerShape(28.dp), modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(10.dp)) {
+    Surface(onClick = onClick, color = MaterialTheme.colorScheme.surfaceContainerLow, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(6.dp)) {
             BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(1f)) {
-                PlaylistCover(playlist.coverUrls, size = maxWidth, iconKey = playlist.iconKey, corner = 20.dp)
+                PlaylistCover(playlist.coverUrls, size = maxWidth, iconKey = playlist.iconKey, corner = 14.dp)
                 FilledIconButton(
                     onClick = onPlay,
                     shape = CircleShape,
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp).size(52.dp),
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(4.dp).size(34.dp),
                 ) {
-                    Icon(Icons.Rounded.PlayArrow, contentDescription = stringResource(R.string.library_playlist_play_named, playlist.name), modifier = Modifier.size(28.dp))
+                    Icon(Icons.Rounded.PlayArrow, contentDescription = stringResource(R.string.library_playlist_play_named, playlist.name), modifier = Modifier.size(20.dp))
                 }
             }
-            Row(Modifier.fillMaxWidth().heightIn(min = CardTextHeight).padding(start = 6.dp, top = 8.dp), verticalAlignment = Alignment.Top) {
-                Column(Modifier.weight(1f).padding(top = 4.dp)) {
-                    Text(playlist.name, style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(PlaylistsCopy.summary(playlist), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
+            Row(Modifier.fillMaxWidth().heightIn(min = CardTextHeight).padding(start = 4.dp, top = 6.dp), verticalAlignment = Alignment.Top) {
+                Column(Modifier.weight(1f)) {
+                    Text(playlist.name, style = MaterialTheme.typography.titleSmall, fontWeight = GoogleSansWeight.bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        PlaylistsCopy.summary(playlist),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
-                PlaylistMenu(playlist.name, onRename, onDelete)
+                PlaylistMenu(playlist.name, onRename, onDelete, compact = true)
             }
         }
     }
@@ -283,10 +285,13 @@ private fun NewPlaylistButton(onClick: () -> Unit) {
 }
 
 @Composable
-internal fun PlaylistMenu(name: String, onRename: () -> Unit, onDelete: () -> Unit, deleteLabel: String = PlaylistsCopy.DELETE) {
+internal fun PlaylistMenu(name: String, onRename: () -> Unit, onDelete: () -> Unit, deleteLabel: String = PlaylistsCopy.DELETE, compact: Boolean = false) {
     var expanded by remember { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { expanded = true }) { Icon(Icons.Rounded.MoreVert, contentDescription = PlaylistsCopy.moreFor(name)) }
+        // The compact button keeps a 48dp touch target; only the drawn size shrinks.
+        IconButton(onClick = { expanded = true }, modifier = if (compact) Modifier.size(28.dp) else Modifier) {
+            Icon(Icons.Rounded.MoreVert, contentDescription = PlaylistsCopy.moreFor(name), modifier = if (compact) Modifier.size(18.dp) else Modifier)
+        }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(text = { Text(PlaylistsCopy.RENAME) }, onClick = {
                 expanded = false
@@ -375,10 +380,24 @@ internal fun PlaylistEditorDialogs(
     }
 }
 
-private val PlaylistCardMinWidth = 168.dp
+/**
+ * The Playlists grid's columns: small cards, three across on any phone, and roomier cards once the
+ * grid is tablet-wide (tablets, unfolded foldables, phones in landscape), so cards never shrink to stamps.
+ */
+internal object PlaylistGridCells : GridCells {
+    override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): List<Int> {
+        val minWidth = if (availableSize.toDp() < PlaylistWideGrid) PlaylistCardMinWidth else PlaylistCardWideMinWidth
+        return with(GridCells.Adaptive(minWidth)) { calculateCrossAxisCellSizes(availableSize, spacing) }
+    }
+}
+
+private val PlaylistCardMinWidth = 100.dp
+private val PlaylistCardWideMinWidth = 152.dp
+private val PlaylistWideGrid = 568.dp
+internal val PlaylistGridSpacing = 10.dp
 
 /** The name and summary area under a card's cover, so cards in a row line up. */
-private val CardTextHeight = 76.dp
+private val CardTextHeight = 62.dp
 
 /** The Playlists grid and its New playlist button, for tests. */
 internal const val PLAYLISTS_GRID_TAG = "playlists_grid"
