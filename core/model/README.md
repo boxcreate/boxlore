@@ -14,7 +14,7 @@ Models:
 - `Person`, `Transcript`, `Chapter`, `PodrollItem` (`Podcast2Types.kt`): Podcasting 2.0 tag values.
 - `ShowNotes`, `EpisodeLink`, `EpisodeLinkKind`: parsed plain text, publisher HTML, chapters and labelled links, with no UI or parser-library dependency.
 - `SubscriptionFolder`, `FolderDisplaySize`: custom library folders and their tile sizes; `isPinnedToTop` separates grid-movable from top-pinned sizes. Listeners see `titleRes`, `subtitleRes` and `placementLabelRes` (`res/values/strings_folder_size.xml`); `title` and `placementLabel` are English for older callers.
-- `Playlist`, `PlaylistOrder` (`newest`/`oldest`), `PlaylistShow`, `normalizePlaylistName`: the listener's show-based playlists and their shows.
+- `Playlist`, `PlaylistMix` (`take_turns`/`newest_first`/`one_show`), `PlaylistShow`, `normalizePlaylistName`, `normalizePlaylistPerShowLimit`: the listener's show-based playlists with their mix, episodes per show (null for no limit, choices in `PLAYLIST_PER_SHOW_CHOICES`), genre icon key and shows.
 - `BoxLoreUser`: the signed-in account (UID, email, display name, verification, anonymous flag, provider).
 - `CrossPromotionResult`, `ResolvedCrossPromotion`, `CrossPromotionConfidence`, `CrossPromotionIndicator`: cross-promotion results; `DISTINCT_ARTWORK` marks an episode whose cover differs from its show's. Indicators live only in UI state.
 - `AutoTranscriptState`, `ShareTarget`, `SleepTimerConstants`: small shared enums and constants.

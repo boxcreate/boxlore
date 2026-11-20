@@ -38,7 +38,6 @@
     <string name="library_delete">Löschen</string>
     <string name="library_rename">Umbenennen</string>
     <string name="library_next">Weiter</string>
-    <string name="library_add">Hinzufügen</string>
     <string name="library_manage">Verwalten</string>
     <string name="library_turn_off">Ausschalten</string>
     <!-- Snackbar action -->
@@ -142,7 +141,6 @@
         <item quantity="other">%1$d Podcasts ausgewählt</item>
     </plurals>
     <string name="library_add_shows">Podcasts hinzufügen</string>
-    <string name="library_shows_you_follow">Deine abonnierten Podcasts</string>
     <!-- Shows that are not in a folder -->
     <string name="library_your_shows">Deine Podcasts</string>
     <!-- Label above the folders on the Shows tab -->
@@ -151,10 +149,7 @@
     <string name="library_genre_folders">Genre-Ordner</string>
     <string name="library_playlists_empty_title">Noch keine Playlists</string>
     <string name="library_playlists_empty_body">Erstelle eine aus deinen abonnierten Podcasts, etwa eine für Comedy und eine für Geschichte. Jede merkt sich, wo du warst, sodass du jederzeit zwischen ihnen wechseln kannst.</string>
-    <!-- A playlist card's second line; %1$s is its show count, such as 3 shows -->
-    <string name="library_playlist_summary_oldest_first">%1$s · Älteste zuerst</string>
     <string name="library_playlist_newest_first">Neueste zuerst</string>
-    <string name="library_playlist_oldest_first">Älteste zuerst</string>
     <!-- Section title: the episodes Play would queue -->
     <string name="library_playlist_coming_up">Demnächst</string>
     <string name="library_playlist_nothing_to_play">Gerade gibt es nichts abzuspielen. Neue Folgen dieser Podcasts erscheinen hier.</string>
@@ -174,7 +169,6 @@
     <string name="library_playlist_removed_show">%1$s entfernt</string>
     <!-- Screen-reader label; %1$s is the show's name -->
     <string name="library_playlist_remove_show">%1$s entfernen</string>
-    <string name="library_playlist_from_folders">Podcasts eines Ordners hinzufügen</string>
     <string name="library_playlist_no_followed">Abonniere zuerst ein paar Podcasts und füge sie dann hier hinzu.</string>
     <string name="library_playlist_all_added">Alle deine abonnierten Podcasts sind schon in dieser Playlist.</string>
 </resources>

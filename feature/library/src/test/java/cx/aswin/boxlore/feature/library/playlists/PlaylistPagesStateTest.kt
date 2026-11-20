@@ -1,12 +1,9 @@
 package cx.aswin.boxlore.feature.library.playlists
 
 import androidx.compose.runtime.saveable.SaverScope
-import cx.aswin.boxlore.core.model.Podcast
-import cx.aswin.boxlore.core.model.SubscriptionFolder
+import cx.aswin.boxlore.core.model.PlaylistMix
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class PlaylistPagesStateTest {
@@ -16,51 +13,50 @@ class PlaylistPagesStateTest {
     }
 
     @Test
-    fun `the open editor, name and picked shows survive saving`() {
+    fun `a new playlist in progress survives saving with every step, pick and choice`() {
         val state = PlaylistPagesState().apply {
             openCreate()
-            nameDraft = "Comedy"
-            toggle("b")
-            pickAll(listOf("a", "b", "c"))
-            toggle("a")
+            newDraft = newDraft!!.copy(
+                step = NewPlaylistDraft.FINISH,
+                pickedIds = listOf("b", "c"),
+                search = "cast",
+                genreFilter = "Comedy",
+                name = "Laughs",
+                nameEdited = true,
+                icon = "comedy",
+                iconChosen = true,
+                mix = PlaylistMix.ONE_SHOW_AT_A_TIME,
+                perShowLimit = null,
+                fromSuggestion = true,
+                origin = "genre",
+            )
         }
-        val restored = roundTrip(state)
-        assertEquals(PlaylistEditor.Create, restored.editor)
-        assertEquals("Comedy", restored.nameDraft)
-        assertEquals(listOf("b", "c"), restored.picked)
+        assertEquals(state.newDraft, roundTrip(state).newDraft)
 
-        restored.closeEditor()
-        val closed = roundTrip(restored)
-        assertNull(closed.editor)
-        assertTrue(closed.picked.isEmpty())
+        state.closeFlow()
+        assertNull(roundTrip(state).newDraft)
     }
 
     @Test
-    fun `every editor encodes and decodes`() {
-        listOf(PlaylistEditor.Create, PlaylistEditor.AddShows("p1"), PlaylistEditor.Rename("p1"), PlaylistEditor.Delete("p1"), null).forEach {
+    fun `add shows opens straight on the show grid for that playlist`() {
+        val state = PlaylistPagesState().apply { openAddShows("p1") }
+        val restored = roundTrip(state).newDraft!!
+        assertEquals(NewPlaylistMode.AddShows, restored.mode)
+        assertEquals("p1", restored.playlistId)
+        assertEquals(NewPlaylistDraft.PICK, restored.step)
+    }
+
+    @Test
+    fun `rename and delete dialogs and the typed name survive saving`() {
+        val state = PlaylistPagesState().apply { openRename("p1", "Old name") }
+        state.nameDraft = "New name"
+        val restored = roundTrip(state)
+        assertEquals(PlaylistEditor.Rename("p1"), restored.editor)
+        assertEquals("New name", restored.nameDraft)
+        listOf(PlaylistEditor.Rename("p1"), PlaylistEditor.Delete("p1"), null).forEach {
             assertEquals(it, PlaylistEditor.decode(PlaylistEditor.encode(it)))
         }
-        assertTrue(PlaylistEditor.AddShows("p1").picksShows)
-        assertFalse(PlaylistEditor.Rename("p1").picksShows)
-    }
-
-    @Test
-    fun `folder chips pre-fill only followed shows not yet in the playlist`() {
-        val followed = listOf(Podcast("a", "A", "", ""), Podcast("b", "B", "", ""), Podcast("c", "C", "", ""))
-        val pickable = PlaylistShowPickerLogic.pickable(followed, inPlaylist = setOf("a"))
-        assertEquals(listOf("b", "c"), pickable.map { it.id })
-        val folders = listOf(
-            SubscriptionFolder("f1", "Comedy", podcastIds = listOf("a", "b", "gone")),
-            SubscriptionFolder("f2", "Only in playlist", podcastIds = listOf("a")),
-        )
-        assertEquals(listOf("Comedy" to listOf("b")), PlaylistShowPickerLogic.folderChips(folders, pickable).map { it.first.name to it.second })
-    }
-
-    @Test
-    fun `a new playlist needs a name and adding needs a show`() {
-        assertFalse(PlaylistShowPickerLogic.canConfirm(PlaylistEditor.Create, "  ", listOf("a")))
-        assertTrue(PlaylistShowPickerLogic.canConfirm(PlaylistEditor.Create, "Comedy", emptyList()))
-        assertFalse(PlaylistShowPickerLogic.canConfirm(PlaylistEditor.AddShows("p1"), "", emptyList()))
-        assertTrue(PlaylistShowPickerLogic.canConfirm(PlaylistEditor.AddShows("p1"), "", listOf("a")))
+        // A dialog saved by the old sheet reads as nothing open.
+        assertNull(PlaylistEditor.decode("create"))
     }
 }

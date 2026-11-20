@@ -5,8 +5,9 @@ import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.catalog.PlaylistRepository
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.PLAYLIST_DEFAULT_PER_SHOW_LIMIT
 import cx.aswin.boxlore.core.model.Playlist
-import cx.aswin.boxlore.core.model.PlaylistOrder
+import cx.aswin.boxlore.core.model.PlaylistMix
 import cx.aswin.boxlore.core.model.PlaylistShow
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
@@ -100,10 +101,21 @@ class PlaylistsViewModel(
         refreshes.value++
     }
 
-    fun create(name: String, podcastIds: List<String>, onCreated: (Playlist) -> Unit = {}) {
+    /** Creates a playlist; [origin] says where its shows came from (a suggestion's kind, or `own`). */
+    @Suppress("LongParameterList")
+    fun create(
+        name: String,
+        podcastIds: List<String>,
+        mix: PlaylistMix = PlaylistMix.TAKE_TURNS,
+        perShowLimit: Int? = PLAYLIST_DEFAULT_PER_SHOW_LIMIT,
+        iconKey: String? = null,
+        origin: String = "own",
+        onCreated: (Playlist) -> Unit = {},
+    ) {
         viewModelScope.launch {
-            val created = repository.createPlaylist(name, podcastIds)
+            val created = repository.createPlaylist(name, podcastIds, mix, perShowLimit, iconKey)
             AnalyticsHelper.trackPlaylistModified("create", SOURCE, playlistSize = created.showCount)
+            AnalyticsHelper.trackSettingsInteraction("playlist_created_from", origin)
             onCreated(created)
         }
     }
@@ -120,9 +132,15 @@ class PlaylistsViewModel(
         }
     }
 
-    fun setOrder(order: PlaylistOrder) {
+    /** How this playlist plays: its mix and the most episodes it takes from one show (null: no limit). */
+    fun setPlayback(mix: PlaylistMix, perShowLimit: Int?) {
         val id = playlistId ?: return
-        viewModelScope.launch { repository.setOrder(id, order) }
+        viewModelScope.launch {
+            if (repository.setPlayback(id, mix, perShowLimit)) {
+                AnalyticsHelper.trackSettingsInteraction("playlist_playback", "${mix.stored}:${perShowLimit ?: "all"}")
+                refreshComingUp()
+            }
+        }
     }
 
     /** Adds [podcastIds] to this playlist: one `add_show` with how many went in. */

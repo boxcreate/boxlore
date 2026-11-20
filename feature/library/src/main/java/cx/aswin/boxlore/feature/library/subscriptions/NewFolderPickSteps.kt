@@ -90,7 +90,7 @@ internal fun PickShowsContent(
 }
 
 @Composable
-private fun PickableCover(
+internal fun PickableCover(
     podcast: Podcast,
     picked: Boolean,
     otherFolder: String?,
@@ -140,7 +140,7 @@ private fun PickMark(picked: Boolean, modifier: Modifier = Modifier) {
 
 /** Filled search pill, as at the top of Explore. */
 @Composable
-private fun ShowSearchField(query: String, onQueryChange: (String) -> Unit) {
+internal fun ShowSearchField(query: String, onQueryChange: (String) -> Unit) {
     TextField(
         value = query,
         onValueChange = onQueryChange,

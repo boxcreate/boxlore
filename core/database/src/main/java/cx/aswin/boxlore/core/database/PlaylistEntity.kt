@@ -7,8 +7,10 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
- * A listener's playlist (Room v44). [playlistId] is a random UUID; the playlist's shows are
- * [PlaylistShowEntity] rows. [episodeOrder] is `newest` or `oldest` (`PlaylistOrder.stored`).
+ * A listener's playlist (Room v44, playback settings and icon v46). [playlistId] is a random UUID;
+ * the playlist's shows are [PlaylistShowEntity] rows. [mix] is `PlaylistMix.stored`, [perShowLimit]
+ * the episodes per show (0 means no limit) and [iconKey] a genre icon key or null. [episodeOrder]
+ * (`newest`/`oldest`) is the v44 order, kept only as a column: nothing reads it since v46.
  */
 @Entity(tableName = "playlists")
 data class PlaylistEntity(
@@ -19,6 +21,11 @@ data class PlaylistEntity(
     val updatedAt: Long,
     @ColumnInfo(defaultValue = "'newest'")
     val episodeOrder: String = "newest",
+    @ColumnInfo(defaultValue = "'take_turns'")
+    val mix: String = "take_turns",
+    @ColumnInfo(defaultValue = "3")
+    val perShowLimit: Int = 3,
+    val iconKey: String? = null,
 )
 
 /**

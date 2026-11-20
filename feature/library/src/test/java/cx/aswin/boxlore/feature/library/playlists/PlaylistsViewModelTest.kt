@@ -2,7 +2,7 @@ package cx.aswin.boxlore.feature.library.playlists
 
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.PlaylistOrder
+import cx.aswin.boxlore.core.model.PlaylistMix
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.UpNextSnapshot
 import cx.aswin.boxlore.core.testing.MainDispatcherExtension
@@ -61,8 +61,11 @@ class PlaylistsViewModelTest {
         val vm = viewModel()
         backgroundScope.launch { vm.playlists.collect {} }
         var created: String? = null
-        vm.create("Comedy", listOf("a", "b")) { created = it.id }
+        vm.create("Comedy", listOf("a", "b"), PlaylistMix.NEWEST_FIRST, perShowLimit = null, iconKey = "comedy", origin = "genre") { created = it.id }
         assertEquals("p1", created)
+        val stored = repository.getPlaylists().single()
+        assertEquals(PlaylistMix.NEWEST_FIRST to null, stored.mix to stored.perShowLimit)
+        assertEquals("comedy", stored.iconKey)
         vm.rename("p1", "Laughs")
         val list = vm.playlists.first { it?.isNotEmpty() == true }!!
         assertEquals(listOf("Laughs" to 2), list.map { it.name to it.showCount })
@@ -72,7 +75,7 @@ class PlaylistsViewModelTest {
     }
 
     @Test
-    fun `a playlist page shows its shows and what plays next, and follows its order`() = runTest {
+    fun `a playlist page shows its shows and what plays next, and saves how it plays`() = runTest {
         repository.createPlaylist("Mix", listOf("a", "b"))
         repository.next = (1..15).map { episode("$it") }
         val vm = viewModel("p1")
@@ -81,9 +84,9 @@ class PlaylistsViewModelTest {
         assertEquals(listOf("a", "b"), ready.shows.map { it.podcastId })
         assertEquals(PlaylistsViewModel.COMING_UP, ready.comingUp.size)
 
-        vm.setOrder(PlaylistOrder.OLDEST)
-        val oldest = vm.detail.first { (it as? PlaylistDetailState.Ready)?.playlist?.order == PlaylistOrder.OLDEST }
-        assertEquals(PlaylistOrder.OLDEST, (oldest as PlaylistDetailState.Ready).playlist.order)
+        vm.setPlayback(PlaylistMix.ONE_SHOW_AT_A_TIME, 2)
+        val binge = vm.detail.first { (it as? PlaylistDetailState.Ready)?.playlist?.mix == PlaylistMix.ONE_SHOW_AT_A_TIME } as PlaylistDetailState.Ready
+        assertEquals(2, binge.playlist.perShowLimit)
     }
 
     @Test

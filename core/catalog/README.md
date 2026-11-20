@@ -47,7 +47,7 @@ It does not own playback, downloads, Compose UI, Room schema ([`:core:database`]
 - `UpgradeAddressRepair`: one-time post-upgrade address repair run by the app's `UpgradeRepairWorker`; finished steps survive process death.
 - `LegacyRssRepair`: one-time pass turning old OPML `rss:` rows into Podcast Index shows on exact feed-URL or GUID match.
 - `FolderRepository` / `RoomFolderRepository`: folders and auto-organize; deleting a folder never unfollows its shows.
-- `PlaylistRepository`: show playlists, backed up, never synced, kept through renumbering; `nextEpisodes` picks followed, unhidden shows' unfinished stored episodes.
+- `PlaylistRepository`: show playlists, backed up, never synced, kept through renumbering; `nextEpisodes` mixes followed, unhidden shows' unfinished stored episodes.
 
 ### Show pages and episode sources
 

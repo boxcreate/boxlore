@@ -8,13 +8,18 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
@@ -27,21 +32,23 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -50,6 +57,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextOverflow
@@ -57,15 +65,18 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.PlaylistCopy
+import cx.aswin.boxlore.core.designsystem.components.PlaylistCover
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.PlaylistOrder
+import cx.aswin.boxlore.core.model.Playlist
+import cx.aswin.boxlore.core.model.PlaylistMix
 import cx.aswin.boxlore.core.model.PlaylistShow
 import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.model.text.resolve
@@ -75,8 +86,6 @@ import kotlinx.coroutines.launch
 
 /** A playlist page's wording. */
 internal object PlaylistDetailCopy {
-    val NEWEST: String @Composable get() = stringResource(R.string.library_playlist_newest_first)
-    val OLDEST: String @Composable get() = stringResource(R.string.library_playlist_oldest_first)
     val PLAY: String @Composable get() = stringResource(R.string.library_play)
     val COMING_UP: String @Composable get() = stringResource(R.string.library_playlist_coming_up)
     val SHOWS: String @Composable get() = stringResource(R.string.library_tab_shows)
@@ -109,7 +118,7 @@ internal object PlaylistDetailCopy {
 /** What a playlist page does; [PlaylistDetailScreen] implements it with [PlaylistsViewModel]. */
 internal interface PlaylistDetailActions : PlaylistsActions {
     fun play()
-    fun setOrder(order: PlaylistOrder)
+    fun setPlayback(mix: PlaylistMix, perShowLimit: Int?)
     fun addShows(podcastIds: List<String>)
     fun removeShow(show: PlaylistShow)
 }
@@ -139,10 +148,10 @@ fun PlaylistDetailScreen(
     val actions = remember(viewModel, onBack) {
         object : PlaylistDetailActions {
             override fun open(playlistId: String) = Unit
-            override fun create(name: String, podcastIds: List<String>) = Unit
+            override fun create(request: PlaylistCreateRequest) = Unit
             override fun rename(playlistId: String, name: String) = viewModel.rename(playlistId, name)
             override fun delete(playlistId: String) = viewModel.delete(playlistId)
-            override fun setOrder(order: PlaylistOrder) = viewModel.setOrder(order)
+            override fun setPlayback(mix: PlaylistMix, perShowLimit: Int?) = viewModel.setPlayback(mix, perShowLimit)
             override fun addShows(podcastIds: List<String>) = viewModel.addShows(podcastIds)
             override fun play() = viewModel.play(onReplaced = { previous -> showUndo(PlaylistDetailCopy.UP_NEXT_REPLACED) { viewModel.undoPlay(previous) } })
             override fun removeShow(show: PlaylistShow) = viewModel.removeShow(show) { removed ->
@@ -172,6 +181,7 @@ internal fun PlaylistDetailContent(
     isPlayerActive: Boolean = false,
 ) {
     val ready = detail as? PlaylistDetailState.Ready
+    var settingsOpen by rememberSaveable { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val titleStyle = lerp(
         start = MaterialTheme.typography.headlineLarge.copy(fontWeight = GoogleSansWeight.bold),
@@ -219,12 +229,15 @@ internal fun PlaylistDetailContent(
                     modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxSize().testTag(PLAYLIST_DETAIL_TAG),
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = playlistChromeBottom(isPlayerActive)),
                 ) {
-                    item(key = "header", contentType = "header") { PlaylistHeader(ready, actions) }
+                    item(key = "header", contentType = "header") { PlaylistHeader(ready, actions, onOpenSettings = { settingsOpen = true }) }
                     comingUp(ready.comingUp)
                     shows(ready, onAdd = { state.openAddShows(ready.playlist.id) }, onRemove = actions::removeShow)
                 }
             }
         }
+    }
+    if (settingsOpen && ready != null) {
+        HowItPlaysSheet(ready.playlist, onChange = actions::setPlayback, onDismiss = { settingsOpen = false })
     }
     PlaylistEditorDialogs(
         state = state,
@@ -237,22 +250,59 @@ internal fun PlaylistDetailContent(
 }
 
 @Composable
-private fun PlaylistHeader(ready: PlaylistDetailState.Ready, actions: PlaylistDetailActions) {
+private fun PlaylistHeader(ready: PlaylistDetailState.Ready, actions: PlaylistDetailActions, onOpenSettings: () -> Unit) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(PlaylistCopy.showCount(ready.shows.size).asString(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        val orders = listOf(PlaylistOrder.NEWEST to PlaylistDetailCopy.NEWEST, PlaylistOrder.OLDEST to PlaylistDetailCopy.OLDEST)
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            orders.forEachIndexed { index, (order, label) ->
-                SegmentedButton(
-                    selected = ready.playlist.order == order,
-                    onClick = { if (ready.playlist.order != order) actions.setOrder(order) },
-                    shape = SegmentedButtonDefaults.itemShape(index, orders.size),
-                ) { Text(label) }
-            }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            PlaylistCover(ready.playlist.coverUrls, size = 72.dp, iconKey = ready.playlist.iconKey)
+            Text(PlaylistCopy.showCount(ready.shows.size).asString(), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        HowItPlaysRow(ready.playlist, onClick = onOpenSettings)
         Button(onClick = actions::play, enabled = ready.comingUp.isNotEmpty(), modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
             Icon(Icons.Rounded.PlayArrow, contentDescription = null)
             Text(PlaylistDetailCopy.PLAY, modifier = Modifier.padding(start = 8.dp))
+        }
+    }
+}
+
+/** How the playlist plays, in one tappable line: its mix and the most it takes from each show. */
+@Composable
+private fun HowItPlaysRow(playlist: Playlist, onClick: () -> Unit) {
+    val copy = playlistMixCopy(playlist.mix)
+    val limit = playlist.perShowLimit
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier.fillMaxWidth().testTag(PLAYLIST_HOW_IT_PLAYS_TAG),
+    ) {
+        Row(Modifier.heightIn(min = 64.dp).padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(copy.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Column(Modifier.weight(1f).padding(horizontal = 16.dp)) {
+                Text(stringResource(R.string.library_playlist_how_it_plays), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(copy.name), style = MaterialTheme.typography.titleSmall, fontWeight = GoogleSansWeight.semiBold)
+                Text(
+                    limit?.let { pluralStringResource(R.plurals.library_playlist_per_show_summary, it, it) } ?: stringResource(R.string.library_playlist_per_show_summary_none),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+/** How it plays, in a sheet over the playlist page; each change saves at once. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HowItPlaysSheet(playlist: Playlist, onChange: (PlaylistMix, Int?) -> Unit, onDismiss: () -> Unit) {
+    TrackScreenView("playlist_how_it_plays")
+    BoxloreModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(start = 20.dp, end = 20.dp, bottom = 24.dp)) {
+            PlaylistPlaybackSettings(playlist.mix, playlist.perShowLimit, onChange)
         }
     }
 }
@@ -322,6 +372,9 @@ private const val SKIPPED_ALPHA = 0.5f
 /** The playback chrome under a playlist page (mini player, floating navigation), which its list and snackbars stay above. */
 @Composable
 internal fun playlistChromeBottom(isPlayerActive: Boolean) = boxloreContentBottomPadding(if (isPlayerActive) 160.dp else 96.dp)
+
+/** The How it plays row, for tests. */
+internal const val PLAYLIST_HOW_IT_PLAYS_TAG = "playlist_how_it_plays"
 
 /** The playlist page's list, for tests. */
 internal const val PLAYLIST_DETAIL_TAG = "playlist_detail"

@@ -3,7 +3,7 @@ package cx.aswin.boxlore.feature.library.playlists
 import cx.aswin.boxlore.core.catalog.PlaylistRepository
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Playlist
-import cx.aswin.boxlore.core.model.PlaylistOrder
+import cx.aswin.boxlore.core.model.PlaylistMix
 import cx.aswin.boxlore.core.model.PlaylistShow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,8 +29,8 @@ internal class FakePlaylistRepository : PlaylistRepository {
 
     override suspend fun getShowIds(): Map<String, List<String>> = rows.value.groupBy({ it.playlistId }) { it.podcastId }
 
-    override suspend fun createPlaylist(name: String, podcastIds: List<String>): Playlist {
-        val playlist = Playlist("p${++ids}", name, 1L, 1L, showCount = 0)
+    override suspend fun createPlaylist(name: String, podcastIds: List<String>, mix: PlaylistMix, perShowLimit: Int?, iconKey: String?): Playlist {
+        val playlist = Playlist("p${++ids}", name, 1L, 1L, showCount = 0, mix = mix, perShowLimit = perShowLimit?.takeIf { it > 0 }, iconKey = iconKey)
         lists.value += playlist
         addShows(playlist.id, podcastIds)
         return playlist.withCount()
@@ -41,8 +41,13 @@ internal class FakePlaylistRepository : PlaylistRepository {
         return true
     }
 
-    override suspend fun setOrder(playlistId: String, order: PlaylistOrder): Boolean {
-        lists.value = lists.value.map { if (it.id == playlistId) it.copy(order = order) else it }
+    override suspend fun setPlayback(playlistId: String, mix: PlaylistMix, perShowLimit: Int?): Boolean {
+        lists.value = lists.value.map { if (it.id == playlistId) it.copy(mix = mix, perShowLimit = perShowLimit?.takeIf { limit -> limit > 0 }) else it }
+        return true
+    }
+
+    override suspend fun setIcon(playlistId: String, iconKey: String?): Boolean {
+        lists.value = lists.value.map { if (it.id == playlistId) it.copy(iconKey = iconKey) else it }
         return true
     }
 

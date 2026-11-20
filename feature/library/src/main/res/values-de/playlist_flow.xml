@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_playlist_start_title">Wofür ist sie?</string>
+    <string name="library_playlist_start_suggested">Aus deinen Podcasts</string>
+    <string name="library_playlist_suggestion_recent">Neu abonniert</string>
+    <string name="library_playlist_start_own">Podcasts selbst wählen</string>
+    <string name="library_playlist_start_own_body">Jede Mischung aus deinen abonnierten Podcasts</string>
+    <string name="library_playlist_pick_title">Wähle die Podcasts</string>
+    <string name="library_playlist_filter_all">Alle</string>
+    <string name="library_playlist_pick_hint">Neue Folgen dieser Podcasts kommen von selbst dazu</string>
+    <string name="library_playlist_name_section">Name</string>
+    <string name="library_playlist_how_it_plays">So wird abgespielt</string>
+    <string name="library_playlist_mix_take_turns">Abwechselnd</string>
+    <string name="library_playlist_mix_take_turns_body">Das Neueste jedes Podcasts abwechselnd, aus dem letzten Monat</string>
+    <string name="library_playlist_mix_newest_body">Alle ungehörten Folgen, die neuesten zuerst</string>
+    <string name="library_playlist_mix_one_show">Ein Podcast nach dem anderen</string>
+    <string name="library_playlist_mix_one_show_body">Jeder Podcast ab seiner ältesten ungehörten Folge, dann der nächste</string>
+    <string name="library_playlist_per_show">Folgen pro Podcast</string>
+    <string name="library_playlist_per_show_none">Kein Limit</string>
+    <string name="library_playlist_per_show_summary_none">Alle ungehörten Folgen jedes Podcasts</string>
+    <string name="library_playlist_create_action">Playlist erstellen</string>
+    <string name="library_playlist_summary_mix">%1$s · %2$s</string>
+    <plurals name="library_playlist_per_show_summary">
+        <item quantity="one">Bis zu %1$d Folge pro Podcast</item>
+        <item quantity="other">Bis zu %1$d Folgen pro Podcast</item>
+    </plurals>
+    <plurals name="library_playlist_add_shows_action">
+        <item quantity="one">%1$d Podcast hinzufügen</item>
+        <item quantity="other">%1$d Podcasts hinzufügen</item>
+    </plurals>
+    <string name="library_playlist_unpick_these">Diese abwählen</string>
+    <plurals name="library_playlist_pick_all">
+        <item quantity="one">%1$d Podcast wählen</item>
+        <item quantity="other">Alle %1$d wählen</item>
+    </plurals>
+</resources>

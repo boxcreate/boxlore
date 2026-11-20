@@ -44,10 +44,11 @@ Owns the Library tab: the hub, Subscriptions (Shows and New Episodes, with folde
 
 ## Playlists
 
-- A playlist is a set of followed shows with an episode order. The Playlists page lists them with a cover of up to four shows and the show count; Rename and Delete (asked first) are dialogs. New playlist (`PlaylistShowPicker`) takes a name and followed shows, with chips that add a Library folder's shows to the pick (no lasting folder link); creating one opens it.
-- A playlist's page shows its show count, Newest first / Oldest first, Play, Coming up (the next ten episodes Play would queue, worked out again when the page comes back) and its shows: Add shows uses the same picker, remove has Undo, and a show no longer followed or hidden stays, marked as skipped. With no shows it says how to add some.
+- A playlist is a set of followed shows with an icon and how it plays: a mix (take turns, newest first, or one show at a time) and the most episodes it takes from each show. The Playlists page lists them with their cover (the icon, else up to four shows' artwork), show count and mix; Rename and Delete (asked first) are dialogs.
+- New playlist (`NewPlaylistFlow`, in the folder editors' window dialog) has three steps: suggestions made from the listener's shows (genres with two or more shows, folders they made, recent follows; `NewPlaylistFlowLogic.suggestions`) or picking shows yourself; a cover grid with genre chips and search; then name, icon and How it plays (`PlaylistPlaybackSettings`). A suggestion goes straight to the last step; creating one opens it.
+- A playlist's page shows its cover and show count, a How it plays row that opens the same settings in a sheet, Play, Coming up (the next ten episodes Play would queue, worked out again when the page comes back) and its shows: Add shows is the flow's show grid, remove has Undo, and a show no longer followed or hidden stays, marked as skipped. With no shows it says how to add some.
 - Play queues the first 20 episodes (never past `PlaybackRepository.QUEUE_LIMIT`) through `QueueManager.playPlaylist`; the playback service tops the queue up from the playlist. When it replaces a queue, an Up next replaced snackbar offers Undo (`QueueManager.restoreUpNext`).
-- `PlaylistPagesState` (saved state) holds what is open, the name being typed and the picked shows.
+- `PlaylistPagesState` (saved state) holds the flow's `NewPlaylistDraft` (step, picks, name, icon, how it plays) and the open dialog with the name being typed.
 
 ## Downloads and Liked
 
@@ -73,7 +74,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
   LibraryPlaylistsCard.kt                   # the hub's Playlists card
   downloads/                                # Downloads list, a show's downloads, Smart Downloads card, models
   logic/                                    # SubscriptionManualOrderLogic, SubscriptionSmartOrderLogic, LibraryEpisodeStatusLogic
-  playlists/                                # Playlists and playlist pages, show picker, ViewModel and saved state
+  playlists/                                # Playlists and playlist pages, New playlist flow, How it plays, ViewModel and saved state
   subscriptions/                            # tabs, rows, chips, sort sheet, reorder, context menus,
                                             #   folder pages and editors, New Episodes swipe, refresh
                                             #   and playback queue logic
@@ -97,7 +98,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
 - This module owns no storage files. Keys it reads and writes live in `:core:prefs`: `subscription_sort`, `subscription_manual_order`, `subscription_folder_sort`, `subscription_intra_folder_sort`, `subscriptions_grid_view`, `hide_completed_in_subs`, `subscriptions_tab_style`, `home_shortcuts_in_library`, `auto_organize_folders_enabled`, `auto_organize_folder_size`, `auto_organize_tile_covers` and `home_pinned_podcast_ids`.
 - Folders, playlists and their members are stored by `:core:catalog` and `:core:database`; download entries and workers by `:core:downloads`; media IDs by `:core:playback`.
 - Routes `library`, `library/subscriptions?tab={tab}`, `library/liked`, `library/playlists`, `library/playlists/{playlistId}`, `library/downloads` and the `boxlore://library/subscriptions` deep link are registered in `:app` and must stay stable.
-- Analytics: hub and destination views send `library_destination_viewed`; folder and playlist pages and sheets send `screen_viewed`; playlist changes send `playlist_modified` (source `library`). Events are listed in [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md).
+- Analytics: hub and destination views send `library_destination_viewed`; folder and playlist pages and sheets send `screen_viewed`; playlist changes send `playlist_modified` (source `library`), and a new playlist's origin and How it plays changes send `settings_interaction`. Events are listed in [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md).
 
 ## Testing notes
 
@@ -109,7 +110,7 @@ Hermetic JVM tests live in `feature/library/src/test`, using fakes from [`:core:
 | Genres, filters and tabs | `SubscriptionFilterLogicTest`, `SubscriptionsTabStyleTest` |
 | Folders | `FolderEditLogicTest`, `SubscriptionFolderLayoutLogicTest`, `FolderSummaryLogicTest`, `AutoOrganizePreviewLogicTest`, `FolderFlowLogicTest` |
 | New Episodes | `LatestEpisodesDisplayLogicTest`, `LatestPlaybackQueueLogicTest`, `LatestSwipeLogicTest`, `LatestEpisodeActionsTest` |
-| Playlists | `PlaylistPagesStateTest`, `PlaylistsViewModelTest` |
+| Playlists | `PlaylistPagesStateTest`, `NewPlaylistFlowLogicTest`, `PlaylistsViewModelTest` |
 | Downloads | `DownloadModelsTest` |
 | Adaptive layouts | `FolderPagesAdaptiveTest`, `PlaylistPagesAdaptiveTest`, `LibraryPlaybackLayoutTest` |
 

@@ -50,7 +50,7 @@ import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Playlist
-import cx.aswin.boxlore.core.model.PlaylistOrder
+import cx.aswin.boxlore.core.model.PlaylistMix
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
@@ -68,23 +68,33 @@ internal object PlaylistsCopy {
     @Composable
     fun moreFor(name: String): String = stringResource(R.string.library_more_options_for, name)
 
-    /** A card's second line: its show count and, when it plays oldest first, that. */
+    /** A card's second line: its show count and how it plays. */
     @Composable
     fun summary(playlist: Playlist): String =
-        if (playlist.order == PlaylistOrder.OLDEST) {
-            stringResource(R.string.library_playlist_summary_oldest_first, PlaylistCopy.showCount(playlist.showCount).asString())
-        } else {
-            PlaylistCopy.showCount(playlist.showCount).asString()
-        }
+        stringResource(
+            R.string.library_playlist_summary_mix,
+            PlaylistCopy.showCount(playlist.showCount).asString(),
+            stringResource(playlistMixCopy(playlist.mix).name),
+        )
 }
 
 /** What the Playlists page and its dialogs do; [PlaylistsScreen] implements it with [PlaylistsViewModel]. */
 internal interface PlaylistsActions {
     fun open(playlistId: String)
-    fun create(name: String, podcastIds: List<String>)
+    fun create(request: PlaylistCreateRequest)
     fun rename(playlistId: String, name: String)
     fun delete(playlistId: String)
 }
+
+/** A new playlist as the flow made it; [origin] is where its shows came from (analytics). */
+internal data class PlaylistCreateRequest(
+    val name: String,
+    val podcastIds: List<String>,
+    val mix: PlaylistMix,
+    val perShowLimit: Int?,
+    val iconKey: String?,
+    val origin: String,
+)
 
 /** The shows a playlist can be made from: followed shows and Library folders. */
 internal data class PlaylistPickSource(val followed: List<Podcast> = emptyList(), val folders: List<SubscriptionFolder> = emptyList())
@@ -105,7 +115,8 @@ fun PlaylistsScreen(
     val actions = remember(viewModel, onOpenPlaylist) {
         object : PlaylistsActions {
             override fun open(playlistId: String) = onOpenPlaylist(playlistId)
-            override fun create(name: String, podcastIds: List<String>) = viewModel.create(name, podcastIds) { onOpenPlaylist(it.id) }
+            override fun create(request: PlaylistCreateRequest) =
+                viewModel.create(request.name, request.podcastIds, request.mix, request.perShowLimit, request.iconKey, request.origin) { onOpenPlaylist(it.id) }
             override fun rename(playlistId: String, name: String) = viewModel.rename(playlistId, name)
             override fun delete(playlistId: String) = viewModel.delete(playlistId)
         }
@@ -190,7 +201,7 @@ private fun PlaylistRow(playlist: Playlist, onClick: () -> Unit, onRename: () ->
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            PlaylistCover(playlist.coverUrls, size = 64.dp)
+            PlaylistCover(playlist.coverUrls, size = 64.dp, iconKey = playlist.iconKey)
             Column(Modifier.weight(1f)) {
                 Text(playlist.name, style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.semiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(PlaylistsCopy.summary(playlist), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -219,9 +230,9 @@ internal fun PlaylistMenu(name: String, onRename: () -> Unit, onDelete: () -> Un
 }
 
 /**
- * What [state] has open: New playlist and Add shows ([PlaylistShowPicker], with [pickSource] and the
- * shows already in the playlist, [inPlaylist]), Rename playlist or Delete playlist. Add shows goes
- * to [onAddShows].
+ * What [state] has open: New playlist and Add shows ([NewPlaylistFlow], over the page, with
+ * [pickSource] and the shows already in the playlist, [inPlaylist]), Rename playlist or Delete
+ * playlist. Add shows goes to [onAddShows].
  */
 @Composable
 internal fun PlaylistEditorDialogs(
@@ -232,18 +243,37 @@ internal fun PlaylistEditorDialogs(
     inPlaylist: Set<String> = emptySet(),
     onAddShows: (List<String>) -> Unit = {},
 ) {
+    state.newDraft?.let { draft ->
+        // Over the whole window like New folder: full screen on phones, a framed panel on tablets.
+        cx.aswin.boxlore.feature.library.subscriptions.EditorDialog(
+            onBack = { NewPlaylistFlowLogic.back(draft)?.let { state.newDraft = it } ?: state.closeFlow() },
+            dismissOnClickOutside = false,
+        ) {
+            NewPlaylistFlow(
+            draft = draft,
+            onDraftChange = { state.newDraft = it },
+            data = NewPlaylistFlowData(
+                followed = pickSource.followed,
+                folders = pickSource.folders,
+                existingNames = playlists.map { it.name },
+                inPlaylist = inPlaylist,
+            ),
+            actions = NewPlaylistFlowActions(
+                onClose = state::closeFlow,
+                onCreate = { request ->
+                    state.closeFlow()
+                    actions.create(request)
+                },
+                onAddShows = { _, ids ->
+                    state.closeFlow()
+                    onAddShows(ids)
+                },
+            ),
+        )
+        }
+    }
     when (val editor = state.editor) {
         null -> Unit
-        PlaylistEditor.Create, is PlaylistEditor.AddShows -> PlaylistShowPicker(
-            state = state,
-            followed = pickSource.followed,
-            folders = pickSource.folders,
-            inPlaylist = if (editor == PlaylistEditor.Create) emptySet() else inPlaylist,
-            onConfirm = { name, ids ->
-                state.closeEditor()
-                if (editor == PlaylistEditor.Create) actions.create(name, ids) else onAddShows(ids)
-            },
-        )
         is PlaylistEditor.Rename -> cx.aswin.boxlore.core.designsystem.components.PlaylistNameDialog(
             title = stringResource(PlaylistCopy.RENAME_PLAYLIST),
             name = state.nameDraft,

@@ -38,7 +38,6 @@
     <string name="library_delete">Supprimer</string>
     <string name="library_rename">Renommer</string>
     <string name="library_next">Suivant</string>
-    <string name="library_add">Ajouter</string>
     <string name="library_manage">Gérer</string>
     <string name="library_turn_off">Désactiver</string>
     <!-- Snackbar action -->
@@ -142,7 +141,6 @@
         <item quantity="other">%1$d podcasts choisis</item>
     </plurals>
     <string name="library_add_shows">Ajouter des podcasts</string>
-    <string name="library_shows_you_follow">Vos abonnements</string>
     <!-- Shows that are not in a folder -->
     <string name="library_your_shows">Vos podcasts</string>
     <!-- Label above the folders on the Shows tab -->
@@ -151,10 +149,7 @@
     <string name="library_genre_folders">Dossiers par genre</string>
     <string name="library_playlists_empty_title">Aucune playlist pour l’instant</string>
     <string name="library_playlists_empty_body">Créez-en une à partir de vos abonnements, par exemple une pour l’humour et une pour l’histoire. Chacune garde votre progression, pour passer de l’une à l’autre quand vous voulez.</string>
-    <!-- A playlist card's second line; %1$s is its show count, such as 3 shows -->
-    <string name="library_playlist_summary_oldest_first">%1$s · Plus anciens d’abord</string>
     <string name="library_playlist_newest_first">Plus récents d’abord</string>
-    <string name="library_playlist_oldest_first">Plus anciens d’abord</string>
     <!-- Section title: the episodes Play would queue -->
     <string name="library_playlist_coming_up">Prochainement</string>
     <string name="library_playlist_nothing_to_play">Rien à lire pour le moment. Les nouveaux épisodes de ces podcasts apparaîtront ici.</string>
@@ -174,7 +169,6 @@
     <string name="library_playlist_removed_show">%1$s retiré</string>
     <!-- Screen-reader label; %1$s is the show's name -->
     <string name="library_playlist_remove_show">Retirer %1$s</string>
-    <string name="library_playlist_from_folders">Ajouter les podcasts d’un dossier</string>
     <string name="library_playlist_no_followed">Abonnez-vous d’abord à des podcasts, puis ajoutez-les ici.</string>
     <string name="library_playlist_all_added">Tous vos abonnements sont déjà dans cette playlist.</string>
 </resources>

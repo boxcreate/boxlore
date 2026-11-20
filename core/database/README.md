@@ -26,7 +26,7 @@ It does not own repositories, sync, feed parsing or ranking. Catalog and sync lo
 | `episode_supplements`, `episode_supplement_items` | `EpisodeSupplementEntity`, `EpisodeSupplementItemEntity` | `EpisodeSupplementDao` | Feed-only extras under a Podcast Index show, with feed validators; `:core:rss` |
 | `local_episode_feeds`, `local_episodes` | `LocalEpisodeFeedEntity`, `LocalEpisodeEntity` | `LocalEpisodeCatalogDao` | Local copies of Podcast Index feeds; `:core:rss`, catalog |
 | `folders`, `podcast_folder_cross_ref` | `FolderEntity`, `PodcastFolderCrossRef` | `FolderDao` | Custom folders; catalog's folder repository |
-| `playlists`, `playlist_shows` | `PlaylistEntity`, `PlaylistShowEntity` | `PlaylistDao` | Playlists with their episode order (`newest`/`oldest`) and their shows in order; one row per show per playlist, deleted with the playlist. `PlaylistDao` also reads the stored episodes (`local_episodes`, `rss_episodes`) and in-progress history a playlist plays from |
+| `playlists`, `playlist_shows` | `PlaylistEntity`, `PlaylistShowEntity` | `PlaylistDao` | Playlists with their mix, episodes per show (0 means no limit) and icon key, and their shows in order; one row per show per playlist, deleted with the playlist. `PlaylistDao` also reads the stored episodes (`local_episodes`, `rss_episodes`) and in-progress history a playlist plays from |
 | `episode_aliases`, `episode_group_state` | `EpisodeAliasEntity`, `EpisodeGroupStateEntity` | `EpisodeIdentityDao` | Every stored ID of an episode and its shared like, completion and archive; `EpisodeListenerStore`, `:core:rss` linkers, sync, backup |
 | `upgrade_repair_shows` | `UpgradeRepairShowEntity` | `UpgradeRepairDao` | Per-show progress of the feed address repair; catalog's upgrade repair |
 
@@ -52,6 +52,7 @@ src/main/java/cx/aswin/boxlore/core/database/
   ShowPlaybackAndPlaylistsMigration.kt  # 42→43
   ShowPlaylistsMigration.kt          # 43→44 and the direct 42→44
   DismissedEpisodesMigration.kt      # 44→45
+  PlaylistPlaybackMigration.kt       # 45→46
   BriefingArtworkCompatibility.kt    # open callback and triggers for Brief artwork
   Converters.kt
   PodcastEntity.kt, PodcastDao.kt, FeedAddressWrite.kt, PodcastScoring.kt
@@ -115,9 +116,9 @@ Stored values, never renamed:
 - `DownloadedEpisodeEntity.downloadOrigin`: `unknown`, `manual`, `auto`, `smart`.
 - `ListeningSessionValues`: sources `lore`, `smart_queue`; outputs `speaker`, `headphones`, `bluetooth`, `car`, `cast`.
 - `LocalEpisodeFeedEntity.feedOrder` (`LocalFeedOrder`): `newest_first`, `oldest_first`, `mixed`.
-- `PlaylistEntity.episodeOrder` (`PlaylistOrder`): `newest`, `oldest`.
+- `PlaylistEntity.mix` (`PlaylistMix`): `take_turns`, `newest_first`, `one_show`. `episodeOrder` (`newest`, `oldest`) is no longer read.
 
-Schema versions (the current version is 45):
+Schema versions (the current version is 46):
 
 | Version | Migration adds |
 | :--- | :--- |
@@ -137,14 +138,15 @@ Schema versions (the current version is 45):
 | 43 | `podcasts.playbackSpeedOverride` and `skipSilenceOverride` (null means the app setting), episode `playlists` and `playlist_items` |
 | 44 | `playlists.episodeOrder` and `playlist_shows`; each playlist keeps its episodes' shows in first-appearance order, then `playlist_items` is dropped. 42→44 is also a direct path |
 | 45 | `listening_history.dismissedAt`, `episode_group_state.dismissedAt` and `dismissClearedAt` |
+| 46 | `playlists.mix`, `perShowLimit` and `iconKey`; an `oldest` playlist becomes `one_show`, any other `newest_first`, both with no limit |
 
 Migration rules:
 
-- Never edit a shipped migration or exported schema: Room refuses to open a file whose schema differs at the same version. Any schema change takes a new version (46 next) and a new exported schema.
-- Migrations only add (43→44 alone converts and drops `playlist_items`): no stored ID or value changes, and new columns carry defaults so existing rows need no rewrite.
+- Never edit a shipped migration or exported schema: Room refuses to open a file whose schema differs at the same version. Any schema change takes a new version (47 next) and a new exported schema.
+- Migrations only add (43→44 alone converts and drops `playlist_items`; 45→46 sets the new playlist columns from the old order): no stored ID or value changes, and new columns carry defaults so existing rows need no rewrite.
 - Add each new migration to `BoxLoreDatabase.ALL_MIGRATIONS`. `BoxLoreDatabase.builder` is the one configuration, used by `getDatabase` and the upgrade tests.
 - A version from 12 on with no path fails to open instead of erasing data. Only versions 1–11 and downgrades still recreate the database empty.
-- Test each new version with an upgrade test that builds the previous version from its exported schema (`RoomSchemaFixture`), opens it through `builder` and checks every stored value survives (`RoomV39UpgradeTest` to `RoomV45UpgradeTest`). For a large change, also compare the upgraded file with a fresh install, as the v39 and v40 tests do.
+- Test each new version with an upgrade test that builds the previous version from its exported schema (`RoomSchemaFixture`), opens it through `builder` and checks every stored value survives (`RoomV39UpgradeTest` to `RoomV46UpgradeTest`). For a large change, also compare the upgraded file with a fresh install, as the v39 and v40 tests do.
 
 ## Testing notes
 
@@ -152,7 +154,7 @@ Tests live in `core/database/src/test` (JUnit 5, Robolectric Room); shared upgra
 
 | Area | Test classes |
 | :--- | :--- |
-| Upgrades and migrations | `RoomV39UpgradeTest`, `RoomV40UpgradeTest`, `RoomV41UpgradeTest`, `RoomV42UpgradeTest`, `RoomV43UpgradeTest`, `RoomV44UpgradeTest`, `RoomV45UpgradeTest`, `AutoDownloadMigrationTest`, `Migration36To37Test`, `DownloadedEpisodeMigration35To36Test`, `CustomFolderMigration33To34Test`, `CustomGenreMigration32To33Test`, `LocalCatalogMigration31To32Test` |
+| Upgrades and migrations | `RoomV39UpgradeTest`, `RoomV40UpgradeTest`, `RoomV41UpgradeTest`, `RoomV42UpgradeTest`, `RoomV43UpgradeTest`, `RoomV44UpgradeTest`, `RoomV45UpgradeTest`, `RoomV46UpgradeTest`, `AutoDownloadMigrationTest`, `Migration36To37Test`, `DownloadedEpisodeMigration35To36Test`, `CustomFolderMigration33To34Test`, `CustomGenreMigration32To33Test`, `LocalCatalogMigration31To32Test` |
 | Episode identity | `EpisodeAliasSeedingTest`, `EpisodeIdentityDaoTest`, `EpisodeListenerProjectionTest`, `EpisodeListenerStoreTest`, `EpisodeRecipeIdReadsTest`, `SwitchedShowListeningTest` |
 | Shows and feed addresses | `PodcastDaoInMemoryTest`, `PodcastDaoExtendedTest`, `PodcastFeedAddressDaoTest`, `PodcastScoringTest` |
 | History and listening | `ListeningHistoryDaoInMemoryTest`, `ListeningDatesTest`, `ListeningRollupMergeTest`, `ListeningInsightsDaoInMemoryTest`, `PlayedShowDaoTest` |

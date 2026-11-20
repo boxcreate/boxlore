@@ -95,7 +95,7 @@ data class BoxLoreBackup(
     val episodeIdentity: EpisodeIdentityBackup? = null,
     /** Version 8+: listening sessions, daily summaries and played shows ([ListeningBackup]). */
     val listening: ListeningBackup? = null,
-    /** Version 11+: playlists with their order and shows ([PlaylistBackup]). */
+    /** Version 11+: playlists with their shows and settings ([PlaylistBackup]). */
     val playlists: List<PlaylistBackup>? = null,
 )
 
