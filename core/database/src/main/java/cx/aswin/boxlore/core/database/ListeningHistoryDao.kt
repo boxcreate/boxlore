@@ -533,7 +533,7 @@ interface ListeningHistoryDao {
           AND dismissedAt = :snapshotDismissedAt
         """,
     )
-    @Suppress("LongParameterList") // One parameter per column the snapshot compares.
+    @Suppress("LongParameterList", "kotlin:S107") // One parameter per column the snapshot compares.
     suspend fun markHistorySyncedIfUnchanged(
         episodeId: String,
         snapshotLastPlayedAt: Long,

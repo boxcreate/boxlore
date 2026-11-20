@@ -265,7 +265,7 @@ internal constructor(
          * An archived latest episode ([dismissedIds]) is never listed, whatever the setting.
          */
         fun latestEpisodePool(enriched: List<Podcast>, hideCompleted: Boolean, dismissedIds: Set<String> = emptySet()): List<Podcast> {
-            val withLatest = enriched.filter { it.latestEpisode != null && it.latestEpisode!!.id !in dismissedIds }
+            val withLatest = enriched.filter { podcast -> podcast.latestEpisode?.let { it.id !in dismissedIds } == true }
             return if (hideCompleted) withLatest.filter { it.episodeStatus != EpisodeStatus.COMPLETED } else withLatest
         }
 
