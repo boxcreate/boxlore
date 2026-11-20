@@ -25,7 +25,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.R
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.AutoTranscriptState
@@ -120,7 +122,7 @@ fun AdvancedPlayerControls(
                 colorScheme = colorScheme,
                 activeIcon = androidx.compose.material.icons.Icons.Rounded.CheckCircle,
                 inactiveIcon = androidx.compose.material.icons.Icons.Outlined.CheckCircle,
-                contentDescription = if (isPlayed) "Mark Unplayed" else "Mark Played",
+                contentDescription = stringResource(if (isPlayed) R.string.player_control_mark_unplayed else R.string.player_control_mark_played),
                 activeTint = playedActiveTint,
                 inactiveTint = baseInactiveTint,
                 activeContainerColor = playedActiveContainer,
@@ -136,7 +138,7 @@ fun AdvancedPlayerControls(
                 colorScheme = colorScheme,
                 activeIcon = androidx.compose.material.icons.Icons.Outlined.Share,
                 inactiveIcon = androidx.compose.material.icons.Icons.Outlined.Share,
-                contentDescription = "Share",
+                contentDescription = stringResource(R.string.player_control_share),
                 activeTint = baseInactiveTint,
                 inactiveTint = baseInactiveTint,
                 controlSize = controlSize,
@@ -157,7 +159,7 @@ fun AdvancedPlayerControls(
                 colorScheme = colorScheme,
                 activeIcon = Icons.AutoMirrored.Rounded.Toc,
                 inactiveIcon = Icons.AutoMirrored.Rounded.Toc,
-                contentDescription = "Chapters",
+                contentDescription = stringResource(R.string.player_control_chapters),
                 activeTint = baseActiveTint,
                 inactiveTint = if (hasChapters || isChaptersAnimating) baseInactiveTint else baseInactiveTint.copy(alpha = 0.4f),
                 controlSize = controlSize,
@@ -193,7 +195,7 @@ fun AdvancedPlayerControls(
                 colorScheme = colorScheme,
                 activeIcon = Icons.Rounded.Description,
                 inactiveIcon = Icons.Rounded.Description,
-                contentDescription = "Transcript",
+                contentDescription = stringResource(R.string.player_control_transcript),
                 activeTint = if (style == ControlStyle.TonalSquircle && overrideColor == null) {
                     colorScheme.onTertiaryContainer
                 } else if (style == ControlStyle.Squircle) {
@@ -233,7 +235,7 @@ fun AdvancedPlayerControls(
             colorScheme = colorScheme,
             activeIcon = Icons.Default.Favorite,
             inactiveIcon = Icons.Outlined.FavoriteBorder,
-            contentDescription = "Like",
+            contentDescription = stringResource(R.string.player_control_like),
             activeTint = if (style == ControlStyle.TonalSquircle &&
                 overrideColor == null
             ) {
@@ -265,7 +267,7 @@ fun AdvancedPlayerControls(
             colorScheme = colorScheme,
             activeIcon = Icons.Outlined.DownloadDone,
             inactiveIcon = Icons.Outlined.Download,
-            contentDescription = "Download",
+            contentDescription = stringResource(R.string.player_control_download),
             activeTint = downloadActiveTint,
             inactiveTint = baseInactiveTint,
             activeContainerColor = downloadActiveContainer,
@@ -299,14 +301,14 @@ fun AdvancedPlayerControls(
             activeIcon = queueIcon,
             inactiveIcon = queueIcon,
             contentDescription = if (isQueued) {
-                "Added to Queue"
+                stringResource(R.string.player_control_queued)
             } else if (showAddQueueIcon ||
                 style == ControlStyle.TonalSquircle ||
                 style == ControlStyle.Transparent
             ) {
-                "Add to Queue"
+                stringResource(R.string.player_control_add_to_queue)
             } else {
-                "Queue"
+                stringResource(R.string.player_control_queue)
             },
             activeTint = if (style == ControlStyle.TonalSquircle &&
                 overrideColor == null

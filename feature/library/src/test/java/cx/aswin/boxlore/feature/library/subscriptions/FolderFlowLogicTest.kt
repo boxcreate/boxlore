@@ -5,6 +5,7 @@ import androidx.compose.runtime.saveable.SaverScope
 import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.testing.TestFixtures
+import cx.aswin.boxlore.feature.library.R
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -69,7 +70,7 @@ class FolderFlowLogicTest {
 
     @Test
     fun `the ways to fill a folder are Shows, Genre and Auto`() {
-        assertEquals(listOf("Shows", "Genre", "Auto"), NewFolderMode.entries.map(::newFolderModeLabel))
+        assertEquals(listOf(R.string.library_folder_mode_shows, R.string.library_folder_mode_genre, R.string.library_folder_mode_auto), NewFolderMode.entries.map(::newFolderModeLabel))
     }
 
     @Test
@@ -99,7 +100,7 @@ class FolderFlowLogicTest {
         assertTrue(NewFolderFlowLogic.nameIsGenre(" news "))
         assertTrue(NewFolderFlowLogic.nameIsGenre("Tech"))
         assertFalse(NewFolderFlowLogic.nameIsGenre("Commute"))
-        assertEquals("Saved as Tech", NewFolderFlowLogic.savedNameNote("Technology"))
+        assertEquals(R.string.library_folder_saved_as_tech, NewFolderFlowLogic.savedNameNote("Technology"))
         assertNull(NewFolderFlowLogic.savedNameNote("Tech"))
     }
 

@@ -228,6 +228,18 @@ internal object QueueContentAnalyticsTracks {
         )
     }
 
+    fun trackPlaylistModified(action: String, source: String, itemsCount: Int? = null, playlistSize: Int? = null,) {
+        AnalyticsEmit.event(
+            "playlist_modified",
+            buildMap {
+                put("action", action)
+                put("source", source)
+                itemsCount?.let { put("items_count", it) }
+                playlistSize?.let { put("playlist_size", it) }
+            },
+        )
+    }
+
     fun trackNavTabClicked(tabName: String, previousTab: String? = null,) {
         AnalyticsEmit.event(
             "nav_tab_clicked",

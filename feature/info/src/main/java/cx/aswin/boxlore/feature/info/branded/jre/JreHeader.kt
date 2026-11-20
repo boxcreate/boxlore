@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.R
@@ -47,7 +48,6 @@ import cx.aswin.boxlore.feature.info.branded.boxShadow
 import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
 import cx.aswin.boxlore.feature.info.branded.jre.JreColors.drawCurtain
 import cx.aswin.boxlore.feature.info.branded.jre.JreColors.drawStageLight
-import java.util.Locale
 
 /** Where the curtain ends below the top of the header; it has faded into the page a little before. */
 private val CurtainBottom = 196.dp
@@ -120,7 +120,7 @@ private val BadgeShadow = Color(0x8C000000)
 private fun PublisherLine(podcast: Podcast) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-            podcast.artist.uppercase(Locale.getDefault()),
+            podcast.artist.uppercase(currentLocale()),
             style = brandedSansStyle(11.sp, 14.sp, weight = 600).copy(letterSpacing = 1.8.sp),
             color = JreColors.Sub,
             maxLines = 1,

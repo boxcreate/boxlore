@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -155,7 +156,7 @@ private fun Deck(deck: List<SerialSeason>, modifier: Modifier) {
             SeasonCard(
                 season = season,
                 bitmap = season.cover?.let { pictures?.get(it) },
-                label = season.label(unnamed.getValue(season.number)),
+                label = season.label(unnamed.getValue(season.number), currentLocale()),
                 modifier = Modifier
                     .offset((SerialArt.DECK_X - SerialArt.STEP * depth).dp, (SerialArt.DECK_Y + SerialArt.STEP * depth).dp)
                     .graphicsLayer {

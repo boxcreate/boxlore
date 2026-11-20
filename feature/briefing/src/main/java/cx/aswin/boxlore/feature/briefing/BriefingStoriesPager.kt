@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.briefing
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.liveRegion
@@ -269,21 +271,21 @@ private fun BriefingStoriesPagerContent(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text("Story ${actions.pagerState.currentPage + 1} of ${uiState.chapters.size}", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.briefing_screen_story_position, actions.pagerState.currentPage + 1, uiState.chapters.size), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 FilledTonalIconButton(onClick = {
                     val page = actions.pagerState.currentPage - 1
                     actions.onUserClickedPageChange(page)
                     actions.scope.launch { actions.pagerState.animateScrollToPage(page) }
                 }, enabled = actions.pagerState.currentPage > 0) {
-                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, "Previous story")
+                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, stringResource(R.string.briefing_screen_previous_story))
                 }
                 FilledTonalIconButton(onClick = {
                     val page = actions.pagerState.currentPage + 1
                     actions.onUserClickedPageChange(page)
                     actions.scope.launch { actions.pagerState.animateScrollToPage(page) }
                 }, enabled = actions.pagerState.currentPage < uiState.chapters.lastIndex) {
-                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, "Next story")
+                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, stringResource(R.string.briefing_screen_next_story))
                 }
             }
         }
@@ -361,12 +363,13 @@ private fun StoriesPlaceholder(loading: Boolean) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = storiesPlaceholderText(loading),
+            text = stringResource(storiesPlaceholderText(loading)),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
 
-internal fun storiesPlaceholderText(loading: Boolean): String =
-    if (loading) "Loading stories…" else "Story text is unavailable. You can still listen to the brief."
+@StringRes
+internal fun storiesPlaceholderText(loading: Boolean): Int =
+    if (loading) R.string.briefing_screen_stories_loading else R.string.briefing_screen_stories_unavailable

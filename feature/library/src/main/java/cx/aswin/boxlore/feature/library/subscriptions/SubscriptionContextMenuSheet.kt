@@ -35,6 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -46,6 +48,7 @@ import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.model.artworkUrls
+import cx.aswin.boxlore.feature.library.R
 
 /**
  * Identifies the target item that was long-pressed in the Subscriptions tab.
@@ -143,7 +146,7 @@ private fun FolderContextActions(
 
     ContextMenuActionRow(
         icon = Icons.Rounded.Edit,
-        label = "Edit folder",
+        label = stringResource(R.string.library_folder_edit),
         onClick = {
             onDismissRequest()
             actions.onEditFolder(folder)
@@ -151,7 +154,7 @@ private fun FolderContextActions(
     )
     ContextMenuActionRow(
         icon = Icons.Rounded.AddCircleOutline,
-        label = "Add shows",
+        label = stringResource(R.string.library_add_shows),
         onClick = {
             onDismissRequest()
             actions.onAddShowsToFolder(folder)
@@ -159,7 +162,7 @@ private fun FolderContextActions(
     )
     ContextMenuActionRow(
         icon = Icons.Rounded.Reorder,
-        label = "Reorder folders",
+        label = stringResource(R.string.library_reorder_folders),
         onClick = {
             onDismissRequest()
             actions.onReorderFolders()
@@ -175,7 +178,7 @@ private fun FolderContextActions(
 
     ContextMenuActionRow(
         icon = Icons.Rounded.DeleteOutline,
-        label = "Delete folder",
+        label = stringResource(R.string.library_folder_delete),
         isDestructive = true,
         onClick = {
             onDismissRequest()
@@ -202,7 +205,7 @@ private fun FolderPodcastContextActions(
 
     ContextMenuActionRow(
         icon = Icons.Rounded.FolderOff,
-        label = "Remove from folder",
+        label = stringResource(R.string.library_folder_remove_from),
         onClick = {
             onDismissRequest()
             actions.onRemoveFromFolder(target.folder, target.podcast)
@@ -210,7 +213,7 @@ private fun FolderPodcastContextActions(
     )
     ContextMenuActionRow(
         icon = Icons.AutoMirrored.Rounded.DriveFileMove,
-        label = "Move to another folder",
+        label = stringResource(R.string.library_folder_move_to_another),
         onClick = {
             onDismissRequest()
             actions.onMoveToAnotherFolder(target.folder, target.podcast)
@@ -218,7 +221,7 @@ private fun FolderPodcastContextActions(
     )
     ContextMenuActionRow(
         icon = Icons.Rounded.Reorder,
-        label = "Reorder shows in folder",
+        label = stringResource(R.string.library_reorder_shows_in_folder),
         onClick = {
             onDismissRequest()
             actions.onReorderFolderShows(target.folder)
@@ -234,7 +237,7 @@ private fun FolderPodcastContextActions(
 
     ContextMenuActionRow(
         icon = Icons.Rounded.RemoveCircleOutline,
-        label = "Unsubscribe",
+        label = stringResource(R.string.library_unsubscribe),
         isDestructive = true,
         onClick = {
             onDismissRequest()
@@ -258,7 +261,7 @@ private fun RootPodcastContextActions(
 
     ContextMenuActionRow(
         icon = Icons.Rounded.CreateNewFolder,
-        label = "Add to folder",
+        label = stringResource(R.string.library_folder_add_to),
         onClick = {
             onDismissRequest()
             actions.onMoveToAnotherFolder(null, podcast)
@@ -266,7 +269,7 @@ private fun RootPodcastContextActions(
     )
     ContextMenuActionRow(
         icon = Icons.Rounded.Reorder,
-        label = "Reorder shows",
+        label = stringResource(R.string.library_reorder_shows),
         onClick = {
             onDismissRequest()
             actions.onReorderRootShows()
@@ -313,7 +316,7 @@ private fun FolderContextMenuHeader(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = "${folder.podcastCount} ${if (folder.podcastCount == 1) "show" else "shows"} • ${folder.displaySize.dimensionsLabel}",
+                text = pluralStringResource(R.plurals.library_folder_shows_and_dimensions, folder.podcastCount, folder.podcastCount, folder.displaySize.dimensionsLabel),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -373,7 +376,7 @@ private fun PodcastContextMenuHeader(
                 overflow = TextOverflow.Ellipsis,
             )
             val subtitle = if (folderName != null) {
-                "${podcast.artist} • In $folderName"
+                stringResource(R.string.library_show_artist_in_folder, podcast.artist, folderName)
             } else {
                 podcast.artist
             }

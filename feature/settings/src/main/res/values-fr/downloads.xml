@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_auto_download_background_title">Quand boxlore est fermé</string>
+    <string name="settings_auto_download_background_checks">Vérifications de secours en arrière-plan</string>
+    <string name="settings_auto_download_background_checks_description">Trouver les nouveaux épisodes si les notifications des podcasts sont désactivées ou n’arrivent pas.</string>
+    <string name="settings_auto_download_background_wifi">Vérifier en Wi-Fi uniquement</string>
+    <string name="settings_auto_download_background_wifi_description">S’applique aux vérifications et aux téléchargements qu’elles lancent.</string>
+    <string name="settings_auto_download_background_charging">Uniquement en charge</string>
+    <string name="settings_auto_download_background_on_footer">Vérifie environ toutes les 6 heures ; Android peut retarder les vérifications. Consomme plus de batterie et de données, et se met en pause quand la batterie est faible.</string>
+    <string name="settings_auto_download_background_off_footer">Les notifications des podcasts peuvent toujours lancer des téléchargements quand boxlore est fermé. Sinon, les nouveaux épisodes sont récupérés quand vous ouvrez l’appli et actualisez.</string>
+    <string name="settings_auto_download_help_title">Fonctionnement des téléchargements automatiques</string>
+    <string name="settings_auto_download_help_shows_title">Choisissez vos podcasts</string>
+    <string name="settings_auto_download_help_shows">Activez le téléchargement auto depuis la page d’un podcast. Il récupère les nouveaux épisodes, sans télécharger les archives du podcast.</string>
+    <string name="settings_auto_download_help_closed">Les notifications des podcasts peuvent déclencher des téléchargements à l’arrivée de nouveaux épisodes. Les vérifications de secours en arrière-plan sont facultatives : elles repèrent les nouveaux épisodes si les notifications sont désactivées ou n’arrivent pas. Elles ont lieu environ toutes les 6 heures, et Android peut les retarder.</string>
+    <string name="settings_auto_download_help_limits_title">Limites de batterie et de réseau</string>
+    <string name="settings_auto_download_help_limits">Les vérifications en arrière-plan consomment plus de batterie et de données, et se mettent toujours en pause quand la batterie est faible. Leurs limites de réseau et de charge s’appliquent aussi aux téléchargements qu’elles lancent. Le réglage Wi-Fi des téléchargements s’applique aux fichiers audio, quelle que soit la façon dont ils ont été trouvés.</string>
+    <string name="settings_auto_download_help_keeping_title">Conserver les épisodes</string>
+    <string name="settings_auto_download_help_keeping">La limite par podcast remplace uniquement les téléchargements automatiques plus anciens et terminés ; les fichiers enregistrés manuellement ne sont pas concernés. Supprimer après écoute efface les fichiers téléchargés quand vous terminez un épisode.</string>
+    <string name="settings_got_it">Compris</string>
+    <string name="settings_auto_download_title">Téléchargements automatiques</string>
+    <string name="settings_auto_download_shows_title">Pour les podcasts de votre choix</string>
+    <string name="settings_auto_download_shows_footer">Activez le téléchargement auto depuis la page de chaque podcast.</string>
+    <string name="settings_auto_download_wifi_only">Wi-Fi uniquement</string>
+    <string name="settings_auto_download_wifi_only_description">Les fichiers audio attendent une connexion non limitée.</string>
+    <string name="settings_auto_download_keep_per_show">Épisodes conservés par podcast</string>
+    <string name="settings_auto_download_keep_per_show_description">Remplacer le plus ancien téléchargement automatique quand cette limite est atteinte.</string>
+    <string name="settings_auto_download_remove_after">Supprimer après écoute</string>
+    <string name="settings_auto_download_remove_after_description">Effacer les fichiers téléchargés quand un épisode est terminé.</string>
+    <string name="settings_downloads_offline_title">Garder des épisodes hors ligne</string>
+    <string name="settings_downloads_offline_footer">Choisissez les épisodes que boxlore garde prêts à être lus hors ligne.</string>
+    <string name="settings_downloads_smart">Téléchargements intelligents</string>
+    <string name="settings_downloads_smart_description">Garder hors ligne une sélection d’épisodes renouvelée selon vos écoutes</string>
+    <string name="settings_downloads_auto_description">Télécharger les nouveaux épisodes des abonnements choisis</string>
+    <string name="settings_smart_downloads_title">Téléchargements intelligents</string>
+    <string name="settings_smart_downloads_enable">Activer les Téléchargements intelligents</string>
+    <string name="settings_smart_downloads_about">À propos des Téléchargements intelligents</string>
+    <string name="settings_smart_downloads_active">Actif</string>
+    <string name="settings_smart_downloads_inactive">Inactif</string>
+    <string name="settings_smart_downloads_description">Synchronise automatiquement sur votre appareil des épisodes susceptibles de vous plaire, d’après votre historique d’écoute, pour en profiter même hors ligne.</string>
+    <string name="settings_smart_downloads_max_episodes">Nombre max. d’épisodes téléchargés auto</string>
+    <string name="settings_smart_downloads_storage_limit">Limite de stockage</string>
+    <string name="settings_smart_downloads_unlimited">Illimité</string>
+    <string name="settings_smart_downloads_conflict_description">Avertissement de conflit</string>
+    <string name="settings_smart_downloads_enabled">Activé</string>
+    <string name="settings_smart_downloads_mobile_data">Utiliser les données mobiles</string>
+    <string name="settings_smart_downloads_charging_only">Uniquement en charge</string>
+    <string name="settings_smart_downloads_on_battery">Télécharger sur batterie</string>
+    <string name="settings_smart_downloads_auto_delete">Supprimer auto les épisodes écoutés</string>
+    <string name="settings_smart_downloads_delete_immediately">Immédiatement</string>
+    <string name="settings_smart_downloads_delete_24h">Après 24 heures</string>
+    <string name="settings_smart_downloads_delete_7d">Après 7 jours</string>
+    <string name="settings_smart_downloads_delete_never">Jamais</string>
+    <string name="settings_smart_downloads_background">Téléchargements en arrière-plan</string>
+    <string name="settings_smart_downloads_background_allowed">Autorisé à télécharger en arrière-plan, malgré les économies d’énergie agressives de l’appareil. Cela n’affecte pas l’autonomie, car la synchro en arrière-plan ne s’exécute efficacement qu’une fois toutes les 24 heures.</string>
+    <string name="settings_smart_downloads_background_blocked">boxlore essaiera de télécharger automatiquement, mais les appareils comme Xiaomi, OnePlus ou Samsung peuvent bloquer les téléchargements à cause de restrictions d’économie d’énergie agressives. Autoriser cette option n’affecte pas l’autonomie, car la synchro en arrière-plan ne s’exécute efficacement qu’une fois toutes les 24 heures.</string>
+    <string name="settings_smart_downloads_allowed">Autorisé</string>
+    <string name="settings_smart_downloads_allow">Autoriser</string>
+    <!-- Smart Downloads chip: how many episodes to keep. -->
+    <plurals name="settings_smart_downloads_episode_count">
+        <item quantity="one">%1$d épisode</item>
+        <item quantity="other">%1$d épisodes</item>
+    </plurals>
+    <!-- %1$s is a storage size like "250 MB", %2$d the episode count. -->
+    <plurals name="settings_smart_downloads_conflict">
+        <item quantity="one">Votre limite de stockage de %1$s est peut-être trop faible pour %2$d épisode. La synchro se mettra en pause une fois la limite atteinte.</item>
+        <item quantity="other">Votre limite de stockage de %1$s est peut-être trop faible pour %2$d épisodes. La synchro se mettra en pause une fois la limite atteinte.</item>
+    </plurals>
+    <!-- Storage sizes. %1$s is an already formatted number. -->
+    <string name="settings_smart_downloads_size_mb">%1$s Mo</string>
+    <string name="settings_smart_downloads_size_gb">%1$s Go</string>
+</resources>

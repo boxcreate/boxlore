@@ -35,12 +35,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.effectiveEpisodeType
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.feature.info.R
-import java.text.DateFormat
-import java.util.Date
 import kotlinx.coroutines.delay
 
 @Composable
@@ -89,7 +89,7 @@ internal fun EpisodeInfoHero(
         }
         EpisodeExpandableTitle(episode.id, episode.title)
         Spacer(Modifier.height(8.dp))
-        EpisodeMetadata(episode, completionState.isCompleted, onToggleCompletion)
+        EpisodeMetadata(episode, completionState.isCompleted, onToggleCompletion, completionState.archive)
         if (completionState.showTip) {
             Text(stringResource(R.string.episode_info_mark_tip), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             LaunchedEffect(episode.id) {
@@ -101,12 +101,13 @@ internal fun EpisodeInfoHero(
 }
 
 @Composable
-private fun EpisodeMetadata(episode: Episode, isCompleted: Boolean, onToggleCompletion: () -> Unit) {
-    val date = remember(episode.publishedDate) {
-        episode.publishedDate.takeIf { it > 0L }?.let { DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it * 1_000L)) }
+private fun EpisodeMetadata(episode: Episode, isCompleted: Boolean, onToggleCompletion: () -> Unit, archive: EpisodeArchiveAction?) {
+    val locale = currentLocale()
+    val date = remember(episode.publishedDate, locale) {
+        episode.publishedDate.takeIf { it > 0L }?.let { LocaleFormats.date(it * 1_000L, LocaleFormats.DateStyle.DAY_MONTH_YEAR, locale) }
     }
     val number = episodeNumberLabel(episode)
-    val metadata = listOfNotNull(date, formatEpisodeDuration(episode.duration).takeIf(String::isNotBlank), number).joinToString(" · ")
+    val metadata = listOfNotNull(date, formatEpisodeDuration(episode.duration, locale).takeIf(String::isNotBlank), number).joinToString(" · ")
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         if (metadata.isNotEmpty()) {
             Text(
@@ -128,8 +129,12 @@ private fun EpisodeMetadata(episode: Episode, isCompleted: Boolean, onToggleComp
             Spacer(Modifier.weight(1f))
         }
         EpisodeCompletionPill(isCompleted, onToggleCompletion)
+        archive?.let { EpisodeArchiveToggle(it.isArchived, it.onToggle) }
     }
 }
+
+/** The episode page's archive state and its toggle ([EpisodeArchiveToggle]). */
+internal data class EpisodeArchiveAction(val isArchived: Boolean, val onToggle: () -> Unit)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

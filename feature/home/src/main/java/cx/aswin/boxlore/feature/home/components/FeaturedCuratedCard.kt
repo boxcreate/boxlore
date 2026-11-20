@@ -9,16 +9,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.text.LocaleFormats
+import cx.aswin.boxlore.feature.home.R
 
 @Composable
 fun FeaturedCuratedCard(
@@ -48,7 +52,7 @@ fun FeaturedCuratedCard(
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = "TODAY'S FEATURED",
+                    text = stringResource(R.string.home_featured_eyebrow).uppercase(currentLocale()),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = GoogleSansWeight.bold,
@@ -86,7 +90,7 @@ fun FeaturedCuratedCard(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.PlayArrow,
-                            contentDescription = "Play",
+                            contentDescription = stringResource(R.string.home_hero_play),
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.padding(6.dp),
                         )
@@ -94,7 +98,7 @@ fun FeaturedCuratedCard(
                     Spacer(modifier = Modifier.width(10.dp))
                     if (episode.duration > 0) {
                         Text(
-                            text = "${episode.duration / 60} min",
+                            text = LocaleFormats.duration(episode.duration / 60 * 60L, currentLocale()),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

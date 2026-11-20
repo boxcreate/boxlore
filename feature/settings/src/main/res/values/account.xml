@@ -31,7 +31,8 @@
     <string name="account_forgot_password">Forgot password?</string>
     <string name="account_show_password">Show password</string>
     <string name="account_hide_password">Hide password</string>
-    <string name="account_privacy_prefix">"By continuing, you agree to the "</string>
+    <!-- %1$s is the linked words "Privacy Policy" (account_privacy_policy). -->
+    <string name="account_privacy_notice">By continuing, you agree to the %1$s.</string>
 
     <!-- Opening a sign-in link: signing in, or why it didn’t work -->
     <string name="account_link_signing_in">Signing you in</string>
@@ -85,4 +86,77 @@
     <string name="account_delete">Delete account</string>
     <string name="account_privacy_policy">Privacy Policy</string>
     <string name="account_how_deletion_works">How deletion works</string>
+    <string name="settings_sync_cloud_sync_title">Cloud Sync</string>
+    <string name="settings_sync_badge_issue">Sync issue</string>
+    <string name="settings_sync_badge_syncing">Syncing...</string>
+    <string name="settings_sync_badge_active">Cloud sync active</string>
+    <string name="settings_sync_signed_in_as">Signed in as %1$s</string>
+    <string name="settings_sync_sign_in_prompt">Sign in to backup and sync across devices</string>
+    <string name="settings_sync_cloud_sync_label">Cloud sync</string>
+    <string name="settings_sync_open_account">Open account settings</string>
+    <string name="settings_sync_full_backup_summary">Subscriptions, folders, playlists, history, likes, and settings (JSON)</string>
+    <string name="settings_sync_export_title">Export</string>
+    <string name="settings_sync_full_backup">Full library backup</string>
+    <string name="settings_sync_subscriptions_only">Subscriptions only</string>
+    <string name="settings_sync_opml_file">OPML file</string>
+    <string name="settings_sync_import_title">Import</string>
+    <!-- "Missing episodes?" is the name of a per-show option. -->
+    <string name="settings_sync_import_full_description">Restores Missing episodes? opt-ins and refreshes those shows</string>
+    <string name="settings_sync_import_opml_description">Import from an OPML file</string>
+    <string name="account_deleted_toast">Account deleted</string>
+    <string name="account_delete_dialog_title">Delete Account</string>
+    <string name="account_delete_dialog_body">Are you sure you want to delete your boxlore account? This permanently removes your cloud profile and cross-device sync data. Your local downloads and podcast catalog on this device will not be erased.</string>
+    <string name="account_delete_dialog_learn_more">Learn how your data is handled after deletion</string>
+    <string name="account_delete_dialog_confirm">Delete Permanently</string>
+    <string name="account_reauth_dialog_title">Recent Sign-In Required</string>
+    <string name="account_reauth_dialog_body">For your security, deleting your account requires recent authentication. Please sign out and sign back in, then try deleting your account again.</string>
+    <string name="account_reauth_dialog_confirm">Sign Out to Re-authenticate</string>
+    <!-- Sign-in and account errors and confirmations. -->
+    <string name="account_error_no_account">No account found with this email. Try signing up instead.</string>
+    <string name="account_error_wrong_password">Incorrect password or credentials. Please try again.</string>
+    <string name="account_error_email_in_use">This email is already registered. Try signing in instead.</string>
+    <string name="account_error_weak_password">Password is too weak. Please use at least 6 characters.</string>
+    <string name="account_error_invalid_email_server">Please enter a valid email address.</string>
+    <string name="account_error_too_many">Too many attempts. Please wait a few minutes before trying again.</string>
+    <string name="account_error_disabled">This account has been disabled. Please contact support.</string>
+    <string name="account_error_recent_login">For security, please sign out and sign in again before deleting your account.</string>
+    <string name="account_error_network">Network error. Check your connection and try again.</string>
+    <string name="account_error_invalid_email">Please enter a valid email address</string>
+    <string name="account_error_unexpected">An unexpected error occurred</string>
+    <string name="account_error_enter_email">Please enter your email address</string>
+    <string name="account_error_enter_password">Please enter your password</string>
+    <string name="account_error_password_short">Password must be at least 6 characters</string>
+    <string name="account_error_confirm_password">Please confirm your password</string>
+    <string name="account_error_passwords_differ">Passwords do not match</string>
+    <string name="account_toast_signed_in">Signed in!</string>
+    <string name="account_toast_email_verified">Email verified! Welcome to boxlore.</string>
+    <string name="account_error_not_verified_yet">We haven\'t received verification yet. Please tap the link in your email and try again.</string>
+    <string name="account_toast_verification_resent">Verification email resent</string>
+    <string name="account_toast_signed_in_google">Signed in with Google!</string>
+    <string name="account_error_reset_needs_email">Enter your email address above to reset password</string>
+    <string name="account_toast_reset_sent">Password reset email sent</string>
+    <string name="account_error_reset_failed">Failed to send reset email</string>
+    <string name="account_error_google">Google sign-in error</string>
+    <string name="account_error_google_timeout">Google sign-in timed out</string>
+    <string name="account_error_google_credential">Unexpected credential received</string>
+    <string name="account_error_google_failed">Google sign-in failed</string>
+    <!-- How the account signs in, under the listener's name. -->
+    <string name="account_provider_google">Signed in with Google</string>
+    <string name="account_provider_email_link">Signed in with an email link</string>
+    <string name="account_provider_password">Signed in with a password</string>
+    <string name="account_sync_never">Not synced yet</string>
+    <string name="account_sync_just_now">Synced just now</string>
+    <string name="account_sync_yesterday">Synced yesterday</string>
+    <string name="account_error_no_browser">Could not open browser</string>
+    <string name="account_error_no_email_app">Could not open email app</string>
+    <!-- Clipboard label for the copied account deletion link. -->
+    <string name="account_deletion_clip_label">Account Deletion URL</string>
+    <string name="account_link_copied">Link copied to clipboard</string>
+    <!-- %1$s is the email address. -->
+    <string name="account_toast_reset_sent_to">Password reset email sent to %1$s</string>
+    <string name="account_toast_signed_out">Signed out</string>
+    <!-- Sync status under the account panel; N minutes, hours or days since the last sync (1 day shows "Synced yesterday"). -->
+    <plurals name="account_sync_minutes_ago"><item quantity="one">Synced %d min ago</item><item quantity="other">Synced %d min ago</item></plurals>
+    <plurals name="account_sync_hours_ago"><item quantity="one">Synced %d hr ago</item><item quantity="other">Synced %d hr ago</item></plurals>
+    <plurals name="account_sync_days_ago"><item quantity="one">Synced %d day ago</item><item quantity="other">Synced %d days ago</item></plurals>
 </resources>

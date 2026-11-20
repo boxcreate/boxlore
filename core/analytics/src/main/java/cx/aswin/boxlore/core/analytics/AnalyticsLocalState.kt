@@ -8,8 +8,8 @@ import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import java.time.Instant
 
 /**
- * What [AnalyticsHelper] keeps on this install: the first-launch mark and the event-levels switch
- * with its sample bucket. Split out of the façade to keep that file within the source-size limit;
+ * What [AnalyticsHelper] keeps on this install: the first-launch mark, the event-levels switch
+ * with its sample bucket, and the feature-adoption values last sent. Split out of the façade to keep that file within the source-size limit;
  * the façade's signatures are unchanged.
  */
 internal object AnalyticsLocalState {
@@ -17,6 +17,7 @@ internal object AnalyticsLocalState {
     private const val KEY_FIRST_LAUNCH = "is_first_launch"
     private const val KEY_SAMPLE_BUCKET = "analytics_sample_bucket"
     private const val KEY_POLICY = "analytics_policy"
+    private const val KEY_FEATURE_ADOPTION = "feature_adoption_sent"
 
     /** Where [startPolicy] keeps the bucket and switch, and the app version they belong to. */
     private class PolicyHome(val store: AnalyticsPolicy.Store, val appVersion: String)
@@ -29,6 +30,8 @@ internal object AnalyticsLocalState {
     var policyPayload: () -> Any? = { PostHog.getFeatureFlagPayload(AnalyticsPolicy.FLAG_KEY, null) }
 
     fun policyStore(context: Context): AnalyticsPolicy.Store = PrefsPolicyStore(prefs(context))
+
+    fun featureAdoptionStore(context: Context): FeatureAdoptionAnalytics.Store = PrefsFeatureAdoptionStore(prefs(context))
 
     fun startPolicy(store: AnalyticsPolicy.Store, appVersion: String) {
         policyHome = PolicyHome(store, appVersion)
@@ -76,6 +79,12 @@ internal object AnalyticsLocalState {
         override fun rules(): String? = prefs.getString(KEY_POLICY, null)
 
         override fun saveRules(encoded: String) = prefs.edit().putString(KEY_POLICY, encoded).apply()
+    }
+
+    private class PrefsFeatureAdoptionStore(private val prefs: SharedPreferences) : FeatureAdoptionAnalytics.Store {
+        override fun lastSent(): String? = prefs.getString(KEY_FEATURE_ADOPTION, null)
+
+        override fun saveSent(encoded: String) = prefs.edit().putString(KEY_FEATURE_ADOPTION, encoded).apply()
     }
 
     private fun prefs(context: Context) =

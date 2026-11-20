@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.library
 
+import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -57,7 +58,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
@@ -133,6 +136,7 @@ fun SubscriptionsScreen(
         LocalLastSeenEpisodes provides lastSeenEpisodes
     ) {
         val coroutineScope = rememberCoroutineScope()
+        val context = LocalContext.current
         val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
         var searchQuery by remember { mutableStateOf("") }
@@ -279,7 +283,7 @@ fun SubscriptionsScreen(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .focusRequester(focusRequester),
-                                        placeholder = { Text("Search shows...") },
+                                        placeholder = { Text(stringResource(R.string.library_search_shows)) },
                                         colors = OutlinedTextFieldDefaults.colors(
                                             focusedContainerColor = Color.Transparent,
                                             unfocusedContainerColor = Color.Transparent,
@@ -290,7 +294,7 @@ fun SubscriptionsScreen(
                                     )
                                 } else {
                                     Text(
-                                        text = "Subscriptions",
+                                        text = stringResource(R.string.library_hub_subscriptions),
                                         fontWeight = GoogleSansWeight.bold
                                     )
                                 }
@@ -310,7 +314,7 @@ fun SubscriptionsScreen(
                                 }) {
                                     Icon(
                                         Icons.AutoMirrored.Rounded.ArrowBack,
-                                        contentDescription = if (isSearchActive) "Close Search" else "Back"
+                                        contentDescription = stringResource(if (isSearchActive) R.string.library_close_search else R.string.library_back)
                                     )
                                 }
                             },
@@ -318,7 +322,7 @@ fun SubscriptionsScreen(
                                 if (isSearchActive) {
                                     if (searchQuery.isNotEmpty()) {
                                         IconButton(onClick = { searchQuery = "" }) {
-                                            Icon(Icons.Rounded.Clear, contentDescription = "Clear search")
+                                            Icon(Icons.Rounded.Clear, contentDescription = stringResource(R.string.library_clear_search))
                                         }
                                     }
                                 } else {
@@ -330,7 +334,7 @@ fun SubscriptionsScreen(
                                         }) {
                                             Icon(
                                                 imageVector = if (isGridView) Icons.AutoMirrored.Rounded.ViewList else Icons.Rounded.GridView,
-                                                contentDescription = if (isGridView) "List View" else "Grid View"
+                                                contentDescription = stringResource(if (isGridView) R.string.library_list_view else R.string.library_grid_view)
                                             )
                                         }
                                     }
@@ -345,7 +349,7 @@ fun SubscriptionsScreen(
                                                     }
                                                 },
                                             ) {
-                                                Icon(Icons.AutoMirrored.Rounded.Sort, contentDescription = "Sort")
+                                                Icon(Icons.AutoMirrored.Rounded.Sort, contentDescription = stringResource(R.string.library_sort))
                                             }
                                             if (pagerState.currentPage != 0) {
                                                 DropdownMenu(
@@ -372,7 +376,7 @@ fun SubscriptionsScreen(
                                         }
                                     }
                                     IconButton(onClick = { isSearchActive = true }) {
-                                        Icon(Icons.Rounded.Search, contentDescription = "Search")
+                                        Icon(Icons.Rounded.Search, contentDescription = stringResource(R.string.library_search))
                                     }
                                 }
                             },
@@ -383,7 +387,7 @@ fun SubscriptionsScreen(
 
                         if (!isFloatingTabs) {
                             ExpressiveTabSwitcher(
-                                tabs = listOf("Shows", "New Episodes"),
+                                tabs = listOf(stringResource(R.string.library_tab_shows), stringResource(R.string.library_tab_new_episodes)),
                                 selectedIndex = pagerState.currentPage,
                                 badge = if (latestCount > 0) mapOf(1 to latestCount) else emptyMap(),
                                 onTabSelected = { index ->
@@ -407,7 +411,7 @@ fun SubscriptionsScreen(
                         }
                         is LibraryUiState.Error -> {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("Error loading subscriptions")
+                                Text(stringResource(R.string.library_subscriptions_error_loading))
                             }
                         }
                         is LibraryUiState.Success -> {
@@ -482,6 +486,7 @@ fun SubscriptionsScreen(
                                                 playAllBottomPadding = playAllBottomPadding,
                                                 isRefreshing = isRefreshingNewEpisodes,
                                                 pendingPlayedEpisodeIds = pendingPlayedEpisodeIds,
+                                                dismissedEpisodeIds = success.dismissedEpisodeIds,
                                             ),
                                             scoreEpisodes = viewModel::scoreLatestEpisodes,
                                             actions =
@@ -496,7 +501,7 @@ fun SubscriptionsScreen(
                                                 onRefresh = viewModel::refreshNewEpisodes,
                                                 onSwipeAction = { action, episode, podcast ->
                                                     coroutineScope.launch {
-                                                        handleLatestSwipe(viewModel, snackbarHostState, action, episode, podcast)
+                                                        handleLatestSwipe(viewModel, snackbarHostState, context, action, episode, podcast)
                                                     }
                                                 },
                                             ),
@@ -757,10 +762,10 @@ fun SubscriptionsScreen(
                 TrackScreenView("delete_folder_confirmation")
                 androidx.compose.material3.AlertDialog(
                     onDismissRequest = { confirmDeleteFolder = null },
-                    title = { Text("Delete folder?") },
+                    title = { Text(stringResource(R.string.library_folder_delete_title)) },
                     text = {
                         Text(
-                            "Shows in '${folderToDelete.name}' will stay in your library and won't be deleted or unsubscribed.",
+                            stringResource(R.string.library_folder_delete_body, folderToDelete.name),
                         )
                     },
                     confirmButton = {
@@ -771,14 +776,14 @@ fun SubscriptionsScreen(
                                 confirmDeleteFolder = null
                             },
                         ) {
-                            Text("Delete", color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(R.string.library_delete), color = MaterialTheme.colorScheme.error)
                         }
                     },
                     dismissButton = {
                         androidx.compose.material3.TextButton(
                             onClick = { confirmDeleteFolder = null },
                         ) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.library_cancel))
                         }
                     },
                 )
@@ -789,10 +794,10 @@ fun SubscriptionsScreen(
                 TrackScreenView("unsubscribe_confirmation")
                 androidx.compose.material3.AlertDialog(
                     onDismissRequest = { confirmUnsubscribePodcast = null },
-                    title = { Text("Unsubscribe?") },
+                    title = { Text(stringResource(R.string.library_unsubscribe_title)) },
                     text = {
                         Text(
-                            "Are you sure you want to unsubscribe from '${podcastToUnsubscribe.title}'? It will be removed from your subscriptions and folders.",
+                            stringResource(R.string.library_unsubscribe_body, podcastToUnsubscribe.title),
                         )
                     },
                     confirmButton = {
@@ -802,14 +807,14 @@ fun SubscriptionsScreen(
                                 confirmUnsubscribePodcast = null
                             },
                         ) {
-                            Text("Unsubscribe", color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(R.string.library_unsubscribe), color = MaterialTheme.colorScheme.error)
                         }
                     },
                     dismissButton = {
                         androidx.compose.material3.TextButton(
                             onClick = { confirmUnsubscribePodcast = null },
                         ) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.library_cancel))
                         }
                     },
                 )
@@ -875,6 +880,7 @@ private val SNACKBAR_ABOVE_PLAY_ALL = 72.dp
 private suspend fun handleLatestSwipe(
     viewModel: LibraryViewModel,
     snackbarHostState: SnackbarHostState,
+    context: Context,
     action: LatestSwipeAction,
     episode: Episode,
     podcast: Podcast,
@@ -884,8 +890,8 @@ private suspend fun handleLatestSwipe(
         LatestSwipeAction.AddToQueue -> {
             val outcome = viewModel.addLatestToQueue(episode, podcast)
             val result = snackbarHostState.showSnackbar(
-                message = latestQueueMessage(outcome),
-                actionLabel = if (outcome == LatestQueueOutcome.Added) "Undo" else null,
+                message = context.getString(latestQueueMessage(outcome)),
+                actionLabel = if (outcome == LatestQueueOutcome.Added) context.getString(R.string.library_undo) else null,
                 duration = SnackbarDuration.Short,
             )
             if (result == SnackbarResult.ActionPerformed) viewModel.undoAddLatestToQueue(episode.id)
@@ -895,8 +901,8 @@ private suspend fun handleLatestSwipe(
             var undone = false
             try {
                 undone = snackbarHostState.showSnackbar(
-                    message = "Marked as played",
-                    actionLabel = "Undo",
+                    message = context.getString(R.string.library_marked_as_played),
+                    actionLabel = context.getString(R.string.library_undo),
                     duration = SnackbarDuration.Short,
                 ) == SnackbarResult.ActionPerformed
             } finally {

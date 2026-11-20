@@ -37,6 +37,10 @@ data class Podcast(
     val autoDownloadEnabled: Boolean = false,
     val skipBeginningOverrideMs: Long? = null,
     val skipEndingOverrideMs: Long? = null,
+    /** This show's playback speed; null uses the app speed. */
+    val playbackSpeedOverride: Float? = null,
+    /** This show's trim silence setting; null uses the app setting. */
+    val skipSilenceOverride: Boolean? = null,
     val sourceType: String = SOURCE_PODCAST_INDEX,
     val feedUrl: String? = null,
     val rssRefreshCapability: String = RSS_REFRESH_MANUAL,
@@ -75,6 +79,17 @@ fun Podcast.isLatestEpisodeNew(lastSeenId: String?): Boolean {
     if (ep.id == lastSeenId) return false
     val hoursSinceRelease = (System.currentTimeMillis() / 1000.0 - ep.publishedDate) / 3600.0
     return hoursSinceRelease <= 48.0
+}
+
+/**
+ * [lastSeen] (show ID to the latest episode the listener saw) with every show of [podcasts] whose
+ * latest episode is archived ([dismissedIds]) counted as seen, so an archived trailer never makes
+ * its show "new" ([isLatestEpisodeNew]) while New Episodes leaves it out.
+ */
+fun lastSeenWithArchived(lastSeen: Map<String, String>, podcasts: List<Podcast>, dismissedIds: Set<String>): Map<String, String> {
+    if (dismissedIds.isEmpty()) return lastSeen
+    val archivedLatest = podcasts.mapNotNull { podcast -> podcast.latestEpisode?.id?.takeIf { it in dismissedIds }?.let { podcast.id to it } }
+    return if (archivedLatest.isEmpty()) lastSeen else lastSeen + archivedLatest
 }
 
 /**

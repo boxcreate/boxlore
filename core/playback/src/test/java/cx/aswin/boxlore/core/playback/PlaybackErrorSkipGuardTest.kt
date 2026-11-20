@@ -1,7 +1,6 @@
 package cx.aswin.boxlore.core.playback
 
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
@@ -56,19 +55,15 @@ class PlaybackErrorSkipGuardTest {
 
     @Test
     fun `stop message tells the listener playback is paused instead of skipping`() {
-        val local = PlaybackErrorMessages.forAction(PlaybackErrorSkipGuard.Action.STOP, isRemote = false)
-        val cast = PlaybackErrorMessages.forAction(PlaybackErrorSkipGuard.Action.STOP, isRemote = true)
-        assertTrue(!local.contains("skipping"))
-        assertTrue(cast.contains("Cast"))
-        assertEquals("Stream unavailable, skipping…", PlaybackErrorMessages.forAction(PlaybackErrorSkipGuard.Action.SKIP_AND_PLAY, isRemote = false))
+        assertEquals(R.string.playback_error_stop, PlaybackErrorMessages.forAction(PlaybackErrorSkipGuard.Action.STOP, isRemote = false))
+        assertEquals(R.string.playback_error_stop_cast, PlaybackErrorMessages.forAction(PlaybackErrorSkipGuard.Action.STOP, isRemote = true))
+        assertEquals(R.string.playback_error_skip, PlaybackErrorMessages.forAction(PlaybackErrorSkipGuard.Action.SKIP_AND_PLAY, isRemote = false))
+        assertEquals(R.string.playback_error_skip_cast, PlaybackErrorMessages.forAction(PlaybackErrorSkipGuard.Action.SKIP_AND_PLAY, isRemote = true))
     }
 
     @Test
     fun `a paused skip never says it is skipping, since nothing starts`() {
-        val local = PlaybackErrorMessages.forAction(PlaybackErrorSkipGuard.Action.SKIP_PAUSED, isRemote = false)
-        val cast = PlaybackErrorMessages.forAction(PlaybackErrorSkipGuard.Action.SKIP_PAUSED, isRemote = true)
-        assertEquals("That episode couldn't play. The next one is ready.", local)
-        assertTrue(cast.contains("Cast") && cast.contains("next one is ready"))
-        assertTrue(!local.contains("skipping") && !cast.contains("skipping"))
+        assertEquals(R.string.playback_error_skip_paused, PlaybackErrorMessages.forAction(PlaybackErrorSkipGuard.Action.SKIP_PAUSED, isRemote = false))
+        assertEquals(R.string.playback_error_skip_paused_cast, PlaybackErrorMessages.forAction(PlaybackErrorSkipGuard.Action.SKIP_PAUSED, isRemote = true))
     }
 }

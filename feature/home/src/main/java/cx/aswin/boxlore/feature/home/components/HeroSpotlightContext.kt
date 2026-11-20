@@ -1,5 +1,9 @@
 package cx.aswin.boxlore.feature.home.components
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
+import cx.aswin.boxlore.feature.home.R
 import java.util.Locale
 
 internal sealed interface HeroSpotlightContext {
@@ -34,4 +38,43 @@ internal fun heroSpotlightContext(label: String, showGenre: String): HeroSpotlig
 
 private fun displayHeroWords(value: String): String = value.split(' ').joinToString(" ") { word ->
     if (word in setOf("US", "UK", "TV", "AI")) word else word.lowercase(Locale.ROOT).replaceFirstChar { it.titlecase(Locale.ROOT) }
+}
+
+/** Hero state keys from `HomeHeroLogic` (and the time-left suffix it may carry) mapped to the listener's words. */
+private val heroStateLabels = mapOf(
+    "TRENDING" to R.string.home_hero_trending,
+    "JUMP BACK IN" to R.string.home_hero_resume_collection,
+    "NEW EPISODES" to R.string.home_hero_new_collection,
+    "RESUME" to R.string.home_hero_resume,
+    "FRESH DROP" to R.string.home_hero_fresh_drop,
+    "NEW EPISODE" to R.string.home_hero_new_episode,
+    "NEXT" to R.string.home_hero_next_episode,
+)
+
+/** The words shown for a hero [label] key; an unknown one is shown as written, in sentence case. */
+@Composable
+internal fun heroStateLabel(label: String): String {
+    val key = label.trim().uppercase(Locale.ROOT).substringBefore(" •")
+    val id = heroStateLabels[key] ?: return label.trim().lowercase(currentLocale()).replaceFirstChar { it.titlecase(currentLocale()) }
+    return stringResource(id)
+}
+
+/** Chart markets named in full, by country code; "US" and "UK" stay as their short names. */
+private val heroMarketCountries = mapOf(
+    "India" to "IN",
+    "France" to "FR",
+    "Germany" to "DE",
+    "Netherlands" to "NL",
+    "Singapore" to "SG",
+    "Spain" to "ES",
+    "Brazil" to "BR",
+    "Russia" to "RU",
+    "Indonesia" to "ID",
+)
+
+/** A Rank context's [market] in the app language ("India" is "Indien" in German). */
+@Composable
+internal fun heroMarketName(market: String): String {
+    val region = heroMarketCountries[market] ?: return market
+    return Locale.Builder().setRegion(region).build().getDisplayCountry(currentLocale())
 }

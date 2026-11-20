@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.ranking.CandidateFeatureBuilder
 import cx.aswin.boxlore.core.ranking.CandidateSignals
 import cx.aswin.boxlore.core.ranking.CandidateSource
@@ -13,14 +14,18 @@ import cx.aswin.boxlore.core.ranking.RankingExposure
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
+import cx.aswin.boxlore.feature.explore.logic.LoreHiddenShows
 import cx.aswin.boxlore.feature.explore.logic.filterAndShuffleNewItems
 import cx.aswin.boxlore.feature.explore.logic.weightedShuffle
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -35,7 +40,7 @@ sealed interface LearnUiState {
 
     data class CaughtUp(val isRefreshing: Boolean = false) : LearnUiState
 
-    data class Error(val message: String) : LearnUiState
+    data class Error(val message: UiText) : LearnUiState
 }
 
 class LearnViewModel(
@@ -43,6 +48,8 @@ class LearnViewModel(
     application: Application,
     private val rankingFeedback: RankingFeedbackRepository,
     private val historyStore: LearnCuriosityHistoryStore = LearnCuriosityHistoryStore(application),
+    /** Every ID of the shows hidden everywhere; their cards leave the deck at once and never join it. */
+    private val hiddenShowIds: Flow<Set<String>> = flowOf(emptySet()),
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow<LearnUiState>(LearnUiState.Loading)
@@ -184,7 +191,26 @@ class LearnViewModel(
     private var fetchJob: Job? = null
     private val scanResume = CuriosityScanResume()
 
+    @Volatile
+    private var hiddenIds: Set<String> = emptySet()
+
+    private fun List<LearnCuriosityCard>.withoutHiddenShows(): List<LearnCuriosityCard> = LoreHiddenShows.withoutHiddenShows(this, hiddenIds)
+
     init {
+        viewModelScope.launch {
+            hiddenShowIds.distinctUntilChanged().collect { ids ->
+                hiddenIds = ids
+                val state = _uiState.value as? LearnUiState.Success ?: return@collect
+                when (val change = LoreHiddenShows.change(state.questionsStack, ids, paging.isEndOfContent)) {
+                    LoreHiddenShows.Change.None -> Unit
+                    LoreHiddenShows.Change.CaughtUp -> showCaughtUp()
+                    is LoreHiddenShows.Change.Deck -> {
+                        _uiState.value = state.copy(questionsStack = change.cards)
+                        if (change.loadMore) fetchNextPage()
+                    }
+                }
+            }
+        }
         viewModelScope.launch {
             uiState.map { state ->
                 (state as? LearnUiState.Success)?.questionsStack.orEmpty().take(4).map { it.artworkSources }
@@ -200,9 +226,12 @@ class LearnViewModel(
         bypassCache: Boolean
     ): InitialCuriosityDeckResult {
         val dismissedIds = getDismissedIds()
+        // Read the hidden shows first so the scan never waits on the collector to see them.
+        val hidden = hiddenShowIds.first().also { hiddenIds = it }
         return findFirstUnseenCuriosityDeck(
             dismissedIds = dismissedIds,
             startPage = scanResume.startPage(dismissedIds),
+            isHidden = { LoreHiddenShows.isHidden(it, hidden) },
             fetchPage = { page ->
                 podcastRepository.getCuratedCuriosity(
                     page = page,
@@ -225,8 +254,10 @@ class LearnViewModel(
     }
 
     private fun showDeck(result: InitialCuriosityDeckResult.Found) {
+        val unhidden = result.unseenItems.withoutHiddenShows()
+        if (unhidden.isEmpty()) return showCaughtUp()
         val shuffled = weightedShuffle(
-            list = result.unseenItems,
+            list = unhidden,
             curiosityScore = LearnCuriosityCard::curiosityScore,
         )
         _uiState.value = LearnUiState.Success(
@@ -265,7 +296,7 @@ class LearnViewModel(
         }
         paging.onPageLoaded(page)
         return filterAndShuffleNewItems(
-            rawItems = res.questionsStack.map { it.toLearnCuriosityCard() },
+            rawItems = res.questionsStack.map { it.toLearnCuriosityCard() }.withoutHiddenShows(),
             currentStack = currentStack,
             dismissedIds = getDismissedIds(),
             episodeId = LearnCuriosityCard::episodeId,
@@ -327,11 +358,11 @@ class LearnViewModel(
                     is InitialCuriosityDeckResult.Exhausted,
                     is InitialCuriosityDeckResult.Capped -> showCaughtUp()
                     is InitialCuriosityDeckResult.Failed -> {
-                        _uiState.value = LearnUiState.Error("Failed to load curiosity curation")
+                        _uiState.value = LearnUiState.Error(UiText.res(R.string.lore_error_load_failed))
                     }
                 }
             } catch (e: Exception) {
-                _uiState.value = LearnUiState.Error(e.message ?: "Unknown error occurred")
+                _uiState.value = LearnUiState.Error(e.message?.let(UiText::raw) ?: UiText.res(R.string.lore_error_unknown))
             }
         }
     }
@@ -356,7 +387,7 @@ class LearnViewModel(
                         _uiState.value = when (current) {
                             is LearnUiState.Success -> current.copy(isRefreshing = false)
                             is LearnUiState.CaughtUp -> current.copy(isRefreshing = false)
-                            else -> LearnUiState.Error("Failed to refresh curiosity curation")
+                            else -> LearnUiState.Error(UiText.res(R.string.lore_error_refresh_failed))
                         }
                     }
                 }
@@ -364,7 +395,7 @@ class LearnViewModel(
                 _uiState.value = when (current) {
                     is LearnUiState.Success -> current.copy(isRefreshing = false)
                     is LearnUiState.CaughtUp -> current.copy(isRefreshing = false)
-                    else -> LearnUiState.Error(e.message ?: "Unknown error occurred")
+                    else -> LearnUiState.Error(e.message?.let(UiText::raw) ?: UiText.res(R.string.lore_error_unknown))
                 }
             }
         }

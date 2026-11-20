@@ -1,14 +1,23 @@
 package cx.aswin.boxlore.core.designsystem.components
 
+import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.model.ContentLanguageSelection
+import cx.aswin.boxlore.core.model.text.resolve
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
-/** What "Include English" says in each state of the languages sheet (D9). */
+/** What "Include English" says in each state of the languages sheet (D9), and the names it uses. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 class ContentLanguagesSheetCopyTest {
     private fun text(languages: List<String>, englishOff: Boolean): String {
         val state = ContentLanguageSelection.englishSwitch(languages, englishOff)
-        return includeEnglishSupportingText(state, languages.filter { it != "en" })
+        return includeEnglishSupportingText(state, languages.filter { it != "en" }) { contentLanguageName(it, Locale.ENGLISH) }
+            .resolve(ApplicationProvider.getApplicationContext<android.content.Context>())
     }
 
     @Test
@@ -43,5 +52,17 @@ class ContentLanguagesSheetCopyTest {
             "There are far fewer shows in your languages, so recommendations won’t match your taste as closely. If there aren’t enough, boxlore adds a few in English.",
             text(listOf("de", "fr"), englishOff = true),
         )
+    }
+
+    @Test
+    fun namesKeepBoxloresEnglishLabelsAndFollowOtherLanguages() {
+        assertEquals("German", contentLanguageName("de", Locale.ENGLISH))
+        assertEquals("allemand", contentLanguageName("de", Locale.FRENCH))
+        assertEquals("Deutsch", contentLanguageName("de", Locale.GERMAN))
+        assertEquals("Allemand", capitalizedIn(contentLanguageName("de", Locale.FRENCH), Locale.FRENCH))
+        assertEquals("USA", contentRegionName("us", Locale.ENGLISH))
+        assertEquals("UK", contentRegionName("uk", Locale.ENGLISH))
+        assertEquals("Deutschland", contentRegionName("de", Locale.GERMAN))
+        assertEquals("Royaume-Uni", contentRegionName("gb", Locale.FRENCH))
     }
 }

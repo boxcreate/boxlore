@@ -81,6 +81,8 @@ internal object PodcastInfoAsyncResultLogic {
                 autoDownloadEnabled = current.podcast.autoDownloadEnabled,
                 skipBeginningOverrideMs = current.podcast.skipBeginningOverrideMs,
                 skipEndingOverrideMs = current.podcast.skipEndingOverrideMs,
+                playbackSpeedOverride = current.podcast.playbackSpeedOverride,
+                skipSilenceOverride = current.podcast.skipSilenceOverride,
                 fallbackImageUrl = current.podcast.fallbackImageUrl ?: result.podcast.fallbackImageUrl,
                 preferredSort = current.podcast.preferredSort ?: result.podcast.preferredSort,
             ),

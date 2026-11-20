@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.info.R
@@ -52,7 +53,6 @@ import cx.aswin.boxlore.feature.info.branded.brandedDetails
 import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
 import cx.aswin.boxlore.feature.info.components.formatEpisodeRelativeDate
-import java.util.Locale
 
 private val CardShape = RoundedCornerShape(4.dp)
 private val CardFrame = FrameStyle(oval = false, moulding = 6.dp, mount = 6.dp, shadows = CardShadows)
@@ -112,7 +112,7 @@ internal fun HistorySpotlight(spotlight: BrandedSpotlight, modifier: Modifier) {
             FramedPicture(spotlight, title.number, fonts)
             Column(Modifier.weight(1f).fillMaxHeight().padding(top = 2.dp)) {
                 Text(
-                    stringResource(R.string.branded_latest_episode).uppercase(Locale.getDefault()),
+                    stringResource(R.string.branded_latest_episode).uppercase(currentLocale()),
                     style = brandedTextStyle(fonts.cinzel, 10.5.sp, 13.sp, letterSpacing = 1.8.sp).copy(fontWeight = FontWeight.Bold),
                     color = HistoryColors.CardKicker,
                     maxLines = 1,
@@ -142,7 +142,7 @@ internal fun HistorySpotlight(spotlight: BrandedSpotlight, modifier: Modifier) {
                 }
                 Spacer(Modifier.weight(1f))
                 Text(
-                    brandedDetails(formatEpisodeRelativeDate(episode.publishedDate), episode.duration, spotlight.isCompleted, stringResource(R.string.episode_info_played)),
+                    brandedDetails(formatEpisodeRelativeDate(episode.publishedDate, currentLocale()), episode.duration, spotlight.isCompleted, stringResource(R.string.episode_info_played), currentLocale()),
                     style = brandedSansStyle(12.sp, 14.sp),
                     color = HistoryColors.CardText,
                     maxLines = 1,
@@ -200,7 +200,7 @@ private fun Nameplate(text: String, fonts: HistoryFonts, modifier: Modifier) {
     ) {
         Screw()
         Text(
-            text.uppercase(Locale.getDefault()),
+            text.uppercase(currentLocale()),
             style = brandedTextStyle(fonts.cinzel, 9.sp, 10.sp, letterSpacing = 1.sp).copy(
                 fontWeight = FontWeight.Bold,
                 shadow = Shadow(Color(0x80FFF0C8), Offset(0f, 1f), 0f),

@@ -129,7 +129,7 @@ internal fun OnboardingViewModel.synthesizeGenreOnboarding() {
                         if (fallbackPodcastDtos.isNotEmpty()) {
                             listOf(
                                 OnboardingCurriculumRowDto(
-                                    rowTitle = "Trending in your Genres",
+                                    rowTitle = OnboardingSuggestionsLanes.FALLBACK_GENRES_TITLE,
                                     podcasts = fallbackPodcastDtos,
                                     episodes = emptyList(),
                                 ),

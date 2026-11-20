@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Appearance > Home: the hero card style picker. Block is the solid colour card; Cover fills the card with the artwork. -->
+    <!-- Header above the non-interactive preview of the picked hero card style. -->
+    <!-- Heads the picked hero style's live preview and its options, for example "Tide look". -->
+    <string name="hero_card_look_title">Stil: %1$s</string>
+    <string name="hero_card_style_title">Hero-Karten</string>
+    <string name="hero_card_style_footer">Die großen Karten oben auf Start.</string>
+    <string name="hero_card_style_block">Block</string>
+    <string name="hero_card_style_block_description">Große Schrift auf einer einfarbigen Fläche, das Cover daneben.</string>
+    <string name="hero_card_style_cover">Cover</string>
+    <string name="hero_card_style_cover_description">Das ganze Cover, der Text auf einem farbigen Verlauf.</string>
+    <string name="hero_card_style_tide">Welle</string>
+    <string name="hero_card_style_tide_description">Das ganze Cover über einer gewellten Fläche, mit rundem Play-Button.</string>
+    <string name="hero_card_style_duotone">Duoton</string>
+    <string name="hero_card_style_duotone_description">Das Cover in zwei Tönen, damit der Text immer gut lesbar ist.</string>
+    <string name="hero_card_style_halo">Halo</string>
+    <string name="hero_card_style_halo_description">Geformtes Cover mit deinem Fortschritt als Ring drumherum.</string>
+    <!-- Shown under the picker when Duotone is chosen: the two tones the artwork is redrawn in. Same choice as Cover's shade. -->
+    <string name="hero_duotone_colors_title">Duoton-Farben</string>
+    <string name="hero_duotone_colors_footer">Dunkel zeigt Cover in Schwarz-Weiß. Cover-Farbe nutzt die eigene Farbe jedes Covers. App-Design nutzt deine Akzentfarbe.</string>
+    <string name="hero_card_style_marquee">Banner</string>
+    <string name="hero_card_style_marquee_description">Ein Cover in voller Breite unter der oberen Leiste, die nächsten Karten neben Abspielen.</string>
+    <!-- Marquee's tile on tablets, where Home shows Cover cards instead. -->
+    <string name="hero_card_style_marquee_description_tablet">Ein Cover in voller Breite auf Handys. Tablets zeigen stattdessen Cover-Karten.</string>
+    <!-- Shown under the picker when Marquee is chosen: covers in full colour or redrawn in two tones. Same choice as Cover's shade. -->
+    <string name="hero_marquee_colors_title">Cover-Farben</string>
+    <string name="hero_marquee_colors_footer">Vollfarbe zeigt Cover, wie sie sind. Cover-Farbe zeichnet sie in zwei Tönen ihrer eigenen Farbe neu. App-Design nutzt deine Akzentfarbe.</string>
+    <!-- Marquee's name for the Dark choice: the cover keeps all its colours. -->
+    <string name="hero_marquee_colors_full">Vollfarbe</string>
+    <!-- Shown under the picker when Tide or Halo is chosen: the colour of the card around the artwork. Same choice as Cover's shade. -->
+    <string name="hero_card_colors_title">Kartenfarbe</string>
+    <string name="hero_card_colors_footer">Dunkel hält Karten fast schwarz. Cover-Farbe übernimmt die eigene Farbe jedes Covers. App-Design nutzt deine Akzentfarbe.</string>
+    <!-- Shown under the picker only when Cover is chosen: the colour the artwork fades into behind the card's text. -->
+    <!-- Tide hero cards ring their Play button with listening progress; this picks the ring's shape. -->
+    <string name="hero_tide_progress_title">Fortschrittsring</string>
+    <string name="hero_tide_progress_footer">Wellig schlägt Wellen, während eine Folge läuft. Kreis bleibt glatt.</string>
+    <string name="hero_tide_progress_wavy">Wellig</string>
+    <string name="hero_tide_progress_circle">Kreis</string>
+    <string name="hero_cover_shade_title">Verlauf hinter dem Text</string>
+    <string name="hero_cover_shade_footer">Cover-Farbe nutzt einen tiefen Ton der eigenen Farbe jedes Covers. App-Design nutzt deine Akzentfarbe.</string>
+    <string name="hero_cover_shade_dark">Dunkel</string>
+    <!-- Each card takes a deep shade of its own cover's colour. -->
+    <string name="hero_cover_shade_artwork">Cover-Farbe</string>
+    <!-- A deep shade of the app's accent colour. Matches "App theme" in the Widgets picker. -->
+    <string name="hero_cover_shade_theme">App-Design</string>
+</resources>

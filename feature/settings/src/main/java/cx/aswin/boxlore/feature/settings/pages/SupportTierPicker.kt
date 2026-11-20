@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -149,7 +150,7 @@ private fun SupportTierPill(
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = tier.shortDuration,
+            text = stringResource(tier.shortDuration),
             style = MaterialTheme.typography.labelMedium.copy(
                 fontWeight = GoogleSansWeight.bold,
                 fontSize = 12.5.sp,

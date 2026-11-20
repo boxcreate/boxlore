@@ -31,18 +31,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.text.LocaleFormats
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.playback.SameShowContinuationState
 import cx.aswin.boxlore.feature.player.v2.logic.queueSourceLabel
+import java.util.Locale
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -138,7 +145,7 @@ fun QueueSheetContent(
                             display = QueueItemDisplay(
                                 episode = episode,
                                 podcast = currentPodcast,
-                                sourceLabel = queueSourceLabel(episode),
+                                sourceLabel = queueSourceLabel(episode)?.asString(),
                                 isDragging = isDragging,
                                 dragHandleModifier = Modifier.draggableHandle(
                                     onDragStarted = { dragStartIndex.intValue = index },
@@ -172,7 +179,7 @@ private fun QueueSheetHeader(visible: Boolean, count: Int, colorScheme: ColorSch
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Up Next",
+                    text = stringResource(R.string.player_queue_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = GoogleSansWeight.bold,
                     color = colorScheme.onSurface
@@ -181,7 +188,7 @@ private fun QueueSheetHeader(visible: Boolean, count: Int, colorScheme: ColorSch
                 Spacer(modifier = Modifier.weight(1f))
 
                 Text(
-                    text = "$count episodes",
+                    text = pluralStringResource(R.plurals.player_queue_episode_count, count, count),
                     style = MaterialTheme.typography.bodyMedium,
                     color = colorScheme.onSurfaceVariant
                 )
@@ -191,7 +198,7 @@ private fun QueueSheetHeader(visible: Boolean, count: Int, colorScheme: ColorSch
                 IconButton(onClick = onClose) {
                     Icon(
                         Icons.Rounded.Close,
-                        contentDescription = "Close queue",
+                        contentDescription = stringResource(R.string.player_close_queue),
                         tint = colorScheme.onSurface
                     )
                 }
@@ -219,13 +226,13 @@ private fun QueueEmptyState(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            text = "Queue is empty",
+            text = stringResource(R.string.player_queue_empty),
             style = MaterialTheme.typography.bodyLarge,
             color = colorScheme.onSurfaceVariant,
         )
         if (!smartQueueEnabled) {
             Text(
-                text = "Smart queue is off, so nothing is added automatically.",
+                text = stringResource(R.string.player_smart_queue_off),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
@@ -235,7 +242,7 @@ private fun QueueEmptyState(
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
             ) {
                 Text(
-                    text = "Turn on",
+                    text = stringResource(R.string.player_turn_on),
                     color = colorScheme.primary,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = GoogleSansWeight.medium,
@@ -296,7 +303,7 @@ fun QueueItemRow(
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = (episode.podcastTitle ?: podcast?.title ?: "Unknown Podcast").replace("+", " "),
+                text = (episode.podcastTitle ?: podcast?.title ?: stringResource(R.string.player_unknown_podcast)).replace("+", " "),
                 style = MaterialTheme.typography.bodySmall,
                 color = colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -321,7 +328,7 @@ fun QueueItemRow(
             ) {
                 Icon(
                     Icons.Rounded.Close,
-                    contentDescription = "Remove from queue",
+                    contentDescription = stringResource(R.string.player_remove_from_queue),
                     tint = colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     modifier = Modifier.size(18.dp)
                 )
@@ -331,7 +338,7 @@ fun QueueItemRow(
         display.dragHandleModifier?.let { dragHandleModifier ->
             Icon(
                 Icons.Rounded.DragHandle,
-                contentDescription = "Reorder",
+                contentDescription = stringResource(R.string.player_reorder),
                 tint = colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = dragHandleModifier
                     .size(40.dp)
@@ -342,27 +349,26 @@ fun QueueItemRow(
 }
 
 object SameShowContinuationBannerDefaults {
-    fun buttonText(availableCount: Int): String = "Add next $availableCount from this show"
+    fun buttonText(availableCount: Int): UiText =
+        UiText.plural(R.plurals.player_same_show_add_next, availableCount, availableCount)
 
-    fun titleText(podcastTitle: String): String = if (podcastTitle.isNotBlank()) "Continue $podcastTitle?" else "Continue this show?"
-
-    const val EXPLANATION_TEXT =
-        "We skipped newer episodes from this show as you played it from recommendations."
-
-    fun previewToggleText(availableCount: Int, isExpanded: Boolean): String = if (isExpanded) {
-        "Hide preview"
-    } else if (availableCount == 1) {
-        "Preview 1 upcoming episode"
+    fun titleText(podcastTitle: String): UiText = if (podcastTitle.isNotBlank()) {
+        UiText.res(R.string.player_same_show_title, podcastTitle)
     } else {
-        "Preview $availableCount upcoming episodes"
+        UiText.res(R.string.player_same_show_title_fallback)
     }
 
-    fun formatDuration(seconds: Int): String {
-        if (seconds <= 0) return ""
-        val hrs = seconds / 3600
-        val mins = (seconds % 3600) / 60
-        return if (hrs > 0) "${hrs}h ${mins}m" else "$mins min"
+    val explanationText: UiText = UiText.res(R.string.player_same_show_explanation)
+
+    fun previewToggleText(availableCount: Int, isExpanded: Boolean): UiText = if (isExpanded) {
+        UiText.res(R.string.player_same_show_hide_preview)
+    } else {
+        UiText.plural(R.plurals.player_same_show_preview, availableCount, availableCount)
     }
+
+    /** An episode's length, such as "45 min" or "1 hr, 15 min"; blank when unknown. */
+    fun formatDuration(seconds: Int, locale: Locale): String =
+        if (seconds <= 0) "" else LocaleFormats.duration(seconds.toLong(), locale)
 }
 
 @Composable
@@ -377,7 +383,7 @@ private fun SameShowContinuationBannerHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
-            text = SameShowContinuationBannerDefaults.titleText(podcastTitle),
+            text = SameShowContinuationBannerDefaults.titleText(podcastTitle).asString(),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = GoogleSansWeight.bold,
             color = colorScheme.onSurface,
@@ -394,7 +400,7 @@ private fun SameShowContinuationBannerHeader(
         ) {
             Icon(
                 imageVector = Icons.Rounded.Close,
-                contentDescription = "Dismiss",
+                contentDescription = stringResource(R.string.player_dismiss),
                 tint = colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(18.dp),
             )
@@ -450,7 +456,7 @@ private fun SameShowContinuationPreviewList(
                     color = colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                 )
-                val duration = SameShowContinuationBannerDefaults.formatDuration(episode.duration)
+                val duration = SameShowContinuationBannerDefaults.formatDuration(episode.duration, currentLocale())
                 if (duration.isNotBlank()) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
@@ -482,7 +488,7 @@ private fun SameShowContinuationAccordionToggle(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Text(
-            text = SameShowContinuationBannerDefaults.previewToggleText(availableCount, isExpanded),
+            text = SameShowContinuationBannerDefaults.previewToggleText(availableCount, isExpanded).asString(),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = GoogleSansWeight.semiBold,
         )
@@ -507,7 +513,7 @@ fun SameShowContinuationBanner(
     if (!state.visible || state.availableCount <= 0) return
 
     var isExpanded by rememberSaveable { mutableStateOf(false) }
-    val buttonText = SameShowContinuationBannerDefaults.buttonText(state.availableCount)
+    val buttonText = SameShowContinuationBannerDefaults.buttonText(state.availableCount).asString()
 
     Card(
         modifier =
@@ -535,7 +541,7 @@ fun SameShowContinuationBanner(
 
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = SameShowContinuationBannerDefaults.EXPLANATION_TEXT,
+                text = SameShowContinuationBannerDefaults.explanationText.asString(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colorScheme.onSurfaceVariant,
             )

@@ -38,7 +38,8 @@ android {
     testOptions {
         // SmartQueueEngine / QueueSkipMemory touch android.util.Log on the JVM path.
         unitTests.isReturnDefaultValues = true
-        unitTests.isIncludeAndroidResources = false
+        // Robolectric tests read this module's and :core:catalog's strings (car rows, error toasts).
+        unitTests.isIncludeAndroidResources = true
         unitTests.all {
             it.useJUnitPlatform()
         }

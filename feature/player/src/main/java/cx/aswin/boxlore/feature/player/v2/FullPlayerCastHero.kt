@@ -31,10 +31,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.playback.PlaybackRouteState
+import cx.aswin.boxlore.feature.player.R
 import kotlin.math.roundToInt
 
 internal enum class CastHeroDisplayMode {
@@ -138,7 +141,7 @@ internal fun FullPlayerCastHero(
                             .padding(start = 12.dp),
                     ) {
                         Text(
-                            text = "PLAYING ON",
+                            text = stringResource(R.string.player_cast_playing_on).uppercase(currentLocale()),
                             style = MaterialTheme.typography.labelSmall,
                             color = model.colorScheme.onPrimaryContainer.copy(alpha = 0.72f),
                             fontWeight = FontWeight.SemiBold,
@@ -217,10 +220,10 @@ internal fun FullPlayerCastHero(
                         FilledTonalIconButton(onClick = actions.onChangeDevice) {
                             Icon(
                                 imageVector = Icons.Rounded.CastConnected,
-                                contentDescription = "Change device",
+                                contentDescription = stringResource(R.string.player_cast_change_device),
                             )
                         }
-                        Text("Device", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.player_cast_device), style = MaterialTheme.typography.labelSmall)
                     }
                     Column(
                         modifier = Modifier.weight(1f),
@@ -232,10 +235,10 @@ internal fun FullPlayerCastHero(
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.SkipNext,
-                                contentDescription = "Next episode",
+                                contentDescription = stringResource(R.string.player_next_episode),
                             )
                         }
-                        Text("Next", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.player_next), style = MaterialTheme.typography.labelSmall)
                     }
                     Column(
                         modifier = Modifier.weight(1f),
@@ -244,10 +247,10 @@ internal fun FullPlayerCastHero(
                         FilledTonalIconButton(onClick = actions.onStopCasting) {
                             Icon(
                                 imageVector = Icons.Rounded.StopCircle,
-                                contentDescription = "Stop casting",
+                                contentDescription = stringResource(R.string.player_stop_casting),
                             )
                         }
-                        Text("Stop", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.player_stop), style = MaterialTheme.typography.labelSmall)
                     }
                 }
             }

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings › Wear OS -->
+    <string name="settings_wear_connected">Votre montre est connectée. Les modifications faites ici lui parviennent tout de suite.</string>
+    <string name="settings_wear_not_connected">Votre montre n’est pas connectée pour le moment. Les modifications faites ici lui parviendront à sa prochaine connexion.</string>
+    <string name="settings_wear_size_mb">%1$d Mo</string>
+    <string name="settings_wear_size_gb">%1$d Go</string>
+    <string name="settings_wear_no_downloads">Aucun téléchargement sur votre montre pour l’instant.</string>
+    <!-- %1$d is the episode count, %2$s the space used in MB as a number, %3$s the limit like "500 MB". -->
+    <plurals name="settings_wear_usage">
+        <item quantity="one">Sur votre montre : %1$d épisode, %2$s Mo sur %3$s.</item>
+        <item quantity="other">Sur votre montre : %1$d épisodes, %2$s Mo sur %3$s.</item>
+    </plurals>
+    <string name="settings_wear_your_shows">Vos podcasts</string>
+    <string name="settings_wear_layout_title">Disposition sur la montre</string>
+    <!-- Watch layout that sets shows in a honeycomb of round covers. -->
+    <string name="settings_wear_layout_honeycomb">Nid d’abeille</string>
+    <string name="settings_wear_layout_list">Liste</string>
+    <string name="settings_wear_downloads_title">Téléchargements sur la montre</string>
+    <string name="settings_wear_downloads_footer">Quand la limite est atteinte, la montre supprime les épisodes écoutés ou téléchargés depuis le plus longtemps.</string>
+    <string name="settings_wear_storage_limit">Limite de stockage</string>
+</resources>

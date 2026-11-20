@@ -45,6 +45,7 @@ import cx.aswin.boxlore.core.support.SendResult
 import cx.aswin.boxlore.core.support.SupportMeta
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
+import cx.aswin.boxlore.feature.settings.text
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
@@ -121,7 +122,7 @@ class FeedbackAdaptiveTransitionTest {
         reach(FEEDBACK_SEND_TAG).performClick()
         fixture.compose.waitUntil(5_000) { viewModel.uiState.value.isSuccess }
         acrossWindowChanges {
-            fixture.compose.onNodeWithText(feedbackSentBody(repliesInApp = false)).assertExists()
+            fixture.compose.onNodeWithText(text(feedbackSentBody(repliesInApp = false))).assertExists()
             fixture.compose.onNodeWithTag(FEEDBACK_NOTIFY_CARD_TAG).assertDoesNotExist()
         }
     }

@@ -244,11 +244,17 @@ class GlossaryAllEventsEmissionTest {
                 "queue_modified" to {
                     AnalyticsHelper.trackQueueModified("add", "e1", "p1", queueSize = 2, source = "player")
                 },
+                "playlist_modified" to {
+                    AnalyticsHelper.trackPlaylistModified("add_show", "show_page", playlistSize = 3)
+                },
                 "episode_liked_toggled" to {
                     AnalyticsHelper.trackEpisodeLikedToggled("e1", "p1", isLiked = true, surface = "history")
                 },
                 "episode_mark_played" to {
                     AnalyticsHelper.trackEpisodeMarkPlayed("e1", "p1", isPlayed = true, surface = "history")
+                },
+                "episode_archived" to {
+                    AnalyticsHelper.trackEpisodeArchived(isArchived = true, surface = "show_page", itemsCount = 3)
                 },
                 "download_requested" to {
                     AnalyticsHelper.trackDownloadRequested("e1", "p1", "episode_detail")

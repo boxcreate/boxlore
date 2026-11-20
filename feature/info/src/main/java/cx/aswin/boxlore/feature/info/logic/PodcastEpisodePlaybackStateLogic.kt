@@ -1,8 +1,10 @@
 package cx.aswin.boxlore.feature.info.logic
 
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.feature.info.InfoListeningProgressItem
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel.EpisodePlaybackState
+import cx.aswin.boxlore.feature.info.R
 
 /** Each episode row's progress and play state on the show page ([cx.aswin.boxlore.feature.info.PodcastInfoViewModel.episodePlaybackState]). */
 internal object PodcastEpisodePlaybackStateLogic {
@@ -50,10 +52,10 @@ internal object PodcastEpisodePlaybackStateLogic {
     }
 
     /** "1h 5m left" or "12m left"; null when no time is left. */
-    fun timeLeftLabel(remainingSeconds: Long): String? {
+    fun timeLeftLabel(remainingSeconds: Long): UiText? {
         if (remainingSeconds <= 0) return null
-        val h = remainingSeconds / 3600
-        val m = (remainingSeconds % 3600) / 60
-        return if (h > 0) "${h}h ${m}m left" else "${m}m left"
+        val h = (remainingSeconds / 3600).toInt()
+        val m = ((remainingSeconds % 3600) / 60).toInt()
+        return if (h > 0) UiText.res(R.string.episode_list_time_left_hours, h, m) else UiText.res(R.string.episode_list_time_left_minutes, m)
     }
 }

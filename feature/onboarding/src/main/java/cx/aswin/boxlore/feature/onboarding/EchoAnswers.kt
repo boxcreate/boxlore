@@ -98,7 +98,7 @@ internal fun EchoAnswerArea(
         EchoScreenKind.Deck -> "deck"
         else -> "none"
     }
-    AnimatedContent(targetState = key, modifier = modifier.fillMaxWidth(), transitionSpec = EchoMotion.handoff(), label = "Echo answers") { target ->
+    AnimatedContent(targetState = key, modifier = modifier.fillMaxWidth(), transitionSpec = EchoMotion.handoff(), label = "echoAnswers") { target ->
         when {
             target == "waiting" -> EchoChoiceSkeleton(metrics)
             target == "deck" -> EchoDeckCard(state.aiDeck, metrics, preview)
@@ -193,7 +193,7 @@ private fun EchoAnswerSurface(
     content: @Composable () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
-    val container by animateColorAsState(if (selected) colors.primaryContainer else colors.surfaceContainerHigh, label = "Answer fill")
+    val container by animateColorAsState(if (selected) colors.primaryContainer else colors.surfaceContainerHigh, label = "answerFill")
     val shape = rememberEchoAnimatedShape(corners)
     Surface(
         shape = shape,
@@ -287,10 +287,10 @@ internal fun echoChoiceCorners(index: Int, count: Int, selected: Boolean): Pair<
 @Composable
 private fun rememberEchoAnimatedShape(target: EchoCorners): RoundedCornerShape {
     val shapeSpring = spring<Dp>(dampingRatio = 0.7f, stiffness = 500f)
-    val topStart by animateDpAsState(target.topStart, shapeSpring, label = "Corner top start")
-    val topEnd by animateDpAsState(target.topEnd, shapeSpring, label = "Corner top end")
-    val bottomEnd by animateDpAsState(target.bottomEnd, shapeSpring, label = "Corner bottom end")
-    val bottomStart by animateDpAsState(target.bottomStart, shapeSpring, label = "Corner bottom start")
+    val topStart by animateDpAsState(target.topStart, shapeSpring, label = "cornerTopStart")
+    val topEnd by animateDpAsState(target.topEnd, shapeSpring, label = "cornerTopEnd")
+    val bottomEnd by animateDpAsState(target.bottomEnd, shapeSpring, label = "cornerBottomEnd")
+    val bottomStart by animateDpAsState(target.bottomStart, shapeSpring, label = "cornerBottomStart")
     return RoundedCornerShape(topStart = topStart, topEnd = topEnd, bottomEnd = bottomEnd, bottomStart = bottomStart)
 }
 
@@ -323,9 +323,9 @@ internal fun echoBadgeShapeIndex(shapeIndex: Int): Int = Math.floorMod(shapeInde
 @Composable
 internal fun EchoSelectionBadge(selected: Boolean, icon: ImageVector?, size: Dp = 40.dp, shapeIndex: Int = 0) {
     val colors = MaterialTheme.colorScheme
-    val progress by animateFloatAsState(if (selected) 1f else 0f, spring(dampingRatio = 0.55f, stiffness = 420f), label = "Badge bloom")
-    val fill by animateColorAsState(if (selected) colors.primary else colors.surfaceContainerHighest, label = "Badge fill")
-    val tint by animateColorAsState(if (selected) colors.onPrimary else colors.primary, label = "Badge icon")
+    val progress by animateFloatAsState(if (selected) 1f else 0f, spring(dampingRatio = 0.55f, stiffness = 420f), label = "badgeBloom")
+    val fill by animateColorAsState(if (selected) colors.primary else colors.surfaceContainerHighest, label = "badgeFill")
+    val tint by animateColorAsState(if (selected) colors.onPrimary else colors.primary, label = "badgeIcon")
     val target = echoBadgeShapeIndex(shapeIndex)
     val morph = remember(target) { Morph(MaterialShapes.Circle.normalized(), EchoBadgeShapes[target].normalized()) }
     val path = remember { Path() }

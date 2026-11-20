@@ -13,14 +13,15 @@ Models:
 - `Podcast`, `Episode`, `Briefing`: core show, episode and Brief types shared across modules.
 - `Person`, `Transcript`, `Chapter`, `PodrollItem` (`Podcast2Types.kt`): Podcasting 2.0 tag values.
 - `ShowNotes`, `EpisodeLink`, `EpisodeLinkKind`: parsed plain text, publisher HTML, chapters and labelled links, with no UI or parser-library dependency.
-- `SubscriptionFolder`, `FolderDisplaySize`: custom library folders and their tile sizes; `isPinnedToTop` and `placementLabel` separate grid-movable from top-pinned sizes.
+- `SubscriptionFolder`, `FolderDisplaySize`: custom library folders and their tile sizes; `isPinnedToTop` separates grid-movable from top-pinned sizes. Listeners see `titleRes`, `subtitleRes` and `placementLabelRes` (`res/values/strings_folder_size.xml`); `title` and `placementLabel` are English for older callers.
+- `Playlist`, `PlaylistOrder` (`newest`/`oldest`), `PlaylistShow`, `normalizePlaylistName`: the listener's show-based playlists and their shows.
 - `BoxLoreUser`: the signed-in account (UID, email, display name, verification, anonymous flag, provider).
 - `CrossPromotionResult`, `ResolvedCrossPromotion`, `CrossPromotionConfidence`, `CrossPromotionIndicator`: cross-promotion results; `DISTINCT_ARTWORK` marks an episode whose cover differs from its show's. Indicators live only in UI state.
 - `AutoTranscriptState`, `ShareTarget`, `SleepTimerConstants`: small shared enums and constants.
 
 Listening history:
 
-- `ListeningHistoryItem`: a history row with `firstPlayedAt` and `finishedAt` (null: not yet; 0: before boxlore recorded them; else epoch ms).
+- `ListeningHistoryItem`: a history row with `firstPlayedAt` and `finishedAt` (null: not yet; 0: before boxlore recorded them; else epoch ms) and its signed archive decision `dismissedAt`.
 - `ListeningDayEpisode`: one day's timed listening of an episode, with time by part of day, output, source and new releases, and `releaseKnownMs`.
 - `ListeningPlayedShow`: a show from history with its first and last plays.
 - `ListeningPeriod`, `ListeningInsightSummary`: the periods and summaries behind Listening history's insights.
@@ -32,6 +33,7 @@ Rules and helpers:
 - `Episode.recipeId`, `Episode.catalogKey`: optional identity fields, null until a source fills them and omitted from JSON when unset; `id` stays the local ID.
 - `EpisodeRecipeId`: boxlore's own episode IDs for numeric shows (`forNamespace`, `catalogKey`, `showIdOrNull`). Rules: [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md).
 - `Podcast.listenerShowIds` (`ListenerShows.idsOf`): the shows whose history, downloads and queue rows count as this show's own, covering RSS shows switched from Podcast Index ([rules](../../docs/EPISODE_IDS.md)).
+- `HiddenShow`, `HiddenShows`, `withoutHiddenShows` / `withoutHiddenShowEpisodes` (`HiddenShows.kt`): shows hidden everywhere, matched by every ID in `Podcast.listenerShowIds` and by an episode's `podcastId`.
 - `Podcast.isLatestEpisodeNew`: the shared NEW badge rule.
 - `Podcast.effectiveGenre`: the listener's `customGenre` when set, else `genre`; `recommendationGenre` uses it only when it canonicalizes to a standard genre.
 - `Podcast.RSS_REFRESH_AUTOMATIC`: the refresh capability for publisher subscriptions; legacy capability strings stay readable.
@@ -48,11 +50,17 @@ Rules and helpers:
 - `FeedFetchReport`, `FeedFetchSource`, `FeedFetchOutcome`, `FeedFetchCompleteness`, `FeedPassResult`, `FeedUrlCorrection` (`FeedTelemetry.kt`): feed analytics values whose `wireName` is the glossary value; none holds an address.
 - `RankingAggregateTelemetry`: aggregate ranking analytics values.
 
+Text and formatting (`text/`; rules in [`docs/i18n/TRANSLATING.md`](../../docs/i18n/TRANSLATING.md)):
+
+- `UiText` (`Res`, `Plural`, `Raw`; `UiText.res`, `plural`, `raw`): listener text chosen where no `Context` is at hand, compared by resource ID and arguments in tests. `resolve(resources)` / `resolve(context)` turn it into words; Compose uses `asString()` from `:core:designsystem`.
+- `LocaleFormats`: dates (`DateStyle` skeletons), times (`use24Hour`), durations (`DurationWidth`), relative times (`RelativeStyle`), numbers, compact numbers and percentages through `android.icu`, always in a given `Locale`. `Context.displayLocale()` and `Context.formatTimeOfDay` read the screen's language and clock setting.
+
 ## Internal structure
 
 ```text
 src/main/java/cx/aswin/boxlore/core/model/
   Podcast.kt                   # Podcast, ListenerShows
+  HiddenShows.kt               # HiddenShow and its matching
   Episode.kt
   Podcast2Types.kt             # Person, Transcript, Chapter, PodrollItem
   Briefing.kt, BriefingArtwork.kt
@@ -68,13 +76,15 @@ src/main/java/cx/aswin/boxlore/core/model/
   FeedTelemetry.kt, RankingAggregateTelemetry.kt
   PlaybackEntryPoint.kt, AutoTranscriptState.kt, SleepTimerConstants.kt
   BoxLoreUser.kt
+  text/UiText.kt, text/LocaleFormats.kt
+src/main/res/values/strings_folder_size.xml
 ```
 
 ## Dependencies
 
 - No project dependencies.
-- `implementation`: kotlinx serialization JSON. `EpisodeRecipeId` uses the JDK's `MessageDigest` (SHA-256).
-- Forbidden: Android framework types, Room, Retrofit, repositories and Compose UI.
+- `implementation`: kotlinx serialization JSON. `EpisodeRecipeId` uses the JDK's `MessageDigest` (SHA-256). `api`: AndroidX annotations (`@StringRes` on `UiText`).
+- Forbidden: Android framework types, Room, Retrofit, repositories and Compose UI. The one exception is `text/`, which reads `Resources`/`Context` and `android.icu` to put text and formats into words, so every module, the watch and Android Auto included, shares one way to do it.
 
 ## Threading / lifecycle
 
@@ -91,7 +101,7 @@ src/main/java/cx/aswin/boxlore/core/model/
 
 ## Testing notes
 
-Tests live in `core/model/src/test` (pure JVM).
+Tests live in `core/model/src/test` (pure JVM; the `text/` tests run on Robolectric, which provides `android.icu`).
 
 | Area | Test classes |
 | :--- | :--- |
@@ -101,6 +111,7 @@ Tests live in `core/model/src/test` (pure JVM).
 | Artwork and Brief | `ArtworkUrlsTest`, `BriefingArtworkTest` |
 | Regions and languages | `ContentRegionsTest`, `ContentLanguageSelectionTest` |
 | Telemetry and account | `FeedTelemetryTest`, `BoxLoreUserTest` |
+| Text and formatting (English and German) | `UiTextTest`, `LocaleFormatsTest` |
 
 - The shared recipe fixture and `EpisodeRecipeIdTest` live in `core/rss/src/test`, where the scripts copy reads the same file; run `:core:rss:testDebugUnitTest` after any recipe change.
 - `Podcast.listenerShowIds` is covered with its readers in `:core:database`'s `SwitchedShowListeningTest`.

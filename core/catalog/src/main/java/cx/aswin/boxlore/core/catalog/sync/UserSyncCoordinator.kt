@@ -11,9 +11,11 @@ import cx.aswin.boxlore.core.database.ListeningInsightsMaintenance
 import cx.aswin.boxlore.core.database.ListeningRollupDao
 import cx.aswin.boxlore.core.database.ListeningSessionDao
 import cx.aswin.boxlore.core.database.PlayedShowDao
+import cx.aswin.boxlore.core.database.PlaylistDao
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.dao.QueueDao
+import cx.aswin.boxlore.core.database.dismissDecisionAt
 import cx.aswin.boxlore.core.database.entities.QueueItem
 import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
 import cx.aswin.boxlore.core.database.entities.QueueRemovalIdentity
@@ -87,6 +89,8 @@ open class UserSyncCoordinator(
      * bring in another phone's finished episodes: starts the review prompt's quiet days.
      */
     private val onFirstAccountPull: suspend () -> Unit = { userPreferencesRepository?.markLibraryImported() },
+    /** Playlists (Room v44); never synced, so an account switch deletes them with the folders. */
+    private val playlistDao: PlaylistDao? = null,
 ) {
     private val syncMutex = Mutex()
 
@@ -301,6 +305,7 @@ open class UserSyncCoordinator(
         requirePodcastDao.clearAllSubscriptionsForAccountSwitch()
         folderDao?.deleteAllCrossRefs()
         folderDao?.deleteAllFolders()
+        playlistDao?.deleteAll()
     }
 
     private suspend fun purgeHistory() {
@@ -504,11 +509,12 @@ open class UserSyncCoordinator(
             isLiked = h.isLiked,
             likedAt = h.likedAt,
             lastPlayedAt = h.lastPlayedAt,
-            updatedAt = maxOf(h.lastPlayedAt, h.likedAt, now),
+            updatedAt = maxOf(h.lastPlayedAt, h.likedAt, h.dismissDecisionAt, now),
             recipeId = identity?.recipeId,
             catalogKey = identity?.catalogKey,
             firstPlayedAt = h.firstPlayedAt,
             finishedAt = h.finishedAt,
+            dismissedAt = h.dismissedAt,
         )
 
     private suspend fun buildQueueDto(
@@ -595,6 +601,7 @@ open class UserSyncCoordinator(
                 snapshotIsCompleted = h.isCompleted,
                 snapshotIsLiked = h.isLiked,
                 syncedAt = syncedAt,
+                snapshotDismissedAt = h.dismissedAt,
             )
         }
 

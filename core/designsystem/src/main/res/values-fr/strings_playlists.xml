@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Playlist dialogs, shared by the show page and Library. -->
+    <string name="playlist_new">Nouvelle playlist</string>
+    <string name="playlist_rename">Renommer la playlist</string>
+    <string name="playlist_name_label">Nom</string>
+    <string name="playlist_create">Créer</string>
+    <string name="playlist_save">Enregistrer</string>
+    <string name="playlist_cancel">Annuler</string>
+    <string name="playlist_delete">Supprimer</string>
+    <string name="playlist_delete_title">Supprimer la playlist ?</string>
+    <!-- %1$s is the playlist's name, which the listener chose. -->
+    <string name="playlist_delete_body">« %1$s » sera supprimée. Cette action est irréversible. Les podcasts, vos téléchargements et votre historique d’écoute restent intacts.</string>
+    <!-- Under a playlist's name when it has no shows. -->
+    <string name="playlist_no_shows">Aucun podcast pour l’instant</string>
+    <!-- Under a playlist's name: how many shows it holds. -->
+    <plurals name="playlist_show_count">
+        <item quantity="one">%1$d podcast</item>
+        <item quantity="other">%1$d podcasts</item>
+    </plurals>
+
+    <!-- The show page's Add to playlist sheet. -->
+    <string name="add_to_playlist_title">Ajouter à une playlist</string>
+    <string name="add_to_playlist_none">Vous n’avez encore aucune playlist.</string>
+    <string name="add_to_playlist_create_and_add">Créer et ajouter</string>
+    <!-- Confirmations after a tap in the sheet. %1$s is the playlist's name. -->
+    <string name="add_to_playlist_added">Ajouté à %1$s</string>
+    <string name="add_to_playlist_removed">Retiré de %1$s</string>
+</resources>

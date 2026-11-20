@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.settings
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -81,18 +82,18 @@ internal fun AdaptiveSettingsLayout(
     }
 }
 
-private data class SettingsCategory(val destination: ProfileSettingsDestination, val title: String, val icon: ImageVector)
+private data class SettingsCategory(val destination: ProfileSettingsDestination, @StringRes val title: Int, val icon: ImageVector)
 
 private val settingsCategories = listOf(
-    SettingsCategory(ProfileSettingsDestination.SyncAndBackups, "Cloud Sync & Backups", Icons.Rounded.CloudSync),
-    SettingsCategory(ProfileSettingsDestination.Library, "Library", Icons.AutoMirrored.Rounded.LibraryBooks),
-    SettingsCategory(ProfileSettingsDestination.Appearance, "Appearance", Icons.Rounded.Palette),
-    SettingsCategory(ProfileSettingsDestination.Playback, "Playback", Icons.Rounded.Tune),
-    SettingsCategory(ProfileSettingsDestination.Downloads, "Downloads", Icons.Rounded.DownloadForOffline),
-    SettingsCategory(ProfileSettingsDestination.WearOs, "Wear OS", Icons.Rounded.Watch),
-    SettingsCategory(ProfileSettingsDestination.Privacy, "Privacy", Icons.Rounded.PrivacyTip),
-    SettingsCategory(ProfileSettingsDestination.About, "About", Icons.Rounded.Info),
-    SettingsCategory(ProfileSettingsDestination.Support, "Support boxlore", Icons.Rounded.Favorite),
+    SettingsCategory(ProfileSettingsDestination.SyncAndBackups, R.string.settings_page_sync, Icons.Rounded.CloudSync),
+    SettingsCategory(ProfileSettingsDestination.Library, R.string.settings_page_library, Icons.AutoMirrored.Rounded.LibraryBooks),
+    SettingsCategory(ProfileSettingsDestination.Appearance, R.string.settings_page_appearance, Icons.Rounded.Palette),
+    SettingsCategory(ProfileSettingsDestination.Playback, R.string.settings_page_playback, Icons.Rounded.Tune),
+    SettingsCategory(ProfileSettingsDestination.Downloads, R.string.settings_page_downloads, Icons.Rounded.DownloadForOffline),
+    SettingsCategory(ProfileSettingsDestination.WearOs, R.string.settings_page_wear_os, Icons.Rounded.Watch),
+    SettingsCategory(ProfileSettingsDestination.Privacy, R.string.settings_privacy_title, Icons.Rounded.PrivacyTip),
+    SettingsCategory(ProfileSettingsDestination.About, R.string.settings_category_about, Icons.Rounded.Info),
+    SettingsCategory(ProfileSettingsDestination.Support, R.string.settings_page_support, Icons.Rounded.Favorite),
 )
 
 /** The categories the split lists; Wear OS appears only for a phone linked with a watch. */
@@ -114,8 +115,8 @@ private fun TabletSettingsCategories(destination: ProfileSettingsDestination, co
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            TopAppBar(title = { Text("Settings") }, navigationIcon = {
-                IconButton(onClick = config.onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back") }
+            TopAppBar(title = { Text(stringResource(R.string.settings_page_hub)) }, navigationIcon = {
+                IconButton(onClick = config.onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.settings_back)) }
             })
         },
     ) { padding ->
@@ -126,7 +127,7 @@ private fun TabletSettingsCategories(destination: ProfileSettingsDestination, co
                         SupportEntryImpression(SupportEntrySurface.SettingsCategoryList)
                     }
                     NavigationDrawerItem(
-                        label = { Text(category.title) },
+                        label = { Text(stringResource(category.title)) },
                         selected = selected == category.destination,
                         onClick = { onNavigate(category.destination) },
                         icon = { Icon(category.icon, contentDescription = null) },

@@ -54,13 +54,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.AutoTranscriptState
 import cx.aswin.boxlore.core.model.SleepTimerConstants
+import cx.aswin.boxlore.core.model.text.LocaleFormats
+import cx.aswin.boxlore.core.playback.ShowPlaybackPolicy
+import cx.aswin.boxlore.feature.player.R
 import cx.aswin.boxlore.feature.player.v2.logic.formatSpeedLabel
 import cx.aswin.boxlore.feature.player.v2.logic.targetControlWeight
 import kotlinx.coroutines.delay
@@ -316,7 +321,7 @@ private fun MorphingPlayButton(
             Crossfade(targetState = isPlaying, label = "playPauseCrossfade") { playing ->
                 Icon(
                     imageVector = if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (playing) "Pause" else "Play",
+                    contentDescription = stringResource(if (playing) R.string.minimal_pause else R.string.minimal_play),
                     modifier = Modifier.size(44.dp),
                     tint = colorScheme.onPrimary
                 )
@@ -338,7 +343,8 @@ internal data class QuickControlShapes(
 data class SecondaryPlaybackState(
     val playbackSpeed: Float,
     val sleepTimerEnd: Long?,
-    val sleepAtEndOfEpisode: Boolean
+    val sleepAtEndOfEpisode: Boolean,
+    val audio: PlayerSpeedAudio = PlayerSpeedAudio()
 )
 
 data class SecondaryAvailabilityState(
@@ -359,7 +365,9 @@ data class SecondaryLibraryState(
 
 data class SecondarySelectionActions(
     val onSpeedSelected: (Float) -> Unit,
-    val onSleepTimerSelected: (Int) -> Unit
+    val onSleepTimerSelected: (Int) -> Unit,
+    val onTrimSilenceChange: (Boolean) -> Unit = {},
+    val onUseAppSpeed: () -> Unit = {}
 )
 
 data class SecondaryClickActions(
@@ -514,7 +522,12 @@ fun SecondaryRail(
                     colorScheme = colorScheme,
                     shapes = selectorShapes,
                     onBack = { controlMode = QuickControlMode.ACTIONS },
-                    onSpeedSelected = selectionActions.onSpeedSelected
+                    onSpeedSelected = selectionActions.onSpeedSelected,
+                    audio = InlineSpeedAudio(
+                        state = playback.audio,
+                        onUseAppSpeed = selectionActions.onUseAppSpeed,
+                        onTrimSilenceChange = selectionActions.onTrimSilenceChange
+                    )
                 )
 
                 QuickControlMode.SLEEP -> InlineSleepSelector(
@@ -536,7 +549,10 @@ fun SpeedSheet(
     currentSpeed: Float,
     colorScheme: ColorScheme,
     onSpeedSelected: (Float) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    audio: PlayerSpeedAudio = PlayerSpeedAudio(),
+    onUseAppSpeed: () -> Unit = {},
+    onTrimSilenceChange: (Boolean) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
@@ -553,12 +569,12 @@ fun SpeedSheet(
                 .padding(bottom = 24.dp)
         ) {
             Text(
-                text = "Playback speed",
+                text = stringResource(R.string.player_playback_speed),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = GoogleSansWeight.bold
             )
             Spacer(Modifier.height(16.dp))
-            val speeds = listOf(0.5f, 0.8f, 0.9f, 1f, 1.1f, 1.2f, 1.25f, 1.5f, 1.75f, 2f, 2.5f, 3f)
+            val speeds = ShowPlaybackPolicy.SPEED_OPTIONS
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(speeds) { speed ->
                     val selected = speed == currentSpeed
@@ -580,6 +596,12 @@ fun SpeedSheet(
                     }
                 }
             }
+            SpeedSheetAudioSection(
+                audio = audio,
+                colorScheme = colorScheme,
+                onUseAppSpeed = onUseAppSpeed,
+                onTrimSilenceChange = onTrimSilenceChange
+            )
         }
     }
 }
@@ -608,20 +630,15 @@ fun SleepSheet(
                 .padding(bottom = 24.dp)
         ) {
             Text(
-                text = "Sleep timer",
+                text = stringResource(R.string.minimal_sleep),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = GoogleSansWeight.bold
             )
             Spacer(Modifier.height(16.dp))
-            val options = listOf(
-                0 to "Off",
-                15 to "15 min",
-                30 to "30 min",
-                45 to "45 min",
-                60 to "1 hr",
-                120 to "2 hr",
-                SleepTimerConstants.END_OF_EPISODE_MINUTES to "End of episode"
-            )
+            val locale = currentLocale()
+            val options = listOf(0 to stringResource(R.string.player_off)) +
+                listOf(15, 30, 45, 60, 120).map { minutes -> minutes to LocaleFormats.duration(minutes * 60L, locale) } +
+                (SleepTimerConstants.END_OF_EPISODE_MINUTES to stringResource(R.string.player_sleep_end_of_episode))
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(options) { (minutes, label) ->
                     val selected = minutes == 0 && !timerActive

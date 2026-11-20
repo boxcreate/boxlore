@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home
 
+// i18n-ignore-file: debug-only screen, not shown to listeners.
+
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 
 data class DebugHistoryItem(

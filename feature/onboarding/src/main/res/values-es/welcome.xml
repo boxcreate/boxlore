@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="welcome_curiosity">Tú pones la curiosidad.</string>
+    <!-- The two visual lines enter in order; TalkBack reads welcome_curiosity as a single heading. -->
+    <string name="welcome_curiosity_first_line">Tú pones</string>
+    <string name="welcome_curiosity_second_line">la curiosidad.</string>
+    <string name="welcome_lore">Nosotros ponemos el lore.</string>
+    <!-- Fixed visual prefix. The full welcome_lore sentence is the stable screen-reader description. -->
+    <string name="welcome_reply_prefix">Nosotros ponemos</string>
+    <!-- These complete welcome_reply_prefix. Preserve this order to match the corresponding icons. Each prefix + word must read as one sentence: where the article changes with the noun, leave it out of the prefix and start each word with it. -->
+    <string-array name="welcome_reply_words">
+        <item>los misterios.</item>
+        <item>las risas.</item>
+        <item>los titulares.</item>
+        <item>las grandes ideas.</item>
+        <item>las historias.</item>
+        <item>los descubrimientos.</item>
+        <item>el lore.</item>
+    </string-array>
+    <string name="welcome_find_shows">Busca podcasts para mí</string>
+    <string name="welcome_search">Buscar podcasts</string>
+    <string name="welcome_import">Importar biblioteca</string>
+    <string name="welcome_skip">Omitir configuración</string>
+</resources>

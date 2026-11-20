@@ -51,7 +51,6 @@ import cx.aswin.boxlore.feature.history.insights.whereHeadline
 import cx.aswin.boxlore.feature.history.timeline.TimelineTime
 import cx.aswin.boxlore.feature.history.timeline.currentLocale
 import cx.aswin.boxlore.feature.history.timeline.durationText
-import java.time.format.DateTimeFormatter
 
 /** Whether the listening-type card is the night version (evenings, late nights, all day) or the light day version. */
 internal fun TypeTime.isNight(): Boolean = this != TypeTime.MORNING && this != TypeTime.DAYTIME
@@ -145,7 +144,7 @@ internal fun BoxScope.StoryRecordsCard(story: MonthStory, palette: StoryPalette,
     val locale = currentLocale()
     val fg = palette.onPrimary
     val run = story.bestRun
-    val biggestDay = story.biggestDay.first.format(DateTimeFormatter.ofPattern("EEE, MMM d", locale))
+    val biggestDay = TimelineTime.shortWeekdayDate(story.biggestDay.first, locale)
     StoryHeading(gap = 4f) {
         StoryEyebrow(stringResource(R.string.history_story_records_eyebrow), fg, clock)
         if (run != null) {
@@ -216,7 +215,7 @@ private fun StoryRecordTile(value: String, label: String, fg: Color, modifier: M
 /** A pill a day of the run, up to 30 × 40 and 4 apart, narrower when the run is longer; each pops in 90ms after the last. */
 @Composable
 private fun StoryRunPills(days: Int, color: Color, clock: StoryClock) {
-    val description = stringResource(R.string.history_story_run_pills, days)
+    val description = pluralStringResource(R.plurals.history_story_run_pills, days, days)
     val width = minOf(30f, (360f - (days - 1) * 4f) / days)
     Row(Modifier.padding(top = 14.dp).clearAndSetSemantics { contentDescription = description }, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         repeat(days) { index ->

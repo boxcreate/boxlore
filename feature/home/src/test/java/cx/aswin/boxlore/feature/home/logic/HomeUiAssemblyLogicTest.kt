@@ -229,4 +229,80 @@ class HomeUiAssemblyLogicTest {
         assertTrue(inResumeGrid.heroItems.any { item -> item.type == HeroType.RESUME_GRID && item.gridItems.any { it.id == briefShow } })
         assertEquals(briefing, inResumeGrid.briefing)
     }
+
+    @Test
+    fun `archived recommendations leave Home`() = runTest {
+        val result =
+            HomeUiAssemblyLogic.assemble(
+                trendingList = emptyList(),
+                rankedRecommendations = listOf(TestFixtures.episode(id = "rec-archived"), TestFixtures.episode(id = "rec-1")),
+                resumeList = emptyList(),
+                subs = emptyList(),
+                allHistory = emptyList(),
+                resolvedSerial = emptyMap(),
+                completedEpisodeIds = emptySet(),
+                region = "us",
+                editorialRows = emptyList(),
+                previousStableOrder = null,
+                podcastScores = emptyMap(),
+                previousMixtape = null,
+                buildMixtape = { _, recommendations ->
+                    MixtapeEngine.Result(podcasts = emptyList(), episodes = recommendations, unplayedCount = recommendations.size)
+                },
+                isTrendingLoaded = true,
+                hasDismissedImportBanner = true,
+                rawBriefing = null,
+                rawBriefingChapters = emptyList(),
+                briefingDismissedDate = "",
+                briefingDismissedForever = false,
+                dismissedEpisodeIds = setOf("rec-archived"),
+            )
+
+        assertEquals(listOf("rec-1"), result.recommendations.map { it.id })
+        assertEquals(1, result.unplayedEpisodeCount)
+    }
+
+    @Test
+    fun `a kept Daily Mix drops an episode archived since it was built`() = runTest {
+        val archived = TestFixtures.episode(id = "mix-archived", podcastId = "show-a")
+        val kept = TestFixtures.episode(id = "mix-kept", podcastId = "show-b")
+        val cache =
+            HomeMixtapeCache(
+                podcasts = listOf(
+                    TestFixtures.podcast(id = "show-a").copy(latestEpisode = archived),
+                    TestFixtures.podcast(id = "show-b").copy(latestEpisode = kept),
+                ),
+                unplayedCount = 2,
+                episodes = listOf(archived, kept),
+                subSignature = setOf("show-a", "show-b"),
+            )
+        val result =
+            HomeUiAssemblyLogic.assemble(
+                trendingList = emptyList(),
+                rankedRecommendations = emptyList(),
+                resumeList = emptyList(),
+                subs = listOf(TestFixtures.podcast(id = "show-a"), TestFixtures.podcast(id = "show-b")),
+                allHistory = emptyList(),
+                resolvedSerial = emptyMap(),
+                completedEpisodeIds = emptySet(),
+                region = "us",
+                editorialRows = emptyList(),
+                previousStableOrder = null,
+                podcastScores = emptyMap(),
+                previousMixtape = cache,
+                buildMixtape = { _, _ -> error("a kept mix is never rebuilt") },
+                isTrendingLoaded = true,
+                hasDismissedImportBanner = true,
+                rawBriefing = null,
+                rawBriefingChapters = emptyList(),
+                briefingDismissedDate = "",
+                briefingDismissedForever = false,
+                dismissedEpisodeIds = setOf("mix-archived"),
+            )
+
+        // Play mix queues the cache's episodes: the archived one is gone, and the card counts one.
+        assertEquals(listOf("mix-kept"), result.mixtapeCache!!.episodes.map { it.id })
+        assertEquals(listOf("show-b"), result.mixtapeCache!!.podcasts.map { it.id })
+        assertEquals(1, result.mixtapeCache!!.unplayedCount)
+    }
 }

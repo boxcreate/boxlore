@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_channel_announcements">Ankündigungen</string>
+    <string name="app_channel_announcements_description">Neuigkeiten und Updates von boxlore</string>
+    <string name="app_channel_new_episode_alerts">Benachrichtigungen zu neuen Folgen</string>
+    <string name="app_channel_new_episodes">Neue Folgen</string>
+    <string name="app_channel_new_episodes_description">Benachrichtigungen zu neuen Podcast-Folgen</string>
+    <string name="app_channel_silent">Lautlose Benachrichtigungen</string>
+    <string name="app_channel_feedback_replies">Antworten auf Feedback</string>
+    <string name="app_channel_feedback_replies_description">Antworten des boxlore-Teams auf dein Feedback</string>
+    <string name="app_new_episode_notification_title">Neue Folge • %1$s</string>
+    <string name="app_new_episode_show_fallback">Neuerscheinung</string>
+    <string name="app_new_episode_episode_fallback">Neue Folge</string>
+    <plurals name="app_new_episode_notification_body">
+        <item quantity="one">„%1$s“ (%2$d Min.)</item>
+        <item quantity="other">„%1$s“ (%2$d Min.)</item>
+    </plurals>
+    <string name="app_new_episode_notification_body_no_duration">„%1$s“</string>
+    <string name="app_new_episodes_summary_title">Neue Folgen</string>
+    <plurals name="app_new_episodes_summary_text">
+        <item quantity="one">%1$d Podcast hat neue Folgen</item>
+        <item quantity="other">%1$d Podcasts haben neue Folgen</item>
+    </plurals>
+    <string name="app_feedback_reply_fallback_title">Neue Antwort auf dein Feedback</string>
+    <string name="app_push_fallback_title">boxlore-Update</string>
+    <string name="app_push_fallback_body">Schau dir an, was es Neues in boxlore gibt!</string>
+    <string name="app_push_fallback_action">Ansehen</string>
+</resources>

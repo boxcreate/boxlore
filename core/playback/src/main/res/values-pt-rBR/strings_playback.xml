@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Short toast after an episode fails to play; Cast is Google Cast. -->
+    <string name="playback_error_stop_cast">Não foi possível tocar estes episódios neste dispositivo Cast. A reprodução foi pausada.</string>
+    <string name="playback_error_stop">Não foi possível tocar estes episódios. Verifique sua conexão e tente de novo.</string>
+    <string name="playback_error_skip_paused_cast">Não foi possível tocar esse episódio neste dispositivo Cast. O próximo já está pronto.</string>
+    <string name="playback_error_skip_paused">Não foi possível tocar esse episódio. O próximo já está pronto.</string>
+    <string name="playback_error_skip_cast">Não foi possível tocar esse episódio neste dispositivo Cast.</string>
+    <string name="playback_error_skip">Stream indisponível, pulando…</string>
+    <!-- Name shown for a Cast speaker or TV that did not report its own name. -->
+    <string name="playback_cast_device_fallback">Dispositivo Cast</string>
+</resources>

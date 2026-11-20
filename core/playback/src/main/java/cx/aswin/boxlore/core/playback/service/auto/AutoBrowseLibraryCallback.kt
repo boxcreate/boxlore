@@ -454,6 +454,7 @@ internal class AutoBrowseLibraryCallback(
         if (!playerHasEpisode) {
             player.addMediaItem(
                 AutoMediaItemFactory.fromEpisode(
+                    resources = host.asContext().resources,
                     episode = episode,
                     source = AutoBrowseContract.SOURCE_QUEUE,
                     artworkUri =

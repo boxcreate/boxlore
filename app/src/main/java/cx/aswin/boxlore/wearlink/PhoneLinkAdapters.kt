@@ -60,9 +60,16 @@ internal object PhoneListRules {
     /** A Daily Mix is ranking work; it is rebuilt at most this often, however often the library is sent. */
     const val MIX_TTL_MS = 30L * 60L * 1_000L
 
-    /** The newest unplayed episode of each followed show, newest first: what the phone's own New episodes lists. */
-    fun newEpisodes(latest: List<Episode>, completedIds: Set<String>): List<Episode> =
-        latest.filter { it.id !in completedIds }.sortedByDescending { it.publishedDate }.take(MAX_NEW)
+    /**
+     * The newest unplayed episode of each followed show, newest first: what the phone's own New
+     * episodes lists. Archived episodes ([dismissedIds]) are left out like finished ones.
+     */
+    fun newEpisodes(latest: List<Episode>, completedIds: Set<String>, dismissedIds: Set<String> = emptySet()): List<Episode> =
+        latest.filter { it.id !in completedIds && it.id !in dismissedIds }.sortedByDescending { it.publishedDate }.take(MAX_NEW)
+
+    /** A show's saved episodes for the watch's show list, without archived ones: the watch can't show them. */
+    fun showEpisodes(saved: List<Episode>, dismissedIds: Set<String>): List<Episode> =
+        if (dismissedIds.isEmpty()) saved else saved.filter { it.id !in dismissedIds }
 
     fun mixIsFresh(builtAt: Long, now: Long): Boolean = builtAt > 0L && now - builtAt < MIX_TTL_MS
 
@@ -72,14 +79,21 @@ internal object PhoneListRules {
     /**
      * The Daily Mix as the phone builds it for [shows]: ranked from the newest rows and the newest
      * real listening (so a show marked played all at once can't crowd it out), resuming any started
-     * episode however old, and never offering one in [completedIds] as unplayed.
+     * episode however old, never offering one in [completedIds] as unplayed nor one in [dismissedIds]
+     * (archived) at all.
      */
-    suspend fun dailyMix(shows: List<Podcast>, history: ListeningHistoryDao, completedIds: Set<String>): MixtapeEngine.Result =
+    suspend fun dailyMix(
+        shows: List<Podcast>,
+        history: ListeningHistoryDao,
+        completedIds: Set<String>,
+        dismissedIds: Set<String> = emptySet(),
+    ): MixtapeEngine.Result =
         MixtapeEngine.build(
             subscriptions = shows,
             history = history.getRecentHistoryWithListeningList(MIX_HISTORY_WINDOW),
             completedIds = completedIds,
             inProgress = history.getInProgressHistoryList(),
+            dismissedIds = dismissedIds,
         )
 
     /**
@@ -112,6 +126,8 @@ internal class PhoneLibraryAdapter(
     private val savedEpisodes: () -> LocalEpisodeCatalogPort,
     private val history: ListeningHistoryDao,
     private val clock: () -> Long = System::currentTimeMillis,
+    /** Archived episode IDs, projected across each episode's IDs; neither watch list offers them. */
+    private val dismissedIds: suspend () -> Set<String> = { history.getDismissedEpisodeIds().toSet() },
 ) : PhoneLibraryPort {
     private var mix: List<WearLinkEpisode> = emptyList()
     private var mixBuiltAt = 0L
@@ -131,16 +147,18 @@ internal class PhoneLibraryAdapter(
         val rows = sync().linkedDeviceRows(historyLimit)
         val shows = rows.shows.map { WearLinkShow(it.podcastId, it.title, it.author, it.imageUrl.takeIf(String::isNotBlank), it.feedUrl) }
         val completed = history.getCompletedEpisodeIds().toSet()
+        val archived = dismissedIds()
         val latest = rows.shows.mapNotNull { show -> show.latestEpisode?.copy(podcastId = show.podcastId, podcastTitle = show.title, podcastImageUrl = show.imageUrl) }
-        val newEpisodes = PhoneListRules.newEpisodes(latest, completed).map { it.toLink(it.podcastId, it.podcastTitle) }
-        return PhoneLibraryRows(shows, rows.history, newEpisodes, dailyMix(rows.shows, completed))
+        val newEpisodes = PhoneListRules.newEpisodes(latest, completed, archived).map { it.toLink(it.podcastId, it.podcastTitle) }
+        return PhoneLibraryRows(shows, rows.history, newEpisodes, dailyMix(rows.shows, completed, archived))
     }
 
     /** The Daily Mix as the phone would play it, kept for [PhoneListRules.MIX_TTL_MS]. */
-    private suspend fun dailyMix(shows: List<PodcastEntity>, completed: Set<String>): List<WearLinkEpisode> {
+    private suspend fun dailyMix(shows: List<PodcastEntity>, completed: Set<String>, archived: Set<String>): List<WearLinkEpisode> {
         val now = clock()
-        if (PhoneListRules.mixIsFresh(mixBuiltAt, now)) return mix
-        val built = PhoneListRules.dailyMix(shows.map { it.toPodcast() }, history, completed)
+        // A kept mix still drops an episode archived since it was built.
+        if (PhoneListRules.mixIsFresh(mixBuiltAt, now)) return mix.filter { it.episodeId !in archived }
+        val built = PhoneListRules.dailyMix(shows.map { it.toPodcast() }, history, completed, archived)
         mix = built.episodes.map { it.toLink(it.podcastId, it.podcastTitle) }
         mixBuiltAt = now
         return mix
@@ -150,7 +168,7 @@ internal class PhoneLibraryAdapter(
         sync().applyLinkedDeviceChanges(subscriptions, history)
 
     override suspend fun episodes(podcastId: String, limit: Int): List<WearLinkEpisode> =
-        savedEpisodes().getPage(podcastId, limit = limit, offset = 0, sort = NEWEST).map { it.toLink(podcastId) }
+        PhoneListRules.showEpisodes(savedEpisodes().getPage(podcastId, limit = limit, offset = 0, sort = NEWEST), dismissedIds()).map { it.toLink(podcastId) }
 
     override suspend fun episodesReadAt(podcastId: String): Long? = PhoneListRules.readAt(savedEpisodes().lastFeedReadAt(podcastId))
 

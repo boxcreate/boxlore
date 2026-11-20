@@ -2,6 +2,7 @@ package cx.aswin.boxlore.navigation
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
@@ -69,8 +70,14 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                     ) as T
                 },
             )
+        val playlists by w.playlistRepository.playlists.collectAsStateWithLifecycle(initialValue = emptyList())
         cx.aswin.boxlore.feature.library.LibraryScreen(
             viewModel = viewModel,
+            playlists =
+            cx.aswin.boxlore.feature.library.LibraryPlaylistsCard(
+                coverUrls = playlists.mapNotNull { it.coverUrls.firstOrNull() },
+                onClick = { w.navigate(NavRoutes.LIBRARY_PLAYLISTS) },
+            ),
             onNavigateToLiked = { w.navigate("library/liked") },
             onNavigateToSubscriptions = { w.navigate(NavRoutes.LIBRARY_SUBSCRIPTIONS) },
             onNavigateToDownloads = { w.navigate(NavRoutes.LIBRARY_DOWNLOADS) },
@@ -97,7 +104,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
             )
         val openEpisode: (cx.aswin.boxlore.core.model.ListeningHistoryItem) -> Unit = { item ->
             fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-            val desc = "Resuming from History"
+            val desc = w.context.getString(cx.aswin.boxlore.R.string.app_history_resume_description)
             w.navigate(
                 "episode/${item.episodeId}/${encode(item.episodeTitle)}/" +
                     "${encode(desc)}/" +

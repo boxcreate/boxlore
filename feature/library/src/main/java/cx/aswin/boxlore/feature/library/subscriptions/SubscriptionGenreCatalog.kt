@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.library.subscriptions
 
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalance
 import androidx.compose.material.icons.rounded.Apps
@@ -21,9 +22,12 @@ import androidx.compose.material.icons.rounded.SportsBaseball
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Weekend
 import androidx.compose.material.icons.rounded.Work
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.feature.library.R
 import java.util.Locale
 
 /**
@@ -31,31 +35,55 @@ import java.util.Locale
  * Kept in `:feature:library` (no feature→feature import of Explore).
  */
 internal data class SubscriptionGenreItem(
+    /** The genre as stored and matched; also shown when [labelRes] is null (custom genres). */
     val label: String,
     val value: String,
     val icon: ImageVector,
+    /** The short name shown on pills for a catalog genre. */
+    @StringRes val labelRes: Int? = null,
+    /** The full name for sentences, when the pill shortens it ("Government" for "Govt"). */
+    @StringRes val fullNameRes: Int? = null,
 )
 
+/** The name to show for this genre: the translated catalog name, or the listener's own genre text. */
+@Composable
+internal fun SubscriptionGenreItem.displayLabel(): String = labelRes?.let { stringResource(it) } ?: label
+
+/**
+ * The name to show in a sentence for a stored genre such as a folder's linked genre ("Tech",
+ * "Technology" or a custom one): the full catalog name for a stored full name, the pill name for a
+ * stored pill name, or the listener's own text.
+ */
+@Composable
+internal fun subscriptionGenreDisplayName(genre: String): String = subscriptionGenreNameRes(genre)?.let { stringResource(it) } ?: genre
+
+/** [subscriptionGenreDisplayName]'s resource: null for a genre outside the catalog. */
+@StringRes
+internal fun subscriptionGenreNameRes(genre: String): Int? {
+    val item = SUBSCRIPTION_GENRE_CATALOG.find { it.value.equals(genre, ignoreCase = true) || it.label.equals(genre, ignoreCase = true) } ?: return null
+    return item.fullNameRes?.takeIf { item.value.equals(genre, ignoreCase = true) } ?: item.labelRes
+}
+
 internal val SUBSCRIPTION_GENRE_CATALOG = listOf(
-    SubscriptionGenreItem("News", "News", Icons.Rounded.Newspaper),
-    SubscriptionGenreItem("Tech", "Technology", Icons.Rounded.Computer),
-    SubscriptionGenreItem("Business", "Business", Icons.Rounded.Work),
-    SubscriptionGenreItem("Comedy", "Comedy", Icons.Rounded.SentimentVerySatisfied),
-    SubscriptionGenreItem("True Crime", "True Crime", Icons.Rounded.Fingerprint),
-    SubscriptionGenreItem("Sports", "Sports", Icons.Rounded.SportsBaseball),
-    SubscriptionGenreItem("Health", "Health", Icons.Rounded.FavoriteBorder),
-    SubscriptionGenreItem("History", "History", Icons.Rounded.AccountBalance),
-    SubscriptionGenreItem("Arts", "Arts", Icons.Rounded.Palette),
-    SubscriptionGenreItem("Society", "Society & Culture", Icons.Rounded.Person),
-    SubscriptionGenreItem("Education", "Education", Icons.Rounded.School),
-    SubscriptionGenreItem("Science", "Science", Icons.Rounded.Science),
-    SubscriptionGenreItem("TV & Film", "TV & Film", Icons.Rounded.Movie),
-    SubscriptionGenreItem("Fiction", "Fiction", Icons.Rounded.AutoStories),
-    SubscriptionGenreItem("Music", "Music", Icons.Rounded.MusicNote),
-    SubscriptionGenreItem("Religion", "Religion & Spirituality", Icons.Rounded.Star),
-    SubscriptionGenreItem("Family", "Kids & Family", Icons.Rounded.Face),
-    SubscriptionGenreItem("Leisure", "Leisure", Icons.Rounded.Weekend),
-    SubscriptionGenreItem("Govt", "Government", Icons.Rounded.Gavel),
+    SubscriptionGenreItem("News", "News", Icons.Rounded.Newspaper, R.string.library_genre_news),
+    SubscriptionGenreItem("Tech", "Technology", Icons.Rounded.Computer, R.string.library_genre_tech, R.string.library_genre_full_tech),
+    SubscriptionGenreItem("Business", "Business", Icons.Rounded.Work, R.string.library_genre_business),
+    SubscriptionGenreItem("Comedy", "Comedy", Icons.Rounded.SentimentVerySatisfied, R.string.library_genre_comedy),
+    SubscriptionGenreItem("True Crime", "True Crime", Icons.Rounded.Fingerprint, R.string.library_genre_true_crime),
+    SubscriptionGenreItem("Sports", "Sports", Icons.Rounded.SportsBaseball, R.string.library_genre_sports),
+    SubscriptionGenreItem("Health", "Health", Icons.Rounded.FavoriteBorder, R.string.library_genre_health),
+    SubscriptionGenreItem("History", "History", Icons.Rounded.AccountBalance, R.string.library_genre_history),
+    SubscriptionGenreItem("Arts", "Arts", Icons.Rounded.Palette, R.string.library_genre_arts),
+    SubscriptionGenreItem("Society", "Society & Culture", Icons.Rounded.Person, R.string.library_genre_society, R.string.library_genre_full_society),
+    SubscriptionGenreItem("Education", "Education", Icons.Rounded.School, R.string.library_genre_education),
+    SubscriptionGenreItem("Science", "Science", Icons.Rounded.Science, R.string.library_genre_science),
+    SubscriptionGenreItem("TV & Film", "TV & Film", Icons.Rounded.Movie, R.string.library_genre_tv_film),
+    SubscriptionGenreItem("Fiction", "Fiction", Icons.Rounded.AutoStories, R.string.library_genre_fiction),
+    SubscriptionGenreItem("Music", "Music", Icons.Rounded.MusicNote, R.string.library_genre_music),
+    SubscriptionGenreItem("Religion", "Religion & Spirituality", Icons.Rounded.Star, R.string.library_genre_religion, R.string.library_genre_full_religion),
+    SubscriptionGenreItem("Family", "Kids & Family", Icons.Rounded.Face, R.string.library_genre_family, R.string.library_genre_full_family),
+    SubscriptionGenreItem("Leisure", "Leisure", Icons.Rounded.Weekend, R.string.library_genre_leisure),
+    SubscriptionGenreItem("Govt", "Government", Icons.Rounded.Gavel, R.string.library_genre_govt, R.string.library_genre_full_govt),
 )
 
 internal val AllGenreIcon: ImageVector = Icons.Rounded.Apps
@@ -91,6 +119,7 @@ internal fun resolveSubscriptionGenreItem(
             label = standardMatch?.label ?: genre,
             value = standardMatch?.value ?: genre,
             icon = customIcon,
+            labelRes = standardMatch?.labelRes,
         )
     }
 
@@ -116,6 +145,7 @@ internal fun resolveSubscriptionGenreItem(
             label = standardMatch?.label ?: genre,
             value = standardMatch?.value ?: genre,
             icon = customIcon,
+            labelRes = standardMatch?.labelRes,
         )
     }
     return resolveSubscriptionGenreItem(genre)

@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="episode_info_title">Folge</string>
+    <string name="episode_info_load_error">Diese Folge konnte nicht geladen werden</string>
+    <string name="episode_info_reading_feed_title">Folge wird gesucht</string>
+    <string name="episode_info_reading_feed_body">Der Feed des Podcasts wird geprüft. Das kann einen Moment dauern.</string>
+    <string name="episode_info_not_found_title">Folge nicht gefunden</string>
+    <string name="episode_info_not_found_body">Sie wurde vielleicht aus dem Podcast entfernt.</string>
+    <string name="episode_info_not_found_body_no_show">Sie wurde vielleicht entfernt, oder dieser Link lässt sich auf diesem Handy nicht öffnen.</string>
+    <string name="episode_info_back">Zurück</string>
+    <string name="episode_info_share">Folge teilen</string>
+    <!-- The header's watch button, shown only while boxlore on a watch is in reach of the phone. -->
+    <string name="episode_info_send_to_watch">An die Uhr senden</string>
+    <string name="episode_info_downloading_on_watch">Wird auf deine Uhr geladen. Von der Uhr entfernen</string>
+    <string name="episode_info_on_watch">Auf deiner Uhr. Von der Uhr entfernen</string>
+    <string name="episode_info_watch_sending">Wird auf deine Uhr geladen</string>
+    <string name="episode_info_watch_removed">Von deiner Uhr entfernt</string>
+    <string name="episode_info_watch_out_of_reach">Deine Uhr ist nicht in Reichweite</string>
+    <string name="episode_info_open_show">%1$s ansehen</string>
+    <string name="episode_info_full_title">Ganzen Titel anzeigen</string>
+    <string name="episode_info_show_less">Weniger anzeigen</string>
+    <string name="episode_info_read_more">Mehr lesen</string>
+    <string name="episode_info_about">Über diese Folge</string>
+    <string name="episode_info_links">Links zur Folge</string>
+    <string name="episode_info_all_links">Alle Links anzeigen</string>
+    <string name="episode_info_fewer_links">Weniger Links anzeigen</string>
+    <string name="episode_info_bonus">Bonus</string>
+    <string name="episode_info_trailer">Trailer</string>
+    <string name="episode_info_video">Video</string>
+    <string name="episode_info_season_episode">S%1$d · F%2$d</string>
+    <string name="episode_info_season">Staffel %1$d</string>
+    <string name="episode_info_number">Folge %1$d</string>
+    <string name="episode_info_chapters">Kapitel</string>
+    <string name="episode_info_all_chapters">Alle Kapitel anzeigen</string>
+    <string name="episode_info_fewer_chapters">Weniger Kapitel anzeigen</string>
+    <string name="episode_info_jump_chapter">Zu %1$s bei %2$s springen</string>
+    <string name="episode_info_current_chapter">Aktuelles Kapitel</string>
+    <string name="episode_info_play">Abspielen</string>
+    <string name="episode_info_resume">Weiter</string>
+    <string name="episode_info_pause">Pause</string>
+    <string name="episode_info_loading">Lädt</string>
+    <string name="episode_info_played_time">%1$s gehört</string>
+    <string name="episode_info_time_left">noch %1$s</string>
+    <string name="episode_info_less_minute">Weniger als 1 Min.</string>
+    <string name="episode_info_like">Gefällt mir</string>
+    <string name="episode_info_liked">Gefällt dir</string>
+    <string name="episode_info_unlike">Gefällt mir nicht mehr</string>
+    <string name="episode_info_download">Herunterladen</string>
+    <string name="episode_info_downloaded">Heruntergeladen</string>
+    <string name="episode_info_downloading">Wird geladen</string>
+    <string name="episode_info_remove_download">Download entfernen</string>
+    <string name="episode_info_queue">Warteschlange</string>
+    <string name="episode_info_queued">In der Warteschlange</string>
+    <string name="episode_info_add_queue">Zur Warteschlange hinzufügen</string>
+    <string name="episode_info_remove_queue">Aus Warteschlange entfernen</string>
+    <string name="episode_info_mark_played">Als gehört markieren</string>
+    <string name="episode_info_played">Gehört</string>
+    <string name="episode_info_mark_unplayed">Als ungehört markieren</string>
+    <string name="episode_info_mark_tip">Markiere die Folge als gehört, um sie aus deiner Liste ungehörter Folgen zu nehmen.</string>
+    <string name="episode_info_featured_show">Vorgestellter Podcast</string>
+    <string name="episode_info_featured_show_possible">Möglicherweise vorgestellter Podcast</string>
+    <string name="episode_info_view_show">Podcast ansehen</string>
+    <string name="episode_info_promo_confirmed">Diese Folge stellt %1$s vor.</string>
+    <string name="episode_info_promo_possible">Diese Folge stellt vielleicht %1$s vor.</string>
+    <string name="episode_info_more_like_this">Probier diese Folgen</string>
+    <string name="episode_info_more_from">Mehr von %1$s</string>
+    <!-- Small label above the show name in the show row that heads the More from list. -->
+    <string name="episode_info_more_from_label">Mehr von</string>
+    <string name="episode_info_explore_podcast">Podcast entdecken</string>
+    <string name="episode_info_no_more">Keine weiteren Folgen verfügbar</string>
+    <string name="episode_info_people">Personen in dieser Folge</string>
+    <string name="episode_info_link_visit">%1$s besuchen</string>
+    <string name="episode_info_link_read">%1$s lesen</string>
+    <string name="episode_info_link_watch">%1$s ansehen</string>
+    <string name="episode_info_link_watch_on">Auf %1$s ansehen</string>
+    <string name="episode_info_link_view_on">%1$s auf %2$s ansehen</string>
+    <!-- A parsed social profile username beside its platform icon; do not add action words. -->
+    <string name="episode_info_link_profile">%1$s</string>
+    <string name="episode_info_link_open_on">Auf %1$s öffnen</string>
+    <string name="episode_info_link_support">%1$s auf %2$s unterstützen</string>
+    <string name="episode_info_link_listen">%1$s anhören</string>
+    <string name="episode_info_link_listen_on">Auf %1$s anhören</string>
+    <string name="episode_info_link_join">%1$s auf %2$s besuchen</string>
+    <string name="episode_info_link_email">E-Mail an %1$s</string>
+    <string name="episode_info_link_unavailable">Keine App kann diesen Link öffnen</string>
+    <plurals name="episode_info_chapter_count"><item quantity="one">%d Kapitel</item><item quantity="other">%d Kapitel</item></plurals>
+    <string name="rss_notification_disclosure_title">Benachrichtigungen für Folgen einschalten?</string>
+    <string name="rss_notification_disclosure_body">Wenn du das einschaltest, wird der Feed-Link öffentlich. Lass Benachrichtigungen bei privaten oder Premium-Feeds aus. Hören, Aktualisieren und Herunterladen funktionieren trotzdem.</string>
+    <string name="rss_notification_disclosure_confirm">Für öffentlichen Feed einschalten</string>
+    <string name="rss_notification_disclosure_dismiss">Benachrichtigungen aus lassen</string>
+    <string name="episode_selection_clear">Auswahl aufheben</string>
+    <string name="episode_selection_download">Ausgewählte Folgen herunterladen</string>
+    <string name="episode_selection_mark_completed">Ausgewählte Folgen als gehört markieren</string>
+    <string name="episode_selection_mark_unplayed">Ausgewählte Folgen als ungehört markieren</string>
+    <string name="episode_selection_play">Ausgewählte Folgen abspielen</string>
+    <string name="episode_selection_add_queue">Ausgewählte Folgen zur Warteschlange hinzufügen</string>
+    <string name="episode_selection_more">Weitere Auswahloptionen</string>
+    <!-- Show page menu, only for a followed show: opens the sheet that puts this show in playlists. -->
+    <string name="podcast_info_add_to_playlist">Zur Playlist hinzufügen</string>
+    <string name="episode_selection_select_visible">Sichtbare Folgen auswählen</string>
+    <string name="episode_selection_select_all">Alle Folgen auswählen</string>
+    <string name="episode_selection_select_older">Alle älteren Folgen auswählen</string>
+    <string name="episode_selection_select_newer">Alle neueren Folgen auswählen</string>
+    <string name="episode_selection_archive">Ausgewählte Folgen archivieren</string>
+    <string name="episode_selection_unarchive">Ausgewählte Folgen aus dem Archiv holen</string>
+    <plurals name="episode_archive_done"><item quantity="one">%d Folge archiviert</item><item quantity="other">%d Folgen archiviert</item></plurals>
+    <plurals name="episode_unarchive_done"><item quantity="one">%d Folge aus dem Archiv geholt</item><item quantity="other">%d Folgen aus dem Archiv geholt</item></plurals>
+    <string name="episode_archive_undo">Rückgängig</string>
+    <string name="episode_archived">Archiviert</string>
+    <string name="episode_archive">Archivieren</string>
+    <string name="episode_unarchive">Aus Archiv holen</string>
+    <string name="podcast_info_show_archived">Archivierte Folgen anzeigen (%d)</string>
+    <string name="podcast_info_hide_archived">Archivierte Folgen ausblenden</string>
+    <string name="episode_selection_failed">Nicht alle Folgen konnten geladen werden. Prüf deine Verbindung und versuch es noch mal.</string>
+    <string name="episode_selection_too_long">Dieser Podcast hat zu viele Folgen, um alle auszuwählen.</string>
+    <string name="subscribe_to_edit_genre">Abonniere den Podcast, um das Genre zu bearbeiten</string>
+    <string name="genre_visibility_hint">Sichtbar auf dieser Podcastseite, in den Abo-Filtern und in Ordnern.</string>
+    <string name="genre_edit_placeholder">Tippen, um eigenen Tag festzulegen</string>
+    <string name="episode_info_episode_from_show">%1$s, aus %2$s</string>
+    <string name="podcast_info_load_error">Dieser Podcast konnte nicht geladen werden</string>
+    <string name="podcast_info_retry">Noch mal versuchen</string>
+    <!-- End of a show's episode list when its next page couldn't load; Try again (podcast_info_retry) sits under it. -->
+    <string name="podcast_info_more_episodes_failed">Weitere Folgen konnten nicht geladen werden</string>
+    <!-- In place of a show's episode list when the first page in a new order couldn't load; Try again sits under it. -->
+    <string name="podcast_info_episodes_failed">Folgen konnten nicht geladen werden</string>
+    <string name="podcast_info_subscribe">Abonnieren</string>
+    <string name="podcast_info_subscribed">Abonniert</string>
+    <string name="podcast_info_unsubscribe">Abo beenden</string>
+    <string name="podcast_info_notifications">Benachrichtigungen für Folgen</string>
+    <string name="podcast_info_notifications_blocked">In den Systemeinstellungen blockiert</string>
+    <string name="podcast_info_auto_download">Auto-Download</string>
+    <string name="podcast_info_sort">Folgen sortieren</string>
+    <string name="podcast_info_search">Folgen durchsuchen</string>
+    <string name="podcast_info_search_in_show">Folgen in %1$s durchsuchen</string>
+    <string name="podcast_info_close_search">Folgensuche schließen</string>
+    <string name="podcast_info_clear_search">Suche leeren</string>
+    <string name="podcast_info_no_search_results">Keine passenden Folgen. Versuch einen anderen Titel oder ein anderes Stichwort.</string>
+    <!-- %1$s is the number of episodes searched, already formatted for the language (1,000). -->
+    <plurals name="podcast_info_search_newest_only">
+        <item quantity="one">Nur die neueste Folge dieses Podcasts wurde durchsucht.</item>
+        <item quantity="other">Nur die neuesten %1$s Folgen dieses Podcasts wurden durchsucht.</item>
+    </plurals>
+    <string name="podcast_info_search_failed">Die Folgen dieses Podcasts konnten nicht durchsucht werden. Prüf deine Verbindung.</string>
+    <string name="podcast_info_missing_offer">Fehlende Folgen?</string>
+    <string name="podcast_info_missing_fetching">Wird aktualisiert…</string>
+    <string name="podcast_info_missing_updated">Auf dem neuesten Stand</string>
+    <string name="podcast_info_missing_check_failed">Aktualisierung fehlgeschlagen</string>
+    <string name="podcast_info_missing_title">Fehlende Folgen suchen?</string>
+    <string name="podcast_info_missing_message">Abonnierte Podcasts bekommen die neuesten Folgen automatisch aus dem Feed des Anbieters. Diese Prüfung brauchst du nur, wenn du lieber nicht abonnieren möchtest.\n\nErlaube boxlore, nach fehlenden Folgen zu suchen und die Liste jedes Mal zu aktualisieren, wenn du diesen Podcast öffnest. Große Feeds können mehr Daten verbrauchen.</string>
+    <string name="podcast_info_missing_allow">Feed-Prüfung erlauben</string>
+    <string name="podcast_info_missing_cancel">Nicht jetzt</string>
+    <string name="podcast_info_feed_reading">Feed wird auf neue Folgen geprüft…</string>
+    <string name="podcast_info_feed_completing">Alle Folgen werden aus dem Feed geladen. Bei langjährigen Podcasts kann das einen Moment dauern.</string>
+    <string name="podcast_info_hide_finding">Gehörte Folgen sind ausgeblendet. Die, die du noch nicht beendet hast, werden gesucht…</string>
+    <string name="podcast_info_caught_up_title">Du hast alle Folgen gehört</string>
+    <string name="podcast_info_caught_up_body">Gehörte Folgen sind ausgeblendet. Neue erscheinen hier, sobald sie veröffentlicht werden.</string>
+    <string name="podcast_info_show_completed">Gehörte Folgen anzeigen</string>
+    <string name="podcast_info_loading">Podcast wird geladen</string>
+    <string name="podcast_info_feed_fallback">Der Feed dieses Podcasts ist nicht erreichbar. Stattdessen wird die Folgenliste von boxlore angezeigt.</string>
+    <string name="podcast_info_feed_offline">Du bist offline. Gespeicherte Folgen werden angezeigt.</string>
+    <string name="podcast_info_feed_offline_empty">Du bist offline. Stell eine Verbindung her, um die Folgen dieses Podcasts zu laden.</string>
+    <string name="podcast_info_play_trailer">Trailer abspielen</string>
+    <string name="podcast_info_support">Unterstützen</string>
+    <string name="podcast_episode_select">Folge auswählen</string>
+    <string name="podcast_episode_selected">Ausgewählt</string>
+    <string name="podcast_episode_up_next">Als Nächstes</string>
+    <!-- Hide show everywhere: keeps a show out of Home, Explore, Lore, Smart Queue and Android Auto; Explore’s Find a show search still finds it. LeaveMeAlone is the settings page (Library › LeaveMeAlone) that lists hidden shows; keep it as one word. -->
+    <string name="podcast_info_hide_show">Podcast überall ausblenden</string>
+    <string name="podcast_info_unhide_show">Podcast einblenden</string>
+    <string name="podcast_info_hide_title">Diesen Podcast überall ausblenden?</string>
+    <string name="podcast_info_hide_message">boxlore schlägt ihn dann nicht mehr auf Start, in Entdecken, Lore oder der Smarten Warteschlange vor. Über „Podcast finden“ findest du ihn weiterhin und kannst ihn hier oder in LeaveMeAlone wieder einblenden.</string>
+    <!-- The show is followed: hiding it unsubscribes too, and Undo subscribes again. -->
+    <string name="podcast_info_hide_message_subscribed">Damit beendest du auch dein Abo. boxlore schlägt ihn dann nicht mehr auf Start, in Entdecken, Lore oder der Smarten Warteschlange vor. Über „Podcast finden“ findest du ihn weiterhin und kannst ihn hier oder in LeaveMeAlone wieder einblenden.</string>
+    <string name="podcast_info_hide_confirm">Podcast ausblenden</string>
+    <string name="podcast_info_hide_confirm_subscribed">Ausblenden und Abo beenden</string>
+    <string name="podcast_info_hide_cancel">Abbrechen</string>
+    <string name="podcast_info_hidden_snackbar">Überall ausgeblendet</string>
+    <string name="podcast_info_hidden_undo">Rückgängig</string>
+    <string name="podcast_info_unhidden_snackbar">Nicht mehr ausgeblendet</string>
+    <!-- A small note under the show's actions while it is hidden. -->
+    <string name="podcast_info_hidden_note">Überall ausgeblendet</string>
+    <string name="podcast_info_hidden_note_unhide">Einblenden</string>
+</resources>

@@ -14,8 +14,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -46,7 +47,7 @@ internal fun GenrePickerScreen(
             LargeTopAppBar(
                 title = {
                     Text(
-                        text = "Can we get to know you better?",
+                        text = stringResource(R.string.onboarding_genres_title),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         fontWeight = GoogleSansWeight.bold,
@@ -57,7 +58,7 @@ internal fun GenrePickerScreen(
                         IconButton(onClick = onBack) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                                contentDescription = "Back",
+                                contentDescription = stringResource(R.string.onboarding_back),
                             )
                         }
                     }
@@ -95,9 +96,9 @@ internal fun GenrePickerScreen(
                     ) {
                         Text(
                             if (selectedGenres.isEmpty()) {
-                                "Pick at least 1"
+                                stringResource(R.string.onboarding_pick_at_least_one)
                             } else {
-                                "Continue (${selectedGenres.size} selected)"
+                                pluralStringResource(R.plurals.onboarding_continue_selected, selectedGenres.size, selectedGenres.size)
                             },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = GoogleSansWeight.semiBold,
@@ -116,7 +117,7 @@ internal fun GenrePickerScreen(
                 .padding(horizontal = 24.dp),
         ) {
             Text(
-                text = "Pick the topics you enjoy",
+                text = stringResource(R.string.onboarding_genres_body),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -185,7 +186,7 @@ private fun GenreChip(
                 tint = if (isSelected) MaterialTheme.colorScheme.primary else contentColor,
             )
             Text(
-                genre.label,
+                stringResource(genre.labelRes),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = if (isSelected) GoogleSansWeight.bold else GoogleSansWeight.medium,
                 maxLines = 1,
@@ -194,29 +195,6 @@ private fun GenreChip(
         }
     }
 }
-
-private val SUB_GENRES_MAP =
-    mapOf(
-        "News" to listOf("Daily News", "Politics", "World News", "Tech News", "Local News"),
-        "Technology" to listOf("Software", "Gadgets", "AI & Tech", "Startups", "Cybersecurity"),
-        "Business" to listOf("Investing", "Marketing", "Personal Finance", "Management", "Real Estate"),
-        "Comedy" to listOf("Standup", "Improv", "Pop Culture Comedy", "Storytelling Comedy"),
-        "True Crime" to listOf("Investigative", "Cold Cases", "Serial Killers", "History Crime"),
-        "Sports" to listOf("Football", "Basketball", "F1 & Racing", "Fantasy Sports", "Fitness"),
-        "Health" to listOf("Mental Health", "Nutrition", "Medicine", "Biohacking", "Yoga & Meditation"),
-        "History" to listOf("Ancient History", "Modern History", "Military History", "Biographies"),
-        "Arts" to listOf("Design", "Literature", "Visual Arts", "Performing Arts", "Fashion"),
-        "Society & Culture" to listOf("Philosophy", "Relationships", "Pop Culture", "Personal Journals"),
-        "Education" to listOf("Language Learning", "Self Improvement", "How-To", "Courses"),
-        "Science" to listOf("Space & Physics", "Biology", "Psychology", "Nature", "Earth Sciences"),
-        "TV & Film" to listOf("Movie Reviews", "TV Show Reviews", "Anime", "Pop Culture"),
-        "Fiction" to listOf("Sci-Fi & Fantasy", "Drama", "Mystery & Thriller", "Comedy Fiction"),
-        "Music" to listOf("Music History", "Songwriting", "Interviews", "Music Commentary"),
-        "Religion & Spirituality" to listOf("Mindfulness", "Spirituality", "Religion", "Philosophy"),
-        "Kids & Family" to listOf("Parenting", "Bedtime Stories", "Education for Kids", "Family Activity"),
-        "Leisure" to listOf("Gaming", "Hobbies", "Travel", "Food & Drink", "Automotive"),
-        "Government" to listOf("Law & Justice", "Public Policy", "Municipal News", "National Politics"),
-    )
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -239,7 +217,7 @@ internal fun SubGenrePickerScreen(
             LargeTopAppBar(
                 title = {
                     Text(
-                        text = "Dive a bit deeper",
+                        text = stringResource(R.string.onboarding_subgenres_title),
                         fontWeight = GoogleSansWeight.bold,
                     )
                 },
@@ -247,7 +225,7 @@ internal fun SubGenrePickerScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.onboarding_back),
                         )
                     }
                 },
@@ -282,7 +260,7 @@ internal fun SubGenrePickerScreen(
                         shape = MaterialTheme.shapes.extraLarge,
                     ) {
                         Text(
-                            text = "Continue",
+                            text = stringResource(R.string.onboarding_continue),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = GoogleSansWeight.semiBold,
                         )
@@ -300,7 +278,7 @@ internal fun SubGenrePickerScreen(
                 .padding(horizontal = 24.dp),
         ) {
             Text(
-                text = "Select specific topics (Optional)",
+                text = stringResource(R.string.onboarding_subgenres_body),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -313,14 +291,14 @@ internal fun SubGenrePickerScreen(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("No genres selected. Go back to pick some.")
+                    Text(stringResource(R.string.onboarding_subgenres_empty))
                 }
             } else {
                 parentGenres.forEach { parentGenre ->
                     val subGenres = SUB_GENRES_MAP[parentGenre] ?: emptyList()
                     if (subGenres.isNotEmpty()) {
                         Text(
-                            text = parentGenre,
+                            text = genreDisplayName(parentGenre),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = GoogleSansWeight.bold,
                             color = MaterialTheme.colorScheme.primary,
@@ -336,11 +314,11 @@ internal fun SubGenrePickerScreen(
                                 .padding(bottom = 24.dp),
                         ) {
                             subGenres.forEach { subGenre ->
-                                val isSelected = subGenre in selectedSubGenres
+                                val isSelected = subGenre.value in selectedSubGenres
                                 SubGenreChip(
-                                    label = subGenre,
+                                    label = stringResource(subGenre.labelRes),
                                     isSelected = isSelected,
-                                    onClick = { onToggleSubGenre(subGenre) },
+                                    onClick = { onToggleSubGenre(subGenre.value) },
                                 )
                             }
                         }
@@ -418,15 +396,7 @@ internal fun ActivityPickerScreen(
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-    val activities =
-        listOf(
-            ActivityItem("Commuting", "commuting", Icons.Rounded.DirectionsCar),
-            ActivityItem("Working", "working", Icons.Rounded.Work),
-            ActivityItem("Meditating / Chilling", "meditating", Icons.Rounded.SelfImprovement),
-            ActivityItem("Winding Down", "winding down", Icons.Rounded.Bedtime),
-            ActivityItem("Working Out", "working out", Icons.Rounded.FitnessCenter),
-            ActivityItem("Doing Chores", "doing chores", Icons.Rounded.Brush),
-        )
+    val activities = ONBOARDING_ACTIVITIES
 
     Scaffold(
         modifier =
@@ -438,7 +408,7 @@ internal fun ActivityPickerScreen(
             LargeTopAppBar(
                 title = {
                     Text(
-                        text = "When do you listen?",
+                        text = stringResource(R.string.onboarding_activities_title),
                         fontWeight = GoogleSansWeight.bold,
                     )
                 },
@@ -446,7 +416,7 @@ internal fun ActivityPickerScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.onboarding_back),
                         )
                     }
                 },
@@ -482,7 +452,12 @@ internal fun ActivityPickerScreen(
                         shape = MaterialTheme.shapes.extraLarge,
                     ) {
                         Text(
-                            text = if (selectedActivities.isEmpty()) "Select at least 1" else "Continue (${selectedActivities.size} selected)",
+                            text =
+                            if (selectedActivities.isEmpty()) {
+                                stringResource(R.string.onboarding_select_at_least_one)
+                            } else {
+                                pluralStringResource(R.plurals.onboarding_continue_selected, selectedActivities.size, selectedActivities.size)
+                            },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = GoogleSansWeight.semiBold,
                         )
@@ -500,7 +475,7 @@ internal fun ActivityPickerScreen(
                 .padding(horizontal = 24.dp),
         ) {
             Text(
-                text = "Select all that apply",
+                text = stringResource(R.string.onboarding_select_all_that_apply),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -573,7 +548,7 @@ internal fun ActivityPickerScreen(
                             }
                             Spacer(modifier = Modifier.width(16.dp))
                             Text(
-                                text = item.label,
+                                text = stringResource(item.labelRes),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = GoogleSansWeight.bold,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -590,7 +565,7 @@ internal fun ActivityPickerScreen(
 
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 Text(
-                                    text = "Target Genres (tap to toggle):",
+                                    text = stringResource(R.string.onboarding_target_genres),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontWeight = GoogleSansWeight.semiBold,
@@ -654,7 +629,7 @@ internal fun ActivityPickerScreen(
                                                     )
                                                 }
                                                 Text(
-                                                    text = genre,
+                                                    text = genreDisplayName(genre),
                                                     style = MaterialTheme.typography.bodySmall,
                                                     fontWeight = if (isGenreAssigned) GoogleSansWeight.bold else FontWeight.Normal,
                                                 )
@@ -684,12 +659,7 @@ internal fun LengthPickerScreen(
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-    val lengths =
-        listOf(
-            LengthItem("Short", "short", "Under 15 minutes", Icons.Rounded.Timer10),
-            LengthItem("Medium", "medium", "15 to 45 minutes", Icons.Rounded.Timer),
-            LengthItem("Long", "long", "Over 45 minutes", Icons.Rounded.HourglassEmpty),
-        )
+    val lengths = ONBOARDING_LENGTHS
 
     Scaffold(
         modifier =
@@ -701,7 +671,7 @@ internal fun LengthPickerScreen(
             LargeTopAppBar(
                 title = {
                     Text(
-                        text = "Preferred episode length",
+                        text = stringResource(R.string.onboarding_lengths_title),
                         fontWeight = GoogleSansWeight.bold,
                     )
                 },
@@ -709,7 +679,7 @@ internal fun LengthPickerScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.onboarding_back),
                         )
                     }
                 },
@@ -745,7 +715,7 @@ internal fun LengthPickerScreen(
                         shape = MaterialTheme.shapes.extraLarge,
                     ) {
                         Text(
-                            text = if (selectedLengths.isEmpty()) "Select at least 1" else "Generate My Feed",
+                            text = stringResource(if (selectedLengths.isEmpty()) R.string.onboarding_select_at_least_one else R.string.onboarding_lengths_generate),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = GoogleSansWeight.semiBold,
                         )
@@ -763,7 +733,7 @@ internal fun LengthPickerScreen(
                 .padding(horizontal = 24.dp),
         ) {
             Text(
-                text = "Select all that apply",
+                text = stringResource(R.string.onboarding_select_all_that_apply),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -837,13 +807,13 @@ internal fun LengthPickerScreen(
                             Spacer(modifier = Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = item.label,
+                                    text = stringResource(item.labelRes),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = GoogleSansWeight.bold,
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
                                 Text(
-                                    text = item.description,
+                                    text = item.descriptionRes?.let { stringResource(it) }.orEmpty(),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -859,7 +829,7 @@ internal fun LengthPickerScreen(
 
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 Text(
-                                    text = "Target Genres (tap to toggle):",
+                                    text = stringResource(R.string.onboarding_target_genres),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontWeight = GoogleSansWeight.semiBold,
@@ -923,7 +893,7 @@ internal fun LengthPickerScreen(
                                                     )
                                                 }
                                                 Text(
-                                                    text = genre,
+                                                    text = genreDisplayName(genre),
                                                     style = MaterialTheme.typography.bodySmall,
                                                     fontWeight = if (isGenreAssigned) GoogleSansWeight.bold else FontWeight.Normal,
                                                 )
@@ -940,15 +910,6 @@ internal fun LengthPickerScreen(
     }
 }
 
-private data class ActivityItem(
-    val label: String,
-    val value: String,
-    val icon: ImageVector,
-)
-
-private data class LengthItem(
-    val label: String,
-    val value: String,
-    val description: String,
-    val icon: ImageVector,
-)
+/** A genre key's full name in the app's language; a key the picker doesn't know shows as it is. */
+@Composable
+private fun genreDisplayName(value: String): String = onboardingGenreNameRes(value)?.let { stringResource(it) } ?: value

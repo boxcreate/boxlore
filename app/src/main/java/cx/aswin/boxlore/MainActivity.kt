@@ -83,6 +83,12 @@ class MainActivity : ComponentActivity() {
         resumePromptsAfterTabletNotice = true
     }
 
+    /** Android 12/12L show the stored App language here; Android 13+ apply it themselves. */
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(newBase)
+        cx.aswin.boxlore.language.AppLanguageController.localeOverride(newBase)?.let(::applyOverrideConfiguration)
+    }
+
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         setIntent(intent)

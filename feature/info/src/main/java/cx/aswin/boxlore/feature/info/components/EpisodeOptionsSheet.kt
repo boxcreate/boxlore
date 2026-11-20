@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
@@ -39,6 +40,7 @@ import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.feature.info.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,7 +91,7 @@ fun EpisodeOptionsSheet(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Episode Options",
+                        text = stringResource(R.string.episode_options_title),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -106,7 +108,7 @@ fun EpisodeOptionsSheet(
             // Actions
             OptionItem(
                 icon = Icons.Outlined.PlayCircle,
-                label = "Play Episode",
+                label = stringResource(R.string.episode_options_play),
                 onClick = {
                     onPlay()
                     onDismissRequest()
@@ -115,7 +117,7 @@ fun EpisodeOptionsSheet(
 
             OptionItem(
                 icon = if (isLiked) Icons.Outlined.Favorite else Icons.Outlined.FavoriteBorder,
-                label = if (isLiked) "Liked" else "Like",
+                label = stringResource(if (isLiked) R.string.episode_info_liked else R.string.episode_info_like),
                 iconTint = if (isLiked) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurface,
                 onClick = {
                     onToggleLike()
@@ -129,7 +131,7 @@ fun EpisodeOptionsSheet(
 
             OptionItem(
                 icon = Icons.Outlined.AddToQueue,
-                label = "Add to Queue",
+                label = stringResource(R.string.episode_options_add_queue),
                 onClick = {
                     onQueue()
                     onDismissRequest()
@@ -138,7 +140,7 @@ fun EpisodeOptionsSheet(
 
             OptionItem(
                 icon = Icons.Outlined.Download,
-                label = "Download",
+                label = stringResource(R.string.episode_info_download),
                 onClick = {
                     onDownload()
                     onDismissRequest()
@@ -147,7 +149,7 @@ fun EpisodeOptionsSheet(
 
             OptionItem(
                 icon = Icons.Outlined.Share,
-                label = "Share",
+                label = stringResource(R.string.episode_options_share),
                 onClick = {
                     onShare()
                     onDismissRequest()

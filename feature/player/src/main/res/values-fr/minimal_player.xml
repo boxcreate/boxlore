@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="minimal_play">Lire</string>
+    <string name="minimal_pause">Pause</string>
+    <string name="minimal_buffering">Mise en mémoire tampon</string>
+    <string name="minimal_sleep">Minuteur de veille</string>
+    <string name="minimal_speed">Vitesse de lecture : %1$s</string>
+    <string name="minimal_up_next">À suivre</string>
+    <string name="minimal_collapse">Réduire le lecteur</string>
+    <string name="minimal_full_title">Afficher le titre complet de l’épisode</string>
+    <string name="minimal_done">OK</string>
+    <string name="minimal_unknown_duration">—</string>
+    <string name="minimal_remaining">−%1$s</string>
+    <string name="player_seek">Position de lecture</string>
+</resources>

@@ -15,8 +15,8 @@ internal fun copyDeletionId(
 ) {
     AnalyticsHelper.trackSettingsInteraction("delete_id_copied")
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText("Anonymous analytics ID", deletionId))
-    Toast.makeText(context, "Analytics ID copied", Toast.LENGTH_SHORT).show()
+    clipboard.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.settings_privacy_clipboard_label), deletionId))
+    Toast.makeText(context, R.string.settings_privacy_id_copied, Toast.LENGTH_SHORT).show()
 }
 
 internal fun requestAnalyticsDeletionByEmail(
@@ -28,7 +28,8 @@ internal fun requestAnalyticsDeletionByEmail(
         Intent(Intent.ACTION_SENDTO).apply {
             data = Uri.parse("mailto:")
             putExtra(Intent.EXTRA_EMAIL, arrayOf("support@aswin.cx"))
-            putExtra(Intent.EXTRA_SUBJECT, "Analytics data deletion request")
+            // The request goes to the boxlore team, who read it in English, so it is not translated.
+            putExtra(Intent.EXTRA_SUBJECT, "Analytics data deletion request") // i18n-ignore
             putExtra(
                 Intent.EXTRA_TEXT,
                 "Please delete PostHog analytics data associated with this distinct ID: $deletionId",
@@ -36,7 +37,7 @@ internal fun requestAnalyticsDeletionByEmail(
         }
     runCatching { context.startActivity(intent) }
         .onFailure {
-            Toast.makeText(context, "No email app is available", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.settings_no_email_app, Toast.LENGTH_SHORT).show()
         }
 }
 

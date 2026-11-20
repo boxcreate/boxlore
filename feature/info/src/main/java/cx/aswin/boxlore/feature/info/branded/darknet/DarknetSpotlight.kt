@@ -45,6 +45,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedEpisodeActions
@@ -55,7 +56,6 @@ import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
 import cx.aswin.boxlore.feature.info.branded.brandedTextStyle
 import cx.aswin.boxlore.feature.info.components.formatEpisodeRelativeDate
 import cx.aswin.boxlore.feature.info.sections.stripHtml
-import java.util.Locale
 
 /**
  * The latest episode on a charred card: a scorched top edge and an ember glow at its foot,
@@ -107,7 +107,7 @@ internal fun DarknetSpotlight(spotlight: BrandedSpotlight, modifier: Modifier) {
                     buildAnnotatedString {
                         withStyle(SpanStyle(color = DarknetColors.Slash)) { append("//") }
                         append(" ")
-                        append(label.uppercase(Locale.getDefault()))
+                        append(label.uppercase(currentLocale()))
                     },
                     style = brandedTextStyle(fonts.black, 10.sp, 13.sp, letterSpacing = 1.2.sp),
                     color = DarknetColors.Text,
@@ -115,7 +115,7 @@ internal fun DarknetSpotlight(spotlight: BrandedSpotlight, modifier: Modifier) {
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    title.headline.uppercase(Locale.getDefault()),
+                    title.headline.uppercase(currentLocale()),
                     style = brandedTextStyle(fonts.anton, 32.sp, 35.sp, letterSpacing = 0.5.sp),
                     color = DarknetColors.Text,
                     maxLines = 2,
@@ -124,8 +124,8 @@ internal fun DarknetSpotlight(spotlight: BrandedSpotlight, modifier: Modifier) {
                     modifier = Modifier.padding(top = 3.dp).clearAndSetSemantics { text = AnnotatedString(episode.title) },
                 )
                 Text(
-                    brandedDetails(formatEpisodeRelativeDate(episode.publishedDate), episode.duration, spotlight.isCompleted, stringResource(R.string.episode_info_played))
-                        .uppercase(Locale.getDefault()),
+                    brandedDetails(formatEpisodeRelativeDate(episode.publishedDate, currentLocale()), episode.duration, spotlight.isCompleted, stringResource(R.string.episode_info_played), currentLocale())
+                        .uppercase(currentLocale()),
                     style = brandedTextStyle(fonts.bold, 10.sp, 13.sp, letterSpacing = 1.sp),
                     color = DarknetColors.Muted,
                     maxLines = 1,

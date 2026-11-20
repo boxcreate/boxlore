@@ -1,0 +1,102 @@
+<resources>
+    <string name="download_notification_channel_name">Descargas</string>
+    <string name="download_notification_channel_description">Muestra el progreso de descarga de los episodios</string>
+    <string name="auto_app_name">boxlore</string>
+    <string name="auto_home">Inicio</string>
+    <string name="auto_tab_new">Nuevos</string>
+    <string name="auto_tab_shows">Podcasts</string>
+    <string name="auto_continue">Continuar</string>
+    <string name="auto_new_episodes">Episodios nuevos</string>
+    <string name="auto_your_shows">Tus podcasts</string>
+    <string name="auto_daily_mix">Mezcla diaria</string>
+    <string name="auto_daily_mix_subtitle">Para hoy</string>
+    <string name="auto_downloads">Descargas</string>
+    <string name="auto_drive_picks">Para el camino</string>
+    <string name="auto_drive_picks_subtitle">Nuevos para ti</string>
+    <string name="auto_liked">Me gusta</string>
+    <string name="auto_listening_history">Historial</string>
+    <string name="auto_listening_history_subtitle">Escuchado recientemente</string>
+    <string name="auto_explore">Explorar</string>
+    <string name="auto_explore_subtitle">Buscar podcasts</string>
+    <string name="auto_none_yet">Aún no hay nada</string>
+    <string name="auto_cant_play">No se puede reproducir ahora. Prueba otro episodio.</string>
+    <plurals name="auto_episode_count">
+        <item quantity="one">%1$d episodio</item>
+        <item quantity="many">%1$d episodios</item>
+        <item quantity="other">%1$d episodios</item>
+    </plurals>
+    <plurals name="auto_new_count">
+        <item quantity="one">%1$d nuevo</item>
+        <item quantity="many">%1$d nuevos</item>
+        <item quantity="other">%1$d nuevos</item>
+    </plurals>
+    <plurals name="auto_show_count">
+        <item quantity="one">%1$d podcast</item>
+        <item quantity="many">%1$d podcasts</item>
+        <item quantity="other">%1$d podcasts</item>
+    </plurals>
+    <string name="auto_today">Hoy</string>
+    <string name="auto_yesterday">Ayer</string>
+    <string name="auto_new_today">Nuevo hoy</string>
+    <string name="auto_new_yesterday">Nuevo ayer</string>
+    <string name="auto_explore_morning">Para esta mañana</string>
+    <string name="auto_explore_afternoon">Para esta tarde</string>
+    <string name="auto_explore_evening">Para esta noche</string>
+    <string name="auto_explore_night">Para la madrugada</string>
+    <string name="auto_group_genres">Géneros</string>
+    <string name="auto_group_latest">Últimos episodios</string>
+    <string name="auto_group_continue">Seguir escuchando</string>
+    <string name="auto_group_browse">Explorar</string>
+    <string name="auto_group_queue">A continuación</string>
+    <string name="auto_group_subscriptions">Tus podcasts</string>
+    <string name="auto_group_liked">Me gusta</string>
+    <string name="auto_group_search">Resultados de búsqueda</string>
+    <string name="auto_replay_10">Retroceder 10 segundos</string>
+    <string name="auto_forward_30">Adelantar 30 segundos</string>
+    <string name="auto_seek_back">Retroceder %1$d segundos</string>
+    <string name="auto_seek_forward">Adelantar %1$d segundos</string>
+    <string name="auto_like">Me gusta el episodio</string>
+    <string name="auto_add_queue">Añadir a la cola</string>
+    <string name="auto_mark_complete">Marcar como terminado</string>
+    <string name="auto_skip_next">Siguiente episodio</string>
+    <!-- Android Auto row second line: %1$s is a length such as "35 min" or "1 hr, 5 min". -->
+    <string name="auto_time_left">Quedan %1$s</string>
+    <!-- Android Auto: a started episode with under a minute to go. -->
+    <string name="auto_almost_done">Casi terminado</string>
+    <!-- Android Auto: an episode shorter than one minute. Keep it short. -->
+    <string name="auto_duration_under_minute">&lt; 1 min</string>
+    <string name="auto_length_hours_minutes">%1$d h %2$d min</string>
+    <string name="auto_length_minutes">%1$d min</string>
+    <!-- Android Auto Explore genre rows: short names; the car cuts long ones. -->
+    <string name="auto_genre_news">Noticias</string>
+    <string name="auto_genre_technology">Tecnología</string>
+    <string name="auto_genre_business">Negocios</string>
+    <string name="auto_genre_comedy">Comedia</string>
+    <string name="auto_genre_true_crime">True crime</string>
+    <string name="auto_genre_sports">Deportes</string>
+    <string name="auto_genre_health">Salud</string>
+    <string name="auto_genre_history">Historia</string>
+    <string name="auto_genre_arts">Arte</string>
+    <string name="auto_genre_society">Sociedad</string>
+    <string name="auto_genre_education">Educación</string>
+    <string name="auto_genre_science">Ciencia</string>
+    <string name="auto_genre_tv_film">Cine y TV</string>
+    <string name="auto_genre_fiction">Ficción</string>
+    <string name="auto_genre_music">Música</string>
+    <string name="auto_genre_religion">Religión</string>
+    <string name="auto_genre_family">Familia</string>
+    <string name="auto_genre_leisure">Ocio</string>
+    <string name="auto_genre_government">Gobierno</string>
+    <!-- Ongoing notification while Mixtape episodes download for offline play. -->
+    <string name="download_mixtape_title">Sincronizando Mixtape</string>
+    <plurals name="download_mixtape_title_remaining">
+        <item quantity="one">Sincronizando Mixtape (queda %1$d)</item>
+        <item quantity="many">Sincronizando Mixtape (quedan %1$d)</item>
+        <item quantity="other">Sincronizando Mixtape (quedan %1$d)</item>
+    </plurals>
+    <!-- %1$s is the episode title, %2$s the share done, such as "42%". -->
+    <string name="download_mixtape_progress">Descargando: %1$s (%2$s)</string>
+    <string name="download_mixtape_preparing">Preparando los siguientes episodios…</string>
+    <!-- Stands in for an episode title the download did not record. -->
+    <string name="download_mixtape_episode_fallback">Episodio de Mixtape</string>
+</resources>

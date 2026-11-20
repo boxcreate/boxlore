@@ -127,14 +127,20 @@ fun PlaybackRepository.skipBackward() {
     }
 }
 
+/**
+ * Sets the speed from the player, a widget or the watch. While the playing show has its own speed
+ * the change is saved for that show; otherwise it changes the app speed.
+ */
 fun PlaybackRepository.setPlaybackSpeed(speed: Float) {
     runOnMainThread {
         val sanitized = PlaybackControlSync.sanitizePlaybackSpeed(speed)
         controller?.takeIf { it.isConnected }?.playbackParameters = PlaybackParameters(sanitized)
-        playerStateFlow.value = playerStateFlow.value.copy(playbackSpeed = sanitized)
+        val before = playerStateFlow.value.audio
+        val settings = playerAudioSettings()
+        playerStateFlow.value = playerStateFlow.value.copy(playbackSpeed = sanitized, audio = settings.audioAfterSpeed(before, sanitized))
         repositoryScope.launch {
             try {
-                userPreferencesRepository.setPlaybackSpeed(sanitized)
+                settings.saveSpeed(before, sanitized)
             } catch (exception: IOException) {
                 Log.w("PlaybackRepo", "Unable to persist playback speed", exception)
             }

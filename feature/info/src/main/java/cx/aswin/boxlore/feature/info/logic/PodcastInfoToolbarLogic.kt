@@ -1,5 +1,8 @@
 package cx.aswin.boxlore.feature.info.logic
 
+import androidx.annotation.StringRes
+import cx.aswin.boxlore.feature.info.R
+
 enum class ToolbarWarning {
     NONE,
     AUTO_DOWNLOAD_APP_OPEN_ONLY,
@@ -17,22 +20,27 @@ fun resolveAutoDownloadToggleWarning(
     else -> ToolbarWarning.NONE
 }
 
-fun toolbarWarningTitle(warning: ToolbarWarning): String = when (warning) {
-    ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY -> "Auto-download is on"
-    ToolbarWarning.SYSTEM_PERMISSION_BLOCKED -> "Notifications Disabled"
-    else -> "Notice"
+@StringRes
+fun toolbarWarningTitle(warning: ToolbarWarning): Int = when (warning) {
+    ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY -> R.string.podcast_info_warning_auto_download_title
+    ToolbarWarning.SYSTEM_PERMISSION_BLOCKED -> R.string.podcast_info_warning_blocked_title
+    else -> R.string.podcast_info_warning_notice_title
 }
 
-fun toolbarWarningMessage(warning: ToolbarWarning): String = when (warning) {
-    ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY -> "New episodes are picked up when you open and refresh boxlore. Turn on show notifications to start downloads while boxlore is closed."
-    ToolbarWarning.SYSTEM_PERMISSION_BLOCKED -> "Notification permissions are disabled in system settings. Please allow notifications and try again. We promise we will never spam."
-    else -> ""
+/** The banner's message, or null when the warning has none. */
+@StringRes
+fun toolbarWarningMessage(warning: ToolbarWarning): Int? = when (warning) {
+    ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY -> R.string.podcast_info_warning_auto_download_message
+    ToolbarWarning.SYSTEM_PERMISSION_BLOCKED -> R.string.podcast_info_warning_blocked_message
+    else -> null
 }
 
-fun toolbarWarningActionText(warning: ToolbarWarning): String = when (warning) {
-    ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY -> "Turn on notifications"
-    ToolbarWarning.SYSTEM_PERMISSION_BLOCKED -> "Turn On"
-    else -> ""
+/** The banner's button, or null when the warning has none. */
+@StringRes
+fun toolbarWarningActionText(warning: ToolbarWarning): Int? = when (warning) {
+    ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY -> R.string.podcast_info_warning_auto_download_action
+    ToolbarWarning.SYSTEM_PERMISSION_BLOCKED -> R.string.podcast_info_warning_blocked_action
+    else -> null
 }
 
 enum class NotificationToggleAction {

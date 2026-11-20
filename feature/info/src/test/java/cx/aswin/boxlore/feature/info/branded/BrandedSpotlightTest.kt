@@ -129,13 +129,6 @@ class BrandedSpotlightTest {
     }
 
     @Test
-    fun `a finished episode's details say Played instead of its length`() {
-        assertEquals("2d ago · 55 min", brandedDetails("2d ago", 55 * 60, completed = false, played = "Played"))
-        assertEquals("2d ago · Played", brandedDetails("2d ago", 55 * 60, completed = true, played = "Played"))
-        assertEquals("Played", brandedDetails("", 55 * 60, completed = true, played = "Played"))
-    }
-
-    @Test
     fun `every Showcase card says when its episode was played`() {
         // Regression: the Darknet Diaries, Rest Is History and Serial cards never said Played.
         val branded = File("src/main/java/cx/aswin/boxlore/feature/info/branded").takeIf(File::isDirectory)

@@ -36,9 +36,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.library.R
 
 /**
  * State representing which section is currently in reordering mode.
@@ -51,41 +55,42 @@ sealed interface ReorderMode {
 }
 
 internal data class ReorderBarContent(
-    val title: String,
-    val subtitle: String,
-    val note: String,
+    val title: UiText?,
+    val subtitle: UiText?,
+    val note: UiText?,
     val icon: ImageVector,
 )
 
-private const val DRAG_TO_ARRANGE = "Drag to arrange"
-private const val SWITCHES_TO_MANUAL_SORT = "Switches to manual sort"
+private val DRAG_TO_ARRANGE = UiText.res(R.string.library_reorder_drag_to_arrange)
+private val SWITCHES_TO_MANUAL_SORT = UiText.res(R.string.library_reorder_switches_to_manual)
 
 internal fun resolveReorderBarContent(reorderMode: ReorderMode): ReorderBarContent = when (reorderMode) {
     ReorderMode.Folders -> ReorderBarContent(
-        title = "Reordering: Folders",
+        title = UiText.res(R.string.library_reorder_title_folders),
         subtitle = DRAG_TO_ARRANGE,
         note = SWITCHES_TO_MANUAL_SORT,
         icon = Icons.Rounded.Folder,
     )
     is ReorderMode.FolderShows -> {
-        val name = reorderMode.folderName.takeIf { it.isNotBlank() } ?: "Folder"
+        val name = reorderMode.folderName.takeIf { it.isNotBlank() }?.let(UiText::raw)
+            ?: UiText.res(R.string.library_folder_fallback_name)
         ReorderBarContent(
-            title = "Reordering: $name",
+            title = UiText.res(R.string.library_reorder_title_named, name),
             subtitle = DRAG_TO_ARRANGE,
             note = SWITCHES_TO_MANUAL_SORT,
             icon = Icons.Rounded.FolderOpen,
         )
     }
     ReorderMode.RootShows -> ReorderBarContent(
-        title = "Reordering: Shows",
+        title = UiText.res(R.string.library_reorder_title_shows),
         subtitle = DRAG_TO_ARRANGE,
         note = SWITCHES_TO_MANUAL_SORT,
         icon = Icons.Rounded.Subscriptions,
     )
     ReorderMode.Inactive -> ReorderBarContent(
-        title = "",
-        subtitle = "",
-        note = "",
+        title = null,
+        subtitle = null,
+        note = null,
         icon = Icons.Rounded.Reorder,
     )
 }
@@ -147,25 +152,25 @@ internal fun SubscriptionReorderBar(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f, fill = false)) {
                         Text(
-                            text = content.title,
+                            text = content.title?.asString().orEmpty(),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        if (content.subtitle.isNotBlank()) {
+                        content.subtitle?.let { subtitle ->
                             Text(
-                                text = content.subtitle,
+                                text = subtitle.asString(),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
-                        if (content.note.isNotBlank()) {
+                        content.note?.let { note ->
                             Text(
-                                text = content.note,
+                                text = note.asString(),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                                 maxLines = 1,
@@ -205,7 +210,7 @@ private fun ReorderBarActions(
         ) {
             Icon(
                 imageVector = Icons.Rounded.Close,
-                contentDescription = "Cancel reordering",
+                contentDescription = stringResource(R.string.library_reorder_cancel),
                 modifier = Modifier.size(20.dp),
             )
         }
@@ -220,7 +225,7 @@ private fun ReorderBarActions(
         ) {
             Icon(
                 imageVector = Icons.Rounded.Check,
-                contentDescription = "Save new order",
+                contentDescription = stringResource(R.string.library_reorder_save),
                 modifier = Modifier.size(20.dp),
             )
         }

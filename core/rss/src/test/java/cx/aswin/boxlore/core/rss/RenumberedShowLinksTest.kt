@@ -50,6 +50,16 @@ class RenumberedShowLinksTest {
     }
 
     @Test
+    fun anArchiveDecisionMergesByItsLatestTimeToo() {
+        val former = EpisodeGroupStateEntity(OLD, "guid-1", dismissedAt = 6_000L, version = 1L)
+        val current = EpisodeGroupStateEntity(NEW, "guid-1", dismissedAt = 2_000L, dismissClearedAt = 3_000L, version = 2L)
+
+        val merged = RenumberedShowLinks.mergedGroupState(former, current, NEW, "guid-1")!!
+
+        assertEquals(6_000L to 3_000L, merged.dismissedAt to merged.dismissClearedAt)
+    }
+
+    @Test
     fun aKeyTwoNewEpisodesShareJoinsNoGroup() {
         val rows = listOf(catalogRow("new-1", "guid-1"), catalogRow("new-2", " guid-1"))
         val group = listOf(alias("-11", OLD, "guid-1"))

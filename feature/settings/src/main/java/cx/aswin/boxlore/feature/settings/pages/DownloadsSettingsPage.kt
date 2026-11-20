@@ -6,7 +6,9 @@ import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsNavigationRow
@@ -26,24 +28,24 @@ internal fun DownloadsSettingsPage(
 ) {
     TrackScreenView("downloads_settings")
     SettingsScaffold(
-        title = "Downloads",
+        title = stringResource(R.string.settings_page_downloads),
         onBack = onBack,
     ) {
         SettingsGroup(
-            title = "Keep episodes offline",
-            footer = "Choose which episodes boxlore keeps ready to play offline.",
+            title = stringResource(R.string.settings_downloads_offline_title),
+            footer = stringResource(R.string.settings_downloads_offline_footer),
         ) {
             SettingsNavigationRow(
-                title = "Smart downloads",
-                supportingText = "Keep a rotating set of episodes offline based on listening",
+                title = stringResource(R.string.settings_downloads_smart),
+                supportingText = stringResource(R.string.settings_downloads_smart_description),
                 icon = Icons.Rounded.AutoAwesome,
                 onClick = onSmartDownloadsClick,
                 modifier = Modifier.testTag(SettingsDownloadsTestTags.SMART_DOWNLOADS_ROW),
             )
             SettingsDivider()
             SettingsNavigationRow(
-                title = "Automatic downloads",
-                supportingText = "Download new episodes from selected subscriptions",
+                title = stringResource(R.string.settings_auto_download_title),
+                supportingText = stringResource(R.string.settings_downloads_auto_description),
                 icon = Icons.Rounded.CloudDownload,
                 onClick = onAutoDownloadsClick,
                 modifier = Modifier.testTag(SettingsDownloadsTestTags.AUTO_DOWNLOADS_ROW),

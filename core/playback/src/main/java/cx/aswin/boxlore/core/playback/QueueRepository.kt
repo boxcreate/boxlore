@@ -169,11 +169,16 @@ class QueueRepository(
         }
     }
 
-    /** Rolls back suspended refill writes if another transport request or queue edit wins. */
+    /**
+     * Rolls back suspended refill writes if another transport request or queue edit wins. Rows are
+     * saved as [contextType] (`AUTO_FILL` for Smart Queue picks, `MANUAL` for a playlist's own episodes)
+     * with each entry's source as their context source.
+     */
     internal suspend fun addRefillEntriesIfUnchanged(
         entries: List<QueueEntry>,
         expectedEpisodeIds: List<String>,
         currentEpisodeId: String,
+        contextType: String = "AUTO_FILL",
         isCurrent: suspend () -> Boolean,
     ): Boolean = try {
         database.withTransaction {
@@ -186,7 +191,7 @@ class QueueRepository(
                 return@withTransaction false
             }
             entries.forEach { entry ->
-                addToQueue(entry.episode, entry.podcast, contextType = "AUTO_FILL", contextSourceId = entry.source)
+                addToQueue(entry.episode, entry.podcast, contextType = contextType, contextSourceId = entry.source)
             }
             if (!isCurrent()) throw RefillInvalidatedException()
             true

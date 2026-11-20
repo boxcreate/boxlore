@@ -22,16 +22,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.text.LocaleFormats
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.library.R
+import java.util.Locale
 
 fun DownloadedEpisodeEntity.toEpisode() = Episode(
     id = episodeId,
@@ -67,26 +74,29 @@ internal data class PodcastGroup(
     val latestDownloadedAt: Long
 )
 
-internal fun formatSize(bytes: Long): String {
-    if (bytes <= 0) return "0 B"
-    val units = arrayOf("B", "KB", "MB", "GB", "TB")
-    val digitGroups = (Math.log10(bytes.toDouble()) / Math.log10(1024.0)).toInt()
-    return String.format(java.util.Locale.US, "%.1f %s", bytes / Math.pow(1024.0, digitGroups.toDouble()), units[digitGroups])
+/** Byte units, smallest first, in 1024 steps. */
+private val SIZE_UNITS = listOf(
+    R.string.library_size_bytes,
+    R.string.library_size_kilobytes,
+    R.string.library_size_megabytes,
+    R.string.library_size_gigabytes,
+    R.string.library_size_terabytes,
+)
+
+/** A file size such as "420.0 MB", with the number written the way [locale] writes it. */
+internal fun formatSize(bytes: Long, locale: Locale): UiText {
+    if (bytes <= 0) return UiText.res(R.string.library_size_bytes, "0")
+    val digitGroups = (Math.log10(bytes.toDouble()) / Math.log10(1024.0)).toInt().coerceIn(0, SIZE_UNITS.lastIndex)
+    val amount = String.format(locale, "%.1f", bytes / Math.pow(1024.0, digitGroups.toDouble()))
+    return UiText.res(SIZE_UNITS[digitGroups], amount)
 }
 
-internal fun formatRelativeDate(timestampSeconds: Long): String {
-    if (timestampSeconds == 0L) return ""
-    val now = System.currentTimeMillis() / 1000
-    val diff = now - timestampSeconds
-    return when {
-        diff < 0 -> "Just now"
-        diff < 3600 -> "${diff / 60}m ago"
-        diff < 86400 -> "${diff / 3600}h ago"
-        diff < 604800 -> "${diff / 86400}d ago"
-        diff < 2592000 -> "${diff / 604800}w ago"
-        diff < 31536000 -> "${diff / 2592000}mo ago"
-        else -> "${diff / 31536000}y ago"
-    }
+/** How long ago something was saved, short ("5m ago", "2d ago"); under a minute or ahead it says "Just now". */
+internal fun formatRelativeDate(timestampSeconds: Long, locale: Locale, nowMs: Long = System.currentTimeMillis()): UiText? {
+    if (timestampSeconds == 0L) return null
+    val diffSeconds = nowMs / 1000 - timestampSeconds
+    if (diffSeconds < 60) return UiText.res(R.string.library_relative_just_now)
+    return UiText.raw(LocaleFormats.compactAgo(timestampSeconds * 1000L, nowMs, locale))
 }
 
 @Composable
@@ -99,7 +109,8 @@ internal fun PodcastListShowCard(
 ) {
     val title = group.podcastName
     val imageUrl = group.podcastImageUrl
-    val countLine = group.episodes.downloadSummary().countLine()
+    val locale = currentLocale()
+    val countLine = group.episodes.downloadSummary().countLine(locale = locale).asString()
     val latestDownloadedAt = group.latestDownloadedAt
     Row(
         modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Episode)
@@ -113,7 +124,7 @@ internal fun PodcastListShowCard(
                     }
                 },
                 onLongClick = selection.onLongClick,
-                onLongClickLabel = "Select",
+                onLongClickLabel = stringResource(R.string.library_select),
                 shape = RoundedCornerShape(16.dp)
             )
             .background(MaterialTheme.colorScheme.surfaceContainerLow, shape = RoundedCornerShape(16.dp))
@@ -157,10 +168,10 @@ internal fun PodcastListShowCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            val latestRelative = formatRelativeDate(latestDownloadedAt / 1000L)
-            if (latestRelative.isNotEmpty()) {
+            val latestRelative = formatRelativeDate(latestDownloadedAt / 1000L, locale)?.asString()
+            if (latestRelative != null) {
                 Text(
-                    text = "Latest: $latestRelative",
+                    text = stringResource(R.string.library_downloads_latest, latestRelative),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                 )
@@ -176,7 +187,7 @@ internal fun PodcastListShowCard(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.PlayArrow,
-                    contentDescription = "Play Show Downloads",
+                    contentDescription = stringResource(R.string.library_downloads_play_show),
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(20.dp)
                 )

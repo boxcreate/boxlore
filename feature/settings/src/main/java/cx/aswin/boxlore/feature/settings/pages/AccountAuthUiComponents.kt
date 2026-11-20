@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.settings.R
 
 internal tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
@@ -70,7 +72,7 @@ internal fun openGmailOrEmailApp(context: Context, email: String = "") {
     }
 
     if (!launchFallbackEmail(context)) {
-        showAccountToast(context, "Could not open email app")
+        showAccountToast(context, context.getString(R.string.account_error_no_email_app))
     }
 }
 
@@ -159,8 +161,6 @@ internal const val BOXLORE_PRIVACY_POLICY_URL = "https://boxlore.in/privacy/"
 @Composable
 internal fun PrivacyPolicyNotice(
     modifier: Modifier = Modifier,
-    prefix: String = "By continuing, you agree to our ",
-    suffix: String = ".",
     style: TextStyle = MaterialTheme.typography.bodyMedium,
     color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     textAlign: TextAlign = TextAlign.Start,
@@ -169,8 +169,12 @@ internal fun PrivacyPolicyNotice(
     val uriHandler = LocalUriHandler.current
     val context = androidx.compose.ui.platform.LocalContext.current
 
+    // One whole sentence, so translations can place the link anywhere in it.
+    val linkText = stringResource(R.string.account_privacy_policy)
+    val sentence = stringResource(R.string.account_privacy_notice, linkText)
+    val linkStart = sentence.indexOf(linkText)
     val annotatedText = buildAnnotatedString {
-        append(prefix)
+        if (linkStart > 0) append(sentence.substring(0, linkStart))
         val link = LinkAnnotation.Url(
             url = privacyUrl,
             styles = TextLinkStyles(
@@ -196,14 +200,14 @@ internal fun PrivacyPolicyNotice(
                 }.getOrDefault(false)
 
                 if (!fallbackOpened) {
-                    showAccountToast(context, "Could not open browser")
+                    showAccountToast(context, context.getString(R.string.account_error_no_browser))
                 }
             }
         }
         withLink(link) {
-            append("Privacy Policy")
+            append(if (linkStart >= 0) linkText else sentence)
         }
-        append(suffix)
+        if (linkStart >= 0) append(sentence.substring(linkStart + linkText.length))
     }
 
     Text(

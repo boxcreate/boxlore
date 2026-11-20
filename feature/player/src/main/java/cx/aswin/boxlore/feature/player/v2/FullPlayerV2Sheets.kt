@@ -23,8 +23,10 @@ import cx.aswin.boxlore.core.playback.pause
 import cx.aswin.boxlore.core.playback.resume
 import cx.aswin.boxlore.core.playback.setPlaybackSpeed
 import cx.aswin.boxlore.core.playback.setSleepTimer
+import cx.aswin.boxlore.core.playback.setTrimSilence
 import cx.aswin.boxlore.core.playback.skipBackward
 import cx.aswin.boxlore.core.playback.skipForward
+import cx.aswin.boxlore.core.playback.useAppSpeedForPlayingShow
 import cx.aswin.boxlore.feature.player.FullscreenTranscriptScreen
 import cx.aswin.boxlore.feature.player.fitVisibleHeight
 import cx.aswin.boxlore.feature.player.v2.logic.ResponsiveHeroLayout
@@ -133,7 +135,8 @@ internal fun FullPlayerModalSheets(
             resources = PlayerQueueSheetResources(
                 resources.scope,
                 resources.snackbarHostState,
-                resources.queueSheetState
+                resources.queueSheetState,
+                playerQueueText(),
             ),
             ui = ui,
             actions = actions,
@@ -191,7 +194,10 @@ internal fun PlayerSpeedSheet(
             playbackRepository.setPlaybackSpeed(speed)
             ui.showSpeedSheet = false
         },
-        onDismiss = { ui.showSpeedSheet = false }
+        onDismiss = { ui.showSpeedSheet = false },
+        audio = PlayerSpeedAudio.from(model.state),
+        onUseAppSpeed = { playbackRepository.useAppSpeedForPlayingShow() },
+        onTrimSilenceChange = { enabled -> playbackRepository.setTrimSilence(enabled) }
     )
 }
 

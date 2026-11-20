@@ -60,6 +60,7 @@ import cx.aswin.boxlore.core.designsystem.echo.EchoFace
 import cx.aswin.boxlore.core.designsystem.echo.EchoGaze
 import cx.aswin.boxlore.core.designsystem.echo.EchoIdle
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.feature.home.NpsScoreBand
 import cx.aswin.boxlore.feature.home.NpsSurveyCopy
@@ -174,7 +175,7 @@ internal fun NpsSurveySheet(
 @Composable
 private fun ScoreStep(copy: NpsSurveyCopy, onScore: (Int) -> Unit, onNotNow: () -> Unit) {
     Text(
-        text = copy.eyebrow.uppercase(),
+        text = copy.eyebrow.uppercase(currentLocale()),
         style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.8.sp),
         color = MaterialTheme.colorScheme.primary,
     )

@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -90,7 +91,7 @@ fun FeatureAnnouncementOverlay(featureAnnouncementId: String, userPrefs: UserPre
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    text = "now works with",
+                    text = stringResource(R.string.app_feature_announcement_auto_kicker),
                     style = MaterialTheme.typography.labelLarge.copy(
                         letterSpacing = 3.sp,
                         fontWeight = FontWeight.Normal,
@@ -107,19 +108,19 @@ fun FeatureAnnouncementOverlay(featureAnnouncementId: String, userPrefs: UserPre
             ) {
                 Image(
                     painter = painterResource(R.drawable.ic_android_auto),
-                    contentDescription = "Android Auto",
+                    contentDescription = stringResource(R.string.app_feature_announcement_auto_name),
                     modifier = Modifier.height(140.dp),
                 )
                 Spacer(Modifier.height(24.dp))
                 Text(
-                    text = "Android Auto",
+                    text = stringResource(R.string.app_feature_announcement_auto_name),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = GoogleSansWeight.bold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = "boxlore now plays on Android Auto. Listen hands-free while driving.",
+                    text = stringResource(R.string.app_feature_announcement_auto_body),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -137,7 +138,7 @@ fun FeatureAnnouncementOverlay(featureAnnouncementId: String, userPrefs: UserPre
                     shape = CircleShape,
                 ) {
                     Text(
-                        text = "Continue",
+                        text = stringResource(R.string.app_feature_announcement_continue),
                         style = MaterialTheme.typography.labelLarge.copy(
                             fontWeight = GoogleSansWeight.semiBold,
                         ),

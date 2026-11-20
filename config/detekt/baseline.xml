@@ -64,7 +64,7 @@
     <ID>CyclomaticComplexMethod:LearnViewModel.kt$LearnViewModel$fun refresh()</ID>
     <ID>CyclomaticComplexMethod:LibrarySectionMixtape.kt$@Composable internal fun MixtapeEpisodeCard( episode: Episode, podcast: Podcast, onClick: () -&gt; Unit, onPlay: () -&gt; Unit, modifier: Modifier = Modifier, overrideStatus: EpisodeStatus? = null, overrideProgress: Float? = null, currentPlayingEpisodeId: String? = null, isPlaying: Boolean = false, isDownloaded: Boolean = false, )</ID>
     <ID>CyclomaticComplexMethod:NavGraphPodcastEpisodeDestinations.kt$internal fun androidx.navigation.NavGraphBuilder.addEpisodeDeepLinkDestination(w: NavGraphWiring)</ID>
-    <ID>CyclomaticComplexMethod:OnboardingScreen.kt$@Composable fun OnboardingScreen( viewModel: OnboardingViewModel, onComplete: () -&gt; Unit, onBack: () -&gt; Unit = {}, onImportClick: () -&gt; Unit = {}, )</ID>
+    <ID>CyclomaticComplexMethod:OnboardingScreen.kt$@Composable fun OnboardingScreen( viewModel: OnboardingViewModel, onComplete: () -&gt; Unit, onBack: () -&gt; Unit = {}, onImportClick: () -&gt; Unit = {}, onAppLanguageChosen: (AppLanguage) -&gt; Unit = {}, )</ID>
     <ID>CyclomaticComplexMethod:OnboardingViewModelAi.kt$internal fun OnboardingViewModel.sendAiTurnInput()</ID>
     <ID>CyclomaticComplexMethod:OnboardingViewModelAi.kt$internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = false)</ID>
     <ID>CyclomaticComplexMethod:PlaybackChaptersTranscriptController.kt$PlaybackChaptersTranscriptController$fun monitorChaptersAndTranscripts()</ID>
@@ -185,7 +185,7 @@
     <ID>LongMethod:NavGraphPodcastEpisodeDestinations.kt$internal fun androidx.navigation.NavGraphBuilder.addEpisodeDeepLinkDestination(w: NavGraphWiring)</ID>
     <ID>LongMethod:NavGraphPodcastEpisodeDestinations.kt$internal fun androidx.navigation.NavGraphBuilder.addEpisodeFullPathDestination(w: NavGraphWiring)</ID>
     <ID>LongMethod:NavGraphPodcastEpisodeDestinations.kt$internal fun androidx.navigation.NavGraphBuilder.addPodcastDestination(w: NavGraphWiring)</ID>
-    <ID>LongMethod:OnboardingScreen.kt$@Composable fun OnboardingScreen( viewModel: OnboardingViewModel, onComplete: () -&gt; Unit, onBack: () -&gt; Unit = {}, onImportClick: () -&gt; Unit = {}, )</ID>
+    <ID>LongMethod:OnboardingScreen.kt$@Composable fun OnboardingScreen( viewModel: OnboardingViewModel, onComplete: () -&gt; Unit, onBack: () -&gt; Unit = {}, onImportClick: () -&gt; Unit = {}, onAppLanguageChosen: (AppLanguage) -&gt; Unit = {}, )</ID>
     <ID>LongMethod:OnboardingViewModelAi.kt$internal fun OnboardingViewModel.sendAiTurnInput()</ID>
     <ID>LongMethod:OnboardingViewModelAi.kt$internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = false)</ID>
     <ID>LongMethod:OnboardingViewModelGenre.kt$internal fun OnboardingViewModel.synthesizeGenreOnboarding()</ID>

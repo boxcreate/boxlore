@@ -45,7 +45,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import cx.aswin.boxlore.R
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 import kotlin.math.roundToInt
 
 /**
@@ -233,7 +235,7 @@ private fun SuccessHeader(state: OpmlImportState.Success) {
 private fun ImportStatTile(value: Int, label: String, modifier: Modifier = Modifier) {
     Surface(modifier.semantics(mergeDescendants = true) {}, shape = ImportCorner, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("$value", style = MaterialTheme.typography.displaySmall, fontWeight = GoogleSansWeight.bold, color = MaterialTheme.colorScheme.primary)
+            Text(LocaleFormats.number(value.toLong(), currentLocale()), style = MaterialTheme.typography.displaySmall, fontWeight = GoogleSansWeight.bold, color = MaterialTheme.colorScheme.primary)
             Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
         }
     }

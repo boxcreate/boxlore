@@ -27,15 +27,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.feature.player.R
 import cx.aswin.boxlore.feature.player.v2.logic.queueSourceLabel
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
 
@@ -77,16 +81,12 @@ fun UpNextCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Up next",
+                        text = stringResource(R.string.minimal_up_next),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
                         color = colorScheme.onSurface
                     )
                     Text(
-                        text = if (queuedEpisodes.size == 1) {
-                            "1 episode queued"
-                        } else {
-                            "${queuedEpisodes.size} episodes queued"
-                        },
+                        text = pluralStringResource(R.plurals.player_episodes_queued, queuedEpisodes.size, queuedEpisodes.size),
                         style = MaterialTheme.typography.labelMedium,
                         color = colorScheme.onSurfaceVariant
                     )
@@ -105,7 +105,7 @@ fun UpNextCard(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("View queue")
+                    Text(stringResource(R.string.player_view_queue))
                 }
             }
 
@@ -170,7 +170,7 @@ private fun QueuePreviewRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            val subtitle = queueSourceLabel(episode) ?: episode.podcastTitle
+            val subtitle = queueSourceLabel(episode)?.asString() ?: episode.podcastTitle
             if (!subtitle.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
@@ -196,7 +196,7 @@ private fun QueuePreviewRow(
             ) {
                 Icon(
                     imageVector = Icons.Filled.PlayArrow,
-                    contentDescription = "Play next episode",
+                    contentDescription = stringResource(R.string.player_play_next_episode),
                     tint = colorScheme.onPrimary,
                     modifier = Modifier.size(25.dp)
                 )

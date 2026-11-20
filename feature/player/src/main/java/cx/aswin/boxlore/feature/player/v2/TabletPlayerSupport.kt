@@ -97,7 +97,7 @@ internal fun TabletPlayerSupport(
                     )
                 }
             }
-            Crossfade(ui.supportingTab, animationSpec = ExpressiveMotion.QuickSpring, label = "player supporting content") { tab ->
+            Crossfade(ui.supportingTab, animationSpec = ExpressiveMotion.QuickSpring, label = "playerSupportingContent") { tab ->
                 when (tab) {
                     PlayerSupportingTab.UpNext -> TabletQueueContent(model, dependencies, colors, actions, ui, resources)
                     PlayerSupportingTab.Chapters -> ChaptersSheetContent(

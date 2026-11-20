@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared player actions and labels -->
+    <string name="player_close">Close</string>
+    <string name="player_dismiss">Dismiss</string>
+    <string name="player_share">Share</string>
+    <string name="player_undo">Undo</string>
+    <string name="player_chapters">Chapters</string>
+    <string name="player_transcript">Transcript</string>
+    <string name="player_queue">Queue</string>
+    <string name="player_off">Off</string>
+    <string name="player_on">On</string>
+    <string name="player_playing">Playing</string>
+    <string name="player_paused">Paused</string>
+    <string name="player_loading">Loading</string>
+    <string name="player_playback_speed">Playback speed</string>
+    <string name="player_episode_artwork">Episode artwork</string>
+    <!-- Content description of the show's artwork in the player hero -->
+    <string name="player_album_art">Album Art</string>
+    <!-- Content description of the next episode's artwork peeking beside the current one. %1$s: episode title -->
+    <string name="player_hero_up_next">Up next: %1$s</string>
+    <string name="player_show_artwork">Show artwork</string>
+
+    <!-- Chapters sheet -->
+    <string name="player_no_chapters">No chapters available</string>
+
+    <!-- Transcript -->
+    <!-- Toggle that keeps the transcript scrolled to the spoken line -->
+    <string name="player_transcript_sync_scroll">Sync Scroll</string>
+    <!-- Phone inline transcript; the tablet pane uses player_open_fullscreen_transcript -->
+    <string name="player_inline_open_fullscreen_transcript">Open fullscreen transcript</string>
+
+    <!-- Full player top bar -->
+    <string name="player_collapse">Collapse player</string>
+    <!-- One-time tip in place of "Now playing" -->
+    <string name="player_swipe_down_tip">Swipe down to minimize</string>
+    <!-- Accessibility label of the bar that opens the full player -->
+    <string name="player_open_player">Open player</string>
+
+    <!-- Hero and video -->
+    <string name="player_swipe_next_episode">Swipe for next episode</string>
+    <string name="player_switch_to_video">Switch to Video</string>
+    <string name="player_audio_only">Audio Only</string>
+    <string name="player_fullscreen">Fullscreen</string>
+    <string name="player_exit_fullscreen">Exit Fullscreen</string>
+    <string name="player_toggle_orientation">Toggle Orientation</string>
+
+    <!-- Quick actions under the transport controls; short, shown under icons -->
+    <string name="player_speed_trim_on">%1$s, trim silence on</string>
+    <string name="player_like">Like</string>
+    <string name="player_liked">Liked</string>
+    <string name="player_complete">Complete</string>
+    <string name="player_played">Played</string>
+    <string name="player_download">Download</string>
+    <string name="player_downloading">Saving</string>
+    <string name="player_downloaded">Saved</string>
+    <string name="player_back_to_quick_actions">Back to quick actions</string>
+    <string name="player_slower">Slower</string>
+    <string name="player_faster">Faster</string>
+    <!-- Sleep quick action; short -->
+    <string name="player_sleep">Sleep</string>
+    <!-- Sleep at end of episode, short chip label -->
+    <string name="player_sleep_end">End</string>
+    <string name="player_sleep_end_of_episode">End of episode</string>
+
+    <!-- Speed and trim silence controls -->
+    <string name="player_trim_silence">Trim silence</string>
+    <string name="player_trim_silence_hint">Skip long pauses</string>
+    <string name="player_not_available_casting">Not available while casting</string>
+    <!-- %1$s: show title -->
+    <string name="player_saved_for_show">Saved for %1$s</string>
+    <string name="player_saved_for_this_show">Saved for this show</string>
+    <string name="player_use_app_speed">Use app speed</string>
+    <string name="player_speed_saved_for_show">Speed saved for this show</string>
+    <!-- Accessibility label of a tile. %1$s: title, %2$s: subtitle -->
+    <string name="player_tile_description">%1$s, %2$s</string>
+
+    <!-- Up next card and show notes -->
+    <string name="player_view_queue">View queue</string>
+    <string name="player_play_next_episode">Play next episode</string>
+    <string name="player_show_notes">Show notes</string>
+    <string name="player_episode_details">Episode details</string>
+    <string name="player_read_more">Read more</string>
+    <string name="player_show_less">Show less</string>
+
+    <!-- Queue sheet -->
+    <string name="player_queue_title">Up Next</string>
+    <string name="player_close_queue">Close queue</string>
+    <string name="player_queue_empty">Queue is empty</string>
+    <string name="player_smart_queue_off">Smart queue is off, so nothing is added automatically.</string>
+    <string name="player_turn_on">Turn on</string>
+    <string name="player_unknown_podcast">Unknown Podcast</string>
+    <!-- Fallback show title when a queued episode has none -->
+    <string name="player_unknown_show">Unknown</string>
+    <string name="player_remove_from_queue">Remove from queue</string>
+    <string name="player_reorder">Reorder</string>
+    <string name="player_removed_from_queue">Removed from queue</string>
+
+    <!-- Why an episode is in the queue; one short line under the show name -->
+    <string name="player_queue_source_lore">From Lore</string>
+    <string name="player_queue_source_same_podcast">Continuing series</string>
+    <string name="player_queue_source_resume">Pick up where you left off</string>
+    <string name="player_queue_source_resume_stale">Starting over</string>
+    <string name="player_queue_source_subscription">From your subscriptions</string>
+    <string name="player_queue_source_recommended">Recommended for you</string>
+    <string name="player_queue_source_similar_episode">Based on what you\'re playing</string>
+    <string name="player_queue_source_similar_liked">Based on something you liked</string>
+    <!-- %1$s: genre name -->
+    <string name="player_queue_source_trending_in">Trending in %1$s</string>
+    <string name="player_queue_source_trending">Trending now</string>
+    <string name="player_queue_source_added">Added for you</string>
+
+    <!-- Banner above Up next offering the rest of the same show -->
+    <!-- %1$s: show title -->
+    <string name="player_same_show_title">Continue %1$s?</string>
+    <string name="player_same_show_title_fallback">Continue this show?</string>
+    <string name="player_same_show_explanation">We skipped newer episodes from this show as you played it from recommendations.</string>
+    <string name="player_same_show_hide_preview">Hide preview</string>
+
+    <!-- Cast -->
+    <string name="player_cast">Cast</string>
+    <string name="player_change_cast_device">Change Cast device</string>
+    <string name="player_show_cast_controls">Show Cast controls</string>
+    <!-- Section header; shown in capitals -->
+    <string name="player_cast_available_devices">Available devices</string>
+    <string name="player_cast_this_phone">This phone</string>
+    <string name="player_cast_move_back_here">Move playback back here</string>
+    <string name="player_cast_same_wifi">Devices must be on the same Wi‑Fi network.</string>
+    <string name="player_cast_choose_where">Choose where to listen</string>
+    <string name="player_cast_connecting">Connecting…</string>
+    <!-- %1$s: Cast device name -->
+    <string name="player_cast_connecting_to">Connecting to %1$s…</string>
+    <string name="player_cast_looking">Looking for nearby devices…</string>
+    <string name="player_cast_awake">Make sure your Cast device is awake.</string>
+    <string name="player_cast_connected">Connected</string>
+    <string name="player_cast_ready">Ready to cast</string>
+    <!-- Hero label above the device name; shown in capitals -->
+    <string name="player_cast_playing_on">Playing on</string>
+    <string name="player_cast_change_device">Change device</string>
+    <!-- Short label under a button -->
+    <string name="player_cast_device">Device</string>
+    <string name="player_next_episode">Next episode</string>
+    <!-- Short label under a button -->
+    <string name="player_next">Next</string>
+    <string name="player_stop_casting">Stop casting</string>
+    <!-- Short label under a button -->
+    <string name="player_stop">Stop</string>
+    <!-- Fallback when the Cast device has no name -->
+    <string name="player_cast_device_fallback">Cast device</string>
+    <!-- %1$s: Cast device name -->
+    <string name="player_casting_to">Casting to %1$s</string>
+    <!-- Mini player state for accessibility. %1$s: Playing/Paused/Loading, %2$s: device name -->
+    <string name="player_state_casting_to">%1$s, casting to %2$s</string>
+
+    <!-- Mini player -->
+    <!-- %1$s: remaining duration, such as 23m or 1h 5m -->
+    <string name="player_mini_time_left">%1$s left</string>
+    <string name="player_mini_swipe_to_dismiss">← Swipe to dismiss →</string>
+</resources>

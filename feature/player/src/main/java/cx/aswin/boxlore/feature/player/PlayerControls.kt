@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
@@ -215,7 +216,7 @@ private fun androidx.compose.foundation.layout.RowScope.PlayPauseButton(
             Crossfade(targetState = isPlaying, label = "playPauseCrossfade") { playing ->
                 Icon(
                     imageVector = if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (playing) "Pause" else "Play",
+                    contentDescription = stringResource(if (playing) R.string.minimal_pause else R.string.minimal_play),
                     modifier = Modifier.size(36.dp),
                     tint = colorScheme.onPrimary
                 )

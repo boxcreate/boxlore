@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tablet_return_to_player">En cours de lecture</string>
+    <string name="tablet_alpha_title">Les mises en page pour tablette sont en alpha</string>
+    <string name="tablet_alpha_body">Si quelque chose semble bizarre ou ne fonctionne plus, dites-le-nous. Nous corrigerons au plus vite.</string>
+    <string name="tablet_alpha_feedback_instruction">Pour envoyer un avis, appuyez sur l’icône %1$s dans la barre supérieure de l’accueil.</string>
+    <string name="tablet_alpha_feedback_icon_name">avis</string>
+    <string name="tablet_alpha_ok">OK</string>
+</resources>

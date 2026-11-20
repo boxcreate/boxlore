@@ -95,10 +95,22 @@
     <string name="episode_selection_play">Play selected episodes</string>
     <string name="episode_selection_add_queue">Add selected episodes to queue</string>
     <string name="episode_selection_more">More selection options</string>
+    <!-- Show page menu, only for a followed show: opens the sheet that puts this show in playlists. -->
+    <string name="podcast_info_add_to_playlist">Add to playlist</string>
     <string name="episode_selection_select_visible">Select visible episodes</string>
     <string name="episode_selection_select_all">Select all episodes</string>
     <string name="episode_selection_select_older">Select all older episodes</string>
     <string name="episode_selection_select_newer">Select all newer episodes</string>
+    <string name="episode_selection_archive">Archive selected episodes</string>
+    <string name="episode_selection_unarchive">Unarchive selected episodes</string>
+    <plurals name="episode_archive_done"><item quantity="one">Archived %d episode</item><item quantity="other">Archived %d episodes</item></plurals>
+    <plurals name="episode_unarchive_done"><item quantity="one">Unarchived %d episode</item><item quantity="other">Unarchived %d episodes</item></plurals>
+    <string name="episode_archive_undo">Undo</string>
+    <string name="episode_archived">Archived</string>
+    <string name="episode_archive">Archive</string>
+    <string name="episode_unarchive">Unarchive</string>
+    <string name="podcast_info_show_archived">Show archived episodes (%d)</string>
+    <string name="podcast_info_hide_archived">Hide archived episodes</string>
     <string name="episode_selection_failed">Couldn’t load every episode. Check your connection and try again.</string>
     <string name="episode_selection_too_long">This show has too many episodes to select them all.</string>
     <string name="subscribe_to_edit_genre">Subscribe to the show to edit genre</string>
@@ -123,7 +135,11 @@
     <string name="podcast_info_close_search">Close episode search</string>
     <string name="podcast_info_clear_search">Clear search</string>
     <string name="podcast_info_no_search_results">No matching episodes. Try another title or keyword.</string>
-    <string name="podcast_info_search_newest_only">Searched only the newest %1$s episodes of this show.</string>
+    <!-- %1$s is the number of episodes searched, already formatted for the language (1,000). -->
+    <plurals name="podcast_info_search_newest_only">
+        <item quantity="one">Searched only the newest %1$s episode of this show.</item>
+        <item quantity="other">Searched only the newest %1$s episodes of this show.</item>
+    </plurals>
     <string name="podcast_info_search_failed">Couldn’t search this show’s episodes. Check your connection.</string>
     <string name="podcast_info_missing_offer">Missing episodes?</string>
     <string name="podcast_info_missing_fetching">Updating…</string>
@@ -148,4 +164,20 @@
     <string name="podcast_episode_select">Select episode</string>
     <string name="podcast_episode_selected">Selected</string>
     <string name="podcast_episode_up_next">Up next</string>
+    <!-- Hide show everywhere: keeps a show out of Home, Explore, Lore, Smart Queue and Android Auto; Explore’s Find a show search still finds it. LeaveMeAlone is the settings page (Library › LeaveMeAlone) that lists hidden shows; keep it as one word. -->
+    <string name="podcast_info_hide_show">Hide show everywhere</string>
+    <string name="podcast_info_unhide_show">Unhide show</string>
+    <string name="podcast_info_hide_title">Hide this show everywhere?</string>
+    <string name="podcast_info_hide_message">boxlore won’t suggest it on Home, Explore, Lore or in Smart Queue. You can still find it with Find a show and unhide it here or in LeaveMeAlone.</string>
+    <!-- The show is followed: hiding it unsubscribes too, and Undo subscribes again. -->
+    <string name="podcast_info_hide_message_subscribed">This also unsubscribes you from it. boxlore won’t suggest it on Home, Explore, Lore or in Smart Queue. You can still find it with Find a show and unhide it here or in LeaveMeAlone.</string>
+    <string name="podcast_info_hide_confirm">Hide show</string>
+    <string name="podcast_info_hide_confirm_subscribed">Hide and unsubscribe</string>
+    <string name="podcast_info_hide_cancel">Cancel</string>
+    <string name="podcast_info_hidden_snackbar">Hidden everywhere</string>
+    <string name="podcast_info_hidden_undo">Undo</string>
+    <string name="podcast_info_unhidden_snackbar">No longer hidden</string>
+    <!-- A small note under the show's actions while it is hidden. -->
+    <string name="podcast_info_hidden_note">Hidden everywhere</string>
+    <string name="podcast_info_hidden_note_unhide">Unhide</string>
 </resources>

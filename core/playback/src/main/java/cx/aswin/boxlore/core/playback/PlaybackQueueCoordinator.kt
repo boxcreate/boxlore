@@ -270,7 +270,11 @@ internal class PlaybackQueueCoordinator(
         entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
         initialPositionMs: Long? = null,
         sourceContext: android.os.Bundle? = null,
-    ) = startQueue(episodes, podcast, startIndex, entryPoint, initialPositionMs, sourceContext, isNewQueue = true)
+    ) = startQueue(episodes, podcast, startIndex, entryPoint, initialPositionMs, sourceContext, QueueStart.NEW)
+
+    /** [playQueue] loaded paused at [initialPositionMs] (Undo of a paused queue): no audio, no play start. */
+    suspend fun loadQueuePaused(episodes: List<Episode>, podcast: Podcast, startIndex: Int, initialPositionMs: Long) =
+        startQueue(episodes, podcast, startIndex, PlaybackEntryPoint.GENERIC, initialPositionMs, null, QueueStart.NEW_PAUSED)
 
     /**
      * Reloads the current queue's [episodes] from [startIndex]. Their shows stay as queued: [podcast]
@@ -283,10 +287,16 @@ internal class PlaybackQueueCoordinator(
         entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
         initialPositionMs: Long? = null,
         sourceContext: android.os.Bundle? = null,
-    ) = startQueue(episodes, podcast, startIndex, entryPoint, initialPositionMs, sourceContext, isNewQueue = false)
+    ) = startQueue(episodes, podcast, startIndex, entryPoint, initialPositionMs, sourceContext, QueueStart.RELOAD)
 
-    /** Loads [episodes] into the player and the queue; a new queue ([isNewQueue]) also gives show-less episodes [podcast]'s show. */
-    @Suppress("LongParameterList")
+    /** How [startQueue] loads: a new queue gives show-less episodes the given show; [NEW_PAUSED] loads without playing. */
+    private enum class QueueStart(val isNewQueue: Boolean, val startPaused: Boolean) {
+        NEW(isNewQueue = true, startPaused = false),
+        NEW_PAUSED(isNewQueue = true, startPaused = true),
+        RELOAD(isNewQueue = false, startPaused = false),
+    }
+
+    /** Loads [episodes] into the player and the queue as [start] says. */
     private suspend fun startQueue(
         episodes: List<Episode>,
         podcast: Podcast,
@@ -294,8 +304,9 @@ internal class PlaybackQueueCoordinator(
         entryPoint: PlaybackEntryPoint,
         initialPositionMs: Long?,
         sourceContext: android.os.Bundle?,
-        isNewQueue: Boolean,
+        start: QueueStart,
     ) {
+        val (isNewQueue, startPaused) = start.isNewQueue to start.startPaused
         Log.d("PlaybackRepo", "playQueue() called: count=${episodes.size}, start=$startIndex, podcastGenre='${podcast.genre}'")
         // Every listener-started queue (play, play episode, play from queue, skip to an episode) lands here.
         onQueueStarted()
@@ -347,20 +358,20 @@ internal class PlaybackQueueCoordinator(
                 if (!CastSkippedEpisodes.canStart(controller, mediaItems.getOrNull(uniqueStartIndex))) return@withContext false
                 if (currentEp != null) {
                     val speed = controller.playbackParameters.speed
-                    publishOptimisticStart { QueueStartState.optimistic(it, currentEp, podcast, startPosMs, episodesWithSource, initialLikeState, speed) }
+                    publishQueueStart(startPaused) { QueueStartState.optimistic(it, currentEp, podcast, startPosMs, episodesWithSource, initialLikeState, speed) }
                 }
                 QueueStartState.markStartSignals(startEpisodeId, startPosMs, initialPositionMs)
-                controller.setMediaItems(mediaItems, uniqueStartIndex, startPosMs)
-                controller.prepare()
-
-                storePendingEntryPoint(entryPointContext)
-
-                controller.play()
+                QueueStartState.load(controller, mediaItems, uniqueStartIndex, startPosMs, startPaused) { storePendingEntryPoint(entryPointContext) }
                 true
             }
         if (!started) return
         syncQueueToDb()
         ensureCurrentHistoryRow()
+    }
+
+    /** [publishOptimisticStart], or for a paused load ([startPaused]) the queue shown paused, with no play start. */
+    private fun publishQueueStart(startPaused: Boolean, started: (PlayerState) -> PlayerState) {
+        if (startPaused) playerStateFlow.value = started(playerStateFlow.value).copy(isPlaying = false) else publishOptimisticStart(started)
     }
 
     /**

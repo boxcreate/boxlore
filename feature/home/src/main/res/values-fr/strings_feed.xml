@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_greeting_morning_title">Bonjour</string>
+    <string name="home_greeting_morning_weekday">Commencez la journée avec ces nouveautés.</string>
+    <string name="home_greeting_morning_weekend">Faites le point sur la semaine.</string>
+    <string name="home_greeting_afternoon_title">Pause de l’après-midi</string>
+    <string name="home_greeting_afternoon_subtitle">Des conversations malines pour tenir le rythme.</string>
+    <string name="home_greeting_evening_title">Détente du soir</string>
+    <string name="home_greeting_evening_friday">Lancez le week-end.</string>
+    <string name="home_greeting_evening_other">Détendez-vous, riez et rattrapez votre retard.</string>
+    <string name="home_greeting_late_night_title">Écoute nocturne</string>
+    <string name="home_greeting_late_night_subtitle">Des histoires pour les heures sombres.</string>
+    <string name="home_error_loading">Erreur de chargement du contenu</string>
+    <string name="home_briefing_episode_description">Votre brief d’actu quotidien généré par IA pour %1$s.</string>
+    <string name="home_mix_offline_queue_title">Mix hors ligne</string>
+    <string name="home_mix_shows_queue_title">Mix de vos podcasts</string>
+    <string name="home_mix_queue_artist">Artistes divers</string>
+    <string name="home_mix_offline_queue_description">Épisodes téléchargés, triés par date de sortie</string>
+    <string name="home_mix_shows_queue_description">Playlist mélangée d’épisodes non écoutés</string>
+    <string name="home_featured_eyebrow">À la une aujourd’hui</string>
+    <string name="home_genre_news">Actualités</string>
+    <string name="home_genre_tech">Tech</string>
+    <string name="home_genre_business">Business</string>
+    <string name="home_genre_comedy">Humour</string>
+    <string name="home_genre_true_crime">Faits divers</string>
+    <string name="home_genre_sports">Sport</string>
+    <string name="home_genre_health">Santé</string>
+    <string name="home_genre_history">Histoire</string>
+    <string name="home_genre_arts">Arts</string>
+    <string name="home_genre_society">Société</string>
+    <string name="home_genre_education">Éducation</string>
+    <string name="home_genre_science">Sciences</string>
+    <string name="home_genre_tv_film">Ciné &amp; TV</string>
+    <string name="home_genre_fiction">Fiction</string>
+    <string name="home_genre_music">Musique</string>
+    <string name="home_genre_religion">Religion</string>
+    <string name="home_genre_family">Famille</string>
+    <string name="home_genre_leisure">Loisirs</string>
+    <string name="home_genre_govt">Politique</string>
+    <string name="home_change_recs_title">Personnaliser les recommandations</string>
+    <string name="home_change_recs_body">Choisissez un podcast pour trouver des épisodes similaires, ou revenez à la détection automatique selon vos habitudes d’écoute.</string>
+    <string name="home_change_recs_auto">Détection automatique (par défaut)</string>
+    <string name="home_change_recs_auto_body">Mise à jour automatique selon votre historique d’écoute</string>
+</resources>

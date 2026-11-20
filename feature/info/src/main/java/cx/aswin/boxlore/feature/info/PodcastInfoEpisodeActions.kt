@@ -9,6 +9,7 @@ import cx.aswin.boxlore.core.downloads.DownloadToggleAction
 import cx.aswin.boxlore.core.downloads.DownloadTogglePolicy
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.QueueManager
 import cx.aswin.boxlore.core.playback.addToQueue
@@ -338,10 +339,10 @@ internal class PodcastInfoEpisodeActions(
 }
 
 /** Shown when Mark all as played or unplayed couldn't read the whole show and changed nothing. */
-internal const val MARK_ALL_FAILED_MESSAGE = "Couldn’t load every episode, so none were marked. Check your connection and try again."
+internal val MARK_ALL_FAILED_MESSAGE: UiText = UiText.res(R.string.podcast_info_mark_all_failed)
 
 /** Shown when the show lists more episodes than boxlore can read at once, so trying again can't help. */
-internal const val MARK_ALL_TOO_LONG_MESSAGE = "This show has too many episodes to mark them all, so none were marked."
+internal val MARK_ALL_TOO_LONG_MESSAGE: UiText = UiText.res(R.string.podcast_info_mark_all_too_long)
 
 /** What Mark all did ([markWholeShow]). */
 internal enum class MarkAllOutcome {

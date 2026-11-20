@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mood_morning_news_title">L’actu du moment</string>
+    <string name="mood_morning_news_subtitle">Les histoires qui font aujourd’hui</string>
+    <string name="mood_morning_motivation_title">Un début plus lumineux</string>
+    <string name="mood_morning_motivation_subtitle">Des idées et des histoires qui donnent un peu d’élan</string>
+    <string name="mood_business_insider_title">Le business à la loupe</string>
+    <string name="mood_business_insider_subtitle">Marchés, technologie et celles et ceux qui les font bouger</string>
+    <string name="mood_science_explainer_title">Bon à savoir</string>
+    <string name="mood_science_explainer_subtitle">Des réponses claires aux questions curieuses</string>
+    <string name="mood_tech_culture_title">La tech aujourd’hui</string>
+    <string name="mood_tech_culture_subtitle">Les idées qui changent notre façon de vivre et de travailler</string>
+    <string name="mood_creative_focus_title">Étincelle créative</string>
+    <string name="mood_creative_focus_subtitle">Des regards neufs sur l’art et le design</string>
+    <string name="mood_comedy_gold_title">Bien rire</string>
+    <string name="mood_comedy_gold_subtitle">Humour et conversations pour décompresser</string>
+    <string name="mood_tv_film_buff_title">À l’écran</string>
+    <string name="mood_tv_film_buff_subtitle">Cinéma, télévision et culture dont on a envie de parler</string>
+    <string name="mood_sports_fan_title">C’est l’heure du match</string>
+    <string name="mood_sports_fan_subtitle">Récits et analyses de tous les sports</string>
+    <string name="mood_true_crime_sleep_title">Faits divers à la nuit tombée</string>
+    <string name="mood_true_crime_sleep_subtitle">Des enquêtes qui vous tiennent en haleine</string>
+    <string name="mood_history_buff_title">Récits d’histoire</string>
+    <string name="mood_history_buff_subtitle">Le passé, raconté comme si c’était hier</string>
+    <string name="mood_mystery_thriller_title">Mystère et suspense</string>
+    <string name="mood_mystery_thriller_subtitle">Rebondissements, tension et histoires pour la nuit</string>
+</resources>

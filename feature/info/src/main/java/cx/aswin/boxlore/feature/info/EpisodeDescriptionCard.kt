@@ -36,12 +36,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.component.HtmlText
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.model.ShowNotes
+import cx.aswin.boxlore.core.model.text.UiText
+import java.util.Locale
 
 @Composable
 internal fun EpisodeDescriptionCard(notes: ShowNotes, modifier: Modifier = Modifier, location: String? = null, license: String? = null, persons: List<Person>? = null, onSeekTo: ((Long) -> Unit)? = null) {
@@ -90,36 +94,33 @@ internal fun EpisodeDescriptionCard(notes: ShowNotes, modifier: Modifier = Modif
                     items(persons) { person -> PersonChip(person) { person.href?.let { openEpisodeLink(context, it) } } }
                 }
             }
-            val details = listOfNotNull(location?.takeIf(String::isNotBlank), license?.takeIf(String::isNotBlank)?.let(::formatLicense))
+            val details = listOfNotNull(location?.takeIf(String::isNotBlank), license?.takeIf(String::isNotBlank)?.let { formatLicense(it).asString() })
             if (details.isNotEmpty()) Text(details.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
-internal fun formatLicense(licenseCode: String): String {
-    val clean = licenseCode.trim().lowercase()
+internal fun formatLicense(licenseCode: String): UiText {
+    val clean = licenseCode.trim().lowercase(Locale.ROOT)
     if (clean.startsWith("cc-") || clean == "cc0" || clean.contains("creative-commons") || clean.contains("creative commons")) {
         val suffix =
             clean
                 .removePrefix("cc-")
                 .removePrefix("creative-commons-")
                 .removePrefix("creative commons-")
-                .uppercase()
+                .uppercase(Locale.ROOT)
+        // The Creative Commons names (CC BY-SA and so on) are the licences' own names, kept as they are.
         return when (suffix) {
-            "0", "CC0", "ZERO" -> "Public Domain (CC0)"
-            "BY" -> "Creative Commons BY"
-            "BY-SA" -> "Creative Commons BY-SA"
-            "BY-NC" -> "Creative Commons BY-NC"
-            "BY-ND" -> "Creative Commons BY-ND"
-            "BY-NC-SA" -> "Creative Commons BY-NC-SA"
-            "BY-NC-ND" -> "Creative Commons BY-NC-ND"
-            else -> "Creative Commons ${suffix.ifEmpty { "License" }}"
+            "0", "CC0", "ZERO" -> UiText.res(R.string.episode_info_license_cc0)
+            "" -> UiText.res(R.string.episode_info_license_cc_generic)
+            else -> UiText.res(R.string.episode_info_license_cc, suffix)
         }
     }
     return when (clean) {
-        "all-rights-reserved", "copyright" -> "All Rights Reserved"
-        "public-domain" -> "Public Domain"
-        else -> licenseCode.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        "all-rights-reserved", "copyright" -> UiText.res(R.string.episode_info_license_all_rights)
+        "public-domain" -> UiText.res(R.string.episode_info_license_public_domain)
+        // A licence the app doesn't know is the feed's own text.
+        else -> UiText.raw(licenseCode.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() })
     }
 }
 
@@ -175,7 +176,7 @@ internal fun PersonChip(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = person.name.firstOrNull()?.uppercase() ?: "?",
+                        text = person.name.firstOrNull()?.toString()?.uppercase(currentLocale()) ?: "?",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = GoogleSansWeight.bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,

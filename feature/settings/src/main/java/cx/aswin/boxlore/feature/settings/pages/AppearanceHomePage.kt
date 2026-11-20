@@ -76,7 +76,7 @@ internal fun AppearanceHomePage(
     // Marquee is a phone layout; tablets show Cover cards, so the preview does too.
     val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
     val previewStyle = if (tablet && style == HeroCardStyle.MARQUEE) HeroCardStyle.COVER else style
-    SettingsScaffold(title = "Home", onBack = onBack) {
+    SettingsScaffold(title = stringResource(R.string.settings_page_home), onBack = onBack) {
         SettingsTileSection(title = stringResource(R.string.hero_card_style_title), footer = stringResource(R.string.hero_card_style_footer)) {
             SettingsPictureRow(HeroStyleOptions, selectedIndex = HeroStyleOptions.indexOfFirst { it.key == style }) { option, modifier, width ->
                 SettingsPictureTile(
@@ -141,10 +141,10 @@ internal fun AppearanceHomePage(
                 onClick = onOpenRecommendations,
             )
         }
-        SettingsGroup(title = "Top bar") {
+        SettingsGroup(title = stringResource(R.string.settings_home_top_bar_title)) {
             SettingsSwitchRow(
-                title = "Move Home shortcuts to Library",
-                supportingText = "Show Settings and Feedback in Library instead of Home",
+                title = stringResource(R.string.settings_home_shortcuts_in_library),
+                supportingText = stringResource(R.string.settings_home_shortcuts_in_library_description),
                 checked = state.homeShortcutsInLibrary,
                 onCheckedChange = actions.onSetHomeShortcutsInLibrary,
                 icon = Icons.Rounded.Home,

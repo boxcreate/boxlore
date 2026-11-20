@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_nps_eyebrow">Petit test micro</string>
+    <string name="home_nps_question">Quelle est la probabilité que vous recommandiez boxlore à un ami ?</string>
+    <string name="home_nps_not_likely">Peu probable</string>
+    <string name="home_nps_very_likely">Très probable</string>
+    <string name="home_nps_not_now">Plus tard</string>
+    <string name="home_nps_picked">Votre note : {score}</string>
+    <string name="home_nps_fix_title">Quelle est la première chose à corriger selon vous ?</string>
+    <string name="home_nps_fix_helper">Chaque réponse est lue. Soyez aussi précis que vous le souhaitez.</string>
+    <string name="home_nps_ten_title">Qu’est-ce qui ferait monter la note à 10 ?</string>
+    <string name="home_nps_ten_helper">Une fonctionnalité manquante, un détail à peaufiner, n’importe quoi.</string>
+    <string name="home_nps_idea_title">Que devrions-nous mettre à l’antenne ensuite ?</string>
+    <string name="home_nps_idea_tag">La plupart des idées des auditeurs voient le jour en quelques semaines</string>
+    <string name="home_nps_answer_label">Votre réponse (facultatif)</string>
+    <string name="home_nps_answer_hint">Saisissez votre réponse…</string>
+    <string name="home_nps_idea_label">Votre idée (facultatif)</string>
+    <string name="home_nps_idea_hint">Saisissez votre idée…</string>
+    <string name="home_nps_skip">Passer</string>
+    <string name="home_nps_send">Envoyer</string>
+    <string name="home_nps_send_idea">Envoyer l’idée</string>
+    <string name="home_nps_thanks_low_title">Merci de nous l’avoir dit</string>
+    <string name="home_nps_thanks_low_body">Nous lisons chaque réponse, et la vôtre nous aide à décider quoi corriger en premier.</string>
+    <string name="home_nps_thanks_middle_title">Bien reçu, cinq sur cinq.</string>
+    <string name="home_nps_thanks_middle_body">Chaque réponse est écoutée avec attention, et elle façonne la suite.</string>
+    <string name="home_nps_thanks_high_title">Un vrai plaisir pour nos oreilles.</string>
+    <string name="home_nps_thanks_high_body">Envie de passer le micro ? Une note sur Google Play aide d’autres auditeurs à découvrir boxlore.</string>
+    <string name="home_nps_done">OK</string>
+    <string name="home_nps_rate_on_play">Noter sur Google Play</string>
+    <string name="home_nps_score_bound">%1$d, %2$s</string>
+    <string name="home_nps_char_count">%1$d / %2$d</string>
+</resources>

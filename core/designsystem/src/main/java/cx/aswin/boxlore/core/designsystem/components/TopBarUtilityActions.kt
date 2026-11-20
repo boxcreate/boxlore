@@ -35,8 +35,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.R
 import cx.aswin.boxlore.core.designsystem.theme.BoxloreClickInteraction
 import cx.aswin.boxlore.core.designsystem.theme.BoxloreClickOptions
 import cx.aswin.boxlore.core.designsystem.theme.boxloreCombinedClickable as combinedClickable
@@ -93,7 +95,7 @@ fun TopBarUtilityActions(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Feedback,
-                    contentDescription = if (replyWaiting) "Feedback, new reply" else "Send Feedback",
+                    contentDescription = stringResource(if (replyWaiting) R.string.top_bar_feedback_reply else R.string.top_bar_feedback),
                     modifier = Modifier.size(20.dp),
                 )
             }
@@ -107,7 +109,7 @@ fun TopBarUtilityActions(
         ) {
             Icon(
                 imageVector = Icons.Rounded.Tune,
-                contentDescription = "Settings",
+                contentDescription = stringResource(R.string.top_bar_settings),
                 modifier = Modifier.size(20.dp),
             )
         }

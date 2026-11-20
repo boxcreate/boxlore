@@ -407,3 +407,7 @@ private class SerialScan(val anchorToken: String?, private val isUnfinished: (Ep
         return newest.subList(0, anchorIndex).asReversed().firstOrNull(isUnfinished) ?: firstUnfinished
     }
 }
+
+/** These candidates without archived episodes ([dismissedEpisodeIds]): never downloaded, even one the listener had started. */
+internal fun List<SmartDownloadCandidateLogic.MixtapeCandidate>.withoutArchived(dismissedEpisodeIds: Set<String>): List<SmartDownloadCandidateLogic.MixtapeCandidate> =
+    if (dismissedEpisodeIds.isEmpty()) this else filter { it.episode.id !in dismissedEpisodeIds }

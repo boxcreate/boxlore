@@ -1,12 +1,16 @@
 package cx.aswin.boxlore.feature.explore.logic
 
+import androidx.annotation.StringRes
+import cx.aswin.boxlore.feature.explore.R
+
 /**
  * Tappable prompt on By-concept idle / no-results.
- * [query] is the exact string sent to GET /search/semantic.
+ * [query] is the exact string sent to GET /search/semantic (kept English: the examples were tuned on it);
+ * [label] is the question shown.
  */
 internal data class ConceptSearchExample(
     val query: String,
-    val label: String,
+    @StringRes val label: Int,
 )
 
 /**
@@ -19,19 +23,19 @@ internal object ConceptSearchIdleLogic {
         listOf(
             ConceptSearchExample(
                 query = "why did the roman empire fall",
-                label = "Why did the Roman empire fall?",
+                label = R.string.explore_concept_example_rome,
             ),
             ConceptSearchExample(
                 query = "how do black holes actually work",
-                label = "How do black holes actually work?",
+                label = R.string.explore_concept_example_black_holes,
             ),
             ConceptSearchExample(
                 query = "why people believe conspiracy theories",
-                label = "Why do people believe conspiracies?",
+                label = R.string.explore_concept_example_conspiracies,
             ),
             ConceptSearchExample(
                 query = "how money actually works",
-                label = "How does money actually work?",
+                label = R.string.explore_concept_example_money,
             ),
         )
 }

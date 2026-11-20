@@ -1,5 +1,8 @@
 package cx.aswin.boxlore.feature.player.v2.logic
 
+import androidx.annotation.StringRes
+import cx.aswin.boxlore.feature.player.R
+
 internal fun targetControlWeight(
     index: Int,
     activeIndex: Int?,
@@ -12,10 +15,11 @@ internal fun targetControlWeight(
     return baseWeights[index] - extra * (baseWeights[index] / otherTotal)
 }
 
-internal fun downloadLabel(isDownloaded: Boolean, isDownloading: Boolean): String = when {
-    isDownloading -> "Saving"
-    isDownloaded -> "Saved"
-    else -> "Download"
+@StringRes
+internal fun downloadLabel(isDownloaded: Boolean, isDownloading: Boolean): Int = when {
+    isDownloading -> R.string.player_downloading
+    isDownloaded -> R.string.player_downloaded
+    else -> R.string.player_download
 }
 
-internal fun formatSpeedLabel(speed: Float): String = if (speed == speed.toInt().toFloat()) "${speed.toInt()}×" else "$speed×"
+internal fun formatSpeedLabel(speed: Float): String = cx.aswin.boxlore.core.playback.ShowPlaybackPolicy.speedLabel(speed)

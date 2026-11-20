@@ -101,15 +101,19 @@ import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.QueueManager
 import cx.aswin.boxlore.core.prefs.BriefingEdition
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import java.time.ZoneOffset
 import java.util.Locale
+import java.util.TimeZone
 
 @Suppress("LongParameterList") // Stable app-shell callback wiring.
 @Composable
@@ -400,14 +404,13 @@ private fun BriefingEditionContent(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 itemVerticalAlignment = Alignment.CenterVertically,
             ) {
-                val date = remember(state.briefing.date) {
-                    runCatching { LocalDate.parse(state.briefing.date).format(DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())) }.getOrDefault(state.briefing.date)
-                }
+                val locale = currentLocale()
+                val date = remember(state.briefing.date, locale) { briefingDisplayDate(state.briefing.date, locale) }
                 val stories = state.chapters.takeIf { it.isNotEmpty() }?.let {
                     pluralStringResource(R.plurals.briefing_story_count, it.size, it.size)
                 }
                 Text(
-                    listOfNotNull(date, stories, formatBriefingListenDuration(state.duration)).joinToString(" · "),
+                    listOfNotNull(date, stories, formatBriefingListenDuration(state.duration)?.asString()).joinToString(" · "),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -474,3 +477,9 @@ private fun BriefingUiState.presentationKey(): String = when (this) {
     is BriefingUiState.Error -> "error"
     is BriefingUiState.Success -> "success"
 }
+
+/** The brief's `yyyy-MM-dd` [date] as a short day and month in [locale] ("Nov 20", "20. Nov."); as sent when unreadable. */
+internal fun briefingDisplayDate(date: String, locale: Locale): String = runCatching {
+    val millis = LocalDate.parse(date).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+    LocaleFormats.date(millis, LocaleFormats.DateStyle.DAY_MONTH, locale, TimeZone.getTimeZone("UTC"))
+}.getOrDefault(date)

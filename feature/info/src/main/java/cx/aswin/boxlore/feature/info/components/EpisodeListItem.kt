@@ -42,6 +42,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -69,6 +71,7 @@ fun EpisodeListItem(
     isQueued: Boolean,
     isCompleted: Boolean,
     isUpNext: Boolean = false,
+    isArchived: Boolean = false,
     selectionActive: Boolean = false,
     isSelected: Boolean = false,
     onClick: () -> Unit,
@@ -166,6 +169,7 @@ fun EpisodeListItem(
 
                 // Text Content
                 Column(modifier = Modifier.weight(1f)) {
+                    if (isArchived) EpisodeArchivedPill()
                     if (isUpNext) {
                         Surface(
                             shape = ExpressiveShapes.Pill,
@@ -190,21 +194,13 @@ fun EpisodeListItem(
                         lineHeight = 20.sp,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    fun formatDuration(seconds: Int): String {
-                        val hours = seconds / 3600
-                        val minutes = (seconds % 3600) / 60
-                        return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
-                    }
-
-                    val seasonEpisode = buildString {
-                        episode.seasonNumber?.let { append("S$it ") }
-                        episode.episodeNumber?.let { append("E$it") }
-                    }.trim()
+                    val locale = currentLocale()
+                    val seasonEpisode = seasonEpisodeShort(episode.seasonNumber, episode.episodeNumber)?.asString().orEmpty()
                     val timeHighlight = LocalBrandedPage.current?.style?.episodeTimeColor
                     val highlightFamily = rememberGoogleSansFamily(weight = 600)
                     Text(
                         text = episodeDetailsLine(
-                            parts = listOf(seasonEpisode, formatEpisodeRelativeDate(episode.publishedDate), formatDuration(episode.duration)),
+                            parts = listOf(seasonEpisode, formatEpisodeRelativeDate(episode.publishedDate, locale), formatEpisodeListDuration(episode.duration, locale)),
                             highlightIndex = 1,
                             highlight = timeHighlight?.let { SpanStyle(color = it, fontFamily = highlightFamily) },
                         ),
@@ -225,7 +221,7 @@ fun EpisodeListItem(
                                 val typeLabel = when (type) {
                                     "bonus" -> stringResource(R.string.episode_info_bonus)
                                     "trailer" -> stringResource(R.string.episode_info_trailer)
-                                    else -> type.replaceFirstChar { it.uppercase() }
+                                    else -> type.replaceFirstChar { it.titlecase(locale) }
                                 }
                                 EpisodeTypeChip(typeLabel)
                             }
@@ -292,20 +288,6 @@ private fun EpisodeTypeChip(label: String, video: Boolean = false) {
             if (video) Icon(Icons.Rounded.Videocam, null, Modifier.size(14.dp))
             Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = GoogleSansWeight.medium)
         }
-    }
-}
-
-/** "2h ago" style age of an episode published at [timestampSeconds]; blank when the date is unknown. */
-internal fun formatEpisodeRelativeDate(timestampSeconds: Long, nowSeconds: Long = System.currentTimeMillis() / 1000): String {
-    if (timestampSeconds == 0L) return ""
-    val diff = nowSeconds - timestampSeconds
-    return when {
-        diff < 3600 -> "${diff / 60}m ago"
-        diff < 86400 -> "${diff / 3600}h ago"
-        diff < 604800 -> "${diff / 86400}d ago"
-        diff < 2592000 -> "${diff / 604800}w ago"
-        diff < 31536000 -> "${diff / 2592000}mo ago"
-        else -> "${diff / 31536000}y ago"
     }
 }
 

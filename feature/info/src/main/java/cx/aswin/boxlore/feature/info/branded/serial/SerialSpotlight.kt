@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedEpisodeActions
@@ -36,7 +37,6 @@ import cx.aswin.boxlore.feature.info.branded.boxShadow
 import cx.aswin.boxlore.feature.info.branded.brandedDetails
 import cx.aswin.boxlore.feature.info.branded.brandedSansStyle
 import cx.aswin.boxlore.feature.info.components.formatEpisodeRelativeDate
-import java.util.Locale
 
 /**
  * The latest episode as the top card of a stack: its own picture on a black card with the logo's
@@ -70,7 +70,7 @@ internal fun SerialSpotlight(spotlight: BrandedSpotlight, modifier: Modifier) {
             EpisodeStack(spotlight)
             Column(Modifier.weight(1f).padding(top = 2.dp)) {
                 Text(
-                    label.uppercase(Locale.getDefault()),
+                    label.uppercase(currentLocale()),
                     style = brandedSansStyle(10.5.sp, 13.sp, weight = 700).copy(letterSpacing = 1.8.sp),
                     color = SerialColors.RedText,
                     maxLines = 1,
@@ -86,7 +86,7 @@ internal fun SerialSpotlight(spotlight: BrandedSpotlight, modifier: Modifier) {
                     modifier = Modifier.padding(top = 5.dp).clearAndSetSemantics { text = AnnotatedString(episode.title) },
                 )
                 Text(
-                    brandedDetails(formatEpisodeRelativeDate(episode.publishedDate), episode.duration, spotlight.isCompleted, stringResource(R.string.episode_info_played)),
+                    brandedDetails(formatEpisodeRelativeDate(episode.publishedDate, currentLocale()), episode.duration, spotlight.isCompleted, stringResource(R.string.episode_info_played), currentLocale()),
                     style = brandedSansStyle(12.sp, 14.sp),
                     color = SerialColors.Muted,
                     maxLines = 1,

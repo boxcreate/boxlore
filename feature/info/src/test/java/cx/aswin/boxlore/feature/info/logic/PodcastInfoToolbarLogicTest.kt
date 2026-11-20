@@ -1,31 +1,30 @@
 package cx.aswin.boxlore.feature.info.logic
 
+import cx.aswin.boxlore.feature.info.R
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 class PodcastInfoToolbarLogicTest {
     @Test
     fun `auto download notice explains foreground discovery and optional show notifications`() {
-        assertEquals("Auto-download is on", toolbarWarningTitle(ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY))
-        assertEquals("Turn on notifications", toolbarWarningActionText(ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY))
-        val message = toolbarWarningMessage(ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY)
-        assertTrue(message.contains("open and refresh"))
-        assertTrue(message.contains("while boxlore is closed"))
+        assertEquals(R.string.podcast_info_warning_auto_download_title, toolbarWarningTitle(ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY))
+        assertEquals(R.string.podcast_info_warning_auto_download_action, toolbarWarningActionText(ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY))
+        assertEquals(R.string.podcast_info_warning_auto_download_message, toolbarWarningMessage(ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY))
     }
 
     @Test
     fun `toolbar warning copy for system permission blocked`() {
-        assertEquals("Notifications Disabled", toolbarWarningTitle(ToolbarWarning.SYSTEM_PERMISSION_BLOCKED))
-        assertEquals("Turn On", toolbarWarningActionText(ToolbarWarning.SYSTEM_PERMISSION_BLOCKED))
-        assertTrue(toolbarWarningMessage(ToolbarWarning.SYSTEM_PERMISSION_BLOCKED).contains("system settings"))
+        assertEquals(R.string.podcast_info_warning_blocked_title, toolbarWarningTitle(ToolbarWarning.SYSTEM_PERMISSION_BLOCKED))
+        assertEquals(R.string.podcast_info_warning_blocked_action, toolbarWarningActionText(ToolbarWarning.SYSTEM_PERMISSION_BLOCKED))
+        assertEquals(R.string.podcast_info_warning_blocked_message, toolbarWarningMessage(ToolbarWarning.SYSTEM_PERMISSION_BLOCKED))
     }
 
     @Test
     fun `toolbar warning copy for none uses defaults`() {
-        assertEquals("Notice", toolbarWarningTitle(ToolbarWarning.NONE))
-        assertEquals("", toolbarWarningMessage(ToolbarWarning.NONE))
-        assertEquals("", toolbarWarningActionText(ToolbarWarning.NONE))
+        assertEquals(R.string.podcast_info_warning_notice_title, toolbarWarningTitle(ToolbarWarning.NONE))
+        assertNull(toolbarWarningMessage(ToolbarWarning.NONE))
+        assertNull(toolbarWarningActionText(ToolbarWarning.NONE))
     }
 
     @Test

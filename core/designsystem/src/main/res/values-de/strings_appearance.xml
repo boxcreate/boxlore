@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Appearance › Lettering choices: how round the letters are. -->
+    <string name="font_roundness_crisp">Kantig</string>
+    <string name="font_roundness_soft">Weich</string>
+    <string name="font_roundness_round">Rund</string>
+</resources>

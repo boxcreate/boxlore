@@ -1,6 +1,8 @@
 package cx.aswin.boxlore.feature.widgets.logic
 
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.feature.widgets.NowPlayingWidgetSnapshot
+import cx.aswin.boxlore.feature.widgets.R
 import cx.aswin.boxlore.feature.widgets.WidgetControl
 import cx.aswin.boxlore.feature.widgets.WidgetPlaybackState
 
@@ -89,20 +91,32 @@ object WidgetOptimisticAction {
     }
 }
 
+/** What a screen reader hears for the whole widget: one whole sentence per case, so each language orders it. */
 object WidgetSemantics {
-    fun contentDescription(snapshot: NowPlayingWidgetSnapshot): String = if (!snapshot.hasEpisode) {
-        "boxlore now playing widget, no episode"
-    } else {
-        buildString {
-            append(snapshot.episodeTitle)
-            if (snapshot.podcastTitle.isNotBlank()) {
-                append(" from ")
-                append(snapshot.podcastTitle)
-            }
-            append(if (snapshot.isPlaying) ", playing" else ", paused")
-            WidgetProgress.minutesLeft(snapshot.positionMs, snapshot.durationMs)
-                ?.takeIf { it > 0 }
-                ?.let { minutes -> append(if (minutes == 1) ", 1 minute left" else ", $minutes minutes left") }
+    /** Indexed by [variant]: with show and playing, with show and paused, playing, paused. */
+    private val WITHOUT_TIME = intArrayOf(
+        R.string.widget_description_playing_from,
+        R.string.widget_description_paused_from,
+        R.string.widget_description_playing,
+        R.string.widget_description_paused,
+    )
+    private val WITH_MINUTES_LEFT = intArrayOf(
+        R.plurals.widget_description_playing_from_left,
+        R.plurals.widget_description_paused_from_left,
+        R.plurals.widget_description_playing_left,
+        R.plurals.widget_description_paused_left,
+    )
+
+    fun contentDescription(snapshot: NowPlayingWidgetSnapshot): UiText {
+        if (!snapshot.hasEpisode) return UiText.res(R.string.widget_description_empty)
+        val minutes = WidgetProgress.minutesLeft(snapshot.positionMs, snapshot.durationMs)?.takeIf { it > 0 }
+        val hasShow = snapshot.podcastTitle.isNotBlank()
+        val variant = (if (hasShow) 0 else 2) + (if (snapshot.isPlaying) 0 else 1)
+        val titles = if (hasShow) listOf(snapshot.episodeTitle, snapshot.podcastTitle) else listOf(snapshot.episodeTitle)
+        return if (minutes == null) {
+            UiText.Res(WITHOUT_TIME[variant], titles)
+        } else {
+            UiText.Plural(WITH_MINUTES_LEFT[variant], minutes, titles + minutes)
         }
     }
 }

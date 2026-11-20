@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
@@ -78,7 +79,7 @@ private fun RelatedEpisodesHeader(isActive: Boolean) {
             modifier = Modifier.size(14.dp)
         )
         Text(
-            text = "Listen further",
+            text = stringResource(R.string.briefing_screen_listen_further),
             style = MaterialTheme.typography.labelSmall.copy(
                 letterSpacing = 0.sp,
                 fontSize = 12.sp

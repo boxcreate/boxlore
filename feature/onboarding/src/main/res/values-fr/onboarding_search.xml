@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_search_placeholder">Titres, animateurs ou sujets…</string>
+    <string name="onboarding_search_clear">Effacer</string>
+    <string name="onboarding_search_trending">Tendances</string>
+    <string name="onboarding_search_trending_shows">Podcasts tendance</string>
+    <string name="onboarding_search_popular_in">Populaires : %1$s</string>
+    <string name="onboarding_search_no_popular">Aucune recommandation trouvée</string>
+    <string name="onboarding_search_empty_title">Aucun podcast trouvé</string>
+    <string name="onboarding_search_empty_body">Essayez de rechercher le mot exact ou le nom du podcast que vous cherchez, et vérifiez les espaces et l’orthographe.</string>
+    <string name="onboarding_search_matches">Résultats</string>
+    <string name="onboarding_search_also_found">Également trouvés</string>
+    <plurals name="onboarding_search_selected_shows">
+        <item quantity="one">Podcasts sélectionnés (%d)</item>
+        <item quantity="other">Podcasts sélectionnés (%d)</item>
+    </plurals>
+    <string name="onboarding_search_remove">Retirer</string>
+    <string name="onboarding_search_selected">Sélectionné</string>
+    <string name="onboarding_search_select">Sélectionner</string>
+    <string name="onboarding_search_side_trip_note">Ces podcasts seront ajoutés à votre bibliothèque, puis vous reviendrez à la discussion pour continuer à construire votre fil.</string>
+    <plurals name="onboarding_search_subscribe_continue_chat">
+        <item quantity="one">S’abonner et reprendre (%d)</item>
+        <item quantity="other">S’abonner et reprendre (%d)</item>
+    </plurals>
+    <plurals name="onboarding_search_continue_with">
+        <item quantity="one">Continuer avec %d</item>
+        <item quantity="other">Continuer avec %d</item>
+    </plurals>
+    <string name="onboarding_search_failed_title">Recherche impossible pour le moment</string>
+    <string name="onboarding_search_failed_body">Vérifiez votre connexion et réessayez.</string>
+    <string name="onboarding_search_try_again">Réessayer</string>
+</resources>

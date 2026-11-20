@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_support_one_time">One-time contribution • No recurring subscription</string>
+    <!-- In capitals; under a tier's story. -->
+    <string name="settings_support_tap_to_return">TAP TO RETURN</string>
+    <!-- In capitals. -->
+    <string name="settings_support_mission_label">A QUIET COMPANION</string>
+    <string name="settings_support_mission_title">Keeping boxlore fast, open, and ad-free</string>
+    <!-- Support boxlore. Tier names and codenames (Micro Energy Cell, WITCH CELL…) are product names and stay in English. -->
+    <!-- Support tier 1: how long it runs the servers. -->
+    <string name="settings_support_tier1_impact">Powers the boxlore servers for 3 hours</string>
+    <string name="settings_support_tier2_impact">Powers the boxlore servers for 8 hours</string>
+    <string name="settings_support_tier3_impact">Powers the boxlore servers for 1 full day</string>
+    <string name="settings_support_tier4_impact">Powers the boxlore servers for 3 full days</string>
+    <string name="settings_support_tier5_impact">Powers the boxlore servers for 1 full week</string>
+    <!-- Short label on the tier picker; at most 4 characters. -->
+    <string name="settings_support_tier1_short">3h</string>
+    <string name="settings_support_tier2_short">8h</string>
+    <string name="settings_support_tier3_short">1d</string>
+    <string name="settings_support_tier4_short">3d</string>
+    <string name="settings_support_tier5_short">7d</string>
+    <string name="settings_support_tier1_lore">Made when a forbidden energy core was sealed inside a rune-bound casing.</string>
+    <string name="settings_support_tier2_lore">Built from dead field units salvaged after the last machine war.</string>
+    <string name="settings_support_tier3_lore">Forged around a shard torn from an ancient solar reactor.</string>
+    <string name="settings_support_tier4_lore">Created when a server tower was rebuilt to draw power from unstable dark matter.</string>
+    <string name="settings_support_tier5_lore">Born from the heart of a failed orbital weapon, still pulsing with its original charge.</string>
+    <!-- Badge on the featured tier, in capitals. -->
+    <string name="settings_support_featured_control">★ SUPREME PATRON UNIT</string>
+    <!-- Pay button. %1$s is the tier's English product name, e.g. Micro Energy Cell. -->
+    <string name="settings_support_cta_control">Deploy %1$s</string>
+    <string name="settings_support_featured_world">★ LEGENDARY</string>
+    <string name="settings_support_mission_intro">Software that helps people learn, listen, and explore should simply exist without a catch.</string>
+    <!-- %1$s is the listening time, e.g. "42 hours". -->
+    <string name="settings_support_mission_companion_control">If boxlore has been a great companion across your %1$s of listening, backing a power cell helps keep the app free and ad-free for everyone.</string>
+    <string name="settings_support_mission_open_control">No ads, no paywalls. Backing a power cell helps fund our servers and keep boxlore open for everyone.</string>
+    <string name="settings_support_mission_companion_neon">If boxlore has been a great companion across your %1$s of listening, every snack helps keep the app free and ad-free for everyone.</string>
+    <string name="settings_support_mission_open_neon">No ads, no paywalls. Every snack helps fund our servers and keep boxlore open for everyone.</string>
+    <string name="settings_support_mission_companion_orbit">If boxlore has been a great companion across your %1$s of listening, every launch helps keep the app free and ad-free for everyone.</string>
+    <string name="settings_support_mission_open_orbit">No ads, no paywalls. Every launch helps fund our servers and keep boxlore open for everyone.</string>
+    <string name="settings_support_mission_companion_alchemy">If boxlore has been a great companion across your %1$s of listening, every relic helps keep the app free and ad-free for everyone.</string>
+    <string name="settings_support_mission_open_alchemy">No ads, no paywalls. Every relic helps fund our servers and keep boxlore open for everyone.</string>
+    <string name="settings_support_mission_companion_abyss">If boxlore has been a great companion across your %1$s of listening, every creature helps keep the app free and ad-free for everyone.</string>
+    <string name="settings_support_mission_open_abyss">No ads, no paywalls. Every creature helps fund our servers and keep boxlore open for everyone.</string>
+    <string name="settings_support_mission_companion_sky">If boxlore has been a great companion across your %1$s of listening, every island helps keep the app free and ad-free for everyone.</string>
+    <string name="settings_support_mission_open_sky">No ads, no paywalls. Every island helps fund our servers and keep boxlore open for everyone.</string>
+    <string name="settings_support_cta_neon">Buy %1$s</string>
+    <string name="settings_support_notice_neon_chip">COIN RETURNED</string>
+    <string name="settings_support_notice_neon_title">The coin slot isn\'t connected yet</string>
+    <string name="settings_support_notice_neon_dismiss">Take my coin back</string>
+    <!-- %1$s is the price, e.g. $6.99. -->
+    <string name="settings_support_notice_neon_body">Your %1$s rolled straight back out. Payments aren\'t set up yet, so nothing was charged.</string>
+    <string name="settings_support_cta_orbit">Launch %1$s</string>
+    <string name="settings_support_notice_orbit_chip">LAUNCH ON HOLD</string>
+    <string name="settings_support_notice_orbit_title">Mission control isn\'t online yet</string>
+    <string name="settings_support_notice_orbit_dismiss">Stand down</string>
+    <string name="settings_support_notice_orbit_body">Your %1$s never left the launch pad. Payments aren\'t set up yet, so nothing was charged.</string>
+    <string name="settings_support_cta_alchemy">Conjure %1$s</string>
+    <string name="settings_support_notice_alchemy_chip">THE SPELL FIZZLED</string>
+    <string name="settings_support_notice_alchemy_title">The cauldron isn\'t lit yet</string>
+    <string name="settings_support_notice_alchemy_dismiss">Cork it</string>
+    <string name="settings_support_notice_alchemy_body">Your %1$s stayed in your purse. Payments aren\'t set up yet, so nothing was charged.</string>
+    <string name="settings_support_cta_abyss">Summon %1$s</string>
+    <string name="settings_support_notice_abyss_chip">NO SIGNAL</string>
+    <string name="settings_support_notice_abyss_title">The deep isn\'t connected yet</string>
+    <string name="settings_support_notice_abyss_dismiss">Back to the deep</string>
+    <string name="settings_support_notice_abyss_body">Your %1$s stayed on dry land. Payments aren\'t set up yet, so nothing was charged.</string>
+    <string name="settings_support_cta_sky">Raise %1$s</string>
+    <string name="settings_support_notice_sky_chip">SKYPORT CLOSED</string>
+    <string name="settings_support_notice_sky_title">The skyport isn\'t open yet</string>
+    <string name="settings_support_notice_sky_dismiss">Back to the clouds</string>
+    <string name="settings_support_notice_sky_body">Your %1$s stayed on the ground. Payments aren\'t set up yet, so nothing was charged.</string>
+    <string name="settings_support_notice_control_chip">DEPLOYMENT PAUSED</string>
+    <string name="settings_support_notice_control_title">The power grid isn\'t connected yet</string>
+    <string name="settings_support_notice_control_body">Your %1$s is still yours. Payments aren\'t set up yet, so nothing was charged.</string>
+    <string name="settings_support_notice_control_dismiss">Stand by</string>
+    <!-- Listening time inside the mission line. -->
+    <plurals name="settings_support_listening_hours">
+        <item quantity="one">%1$d hour</item>
+        <item quantity="other">%1$d hours</item>
+    </plurals>
+</resources>

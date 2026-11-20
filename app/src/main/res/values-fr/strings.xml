@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lore_queue_conflict_title">Lancer une file d’attente Lore ?</string>
+    <string name="lore_queue_conflict_message">Votre file d’attente contient déjà des épisodes. Lancer une file d’attente Lore arrête la lecture et remplace votre file d’attente actuelle par cet épisode. Balayez vers la droite d’autres cartes Lore pour en ajouter.\n\nPour ajouter plutôt des épisodes à votre file d’attente actuelle, choisissez Garder la file actuelle. Appuyez ensuite sur une carte pour ouvrir ses détails et choisissez Ajouter à la file d’attente.</string>
+    <string name="lore_queue_conflict_replace">Lancer la file Lore</string>
+    <string name="lore_queue_conflict_keep">Garder la file actuelle</string>
+    <string name="app_cross_device_email_title">Se connecter à boxlore</string>
+    <string name="app_cross_device_email_body">Saisissez l’adresse e-mail utilisée pour demander ce lien de connexion.</string>
+    <string name="app_cross_device_email_label">Adresse e-mail</string>
+    <string name="app_cross_device_email_invalid">Saisissez une adresse e-mail valide</string>
+    <string name="app_cross_device_email_sign_in">Se connecter</string>
+    <string name="app_cross_device_email_cancel">Annuler</string>
+    <string name="app_library_export_json_success">Bibliothèque exportée</string>
+    <string name="app_library_export_json_failed">Échec de l’exportation : %1$s</string>
+    <string name="app_library_export_opml_success">Abonnements exportés en OPML</string>
+    <string name="app_library_export_opml_failed">Échec de l’exportation OPML : %1$s</string>
+    <string name="app_history_resume_description">Reprise depuis l’historique</string>
+</resources>

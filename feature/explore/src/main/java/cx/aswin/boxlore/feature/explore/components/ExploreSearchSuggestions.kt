@@ -109,7 +109,7 @@ internal fun ConceptQuestionList(onExampleClick: (String) -> Unit, modifier: Mod
                 ) {
                     Icon(icons.getOrElse(index) { Icons.Rounded.AutoAwesome }, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                     Text(
-                        example.label,
+                        stringResource(example.label),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = GoogleSansWeight.semiBold,
                         color = MaterialTheme.colorScheme.onSurface,

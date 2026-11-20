@@ -180,6 +180,49 @@ class QueueManager(private val queueRepository: QueueRepository, private val pla
         }
     }
 
+    /**
+     * Plays a playlist: replaces the queue with its first batch [episodes] (worked out by
+     * `PlaylistRepository.nextEpisodes`) tagged as [playlistId]'s, so Smart Queue waits and the
+     * service tops the queue up from the playlist when its last episode ends.
+     */
+    fun playPlaylist(
+        playlistId: String,
+        episodes: List<cx.aswin.boxlore.core.model.Episode>,
+        fallbackPodcast: cx.aswin.boxlore.core.model.Podcast,
+    ) {
+        val queue = PlaybackQueueContext.playlistEpisodes(episodes, playlistId)
+        if (queue.isEmpty()) return
+        PlaybackActivationRequest.clear()
+        scope.launch {
+            queueRepository.replaceQueue(queue)
+            val context = android.os.Bundle().apply {
+                putString("entry_point", PlaybackQueueContext.PLAYLIST)
+                putString("source_entry_point", PlaybackQueueContext.PLAYLIST)
+            }
+            playbackRepository.playQueue(queue, fallbackPodcast, sourceContext = context)
+        }
+    }
+
+    /** The queue now, for Undo after a list replaces it; null when nothing is queued or playing. */
+    fun upNextSnapshot(): UpNextSnapshot? = UpNextSnapshot.of(playbackRepository.playerState.value)
+
+    /**
+     * Undo: puts [snapshot]'s queue back with its episode where it was: playing again when it was
+     * playing, otherwise loaded paused, so no audio starts.
+     */
+    fun restoreUpNext(snapshot: UpNextSnapshot) {
+        if (snapshot.episodes.isEmpty()) return
+        PlaybackActivationRequest.clear()
+        scope.launch {
+            queueRepository.replaceQueue(snapshot.episodes)
+            if (snapshot.wasPlaying) {
+                playbackRepository.playQueue(snapshot.episodes, snapshot.podcast, snapshot.currentIndex, initialPositionMs = snapshot.positionMs)
+            } else {
+                playbackRepository.queueCoordinator.loadQueuePaused(snapshot.episodes, snapshot.podcast, snapshot.currentIndex, snapshot.positionMs)
+            }
+        }
+    }
+
     fun dismissSameShowContinuation() {
         playbackRepository.dismissSameShowContinuation()
     }

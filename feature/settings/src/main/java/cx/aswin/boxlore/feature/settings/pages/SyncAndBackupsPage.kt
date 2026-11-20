@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,11 +28,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsNavigationRow
@@ -59,7 +64,7 @@ internal fun SyncAndBackupsPage(
 ) {
     TrackScreenView("sync_and_backups")
     SettingsScaffold(
-        title = "Cloud Sync & Backups",
+        title = stringResource(R.string.settings_page_sync),
         onBack = onBack,
     ) {
         SyncAccountSection(
@@ -79,7 +84,7 @@ private fun SyncAccountSection(
     syncStatus: CloudSyncUiStatus,
     onAccountClick: () -> Unit,
 ) {
-    SettingsGroup(title = "Cloud Sync") {
+    SettingsGroup(title = stringResource(R.string.settings_sync_cloud_sync_title)) {
         CloudSyncCard(
             accountStatus = accountStatus,
             syncStatus = syncStatus,
@@ -121,17 +126,18 @@ private fun resolveSyncVisual(
     }
 }
 
-internal fun resolveSyncBadgeText(syncStatus: CloudSyncUiStatus): String = when {
-    syncStatus is CloudSyncUiStatus.Error -> "Sync issue"
-    syncStatus is CloudSyncUiStatus.Syncing -> "Syncing..."
-    else -> "Cloud sync active"
+@StringRes
+internal fun resolveSyncBadgeText(syncStatus: CloudSyncUiStatus): Int = when {
+    syncStatus is CloudSyncUiStatus.Error -> R.string.settings_sync_badge_issue
+    syncStatus is CloudSyncUiStatus.Syncing -> R.string.settings_sync_badge_syncing
+    else -> R.string.settings_sync_badge_active
 }
 
-internal fun resolveCloudSyncSubtitle(accountStatus: String?): String =
+internal fun resolveCloudSyncSubtitle(accountStatus: String?): UiText =
     if (accountStatus != null) {
-        "Signed in as $accountStatus"
+        UiText.res(R.string.settings_sync_signed_in_as, accountStatus)
     } else {
-        "Sign in to backup and sync across devices"
+        UiText.res(R.string.settings_sync_sign_in_prompt)
     }
 
 @Composable
@@ -146,7 +152,7 @@ private fun SyncStatusBadge(
     } else {
         MaterialTheme.colorScheme.primary
     }
-    val statusText = resolveSyncBadgeText(syncStatus)
+    val statusText = stringResource(resolveSyncBadgeText(syncStatus))
 
     Row(
         modifier = modifier,
@@ -208,14 +214,14 @@ private fun CloudSyncCard(
             verticalArrangement = Arrangement.spacedBy(3.dp),
         ) {
             Text(
-                text = "Cloud sync",
+                text = stringResource(R.string.settings_sync_cloud_sync_label),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = GoogleSansWeight.bold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
 
             Text(
-                text = resolveCloudSyncSubtitle(accountStatus),
+                text = resolveCloudSyncSubtitle(accountStatus).asString(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -234,7 +240,7 @@ private fun CloudSyncCard(
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
-                    contentDescription = "Open account settings",
+                    contentDescription = stringResource(R.string.settings_sync_open_account),
                     modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -244,23 +250,24 @@ private fun CloudSyncCard(
 }
 
 /** Names only what `LibraryBackupManager.exportLibraryAsJson` writes. */
-internal const val FULL_LIBRARY_EXPORT_SUMMARY = "Subscriptions, folders, history, likes, and settings (JSON)"
+@StringRes
+internal val FULL_LIBRARY_EXPORT_SUMMARY = R.string.settings_sync_full_backup_summary
 
 @Composable
 private fun SyncBackupExportGroup(
     backupActions: LibraryBackupActions,
 ) {
-    SettingsGroup(title = "Export") {
+    SettingsGroup(title = stringResource(R.string.settings_sync_export_title)) {
         SettingsNavigationRow(
-            title = "Full library backup",
-            supportingText = FULL_LIBRARY_EXPORT_SUMMARY,
+            title = stringResource(R.string.settings_sync_full_backup),
+            supportingText = stringResource(FULL_LIBRARY_EXPORT_SUMMARY),
             icon = Icons.Rounded.FileUpload,
             onClick = backupActions.onExportJson,
         )
         SettingsDivider()
         SettingsNavigationRow(
-            title = "Subscriptions only",
-            supportingText = "OPML file",
+            title = stringResource(R.string.settings_sync_subscriptions_only),
+            supportingText = stringResource(R.string.settings_sync_opml_file),
             icon = Icons.Rounded.FileUpload,
             onClick = backupActions.onExportOpml,
         )
@@ -271,17 +278,17 @@ private fun SyncBackupExportGroup(
 private fun SyncBackupImportGroup(
     backupActions: LibraryBackupActions,
 ) {
-    SettingsGroup(title = "Import") {
+    SettingsGroup(title = stringResource(R.string.settings_sync_import_title)) {
         SettingsNavigationRow(
-            title = "Full library backup",
-            supportingText = "Restores Missing episodes? opt-ins and refreshes those shows",
+            title = stringResource(R.string.settings_sync_full_backup),
+            supportingText = stringResource(R.string.settings_sync_import_full_description),
             icon = Icons.Rounded.FileDownload,
             onClick = backupActions.onImportJson,
         )
         SettingsDivider()
         SettingsNavigationRow(
-            title = "Subscriptions only",
-            supportingText = "Import from an OPML file",
+            title = stringResource(R.string.settings_sync_subscriptions_only),
+            supportingText = stringResource(R.string.settings_sync_import_opml_description),
             icon = Icons.Rounded.FileDownload,
             onClick = backupActions.onImportOpml,
         )

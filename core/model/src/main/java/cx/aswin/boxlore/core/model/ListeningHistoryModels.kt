@@ -22,6 +22,8 @@ data class ListeningHistoryItem(
     val firstPlayedAt: Long? = null,
     /** First finish by listening: null when not known, 0 when before boxlore recorded it, else epoch ms. */
     val finishedAt: Long? = null,
+    /** The archive decision as stored (0 never, positive archived at, negative brought back at), so a history Undo keeps it. */
+    val dismissedAt: Long = 0L,
 )
 
 enum class ListeningPeriod {
@@ -196,7 +198,7 @@ data class ListeningHistoryRowSnapshot(
 )
 
 /**
- * An episode's like and completion settings shared by its stored IDs, removed with its history
+ * An episode's like, completion and archive settings shared by its stored IDs, removed with its history
  * and put back by Undo.
  *
  * Added in P4 of the own-episode-IDs plan (plan section 8, history removal across IDs).
@@ -209,6 +211,8 @@ data class ListeningGroupStateSnapshot(
     val completedAt: Long,
     val completeClearedAt: Long,
     val version: Long,
+    val dismissedAt: Long = 0L,
+    val dismissClearedAt: Long = 0L,
 )
 
 /**

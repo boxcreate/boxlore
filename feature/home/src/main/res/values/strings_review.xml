@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Milestone review prompt (bottom sheet). The wording changes with how many episodes the listener has finished. -->
+    <string name="home_review_pro_title">You\'re a podcast pro</string>
+    <!-- Shown from 30 finished episodes. -->
+    <plurals name="home_review_pro_body">
+        <item quantity="one">%1$d episode and counting — your review would mean the world to us.</item>
+        <item quantity="other">%1$d episodes and counting — your review would mean the world to us.</item>
+    </plurals>
+    <string name="home_review_regular_title">You\'re a regular listener</string>
+    <!-- Shown from 15 finished episodes. -->
+    <plurals name="home_review_regular_body">
+        <item quantity="one">You\'ve finished %1$d episode. Mind leaving a quick rating?</item>
+        <item quantity="other">You\'ve finished %1$d episodes. Mind leaving a quick rating?</item>
+    </plurals>
+    <string name="home_review_roll_title">You\'re on a roll</string>
+    <plurals name="home_review_roll_body">
+        <item quantity="one">You\'ve completed %1$d episode. How\'s boxlore treating you?</item>
+        <item quantity="other">You\'ve completed %1$d episodes. How\'s boxlore treating you?</item>
+    </plurals>
+    <!-- Primary button: opens the Play review flow. -->
+    <string name="home_review_rate_boxlore">Rate boxlore</string>
+    <!-- Primary button on the first milestone: opens the Play review flow. -->
+    <string name="home_review_loving_it">Loving it</string>
+    <!-- Secondary button: closes the prompt. -->
+    <string name="home_review_not_right_now">Not right now</string>
+    <!-- Secondary button: opens the feedback form. -->
+    <string name="home_review_could_be_better">Could be better</string>
+
+    <!-- Sheet shown after the Play review flow returns. -->
+    <string name="home_post_review_title">Glad you\'re enjoying boxlore</string>
+    <string name="home_post_review_body">If you didn\'t get a chance to leave a rating, no worries. We also love hearing your feature ideas!</string>
+    <string name="home_post_review_share_idea">Share an idea</string>
+    <string name="home_post_review_maybe_later">Maybe later</string>
+    <string name="home_review_rate_on_play">Rate on Google Play</string>
+
+    <!-- Feedback form (bottom sheet). -->
+    <string name="home_feedback_title">Share your thoughts</string>
+    <string name="home_feedback_close">Close</string>
+    <string name="home_feedback_sent">Sent — thank you!</string>
+    <string name="home_feedback_category_label">What\'s this about?</string>
+    <!-- Category chips; keep short, three sit on one row. -->
+    <string name="home_feedback_category_feature">Feature idea</string>
+    <string name="home_feedback_category_bug">Bug report</string>
+    <string name="home_feedback_category_other">Other</string>
+    <string name="home_feedback_hint_feature">Describe the feature you\'d like to see...</string>
+    <string name="home_feedback_hint_bug">What happened and how can we reproduce it?</string>
+    <string name="home_feedback_hint_other">Tell us what\'s on your mind...</string>
+    <!-- Characters typed out of the limit, e.g. "120/2000". -->
+    <string name="home_feedback_char_count">%1$d/%2$d</string>
+    <string name="home_feedback_email_feature">Mind sharing your email? We\'d love to follow up and chat more about your idea.</string>
+    <string name="home_feedback_email_bug">Mind sharing your email? We may need a few more details to help squash this bug.</string>
+    <string name="home_feedback_email_other">Mind sharing your email? We really appreciate the feedback and may reach out.</string>
+    <!-- Placeholder in the email field. -->
+    <string name="home_feedback_email_hint">you@example.com (optional)</string>
+    <string name="home_feedback_anonymous" formatted="false">Feedback is 100% anonymous — no account info is shared.</string>
+    <string name="home_feedback_error_empty">Please write a message first</string>
+    <string name="home_feedback_error_send">Couldn\'t send right now. Please try again.</string>
+    <string name="home_feedback_sending">Sending...</string>
+    <string name="home_feedback_send">Send feedback</string>
+</resources>

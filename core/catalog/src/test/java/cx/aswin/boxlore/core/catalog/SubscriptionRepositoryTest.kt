@@ -211,6 +211,14 @@ class SubscriptionRepositoryTest {
         podcastDao.markPodcastsSynced(listOf("pod-1"), timestamp = 5000L)
         repository.updateCustomGenre("pod-1", "Tech Overrides", "cpu")
         assertTrue(podcastDao.getPodcast("pod-1")!!.isDirty)
+
+        podcastDao.markPodcastsSynced(listOf("pod-1"), timestamp = 6000L)
+        repository.setPlaybackSpeedOverride("pod-1", 1.5f)
+        assertTrue(podcastDao.getPodcast("pod-1")!!.isDirty)
+
+        podcastDao.markPodcastsSynced(listOf("pod-1"), timestamp = 7000L)
+        repository.setSkipSilenceOverride("pod-1", true)
+        assertTrue(podcastDao.getPodcast("pod-1")!!.isDirty)
     }
 
     @Test
@@ -279,6 +287,40 @@ class SubscriptionRepositoryTest {
         val stored = podcastDao.getPodcast("pod-1")!!
         assertEquals(5_000L, stored.skipBeginningOverrideMs)
         assertEquals(10_000L, stored.skipEndingOverrideMs)
+    }
+
+    @Test
+    fun setPlaybackSpeedAndTrimSilenceOverridesPersist() = runTest {
+        repository.subscribe(podcast())
+        repository.setPlaybackSpeedOverride("pod-1", 1.25f)
+        repository.setSkipSilenceOverride("pod-1", false)
+
+        val stored = podcastDao.getPodcast("pod-1")!!
+        assertEquals(1.25f, stored.playbackSpeedOverride)
+        assertEquals(false, stored.skipSilenceOverride)
+        assertEquals(1.25f, repository.subscribedPodcasts.first().single().playbackSpeedOverride)
+    }
+
+    @Test
+    fun theShowsOwnPlaybackSettingsSurviveUnfollowFollowAgainAndRestore() = runTest {
+        repository.subscribe(podcast())
+        repository.setPlaybackSkipOverrides("pod-1", 5_000L, null)
+        repository.setPlaybackSpeedOverride("pod-1", 2f)
+        repository.setSkipSilenceOverride("pod-1", true)
+
+        repository.toggleSubscription(podcast())
+        val unfollowed = podcastDao.getPodcast("pod-1")!!
+        assertFalse(unfollowed.isSubscribed)
+        assertEquals(2f to true, unfollowed.playbackSpeedOverride to unfollowed.skipSilenceOverride)
+
+        repository.toggleSubscription(podcast())
+        repository.restoreSubscription(podcast(), subscribedAt = 1_000L)
+
+        val stored = podcastDao.getPodcast("pod-1")!!
+        assertTrue(stored.isSubscribed)
+        assertEquals(5_000L, stored.skipBeginningOverrideMs)
+        assertEquals(2f, stored.playbackSpeedOverride)
+        assertEquals(true, stored.skipSilenceOverride)
     }
 
     @Test

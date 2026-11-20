@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="model_folder_size_compact_title">Kompakt</string>
+    <string name="model_folder_size_wide_title">Breit</string>
+    <string name="model_folder_size_featured_title">Hervorgehoben</string>
+    <string name="model_folder_size_tall_title">Hoch</string>
+    <string name="model_folder_size_shelf_title">Regal</string>
+    <string name="model_folder_size_panel_title">Panel</string>
+    <string name="model_folder_size_showcase_title">Showcase</string>
+    <string name="model_folder_size_compact_subtitle">1 Zelle • Tippen für Podcasts</string>
+    <string name="model_folder_size_wide_subtitle">2 Spalten • Antippbar</string>
+    <string name="model_folder_size_featured_subtitle">2×2 • Antippbar + mehr</string>
+    <string name="model_folder_size_tall_subtitle">2×3 hoch • Antippbar</string>
+    <string name="model_folder_size_shelf_subtitle">Ganze Reihe • Antippbar</string>
+    <string name="model_folder_size_panel_subtitle">3×2-Panel • Antippbar</string>
+    <string name="model_folder_size_showcase_subtitle">Max. 3×3 • Volles Raster</string>
+    <string name="model_folder_size_placement_anywhere">Kann überall im Raster platziert werden</string>
+    <string name="model_folder_size_placement_top">Oben auf der Seite angeheftet</string>
+</resources>

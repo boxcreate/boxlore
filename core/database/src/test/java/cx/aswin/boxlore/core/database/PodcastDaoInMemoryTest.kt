@@ -88,6 +88,15 @@ class PodcastDaoInMemoryTest {
         assertEquals(listOf("rss:disabled", "rss:removed"), dao.getRssNotificationRows().map { it.podcastId })
     }
 
+    @Test
+    fun ownSpeedCountCountsOnlyFollowedShowsWithASpeed() = runTest {
+        dao.upsert(createPodcast("1", isSubscribed = true).copy(playbackSpeedOverride = 1.5f))
+        dao.upsert(createPodcast("2", isSubscribed = true))
+        dao.upsert(createPodcast("3").copy(playbackSpeedOverride = 2f))
+
+        assertEquals(1, dao.observeFollowedOwnSpeedCount().first())
+    }
+
     @Suppress("LongParameterList")
     private fun createPodcast(
         podcastId: String,

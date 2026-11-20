@@ -92,7 +92,7 @@ internal fun HomeDaypartMark(daypart: ContentDaypart, fullyVisible: Boolean) {
 
 @Composable
 private fun rememberDaypartAmbientPhase(daypart: ContentDaypart): State<Float> {
-    val transition = rememberInfiniteTransition(label = "Daypart ambient motion")
+    val transition = rememberInfiniteTransition(label = "daypartAmbientMotion")
     return transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
@@ -100,7 +100,7 @@ private fun rememberDaypartAmbientPhase(daypart: ContentDaypart): State<Float> {
             tween(if (daypart == ContentDaypart.LATE_NIGHT) 1_400 else 2_400, easing = FastOutSlowInEasing),
             RepeatMode.Reverse,
         ),
-        label = "Sun rays or star brightness",
+        label = "daypartRayBrightness",
     )
 }
 

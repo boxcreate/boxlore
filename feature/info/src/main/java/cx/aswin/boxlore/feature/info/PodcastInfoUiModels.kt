@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.info
 import androidx.compose.runtime.Immutable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.text.UiText
 
 enum class EpisodeSort { NEWEST, OLDEST }
 
@@ -77,7 +78,7 @@ sealed interface PodcastInfoUiState {
         val piEpisodes: List<Episode> = emptyList(),
         val directFeedChip: DirectFeedChipState = DirectFeedChipState.Hidden,
         /** One-shot toast/snackbar text; cleared via [PodcastInfoViewModel.consumeUserMessage]. */
-        val userMessage: String? = null,
+        val userMessage: UiText? = null,
         /** The feed-first show page's status line (P4 PR 16). */
         val feedStatus: ShowFeedStatus = ShowFeedStatus.NONE,
         /**

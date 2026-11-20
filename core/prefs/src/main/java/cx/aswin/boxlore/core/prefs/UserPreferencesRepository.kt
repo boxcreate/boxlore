@@ -52,6 +52,7 @@ class UserPreferencesRepository(context: Context,) {
     )
     private val library = LibraryPreferences(dataStore)
     private val subscriptionsLayout = SubscriptionsLayoutPreferences(dataStore)
+    private val showPage = ShowPagePreferences(dataStore)
     private val engagement = EngagementPreferences(dataStore)
     private val tips = TooltipPreferences(dataStore)
     private val reviews = ReviewPromptPreferences(dataStore)
@@ -161,12 +162,7 @@ class UserPreferencesRepository(context: Context,) {
                 if (stored != null) {
                     normalizeRegionCode(stored)
                 } else {
-                    val localeCountry =
-                        java.util.Locale
-                            .getDefault()
-                            .country
-                            .lowercase()
-                    ContentRegions.localeDefaultRegion(localeCountry)
+                    ContentRegions.localeDefaultRegion(deviceCountry())
                 }
             }.distinctUntilChanged()
 
@@ -211,7 +207,24 @@ class UserPreferencesRepository(context: Context,) {
 
     /** The stored chart country, else the device locale's. */
     private fun regionOf(preferences: Preferences): String = preferences[Keys.REGION]?.let { normalizeRegionCode(it) }
-        ?: ContentRegions.localeDefaultRegion(java.util.Locale.getDefault().country.lowercase())
+        ?: ContentRegions.localeDefaultRegion(deviceCountry())
+
+    /**
+     * The phone's own country, lowercase. Read from the system configuration because an App language
+     * picked on Android 13+ (a bare tag such as "es") replaces [java.util.Locale.getDefault] and drops
+     * its country; falls back to the default locale where system resources aren't available.
+     */
+    private fun deviceCountry(): String {
+        val system =
+            runCatching {
+                android.content.res.Resources
+                    .getSystem()
+                    .configuration.locales
+                    .get(0)
+                    ?.country
+            }.getOrNull()
+        return (system?.takeIf { it.isNotEmpty() } ?: java.util.Locale.getDefault().country).lowercase()
+    }
 
     /**
      * Changes the chart country. The listener's languages and English choice stay as they are; a
@@ -437,6 +450,9 @@ class UserPreferencesRepository(context: Context,) {
 
     suspend fun removePodcastIdFromManualOrderAndPins(podcastId: String) = library.removePodcastIdFromManualOrderAndPins(podcastId)
 
+    /** The shows the listener hid everywhere; kept on an account switch. */
+    val hiddenShows = HiddenShowsPreferences(dataStore)
+
     suspend fun legacyRssRepairVersion(): Int = library.legacyRssRepairVersion()
 
     suspend fun markLegacyRssRepairVersion(version: Int) = library.markLegacyRssRepairVersion(version)
@@ -477,6 +493,12 @@ class UserPreferencesRepository(context: Context,) {
             preferences[Keys.PLAYBACK_SPEED] = speed
         }
     }
+
+    private val playbackAudio = PlaybackAudioPreferences(dataStore)
+
+    /** Trim silence: skips long pauses in episodes. Off by default; a show can set its own. */
+    val trimSilenceEnabledStream: Flow<Boolean> = playbackAudio.trimSilenceEnabled
+    suspend fun setTrimSilenceEnabled(enabled: Boolean) = playbackAudio.setTrimSilenceEnabled(enabled)
 
     val skipBeginningMsStream: Flow<Long> =
         playbackDurationStream(
@@ -683,6 +705,10 @@ class UserPreferencesRepository(context: Context,) {
             preferences[Keys.HIDE_COMPLETED_IN_SHOW_DETAILS] = hide
         }
     }
+
+    /** Show pages list episodes by title only, without artwork, descriptions or the action row (off by default). */
+    val episodeTitlesOnlyStream: Flow<Boolean> = showPage.episodeTitlesOnlyStream
+    suspend fun setEpisodeTitlesOnly(enabled: Boolean) = showPage.setEpisodeTitlesOnly(enabled)
 
     val hideCompletedInHomeStream: Flow<Boolean> =
         dataStore.data

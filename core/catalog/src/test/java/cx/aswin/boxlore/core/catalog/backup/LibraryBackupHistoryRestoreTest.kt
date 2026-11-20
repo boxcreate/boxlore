@@ -28,6 +28,13 @@ class LibraryBackupHistoryRestoreTest {
         assertEquals(42L, restored.likedAt)
     }
 
+    @Test
+    fun sanitizeKeepsTheArchiveDecisionEitherWay() {
+        assertEquals(42L, LibraryBackupHistoryRestore.sanitize(history().copy(dismissedAt = 42L)).dismissedAt)
+        assertEquals(-43L, LibraryBackupHistoryRestore.sanitize(history().copy(dismissedAt = -43L)).dismissedAt)
+        assertEquals(0L, LibraryBackupHistoryRestore.sanitize(history()).dismissedAt)
+    }
+
     private fun history() = ListeningHistoryEntity(
         episodeId = "-9",
         podcastId = "100",

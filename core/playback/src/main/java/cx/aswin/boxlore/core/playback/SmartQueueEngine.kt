@@ -217,10 +217,12 @@ class DefaultSmartQueueEngine(
     private suspend fun buildExcludeSet(currentEpisode: EpisodeItem, excludeEpisodeIds: Set<String>,): MutableSet<String> {
         val skippedEpisodes = skipMemory?.skippedEpisodeIds() ?: emptySet()
         val completed = runSuspendCatching { sources.getCompletedEpisodeIds() }.getOrDefault(emptySet())
+        val dismissed = runSuspendCatching { sources.getDismissedEpisodeIds() }.getOrDefault(emptySet())
         val currentId = currentEpisode.id.toString()
-        return HashSet<String>(excludeEpisodeIds.size + completed.size + skippedEpisodes.size + 1).apply {
+        return HashSet<String>(excludeEpisodeIds.size + completed.size + dismissed.size + skippedEpisodes.size + 1).apply {
             addAll(excludeEpisodeIds)
             addAll(completed)
+            addAll(dismissed)
             addAll(skippedEpisodes)
             add(currentId)
         }

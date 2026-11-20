@@ -55,6 +55,8 @@ class RoomLocalCatalog(private val database: BoxLoreDatabase,) : LocalCatalogPor
                         ?: existing.skipBeginningOverrideMs,
                     skipEndingOverrideMs = podcast.skipEndingOverrideMs
                         ?: existing.skipEndingOverrideMs,
+                    playbackSpeedOverride = podcast.playbackSpeedOverride ?: existing.playbackSpeedOverride,
+                    skipSilenceOverride = podcast.skipSilenceOverride ?: existing.skipSilenceOverride,
                     // Preserve RSS / catalog identity fields from the existing row.
                     sourceType = existing.sourceType,
                     feedUrl = existing.feedUrl ?: podcast.feedUrl,

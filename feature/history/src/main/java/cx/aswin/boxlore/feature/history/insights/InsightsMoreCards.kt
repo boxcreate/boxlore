@@ -71,7 +71,7 @@ internal fun MonthMosaicCard(mosaic: Mosaic, today: LocalDate, onOpenDay: (Local
     InsightsCard {
         InsightsCardHeader(
             stringResource(R.string.history_ins_your_month, mosaic.month.month.getDisplayName(TextStyle.FULL_STANDALONE, locale)),
-            stringResource(R.string.history_ins_days_of, mosaic.listenedDays, mosaic.daysSoFar),
+            pluralStringResource(R.plurals.history_ins_days_of, mosaic.daysSoFar, mosaic.listenedDays, mosaic.daysSoFar),
         )
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -232,7 +232,8 @@ internal fun GenresCard(genres: List<GenreShare>) {
     val palette = listOf(colors.primary, colors.tertiary, colors.secondary, colors.primaryContainer, colors.outlineVariant)
     val other = stringResource(R.string.history_ins_genre_other)
     val names = genres.map { it.genre ?: other }
-    val description = genres.indices.joinToString { "${names[it]} ${InsightsWording.percent(genres[it].share)}%" }
+    val shareLabels = genres.indices.map { stringResource(R.string.history_ins_part_share, names[it], InsightsWording.percent(genres[it].share)) }
+    val description = shareLabels.joinToString()
     InsightsCard {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(stringResource(R.string.history_ins_genres), style = TimelineType.header, color = colors.onSurface)
@@ -259,7 +260,7 @@ internal fun GenresCard(genres: List<GenreShare>) {
                             Modifier.size(10.dp).clip(CircleShape).background(palette[index % palette.size])
                                 .then(if (index == 3) Modifier.border(1.dp, colors.primary, CircleShape) else Modifier),
                         )
-                        Text("${names[index]} ${InsightsWording.percent(genres[index].share)}%", style = InsightsType.body13, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(shareLabels[index], style = InsightsType.body13, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
                 if (pair.size == 1) Box(Modifier.weight(1f))
@@ -274,7 +275,7 @@ internal fun MilestoneCard(milestone: FinishedMilestone) {
     val colors = MaterialTheme.colorScheme
     InsightsCard {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
-            Text(stringResource(R.string.history_ins_finished_count, milestone.finished), style = InsightsType.value24, color = colors.onSurface)
+            Text(pluralStringResource(R.plurals.history_ins_finished_count, milestone.finished, milestone.finished), style = InsightsType.value24, color = colors.onSurface)
             Text(stringResource(R.string.history_ins_all_time), style = TimelineType.meta, color = colors.onSurfaceVariant)
         }
         Box(Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)).background(colors.surfaceVariant)) {
@@ -287,7 +288,7 @@ internal fun MilestoneCard(milestone: FinishedMilestone) {
             )
         }
         Text(
-            stringResource(R.string.history_ins_to_milestone, milestone.next - milestone.finished, milestone.next),
+            pluralStringResource(R.plurals.history_ins_to_milestone, milestone.next - milestone.finished, milestone.next - milestone.finished, milestone.next),
             style = InsightsType.body14,
             color = colors.onSurfaceVariant,
         )

@@ -21,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -35,6 +37,8 @@ import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
+import cx.aswin.boxlore.feature.settings.pages.AppearanceActions
+import cx.aswin.boxlore.feature.settings.pages.AppearanceUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -70,6 +74,7 @@ class TabletSettingsLayoutTest {
 
     @Test fun `split categories follow each page's parent`() {
         assertEquals(ProfileSettingsDestination.Appearance, settingsCategoryOf(ProfileSettingsDestination.AppearanceText))
+        assertEquals(ProfileSettingsDestination.Appearance, settingsCategoryOf(ProfileSettingsDestination.AppearanceShowPages))
         assertEquals(ProfileSettingsDestination.Appearance, settingsCategoryOf(ProfileSettingsDestination.CustomTheme))
         assertEquals(ProfileSettingsDestination.SyncAndBackups, settingsCategoryOf(ProfileSettingsDestination.Account))
         assertEquals(ProfileSettingsDestination.Downloads, settingsCategoryOf(ProfileSettingsDestination.Downloads))
@@ -111,6 +116,44 @@ class TabletSettingsLayoutTest {
         fixture.compose.onNodeWithText("draft retained").assertIsDisplayed()
         fixture.compose.onNodeWithText("Downloads").performClick()
         assertEquals(ProfileSettingsDestination.Downloads, selected.value)
+    }
+
+    @Test fun `Show pages keeps its switch, back arrow and Appearance highlight through resizes both ways`() {
+        selected.value = ProfileSettingsDestination.AppearanceShowPages
+        val state = mutableStateOf(AppearanceUiState("system", false, "violet", "standard"))
+        val saved = mutableListOf<Boolean>()
+        fixture.prepare()
+        fixture.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreWindowLayout(1280f, 1280f)) {
+                    Box(Modifier.requiredSize(paneWidth.value.dp, 800.dp)) {
+                        AdaptiveSettingsLayout(selected.value, SettingsScreenConfig(onBack = { backs++ }, onResetAnalytics = {}), { selected.value = it }) {
+                            backVisible = LocalSettingsPaneBackVisible.current
+                            val actions = AppearanceActions({}, {}, {}, {}, onSetEpisodeTitlesOnly = {
+                                saved += it
+                                state.value = state.value.copy(episodeTitlesOnly = it)
+                            })
+                            cx.aswin.boxlore.feature.settings.pages.AppearanceShowPagesPage(state.value, actions, onBack = {})
+                        }
+                    }
+                }
+            }
+        }
+        fixture.compose.mainClock.autoAdvance = true
+        fixture.compose.waitForIdle()
+        fixture.compose.onNodeWithText("Appearance").assertIsSelected()
+        fixture.compose.onNodeWithText("Episode titles only").performClick()
+        assertEquals(listOf(true), saved)
+        listOf(640, 1200, 640).forEach { width ->
+            fixture.compose.runOnIdle { paneWidth.value = width }
+            settle()
+            assertTrue(backVisible)
+            fixture.compose.onNode(androidx.compose.ui.test.isToggleable()).assertIsOn()
+            if (width > 640) fixture.compose.onNodeWithText("Appearance").assertIsSelected() else fixture.compose.onNodeWithText("Appearance").assertDoesNotExist()
+        }
+        fixture.compose.onNodeWithText("Episode titles only").performClick()
+        assertEquals(listOf(true, false), saved)
+        fixture.compose.onNode(androidx.compose.ui.test.isToggleable()).assertIsOff()
     }
 
     @Test fun `onboarding and support stay single pane on a large tablet`() {

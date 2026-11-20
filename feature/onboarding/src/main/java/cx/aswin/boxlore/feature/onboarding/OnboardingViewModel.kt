@@ -10,6 +10,7 @@ import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.OnboardingHistoryEntry
 import cx.aswin.boxlore.core.network.model.toPodcast
+import cx.aswin.boxlore.core.prefs.AppLanguage
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import java.util.concurrent.ConcurrentHashMap
@@ -28,10 +29,17 @@ class OnboardingViewModel(
     internal val podcastRepository: PodcastRepository,
     internal val subscriptionRepository: SubscriptionRepository,
     internal val userPrefs: UserPreferencesRepository,
+    /**
+     * The translation the phone suggests (the app's App language API), asked once when this view
+     * model is built and only while onboarding is unfinished; non-null opens with the language question.
+     */
+    appLanguageSuggestion: () -> AppLanguage? = { null },
+    /** The translation the screens show ("es", "pt-BR"), sent so Echo writes in it; null for English. */
+    internal val echoLanguageTag: () -> String? = { null },
 ) : AndroidViewModel(application) {
     internal val boxcastPrefs = BoxcastPrefs(application)
 
-    internal val _uiState = MutableStateFlow(OnboardingUiState())
+    internal val _uiState = MutableStateFlow(OnboardingAppLanguage.initialState(boxcastPrefs.isOnboardingCompleted(), appLanguageSuggestion))
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
     internal var searchJob: Job? = null
@@ -131,13 +139,19 @@ class OnboardingViewModel(
 
     /** Called when the welcome screen composable first loads */
     fun onWelcomeScreenViewed() {
-        if (!onboardingStartedFired) {
-            onboardingStartMs = System.currentTimeMillis()
-            welcomeScreenStartMs = System.currentTimeMillis()
-            currentStepStartMs = System.currentTimeMillis()
-            AnalyticsHelper.trackOnboardingStarted()
-            onboardingStartedFired = true
-        }
+        markOnboardingStarted()
+        if (welcomeScreenStartMs == 0L) welcomeScreenStartMs = System.currentTimeMillis()
+    }
+
+    /** The app language question, when shown, is where onboarding starts, so leaving there counts as abandoning. */
+    fun onAppLanguageQuestionViewed() = markOnboardingStarted()
+
+    private fun markOnboardingStarted() {
+        if (onboardingStartedFired) return
+        onboardingStartMs = System.currentTimeMillis()
+        currentStepStartMs = System.currentTimeMillis()
+        AnalyticsHelper.trackOnboardingStarted()
+        onboardingStartedFired = true
     }
 
     /** Called when the genre screen composable first loads */
@@ -443,6 +457,7 @@ class OnboardingViewModel(
     }
 
     private fun lastStepName(step: OnboardingStep): String = when (step) {
+        OnboardingStep.APP_LANGUAGE -> OnboardingAppLanguage.STEP_NAME
         OnboardingStep.WELCOME -> "welcome"
         OnboardingStep.GENRES -> "genres"
         OnboardingStep.SUB_GENRES -> "sub_genres"

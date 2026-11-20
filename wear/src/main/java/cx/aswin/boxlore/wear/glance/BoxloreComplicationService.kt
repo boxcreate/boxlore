@@ -61,7 +61,7 @@ class BoxloreComplicationService : SuspendingComplicationDataSourceService() {
 
     companion object {
         /** What the watch-face picker shows before the listener has chosen the shortcut. */
-        private val PREVIEW = WatchGlance(episodeId = "", title = "Blackshades", showTitle = "Darknet Diaries", minutesLeft = 26, progress = 0.36f)
+        private val PREVIEW = WatchGlance(episodeId = "", title = "Blackshades", showTitle = "Darknet Diaries", minutesLeft = 26, progress = 0.36f) // i18n-ignore
 
         /** Redraws the shortcut on every watch face that uses it. */
         fun requestUpdate(context: Context) {

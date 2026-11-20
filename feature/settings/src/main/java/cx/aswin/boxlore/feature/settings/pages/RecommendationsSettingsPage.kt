@@ -33,15 +33,21 @@ private val EpisodeSwitches = listOf(
 )
 
 /**
- * Library > Recommendations: one switch for each optional suggestion section. A section that is
- * off is hidden and makes no requests. Appearance > Home links here too.
+ * Library > Recommendations: one switch for each optional suggestion section, then the shows hidden
+ * everywhere. A section that is off is hidden and makes no requests. Appearance > Home links here too.
  */
 @Composable
-internal fun RecommendationsSettingsPage(sections: DiscoverySections, onSet: (DiscoverySection, Boolean) -> Unit, onBack: () -> Unit) {
+internal fun RecommendationsSettingsPage(
+    sections: DiscoverySections,
+    onSet: (DiscoverySection, Boolean) -> Unit,
+    onBack: () -> Unit,
+    hiddenShows: HiddenShowsControl = HiddenShowsControl(),
+) {
     TrackScreenView("recommendations_settings")
     SettingsScaffold(title = stringResource(R.string.recommendations_title), onBack = onBack) {
         RecommendationSwitchGroup(stringResource(R.string.recommendations_home_title), stringResource(R.string.recommendations_home_footer), HomeSwitches, sections, onSet)
         RecommendationSwitchGroup(stringResource(R.string.recommendations_episodes_title), null, EpisodeSwitches, sections, onSet)
+        HiddenShowsSection(hiddenShows)
     }
 }
 

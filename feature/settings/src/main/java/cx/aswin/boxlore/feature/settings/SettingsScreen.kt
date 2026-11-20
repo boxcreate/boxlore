@@ -28,12 +28,15 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.model.text.resolve
 import cx.aswin.boxlore.core.prefs.DiscoverySection
 import cx.aswin.boxlore.core.prefs.DiscoverySections
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
@@ -48,10 +51,11 @@ import cx.aswin.boxlore.feature.settings.pages.AppInfo
 import cx.aswin.boxlore.feature.settings.pages.AppearanceActions
 import cx.aswin.boxlore.feature.settings.pages.AppearanceHeroPreview
 import cx.aswin.boxlore.feature.settings.pages.AppearanceHomePage
+import cx.aswin.boxlore.feature.settings.pages.AppearanceLanguagePage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceNavigationPage
 import cx.aswin.boxlore.feature.settings.pages.AppearancePlayerPage
-import cx.aswin.boxlore.feature.settings.pages.AppearanceSection
 import cx.aswin.boxlore.feature.settings.pages.AppearanceSettingsPage
+import cx.aswin.boxlore.feature.settings.pages.AppearanceShowPagesPage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceTextPage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceThemePage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceUiState
@@ -109,6 +113,8 @@ data class RegionSettings(
     val savedShows: cx.aswin.boxlore.feature.settings.pages.SavedShowsControl = cx.aswin.boxlore.feature.settings.pages.SavedShowsControl(),
     val discoverySections: DiscoverySections = DiscoverySections(),
     val onSetDiscoverySection: (DiscoverySection, Boolean) -> Unit = { _, _ -> },
+    /** The shows hidden everywhere, listed on LeaveMeAlone. */
+    val hiddenShows: cx.aswin.boxlore.feature.settings.pages.HiddenShowsControl = cx.aswin.boxlore.feature.settings.pages.HiddenShowsControl(),
 )
 
 /** RSS + ranking ports needed by [SettingsViewModel] (keeps [SettingsScreen] ≤7 params). */
@@ -224,7 +230,7 @@ fun SettingsScreen(
         repositories.totalListeningHoursFlow?.collectAsStateWithLifecycle(initialValue = null)
             ?: remember { mutableStateOf<Long?>(null) }
     )
-    val accountStatus = resolveAccountStatus(currentUser)
+    val accountStatus = resolveAccountStatus(currentUser, stringResource(R.string.settings_account_connected))
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var isDeletionExpanded by rememberSaveable { mutableStateOf(false) }
     var analyticsIdVersion by remember { mutableIntStateOf(0) }
@@ -267,7 +273,7 @@ fun SettingsScreen(
         settingsViewModel.events.collect { event ->
             when (event) {
                 is SettingsEvent.ShowToast ->
-                    Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, event.message.resolve(context), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -358,8 +364,8 @@ fun SettingsScreen(
     )
 }
 
-private fun resolveAccountStatus(user: cx.aswin.boxlore.core.model.BoxLoreUser?): String? =
-    user?.let { it.email ?: it.displayName ?: "Connected" }
+private fun resolveAccountStatus(user: cx.aswin.boxlore.core.model.BoxLoreUser?, connected: String): String? =
+    user?.let { it.email ?: it.displayName ?: connected }
 
 internal data class SettingsPagesContentBundle(
     val regionSettings: RegionSettings,
@@ -493,15 +499,18 @@ private fun SettingsDestinationContent(
                 sections = contentBundle.regionSettings.discoverySections,
                 onSet = trackedDiscoverySectionSetter(contentBundle.regionSettings.discoverySections, contentBundle.regionSettings.onSetDiscoverySection),
                 onBack = actions.onReturnToHub,
+                hiddenShows = contentBundle.regionSettings.hiddenShows,
             )
 
         ProfileSettingsDestination.Appearance,
         ProfileSettingsDestination.Theme,
         ProfileSettingsDestination.AppearanceHome,
+        ProfileSettingsDestination.AppearanceShowPages,
         ProfileSettingsDestination.AppearancePlayer,
         ProfileSettingsDestination.AppearanceNavigation,
         ProfileSettingsDestination.AppearanceText,
         ProfileSettingsDestination.AppearanceWidgets,
+        ProfileSettingsDestination.AppearanceLanguage,
         -> AppearanceDestinationContent(destination, contentBundle.appearanceSettings, actions)
 
         ProfileSettingsDestination.CustomTheme ->
@@ -624,7 +633,7 @@ private fun SettingsDialogs(
     if (rssState.showAddRssDialog) {
         AddRssFeedDialog(
             url = rssState.rssUrl,
-            error = rssState.rssError,
+            error = rssState.rssError?.asString(),
             isAdding = rssState.isAddingRss,
             onUrlChange = settingsViewModel::onRssUrlChange,
             onDismiss = settingsViewModel::dismissAddRssDialog,
@@ -700,7 +709,9 @@ private fun trackedLibraryBackupActions(
  * Wraps the appearance callbacks with their analytics tracking, without changing behavior.
  * [currentState] is read at each pick, so a hero card style or colour pick reports the full look it
  * makes, and a pick that leaves a setting as it was (re-tapping the current choice) reports nothing.
+ * It holds one entry per Appearance callback (so it is long by design); App language is reported by its page.
  */
+@Suppress("LongMethod")
 internal fun AppearanceActions.trackedForAnalytics(currentState: () -> AppearanceUiState? = { null }): AppearanceActions {
     fun <T : Any> report(key: String, value: T, current: (AppearanceUiState) -> T) {
         if (currentState()?.let(current) != value) AnalyticsHelper.trackSettingsInteraction(key, value.toString())
@@ -769,6 +780,8 @@ internal fun AppearanceActions.trackedForAnalytics(currentState: () -> Appearanc
             report("mini_player_seek_buttons_toggled", it) { state -> state.miniPlayerSeekButtonsEnabled }
             onSetMiniPlayerSeekButtonsEnabled(it)
         },
+        onSetEpisodeTitlesOnly = tracked("episode_titles_only_toggled", { it.episodeTitlesOnly }, onSetEpisodeTitlesOnly),
+        onSetAppLanguage = onSetAppLanguage,
         onSetFullPlayerStyle = {
             report("full_player_style_changed", it) { state -> state.fullPlayerStyle }
             onSetFullPlayerStyle(it)
@@ -815,7 +828,7 @@ private fun rememberAppInfo(context: Context): AppInfo {
         remember {
             runCatching {
                 context.packageManager.getPackageInfo(context.packageName, 0).versionName
-            }.getOrNull().orEmpty().ifBlank { "Not available" }
+            }.getOrNull().orEmpty().ifBlank { context.getString(R.string.settings_about_not_available) }
         }
     val versionCode =
         remember {
@@ -858,27 +871,18 @@ private fun AppearanceDestinationContent(
             AppearanceThemePage(state, tracked, onBack = actions.onReturnToHub, onEditCustomTheme = { actions.onNavigate(ProfileSettingsDestination.CustomTheme) })
         ProfileSettingsDestination.AppearanceHome ->
             AppearanceHomePage(state, tracked, appearance.heroPreview, onBack = actions.onReturnToHub, onOpenRecommendations = actions.onOpenRecommendationsFromHome)
+        ProfileSettingsDestination.AppearanceShowPages -> AppearanceShowPagesPage(state, tracked, onBack = actions.onReturnToHub)
         ProfileSettingsDestination.AppearancePlayer -> AppearancePlayerPage(state, tracked, onBack = actions.onReturnToHub)
         ProfileSettingsDestination.AppearanceNavigation -> AppearanceNavigationPage(state, tracked, onBack = actions.onReturnToHub)
         ProfileSettingsDestination.AppearanceText -> AppearanceTextPage(state, tracked, onBack = actions.onReturnToHub)
         ProfileSettingsDestination.AppearanceWidgets -> AppearanceWidgetsPage(state, tracked, onBack = actions.onReturnToHub, preview = appearance.widgetPreview)
+        ProfileSettingsDestination.AppearanceLanguage -> AppearanceLanguagePage(state, tracked, onBack = actions.onReturnToHub)
         else ->
             AppearanceSettingsPage(
                 state = state,
                 actions = tracked,
                 onBack = actions.onReturnToHub,
-                onOpenSection = { section ->
-                    actions.onNavigate(
-                        when (section) {
-                            AppearanceSection.Theme -> ProfileSettingsDestination.Theme
-                            AppearanceSection.Home -> ProfileSettingsDestination.AppearanceHome
-                            AppearanceSection.Player -> ProfileSettingsDestination.AppearancePlayer
-                            AppearanceSection.Navigation -> ProfileSettingsDestination.AppearanceNavigation
-                            AppearanceSection.Text -> ProfileSettingsDestination.AppearanceText
-                            AppearanceSection.Widgets -> ProfileSettingsDestination.AppearanceWidgets
-                        },
-                    )
-                },
+                onOpenSection = { section -> actions.onNavigate(appearanceSectionDestination(section)) },
             )
     }
 }

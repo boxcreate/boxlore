@@ -47,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -55,12 +56,14 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.support.SupportThread
+import cx.aswin.boxlore.feature.settings.R
 import java.time.ZoneId
-import java.util.Locale
 
 internal const val FEEDBACK_LIST_TAG = "feedback_list"
 internal const val FEEDBACK_NEW_TAG = "feedback_new"
@@ -99,8 +102,8 @@ internal fun FeedbackListScreen(
         Box(Modifier.fillMaxSize().statusBarsPadding(), contentAlignment = Alignment.TopCenter) {
             Column(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility)) {
                 Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 4.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    if (onBack != null) FeedbackIconButton(Icons.AutoMirrored.Rounded.ArrowBack, "Navigate back", onBack) else Spacer(Modifier.width(16.dp))
-                    Text("Feedback", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(start = 4.dp))
+                    if (onBack != null) FeedbackIconButton(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.settings_navigate_back), onBack) else Spacer(Modifier.width(16.dp))
+                    Text(stringResource(R.string.feedback_title), style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(start = 4.dp))
                 }
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     when {
@@ -128,7 +131,7 @@ private fun ThreadList(threads: List<SupportThread>, selectedId: String?, onOpen
     LazyColumn(Modifier.fillMaxSize().testTag(FEEDBACK_LIST_TAG), state = listState, contentPadding = contentPadding) {
         item(key = "heading") {
             Text(
-                "Your feedback",
+                stringResource(R.string.feedback_list_title),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
@@ -143,7 +146,7 @@ private fun ThreadList(threads: List<SupportThread>, selectedId: String?, onOpen
                 bottomStart = if (last) 20.dp else 0.dp,
                 bottomEnd = if (last) 20.dp else 0.dp,
             )
-            val time = feedbackListTime(thread.updatedAt, now, ZoneId.systemDefault(), Locale.getDefault(), is24Hour)
+            val time = feedbackListTime(thread.updatedAt, now, ZoneId.systemDefault(), currentLocale(), is24Hour).asString()
             Column(Modifier.clip(shape)) {
                 ThreadRow(thread, feedbackStatusLine(thread.status.label, thread.status.showTime, time), selected = thread.id == selectedId, shape = shape, onClick = { onOpen(thread.id) })
                 if (!last) {
@@ -202,12 +205,12 @@ private fun ThreadRow(thread: SupportThread, statusLine: String, selected: Boole
 private fun LoadFailed(onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier.padding(horizontal = 32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
-            "Couldn't load your feedback. Check your connection and try again.",
+            stringResource(R.string.feedback_list_error),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        TextButton(onClick = onRetry) { Text("Try again", fontWeight = GoogleSansWeight.semiBold) }
+        TextButton(onClick = onRetry) { Text(stringResource(R.string.feedback_try_again), fontWeight = GoogleSansWeight.semiBold) }
     }
 }
 
@@ -218,18 +221,18 @@ private fun ListActions(onNew: () -> Unit, onRate: () -> Unit, onGitHub: () -> U
             FilledTonalButton(onClick = onRate, modifier = Modifier.weight(1f).height(48.dp)) {
                 Icon(Icons.Rounded.Star, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Rate on Play", fontWeight = GoogleSansWeight.semiBold)
+                Text(stringResource(R.string.feedback_rate_on_play), fontWeight = GoogleSansWeight.semiBold)
             }
             FilledTonalButton(onClick = onGitHub, modifier = Modifier.weight(1f).height(48.dp)) {
                 Icon(Icons.AutoMirrored.Rounded.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Report on GitHub", fontWeight = GoogleSansWeight.semiBold)
+                Text(stringResource(R.string.feedback_report_on_github), fontWeight = GoogleSansWeight.semiBold)
             }
         }
         Button(onClick = onNew, shape = CircleShape, modifier = Modifier.fillMaxWidth().height(56.dp).testTag(FEEDBACK_NEW_TAG)) {
             Icon(Icons.Rounded.Edit, contentDescription = null, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(10.dp))
-            Text("Send feedback", style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.semiBold)
+            Text(stringResource(R.string.feedback_send_feedback), style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.semiBold)
         }
     }
 }

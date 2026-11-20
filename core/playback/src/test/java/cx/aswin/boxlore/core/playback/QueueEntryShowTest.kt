@@ -183,7 +183,7 @@ class QueueEntryShowTest {
     @Test
     fun androidAutoItemRebuiltFromThePlayerTakesItsShowNotItsSubtitle() = runTest(dispatcher) {
         // Android Auto subtitles add the duration ("The Vergecast · 1h 0m").
-        items += AutoMediaItemFactory.fromEpisode(vergeLatest.copy(podcastTitle = vergecast.title), source = "test", artworkUri = null)
+        items += AutoMediaItemFactory.fromEpisode(ApplicationProvider.getApplicationContext<Context>().resources, vergeLatest.copy(podcastTitle = vergecast.title), source = "test", artworkUri = null)
         coordinator.reconcileQueueSnapshot(items.map { it.mediaId.removePrefix("episode:") })
         advanceTo(1)
 

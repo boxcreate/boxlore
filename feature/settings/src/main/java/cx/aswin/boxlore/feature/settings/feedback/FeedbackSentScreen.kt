@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.settings.feedback
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -53,6 +55,7 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
+import cx.aswin.boxlore.feature.settings.R
 
 internal const val FEEDBACK_SENT_TAG = "feedback_sent"
 internal const val FEEDBACK_NOTIFY_CARD_TAG = "feedback_notify_card"
@@ -64,13 +67,12 @@ internal const val FEEDBACK_SENT_ECHO = "feedback-sent"
  * The reply promise only when the message became a conversation (the old form has no replies in
  * the app), and a plain note when its photos couldn't go along.
  */
-internal fun feedbackSentBody(repliesInApp: Boolean, photosDropped: Boolean = false): String {
-    val thanks = if (repliesInApp) {
-        "Thanks for telling us. The boxlore team reads every message, and the reply will show up in Feedback."
-    } else {
-        "Thanks for telling us. The boxlore team reads every message."
-    }
-    return if (photosDropped) "$thanks Your photos couldn't be sent this time." else thanks
+@StringRes
+internal fun feedbackSentBody(repliesInApp: Boolean, photosDropped: Boolean = false): Int = when {
+    repliesInApp && photosDropped -> R.string.feedback_sent_body_replies_no_photos
+    repliesInApp -> R.string.feedback_sent_body_replies
+    photosDropped -> R.string.feedback_sent_body_no_photos
+    else -> R.string.feedback_sent_body
 }
 
 /**
@@ -114,7 +116,7 @@ internal fun FeedbackSentScreen(
         ) {
             Column(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility)) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
-                    FeedbackIconButton(Icons.Rounded.Close, "Close", onDone)
+                    FeedbackIconButton(Icons.Rounded.Close, stringResource(R.string.feedback_close), onDone)
                 }
                 Column(
                     modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp),
@@ -122,10 +124,10 @@ internal fun FeedbackSentScreen(
                 ) {
                     EchoCharacter(sequence = FEEDBACK_SENT_ECHO, modifier = Modifier.size(width = 168.dp, height = 228.dp))
                     Spacer(Modifier.height(12.dp))
-                    Text("Feedback sent", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+                    Text(stringResource(R.string.feedback_sent_title), style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        feedbackSentBody(repliesInApp, photosDropped),
+                        stringResource(feedbackSentBody(repliesInApp, photosDropped)),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -141,7 +143,7 @@ internal fun FeedbackSentScreen(
                     shape = CircleShape,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp).fillMaxWidth().height(64.dp),
                 ) {
-                    Text("Done", style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.semiBold)
+                    Text(stringResource(R.string.feedback_done), style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.semiBold)
                 }
             }
         }
@@ -161,9 +163,9 @@ private fun NotificationCard(onTurnOn: () -> Unit, onNotNow: () -> Unit) {
                     Icon(Icons.Rounded.NotificationsNone, contentDescription = null, modifier = Modifier.padding(11.dp).size(22.dp))
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Know when the team replies", style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.semiBold)
+                    Text(stringResource(R.string.feedback_sent_notify_title), style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.semiBold)
                     Text(
-                        "Replies can take a day or two. Turn on notifications so you don't miss one.",
+                        stringResource(R.string.feedback_sent_notify_body),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -171,10 +173,10 @@ private fun NotificationCard(onTurnOn: () -> Unit, onNotNow: () -> Unit) {
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = onTurnOn, shape = CircleShape, modifier = Modifier.weight(1f).heightIn(min = 48.dp), colors = ButtonDefaults.buttonColors()) {
-                    Text("Turn on notifications", fontWeight = GoogleSansWeight.semiBold)
+                    Text(stringResource(R.string.feedback_sent_notify_turn_on), fontWeight = GoogleSansWeight.semiBold)
                 }
                 TextButton(onClick = onNotNow, modifier = Modifier.heightIn(min = 48.dp)) {
-                    Text("Not now", fontWeight = GoogleSansWeight.semiBold)
+                    Text(stringResource(R.string.feedback_not_now), fontWeight = GoogleSansWeight.semiBold)
                 }
             }
         }

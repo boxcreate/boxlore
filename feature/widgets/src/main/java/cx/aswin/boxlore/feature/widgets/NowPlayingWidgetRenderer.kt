@@ -9,6 +9,9 @@ import android.view.Gravity
 import android.view.View
 import android.widget.RemoteViews
 import androidx.annotation.ColorRes
+import cx.aswin.boxlore.core.model.text.LocaleFormats
+import cx.aswin.boxlore.core.model.text.displayLocale
+import cx.aswin.boxlore.core.model.text.resolve
 import cx.aswin.boxlore.feature.widgets.actions.WidgetActionIntents
 import cx.aswin.boxlore.feature.widgets.logic.WidgetPresentation
 import cx.aswin.boxlore.feature.widgets.logic.WidgetProgress
@@ -242,7 +245,7 @@ object NowPlayingWidgetRenderer {
     // region Shared parts
 
     private fun bindRoot(frame: Frame, views: RemoteViews) {
-        views.setContentDescription(R.id.widget_root, WidgetSemantics.contentDescription(frame.snapshot))
+        views.setContentDescription(R.id.widget_root, WidgetSemantics.contentDescription(frame.snapshot).resolve(frame.context))
         views.setOnClickPendingIntent(R.id.widget_root, WidgetActionIntents.openApp(frame.context))
     }
 
@@ -344,11 +347,9 @@ object NowPlayingWidgetRenderer {
 
     internal fun timeLeftLabel(context: Context, snapshot: NowPlayingWidgetSnapshot): String? {
         val left = WidgetProgress.timeLeft(snapshot.positionMs, snapshot.durationMs) ?: return null
-        return when {
-            left.hours == 0 -> context.getString(R.string.widget_time_left_minutes, left.minutes)
-            left.minutes == 0 -> context.getString(R.string.widget_time_left_hours, left.hours)
-            else -> context.getString(R.string.widget_time_left_hours_minutes, left.hours, left.minutes)
-        }
+        val seconds = (left.hours * MINUTES_PER_HOUR + left.minutes) * SECONDS_PER_MINUTE
+        val length = LocaleFormats.duration(seconds, context.displayLocale(), LocaleFormats.DurationWidth.NARROW)
+        return context.getString(R.string.widget_time_left, length)
     }
 
     private fun bindPlayPause(frame: Frame, views: RemoteViews) {
@@ -446,6 +447,8 @@ object NowPlayingWidgetRenderer {
     private const val FALLBACK_ONE_ROW_DP = 48
 
     private const val METHOD_GRAVITY = "setGravity"
+    private const val MINUTES_PER_HOUR = 60L
+    private const val SECONDS_PER_MINUTE = 60L
     private const val MIN_PICTURE_PX = 96
     private const val MAX_PICTURE_PX = 512
     private const val MS_PER_SECOND = 1000L

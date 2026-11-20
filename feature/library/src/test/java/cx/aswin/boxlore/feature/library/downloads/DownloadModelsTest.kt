@@ -1,8 +1,11 @@
 package cx.aswin.boxlore.feature.library.downloads
 
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.library.R
+import java.util.Locale
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 class DownloadModelsTest {
@@ -72,29 +75,21 @@ class DownloadModelsTest {
 
     @Test
     fun formatSizeCoversAllUnitBuckets() {
-        assertEquals("0 B", formatSize(0L))
-        assertEquals("0 B", formatSize(-5L))
-        assertEquals("512.0 B", formatSize(512L))
-        assertEquals("1.0 KB", formatSize(1024L))
-        assertEquals("1.0 MB", formatSize(1024L * 1024L))
-        assertEquals("1.0 GB", formatSize(1024L * 1024L * 1024L))
+        assertEquals(UiText.res(R.string.library_size_bytes, "0"), formatSize(0L, Locale.US))
+        assertEquals(UiText.res(R.string.library_size_bytes, "0"), formatSize(-5L, Locale.US))
+        assertEquals(UiText.res(R.string.library_size_bytes, "512.0"), formatSize(512L, Locale.US))
+        assertEquals(UiText.res(R.string.library_size_kilobytes, "1.0"), formatSize(1024L, Locale.US))
+        assertEquals(UiText.res(R.string.library_size_megabytes, "1.0"), formatSize(1024L * 1024L, Locale.US))
+        assertEquals(UiText.res(R.string.library_size_gigabytes, "1.0"), formatSize(1024L * 1024L * 1024L, Locale.US))
+        // The number follows the language: German writes a decimal comma.
+        assertEquals(UiText.res(R.string.library_size_megabytes, "1,5"), formatSize(1024L * 1536L, Locale.GERMANY))
     }
 
     @Test
-    fun formatRelativeDateReturnsEmptyForZero() {
-        assertEquals("", formatRelativeDate(0L))
-    }
-
-    @Test
-    fun formatRelativeDateBucketsElapsedTime() {
-        val nowSeconds = System.currentTimeMillis() / 1000
-        assertEquals("Just now", formatRelativeDate(nowSeconds + 100))
-        assertTrue(formatRelativeDate(nowSeconds - 120).endsWith("m ago"))
-        assertTrue(formatRelativeDate(nowSeconds - 7_200).endsWith("h ago"))
-        assertTrue(formatRelativeDate(nowSeconds - 172_800).endsWith("d ago"))
-        assertTrue(formatRelativeDate(nowSeconds - 1_209_600).endsWith("w ago"))
-        assertTrue(formatRelativeDate(nowSeconds - 5_184_000).endsWith("mo ago"))
-        assertTrue(formatRelativeDate(nowSeconds - 63_072_000).endsWith("y ago"))
+    fun formatRelativeDateIsNullForZeroAndJustNowWhenAhead() {
+        val nowMs = System.currentTimeMillis()
+        assertNull(formatRelativeDate(0L, Locale.US, nowMs))
+        assertEquals(UiText.res(R.string.library_relative_just_now), formatRelativeDate(nowMs / 1000 + 100, Locale.US, nowMs))
     }
 
     @Test

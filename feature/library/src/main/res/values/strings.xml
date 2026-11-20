@@ -1,3 +1,180 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Library tab title -->
+    <string name="library_title">Library</string>
+    <string name="library_error_loading">Error loading library</string>
+    <!-- Library hub card and Subscriptions page title -->
+    <string name="library_hub_subscriptions">Subscriptions</string>
+    <!-- Library hub card and Liked page title -->
+    <string name="library_hub_liked_episodes">Liked Episodes</string>
+    <!-- Library hub card and Downloads page title -->
+    <string name="library_hub_downloads">Downloads</string>
+    <!-- Library hub card -->
+    <string name="library_hub_listening_history">Listening History</string>
+    <!-- Library hub card and Playlists page title -->
+    <string name="library_hub_playlists">Playlists</string>
+    <string name="library_empty_title">Your library is empty</string>
+    <!-- Two short lines -->
+    <string name="library_empty_body">It\'s a big universe out there.\nStart exploring.</string>
+    <!-- Button that opens Explore -->
+    <string name="library_empty_action">Go Explore</string>
+    <!-- Button that opens Explore -->
+    <string name="library_find_podcasts">Find Podcasts</string>
+    <!-- Button that opens Explore -->
+    <string name="library_discover_shows">Discover Shows</string>
+    <!-- Screen-reader label for the video badge on a show cover -->
+    <string name="library_video_badge">Video</string>
+    <string name="library_liked_empty_title">No Liked Episodes</string>
+    <string name="library_liked_empty_body">Heart episodes you love to save them here.</string>
+    <!-- Floating button that plays every listed episode -->
+    <string name="library_play_all">Play All</string>
+    <!-- Screen-reader label for the back button -->
+    <string name="library_back">Back</string>
+    <!-- Screen-reader label for a close button -->
+    <string name="library_close">Close</string>
+    <string name="library_cancel">Cancel</string>
+    <string name="library_save">Save</string>
+    <string name="library_done">Done</string>
+    <string name="library_delete">Delete</string>
+    <string name="library_rename">Rename</string>
+    <string name="library_next">Next</string>
+    <string name="library_add">Add</string>
+    <string name="library_manage">Manage</string>
+    <string name="library_turn_off">Turn off</string>
+    <!-- Snackbar action -->
+    <string name="library_undo">Undo</string>
+    <!-- Screen-reader label that clears the search text -->
+    <string name="library_clear">Clear</string>
+    <!-- Screen-reader label for the search button -->
+    <string name="library_search">Search</string>
+    <!-- Screen-reader label for the sort button -->
+    <string name="library_sort">Sort</string>
+    <!-- Screen-reader label for the tick beside the chosen menu option -->
+    <string name="library_selected">Selected</string>
+    <!-- Screen-reader name of the long-press action that starts selecting -->
+    <string name="library_select">Select</string>
+    <!-- Screen-reader label -->
+    <string name="library_select_all">Select All</string>
+    <!-- Screen-reader label -->
+    <string name="library_cancel_selection">Cancel selection</string>
+    <!-- Screen-reader label -->
+    <string name="library_delete_selected">Delete Selected</string>
+    <string name="library_delete_all">Delete All</string>
+    <!-- Under a sheet title: how many shows are ticked -->
+    <plurals name="library_selected_count">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <!-- Top bar title while selecting -->
+    <plurals name="library_selected_count_title">
+        <item quantity="one">%1$d Selected</item>
+        <item quantity="other">%1$d Selected</item>
+    </plurals>
+    <!-- Screen-reader label for the ⋮ button -->
+    <string name="library_more_options">More options</string>
+    <!-- Screen-reader label for a playlist's ⋮ button; %1$s is the playlist name -->
+    <string name="library_more_options_for">More options for %1$s</string>
+    <!-- Screen-reader label for an episode's ⋮ button -->
+    <string name="library_options">Options</string>
+    <string name="library_play">Play</string>
+    <string name="library_play_next">Play Next</string>
+    <!-- Screen-reader label -->
+    <string name="library_play_episode">Play episode</string>
+    <!-- Screen-reader label for the played tick -->
+    <string name="library_played">Played</string>
+    <!-- Screen-reader label for the pin icon -->
+    <string name="library_pinned">Pinned</string>
+    <!-- Swipe hint and screen-reader action on a New Episodes row -->
+    <string name="library_add_to_queue">Add to queue</string>
+    <!-- Menu item -->
+    <string name="library_add_to_queue_menu">Add to Queue</string>
+    <!-- Swipe hint and screen-reader action on a New Episodes row -->
+    <string name="library_mark_as_played">Mark as played</string>
+    <!-- Snackbar -->
+    <string name="library_marked_as_played">Marked as played</string>
+    <!-- Snackbar -->
+    <string name="library_queue_added">Added to queue</string>
+    <!-- Snackbar -->
+    <string name="library_queue_already_queued">Already in your queue</string>
+    <!-- Snackbar -->
+    <string name="library_queue_full">Your queue is full. Remove an episode to add this one.</string>
+    <!-- Tiny badge on a show or folder with a new episode; keep it very short, all capitals where the language uses them -->
+    <string name="library_new_badge">NEW</string>
+    <!-- Small tag beside a folder auto-organize will make -->
+    <string name="library_new_tag">New</string>
+    <!-- The last spot of a folder: how many more shows it holds -->
+    <string name="library_overflow_count">+%1$d</string>
+    <!-- Shown when a show has no author -->
+    <string name="library_podcast_fallback_artist">Podcast</string>
+    <!-- Screen-reader label -->
+    <string name="library_collapse">Collapse</string>
+    <!-- Screen-reader label -->
+    <string name="library_expand">Expand</string>
+    <!-- A date then a time of day, such as Mar 5, 9:30 AM -->
+    <string name="library_date_and_time">%1$s, %2$s</string>
+    <string name="library_relative_just_now">Just now</string>
+    <!-- How long ago an episode came out, on a line of its own -->
+    <string name="library_relative_today">Today</string>
+    <!-- How long ago an episode came out, on a line of its own -->
+    <string name="library_relative_yesterday">Yesterday</string>
+    <!-- How long ago an episode came out (2 to 6 days) -->
+    <plurals name="library_relative_days_ago">
+        <item quantity="one">%1$d day ago</item>
+        <item quantity="other">%1$d days ago</item>
+    </plurals>
+    <!-- How long ago an episode came out (1 to 4 weeks) -->
+    <plurals name="library_relative_weeks_ago">
+        <item quantity="one">%1$d week ago</item>
+        <item quantity="other">%1$d weeks ago</item>
+    </plurals>
+    <!-- Time left in an episode; %1$s is a short length such as 1h 5m -->
+    <string name="library_time_left">%1$s left</string>
+    <plurals name="library_show_count">
+        <item quantity="one">%1$d show</item>
+        <item quantity="other">%1$d shows</item>
+    </plurals>
+    <plurals name="library_new_episode_count">
+        <item quantity="one">%1$d new episode</item>
+        <item quantity="other">%1$d new episodes</item>
+    </plurals>
+    <plurals name="library_shows_picked">
+        <item quantity="one">%1$d show picked</item>
+        <item quantity="other">%1$d shows picked</item>
+    </plurals>
+    <string name="library_add_shows">Add shows</string>
+    <string name="library_shows_you_follow">Shows you follow</string>
+    <!-- Shows that are not in a folder -->
+    <string name="library_your_shows">Your shows</string>
+    <!-- Label above the folders on the Shows tab -->
+    <string name="library_folders">Folders</string>
+    <string name="library_your_folders">Your folders</string>
+    <string name="library_genre_folders">Genre folders</string>
+    <string name="library_playlists_empty_title">No playlists yet</string>
+    <string name="library_playlists_empty_body">Make one from the shows you follow, like one for comedy and one for history. Each keeps its place, so you can switch between them any time.</string>
+    <!-- A playlist card's second line; %1$s is its show count, such as 3 shows -->
+    <string name="library_playlist_summary_oldest_first">%1$s · Oldest first</string>
+    <string name="library_playlist_newest_first">Newest first</string>
+    <string name="library_playlist_oldest_first">Oldest first</string>
+    <!-- Section title: the episodes Play would queue -->
+    <string name="library_playlist_coming_up">Coming up</string>
+    <string name="library_playlist_nothing_to_play">Nothing to play right now. New episodes from these shows will appear here.</string>
+    <string name="library_playlist_not_following_skipped">Not following, skipped</string>
+    <string name="library_playlist_hidden_skipped">Hidden, skipped</string>
+    <string name="library_playlist_empty_title">No shows yet</string>
+    <!-- Add to playlist is the name of the button on a show's page -->
+    <string name="library_playlist_empty_body">Add shows you follow here, or use Add to playlist on a show’s page.</string>
+    <string name="library_playlist_delete">Delete playlist</string>
+    <!-- Snackbar; Up next is the queue's name -->
+    <string name="library_playlist_up_next_replaced">Up next replaced</string>
+    <!-- Shown for a show restored from a backup whose details are not on this phone -->
+    <string name="library_playlist_unknown_show">Unknown show</string>
+    <!-- Snackbar -->
+    <string name="library_playlist_show_removed">Show removed</string>
+    <!-- Snackbar; %1$s is the show's name -->
+    <string name="library_playlist_removed_show">Removed %1$s</string>
+    <!-- Screen-reader label; %1$s is the show's name -->
+    <string name="library_playlist_remove_show">Remove %1$s</string>
+    <string name="library_playlist_from_folders">Add a folder’s shows</string>
+    <string name="library_playlist_no_followed">Follow some shows first, then add them here.</string>
+    <string name="library_playlist_all_added">Every show you follow is already in this playlist.</string>
 </resources>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="playlist_new">Nueva playlist</string>
+    <string name="playlist_rename">Cambiar nombre de la playlist</string>
+    <string name="playlist_name_label">Nombre</string>
+    <string name="playlist_create">Crear</string>
+    <string name="playlist_save">Guardar</string>
+    <string name="playlist_cancel">Cancelar</string>
+    <string name="playlist_delete">Eliminar</string>
+    <string name="playlist_delete_title">¿Eliminar playlist?</string>
+    <string name="playlist_delete_body">Se eliminará «%1$s». No se puede deshacer. Los podcasts, tus descargas y tu historial se quedan como están.</string>
+    <string name="playlist_no_shows">Aún no hay podcasts</string>
+    <plurals name="playlist_show_count">
+        <item quantity="one">%1$d podcast</item>
+        <item quantity="many">%1$d podcasts</item>
+        <item quantity="other">%1$d podcasts</item>
+    </plurals>
+
+    <string name="add_to_playlist_title">Añadir a playlist</string>
+    <string name="add_to_playlist_none">Aún no tienes playlists.</string>
+    <string name="add_to_playlist_create_and_add">Crear y añadir</string>
+    <string name="add_to_playlist_added">Añadido a %1$s</string>
+    <string name="add_to_playlist_removed">Quitado de %1$s</string>
+</resources>

@@ -25,9 +25,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
@@ -81,7 +83,7 @@ fun CrossDeviceEmailDialog(
         },
         title = {
             Text(
-                text = "Sign in to boxlore",
+                text = stringResource(R.string.app_cross_device_email_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = GoogleSansWeight.bold,
             )
@@ -89,7 +91,7 @@ fun CrossDeviceEmailDialog(
         text = {
             Column {
                 Text(
-                    text = "Enter the email address you used to request this sign-in link.",
+                    text = stringResource(R.string.app_cross_device_email_body),
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
@@ -99,11 +101,11 @@ fun CrossDeviceEmailDialog(
                         email = it
                         isError = false
                     },
-                    label = { Text("Email address") },
+                    label = { Text(stringResource(R.string.app_cross_device_email_label)) },
                     leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
                     isError = isError,
                     supportingText = if (isError) {
-                        { Text("Please enter a valid email address") }
+                        { Text(stringResource(R.string.app_cross_device_email_invalid)) }
                     } else {
                         null
                     },
@@ -125,7 +127,7 @@ fun CrossDeviceEmailDialog(
                 onClick = { submit() },
                 shape = MaterialTheme.shapes.large,
             ) {
-                Text("Sign In")
+                Text(stringResource(R.string.app_cross_device_email_sign_in))
             }
         },
         dismissButton = {
@@ -133,7 +135,7 @@ fun CrossDeviceEmailDialog(
                 onClick = onDismiss,
                 shape = MaterialTheme.shapes.large,
             ) {
-                Text("Cancel")
+                Text(stringResource(R.string.app_cross_device_email_cancel))
             }
         },
     )

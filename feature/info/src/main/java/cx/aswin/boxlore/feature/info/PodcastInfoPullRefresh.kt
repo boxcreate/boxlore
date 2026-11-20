@@ -9,6 +9,7 @@ import cx.aswin.boxlore.core.domain.ports.LocalCatalogPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.domain.ports.ShowPageFeedPort
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.feature.info.PodcastInfoPageState.Companion.TAG
 import cx.aswin.boxlore.feature.info.PodcastInfoPageState.Companion.pageSizeFor
@@ -287,7 +288,7 @@ internal class PodcastInfoPullRefresh(
                 val appliedState =
                     pageState.applySupplementRefreshState(
                         targetPodcastId,
-                        refreshed.state.copy(isRssRefreshing = false, userMessage = refreshed.failureMessage ?: refreshed.state.userMessage),
+                        refreshed.state.copy(isRssRefreshing = false, userMessage = refreshed.failureMessage?.let(UiText::raw) ?: refreshed.state.userMessage),
                     ) ?: return@launch
                 refreshed.pageSourceCount?.let { pageState.currentOffset = it }
                 if (PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(

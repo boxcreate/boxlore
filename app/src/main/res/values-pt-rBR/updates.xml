@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="updates_title">Atualizações do app</string>
+    <string name="updates_checking">Procurando atualizações…</string>
+    <string name="updates_current">Você está com a versão mais recente</string>
+    <string name="updates_check_failed">Não foi possível procurar atualizações. Tente mais tarde.</string>
+    <string name="updates_incompatible">A atualização mais recente precisa de uma versão mais nova do Android.</string>
+    <string name="updates_check">Procurar atualizações</string>
+    <string name="updates_close">Fechar atualizações</string>
+    <string name="updates_available">Atualização disponível</string>
+    <string name="updates_version">Versão %1$s</string>
+    <string name="updates_play_available">Há uma atualização disponível no Google Play</string>
+    <string name="updates_play">Atualizar pelo Google Play</string>
+    <string name="updates_play_failed">Não foi possível abrir a atualização. Tente de novo.</string>
+    <string name="updates_play_check_failed">Não foi possível procurar atualizações no Google Play</string>
+    <string name="updates_open_play">Abrir o Google Play</string>
+    <string name="updates_try_again">Tentar de novo</string>
+    <string name="updates_play_unavailable">Esta atualização não está mais disponível. Procure atualizações de novo.</string>
+    <string name="updates_download">Baixar atualização</string>
+    <string name="updates_install">Instalar atualização</string>
+    <string name="updates_pause">Pausar download</string>
+    <string name="updates_downloading">Baixando atualização · %1$d%%</string>
+    <string name="updates_verifying">Verificando atualização…</string>
+    <string name="updates_ready">Pronta para instalar. O Android vai pedir sua confirmação.</string>
+    <string name="updates_permission">Permita que o boxlore instale atualizações nas Configurações do Android, depois volte e toque em Instalar atualização.</string>
+    <string name="updates_transfer_failed">Não foi possível preparar a atualização. Tente baixar de novo.</string>
+    <string name="updates_notes">Notas da versão</string>
+    <string name="updates_read_notes">Ler notas da versão</string>
+    <string name="updates_upcoming">Em breve</string>
+    <string name="updates_unreleased">Ainda não lançado</string>
+</resources>

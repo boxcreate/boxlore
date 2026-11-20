@@ -16,6 +16,7 @@ object PlaybackControlSync {
         seekBackwardMs = previous.seekBackwardMs,
         seekForwardMs = previous.seekForwardMs,
         playbackRoute = previous.playbackRoute,
+        audio = PlaybackAudioState(appTrimSilence = previous.audio.appTrimSilence),
     )
 
     /**

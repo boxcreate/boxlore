@@ -30,6 +30,16 @@ class CastMediaItemConverterTest {
     }
 
     @Test
+    fun preservesPlaylistProvenanceAcrossCastRoundTrip() {
+        val episode = cx.aswin.boxlore.core.model.Episode("42", "Episode", "", "https://cdn.example.com/episode.mp3")
+        val contextEpisode = PlaybackQueueContext.playlistEpisodes(listOf(episode), "list-a").single()
+        val mediaItem = MediaItem.Builder().setMediaId(episode.id).setUri(episode.audioUrl)
+            .setMediaMetadata(MediaMetadata.Builder().setExtras(PlaybackQueueContext.extras(contextEpisode, null)).build()).build()
+        val restored = converter.toMediaItem(converter.toMediaQueueItem(mediaItem))
+        assertEquals(PlaybackQueueContext.PLAYLIST, PlaybackQueueContext.contextEntryPoint(restored))
+    }
+
+    @Test
     fun forwardsAnEligibleStreamingUri() {
         val url = "https://cdn.example.com/episode.mp3"
         val queueItem = converter.toMediaQueueItem(MediaItem.Builder().setUri(url).build())

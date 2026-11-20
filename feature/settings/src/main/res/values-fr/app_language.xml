@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings › Appearance row and page title for the language of boxlore's own text. -->
+    <string name="settings_app_language_title">Langue de l’appli</string>
+    <!-- The first choice: follow the phone's language. Also shown under the Appearance row when picked. -->
+    <string name="settings_app_language_system">Langue du système</string>
+    <!-- Under the language list. Keep the words "Feedback" matching the Feedback page's name. -->
+    <string name="settings_app_language_ai_note">Les traductions sont réalisées avec l’aide de l’IA. Vous voyez une erreur ? Dites-le-nous dans Avis.</string>
+</resources>

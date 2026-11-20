@@ -15,7 +15,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.R
 
 enum class DownloadState {
     IDLE,
@@ -39,7 +41,7 @@ fun DownloadButton(
                 DownloadState.IDLE -> {
                     Icon(
                         imageVector = Icons.Outlined.Download,
-                        contentDescription = "Download",
+                        contentDescription = stringResource(R.string.download_button_download),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -52,7 +54,7 @@ fun DownloadButton(
                     )
                     Icon(
                         imageVector = Icons.Filled.Close,
-                        contentDescription = "Cancel Download",
+                        contentDescription = stringResource(R.string.download_button_cancel),
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -66,7 +68,7 @@ fun DownloadButton(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Check,
-                            contentDescription = "Downloaded",
+                            contentDescription = stringResource(R.string.download_button_downloaded),
                             modifier = Modifier.size(16.dp),
                             tint = MaterialTheme.colorScheme.onPrimary
                         )

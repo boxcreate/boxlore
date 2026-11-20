@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Library folder tile sizes (FolderDisplaySize). Titles are short chip labels; keep them to one word. -->
+    <string name="model_folder_size_compact_title">Compacto</string>
+    <string name="model_folder_size_wide_title">Largo</string>
+    <string name="model_folder_size_featured_title">Destaque</string>
+    <string name="model_folder_size_tall_title">Alto</string>
+    <string name="model_folder_size_shelf_title">Prateleira</string>
+    <string name="model_folder_size_panel_title">Painel</string>
+    <string name="model_folder_size_showcase_title">Vitrine</string>
+    <!-- Folder size hints under the title. "pods" means podcasts; "Clickable" means the tile opens the folder. -->
+    <string name="model_folder_size_compact_subtitle">1 célula • Toque para ver os podcasts</string>
+    <string name="model_folder_size_wide_subtitle">2 colunas • Clicável</string>
+    <string name="model_folder_size_featured_subtitle">2×2 • Clicável + extras</string>
+    <string name="model_folder_size_tall_subtitle">2×3 alto • Clicável</string>
+    <string name="model_folder_size_shelf_subtitle">Linha inteira • Clicável</string>
+    <string name="model_folder_size_panel_subtitle">Painel 3×2 • Clicável</string>
+    <string name="model_folder_size_showcase_subtitle">Até 3×3 • Grade completa</string>
+    <!-- Where a folder of this size sits in the Library grid. -->
+    <string name="model_folder_size_placement_anywhere">Pode ficar em qualquer lugar da grade</string>
+    <string name="model_folder_size_placement_top">Fixado no topo da página</string>
+</resources>

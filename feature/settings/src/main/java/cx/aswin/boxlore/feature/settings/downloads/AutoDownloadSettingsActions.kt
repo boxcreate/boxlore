@@ -1,7 +1,9 @@
 package cx.aswin.boxlore.feature.settings.downloads
 
+import androidx.annotation.StringRes
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.prefs.AutoDownloadBackgroundSettings
+import cx.aswin.boxlore.feature.settings.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -36,14 +38,14 @@ internal class AutoDownloadSettingsActions(
     fun dismissHelp() = onHelpVisibilityChange(false)
 }
 
-internal data class AutoDownloadBackgroundPresentation(val controlsVisible: Boolean, val footer: String)
+internal data class AutoDownloadBackgroundPresentation(val controlsVisible: Boolean, @StringRes val footer: Int)
 
 internal fun autoDownloadBackgroundPresentation(settings: AutoDownloadBackgroundSettings): AutoDownloadBackgroundPresentation =
     AutoDownloadBackgroundPresentation(
         controlsVisible = settings.enabled,
         footer = if (settings.enabled) {
-            "Checks about every 6 hours; Android may delay them. Uses extra battery and data and pauses on low battery."
+            R.string.settings_auto_download_background_on_footer
         } else {
-            "Show notifications can still start downloads while boxlore is closed. Otherwise, new episodes are picked up when you open and refresh."
+            R.string.settings_auto_download_background_off_footer
         },
     )

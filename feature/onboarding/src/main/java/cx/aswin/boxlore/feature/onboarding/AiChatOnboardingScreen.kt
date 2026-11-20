@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.onboarding
 
+// i18n-ignore-file: not routed by OnboardingScreen (the legacy chat and import screens), so none of its text reaches listeners.
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*

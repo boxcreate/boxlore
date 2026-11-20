@@ -32,9 +32,9 @@ class AnnouncementPolicyTest {
     }
 
     @Test fun `legacy payload defaults to compact and new payload preserves exact presentation`() {
-        val old = FcmPayloadParser.parse(mapOf("title" to "News", "body" to "Exact text"))
+        val old = FcmPayloadParser.parse(mapOf("title" to "News", "body" to "Exact text"), PushTextFallbacks("", "", ""))
         assertEquals("compact", old.presentation)
-        val current = FcmPayloadParser.parse(mapOf("presentation" to "fullscreen", "tone" to "tertiary", "release_alert" to "false", "include_play" to "true", "test_mode" to "true"))
+        val current = FcmPayloadParser.parse(mapOf("presentation" to "fullscreen", "tone" to "tertiary", "release_alert" to "false", "include_play" to "true", "test_mode" to "true"), PushTextFallbacks("", "", ""))
         assertEquals("fullscreen", current.presentation)
         assertFalse(current.releaseAlert!!)
         assertTrue(current.includePlay)

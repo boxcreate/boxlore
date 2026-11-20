@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_trimming_title">Recorte automático de episodios</string>
+    <string name="settings_playback_skip_beginning">Saltar el inicio</string>
+    <string name="settings_playback_skip_beginning_description">Salta intros o anuncios iniciales al empezar desde cero</string>
+    <string name="settings_playback_skip_ending">Saltar el final</string>
+    <string name="settings_playback_skip_ending_description">Termina de forma natural antes de los créditos o los anuncios finales</string>
+    <string name="settings_playback_trim_silence">Recortar silencios</string>
+    <string name="settings_playback_trim_silence_description">Salta las pausas largas para terminar antes los episodios</string>
+    <string name="settings_playback_trimming_footer">Define otra velocidad, el recorte de silencios o los tiempos de salto para un podcast desde el menú ⋮ de su página. Las posiciones guardadas siempre tienen prioridad.</string>
+    <string name="settings_playback_seek_title">Controles de avance</string>
+    <string name="settings_playback_seek_footer">Los usan el reproductor, la transcripción, la notificación, los auriculares y Android Auto.</string>
+    <string name="settings_playback_seek_backward">Retroceder</string>
+    <string name="settings_playback_seek_forward">Avanzar</string>
+    <string name="settings_playback_skip_title">Al saltar un episodio</string>
+    <string name="settings_playback_skip_footer">Se aplica cuando saltas al siguiente episodio.</string>
+    <string name="settings_playback_skip_only">Solo saltar</string>
+    <string name="settings_playback_skip_only_description">Deja el episodio actual sin terminar</string>
+    <string name="settings_playback_mark_complete">Marcar como terminado y saltar</string>
+    <string name="settings_playback_mark_complete_description">Marca primero el episodio actual como terminado</string>
+    <string name="settings_playback_resume_title">Reanudar</string>
+    <string name="settings_playback_resume_footer">Si está activado, la cola y el mixtape empiezan desde el principio si no has escuchado un episodio en 7 días. Retoma donde lo dejaste y el Historial siempre continúan donde lo dejaste.</string>
+    <string name="settings_playback_restart_forgotten">Reiniciar episodios olvidados</string>
+    <string name="settings_playback_restart_forgotten_description">Cola y mixtape tras 7 días sin actividad</string>
+    <string name="settings_playback_queue_title">Cola</string>
+    <string name="settings_playback_queue_footer">Si está desactivado, la cola solo añade automáticamente episodios más nuevos del podcast que escuchas, si los hay. Siempre puedes añadir episodios a mano.</string>
+    <string name="settings_playback_smart_queue">Cola inteligente</string>
+    <string name="settings_playback_smart_queue_description">Llena la cola con tu biblioteca y con recomendaciones</string>
+    <string name="settings_playback_hide_completed_title">Ocultar episodios terminados en</string>
+    <string name="settings_playback_hide_completed_footer">Los episodios terminados siguen en tu biblioteca; solo se ocultan en estos lugares.</string>
+    <string name="settings_playback_hide_home">Episodios de podcasts en Inicio</string>
+    <string name="settings_playback_hide_home_description">Cuando tocas un podcast en la pestaña Inicio</string>
+    <string name="settings_playback_hide_latest">Seguidos · Episodios nuevos</string>
+    <string name="settings_playback_hide_latest_description">La pestaña Episodios nuevos en Biblioteca → Seguidos</string>
+    <string name="settings_playback_hide_podcast_pages">Páginas de podcasts</string>
+    <string name="settings_playback_hide_podcast_pages_description">La lista completa de episodios en la página de un podcast</string>
+</resources>

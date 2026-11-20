@@ -149,6 +149,39 @@ class WidgetLibrarySourceAdapterTest {
     }
 
     @Test
+    fun anArchivedLatestEpisodeLeavesNewEpisodesWhateverTheHideFinishedSetting() = runTest {
+        val shows = listOf(show("p1", "e1"), show("p2", "e2"))
+        assertEquals(listOf("p2"), WidgetLibrarySourceAdapter.latestEpisodePool(shows, hideCompleted = false, dismissedIds = setOf("e1")).map { it.id })
+        assertEquals(listOf("p2"), WidgetLibrarySourceAdapter.latestEpisodePool(shows, hideCompleted = true, dismissedIds = setOf("e1")).map { it.id })
+
+        val dismissed = MutableStateFlow(emptySet<String>())
+        val adapterScope = CoroutineScope(SupervisorJob() + StandardTestDispatcher(testScheduler))
+        val adapter =
+            WidgetLibrarySourceAdapter(
+                podcasts = flowOf(shows),
+                history = flowOf(emptyList()),
+                sortName = flowOf("SmartRank"),
+                dismissedEpisodeIds = dismissed,
+                hideCompleted = flowOf(false),
+                useSmart = flowOf(false),
+                lastSeen = flowOf(emptyMap()),
+                scoreShows = { scorable, _ -> scorable.associate { it.id to 1.0 } },
+                scoreLatest = { inputs, _ -> inputs.associate { it.episode.id to 1.0 } },
+                scope = adapterScope,
+            )
+        advanceUntilIdle()
+        assertEquals(setOf("e1", "e2"), adapter.newEpisodes.first().map { it.episodeId }.toSet())
+
+        dismissed.value = setOf("e2")
+        advanceUntilIdle()
+        assertEquals(listOf("e1"), adapter.newEpisodes.first().map { it.episodeId })
+        // The show stays in the library; only its archived episode leaves New Episodes.
+        assertEquals(2, adapter.counts.first().subscriptions)
+        assertEquals(1, adapter.counts.first().newEpisodes)
+        adapterScope.cancel()
+    }
+
+    @Test
     fun progressSavesDuringPlaybackNeverRankTheLibraryAgain() = runTest {
         val shows = listOf(show("p1", "e1"), show("p2", "e2"))
         val history = MutableStateFlow(listOf(played("e1", "p1", progressMs = 10_000L, lastPlayedAt = HOUR_START)))

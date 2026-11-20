@@ -1,0 +1,105 @@
+package cx.aswin.boxlore.core.catalog.backup
+
+import android.content.Context
+import androidx.datastore.preferences.core.edit
+import androidx.test.core.app.ApplicationProvider
+import com.google.gson.JsonParser
+import cx.aswin.boxlore.core.catalog.FolderRepository
+import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.SubscriptionRepository
+import cx.aswin.boxlore.core.catalog.ports.ListeningHistoryBackupPort
+import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.PodcastDao
+import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.HiddenShow
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import cx.aswin.boxlore.core.prefs.userPreferencesDataStore
+import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
+import cx.aswin.boxlore.core.rss.RssPodcastRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+
+/** Hidden shows through the real backup manager: export, import added to the shows hidden here, and older backups. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
+class LibraryBackupHiddenShowsTest {
+    private val context = ApplicationProvider.getApplicationContext<Context>()
+    private lateinit var prefs: UserPreferencesRepository
+    private lateinit var manager: LibraryBackupManager
+
+    private val noHistory =
+        object : ListeningHistoryBackupPort {
+            override fun getRecentHistory(): Flow<List<ListeningHistoryEntity>> = flowOf(emptyList())
+
+            override suspend fun exportStoredHistory(): List<ListeningHistoryEntity> = emptyList()
+
+            override suspend fun upsertHistoryEntity(entity: ListeningHistoryEntity) = Unit
+
+            override suspend fun markAllEpisodesCompleted(episodes: List<Episode>, podcastId: String, podcastTitle: String, podcastImageUrl: String?) = Unit
+        }
+
+    @Before
+    fun setUp() {
+        runBlocking { context.userPreferencesDataStore.edit { it.clear() } }
+        prefs = UserPreferencesRepository(context)
+        val podcastDao = mock(PodcastDao::class.java)
+        `when`(podcastDao.getSubscribedPodcasts()).thenReturn(flowOf(emptyList()))
+        manager =
+            LibraryBackupManager(
+                subscriptionRepository = SubscriptionRepository(podcastDao),
+                listeningHistory = noHistory,
+                podcastRepository = mock(PodcastRepository::class.java),
+                userPrefs = prefs,
+                context = context,
+                adaptiveRankingRepository = mock(AdaptiveRankingRepository::class.java),
+                rssPodcastRepository = mock(RssPodcastRepository::class.java),
+                folderRepository = mock(FolderRepository::class.java),
+            )
+    }
+
+    @After
+    fun tearDown() {
+        runBlocking { context.userPreferencesDataStore.edit { it.clear() } }
+    }
+
+    @Test
+    fun hiddenShowsSurviveExportAndImportAndJoinTheShowsHiddenHere() = runTest {
+        prefs.hiddenShows.hide(HiddenShow("rss:https://feed.example/a", "Curious world", "https://art/a", aliasIds = setOf("42")))
+        prefs.hiddenShows.hide(HiddenShow("7", "Night owls"))
+        val json = manager.exportLibraryAsJson()
+        val rows = JsonParser.parseString(json).asJsonObject.getAsJsonObject("globalPreferences").getAsJsonArray("hiddenShows")
+        assertEquals(listOf("7", "rss:https://feed.example/a"), rows.map { it.asJsonObject.get("id").asString })
+
+        context.userPreferencesDataStore.edit { it.clear() }
+        prefs.hiddenShows.hide(HiddenShow("99", "Hidden on this phone"))
+        manager.importLibraryFromJson(json)
+
+        assertEquals(listOf("7", "rss:https://feed.example/a", "99"), prefs.hiddenShows.showsStream.first().map(HiddenShow::id))
+        assertEquals(setOf("7", "rss:https://feed.example/a", "42", "99"), prefs.hiddenShows.matchIds())
+        assertEquals("Curious world", prefs.hiddenShows.showsStream.first()[1].title)
+    }
+
+    @Test
+    fun anOlderBackupOrABrokenRowLeavesTheHiddenShowsAsTheyAre() = runTest {
+        prefs.hiddenShows.hide(HiddenShow("99"))
+        manager.importLibraryFromJson("""{"version":10,"subscriptions":[],"history":[],"globalPreferences":{"region":"us"}}""")
+        assertEquals(setOf("99"), prefs.hiddenShows.matchIds())
+
+        manager.importLibraryFromJson("""{"version":11,"subscriptions":[],"history":[],"globalPreferences":{"hiddenShows":[{"title":"No ID"},null,{"id":" 5 ","aliasIds":[null," "]}]}}""")
+        assertEquals(listOf("5", "99"), prefs.hiddenShows.showsStream.first().map(HiddenShow::id))
+        assertTrue(prefs.hiddenShows.showsStream.first().first().aliasIds.isEmpty())
+    }
+}

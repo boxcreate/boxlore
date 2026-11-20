@@ -1,9 +1,11 @@
 package cx.aswin.boxlore.feature.info.logic
 
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.info.InfoListeningProgressItem
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel.EpisodePlaybackState
+import cx.aswin.boxlore.feature.info.R
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -25,8 +27,8 @@ class PodcastEpisodePlaybackStateLogicTest {
                 loadedPodcastId = "p1",
             )
 
-        assertEquals(EpisodePlaybackState(isPlaying = false, isResume = true, progress = 0.25f, timeLeft = "45m left"), states["e1"])
-        assertEquals("5m left", states["e2"]?.timeLeft)
+        assertEquals(EpisodePlaybackState(isPlaying = false, isResume = true, progress = 0.25f, timeLeft = minutesLeft(45)), states["e1"])
+        assertEquals(minutesLeft(5), states["e2"]?.timeLeft)
     }
 
     @Test
@@ -53,10 +55,10 @@ class PodcastEpisodePlaybackStateLogicTest {
         val history = listOf(history("e1", progressMs = 900_000L))
 
         val ownShow = PodcastEpisodePlaybackStateLogic.episodeStates(player, history, loadedPodcastId = "p1")
-        assertEquals(EpisodePlaybackState(isPlaying = true, isResume = true, progress = 0.25f, timeLeft = "50m left"), ownShow["e1"])
+        assertEquals(EpisodePlaybackState(isPlaying = true, isResume = true, progress = 0.25f, timeLeft = minutesLeft(50)), ownShow["e1"])
 
         val otherShow = PodcastEpisodePlaybackStateLogic.episodeStates(player, history, loadedPodcastId = "p2")
-        assertEquals(EpisodePlaybackState(isPlaying = false, isResume = true, progress = 0.25f, timeLeft = "45m left"), otherShow["e1"])
+        assertEquals(EpisodePlaybackState(isPlaying = false, isResume = true, progress = 0.25f, timeLeft = minutesLeft(45)), otherShow["e1"])
     }
 
     @Test
@@ -71,10 +73,12 @@ class PodcastEpisodePlaybackStateLogicTest {
 
     @Test
     fun `time left reads in hours and minutes, and nothing once none is left`() {
-        assertEquals("1h 5m left", PodcastEpisodePlaybackStateLogic.timeLeftLabel(3_900L))
-        assertEquals("2h 0m left", PodcastEpisodePlaybackStateLogic.timeLeftLabel(7_200L))
-        assertEquals("0m left", PodcastEpisodePlaybackStateLogic.timeLeftLabel(59L))
+        assertEquals(UiText.res(R.string.episode_list_time_left_hours, 1, 5), PodcastEpisodePlaybackStateLogic.timeLeftLabel(3_900L))
+        assertEquals(UiText.res(R.string.episode_list_time_left_hours, 2, 0), PodcastEpisodePlaybackStateLogic.timeLeftLabel(7_200L))
+        assertEquals(minutesLeft(0), PodcastEpisodePlaybackStateLogic.timeLeftLabel(59L))
         assertNull(PodcastEpisodePlaybackStateLogic.timeLeftLabel(0L))
         assertNull(PodcastEpisodePlaybackStateLogic.timeLeftLabel(-5L))
     }
+
+    private fun minutesLeft(minutes: Int) = UiText.res(R.string.episode_list_time_left_minutes, minutes)
 }

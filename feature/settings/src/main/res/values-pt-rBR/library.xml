@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_library_charts_title">Paradas</string>
+    <string name="settings_library_charts_footer">Define as paradas em Explorar.</string>
+    <string name="settings_library_country">País</string>
+    <string name="settings_library_recommendations_title">Recomendações</string>
+    <string name="settings_library_recommendations_footer">Para você, a busca e as vibes usam estes idiomas.</string>
+    <string name="settings_library_languages">Idiomas</string>
+    <string name="settings_library_add_rss">Adicionar podcast por feed RSS</string>
+    <string name="settings_library_add_rss_description">Para podcasts que não estão no catálogo</string>
+    <string name="settings_library_country_faq_toggle">Por que meu país não aparece?</string>
+    <string name="settings_collapse">Recolher</string>
+    <string name="settings_expand">Expandir</string>
+    <string name="settings_library_country_faq_title">Por que meu país não aparece?</string>
+    <string name="settings_library_country_faq_intro">Estamos trabalhando para ampliar nossa cobertura global! Por enquanto, priorizamos novos países conforme a demanda dos usuários.</string>
+    <string name="settings_library_country_faq_effects">Como isso afeta sua experiência:</string>
+    <string name="settings_library_country_faq_search">A busca continua global: você ainda pode buscar, encontrar e acessar todo o conteúdo, mesmo que seu país ainda não esteja na lista.</string>
+    <string name="settings_library_country_faq_recommendations">As recomendações inteligentes continuam funcionando: elas ainda sugerem o que mais combina com seus hábitos de escuta, seja qual for o país escolhido.</string>
+    <string name="settings_library_country_faq_changes">O que o país muda: as paradas em Explorar. Seus idiomas continuam como estão.</string>
+    <string name="settings_library_country_faq_languages">Os idiomas são separados: escolha-os em Recomendações › Idiomas para Para você, busca e vibes. As paradas continuam por país e não são filtradas por idioma.</string>
+    <string name="settings_library_country_faq_more">Quer outro país ou idioma?</string>
+    <string name="settings_library_country_faq_tell_us">Conte para a gente em Feedback ou no GitHub. Ampliamos a cobertura conforme a demanda.</string>
+    <string name="settings_library_saved_shows_counting">Contando…</string>
+    <string name="settings_library_saved_shows_none">Nada salvo de podcasts que você não segue</string>
+    <string name="settings_library_storage_title">Armazenamento</string>
+    <string name="settings_library_clear_saved_shows">Limpar podcasts salvos</string>
+    <string name="settings_clear_saved_shows_title">Limpar podcasts salvos?</string>
+    <string name="settings_clear_saved_shows_kept">Os podcasts que você segue, seu histórico, downloads e fila não são afetados.</string>
+    <string name="settings_clear_saved_shows_confirm">Limpar</string>
+    <string name="settings_cancel">Cancelar</string>
+    <!-- Under Clear saved shows: how many shows you don't follow have saved episode lists. -->
+    <plurals name="settings_library_saved_shows_count">
+        <item quantity="one">Listas de episódios de %1$d podcast que você não segue</item>
+        <item quantity="other">Listas de episódios de %1$d podcasts que você não segue</item>
+    </plurals>
+    <plurals name="settings_clear_saved_shows_body">
+        <item quantity="one">As listas de episódios de %1$d podcast que você não segue serão removidas deste celular. Elas carregam de novo quando você abre o podcast.</item>
+        <item quantity="other">As listas de episódios de %1$d podcasts que você não segue serão removidas deste celular. Elas carregam de novo quando você abre um podcast.</item>
+    </plurals>
+</resources>

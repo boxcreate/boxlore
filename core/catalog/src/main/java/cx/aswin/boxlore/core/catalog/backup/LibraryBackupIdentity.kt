@@ -48,6 +48,9 @@ data class EpisodeGroupStateBackup(
     val completedAt: Long = 0L,
     val completeClearedAt: Long = 0L,
     val version: Long = 0L,
+    /** The episode's archive and its clear (Room v45); 0 in backups made before. */
+    val dismissedAt: Long = 0L,
+    val dismissClearedAt: Long = 0L,
 )
 
 /**
@@ -65,7 +68,7 @@ internal enum class AliasRestoreDecision { INSERT, KEEP_PHONE, REFUSE }
  * - An ID only a catalog row holds is refused when the row is another show's or another key's
  *   (a legacy row's synthetic `id:<its own ID>` key is unknown, so it never differs).
  * - Unresolved and ambiguous aliases keep their state; only a trusted alias with a key may own.
- * - Group settings merge with the phone's by the latest like and completion decision.
+ * - Group settings merge with the phone's by the latest like, completion and archive decision.
  */
 internal object LibraryBackupIdentityLogic {
     private val STATES = setOf(EpisodeAliasState.TRUSTED, EpisodeAliasState.AMBIGUOUS, EpisodeAliasState.UNRESOLVED)
@@ -89,6 +92,8 @@ internal object LibraryBackupIdentityLogic {
         completedAt = state.completedAt,
         completeClearedAt = state.completeClearedAt,
         version = state.version,
+        dismissedAt = state.dismissedAt,
+        dismissClearedAt = state.dismissClearedAt,
     )
 
     /**
@@ -127,6 +132,8 @@ internal object LibraryBackupIdentityLogic {
             completedAt = backup.completedAt.coerceAtLeast(0L),
             completeClearedAt = backup.completeClearedAt.coerceAtLeast(0L),
             version = backup.version.coerceAtLeast(0L),
+            dismissedAt = backup.dismissedAt.coerceAtLeast(0L),
+            dismissClearedAt = backup.dismissClearedAt.coerceAtLeast(0L),
         )
     }
 
@@ -153,6 +160,8 @@ internal object LibraryBackupIdentityLogic {
             likeClearedAt = maxOf(phone.likeClearedAt, restored.likeClearedAt),
             completedAt = maxOf(phone.completedAt, restored.completedAt),
             completeClearedAt = maxOf(phone.completeClearedAt, restored.completeClearedAt),
+            dismissedAt = maxOf(phone.dismissedAt, restored.dismissedAt),
+            dismissClearedAt = maxOf(phone.dismissClearedAt, restored.dismissClearedAt),
             version = maxOf(phone.version, restored.version) + 1L,
         )
     }

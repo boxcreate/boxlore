@@ -170,6 +170,32 @@ class AutoBrowseTreeBuilderTest {
     }
 
     @Test
+    fun archivedEpisodesLeaveNewEpisodesAndContinueWithoutBeingPlayed() = runBlocking {
+        database.podcastDao().upsertRow(show("1", latest = episode("trailer", publishedSeconds = nowSeconds)))
+        database.podcastDao().upsertRow(show("2", latest = episode("fresh", publishedSeconds = nowSeconds - 60L)))
+        database.listeningHistoryDao().upsertAll(
+            listOf(history("started", progressMs = 60_000L, playedAt = 10L), history("abandoned", progressMs = 60_000L, playedAt = 20L)),
+        )
+        // The trailer was never played: archiving creates its row, carrying only the decision.
+        database.listeningHistoryDao().upsert(history("trailer", progressMs = 0L, playedAt = 0L).copy(dismissedAt = 30L))
+        database.listeningHistoryDao().setDismissedForIds(listOf("abandoned"), 31L)
+
+        assertEquals(listOf("episode:fresh"), treeBuilder.getNewEpisodesChildren().map { it.mediaId })
+        assertEquals(listOf("episode:started"), treeBuilder.getContinueListeningChildren().map { it.mediaId })
+        assertFalse(database.listeningHistoryDao().getHistoryItem("trailer")!!.isCompleted)
+    }
+
+    @Test
+    fun aShowsEpisodeListLeavesArchivedEpisodesOut() = runBlocking {
+        database.podcastDao().upsertRow(show("1", latest = episode("e2", publishedSeconds = nowSeconds)))
+        database.listeningHistoryDao().upsert(history("trailer", progressMs = 0L, playedAt = 0L).copy(dismissedAt = 30L))
+
+        val rows = treeBuilder.podcastEpisodeRows("1", listOf(episode("e2"), episode("e1"), episode("trailer")))
+
+        assertEquals(listOf("episode:e2", "episode:e1"), rows.map { it.mediaId })
+    }
+
+    @Test
     fun aStartedEpisodeKeepsItsTimeLeftBehindAShowMarkedPlayedAllAtOnce() = runBlocking {
         // Regression: rows were looked up in the newest 300, which one Mark all of 301 episodes filled.
         database.podcastDao().upsertRow(show("1", latest = episode("e1", publishedSeconds = nowSeconds)))
@@ -276,6 +302,8 @@ class AutoBrowseTreeBuilderTest {
 
         assertEquals("discover_curated_morning_news", tiles.first().mediaId)
         assertEquals(19, tiles.count { it.mediaId.startsWith(AutoBrowseContract.GENRE_PREFIX) })
+        // The id keeps the chart category the server knows; the row shows the short name from resources.
+        assertEquals("Tech", tiles.first { it.mediaId == "${AutoBrowseContract.GENRE_PREFIX}Technology" }.mediaMetadata.title.toString())
         assertFalse(tiles.any { it.mediaId == AutoBrowseContract.DISCOVER_GENRES_ID })
         assertTrue(tiles.all { it.mediaMetadata.artworkUri?.scheme == "android.resource" })
     }
@@ -336,6 +364,35 @@ class AutoBrowseTreeBuilderTest {
         val tiles = treeBuilder.slicePage(treeBuilder.getCuratedChildren("morning_news"), 0, Int.MAX_VALUE)
 
         assertEquals((1..50).map { "subscription:$it" }, tiles.map { it.mediaId })
+    }
+
+    @Test
+    fun curatedListsGenresAndDrivePicksLeaveHiddenShowsOut() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val realPrefs = cx.aswin.boxlore.core.prefs.UserPreferencesRepository(context)
+        realPrefs.hiddenShows.setAll(listOf(cx.aswin.boxlore.core.model.HiddenShow("2"), cx.aswin.boxlore.core.model.HiddenShow("rss:x", aliasIds = setOf("3"))))
+        try {
+            val prefs = mock(cx.aswin.boxlore.core.prefs.UserPreferencesRepository::class.java)
+            val repository = mock(cx.aswin.boxlore.core.catalog.PodcastRepository::class.java)
+            `when`(prefs.regionStream).thenReturn(kotlinx.coroutines.flow.flowOf("us"))
+            `when`(prefs.contentLanguagesStream).thenReturn(kotlinx.coroutines.flow.flowOf(listOf("en")))
+            `when`(prefs.hiddenShows).thenReturn(realPrefs.hiddenShows)
+            `when`(host.userPreferencesRepository).thenReturn(prefs)
+            `when`(host.podcastRepository).thenReturn(repository)
+            val shows = (1..4).map { cx.aswin.boxlore.core.model.Podcast(id = "$it", title = "Show $it", artist = "", imageUrl = "", latestEpisode = episode("ep$it", durationSeconds = 2_400)) }
+            `when`(repository.getCuratedPodcasts(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyList()))
+                .thenReturn(shows)
+            `when`(repository.getTrendingPodcasts(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyInt()))
+                .thenReturn(shows)
+            `when`(repository.getCuratedVibes(org.mockito.ArgumentMatchers.anyList(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.isNull()))
+                .thenReturn(mapOf("any" to shows))
+
+            assertEquals(listOf("subscription:1", "subscription:4"), treeBuilder.getCuratedChildren("morning_news").map { it.mediaId })
+            assertEquals(listOf("subscription:1", "subscription:4"), treeBuilder.getGenreChildren("Comedy").map { it.mediaId })
+            assertEquals(listOf("episode:ep1", "episode:ep4"), treeBuilder.getDrivePicksChildren().map { it.mediaId })
+        } finally {
+            realPrefs.hiddenShows.setAll(emptyList())
+        }
     }
 
     private fun mediaItems(count: Int) = (0 until count).map { androidx.media3.common.MediaItem.Builder().setMediaId("item:$it").build() }

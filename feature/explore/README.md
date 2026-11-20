@@ -37,7 +37,7 @@ Used by `:app` navigation:
 
 ## Lore
 
-- `LearnViewModel` loads curiosity pages through `PodcastRepository.getCuratedCuriosity`, skipping dismissed IDs, and shows `LearnUiState.CaughtUp` when a scan finds no unseen card. A scan reads a bounded number of pages (`findFirstUnseenCuriosityDeck`); each Check for new cards reads page 1 past the cache, then carries on where the last one stopped (`CuriosityScanResume`). A failed check keeps the deck and its paging.
+- `LearnViewModel` loads curiosity pages through `PodcastRepository.getCuratedCuriosity`, skipping dismissed IDs and cards of hidden shows (its `hiddenShowIds` flow, which also takes them out of the shown deck), and shows `LearnUiState.CaughtUp` when a scan finds no unseen card. A scan reads a bounded number of pages (`findFirstUnseenCuriosityDeck`); each Check for new cards reads page 1 past the cache, then carries on where the last one stopped (`CuriosityScanResume`). A failed check keeps the deck and its paging.
 - Swiping left skips a card; swiping right adds its episode to the queue. Both are recorded in history (`LearnHistoryAction.DISMISS` / `QUEUE`).
 - Ranking feedback records each card shown, every queue, and a skip only after the card stayed on screen long enough to be read.
 - Card buttons mirror the swipes: the source row opens the show or details; the bottom row has Skip, Play/Pause and Add to queue. Play starts the episode with the `LEARN` entry point, or toggles it when it is already playing.

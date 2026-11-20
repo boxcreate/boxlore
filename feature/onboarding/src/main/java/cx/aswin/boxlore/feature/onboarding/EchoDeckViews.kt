@@ -104,10 +104,10 @@ internal fun EchoDeckCard(deck: EchoDeck, metrics: EchoLayoutMetrics, preview: E
                     if (targetState > initialState) echoDeckForward() else echoDeckBackward()
                 },
                 contentAlignment = Alignment.TopCenter,
-                label = "Echo deck card",
+                label = "echoDeckCard",
             ) { index ->
                 val card = deck.cards.getOrNull(index) ?: return@AnimatedContent
-                val fling by transition.animateFloat({ tween(EchoDeckFlingMillis) }, label = "Card fling") { if (it == EnterExitState.PostExit) 1f else 0f }
+                val fling by transition.animateFloat({ tween(EchoDeckFlingMillis) }, label = "cardFling") { if (it == EnterExitState.PostExit) 1f else 0f }
                 val throwTo = echoDeckThrow(deck.reactions.getOrNull(index)?.reaction)
                 val reveal = remember {
                     when {
@@ -289,7 +289,7 @@ private fun RowScope.EchoReactionButton(reaction: EchoDeckReaction, corners: Ech
     val colors = MaterialTheme.colorScheme
     val press = remember { MutableInteractionSource() }
     val pressed by press.collectIsPressedAsState()
-    val weight by animateFloatAsState(if (pressed) 1.12f else 1f, spring(dampingRatio = 0.6f, stiffness = 600f), label = "Reaction width")
+    val weight by animateFloatAsState(if (pressed) 1.12f else 1f, spring(dampingRatio = 0.6f, stiffness = 600f), label = "reactionWidth")
     val (container, content) = when (reaction) {
         EchoDeckReaction.Like -> colors.primary to colors.onPrimary
         EchoDeckReaction.Dislike -> colors.secondaryContainer to colors.onSecondaryContainer

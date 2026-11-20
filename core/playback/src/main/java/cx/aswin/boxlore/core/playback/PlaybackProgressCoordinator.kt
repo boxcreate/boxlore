@@ -6,7 +6,9 @@ import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.dismissDecisionAt
 import cx.aswin.boxlore.core.database.episodeListenerStore
+import cx.aswin.boxlore.core.database.isDismissed
 import cx.aswin.boxlore.core.playback.SleepTimerHolder
 import cx.aswin.boxlore.core.playback.service.auto.stripEpisodePrefix
 import kotlinx.coroutines.CancellationException
@@ -23,6 +25,8 @@ internal data class PlaybackProgressSnapshot(
     val durationMs: Long,
     val hasBeenPlayingFor10s: Boolean,
     val allowZeroPosition: Boolean,
+    /** When this stretch of play started (0 when not playing); an archive made before it is undone. */
+    val playStartedAtMs: Long = 0L,
     val activePlaybackEnded: Boolean = false,
     val episodeTitle: String?,
     val episodeImageUrl: String?,
@@ -50,6 +54,9 @@ internal class PlaybackProgressCoordinator(
     private val progressSaveMutex = Mutex()
     private var nextSnapshotSequence = 0L
     private val lastAppliedSequenceByEpisode = mutableMapOf<String, Long>()
+
+    /** The stretch of play ([unarchiveOnPlay]) already checked: episode and start time. */
+    private var lastUnarchiveCheck: Pair<String, Long>? = null
     private val metadataEnrichmentAttemptCountByEpisode = mutableMapOf<String, Int>()
     private val missingSeedAttemptCountByEpisode = mutableMapOf<String, Int>()
 
@@ -108,6 +115,7 @@ internal class PlaybackProgressCoordinator(
             activePlaybackStartTimeMs > 0 &&
                 nowMs - activePlaybackStartTimeMs >= 10_000L,
             allowZeroPosition = allowZeroPosition || zeroStartRequested,
+            playStartedAtMs = activePlaybackStartTimeMs,
             activePlaybackEnded = activePlaybackEnded,
             episodeTitle = CastMediaMetadata.queueTitle(currentItem.mediaMetadata.title),
             episodeImageUrl = PlaybackArtworkMetadata.savedArtworkUrl(currentItem.mediaMetadata),
@@ -176,6 +184,7 @@ internal class PlaybackProgressCoordinator(
         // The media ID stays the one playback started with; its progress goes to the episode's owner.
         val historyId = listenerStore.historyId(snapshot.episodeId)
         val existing = loadOrSeedHistory(dao, snapshot, historyId)
+        unarchiveOnPlay(existing, snapshot, historyId)
         val canPersistPosition =
             snapshot.positionMs > 0L || snapshot.allowZeroPosition
         val didWrite =
@@ -186,6 +195,23 @@ internal class PlaybackProgressCoordinator(
             }
         lastAppliedSequenceByEpisode[snapshot.episodeId] = snapshot.sequence
         return didWrite
+    }
+
+    /**
+     * Playing an archived episode brings it back. Only real play counts, so restoring a paused
+     * episode or saving its place never does, and only an archive made before this stretch of play
+     * started: archiving the episode that is playing keeps it archived. Checked once per stretch, on
+     * the episode's projected state, so an archive held by another of its IDs is undone too.
+     */
+    private suspend fun unarchiveOnPlay(existing: ListeningHistoryEntity?, snapshot: PlaybackProgressSnapshot, historyId: String) {
+        if (existing == null || !snapshot.hasBeenPlayingFor10s || snapshot.playStartedAtMs <= 0L) return
+        val stretch = snapshot.episodeId to snapshot.playStartedAtMs
+        if (stretch == lastUnarchiveCheck) return
+        lastUnarchiveCheck = stretch
+        val projected = listenerStore.projectedHistory(historyId, existing) ?: return
+        if (projected.isDismissed && projected.dismissDecisionAt < snapshot.playStartedAtMs) {
+            listenerStore.setDismissed(historyId, dismissed = false, nowMs = System.currentTimeMillis())
+        }
     }
 
     private suspend fun loadOrSeedHistory(dao: ListeningHistoryDao, snapshot: PlaybackProgressSnapshot, historyId: String,): ListeningHistoryEntity? {

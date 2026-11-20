@@ -33,7 +33,7 @@ internal interface RenumberedFollowEffects {
     /** Records an auto-download setting change through the auto-download records. */
     suspend fun autoDownloadChanged(podcastId: String, enabled: Boolean)
 
-    /** Moves folder memberships, Home pins and the manual order from [oldId] to [newId]. */
+    /** Moves folder memberships, Home pins, the manual order and playlist places from [oldId] to [newId]. */
     suspend fun moveLibraryPlacement(oldId: String, newId: String)
 
     /** Starts the old show's unfollowed catalog countdown and, when [newId] is given, clears the new show's. */
@@ -48,8 +48,8 @@ internal interface RenumberedFollowEffects {
 
 /**
  * [RenumberedFollowEffects] on the app's stores: the address writer's pending registrations,
- * Firebase through [unregister], auto-download records, folders, Home pins and the manual order,
- * the catalog's unfollowed countdown and the episode links ([link]).
+ * Firebase through [unregister], auto-download records, folders, Home pins, the manual order and
+ * playlists, the catalog's unfollowed countdown and the episode links ([link]).
  */
 internal class RenumberedFollowWrites(
     private val podcastDao: PodcastDao,
@@ -64,6 +64,7 @@ internal class RenumberedFollowWrites(
         val prefs: UserPreferencesRepository?,
         val autoDownload: AutoDownloadDao?,
         val catalog: LocalEpisodeCatalogPort?,
+        val playlists: PlaylistRepository? = null,
     )
 
     override fun markRegistrationPending(podcastId: String): Boolean = feedAddresses.markRegistrationPending(podcastId)
@@ -88,6 +89,7 @@ internal class RenumberedFollowWrites(
             val order = prefs.subscriptionManualOrderStream.first()
             RenumberedFollowMerge.replacedId(order, oldId, newId).takeIf { it != order }?.let { prefs.setSubscriptionManualOrder(it) }
         }
+        library.playlists?.replaceShow(oldId, newId)
     }
 
     override suspend fun catalogFollowChanged(oldId: String, newId: String?) {
@@ -213,8 +215,9 @@ class RenumberedShowFollows internal constructor(
     }
 
     /** True when a show recorded as renumbered into [podcastId] is still followed under its old number. */
-    suspend fun isFollowedUnderFormerId(podcastId: String): Boolean =
-        shows.formerIds(podcastId).any { id -> podcastDao.getPodcast(id)?.let { it.isSubscribed && !it.isRss } == true }
+    /** A number Podcast Index retired for [podcastId] that is still followed (the show page counts its follow), or null. */
+    suspend fun followedFormerIdOf(podcastId: String): String? =
+        shows.formerIds(podcastId).firstOrNull { id -> podcastDao.getPodcast(id)?.let { it.isSubscribed && !it.isRss } == true }
 
     /**
      * The foreground pass's step: follows of shows recorded as renumbered move, then followed shows

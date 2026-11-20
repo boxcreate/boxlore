@@ -25,8 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.feature.library.R
 
 /**
  * New folder, then the genres of the shows you follow, as Explore-style chips. Tapping the picked
@@ -69,7 +71,7 @@ internal fun SubscriptionsFilterRow(
                         selectedGenre.equals(genre.label, ignoreCase = true)
                 )
             SubscriptionChip(
-                label = genre.label,
+                label = genre.displayLabel(),
                 selected = isSelected,
                 onClick = { onGenreChange(if (isSelected) "All" else genre.value) },
                 icon = genre.icon,
@@ -94,7 +96,7 @@ internal fun CompactNewFolderChip(
         Box(contentAlignment = Alignment.Center) {
             Icon(
                 imageVector = Icons.Rounded.CreateNewFolder,
-                contentDescription = "New folder",
+                contentDescription = stringResource(R.string.library_folder_new),
                 modifier = Modifier.size(22.dp),
             )
         }

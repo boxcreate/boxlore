@@ -17,6 +17,8 @@ import cx.aswin.boxlore.core.playback.pause
 import cx.aswin.boxlore.core.playback.resume
 import cx.aswin.boxlore.core.prefs.BriefingEdition
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import cx.aswin.boxlore.feature.briefing.R as BriefingR
+import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -178,8 +180,9 @@ class BriefingViewModel(
             val audioUri = android.net.Uri.parse(briefing.audioUrl)
             val version = audioUri.getQueryParameter("v")
 
+            val app = getApplication<Application>()
             val descriptionHtml = buildString {
-                append("<p>Your daily AI-generated news briefing for ${briefing.region.uppercase()}.</p>")
+                append("<p>").append(app.getString(BriefingR.string.briefing_screen_episode_description, briefing.region.uppercase(Locale.ROOT))).append("</p>")
                 if (briefing.script.isNotEmpty()) {
                     append("<br/>")
                     briefing.script.split("\n\n").filter { it.isNotBlank() }.forEach { paragraph ->
@@ -187,7 +190,7 @@ class BriefingViewModel(
                     }
                 }
                 if (briefing.sources.isNotEmpty()) {
-                    append("<br/><br/><h3>References & Sources</h3><ul>")
+                    append("<br/><br/><h3>").append(app.getString(BriefingR.string.briefing_screen_sources_heading)).append("</h3><ul>")
                     briefing.sources.forEach { source ->
                         append("<li><a href=\"").append(source.url).append("\">")
                             .append(source.title).append("</a></li>")

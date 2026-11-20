@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Picker names. The part before the dot is the family, so the picker reads as two groups. -->
+    <string name="now_playing_widget_label">Reproduciendo · Controles completos</string>
+    <string name="now_playing_bar_widget_label">Reproduciendo · Compacto</string>
+    <string name="playback_controls_widget_label">Reproduciendo · Redondo</string>
+    <string name="playback_next_controls_widget_label">Reproduciendo · Redondo con Siguiente</string>
+    <!-- Picker descriptions: one line on what the widget gives you. -->
+    <string name="now_playing_widget_description">El reproductor completo: portada, tiempo restante y los cinco controles</string>
+    <string name="now_playing_bar_widget_description">Un reproductor fino de una fila con atrás, reproducir y adelante</string>
+    <string name="playback_controls_widget_description">Un reproductor redondo con atrás, reproducir y adelante</string>
+    <string name="playback_next_controls_widget_description">Un reproductor redondo con adelante, reproducir y siguiente episodio</string>
+    <string name="widget_empty_title">Listo cuando quieras</string>
+    <string name="widget_empty_subtitle">Toca para abrir boxlore</string>
+    <string name="widget_previous">Episodio anterior</string>
+    <string name="widget_next">Siguiente episodio</string>
+    <string name="widget_skip_back">Retroceder</string>
+    <string name="widget_skip_forward">Adelantar</string>
+    <string name="widget_play">Reproducir</string>
+    <string name="widget_pause">Pausar</string>
+    <!-- Time left in the playing episode; %1$s is a short length such as "36m" or "1h 5m". Kept short so it fits beside the show name. -->
+    <string name="widget_time_left">Quedan %1$s</string>
+    <!-- Screen-reader text for the whole now playing widget. %1$s is the episode title, %2$s the show name. -->
+    <string name="widget_description_empty">Widget de reproducción de boxlore, sin episodio</string>
+    <string name="widget_description_playing_from">%1$s de %2$s, reproduciendo</string>
+    <string name="widget_description_paused_from">%1$s de %2$s, en pausa</string>
+    <string name="widget_description_playing">%1$s, reproduciendo</string>
+    <string name="widget_description_paused">%1$s, en pausa</string>
+    <plurals name="widget_description_playing_from_left">
+        <item quantity="one">%1$s de %2$s, reproduciendo, queda %3$d minuto</item>
+        <item quantity="many">%1$s de %2$s, reproduciendo, quedan %3$d minutos</item>
+        <item quantity="other">%1$s de %2$s, reproduciendo, quedan %3$d minutos</item>
+    </plurals>
+    <plurals name="widget_description_paused_from_left">
+        <item quantity="one">%1$s de %2$s, en pausa, queda %3$d minuto</item>
+        <item quantity="many">%1$s de %2$s, en pausa, quedan %3$d minutos</item>
+        <item quantity="other">%1$s de %2$s, en pausa, quedan %3$d minutos</item>
+    </plurals>
+    <plurals name="widget_description_playing_left">
+        <item quantity="one">%1$s, reproduciendo, queda %2$d minuto</item>
+        <item quantity="many">%1$s, reproduciendo, quedan %2$d minutos</item>
+        <item quantity="other">%1$s, reproduciendo, quedan %2$d minutos</item>
+    </plurals>
+    <plurals name="widget_description_paused_left">
+        <item quantity="one">%1$s, en pausa, queda %2$d minuto</item>
+        <item quantity="many">%1$s, en pausa, quedan %2$d minutos</item>
+        <item quantity="other">%1$s, en pausa, quedan %2$d minutos</item>
+    </plurals>
+    <!-- Time left, then the show name. The show name is cut off first when space runs out. -->
+    <string name="widget_meta_time_and_show">%1$s · %2$s</string>
+    <string name="widget_preview_episode">Por qué la curiosidad se multiplica</string>
+    <string name="widget_preview_podcast">The Daily Lore</string>
+    <string name="widget_preview_episode_2">Una semana tranquila en Kioto</string>
+    <string name="widget_preview_episode_2_show">Field Notes</string>
+    <string name="widget_preview_episode_3">Cómo los mapas moldean la memoria</string>
+    <string name="widget_preview_episode_3_show">Soft Power</string>
+    <string name="widget_preview_count">12</string>
+    <string name="widget_preview_show_count">24</string>
+    <string name="widget_preview_time_and_show">Quedan 36 min · The Daily Lore</string>
+    <string name="widget_preview_time_left">Quedan 36 min</string>
+    <string name="subscriptions_widget_label">Biblioteca · Tus podcasts</string>
+    <string name="subscriptions_widget_description">Los podcasts que sigues, en una cuadrícula de portadas</string>
+    <string name="subscriptions_widget_header">Seguidos</string>
+    <string name="subscriptions_widget_empty_title">Aún no sigues ningún podcast</string>
+    <string name="subscriptions_widget_empty_cta">Abrir boxlore</string>
+    <string name="new_episodes_widget_label">Biblioteca · Episodios nuevos</string>
+    <string name="new_episodes_widget_description">Los últimos episodios de tus podcasts</string>
+    <string name="new_episodes_widget_header">Episodios nuevos</string>
+    <string name="new_episodes_widget_empty_title">No hay episodios nuevos</string>
+    <string name="new_episodes_widget_empty_cta">Abrir Seguidos</string>
+    <string name="library_widget_view_all">Ver todo</string>
+</resources>

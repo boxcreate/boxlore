@@ -34,14 +34,12 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -63,6 +61,7 @@ import cx.aswin.boxlore.core.catalog.ShowListTooLongException
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 import cx.aswin.boxlore.core.model.Episode
@@ -80,6 +79,7 @@ import cx.aswin.boxlore.feature.info.components.InfoArtworkBackground
 import cx.aswin.boxlore.feature.info.components.MissingEpisodesChip
 import cx.aswin.boxlore.feature.info.components.MissingEpisodesConfirmDialog
 import cx.aswin.boxlore.feature.info.components.PodcastGenreEditSheet
+import cx.aswin.boxlore.feature.info.components.PodcastInfoArchiveMenu
 import cx.aswin.boxlore.feature.info.components.PodcastInfoJumpPillOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoLoadError
 import cx.aswin.boxlore.feature.info.components.PodcastInfoMarkDialogs
@@ -91,6 +91,7 @@ import cx.aswin.boxlore.feature.info.components.areAppNotificationsEnabled
 import cx.aswin.boxlore.feature.info.components.handleAutoDownloadToggle
 import cx.aswin.boxlore.feature.info.components.handleNotificationsToggle
 import cx.aswin.boxlore.feature.info.components.handleToolbarWarningAction
+import cx.aswin.boxlore.feature.info.logic.EpisodeArchiveLogic
 import cx.aswin.boxlore.feature.info.logic.EpisodeSelectionRange
 import cx.aswin.boxlore.feature.info.logic.FeedItem
 import cx.aswin.boxlore.feature.info.logic.PodcastEpisodeSelectionLogic
@@ -98,7 +99,6 @@ import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
 import cx.aswin.boxlore.feature.info.logic.groupEpisodes
 import cx.aswin.boxlore.feature.info.logic.podcastSearchDisplayEpisodes
 import cx.aswin.boxlore.feature.info.logic.resolveAutoScrollTarget
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -144,9 +144,8 @@ fun PodcastInfoScreen(
     val downloadingEpisodeIds by viewModel.downloadingEpisodeIds.collectAsState()
     val episodePendingDownloadRemoval by viewModel.episodePendingDownloadRemoval.collectAsState()
     val hideCompleted by viewModel.hideCompletedInShowDetails.collectAsState()
+    val titlesOnly by viewModel.episodeTitlesOnly.collectAsState()
     val isPinnedToHome by viewModel.isPinnedToHome.collectAsState()
-    val globalSkipBeginningMs by viewModel.globalSkipBeginningMs.collectAsState()
-    val globalSkipEndingMs by viewModel.globalSkipEndingMs.collectAsState()
     val backgroundChecksEnabled by viewModel.autoDownloadBackgroundChecksEnabled.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
@@ -205,6 +204,7 @@ fun PodcastInfoScreen(
     val selectedEpisodeIdSet = selectedEpisodeIds.toSet()
     val selectionActive = selectedEpisodeIds.isNotEmpty()
     val snackbarHostState = remember { SnackbarHostState() }
+    val playlistPicker = rememberInfoPlaylistPicker(podcastId)
 
     val notificationPermission = rememberShowNotificationPermission(
         podcastId = podcastId,
@@ -283,6 +283,11 @@ fun PodcastInfoScreen(
     var targetJumpEpisode by remember(podcastId) { mutableStateOf<Episode?>(null) }
     var isTargetOngoing by remember(podcastId) { mutableStateOf(false) }
     val completedEpisodeIds by viewModel.completedEpisodesState.collectAsState()
+    val archivedEpisodeIds by viewModel.archivedEpisodesState.collectAsState()
+    val archivedInShow by viewModel.archivedEpisodeCount.collectAsState()
+    // Show archived survives window changes and recreation, like the selection.
+    var showArchived by rememberSaveable(podcastId) { mutableStateOf(false) }
+    val archiveSelection = rememberSelectionArchive(viewModel, snackbarHostState)
 
     // Scroll-linked header and floating title, like Episode Info.
     val titleMotion = rememberShowPageTitleMotion(listState)
@@ -305,7 +310,7 @@ fun PodcastInfoScreen(
         when (val state = uiState) {
             is PodcastInfoUiState.Loading -> {
                 Box(modifier = Modifier.fillMaxSize().testTag(PODCAST_INFO_LOADING_TAG)) {
-                    ShowPageSkeleton()
+                    ShowPageSkeleton(titlesOnly = titlesOnly)
                 }
             }
 
@@ -327,14 +332,11 @@ fun PodcastInfoScreen(
 
                 // Content
                 val displayEpisodes =
-                    remember(isSearchActive, state.searchQuery, state.searchResults, state.episodes, hideCompleted, completedEpisodeIds) {
+                    remember(isSearchActive, state.searchQuery, state.searchResults, state.episodes, hideCompleted, completedEpisodeIds, showArchived, archivedEpisodeIds) {
                         val rawList = podcastSearchDisplayEpisodes(isSearchActive, state.searchQuery, state.searchResults, state.episodes)
-                        if (hideCompleted && !(isSearchActive && state.searchQuery.isNotBlank())) {
-                            rawList.filter { it.id !in completedEpisodeIds }
-                        } else {
-                            rawList
-                        }
+                        EpisodeArchiveLogic.listEpisodes(rawList, isSearchActive && state.searchQuery.isNotBlank(), hideCompleted, completedEpisodeIds, showArchived, archivedEpisodeIds)
                     }
+                val isHiddenFromList = { id: String -> EpisodeArchiveLogic.isHidden(id, hideCompleted, completedEpisodeIds, showArchived, archivedEpisodeIds) }
                 val hideCompletedFill = rememberHideCompletedFill(
                     hideCompleted = hideCompleted,
                     searching = isSearchActive && state.searchQuery.isNotBlank(),
@@ -414,12 +416,7 @@ fun PodcastInfoScreen(
                                 selectionSortName = rangeSort.name
                                 // A loaded window can also settle a restore that failed earlier.
                                 selectionRestoreFailedOn = null
-                                val eligibleEpisodes =
-                                    if (hideCompleted) {
-                                        window.episodes.filter { it.id !in completedEpisodeIds }
-                                    } else {
-                                        window.episodes
-                                    }
+                                val eligibleEpisodes = window.episodes.filterNot { isHiddenFromList(it.id) }
                                 addRange(range, eligibleEpisodes, window.newestFirst)
                             } finally {
                                 if (requestGeneration == selectionRequestGeneration) {
@@ -527,6 +524,7 @@ fun PodcastInfoScreen(
                         downloadedEpisodeIds,
                         downloadingEpisodeIds,
                         completedEpisodeIds,
+                        archivedEpisodeIds,
                     ) {
                         EpisodeListIndicators(
                             likedEpisodeIds = likedEpisodeIds,
@@ -534,13 +532,19 @@ fun PodcastInfoScreen(
                             downloadedEpisodeIds = downloadedEpisodeIds,
                             downloadingEpisodeIds = downloadingEpisodeIds,
                             completedEpisodeIds = completedEpisodeIds,
+                            archivedEpisodeIds = archivedEpisodeIds,
                         )
                     }
 
+                // The branded spotlight skips what the list hides: finished (when hidden) and archived episodes.
+                val spotlightHiddenIds = remember(hideCompleted, completedEpisodeIds, showArchived, archivedEpisodeIds) {
+                    (if (hideCompleted) completedEpisodeIds else emptySet()) + (if (showArchived) emptySet() else archivedEpisodeIds)
+                }
                 val spotlightEpisode = brandedPage?.let {
-                    brandedSpotlightEpisode(state.episodes, state.currentSort, isSearchActive, hiddenIds = if (hideCompleted) completedEpisodeIds else emptySet())
+                    brandedSpotlightEpisode(state.episodes, state.currentSort, isSearchActive, hiddenIds = spotlightHiddenIds)
                 }
                 val listFeedItems = remember(feedItems, spotlightEpisode) { feedItemsWithoutSpotlight(feedItems, spotlightEpisode) }
+                val hideShow = rememberPodcastInfoHideShow(viewModel, state, snackbarHostState)
                 val contentState = EpisodeListContentState(
                     listState = listState,
                     modifier = episodeListModifier,
@@ -570,6 +574,8 @@ fun PodcastInfoScreen(
                     searchFocusRequester = searchFocusRequester,
                     hideCompletedFill = hideCompletedFill,
                     spotlightEpisode = spotlightEpisode,
+                    isHidden = hideShow.isHidden,
+                    titlesOnly = titlesOnly,
                 )
 
                 val contentCallbacks = EpisodeListContentCallbacks(
@@ -580,6 +586,7 @@ fun PodcastInfoScreen(
                     onSearchChange = { viewModel.searchEpisodes(it) },
                     onSortToggle = { viewModel.toggleSort() },
                     onSubscribeClick = { viewModel.toggleSubscription() },
+                    onUnhide = hideShow.onUnhide,
                     onNotificationsToggle = {
                         cx.aswin.boxlore.feature.info.logic.requestPodcastNotificationAction(
                             podcast = state.podcast,
@@ -709,12 +716,18 @@ fun PodcastInfoScreen(
                         onMarkAllPlayed = { showMarkAllPlayedDialog = true },
                         onMarkAllUnplayed = { showMarkAllUnplayedDialog = true },
                         onToggleHideCompleted = { viewModel.toggleHideCompleted() },
+                        archive = PodcastInfoArchiveMenu(maxOf(archivedInShow, EpisodeArchiveLogic.archivedCount(state.episodes, archivedEpisodeIds)), showArchived) { showArchived = !showArchived },
                         onPlaybackSettings = { showPodcastPlaybackSettings = true },
+                        titlesOnly = titlesOnly,
+                        onToggleTitlesOnly = viewModel::toggleEpisodeTitlesOnly,
                         isSubscribed = state.isSubscribed,
+                        onAddToPlaylist = viewModel.playlists?.takeIf { state.isSubscribed }?.let { { playlistPicker.open = true } },
                         isPinnedToHome = isPinnedToHome,
                         onToggleHomePin = viewModel::toggleHomePin,
                         onEditGenre = handleEditGenreClick,
                         markAllRunning = state.isMarkingAll,
+                        isHidden = hideShow.isHidden,
+                        onToggleHidden = hideShow.onMenuClick,
                     ),
                     look = PodcastInfoTopBarLook(
                         sealAlpha = if (brandedPage == null) 0f else sealShown * (1f - (titleMotion.scrollFraction / 0.5f).coerceIn(0f, 1f)),
@@ -758,6 +771,7 @@ fun PodcastInfoScreen(
                                 it.id !in downloadedEpisodeIds && it.id !in downloadingEpisodeIds
                             },
                             markAsUnplayed = markSelectionAsUnplayed,
+                            unarchive = EpisodeArchiveLogic.shouldUnarchive(selectedEpisodes, archivedEpisodeIds),
                             canAddToQueue = selectedEpisodes.any { it.id !in queuedEpisodeIds },
                             hasRangeAnchor =
                             selectionAnchorEpisodeId != null &&
@@ -787,6 +801,10 @@ fun PodcastInfoScreen(
                                 viewModel.playEpisodes(selectedEpisodes)
                                 clearEpisodeSelection()
                             },
+                            onToggleArchive = {
+                                archiveSelection(selectedEpisodes, !EpisodeArchiveLogic.shouldUnarchive(selectedEpisodes, archivedEpisodeIds))
+                                clearEpisodeSelection()
+                            },
                             onAddToQueue = {
                                 viewModel.addEpisodesToQueue(selectedEpisodes)
                                 clearEpisodeSelection()
@@ -799,7 +817,7 @@ fun PodcastInfoScreen(
                                 val visibleEpisodes =
                                     PodcastEpisodeSelectionLogic
                                         .visibleEpisodes(feedItems, visibleItemKeys)
-                                        .filterNot { hideCompleted && it.id in completedEpisodeIds }
+                                        .filterNot { isHiddenFromList(it.id) }
                                 noteSelectionSort()
                                 selectionEpisodePool =
                                     (selectionEpisodePool + visibleEpisodes).distinctBy(Episode::id)
@@ -818,6 +836,7 @@ fun PodcastInfoScreen(
                         ),
                     )
                 }
+                InfoPlaylistPickerHost(playlistPicker, viewModel.playlists, state.podcast.takeIf { state.isSubscribed }, snackbarHostState)
 
                 // A restored dialog waits for the reloaded page to offer the feed check again, and
                 // is dropped once the check has run, so a confirm always has something to start.
@@ -846,29 +865,13 @@ fun PodcastInfoScreen(
                 }
 
                 if (showPodcastPlaybackSettings) {
-                    cx.aswin.boxlore.feature.info.components.PodcastPlaybackSettingsSheet(
-                        state =
-                        cx.aswin.boxlore.feature.info.components.PodcastPlaybackSettingsState(
-                            podcastTitle = state.podcast.title,
-                            isSubscribed = state.isSubscribed,
-                            globalSkipBeginningMs = globalSkipBeginningMs,
-                            globalSkipEndingMs = globalSkipEndingMs,
-                            skipBeginningOverrideMs = state.podcast.skipBeginningOverrideMs,
-                            skipEndingOverrideMs = state.podcast.skipEndingOverrideMs,
-                        ),
-                        actions =
-                        cx.aswin.boxlore.feature.info.components.PodcastPlaybackSettingsActions(
-                            onUseAppDefaultsChange = viewModel::setUseAppPlaybackDefaults,
-                            onSkipBeginningOverrideChange = viewModel::setSkipBeginningOverride,
-                            onSkipEndingOverrideChange = viewModel::setSkipEndingOverride,
-                            onDismissRequest = { showPodcastPlaybackSettings = false },
-                        ),
-                    )
+                    PodcastInfoPlaybackSettingsHost(viewModel, state) { showPodcastPlaybackSettings = false }
                 }
 
                 // SNACKBAR HOST (Overlay) — placed after jump-pill visibility is known
+                val userMessage = state.userMessage?.asString()
                 LaunchedEffect(state.userMessage) {
-                    val message = state.userMessage ?: return@LaunchedEffect
+                    val message = userMessage ?: return@LaunchedEffect
                     snackbarHostState.showSnackbar(message)
                     viewModel.consumeUserMessage()
                 }
@@ -892,46 +895,8 @@ fun PodcastInfoScreen(
                         },
                 )
 
-                // Derived visibility check for floating action pill
-                val isTargetVisible by remember(feedItems, listState, targetJumpIndex) {
-                    derivedStateOf {
-                        if (targetJumpIndex == -1 || feedItems.isEmpty()) {
-                            true
-                        } else {
-                            val listIndex = targetJumpIndex + 2
-                            val visibleItems = listState.layoutInfo.visibleItemsInfo
-                            if (visibleItems.isEmpty()) {
-                                true
-                            } else {
-                                val firstVisible = visibleItems.firstOrNull()?.index ?: 0
-                                val lastVisible = visibleItems.lastOrNull()?.index ?: 0
-                                listIndex in firstVisible..lastVisible || firstVisible >= listIndex
-                            }
-                        }
-                    }
-                }
-
-                // Track scroll direction to show/hide FAB
-                var isFabVisible by remember { mutableStateOf(true) }
-                LaunchedEffect(Unit) {
-                    var lastIndex = listState.firstVisibleItemIndex
-                    var lastOffset = listState.firstVisibleItemScrollOffset
-                    androidx.compose.runtime
-                        .snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
-                        .collect { (currentIndex, currentOffset) ->
-                            if (currentIndex > lastIndex) {
-                                isFabVisible = false
-                            } else if (currentIndex < lastIndex) {
-                                isFabVisible = true
-                            } else if (currentOffset > lastOffset) {
-                                isFabVisible = false
-                            } else if (currentOffset < lastOffset) {
-                                isFabVisible = true
-                            }
-                            lastIndex = currentIndex
-                            lastOffset = currentOffset
-                        }
-                }
+                val isTargetVisible by rememberJumpTargetVisible(listState, feedItems, targetJumpIndex)
+                val isFabVisible by rememberListScrollingUp(listState)
 
                 val jumpPillVisible =
                     targetJumpEpisode != null && !isTargetVisible && isFabVisible && !selectionActive && !isSearchActive
@@ -990,24 +955,3 @@ internal const val PODCAST_INFO_LOADING_TAG = "podcast_info_loading"
 
 /** Test tag on the pull-to-refresh indicator. */
 internal const val PODCAST_INFO_REFRESH_INDICATOR_TAG = "podcast_info_refresh_indicator"
-
-/** Saves selected episode IDs as a bundle-safe list. */
-private val EpisodeIdListSaver = Saver<List<String>, ArrayList<String>>(
-    save = { ArrayList(it) },
-    restore = { it },
-)
-
-/**
- * The selection window, in [sort], for a range selection or to look selected episodes up again
- * after the page is recreated, or the failure when it cannot be loaded: a range selection then
- * leaves the selection as it was and says why, and the restore keeps every ID and tries again.
- */
-@Suppress("TooGenericExceptionCaught") // Any load failure is handled by the caller.
-private suspend fun PodcastInfoViewModel.selectionWindowResult(sort: EpisodeSort): Result<PodcastEpisodeSelectionWindow> = try {
-    Result.success(loadEpisodeSelectionWindow(sort))
-} catch (cancelled: CancellationException) {
-    throw cancelled
-} catch (failure: Exception) {
-    android.util.Log.w("PodcastInfoScreen", "Could not load the show's episodes for selection", failure)
-    Result.failure(failure)
-}

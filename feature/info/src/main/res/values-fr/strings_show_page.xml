@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The show page: its menus, chips, sheets, dialogs and messages. -->
+    <!-- Show-page chip: the show has not released an episode for over a year. Short chip text. -->
+    <string name="podcast_info_frequency_inactive">Inactif / Terminé</string>
+    <!-- Show-page chip: no episode for over six months. -->
+    <string name="podcast_info_frequency_hiatus">En pause</string>
+    <!-- Show-page chip: the show is taking a break between seasons. -->
+    <string name="podcast_info_frequency_between_seasons">Entre deux saisons</string>
+    <!-- Show-page chip: how often the show releases episodes. Short chip text. -->
+    <string name="podcast_info_frequency_daily">Quotidien</string>
+    <string name="podcast_info_frequency_multi_weekly">Plusieurs fois par semaine</string>
+    <string name="podcast_info_frequency_weekly">Hebdomadaire</string>
+    <string name="podcast_info_frequency_biweekly">Toutes les 2 semaines</string>
+    <string name="podcast_info_frequency_monthly">Mensuel</string>
+    <string name="podcast_info_frequency_occasionally">Occasionnel</string>
+    <!-- Show-page chip: the show releases every week, usually on this weekday. -->
+    <string name="podcast_info_frequency_weekly_sunday">Chaque dimanche</string>
+    <string name="podcast_info_frequency_weekly_monday">Chaque lundi</string>
+    <string name="podcast_info_frequency_weekly_tuesday">Chaque mardi</string>
+    <string name="podcast_info_frequency_weekly_wednesday">Chaque mercredi</string>
+    <string name="podcast_info_frequency_weekly_thursday">Chaque jeudi</string>
+    <string name="podcast_info_frequency_weekly_friday">Chaque vendredi</string>
+    <string name="podcast_info_frequency_weekly_saturday">Chaque samedi</string>
+    <!-- Show-page chip: the show releases every two weeks, usually on this weekday. -->
+    <string name="podcast_info_frequency_biweekly_sunday">Un dimanche sur deux</string>
+    <string name="podcast_info_frequency_biweekly_monday">Un lundi sur deux</string>
+    <string name="podcast_info_frequency_biweekly_tuesday">Un mardi sur deux</string>
+    <string name="podcast_info_frequency_biweekly_wednesday">Un mercredi sur deux</string>
+    <string name="podcast_info_frequency_biweekly_thursday">Un jeudi sur deux</string>
+    <string name="podcast_info_frequency_biweekly_friday">Un vendredi sur deux</string>
+    <string name="podcast_info_frequency_biweekly_saturday">Un samedi sur deux</string>
+    <!-- Show-page chip for a person: their name, then their role from the feed (Host, Guest…). -->
+    <string name="podcast_info_person_role">%1$s (%2$s)</string>
+    <!-- Chip on a show added from an RSS feed link. -->
+    <string name="podcast_info_rss_chip">RSS</string>
+    <!-- Show-page chip: the feed's medium (what kind of feed it is). -->
+    <string name="podcast_info_medium_music">Musique</string>
+    <string name="podcast_info_medium_video">Vidéo</string>
+    <string name="podcast_info_medium_film">Film</string>
+    <string name="podcast_info_medium_audiobook">Livre audio</string>
+    <string name="podcast_info_medium_newsletter">Newsletter</string>
+    <string name="podcast_info_medium_blog">Blog</string>
+    <!-- Screen-reader label for the lock icon on a show whose feed is locked. -->
+    <string name="podcast_info_locked_icon">Verrouillé</string>
+    <string name="podcast_info_locked_label">Le flux du podcast est verrouillé</string>
+    <string name="podcast_info_locked_info_icon">Informations</string>
+    <string name="podcast_info_locked_title">Podcast verrouillé</string>
+    <!-- Podcasting 2.0 is the name of an open podcast standard; keep it in English. -->
+    <string name="podcast_info_locked_body">Le flux de ce podcast a été verrouillé par son éditeur. Selon la spécification Podcasting 2.0, un flux verrouillé empêche les autres annuaires ou hébergeurs d’importer ou de migrer le flux de ce podcast sans l’autorisation explicite de son propriétaire.</string>
+    <string name="podcast_info_locked_ok">Compris</string>
+    <!-- Heading over the shows the show's creator recommends (its podroll). -->
+    <string name="podcast_info_podroll_title">Recommandés par le créateur</string>
+    <!-- Screen-reader label for the show page's share button. -->
+    <string name="podcast_info_share">Partager le podcast</string>
+    <!-- Screen-reader label for the show page's overflow menu button. -->
+    <string name="podcast_info_more_options">Plus d’options</string>
+    <!-- Show page overflow menu items. -->
+    <string name="podcast_info_mark_all_played">Tout marquer comme écouté</string>
+    <string name="podcast_info_mark_all_unplayed">Tout marquer comme non écouté</string>
+    <string name="podcast_info_hide_completed">Masquer les épisodes terminés</string>
+    <string name="podcast_info_show_full_episodes">Afficher les épisodes en entier</string>
+    <string name="podcast_info_show_titles_only">Afficher les titres seuls</string>
+    <!-- Menu item and sheet title: this show's own speed, trim silence and skips. -->
+    <string name="podcast_info_playback_for_show">Lecture pour ce podcast</string>
+    <string name="podcast_info_change_genre">Modifier l’étiquette / le genre</string>
+    <string name="podcast_info_pin_home">Épingler sur l’accueil</string>
+    <string name="podcast_info_unpin_home">Retirer de l’accueil</string>
+    <string name="podcast_info_mark_all_played_title">Tout marquer comme écouté ?</string>
+    <string name="podcast_info_mark_all_unplayed_title">Tout marquer comme non écouté ?</string>
+    <!-- %1$s is the show's name. -->
+    <string name="podcast_info_mark_all_played_body">Tous les épisodes de « %1$s » seront marqués comme écoutés.</string>
+    <!-- %1$s is the show's name. -->
+    <string name="podcast_info_mark_all_unplayed_body">Tous les épisodes de « %1$s » repasseront en non écoutés.</string>
+    <string name="podcast_info_confirm">Confirmer</string>
+    <!-- Part of the app-defaults line in Playback for this show: how much of each episode's beginning the app skips. %1$s is "Off" or a length like "30s". -->
+    <string name="podcast_playback_summary_beginning">Début %1$s</string>
+    <!-- As above, for the ending. -->
+    <string name="podcast_playback_summary_ending">Fin %1$s</string>
+    <!-- Part of the app-defaults line: the app trims silence. -->
+    <string name="podcast_playback_summary_trim_silence">Suppression des silences activée</string>
+    <!-- Speed chip that follows the app's speed; %1$s is the speed, like "1.2×". -->
+    <string name="podcast_playback_app_speed">Vitesse de l’appli (%1$s)</string>
+    <!-- Trim silence chip that follows the app's setting, which is on. -->
+    <string name="podcast_playback_app_setting_on">Réglage de l’appli (activé)</string>
+    <string name="podcast_playback_app_setting_off">Réglage de l’appli (désactivé)</string>
+    <!-- Shown beside a playback setting that follows the app's value. -->
+    <string name="podcast_playback_app">Appli</string>
+    <string name="podcast_playback_speed">Vitesse</string>
+    <string name="podcast_playback_trim_silence">Supprimer les silences</string>
+    <string name="podcast_playback_on">Activé</string>
+    <string name="podcast_playback_off">Désactivé</string>
+    <string name="podcast_playback_trim_silence_hint">Sauter les longues pauses dans les épisodes de ce podcast</string>
+    <string name="podcast_playback_use_app_defaults">Utiliser les réglages de l’appli</string>
+    <string name="podcast_playback_subscribe_hint">Abonnez-vous pour personnaliser la lecture de ce podcast</string>
+    <string name="podcast_playback_skip_beginning">Sauter le début</string>
+    <string name="podcast_playback_skip_ending">Sauter la fin</string>
+    <!-- "Settings → Playback" names the app's Settings page and its Playback section. -->
+    <string name="podcast_playback_seek_note">Les intervalles des boutons d’avance et de retour s’appliquent à toute l’appli et se modifient dans Paramètres → Lecture.</string>
+    <!-- Screen-reader label for a skip slider: its title, then its value ("Skip beginning, 30 seconds"). -->
+    <string name="podcast_playback_slider_description">%1$s, %2$s</string>
+    <!-- Value beside a skip slider. -->
+    <plurals name="podcast_playback_seconds">
+        <item quantity="one">%1$d seconde</item>
+        <item quantity="other">%1$d secondes</item>
+    </plurals>
+    <!-- A skip length in the app-defaults line, abbreviated ("30s"). -->
+    <plurals name="podcast_playback_seconds_short">
+        <item quantity="one">%1$d s</item>
+        <item quantity="other">%1$d s</item>
+    </plurals>
+    <!-- Tag & Icon sheet: the preview's tag when the show has no genre and none is typed. -->
+    <string name="genre_edit_fallback_genre">Podcast</string>
+    <string name="genre_edit_close">Fermer</string>
+    <!-- Title of the sheet that changes a show's genre tag and its icon. -->
+    <string name="genre_edit_title">Étiquette et icône</string>
+    <string name="genre_edit_reset">Réinitialiser</string>
+    <string name="genre_edit_save">Enregistrer</string>
+    <string name="genre_edit_live_preview">Aperçu en direct</string>
+    <!-- The genre the show has in the catalog; %1$s is that genre. -->
+    <string name="genre_edit_catalog">Catalogue : %1$s</string>
+    <string name="genre_edit_selected_icon">Icône choisie</string>
+    <string name="genre_edit_clear_input">Effacer l’étiquette saisie</string>
+    <string name="genre_edit_quick_suggestions">Suggestions rapides</string>
+    <!-- Heading over tags that match what was typed; %1$d is how many. -->
+    <plurals name="genre_edit_matching_tags">
+        <item quantity="one">Étiquette correspondante (%1$d)</item>
+        <item quantity="other">Étiquettes correspondantes (%1$d)</item>
+    </plurals>
+    <string name="genre_edit_suggested_icons">Icônes suggérées</string>
+    <string name="genre_edit_all_icons">Toutes les icônes</string>
+    <string name="genre_edit_clear_icon">Retirer l’icône</string>
+    <!-- Banner on the show page after turning on auto-download while notifications are off. -->
+    <string name="podcast_info_warning_auto_download_title">Le téléchargement auto est activé</string>
+    <!-- Banner title: boxlore's notifications are off in system settings. -->
+    <string name="podcast_info_warning_blocked_title">Notifications désactivées</string>
+    <string name="podcast_info_warning_notice_title">À noter</string>
+    <string name="podcast_info_warning_auto_download_message">Les nouveaux épisodes sont récupérés quand vous ouvrez et actualisez boxlore. Activez les notifications du podcast pour lancer les téléchargements même quand boxlore est fermé.</string>
+    <string name="podcast_info_warning_blocked_message">Les notifications sont désactivées dans les paramètres système. Autorisez-les, puis réessayez. Promis, nous ne vous spammerons jamais.</string>
+    <string name="podcast_info_warning_auto_download_action">Activer les notifications</string>
+    <string name="podcast_info_warning_blocked_action">Activer</string>
+    <string name="podcast_info_warning_dismiss">Ignorer</string>
+    <!-- Header of the card that groups a show's trailers. -->
+    <string name="podcast_info_trailers_title">Bandes-annonces</string>
+    <!-- Under the trailers card's title while selecting: %1$d selected out of %2$d trailers. The plural follows %2$d. -->
+    <plurals name="podcast_info_trailers_selected">
+        <item quantity="one">Sélection : %1$d sur %2$d</item>
+        <item quantity="other">Sélection : %1$d sur %2$d</item>
+    </plurals>
+    <!-- Under the trailers card's title: how many trailers the show has. -->
+    <plurals name="podcast_info_trailers_count">
+        <item quantity="one">%1$d bande-annonce</item>
+        <item quantity="other">%1$d bandes-annonces</item>
+    </plurals>
+    <string name="podcast_info_trailers_collapse">Réduire</string>
+    <string name="podcast_info_trailers_expand">Développer</string>
+    <string name="podcast_info_mark_all_failed">Impossible de charger tous les épisodes, aucun n’a donc été marqué. Vérifiez votre connexion et réessayez.</string>
+    <string name="podcast_info_mark_all_too_long">Ce podcast a trop d’épisodes pour tous les marquer, aucun n’a donc été marqué.</string>
+    <string name="podcast_info_queue_full">Votre file d’attente est pleine. Retirez un épisode pour en ajouter d’autres.</string>
+    <!-- Joins two whole sentences after Add to queue filled the queue: "Added 42 episodes." and "Your queue is full, so 178 weren’t added." Change only if your language orders sentences differently. -->
+    <string name="podcast_info_queue_partly_added">%1$s %2$s</string>
+    <!-- First sentence after Add to queue filled the queue: how many episodes were added. -->
+    <plurals name="podcast_info_queue_added">
+        <item quantity="one">%1$d épisode ajouté.</item>
+        <item quantity="other">%1$d épisodes ajoutés.</item>
+    </plurals>
+    <!-- Second sentence: how many selected episodes didn't fit. -->
+    <plurals name="podcast_info_queue_not_added">
+        <item quantity="one">Votre file d’attente est pleine : %1$d n’a pas été ajouté.</item>
+        <item quantity="other">Votre file d’attente est pleine : %1$d n’ont pas été ajoutés.</item>
+    </plurals>
+    <!-- Snackbar after Find missing episodes added episodes. -->
+    <plurals name="podcast_info_supplement_added">
+        <item quantity="one">%1$d épisode ajouté</item>
+        <item quantity="other">%1$d épisodes ajoutés</item>
+    </plurals>
+    <string name="podcast_info_supplement_updated">Liste d’épisodes mise à jour</string>
+    <!-- Snackbar after pull to refresh read new episodes from the show's feed. -->
+    <plurals name="podcast_info_feed_added">
+        <item quantity="one">%1$d épisode ajouté depuis le flux</item>
+        <item quantity="other">%1$d épisodes ajoutés depuis le flux</item>
+    </plurals>
+    <string name="podcast_info_feed_updated">Liste d’épisodes mise à jour depuis le flux</string>
+    <string name="podcast_info_feed_check_failed">Impossible de mettre à jour les épisodes depuis le flux</string>
+    <!-- Snackbar when Pin to Home screen is tapped and Home already has the most pinned shows. %1$d is that number (more than one). -->
+    <string name="podcast_info_pin_capacity">Vous pouvez épingler jusqu’à %1$d podcasts sur l’accueil</string>
+    <!-- The jump pill on a show page: shown before the title of the episode you're partway through, which follows in its own style. Keep the trailing space. -->
+    <string name="podcast_info_jump_resume">"Reprendre : "</string>
+    <!-- As above, before the title of the episode the list will scroll to. -->
+    <string name="podcast_info_jump_to">"Aller à : "</string>
+</resources>

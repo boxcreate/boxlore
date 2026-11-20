@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.core.playback
 
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 
@@ -42,5 +44,19 @@ internal object QueueStartState {
         if (startEpisodeId != null) {
             PlaybackActivationRequest.set(startEpisodeId, startPosMs, applyIntroTrim = initialPositionMs == null && startPosMs == 0L)
         }
+    }
+
+    /**
+     * Loads [items] into [player] at [index] and [positionMs], runs [beforeStart], then plays, or
+     * leaves them paused when [startPaused]: paused before the new items, so a playing queue doesn't
+     * play them on prepare.
+     */
+    @Suppress("LongParameterList")
+    fun load(player: Player, items: List<MediaItem>, index: Int, positionMs: Long, startPaused: Boolean, beforeStart: () -> Unit) {
+        if (startPaused) player.pause()
+        player.setMediaItems(items, index, positionMs)
+        player.prepare()
+        beforeStart()
+        if (!startPaused) player.play()
     }
 }

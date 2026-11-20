@@ -179,6 +179,7 @@ internal class AutoPlaybackResumptionHandler(
         val resolvedMediaItems = if (aligned.items.isNotEmpty()) {
             aligned.items.map { episode ->
                 val ungrounded = AutoMediaItemFactory.fromEpisode(
+                    resources = host.asContext().resources,
                     episode = episode,
                     source = AutoBrowseContract.SOURCE_QUEUE,
                     artworkUri = AutoArtworkRepository.remoteUri(

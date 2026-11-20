@@ -162,6 +162,60 @@ class PodcastDaoExtendedTest {
     }
 
     @Test
+    fun playbackSpeedAndTrimSilenceOverridesPersistAndClear() = runTest {
+        dao.upsert(podcast("1"))
+        dao.setPlaybackSpeedOverride("1", 1.75f)
+        dao.setSkipSilenceOverride("1", true)
+
+        val updated = dao.getPodcast("1")!!
+        assertEquals(1.75f, updated.playbackSpeedOverride)
+        assertEquals(true, updated.skipSilenceOverride)
+        assertTrue("the change is pushed with the next sync", updated.isDirty)
+
+        dao.setPlaybackSpeedOverride("1", null)
+        dao.setSkipSilenceOverride("1", false)
+        val cleared = dao.getPodcast("1")!!
+        assertNull(cleared.playbackSpeedOverride)
+        assertEquals(false, cleared.skipSilenceOverride)
+
+        dao.setPlaybackSpeedOverride("missing", 2f)
+        assertNull(dao.getPodcast("missing"))
+    }
+
+    @Test
+    fun playerSpeedAndTrimSilenceChangesAreNotQueuedForSync() = runTest {
+        dao.upsert(podcast("1"))
+        dao.markPodcastsSynced(listOf("1"), timestamp = 5_000L)
+
+        dao.setPlaybackSpeedOverrideLocally("1", 2f)
+        dao.setSkipSilenceOverrideLocally("1", true)
+
+        val updated = dao.getPodcast("1")!!
+        assertEquals(2f, updated.playbackSpeedOverride)
+        assertEquals(true, updated.skipSilenceOverride)
+        assertFalse("sync doesn't carry speed or trim silence", updated.isDirty)
+
+        dao.setPlaybackSpeedOverrideLocally("1", null)
+        dao.setSkipSilenceOverrideLocally("1", null)
+        assertNull(dao.getPodcast("1")!!.playbackSpeedOverride)
+        assertNull(dao.getPodcast("1")!!.skipSilenceOverride)
+        dao.setPlaybackSpeedOverrideLocally("missing", 2f)
+        assertNull(dao.getPodcast("missing"))
+    }
+
+    @Test
+    fun observePodcastFollowsTheRowsOwnPlaybackSettings() = runTest {
+        assertNull(dao.observePodcast("1").first())
+        dao.upsert(podcast("1"))
+        dao.setPlaybackSpeedOverride("1", 1.5f)
+        dao.setSkipSilenceOverride("1", true)
+
+        val observed = dao.observePodcast("1").first()!!
+        assertEquals(1.5f, observed.playbackSpeedOverride)
+        assertEquals(true, observed.skipSilenceOverride)
+    }
+
+    @Test
     fun updateRssStateAppliesPartialUpdate() = runTest {
         dao.upsert(podcast("-1001", sourceType = PodcastEntity.SOURCE_RSS))
 

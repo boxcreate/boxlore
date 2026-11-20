@@ -19,6 +19,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.player.R
 import cx.aswin.boxlore.feature.player.v2.logic.playbackFraction
 
 /** Non-interactive status decoration around the same artwork used by the normal mini player. */
@@ -74,11 +76,13 @@ internal fun miniPlayerCompactDuration(content: MiniPlayerContent): Long =
 internal fun miniPlayerCompactProgress(content: MiniPlayerContent): Float =
     playbackFraction(content.position, miniPlayerCompactDuration(content))
 
-internal fun miniPlayerCompactStateDescription(content: MiniPlayerContent): String {
+internal fun miniPlayerCompactStateDescription(content: MiniPlayerContent): UiText {
     val state = when {
-        content.isLoading -> "Loading"
-        content.isPlaying -> "Playing"
-        else -> "Paused"
+        content.isLoading -> UiText.res(R.string.player_loading)
+        content.isPlaying -> UiText.res(R.string.player_playing)
+        else -> UiText.res(R.string.player_paused)
     }
-    return if (content.isCasting) "$state, casting to ${content.castDeviceName ?: "Cast device"}" else state
+    if (!content.isCasting) return state
+    val device = content.castDeviceName?.let(UiText::raw) ?: UiText.res(R.string.player_cast_device_fallback)
+    return UiText.res(R.string.player_state_casting_to, state, device)
 }

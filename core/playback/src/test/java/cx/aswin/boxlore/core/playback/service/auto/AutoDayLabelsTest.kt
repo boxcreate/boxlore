@@ -2,7 +2,6 @@ package cx.aswin.boxlore.core.playback.service.auto
 
 import java.time.ZoneId
 import java.time.ZonedDateTime
-import java.util.Locale
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -32,13 +31,5 @@ class AutoDayLabelsTest {
     fun `a missing or future date has no age`() {
         assertNull(AutoDayLabels.daysAgo(0L, now.toInstant().toEpochMilli(), zone))
         assertNull(daysAgo(now.plusDays(1)))
-    }
-
-    @Test
-    fun `the short date drops the year only within the same year`() {
-        val published = ZonedDateTime.of(2025, 10, 14, 12, 0, 0, 0, zone).toEpochSecond()
-
-        assertEquals("14 Oct", AutoDayLabels.shortDate(published, sameYear = true, zone = zone, locale = Locale.UK))
-        assertEquals("14 Oct 2025", AutoDayLabels.shortDate(published, sameYear = false, zone = zone, locale = Locale.UK))
     }
 }

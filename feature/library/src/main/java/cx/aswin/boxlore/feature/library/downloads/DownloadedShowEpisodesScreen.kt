@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.library.downloads
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -72,6 +73,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
@@ -82,14 +85,18 @@ import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.downloads.canRetryDownload
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.feature.library.LibraryUiState
 import cx.aswin.boxlore.feature.library.LibraryViewModel
+import cx.aswin.boxlore.feature.library.R
 import cx.aswin.boxlore.feature.library.ShowSortOrder
 import kotlinx.coroutines.launch
 
@@ -213,11 +220,11 @@ fun DownloadedShowEpisodesScreen(
                             isSelectionMode = false
                             selectedEpisodeIds.clear()
                         }) {
-                            Icon(Icons.Rounded.Close, contentDescription = "Cancel selection")
+                            Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.library_cancel_selection))
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "${selectedEpisodeIds.size} Selected",
+                            text = pluralStringResource(R.plurals.library_selected_count_title, selectedEpisodeIds.size, selectedEpisodeIds.size),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = GoogleSansWeight.bold,
                             modifier = Modifier.weight(1f)
@@ -230,7 +237,7 @@ fun DownloadedShowEpisodesScreen(
                                 selectedEpisodeIds.addAll(showEpisodes.map { it.episodeId })
                             }
                         }) {
-                            Icon(Icons.Rounded.SelectAll, contentDescription = "Select All")
+                            Icon(Icons.Rounded.SelectAll, contentDescription = stringResource(R.string.library_select_all))
                         }
                         IconButton(
                             onClick = { deleteConfirmSelectedDialog = true },
@@ -238,13 +245,13 @@ fun DownloadedShowEpisodesScreen(
                         ) {
                             Icon(
                                 Icons.Rounded.Delete,
-                                contentDescription = "Delete Selected",
+                                contentDescription = stringResource(R.string.library_delete_selected),
                                 tint = if (selectedEpisodeIds.isNotEmpty()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                             )
                         }
                     } else {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.library_back))
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
@@ -259,7 +266,7 @@ fun DownloadedShowEpisodesScreen(
                         )
                         if (showEpisodes.isNotEmpty()) {
                             IconButton(onClick = { isSelectionMode = true }) {
-                                Icon(Icons.Rounded.Checklist, contentDescription = "Select episodes")
+                                Icon(Icons.Rounded.Checklist, contentDescription = stringResource(R.string.library_downloads_select_episodes))
                             }
                         }
                     }
@@ -314,7 +321,7 @@ fun DownloadedShowEpisodesScreen(
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     Text(
-                                        text = summary.countLine(sizeSuffix = " saved"),
+                                        text = summary.countLine(DownloadSizeWording.Saved, currentLocale()).asString(),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -351,7 +358,7 @@ fun DownloadedShowEpisodesScreen(
                                             )
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Text(
-                                                text = "Play All",
+                                                text = stringResource(R.string.library_play_all),
                                                 style = MaterialTheme.typography.labelLarge,
                                                 fontWeight = GoogleSansWeight.bold,
                                                 color = MaterialTheme.colorScheme.onPrimary
@@ -381,7 +388,7 @@ fun DownloadedShowEpisodesScreen(
                                             )
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Text(
-                                                text = "Delete All",
+                                                text = stringResource(R.string.library_delete_all),
                                                 style = MaterialTheme.typography.labelLarge,
                                                 fontWeight = GoogleSansWeight.bold,
                                                 color = MaterialTheme.colorScheme.error
@@ -430,7 +437,7 @@ fun DownloadedShowEpisodesScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Rounded.DeleteOutline,
-                                            contentDescription = "Delete",
+                                            contentDescription = stringResource(R.string.library_delete),
                                             tint = MaterialTheme.colorScheme.onErrorContainer
                                         )
                                     }
@@ -445,7 +452,7 @@ fun DownloadedShowEpisodesScreen(
                                             .fillMaxWidth()
                                             .expressiveClickable(
                                                 shape = RoundedCornerShape(12.dp),
-                                                onLongClickLabel = "Select",
+                                                onLongClickLabel = stringResource(R.string.library_select),
                                                 onLongClick = {
                                                     isSelectionMode =
                                                         selectedEpisodeIds.applyLongPressDownloadSelection(
@@ -522,7 +529,7 @@ fun DownloadedShowEpisodesScreen(
                                                     ) {
                                                         Icon(
                                                             imageVector = Icons.Rounded.Queue,
-                                                            contentDescription = "Queued",
+                                                            contentDescription = stringResource(R.string.library_downloads_status_queued),
                                                             tint = Color.White,
                                                             modifier = Modifier.size(16.dp)
                                                         )
@@ -537,7 +544,7 @@ fun DownloadedShowEpisodesScreen(
                                                     ) {
                                                         Icon(
                                                             imageVector = Icons.Rounded.Info,
-                                                            contentDescription = "Failed",
+                                                            contentDescription = stringResource(R.string.library_downloads_status_failed),
                                                             tint = MaterialTheme.colorScheme.error,
                                                             modifier = Modifier.size(16.dp)
                                                         )
@@ -554,11 +561,16 @@ fun DownloadedShowEpisodesScreen(
                                                 fontWeight = GoogleSansWeight.semiBold,
                                                 style = MaterialTheme.typography.bodyMedium
                                             )
-                                            val relativeDate = formatRelativeDate(download.publishedDate)
-                                            val durationText = if (download.durationMs > 0) "${(download.durationMs / 1000) / 60}m" else null
-                                            val sizeText = formatSize(download.sizeBytes)
+                                            val locale = currentLocale()
+                                            val relativeDate = formatRelativeDate(download.publishedDate, locale)?.asString()
+                                            val durationText = if (download.durationMs > 0) {
+                                                LocaleFormats.duration(download.durationMs / 1000 / 60 * 60, locale, LocaleFormats.DurationWidth.NARROW)
+                                            } else {
+                                                null
+                                            }
+                                            val sizeText = formatSize(download.sizeBytes, locale).asString()
                                             val subText = listOfNotNull(
-                                                relativeDate.takeIf { it.isNotEmpty() },
+                                                relativeDate,
                                                 durationText,
                                                 sizeText
                                             ).joinToString(" • ")
@@ -570,7 +582,7 @@ fun DownloadedShowEpisodesScreen(
                                             )
                                             if (canRetry) {
                                                 Text(
-                                                    text = DOWNLOAD_FAILED_LINE,
+                                                    text = stringResource(DOWNLOAD_FAILED_LINE),
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = MaterialTheme.colorScheme.error
                                                 )
@@ -607,7 +619,7 @@ fun DownloadedShowEpisodesScreen(
                                                 ) {
                                                     Icon(
                                                         imageVector = if (canRetry) Icons.Rounded.Refresh else Icons.Rounded.PlayArrow,
-                                                        contentDescription = if (canRetry) DOWNLOAD_AGAIN_LABEL else "Play episode",
+                                                        contentDescription = stringResource(if (canRetry) DOWNLOAD_AGAIN_LABEL else R.string.library_play_episode),
                                                         tint = MaterialTheme.colorScheme.primary,
                                                         modifier = Modifier.size(20.dp)
                                                     )
@@ -619,7 +631,7 @@ fun DownloadedShowEpisodesScreen(
                                                     ) {
                                                         Icon(
                                                             imageVector = Icons.Rounded.MoreVert,
-                                                            contentDescription = "Options",
+                                                            contentDescription = stringResource(R.string.library_options),
                                                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                                             modifier = Modifier.size(18.dp)
                                                         )
@@ -632,7 +644,7 @@ fun DownloadedShowEpisodesScreen(
                                                     ) {
                                                         if (canRetry) {
                                                             DropdownMenuItem(
-                                                                text = { Text(DOWNLOAD_AGAIN_LABEL) },
+                                                                text = { Text(stringResource(DOWNLOAD_AGAIN_LABEL)) },
                                                                 onClick = {
                                                                     showMenu = false
                                                                     viewModel.retryDownload(download.episodeId)
@@ -643,7 +655,7 @@ fun DownloadedShowEpisodesScreen(
                                                             )
                                                         } else {
                                                             DropdownMenuItem(
-                                                                text = { Text("Play") },
+                                                                text = { Text(stringResource(R.string.library_play)) },
                                                                 onClick = {
                                                                     showMenu = false
                                                                     viewModel.playQueue(listOf(download.toEpisode()), download.toPodcast())
@@ -653,7 +665,7 @@ fun DownloadedShowEpisodesScreen(
                                                                 }
                                                             )
                                                             DropdownMenuItem(
-                                                                text = { Text("Play Next") },
+                                                                text = { Text(stringResource(R.string.library_play_next)) },
                                                                 onClick = {
                                                                     showMenu = false
                                                                     viewModel.addToQueueNext(download.toEpisode(), download.toPodcast())
@@ -663,7 +675,7 @@ fun DownloadedShowEpisodesScreen(
                                                                 }
                                                             )
                                                             DropdownMenuItem(
-                                                                text = { Text("Add to Queue") },
+                                                                text = { Text(stringResource(R.string.library_add_to_queue_menu)) },
                                                                 onClick = {
                                                                     showMenu = false
                                                                     viewModel.addToQueue(download.toEpisode(), download.toPodcast())
@@ -674,7 +686,7 @@ fun DownloadedShowEpisodesScreen(
                                                             )
                                                         }
                                                         DropdownMenuItem(
-                                                            text = { Text("Remove Download") },
+                                                            text = { Text(stringResource(R.string.library_remove_download)) },
                                                             onClick = {
                                                                 showMenu = false
                                                                 swipeToDeleteEpisode = download
@@ -715,8 +727,8 @@ fun DownloadedShowEpisodesScreen(
         if (deleteConfirmSelectedDialog) {
             AlertDialog(
                 onDismissRequest = { deleteConfirmSelectedDialog = false },
-                title = { Text("Delete Downloads?") },
-                text = { Text("Remove ${selectedEpisodeIds.size} selected downloaded episodes?") },
+                title = { Text(stringResource(R.string.library_downloads_delete_episodes_title)) },
+                text = { Text(pluralStringResource(R.plurals.library_downloads_delete_episodes_body, selectedEpisodeIds.size, selectedEpisodeIds.size)) },
                 confirmButton = {
                     TextButton(onClick = {
                         viewModel.removeMultipleDownloads(selectedEpisodeIds.toList())
@@ -724,12 +736,12 @@ fun DownloadedShowEpisodesScreen(
                         isSelectionMode = false
                         deleteConfirmSelectedDialog = false
                     }) {
-                        Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = GoogleSansWeight.bold)
+                        Text(stringResource(R.string.library_delete), color = MaterialTheme.colorScheme.error, fontWeight = GoogleSansWeight.bold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { deleteConfirmSelectedDialog = false }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.library_cancel))
                     }
                 }
             )
@@ -739,19 +751,19 @@ fun DownloadedShowEpisodesScreen(
         if (deleteConfirmShowDialog) {
             AlertDialog(
                 onDismissRequest = { deleteConfirmShowDialog = false },
-                title = { Text("Delete Show Downloads?") },
-                text = { Text("Remove all downloaded episodes for '$podcastTitle'?") },
+                title = { Text(stringResource(R.string.library_downloads_delete_show_title)) },
+                text = { Text(stringResource(R.string.library_downloads_delete_show_body, podcastTitle)) },
                 confirmButton = {
                     TextButton(onClick = {
                         viewModel.removeMultipleDownloads(showEpisodes.map { it.episodeId })
                         deleteConfirmShowDialog = false
                     }) {
-                        Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = GoogleSansWeight.bold)
+                        Text(stringResource(R.string.library_delete), color = MaterialTheme.colorScheme.error, fontWeight = GoogleSansWeight.bold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { deleteConfirmShowDialog = false }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.library_cancel))
                     }
                 }
             )
@@ -760,6 +772,8 @@ fun DownloadedShowEpisodesScreen(
 }
 
 /** Under a download that failed, which then offers [DOWNLOAD_AGAIN_LABEL] instead of Play. */
-internal const val DOWNLOAD_FAILED_LINE = "Couldn’t download"
+@StringRes
+internal val DOWNLOAD_FAILED_LINE: Int = R.string.library_downloads_failed_line
 
-internal const val DOWNLOAD_AGAIN_LABEL = "Download Again"
+@StringRes
+internal val DOWNLOAD_AGAIN_LABEL: Int = R.string.library_downloads_download_again

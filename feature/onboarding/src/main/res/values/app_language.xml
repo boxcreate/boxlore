@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Onboarding's language question, shown only when the phone suggests one of boxlore's translations.
+  The screen stays in English on purpose: the listener hasn't picked a language yet. Each language
+  is named in itself, and the greeting speaks every language, so these strings are never translated.
+-->
+<resources>
+    <!-- Headline. -->
+    <string name="onboarding_app_language_title" translatable="false">Pick your app language</string>
+    <!-- Under the headline. -->
+    <string name="onboarding_app_language_body" translatable="false">You can change it anytime in Settings.</string>
+    <!-- Small label on the main button, above the suggested language's name. -->
+    <string name="onboarding_app_language_suggested" translatable="false">Suggested for you</string>
+
+    <!-- The greeting at the top cycles through "hello" in each language. -->
+    <string name="onboarding_app_language_hello_en" translatable="false">Hello</string>
+    <string name="onboarding_app_language_hello_es" translatable="false">Hola</string>
+    <string name="onboarding_app_language_hello_pt_br" translatable="false">Olá</string>
+    <string name="onboarding_app_language_hello_de" translatable="false">Hallo</string>
+    <string name="onboarding_app_language_hello_fr" translatable="false">Bonjour</string>
+
+    <!-- Under the greeting, cycling with it: "Pick your language" in each language. -->
+    <string name="onboarding_app_language_prompt_en" translatable="false">Pick your language</string>
+    <string name="onboarding_app_language_prompt_es" translatable="false">Elige tu idioma</string>
+    <string name="onboarding_app_language_prompt_pt_br" translatable="false">Escolha seu idioma</string>
+    <string name="onboarding_app_language_prompt_de" translatable="false">Wähle deine Sprache</string>
+    <string name="onboarding_app_language_prompt_fr" translatable="false">Choisissez votre langue</string>
+</resources>

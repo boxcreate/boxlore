@@ -8,4 +8,22 @@
         <item quantity="one">Seek forward %1$d second</item>
         <item quantity="other">Seek forward %1$d seconds</item>
     </plurals>
+    <!-- Queue sheet header count -->
+    <plurals name="player_queue_episode_count">
+        <item quantity="one">%1$d episode</item>
+        <item quantity="other">%1$d episodes</item>
+    </plurals>
+    <plurals name="player_episodes_queued">
+        <item quantity="one">%1$d episode queued</item>
+        <item quantity="other">%1$d episodes queued</item>
+    </plurals>
+    <!-- Same-show banner button -->
+    <plurals name="player_same_show_add_next">
+        <item quantity="one">Add next %1$d from this show</item>
+        <item quantity="other">Add next %1$d from this show</item>
+    </plurals>
+    <plurals name="player_same_show_preview">
+        <item quantity="one">Preview %1$d upcoming episode</item>
+        <item quantity="other">Preview %1$d upcoming episodes</item>
+    </plurals>
 </resources>

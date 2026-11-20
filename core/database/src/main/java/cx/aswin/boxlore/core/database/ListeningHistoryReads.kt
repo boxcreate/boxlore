@@ -24,6 +24,16 @@ data class CompletedHistorySignal(
 )
 
 /**
+ * [ListeningHistoryDao.dismissedHistorySignal]: changes when a row's or a shared archive decision
+ * changes; a progress save leaves it as it is.
+ */
+data class DismissedHistorySignal(
+    val decidedRows: Int,
+    val rowDecisionSum: Long,
+    val groupDecisionSum: Long,
+)
+
+/**
  * This recent history with the [inProgress] episodes it doesn't hold, newest first: every started
  * episode for status (progress, the listener's place, resume picks), never for ranking, which
  * reads only the bounded recent history.

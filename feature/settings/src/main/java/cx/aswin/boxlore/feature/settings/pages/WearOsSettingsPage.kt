@@ -1,17 +1,25 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
+import cx.aswin.boxlore.core.model.text.LocaleFormats
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsInfoTip
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
 import java.util.Locale
+import kotlin.math.roundToLong
 
 /**
  * What the Wear OS page shows about boxlore on the listener's watch. The app fills it from the
@@ -51,23 +59,29 @@ internal object WearOsCopy {
     private const val BYTES_PER_MB = 1024L * 1024L
     private const val MB_PER_GB = 1000
 
-    fun connection(reachable: Boolean): String =
-        if (reachable) {
-            "Your watch is connected. Changes here reach it right away."
-        } else {
-            "Your watch isn't connected right now. Changes here reach it the next time it connects."
-        }
+    fun connection(reachable: Boolean): UiText =
+        UiText.res(if (reachable) R.string.settings_wear_connected else R.string.settings_wear_not_connected)
 
     /** A limit as the watch shows it: "250 MB", "1 GB". */
-    fun limit(megabytes: Int): String = if (megabytes < MB_PER_GB) "$megabytes MB" else "${megabytes / MB_PER_GB} GB"
+    fun limit(megabytes: Int): UiText =
+        if (megabytes < MB_PER_GB) UiText.res(R.string.settings_wear_size_mb, megabytes) else UiText.res(R.string.settings_wear_size_gb, megabytes / MB_PER_GB)
 
     /** How much of the limit downloads on the watch use, as last reported by the watch. */
-    fun usage(state: WearOsUiState, locale: Locale = Locale.getDefault()): String {
-        if (state.watchDownloads <= 0) return "No downloads on your watch yet."
-        val used = String.format(locale, "%.0f MB", state.watchStoredBytes.coerceAtLeast(0L) / BYTES_PER_MB.toDouble())
-        val episodes = if (state.watchDownloads == 1) "1 episode" else "${state.watchDownloads} episodes"
-        return "On your watch: $episodes, $used of ${limit(state.storageLimitMb)}."
+    fun usage(state: WearOsUiState, locale: Locale = Locale.getDefault()): UiText {
+        if (state.watchDownloads <= 0) return UiText.res(R.string.settings_wear_no_downloads)
+        val usedMb = (state.watchStoredBytes.coerceAtLeast(0L) / BYTES_PER_MB.toDouble()).roundToLong()
+        return UiText.plural(
+            R.plurals.settings_wear_usage,
+            state.watchDownloads,
+            state.watchDownloads,
+            LocaleFormats.number(usedMb, locale),
+            limit(state.storageLimitMb),
+        )
     }
+
+    /** The stored layout key's name as the page shows it; the keys are stored values and never change. */
+    @StringRes
+    fun layoutLabel(layout: String): Int = if (layout == WearOsUiState.LAYOUT_LIST) R.string.settings_wear_layout_list else R.string.settings_wear_layout_honeycomb
 }
 
 @Composable
@@ -78,30 +92,31 @@ internal fun WearOsSettingsPage(
     TrackScreenView("wear_os")
     val settings = linked ?: WearOsSettings()
     val state = settings.state
-    SettingsScaffold(title = "Wear OS", onBack = onBack) {
-        SettingsInfoTip(text = WearOsCopy.connection(state.watchReachable), modifier = Modifier.testTag("wear_os_connection"))
-        SettingsGroup(title = "Your shows") {
+    SettingsScaffold(title = stringResource(R.string.settings_page_wear_os), onBack = onBack) {
+        val locale = currentLocale()
+        SettingsInfoTip(text = WearOsCopy.connection(state.watchReachable).asString(), modifier = Modifier.testTag("wear_os_connection"))
+        SettingsGroup(title = stringResource(R.string.settings_wear_your_shows)) {
             SettingsContent {
                 AppearanceChoicePicker(
-                    "Layout on the watch",
-                    listOf(WearOsUiState.LAYOUT_HONEYCOMB to "Honeycomb", WearOsUiState.LAYOUT_LIST to "List"),
+                    stringResource(R.string.settings_wear_layout_title),
+                    listOf(WearOsUiState.LAYOUT_HONEYCOMB, WearOsUiState.LAYOUT_LIST).map { it to stringResource(WearOsCopy.layoutLabel(it)) },
                     state.showsLayout,
                     settings.onSetShowsLayout,
                 )
             }
         }
         SettingsGroup(
-            title = "Downloads on the watch",
-            footer = "When downloads reach the limit, the watch removes the ones you played or downloaded longest ago.",
+            title = stringResource(R.string.settings_wear_downloads_title),
+            footer = stringResource(R.string.settings_wear_downloads_footer),
         ) {
             SettingsContent {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     AppearanceChoicePicker(
-                        "Storage limit",
-                        WearOsUiState.STORAGE_LIMITS_MB.map { it.toString() to WearOsCopy.limit(it) },
+                        stringResource(R.string.settings_wear_storage_limit),
+                        WearOsUiState.STORAGE_LIMITS_MB.map { it.toString() to WearOsCopy.limit(it).asString() },
                         state.storageLimitMb.toString(),
                     ) { picked -> picked.toIntOrNull()?.let(settings.onSetStorageLimitMb) }
-                    SettingsInfoTip(text = WearOsCopy.usage(state), modifier = Modifier.testTag("wear_os_usage"))
+                    SettingsInfoTip(text = WearOsCopy.usage(state, locale).asString(), modifier = Modifier.testTag("wear_os_usage"))
                 }
             }
         }

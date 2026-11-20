@@ -65,7 +65,7 @@ internal object FloatingNavigationBlur {
 @Composable
 internal fun FloatingNavigationBlurStrip(state: HazeState, level: String, bottomChrome: Dp, pageColor: Color, modifier: Modifier = Modifier) {
     val spec = FloatingNavigationBlur.spec(level)
-    val height by animateDpAsState(FloatingNavigationBlur.stripHeight(bottomChrome, spec.reach), label = "Navigation blur height")
+    val height by animateDpAsState(FloatingNavigationBlur.stripHeight(bottomChrome, spec.reach), label = "Navigation blur height") // i18n-ignore
     val reach = with(LocalDensity.current) { spec.reach.toPx() }
     // The mask fades blur and tint in together over the reach, so the top edge never shows.
     val mask = remember(reach) {

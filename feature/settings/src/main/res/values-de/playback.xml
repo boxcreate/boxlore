@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_trimming_title">Folgen automatisch kürzen</string>
+    <string name="settings_playback_skip_beginning">Anfang überspringen</string>
+    <string name="settings_playback_skip_beginning_description">Intros oder Werbung am Anfang beim ersten Start überspringen</string>
+    <string name="settings_playback_skip_ending">Ende überspringen</string>
+    <string name="settings_playback_skip_ending_description">Vor Abspann oder Werbung am Ende sauber beenden</string>
+    <string name="settings_playback_trim_silence">Stille kürzen</string>
+    <string name="settings_playback_trim_silence_description">Lange Pausen überspringen, damit Folgen schneller enden</string>
+    <!-- ⋮ is the show page's overflow menu icon. -->
+    <string name="settings_playback_trimming_footer">Eigene Geschwindigkeit, Stillekürzung oder Sprungzeiten für einen einzelnen Podcast stellst du über das Menü ⋮ auf seiner Seite ein. Gespeicherte Wiedergabepositionen haben immer Vorrang.</string>
+    <string name="settings_playback_seek_title">Spulen</string>
+    <string name="settings_playback_seek_footer">Gilt für Player, Transkript, Benachrichtigung, Headset und Android Auto.</string>
+    <string name="settings_playback_seek_backward">Zurückspulen</string>
+    <string name="settings_playback_seek_forward">Vorspulen</string>
+    <string name="settings_playback_skip_title">Beim Überspringen einer Folge</string>
+    <string name="settings_playback_skip_footer">Gilt, wenn du zur nächsten Folge springst.</string>
+    <string name="settings_playback_skip_only">Nur überspringen</string>
+    <string name="settings_playback_skip_only_description">Aktuelle Folge nicht als gehört markieren</string>
+    <string name="settings_playback_mark_complete">Als gehört markieren und überspringen</string>
+    <string name="settings_playback_mark_complete_description">Aktuelle Folge vorher als gehört markieren</string>
+    <string name="settings_playback_resume_title">Fortsetzen</string>
+    <string name="settings_playback_resume_footer">Wenn aktiviert, starten Warteschlange und Mixtape von vorn, wenn du eine Folge 7 Tage lang nicht gehört hast. Weiterhören und Verlauf machen immer dort weiter, wo du aufgehört hast.</string>
+    <string name="settings_playback_restart_forgotten">Vergessene Folgen neu starten</string>
+    <string name="settings_playback_restart_forgotten_description">Warteschlange und Mixtape nach 7 inaktiven Tagen</string>
+    <string name="settings_playback_queue_title">Warteschlange</string>
+    <string name="settings_playback_queue_footer">Ist das aus, fügt die Warteschlange automatisch nur neuere Folgen des gerade laufenden Podcasts hinzu, falls es welche gibt. Folgen selbst hinzufügen kannst du immer.</string>
+    <string name="settings_playback_smart_queue">Smarte Warteschlange</string>
+    <string name="settings_playback_smart_queue_description">Füllt die Warteschlange aus deiner Bibliothek und deinen Empfehlungen</string>
+    <string name="settings_playback_hide_completed_title">Gehörte Folgen ausblenden in</string>
+    <string name="settings_playback_hide_completed_footer">Gehörte Folgen bleiben in deiner Bibliothek; sie werden nur an diesen Stellen ausgeblendet.</string>
+    <string name="settings_playback_hide_home">Podcastfolgen auf Start</string>
+    <string name="settings_playback_hide_home_description">Wenn du auf dem Tab Start auf einen Podcast tippst</string>
+    <string name="settings_playback_hide_latest">Abos · Neueste</string>
+    <string name="settings_playback_hide_latest_description">Der Tab Neueste unter Bibliothek → Abos</string>
+    <string name="settings_playback_hide_podcast_pages">Podcastseiten</string>
+    <string name="settings_playback_hide_podcast_pages_description">Die vollständige Folgenliste auf der Seite eines Podcasts</string>
+</resources>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Library folder tile sizes (FolderDisplaySize). Titles are short chip labels; keep them to one word. -->
+    <string name="model_folder_size_compact_title">Compacto</string>
+    <string name="model_folder_size_wide_title">Ancho</string>
+    <string name="model_folder_size_featured_title">Destacado</string>
+    <string name="model_folder_size_tall_title">Alto</string>
+    <string name="model_folder_size_shelf_title">Estante</string>
+    <string name="model_folder_size_panel_title">Panel</string>
+    <string name="model_folder_size_showcase_title">Showcase</string>
+    <!-- Folder size hints under the title. "pods" means podcasts; "Clickable" means the tile opens the folder. -->
+    <string name="model_folder_size_compact_subtitle">1 celda • Toca para ver podcasts</string>
+    <string name="model_folder_size_wide_subtitle">2 col. • Se puede tocar</string>
+    <string name="model_folder_size_featured_subtitle">2×2 • Se puede tocar y más</string>
+    <string name="model_folder_size_tall_subtitle">2×3 alto • Se puede tocar</string>
+    <string name="model_folder_size_shelf_subtitle">Fila completa • Se puede tocar</string>
+    <string name="model_folder_size_panel_subtitle">Panel 3×2 • Se puede tocar</string>
+    <string name="model_folder_size_showcase_subtitle">Máx. 3×3 • Cuadrícula completa</string>
+    <!-- Where a folder of this size sits in the Library grid. -->
+    <string name="model_folder_size_placement_anywhere">Se puede colocar en cualquier parte de la cuadrícula</string>
+    <string name="model_folder_size_placement_top">Fijado arriba de la página</string>
+</resources>

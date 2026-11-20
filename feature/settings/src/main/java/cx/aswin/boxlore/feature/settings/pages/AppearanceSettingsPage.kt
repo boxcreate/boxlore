@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,7 +13,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ViewList
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.PlayCircle
 import androidx.compose.material.icons.rounded.TextFields
@@ -23,6 +26,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
@@ -30,8 +34,11 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
 import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.core.prefs.AppLanguage
 import cx.aswin.boxlore.core.prefs.DiscoverySections
 import cx.aswin.boxlore.core.prefs.ExploreDefaultTab
 import cx.aswin.boxlore.core.prefs.FullPlayerStyle
@@ -45,6 +52,7 @@ import cx.aswin.boxlore.core.prefs.SubscriptionsTabStyle
 import cx.aswin.boxlore.core.prefs.ThemeSelection
 import cx.aswin.boxlore.core.prefs.WidgetAppearance
 import cx.aswin.boxlore.core.prefs.WidgetShowsArtwork
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
@@ -93,6 +101,8 @@ data class AppearanceUiState(
     val currentSubscriptionsDefaultTab: String = SubscriptionsDefaultTab.SHOWS,
     val currentSubscriptionsTabStyle: String = SubscriptionsTabStyle.TOP,
     val miniPlayerSeekButtonsEnabled: Boolean = false,
+    /** Show pages list episodes as short title rows (Appearance › Show pages, and each show page's menu). */
+    val episodeTitlesOnly: Boolean = false,
     val artworkColorsEnabled: Boolean = true,
     val navigationBlurLevel: String = NavigationBlurLevel.DEFAULT,
     val heroCardStyle: String = HeroCardStyle.DEFAULT,
@@ -102,6 +112,8 @@ data class AppearanceUiState(
     val fullPlayerStyle: String = FullPlayerStyle.STANDARD,
     /** Read-only here: Navigation hides Explore's opening tab without For you. Library > Recommendations sets it. */
     val discoverySections: DiscoverySections = DiscoverySections(),
+    /** The language boxlore's own text is shown in (App language page). */
+    val appLanguage: AppLanguage = AppLanguage.SYSTEM,
 ) {
     /** A theme is its brand, surface and wallpaper colours together; [selection] is the same only if all match. */
     fun hasSameTheme(selection: ThemeSelection): Boolean = currentThemeBrand == selection.brand &&
@@ -131,6 +143,7 @@ data class AppearanceActions(
     val onSetSubscriptionsDefaultTab: (String) -> Unit = {},
     val onSetSubscriptionsTabStyle: (String) -> Unit = {},
     val onSetMiniPlayerSeekButtonsEnabled: (Boolean) -> Unit = {},
+    val onSetEpisodeTitlesOnly: (Boolean) -> Unit = {},
     val onSetThemePreset: (String) -> Unit = {},
     val onSetArtworkColorsEnabled: (Boolean) -> Unit = {},
     val onSetNavigationBlurLevel: (String) -> Unit = {},
@@ -140,6 +153,8 @@ data class AppearanceActions(
     val onApplyTheme: (ThemeSelection, ThemeSelection?) -> Unit = { _, _ -> },
     val onSaveCustomTheme: (ThemeSelection) -> Unit = { onApplyTheme(it, it) },
     val onSetFullPlayerStyle: (String) -> Unit = {},
+    /** Applies the App language at once; the app owns how (per-app language, or restarting the screen). */
+    val onSetAppLanguage: (AppLanguage) -> Unit = {},
 )
 
 /**
@@ -151,7 +166,7 @@ data class AppearanceActions(
 typealias AppearanceHeroPreview = @Composable (style: String, coverShade: String, collection: Boolean, modifier: Modifier) -> Unit
 
 /** Where each Appearance row leads, so the page needs no navigation types of its own. */
-internal enum class AppearanceSection { Theme, Home, Player, Navigation, Text, Widgets }
+internal enum class AppearanceSection { Theme, Home, ShowPages, Player, Navigation, Text, Widgets, Language }
 
 /**
  * The Appearance overview: Display mode (the setting people change most, also on Theme & colors),
@@ -166,85 +181,127 @@ internal fun AppearanceSettingsPage(
 ) {
     TrackScreenView("appearance")
     val summary = appearanceSummary(state)
-    SettingsScaffold(title = "Appearance", onBack = onBack) {
-        SettingsGroup(title = "Display mode") {
+    SettingsScaffold(title = stringResource(R.string.settings_page_appearance), onBack = onBack) {
+        SettingsGroup(title = stringResource(R.string.settings_display_mode_title)) {
             SettingsContent { DisplayModeSelector(state, actions) }
         }
         SettingsGroup {
-            SettingsNavigationRow(title = "Theme & colors", supportingText = summary.theme, icon = Icons.Rounded.Palette, onClick = { onOpenSection(AppearanceSection.Theme) })
+            SettingsNavigationRow(
+                title = stringResource(R.string.settings_app_language_title),
+                supportingText = appLanguageName(state.appLanguage),
+                icon = Icons.Rounded.Language,
+                onClick = { onOpenSection(AppearanceSection.Language) },
+            )
+        }
+        SettingsGroup {
+            SettingsNavigationRow(title = stringResource(R.string.settings_page_theme), supportingText = summary.theme.asString(), icon = Icons.Rounded.Palette, onClick = { onOpenSection(AppearanceSection.Theme) })
             SettingsDivider()
-            SettingsNavigationRow(title = "Home", supportingText = summary.home, icon = Icons.Rounded.Home, onClick = { onOpenSection(AppearanceSection.Home) })
+            SettingsNavigationRow(title = stringResource(R.string.settings_page_home), supportingText = summary.home.asString(), icon = Icons.Rounded.Home, onClick = { onOpenSection(AppearanceSection.Home) })
             SettingsDivider()
-            SettingsNavigationRow(title = "Player", supportingText = summary.player, icon = Icons.Rounded.PlayCircle, onClick = { onOpenSection(AppearanceSection.Player) })
+            SettingsNavigationRow(title = stringResource(R.string.settings_page_show_pages), supportingText = summary.showPages.asString(), icon = Icons.AutoMirrored.Rounded.ViewList, onClick = { onOpenSection(AppearanceSection.ShowPages) })
             SettingsDivider()
-            SettingsNavigationRow(title = "Navigation", supportingText = summary.navigation, icon = Icons.Rounded.ViewDay, onClick = { onOpenSection(AppearanceSection.Navigation) })
+            SettingsNavigationRow(title = stringResource(R.string.settings_page_player), supportingText = summary.player.asString(), icon = Icons.Rounded.PlayCircle, onClick = { onOpenSection(AppearanceSection.Player) })
             SettingsDivider()
-            SettingsNavigationRow(title = "Text", supportingText = summary.text, icon = Icons.Rounded.TextFields, onClick = { onOpenSection(AppearanceSection.Text) })
+            SettingsNavigationRow(title = stringResource(R.string.settings_page_navigation), supportingText = summary.navigation.asString(), icon = Icons.Rounded.ViewDay, onClick = { onOpenSection(AppearanceSection.Navigation) })
             SettingsDivider()
-            SettingsNavigationRow(title = "Widgets", supportingText = summary.widgets, icon = Icons.Rounded.Widgets, onClick = { onOpenSection(AppearanceSection.Widgets) })
+            SettingsNavigationRow(title = stringResource(R.string.settings_page_text), supportingText = summary.text.asString(), icon = Icons.Rounded.TextFields, onClick = { onOpenSection(AppearanceSection.Text) })
+            SettingsDivider()
+            SettingsNavigationRow(title = stringResource(R.string.settings_page_widgets), supportingText = summary.widgets.asString(), icon = Icons.Rounded.Widgets, onClick = { onOpenSection(AppearanceSection.Widgets) })
         }
     }
 }
 
 /** What each Appearance row shows under its title. */
 internal data class AppearanceSummary(
-    val theme: String,
-    val home: String,
-    val player: String,
-    val navigation: String,
-    val text: String,
-    val widgets: String,
+    val theme: UiText,
+    val home: UiText,
+    val showPages: UiText,
+    val player: UiText,
+    val navigation: UiText,
+    val text: UiText,
+    val widgets: UiText,
 )
 
 internal fun appearanceSummary(state: AppearanceUiState): AppearanceSummary {
-    val look = themeLookOptions().firstOrNull { it.key == state.selectedLookKey() }?.name ?: "Custom"
-    val player = if (FullPlayerStyle.sanitize(state.fullPlayerStyle) == FullPlayerStyle.BUNPOD) "bunpod" else "Standard"
-    val start = when (state.currentOpenAppTo) {
-        OpenAppTo.SUBSCRIPTIONS -> "Subscriptions"
-        OpenAppTo.DOWNLOADS -> "Downloads"
-        else -> "Home"
-    }
-    val letters = FontRoundness.entries.firstOrNull { it.key == FontRoundness.sanitizeKey(state.currentFontRoundness) }?.label ?: "Round"
+    val look = UiText.res(themeLookOptions().firstOrNull { it.key == state.selectedLookKey() }?.name ?: R.string.settings_theme_look_custom)
+    val player = UiText.res(if (FullPlayerStyle.sanitize(state.fullPlayerStyle) == FullPlayerStyle.BUNPOD) R.string.player_style_bunpod else R.string.player_style_standard)
+    val start = UiText.res(
+        when (state.currentOpenAppTo) {
+            OpenAppTo.SUBSCRIPTIONS -> R.string.settings_navigation_start_subscriptions
+            OpenAppTo.DOWNLOADS -> R.string.settings_navigation_start_downloads
+            else -> R.string.settings_navigation_start_home
+        },
+    )
+    val letters = UiText.res(fontRoundnessLabel(FontRoundness.sanitizeKey(state.currentFontRoundness)))
     return AppearanceSummary(
-        theme = if (state.artworkColorsEnabled) "$look · artwork colors on" else look,
+        theme = if (state.artworkColorsEnabled) UiText.res(R.string.settings_appearance_summary_theme_artwork, look) else look,
         home = homeSummary(state),
-        player = if (state.miniPlayerSeekButtonsEnabled) "$player · seek buttons on" else player,
-        navigation = "${NavigationStyle.fromKey(state.currentNavigationStyle).label} bar · starts on $start",
-        text = "$letters letters",
+        showPages = showPagesSummary(state),
+        player = if (state.miniPlayerSeekButtonsEnabled) UiText.res(R.string.settings_appearance_summary_player_seek, player) else player,
+        navigation = UiText.res(R.string.settings_appearance_summary_navigation, UiText.res(navigationStyleLabel(NavigationStyle.fromKey(state.currentNavigationStyle))), start),
+        text = UiText.res(R.string.settings_appearance_summary_letters, letters),
         widgets = widgetsSummary(state),
     )
 }
 
+/** The letter shape's name as Settings shows it; the keys are stored values and never change. */
+@StringRes
+internal fun fontRoundnessLabel(key: String): Int = when (key) {
+    FontRoundness.CRISP -> R.string.settings_letters_crisp
+    FontRoundness.SOFT -> R.string.settings_letters_soft
+    else -> R.string.settings_letters_round
+}
+
+/** The navigation bar style's name as Settings shows it. */
+@StringRes
+internal fun navigationStyleLabel(style: NavigationStyle): Int = when (style) {
+    NavigationStyle.Classic -> R.string.settings_navigation_style_classic
+    NavigationStyle.Floating -> R.string.settings_navigation_style_floating
+}
+
 /** The widgets' colour source, then how Your Shows cuts its covers. */
-private fun widgetsSummary(state: AppearanceUiState): String {
-    val colors = if (WidgetAppearance.sanitize(state.currentWidgetAppearance) == WidgetAppearance.SYSTEM) "System colors" else "App theme colors"
-    val covers = if (WidgetShowsArtwork.usesShapes(state.currentWidgetShowsArtwork)) "shapes" else "whole covers"
-    return "$colors · $covers"
+private fun widgetsSummary(state: AppearanceUiState): UiText {
+    val system = WidgetAppearance.sanitize(state.currentWidgetAppearance) == WidgetAppearance.SYSTEM
+    val shapes = WidgetShowsArtwork.usesShapes(state.currentWidgetShowsArtwork)
+    return UiText.res(
+        when {
+            system && shapes -> R.string.settings_appearance_summary_widgets_system_shapes
+            system -> R.string.settings_appearance_summary_widgets_system_covers
+            shapes -> R.string.settings_appearance_summary_widgets_theme_shapes
+            else -> R.string.settings_appearance_summary_widgets_theme_covers
+        },
+    )
 }
 
 /** The hero card style's name as Settings shows it. */
-private fun heroStyleName(style: String): String = when (style) {
-    HeroCardStyle.COVER -> "Cover"
-    HeroCardStyle.TIDE -> "Tide"
-    HeroCardStyle.DUOTONE -> "Duotone"
-    HeroCardStyle.HALO -> "Halo"
-    HeroCardStyle.MARQUEE -> "Marquee"
-    else -> "Block"
+@StringRes
+private fun heroStyleName(style: String): Int = when (style) {
+    HeroCardStyle.COVER -> R.string.hero_card_style_cover
+    HeroCardStyle.TIDE -> R.string.hero_card_style_tide
+    HeroCardStyle.DUOTONE -> R.string.hero_card_style_duotone
+    HeroCardStyle.HALO -> R.string.hero_card_style_halo
+    HeroCardStyle.MARQUEE -> R.string.hero_card_style_marquee
+    else -> R.string.hero_card_style_block
 }
 
 /** The hero card style, with the colours it takes. */
-private fun homeSummary(state: AppearanceUiState): String {
+private fun homeSummary(state: AppearanceUiState): UiText {
     val style = HeroCardStyle.sanitize(state.heroCardStyle)
-    return heroStyleName(style) + " hero cards, " + heroColorsSummary(style, HeroCoverShade.forStyle(style, state.heroCoverShade))
+    return UiText.res(
+        R.string.settings_appearance_summary_home,
+        UiText.res(heroStyleName(style)),
+        UiText.res(heroColorsSummary(style, HeroCoverShade.forStyle(style, state.heroCoverShade))),
+    )
 }
 
 /** What the colour choice does in each style: Cover's shade, Duotone's and Marquee's tones, Block's, Tide's and Halo's card. */
-private fun heroColorsSummary(style: String, colors: String): String {
+@StringRes
+private fun heroColorsSummary(style: String, colors: String): Int {
     val (dark, theme, artwork) = when (style) {
-        HeroCardStyle.COVER -> Triple("dark shade", "app theme shade", "artwork shade")
-        HeroCardStyle.DUOTONE -> Triple("black and white", "app theme tones", "artwork tones")
-        HeroCardStyle.MARQUEE -> Triple("full color", "app theme tones", "artwork tones")
-        else -> Triple("dark cards", "app theme color", "artwork color")
+        HeroCardStyle.COVER -> Triple(R.string.settings_hero_summary_dark_shade, R.string.settings_hero_summary_theme_shade, R.string.settings_hero_summary_artwork_shade)
+        HeroCardStyle.DUOTONE -> Triple(R.string.settings_hero_summary_black_white, R.string.settings_hero_summary_theme_tones, R.string.settings_hero_summary_artwork_tones)
+        HeroCardStyle.MARQUEE -> Triple(R.string.settings_hero_summary_full_color, R.string.settings_hero_summary_theme_tones, R.string.settings_hero_summary_artwork_tones)
+        else -> Triple(R.string.settings_hero_summary_dark_cards, R.string.settings_hero_summary_theme_color, R.string.settings_hero_summary_artwork_color)
     }
     return when (colors) {
         HeroCoverShade.DARK -> dark
@@ -266,7 +323,7 @@ internal fun AppearanceHeroLookCard(
     previewHeight: Dp,
     options: @Composable ColumnScope.() -> Unit,
 ) {
-    val description = "Preview of ${heroStyleName(HeroCardStyle.sanitize(style))} hero cards"
+    val description = stringResource(R.string.settings_hero_preview_description, stringResource(heroStyleName(HeroCardStyle.sanitize(style))))
     Surface(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
         Column {
             if (heroPreview != null) {
@@ -300,7 +357,7 @@ internal fun AppearanceLookChoice(label: String, help: String, options: List<Pai
 @Composable
 internal fun DisplayModeSelector(state: AppearanceUiState, actions: AppearanceActions) {
     ConnectedOptionSelector(
-        listOf("system" to "System", "light" to "Light", "dark" to "Dark"),
+        listOf("system" to stringResource(R.string.settings_display_mode_system), "light" to stringResource(R.string.settings_display_mode_light), "dark" to stringResource(R.string.settings_display_mode_dark)),
         appearanceDisplayMode(state),
         onSelect = { mode ->
             val unlocked = automaticSurfaceStyle(state.currentSurfaceStyle)

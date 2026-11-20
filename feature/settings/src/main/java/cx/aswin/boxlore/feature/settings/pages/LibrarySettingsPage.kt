@@ -38,9 +38,11 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.ContentLanguagesSheet
 import cx.aswin.boxlore.core.designsystem.components.ContentRegionPickerSheet
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.ContentRegions
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsActionRow
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
@@ -48,7 +50,6 @@ import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsNavigationRow
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
 import cx.aswin.boxlore.feature.settings.dialogs.ClearSavedShowsDialog
-import cx.aswin.boxlore.feature.settings.dialogs.savedShowsLabel
 import kotlinx.coroutines.launch
 
 /**
@@ -85,14 +86,14 @@ internal fun LibrarySettingsPage(
     var showLanguagesSheet by rememberSaveable { mutableStateOf(false) }
 
     SettingsScaffold(
-        title = "Library",
+        title = stringResource(R.string.settings_page_library),
         onBack = onBack,
         onUnconsumedTap = if (isCountryFaqExpanded) collapseCountryFaq else null,
     ) {
         // One thing per row: the chart country, then the languages recommendations use.
-        SettingsGroup(title = "Charts", footer = "Sets the top charts in Explore.") {
+        SettingsGroup(title = stringResource(R.string.settings_library_charts_title), footer = stringResource(R.string.settings_library_charts_footer)) {
             SettingsNavigationRow(
-                title = "Country",
+                title = stringResource(R.string.settings_library_country),
                 supportingText = ContentRegions.displayLabel(discoveryPreferences.currentRegion),
                 icon = Icons.Rounded.Public,
                 onClick = {
@@ -108,9 +109,9 @@ internal fun LibrarySettingsPage(
             )
         }
 
-        SettingsGroup(title = "Recommendations", footer = "For You, search and vibes use these languages.") {
+        SettingsGroup(title = stringResource(R.string.settings_library_recommendations_title), footer = stringResource(R.string.settings_library_recommendations_footer)) {
             SettingsNavigationRow(
-                title = "Languages",
+                title = stringResource(R.string.settings_library_languages),
                 supportingText = languagesSummary(discoveryPreferences.contentLanguages),
                 icon = Icons.Rounded.Translate,
                 onClick = {
@@ -133,10 +134,10 @@ internal fun LibrarySettingsPage(
             )
         }
 
-        SettingsGroup(title = "RSS") {
+        SettingsGroup(title = stringResource(R.string.settings_library_rss_title)) {
             SettingsNavigationRow(
-                title = "Add podcast by RSS feed",
-                supportingText = "For podcasts that are not in the catalog",
+                title = stringResource(R.string.settings_library_add_rss),
+                supportingText = stringResource(R.string.settings_library_add_rss_description),
                 icon = Icons.Rounded.RssFeed,
                 onClick = {
                     collapseCountryFaq()
@@ -187,7 +188,7 @@ private fun CountryNotListedFaq(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = "Why is my country not listed?",
+                text = stringResource(R.string.settings_library_country_faq_toggle),
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = GoogleSansWeight.medium,
@@ -200,7 +201,7 @@ private fun CountryNotListedFaq(
                 } else {
                     Icons.Rounded.KeyboardArrowDown
                 },
-                contentDescription = if (expanded) "Collapse" else "Expand",
+                contentDescription = if (expanded) stringResource(R.string.settings_collapse) else stringResource(R.string.settings_expand),
                 modifier = Modifier.size(20.dp),
                 tint = MaterialTheme.colorScheme.primary,
             )
@@ -222,40 +223,40 @@ private fun CountryNotListedFaq(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text(
-                    text = "Why isn't my country listed?",
+                    text = stringResource(R.string.settings_library_country_faq_title),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = GoogleSansWeight.semiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 FaqParagraph(
-                    "We are actively working to expand our global coverage! Currently, we prioritize adding new countries based on active user demand.",
+                    stringResource(R.string.settings_library_country_faq_intro),
                 )
                 Text(
-                    text = "How this affects your experience:",
+                    text = stringResource(R.string.settings_library_country_faq_effects),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = GoogleSansWeight.semiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 FaqParagraph(
-                    "Search is still global: You can still search for, find, and access all content, even if your country isn't officially listed yet.",
+                    stringResource(R.string.settings_library_country_faq_search),
                 )
                 FaqParagraph(
-                    "Smart recommendations still work: The recommendation engine will still suggest the closest matches based on your listening habits, irrespective of your country selection.",
+                    stringResource(R.string.settings_library_country_faq_recommendations),
                 )
                 FaqParagraph(
-                    "What country changes: The top charts in Explore. Your languages stay as they are.",
+                    stringResource(R.string.settings_library_country_faq_changes),
                 )
                 FaqParagraph(
-                    "Languages are separate: Pick them under Recommendations › Languages for For You, search and vibes. Charts stay country-based and aren't filtered by language.",
+                    stringResource(R.string.settings_library_country_faq_languages),
                 )
                 Text(
-                    text = "Want another country or language?",
+                    text = stringResource(R.string.settings_library_country_faq_more),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = GoogleSansWeight.semiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 FaqParagraph(
-                    "Tell us via Feedback or GitHub — we expand coverage based on demand.",
+                    stringResource(R.string.settings_library_country_faq_tell_us),
                 )
             }
         }
@@ -275,10 +276,10 @@ private fun FaqParagraph(text: String) {
 internal fun languagesSummary(languages: List<String>): String = languages.mapNotNull { ContentRegions.LANGUAGE_LABELS[it] }.joinToString(", ")
 
 /** The Clear saved shows row's summary: counting, nothing saved, or how many shows have saved lists. */
-internal fun savedShowsSupportingText(count: Int?): String = when (count) {
-    null -> "Counting…"
-    0 -> "Nothing saved for shows you don’t follow"
-    else -> "${savedShowsLabel(count)} you don’t follow"
+internal fun savedShowsSupportingText(count: Int?): UiText = when (count) {
+    null -> UiText.res(R.string.settings_library_saved_shows_counting)
+    0 -> UiText.res(R.string.settings_library_saved_shows_none)
+    else -> UiText.plural(R.plurals.settings_library_saved_shows_count, count, count)
 }
 
 /**
@@ -294,10 +295,10 @@ private fun SavedShowsGroup(control: SavedShowsControl, onOpen: () -> Unit) {
     var reads by remember { mutableIntStateOf(0) }
     val count by produceState<Int?>(initialValue = null, reads) { value = control.count() }
     val scope = rememberCoroutineScope()
-    SettingsGroup(title = "Storage") {
+    SettingsGroup(title = stringResource(R.string.settings_library_storage_title)) {
         SettingsActionRow(
-            title = "Clear saved shows",
-            supportingText = savedShowsSupportingText(count),
+            title = stringResource(R.string.settings_library_clear_saved_shows),
+            supportingText = savedShowsSupportingText(count).asString(),
             icon = Icons.Rounded.DeleteSweep,
             onClick = {
                 onOpen()

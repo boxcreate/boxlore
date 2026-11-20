@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="welcome_curiosity">Vous apportez la curiosité.</string>
+    <string name="welcome_curiosity_first_line">Vous apportez</string>
+    <string name="welcome_curiosity_second_line">la curiosité.</string>
+    <string name="welcome_lore">Nous, on a le lore.</string>
+    <string name="welcome_reply_prefix">Nous, on a</string>
+    <string-array name="welcome_reply_words">
+        <item>les mystères.</item>
+        <item>les fous rires.</item>
+        <item>les gros titres.</item>
+        <item>les grandes idées.</item>
+        <item>les histoires.</item>
+        <item>les découvertes.</item>
+        <item>le lore.</item>
+    </string-array>
+    <string name="welcome_find_shows">Trouver des podcasts pour moi</string>
+    <string name="welcome_search">Rechercher des podcasts</string>
+    <string name="welcome_import">Importer une bibliothèque</string>
+    <string name="welcome_skip">Passer la configuration</string>
+</resources>

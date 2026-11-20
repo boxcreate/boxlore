@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notification channel names and descriptions, shown in Android's notification settings for boxlore. -->
+    <string name="app_channel_announcements">Comunicados</string>
+    <string name="app_channel_announcements_description">Notícias e atualizações do boxlore</string>
+    <!-- Older name of the new-episode channel, used when an announcement push asks for the chime. -->
+    <string name="app_channel_new_episode_alerts">Alertas de episódios novos</string>
+    <string name="app_channel_new_episodes">Episódios novos</string>
+    <string name="app_channel_new_episodes_description">Alertas de novos episódios de podcasts</string>
+    <string name="app_channel_silent">Notificações silenciosas</string>
+    <string name="app_channel_feedback_replies">Respostas ao feedback</string>
+    <string name="app_channel_feedback_replies_description">Respostas da equipe do boxlore ao seu feedback</string>
+
+    <!-- New-episode notification title: the show's name follows. -->
+    <string name="app_new_episode_notification_title">Episódio novo • %1$s</string>
+    <!-- Stands in for the show's name when the push has none. -->
+    <string name="app_new_episode_show_fallback">Novo lançamento</string>
+    <!-- Stands in for the episode's title when the push has none. -->
+    <string name="app_new_episode_episode_fallback">Episódio novo</string>
+    <!-- New-episode notification text: the episode's title in quotes, then its length in minutes. -->
+    <plurals name="app_new_episode_notification_body">
+        <item quantity="one">“%1$s” (%2$d min)</item>
+        <item quantity="other">“%1$s” (%2$d min)</item>
+    </plurals>
+    <!-- New-episode notification text when the length is unknown: the episode's title in quotes. -->
+    <string name="app_new_episode_notification_body_no_duration">“%1$s”</string>
+    <!-- Summary notification that groups several shows' new-episode notifications. -->
+    <string name="app_new_episodes_summary_title">Episódios novos</string>
+    <plurals name="app_new_episodes_summary_text">
+        <item quantity="one">%1$d podcast tem episódios novos</item>
+        <item quantity="other">%1$d podcasts têm episódios novos</item>
+    </plurals>
+
+    <!-- Feedback reply notification title when the reply has none. -->
+    <string name="app_feedback_reply_fallback_title">Nova resposta ao seu feedback</string>
+
+    <!-- Announcement push defaults, used only when the push leaves them out. -->
+    <string name="app_push_fallback_title">Novidade do boxlore</string>
+    <string name="app_push_fallback_body">Veja o que há de novo no boxlore!</string>
+    <!-- Announcement notification button. Keep it short. -->
+    <string name="app_push_fallback_action">Ver</string>
+</resources>

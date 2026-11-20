@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -85,13 +86,13 @@ fun LikedEpisodesScreen(
                 modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                 title = {
                     Text(
-                        text = "Liked Episodes",
+                        text = stringResource(R.string.library_hub_liked_episodes),
                         style = titleStyle,
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.library_back))
                     }
                 },
                 scrollBehavior = scrollBehavior,
@@ -110,9 +111,9 @@ fun LikedEpisodesScreen(
                     if (liked.isEmpty()) {
                         Box(Modifier.boxloreCardWidth(BoxloreCardFamily.Utility)) {
                         ExpressiveSolarSystemEmptyState(
-                            title = "No Liked Episodes",
-                            description = "Heart episodes you love to save them here.",
-                            actionText = "Find Podcasts",
+                            title = stringResource(R.string.library_liked_empty_title),
+                            description = stringResource(R.string.library_liked_empty_body),
+                            actionText = stringResource(R.string.library_find_podcasts),
                             onExploreClick = onExploreClick
                         )
                         }

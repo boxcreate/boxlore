@@ -30,6 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.lerp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -39,8 +41,11 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import cx.aswin.boxlore.feature.settings.R
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -86,7 +91,7 @@ fun SmartDownloadsSettingsScreen(
                 modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                 title = {
                     Text(
-                        text = "Smart Downloads",
+                        text = stringResource(R.string.settings_smart_downloads_title),
                         style = titleStyle,
                     )
                 },
@@ -94,7 +99,7 @@ fun SmartDownloadsSettingsScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.settings_back)
                         )
                     }
                 },
@@ -157,7 +162,7 @@ fun SmartDownloadsSettingsScreen(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Text(
-                                    text = "Enable Smart Downloads",
+                                    text = stringResource(R.string.settings_smart_downloads_enable),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = GoogleSansWeight.bold
                                 )
@@ -167,14 +172,14 @@ fun SmartDownloadsSettingsScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Rounded.Info,
-                                        contentDescription = "About Smart Downloads",
+                                        contentDescription = stringResource(R.string.settings_smart_downloads_about),
                                         tint = if (showExplanation) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                         modifier = Modifier.size(18.dp)
                                     )
                                 }
                             }
                             Text(
-                                text = if (isEnabled) "Active" else "Inactive",
+                                text = if (isEnabled) stringResource(R.string.settings_smart_downloads_active) else stringResource(R.string.settings_smart_downloads_inactive),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -212,7 +217,7 @@ fun SmartDownloadsSettingsScreen(
                                 .padding(12.dp)
                         ) {
                             Text(
-                                text = "Automatically syncs episodes you might like to your device based on your listening history, so that you can enjoy them even when you're offline.",
+                                text = stringResource(R.string.settings_smart_downloads_description),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 lineHeight = 16.sp
@@ -242,7 +247,7 @@ fun SmartDownloadsSettingsScreen(
                         // Section 1: Max Auto-Downloaded Episodes
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
-                                text = "Max Auto-Downloaded Episodes",
+                                text = stringResource(R.string.settings_smart_downloads_max_episodes),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = GoogleSansWeight.bold,
                                 modifier = Modifier.padding(horizontal = 16.dp)
@@ -265,7 +270,7 @@ fun SmartDownloadsSettingsScreen(
                                                 userPrefs.setSmartDownloadsMaxEpisodes(count)
                                             }
                                         },
-                                        label = { Text("$count episodes") },
+                                        label = { Text(pluralStringResource(R.plurals.settings_smart_downloads_episode_count, count, count)) },
                                         leadingIcon = if (isSelected) {
                                             {
                                                 Icon(
@@ -287,7 +292,7 @@ fun SmartDownloadsSettingsScreen(
                         // Section 2: Storage Limit
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
-                                text = "Storage Limit",
+                                text = stringResource(R.string.settings_smart_downloads_storage_limit),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = GoogleSansWeight.bold,
                                 modifier = Modifier.padding(horizontal = 16.dp)
@@ -301,12 +306,12 @@ fun SmartDownloadsSettingsScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 listOf(
-                                    250L to "250 MB",
-                                    500L to "500 MB",
-                                    1000L to "1.0 GB",
-                                    2000L to "2.0 GB",
-                                    5000L to "5.0 GB",
-                                    0L to "Unlimited"
+                                    250L to smartDownloadsBudgetLabel(250L),
+                                    500L to smartDownloadsBudgetLabel(500L),
+                                    1000L to smartDownloadsBudgetLabel(1000L),
+                                    2000L to smartDownloadsBudgetLabel(2000L),
+                                    5000L to smartDownloadsBudgetLabel(5000L),
+                                    0L to stringResource(R.string.settings_smart_downloads_unlimited)
                                 ).forEach { (bytes, label) ->
                                     val isSelected = storageBudget == bytes
                                     FilterChip(
@@ -341,10 +346,7 @@ fun SmartDownloadsSettingsScreen(
                             enter = expandVertically() + fadeIn(),
                             exit = shrinkVertically() + fadeOut()
                         ) {
-                            val budgetText = when {
-                                storageBudget >= 1000L -> "${storageBudget / 1000.0} GB"
-                                else -> "$storageBudget MB"
-                            }
+                            val budgetText = smartDownloadsBudgetLabel(storageBudget)
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -358,12 +360,12 @@ fun SmartDownloadsSettingsScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Rounded.Warning,
-                                    contentDescription = "Conflict warning",
+                                    contentDescription = stringResource(R.string.settings_smart_downloads_conflict_description),
                                     tint = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Text(
-                                    text = "Your $budgetText storage limit may be too small for $maxEpisodes episodes. Sync will pause once the storage budget is hit.",
+                                    text = pluralStringResource(R.plurals.settings_smart_downloads_conflict, maxEpisodes, budgetText, maxEpisodes),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onErrorContainer
                                 )
@@ -411,11 +413,11 @@ fun SmartDownloadsSettingsScreen(
                                 Icon(imageVector = Icons.Rounded.Wifi, contentDescription = null)
                                 Column {
                                     Text(
-                                        text = "Wi-Fi only",
+                                        text = stringResource(R.string.settings_auto_download_wifi_only),
                                         style = MaterialTheme.typography.titleMedium
                                     )
                                     Text(
-                                        text = if (wifiOnly) "Enabled" else "Use mobile data",
+                                        text = if (wifiOnly) stringResource(R.string.settings_smart_downloads_enabled) else stringResource(R.string.settings_smart_downloads_mobile_data),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -463,11 +465,11 @@ fun SmartDownloadsSettingsScreen(
                                 Icon(imageVector = Icons.Rounded.BatteryChargingFull, contentDescription = null)
                                 Column {
                                     Text(
-                                        text = "Charging only",
+                                        text = stringResource(R.string.settings_smart_downloads_charging_only),
                                         style = MaterialTheme.typography.titleMedium
                                     )
                                     Text(
-                                        text = if (chargingOnly) "Enabled" else "Download on battery",
+                                        text = if (chargingOnly) stringResource(R.string.settings_smart_downloads_enabled) else stringResource(R.string.settings_smart_downloads_on_battery),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -518,7 +520,7 @@ fun SmartDownloadsSettingsScreen(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = "Auto-delete played episodes",
+                                text = stringResource(R.string.settings_smart_downloads_auto_delete),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = GoogleSansWeight.bold
                             )
@@ -532,10 +534,10 @@ fun SmartDownloadsSettingsScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             listOf(
-                                "immediately" to "Immediately",
-                                "after_24h" to "After 24 hours",
-                                "after_7d" to "After 7 days",
-                                "never" to "Never"
+                                "immediately" to stringResource(R.string.settings_smart_downloads_delete_immediately),
+                                "after_24h" to stringResource(R.string.settings_smart_downloads_delete_24h),
+                                "after_7d" to stringResource(R.string.settings_smart_downloads_delete_7d),
+                                "never" to stringResource(R.string.settings_smart_downloads_delete_never)
                             ).forEach { (rule, label) ->
                                 val isSelected = cleanupRule == rule
                                 FilterChip(
@@ -595,7 +597,7 @@ fun SmartDownloadsSettingsScreen(
                                 modifier = Modifier.size(24.dp)
                             )
                             Text(
-                                text = "Background Downloads",
+                                text = stringResource(R.string.settings_smart_downloads_background),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = GoogleSansWeight.bold
                             )
@@ -603,7 +605,7 @@ fun SmartDownloadsSettingsScreen(
 
                         // Full-width description text
                         Text(
-                            text = if (isIgnoringBatteryOptimizations) "Allowed to download in the background, bypassing aggressive device battery savings. This won't affect battery life as background sync runs efficiently only once every 24 hours." else "boxlore will try to download automatically, but devices like Xiaomi, OnePlus, or Samsung may block downloads due to aggressive battery saving restrictions. Allowing this won't affect battery life, as background sync runs efficiently only once every 24 hours.",
+                            text = if (isIgnoringBatteryOptimizations) stringResource(R.string.settings_smart_downloads_background_allowed) else stringResource(R.string.settings_smart_downloads_background_blocked),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.fillMaxWidth()
@@ -617,7 +619,7 @@ fun SmartDownloadsSettingsScreen(
                                 modifier = Modifier.align(Alignment.End)
                             ) {
                                 Text(
-                                    text = "Allowed",
+                                    text = stringResource(R.string.settings_smart_downloads_allowed),
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = GoogleSansWeight.bold,
@@ -641,7 +643,7 @@ fun SmartDownloadsSettingsScreen(
                                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
                             ) {
                                 Text(
-                                    text = "Allow",
+                                    text = stringResource(R.string.settings_smart_downloads_allow),
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = GoogleSansWeight.bold
                                 )
@@ -666,5 +668,16 @@ fun SmartDownloadsSettingsScreen(
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
+    }
+}
+
+/** A storage budget in megabytes as "250 MB" or "1.0 GB", with the number written for the app's language. */
+@Composable
+private fun smartDownloadsBudgetLabel(megabytes: Long): String {
+    val locale = currentLocale()
+    return if (megabytes >= 1000L) {
+        stringResource(R.string.settings_smart_downloads_size_gb, String.format(locale, "%.1f", megabytes / 1000.0))
+    } else {
+        stringResource(R.string.settings_smart_downloads_size_mb, LocaleFormats.number(megabytes, locale))
     }
 }

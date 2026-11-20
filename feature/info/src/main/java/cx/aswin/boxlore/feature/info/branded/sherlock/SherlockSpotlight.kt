@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.branded.BrandedEpisodeActions
@@ -94,7 +95,7 @@ internal fun SherlockSpotlight(spotlight: BrandedSpotlight, modifier: Modifier) 
             Column(Modifier.width(PLATE_COLUMN).padding(top = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Plate(spotlight)
                 Text(
-                    brandedDetails(formatEpisodeRelativeDate(episode.publishedDate), episode.duration, spotlight.isCompleted, stringResource(R.string.episode_info_played)),
+                    brandedDetails(formatEpisodeRelativeDate(episode.publishedDate, currentLocale()), episode.duration, spotlight.isCompleted, stringResource(R.string.episode_info_played), currentLocale()),
                     style = brandedTextStyle(fonts.italic, 10.sp, 12.sp),
                     color = SherlockColors.Italic,
                     textAlign = TextAlign.Center,

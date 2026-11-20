@@ -31,6 +31,7 @@ Owns the Home tab: the hero carousel, Your shows (pins, Daily and Offline mixes,
 - Home never ranks Your shows, Daily Mix or discovery per playback tick or per synced row. `HomeYourShowsRanker` decides when a ranking pass runs; `HomeRankingBudgetTest` guards it.
 - A pass runs on the first assembly; once after synced catalog changes settle (`settledCatalogChanges`: new or serial-next episodes, imported or synced subscriptions, rate-limited during long syncs); and when Home starts after an episode was started or finished, or on an old snapshot. A restart-setting change rebuilds Daily Mix alone.
 - Discovery rows re-rank only when their candidates change or on a ranking pass, never on raw history.
+- Shows hidden everywhere leave discovery, the kept Daily Mix and Because you like (never as its seed) after ranking (`HomeHiddenShowsLogic`), so hiding or unhiding one never ranks again.
 
 ## Hero styles
 

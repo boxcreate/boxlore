@@ -1,10 +1,16 @@
 package cx.aswin.boxlore.feature.settings.pages
 
 import cx.aswin.boxlore.core.auth.RecentLoginRequiredException
+import cx.aswin.boxlore.feature.settings.text
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 class AccountSettingsPageTest {
 
     @Test
@@ -34,56 +40,58 @@ class AccountSettingsPageTest {
         val genericError = Result.failure<Unit>(RuntimeException("Something went wrong"))
         val outcome = resolveAccountDeletionOutcome(genericError)
         assertTrue(outcome is AccountDeletionOutcome.Failure)
-        assertEquals("Something went wrong", (outcome as AccountDeletionOutcome.Failure).message)
+        assertEquals("Something went wrong", (outcome as AccountDeletionOutcome.Failure).message.text())
     }
 
     @Test
     fun resolveAccountDeletionOutcome_nullResult_returnsUnknownFailure() {
         val outcome = resolveAccountDeletionOutcome(null)
         assertTrue(outcome is AccountDeletionOutcome.Failure)
-        assertEquals("An unexpected error occurred", (outcome as AccountDeletionOutcome.Failure).message)
+        assertEquals("An unexpected error occurred", (outcome as AccountDeletionOutcome.Failure).message.text())
     }
 
     @Test
     fun formatRelativeSyncTime_neverSynced_saysNotYet() {
-        assertEquals("Not synced yet", formatRelativeSyncTime(0L))
-        assertEquals("Not synced yet", formatRelativeSyncTime(-100L))
+        assertEquals("Not synced yet", formatRelativeSyncTime(0L).text())
+        assertEquals("Not synced yet", formatRelativeSyncTime(-100L).text())
     }
 
     @Test
     fun formatRelativeSyncTime_futureTimestampOrClockSkew_saysJustNow() {
         val now = 100_000L
-        assertEquals("Synced just now", formatRelativeSyncTime(now + 5_000L, now = now))
+        assertEquals("Synced just now", formatRelativeSyncTime(now + 5_000L, now = now).text())
     }
 
     @Test
     fun formatRelativeSyncTime_underAMinute_saysJustNow() {
         val now = 100_000L
-        assertEquals("Synced just now", formatRelativeSyncTime(now - 15_000L, now = now))
-        assertEquals("Synced just now", formatRelativeSyncTime(now - 59_000L, now = now))
+        assertEquals("Synced just now", formatRelativeSyncTime(now - 15_000L, now = now).text())
+        assertEquals("Synced just now", formatRelativeSyncTime(now - 59_000L, now = now).text())
     }
 
     @Test
     fun formatRelativeSyncTime_minutesAgo() {
         val now = 10_000_000L
-        assertEquals("Synced 1 min ago", formatRelativeSyncTime(now - 60_000L, now = now))
-        assertEquals("Synced 15 min ago", formatRelativeSyncTime(now - 15 * 60_000L, now = now))
-        assertEquals("Synced 59 min ago", formatRelativeSyncTime(now - 59 * 60_000L, now = now))
+        assertEquals("Synced 1 min ago", formatRelativeSyncTime(now - 60_000L, now = now).text())
+        assertEquals("Synced 15 min ago", formatRelativeSyncTime(now - 15 * 60_000L, now = now).text())
+        assertEquals("Synced 59 min ago", formatRelativeSyncTime(now - 59 * 60_000L, now = now).text())
     }
 
     @Test
     fun formatRelativeSyncTime_hoursAgo() {
         val now = 100_000_000L
-        assertEquals("Synced 1 hr ago", formatRelativeSyncTime(now - 3600_000L, now = now))
-        assertEquals("Synced 23 hr ago", formatRelativeSyncTime(now - 23 * 3600_000L, now = now))
+        assertEquals("Synced 1 hr ago", formatRelativeSyncTime(now - 3600_000L, now = now).text())
+        assertEquals("Synced 23 hr ago", formatRelativeSyncTime(now - 23 * 3600_000L, now = now).text())
     }
 
     @Test
     fun formatRelativeSyncTime_daysAgo() {
         val now = 500_000_000L
         val oneDay = 24 * 3600_000L
-        assertEquals("Synced yesterday", formatRelativeSyncTime(now - oneDay, now = now))
-        assertEquals("Synced 4 days ago", formatRelativeSyncTime(now - 4 * oneDay, now = now))
+        assertEquals("Synced yesterday", formatRelativeSyncTime(now - oneDay, now = now).text())
+        assertEquals("Synced 4 days ago", formatRelativeSyncTime(now - 4 * oneDay, now = now).text())
+        // Stays in days rather than switching to weeks or months.
+        assertEquals("Synced 40 days ago", formatRelativeSyncTime(100 * oneDay - 40 * oneDay, now = 100 * oneDay).text())
     }
 
     @Test
@@ -113,10 +121,10 @@ class AccountSettingsPageTest {
 
     @Test
     fun resolveProviderLine_saysHowTheAccountSignsIn() {
-        assertEquals("Signed in with Google", resolveProviderLine("google.com"))
-        assertEquals("Signed in with an email link", resolveProviderLine("emailLink"))
-        assertEquals("Signed in with a password", resolveProviderLine("password"))
-        assertEquals("Signed in with a password", resolveProviderLine(null))
+        assertEquals("Signed in with Google", text(resolveProviderLine("google.com")))
+        assertEquals("Signed in with an email link", text(resolveProviderLine("emailLink")))
+        assertEquals("Signed in with a password", text(resolveProviderLine("password")))
+        assertEquals("Signed in with a password", text(resolveProviderLine(null)))
     }
 
     @Test

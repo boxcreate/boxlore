@@ -6,6 +6,7 @@ import com.google.gson.GsonBuilder
 import cx.aswin.boxlore.core.catalog.FeedUrlSources
 import cx.aswin.boxlore.core.catalog.FolderRepository
 import cx.aswin.boxlore.core.catalog.LOCAL_CATALOG_WINDOW_BOUND
+import cx.aswin.boxlore.core.catalog.PlaylistRepository
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
@@ -48,6 +49,8 @@ data class GlobalPreferencesBackup(
     val subscriptionFolderManualOrder: List<String>? = null,
     val autoOrganizeFolders: Boolean? = null,
     val homePinnedPodcastIds: List<String>? = null,
+    /** Shows hidden everywhere; absent in older backups, which leave the hidden shows as they are. */
+    val hiddenShows: List<HiddenShowBackup>? = null,
     val latestEpisodesSortUseSmart: Boolean? = null,
     val skipBehavior: String? = null,
     val skipBeginningMs: Long? = null,
@@ -56,10 +59,14 @@ data class GlobalPreferencesBackup(
     val seekForwardMs: Long? = null,
     val hideCompletedInFeeds: Boolean? = null,
     val hideCompletedInShowDetails: Boolean? = null,
+    /** Show pages list episodes by title only; absent in older backups, which keep full rows. */
+    val episodeTitlesOnly: Boolean? = null,
     val hideCompletedInHome: Boolean? = null,
     val hideCompletedInSubs: Boolean? = null,
     val restartForgottenEpisodes: Boolean? = null,
     val sameShowQueueOnly: Boolean? = null,
+    /** Trim silence; absent in older backups, which leave the setting as it is. */
+    val trimSilenceEnabled: Boolean? = null,
     val homeShortcutsInLibrary: Boolean? = null,
     val widgetAppearance: String? = null,
     val exploreDefaultTab: String? = null,
@@ -88,6 +95,8 @@ data class BoxLoreBackup(
     val episodeIdentity: EpisodeIdentityBackup? = null,
     /** Version 8+: listening sessions, daily summaries and played shows ([ListeningBackup]). */
     val listening: ListeningBackup? = null,
+    /** Version 11+: playlists with their order and shows ([PlaylistBackup]). */
+    val playlists: List<PlaylistBackup>? = null,
 )
 
 data class OpmlFeed(val title: String, val xmlUrl: String,)
@@ -112,6 +121,7 @@ class LibraryBackupManager(
     private val legacyListeningOrigin: DeviceIdentityPort? = null,
     private val pendingOpmlImports: PendingOpmlImports =
         SharedAppDependenciesHolder.instance?.pendingOpmlImports ?: MemoryPendingOpmlImports(),
+    private val playlistRepository: PlaylistRepository? = SharedAppDependenciesHolder.instance?.playlistRepository,
 ) {
     private val context = context.applicationContext
     private val rssFeedClient = RssFeedClient()
@@ -145,6 +155,7 @@ class LibraryBackupManager(
                     subscriptionFolderManualOrder = userPrefs.subscriptionFolderManualOrderStream.first(),
                     autoOrganizeFolders = userPrefs.autoOrganizeFoldersStream.first(),
                     homePinnedPodcastIds = userPrefs.homePinnedPodcastIdsStream.first(),
+                    hiddenShows = userPrefs.hiddenShows.showsStream.first().toHiddenShowBackups(),
                     latestEpisodesSortUseSmart = userPrefs.latestEpisodesSortUseSmartStream.first(),
                     skipBehavior = userPrefs.skipBehaviorStream.first(),
                     skipBeginningMs = userPrefs.skipBeginningMsStream.first(),
@@ -153,10 +164,12 @@ class LibraryBackupManager(
                     seekForwardMs = userPrefs.seekForwardMsStream.first(),
                     hideCompletedInFeeds = userPrefs.hideCompletedInFeedsStream.first(),
                     hideCompletedInShowDetails = userPrefs.hideCompletedInShowDetailsStream.first(),
+                    episodeTitlesOnly = userPrefs.episodeTitlesOnlyStream.first(),
                     hideCompletedInHome = userPrefs.hideCompletedInHomeStream.first(),
                     hideCompletedInSubs = userPrefs.hideCompletedInSubsStream.first(),
                     restartForgottenEpisodes = userPrefs.restartForgottenEpisodesStream.first(),
                     sameShowQueueOnly = userPrefs.sameShowQueueOnlyStream.first(),
+                    trimSilenceEnabled = userPrefs.trimSilenceEnabledStream.first(),
                     homeShortcutsInLibrary = userPrefs.homeShortcutsInLibraryStream.first(),
                     widgetAppearance = userPrefs.widgetAppearanceStream.first(),
                     exploreDefaultTab = userPrefs.exploreDefaultTabStream.first(),
@@ -181,6 +194,7 @@ class LibraryBackupManager(
         val exportedFolders = folderRepo?.getFolders()?.map(LibraryBackupFolderLogic::toBackup).orEmpty()
         val episodeIdentity = identity()?.export()
         val listening = listening()?.export()
+        val playlists = playlistRepository?.let { LibraryBackupPlaylists.export(it) }
         val backup =
             BoxLoreBackup(
                 version = LibraryBackupDirectFeedLogic.VERSION,
@@ -192,6 +206,7 @@ class LibraryBackupManager(
                 folders = exportedFolders,
                 episodeIdentity = episodeIdentity,
                 listening = listening,
+                playlists = playlists,
             )
         return gson.toJson(backup)
     }
@@ -268,6 +283,7 @@ class LibraryBackupManager(
         restoreImportedHistory(backup.history, importedIds, refusedIds)
         listening()?.restore(backup.listening, refusedIds, importedIds)
         relinkImportedSwitchedShows(importedIds)
+        playlistRepository?.let { LibraryBackupPlaylists.restore(backup.playlists, it) }
         backup.adaptiveRanking?.let { rankingBackup ->
             adaptiveRankingRepository.restoreBackup(rankingBackup)
         }
@@ -316,6 +332,8 @@ class LibraryBackupManager(
         prefs.subscriptionFolderManualOrder.writePref { up.setSubscriptionFolderManualOrder(it) }
         prefs.autoOrganizeFolders.writePref { up.setAutoOrganizeFolders(it) }
         prefs.homePinnedPodcastIds.writePref { up.setHomePinnedPodcastIds(it) }
+        // Added to the shows already hidden here, never replacing them.
+        prefs.hiddenShows.writePref { up.hiddenShows.setAll(it.toHiddenShows() + up.hiddenShows.showsStream.first()) }
         prefs.latestEpisodesSortUseSmart.writePref { up.setLatestEpisodesSortUseSmart(it) }
         prefs.skipBehavior.writePref { up.setSkipBehavior(it) }
         prefs.skipBeginningMs.writePref { up.setSkipBeginningMs(it) }
@@ -324,10 +342,12 @@ class LibraryBackupManager(
         prefs.seekForwardMs.writePref { up.setSeekForwardMs(it) }
         prefs.hideCompletedInFeeds.writePref { up.setHideCompletedInFeeds(it) }
         prefs.hideCompletedInShowDetails.writePref { up.setHideCompletedInShowDetails(it) }
+        prefs.episodeTitlesOnly.writePref { up.setEpisodeTitlesOnly(it) }
         prefs.hideCompletedInHome.writePref { up.setHideCompletedInHome(it) }
         prefs.hideCompletedInSubs.writePref { up.setHideCompletedInSubs(it) }
         prefs.restartForgottenEpisodes.writePref { up.setRestartForgottenEpisodes(it) }
         prefs.sameShowQueueOnly.writePref { up.setSameShowQueueOnly(it) }
+        prefs.trimSilenceEnabled.writePref { up.setTrimSilenceEnabled(it) }
         prefs.homeShortcutsInLibrary.writePref { up.setHomeShortcutsInLibrary(it) }
         prefs.widgetAppearance.writePref { up.setWidgetAppearance(it) }
         prefs.exploreDefaultTab.writePref { up.setExploreDefaultTab(it) }
@@ -410,6 +430,8 @@ class LibraryBackupManager(
                 linkedPodcastIndexId = entity.linkedPodcastIndexId,
                 skipBeginningOverrideMs = entity.skipBeginningOverrideMs,
                 skipEndingOverrideMs = entity.skipEndingOverrideMs,
+                playbackSpeedOverride = entity.playbackSpeedOverride,
+                skipSilenceOverride = entity.skipSilenceOverride,
                 customGenre = entity.customGenre,
                 customGenreIcon = entity.customGenreIcon,
             )
@@ -452,6 +474,10 @@ class LibraryBackupManager(
                 entity.skipBeginningOverrideMs,
                 entity.skipEndingOverrideMs,
             )
+        }
+        if (backup.version >= LibraryBackupDirectFeedLogic.SHOW_PLAYBACK_SINCE_VERSION) {
+            subscriptionRepository.setPlaybackSpeedOverride(podcast.id, entity.playbackSpeedOverride)
+            subscriptionRepository.setSkipSilenceOverride(podcast.id, entity.skipSilenceOverride)
         }
         if (entity.customGenre != null || entity.customGenreIcon != null) {
             subscriptionRepository.updateCustomGenre(

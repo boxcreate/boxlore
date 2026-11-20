@@ -55,6 +55,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.settings.R
 
@@ -101,8 +102,6 @@ internal fun ColumnScope.SignedOutContent(state: AccountAuthState) {
     }
 
     PrivacyPolicyNotice(
-        prefix = stringResource(R.string.account_privacy_prefix),
-        suffix = ".",
         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
         style = MaterialTheme.typography.bodySmall,
     )
@@ -133,7 +132,7 @@ private fun AccountMethodCards(state: AccountAuthState) {
         AccountMethodCard(stringResource(R.string.account_password), stringResource(R.string.account_password_detail), emphasized = false, enabled = !state.isAnyLoading, onClick = { state.chooseEmailMethod(password = true) }, tag = "account_method_password") {
             AccountMethodIcon(Icons.Rounded.Key)
         }
-        state.errorMessage?.let { AuthErrorBanner(message = it) }
+        state.errorMessage?.let { AuthErrorBanner(message = it.asString()) }
     }
 }
 
@@ -191,7 +190,7 @@ private fun ColumnScope.EmailLinkInputSection(
         keyboardActions = KeyboardActions(onDone = { actions.onSendLink() }),
         modifier = Modifier.fillMaxWidth().testTag("account_email_field").onFocusChanged { if (it.isFocused) actions.onInputFocused() },
     )
-    state.errorMessage?.let { AuthErrorBanner(message = it) }
+    state.errorMessage?.let { AuthErrorBanner(message = it.asString()) }
     AccountPrimaryButton(
         label = stringResource(R.string.account_send_link),
         loading = state.isLoading,
@@ -284,7 +283,7 @@ private fun ColumnScope.PasswordAuthSection(
             Text(stringResource(R.string.account_forgot_password))
         }
     }
-    state.errorMessage?.let { AuthErrorBanner(message = it) }
+    state.errorMessage?.let { AuthErrorBanner(message = it.asString()) }
     AccountPrimaryButton(
         label = stringResource(if (state.isSignUp) R.string.account_create else R.string.account_sign_in),
         loading = state.isLoading,

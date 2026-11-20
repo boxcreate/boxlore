@@ -11,15 +11,18 @@ import cx.aswin.boxlore.core.domain.ports.LocalCatalogPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.playback.addToQueueNext
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
+import cx.aswin.boxlore.core.playback.dismissedEpisodeIds
 import cx.aswin.boxlore.core.playback.getSession
 import cx.aswin.boxlore.core.playback.likedEpisodeIds
 import cx.aswin.boxlore.core.playback.removeFromQueue
 import cx.aswin.boxlore.core.playback.savePlaybackState
+import cx.aswin.boxlore.core.playback.setEpisodesDismissed
 import cx.aswin.boxlore.core.playback.toggleCompletion
 import cx.aswin.boxlore.core.playback.toggleLike
 import cx.aswin.boxlore.core.playback.togglePlayPause
 import cx.aswin.boxlore.core.playback.withEpisodeAliases
 import cx.aswin.boxlore.feature.info.logic.EpisodeOfflineMergeLogic
+import cx.aswin.boxlore.feature.info.logic.EpisodeShowTitle
 import cx.aswin.boxlore.feature.info.logic.collectSimilarEpisodes
 import cx.aswin.boxlore.feature.info.logic.sharedLookup
 import kotlinx.coroutines.Job
@@ -89,6 +92,8 @@ class EpisodeInfoViewModel(
     private val userPrefs: cx.aswin.boxlore.core.prefs.UserPreferencesRepository,
     private val localCatalog: LocalCatalogPort,
     private val episodeOfflineLookup: EpisodeOfflineLookupPort,
+    /** The app's own scope, so an archive write outlives the page; the page's scope when null. */
+    private val applicationScope: kotlinx.coroutines.CoroutineScope? = null,
 ) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow<EpisodeInfoUiState>(EpisodeInfoUiState.Loading)
     val uiState: StateFlow<EpisodeInfoUiState> = _uiState.asStateFlow()
@@ -112,7 +117,8 @@ class EpisodeInfoViewModel(
             val result = cx.aswin.boxlore.core.catalog.crosspromo.CrossPromotionDetector().detect(episode, hostTitle, notes)
             val name = result.extractedShowName
             if (result.isCrossPromotion && name != null) {
-                crossPromotionResolver.resolve(name, hostId, notes.links)?.let { target ->
+                // A promoted show the listener hid is never offered.
+                crossPromotionResolver.resolve(name, hostId, notes.links)?.takeUnless { cx.aswin.boxlore.core.model.HiddenShows.hides(userPrefs.hiddenShows.matchIds(), it) }?.let { target ->
                     cx.aswin.boxlore.core.model.ResolvedCrossPromotion(name, result.confidence, target, result.matchedIndicators)
                 }
             } else {
@@ -141,6 +147,26 @@ class EpisodeInfoViewModel(
                     .WhileSubscribed(5_000),
                 initialValue = emptySet(),
             )
+
+    private val archiver =
+        EpisodeArchiver(
+            scope = viewModelScope,
+            writeScope = applicationScope ?: viewModelScope,
+            archivedIds = playbackRepository.dismissedEpisodeIds,
+            surface = EpisodeArchiver.SURFACE_EPISODE_PAGE,
+            show = { (_uiState.value as? EpisodeInfoUiState.Success)?.let { ArchiveShow(it.podcastId, it.podcastTitle, it.episode.podcastImageUrl) } },
+        ) { show, episodes, archive ->
+            playbackRepository.setEpisodesDismissed(episodes, show.id, show.title, show.imageUrl, archive)
+        }
+
+    /** Archived episodes: this page's Archive toggle reads its episode here, under any of its IDs. */
+    val archivedEpisodeIds: StateFlow<Set<String>> = archiver.archivedIds
+
+    /** Archives this page's episode, or brings it back; it is never marked played. */
+    fun onToggleArchive() {
+        val page = _uiState.value as? EpisodeInfoUiState.Success ?: return
+        archiver.setArchived(listOf(page.episode), archive = page.episode.id !in archivedEpisodeIds.value)
+    }
 
     private val _showRemoveDownloadDialog = MutableStateFlow(false)
     val showRemoveDownloadDialog: StateFlow<Boolean> = _showRemoveDownloadDialog.asStateFlow()
@@ -303,9 +329,9 @@ class EpisodeInfoViewModel(
                         currentEpisode = fullEpisode
                         if (finalPodcastId.isEmpty()) finalPodcastId = fullEpisode.podcastId ?: "unknown"
                         if (finalPodcastTitle.isEmpty() ||
-                            finalPodcastTitle == "Podcast"
+                            finalPodcastTitle == EpisodeShowTitle.PLACEHOLDER
                         ) {
-                            finalPodcastTitle = fullEpisode.podcastTitle ?: "Podcast"
+                            finalPodcastTitle = fullEpisode.podcastTitle ?: EpisodeShowTitle.PLACEHOLDER
                         }
                         if (finalEpisodeTitle.isEmpty()) finalEpisodeTitle = fullEpisode.title
                         if (finalEpisodeImageUrl.isEmpty()) finalEpisodeImageUrl = fullEpisode.imageUrl ?: ""
@@ -346,12 +372,12 @@ class EpisodeInfoViewModel(
                 val initialLocation = localPodcast?.location
                 val initialLicense = localPodcast?.license
 
-                if (localPodcast != null && (finalPodcastTitle.isEmpty() || finalPodcastTitle == "Podcast")) {
+                if (localPodcast != null && (finalPodcastTitle.isEmpty() || finalPodcastTitle == EpisodeShowTitle.PLACEHOLDER)) {
                     finalPodcastTitle = localPodcast.title
                 }
 
                 // If finalPodcastTitle is empty/generic, try to fetch podcast details from network
-                if (finalPodcastId.isNotEmpty() && (finalPodcastTitle.isEmpty() || finalPodcastTitle == "Podcast")) {
+                if (finalPodcastId.isNotEmpty() && (finalPodcastTitle.isEmpty() || finalPodcastTitle == EpisodeShowTitle.PLACEHOLDER)) {
                     val podcast = podcastRepository.getPodcastDetails(finalPodcastId)
                     if (podcast != null) {
                         finalPodcastTitle = podcast.title

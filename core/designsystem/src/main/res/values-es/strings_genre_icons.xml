@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="genre_icon_mic">Micrófono</string>
+    <string name="genre_icon_headphones">Auriculares</string>
+    <string name="genre_icon_music">Música</string>
+    <string name="genre_icon_movie">Película</string>
+    <string name="genre_icon_gaming">Videojuegos</string>
+    <string name="genre_icon_code">Código</string>
+    <string name="genre_icon_tech">Tecnología</string>
+    <string name="genre_icon_bulb">Ideas</string>
+    <string name="genre_icon_star">Estrella</string>
+    <string name="genre_icon_fire">Fuego</string>
+    <string name="genre_icon_science">Ciencia</string>
+    <string name="genre_icon_book">Libro</string>
+    <string name="genre_icon_health">Salud</string>
+    <string name="genre_icon_finance">Finanzas</string>
+    <string name="genre_icon_news">Noticias</string>
+    <string name="genre_icon_sports">Deportes</string>
+    <string name="genre_icon_comedy">Comedia</string>
+    <string name="genre_icon_history">Historia</string>
+    <string name="genre_icon_art">Arte</string>
+    <string name="genre_icon_education">Educación</string>
+    <string name="genre_icon_crime">True crime</string>
+    <string name="genre_icon_chat">Charla</string>
+    <string name="genre_icon_travel">Viajes</string>
+    <string name="genre_icon_food">Comida</string>
+    <string name="genre_icon_nature">Naturaleza</string>
+    <string name="genre_icon_family">Familia</string>
+    <string name="genre_icon_business">Negocios</string>
+    <string name="genre_icon_government">Gobierno</string>
+    <string name="genre_icon_tag">Etiqueta</string>
+    <string name="genre_icon_category">Categoría</string>
+    <string name="genre_icon_folder">Carpeta</string>
+</resources>

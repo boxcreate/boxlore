@@ -97,7 +97,7 @@ internal fun StoryEntryCard(month: StoryMonth, isNew: Boolean, onOpen: () -> Uni
                         Text(stringResource(R.string.history_story_new), style = StoryType.of(11f, 14f, GoogleSansWeight.bold), color = palette.onContainer)
                     }
                 }
-                Text(stringResource(R.string.history_story_entry_meta, month.cards), style = StoryType.of(12f, 16f, GoogleSansWeight.semiBold), color = palette.onPrimary)
+                Text(pluralStringResource(R.plurals.history_story_entry_meta, month.cards, month.cards), style = StoryType.of(12f, 16f, GoogleSansWeight.semiBold), color = palette.onPrimary)
             }
             Text(
                 stringResource(R.string.history_story_entry_title, name),

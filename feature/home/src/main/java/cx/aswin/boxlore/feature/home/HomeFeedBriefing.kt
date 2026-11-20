@@ -19,6 +19,7 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.components.DailyBriefingCard
 import java.time.LocalDate
 import java.time.ZoneOffset
+import java.util.Locale
 
 internal fun LazyStaggeredGridScope.dailyBriefingItem(
     feedState: PodcastFeedUiState,
@@ -87,7 +88,12 @@ private fun playDailyBriefingFromFeed(
     trackDailyBriefingPlayPause(briefing, isCurrentPlaying)
     val show = briefingShowPodcast(context, briefing.region)
     callbacks.onPlayEpisode(
-        dailyBriefingEpisode(briefing, briefingId, show),
+        dailyBriefingEpisode(
+            briefing,
+            briefingId,
+            show,
+            description = context.getString(R.string.home_briefing_episode_description, briefing.region.uppercase(Locale.ROOT)),
+        ),
         show,
         // Glossary entry_point=briefing (via enum → sourceContext). Do not use GENERIC —
         // that normalizes to unknown and breaks Brief playback attribution.
@@ -118,12 +124,13 @@ private fun dailyBriefingEpisode(
     briefing: Briefing,
     briefingId: String,
     show: Podcast,
+    description: String,
 ): Episode {
     val version = dailyBriefingVersion(briefing.audioUrl)
     return Episode(
         id = briefingId,
         title = briefing.title,
-        description = "Your daily AI-generated news briefing for ${briefing.region.uppercase()}.",
+        description = description,
         audioUrl = briefing.audioUrl,
         imageUrl = show.imageUrl,
         podcastId = show.id,

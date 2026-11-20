@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.player.v2
 
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.player.R
 import cx.aswin.boxlore.feature.player.v2.logic.episode
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -17,23 +19,27 @@ class MiniPlayerCompactStatusTest {
 
     @Test
     fun compactArtworkReportsWhetherPlaybackIsPausedOrPlaying() {
-        assertEquals("Paused", miniPlayerCompactStateDescription(content))
-        assertEquals("Playing", miniPlayerCompactStateDescription(content.copy(isPlaying = true)))
+        assertEquals(UiText.res(R.string.player_paused), miniPlayerCompactStateDescription(content))
+        assertEquals(UiText.res(R.string.player_playing), miniPlayerCompactStateDescription(content.copy(isPlaying = true)))
     }
 
     @Test
     fun loadingTakesPrecedenceOverTransportState() {
-        assertEquals("Loading", miniPlayerCompactStateDescription(content.copy(isPlaying = true, isLoading = true)))
+        assertEquals(UiText.res(R.string.player_loading), miniPlayerCompactStateDescription(content.copy(isPlaying = true, isLoading = true)))
     }
 
     @Test
     fun castAccessibilityNamesTheReceiverWhilePreservingTransportState() {
         assertEquals(
-            "Paused, casting to Living room",
+            UiText.res(R.string.player_state_casting_to, UiText.res(R.string.player_paused), UiText.raw("Living room")),
             miniPlayerCompactStateDescription(content.copy(isCasting = true, castDeviceName = "Living room")),
         )
         assertEquals(
-            "Playing, casting to Cast device",
+            UiText.res(
+                R.string.player_state_casting_to,
+                UiText.res(R.string.player_playing),
+                UiText.res(R.string.player_cast_device_fallback),
+            ),
             miniPlayerCompactStateDescription(content.copy(isPlaying = true, isCasting = true)),
         )
     }

@@ -10,9 +10,10 @@ package cx.aswin.boxlore.core.database
  *   Progress, position, length and play time come from the most recently played row: the owner's,
  *   unless another ID was played later. Every write on this phone goes to the owner, so another ID
  *   is newer only after a cloud pull, a restore or older-build data; reading it keeps that later
- *   listening, and an ID that holds only a like never hides an ID with progress. Liked and
- *   completed are the latest decision among the group settings and the rows: a row's like decision
- *   is its `likedAt`, its completion decision is its `lastPlayedAt`. A group setting wins a tie
+ *   listening, and an ID that holds only a like never hides an ID with progress. Liked, completed
+ *   and archived are the latest decision among the group settings and the rows: a row's like
+ *   decision is its `likedAt`, its completion decision is its `lastPlayedAt`, its archive decision
+ *   the time in its signed `dismissedAt`. A group setting wins a tie
  *   with a row, so an older alias row can never bring back a like or completion that was cleared;
  *   rows that tie with each other count as set when any of them is.
  *
@@ -38,6 +39,7 @@ object EpisodeListenerProjection {
         val played = latestPlayed(members, base)
         val liked = likeDecision(members, state)
         val completed = completionDecision(members, state)
+        val dismissed = dismissDecision(members, state)
         val completedBy = if (completed.value && !base.isCompleted) {
             // Ties on play time go to the higher ID, as for the base row, so any row order gives the same flags.
             members.filter { it.isCompleted }.maxWithOrNull(compareBy<ListeningHistoryEntity>({ it.lastPlayedAt }, { it.episodeId })) ?: base
@@ -56,6 +58,7 @@ object EpisodeListenerProjection {
             // The episode was first played and first finished under whichever ID did it first.
             firstPlayedAt = members.map { it.firstPlayedAt }.reduce(ListeningDates::earliest),
             finishedAt = members.map { it.finishedAt }.reduce(ListeningDates::earliest),
+            dismissedAt = dismissedAtValue(dismissed.value, dismissed.at),
         )
     }
 
@@ -84,6 +87,18 @@ object EpisodeListenerProjection {
     )
 
     /**
+     * The episode's current archive decision across [rows] and the group settings. A row that never
+     * decided (`dismissedAt` 0) is no decision, so it can't bring a cleared archive back nor clear one.
+     */
+    fun dismissDecision(rows: Collection<ListeningHistoryEntity>, state: EpisodeGroupStateEntity?,): Decision = latest(
+        rows = rows.filter { it.dismissedAt != 0L }.map { Decision(it.dismissDecisionAt, it.isDismissed) },
+        group = listOfNotNull(
+            state?.dismissedAt?.takeIf { it > 0L }?.let { Decision(it, true) },
+            state?.dismissClearedAt?.takeIf { it > 0L }?.let { Decision(it, false) },
+        ),
+    )
+
+    /**
      * The time to stamp a new like decision with: [nowMs], or just after the latest recorded like
      * decision when the clock reads earlier, so the new decision always wins the projection.
      */
@@ -93,6 +108,10 @@ object EpisodeListenerProjection {
     /** As [likeTime], for a completion decision. */
     fun completionTime(nowMs: Long, rows: Collection<ListeningHistoryEntity>, state: EpisodeGroupStateEntity?,): Long =
         after(nowMs, listOfNotNull(state?.completedAt, state?.completeClearedAt, rows.maxOfOrNull { it.lastPlayedAt }))
+
+    /** As [likeTime], for an archive decision. */
+    fun dismissTime(nowMs: Long, rows: Collection<ListeningHistoryEntity>, state: EpisodeGroupStateEntity?,): Long =
+        after(nowMs, listOfNotNull(state?.dismissedAt, state?.dismissClearedAt, rows.maxOfOrNull { it.dismissDecisionAt }))
 
     private fun after(nowMs: Long, recorded: List<Long>): Long {
         val latest = recorded.maxOrNull() ?: 0L
@@ -116,6 +135,16 @@ object EpisodeListenerProjection {
             current.copy(completedAt = at, version = current.version + 1L)
         } else {
             current.copy(completeClearedAt = at, version = current.version + 1L)
+        }
+    }
+
+    /** [state] after an archive decision ([dismissed] at [at]); a new row when [state] is null. */
+    fun withDismiss(state: EpisodeGroupStateEntity?, podcastId: String, catalogKey: String, dismissed: Boolean, at: Long,): EpisodeGroupStateEntity {
+        val current = state ?: EpisodeGroupStateEntity(podcastId = podcastId, catalogKey = catalogKey)
+        return if (dismissed) {
+            current.copy(dismissedAt = at, version = current.version + 1L)
+        } else {
+            current.copy(dismissClearedAt = at, version = current.version + 1L)
         }
     }
 

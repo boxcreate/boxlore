@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="now_playing_widget_label">En lecture · Commandes complètes</string>
+    <string name="now_playing_bar_widget_label">En lecture · Compact</string>
+    <string name="playback_controls_widget_label">En lecture · Rond</string>
+    <string name="playback_next_controls_widget_label">En lecture · Rond avec Suivant</string>
+    <string name="now_playing_widget_description">Le lecteur complet : illustration, temps restant et les cinq commandes</string>
+    <string name="now_playing_bar_widget_description">Un lecteur fin sur une ligne avec retour, lecture et avance</string>
+    <string name="playback_controls_widget_description">Un lecteur rond avec retour, lecture et avance</string>
+    <string name="playback_next_controls_widget_description">Un lecteur rond avec avance, lecture et épisode suivant</string>
+    <string name="widget_empty_title">Prêt quand vous l’êtes</string>
+    <string name="widget_empty_subtitle">Appuyez pour ouvrir boxlore</string>
+    <string name="widget_previous">Épisode précédent</string>
+    <string name="widget_next">Épisode suivant</string>
+    <string name="widget_skip_back">Reculer</string>
+    <string name="widget_skip_forward">Avancer</string>
+    <string name="widget_play">Lire</string>
+    <string name="widget_pause">Pause</string>
+    <string name="widget_time_left">%1$s restantes</string>
+    <string name="widget_description_empty">Widget En lecture de boxlore, aucun épisode</string>
+    <string name="widget_description_playing_from">%1$s de %2$s, en lecture</string>
+    <string name="widget_description_paused_from">%1$s de %2$s, en pause</string>
+    <string name="widget_description_playing">%1$s, en lecture</string>
+    <string name="widget_description_paused">%1$s, en pause</string>
+    <plurals name="widget_description_playing_from_left">
+        <item quantity="one">%1$s de %2$s, en lecture, %3$d minute restante</item>
+        <item quantity="other">%1$s de %2$s, en lecture, %3$d minutes restantes</item>
+    </plurals>
+    <plurals name="widget_description_paused_from_left">
+        <item quantity="one">%1$s de %2$s, en pause, %3$d minute restante</item>
+        <item quantity="other">%1$s de %2$s, en pause, %3$d minutes restantes</item>
+    </plurals>
+    <plurals name="widget_description_playing_left">
+        <item quantity="one">%1$s, en lecture, %2$d minute restante</item>
+        <item quantity="other">%1$s, en lecture, %2$d minutes restantes</item>
+    </plurals>
+    <plurals name="widget_description_paused_left">
+        <item quantity="one">%1$s, en pause, %2$d minute restante</item>
+        <item quantity="other">%1$s, en pause, %2$d minutes restantes</item>
+    </plurals>
+    <string name="widget_meta_time_and_show">%1$s · %2$s</string>
+    <string name="widget_preview_episode">Pourquoi la curiosité se cultive</string>
+    <string name="widget_preview_podcast">The Daily Lore</string>
+    <string name="widget_preview_episode_2">Une semaine tranquille à Kyoto</string>
+    <string name="widget_preview_episode_2_show">Field Notes</string>
+    <string name="widget_preview_episode_3">Comment les cartes façonnent la mémoire</string>
+    <string name="widget_preview_episode_3_show">Soft Power</string>
+    <string name="widget_preview_count">12</string>
+    <string name="widget_preview_show_count">24</string>
+    <string name="widget_preview_time_and_show">36 min restantes · The Daily Lore</string>
+    <string name="widget_preview_time_left">36 min restantes</string>
+    <string name="subscriptions_widget_label">Bibliothèque · Vos podcasts</string>
+    <string name="subscriptions_widget_description">Vos podcasts abonnés sous forme de grille d’illustrations</string>
+    <string name="subscriptions_widget_header">Abonnements</string>
+    <string name="subscriptions_widget_empty_title">Aucun abonnement pour l’instant</string>
+    <string name="subscriptions_widget_empty_cta">Ouvrir boxlore</string>
+    <string name="new_episodes_widget_label">Bibliothèque · Nouveaux épisodes</string>
+    <string name="new_episodes_widget_description">Les derniers épisodes de vos podcasts</string>
+    <string name="new_episodes_widget_header">Nouveaux épisodes</string>
+    <string name="new_episodes_widget_empty_title">Aucun nouvel épisode</string>
+    <string name="new_episodes_widget_empty_cta">Ouvrir les abonnements</string>
+    <string name="library_widget_view_all">Tout voir</string>
+</resources>

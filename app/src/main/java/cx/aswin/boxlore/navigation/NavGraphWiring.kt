@@ -35,6 +35,10 @@ internal object NavRoutes {
     const val LIBRARY_DOWNLOADS = "library/downloads"
     const val LIBRARY_SUBSCRIPTIONS = "library/subscriptions"
     const val LIBRARY_DOWNLOADS_SETTINGS = "library/downloads/settings"
+    const val LIBRARY_PLAYLISTS = "library/playlists"
+    const val LIBRARY_PLAYLIST = "library/playlists/{playlistId}"
+
+    fun libraryPlaylist(playlistId: String) = "library/playlists/${android.net.Uri.encode(playlistId)}"
 }
 
 internal fun bottomNavTabRoutePattern(tab: String): String? = when (tab) {
@@ -228,6 +232,7 @@ internal class NavGraphWiring(
     val queueManager get() = container.queueManager
     val smartDownloadManager get() = container.smartDownloadManager
     val folderRepository get() = container.folderRepository
+    val playlistRepository get() = container.playlistRepository
 }
 
 // ---------------------------------------------------------------------------
@@ -479,6 +484,14 @@ internal fun navigateHomeExplore(navController: NavHostController, category: Str
 }
 
 internal fun podcastIdFromInfoUiState(state: cx.aswin.boxlore.feature.info.PodcastInfoUiState, fallback: String,): String = (state as? cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success)?.podcast?.id ?: fallback
+
+/**
+ * Stands in for a show's name in an episode route until the episode page loads the show. It is the
+ * episode page's fixed marker, never translated: the page swaps it for the real name, or shows its
+ * own translated stand-in.
+ */
+internal val NavGraphWiring.podcastTitleFallback: String
+    get() = cx.aswin.boxlore.feature.info.logic.EpisodeShowTitle.PLACEHOLDER
 
 internal fun podcastTitleFromInfoUiState(state: cx.aswin.boxlore.feature.info.PodcastInfoUiState, fallback: String,): String = (state as? cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success)?.podcast?.title ?: fallback
 

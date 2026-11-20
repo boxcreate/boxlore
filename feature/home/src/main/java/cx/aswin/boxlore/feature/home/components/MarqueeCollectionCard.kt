@@ -96,7 +96,7 @@ internal fun MarqueeCollectionCard(
     val item = SmartHeroItem(
         if (resume) HeroType.RESUME else HeroType.JUMP_BACK_IN,
         podcast,
-        if (resume) "Resume" else "NEW EPISODE",
+        if (resume) "RESUME" else "NEW EPISODE", // hero state keys, worded by heroStateLabel
         description = podcast.latestEpisode?.title,
     )
     val nowPlaying = HomePlaybackStateLogic.isHeroItemPlaying(

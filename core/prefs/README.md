@@ -23,15 +23,17 @@ It does not own analytics event storage, playback behaviour, ranking storage, ca
 - `DiscoverySection`, `DiscoverySections`: switchable discovery sections; `collectDiscoverySection` loads a section while it is on and cancels or clears it when off.
 - `HomePinnedShows`: sanitizes Home pins (distinct, at most `MAX`) and returns a `ToggleResult` (`Pinned`, `Unpinned`, `AtCapacity`).
 - `PreferenceIdList`: encodes ordered ID lists in one string, safe for `rss:` URLs containing commas.
+- `HiddenShowsPreferences` (`UserPreferencesRepository.hiddenShows`): the shows hidden everywhere, newest first, at most 500, with `matchIdsStream` for filters; kept on an account switch.
 - `AutoDownloadBackgroundSettings`: installation-local consent for background auto-download checks (off, unmetered-only, charging optional by default).
 - `NpsSurveySchedule`, `NpsSurveyRule`, `NpsSurveyStore`: pure survey timing rules and their backup-excluded store.
 - `AutoBackupStore`, `AutoBackupSettings`, `AutoBackupFrequency`, `AutoBackupProblem`: the automatic backup's folder link, schedule (daily or weekly, keep 3, 5 or 10), last result and problem codes, in a backup-excluded store.
 - `PlaybackSkipBounds`, `EngagementPromptConstants`: shared bounds and thresholds.
+- `AppLanguage`: the App language choices (system default, English, Spanish, Brazilian Portuguese, German, French) with stable BCP 47 `tag`s and each language's `nativeName`; `fromTag` maps stored and system tags. `AppLanguageMatcher.suggest` picks the translation onboarding offers from the phone's language list, then its region. `:app` applies the choice; see [translating](../../docs/i18n/TRANSLATING.md).
 - `BoxcastPrefs.resolveLearnerLogEnabled(isDebugBuild)`: on by default in debug; off in release unless explicitly stored as `true`.
 
 ## Internal structure
 
-`UserPreferencesRepository` delegates to internal helpers (appearance and fast cache, library ordering and RSS repair, engagement and review prompts, announcements, hero, full player, navigation blur, discovery sections). They share one DataStore; the repository API, file names and keys stay where they are.
+`UserPreferencesRepository` delegates to internal helpers (appearance and fast cache, library ordering and RSS repair, engagement and review prompts, announcements, hero, full player, navigation blur, discovery sections, trim silence, show page lists). They share one DataStore; the repository API, file names and keys stay where they are.
 
 ```text
 src/main/java/cx/aswin/boxlore/core/prefs/
@@ -44,8 +46,10 @@ src/main/java/cx/aswin/boxlore/core/prefs/
   HeroCardStyle.kt, HeroCoverShade.kt, HeroTideProgress.kt, HeroCardStylePreferences.kt
   DefaultLandingTabs.kt              # ExploreDefaultTab, SubscriptionsDefaultTab
   SubscriptionsTabStyle.kt, SubscriptionsLayoutPreferences.kt
+  ShowPagePreferences.kt             # Episode titles only
   LibraryPreferences.kt              # sorting, manual order, pins, legacy RSS repair journal
   HomePinnedShows.kt, PreferenceIdList.kt
+  HiddenShowsPreferences.kt          # shows hidden everywhere
   DiscoverySections.kt, DiscoverySectionPreferences.kt, DiscoverySectionLoader.kt
   BriefingEdition.kt
   EngagementPreferences.kt           # tips, review prompt, engagement timing
@@ -54,8 +58,9 @@ src/main/java/cx/aswin/boxlore/core/prefs/
   AnnouncementPreferences.kt
   AutoDownloadBackgroundSettings.kt
   AutoBackupStore.kt
-  PlaybackSkipBounds.kt
+  PlaybackSkipBounds.kt, PlaybackAudioPreferences.kt   # skip bounds; trim silence (`trim_silence_enabled`, off by default)
   BoxcastPrefs.kt
+  AppLanguage.kt                     # AppLanguage, AppLanguageMatcher
   PrefsFileMigrator.kt               # file names, legacy reads, DualReadSharedPreferences
 ```
 
@@ -98,7 +103,7 @@ Contracts:
 - Hero choices are cached and hydrated only once picked, so listeners who never picked follow the current default.
 - `theme_brand` holds a named palette, a `#RRGGBB` Material 3 seed, or `exact:#RRGGBB` (primary used as is).
 - `HeroCardStyle` stores Block as `standard` and Cover as `classic`; Tide, Duotone, Halo and Marquee as `tide`, `duotone`, `halo`, `marquee`. `HeroCoverShade.UNSET` means not yet picked.
-- `subscription_manual_order`, `subscription_folder_manual_order` and `home_pinned_podcast_ids` are `PreferenceIdList` strings in `user_preferences`.
+- `subscription_manual_order`, `subscription_folder_manual_order`, `home_pinned_podcast_ids` and `hidden_podcast_ids` are `PreferenceIdList` strings in `user_preferences`; `hidden_podcast_details` holds each hidden show's title, artwork and alias IDs.
 - `content_languages` holds at most four languages, English first; `content_english_off` applies only while every pick is in `ContentRegions.ENGLISH_OFF_LANGUAGES` ([`:core:model`](../model/README.md)).
 - The Brief discovery section reuses `briefing_dismissed_forever` inverted; turning it on clears `briefing_dismissed_date`. Other sections use `discovery_picked_for_you`, `discovery_because_you_like`, `discovery_curated_rows`, `discovery_more_like_this`.
 - `legacy_rss_repair_version`, `legacy_rss_repair_pending_old_id` and `legacy_rss_repair_pending_new_id` are a crash-recovery journal; finishing it rewrites manual order, pins, `overridden_rec_podcast_id` and `last_seen_episode_id_*` in one transaction.
@@ -108,7 +113,8 @@ Contracts:
 - `sync_device_id` is backed up with `boxlore_prefs`; the listening device ID is not, so two phones restored from one backup stay distinct. `getListeningLegacyOrigin()` is `legacy-` plus the sync device ID.
 - Sync cursors in `boxlore_prefs`: `sync_last_timestamp`, `sync_last_user_id`, `sync_metadata_version`, `sync_listening_pulled_until`, `sync_listening_dates_sent_after`, `sync_listening_dates_sent`, `sync_listening_totals_sent`, `sync_listening_release_known_sent`.
 - Other `boxlore_prefs` keys include `onboarding_completed`, `user_genres`, `cached_byl_*`, `pending_auth_email`, `feedback_draft_*`, `featured_video_showcase_dismissed`, `tablet_ui_alpha_notice_acknowledged`, `has_requested_notification_permission`, `learner_log_enabled`.
-- `AutoBackupStore.setFolder` turns automatic backup on and forgets another folder's last backup; `turnOff` forgets the folder, whose grant the app releases. Successes and problems are recorded only for the folder they happened in. `settingsWhenReadable` ends on a read error instead of reading as off, so the schedule stays.
+- `AutoBackupStore.setFolder` turns automatic backup on and forgets another folder's last backup; `turnOff` forgets the folder, whose grant the app releases. Successes and problems are recorded only for the folder they happened in. `settingsWhenReadable` emits nothing while the file can't be read, instead of reading as off, and reads it again after a growing pause, so the schedule stays and later changes still reach it.
+- `app_language` in `boxlore_prefs` holds the picked `AppLanguage.tag` (empty for the phone's language); absent means never picked. Android 12 applies the language from it.
 - `AutoDownloadBackgroundSettings` is enabled only by its explicit setter; auto-download preferences and per-show flags never grant consent.
 
 ## Testing notes
@@ -117,7 +123,7 @@ Tests live in `core/prefs/src/test` (JUnit 5, Robolectric for DataStore and Shar
 
 | Area | Test classes |
 | :--- | :--- |
-| Repository, presets, full player | `UserPreferencesRepositoryTest`, `ThemeSelectionPreferencesTest` |
+| Repository, presets, full player, trim silence | `UserPreferencesRepositoryTest`, `ThemeSelectionPreferencesTest`, `TrimSilencePreferenceTest` |
 | Backup restore hydration | `UserPreferencesRestoreHydrationTest` |
 | Appearance values | `HeroCardStylePreferencesTest`, `NavigationBlurPreferencesTest`, `NavigationStylePreferenceTest`, `FontRoundnessAxisTest`, `WidgetAppearanceTest` |
 | Landing and tabs | `OpenAppToPreferenceTest`, `DefaultLandingTabsTest`, `SubscriptionsTabStylePreferenceTest`, `SubscriptionsGridViewPreferenceTest` |
@@ -125,6 +131,7 @@ Tests live in `core/prefs/src/test` (JUnit 5, Robolectric for DataStore and Shar
 | Content and discovery | `ContentLanguagePreferencesTest`, `BriefingEditionTest`, `DiscoverySectionPreferencesTest`, `DiscoverySectionLoaderTest` |
 | Prompts and survey | `ReviewPromptPreferencesTest`, `NpsSurveyScheduleTest`, `NpsSurveyStoreTest`, `AnnouncementPreferencesTest` |
 | Files and facade | `BoxcastPrefsTest`, `PrefsFileMigratorTest`, `AutoDownloadBackgroundSettingsTest`, `AutoBackupStoreTest` |
+| App language and its matching table | `AppLanguageTest` |
 
 ```bash
 ./gradlew :core:prefs:testDebugUnitTest

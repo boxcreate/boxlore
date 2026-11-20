@@ -31,10 +31,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
 import cx.aswin.boxlore.feature.info.logic.toolbarWarningActionText
 import cx.aswin.boxlore.feature.info.logic.toolbarWarningMessage
@@ -79,7 +81,7 @@ internal fun ToolbarWarningBanner(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = toolbarWarningMessage(warning),
+                    text = toolbarWarningMessage(warning)?.let { stringResource(it) }.orEmpty(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = contentColor,
                 )
@@ -115,7 +117,7 @@ private fun ToolbarWarningHeader(
                 modifier = Modifier.size(22.dp),
             )
             Text(
-                text = toolbarWarningTitle(warning),
+                text = stringResource(toolbarWarningTitle(warning)),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = GoogleSansWeight.bold,
                 color = contentColor,
@@ -127,7 +129,7 @@ private fun ToolbarWarningHeader(
         ) {
             Icon(
                 imageVector = Icons.Rounded.Close,
-                contentDescription = "Dismiss",
+                contentDescription = stringResource(R.string.podcast_info_warning_dismiss),
                 modifier = Modifier.size(18.dp),
                 tint = contentColor,
             )
@@ -138,7 +140,7 @@ private fun ToolbarWarningHeader(
 @Composable
 private fun ToolbarWarningAction(warning: ToolbarWarning, onAction: () -> Unit, accentColor: Color) {
     val isNotice = warning == ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY
-    val actionText = toolbarWarningActionText(warning)
+    val actionText = toolbarWarningActionText(warning)?.let { stringResource(it) }.orEmpty()
 
     if (actionText.isNotEmpty()) {
         Spacer(modifier = Modifier.height(12.dp))

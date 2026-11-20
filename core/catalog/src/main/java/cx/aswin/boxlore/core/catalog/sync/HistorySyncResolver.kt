@@ -4,13 +4,15 @@ import cx.aswin.boxlore.core.catalog.ports.ActivePlaybackSyncPort
 import cx.aswin.boxlore.core.database.ListeningDates
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.dismissDecisionAt
 import cx.aswin.boxlore.core.model.persistableArtworkUrl
 import cx.aswin.boxlore.core.network.model.ListeningHistorySyncDto
+import kotlin.math.abs
 
 /**
  * LWW (Last-Write-Wins) conflict resolver for listening history.
- * Guarantees active playing episode protection, progress LWW, independent like status LWW,
- * and preservation of local cached rich metadata.
+ * Guarantees active playing episode protection, progress LWW, independent like and archive LWW
+ * (each on its own decision time), and preservation of local cached rich metadata.
  *
  * @param episodeIds every stored ID of an episode (`EpisodeListenerStore.memberIds`); just the ID
  *   when it has no other. The playing episode is protected under each of them, because its
@@ -65,6 +67,7 @@ class HistorySyncResolver(
             lastPlayedAt = remote.lastPlayedAt,
             isDirty = false,
             syncedAt = syncedAt,
+            dismissedAt = remote.dismissedAt,
         ).withListeningDatesOf(remote)
         listeningHistoryDao.upsert(newEntity)
     }
@@ -81,6 +84,9 @@ class HistorySyncResolver(
         } else {
             local.isLiked to local.likedAt
         }
+        // The archive decision is its own last write: the newer time wins, whichever way it went. A
+        // server that dropped the field sends 0, which never wins over a decision made here.
+        val finalDismissedAt = if (abs(remote.dismissedAt) > local.dismissDecisionAt) remote.dismissedAt else local.dismissedAt
 
         if (isActive) {
             val updated = local.copy(
@@ -91,6 +97,7 @@ class HistorySyncResolver(
                 episodeAudioUrl = meta.episodeAudioUrl,
                 isLiked = finalIsLiked,
                 likedAt = finalLikedAt,
+                dismissedAt = finalDismissedAt,
                 syncedAt = syncedAt,
             )
             listeningHistoryDao.upsert(updated.withListeningDatesOf(remote))
@@ -110,7 +117,8 @@ class HistorySyncResolver(
                 lastPlayedAt = remote.lastPlayedAt,
                 isLiked = finalIsLiked,
                 likedAt = finalLikedAt,
-                isDirty = local.isDirty && local.likedAt > remote.likedAt,
+                dismissedAt = finalDismissedAt,
+                isDirty = local.isDirty && (local.likedAt > remote.likedAt || local.dismissDecisionAt > abs(remote.dismissedAt)),
                 syncedAt = syncedAt,
             )
         } else {
@@ -122,6 +130,7 @@ class HistorySyncResolver(
                 episodeAudioUrl = meta.episodeAudioUrl,
                 isLiked = finalIsLiked,
                 likedAt = finalLikedAt,
+                dismissedAt = finalDismissedAt,
                 syncedAt = syncedAt,
             )
         }

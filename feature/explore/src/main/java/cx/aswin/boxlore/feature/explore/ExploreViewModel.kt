@@ -18,6 +18,7 @@ import cx.aswin.boxlore.core.ranking.RankingSurface
 import cx.aswin.boxlore.feature.explore.logic.ExploreBrowseLogic
 import cx.aswin.boxlore.feature.explore.logic.ExploreForYouRefreshKey
 import cx.aswin.boxlore.feature.explore.logic.ExploreForYouRefresher
+import cx.aswin.boxlore.feature.explore.logic.ExploreHiddenShowsLogic
 import cx.aswin.boxlore.feature.explore.logic.ExploreLoadFailures
 import cx.aswin.boxlore.feature.explore.logic.ExploreSharedRecommendationsLogic
 import cx.aswin.boxlore.feature.explore.logic.ExploreTopChartPaging
@@ -354,6 +355,9 @@ class ExploreViewModel(
                     topChartFailed = loading.failures.topChart,
                     nextTopChartPageFailed = loading.failures.nextTopChartPage,
                 )
+            }.combine(userPrefs.hiddenShows.matchIdsStream) { state, hiddenIds ->
+                // On screen, so a show hidden elsewhere leaves at once and chart pages keep their size.
+                ExploreHiddenShowsLogic.withoutHiddenShows(state, hiddenIds)
             }.collect { state ->
                 _uiState.value = state
             }

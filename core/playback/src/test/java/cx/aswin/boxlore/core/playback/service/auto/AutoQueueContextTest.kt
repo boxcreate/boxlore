@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.core.playback.service.auto
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.playback.PlaybackQueueContext
 import org.junit.Assert.assertEquals
@@ -14,7 +16,7 @@ import org.robolectric.annotation.Config
 class AutoQueueContextTest {
     @Test fun restoredQueueCarriesContextThroughAutoMediaFactory() {
         val episode = PlaybackQueueContext.episodes(listOf(Episode("rss:1", "Episode", "", "https://example.com/1.mp3"))).single()
-        val item = AutoMediaItemFactory.fromEpisode(episode, AutoBrowseContract.SOURCE_QUEUE, null, row = AutoEpisodeRow(mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX))
+        val item = AutoMediaItemFactory.fromEpisode(ApplicationProvider.getApplicationContext<Context>().resources, episode, AutoBrowseContract.SOURCE_QUEUE, null, row = AutoEpisodeRow(mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX))
         assertEquals("queue:rss:1", item.mediaId)
         assertTrue(PlaybackQueueContext.isContextItem(item))
     }

@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The show page: its menus, chips, sheets, dialogs and messages. -->
+    <!-- Show-page chip: the show has not released an episode for over a year. Short chip text. -->
+    <string name="podcast_info_frequency_inactive">Inactive / Ended</string>
+    <!-- Show-page chip: no episode for over six months. -->
+    <string name="podcast_info_frequency_hiatus">On Hiatus</string>
+    <!-- Show-page chip: the show is taking a break between seasons. -->
+    <string name="podcast_info_frequency_between_seasons">Between Seasons</string>
+    <!-- Show-page chip: how often the show releases episodes. Short chip text. -->
+    <string name="podcast_info_frequency_daily">Releases Daily</string>
+    <string name="podcast_info_frequency_multi_weekly">Releases Multi-Weekly</string>
+    <string name="podcast_info_frequency_weekly">Releases Weekly</string>
+    <string name="podcast_info_frequency_biweekly">Releases Every 2 Weeks</string>
+    <string name="podcast_info_frequency_monthly">Releases Monthly</string>
+    <string name="podcast_info_frequency_occasionally">Releases Occasionally</string>
+    <!-- Show-page chip: the show releases every week, usually on this weekday. -->
+    <string name="podcast_info_frequency_weekly_sunday">Weekly on Sundays</string>
+    <string name="podcast_info_frequency_weekly_monday">Weekly on Mondays</string>
+    <string name="podcast_info_frequency_weekly_tuesday">Weekly on Tuesdays</string>
+    <string name="podcast_info_frequency_weekly_wednesday">Weekly on Wednesdays</string>
+    <string name="podcast_info_frequency_weekly_thursday">Weekly on Thursdays</string>
+    <string name="podcast_info_frequency_weekly_friday">Weekly on Fridays</string>
+    <string name="podcast_info_frequency_weekly_saturday">Weekly on Saturdays</string>
+    <!-- Show-page chip: the show releases every two weeks, usually on this weekday. -->
+    <string name="podcast_info_frequency_biweekly_sunday">Every 2 Weeks on Sundays</string>
+    <string name="podcast_info_frequency_biweekly_monday">Every 2 Weeks on Mondays</string>
+    <string name="podcast_info_frequency_biweekly_tuesday">Every 2 Weeks on Tuesdays</string>
+    <string name="podcast_info_frequency_biweekly_wednesday">Every 2 Weeks on Wednesdays</string>
+    <string name="podcast_info_frequency_biweekly_thursday">Every 2 Weeks on Thursdays</string>
+    <string name="podcast_info_frequency_biweekly_friday">Every 2 Weeks on Fridays</string>
+    <string name="podcast_info_frequency_biweekly_saturday">Every 2 Weeks on Saturdays</string>
+    <!-- Show-page chip for a person: their name, then their role from the feed (Host, Guest…). -->
+    <string name="podcast_info_person_role">%1$s (%2$s)</string>
+    <!-- Chip on a show added from an RSS feed link. -->
+    <string name="podcast_info_rss_chip">RSS</string>
+    <!-- Show-page chip: the feed's medium (what kind of feed it is). -->
+    <string name="podcast_info_medium_music">Music</string>
+    <string name="podcast_info_medium_video">Video</string>
+    <string name="podcast_info_medium_film">Film</string>
+    <string name="podcast_info_medium_audiobook">Audiobook</string>
+    <string name="podcast_info_medium_newsletter">Newsletter</string>
+    <string name="podcast_info_medium_blog">Blog</string>
+    <!-- Screen-reader label for the lock icon on a show whose feed is locked. -->
+    <string name="podcast_info_locked_icon">Locked</string>
+    <string name="podcast_info_locked_label">Podcast feed is locked</string>
+    <string name="podcast_info_locked_info_icon">Information</string>
+    <string name="podcast_info_locked_title">Podcast Locked</string>
+    <!-- Podcasting 2.0 is the name of an open podcast standard; keep it in English. -->
+    <string name="podcast_info_locked_body">This podcast\'s feed has been locked by its publisher. According to the Podcasting 2.0 specification, a locked feed prevents other directory platforms or hosting services from importing or migrating this show\'s feed without the owner\'s explicit authorization.</string>
+    <string name="podcast_info_locked_ok">Got it</string>
+    <!-- Heading over the shows the show's creator recommends (its podroll). -->
+    <string name="podcast_info_podroll_title">Creator Recommends</string>
+    <!-- Screen-reader label for the show page's share button. -->
+    <string name="podcast_info_share">Share Podcast</string>
+    <!-- Screen-reader label for the show page's overflow menu button. -->
+    <string name="podcast_info_more_options">More Options</string>
+    <!-- Show page overflow menu items. -->
+    <string name="podcast_info_mark_all_played">Mark all as played</string>
+    <string name="podcast_info_mark_all_unplayed">Mark all as unplayed</string>
+    <string name="podcast_info_hide_completed">Hide completed episodes</string>
+    <string name="podcast_info_show_full_episodes">Show full episodes</string>
+    <string name="podcast_info_show_titles_only">Show titles only</string>
+    <!-- Menu item and sheet title: this show's own speed, trim silence and skips. -->
+    <string name="podcast_info_playback_for_show">Playback for this show</string>
+    <string name="podcast_info_change_genre">Change tag / genre</string>
+    <string name="podcast_info_pin_home">Pin to Home screen</string>
+    <string name="podcast_info_unpin_home">Unpin from Home screen</string>
+    <string name="podcast_info_mark_all_played_title">Mark all as played?</string>
+    <string name="podcast_info_mark_all_unplayed_title">Mark all as unplayed?</string>
+    <!-- %1$s is the show's name. -->
+    <string name="podcast_info_mark_all_played_body">This will mark all episodes of \"%1$s\" as played.</string>
+    <!-- %1$s is the show's name. -->
+    <string name="podcast_info_mark_all_unplayed_body">This will reset all episodes of \"%1$s\" to unplayed.</string>
+    <string name="podcast_info_confirm">Confirm</string>
+    <!-- Part of the app-defaults line in Playback for this show: how much of each episode's beginning the app skips. %1$s is "Off" or a length like "30s". -->
+    <string name="podcast_playback_summary_beginning">Beginning %1$s</string>
+    <!-- As above, for the ending. -->
+    <string name="podcast_playback_summary_ending">Ending %1$s</string>
+    <!-- Part of the app-defaults line: the app trims silence. -->
+    <string name="podcast_playback_summary_trim_silence">Trim silence on</string>
+    <!-- Speed chip that follows the app's speed; %1$s is the speed, like "1.2×". -->
+    <string name="podcast_playback_app_speed">App speed (%1$s)</string>
+    <!-- Trim silence chip that follows the app's setting, which is on. -->
+    <string name="podcast_playback_app_setting_on">App setting (on)</string>
+    <string name="podcast_playback_app_setting_off">App setting (off)</string>
+    <!-- Shown beside a playback setting that follows the app's value. -->
+    <string name="podcast_playback_app">App</string>
+    <string name="podcast_playback_speed">Speed</string>
+    <string name="podcast_playback_trim_silence">Trim silence</string>
+    <string name="podcast_playback_on">On</string>
+    <string name="podcast_playback_off">Off</string>
+    <string name="podcast_playback_trim_silence_hint">Skip long pauses in this show’s episodes</string>
+    <string name="podcast_playback_use_app_defaults">Use app defaults</string>
+    <string name="podcast_playback_subscribe_hint">Subscribe to customize playback for this show</string>
+    <string name="podcast_playback_skip_beginning">Skip beginning</string>
+    <string name="podcast_playback_skip_ending">Skip ending</string>
+    <!-- "Settings → Playback" names the app's Settings page and its Playback section. -->
+    <string name="podcast_playback_seek_note">Seek-button increments are app-wide and can be changed in Settings → Playback.</string>
+    <!-- Screen-reader label for a skip slider: its title, then its value ("Skip beginning, 30 seconds"). -->
+    <string name="podcast_playback_slider_description">%1$s, %2$s</string>
+    <!-- Value beside a skip slider. -->
+    <plurals name="podcast_playback_seconds">
+        <item quantity="one">%1$d second</item>
+        <item quantity="other">%1$d seconds</item>
+    </plurals>
+    <!-- A skip length in the app-defaults line, abbreviated ("30s"). -->
+    <plurals name="podcast_playback_seconds_short">
+        <item quantity="one">%1$ds</item>
+        <item quantity="other">%1$ds</item>
+    </plurals>
+    <!-- Tag & Icon sheet: the preview's tag when the show has no genre and none is typed. -->
+    <string name="genre_edit_fallback_genre">Podcast</string>
+    <string name="genre_edit_close">Close</string>
+    <!-- Title of the sheet that changes a show's genre tag and its icon. -->
+    <string name="genre_edit_title">Tag &amp; Icon</string>
+    <string name="genre_edit_reset">Reset</string>
+    <string name="genre_edit_save">Save</string>
+    <string name="genre_edit_live_preview">Live preview</string>
+    <!-- The genre the show has in the catalog; %1$s is that genre. -->
+    <string name="genre_edit_catalog">Catalog: %1$s</string>
+    <string name="genre_edit_selected_icon">Selected icon</string>
+    <string name="genre_edit_clear_input">Clear tag input</string>
+    <string name="genre_edit_quick_suggestions">Quick suggestions</string>
+    <!-- Heading over tags that match what was typed; %1$d is how many. -->
+    <plurals name="genre_edit_matching_tags">
+        <item quantity="one">Matching tags (%1$d)</item>
+        <item quantity="other">Matching tags (%1$d)</item>
+    </plurals>
+    <string name="genre_edit_suggested_icons">Suggested icons</string>
+    <string name="genre_edit_all_icons">All icons</string>
+    <string name="genre_edit_clear_icon">Clear icon</string>
+    <!-- Banner on the show page after turning on auto-download while notifications are off. -->
+    <string name="podcast_info_warning_auto_download_title">Auto-download is on</string>
+    <!-- Banner title: boxlore's notifications are off in system settings. -->
+    <string name="podcast_info_warning_blocked_title">Notifications Disabled</string>
+    <string name="podcast_info_warning_notice_title">Notice</string>
+    <string name="podcast_info_warning_auto_download_message">New episodes are picked up when you open and refresh boxlore. Turn on show notifications to start downloads while boxlore is closed.</string>
+    <string name="podcast_info_warning_blocked_message">Notification permissions are disabled in system settings. Please allow notifications and try again. We promise we will never spam.</string>
+    <string name="podcast_info_warning_auto_download_action">Turn on notifications</string>
+    <string name="podcast_info_warning_blocked_action">Turn On</string>
+    <string name="podcast_info_warning_dismiss">Dismiss</string>
+    <!-- Header of the card that groups a show's trailers. -->
+    <string name="podcast_info_trailers_title">Promotional Trailers</string>
+    <!-- Under the trailers card's title while selecting: %1$d selected out of %2$d trailers. The plural follows %2$d. -->
+    <plurals name="podcast_info_trailers_selected">
+        <item quantity="one">%1$d of %2$d selected</item>
+        <item quantity="other">%1$d of %2$d selected</item>
+    </plurals>
+    <!-- Under the trailers card's title: how many trailers the show has. -->
+    <plurals name="podcast_info_trailers_count">
+        <item quantity="one">%1$d trailer</item>
+        <item quantity="other">%1$d trailers</item>
+    </plurals>
+    <string name="podcast_info_trailers_collapse">Collapse</string>
+    <string name="podcast_info_trailers_expand">Expand</string>
+    <string name="podcast_info_mark_all_failed">Couldn’t load every episode, so none were marked. Check your connection and try again.</string>
+    <string name="podcast_info_mark_all_too_long">This show has too many episodes to mark them all, so none were marked.</string>
+    <string name="podcast_info_queue_full">Your queue is full. Remove an episode to add more.</string>
+    <!-- Joins two whole sentences after Add to queue filled the queue: "Added 42 episodes." and "Your queue is full, so 178 weren’t added." Change only if your language orders sentences differently. -->
+    <string name="podcast_info_queue_partly_added">%1$s %2$s</string>
+    <!-- First sentence after Add to queue filled the queue: how many episodes were added. -->
+    <plurals name="podcast_info_queue_added">
+        <item quantity="one">Added %1$d episode.</item>
+        <item quantity="other">Added %1$d episodes.</item>
+    </plurals>
+    <!-- Second sentence: how many selected episodes didn't fit. -->
+    <plurals name="podcast_info_queue_not_added">
+        <item quantity="one">Your queue is full, so %1$d wasn’t added.</item>
+        <item quantity="other">Your queue is full, so %1$d weren’t added.</item>
+    </plurals>
+    <!-- Snackbar after Find missing episodes added episodes. -->
+    <plurals name="podcast_info_supplement_added">
+        <item quantity="one">Added %1$d episode</item>
+        <item quantity="other">Added %1$d episodes</item>
+    </plurals>
+    <string name="podcast_info_supplement_updated">Episode list updated</string>
+    <!-- Snackbar after pull to refresh read new episodes from the show's feed. -->
+    <plurals name="podcast_info_feed_added">
+        <item quantity="one">Added %1$d episode from the feed</item>
+        <item quantity="other">Added %1$d episodes from the feed</item>
+    </plurals>
+    <string name="podcast_info_feed_updated">Episode list updated from the feed</string>
+    <string name="podcast_info_feed_check_failed">Couldn\'t update episodes from the feed</string>
+    <!-- Snackbar when Pin to Home screen is tapped and Home already has the most pinned shows. %1$d is that number (more than one). -->
+    <string name="podcast_info_pin_capacity">You can pin up to %1$d shows on Home</string>
+    <!-- The jump pill on a show page: shown before the title of the episode you're partway through, which follows in its own style. Keep the trailing space. -->
+    <string name="podcast_info_jump_resume">"Resume: "</string>
+    <!-- As above, before the title of the episode the list will scroll to. -->
+    <string name="podcast_info_jump_to">"Jump to: "</string>
+</resources>

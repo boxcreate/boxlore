@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared suggestions screen, reached from Echo, genres, search and library import. Nothing starts selected except shows the listener picked themselves. -->
+    <string name="suggestions_title">Podcasts para você</string>
+    <string name="suggestions_echo_found">Olha o que encontrei. Toque para adicionar, segure para ver detalhes.</string>
+    <string name="suggestions_echo_finding">Procurando podcasts que combinam com o que você me contou.</string>
+    <!-- Search flow: the shows picked on the search screen are already in the library. -->
+    <plurals name="suggestions_search_seeds">
+        <item quantity="one">%d escolha já está na sua biblioteca</item>
+        <item quantity="other">Suas %d escolhas já estão na sua biblioteca</item>
+    </plurals>
+    <!-- Library import flow. -->
+    <plurals name="suggestions_library_seeds">
+        <item quantity="one">%d podcast importado já está na sua biblioteca</item>
+        <item quantity="other">%d podcasts importados já estão na sua biblioteca</item>
+    </plurals>
+    <string name="suggestions_more_like">Toque para adicionar mais, segure para ver detalhes.</string>
+    <!-- Echo flow: shows picked during the chat (a positive taste-test answer or a search). -->
+    <string name="suggestions_picks_lane">Suas escolhas</string>
+    <string name="suggestions_add_all">Adicionar todos</string>
+    <string name="suggestions_remove_all">Remover todos</string>
+    <string name="suggestions_start_without">Começar sem adicionar</string>
+    <plurals name="suggestions_add_shows">
+        <item quantity="one">Adicionar %d podcast</item>
+        <item quantity="other">Adicionar %d podcasts</item>
+    </plurals>
+    <string name="suggestions_adding">Adicionando seus podcasts…</string>
+    <!-- Shown in the main button while suggestions load, one at a time. -->
+    <string-array name="suggestions_finding_words">
+        <item>Procurando podcasts…</item>
+        <item>Organizando em fileiras…</item>
+        <item>Escolhendo os melhores…</item>
+    </string-array>
+    <string name="suggestions_loading_genres">Combinando podcasts com seus gêneros.</string>
+    <string name="suggestions_loading_search">Procurando mais parecidos com suas escolhas.</string>
+    <string name="suggestions_loading_library">Procurando podcasts parecidos com os da sua biblioteca.</string>
+    <string name="suggestions_error_title">Não foi possível carregar sugestões</string>
+    <string name="suggestions_error_body">Verifique sua conexão e tente de novo.</string>
+    <string name="suggestions_empty_title">Sem sugestões desta vez</string>
+    <string name="suggestions_empty_body">Tente de novo ou comece sem elas.</string>
+    <string name="suggestions_try_again">Tentar de novo</string>
+    <!-- Search and import stop here before any request: suggestions only when asked for. -->
+    <string name="similar_choice_title">Quer podcasts parecidos?</string>
+    <string name="similar_choice_body">O boxlore encontra podcasts parecidos em poucos segundos, ou você pode começar a ouvir agora.</string>
+    <string name="similar_choice_see">Ver podcasts parecidos</string>
+    <string name="similar_choice_home">Ir para o Início</string>
+    <!-- While search or import suggestions load. The picked shows stay followed. -->
+    <string name="similar_skip_home">Pular para o Início</string>
+    <string name="suggestions_details">Detalhes do podcast</string>
+    <string name="suggestions_back">Voltar</string>
+    <!-- Brief note on the show deck when a positive answer picks the show. %s is the show title. -->
+    <string name="echo_deck_added">%s adicionado às suas escolhas</string>
+    <!-- Lane titles the app writes. Lanes from the server keep the server's title. -->
+    <string name="suggestions_lane_for_you">Para você</string>
+    <string name="suggestions_lane_popular_now">Populares agora</string>
+    <!-- Fallback lanes when suggestions fall back to the charts. -->
+    <string name="suggestions_lane_trending_hits">Sucessos em alta</string>
+    <string name="suggestions_lane_trending_genres">Em alta nos seus gêneros</string>
+    <!-- One line about what a lane is for. -->
+    <string name="suggestions_lane_purpose_matched">Podcasts que combinam com este gosto.</string>
+    <string name="suggestions_lane_purpose_themed">Uma seleção temática com base no que você nos contou.</string>
+    <string name="suggestions_lane_purpose_wind_down">Podcasts mais tranquilos para relaxar.</string>
+    <string name="suggestions_lane_purpose_news">Fique por dentro sem o ruído.</string>
+    <string name="suggestions_lane_purpose_deep">Episódios mais longos que vão mais fundo.</string>
+    <string name="suggestions_lane_purpose_lighter">Podcasts mais leves para levantar o astral.</string>
+    <string name="suggestions_lane_purpose_tension">Histórias com tensão e um desfecho que compensa.</string>
+    <string name="suggestions_lane_purpose_similar">Mais parecidos com os podcasts que você já escolheu.</string>
+    <string name="suggestions_lane_purpose_starter">Um mix inicial com base nas suas preferências.</string>
+    <string name="suggestions_lane_purpose_charts_region">Podcasts nas paradas da sua região agora.</string>
+    <!-- %1$s is a genre name, for example "Comedy". -->
+    <string name="suggestions_lane_purpose_charts_one">Em alta em %1$s no seu país.</string>
+    <!-- %1$s and %2$s are genre names. -->
+    <string name="suggestions_lane_purpose_charts_two">Em alta em %1$s · %2$s no seu país.</string>
+    <!-- Show details sheet. -->
+    <string name="suggestions_details_close">Fechar</string>
+    <string name="suggestions_details_add">Adicionar podcast</string>
+    <string name="suggestions_details_remove">Remover</string>
+    <!-- When a show has no description. %1$s is the show's name. -->
+    <string name="suggestions_details_fallback">Explore episódios e temas de %1$s.</string>
+    <!-- When a show has no description. %1$s is the show's name, %2$s its host or publisher. -->
+    <string name="suggestions_details_fallback_with_host">Explore episódios e temas de %1$s, por %2$s.</string>
+</resources>

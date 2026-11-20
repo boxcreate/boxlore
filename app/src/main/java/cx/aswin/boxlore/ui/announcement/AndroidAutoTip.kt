@@ -172,8 +172,8 @@ internal class AndroidAutoTip(
                     .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                     .build()
             manager.createNotificationChannel(
-                NotificationChannel(CHANNEL_ID, "Announcements", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                    description = "boxlore news and updates"
+                NotificationChannel(CHANNEL_ID, context.getString(R.string.app_channel_announcements), NotificationManager.IMPORTANCE_DEFAULT).apply {
+                    description = context.getString(R.string.app_channel_announcements_description)
                     setSound(sound, attributes)
                 },
             )

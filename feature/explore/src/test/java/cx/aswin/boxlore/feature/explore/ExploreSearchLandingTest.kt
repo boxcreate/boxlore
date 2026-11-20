@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.explore
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
@@ -33,6 +34,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.feature.explore.components.ExploreBrowseChromeState
 import cx.aswin.boxlore.feature.explore.components.ExploreEpisodesSearchIdleState
@@ -164,7 +166,7 @@ class ExploreSearchLandingTest {
             assertTrue((bounds.bottom - bounds.top).value >= 64f)
             assertTrue(bounds.left.value >= 0f && bounds.right.value <= 360f)
             previousBottom = bounds.bottom.value
-            composeRule.onNodeWithText(example.label).performClick()
+            composeRule.onNodeWithText(ApplicationProvider.getApplicationContext<Context>().getString(example.label)).performClick()
         }
         assertEquals(ConceptSearchIdleLogic.examples.map { it.query }, queries)
     }

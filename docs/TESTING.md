@@ -40,6 +40,7 @@ Run commands from the repository root. Start with the affected behavior and broa
 | Android logic or state | Add or extend JVM regression coverage; run `./gradlew :<module>:testDebugUnitTest` for affected modules (for example, `:core:playback:testDebugUnitTest`), then `./gradlew testDebugUnitTest --continue` for shared behavior |
 | Module boundaries, dependencies, or composition | Run both `scripts/ci/check-feature-no-boxlore-database.sh` and `scripts/ci/check-feature-no-posthog.sh` with Bash; run `./gradlew :core:testing:testDebugUnitTest :app:dependencyGuard :core:catalog:dependencyGuard :core:playback:dependencyGuard` |
 | Kotlin, Android resources, or manifests | Run `./gradlew detekt ktlintCheck lintDebug`; include affected JVM tests for changed behavior |
+| Listener text, string resources or translations | Run `./gradlew :core:testing:testDebugUnitTest` (translation, brand and hard-coded text guards); rules and the baseline in [`docs/i18n/TRANSLATING.md`](i18n/TRANSLATING.md) |
 | App UI or runtime behavior | Build/install with `./gradlew installDebug` on an available device; verify the affected screen and action; use optional local Roborazzi when appropriate |
 | Catalog sync logic | Run `npm ci --prefix scripts` once, then `npm run test:sync --prefix scripts`; deployment is a separate operation requiring the internal runbook |
 | New-episode notification checker | Run `npm ci --prefix scripts` once, then `npm run test:check-new-episodes --prefix scripts` |

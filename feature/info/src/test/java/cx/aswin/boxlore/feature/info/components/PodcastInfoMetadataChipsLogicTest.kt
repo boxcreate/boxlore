@@ -2,7 +2,9 @@ package cx.aswin.boxlore.feature.info.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PauseCircle
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.testing.TestFixtures
+import cx.aswin.boxlore.feature.info.R
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -28,7 +30,7 @@ class PodcastInfoMetadataChipsLogicTest {
     fun `dormancy status returns inactive after one year`() {
         val status = dormancyStatus(daysSinceLatest = 400)
 
-        assertEquals("Inactive / Ended", status?.first)
+        assertEquals(UiText.res(R.string.podcast_info_frequency_inactive), status?.first)
         assertEquals(Icons.Rounded.PauseCircle, status?.second)
     }
 
@@ -36,7 +38,7 @@ class PodcastInfoMetadataChipsLogicTest {
     fun `dormancy status returns hiatus between six months and one year`() {
         val status = dormancyStatus(daysSinceLatest = 200)
 
-        assertEquals("On Hiatus", status?.first)
+        assertEquals(UiText.res(R.string.podcast_info_frequency_hiatus), status?.first)
     }
 
     @Test

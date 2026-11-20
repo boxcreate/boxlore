@@ -48,7 +48,7 @@ import cx.aswin.boxlore.wear.ui.components.Artwork
 import cx.aswin.boxlore.wear.ui.components.EmptyMessage
 import cx.aswin.boxlore.wear.ui.components.RowDetail
 import cx.aswin.boxlore.wear.ui.components.WatchRow
-import java.time.ZoneId
+import java.util.TimeZone
 
 @Composable
 internal fun ShowScreen(
@@ -206,7 +206,7 @@ private fun EpisodeState(episode: WatchEpisode) {
 @Composable
 private fun withDate(state: String, episode: WatchEpisode): String {
     val released = episode.releasedAtMillis ?: return state
-    val date = WatchFormat.shortDate(released, ZoneId.systemDefault(), LocalConfiguration.current.locales[0])
+    val date = WatchFormat.shortDate(released, TimeZone.getDefault(), LocalConfiguration.current.locales[0])
     return stringResource(R.string.wear_date_and_minutes, state, date)
 }
 
@@ -216,6 +216,6 @@ private fun episodeLine(episode: WatchEpisode): String {
     val minutes = stringResource(R.string.wear_minutes, episode.durationMinutes)
     val released = episode.releasedAtMillis ?: return minutes
     val locale = LocalConfiguration.current.locales[0]
-    val date = WatchFormat.shortDate(released, ZoneId.systemDefault(), locale)
+    val date = WatchFormat.shortDate(released, TimeZone.getDefault(), locale)
     return stringResource(R.string.wear_date_and_minutes, date, minutes)
 }

@@ -1,33 +1,35 @@
 package cx.aswin.boxlore.feature.library.subscriptions
 
+import androidx.annotation.StringRes
 import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.model.isLatestEpisodeNew
+import cx.aswin.boxlore.feature.library.R
 import cx.aswin.boxlore.feature.library.SubscriptionSort
 
 /**
  * Inter-folder sorting options (how folders are arranged relative to each other at the top).
  */
-enum class FolderInterSort(val label: String) {
-    Inherit("Same as shows"),
-    SmartRank("Smart"),
-    RecentlyUpdated("Recently updated"),
-    Alphabetical("A–Z"),
-    MostShows("Most shows"),
-    Manual("Manual"),
+enum class FolderInterSort(@StringRes val label: Int) {
+    Inherit(R.string.library_sort_same_as_shows),
+    SmartRank(R.string.library_sort_smart),
+    RecentlyUpdated(R.string.library_sort_recently_updated),
+    Alphabetical(R.string.library_sort_a_to_z),
+    MostShows(R.string.library_sort_most_shows),
+    Manual(R.string.library_sort_manual),
 }
 
 /**
  * Intra-folder sorting options (how shows inside a folder are ordered for preview slots and sheet).
  */
-enum class FolderIntraSort(val label: String) {
-    Inherit("Same as shows"),
-    SmartRank("Smart"),
-    RecentlyUpdated("Recently updated"),
-    Alphabetical("A–Z"),
-    MostListened("Most listened"),
-    Manual("Your order"),
+enum class FolderIntraSort(@StringRes val label: Int) {
+    Inherit(R.string.library_sort_same_as_shows),
+    SmartRank(R.string.library_sort_smart),
+    RecentlyUpdated(R.string.library_sort_recently_updated),
+    Alphabetical(R.string.library_sort_a_to_z),
+    MostListened(R.string.library_sort_most_listened),
+    Manual(R.string.library_sort_your_order),
 }
 
 /**

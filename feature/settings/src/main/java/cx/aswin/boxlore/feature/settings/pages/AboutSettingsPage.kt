@@ -31,9 +31,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.designsystem.R
+import cx.aswin.boxlore.core.designsystem.R as DesignR
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsNavigationRow
@@ -62,10 +63,10 @@ internal fun AboutSettingsPage(
 ) {
     TrackScreenView("about")
     SettingsScaffold(
-        title = "About boxlore",
+        title = stringResource(R.string.settings_page_about),
         onBack = onBack,
     ) {
-        SettingsGroup(title = "Catalog") {
+        SettingsGroup(title = stringResource(R.string.settings_about_catalog_title)) {
             SettingsContent {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -73,16 +74,14 @@ internal fun AboutSettingsPage(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text(
-                        text = "Powered by Podcast Index",
+                        text = stringResource(R.string.settings_about_powered_by),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = GoogleSansWeight.semiBold,
                         textAlign = TextAlign.Center,
                     )
                     Text(
                         text =
-                        "boxlore’s podcast catalog comes from Podcast Index — " +
-                            "an open directory that makes indie podcast discovery possible. " +
-                            "We’re grateful they exist.",
+                        stringResource(R.string.settings_about_catalog_body),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -94,8 +93,8 @@ internal fun AboutSettingsPage(
                         color = MaterialTheme.colorScheme.surface,
                     ) {
                         Image(
-                            painter = painterResource(R.drawable.ic_podcast_index_logo),
-                            contentDescription = "Podcast Index logo",
+                            painter = painterResource(DesignR.drawable.ic_podcast_index_logo),
+                            contentDescription = stringResource(R.string.settings_about_podcast_index_logo),
                             modifier =
                             Modifier
                                 .fillMaxWidth()
@@ -121,33 +120,33 @@ internal fun AboutSettingsPage(
                             modifier = Modifier.size(18.dp),
                         )
                         Spacer(modifier = Modifier.size(8.dp))
-                        Text("Visit podcastindex.org")
+                        Text(stringResource(R.string.settings_about_visit_podcast_index))
                     }
                 }
             }
         }
 
-        SettingsGroup(title = "App") {
+        SettingsGroup(title = stringResource(R.string.settings_about_app_title)) {
             SettingsContent {
                 Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
-                    SpecRow(label = "Version", value = appInfo.versionName)
+                    SpecRow(label = stringResource(R.string.settings_about_version), value = appInfo.versionName)
                     SpecDivider()
-                    SpecRow(label = "Build", value = appInfo.versionCode.toString())
+                    SpecRow(label = stringResource(R.string.settings_about_build), value = appInfo.versionCode.toString())
                     SpecDivider()
-                    SpecRow(label = "Package", value = appInfo.packageName, monospace = true)
+                    SpecRow(label = stringResource(R.string.settings_about_package), value = appInfo.packageName, monospace = true)
                     SpecDivider()
-                    SpecRow(label = "Android", value = "${appInfo.androidRelease} (API ${appInfo.sdkInt})")
+                    SpecRow(label = stringResource(R.string.settings_about_android), value = stringResource(R.string.settings_about_android_version, appInfo.androidRelease, appInfo.sdkInt))
                 }
             }
             SettingsNavigationRow(
-                title = "Send feedback",
-                supportingText = "Ideas, bug reports, and logs",
+                title = stringResource(R.string.settings_about_send_feedback),
+                supportingText = stringResource(R.string.settings_about_send_feedback_description),
                 icon = Icons.Rounded.Feedback,
                 onClick = onSendFeedback,
             )
             SettingsNavigationRow(
-                title = "Changelog",
-                supportingText = "What’s new on GitHub",
+                title = stringResource(R.string.settings_about_changelog),
+                supportingText = stringResource(R.string.settings_about_changelog_description),
                 icon = Icons.Rounded.HistoryEdu,
                 onClick = onOpenChangelog,
             )

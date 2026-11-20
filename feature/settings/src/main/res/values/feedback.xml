@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Feedback: built-in types, shown when the server sends none. -->
+    <string name="feedback_category_feature">Feature idea</string>
+    <string name="feedback_category_feature_hint">Describe the feature or improvement you\'d like to see...</string>
+    <string name="feedback_category_bug">Bug report</string>
+    <string name="feedback_category_bug_hint">What happened and what did you expect to happen?</string>
+    <string name="feedback_category_audio">Audio / Stream</string>
+    <string name="feedback_category_audio_hint">Describe the playback issue (buffering, cut-off, audio distortion)...</string>
+    <string name="feedback_category_other">General</string>
+    <string name="feedback_category_other_hint">Tell us what\'s on your mind...</string>
+    <!-- %1$d is the character limit, e.g. 2,000. -->
+    <string name="feedback_over_limit">This is over the %1$,d-character limit. Shorten it to send.</string>
+    <string name="feedback_paused_notice">Sending is paused for now. Your message stays saved here.</string>
+    <string name="feedback_error_empty">Write a message first.</string>
+    <string name="feedback_error_photos">Couldn\'t attach your photos. Check your connection and try again.</string>
+    <string name="feedback_error_send">Couldn\'t send your feedback. Check your connection and try again.</string>
+    <string name="feedback_no_diagnostics">No diagnostics available.</string>
+    <string name="feedback_diagnostics_share_subject">boxlore Diagnostics &amp; Logs</string>
+    <string name="feedback_diagnostics_share_title">Share Diagnostics &amp; Logs</string>
+    <!-- Screen-reader label of the type menu. %1$s is the picked type. -->
+    <string name="feedback_type_change_description">Type: %1$s. Change</string>
+    <string name="feedback_message_label">Your message</string>
+    <string name="feedback_add_photo">Add a photo or screenshot</string>
+    <string name="feedback_add">Add</string>
+    <!-- Screen-reader label of an attached photo. %1$d is its position. -->
+    <string name="feedback_photo_number">Photo %1$d</string>
+    <string name="feedback_remove_photo">Remove photo %1$d</string>
+    <string name="feedback_include_diagnostics">Include device diagnostics</string>
+    <string name="feedback_send_feedback">Send feedback</string>
+    <string name="feedback_sending">Sending</string>
+    <string name="feedback_how_we_handle">How we handle feedback</string>
+    <string name="feedback_diagnostics">Diagnostics</string>
+    <string name="feedback_send">Send</string>
+    <string name="feedback_form_title">Share your thoughts</string>
+    <string name="feedback_form_subtitle">Bugs, ideas, anything at all. The boxlore team reads every message.</string>
+    <string name="settings_navigate_back">Navigate back</string>
+    <string name="feedback_more_options">More options</string>
+    <string name="feedback_preview_diagnostics">Preview diagnostics</string>
+    <string name="feedback_rate_on_play">Rate on Play</string>
+    <string name="feedback_report_on_github">Report on GitHub</string>
+    <string name="feedback_discard_draft">Discard draft</string>
+    <string name="feedback_title">Feedback</string>
+    <string name="feedback_list_title">Your feedback</string>
+    <string name="feedback_list_error">Couldn\'t load your feedback. Check your connection and try again.</string>
+    <string name="feedback_try_again">Try again</string>
+    <string name="feedback_thread_gone">This conversation isn\'t available any more.</string>
+    <string name="feedback_thread_error">Couldn\'t load this conversation. Check your connection and try again.</string>
+    <string name="feedback_thread_refresh_error">Couldn\'t refresh this conversation.</string>
+    <string name="feedback_thread_loading">Loading…</string>
+    <string name="feedback_thread_show_earlier">Show earlier messages</string>
+    <string name="feedback_thread_reply">Reply</string>
+    <string name="feedback_thread_mark_solved">Mark solved</string>
+    <!-- Name shown on the team's replies. -->
+    <string name="feedback_thread_team">boxlore team</string>
+    <string name="feedback_thread_diagnostics_included">Diagnostics included</string>
+    <string name="feedback_thread_reply_placeholder">Write your reply</string>
+    <string name="feedback_thread_reply_label">Your reply</string>
+    <string name="feedback_thread_send_reply">Send reply</string>
+    <string name="feedback_sent_body_replies">Thanks for telling us. The boxlore team reads every message, and the reply will show up in Feedback.</string>
+    <string name="feedback_sent_body">Thanks for telling us. The boxlore team reads every message.</string>
+    <string name="feedback_close">Close</string>
+    <string name="feedback_sent_title">Feedback sent</string>
+    <string name="feedback_done">Done</string>
+    <string name="feedback_sent_notify_title">Know when the team replies</string>
+    <string name="feedback_sent_notify_body">Replies can take a day or two. Turn on notifications so you don\'t miss one.</string>
+    <string name="feedback_sent_notify_turn_on">Turn on notifications</string>
+    <string name="feedback_not_now">Not now</string>
+    <string name="feedback_logs_title">Diagnostics &amp; Logs Preview</string>
+    <string name="feedback_logs_body">These diagnostics and sanitized logs will be included with your submission when diagnostics are enabled.\nTip: Reproduce the issue first so relevant error logs appear.</string>
+    <string name="feedback_logs_none">No logs captured.</string>
+    <string name="feedback_logs_clip_label">boxlore diagnostics</string>
+    <string name="feedback_logs_copied">Copied diagnostics &amp; logs to clipboard</string>
+    <string name="feedback_logs_copy">Copy text</string>
+    <string name="feedback_logs_share">Share text</string>
+    <string name="feedback_sent_body_replies_no_photos">Thanks for telling us. The boxlore team reads every message, and the reply will show up in Feedback. Your photos couldn\'t be sent this time.</string>
+    <string name="feedback_sent_body_no_photos">Thanks for telling us. The boxlore team reads every message. Your photos couldn\'t be sent this time.</string>
+    <string name="feedback_thread_error_reply">Couldn\'t send your reply. Check your connection and try again.</string>
+    <!-- Feedback times. %1$s is a clock time like 11:02. -->
+    <string name="feedback_time_yesterday">Yesterday</string>
+    <string name="feedback_time_today_at">Today, %1$s</string>
+    <string name="feedback_time_yesterday_at">Yesterday, %1$s</string>
+    <!-- %1$s is a date like "2 Nov", %2$s a clock time. -->
+    <string name="feedback_time_date_at">%1$s, %2$s</string>
+    <!-- Under the photo tiles: how many photos a message can carry. -->
+    <plurals name="feedback_photos_limit">
+        <item quantity="one">Up to %1$d</item>
+        <item quantity="other">Up to %1$d</item>
+    </plurals>
+    <!-- Screen-reader label of the photo button. -->
+    <plurals name="feedback_photos_attached_description">
+        <item quantity="one">Photos and screenshots, %1$d attached</item>
+        <item quantity="other">Photos and screenshots, %1$d attached</item>
+    </plurals>
+    <!-- The listener's own messages when the server sends no name. -->
+    <string name="feedback_thread_you">You</string>
+    <!-- %1$s is who wrote the message, %2$s when. -->
+    <string name="feedback_thread_author_time">%1$s · %2$s</string>
+</resources>

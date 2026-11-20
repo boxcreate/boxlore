@@ -32,6 +32,10 @@ internal fun androidx.navigation.NavGraphBuilder.addOnboardingDestination(w: Nav
                 }
             },
             onBack = { navController.popBackStack() },
+            // Android 13+ recreates the activity itself; Android 12 needs it done here. Onboarding's view model outlives both.
+            onAppLanguageChosen = { language ->
+                w.container.appLanguage.set(language, recreate = { (w.context as? android.app.Activity)?.recreate() })
+            },
             onImportClick = {
                 opmlCallbacks.onSourceChange("welcome_screen")
                 cx.aswin.boxlore.core.analytics.AnalyticsHelper
@@ -153,6 +157,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLearnDestinations(w: NavGrap
                         application = application,
                         rankingFeedback = container.rankingFeedbackRepository,
                         historyStore = learnHistoryStore,
+                        hiddenShowIds = container.userPreferencesRepository.hiddenShows.matchIdsStream,
                     ) as T
                 },
             )
@@ -169,7 +174,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLearnDestinations(w: NavGrap
                         "${encode(episode.imageUrl)}/" +
                         "${encode(episode.audioUrl)}/" +
                         "${episode.duration}/${encode(episode.podcastId ?: "learn")}/" +
-                        "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=learn"
+                        "${encode(episode.podcastTitle ?: w.podcastTitleFallback)}?entryPoint=learn"
                 w.navigate(route)
             },
             onQueueEpisode = { episode ->
@@ -225,7 +230,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLearnDestinations(w: NavGrap
                         "${encode(episode.imageUrl)}/" +
                         "${encode(episode.audioUrl)}/" +
                         "${episode.duration}/${encode(episode.podcastId ?: "learn")}/" +
-                        "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=learn"
+                        "${encode(episode.podcastTitle ?: w.podcastTitleFallback)}?entryPoint=learn"
                 w.navigate(route)
             },
         )
@@ -271,7 +276,7 @@ internal fun androidx.navigation.NavGraphBuilder.addBriefingDestination(w: NavGr
                         "${encode(episode.imageUrl)}/" +
                         "${encode(episode.audioUrl)}/" +
                         "${episode.duration}/${encode(episode.podcastId ?: "briefing")}/" +
-                        "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=briefing"
+                        "${encode(episode.podcastTitle ?: w.podcastTitleFallback)}?entryPoint=briefing"
                 w.navigate(route)
             },
         )

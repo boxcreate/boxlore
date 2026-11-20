@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- NPS survey sheet. Any of these can be replaced by the survey's remote wording flag. -->
+    <!-- Small eyebrow above the question; shown in capitals. -->
+    <string name="home_nps_eyebrow">Una prueba de sonido rápida</string>
+    <string name="home_nps_question">¿Con qué probabilidad recomendarías boxlore a un amigo?</string>
+    <!-- Sits under the 0 score button; keep short. -->
+    <string name="home_nps_not_likely">Poco probable</string>
+    <!-- Sits under the 10 score button; keep short. -->
+    <string name="home_nps_very_likely">Muy probable</string>
+    <string name="home_nps_not_now">Ahora no</string>
+    <!-- Chip after a score is picked. Keep {score} exactly; it becomes the number. -->
+    <string name="home_nps_picked">Elegiste {score}</string>
+    <string name="home_nps_fix_title">¿Qué es lo primero que deberíamos arreglar?</string>
+    <string name="home_nps_fix_helper">Leemos todas las respuestas. Da todos los detalles que quieras.</string>
+    <string name="home_nps_ten_title">¿Qué haría falta para subirlo a un 10?</string>
+    <string name="home_nps_ten_helper">Una función que falta, algo que no va fino, lo que sea.</string>
+    <string name="home_nps_idea_title">¿Qué ponemos en cola después?</string>
+    <string name="home_nps_idea_tag">La mayoría de las ideas de los oyentes se hacen realidad en pocas semanas</string>
+    <string name="home_nps_answer_label">Tu respuesta (opcional)</string>
+    <string name="home_nps_answer_hint">Escribe tu respuesta…</string>
+    <string name="home_nps_idea_label">Tu idea (opcional)</string>
+    <string name="home_nps_idea_hint">Escribe tu idea…</string>
+    <string name="home_nps_skip">Omitir</string>
+    <string name="home_nps_send">Enviar</string>
+    <string name="home_nps_send_idea">Enviar idea</string>
+    <string name="home_nps_thanks_low_title">Gracias por contárnoslo</string>
+    <string name="home_nps_thanks_low_body">Leemos todas las respuestas, y la tuya nos ayuda a decidir qué arreglar primero.</string>
+    <string name="home_nps_thanks_middle_title">Recibido, alto y claro.</string>
+    <string name="home_nps_thanks_middle_body">Escuchamos con atención cada respuesta, y eso da forma a lo que viene.</string>
+    <string name="home_nps_thanks_high_title">Música para nuestros oídos.</string>
+    <string name="home_nps_thanks_high_body">¿Nos pasas el micrófono? Una valoración en Google Play ayuda a otros oyentes a descubrir boxlore.</string>
+    <string name="home_nps_done">Listo</string>
+    <string name="home_nps_rate_on_play">Valorar en Google Play</string>
+    <!-- Screen-reader label of the 0 and 10 score buttons, e.g. "0, Not likely". -->
+    <string name="home_nps_score_bound">%1$d, %2$s</string>
+    <!-- Characters typed out of the limit, e.g. "120 / 500". -->
+    <string name="home_nps_char_count">%1$d / %2$d</string>
+</resources>

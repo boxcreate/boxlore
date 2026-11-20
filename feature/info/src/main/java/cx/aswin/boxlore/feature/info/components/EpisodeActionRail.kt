@@ -47,6 +47,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.info.R
 
@@ -174,8 +175,8 @@ private fun EpisodeProgressSummary(positionMs: Long, durationMs: Long) {
     val lessMinute = stringResource(R.string.episode_info_less_minute)
     Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(R.string.episode_info_played_time, formatEpisodeDuration((positionMs / 1_000).toInt()).ifEmpty { lessMinute }), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
-            Text(stringResource(R.string.episode_info_time_left, formatEpisodeDuration(((durationMs - positionMs).coerceAtLeast(0) / 1_000).toInt()).ifEmpty { lessMinute }), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
+            Text(stringResource(R.string.episode_info_played_time, formatEpisodeDuration((positionMs / 1_000).toInt(), currentLocale()).ifEmpty { lessMinute }), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.episode_info_time_left, formatEpisodeDuration(((durationMs - positionMs).coerceAtLeast(0) / 1_000).toInt(), currentLocale()).ifEmpty { lessMinute }), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
         }
         EpisodeListeningProgress(positionMs, durationMs)
     }

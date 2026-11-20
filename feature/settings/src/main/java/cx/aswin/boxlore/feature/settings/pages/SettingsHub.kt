@@ -41,7 +41,7 @@ internal fun SettingsHub(
 ) {
     SupportEntryImpression(SupportEntrySurface.SettingsTopBar)
     SettingsScaffold(
-        title = "Settings",
+        title = stringResource(R.string.settings_page_hub),
         onBack = onBack,
         actions = {
             FilledTonalButton(
@@ -51,52 +51,52 @@ internal fun SettingsHub(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Favorite,
-                    contentDescription = "Support boxlore",
+                    contentDescription = stringResource(R.string.settings_page_support),
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Support boxlore",
+                    text = stringResource(R.string.settings_page_support),
                     style = MaterialTheme.typography.labelLarge,
                 )
             }
         },
     ) {
         SettingsCategoryCard(
-            title = "Cloud Sync & Backups",
-            description = "Account sync, OPML feeds, and library backups",
+            title = stringResource(R.string.settings_page_sync),
+            description = stringResource(R.string.settings_hub_sync_description),
             icon = Icons.Rounded.CloudSync,
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             onClick = { onNavigate(ProfileSettingsDestination.SyncAndBackups) },
         )
         SettingsCategoryCard(
-            title = "Library",
-            description = "Discovery region, content languages, and RSS feeds",
+            title = stringResource(R.string.settings_page_library),
+            description = stringResource(R.string.settings_hub_library_description),
             icon = Icons.AutoMirrored.Rounded.LibraryBooks,
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             onClick = { onNavigate(ProfileSettingsDestination.Library) },
         )
         SettingsCategoryCard(
-            title = "Appearance",
-            description = "Theme and navigation settings",
+            title = stringResource(R.string.settings_page_appearance),
+            description = stringResource(R.string.settings_hub_appearance_description),
             icon = Icons.Rounded.Palette,
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             onClick = { onNavigate(ProfileSettingsDestination.Appearance) },
         )
         SettingsCategoryCard(
-            title = "Playback",
-            description = "Intro skip, seek controls, and completed episodes",
+            title = stringResource(R.string.settings_page_playback),
+            description = stringResource(R.string.settings_hub_playback_description),
             icon = Icons.Rounded.Tune,
             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
             contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
             onClick = { onNavigate(ProfileSettingsDestination.Playback) },
         )
         SettingsCategoryCard(
-            title = "Downloads",
-            description = "Smart and automatic episode downloads",
+            title = stringResource(R.string.settings_page_downloads),
+            description = stringResource(R.string.settings_hub_downloads_description),
             icon = Icons.Rounded.DownloadForOffline,
             containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             contentColor = MaterialTheme.colorScheme.onSurface,
@@ -104,8 +104,8 @@ internal fun SettingsHub(
         )
         if (showWearOs) {
             SettingsCategoryCard(
-                title = "Wear OS",
-                description = "Your shows layout and download storage on your watch",
+                title = stringResource(R.string.settings_page_wear_os),
+                description = stringResource(R.string.settings_hub_wear_os_description),
                 icon = Icons.Rounded.Watch,
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -113,16 +113,16 @@ internal fun SettingsHub(
             )
         }
         SettingsCategoryCard(
-            title = "Privacy",
-            description = "Analytics data and deletion requests",
+            title = stringResource(R.string.settings_privacy_title),
+            description = stringResource(R.string.settings_hub_privacy_description),
             icon = Icons.Rounded.PrivacyTip,
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             onClick = { onNavigate(ProfileSettingsDestination.Privacy) },
         )
         SettingsCategoryCard(
-            title = "About",
-            description = "App version and Podcast Index",
+            title = stringResource(R.string.settings_category_about),
+            description = stringResource(R.string.settings_hub_about_description),
             icon = Icons.Rounded.Info,
             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
             contentColor = MaterialTheme.colorScheme.onTertiaryContainer,

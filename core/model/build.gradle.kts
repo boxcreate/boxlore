@@ -38,8 +38,13 @@ android {
 
 dependencies {
     implementation(libs.kotlinx.serialization.json)
+    // @StringRes / @PluralsRes on UiText.
+    api(libs.androidx.annotation)
 
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.vintage.engine)
     testRuntimeOnly(libs.junit.platform.launcher)
+    // Locale formatting runs on android.icu, which Robolectric provides on the JVM.
+    testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
 }

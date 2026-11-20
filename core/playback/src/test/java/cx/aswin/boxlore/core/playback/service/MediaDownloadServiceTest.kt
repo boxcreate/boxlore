@@ -15,6 +15,10 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
+/**
+ * The app's minSdk is 31, and with this module's resources on the test classpath Robolectric will not
+ * start below it, so the API 30-and-below scheduler branch has no test here.
+ */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class MediaDownloadServiceTest {
@@ -57,24 +61,10 @@ class MediaDownloadServiceTest {
     }
 
     @Test
-    @Config(sdk = [30])
-    fun `getScheduler returns PlatformScheduler on API 30 boundary`() {
-        val service = TestMediaDownloadService()
-        org.junit.Assert.assertNotNull(service.exposedScheduler())
-    }
-
-    @Test
     fun `onStartCommand catches exception returns START_NOT_STICKY and calls stopSelf`() {
         val service = TestMediaDownloadService()
         val result = service.onStartCommand(Intent(), 0, 1)
         assertEquals(Service.START_NOT_STICKY, result)
         org.junit.Assert.assertTrue(org.robolectric.Shadows.shadowOf(service).isStoppedBySelf)
-    }
-
-    @Test
-    @Config(sdk = [28])
-    fun `getScheduler returns PlatformScheduler on API 30 and below`() {
-        val service = TestMediaDownloadService()
-        org.junit.Assert.assertNotNull(service.exposedScheduler())
     }
 }

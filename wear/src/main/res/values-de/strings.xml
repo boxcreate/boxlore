@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Home -->
+    <string name="wear_home_ready">Bereit, wenn du es bist</string>
+    <string name="wear_home_on_phone">Auf dem Handy</string>
+    <string name="wear_home_state_and_time">%1$s · %2$s</string>
+    <string name="wear_home_paused">Pausiert</string>
+    <string name="wear_your_shows">Deine Podcasts</string>
+    <string name="wear_jump_back_in">Weiterhören</string>
+    <string name="wear_new_episodes">Neue Folgen</string>
+    <string name="wear_search">Suchen</string>
+    <string name="wear_daily_mix">Täglicher Mix</string>
+    <string name="wear_downloads">Downloads</string>
+    <string name="wear_settings">Einstellungen</string>
+    <string name="wear_up_next">Als Nächstes</string>
+    <string name="wear_now_playing_label">%1$s. %2$s. Player öffnen</string>
+
+    <!-- Episode and show details -->
+    <string name="wear_minutes">%1$d Min.</string>
+    <string name="wear_minutes_left">Noch %1$d Min.</string>
+    <string name="wear_date_and_minutes">%1$s · %2$s</string>
+    <plurals name="wear_new_episode_count">
+        <item quantity="one">%1$d neue Folge</item>
+        <item quantity="other">%1$d neue Folgen</item>
+    </plurals>
+    <string name="wear_show_with_new_episodes">%1$s, %2$s</string>
+    <string name="wear_size_megabytes">%1$s MB</string>
+    <string name="wear_size_gigabytes">%1$s GB</string>
+    <string name="wear_downloads_usage">Auf dieser Uhr · %1$s von %2$s</string>
+    <string name="wear_over_limit_title">Nicht genug Platz</string>
+    <string name="wear_over_limit_body">Diese Folge ist größer als dein Speicherlimit. Erhöhe das Limit in den Einstellungen.</string>
+    <string name="wear_watch_full_title">Uhrspeicher ist voll</string>
+    <string name="wear_watch_full_body">Gib Speicher auf deiner Uhr frei und versuch es dann noch mal.</string>
+    <string name="wear_downloaded">Geladen</string>
+    <string name="wear_downloading">Lädt</string>
+    <string name="wear_subscribe">Abonnieren</string>
+    <string name="wear_subscribed">Abonniert</string>
+    <string name="wear_play">Abspielen</string>
+    <string name="wear_pause">Pause</string>
+    <string name="wear_resume">Fortsetzen</string>
+    <string name="wear_tile_open">Öffnen</string>
+    <string name="wear_complication_description">boxlore: %1$s, %2$s</string>
+    <string name="wear_download">Laden</string>
+    <string name="wear_percent">%1$d %%</string>
+    <string name="wear_downloading_percent">Lädt, %1$s. Stoppen und entfernen</string>
+    <string name="wear_downloaded_remove">Geladen. Download entfernen</string>
+    <string name="wear_remove_download_title">Download entfernen?</string>
+    <string name="wear_remove_download_body">Du kannst sie später wieder laden.</string>
+    <string name="wear_play_next">Als Nächstes</string>
+    <string name="wear_played">Gehört</string>
+    <string name="wear_mark_played">Als gehört</string>
+
+    <!-- Player -->
+    <plurals name="wear_seek_back">
+        <item quantity="one">%1$d Sekunde zurück</item>
+        <item quantity="other">%1$d Sekunden zurück</item>
+    </plurals>
+    <plurals name="wear_seek_forward">
+        <item quantity="one">%1$d Sekunde vor</item>
+        <item quantity="other">%1$d Sekunden vor</item>
+    </plurals>
+    <string name="wear_volume">Lautstärke</string>
+    <string name="wear_could_not_play">Wiedergabe fehlgeschlagen. Prüf deine Verbindung.</string>
+    <string name="wear_more_controls">Mehr Steuerung</string>
+    <string name="wear_playback_speed">Geschwindigkeit</string>
+    <string name="wear_speed_value">%1$s×</string>
+    <string name="wear_speed_slower">Langsamer</string>
+    <string name="wear_speed_faster">Schneller</string>
+    <string name="wear_sleep_timer">Sleep-Timer</string>
+    <string name="wear_sleep_off">Aus</string>
+    <string name="wear_sleep_minutes">%1$d Min.</string>
+    <string name="wear_sleep_hours">%1$d Std.</string>
+    <string name="wear_sleep_end_of_episode">Folgenende</string>
+    <string name="wear_play_on_phone">Auf Handy abspielen</string>
+    <string name="wear_play_on_watch">Auf Uhr abspielen</string>
+    <string name="wear_phone_is_playing">Dein Handy spielt gerade</string>
+
+    <!-- Search -->
+    <string name="wear_search_title">Podcasts suchen</string>
+    <string name="wear_search_query">„%1$s“</string>
+    <string name="wear_search_no_results">Keine Ergebnisse</string>
+    <string name="wear_search_no_results_body">Versuch andere Wörter.</string>
+    <string name="wear_no_connection">Keine Verbindung</string>
+    <string name="wear_no_connection_body">Die Suche braucht WLAN oder dein Handy in der Nähe. Deine Downloads lassen sich trotzdem abspielen.</string>
+
+    <!-- Empty lists -->
+    <string name="wear_shows_empty">Noch keine Podcasts</string>
+    <string name="wear_shows_empty_body">Abonniere auf dem Handy oder suche hier nach einem Podcast.</string>
+    <string name="wear_jump_back_in_empty">Nichts angefangen</string>
+    <string name="wear_jump_back_in_empty_body">Folgen, die du anfängst, erscheinen hier.</string>
+    <string name="wear_new_episodes_empty">Keine neuen Folgen</string>
+    <string name="wear_downloads_empty">Noch keine Downloads</string>
+    <string name="wear_downloads_empty_body">Lade eine Folge herunter, um sie ohne Handy zu hören.</string>
+    <string name="wear_up_next_empty">Nichts als Nächstes</string>
+    <string name="wear_episodes_empty">Noch keine Folgen</string>
+    <string name="wear_episodes_loading">Folgen werden geladen</string>
+    <string name="wear_episodes_failed">Folgen nicht geladen</string>
+    <string name="wear_show_failed">Podcast nicht geladen</string>
+    <string name="wear_load_failed_body">Prüf deine Verbindung oder halte dein Handy in die Nähe.</string>
+    <string name="wear_try_again">Noch mal</string>
+
+    <!-- Settings -->
+    <string name="wear_shows_layout">Layout deiner Podcasts</string>
+    <string name="wear_storage_limit">Speicherlimit</string>
+    <string name="wear_account">Konto</string>
+    <string name="wear_account_sign_in">Mit Handy anmelden</string>
+    <string name="wear_account_signing_in">Anmeldung läuft…</string>
+    <string name="wear_account_sign_in_detail">Synchronisiert Podcasts und Fortschritt</string>
+    <string name="wear_account_signed_in">Angemeldet</string>
+    <string name="wear_account_signed_out">Nicht angemeldet</string>
+    <string name="wear_account_syncing">Wird mit deinem Konto synchronisiert</string>
+    <string name="wear_account_sign_out">Abmelden</string>
+    <string name="wear_account_sign_out_detail">Deine Podcasts bleiben auf dieser Uhr</string>
+    <string name="wear_account_phone_away">Dein Handy ist nicht in Reichweite. Halte es näher und versuch es noch mal.</string>
+    <string name="wear_account_phone_signed_out">Melde dich zuerst auf dem Handy bei boxlore an.</string>
+    <string name="wear_account_failed">Anmeldung fehlgeschlagen. Versuch es noch mal.</string>
+    <string name="wear_shows_layout_honeycomb">Waben</string>
+    <string name="wear_shows_layout_list">Liste</string>
+</resources>

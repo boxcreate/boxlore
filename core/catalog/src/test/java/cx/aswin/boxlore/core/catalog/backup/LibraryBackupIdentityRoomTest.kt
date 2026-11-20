@@ -74,7 +74,7 @@ class LibraryBackupIdentityRoomTest {
 
         val exported = JsonParser.parseString(json).asJsonObject
         // Version 8 (the listening block) carries the version 7 identity block unchanged.
-        assertEquals(10, exported["version"].asInt)
+        assertEquals(11, exported["version"].asInt)
         assertEquals(5, exported["episodeIdentity"].asJsonObject["episodeAliases"].asJsonArray.size())
         assertEquals(2, result.first)
         val dao = target.episodeIdentityDao()
@@ -90,6 +90,27 @@ class LibraryBackupIdentityRoomTest {
         val history = target.listeningHistoryDao().getHistoryItem(PI_ID)!!
         assertEquals(1_000L, history.progressMs)
         assertEquals(50L, history.likedAt)
+    }
+
+    @Test
+    fun archivedEpisodesRoundTripWithoutBeingMarkedPlayed() = runTest {
+        seedSource()
+        stubRssRestore()
+        // A trailer never played, archived; another episode brought back; an episode archived across its IDs.
+        source.listeningHistoryDao().upsert(history("trailer", progressMs = 0L).copy(lastPlayedAt = 0L, dismissedAt = 90L))
+        source.listeningHistoryDao().setDismissedForIds(listOf(UNRESOLVED_ID), -95L)
+        source.episodeIdentityDao().upsertGroupState(EpisodeGroupStateEntity(SHOW, "guid-a", likedAt = 50L, completedAt = 60L, version = 4L, dismissedAt = 80L))
+
+        val json = manager(source, sourceShows).exportLibraryAsJson()
+        manager(target, targetShows).importLibraryFromJson(json)
+
+        // Older apps ignore the new field, so the backup version stays.
+        assertEquals(11, JsonParser.parseString(json).asJsonObject["version"].asInt)
+        val trailer = target.listeningHistoryDao().getHistoryItem("trailer")!!
+        assertEquals(90L, trailer.dismissedAt)
+        assertEquals(false, trailer.isCompleted)
+        assertEquals(-95L, target.listeningHistoryDao().getHistoryItem(UNRESOLVED_ID)!!.dismissedAt)
+        assertEquals(80L, target.episodeIdentityDao().getGroupState(SHOW, "guid-a")!!.dismissedAt)
     }
 
     @Test

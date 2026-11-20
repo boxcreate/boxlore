@@ -13,10 +13,13 @@ import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.countsAsListening
 import cx.aswin.boxlore.core.database.episodeListenerStore
+import cx.aswin.boxlore.core.database.isDismissed
 import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.isTrailer
+import cx.aswin.boxlore.core.model.text.displayLocale
+import cx.aswin.boxlore.core.model.withoutHiddenShows
 import cx.aswin.boxlore.core.playback.MixtapeEngine
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
@@ -184,6 +187,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
         return queue.map { episode ->
             val played = history[episode.id]
             AutoMediaItemFactory.fromEpisode(
+                resources = host.asContext().resources,
                 episode = episode,
                 source = AutoBrowseContract.SOURCE_QUEUE,
                 artworkUri = rowArt(episode.imageUrl, episode.podcastImageUrl ?: played?.podcastImageUrl, episode.podcastId),
@@ -203,6 +207,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
         return newEpisodes.map { (episode, podcast) ->
             val played = history[episode.id]
             AutoMediaItemFactory.fromEpisode(
+                resources = host.asContext().resources,
                 episode = episode,
                 source = AutoBrowseContract.SOURCE_NEW,
                 artworkUri = rowArt(episode.imageUrl, podcast.imageUrl, podcast.podcastId),
@@ -212,12 +217,12 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
         }
     }
 
-    /** The newest unplayed episode of each subscribed show, newest first. */
+    /** The newest unplayed episode of each subscribed show, newest first; archived episodes are left out. */
     private suspend fun newEpisodes(subscriptions: List<PodcastEntity>): List<Pair<Episode, PodcastEntity>> {
         if (subscriptions.isEmpty()) return emptyList()
-        val completedIds = completedIds()
+        val hiddenIds = completedIds() + dismissedIds()
         return subscriptions
-            .mapNotNull { entity -> entity.latestEpisode?.takeIf { it.id !in completedIds }?.let { it to entity } }
+            .mapNotNull { entity -> entity.latestEpisode?.takeIf { it.id !in hiddenIds }?.let { it to entity } }
             .sortedByDescending { (episode, _) -> episode.publishedDate }
             .take(NEW_EPISODES_LIMIT)
     }
@@ -268,9 +273,17 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
      * A show's episodes, newest first, with the ones in progress moved to the top under
      * "Jump back in". Rows say when the episode came out, not the show's name again.
      */
-    suspend fun getPodcastEpisodes(podcastId: String): List<MediaItem> {
+    suspend fun getPodcastEpisodes(podcastId: String): List<MediaItem> =
+        podcastEpisodeRows(podcastId, host.podcastRepository.getEpisodesPaginated(podcastId, limit = LIST_LIMIT, sort = "newest").episodes)
+
+    /**
+     * [getPodcastEpisodes]'s rows for the show's [listed] episodes. Archived episodes are left out:
+     * the car has no way to show them, as the phone's show page hides them by default.
+     */
+    internal suspend fun podcastEpisodeRows(podcastId: String, listed: List<Episode>): List<MediaItem> {
         val podcastEntity = host.database.podcastDao().getPodcast(podcastId)
-        val episodes = host.podcastRepository.getEpisodesPaginated(podcastId, limit = LIST_LIMIT, sort = "newest").episodes
+        val archived = dismissedIds()
+        val episodes = listed.filter { it.id !in archived }
         // Looked up by the listed ID: an episode stored under several IDs shows its state under any of them.
         val history = historyById(episodes.map { it.id })
         val downloaded = downloadedIds()
@@ -280,6 +293,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
             val played = history[episode.id]
             val showTitle = podcastEntity?.title ?: episode.podcastTitle
             AutoMediaItemFactory.fromEpisode(
+                resources = host.asContext().resources,
                 episode = episode,
                 source = AutoBrowseContract.SOURCE_SHOW,
                 artworkUri = rowArt(episode.imageUrl, podcastEntity?.imageUrl ?: episode.podcastImageUrl, podcastId),
@@ -300,7 +314,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
                 history = it,
                 source = AutoBrowseContract.SOURCE_LIKED,
                 artworkUri = rowArt(it.episodeImageUrl, it.podcastImageUrl, it.podcastId),
-                subtitle = AutoMediaItemFactory.buildDurationSubtitle(it.podcastName, it.durationMs),
+                subtitle = AutoMediaItemFactory.buildDurationSubtitle(host.asContext().resources, it.podcastName, it.durationMs),
                 groupTitle = null,
                 isDownloaded = it.episodeId in downloaded,
             )
@@ -322,7 +336,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
                 subtitle = if (!it.isCompleted && it.progressMs > 0) {
                     buildProgressSubtitle(it.podcastName, it.progressMs, it.durationMs)
                 } else {
-                    AutoMediaItemFactory.buildDurationSubtitle(it.podcastName, it.durationMs)
+                    AutoMediaItemFactory.buildDurationSubtitle(host.asContext().resources, it.podcastName, it.durationMs)
                 },
                 groupTitle = null,
                 isDownloaded = it.episodeId in downloaded,
@@ -339,8 +353,9 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
         val subscriptions = subscriptionEntities.map { host.toAutoPodcast(it) }
         val history = listenerStore.projectRows(host.database.listeningHistoryDao().getRecentHistoryWithListeningList(HISTORY_WINDOW))
         val completedIds = completedIds()
+        val dismissedIds = dismissedIds()
         val ranking = MixtapeEngine.AdaptiveRanking(scorer = host.adaptiveCandidateScorer, surface = RankingSurface.ANDROID_AUTO)
-        var result = MixtapeEngine.build(subscriptions = subscriptions, history = history, completedIds = completedIds, adaptiveRanking = ranking)
+        var result = MixtapeEngine.build(subscriptions = subscriptions, history = history, completedIds = completedIds, adaptiveRanking = ranking, dismissedIds = dismissedIds)
         if (result.episodes.size < MIN_MIXTAPE_EPISODES) {
             val recommendations =
                 runCatching {
@@ -356,7 +371,14 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
                 }.onFailure {
                     android.util.Log.w("AutoBrowse", "Mixtape fallback unavailable", it)
                 }.getOrDefault(emptyList())
-            result = MixtapeEngine.build(subscriptions = subscriptions, history = history, completedIds = completedIds, recommendations = recommendations, adaptiveRanking = ranking)
+            result = MixtapeEngine.build(
+                subscriptions = subscriptions,
+                history = history,
+                completedIds = completedIds,
+                recommendations = recommendations,
+                adaptiveRanking = ranking,
+                dismissedIds = dismissedIds,
+            )
         }
         val downloaded = downloadedIds()
         val played = historyById(result.podcasts.mapNotNull { it.latestEpisode?.id })
@@ -368,6 +390,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
                 .map { (episode, podcast) ->
                     val history = played[episode.id]
                     AutoMediaItemFactory.fromEpisode(
+                        resources = host.asContext().resources,
                         episode = episode,
                         source = AutoBrowseContract.SOURCE_MIXTAPE,
                         artworkUri = rowArt(episode.imageUrl, episode.podcastImageUrl ?: podcast.imageUrl, podcast.id),
@@ -398,6 +421,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
                     ?.episodeAudioUrl
                 ?: host.queueRepository.getQueueItemByEpisodeId(download.episodeId)?.audioUrl
         AutoMediaItemFactory.fromDownload(
+            resources = host.asContext().resources,
             download = download,
             artworkUri = rowArt(download.episodeImageUrl, download.podcastImageUrl, download.podcastId),
             uri = sourceUri,
@@ -417,9 +441,10 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
             } else {
                 emptyMap()
             }
-        val completedIds = listenerStore.projectCompletedIds(host.database.listeningHistoryDao().getCompletedEpisodeIds())
+        val completedIds = listenerStore.projectCompletedIds(host.database.listeningHistoryDao().getCompletedEpisodeIds()) + dismissedIds()
         val recentIds = host.database.listeningHistoryDao().getRecentHistoryList(30).mapTo(mutableSetOf()) { it.episodeId }
-        val feedMap = if (driveFeeds.values.any { it.isNotEmpty() }) driveFeeds else fallbackFeeds
+        val hidden = hiddenShowIds()
+        val feedMap = (if (driveFeeds.values.any { it.isNotEmpty() }) driveFeeds else fallbackFeeds).mapValues { (_, podcasts) -> podcasts.withoutHiddenShows(hidden) }
         val episodes =
             (driveVibes + feedMap.keys.sorted())
                 .distinct()
@@ -437,6 +462,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
         val items =
             episodes.map { (episode, podcast) ->
                 AutoMediaItemFactory.fromEpisode(
+                    resources = host.asContext().resources,
                     episode =
                     episode.copy(
                         podcastId = podcast.id,
@@ -479,7 +505,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
     fun getGenresChildren(): List<MediaItem> = genreTiles(null)
 
     private fun genreTiles(groupTitle: String?): List<MediaItem> = GENRES.map { (category, title) ->
-        category("${AutoBrowseContract.GENRE_PREFIX}$category", title, R.drawable.ic_auto_genre, groupTitle)
+        category("${AutoBrowseContract.GENRE_PREFIX}$category", host.asContext().getString(title), R.drawable.ic_auto_genre, groupTitle)
     }
 
     /**
@@ -507,7 +533,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
                 region(),
                 languages = withTimeoutOrNull(PREFS_TIMEOUT_MS) { host.userPreferencesRepository.contentLanguagesStream.first() },
             )
-        return buildPodcastFolderItems(curatedPodcasts.take(LIST_LIMIT))
+        return buildPodcastFolderItems(curatedPodcasts.withoutHiddenShows(hiddenShowIds()).take(LIST_LIMIT))
     }
 
     suspend fun getGenreChildren(category: String): List<MediaItem> {
@@ -515,7 +541,16 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
             withTimeoutOrNull(NETWORK_TIMEOUT_MS) {
                 host.podcastRepository.getTrendingPodcasts(country = region(), limit = LIST_LIMIT, category = category.lowercase())
             }.orEmpty()
-        return buildPodcastFolderItems(podcasts)
+        return buildPodcastFolderItems(podcasts.withoutHiddenShows(hiddenShowIds()))
+    }
+
+    /** The shows hidden everywhere, or none when they can't be read in time. */
+    private suspend fun hiddenShowIds(): Set<String> = try {
+        withTimeoutOrNull(PREFS_TIMEOUT_MS) { host.userPreferencesRepository.hiddenShows.matchIds() }.orEmpty()
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        emptySet()
     }
 
     private fun buildPodcastFolderItems(podcasts: List<Podcast>): List<MediaItem> = podcasts.map { podcast ->
@@ -569,7 +604,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
     // ── Shared reads ────────────────────────────────────────────────────────────────────────
 
     private suspend fun resumeItems(): List<ListeningHistoryEntity> = runCatching {
-        listenerStore.projectRows(host.database.listeningHistoryDao().getResumeItemsList()) { !it.isCompleted && it.progressMs > 0 }
+        listenerStore.projectRows(host.database.listeningHistoryDao().getResumeItemsList()) { !it.isCompleted && it.progressMs > 0 && !it.isDismissed }
     }.getOrDefault(emptyList())
 
     private suspend fun queueEpisodes(): List<Episode> = runCatching { host.queueRepository.getQueueEpisodeSnapshot() }.getOrNull().orEmpty()
@@ -588,6 +623,9 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
     private suspend fun completedIds(): Set<String> = runCatching {
         listenerStore.projectCompletedIds(host.database.listeningHistoryDao().getCompletedEpisodeIds())
     }.getOrDefault(emptySet())
+
+    /** Every archived episode ID, projected: no list offers them. */
+    private suspend fun dismissedIds(): Set<String> = runCatching { listenerStore.dismissedIds() }.getOrDefault(emptySet())
 
     /** IDs of the episodes saved on the phone, so every list can mark them as downloaded. */
     private suspend fun downloadedIds(): Set<String> = runCatching {
@@ -611,9 +649,9 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
         val totalMs = started?.durationMs?.takeIf { it > 0 } ?: durationMs
         // With no known length there is no time left to state; the row then says nothing rather than "Almost done".
         val length = if (started != null && totalMs > 0) {
-            AutoMediaItemFactory.formatTimeLeft(started.progressMs, totalMs)
+            AutoMediaItemFactory.formatTimeLeft(host.asContext().resources, started.progressMs, totalMs)
         } else {
-            AutoMediaItemFactory.formatDuration(durationMs)
+            AutoMediaItemFactory.formatDuration(host.asContext().resources, durationMs)
         }
         return AutoMediaItemFactory.joinSubtitle(showTitle, dayLabel(episode.publishedDate).takeIf { withDate }, length)
     }
@@ -622,7 +660,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
         null -> null
         0L -> host.getString(R.string.auto_today)
         1L -> host.getString(R.string.auto_yesterday)
-        else -> AutoDayLabels.shortDate(publishedSeconds, sameYear = days < DAYS_IN_YEAR)
+        else -> AutoDayLabels.shortDate(publishedSeconds, sameYear = days < DAYS_IN_YEAR, locale = host.asContext().displayLocale())
     }
 
     /**
@@ -671,7 +709,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
     /** A started episode's second line, e.g. "Show name · 35 min left". */
     fun buildProgressSubtitle(podcastName: String, progressMs: Long, durationMs: Long,): String {
         if (durationMs <= 0) return podcastName
-        return AutoMediaItemFactory.joinSubtitle(podcastName, AutoMediaItemFactory.formatTimeLeft(progressMs, durationMs))
+        return AutoMediaItemFactory.joinSubtitle(podcastName, AutoMediaItemFactory.formatTimeLeft(host.asContext().resources, progressMs, durationMs))
     }
 
     private companion object {
@@ -687,27 +725,27 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
         const val PREFS_TIMEOUT_MS = 1_000L
         const val DAYS_IN_YEAR = 365L
 
-        /** Chart category to the short name shown on its tile. */
-        val GENRES = listOf(
-            "News" to "News",
-            "Technology" to "Tech",
-            "Business" to "Business",
-            "Comedy" to "Comedy",
-            AutoBrowseContract.GENRE_TRUE_CRIME to AutoBrowseContract.GENRE_TRUE_CRIME,
-            "Sports" to "Sports",
-            "Health" to "Health",
-            "History" to "History",
-            "Arts" to "Arts",
-            "Society & Culture" to "Society",
-            "Education" to "Education",
-            "Science" to "Science",
-            AutoBrowseContract.GENRE_TV_FILM to AutoBrowseContract.GENRE_TV_FILM,
-            "Fiction" to "Fiction",
-            "Music" to "Music",
-            "Religion & Spirituality" to "Religion",
-            "Kids & Family" to "Family",
-            "Leisure" to "Leisure",
-            "Government" to "Government",
+        /** Chart category (sent to the server, never translated) to the short name shown on its row. */
+        val GENRES: List<Pair<String, Int>> = listOf(
+            "News" to R.string.auto_genre_news,
+            "Technology" to R.string.auto_genre_technology,
+            "Business" to R.string.auto_genre_business,
+            "Comedy" to R.string.auto_genre_comedy,
+            AutoBrowseContract.GENRE_TRUE_CRIME to R.string.auto_genre_true_crime,
+            "Sports" to R.string.auto_genre_sports,
+            "Health" to R.string.auto_genre_health,
+            "History" to R.string.auto_genre_history,
+            "Arts" to R.string.auto_genre_arts,
+            "Society & Culture" to R.string.auto_genre_society,
+            "Education" to R.string.auto_genre_education,
+            "Science" to R.string.auto_genre_science,
+            AutoBrowseContract.GENRE_TV_FILM to R.string.auto_genre_tv_film,
+            "Fiction" to R.string.auto_genre_fiction,
+            "Music" to R.string.auto_genre_music,
+            "Religion & Spirituality" to R.string.auto_genre_religion,
+            "Kids & Family" to R.string.auto_genre_family,
+            "Leisure" to R.string.auto_genre_leisure,
+            "Government" to R.string.auto_genre_government,
         )
     }
 }

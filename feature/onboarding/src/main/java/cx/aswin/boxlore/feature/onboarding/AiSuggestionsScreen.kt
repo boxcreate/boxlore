@@ -75,6 +75,7 @@ import cx.aswin.boxlore.core.designsystem.components.RegionSegmentedSelector
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
 import cx.aswin.boxlore.core.model.Podcast
@@ -121,9 +122,8 @@ internal fun AiSuggestionsScreen(uiState: OnboardingUiState, callbacks: Suggesti
     val origin = OnboardingSuggestionsPresentation.origin(uiState)
     val loading = OnboardingSuggestionsPresentation.isLoading(uiState)
     val error = OnboardingSuggestionsPresentation.isError(uiState)
-    val picksTitle = stringResource(R.string.suggestions_picks_lane)
-    val lanes = remember(uiState.aiCurriculumRows, uiState.genreChartsPodcasts, uiState.selectedGenres, uiState.aiPicks, origin, picksTitle) {
-        OnboardingSuggestionsPresentation.lanes(uiState, picksTitle)
+    val lanes = remember(uiState.aiCurriculumRows, uiState.genreChartsPodcasts, uiState.selectedGenres, uiState.aiPicks, origin) {
+        OnboardingSuggestionsPresentation.lanes(uiState)
     }
     var details by remember { mutableStateOf<Podcast?>(null) }
     val list = rememberLazyListState()
@@ -291,7 +291,7 @@ private fun SuggestionLane(lane: OnboardingSuggestionsLane, index: Int, uiState:
                 Icon(suggestionLaneIcon(lane, index), null, Modifier.size(20.dp), tint = if (picks) colors.onPrimary else colors.onSecondaryContainer)
             }
             Text(
-                lane.title,
+                lane.title.asString(),
                 Modifier.weight(1f).padding(start = 12.dp, end = 4.dp).semantics { heading() },
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
                 color = colors.onSurface,
@@ -443,7 +443,7 @@ private fun SuggestionsFooter(state: SuggestionsFooterState, actions: Suggestion
             colors = ButtonDefaults.buttonColors(containerColor = container, contentColor = content, disabledContainerColor = container, disabledContentColor = content),
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
         ) {
-            AnimatedContent(targetState = state, transitionSpec = EchoMotion.handoff(), contentAlignment = Alignment.Center, label = "Suggestions button label") { target ->
+            AnimatedContent(targetState = state, transitionSpec = EchoMotion.handoff(), contentAlignment = Alignment.Center, label = "suggestionsButtonLabel") { target ->
                 SuggestionsFooterLabel(target)
             }
         }
@@ -486,7 +486,7 @@ private fun suggestionsButtonColors(state: SuggestionsFooterState): Pair<Color, 
             filled -> colors.primary
             else -> colors.secondaryContainer
         },
-        label = "Suggestions button",
+        label = "suggestionsButton",
     )
     val content by animateColorAsState(
         when {
@@ -494,7 +494,7 @@ private fun suggestionsButtonColors(state: SuggestionsFooterState): Pair<Color, 
             filled -> colors.onPrimary
             else -> colors.onSecondaryContainer
         },
-        label = "Suggestions button text",
+        label = "suggestionsButtonText",
     )
     return container to content
 }

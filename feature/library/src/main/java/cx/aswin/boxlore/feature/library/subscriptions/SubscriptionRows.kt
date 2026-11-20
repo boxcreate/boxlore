@@ -44,6 +44,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -51,6 +52,8 @@ import cx.aswin.boxlore.core.designsystem.components.NewEpisodeBadge
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.boxloreCombinedClickable as combinedClickable
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -60,9 +63,11 @@ import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.core.model.isLatestEpisodeNew
-import java.text.SimpleDateFormat
+import cx.aswin.boxlore.core.model.text.LocaleFormats
+import cx.aswin.boxlore.core.model.text.LocaleFormats.DateStyle
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.library.R
 import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -87,8 +92,9 @@ internal fun DateHeader(
     }
 }
 
-internal fun getChronologicalHeader(timestampSeconds: Long): String {
-    if (timestampSeconds == 0L) return "Older"
+/** The New Episodes date group for [timestampSeconds]: Today, Yesterday, a weekday or a date in [locale]. */
+internal fun getChronologicalHeader(timestampSeconds: Long, locale: Locale): UiText {
+    if (timestampSeconds == 0L) return UiText.res(R.string.library_header_older)
     val timestampMs = timestampSeconds * 1000L
 
     val now = Calendar.getInstance()
@@ -109,50 +115,86 @@ internal fun getChronologicalHeader(timestampSeconds: Long): String {
     val diffDays = (nowDay.timeInMillis - timeDay.timeInMillis) / (24 * 60 * 60 * 1000L)
 
     return when {
-        diffDays == 0L -> "Today"
-        diffDays == 1L -> "Yesterday"
-        diffDays < 7L -> {
-            SimpleDateFormat("EEEE", Locale.getDefault()).format(Date(timestampMs))
-        }
-        else -> {
-            SimpleDateFormat("MMMM d, yyyy", Locale.getDefault()).format(Date(timestampMs))
-        }
+        diffDays == 0L -> UiText.res(R.string.library_header_today)
+        diffDays == 1L -> UiText.res(R.string.library_header_yesterday)
+        diffDays < 7L -> UiText.raw(LocaleFormats.date(timestampMs, DateStyle.WEEKDAY, locale))
+        else -> UiText.raw(LocaleFormats.date(timestampMs, DateStyle.LONG_DAY_MONTH_YEAR, locale))
     }
 }
 
-internal fun formatRelativeUpdateLabel(publishedSeconds: Long): String? {
+/** How long ago an episode came out, as a line on its own ("Today", "3 days ago", "Mar 5, 2026"). */
+internal fun formatRelativeUpdateLabel(
+    publishedSeconds: Long,
+    locale: Locale,
+    nowMs: Long = System.currentTimeMillis(),
+): UiText? = relativeUpdate(publishedSeconds, nowMs)?.let { age ->
+    when (age) {
+        RelativeUpdate.JustNow -> UiText.res(R.string.library_relative_just_now)
+        RelativeUpdate.Today -> UiText.res(R.string.library_relative_today)
+        RelativeUpdate.Yesterday -> UiText.res(R.string.library_relative_yesterday)
+        is RelativeUpdate.Days -> UiText.plural(R.plurals.library_relative_days_ago, age.count, age.count)
+        is RelativeUpdate.Weeks -> UiText.plural(R.plurals.library_relative_weeks_ago, age.count, age.count)
+        is RelativeUpdate.OnDate -> UiText.raw(LocaleFormats.date(age.epochMillis, DateStyle.DAY_MONTH_YEAR, locale))
+    }
+}
+
+/** "Updated today", "Updated 3 days ago" or "Updated Mar 5, 2026" for a show's latest episode. */
+internal fun formatUpdatedLabel(
+    publishedSeconds: Long,
+    locale: Locale,
+    nowMs: Long = System.currentTimeMillis(),
+): UiText? = relativeUpdate(publishedSeconds, nowMs)?.let { age ->
+    when (age) {
+        RelativeUpdate.JustNow -> UiText.res(R.string.library_updated_just_now)
+        RelativeUpdate.Today -> UiText.res(R.string.library_updated_today)
+        RelativeUpdate.Yesterday -> UiText.res(R.string.library_updated_yesterday)
+        is RelativeUpdate.Days -> UiText.plural(R.plurals.library_updated_days_ago, age.count, age.count)
+        is RelativeUpdate.Weeks -> UiText.plural(R.plurals.library_updated_weeks_ago, age.count, age.count)
+        is RelativeUpdate.OnDate ->
+            UiText.res(R.string.library_updated_on_date, LocaleFormats.date(age.epochMillis, DateStyle.DAY_MONTH_YEAR, locale))
+    }
+}
+
+private sealed interface RelativeUpdate {
+    data object JustNow : RelativeUpdate
+    data object Today : RelativeUpdate
+    data object Yesterday : RelativeUpdate
+    data class Days(val count: Int) : RelativeUpdate
+    data class Weeks(val count: Int) : RelativeUpdate
+    data class OnDate(val epochMillis: Long) : RelativeUpdate
+}
+
+private fun relativeUpdate(publishedSeconds: Long, nowMs: Long): RelativeUpdate? {
     if (publishedSeconds <= 0L) return null
     val publishedMs = publishedSeconds * 1000L
-    val nowMs = System.currentTimeMillis()
-    if (publishedMs > nowMs) return "just now"
+    if (publishedMs > nowMs) return RelativeUpdate.JustNow
     val days = TimeUnit.MILLISECONDS.toDays(nowMs - publishedMs)
     return when {
-        days == 0L -> "today"
-        days == 1L -> "yesterday"
-        days < 7L -> "$days days ago"
-        days < 30L -> {
-            val weeks = days / 7
-            if (weeks == 1L) "1 week ago" else "$weeks weeks ago"
-        }
-        else -> SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(publishedMs))
+        days == 0L -> RelativeUpdate.Today
+        days == 1L -> RelativeUpdate.Yesterday
+        days < 7L -> RelativeUpdate.Days(days.toInt())
+        days < 30L -> RelativeUpdate.Weeks((days / 7).toInt())
+        else -> RelativeUpdate.OnDate(publishedMs)
     }
 }
 
+/** The episode's length ("1h 5m"), or what is left of it ("45m left") while it is in progress. */
 internal fun episodeMetaDurationLabel(
     episode: Episode,
     isInProgress: Boolean,
     progress: Float,
-): String {
-    val h = episode.duration / 3600
-    val m = (episode.duration % 3600) / 60
-    return if (isInProgress && progress > 0f) {
-        val remaining = ((1f - progress) * episode.duration).toInt()
-        val rh = remaining / 3600
-        val rm = (remaining % 3600) / 60
-        if (rh > 0) "${rh}h ${rm}m left" else "${rm}m left"
-    } else {
-        if (h > 0) "${h}h ${m}m" else "${m}m"
-    }
+    locale: Locale,
+): UiText = if (isInProgress && progress > 0f) {
+    val remaining = ((1f - progress) * episode.duration).toLong()
+    UiText.res(R.string.library_time_left, wholeMinutesDuration(remaining, locale))
+} else {
+    UiText.raw(wholeMinutesDuration(episode.duration.toLong(), locale))
+}
+
+/** Hours and minutes, narrow ("1h 5m"), dropping leftover seconds; under a minute it shows seconds. */
+private fun wholeMinutesDuration(seconds: Long, locale: Locale): String {
+    val wholeMinutes = seconds / 60 * 60
+    return LocaleFormats.duration(if (wholeMinutes > 0) wholeMinutes else seconds, locale, LocaleFormats.DurationWidth.NARROW)
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -177,11 +219,12 @@ internal fun SubscriptionListRow(
         ) {
             podcast.isLatestEpisodeNew(lastSeen)
         }
-    val updateLabel = remember(podcast.latestEpisode?.publishedDate) {
+    val locale = currentLocale()
+    val updateLabel = remember(podcast.latestEpisode?.publishedDate, locale) {
         podcast.latestEpisode?.publishedDate?.let { published ->
-            formatRelativeUpdateLabel(published)?.let { "Updated $it" }
+            formatUpdatedLabel(published, locale)
         }
-    }
+    }?.asString()
 
     val artworkShape = RoundedCornerShape(10.dp)
     val dragScale by animateFloatAsState(
@@ -254,9 +297,10 @@ internal fun LatestEpisodeRow(
     val progress = podcast.resumeProgress ?: 0f
     val isCompleted = showAsPlayed || status == EpisodeStatus.COMPLETED
     val isInProgress = !showAsPlayed && status == EpisodeStatus.IN_PROGRESS
-    val relativePublished = remember(episode.publishedDate) {
-        formatRelativeUpdateLabel(episode.publishedDate)
-    }
+    val locale = currentLocale()
+    val relativePublished = remember(episode.publishedDate, locale) {
+        formatRelativeUpdateLabel(episode.publishedDate, locale)
+    }?.asString()
 
     Row(
         modifier = modifier
@@ -302,7 +346,7 @@ internal fun LatestEpisodeRow(
                 if (relativePublished != null) {
                     Text(
                         text = relativePublished.replaceFirstChar {
-                            if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+                            if (it.isLowerCase()) it.titlecase(locale) else it.toString()
                         },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
@@ -310,7 +354,7 @@ internal fun LatestEpisodeRow(
                     )
                 }
                 if (episode.duration > 0) {
-                    val displayText = episodeMetaDurationLabel(episode, isInProgress, progress)
+                    val displayText = episodeMetaDurationLabel(episode, isInProgress, progress, locale).asString()
                     Text(
                         text = if (relativePublished != null) "· $displayText" else displayText,
                         style = MaterialTheme.typography.labelSmall,
@@ -373,7 +417,7 @@ private fun LatestEpisodePlayButton(onPlay: () -> Unit) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
             Icon(
                 imageVector = Icons.Rounded.PlayArrow,
-                contentDescription = "Play episode",
+                contentDescription = stringResource(R.string.library_play_episode),
                 tint = iconColor,
                 modifier = Modifier.size(24.dp),
             )
@@ -517,7 +561,7 @@ internal fun EpisodeRowArtwork(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Check,
-                    contentDescription = "Played",
+                    contentDescription = stringResource(R.string.library_played),
                     tint = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.size(12.dp)
                 )

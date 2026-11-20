@@ -28,6 +28,9 @@ Nothing outside this module depends on it. Inside it, screens depend only on the
 `LiveWatchContainer` builds the real graph. A debug build made with `-Pwear.sample=true` swaps in
 the sample shows under `preview.*`; a release build never shows made-up content.
 
+The watch follows the watch's own language, with no App language setting. Debug builds add the
+en-XA and ar-XB pseudo-locales ([translating](../docs/i18n/TRANSLATING.md)).
+
 ## Internal structure
 
 ```text
@@ -152,7 +155,7 @@ src/release/java/...         # release WatchContainerFactory
 
 ## Testing notes
 
-Tests live in `wear/src/test` (JUnit 5, plain JVM, fakes for the ports).
+Tests live in `wear/src/test` (JUnit 5, plain JVM, fakes for the ports; Robolectric only where `android.icu` formats dates).
 
 | Area | Test class |
 | :--- | :--- |

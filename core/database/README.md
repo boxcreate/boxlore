@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Owns the main Room database (`BoxLoreDatabase`): its entities, DAOs, type converters, migrations and exported schemas. It stores shows, listening history and timed listening, the queue, downloads and auto-download state, RSS episodes, feed-only extras, local copies of Podcast Index feeds, folders, and episode identity (aliases, shared like and completion state, and the feed address repair's per-show progress).
+Owns the main Room database (`BoxLoreDatabase`): its entities, DAOs, type converters, migrations and exported schemas. It stores shows, listening history and timed listening, the queue, downloads and auto-download state, RSS episodes, feed-only extras, local copies of Podcast Index feeds, folders, playlists, and episode identity (aliases, shared like and completion state, and the feed address repair's per-show progress).
 
 It does not own repositories, sync, feed parsing or ranking. Catalog and sync logic live in [`:core:catalog`](../catalog/README.md), local feed copies are read and refreshed in [`:core:rss`](../rss/README.md), and ranking keeps its own database in [`:core:ranking`](../ranking/README.md).
 
@@ -14,7 +14,7 @@ It does not own repositories, sync, feed parsing or ranking. Catalog and sync lo
 | Table | Entity | DAO | Stores / used by |
 | :--- | :--- | :--- | :--- |
 | `podcasts` | `PodcastEntity` | `PodcastDao` | Shows, follow state, per-show settings, saved feed addresses, sync flags; catalog, `:core:rss`, playback, downloads |
-| `listening_history` | `ListeningHistoryEntity` | `ListeningHistoryDao` | Progress, likes, completion and listening dates per stored episode ID; playback, sync, backup |
+| `listening_history` | `ListeningHistoryEntity` | `ListeningHistoryDao` | Progress, likes, completion, archive and listening dates per stored episode ID; playback, sync, backup |
 | `listening_sessions` | `ListeningSessionEntity` | `ListeningSessionDao` | Timed plays with origin, source, output and release date; playback, insights, backup |
 | `listening_rollups` | `ListeningRollupEntity` | `ListeningRollupDao` | Daily summaries per origin, day and episode, with `ListeningDayTotals`; insights, sync, backup |
 | `listening_days_pushed` | `PushedListeningDayEntity` | `ListeningPushDao` | Each day as this phone knows the cloud holds it; `ListeningInsightsMaintenance` |
@@ -26,7 +26,8 @@ It does not own repositories, sync, feed parsing or ranking. Catalog and sync lo
 | `episode_supplements`, `episode_supplement_items` | `EpisodeSupplementEntity`, `EpisodeSupplementItemEntity` | `EpisodeSupplementDao` | Feed-only extras under a Podcast Index show, with feed validators; `:core:rss` |
 | `local_episode_feeds`, `local_episodes` | `LocalEpisodeFeedEntity`, `LocalEpisodeEntity` | `LocalEpisodeCatalogDao` | Local copies of Podcast Index feeds; `:core:rss`, catalog |
 | `folders`, `podcast_folder_cross_ref` | `FolderEntity`, `PodcastFolderCrossRef` | `FolderDao` | Custom folders; catalog's folder repository |
-| `episode_aliases`, `episode_group_state` | `EpisodeAliasEntity`, `EpisodeGroupStateEntity` | `EpisodeIdentityDao` | Every stored ID of an episode and its shared like and completion; `EpisodeListenerStore`, `:core:rss` linkers, sync, backup |
+| `playlists`, `playlist_shows` | `PlaylistEntity`, `PlaylistShowEntity` | `PlaylistDao` | Playlists with their episode order (`newest`/`oldest`) and their shows in order; one row per show per playlist, deleted with the playlist. `PlaylistDao` also reads the stored episodes (`local_episodes`, `rss_episodes`) and in-progress history a playlist plays from |
+| `episode_aliases`, `episode_group_state` | `EpisodeAliasEntity`, `EpisodeGroupStateEntity` | `EpisodeIdentityDao` | Every stored ID of an episode and its shared like, completion and archive; `EpisodeListenerStore`, `:core:rss` linkers, sync, backup |
 | `upgrade_repair_shows` | `UpgradeRepairShowEntity` | `UpgradeRepairDao` | Per-show progress of the feed address repair; catalog's upgrade repair |
 
 - `EpisodeListenerStore` (`BoxLoreDatabase.episodeListenerStore()`): reads and writes one listener state per episode across its stored IDs, built on `EpisodeGroup` and `EpisodeListenerProjection`. Rules: [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md#5-aliases-on-the-phone).
@@ -48,6 +49,9 @@ src/main/java/cx/aswin/boxlore/core/database/
   ListeningDataMigration.kt          # 39→40
   ListeningTotalsMigration.kt        # 40→41
   ListeningReleaseKnownMigration.kt  # 41→42
+  ShowPlaybackAndPlaylistsMigration.kt  # 42→43
+  ShowPlaylistsMigration.kt          # 43→44 and the direct 42→44
+  DismissedEpisodesMigration.kt      # 44→45
   BriefingArtworkCompatibility.kt    # open callback and triggers for Brief artwork
   Converters.kt
   PodcastEntity.kt, PodcastDao.kt, FeedAddressWrite.kt, PodcastScoring.kt
@@ -62,6 +66,7 @@ src/main/java/cx/aswin/boxlore/core/database/
   EpisodeSupplementEntity.kt, EpisodeSupplementItemEntity.kt, EpisodeSupplementDao.kt
   LocalEpisodeFeedEntity.kt, LocalEpisodeEntity.kt, LocalEpisodeCatalogDao.kt
   FolderEntity.kt, PodcastFolderCrossRef.kt, FolderDao.kt
+  PlaylistEntity.kt, PlaylistDao.kt
   EpisodeAliasEntity.kt              # alias entity, state and provenance values
   EpisodeAliasSeeding.kt             # v39 alias seeding rules (pure)
   EpisodeGroupStateEntity.kt, EpisodeIdentityDao.kt, EpisodeRecipeIdReads.kt
@@ -70,7 +75,7 @@ src/main/java/cx/aswin/boxlore/core/database/
   dao/QueueDao.kt
   entities/QueueItem.kt, QueueMetadataEntity.kt, QueueRemovalIdentity.kt
 src/upgradeFixtures/java/            # RoomSchemaFixture, LegacyRows (shared with :core:catalog tests)
-schemas/                             # exported Room schemas, versions 30–42
+schemas/                             # exported Room schemas, versions 30–45
 ```
 
 ## Dependencies
@@ -95,7 +100,7 @@ schemas/                             # exported Room schemas, versions 30–42
 - Table and column names are stable; other modules, backups and sync rely on them.
 - Episode IDs, aliases, the owner rule, orphan rematch, RSS switch links and renumbered shows follow [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md). Aliases and group state survive catalog eviction.
 - Whole-row writers keep columns they don't own: `PodcastDao.upsert` keeps `epNs` (and the address columns while `feedUrl` is unchanged), `LocalEpisodeCatalogDao.upsertFeed` keeps the follow, cleanup, namespace and show-metadata columns, and `ListeningHistoryDao.upsert` keeps listening dates.
-- `listening_history.firstPlayedAt` and `finishedAt`: null means not yet, 0 means before boxlore recorded dates, otherwise epoch ms.
+- `listening_history.firstPlayedAt` and `finishedAt`: null means not yet, 0 means before boxlore recorded dates, otherwise epoch ms. `dismissedAt` (Archive): 0 never decided, positive archived at, negative brought back at minus that time; an archived row keeps its progress and completion and never counts as listening. Clearing or removing history keeps each archive decision (`archiveOnly`, `EpisodeListenerStore.archiveOnlyState`).
 - `local_episodes.legacy` defaults to 1 for rows that existed before v39; raw SQL inserting into `local_episodes` must set it.
 - `local_episode_feeds.followed` follows the subscription and the unsubscribe TTL (`setTtlAndFollowed`); a feed copy with a TTL is not ready for live lists.
 - `ListeningRollupEntity.THIS_DEVICE` (`''`) marks summaries from before v40 until this installation claims them.
@@ -110,8 +115,9 @@ Stored values, never renamed:
 - `DownloadedEpisodeEntity.downloadOrigin`: `unknown`, `manual`, `auto`, `smart`.
 - `ListeningSessionValues`: sources `lore`, `smart_queue`; outputs `speaker`, `headphones`, `bluetooth`, `car`, `cast`.
 - `LocalEpisodeFeedEntity.feedOrder` (`LocalFeedOrder`): `newest_first`, `oldest_first`, `mixed`.
+- `PlaylistEntity.episodeOrder` (`PlaylistOrder`): `newest`, `oldest`.
 
-Schema versions (the current version is 42):
+Schema versions (the current version is 45):
 
 | Version | Migration adds |
 | :--- | :--- |
@@ -128,14 +134,17 @@ Schema versions (the current version is 42):
 | 40 | Listening dates, session origin and details, rollups keyed by origin, `listening_days_pushed`, `played_shows` |
 | 41 | Nine richer daily totals on `listening_rollups` and `listening_days_pushed` (0 means not known) |
 | 42 | `releaseKnownMs` on the same two tables (0 means not known) |
+| 43 | `podcasts.playbackSpeedOverride` and `skipSilenceOverride` (null means the app setting), episode `playlists` and `playlist_items` |
+| 44 | `playlists.episodeOrder` and `playlist_shows`; each playlist keeps its episodes' shows in first-appearance order, then `playlist_items` is dropped. 42→44 is also a direct path |
+| 45 | `listening_history.dismissedAt`, `episode_group_state.dismissedAt` and `dismissClearedAt` |
 
 Migration rules:
 
-- Never edit a shipped migration or exported schema: Room refuses to open a file whose schema differs at the same version. Any schema change takes a new version (43 next) and a new exported schema.
-- Migrations only add: no stored ID or value changes, and new columns carry defaults so existing rows need no rewrite.
+- Never edit a shipped migration or exported schema: Room refuses to open a file whose schema differs at the same version. Any schema change takes a new version (46 next) and a new exported schema.
+- Migrations only add (43→44 alone converts and drops `playlist_items`): no stored ID or value changes, and new columns carry defaults so existing rows need no rewrite.
 - Add each new migration to `BoxLoreDatabase.ALL_MIGRATIONS`. `BoxLoreDatabase.builder` is the one configuration, used by `getDatabase` and the upgrade tests.
 - A version from 12 on with no path fails to open instead of erasing data. Only versions 1–11 and downgrades still recreate the database empty.
-- Test each new version with an upgrade test that builds the previous version from its exported schema (`RoomSchemaFixture`), opens it through `builder` and checks every stored value survives (`RoomV39UpgradeTest` to `RoomV42UpgradeTest`). For a large change, also compare the upgraded file with a fresh install, as the v39 and v40 tests do.
+- Test each new version with an upgrade test that builds the previous version from its exported schema (`RoomSchemaFixture`), opens it through `builder` and checks every stored value survives (`RoomV39UpgradeTest` to `RoomV45UpgradeTest`). For a large change, also compare the upgraded file with a fresh install, as the v39 and v40 tests do.
 
 ## Testing notes
 
@@ -143,11 +152,11 @@ Tests live in `core/database/src/test` (JUnit 5, Robolectric Room); shared upgra
 
 | Area | Test classes |
 | :--- | :--- |
-| Upgrades and migrations | `RoomV39UpgradeTest`, `RoomV40UpgradeTest`, `RoomV41UpgradeTest`, `RoomV42UpgradeTest`, `AutoDownloadMigrationTest`, `Migration36To37Test`, `DownloadedEpisodeMigration35To36Test`, `CustomFolderMigration33To34Test`, `CustomGenreMigration32To33Test`, `LocalCatalogMigration31To32Test` |
+| Upgrades and migrations | `RoomV39UpgradeTest`, `RoomV40UpgradeTest`, `RoomV41UpgradeTest`, `RoomV42UpgradeTest`, `RoomV43UpgradeTest`, `RoomV44UpgradeTest`, `RoomV45UpgradeTest`, `AutoDownloadMigrationTest`, `Migration36To37Test`, `DownloadedEpisodeMigration35To36Test`, `CustomFolderMigration33To34Test`, `CustomGenreMigration32To33Test`, `LocalCatalogMigration31To32Test` |
 | Episode identity | `EpisodeAliasSeedingTest`, `EpisodeIdentityDaoTest`, `EpisodeListenerProjectionTest`, `EpisodeListenerStoreTest`, `EpisodeRecipeIdReadsTest`, `SwitchedShowListeningTest` |
 | Shows and feed addresses | `PodcastDaoInMemoryTest`, `PodcastDaoExtendedTest`, `PodcastFeedAddressDaoTest`, `PodcastScoringTest` |
 | History and listening | `ListeningHistoryDaoInMemoryTest`, `ListeningDatesTest`, `ListeningRollupMergeTest`, `ListeningInsightsDaoInMemoryTest`, `PlayedShowDaoTest` |
-| Queue | `QueueDaoInMemoryTest`, `QueueRichRemovalsTest` |
+| Queue and playlists | `QueueDaoInMemoryTest`, `QueueRichRemovalsTest`, `PlaylistDaoInMemoryTest` |
 | Catalog, RSS, downloads | `LocalEpisodeCatalogDaoOwnersTest`, `RssEpisodeDaoInMemoryTest`, `DownloadedEpisodeDaoInMemoryTest`, `AutoDownloadDaoTest` |
 | Converters and artwork | `ConvertersEpisodeIdentityTest`, `EpisodeToDomainArtworkTest`, `BriefingArtworkCompatibilityTest` |
 

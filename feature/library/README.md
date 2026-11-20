@@ -2,17 +2,18 @@
 
 ## Purpose
 
-Owns the Library tab: the hub, Subscriptions (Shows and New Episodes, with folders), Liked episodes and Downloads. It presents data from injected core dependencies and does not own Listening history (`:feature:history`), show or episode details (`:feature:info`), download settings (`:feature:settings`), download workers, playback services, ranking, folder storage or route registration.
+Owns the Library tab: the hub, Subscriptions (Shows and New Episodes, with folders), Liked episodes, Playlists and Downloads. It presents data from injected core dependencies and does not own Listening history (`:feature:history`), show or episode details (`:feature:info`), download settings (`:feature:settings`), download workers, playback services, ranking, folder or playlist storage or route registration.
 
 ## Public API
 
-- `LibraryScreen`: the hub on the app's `library` route, with cards for Subscriptions, Liked Episodes, Downloads and Listening History.
+- `LibraryScreen`: the hub on the app's `library` route, with cards for Subscriptions, Liked Episodes, Downloads, Listening History and, last, Playlists (when the app passes a `LibraryPlaylistsCard`).
 - `SubscriptionsScreen`: Shows and New Episodes on `library/subscriptions?tab={tab}`. `LocalLastSeenEpisodes` supplies the last-seen episode per show for NEW badges.
 - `LikedEpisodesScreen`, `DownloadedEpisodesScreen` and `DownloadedShowEpisodesScreen` (wrappers over `downloads/`).
 - `DownloadedEpisodeEntity.toEpisode()` / `toPodcast()`: map a download to domain models, keeping its own show ID and name and its chapter and transcript links.
 - `LibraryViewModel` and `LibraryUiState`: one ViewModel class for every Library destination, built by the app from core repositories, `AdaptiveCandidateScorer` and an optional `FolderRepository`.
 - `SubscriptionSort`, `DownloadsSortOrder` and `ShowSortOrder`: sort choices shown by the screens.
 - `PlayAllFab`: the shared Play All button.
+- `PlaylistsScreen`, `PlaylistDetailScreen` and `PlaylistsViewModel` (`playlists/`): Library › Playlists and one playlist's page, built by the app from `:core:catalog`'s `PlaylistRepository` and `PlaylistPlaybackPorts` (followed shows, folders, completed IDs, play and Up next Undo).
 
 ## Subscriptions
 
@@ -41,6 +42,13 @@ Owns the Library tab: the hub, Subscriptions (Shows and New Episodes, with folde
 - Swiping a row queues it or marks it played (both also TalkBack actions). Undoing a queue add removes it with `deferSkipSignal`, so it is not a Smart Queue rejection.
 - Marked played is held in `LibraryViewModel.pendingPlayedEpisodeIds` while its Undo shows, then saved with `markAllEpisodesCompleted` however the message closes, because saving clears the listening position. Pure rules live in `LatestSwipeLogic`.
 
+## Playlists
+
+- A playlist is a set of followed shows with an episode order. The Playlists page lists them with a cover of up to four shows and the show count; Rename and Delete (asked first) are dialogs. New playlist (`PlaylistShowPicker`) takes a name and followed shows, with chips that add a Library folder's shows to the pick (no lasting folder link); creating one opens it.
+- A playlist's page shows its show count, Newest first / Oldest first, Play, Coming up (the next ten episodes Play would queue, worked out again when the page comes back) and its shows: Add shows uses the same picker, remove has Undo, and a show no longer followed or hidden stays, marked as skipped. With no shows it says how to add some.
+- Play queues the first 20 episodes (never past `PlaybackRepository.QUEUE_LIMIT`) through `QueueManager.playPlaylist`; the playback service tops the queue up from the playlist. When it replaces a queue, an Up next replaced snackbar offers Undo (`QueueManager.restoreUpNext`).
+- `PlaylistPagesState` (saved state) holds what is open, the name being typed and the picked shows.
+
 ## Downloads and Liked
 
 - Downloads groups by show, sorts by `DownloadsSortOrder`, and supports multi-select delete (checklist in the top bar, or long-press a row). A failed download, other than an auto-download, offers Download Again in place of Play.
@@ -49,7 +57,7 @@ Owns the Library tab: the hub, Subscriptions (Shows and New Episodes, with folde
 
 ## Adaptive layouts
 
-Window gates and state retention follow [`ARCHITECTURE.md#adaptive-ui-and-state`](../../ARCHITECTURE.md#adaptive-ui-and-state). Library-specific behaviour: `TabletLibraryHub` lays the hub out in bounded columns, `LibraryPlaybackLayout` gives Play All its own row on tablets so it never covers episode controls, and folder pages keep one owner across window changes (`FolderPagesAdaptiveTest`).
+Window gates and state retention follow [`ARCHITECTURE.md#adaptive-ui-and-state`](../../ARCHITECTURE.md#adaptive-ui-and-state). Library-specific behaviour: `TabletLibraryHub` lays the hub out in bounded columns, `LibraryPlaybackLayout` gives Play All its own row on tablets so it never covers episode controls, and folder and playlist pages keep one owner across window changes (`FolderPagesAdaptiveTest`, `PlaylistPagesAdaptiveTest`).
 
 ## Internal structure
 
@@ -62,8 +70,10 @@ src/main/java/cx/aswin/boxlore/feature/library/
   DownloadedEpisodesScreen.kt               # public wrappers over downloads/
   LibraryPlaybackLayout.kt, PlayAllFab.kt
   FolderEditLogic.kt                        # folder save rules shared by the editors
+  LibraryPlaylistsCard.kt                   # the hub's Playlists card
   downloads/                                # Downloads list, a show's downloads, Smart Downloads card, models
   logic/                                    # SubscriptionManualOrderLogic, SubscriptionSmartOrderLogic, LibraryEpisodeStatusLogic
+  playlists/                                # Playlists and playlist pages, show picker, ViewModel and saved state
   subscriptions/                            # tabs, rows, chips, sort sheet, reorder, context menus,
                                             #   folder pages and editors, New Episodes swipe, refresh
                                             #   and playback queue logic
@@ -85,9 +95,9 @@ src/main/java/cx/aswin/boxlore/feature/library/
 ## Persistence & identity
 
 - This module owns no storage files. Keys it reads and writes live in `:core:prefs`: `subscription_sort`, `subscription_manual_order`, `subscription_folder_sort`, `subscription_intra_folder_sort`, `subscriptions_grid_view`, `hide_completed_in_subs`, `subscriptions_tab_style`, `home_shortcuts_in_library`, `auto_organize_folders_enabled`, `auto_organize_folder_size`, `auto_organize_tile_covers` and `home_pinned_podcast_ids`.
-- Folders and their members are stored by `:core:catalog` and `:core:database`; download entries and workers by `:core:downloads`; media IDs by `:core:playback`.
-- Routes `library`, `library/subscriptions?tab={tab}`, `library/liked`, `library/downloads` and the `boxlore://library/subscriptions` deep link are registered in `:app` and must stay stable.
-- Analytics: hub and destination views send `library_destination_viewed`; folder pages and sheets send `screen_viewed`. Events are listed in [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md).
+- Folders, playlists and their members are stored by `:core:catalog` and `:core:database`; download entries and workers by `:core:downloads`; media IDs by `:core:playback`.
+- Routes `library`, `library/subscriptions?tab={tab}`, `library/liked`, `library/playlists`, `library/playlists/{playlistId}`, `library/downloads` and the `boxlore://library/subscriptions` deep link are registered in `:app` and must stay stable.
+- Analytics: hub and destination views send `library_destination_viewed`; folder and playlist pages and sheets send `screen_viewed`; playlist changes send `playlist_modified` (source `library`). Events are listed in [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md).
 
 ## Testing notes
 
@@ -99,8 +109,9 @@ Hermetic JVM tests live in `feature/library/src/test`, using fakes from [`:core:
 | Genres, filters and tabs | `SubscriptionFilterLogicTest`, `SubscriptionsTabStyleTest` |
 | Folders | `FolderEditLogicTest`, `SubscriptionFolderLayoutLogicTest`, `FolderSummaryLogicTest`, `AutoOrganizePreviewLogicTest`, `FolderFlowLogicTest` |
 | New Episodes | `LatestEpisodesDisplayLogicTest`, `LatestPlaybackQueueLogicTest`, `LatestSwipeLogicTest`, `LatestEpisodeActionsTest` |
+| Playlists | `PlaylistPagesStateTest`, `PlaylistsViewModelTest` |
 | Downloads | `DownloadModelsTest` |
-| Adaptive layouts | `FolderPagesAdaptiveTest`, `LibraryPlaybackLayoutTest` |
+| Adaptive layouts | `FolderPagesAdaptiveTest`, `PlaylistPagesAdaptiveTest`, `LibraryPlaybackLayoutTest` |
 
 `SubscriptionsScreensCaptureTest` and `LibraryTabletAuditCaptureTest` are local review captures that skip unless asked for; see [`docs/TESTING.md#screenshots`](../../docs/TESTING.md#screenshots).
 

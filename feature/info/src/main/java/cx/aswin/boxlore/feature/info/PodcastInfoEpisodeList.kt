@@ -30,21 +30,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.feature.info.branded.BrandedShowHeader
 import cx.aswin.boxlore.feature.info.branded.BrandedSpotlight
 import cx.aswin.boxlore.feature.info.branded.LocalBrandedPage
 import cx.aswin.boxlore.feature.info.branded.brandedEpisodePicture
 import cx.aswin.boxlore.feature.info.branded.brandedShowPicture
 import cx.aswin.boxlore.feature.info.branded.brandedSpotlightKey
-import cx.aswin.boxlore.feature.info.components.EpisodeCardSkeleton
 import cx.aswin.boxlore.feature.info.components.EpisodeFeedItemRow
 import cx.aswin.boxlore.feature.info.components.EpisodeFeedRowUi
 import cx.aswin.boxlore.feature.info.components.EpisodeListIndicators
+import cx.aswin.boxlore.feature.info.components.EpisodeListSkeleton
 import cx.aswin.boxlore.feature.info.components.EpisodePlayStateWrapper
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionUi
 import cx.aswin.boxlore.feature.info.components.EpisodeToolbar
@@ -65,7 +69,6 @@ import cx.aswin.boxlore.feature.info.logic.podcastSearchCoverage
 import cx.aswin.boxlore.feature.info.logic.podcastSearchHasNoResults
 import cx.aswin.boxlore.feature.info.logic.podcastSearchShowsFailure
 import cx.aswin.boxlore.feature.info.sections.PodcastInfoHeroSection
-import java.text.NumberFormat
 
 internal data class EpisodeListContentState(
     val listState: LazyListState,
@@ -87,6 +90,10 @@ internal data class EpisodeListContentState(
     val hideCompletedFill: HideCompletedFill.State = HideCompletedFill.State.NONE,
     /** A branded page's latest episode, shown in its spotlight card instead of the list. */
     val spotlightEpisode: Episode? = null,
+    /** The show is hidden everywhere: a note under its actions says so and offers Unhide. */
+    val isHidden: Boolean = false,
+    /** Episode titles only: short title rows and matching loading rows. */
+    val titlesOnly: Boolean = false,
 )
 
 internal data class EpisodeListContentCallbacks(
@@ -110,6 +117,7 @@ internal data class EpisodeListContentCallbacks(
     val onShowCompleted: () -> Unit = {},
     /** Try again after a page of episodes couldn't load ([PodcastInfoUiState.Success.pageLoadFailed]). */
     val onRetryPage: () -> Unit = {},
+    val onUnhide: () -> Unit = {},
 )
 
 @Composable
@@ -177,6 +185,10 @@ internal fun PodcastInfoEpisodeList(
             onAction = callbacks.onWarningAction,
         )
 
+        if (contentState.isHidden && !contentState.isSearchActive) {
+            item(key = "hidden_note") { PodcastInfoHiddenNote(onUnhide = callbacks.onUnhide, modifier = Modifier.animateItem()) }
+        }
+
         brandedSpotlightItem(contentState, callbacks, viewModel)
 
         feedStatusItem(contentState.state.feedStatus, contentState.hideCompletedFill, contentState.isSearchActive)
@@ -208,7 +220,7 @@ internal fun PodcastInfoEpisodeList(
         if (showsLoadingCards(contentState)) {
             // Loading more, or every episode for oldest first: cards in the list's own shape.
             items(count = LOADING_CARDS, key = { "loading_card_$it" }) {
-                EpisodeCardSkeleton(Modifier.padding(horizontal = 16.dp).animateItem())
+                EpisodeListSkeleton(contentState.titlesOnly, Modifier.padding(horizontal = 16.dp).animateItem())
             }
         }
 
@@ -244,7 +256,7 @@ private fun LazyListScope.searchCoverageItem(contentState: EpisodeListContentSta
         podcastSearchCoverage(contentState.isSearchActive, state.searchQuery, state.isSearching, state.searchFailed, state.searchedNewest) ?: return
     item(key = "search_coverage") {
         Text(
-            text = stringResource(R.string.podcast_info_search_newest_only, NumberFormat.getIntegerInstance().format(searched)),
+            text = pluralStringResource(R.plurals.podcast_info_search_newest_only, searched, LocaleFormats.number(searched.toLong(), currentLocale())),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
@@ -369,7 +381,7 @@ private fun LazyListScope.brandedSpotlightItem(
                 ),
                 isCompleted = isCompleted,
                 progress = podcastEpisodeCardProgress(isResume, isCompleted, playState?.progress ?: 0f),
-                timeLeft = playState?.timeLeft,
+                timeLeft = playState?.timeLeft?.asString(),
                 isSelected = episode.id in contentState.selectedEpisodeIdSet,
                 onOpen = {
                     if (contentState.selectionActive) {
@@ -421,6 +433,7 @@ private fun LazyListScope.episodesSection(
                 podcastImageUrl = contentState.state.podcast.imageUrl.takeIf { it.isNotEmpty() }
                     ?: contentState.state.podcast.fallbackImageUrl,
                 isSearchActive = contentState.isSearchActive,
+                titlesOnly = contentState.titlesOnly,
             ),
             onEpisodeClick = callbacks.onEpisodeClick,
             selection = EpisodeSelectionUi(

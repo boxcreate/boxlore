@@ -87,6 +87,8 @@ internal fun androidx.navigation.NavGraphBuilder.addPodcastDestination(w: NavGra
             subscriptionForegroundSync = container.subscriptionForegroundSync,
             folderRepository = container.folderRepository,
             applicationScope = container.pageWorkScope,
+            playlistRepository = container.playlistRepository,
+            episodeTitlesOnly = container.episodeTitlesOnly,
         )
         val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.info.PodcastInfoViewModel>(
             factory = cx.aswin.boxlore.feature.info.InfoViewModelAssembler.podcastInfoFactory(
@@ -126,7 +128,7 @@ internal fun androidx.navigation.NavGraphBuilder.addPodcastDestination(w: NavGra
                     entryPointStr = entryPointStr,
                     index = index,
                     podcastId = podcastIdFromInfoUiState(state, podcastId),
-                    podcastTitle = podcastTitleFromInfoUiState(state, "Podcast"),
+                    podcastTitle = podcastTitleFromInfoUiState(state, w.podcastTitleFallback),
                     navigate = { w.navigate(it) },
                 )
             },
@@ -388,7 +390,7 @@ internal fun androidx.navigation.NavGraphBuilder.addEpisodeDeepLinkDestination(w
             episodeAudioUrl = successState?.episode?.audioUrl ?: "",
             episodeDuration = successState?.episode?.duration ?: 0,
             podcastId = successState?.podcastId ?: "",
-            podcastTitle = successState?.podcastTitle ?: "Podcast",
+            podcastTitle = successState?.podcastTitle ?: w.podcastTitleFallback,
             viewModel = viewModel,
             onBack = { navController.popBackStack() },
             onPodcastClick = { pId ->
@@ -399,7 +401,7 @@ internal fun androidx.navigation.NavGraphBuilder.addEpisodeDeepLinkDestination(w
                     navController,
                     ep,
                     successState?.podcastId ?: "",
-                    successState?.podcastTitle ?: "Podcast",
+                    successState?.podcastTitle ?: w.podcastTitleFallback,
                     navigate = { w.navigate(it) },
                 )
             },

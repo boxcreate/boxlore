@@ -59,6 +59,9 @@ interface SharedAppDependencies {
 
     /** OPML outlines an import couldn't settle yet (`boxlore_pending_opml_imports`); null keeps them for one process only (tests). */
     val pendingOpmlImports: cx.aswin.boxlore.core.catalog.backup.PendingOpmlImports? get() = null
+
+    /** The listener's playlists; null when the composition root doesn't provide them (tests), which hides playlist actions. */
+    val playlistRepository: PlaylistRepository? get() = null
 }
 
 /**

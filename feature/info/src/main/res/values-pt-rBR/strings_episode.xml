@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Episode rows, the episode page and the episode options sheet. -->
+    <!-- An episode row's numbers: season %1$d, episode %2$d, abbreviated. -->
+    <string name="episode_list_season_episode_short">T%1$d E%2$d</string>
+    <!-- An episode row's season number, abbreviated. -->
+    <string name="episode_list_season_short">T%1$d</string>
+    <!-- An episode row's episode number, abbreviated. -->
+    <string name="episode_list_episode_short">E%1$d</string>
+    <!-- An episode row while partly played: %1$d hours and %2$d minutes left, in short units. Keep it short. -->
+    <string name="episode_list_time_left_hours">Faltam %1$dh %2$dmin</string>
+    <!-- As above, under an hour: %1$d minutes left. -->
+    <string name="episode_list_time_left_minutes">Faltam %1$dmin</string>
+    <!-- Subtitle under the episode title in the episode options sheet. -->
+    <string name="episode_options_title">Opções do episódio</string>
+    <string name="episode_options_play">Tocar episódio</string>
+    <string name="episode_options_add_queue">Adicionar à fila</string>
+    <string name="episode_options_share">Compartilhar</string>
+    <!-- An episode's licence, under its description. CC0 is the licence's name. -->
+    <string name="episode_info_license_cc0">Domínio público (CC0)</string>
+    <!-- An episode's Creative Commons licence; %1$s is its code, like BY-SA. Creative Commons is the licence's name. -->
+    <string name="episode_info_license_cc">Creative Commons %1$s</string>
+    <string name="episode_info_license_cc_generic">Licença Creative Commons</string>
+    <string name="episode_info_license_all_rights">Todos os direitos reservados</string>
+    <string name="episode_info_license_public_domain">Domínio público</string>
+    <!-- Screen-reader label for an episode link: what it opens, then the website it goes to ("Read the article, nytimes.com"). -->
+    <string name="episode_info_link_description">%1$s, %2$s</string>
+    <!-- Stands in for the show's name on an episode page until the show is known. -->
+    <string name="episode_info_show_placeholder">Podcast</string>
+</resources>

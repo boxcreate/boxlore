@@ -49,12 +49,16 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.AutoTranscriptState
 import cx.aswin.boxlore.core.model.SleepTimerConstants
+import cx.aswin.boxlore.core.model.text.LocaleFormats
+import cx.aswin.boxlore.feature.player.R
 import cx.aswin.boxlore.feature.player.formatTime
 import cx.aswin.boxlore.feature.player.v2.logic.downloadLabel
 import cx.aswin.boxlore.feature.player.v2.logic.formatSpeedLabel
@@ -99,14 +103,19 @@ internal fun QuickActionsTopRow(
     navigation: QuickControlNavigation,
     clickActions: SecondaryClickActions
 ) {
-    val speedIsCustom = kotlin.math.abs(playback.playbackSpeed - 1f) > 0.001f
+    val speedIsCustom = speedChipIsActive(playback.playbackSpeed, playback.audio)
+    val trimHint = playback.audio.trimSilence && !playback.audio.isCasting
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(3.dp)
     ) {
         UtilityAction(
             icon = Icons.Outlined.Speed,
-            label = formatSpeedLabel(playback.playbackSpeed),
+            label = if (trimHint) {
+                stringResource(R.string.player_speed_trim_on, formatSpeedLabel(playback.playbackSpeed))
+            } else {
+                formatSpeedLabel(playback.playbackSpeed)
+            },
             state = UtilityActionState(
                 active = speedIsCustom,
                 status = formatSpeedLabel(playback.playbackSpeed).takeIf { speedIsCustom }
@@ -126,7 +135,7 @@ internal fun QuickActionsTopRow(
         )
         UtilityAction(
             icon = if (library.isDownloaded) Icons.Outlined.DownloadDone else Icons.Outlined.Download,
-            label = downloadLabel(library.isDownloaded, library.isDownloading),
+            label = stringResource(downloadLabel(library.isDownloaded, library.isDownloading)),
             state = UtilityActionState(
                 active = library.isDownloaded,
                 loading = library.isDownloading
@@ -138,7 +147,7 @@ internal fun QuickActionsTopRow(
         )
         UtilityAction(
             icon = Icons.AutoMirrored.Outlined.QueueMusic,
-            label = "Queue",
+            label = stringResource(R.string.player_queue),
             colorScheme = colorScheme,
             shape = shapes.topEnd,
             onClick = clickActions.onQueueClick,
@@ -163,7 +172,7 @@ internal fun QuickActionsBottomRow(
     ) {
         UtilityAction(
             icon = if (library.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-            label = if (library.isLiked) "Liked" else "Like",
+            label = stringResource(if (library.isLiked) R.string.player_liked else R.string.player_like),
             state = UtilityActionState(active = library.isLiked),
             colorScheme = colorScheme,
             shape = shapes.bottomStart,
@@ -172,7 +181,7 @@ internal fun QuickActionsBottomRow(
         )
         UtilityAction(
             icon = Icons.AutoMirrored.Outlined.FormatListBulleted,
-            label = "Chapters",
+            label = stringResource(R.string.player_chapters),
             state = UtilityActionState(
                 enabled = !chaptersBusy,
                 loading = chaptersBusy,
@@ -185,7 +194,7 @@ internal fun QuickActionsBottomRow(
         )
         UtilityAction(
             icon = Icons.Outlined.Subtitles,
-            label = "Transcript",
+            label = stringResource(R.string.player_transcript),
             state = UtilityActionState(
                 active = availability.isTranscriptVisible,
                 enabled = availability.hasTranscript && !transcriptBusy,
@@ -199,7 +208,7 @@ internal fun QuickActionsBottomRow(
         )
         UtilityAction(
             icon = if (library.isPlayed) Icons.Rounded.CheckCircle else Icons.Outlined.CheckCircle,
-            label = if (library.isPlayed) "Played" else "Complete",
+            label = stringResource(if (library.isPlayed) R.string.player_played else R.string.player_complete),
             state = UtilityActionState(active = library.isPlayed),
             colorScheme = colorScheme,
             shape = shapes.bottomEnd,
@@ -215,12 +224,11 @@ internal fun InlineSpeedSelector(
     colorScheme: ColorScheme,
     shapes: QuickControlShapes,
     onBack: () -> Unit,
-    onSpeedSelected: (Float) -> Unit
+    onSpeedSelected: (Float) -> Unit,
+    audio: InlineSpeedAudio = InlineSpeedAudio()
 ) {
     TrackScreenView("player_speed")
-    val speeds = remember {
-        listOf(0.5f, 0.8f, 0.9f, 1f, 1.1f, 1.2f, 1.25f, 1.5f, 1.75f, 2f, 2.5f, 3f)
-    }
+    val speeds = cx.aswin.boxlore.core.playback.ShowPlaybackPolicy.SPEED_OPTIONS
     val currentIndex = speeds.indices.minByOrNull { index ->
         kotlin.math.abs(speeds[index] - currentSpeed)
     } ?: speeds.indexOf(1f)
@@ -233,7 +241,7 @@ internal fun InlineSpeedSelector(
         ) {
             UtilityAction(
                 icon = Icons.AutoMirrored.Rounded.ArrowBack,
-                label = "Back to quick actions",
+                label = stringResource(R.string.player_back_to_quick_actions),
                 colorScheme = colorScheme,
                 shape = shapes.topStart,
                 onClick = onBack,
@@ -241,7 +249,7 @@ internal fun InlineSpeedSelector(
             )
             UtilityAction(
                 icon = Icons.Rounded.Remove,
-                label = "Slower",
+                label = stringResource(R.string.player_slower),
                 state = UtilityActionState(
                     enabled = currentIndex > 0,
                     subdued = currentIndex <= 0
@@ -262,7 +270,7 @@ internal fun InlineSpeedSelector(
             )
             UtilityAction(
                 icon = Icons.Rounded.Add,
-                label = "Faster",
+                label = stringResource(R.string.player_faster),
                 state = UtilityActionState(
                     enabled = currentIndex < speeds.lastIndex,
                     subdued = currentIndex >= speeds.lastIndex
@@ -278,16 +286,12 @@ internal fun InlineSpeedSelector(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            presets.forEachIndexed { index, speed ->
+            presets.forEach { speed ->
                 LabelAction(
                     label = formatSpeedLabel(speed),
                     active = kotlin.math.abs(currentSpeed - speed) < 0.001f,
                     colorScheme = colorScheme,
-                    shape = when (index) {
-                        0 -> shapes.bottomStart
-                        presets.lastIndex -> shapes.bottomEnd
-                        else -> shapes.middle
-                    },
+                    shape = shapes.middle,
                     onClick = {
                         onSpeedSelected(speed)
                         onBack()
@@ -296,6 +300,14 @@ internal fun InlineSpeedSelector(
                 )
             }
         }
+        Spacer(Modifier.height(3.dp))
+        InlineSpeedAudioRow(
+            audio = audio.state,
+            colorScheme = colorScheme,
+            shapes = InlineSpeedAudioShapes(start = shapes.bottomStart, end = shapes.bottomEnd, full = InlineSpeedAudioBottomShape),
+            onUseAppSpeed = audio.onUseAppSpeed,
+            onTrimSilenceChange = audio.onTrimSilenceChange
+        )
     }
 }
 
@@ -326,14 +338,14 @@ internal fun InlineSleepSelector(
         ) {
             UtilityAction(
                 icon = Icons.AutoMirrored.Rounded.ArrowBack,
-                label = "Back to quick actions",
+                label = stringResource(R.string.player_back_to_quick_actions),
                 colorScheme = colorScheme,
                 shape = shapes.topStart,
                 onClick = onBack,
                 modifier = Modifier.weight(1f)
             )
             LabelAction(
-                label = "Off",
+                label = stringResource(R.string.player_off),
                 active = !timerActive,
                 colorScheme = colorScheme,
                 shape = shapes.middle,
@@ -342,7 +354,7 @@ internal fun InlineSleepSelector(
             )
             SleepDurationAction(
                 minutes = 15,
-                label = "15m",
+                label = sleepChipLabel(15),
                 active = !sleepAtEndOfEpisode && remainingMinutes == 15,
                 colorScheme = colorScheme,
                 shape = shapes.middle,
@@ -351,7 +363,7 @@ internal fun InlineSleepSelector(
             )
             SleepDurationAction(
                 minutes = 30,
-                label = "30m",
+                label = sleepChipLabel(30),
                 active = !sleepAtEndOfEpisode && remainingMinutes == 30,
                 colorScheme = colorScheme,
                 shape = shapes.topEnd,
@@ -366,7 +378,7 @@ internal fun InlineSleepSelector(
         ) {
             SleepDurationAction(
                 minutes = 45,
-                label = "45m",
+                label = sleepChipLabel(45),
                 active = !sleepAtEndOfEpisode && remainingMinutes == 45,
                 colorScheme = colorScheme,
                 shape = shapes.bottomStart,
@@ -375,7 +387,7 @@ internal fun InlineSleepSelector(
             )
             SleepDurationAction(
                 minutes = 60,
-                label = "1h",
+                label = sleepChipLabel(60),
                 active = !sleepAtEndOfEpisode && remainingMinutes == 60,
                 colorScheme = colorScheme,
                 shape = shapes.middle,
@@ -384,7 +396,7 @@ internal fun InlineSleepSelector(
             )
             SleepDurationAction(
                 minutes = 120,
-                label = "2h",
+                label = sleepChipLabel(120),
                 active = !sleepAtEndOfEpisode && remainingMinutes == 120,
                 colorScheme = colorScheme,
                 shape = shapes.middle,
@@ -393,7 +405,7 @@ internal fun InlineSleepSelector(
             )
             SleepDurationAction(
                 minutes = SleepTimerConstants.END_OF_EPISODE_MINUTES,
-                label = "End",
+                label = stringResource(R.string.player_sleep_end),
                 active = sleepAtEndOfEpisode,
                 colorScheme = colorScheme,
                 shape = shapes.bottomEnd,
@@ -605,13 +617,13 @@ internal fun SleepAction(
     val hasCountdown = sleepTimerEnd != null && sleepTimerEnd > System.currentTimeMillis()
     val active = hasCountdown || sleepAtEndOfEpisode
     val status = when {
-        sleepAtEndOfEpisode -> "End"
+        sleepAtEndOfEpisode -> stringResource(R.string.player_sleep_end)
         hasCountdown && remainingTime.isNotEmpty() -> remainingTime
         else -> null
     }
     UtilityAction(
         icon = Icons.Outlined.Bedtime,
-        label = "Sleep",
+        label = stringResource(R.string.player_sleep),
         state = UtilityActionState(active = active, status = status),
         colorScheme = colorScheme,
         shape = shape,
@@ -619,3 +631,8 @@ internal fun SleepAction(
         modifier = modifier
     )
 }
+
+/** A sleep chip's short length, such as "15m" or "1h", in the screen's language. */
+@Composable
+private fun sleepChipLabel(minutes: Int): String =
+    LocaleFormats.duration(minutes * 60L, currentLocale(), LocaleFormats.DurationWidth.NARROW)

@@ -27,11 +27,13 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.info.PodcastInfoScreen
 import cx.aswin.boxlore.feature.info.PodcastInfoUiState
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPageShow
+import cx.aswin.boxlore.feature.info.stubArchive
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assume.assumeTrue
@@ -181,16 +183,21 @@ class BrandedPagesPhoneGoldenTest(private val show: String, private val dark: Bo
         `when`(model.downloadingEpisodeIds).thenReturn(MutableStateFlow(emptySet()))
         `when`(model.episodePendingDownloadRemoval).thenReturn(MutableStateFlow(null))
         `when`(model.hideCompletedInShowDetails).thenReturn(MutableStateFlow(false))
+        `when`(model.episodeTitlesOnly).thenReturn(MutableStateFlow(false))
         `when`(model.isPinnedToHome).thenReturn(MutableStateFlow(false))
+        `when`(model.isHidden).thenReturn(MutableStateFlow(false))
         `when`(model.pageShow).thenReturn(MutableStateFlow(PodcastInfoPageShow()))
         `when`(model.globalSkipBeginningMs).thenReturn(MutableStateFlow(0L))
         `when`(model.globalSkipEndingMs).thenReturn(MutableStateFlow(0L))
+        `when`(model.globalPlaybackSpeed).thenReturn(MutableStateFlow(1f))
+        `when`(model.globalTrimSilence).thenReturn(MutableStateFlow(false))
         `when`(model.autoDownloadBackgroundChecksEnabled).thenReturn(MutableStateFlow(false))
         `when`(model.completedEpisodesState).thenReturn(MutableStateFlow(emptySet()))
+        stubArchive(model)
         `when`(model.likedEpisodesState).thenReturn(MutableStateFlow(emptySet()))
         // "-partway": the latest episode is 38% heard.
         val partway = if (show.endsWith("-partway")) {
-            mapOf(episodes.first().id to PodcastInfoViewModel.EpisodePlaybackState(isResume = true, progress = 0.38f, timeLeft = "28m left"))
+            mapOf(episodes.first().id to PodcastInfoViewModel.EpisodePlaybackState(isResume = true, progress = 0.38f, timeLeft = UiText.raw("28m left")))
         } else {
             emptyMap()
         }

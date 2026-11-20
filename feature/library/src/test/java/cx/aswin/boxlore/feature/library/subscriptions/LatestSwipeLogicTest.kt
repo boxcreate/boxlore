@@ -4,6 +4,7 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.feature.library.R
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -51,9 +52,9 @@ class LatestSwipeLogicTest {
 
     @Test
     fun queueMessagesSayWhatHappened() {
-        assertEquals("Added to queue", latestQueueMessage(LatestQueueOutcome.Added))
-        assertEquals("Already in your queue", latestQueueMessage(LatestQueueOutcome.AlreadyQueued))
-        assertTrue(latestQueueMessage(LatestQueueOutcome.QueueFull).startsWith("Your queue is full"))
+        assertEquals(R.string.library_queue_added, latestQueueMessage(LatestQueueOutcome.Added))
+        assertEquals(R.string.library_queue_already_queued, latestQueueMessage(LatestQueueOutcome.AlreadyQueued))
+        assertEquals(R.string.library_queue_full, latestQueueMessage(LatestQueueOutcome.QueueFull))
     }
 
     @Test
@@ -63,6 +64,17 @@ class LatestSwipeLogicTest {
         val shown = visibleLatestPodcasts(rows, hideCompleted = true, pendingPlayedIds = setOf("a_ep"))
 
         assertEquals(listOf("b"), shown.map { it.id })
+    }
+
+    @Test
+    fun archivedLatestEpisodesNeverListWhateverHidePlayedSays() {
+        val rows = listOf(podcast("a"), podcast("b"), podcast("c", EpisodeStatus.COMPLETED))
+
+        val listable = latestWithoutArchived(rows, dismissedIds = setOf("a_ep", "c_ep"))
+
+        assertEquals(listOf("b"), listable.map { it.id })
+        assertEquals(listOf("b"), visibleLatestPodcasts(listable, hideCompleted = false, pendingPlayedIds = emptySet()).map { it.id })
+        assertEquals(listOf("a", "b", "c"), latestWithoutArchived(rows, dismissedIds = emptySet()).map { it.id })
     }
 
     @Test

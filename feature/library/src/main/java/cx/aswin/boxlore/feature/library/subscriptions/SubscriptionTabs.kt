@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.library.subscriptions
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -12,9 +13,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryTab
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryTabSwitcher
+import cx.aswin.boxlore.feature.library.R
 import cx.aswin.boxlore.feature.library.SubscriptionSort
 
 @Composable
@@ -36,15 +39,18 @@ internal fun ExpressiveTabSwitcher(
     )
 }
 
-internal fun showsSortLabel(sort: SubscriptionSort): String = when (sort) {
-    SubscriptionSort.SmartRank -> "Smart"
-    SubscriptionSort.RecentlyUpdated -> "Updated"
-    SubscriptionSort.Alphabetical -> "A–Z"
-    SubscriptionSort.MostListened -> "Listened"
-    SubscriptionSort.Manual -> "Manual"
+@StringRes
+internal fun showsSortLabel(sort: SubscriptionSort): Int = when (sort) {
+    SubscriptionSort.SmartRank -> R.string.library_sort_smart
+    SubscriptionSort.RecentlyUpdated -> R.string.library_sort_updated_short
+    SubscriptionSort.Alphabetical -> R.string.library_sort_a_to_z
+    SubscriptionSort.MostListened -> R.string.library_sort_listened_short
+    SubscriptionSort.Manual -> R.string.library_sort_manual
 }
 
-internal fun latestSortLabel(useSmartRank: Boolean): String = if (useSmartRank) "Smart" else "Chronological"
+@StringRes
+internal fun latestSortLabel(useSmartRank: Boolean): Int =
+    if (useSmartRank) R.string.library_sort_smart else R.string.library_sort_chronological
 
 /**
  * Explore-style genre pills only (icons + short labels). Sort / hide-played live in the top bar.
@@ -79,7 +85,7 @@ internal fun ShowsSortMenuItems(
     onDismiss: () -> Unit
 ) {
     ShowsSortOption(
-        label = "Smart Sort",
+        label = stringResource(R.string.library_sort_smart_sort),
         selected = currentSort == SubscriptionSort.SmartRank,
         onClick = {
             onSortChange(SubscriptionSort.SmartRank)
@@ -87,7 +93,7 @@ internal fun ShowsSortMenuItems(
         }
     )
     ShowsSortOption(
-        label = "Recently Updated",
+        label = stringResource(R.string.library_sort_recently_updated_menu),
         selected = currentSort == SubscriptionSort.RecentlyUpdated,
         onClick = {
             onSortChange(SubscriptionSort.RecentlyUpdated)
@@ -95,7 +101,7 @@ internal fun ShowsSortMenuItems(
         }
     )
     ShowsSortOption(
-        label = "A-Z",
+        label = stringResource(R.string.library_sort_a_to_z_menu),
         selected = currentSort == SubscriptionSort.Alphabetical,
         onClick = {
             onSortChange(SubscriptionSort.Alphabetical)
@@ -103,7 +109,7 @@ internal fun ShowsSortMenuItems(
         }
     )
     ShowsSortOption(
-        label = "Most Listened",
+        label = stringResource(R.string.library_sort_most_listened_menu),
         selected = currentSort == SubscriptionSort.MostListened,
         onClick = {
             onSortChange(SubscriptionSort.MostListened)
@@ -111,7 +117,7 @@ internal fun ShowsSortMenuItems(
         }
     )
     ShowsSortOption(
-        label = "Manual",
+        label = stringResource(R.string.library_sort_manual),
         selected = currentSort == SubscriptionSort.Manual,
         onClick = {
             onSortChange(SubscriptionSort.Manual)
@@ -121,14 +127,14 @@ internal fun ShowsSortMenuItems(
     if (onAutoOrganizeFoldersChange != null) {
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
         DropdownMenuItem(
-            text = { Text("Auto-organize into folders") },
+            text = { Text(stringResource(R.string.library_sort_auto_organize_into_folders)) },
             onClick = {
                 onAutoOrganizeFoldersChange(!autoOrganizeFolders)
                 onDismiss()
             },
             trailingIcon = {
                 if (autoOrganizeFolders) {
-                    Icon(Icons.Rounded.Check, contentDescription = "Selected")
+                    Icon(Icons.Rounded.Check, contentDescription = stringResource(R.string.library_selected))
                 }
             }
         )
@@ -146,7 +152,7 @@ private fun ShowsSortOption(
         onClick = onClick,
         trailingIcon = {
             if (selected) {
-                Icon(Icons.Rounded.Check, contentDescription = "Selected")
+                Icon(Icons.Rounded.Check, contentDescription = stringResource(R.string.library_selected))
             }
         }
     )
@@ -161,38 +167,38 @@ internal fun LatestSortMenuItems(
     onDismiss: () -> Unit
 ) {
     DropdownMenuItem(
-        text = { Text("Smart Sort") },
+        text = { Text(stringResource(R.string.library_sort_smart_sort)) },
         onClick = {
             onUseSmartRankChange(true)
             onDismiss()
         },
         trailingIcon = {
             if (useSmartRank) {
-                Icon(Icons.Rounded.Check, contentDescription = "Selected")
+                Icon(Icons.Rounded.Check, contentDescription = stringResource(R.string.library_selected))
             }
         }
     )
     DropdownMenuItem(
-        text = { Text("Chronological") },
+        text = { Text(stringResource(R.string.library_sort_chronological)) },
         onClick = {
             onUseSmartRankChange(false)
             onDismiss()
         },
         trailingIcon = {
             if (!useSmartRank) {
-                Icon(Icons.Rounded.Check, contentDescription = "Selected")
+                Icon(Icons.Rounded.Check, contentDescription = stringResource(R.string.library_selected))
             }
         }
     )
     DropdownMenuItem(
-        text = { Text("Hide played episodes") },
+        text = { Text(stringResource(R.string.library_hide_played_episodes)) },
         onClick = {
             onHideCompletedChange(!hideCompleted)
             onDismiss()
         },
         trailingIcon = {
             if (hideCompleted) {
-                Icon(Icons.Rounded.Check, contentDescription = "Selected")
+                Icon(Icons.Rounded.Check, contentDescription = stringResource(R.string.library_selected))
             }
         }
     )

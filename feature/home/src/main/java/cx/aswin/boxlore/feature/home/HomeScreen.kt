@@ -33,6 +33,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -427,7 +428,7 @@ private fun HomeScreenFeedContent(
 ) {
     if (uiState.isError) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Error loading content", color = MaterialTheme.colorScheme.error)
+            Text(stringResource(R.string.home_error_loading), color = MaterialTheme.colorScheme.error)
         }
         return
     }

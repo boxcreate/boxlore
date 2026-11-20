@@ -28,6 +28,8 @@ data class HomeDataWrapper(
     val resolvedSerial: Map<String, Episode>,
     val recommendations: List<Episode> = emptyList(),
     val completedEpisodeIds: Set<String> = emptySet(),
+    /** Archived episodes: no Home list offers them. */
+    val dismissedEpisodeIds: Set<String> = emptySet(),
     val isTrendingLoaded: Boolean = false,
     val isRecommendationsLoaded: Boolean = false,
     val hasDismissedImportBanner: Boolean = false,
@@ -44,6 +46,8 @@ data class HomeDataWrapper(
     val editorialRows: List<HomeEditorialRow> = emptyList(),
     val isEditorialRowsLoading: Boolean = true,
     val pinnedPodcastIds: List<String> = emptyList(),
+    /** Every ID of the shows hidden everywhere; Home leaves them out after ranking. */
+    val hiddenShowIds: Set<String> = emptySet(),
     val showsOrderRefreshGeneration: Long = 0L,
     val scoringHistory: List<ListeningHistoryEntity> = emptyList(),
     /** Every started episode, for Daily Mix resume picks; [history] holds them too. Never ranking. */
@@ -73,6 +77,7 @@ internal data class HomeRecsSlice(
     val isRecommendationsLoaded: Boolean,
     val hasDismissedImportBanner: Boolean,
     val staleRestartEnabled: Boolean = true,
+    val dismissedEpisodeIds: Set<String> = emptySet(),
 )
 
 internal data class HomeBriefingSlice(

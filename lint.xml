@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Shared lint settings for every module (lint reads the nearest lint.xml up the folder tree).
+  MissingTranslation only warns while the app's text moves into resources and the translations
+  land (docs/i18n/TRANSLATING.md); the JVM checks in :core:testing guard the translations that exist.
+-->
+<lint>
+    <issue id="MissingTranslation" severity="warning" />
+</lint>

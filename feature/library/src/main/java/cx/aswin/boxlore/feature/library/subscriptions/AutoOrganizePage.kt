@@ -25,6 +25,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -32,10 +34,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
+import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
+import cx.aswin.boxlore.core.model.text.UiText
+import cx.aswin.boxlore.feature.library.R
 
 /** The look auto-organize gives genre folders: [fixedSize] null lets boxlore choose by size. */
 internal data class AutoOrganizeLook(
@@ -72,7 +78,7 @@ internal fun AutoOrganizePage(
     val genreFolders = genreFolders(folders)
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-            FolderFlowTopBar(title = "Auto-organize", onBack = actions.onClose, showClose = false)
+            FolderFlowTopBar(title = stringResource(R.string.library_auto_organize), onBack = actions.onClose, showClose = false)
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -86,33 +92,33 @@ internal fun AutoOrganizePage(
                 if (enabled) {
                     AutoOrganizeStatusCard(genreFolderCount = genreFolders.size, onTurnOff = actions.onTurnOff)
                     if (genreFolders.isNotEmpty()) {
-                        Text(text = "Genre folders", style = MaterialTheme.typography.titleSmall)
+                        Text(text = stringResource(R.string.library_genre_folders), style = MaterialTheme.typography.titleSmall)
                         GenreFolderList(genreFolders, actions.onOpenFolder)
                     }
                     AutoOrganizeLookChoice(look.fixedSize, onFixedLookChange, look.tileShowsCovers, onCoversChange)
                     if (genreFolders.isNotEmpty()) {
                         OutlinedButton(onClick = actions.onApplyToAll) {
-                            Text(text = applyToAllLabel(genreFolders.size))
+                            Text(text = applyToAllLabel(genreFolders.size).asString())
                         }
                         Text(
-                            text = "New genre folders get this look. Apply it to change the ones you have too.",
+                            text = stringResource(R.string.library_auto_organize_apply_note),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    TextButton(onClick = actions.onTurnOff) { Text(text = "Turn off auto-organize") }
+                    TextButton(onClick = actions.onTurnOff) { Text(text = stringResource(R.string.library_auto_organize_turn_off)) }
                 } else {
                     AutoOrganizeSetupContent(podcasts, folders, look.fixedSize, onFixedLookChange, look.tileShowsCovers, onCoversChange)
                 }
             }
             if (!enabled) {
-                FolderFlowBottomBar(primaryLabel = "Turn on auto-organize", primaryEnabled = true, onPrimary = actions.onTurnOn)
+                FolderFlowBottomBar(primaryLabel = stringResource(R.string.library_auto_organize_turn_on), primaryEnabled = true, onPrimary = actions.onTurnOn)
             }
         }
     }
 }
 
-internal fun applyToAllLabel(count: Int): String = if (count == 1) "Apply to 1 genre folder" else "Apply to all $count genre folders"
+internal fun applyToAllLabel(count: Int): UiText = UiText.plural(R.plurals.library_auto_organize_apply_to_all, count, count)
 
 @Composable
 private fun AutoOrganizeStatusCard(genreFolderCount: Int, onTurnOff: () -> Unit) {
@@ -121,11 +127,12 @@ private fun AutoOrganizeStatusCard(genreFolderCount: Int, onTurnOff: () -> Unit)
         color = MaterialTheme.colorScheme.primaryContainer,
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
     ) {
+        val autoOrganizeLabel = stringResource(R.string.library_auto_organize)
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = "Auto-organize is on", style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.semiBold)
+                Text(text = stringResource(R.string.library_auto_organize_is_on), style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.semiBold)
                 Text(
-                    text = "${genreFolderCountLabel(genreFolderCount)}, kept up to date as you follow shows",
+                    text = pluralStringResource(R.plurals.library_auto_organize_status, genreFolderCount, genreFolderCount),
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
@@ -133,13 +140,11 @@ private fun AutoOrganizeStatusCard(genreFolderCount: Int, onTurnOff: () -> Unit)
             Switch(
                 checked = true,
                 onCheckedChange = { if (!it) onTurnOff() },
-                modifier = Modifier.semantics { contentDescription = "Auto-organize" },
+                modifier = Modifier.semantics { contentDescription = autoOrganizeLabel },
             )
         }
     }
 }
-
-private fun genreFolderCountLabel(count: Int): String = if (count == 1) "1 genre folder" else "$count genre folders"
 
 @Composable
 private fun GenreFolderList(folders: List<SubscriptionFolder>, onOpenFolder: (String) -> Unit) {
@@ -165,7 +170,11 @@ private fun GenreFolderList(folders: List<SubscriptionFolder>, onOpenFolder: (St
                             modifier = Modifier.weight(1f).padding(horizontal = 14.dp),
                         )
                         Text(
-                            text = "${showCountLabel(folder.podcastCount)} · ${folderLookName(folder.displaySize).lowercase()}",
+                            text = stringResource(
+                                R.string.library_folder_count_and_look,
+                                showCountLabel(folder.podcastCount).asString(),
+                                folderLookName(folder.displaySize).asString().lowercase(currentLocale()),
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

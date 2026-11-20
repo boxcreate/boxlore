@@ -36,6 +36,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
                         ),
                         subtitle =
                         AutoMediaItemFactory.buildDurationSubtitle(
+                            host.asContext().resources,
                             history.podcastName,
                             history.durationMs,
                         ),
@@ -300,6 +301,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
         podcastTitle: String?,
         podcastImageUrl: String?,
     ): MediaItem = AutoMediaItemFactory.fromEpisode(
+        resources = host.asContext().resources,
         episode = episode,
         source = AutoBrowseContract.SOURCE_SEARCH,
         artworkUri =
@@ -342,6 +344,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
         return newEpisodes
             .map { (episode, podcast) ->
                 AutoMediaItemFactory.fromEpisode(
+                    resources = host.asContext().resources,
                     episode = episode,
                     source = AutoBrowseContract.SOURCE_NEW,
                     artworkUri =
@@ -371,6 +374,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
                     ),
                     subtitle =
                     AutoMediaItemFactory.buildDurationSubtitle(
+                        host.asContext().resources,
                         history.podcastName,
                         history.durationMs,
                     ),
@@ -424,6 +428,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
     private suspend fun queueItem(episode: cx.aswin.boxlore.core.model.Episode, groupTitle: String? = null): MediaItem = AutoItemArtwork.withSources(
         host.asContext(),
         AutoMediaItemFactory.fromEpisode(
+            resources = host.asContext().resources,
             episode = episode,
             source = AutoBrowseContract.SOURCE_QUEUE,
             artworkUri = treeBuilder.queueArt(episode),

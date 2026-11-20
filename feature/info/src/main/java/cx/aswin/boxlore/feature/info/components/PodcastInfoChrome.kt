@@ -34,6 +34,8 @@ import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.SyncProblem
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.ViewAgenda
+import androidx.compose.material.icons.rounded.ViewHeadline
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.AlertDialog
@@ -73,6 +75,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.links.startFirstAvailable
+import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
@@ -205,6 +208,8 @@ internal data class EpisodeListIndicators(
     val downloadedEpisodeIds: Set<String> = emptySet(),
     val downloadingEpisodeIds: Set<String> = emptySet(),
     val completedEpisodeIds: Set<String> = emptySet(),
+    /** Archived episodes, marked on their rows when Show archived or a search lists them. */
+    val archivedEpisodeIds: Set<String> = emptySet(),
 )
 
 internal data class EpisodeSelectionUi(
@@ -220,6 +225,8 @@ internal data class EpisodeFeedRowUi(
     val autoScrolledEpisodeId: String?,
     val podcastImageUrl: String?,
     val isSearchActive: Boolean = false,
+    /** Episode titles only: short [EpisodeTitleRow]s instead of full cards. Trailer cards are already short and stay. */
+    val titlesOnly: Boolean = false,
 )
 
 @Composable
@@ -240,41 +247,47 @@ internal fun EpisodeFeedItemRow(
                 episodeId = episode.id,
                 playbackStateFlow = viewModel.episodePlaybackState,
             ) { playState ->
-                EpisodeListItem(
-                    episode = episode,
-                    isLiked = ui.indicators.likedEpisodeIds.contains(episode.id),
-                    accentColor = ui.accentColor,
-                    podcastImageUrl = ui.podcastImageUrl,
-                    // Playback State
-                    isPlaying = playState?.isPlaying == true,
-                    isResume = playState?.isResume == true,
-                    progress = playState?.progress ?: 0f,
-                    timeLeft = playState?.timeLeft,
-                    // Download State
-                    isDownloaded = ui.indicators.downloadedEpisodeIds.contains(episode.id),
-                    isDownloading = ui.indicators.downloadingEpisodeIds.contains(episode.id),
-                    isQueued = ui.indicators.queuedEpisodeIds.contains(episode.id),
-                    isCompleted = ui.indicators.completedEpisodeIds.contains(episode.id),
-                    isUpNext = episode.id == ui.autoScrolledEpisodeId,
-                    selectionActive = selection.isActive,
-                    isSelected = episode.id in selection.selectedEpisodeIds,
-                    onClick = {
-                        if (selection.isActive) {
-                            selection.onToggle(episode)
-                        } else {
-                            viewModel.recordEpisodeClick(episode.id)
-                            onEpisodeClick(episode, if (ui.isSearchActive) "podcast_info_search_results" else "podcast_info_episodes_list", index)
-                        }
-                    },
-                    onLongClick = { selection.onLongPress(episode) },
-                    onPlayClick = { viewModel.onPlayClick(episode) },
-                    onToggleLike = { viewModel.onToggleLike(episode) },
-                    onQueueClick = { viewModel.toggleQueue(episode) },
-                    onDownloadClick = { viewModel.toggleDownload(episode) },
-                    onMarkPlayedClick = { viewModel.onToggleCompletion(episode) },
-                    showMarkPlayedButton = ui.isSearchActive,
-                    modifier = modifier.padding(horizontal = 16.dp),
-                )
+                val onRowClick = {
+                    if (selection.isActive) {
+                        selection.onToggle(episode)
+                    } else {
+                        viewModel.recordEpisodeClick(episode.id)
+                        onEpisodeClick(episode, if (ui.isSearchActive) "podcast_info_search_results" else "podcast_info_episodes_list", index)
+                    }
+                }
+                if (ui.titlesOnly) {
+                    NormalEpisodeTitleRow(episode, playState, ui, selection, onRowClick, viewModel, modifier.padding(horizontal = 16.dp))
+                } else {
+                    EpisodeListItem(
+                        episode = episode,
+                        isLiked = ui.indicators.likedEpisodeIds.contains(episode.id),
+                        accentColor = ui.accentColor,
+                        podcastImageUrl = ui.podcastImageUrl,
+                        // Playback State
+                        isPlaying = playState?.isPlaying == true,
+                        isResume = playState?.isResume == true,
+                        progress = playState?.progress ?: 0f,
+                        timeLeft = playState?.timeLeft?.asString(),
+                        // Download State
+                        isDownloaded = ui.indicators.downloadedEpisodeIds.contains(episode.id),
+                        isDownloading = ui.indicators.downloadingEpisodeIds.contains(episode.id),
+                        isQueued = ui.indicators.queuedEpisodeIds.contains(episode.id),
+                        isCompleted = ui.indicators.completedEpisodeIds.contains(episode.id),
+                        isUpNext = episode.id == ui.autoScrolledEpisodeId,
+                        isArchived = episode.id in ui.indicators.archivedEpisodeIds,
+                        selectionActive = selection.isActive,
+                        isSelected = episode.id in selection.selectedEpisodeIds,
+                        onClick = onRowClick,
+                        onLongClick = { selection.onLongPress(episode) },
+                        onPlayClick = { viewModel.onPlayClick(episode) },
+                        onToggleLike = { viewModel.onToggleLike(episode) },
+                        onQueueClick = { viewModel.toggleQueue(episode) },
+                        onDownloadClick = { viewModel.toggleDownload(episode) },
+                        onMarkPlayedClick = { viewModel.onToggleCompletion(episode) },
+                        showMarkPlayedButton = ui.isSearchActive,
+                        modifier = modifier.padding(horizontal = 16.dp),
+                    )
+                }
             }
         }
         is FeedItem.SingleTrailer -> {
@@ -314,13 +327,35 @@ internal data class PodcastInfoTopOverlayActions(
     val onMarkAllUnplayed: () -> Unit,
     val onToggleHideCompleted: () -> Unit,
     val onPlaybackSettings: () -> Unit,
+    /** Episode titles only is on: the menu offers full episodes back. */
+    val titlesOnly: Boolean = false,
+    val onToggleTitlesOnly: () -> Unit = {},
     val isSubscribed: Boolean = false,
+    /** Opens Add to playlist; null hides it (the show isn't followed, or there are no playlists). */
+    val onAddToPlaylist: (() -> Unit)? = null,
     val isPinnedToHome: Boolean = false,
     val onToggleHomePin: () -> Unit = {},
     val onEditGenre: () -> Unit = {},
     /** Mark all is reading the show: both Mark all items wait until it ends. */
     val markAllRunning: Boolean = false,
+    /** The show is hidden everywhere: the menu offers Unhide show instead of Hide show everywhere. */
+    val isHidden: Boolean = false,
+    val onToggleHidden: () -> Unit = {},
+    /** Show / Hide archived episodes, next to Hide completed. */
+    val archive: PodcastInfoArchiveMenu = PodcastInfoArchiveMenu(),
 )
+
+/**
+ * The menu's archived-episodes toggle: offered while the show has [archivedCount] archived episodes,
+ * or while they show ([showArchived]) so they can be hidden again.
+ */
+internal data class PodcastInfoArchiveMenu(
+    val archivedCount: Int = 0,
+    val showArchived: Boolean = false,
+    val onToggle: () -> Unit = {},
+) {
+    val offered: Boolean get() = showArchived || archivedCount > 0
+}
 
 internal data class MissingEpisodesChip(
     val visible: Boolean = false,
@@ -362,7 +397,7 @@ internal fun PodcastInfoTopOverlay(
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.episode_info_back),
                 tint = iconTint,
             )
         }
@@ -400,7 +435,7 @@ private fun PodcastInfoHeaderOverflow(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Share,
-                    contentDescription = "Share Podcast",
+                    contentDescription = stringResource(R.string.podcast_info_share),
                     tint = iconTint,
                 )
             }
@@ -409,7 +444,7 @@ private fun PodcastInfoHeaderOverflow(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.MoreVert,
-                    contentDescription = "More Options",
+                    contentDescription = stringResource(R.string.podcast_info_more_options),
                     tint = iconTint,
                 )
             }
@@ -456,7 +491,7 @@ private fun PodcastInfoOverflowMenuItems(
     actions: PodcastInfoTopOverlayActions,
 ) {
     DropdownMenuItem(
-        text = { Text("Mark all as played") },
+        text = { Text(stringResource(R.string.podcast_info_mark_all_played)) },
         enabled = !actions.markAllRunning,
         onClick = {
             onDismiss()
@@ -467,7 +502,7 @@ private fun PodcastInfoOverflowMenuItems(
         },
     )
     DropdownMenuItem(
-        text = { Text("Mark all as unplayed") },
+        text = { Text(stringResource(R.string.podcast_info_mark_all_unplayed)) },
         enabled = !actions.markAllRunning,
         onClick = {
             onDismiss()
@@ -478,7 +513,7 @@ private fun PodcastInfoOverflowMenuItems(
         },
     )
     DropdownMenuItem(
-        text = { Text(if (hideCompleted) "Show completed episodes" else "Hide completed episodes") },
+        text = { Text(stringResource(if (hideCompleted) R.string.podcast_info_show_completed else R.string.podcast_info_hide_completed)) },
         onClick = {
             onDismiss()
             actions.onToggleHideCompleted()
@@ -490,8 +525,22 @@ private fun PodcastInfoOverflowMenuItems(
             )
         },
     )
+    if (actions.archive.offered) ArchivedEpisodesMenuItem(actions.archive, onDismiss)
     DropdownMenuItem(
-        text = { Text("Playback for this show") },
+        text = { Text(stringResource(if (actions.titlesOnly) R.string.podcast_info_show_full_episodes else R.string.podcast_info_show_titles_only)) },
+        onClick = {
+            onDismiss()
+            actions.onToggleTitlesOnly()
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = if (actions.titlesOnly) Icons.Rounded.ViewAgenda else Icons.Rounded.ViewHeadline,
+                contentDescription = null,
+            )
+        },
+    )
+    DropdownMenuItem(
+        text = { Text(stringResource(R.string.podcast_info_playback_for_show)) },
         onClick = {
             onDismiss()
             actions.onPlaybackSettings()
@@ -500,9 +549,10 @@ private fun PodcastInfoOverflowMenuItems(
             Icon(Icons.Rounded.Tune, contentDescription = null)
         },
     )
+    actions.onAddToPlaylist?.let { AddToPlaylistMenuItem(onDismiss, it) }
     if (actions.isSubscribed) {
         DropdownMenuItem(
-            text = { Text("Change tag / genre") },
+            text = { Text(stringResource(R.string.podcast_info_change_genre)) },
             onClick = {
                 onDismiss()
                 actions.onEditGenre()
@@ -512,7 +562,7 @@ private fun PodcastInfoOverflowMenuItems(
             },
         )
         DropdownMenuItem(
-            text = { Text(if (actions.isPinnedToHome) "Unpin from Home screen" else "Pin to Home screen") },
+            text = { Text(stringResource(if (actions.isPinnedToHome) R.string.podcast_info_unpin_home else R.string.podcast_info_pin_home)) },
             onClick = {
                 onDismiss()
                 actions.onToggleHomePin()
@@ -526,6 +576,17 @@ private fun PodcastInfoOverflowMenuItems(
             },
         )
     }
+    // Followed or not: hiding a followed show unsubscribes from it after a confirmation.
+    DropdownMenuItem(
+        text = { Text(stringResource(if (actions.isHidden) R.string.podcast_info_unhide_show else R.string.podcast_info_hide_show)) },
+        onClick = {
+            onDismiss()
+            actions.onToggleHidden()
+        },
+        leadingIcon = {
+            Icon(if (actions.isHidden) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff, contentDescription = null)
+        },
+    )
 }
 
 @Composable
@@ -615,7 +676,7 @@ internal fun MarkAllEpisodesDialog(
         },
         title = {
             Text(
-                text = if (markAsPlayed) "Mark all as played?" else "Mark all as unplayed?",
+                text = stringResource(if (markAsPlayed) R.string.podcast_info_mark_all_played_title else R.string.podcast_info_mark_all_unplayed_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = GoogleSansWeight.bold,
                 textAlign = TextAlign.Center,
@@ -626,9 +687,9 @@ internal fun MarkAllEpisodesDialog(
             Text(
                 text =
                 if (markAsPlayed) {
-                    "This will mark all episodes of \"$podcastTitle\" as played."
+                    stringResource(R.string.podcast_info_mark_all_played_body, podcastTitle)
                 } else {
-                    "This will reset all episodes of \"$podcastTitle\" to unplayed."
+                    stringResource(R.string.podcast_info_mark_all_unplayed_body, podcastTitle)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -645,12 +706,12 @@ internal fun MarkAllEpisodesDialog(
                 ),
                 shape = ExpressiveShapes.Pill,
             ) {
-                Text("Confirm")
+                Text(stringResource(R.string.podcast_info_confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.podcast_info_hide_cancel))
             }
         },
         shape = MaterialTheme.shapes.extraLarge,

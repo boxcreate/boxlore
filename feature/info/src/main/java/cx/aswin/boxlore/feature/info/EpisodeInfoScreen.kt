@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -51,6 +52,7 @@ import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.info.logic.EpisodeShowTitle
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -75,6 +77,8 @@ fun EpisodeInfoScreen(
     modifier: Modifier = Modifier,
 ) {
     TrackScreenView("episode_detail", episodeId, send = {}) // episode_detail_viewed goes out once the episode loads
+    val showStandIn = stringResource(R.string.episode_info_show_placeholder)
+    val shownPodcastTitle = EpisodeShowTitle.displayName(podcastTitle, showStandIn)
     val uiState by viewModel.uiState.collectAsState()
     val moreLikeThisOn by viewModel.moreLikeThisOn.collectAsState()
     val pageEpisode = EpisodeLoadRequests.pageEpisode(uiState, episodeId)
@@ -82,6 +86,7 @@ fun EpisodeInfoScreen(
     cx.aswin.boxlore.feature.info.components.ArtworkInfoTheme(listOf(pageEpisode?.imageUrl ?: episodeImageUrl, pageEpisode?.podcastImageUrl), isLoading = isLoadingPage) {
     val likedEpisodeIds by viewModel.likedEpisodeIds.collectAsState()
     val completedEpisodeIds by viewModel.completedEpisodeIds.collectAsState()
+    val archivedEpisodeIds by viewModel.archivedEpisodeIds.collectAsState()
     val queuedEpisodeIds by viewModel.queuedEpisodeIds.collectAsState()
     val listState = rememberLazyListState()
     val isMoreFromScrolling by remember {
@@ -238,7 +243,7 @@ fun EpisodeInfoScreen(
                         item {
                             cx.aswin.boxlore.feature.info.components.EpisodeInfoHero(
                                 episode = state.episode,
-                                podcastTitle = state.podcastTitle,
+                                podcastTitle = EpisodeShowTitle.displayName(state.podcastTitle, showStandIn),
                                 onPodcastClick = {
                                     viewModel.onPodcastLinkClicked()
                                     onPodcastClick(state.podcastId)
@@ -246,6 +251,10 @@ fun EpisodeInfoScreen(
                                 completionState = cx.aswin.boxlore.feature.info.components.EpisodeCompletionState(
                                     isCompleted = state.episode.id in completedEpisodeIds,
                                     showTip = showMarkPlayedTip,
+                                    archive = cx.aswin.boxlore.feature.info.components.EpisodeArchiveAction(
+                                        isArchived = state.episode.id in archivedEpisodeIds,
+                                        onToggle = viewModel::onToggleArchive,
+                                    ),
                                 ),
                                 onToggleCompletion = viewModel::onToggleCompletion,
                                 modifier = Modifier.padding(horizontal = 22.dp),
@@ -378,7 +387,7 @@ fun EpisodeInfoScreen(
                             id = shareEpisode.id,
                             type = "episode",
                             title = shareEpisode.title,
-                            subtitle = podcastTitle,
+                            subtitle = shownPodcastTitle,
                             imageUrl = shareEpisode.imageUrl ?: shareEpisode.podcastImageUrl,
                             onDismissRequest = { showShareSheet = false },
                             durationMs = shareEpisode.duration * 1000L,
@@ -389,7 +398,7 @@ fun EpisodeInfoScreen(
                                 cx.aswin.boxlore.core.designsystem.share.ShareManager.shareEpisode(
                                     context = context,
                                     episode = shareEpisode,
-                                    podcastTitle = podcastTitle,
+                                    podcastTitle = shownPodcastTitle,
                                     timestampMs = timestamp,
                                     target = target,
                                 )
@@ -460,7 +469,7 @@ private fun LazyListScope.episodeShowNotes(
             }
         }
         if (notes.links.isNotEmpty()) {
-            item { EpisodeLinksSection(notes.links, state.podcastTitle) }
+            item { EpisodeLinksSection(notes.links, EpisodeShowTitle.displayName(state.podcastTitle, stringResource(R.string.episode_info_show_placeholder))) }
         }
     }
 }

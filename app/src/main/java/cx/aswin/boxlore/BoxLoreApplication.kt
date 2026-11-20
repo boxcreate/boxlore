@@ -36,6 +36,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+// The process entry point owns app-wide startup hooks; attachBaseContext (the Android 12 App language) is one more.
+@Suppress("TooManyFunctions")
 class BoxLoreApplication :
     Application(),
     Configuration.Provider {
@@ -136,9 +138,19 @@ class BoxLoreApplication :
                 .setWorkerFactory(LegacyWorkerFactory())
                 .build()
 
+    /**
+     * Android 12/12L only: shows text resolved through the application context (toasts, the mix and
+     * Brief queue titles) in the stored App language too. The activity applies it on its own
+     * ([MainActivity.attachBaseContext]); this side picks up a new choice when the app next starts.
+     */
+    override fun attachBaseContext(base: android.content.Context) {
+        super.attachBaseContext(cx.aswin.boxlore.language.AppLanguageController.applicationBase(base))
+    }
+
     @OptIn(UnstableApi::class)
     override fun onCreate() {
         super.onCreate()
+        cx.aswin.boxlore.language.AppLanguageController(this).adoptStoredChoice()
         // Before anything can make an API request: start the shared session exchange behind the splash.
         apiSessions = cx.aswin.boxlore.session.ApiSessionSetup.install(this, applicationScope)
         cx.aswin.boxlore.ui.CoilImageLoaderSetup.install(this)
@@ -189,6 +201,8 @@ class BoxLoreApplication :
             adaptiveScorer = { container.adaptiveCandidateScorer },
             awaitStartupReady = { startupWorkGate.awaitReady() },
         )
+        // Feature-adoption person properties: sent only when they change, across launches.
+        cx.aswin.boxlore.analytics.FeatureAdoptionWiring.start(this, applicationScope, container, userPreferencesRepository) { startupWorkGate.awaitReady() }
         engagementPromptCoordinator =
             EngagementPromptCoordinator(userPreferencesRepository, cx.aswin.boxlore.core.prefs.NpsSurveyStore(this))
         // Each finish is also kept on disk, so the NPS survey's moment outlives a restart.

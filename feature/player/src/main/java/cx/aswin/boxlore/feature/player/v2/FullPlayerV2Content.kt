@@ -56,12 +56,14 @@ import cx.aswin.boxlore.core.playback.removeFromQueue
 import cx.aswin.boxlore.core.playback.resume
 import cx.aswin.boxlore.core.playback.setPlaybackSpeed
 import cx.aswin.boxlore.core.playback.setSleepTimer
+import cx.aswin.boxlore.core.playback.setTrimSilence
 import cx.aswin.boxlore.core.playback.skipBackward
 import cx.aswin.boxlore.core.playback.skipForward
 import cx.aswin.boxlore.core.playback.skipToNextEpisode
 import cx.aswin.boxlore.core.playback.toggleCompletion
 import cx.aswin.boxlore.core.playback.toggleLike
 import cx.aswin.boxlore.core.playback.undoQueueRemoval
+import cx.aswin.boxlore.core.playback.useAppSpeedForPlayingShow
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.feature.player.ChaptersSheetContent
 import cx.aswin.boxlore.feature.player.QueueSheetActions
@@ -247,7 +249,8 @@ internal fun FullPlayerSecondaryControls(
         playback = SecondaryPlaybackState(
             model.state.playbackSpeed,
             model.state.sleepTimerEnd,
-            model.state.sleepAtEndOfEpisode
+            model.state.sleepAtEndOfEpisode,
+            audio = PlayerSpeedAudio.from(model.state)
         ),
         availability = SecondaryAvailabilityState(
             hasChapters = !model.episode.chaptersUrl.isNullOrEmpty() ||
@@ -288,7 +291,9 @@ internal fun fullPlayerSelectionActions(
             value = minutes.toString()
         )
         playbackRepository.setSleepTimer(minutes)
-    }
+    },
+    onTrimSilenceChange = { enabled -> playbackRepository.setTrimSilence(enabled) },
+    onUseAppSpeed = { playbackRepository.useAppSpeedForPlayingShow() }
 )
 
 internal fun fullPlayerClickActions(
@@ -401,7 +406,8 @@ internal data class PlayerQueueSheetModel(
 internal data class PlayerQueueSheetResources(
     val scope: CoroutineScope,
     val snackbarHostState: SnackbarHostState,
-    val sheetState: SheetState
+    val sheetState: SheetState,
+    val text: PlayerQueueText,
 )
 
 internal data class PlayerQueueSheetCallbacks(
@@ -470,14 +476,14 @@ internal fun queueSheetActions(
     onPlayEpisode = { episode ->
         resources.scope.launch {
             val freshQueue = playbackRepository.playerState.value.queue
-            val episodePodcast = resolveQueuePodcast(episode, podcast)
+            val episodePodcast = resolveQueuePodcast(episode, podcast, resources.text.unknownShow)
             playbackRepository.playFromQueueIndex(episode.id, freshQueue, episodePodcast)
             ui.showQueueSheet = false
         }
     },
     onRemoveEpisode = { episode ->
         resources.scope.launch {
-            handleQueueRemoval(playbackRepository, episode.id, resources.snackbarHostState)
+            handleQueueRemoval(playbackRepository, episode.id, resources.snackbarHostState, resources.text)
         }
     },
     onClose = { ui.showQueueSheet = false },
@@ -510,12 +516,13 @@ internal fun queueSheetActions(
 internal suspend fun handleQueueRemoval(
     playbackRepository: PlaybackRepository,
     episodeId: String,
-    snackbarHostState: SnackbarHostState
+    snackbarHostState: SnackbarHostState,
+    text: PlayerQueueText,
 ) {
     val removed = playbackRepository.removeFromQueue(episodeId, deferSkipSignal = true) ?: return
     val result = snackbarHostState.showSnackbar(
-        message = "Removed from queue",
-        actionLabel = "Undo",
+        message = text.removed,
+        actionLabel = text.undo,
         duration = SnackbarDuration.Short
     )
     if (result == SnackbarResult.ActionPerformed) {

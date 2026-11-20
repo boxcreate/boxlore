@@ -12,10 +12,12 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
+import cx.aswin.boxlore.core.model.lastSeenWithArchived
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.addToQueue
 import cx.aswin.boxlore.core.playback.addToQueueNext
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
+import cx.aswin.boxlore.core.playback.dismissedEpisodeIds
 import cx.aswin.boxlore.core.playback.inProgressForEpisodeLookup
 import cx.aswin.boxlore.core.playback.likedEpisodes
 import cx.aswin.boxlore.core.playback.playEpisode
@@ -66,15 +68,21 @@ sealed interface LibraryUiState {
         val allHistory: List<ListeningHistoryEntity> = emptyList(),
         val manualOrder: List<String> = emptyList(),
         val smartOrderIds: List<String> = emptyList(),
+        /** Archived episodes: New Episodes never lists them, whatever Hide played says. */
+        val dismissedEpisodeIds: Set<String> = emptySet(),
     ) : LibraryUiState
     data class Error(val message: String) : LibraryUiState
 }
 
-/** Library's history: [recent] for ranking and the recent strip; [inProgress] and [completedIds] for played state. */
+/**
+ * Library's history: [recent] for ranking and the recent strip; [inProgress] and [completedIds] for
+ * played state; [dismissedIds] the archived episodes New Episodes leaves out.
+ */
 private data class LibraryHistory(
     val recent: List<ListeningHistoryEntity>,
     val inProgress: List<ListeningHistoryEntity>,
     val completedIds: Set<String>,
+    val dismissedIds: Set<String> = emptySet(),
 )
 
 class LibraryViewModel(
@@ -105,7 +113,13 @@ class LibraryViewModel(
         },
     )
 
-    val lastSeenEpisodes: StateFlow<Map<String, String>> = userPreferencesRepository.lastSeenEpisodesStream
+    /** The latest episode seen per show; an archived latest episode counts as seen ([lastSeenWithArchived]). */
+    val lastSeenEpisodes: StateFlow<Map<String, String>> = combine(
+        userPreferencesRepository.lastSeenEpisodesStream,
+        subscriptionRepository.subscribedPodcasts,
+        playbackRepository.dismissedEpisodeIds,
+        ::lastSeenWithArchived,
+    )
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -531,7 +545,8 @@ class LibraryViewModel(
             playbackRepository.getRecentHistory(),
             playbackRepository.inProgressForEpisodeLookup,
             playbackRepository.completedEpisodeIds,
-        ) { list, inProgress, completed -> LibraryHistory(list, inProgress, completed) },
+            playbackRepository.dismissedEpisodeIds,
+        ) { list, inProgress, completed, dismissed -> LibraryHistory(list, inProgress, completed, dismissed) },
         sortAndManualOrder,
     ) {
             podcasts: List<Podcast>,
@@ -586,6 +601,7 @@ class LibraryViewModel(
             allHistory = allHistory,
             manualOrder = manualOrder,
             smartOrderIds = smartRanked.map { it.id },
+            dismissedEpisodeIds = histories.dismissedIds,
         )
     }.flowOn(kotlinx.coroutines.Dispatchers.Default)
         .stateIn(

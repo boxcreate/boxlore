@@ -31,6 +31,9 @@ internal class ListenRecorder(private val playerProvider: () -> Player?) {
     /** Where the sound goes for a listen's `output` ([PlaybackListenValues] `OUTPUT_*`); set by the service. */
     var analyticsOutput: () -> String = { PlaybackListenValues.OUTPUT_OTHER }
 
+    /** Whether the local player trims silence, for a listen's `trim_silence`; set by the service. */
+    var trimSilence: () -> Boolean = { false }
+
     /** Whether boxlore's screens are out of sight, for the note; set by the service. */
     var isAppInBackground: () -> Boolean = { false }
 
@@ -194,6 +197,8 @@ internal class ListenRecorder(private val playerProvider: () -> Player?) {
                 bufferingCount = listen.bufferingCount,
                 bufferingMs = listen.bufferingMs,
                 queueSize = queueSize,
+                // A Cast receiver can't trim silence, whatever the local player is set to.
+                trimSilence = output != PlaybackListenValues.OUTPUT_CAST && runCatching(trimSilence).getOrDefault(false),
             ),
         )
     }

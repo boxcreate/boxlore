@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -33,6 +34,7 @@ import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.artworkUrls
+import cx.aswin.boxlore.feature.library.R
 
 @Composable
 internal fun SubscriptionPinnedBadge(modifier: Modifier = Modifier) {
@@ -48,7 +50,7 @@ internal fun SubscriptionPinnedBadge(modifier: Modifier = Modifier) {
     ) {
         Icon(
             imageVector = Icons.Rounded.PushPin,
-            contentDescription = "Pinned",
+            contentDescription = stringResource(R.string.library_pinned),
             tint = MaterialTheme.colorScheme.onPrimary,
             modifier =
             Modifier
@@ -86,7 +88,7 @@ internal fun SubscriptionListRowText(
             )
             if (hasRecentNew) {
                 Text(
-                    text = "NEW",
+                    text = stringResource(R.string.library_new_badge),
                     style =
                     MaterialTheme.typography.labelSmall.copy(
                         fontWeight = GoogleSansWeight.bold,
@@ -98,7 +100,7 @@ internal fun SubscriptionListRowText(
         }
         Spacer(modifier = Modifier.height(2.dp))
         Text(
-            text = artist.takeIf { it.isNotEmpty() } ?: "Podcast",
+            text = artist.takeIf { it.isNotEmpty() } ?: stringResource(R.string.library_podcast_fallback_artist),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,

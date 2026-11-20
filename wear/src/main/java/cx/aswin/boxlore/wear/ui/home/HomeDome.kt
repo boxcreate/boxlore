@@ -98,7 +98,7 @@ private val ArcWidth = 3.dp
 @Composable
 internal fun NowPlayingDome(nowPlaying: NowPlaying, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val scale = rememberScreenScale()
-    val openPlayer = stringResource(R.string.wear_open_player)
+    val label = stringResource(R.string.wear_now_playing_label, nowPlaying.episode.title, nowPlaying.episode.showTitle)
     val round = LocalConfiguration.current.isScreenRound
     // boxlore's own colour, whatever is playing: artwork colours are for the player. A dark yellow or
     // green cover would turn the first thing on Home muddy.
@@ -108,7 +108,7 @@ internal fun NowPlayingDome(nowPlaying: NowPlaying, onClick: () -> Unit, modifie
     val progress = nowPlaying.progress.coerceIn(0f, 1f)
     DomeBlock(
         onClick = onClick,
-        label = "${nowPlaying.episode.title}. ${nowPlaying.episode.showTitle}. $openPlayer",
+        label = label,
         modifier = modifier,
         ground = ground,
         // Drawn on the dome's colour and under its text.

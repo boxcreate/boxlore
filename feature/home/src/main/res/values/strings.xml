@@ -19,6 +19,10 @@
     <string name="home_hero_rank_number">#%1$s</string>
     <string name="home_hero_rank_market">in %1$s</string>
     <string name="home_hero_trending_in">Trending in</string>
+    <!-- Spoken label of a trending card, e.g. "Trending in True Crime". The argument is the genre. -->
+    <string name="home_hero_trending_in_genre">Trending in %1$s</string>
+    <!-- A trending card with no genre. -->
+    <string name="home_hero_trending">Trending</string>
     <string name="home_hero_episode_details">Open episode details</string>
     <string name="home_hero_show_details">Explore podcast</string>
     <string name="home_hero_listening_progress">Listening progress</string>
@@ -96,4 +100,6 @@
     <string name="home_setup_suggestions_description">Get recommendations based on what you enjoy.</string>
     <string name="home_setup_search_description">Find a show, topic, or episode.</string>
     <string name="home_setup_import_description">Bring subscriptions from another podcast app.</string>
+    <!-- An episode published under a minute ago, where a row shows "3h ago". -->
+    <string name="home_relative_just_now">Just now</string>
 </resources>

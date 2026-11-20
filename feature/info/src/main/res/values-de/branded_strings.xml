@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Branded show pages: a boxlore pick shown in the show's own style. -->
+    <!-- The Showcase seal in the top bar ("The best of" around boxlore's mark) and the note it opens. -->
+    <!-- Drawn in capitals along the top arc of the Showcase seal, above boxlore's mark ("THE BEST OF [boxlore mark]"). Keep it about 11 characters so it fits the arc. -->
+    <string name="branded_seal_words">Best of</string>
+    <string name="branded_seal_label">Über diese Showcase-Seite</string>
+    <string name="branded_seal_title">Eine Showcase-Seite</string>
+    <string name="branded_seal_body">Ein Podcast, den boxlore ausgewählt hat, auf einer Seite in seinem eigenen Stil und mit eigenen Bildern.</string>
+    <string name="branded_latest_episode">Neueste Folge</string>
+    <string name="branded_copyright_button">Urheberrechtshinweise</string>
+    <string name="branded_copyright_title">Artwork und Logos</string>
+    <!-- What screen readers hear for a Showcase page's description, which opens and closes on tap. -->
+    <string name="branded_description_expanded">Ausgeklappt</string>
+    <string name="branded_description_collapsed">Eingeklappt</string>
+    <string name="branded_copyright_note">Von boxlore gestaltet, im eigenen Stil des Podcasts.</string>
+    <string name="vergecast_wordmark_description">The Vergecast</string>
+    <string name="vergecast_publisher_description">The Verge</string>
+    <string name="vergecast_copyright">© Vox Media, LLC. The Vergecast und The Verge sind Marken von Vox Media.</string>
+    <string name="conspiracy_wordmark_description">Conspiracy Theories</string>
+    <string name="conspiracy_latest_filed">Neueste · abgelegt am %1$s</string>
+    <string name="conspiracy_new">Neu</string>
+    <string name="conspiracy_copyright">© Spotify AB. Conspiracy Theories ist ein Spotify-Podcast von Spotify Studios.</string>
+    <string name="waveform_subtitle">The MKBHD Podcast</string>
+    <string name="waveform_publisher">MKBHD · Vox Media</string>
+    <string name="waveform_latest">Neueste</string>
+    <string name="waveform_copyright">© MKBHD. Waveform gehört zum Vox Media Podcast Network.</string>
+    <string name="crimejunkie_wordmark_description">Crime Junkie</string>
+    <string name="crimejunkie_aired">Ausgestrahlt am %1$s</string>
+    <string name="crimejunkie_copyright">© audiochuck, LLC. Crime Junkie ist eine eingetragene Marke von audiochuck.</string>
+    <string name="jre_badge_description">The Joe Rogan Experience</string>
+    <string name="jre_copyright">© Joe Rogan. Alle Rechte vorbehalten.</string>
+    <!-- Rotten Mango -->
+    <string name="rottenmango_copyright">Aus dem offiziellen Cover von Rotten Mango. © Stephanie Soo. Alle Rechte vorbehalten.</string>
+    <string name="rottenmango_number">Nr. %1$d</string>
+    <string name="rottenmango_number_description">Folge %1$d</string>
+    <string name="rottenmango_bonus">Bonus</string>
+    <!-- The Daily -->
+    <string name="daily_masthead_description">The New York Times</string>
+    <string name="daily_copyright">© The New York Times Company. The Daily und The New York Times sind Marken der The New York Times Company.</string>
+    <string name="trih_logo_description">The Rest Is History</string>
+    <string name="trih_publisher_description">Goalhanger</string>
+    <!-- The nameplate under the latest episode's frame: its number in the show's feed. -->
+    <string name="trih_episode_number">Nr. %1$d</string>
+    <string name="trih_copyright">© Goalhanger. The Rest Is History ist ein Podcast von Goalhanger. Die Büsten stammen aus dem Cover des Podcasts.</string>
+    <string name="darknet_wordmark_description">Darknet Diaries</string>
+    <!-- The latest episode's label: the show numbers every episode. -->
+    <string name="darknet_latest_number">Neueste · Folge %1$d</string>
+    <string name="darknet_latest">Neueste</string>
+    <string name="darknet_copyright">© Jack Rhysider. Der Fahnenträger und Jacks maskierter Avatar sind Originalgrafiken des Podcasts.</string>
+    <!-- Serial -->
+    <string name="serial_wordmark_description">Serial</string>
+    <string name="serial_nyt_description">The New York Times</string>
+    <string name="serial_productions_description">Serial Productions</string>
+    <!-- A season's card in the deck before its name is known: "Season 19". -->
+    <string name="serial_season">Staffel %1$d</string>
+    <!-- Above the latest episode's title: the season's name and the episode's number, "METRO · Episode 3". -->
+    <string name="serial_season_episode">%1$s · Folge %2$d</string>
+    <string name="serial_episode">Folge %1$d</string>
+    <string name="serial_copyright">© The New York Times Company. Serial ist ein Podcast von Serial Productions und The New York Times. Die Karten zeigen das eigene Cover jeder Staffel.</string>
+    <!-- Sherlock Holmes Short Stories, as The Strand Magazine -->
+    <string name="sherlock_wordmark_description">Sherlock Holmes Short Stories</string>
+    <!-- Under the latest story's title, in period italic: who reads it. -->
+    <string name="sherlock_read_by">Gelesen von Hugh Bonneville.</string>
+    <!-- The same line with the story's part in Roman numerals: "Part III.  Read by Hugh Bonneville." -->
+    <string name="sherlock_part_read_by">Teil %1$s.  Gelesen von Hugh Bonneville.</string>
+    <string name="sherlock_copyright">© Noiser. Sherlock Holmes Short Stories ist ein Podcast von Noiser. Das Cover des Strand Magazine von 1891 von George Charles Haité und die Zeichnung von Sidney Paget aus dem Jahr 1893 sind gemeinfrei.</string>
+    <!-- The Desi Crime Podcast, as the hosts' crime board -->
+    <string name="desicrime_wordmark_description">The Desi Crime Podcast</string>
+    <string name="desicrime_hosts">Aryaan Misra &amp; Aishwarya Singh</string>
+    <string name="desicrime_hosts_description">Aishwarya Singh und Aryaan Misra</string>
+    <!-- Above the latest episode's title on its sticky note, handwritten: "#212 · newest case". -->
+    <string name="desicrime_newest_case">#%1$d · neuester Fall</string>
+    <!-- The same, for a latest episode without a case number. -->
+    <string name="desicrime_newest">neueste Folge</string>
+    <string name="desicrime_copyright">© Desi Studios. The Desi Crime Podcast ist ein Podcast von Desi Studios. Die Abzüge zeigen das eigene Folgenbild jedes Falls, und Aryaan und Aishwarya stammen aus dem Cover des Podcasts.</string>
+</resources>
