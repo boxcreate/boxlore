@@ -45,7 +45,7 @@ class AppLanguageController(
     fun current(): AppLanguage {
         val manager = perAppLocales ?: return AppLanguage.fromTag(prefs.getAppLanguageTag())
         val locales = manager.applicationLocales
-        return if (locales.isEmpty) AppLanguage.SYSTEM else AppLanguage.fromTag(locales.get(0).toLanguageTag())
+        return if (locales.isEmpty) AppLanguage.SYSTEM else AppLanguage.fromTag(locales[0].toLanguageTag())
     }
 
     /** Whether the listener has picked a language here or in the system's per-app language setting. */
@@ -97,7 +97,7 @@ class AppLanguageController(
     /** The phone's own language list, whatever the app language is. */
     fun systemLocales(): List<Locale> {
         val list = perAppLocales?.systemLocales ?: Resources.getSystem().configuration.locales
-        return (0 until list.size()).map { list.get(it) }
+        return (0 until list.size()).map { list[it] }
     }
 
     companion object {

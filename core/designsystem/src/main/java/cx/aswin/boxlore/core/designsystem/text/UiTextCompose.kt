@@ -25,4 +25,4 @@ fun UiText.asString(): String {
  */
 @Composable
 @ReadOnlyComposable
-fun currentLocale(): Locale = LocalConfiguration.current.locales.get(0) ?: Locale.getDefault()
+fun currentLocale(): Locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()

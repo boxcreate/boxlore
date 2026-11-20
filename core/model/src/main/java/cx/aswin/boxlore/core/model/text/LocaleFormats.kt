@@ -200,7 +200,7 @@ object LocaleFormats {
 }
 
 /** The language this context's text is shown in: the app language when one is set, else the system's. */
-fun Context.displayLocale(): Locale = resources.configuration.locales.get(0) ?: Locale.getDefault()
+fun Context.displayLocale(): Locale = resources.configuration.locales[0] ?: Locale.getDefault()
 
 /** [LocaleFormats.time] with the device's 12/24-hour clock setting. */
 fun Context.formatTimeOfDay(epochMillis: Long, timeZone: TimeZone = TimeZone.getDefault()): String =
