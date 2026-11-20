@@ -1,16 +1,23 @@
 package cx.aswin.boxlore.backup
 
 import android.content.Context
+import android.util.Log
 import androidx.core.net.toUri
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.prefs.AutoBackupStore
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 
 /**
  * Saves one automatic library backup to the chosen folder ([AutoBackupScheduling] runs it). A lost grant or
  * a missing folder is recorded for Settings and never retried; other failures retry up to
  * [AutoBackupScheduling.MAX_ATTEMPTS] times.
+ *
+ * Notes in the store (attempt, success, problem) are tried a few times in place. One that still can't be
+ * saved never stops the backup, and never runs it again: that would save a second file.
  */
 class AutoBackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     internal var store: AutoBackupStore = AutoBackupStore(applicationContext)
@@ -19,15 +26,20 @@ class AutoBackupWorker(context: Context, params: WorkerParameters) : CoroutineWo
     internal var nowMs: () -> Long = System::currentTimeMillis
     internal var report: (AutoBackupOutcome) -> Unit = ::track
 
+    /** Runs one store write; tests swap it to make the disk fail. */
+    internal var writeStore: suspend (suspend AutoBackupStore.() -> Unit) -> Unit = { write -> store.write() }
+    internal var storeRetryDelayMs: Long = STORE_RETRY_DELAY_MS
+
     override suspend fun doWork(): Result {
         val settings = store.current()
         val folderUri = settings.folderUri
         // Turned off or the folder was cleared after this run was scheduled.
         if (!settings.isActive || folderUri == null) return Result.success()
-        store.recordAttempt(nowMs())
+        record { recordAttempt(nowMs()) }
         return when (val outcome = AutoBackupRunner(folderFor(folderUri), export, nowMs).run(settings.keepCount)) {
             is AutoBackupOutcome.Saved -> {
-                store.recordSuccess(nowMs(), outcome.fileName, folderUri)
+                // The file is saved either way; Settings catches up with the next run's note.
+                record { recordSuccess(nowMs(), outcome.fileName, folderUri) }
                 report(outcome)
                 Result.success()
             }
@@ -35,11 +47,28 @@ class AutoBackupWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 if (outcome.retryable && runAttemptCount < AutoBackupScheduling.MAX_ATTEMPTS - 1) {
                     Result.retry()
                 } else {
-                    store.recordProblem(outcome.code, folderUri)
+                    val recorded = record { recordProblem(outcome.code, folderUri) }
                     report(outcome)
-                    if (outcome.retryable) Result.failure() else Result.success()
+                    // Unrecorded, the problem can't reach Settings, so the run at least ends as failed.
+                    if (outcome.retryable || !recorded) Result.failure() else Result.success()
                 }
         }
+    }
+
+    /** Saves one note, trying again briefly; false when every try failed (logged, never thrown). */
+    private suspend fun record(write: suspend AutoBackupStore.() -> Unit): Boolean {
+        repeat(STORE_TRIES) { attempt ->
+            try {
+                writeStore(write)
+                return true
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: IOException) {
+                Log.w(TAG, "An automatic backup note wasn't saved: ${error.javaClass.simpleName}")
+                if (attempt < STORE_TRIES - 1) delay(storeRetryDelayMs)
+            }
+        }
+        return false
     }
 
     private fun track(outcome: AutoBackupOutcome) {
@@ -62,5 +91,8 @@ class AutoBackupWorker(context: Context, params: WorkerParameters) : CoroutineWo
     private companion object {
         const val ACTION = "auto_backup"
         const val FORMAT = "json"
+        const val TAG = "AutoBackupWorker"
+        const val STORE_TRIES = 3
+        const val STORE_RETRY_DELAY_MS = 500L
     }
 }

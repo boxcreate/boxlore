@@ -14,8 +14,10 @@ import android.provider.DocumentsContract.Document
 import androidx.test.core.app.ApplicationProvider
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.IOException
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -61,6 +63,37 @@ class SafAutoBackupFolderTest {
         assertEquals(0, provider.renames)
     }
 
+    @Test fun `a backup from the same minute is replaced only once the new one has its name`() {
+        provider.add(name, "old".toByteArray())
+        folder().write(name, AutoBackupFiles.tempName(name), bytes)
+        assertEquals(listOf(name), folder().listNames())
+        assertArrayEquals(bytes, provider.bytesOf(name))
+    }
+
+    @Test fun `a failed rename keeps the earlier backup from the same minute and removes the new file`() {
+        provider.add(name, "old".toByteArray())
+        provider.failRenameOf = AutoBackupFiles.tempName(name)
+        val failed = runCatching { folder().write(name, AutoBackupFiles.tempName(name), bytes) }
+        assertTrue(failed.isFailure)
+        assertEquals(listOf(name), folder().listNames())
+        assertArrayEquals("old".toByteArray(), provider.bytesOf(name))
+    }
+
+    @Test fun `without renaming, an existing backup is never overwritten`() {
+        provider.supportsRename = false
+        provider.add(name, "old".toByteArray())
+        assertTrue(runCatching { folder().write(name, AutoBackupFiles.tempName(name), bytes) }.exceptionOrNull() is IOException)
+        assertEquals(listOf(name), folder().listNames())
+        assertArrayEquals("old".toByteArray(), provider.bytesOf(name))
+    }
+
+    @Test fun `without renaming, a new file that fails partway is removed`() {
+        provider.supportsRename = false
+        provider.failOpenOf = name
+        assertTrue(runCatching { folder().write(name, AutoBackupFiles.tempName(name), bytes) }.isFailure)
+        assertTrue(folder().listNames().isEmpty())
+    }
+
     @Test fun `deletes only the named file`() {
         provider.add("keep-me.txt")
         provider.add(name)
@@ -91,12 +124,18 @@ class FakeDocumentsProvider : ContentProvider() {
     var supportsRename = true
     var gone = false
     var renames = 0
+
+    /** Renaming the document with this name fails, as a provider can. */
+    var failRenameOf: String? = null
+
+    /** Opening the document with this name fails, so a write stops partway. */
+    var failOpenOf: String? = null
     private val names = linkedMapOf<String, String>()
     private var nextId = 0
 
-    fun add(name: String): String = "d${nextId++}".also { id ->
+    fun add(name: String, content: ByteArray = ByteArray(0)): String = "d${nextId++}".also { id ->
         names[id] = name
-        File(dir, id).writeBytes(ByteArray(0))
+        File(dir, id).writeBytes(content)
     }
 
     fun bytesOf(name: String): ByteArray = File(dir, names.entries.single { it.value == name }.key).readBytes()
@@ -127,6 +166,7 @@ class FakeDocumentsProvider : ContentProvider() {
         return when (method) {
             "android:createDocument" -> uriBundle(target, add(extras.getString(Document.COLUMN_DISPLAY_NAME).orEmpty()))
             "android:renameDocument" -> {
+                if (names[id] != null && names[id] == failRenameOf) error("rename refused")
                 renames++
                 names[id] = extras.getString(Document.COLUMN_DISPLAY_NAME).orEmpty()
                 Bundle()
@@ -145,8 +185,11 @@ class FakeDocumentsProvider : ContentProvider() {
         putParcelable(EXTRA_URI, DocumentsContract.buildDocumentUriUsingTree(tree, id))
     }
 
-    override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor =
-        ParcelFileDescriptor.open(File(dir, DocumentsContract.getDocumentId(uri)), ParcelFileDescriptor.parseMode(mode))
+    override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor {
+        val id = DocumentsContract.getDocumentId(uri)
+        if (names[id] != null && names[id] == failOpenOf) throw FileNotFoundException("open refused")
+        return ParcelFileDescriptor.open(File(dir, id), ParcelFileDescriptor.parseMode(mode))
+    }
 
     override fun getType(uri: Uri): String? = null
 

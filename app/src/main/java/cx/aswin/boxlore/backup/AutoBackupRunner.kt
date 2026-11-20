@@ -53,7 +53,7 @@ internal class AutoBackupRunner(
             folder.write(name, AutoBackupFiles.tempName(name), backup.bytes)
         } catch (error: Exception) {
             Log.w(TAG, "The automatic backup couldn't be saved: ${kind(error)}")
-            return classify(error)
+            return writeFailure(error)
         }
         return AutoBackupOutcome.Saved(name, backup.subscriptionCount, prune(keep, name))
     }
@@ -73,6 +73,17 @@ internal class AutoBackupRunner(
      * logs can travel with feedback.
      */
     private fun kind(error: Exception): String = error.javaClass.simpleName
+
+    /**
+     * A file the provider couldn't open doesn't prove the folder is gone (a sync app may have removed the new
+     * file), so the folder is checked again: still there, the run is retried like any other write error.
+     */
+    private fun writeFailure(error: Exception): AutoBackupOutcome.Failed =
+        if (error is FileNotFoundException) {
+            reach() ?: AutoBackupOutcome.Failed(AutoBackupProblem.IO_ERROR, retryable = true)
+        } else {
+            classify(error)
+        }
 
     private fun classify(error: Exception): AutoBackupOutcome.Failed = when (error) {
         is SecurityException -> AutoBackupOutcome.Failed(AutoBackupProblem.PERMISSION_LOST, retryable = false)

@@ -13,6 +13,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /** Connects Settings' automatic backup group to the folder grant, the stored settings and the schedule. */
@@ -22,6 +24,12 @@ internal object AutoBackupControlFactory {
      * the change would otherwise leave a folder stored without access.
      */
     private val processScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /**
+     * Folder changes run one at a time, so turning off (forget the folder, then release its grant) can't
+     * interleave with picking that folder again and leave it stored without its grant.
+     */
+    internal val folderChanges = Mutex()
 
     /** One control for the Settings route's life, so its state flow isn't rebuilt on each recomposition. */
     @Composable
@@ -52,12 +60,12 @@ internal object AutoBackupControlFactory {
         store: AutoBackupStore,
         uri: Uri,
         takeGrant: (Uri) -> Boolean = { AutoBackupFolderGrant.take(application, it) },
-    ) {
+    ): Unit = folderChanges.withLock {
         if (!takeGrant(uri)) {
             withContext(Dispatchers.Main.immediate) {
                 Toast.makeText(application, "boxlore can't save to this folder. Choose another one.", Toast.LENGTH_LONG).show()
             }
-            return
+            return@withLock
         }
         val previous = store.current().folderUri
         store.setFolder(uri.toString(), AutoBackupFolderGrant.displayName(application, uri))
@@ -66,7 +74,7 @@ internal object AutoBackupControlFactory {
     }
 
     /** Forgets the folder first, then its grant, so a stored folder always still has its grant. */
-    internal suspend fun turnOff(application: Application, store: AutoBackupStore) {
+    internal suspend fun turnOff(application: Application, store: AutoBackupStore): Unit = folderChanges.withLock {
         val folder = store.current().folderUri
         store.turnOff()
         folder?.let { AutoBackupFolderGrant.release(application, it) }

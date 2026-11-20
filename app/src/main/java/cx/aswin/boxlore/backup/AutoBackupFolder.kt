@@ -53,23 +53,49 @@ internal class SafAutoBackupFolder(context: Context, private val treeUri: Uri) :
         children().filter { it.first == tempName }.forEach { (_, uri) -> deleteDocument(uri) }
         val temp = DocumentsContract.createDocument(resolver, directory, BINARY_MIME, tempName)
             ?: throw IOException("Couldn't create the backup file")
+        if (supportsRename(temp)) writeThroughRename(temp, name, bytes) else writeInPlace(temp, name, bytes)
+    }
+
+    /**
+     * Writes [temp], then gives it [name]. A backup already called [name] (an earlier run in the same minute)
+     * is moved aside first and only deleted once the new one has the name; if anything fails, the new file is
+     * removed and the earlier backup gets its name back.
+     */
+    private fun writeThroughRename(temp: Uri, name: String, bytes: ByteArray) {
+        var aside: Uri? = null
         try {
-            if (supportsRename(temp)) {
-                writeBytes(temp, bytes)
-                existing(name)?.let(::deleteDocument)
-                DocumentsContract.renameDocument(resolver, temp, name) ?: throw IOException("Couldn't rename the backup file")
-            } else {
-                deleteDocument(temp)
-                val target = existing(name)
-                    ?: DocumentsContract.createDocument(resolver, directory, JSON_MIME, name)
-                    ?: throw IOException("Couldn't create the backup file")
-                writeBytes(target, bytes)
-            }
+            writeBytes(temp, bytes)
+            aside = existing(name)?.let { rename(it, AutoBackupFiles.asideName(name)) }
+            rename(temp, name)
         } catch (error: Exception) {
             runCatching { deleteDocument(temp) }
+            aside?.let { runCatching { rename(it, name) } }
+            throw error
+        }
+        // A copy left behind is a leftover the next run removes.
+        aside?.let { runCatching { deleteDocument(it) } }
+    }
+
+    /**
+     * For folders that can't rename. A backup already called [name] is never overwritten: the run fails and
+     * retries under a later minute's name. A new file that fails partway is removed, so a half-written backup
+     * is never counted as one.
+     */
+    private fun writeInPlace(temp: Uri, name: String, bytes: ByteArray) {
+        runCatching { deleteDocument(temp) }
+        if (existing(name) != null) throw IOException("A backup with this name is already there")
+        val target = DocumentsContract.createDocument(resolver, directory, JSON_MIME, name)
+            ?: throw IOException("Couldn't create the backup file")
+        try {
+            writeBytes(target, bytes)
+        } catch (error: Exception) {
+            runCatching { deleteDocument(target) }
             throw error
         }
     }
+
+    private fun rename(document: Uri, name: String): Uri =
+        DocumentsContract.renameDocument(resolver, document, name) ?: throw IOException("Couldn't rename the backup file")
 
     override fun delete(name: String) {
         children().filter { it.first == name }.forEach { (_, uri) -> deleteDocument(uri) }

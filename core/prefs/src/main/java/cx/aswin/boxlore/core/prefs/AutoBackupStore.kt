@@ -11,11 +11,13 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import java.io.IOException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.retryWhen
 
 /**
  * The automatic backup's folder and schedule. A folder link only works on the phone that granted it, so the
@@ -86,13 +88,16 @@ class AutoBackupStore internal constructor(private val dataStore: DataStore<Pref
     suspend fun current(): AutoBackupSettings = settings.first()
 
     /**
-     * Like [settings], but an unreadable file ends the flow instead of reading as "off", so the schedule
-     * that follows it is left as it was rather than cancelled.
+     * Like [settings], but an unreadable file emits nothing instead of reading as "off", so the schedule that
+     * follows it is left as it was rather than cancelled. The file is read again after a pause (longer each
+     * time, up to [MAX_READ_RETRY_MS]), so later changes still reach the schedule once it reads again.
      */
     val settingsWhenReadable: Flow<AutoBackupSettings> =
         dataStore.data
             .map(::read)
-            .catch { error -> if (error !is IOException) throw error }
+            .retryWhen { error, attempt ->
+                (error is IOException).also { unreadable -> if (unreadable) delay(readRetryDelayMs(attempt)) }
+            }
             .distinctUntilChanged()
 
     /**
@@ -169,6 +174,14 @@ class AutoBackupStore internal constructor(private val dataStore: DataStore<Pref
         val KEEP_CHOICES = listOf(3, 5, 10)
 
         fun sanitizeKeep(count: Int): Int = if (count in KEEP_CHOICES) count else DEFAULT_KEEP
+
+        /** The longest pause before an unreadable settings file is read again. */
+        const val MAX_READ_RETRY_MS = 10 * 60 * 1000L
+        private const val FIRST_READ_RETRY_MS = 1_000L
+
+        /** One second, doubling after each failed read, up to [MAX_READ_RETRY_MS]. */
+        internal fun readRetryDelayMs(attempt: Long): Long =
+            (FIRST_READ_RETRY_MS shl attempt.coerceIn(0L, 20L).toInt()).coerceAtMost(MAX_READ_RETRY_MS)
 
         private val ENABLED = booleanPreferencesKey("enabled")
         private val FOLDER_URI = stringPreferencesKey("folder_uri")

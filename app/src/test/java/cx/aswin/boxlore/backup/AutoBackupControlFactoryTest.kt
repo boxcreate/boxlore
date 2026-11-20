@@ -8,6 +8,9 @@ import androidx.work.WorkManager
 import androidx.work.testing.WorkManagerTestInitHelper
 import cx.aswin.boxlore.core.prefs.AutoBackupProblem
 import cx.aswin.boxlore.core.prefs.AutoBackupStore
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -84,5 +87,17 @@ class AutoBackupControlFactoryTest {
         val settings = store.current()
         assertFalse(settings.enabled)
         assertNull(settings.folderUri)
+    }
+
+    @Test fun `picking a folder waits while another folder change is under way`() = runBlocking {
+        var taken = 0
+        AutoBackupControlFactory.folderChanges.lock()
+        val pick = launch(Dispatchers.IO) { AutoBackupControlFactory.adoptFolder(application, store, sync) { taken++ > -1 } }
+        delay(100)
+        assertEquals(0, taken)
+        AutoBackupControlFactory.folderChanges.unlock()
+        pick.join()
+        assertEquals(1, taken)
+        assertEquals(sync.toString(), store.current().folderUri)
     }
 }

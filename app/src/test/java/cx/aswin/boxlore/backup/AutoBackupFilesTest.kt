@@ -72,7 +72,23 @@ class AutoBackupFilesTest {
         )
     }
 
+    @Test fun `a saved backup a sync app already took away holds no place among the kept ones`() {
+        val names = listOf(
+            "boxlore_auto_backup_2026-12-01_0900.json",
+            "boxlore_auto_backup_2026-12-08_0900.json",
+            "boxlore_auto_backup_2026-12-15_0900.json",
+        )
+        assertTrue(AutoBackupFiles.toDelete(names, keep = 3, saved = "boxlore_auto_backup_2026-12-22_0900.json").isEmpty())
+        assertEquals(
+            listOf("boxlore_auto_backup_2026-12-01_0900.json"),
+            AutoBackupFiles.toDelete(names, keep = 2, saved = "boxlore_auto_backup_2026-12-22_0900.json"),
+        )
+    }
+
     @Test fun `only exact names count as backups or leftovers`() {
+        assertTrue(AutoBackupFiles.isLeftoverTemp("boxlore_auto_backup_2026-12-01_0900.json.tmp"))
+        assertTrue(AutoBackupFiles.isLeftoverTemp(AutoBackupFiles.asideName("boxlore_auto_backup_2026-12-01_0900.json")))
+        assertFalse(AutoBackupFiles.isBackup(AutoBackupFiles.asideName("boxlore_auto_backup_2026-12-01_0900.json")))
         assertFalse(AutoBackupFiles.isBackup("boxlore_auto_backup_2026-12-01_0900.json.tmp"))
         assertFalse(AutoBackupFiles.isBackup("my_boxlore_auto_backup_2026-12-01_0900.json"))
         assertFalse(AutoBackupFiles.isLeftoverTemp("boxlore_auto_backup_2026-12-01_0900.json"))

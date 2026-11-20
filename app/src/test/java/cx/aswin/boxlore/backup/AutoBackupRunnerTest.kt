@@ -67,7 +67,10 @@ class AutoBackupRunnerTest {
         assertEquals(AutoBackupOutcome.Failed(AutoBackupProblem.FOLDER_MISSING, retryable = false), runner(missing).run(5))
         assertTrue(lost.writes.isEmpty() && missing.writes.isEmpty())
         // The folder vanishing between the check and the write reads the same way.
-        val vanished = FakeAutoBackupFolder().apply { writeError = FileNotFoundException("gone") }
+        val vanished = FakeAutoBackupFolder().apply {
+            writeError = FileNotFoundException("gone")
+            reachErrorAfterWrite = FileNotFoundException("gone")
+        }
         assertEquals(AutoBackupOutcome.Failed(AutoBackupProblem.FOLDER_MISSING, retryable = false), runner(vanished).run(5))
     }
 
@@ -82,6 +85,19 @@ class AutoBackupRunnerTest {
             runner(folder) { throw IllegalStateException("database closed") }.run(5),
         )
         assertTrue(folder.writes.isEmpty())
+    }
+
+    @Test fun `a new file that vanished while the folder is still there is retried, not reported as a missing folder`() = runBlocking {
+        val folder = FakeAutoBackupFolder().apply { writeError = FileNotFoundException("document") }
+        assertEquals(AutoBackupOutcome.Failed(AutoBackupProblem.IO_ERROR, retryable = true), runner(folder).run(keep = 3))
+    }
+
+    @Test fun `a folder that went away during the write is still reported as missing`() = runBlocking {
+        val folder = FakeAutoBackupFolder().apply {
+            writeError = FileNotFoundException("document")
+            reachErrorAfterWrite = FileNotFoundException("folder")
+        }
+        assertEquals(AutoBackupOutcome.Failed(AutoBackupProblem.FOLDER_MISSING, retryable = false), runner(folder).run(keep = 3))
     }
 
     @Test fun `a pruning failure never fails a saved backup`() = runBlocking {

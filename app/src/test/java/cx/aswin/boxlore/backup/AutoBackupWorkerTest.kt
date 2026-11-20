@@ -110,6 +110,43 @@ class AutoBackupWorkerTest {
         assertEquals(AutoBackupProblem.IO_ERROR, settings.lastError)
     }
 
+    @Test fun `a note that can't be saved never skips the backup`() = runBlocking {
+        var failures = 3
+        val run = worker(attempt = 0).apply {
+            nowMs = { 2_000L }
+            failStoreWrites { failures-- > 0 }
+        }
+        assertEquals(ListenableWorker.Result.success(), run.doWork())
+        assertEquals(1, folder.writes.size)
+        assertTrue(store.current().lastAttemptAt != 2_000L)
+        assertEquals(2_000L, store.current().lastSuccessAt)
+    }
+
+    @Test fun `a saved backup whose note can't be saved still succeeds once, without a second file`() = runBlocking {
+        var writes = 0
+        val run = worker(attempt = 0).apply { failStoreWrites { ++writes > 1 } }
+        assertEquals(ListenableWorker.Result.success(), run.doWork())
+        assertEquals(1, folder.writes.size)
+        assertNull(store.current().lastSuccessAt)
+        assertEquals(1, reports.size)
+    }
+
+    @Test fun `a note that tries again in place still records the backup`() = runBlocking {
+        var failures = 1
+        val run = worker(attempt = 0).apply { failStoreWrites { it == SUCCESS_WRITE && failures-- > 0 } }
+        assertEquals(ListenableWorker.Result.success(), run.doWork())
+        assertEquals(1_000L, store.current().lastSuccessAt)
+    }
+
+    @Test fun `a problem that can't be recorded ends the run as failed, and is still reported`() = runBlocking {
+        folder.reachError = SecurityException("revoked")
+        var writes = 0
+        val run = worker(attempt = 0).apply { failStoreWrites { ++writes > 1 } }
+        assertEquals(ListenableWorker.Result.failure(), run.doWork())
+        assertNull(store.current().lastError)
+        assertEquals(listOf(AutoBackupOutcome.Failed(AutoBackupProblem.PERMISSION_LOST, false)), reports)
+    }
+
     @Test fun `every problem code is an allowed analytics error code`() {
         val allowed = setOf(
             LibraryBackupAnalyticsErrors.PERMISSION_LOST,
@@ -121,6 +158,17 @@ class AutoBackupWorkerTest {
             allowed,
             setOf(AutoBackupProblem.PERMISSION_LOST, AutoBackupProblem.FOLDER_MISSING, AutoBackupProblem.IO_ERROR, AutoBackupProblem.EXPORT_FAILED),
         )
+    }
+
+    /** Store writes for which [fails] (given the write's position: attempt, then result) throw like a full disk. */
+    private fun AutoBackupWorker.failStoreWrites(fails: (Int) -> Boolean) {
+        var position = 0
+        storeRetryDelayMs = 0L
+        writeStore = { write ->
+            val index = position++
+            if (fails(index)) throw IOException("disk")
+            this@AutoBackupWorkerTest.store.write()
+        }
     }
 
     private fun worker(attempt: Int) = TestListenableWorkerBuilder<AutoBackupWorker>(context)
@@ -142,5 +190,8 @@ class AutoBackupWorkerTest {
 
     private companion object {
         const val FOLDER = "content://com.android.externalstorage.documents/tree/primary%3ASync"
+
+        /** The store write after the attempt note, when nothing fails before it. */
+        const val SUCCESS_WRITE = 1
     }
 }

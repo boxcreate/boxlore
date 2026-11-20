@@ -3,16 +3,18 @@ package cx.aswin.boxlore.core.prefs
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.preferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -129,14 +131,34 @@ class AutoBackupStoreTest {
         assertEquals(3, AutoBackupStore(context).current().keepCount)
     }
 
-    @Test fun `an unreadable file reads as the defaults`() = runTest {
+    @Test fun `an unreadable file reads as the defaults, while the schedule's flow waits and reads again`() = runTest {
         val broken = object : DataStore<Preferences> {
             override val data: Flow<Preferences> = flow { throw IOException("disk") }
             override suspend fun updateData(transform: suspend (t: Preferences) -> Preferences): Preferences = throw IOException("disk")
         }
         assertEquals(AutoBackupSettings(), AutoBackupStore(broken).settings.first())
-        // The schedule's flow ends instead, so an unreadable file never reads as "turned off".
-        assertTrue(AutoBackupStore(broken).settingsWhenReadable.toList().isEmpty())
+        // Never "turned off" while unreadable: the schedule's flow emits nothing...
+        assertNull(withTimeoutOrNull(60 * 60 * 1000L) { AutoBackupStore(broken).settingsWhenReadable.first() })
+    }
+
+    @Test fun `the schedule's flow picks up settings once the file reads again`() = runTest {
+        var reads = 0
+        val recovering = object : DataStore<Preferences> {
+            override val data: Flow<Preferences> = flow {
+                if (reads++ < 2) throw IOException("disk")
+                emit(preferencesOf(booleanPreferencesKey("enabled") to true, stringPreferencesKey("folder_uri") to "content://tree/sync"))
+            }
+            override suspend fun updateData(transform: suspend (t: Preferences) -> Preferences): Preferences = throw IOException("disk")
+        }
+        val settings = AutoBackupStore(recovering).settingsWhenReadable.first()
+        assertTrue(settings.isActive)
+        assertEquals(3, reads)
+    }
+
+    @Test fun `failed reads wait longer each time, up to ten minutes`() {
+        assertEquals(1_000L, AutoBackupStore.readRetryDelayMs(0))
+        assertEquals(4_000L, AutoBackupStore.readRetryDelayMs(2))
+        assertEquals(AutoBackupStore.MAX_READ_RETRY_MS, AutoBackupStore.readRetryDelayMs(30))
     }
 
     @Test fun `only folder problems ask for a new folder`() {

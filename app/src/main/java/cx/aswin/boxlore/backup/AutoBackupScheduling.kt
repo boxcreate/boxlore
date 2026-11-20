@@ -80,7 +80,8 @@ internal object AutoBackupScheduling {
 
     /** Settings changes and process starts (restores included) rebuild the schedule from the `auto_backup` store. */
     fun start(context: Context, scope: CoroutineScope) {
-        // A read failure leaves the schedule as it was; it must not cancel backups the listener turned on.
+        // A read failure leaves the schedule as it was (it must not cancel backups the listener turned on),
+        // and the settings are read again later, so later changes still reach the schedule.
         scope.launch { follow(context, AutoBackupStore(context).settingsWhenReadable) }
     }
 

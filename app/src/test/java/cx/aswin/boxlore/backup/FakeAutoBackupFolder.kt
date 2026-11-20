@@ -8,6 +8,9 @@ internal class FakeAutoBackupFolder(vararg existing: String) : AutoBackupFolder 
     var writeError: Exception? = null
     var listError: Exception? = null
 
+    /** Set when writing: the folder fails its next reach check this way (it went away mid-run). */
+    var reachErrorAfterWrite: Exception? = null
+
     override fun checkReachable() {
         reachError?.let { throw it }
     }
@@ -19,6 +22,7 @@ internal class FakeAutoBackupFolder(vararg existing: String) : AutoBackupFolder 
 
     override fun write(name: String, tempName: String, bytes: ByteArray) {
         writes += name to tempName
+        reachErrorAfterWrite?.let { reachError = it }
         writeError?.let { throw it }
         files[name] = bytes
     }
