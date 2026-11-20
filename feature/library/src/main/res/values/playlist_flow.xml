@@ -44,4 +44,11 @@
         <item quantity="one">Pick %1$d show</item>
         <item quantity="other">Pick all %1$d</item>
     </plurals>
+    <!-- Beside the Icon heading in New playlist: show every icon, or only one row. -->
+    <string name="library_playlist_more_icons">More icons</string>
+    <string name="library_playlist_fewer_icons">Fewer icons</string>
+    <!-- Playlist page: the first episode Play starts with. -->
+    <string name="library_playlist_up_next">Up next</string>
+    <!-- Play button on a playlist card (screen readers); %1$s is the playlist name. -->
+    <string name="library_playlist_play_named">Play %1$s</string>
 </resources>

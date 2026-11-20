@@ -2,11 +2,14 @@ package cx.aswin.boxlore.feature.library.playlists
 
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
+import cx.aswin.boxlore.core.designsystem.icon.GenreIconItem
+import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.model.PLAYLIST_DEFAULT_PER_SHOW_LIMIT
 import cx.aswin.boxlore.core.model.PlaylistMix
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.model.normalizePlaylistName
+import cx.aswin.boxlore.feature.library.subscriptions.ICONS_PER_ROW
 import cx.aswin.boxlore.feature.library.subscriptions.extractDistinctGenres
 import cx.aswin.boxlore.feature.library.subscriptions.matchingShows
 
@@ -101,6 +104,12 @@ internal object NewPlaylistFlowLogic {
 
     fun withIcon(draft: NewPlaylistDraft, iconKey: String): NewPlaylistDraft = draft.copy(icon = iconKey, iconChosen = true)
 
+    /** The collapsed icon row: the chosen icon first, then the first others, one row's worth. */
+    fun iconRow(selectedKey: String?): List<GenreIconItem> {
+        val chosen = GenreIcons.all.firstOrNull { it.key.equals(selectedKey, ignoreCase = true) }
+        return (listOfNotNull(chosen) + GenreIcons.all.filter { it != chosen }).take(ICONS_PER_ROW)
+    }
+
     fun withPlayback(draft: NewPlaylistDraft, mix: PlaylistMix, perShowLimit: Int?): NewPlaylistDraft = draft.copy(mix = mix, perShowLimit = perShowLimit)
 
     /**
@@ -114,16 +123,10 @@ internal object NewPlaylistFlowLogic {
         displayName: (String) -> String = { it },
     ): NewPlaylistDraft {
         if (draft.step != NewPlaylistDraft.PICK) return draft
-        val shared = sharedGenre(followed.filter { it.id in draft.pickedIds })
+        val shared = PlaylistShowGrid.sharedGenre(followed.filter { it.id in draft.pickedIds })
         val named = if (draft.nameEdited || draft.name.isNotBlank() || shared == null) draft else draft.copy(name = displayName(shared))
         val iconed = if (draft.iconChosen || shared == null || named.icon != null) named else named.copy(icon = iconKeyFor(shared))
         return iconed.copy(step = NewPlaylistDraft.FINISH)
-    }
-
-    /** The one genre every show in [shows] has, or null. */
-    fun sharedGenre(shows: List<Podcast>): String? {
-        if (shows.isEmpty()) return null
-        return extractDistinctGenres(shows).firstOrNull { genre -> matchingShows(shows, genre).size == shows.size }
     }
 
     /** Back one step; null leaves the flow. */
@@ -207,6 +210,12 @@ internal object PlaylistSuggestions {
 
 /** What New playlist's show grid offers and how it can be narrowed. */
 internal object PlaylistShowGrid {
+    /** The one genre every show in [shows] has, or null. */
+    fun sharedGenre(shows: List<Podcast>): String? {
+        if (shows.isEmpty()) return null
+        return extractDistinctGenres(shows).firstOrNull { genre -> matchingShows(shows, genre).size == shows.size }
+    }
+
     /** The shows the grid offers: followed shows not yet in the playlist, narrowed by genre and search. */
     fun visibleShows(followed: List<Podcast>, inPlaylist: Set<String>, genre: String?, search: String): List<Podcast> {
         val pickable = followed.filter { it.id !in inPlaylist }

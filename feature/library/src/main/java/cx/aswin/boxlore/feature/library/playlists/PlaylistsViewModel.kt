@@ -171,8 +171,9 @@ class PlaylistsViewModel(
      * Replaces the queue with this playlist's next episodes. [onReplaced] gets what the queue held,
      * for Undo, when there was anything; [onNothingToPlay] runs when the playlist has nothing to play.
      */
-    fun play(onReplaced: (UpNextSnapshot) -> Unit = {}, onNothingToPlay: () -> Unit = {}) {
-        val id = playlistId ?: return
+    /** Plays [target] (this page's playlist unless given, as from a card on the Playlists page). */
+    fun play(target: String? = playlistId, onReplaced: (UpNextSnapshot) -> Unit = {}, onNothingToPlay: () -> Unit = {}) {
+        val id = target ?: return
         viewModelScope.launch {
             val episodes = repository.nextEpisodes(id, minOf(batchSize, queueLimit))
             if (episodes.isEmpty()) {
@@ -182,6 +183,7 @@ class PlaylistsViewModel(
             val previous = ports.upNextSnapshot()
             ports.startPlayback(id, episodes)
             val size = (detail.value as? PlaylistDetailState.Ready)?.shows?.size
+                ?: playlists.value?.firstOrNull { it.id == id }?.showCount
             AnalyticsHelper.trackPlaylistModified("play", SOURCE, itemsCount = episodes.size, playlistSize = size)
             previous?.let(onReplaced)
         }

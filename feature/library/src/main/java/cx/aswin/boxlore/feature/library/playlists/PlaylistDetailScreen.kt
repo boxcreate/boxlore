@@ -3,6 +3,8 @@ package cx.aswin.boxlore.feature.library.playlists
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,22 +13,25 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
@@ -73,11 +78,13 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
 import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.designsystem.text.currentLocale
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Playlist
 import cx.aswin.boxlore.core.model.PlaylistMix
 import cx.aswin.boxlore.core.model.PlaylistShow
+import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.core.model.text.UiText
 import cx.aswin.boxlore.core.model.text.resolve
 import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
@@ -249,44 +256,39 @@ internal fun PlaylistDetailContent(
     )
 }
 
+/** The playlist up top: a solid block with its big cover, what it holds and how it plays, then Play and How it plays. */
 @Composable
 private fun PlaylistHeader(ready: PlaylistDetailState.Ready, actions: PlaylistDetailActions, onOpenSettings: () -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            PlaylistCover(ready.playlist.coverUrls, size = 72.dp, iconKey = ready.playlist.iconKey)
-            Text(PlaylistCopy.showCount(ready.shows.size).asString(), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        HowItPlaysRow(ready.playlist, onClick = onOpenSettings)
-        Button(onClick = actions::play, enabled = ready.comingUp.isNotEmpty(), modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-            Icon(Icons.Rounded.PlayArrow, contentDescription = null)
-            Text(PlaylistDetailCopy.PLAY, modifier = Modifier.padding(start = 8.dp))
-        }
-    }
-}
-
-/** How the playlist plays, in one tappable line: its mix and the most it takes from each show. */
-@Composable
-private fun HowItPlaysRow(playlist: Playlist, onClick: () -> Unit) {
-    val copy = playlistMixCopy(playlist.mix)
-    val limit = playlist.perShowLimit
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth().testTag(PLAYLIST_HOW_IT_PLAYS_TAG),
-    ) {
-        Row(Modifier.heightIn(min = 64.dp).padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(copy.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            Column(Modifier.weight(1f).padding(horizontal = 16.dp)) {
-                Text(stringResource(R.string.library_playlist_how_it_plays), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(stringResource(copy.name), style = MaterialTheme.typography.titleSmall, fontWeight = GoogleSansWeight.semiBold)
-                Text(
-                    limit?.let { pluralStringResource(R.plurals.library_playlist_per_show_summary, it, it) } ?: stringResource(R.string.library_playlist_per_show_summary_none),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+    val playlist = ready.playlist
+    val mix = playlistMixCopy(playlist.mix)
+    Surface(shape = RoundedCornerShape(32.dp), color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                PlaylistCover(playlist.coverUrls, size = 112.dp, iconKey = playlist.iconKey, corner = 24.dp)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(PlaylistCopy.showCount(ready.shows.size).asString(), style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.semiBold)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Icon(mix.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                        Text(stringResource(mix.name), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = GoogleSansWeight.medium)
+                    }
+                    Text(
+                        playlist.perShowLimit?.let { pluralStringResource(R.plurals.library_playlist_per_show_summary, it, it) }
+                            ?: stringResource(R.string.library_playlist_per_show_summary_none),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
-            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = actions::play, enabled = ready.comingUp.isNotEmpty(), modifier = Modifier.weight(1f).heightIn(min = 56.dp)) {
+                    Icon(Icons.Rounded.PlayArrow, contentDescription = null)
+                    Text(PlaylistDetailCopy.PLAY, modifier = Modifier.padding(start = 8.dp), style = MaterialTheme.typography.titleMedium)
+                }
+                FilledTonalButton(onClick = onOpenSettings, modifier = Modifier.heightIn(min = 56.dp).testTag(PLAYLIST_HOW_IT_PLAYS_TAG)) {
+                    Icon(Icons.Rounded.Tune, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Text(stringResource(R.string.library_playlist_how_it_plays), modifier = Modifier.padding(start = 8.dp))
+                }
+            }
         }
     }
 }
@@ -314,17 +316,54 @@ private fun LazyListScope.comingUp(episodes: List<Episode>) {
             Text(PlaylistDetailCopy.NOTHING_TO_PLAY, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp))
         }
     }
-    items(episodes, key = { "episode:${it.id}" }, contentType = { "episode" }) { episode ->
-        Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 4.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Artwork(episode.imageUrl?.takeIf(String::isNotBlank) ?: episode.podcastImageUrl, fallback = episode.podcastImageUrl)
+    itemsIndexed(episodes, key = { _, episode -> "episode:${episode.id}" }, contentType = { index, _ -> if (index == 0) "up_next" else "episode" }) { index, episode ->
+        if (index == 0) UpNextCard(episode) else ComingUpRow(index + 1, episode)
+    }
+}
+
+/** The episode Play starts with, as a solid card. */
+@Composable
+private fun UpNextCard(episode: Episode) {
+    Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Artwork(episode.imageUrl?.takeIf(String::isNotBlank) ?: episode.podcastImageUrl, fallback = episode.podcastImageUrl, size = 72.dp)
             Column(Modifier.weight(1f)) {
-                Text(episode.title, style = MaterialTheme.typography.bodyLarge, fontWeight = GoogleSansWeight.medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(episode.podcastTitle.orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(stringResource(R.string.library_playlist_up_next), style = MaterialTheme.typography.labelMedium, fontWeight = GoogleSansWeight.semiBold)
+                Text(episode.title, style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.semiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(episodeLine(episode), style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
 }
 
+/** A later episode: its place in line, artwork, title, show and length. */
+@Composable
+private fun ComingUpRow(position: Int, episode: Episode) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 4.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            LocaleFormats.number(position.toLong(), currentLocale()),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(24.dp),
+        )
+        Artwork(episode.imageUrl?.takeIf(String::isNotBlank) ?: episode.podcastImageUrl, fallback = episode.podcastImageUrl)
+        Column(Modifier.weight(1f)) {
+            Text(episode.title, style = MaterialTheme.typography.bodyLarge, fontWeight = GoogleSansWeight.medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(episodeLine(episode), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+/** "Show · 45 min", or just the show when the length isn't known. */
+@Composable
+private fun episodeLine(episode: Episode): String {
+    val show = episode.podcastTitle.orEmpty()
+    if (episode.duration <= 0) return show
+    val length = LocaleFormats.duration(episode.duration.toLong(), currentLocale())
+    return if (show.isBlank()) length else "$show · $length"
+}
+
+@OptIn(ExperimentalLayoutApi::class)
 private fun LazyListScope.shows(ready: PlaylistDetailState.Ready, onAdd: () -> Unit, onRemove: (PlaylistShow) -> Unit) {
     item(key = "shows", contentType = "section") {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -335,18 +374,37 @@ private fun LazyListScope.shows(ready: PlaylistDetailState.Ready, onAdd: () -> U
             }
         }
     }
-    items(ready.shows, key = { "show:${it.podcastId}" }, contentType = { "show" }) { show ->
-        val skipped = PlaylistDetailCopy.skipped(show)
-        Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 4.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Box(Modifier.alpha(if (skipped != null) SKIPPED_ALPHA else 1f)) { Artwork(show.imageUrl, fallback = null) }
-            Column(Modifier.weight(1f)) {
-                Text(PlaylistDetailCopy.title(show), style = MaterialTheme.typography.bodyLarge, fontWeight = GoogleSansWeight.medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                skipped?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            }
-            IconButton(onClick = { onRemove(show) }) {
-                Icon(Icons.Rounded.Close, contentDescription = PlaylistDetailCopy.remove(show), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    item(key = "show_grid", contentType = "shows") {
+        FlowRow(
+            Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            ready.shows.forEach { show -> ShowTile(show, onRemove = { onRemove(show) }) }
+        }
+    }
+}
+
+/** A show in the playlist: its cover with a remove button, its title, and why it's skipped when it is. */
+@Composable
+private fun ShowTile(show: PlaylistShow, onRemove: () -> Unit) {
+    val skipped = PlaylistDetailCopy.skipped(show)
+    Column(Modifier.width(ShowTileSize), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(Modifier.size(ShowTileSize)) {
+            Box(Modifier.alpha(if (skipped != null) SKIPPED_ALPHA else 1f)) { Artwork(show.imageUrl, fallback = null, size = ShowTileSize, corner = 20.dp) }
+            Surface(
+                onClick = onRemove,
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(32.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(Icons.Rounded.Close, contentDescription = PlaylistDetailCopy.remove(show), tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(18.dp))
+                }
             }
         }
+        Text(PlaylistDetailCopy.title(show), style = MaterialTheme.typography.bodyMedium, fontWeight = GoogleSansWeight.medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        skipped?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
 }
 
@@ -356,18 +414,19 @@ private fun Section(title: String) {
 }
 
 @Composable
-private fun Artwork(url: String?, fallback: String?) {
+private fun Artwork(url: String?, fallback: String?, size: androidx.compose.ui.unit.Dp = 52.dp, corner: androidx.compose.ui.unit.Dp = 14.dp) {
     OptimizedImage(
         url = url,
         fallbackUrls = listOf(fallback),
-        proxyWidth = 160,
+        proxyWidth = 240,
         contentDescription = null,
-        modifier = Modifier.size(52.dp).clip(MaterialTheme.shapes.medium),
+        modifier = Modifier.size(size).clip(RoundedCornerShape(corner)),
         contentScale = ContentScale.Crop,
     )
 }
 
 private const val SKIPPED_ALPHA = 0.5f
+private val ShowTileSize = 100.dp
 
 /** The playback chrome under a playlist page (mini player, floating navigation), which its list and snackbars stay above. */
 @Composable

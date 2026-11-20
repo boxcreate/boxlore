@@ -33,4 +33,8 @@
         <item quantity="one">Choisir %1$d podcast</item>
         <item quantity="other">Choisir les %1$d</item>
     </plurals>
+    <string name="library_playlist_more_icons">Plus d’icônes</string>
+    <string name="library_playlist_fewer_icons">Moins d’icônes</string>
+    <string name="library_playlist_up_next">À suivre</string>
+    <string name="library_playlist_play_named">Lire %1$s</string>
 </resources>

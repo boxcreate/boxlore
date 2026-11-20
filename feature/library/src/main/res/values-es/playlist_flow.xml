@@ -36,4 +36,8 @@
         <item quantity="many">Elegir los %1$d</item>
         <item quantity="other">Elegir los %1$d</item>
     </plurals>
+    <string name="library_playlist_more_icons">Más iconos</string>
+    <string name="library_playlist_fewer_icons">Menos iconos</string>
+    <string name="library_playlist_up_next">A continuación</string>
+    <string name="library_playlist_play_named">Reproducir %1$s</string>
 </resources>

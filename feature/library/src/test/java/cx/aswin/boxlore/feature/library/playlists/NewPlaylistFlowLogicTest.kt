@@ -156,4 +156,13 @@ class NewPlaylistFlowLogicTest {
         assertTrue(NewPlaylistFlowLogic.canGoNext(NewPlaylistFlowLogic.togglePick(draft, "c1")))
         assertNull(NewPlaylistFlowLogic.back(draft))
     }
+
+    @Test
+    fun `the collapsed icon row is one row with the chosen icon first`() {
+        val row = NewPlaylistFlowLogic.iconRow("crime")
+        assertEquals(6, row.size)
+        assertEquals("crime", row.first().key)
+        assertEquals(row.size, row.distinct().size)
+        assertEquals(6, NewPlaylistFlowLogic.iconRow(null).size)
+    }
 }

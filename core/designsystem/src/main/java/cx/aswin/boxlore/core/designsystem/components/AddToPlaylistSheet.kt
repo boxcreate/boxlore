@@ -234,16 +234,17 @@ private fun PlaylistToggleRow(playlist: Playlist, checked: Boolean, onToggle: ()
  * A playlist's cover. With an icon ([iconKey], a [GenreIcons] key) it is that icon on an expressive
  * cookie over a solid colour block; otherwise its shows' artwork fills the whole tile
  * ([playlistCoverTiles]: one cover, two halves, a half and two quarters, or four quarters), or a
- * playlist mark on a solid surface when it has none.
+ * playlist mark on a solid surface when it has none. [corner] rounds the tile (by default 12dp, or in
+ * proportion for an icon cover).
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun PlaylistCover(imageUrls: List<String>, modifier: Modifier = Modifier, size: Dp = 44.dp, iconKey: String? = null) {
+fun PlaylistCover(imageUrls: List<String>, modifier: Modifier = Modifier, size: Dp = 44.dp, iconKey: String? = null, corner: Dp? = null) {
     val icon = GenreIcons.findIcon(iconKey)
     if (icon != null) {
         val colors = MaterialTheme.colorScheme
         Box(
-            modifier.size(size).clip(RoundedCornerShape(size * COVER_CORNER_FRACTION)).background(colors.tertiaryContainer),
+            modifier.size(size).clip(RoundedCornerShape(corner ?: (size * COVER_CORNER_FRACTION))).background(colors.tertiaryContainer),
             contentAlignment = Alignment.Center,
         ) {
             Box(
@@ -256,10 +257,15 @@ fun PlaylistCover(imageUrls: List<String>, modifier: Modifier = Modifier, size: 
         return
     }
     val urls = imageUrls.filter(String::isNotBlank).take(PlaylistCoverTile.MAX)
-    Box(modifier.size(size).clip(RoundedCornerShape(12.dp))) {
+    Box(modifier.size(size).clip(RoundedCornerShape(corner ?: 12.dp))) {
         Surface(color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.size(size)) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(Icons.AutoMirrored.Rounded.PlaylistPlay, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                Icon(
+                    Icons.AutoMirrored.Rounded.PlaylistPlay,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size((size * ICON_FRACTION).coerceAtLeast(24.dp)),
+                )
             }
         }
         urls.zip(playlistCoverTiles(urls.size)).forEach { (url, tile) ->
