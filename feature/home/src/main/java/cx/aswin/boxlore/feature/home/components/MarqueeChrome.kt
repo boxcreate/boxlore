@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -132,7 +133,8 @@ internal fun marqueeFadeUnderBar(barBottom: Float, scroll: Int, top: Float, fade
 
 /**
  * Fades this part of Marquee's words as Home scrolls it under the floating top bar
- * ([marqueeFadeUnderBar]). Reads the scroll only while drawing, so scrolling never recomposes the card.
+ * ([marqueeFadeUnderBar]). Reads the scroll and its own position only while drawing, so scrolling never
+ * recomposes the card, and a move without a scroll still redraws the fade.
  */
 @Composable
 internal fun Modifier.marqueeFadesUnderBar(): Modifier {
@@ -140,16 +142,17 @@ internal fun Modifier.marqueeFadesUnderBar(): Modifier {
     val density = LocalDensity.current
     val barBottom = with(density) { LocalHeroTopInset.current.toPx() }
     val fade = with(density) { MarqueeWordsUnderBarFade.toPx() }
-    val top = remember { FloatArray(1) }
+    // State, so a move without a scroll (a resize, a different card height) redraws the fade too.
+    val top = remember { mutableFloatStateOf(0f) }
     return this
-        .onPlaced { top[0] = it.positionInParent().y }
+        .onPlaced { top.floatValue = it.positionInParent().y }
         .graphicsLayer {
-            val fading = marqueeFadeUnderBar(barBottom, scroll(), top[0], fade) != null
+            val fading = marqueeFadeUnderBar(barBottom, scroll(), top.floatValue, fade) != null
             compositingStrategy = if (fading) CompositingStrategy.Offscreen else CompositingStrategy.Auto
         }
         .drawWithContent {
             drawContent()
-            val band = marqueeFadeUnderBar(barBottom, scroll(), top[0], fade) ?: return@drawWithContent
+            val band = marqueeFadeUnderBar(barBottom, scroll(), top.floatValue, fade) ?: return@drawWithContent
             val stops = marqueeEasedFade(0f, 1f, 0f, 1f).map { (at, alpha) -> at to Color.Black.copy(alpha = alpha) }
             drawRect(Brush.verticalGradient(*stops.toTypedArray(), startY = band.first, endY = band.second), blendMode = BlendMode.DstIn)
         }
