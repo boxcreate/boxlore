@@ -63,7 +63,10 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 ### Upcoming
 
 <!-- release-upcoming:start -->
-New features and improvements for the next release are currently in development.
+<b>⚡ Improved:</b>
+<ul align="left">
+<li>The Marquee style on Home now scrolls with the page in one go, and its cover stays clear behind the words.</li>
+</ul>
 <!-- release-upcoming:end -->
 
 

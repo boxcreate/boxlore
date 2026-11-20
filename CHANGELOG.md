@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Marquee's hero scrolls with Home as one piece (no fold-over, scroll stop or sheet handle), its words fade under the top bar, and its backdrop keeps the cover sharp at the top with a light, eased progressive blur toward the words. `MarqueeDetentConnection`, `marqueePinned` and `MarqueeSheetHandle` are removed. ([#1287](https://github.com/boxcreate/boxlore/pull/1287)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `:wear` declares `com.google.android.gms.permission.AD_ID`, matching `:app`, so Play's advertising ID check passes for the watch bundle; `WatchManifestTest` guards both manifests. ([#1286](https://github.com/boxcreate/boxlore/pull/1286)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ## [v0.0.32] - 2026-11-20
 
