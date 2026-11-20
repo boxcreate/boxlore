@@ -14,6 +14,10 @@ object LibraryBackupAnalyticsErrors {
     const val NO_PODCASTS_RESOLVED = "no_podcasts_resolved"
     const val MARK_COMPLETED_FAILED = "mark_completed_failed"
 
+    /** Automatic backup (`action` `auto_backup`): the folder grant is gone, or the folder is. */
+    const val PERMISSION_LOST = cx.aswin.boxlore.core.prefs.AutoBackupProblem.PERMISSION_LOST
+    const val FOLDER_MISSING = cx.aswin.boxlore.core.prefs.AutoBackupProblem.FOLDER_MISSING
+
     fun fromThrowable(error: Throwable, fallback: String,): String = when (error) {
         is java.io.IOException -> IO_ERROR
         is SecurityException -> PERMISSION_DENIED

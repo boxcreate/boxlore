@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_auto_backup_title">Backup automático</string>
+    <string name="settings_auto_backup_toggle">Fazer backup automaticamente</string>
+    <string name="settings_auto_backup_toggle_summary">Salva um backup completo da biblioteca na pasta que você escolher</string>
+    <string name="settings_auto_backup_folder">Pasta</string>
+    <string name="settings_auto_backup_folder_choose">Escolha uma pasta</string>
+    <string name="settings_auto_backup_folder_chosen">Pasta escolhida</string>
+    <string name="settings_auto_backup_how_often">Frequência</string>
+    <string name="settings_auto_backup_daily">Diariamente</string>
+    <string name="settings_auto_backup_weekly">Semanalmente</string>
+    <string name="settings_auto_backup_keep">Backups a manter</string>
+    <string name="settings_auto_backup_now">Fazer backup agora</string>
+    <string name="settings_auto_backup_status_running">Fazendo backup…</string>
+    <string name="settings_auto_backup_status_none">Nenhum backup ainda</string>
+    <string name="settings_auto_backup_status_last">Último backup: %1$s</string>
+    <string name="settings_auto_backup_problem_permission">O boxlore não consegue mais salvar nesta pasta.</string>
+    <string name="settings_auto_backup_problem_missing">Esta pasta foi movida ou excluída.</string>
+    <string name="settings_auto_backup_problem_other">O último backup não foi salvo. O boxlore vai tentar de novo na próxima vez.</string>
+    <string name="settings_auto_backup_fix_folder">Escolher a pasta de novo</string>
+    <string name="settings_auto_backup_fix_retry">Tentar de novo</string>
+    <string name="settings_auto_backup_footer">O boxlore exclui apenas os próprios backups automáticos antigos. Os outros arquivos da pasta continuam lá.</string>
+    <string name="settings_auto_backup_no_picker">Este aparelho não tem seletor de pastas, então o boxlore não consegue escolher uma pasta.</string>
+</resources>

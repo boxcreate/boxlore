@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Toast when the picked folder refuses a lasting write grant (Settings › Cloud Sync & Backups). -->
+    <string name="auto_backup_folder_refused">boxlore can\'t save to this folder. Choose another one.</string>
+    <!-- Toast when an automatic backup setting couldn't be written to the phone's storage. -->
+    <string name="auto_backup_change_not_saved">boxlore couldn\'t save this change. Try again.</string>
+</resources>

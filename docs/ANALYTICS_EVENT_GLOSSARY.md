@@ -154,7 +154,7 @@ Neither event carries an address. `show_id` is the Podcast Index ID or the hashe
 | `smart_download_sync` | Smart Downloads sync ran | — | requested_count:int; completed_count:int; failed_count:int; cleaned_count:int; trigger:string | none |
 | `show_notification_toggled` | Per-show notification preference changed | podcast_id:string; enabled:bool | — | none |
 | `share_content` | User shared podcast/episode/app | content_type:enum | podcast_id:string; episode_id:string; recipe_id:string; channel:string; surface:string | none |
-| `backup_restore_result` | Library backup or restore finished | action:string; success:bool | item_count:int; format:string; error_message:string | none |
+| `backup_restore_result` | Library backup or restore finished; `action` is `export`, `import` or `auto_backup` (each scheduled backup, with `error_message` `permission_lost`, `folder_missing`, `io_error` or `export_failed`) | action:string; success:bool | item_count:int; format:string; error_message:string | none |
 | `survey shown` | The NPS survey sheet was on screen (PostHog's standard survey event) | $survey_id:string | — | none |
 | `survey sent` | NPS answers so far: the score at once (partial), then the follow-up (completed); answers as `$survey_response_<question_id>` | $survey_id:string; $survey_submission_id:string; $survey_completed:bool; $survey_questions:list | — | logged_by_policy |
 | `survey dismissed` | The NPS survey closed before any answer | $survey_id:string | — | none |

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_auto_backup_title">Copia automática</string>
+    <string name="settings_auto_backup_toggle">Hacer copias automáticas</string>
+    <string name="settings_auto_backup_toggle_summary">Guarda una copia completa de la biblioteca en la carpeta que elijas</string>
+    <string name="settings_auto_backup_folder">Carpeta</string>
+    <string name="settings_auto_backup_folder_choose">Elige una carpeta</string>
+    <string name="settings_auto_backup_folder_chosen">Carpeta elegida</string>
+    <string name="settings_auto_backup_how_often">Frecuencia</string>
+    <string name="settings_auto_backup_daily">A diario</string>
+    <string name="settings_auto_backup_weekly">Cada semana</string>
+    <string name="settings_auto_backup_keep">Copias que conservar</string>
+    <string name="settings_auto_backup_now">Hacer copia ahora</string>
+    <string name="settings_auto_backup_status_running">Haciendo copia…</string>
+    <string name="settings_auto_backup_status_none">Aún no hay copias</string>
+    <string name="settings_auto_backup_status_last">Última copia: %1$s</string>
+    <string name="settings_auto_backup_problem_permission">boxlore ya no puede guardar en esta carpeta.</string>
+    <string name="settings_auto_backup_problem_missing">Esta carpeta se movió o se eliminó.</string>
+    <string name="settings_auto_backup_problem_other">La última copia no se guardó. boxlore lo volverá a intentar la próxima vez.</string>
+    <string name="settings_auto_backup_fix_folder">Volver a elegir la carpeta</string>
+    <string name="settings_auto_backup_fix_retry">Reintentar</string>
+    <string name="settings_auto_backup_footer">boxlore solo elimina sus propias copias automáticas antiguas. Los demás archivos de la carpeta se quedan.</string>
+    <string name="settings_auto_backup_no_picker">Este dispositivo no tiene selector de carpetas, así que boxlore no puede elegir una.</string>
+</resources>

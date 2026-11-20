@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.network.SupportApi
+import cx.aswin.boxlore.core.prefs.AutoBackupSettings
 import cx.aswin.boxlore.core.prefs.AutoDownloadBackgroundSettings
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.DiscoverySections
@@ -26,6 +27,9 @@ import cx.aswin.boxlore.feature.settings.pages.AppearanceSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceShowPagesPage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceTextPage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceWidgetsPage
+import cx.aswin.boxlore.feature.settings.pages.AutoBackupActions
+import cx.aswin.boxlore.feature.settings.pages.AutoBackupPage
+import cx.aswin.boxlore.feature.settings.pages.AutoBackupUiState
 import cx.aswin.boxlore.feature.settings.pages.CustomThemeEditor
 import cx.aswin.boxlore.feature.settings.pages.DownloadsSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.LibraryBackupActions
@@ -108,7 +112,17 @@ private fun CaptureSettingsPage(destination: ProfileSettingsDestination) {
     val appearance = AppearanceSettings()
     val playback = PlaybackSettings()
     when (destination) {
-        ProfileSettingsDestination.SyncAndBackups -> SyncAndBackupsPage(null, CloudSyncUiStatus.Idle, LibraryBackupActions({}, {}, {}, {}), {}, {})
+        ProfileSettingsDestination.SyncAndBackups -> SyncAndBackupsPage(
+            null,
+            CloudSyncUiStatus.Idle,
+            LibraryBackupActions({}, {}, {}, {}),
+            {},
+            {},
+            AutoBackupPage(
+                AutoBackupUiState(AutoBackupSettings(enabled = true, folderUri = "content://tree/sync", folderName = "Sync", lastSuccessAt = 1_765_789_500_000L)),
+                AutoBackupActions({}, {}, {}, {}, {}),
+            ),
+        )
         ProfileSettingsDestination.Library -> LibrarySettingsPage(LibraryDiscoveryPreferences("us", listOf("en"), {}, {}), {}, {})
         ProfileSettingsDestination.Recommendations -> RecommendationsSettingsPage(DiscoverySections(), { _, _ -> }, {})
         ProfileSettingsDestination.Appearance, ProfileSettingsDestination.Theme -> AppearanceSettingsPage(appearance.state, appearance.actions, {}, {})

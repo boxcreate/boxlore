@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings › Cloud Sync & Backups › Automatic backup: saves the full library backup to a folder on a schedule. -->
+    <string name="settings_auto_backup_title">Automatic backup</string>
+    <string name="settings_auto_backup_toggle">Back up automatically</string>
+    <string name="settings_auto_backup_toggle_summary">Saves a full library backup to a folder you choose</string>
+    <string name="settings_auto_backup_folder">Folder</string>
+    <string name="settings_auto_backup_folder_choose">Choose a folder</string>
+    <string name="settings_auto_backup_folder_chosen">Chosen folder</string>
+    <string name="settings_auto_backup_how_often">How often</string>
+    <string name="settings_auto_backup_daily">Daily</string>
+    <string name="settings_auto_backup_weekly">Weekly</string>
+    <string name="settings_auto_backup_keep">Backups to keep</string>
+    <string name="settings_auto_backup_now">Back up now</string>
+    <string name="settings_auto_backup_status_running">Backing up…</string>
+    <string name="settings_auto_backup_status_none">No backups yet</string>
+    <!-- Under Back up now. %1$s is the date and time of the last saved backup. -->
+    <string name="settings_auto_backup_status_last">Last backup: %1$s</string>
+    <string name="settings_auto_backup_problem_permission">boxlore can\'t save to this folder anymore.</string>
+    <string name="settings_auto_backup_problem_missing">This folder was moved or deleted.</string>
+    <string name="settings_auto_backup_problem_other">The last backup didn\'t save. boxlore will try again next time.</string>
+    <!-- Button beside a folder problem. -->
+    <string name="settings_auto_backup_fix_folder">Choose folder again</string>
+    <string name="settings_auto_backup_fix_retry">Try again</string>
+    <!-- Under the group while automatic backup is on. -->
+    <string name="settings_auto_backup_footer">boxlore deletes only its own older automatic backups. Other files in the folder stay.</string>
+    <!-- Toast when the phone has no system folder picker. -->
+    <string name="settings_auto_backup_no_picker">This device has no folder picker, so boxlore can\'t choose a folder.</string>
+</resources>
