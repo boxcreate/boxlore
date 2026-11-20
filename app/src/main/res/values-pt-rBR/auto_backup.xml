@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="auto_backup_folder_refused">O boxlore não consegue salvar nesta pasta. Escolha outra.</string>
+    <string name="auto_backup_change_not_saved">O boxlore não conseguiu salvar esta alteração. Tente de novo.</string>
+</resources>

@@ -136,7 +136,7 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
             ),
             appearanceSettings = buildAppearanceSettings(w),
             playbackSettings = buildPlaybackSettings(w),
-            libraryBackupWriters = buildLibraryBackupWriters(w),
+            libraryBackupWriters = buildLibraryBackupWriters(w, cx.aswin.boxlore.backup.AutoBackupControlFactory.rememberControl(w.application)),
             downloadsNavigation = DownloadsNavigation(
                 onNavigateToSmartDownloads = { navController.navigate(NavRoutes.LIBRARY_DOWNLOADS_SETTINGS) },
                 onNavigateToAutoDownloads = { navController.navigate("library/auto_downloads/settings") },
@@ -366,7 +366,7 @@ private fun buildPlaybackSettings(w: NavGraphWiring): PlaybackSettings {
     )
 }
 
-private fun buildLibraryBackupWriters(w: NavGraphWiring): LibraryBackupWriters {
+private fun buildLibraryBackupWriters(w: NavGraphWiring, autoBackup: cx.aswin.boxlore.feature.settings.pages.AutoBackupControl): LibraryBackupWriters {
     val scope = w.scope
     val application = w.application
     val podcastRepository = w.podcastRepository
@@ -385,14 +385,16 @@ private fun buildLibraryBackupWriters(w: NavGraphWiring): LibraryBackupWriters {
                     successToast = R.string.app_library_export_json_success,
                     failureToast = R.string.app_library_export_json_failed,
                 ) {
-                    cx.aswin.boxlore.core.catalog.backup.LibraryBackupManager(
-                        subscriptionRepository,
-                        playbackRepository,
-                        podcastRepository,
-                        userPrefs,
-                        application,
-                    ).exportLibraryAsJson()
-                        .toByteArray()
+                    // The same file the automatic backup writes, settings included.
+                    cx.aswin.boxlore.backup.LibraryJsonBackup.bytes(
+                        cx.aswin.boxlore.backup.LibraryJsonBackup.manager(
+                            subscriptionRepository,
+                            playbackRepository,
+                            podcastRepository,
+                            userPrefs,
+                            application,
+                        ),
+                    )
                 }
             }
         },
@@ -420,6 +422,7 @@ private fun buildLibraryBackupWriters(w: NavGraphWiring): LibraryBackupWriters {
             opmlCallbacks.onImportStateChange(OpmlImportState.Parsing(uri))
             opmlCallbacks.onTriggerKeyChange(System.currentTimeMillis())
         },
+        autoBackup = autoBackup,
     )
 }
 

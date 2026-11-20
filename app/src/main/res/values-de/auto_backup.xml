@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="auto_backup_folder_refused">boxlore kann nicht in diesem Ordner speichern. Wähle einen anderen.</string>
+    <string name="auto_backup_change_not_saved">boxlore konnte diese Änderung nicht speichern. Versuch es noch mal.</string>
+</resources>

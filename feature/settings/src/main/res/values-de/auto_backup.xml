@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_auto_backup_title">Automatisches Backup</string>
+    <string name="settings_auto_backup_toggle">Automatisch sichern</string>
+    <string name="settings_auto_backup_toggle_summary">Speichert ein vollständiges Bibliotheks-Backup in einem Ordner deiner Wahl</string>
+    <string name="settings_auto_backup_folder">Ordner</string>
+    <string name="settings_auto_backup_folder_choose">Wähle einen Ordner</string>
+    <string name="settings_auto_backup_folder_chosen">Gewählter Ordner</string>
+    <string name="settings_auto_backup_how_often">Wie oft</string>
+    <string name="settings_auto_backup_daily">Täglich</string>
+    <string name="settings_auto_backup_weekly">Wöchentlich</string>
+    <string name="settings_auto_backup_keep">Backups behalten</string>
+    <string name="settings_auto_backup_now">Jetzt sichern</string>
+    <string name="settings_auto_backup_status_running">Wird gesichert…</string>
+    <string name="settings_auto_backup_status_none">Noch keine Backups</string>
+    <string name="settings_auto_backup_status_last">Letztes Backup: %1$s</string>
+    <string name="settings_auto_backup_problem_permission">boxlore kann nicht mehr in diesem Ordner speichern.</string>
+    <string name="settings_auto_backup_problem_missing">Dieser Ordner wurde verschoben oder gelöscht.</string>
+    <string name="settings_auto_backup_problem_other">Das letzte Backup wurde nicht gespeichert. boxlore versucht es beim nächsten Mal erneut.</string>
+    <string name="settings_auto_backup_fix_folder">Ordner erneut wählen</string>
+    <string name="settings_auto_backup_fix_retry">Noch mal versuchen</string>
+    <string name="settings_auto_backup_footer">boxlore löscht nur seine eigenen älteren automatischen Backups. Andere Dateien im Ordner bleiben erhalten.</string>
+    <string name="settings_auto_backup_no_picker">Dieses Gerät hat keine Ordnerauswahl, daher kann boxlore keinen Ordner wählen.</string>
+</resources>

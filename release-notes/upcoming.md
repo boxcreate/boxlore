@@ -37,6 +37,7 @@ Announcement title:
 - Archive episodes you don't plan to hear, like trailers, from a show's page or an episode's page. They leave your lists without being marked as played, and you can bring them back any time.
 - Make playlists in Library from the shows you follow, or start from one boxlore suggests, like News or True crime. Each takes turns between its shows’ newest episodes, or plays newest first or one show at a time, picks up new episodes by itself, and keeps its place.
 - boxlore now comes in Spanish, Brazilian Portuguese, German and French. It follows your phone's language, and you can pick another in Settings › Appearance › App language.
+- boxlore can now back up your library automatically, daily or weekly, to a folder you choose, ready for apps like Syncthing. Turn it on in Settings › Cloud Sync & Backups.
 
 ## Improved
 

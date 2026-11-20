@@ -27,7 +27,7 @@ Owns the Settings hub and its pages, sign-in, the Smart and automatic download s
 - App language (`AppearanceLanguagePage`) lists System default and each `AppLanguage` (`:core:prefs`) in its own words, with a note that translations are made with AI help. `AppearanceActions.onSetAppLanguage` hands a pick to the app, which applies it at once; it is reported as `app_language_changed`.
 - Theme & colors offers four looks (boxlore classic, Pure, Material 3, Custom) and **Use artwork colors** (on by default). Legacy palettes show as Custom without changing stored values (`ThemeSettingsLogic.kt`).
 - The custom theme editor is a full page. Drafts change only its preview; Save applies the palette in one write, and Back discards it.
-- Widgets holds the home screen widgets' colours (App theme or System) and every widget (`AddableWidget`, supplied by the app) as a card: its real look drawn by the app through `AppearanceWidgetPreview`, scaled to fit and never enlarged, its name, and an Add button that asks the home screen app to add it. The two round players share a row, and the Your Shows card carries the cover choice (whole covers or shapes) under its picture. When nothing answers the latest request within `ADD_WIDGET_ANSWER_MS` (the app is not paused by a confirmation and `AppearanceActions.addedWidgets` reports nothing), that card offers help and a way to the app's permission settings; the help goes away when an answer arrives. When the home screen app cannot add widgets (`AppearanceActions.canAddWidgets`), the cards stay without buttons, with the steps for adding one by hand.
+- Widgets holds the widgets' colours (App theme or System) and a card per widget (`AddableWidget`, from the app): its real look (`AppearanceWidgetPreview`, scaled to fit, never enlarged), its name and an Add button that asks the home screen app to add it. The two round players share a row; the Your Shows card carries the cover choice (whole covers or shapes) under its picture. When nothing answers the latest request within `ADD_WIDGET_ANSWER_MS` (no pause for a confirmation, nothing from `AppearanceActions.addedWidgets`), that card offers help and a way to the app's permission settings, until an answer arrives. When the home screen app can't add widgets (`AppearanceActions.canAddWidgets`), the cards have no buttons and show the steps for adding one by hand.
 - Home holds the hero card style and its colour choice, with live previews drawn by the app through `AppearanceHeroPreview`. Hero styles are described in [`feature/home/README.md`](../home/README.md).
 - Show pages holds **Episode titles only** (off by default), the same choice as each show page's menu; show pages then list short title rows (see [`feature/info/README.md`](../info/README.md)).
 - Player holds **Player style** (Standard or bunpod) and the miniplayer's **Seek buttons** (off by default). The bunpod option credits Kamran Bekirov's BunPod design. Video always uses Standard.
@@ -37,12 +37,12 @@ Owns the Settings hub and its pages, sign-in, the Smart and automatic download s
 ## Account and sync
 
 - `AccountSettingsPage` serves Settings and onboarding. `accountPageMode` picks one state: signed in, signing in with a link, link failed, confirm email, check email, or signed out.
-- Signed out offers Google, an emailed sign-in link and email with password; the chosen method's form replaces the cards (`AccountAuthState.methodChosen`, kept in saved state).
-- Opening a sign-in link shows its progress or failure through `AccountEmailLinkUi`, fed by `SettingsRepositories.emailLinkSignIn`.
-- Signed in from Settings shows the sync panel (`AccountSyncPanel`) and the account group (sign out, reset password for password accounts, delete account). Backend error text is never shown.
+- Signed out offers Google, an emailed link, or email and password; the chosen form replaces the cards (`AccountAuthState.methodChosen`, saved state).
+- A sign-in link shows progress or failure in `AccountEmailLinkUi` (from `SettingsRepositories.emailLinkSignIn`).
+- Signed in, Settings shows the sync panel (`AccountSyncPanel`) and account actions (sign out, password reset for password accounts, delete). Backend error text is never shown.
 - Echo (`AccountEcho`, the shared `EchoCharacter`) is decorative; tapping it cycles outfits (`AccountEchoOutfits`), except while syncing.
-- Cloud Sync & Backups exports and imports a full JSON backup or subscriptions only (OPML) through `LibraryBackupWriters`; its copy names exactly what the JSON holds (`FULL_LIBRARY_EXPORT_SUMMARY`).
-- Listener-facing text lives in `res/values/` by area. The Privacy explanation stays English (`translatable="false"`), as do Support tier names and codenames, which are also analytics values.
+- Cloud Sync & Backups exports and imports a full JSON backup or OPML (`LibraryBackupWriters`; copy in `FULL_LIBRARY_EXPORT_SUMMARY`). Automatic backup (`AutoBackupControl`, from the app) sets the folder, frequency and retention, and shows the last backup or a folder problem with its fix. `SettingsScreen` hosts the folder picker above the adaptive layout, so it survives resizes and recreation.
+- Text lives in `res/values/` by area. The Privacy explanation, Support tier names and codenames stay English (`translatable="false"`); the last two are analytics values.
 
 ## Feedback and support conversations
 
@@ -76,7 +76,7 @@ Owns the Settings hub and its pages, sign-in, the Smart and automatic download s
 - Playback holds trimming (including trim silence), seek lengths (also used by the miniplayer's seek buttons), skip behaviour, restarting forgotten episodes, Smart queue and where completed episodes hide.
 - Automatic downloads offers 1, 2, 3 or 5 episodes per show. Backup background checks are off by default; their network and charging controls show only when on and keep their values while hidden.
 - Privacy explains analytics and offers Reset recommendations, the analytics ID (copy or start a new one) and a request to delete analytics data.
-- Wear OS (`ProfileSettingsDestination.WearOs`, entry `wear_os`) sets the watch's Your shows layout and download storage limit and shows what the watch last reported. The hub and the tablet split list it only when `SettingsScreenConfig.wearOs` is set, which the app does once boxlore on a watch has linked.
+- Wear OS (`ProfileSettingsDestination.WearOs`, entry `wear_os`) sets the watch's Your shows layout and download storage limit and shows what the watch last reported. The hub and tablet split list it only when `SettingsScreenConfig.wearOs` is set, once boxlore on a watch has linked.
 
 ## Internal structure
 
@@ -92,7 +92,7 @@ src/main/java/cx/aswin/boxlore/feature/settings/
   feedback/                      # FeedbackScreen, panes, list, thread, sent screen,
                                  #   view models, diagnostics and logcat collectors
   pages/
-    SettingsHub.kt, *SettingsPage.kt, SyncAndBackupsPage.kt, RecommendationsSettingsPage.kt
+    SettingsHub.kt, *SettingsPage.kt, SyncAndBackupsPage.kt, AutoBackupGroup.kt, RecommendationsSettingsPage.kt
     WearOsSettingsPage.kt        # WearOsSettings, WearOsUiState, WearOsCopy, the page
     Account*.kt                  # Account & sync: auth state, sign-in, email link, sync panel, Echo
     Appearance*Page.kt, AppearancePictures.kt
@@ -134,7 +134,7 @@ Hermetic JVM tests live in `feature/settings/src/test`, using fakes from [`:core
 | RSS and reset dialogs | `SettingsViewModelTest`, `SettingsViewModelDialogTest`, `SettingsGoldenRoborazziTest` |
 | Appearance | `AppearancePagesTest`, `AppearanceActionsTrackedTest`, `SettingsPictureRowTest`, `PlayerStyleSectionTest`, `AppearanceWidgetsPageTest`, `AppearanceLanguagePageTest` |
 | Themes | `CustomThemeEditorTest`, `CustomThemeEditorOptionsTest`, `ThemeEditorPressFeedbackTest`, `ThemeSettingsLogicTest`, `ThemePresetResolutionTest`, `AccentSwatchLayoutTest` |
-| Account and sync | `AccountPagePresentationTest`, `AccountPageAdaptiveTest`, `AccountSettingsPageTest`, `AccountAuthHelpersTest`, `AccountLinkFailedContentTest`, `SyncAndBackupsPageTest` |
+| Account and sync | `AccountPagePresentationTest`, `AccountPageAdaptiveTest`, `AccountSettingsPageTest`, `AccountAuthHelpersTest`, `AccountLinkFailedContentTest`, `SyncAndBackupsPageTest`, `AutoBackupGroupTest`, `AutoBackupPageAdaptiveTest` |
 | Library | `LibraryLanguagesAdaptiveTest`, `ClearSavedShowsAdaptiveTest` |
 | Downloads | `AutoDownloadSettingsActionsTest` |
 | Wear OS | `WearOsSettingsTest` |
