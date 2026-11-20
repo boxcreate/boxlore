@@ -164,6 +164,22 @@ class AutoBackupSchedulingTest {
         assertEquals(List(3) { AutoBackupScheduling.planOf(active()) }, tried)
         follow.cancel()
 
+        // A newer plan doesn't wait out the old plan's retry: it applies at once, and the old one stops.
+        val applied = mutableListOf<AutoBackupScheduling.Plan>()
+        val changing = MutableStateFlow(active())
+        val waiting = launch {
+            AutoBackupScheduling.follow(context, changing, apply = { _, plan ->
+                applied += plan
+                if (plan.active) error("work database busy")
+            }, retryDelayMs = 60_000L)
+        }
+        withTimeout(5_000) { while (applied.isEmpty()) delay(5) }
+        changing.value = AutoBackupSettings()
+        withTimeout(5_000) { while (applied.size < 2) delay(5) }
+        delay(100)
+        assertEquals(listOf(AutoBackupScheduling.planOf(active()), AutoBackupScheduling.planOf(AutoBackupSettings())), applied)
+        waiting.cancel()
+
         // A plan that keeps failing stops after its tries.
         val failing = mutableListOf<AutoBackupScheduling.Plan>()
         AutoBackupScheduling.follow(context, flowOf(active()), apply = { _, plan ->
