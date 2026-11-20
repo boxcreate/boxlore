@@ -7,12 +7,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -20,16 +19,17 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
-import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.PLAYLIST_DEFAULT_PER_SHOW_LIMIT
 import cx.aswin.boxlore.core.model.Playlist
-import cx.aswin.boxlore.core.model.PlaylistOrder
+import cx.aswin.boxlore.core.model.PlaylistMix
 import cx.aswin.boxlore.core.model.PlaylistShow
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
@@ -49,10 +49,10 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * The Playlists and playlist pages keep what is open (New playlist with its name and picked shows,
- * Add shows, Rename, Delete) while the window moves between phone, tablet, split and short layouts,
- * both ways, and when the activity is recreated; Create, Add, Save, Delete, Play, the order toggle
- * and Remove still do the current thing afterwards, from one state owner.
+ * The Playlists and playlist pages keep what is open (New playlist with its step, picks, name and
+ * how it plays; Add shows; Rename; Delete) while the window moves between phone, tablet, split and
+ * short layouts, both ways, and when the activity is recreated; Create, Add, Save, Delete, Play,
+ * How it plays and Remove still do the current thing afterwards, from one state owner.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], qualifiers = "w1300dp-h1300dp-mdpi", application = Application::class)
@@ -64,15 +64,17 @@ class PlaylistPagesAdaptiveTest {
     private lateinit var state: PlaylistPagesState
     private val owners = mutableSetOf<PlaylistPagesState>()
 
-    private val created = mutableListOf<Pair<String, List<String>>>()
+    private val created = mutableListOf<PlaylistCreateRequest>()
     private val renamed = mutableListOf<Pair<String, String>>()
     private val deleted = mutableListOf<String>()
     private val added = mutableListOf<List<String>>()
     private val removed = mutableListOf<String>()
-    private val orders = mutableListOf<PlaylistOrder>()
+    private val playbacks = mutableListOf<Pair<PlaylistMix, Int?>>()
     private var plays = 0
 
-    private val followed = listOf("Alpha", "Bravo", "Charlie").map { Podcast(it.lowercase(), it, "Host", "") }
+    private val followed = listOf("Alpha" to "Sports", "Bravo" to "Sports", "Charlie" to "News").map { (title, genre) ->
+        Podcast(title.lowercase(), title, "Host", "", genre = genre)
+    }
     private val pickSource = PlaylistPickSource(followed, listOf(SubscriptionFolder("f1", "Funny", podcastIds = listOf("bravo", "charlie"))))
     private val comedy = Playlist("p1", "Comedy", 1L, 1L, showCount = 2)
     private val shows = listOf(
@@ -95,8 +97,8 @@ class PlaylistPagesAdaptiveTest {
 
     private val actions = object : PlaylistDetailActions {
         override fun open(playlistId: String) = Unit
-        override fun create(name: String, podcastIds: List<String>) {
-            created += name to podcastIds
+        override fun create(request: PlaylistCreateRequest) {
+            created += request
         }
         override fun rename(playlistId: String, name: String) {
             renamed += playlistId to name
@@ -107,8 +109,8 @@ class PlaylistPagesAdaptiveTest {
         override fun play() {
             plays++
         }
-        override fun setOrder(order: PlaylistOrder) {
-            orders += order
+        override fun setPlayback(mix: PlaylistMix, perShowLimit: Int?) {
+            playbacks += mix to perShowLimit
         }
         override fun addShows(podcastIds: List<String>) {
             added += podcastIds
@@ -148,38 +150,45 @@ class PlaylistPagesAdaptiveTest {
     }
 
     @Test
-    fun `a new playlist keeps its name and picked shows across window changes, then creates`() {
+    fun `a suggested playlist keeps its name and how it plays across window changes, then creates`() {
         compose.setContent { listPage() }
-        compose.onNodeWithContentDescription("New playlist").performClick()
-        compose.onNode(hasSetTextAction()).performTextInput("Laughs")
-        compose.onNodeWithText("Funny").performClick()
-        compose.onNode(hasText("Alpha") and isToggleable()).performClick()
+        compose.onNodeWithTag(NEW_PLAYLIST_TILE_TAG).performClick()
+        compose.onNodeWithText("Made from your shows").assertExists()
+        compose.onNodeWithTag("playlist_suggestion_genre:Sports").performClick()
+        compose.onNode(hasSetTextAction()).assertTextContains("Sports")
 
         moveThroughWindows {
-            compose.onNode(hasSetTextAction()).assertTextContains("Laughs")
-            compose.onNodeWithText("3 shows picked").assertExists()
+            compose.onNode(hasSetTextAction()).assertTextContains("Sports")
+            compose.onNodeWithText("2 shows picked").assertExists()
         }
 
-        compose.onNodeWithText("Create").performClick()
+        compose.onNodeWithTag(PLAYLIST_PLAYBACK_SETTINGS_TAG).performScrollTo()
+        compose.onNodeWithText("One show at a time").performScrollTo().performClick()
+        compose.onNodeWithText("5").performScrollTo().performClick()
+        compose.onNodeWithText("Create playlist").performClick()
         compose.runOnIdle {
-            assertEquals(listOf("Laughs" to listOf("bravo", "charlie", "alpha")), created)
-            assertNull(state.editor)
+            assertEquals(
+                listOf(PlaylistCreateRequest("Sports", listOf("alpha", "bravo"), PlaylistMix.ONE_SHOW_AT_A_TIME, 5, "sports", "genre")),
+                created,
+            )
+            assertNull(state.newDraft)
         }
     }
 
     @Test
-    fun `the picker and its picks survive recreation`() {
+    fun `picking shows yourself survives recreation, then names the playlist after their genre`() {
         val restoration = StateRestorationTester(compose)
         restoration.setContent { listPage() }
-        compose.onNodeWithContentDescription("New playlist").performClick()
-        compose.onNode(hasSetTextAction()).performTextInput("Late")
-        compose.onNode(hasText("Bravo") and isToggleable()).performClick()
+        compose.onNodeWithTag(NEW_PLAYLIST_TILE_TAG).performClick()
+        compose.onNodeWithText("Pick shows yourself").performClick()
+        compose.onNodeWithContentDescription("Charlie").performClick()
 
         restoration.emulateSavedInstanceStateRestore()
 
-        compose.onNode(hasSetTextAction()).assertTextContains("Late")
-        compose.onNode(hasText("Bravo") and isToggleable()).assertIsOn()
-        compose.runOnIdle { assertEquals(listOf("bravo"), state.picked) }
+        compose.onNodeWithContentDescription("Charlie").assertIsSelected()
+        compose.onNodeWithText("Next").performClick()
+        compose.onNode(hasSetTextAction()).assertTextContains("News")
+        compose.runOnIdle { assertEquals(listOf("charlie"), state.newDraft?.pickedIds) }
     }
 
     @Test
@@ -199,30 +208,40 @@ class PlaylistPagesAdaptiveTest {
         compose.setContent { detailPage() }
         compose.onNodeWithTag(PLAYLIST_DETAIL_TAG).performScrollToNode(hasText("Add shows"))
         compose.onNodeWithText("Add shows").performClick()
-        compose.onNode(hasText("Alpha") and isToggleable()).assertDoesNotExist()
-        compose.onNode(hasText("Charlie") and isToggleable()).performClick()
+        compose.onNodeWithContentDescription("Alpha").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Charlie").performClick()
 
-        moveThroughWindows { compose.onNode(hasText("Charlie") and isToggleable()).assertIsOn() }
+        moveThroughWindows { compose.onNodeWithContentDescription("Charlie").assertIsSelected() }
 
-        compose.onNodeWithText("Add").performClick()
+        compose.onNodeWithText("Add 1 show").performClick()
         compose.runOnIdle {
             assertEquals(listOf(listOf("charlie")), added)
-            assertNull(state.editor)
+            assertNull(state.newDraft)
         }
     }
 
     @Test
-    fun `the page plays, flips its order, marks unfollowed shows and removes them`() {
+    fun `the page plays, changes how it plays, marks unfollowed shows and removes them`() {
         compose.setContent { detailPage() }
         compose.onNodeWithText("First up").assertExists()
         compose.onNodeWithText("Play").performClick()
-        compose.onNodeWithText("Oldest first").performClick()
+        compose.onNodeWithTag(PLAYLIST_HOW_IT_PLAYS_TAG).performClick()
+        compose.onNodeWithText("Newest first").performScrollTo().performClick()
+        compose.onNodeWithText("No limit").performScrollTo().performClick()
+        compose.runOnIdle {
+            assertEquals(
+                // The page's playlist never updates here, as before a save lands: the second change keeps the first.
+                listOf(PlaylistMix.NEWEST_FIRST to PLAYLIST_DEFAULT_PER_SHOW_LIMIT, PlaylistMix.NEWEST_FIRST to null),
+                playbacks,
+            )
+        }
+        compose.onNodeWithText("Newest first").performScrollTo() // the sheet stays open for more changes
+        androidx.test.espresso.Espresso.pressBack()
         compose.onNodeWithTag(PLAYLIST_DETAIL_TAG).performScrollToNode(hasText("Gone show"))
         compose.onNodeWithText("Not following, skipped").assertExists()
         compose.onNodeWithContentDescription("Remove Gone show").performClick()
         compose.runOnIdle {
             assertEquals(1, plays)
-            assertEquals(listOf(PlaylistOrder.OLDEST), orders)
             assertEquals(listOf("gone"), removed)
         }
     }
@@ -248,7 +267,7 @@ class PlaylistPagesAdaptiveTest {
         }
         compose.onNodeWithText("No shows yet").assertExists()
         compose.onNodeWithText("Add shows").performClick()
-        compose.runOnIdle { assertEquals(PlaylistEditor.AddShows("p1"), state.editor) }
+        compose.runOnIdle { assertEquals(NewPlaylistFlowLogic.addShows("p1"), state.newDraft) }
     }
 
     @Test

@@ -5,8 +5,9 @@ import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.catalog.PlaylistRepository
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.PLAYLIST_DEFAULT_PER_SHOW_LIMIT
 import cx.aswin.boxlore.core.model.Playlist
-import cx.aswin.boxlore.core.model.PlaylistOrder
+import cx.aswin.boxlore.core.model.PlaylistMix
 import cx.aswin.boxlore.core.model.PlaylistShow
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
@@ -22,6 +23,8 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /** One playlist's page: loading, gone (deleted, or a stale link), or its shows and what plays next. */
 sealed interface PlaylistDetailState {
@@ -70,6 +73,12 @@ class PlaylistsViewModel(
     val folders: StateFlow<List<SubscriptionFolder>> =
         ports.folders.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
 
+    /** The newest Play request; an older one whose read finishes later must not replace its queue. */
+    private var playRequest = 0
+
+    /** How it plays is saved one change at a time, in the order the listener made them. */
+    private val playbackWrites = Mutex()
+
     /** Bumped by [refreshComingUp]: stored episodes and in-progress plays change without a cheap signal. */
     private val refreshes = MutableStateFlow(0)
 
@@ -100,10 +109,21 @@ class PlaylistsViewModel(
         refreshes.value++
     }
 
-    fun create(name: String, podcastIds: List<String>, onCreated: (Playlist) -> Unit = {}) {
+    /** Creates a playlist; [origin] says where its shows came from (a suggestion's kind, or `own`). */
+    @Suppress("LongParameterList")
+    fun create(
+        name: String,
+        podcastIds: List<String>,
+        mix: PlaylistMix = PlaylistMix.TAKE_TURNS,
+        perShowLimit: Int? = PLAYLIST_DEFAULT_PER_SHOW_LIMIT,
+        iconKey: String? = null,
+        origin: String = "own",
+        onCreated: (Playlist) -> Unit = {},
+    ) {
         viewModelScope.launch {
-            val created = repository.createPlaylist(name, podcastIds)
+            val created = repository.createPlaylist(name, podcastIds, mix, perShowLimit, iconKey)
             AnalyticsHelper.trackPlaylistModified("create", SOURCE, playlistSize = created.showCount)
+            AnalyticsHelper.trackSettingsInteraction("playlist_created_from", origin)
             onCreated(created)
         }
     }
@@ -120,9 +140,15 @@ class PlaylistsViewModel(
         }
     }
 
-    fun setOrder(order: PlaylistOrder) {
+    /** How this playlist plays: its mix and the most episodes it takes from one show (null: no limit). */
+    fun setPlayback(mix: PlaylistMix, perShowLimit: Int?) {
         val id = playlistId ?: return
-        viewModelScope.launch { repository.setOrder(id, order) }
+        viewModelScope.launch {
+            if (playbackWrites.withLock { repository.setPlayback(id, mix, perShowLimit) }) {
+                AnalyticsHelper.trackSettingsInteraction("playlist_playback", "${mix.stored}:${perShowLimit ?: "all"}")
+                refreshComingUp()
+            }
+        }
     }
 
     /** Adds [podcastIds] to this playlist: one `add_show` with how many went in. */
@@ -150,13 +176,16 @@ class PlaylistsViewModel(
     }
 
     /**
-     * Replaces the queue with this playlist's next episodes. [onReplaced] gets what the queue held,
-     * for Undo, when there was anything; [onNothingToPlay] runs when the playlist has nothing to play.
+     * Replaces the queue with [target]'s next episodes (this page's playlist unless given, as from a card
+     * on the Playlists page). [onReplaced] gets what the queue held, for Undo, when there was anything;
+     * [onNothingToPlay] runs when the playlist has nothing to play. Only the newest request acts.
      */
-    fun play(onReplaced: (UpNextSnapshot) -> Unit = {}, onNothingToPlay: () -> Unit = {}) {
-        val id = playlistId ?: return
+    fun play(target: String? = playlistId, onReplaced: (UpNextSnapshot) -> Unit = {}, onNothingToPlay: () -> Unit = {}) {
+        val id = target ?: return
+        val request = ++playRequest
         viewModelScope.launch {
             val episodes = repository.nextEpisodes(id, minOf(batchSize, queueLimit))
+            if (request != playRequest) return@launch
             if (episodes.isEmpty()) {
                 onNothingToPlay()
                 return@launch
@@ -164,6 +193,7 @@ class PlaylistsViewModel(
             val previous = ports.upNextSnapshot()
             ports.startPlayback(id, episodes)
             val size = (detail.value as? PlaylistDetailState.Ready)?.shows?.size
+                ?: playlists.value?.firstOrNull { it.id == id }?.showCount
             AnalyticsHelper.trackPlaylistModified("play", SOURCE, itemsCount = episodes.size, playlistSize = size)
             previous?.let(onReplaced)
         }

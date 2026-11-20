@@ -38,7 +38,6 @@
     <string name="library_delete">Excluir</string>
     <string name="library_rename">Renomear</string>
     <string name="library_next">Avançar</string>
-    <string name="library_add">Adicionar</string>
     <string name="library_manage">Gerenciar</string>
     <string name="library_turn_off">Desativar</string>
     <!-- Snackbar action -->
@@ -142,7 +141,6 @@
         <item quantity="other">%1$d podcasts escolhidos</item>
     </plurals>
     <string name="library_add_shows">Adicionar podcasts</string>
-    <string name="library_shows_you_follow">Podcasts que você segue</string>
     <!-- Shows that are not in a folder -->
     <string name="library_your_shows">Seus podcasts</string>
     <!-- Label above the folders on the Shows tab -->
@@ -151,10 +149,7 @@
     <string name="library_genre_folders">Pastas de gênero</string>
     <string name="library_playlists_empty_title">Nenhuma playlist ainda</string>
     <string name="library_playlists_empty_body">Crie uma com os podcasts que você segue, como uma de comédia e outra de história. Cada uma guarda onde você parou, então dá para alternar entre elas quando quiser.</string>
-    <!-- A playlist card's second line; %1$s is its show count, such as 3 shows -->
-    <string name="library_playlist_summary_oldest_first">%1$s · Mais antigos primeiro</string>
     <string name="library_playlist_newest_first">Mais novos primeiro</string>
-    <string name="library_playlist_oldest_first">Mais antigos primeiro</string>
     <!-- Section title: the episodes Play would queue -->
     <string name="library_playlist_coming_up">Vem aí</string>
     <string name="library_playlist_nothing_to_play">Nada para tocar agora. Os episódios novos destes podcasts vão aparecer aqui.</string>
@@ -174,7 +169,6 @@
     <string name="library_playlist_removed_show">%1$s removido</string>
     <!-- Screen-reader label; %1$s is the show's name -->
     <string name="library_playlist_remove_show">Remover %1$s</string>
-    <string name="library_playlist_from_folders">Adicionar podcasts de uma pasta</string>
     <string name="library_playlist_no_followed">Siga alguns podcasts primeiro e depois adicione-os aqui.</string>
     <string name="library_playlist_all_added">Todos os podcasts que você segue já estão nesta playlist.</string>
 </resources>

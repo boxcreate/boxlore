@@ -8,9 +8,11 @@ import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Playlists and their shows (Room v44). Shows are read in playlist order (`position`, then when
- * they were added); a show is in a playlist at most once, and deleting a playlist deletes its rows.
- * Also reads the stored episodes and in-progress history a playlist plays from.
+ * Playlists and their shows (Room v44; playback settings and icon v46). Shows are read in playlist
+ * order (`position`, then when they were added); a show is in a playlist at most once, and deleting
+ * a playlist deletes its rows. Also reads the stored episodes and in-progress history a playlist
+ * plays from: the episode reads take any number of shows up to their bind limit, so one show's
+ * episodes are read by passing just its ID.
  */
 @Dao
 @Suppress("TooManyFunctions")
@@ -96,9 +98,13 @@ interface PlaylistDao {
     @Query("UPDATE playlists SET name = :name, updatedAt = :updatedAt WHERE playlistId = :playlistId")
     suspend fun renamePlaylist(playlistId: String, name: String, updatedAt: Long): Int
 
-    /** Sets [playlistId]'s episode order (`newest` or `oldest`); returns the rows changed. */
-    @Query("UPDATE playlists SET episodeOrder = :episodeOrder, updatedAt = :updatedAt WHERE playlistId = :playlistId")
-    suspend fun setEpisodeOrder(playlistId: String, episodeOrder: String, updatedAt: Long): Int
+    /** Sets [playlistId]'s mix and episodes per show (0 means no limit); returns the rows changed. */
+    @Query("UPDATE playlists SET mix = :mix, perShowLimit = :perShowLimit, updatedAt = :updatedAt WHERE playlistId = :playlistId")
+    suspend fun setPlayback(playlistId: String, mix: String, perShowLimit: Int, updatedAt: Long): Int
+
+    /** Sets [playlistId]'s icon key (null for none); returns the rows changed. */
+    @Query("UPDATE playlists SET iconKey = :iconKey, updatedAt = :updatedAt WHERE playlistId = :playlistId")
+    suspend fun setIcon(playlistId: String, iconKey: String?, updatedAt: Long): Int
 
     @Query("UPDATE playlists SET updatedAt = :updatedAt WHERE playlistId = :playlistId")
     suspend fun touchPlaylist(playlistId: String, updatedAt: Long)

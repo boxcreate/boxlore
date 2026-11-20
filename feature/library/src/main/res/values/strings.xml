@@ -38,7 +38,6 @@
     <string name="library_delete">Delete</string>
     <string name="library_rename">Rename</string>
     <string name="library_next">Next</string>
-    <string name="library_add">Add</string>
     <string name="library_manage">Manage</string>
     <string name="library_turn_off">Turn off</string>
     <!-- Snackbar action -->
@@ -142,7 +141,6 @@
         <item quantity="other">%1$d shows picked</item>
     </plurals>
     <string name="library_add_shows">Add shows</string>
-    <string name="library_shows_you_follow">Shows you follow</string>
     <!-- Shows that are not in a folder -->
     <string name="library_your_shows">Your shows</string>
     <!-- Label above the folders on the Shows tab -->
@@ -151,10 +149,7 @@
     <string name="library_genre_folders">Genre folders</string>
     <string name="library_playlists_empty_title">No playlists yet</string>
     <string name="library_playlists_empty_body">Make one from the shows you follow, like one for comedy and one for history. Each keeps its place, so you can switch between them any time.</string>
-    <!-- A playlist card's second line; %1$s is its show count, such as 3 shows -->
-    <string name="library_playlist_summary_oldest_first">%1$s · Oldest first</string>
     <string name="library_playlist_newest_first">Newest first</string>
-    <string name="library_playlist_oldest_first">Oldest first</string>
     <!-- Section title: the episodes Play would queue -->
     <string name="library_playlist_coming_up">Coming up</string>
     <string name="library_playlist_nothing_to_play">Nothing to play right now. New episodes from these shows will appear here.</string>
@@ -174,7 +169,6 @@
     <string name="library_playlist_removed_show">Removed %1$s</string>
     <!-- Screen-reader label; %1$s is the show's name -->
     <string name="library_playlist_remove_show">Remove %1$s</string>
-    <string name="library_playlist_from_folders">Add a folder’s shows</string>
     <string name="library_playlist_no_followed">Follow some shows first, then add them here.</string>
     <string name="library_playlist_all_added">Every show you follow is already in this playlist.</string>
 </resources>

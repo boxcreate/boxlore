@@ -59,7 +59,7 @@ class RoomV43UpgradeTest {
     fun showsKeepTheirValuesAndReadNoPerShowSpeedOrTrimSilence() = runBlocking<Unit> {
         val db = upgrade()
 
-        assertEquals(45, db.openHelper.writableDatabase.version)
+        assertEquals(46, db.openHelper.writableDatabase.version)
         val show = db.podcastDao().getPodcast(SHOW)!!
         assertEquals("Show $SHOW", show.title)
         assertEquals("History", show.genre)
@@ -107,8 +107,11 @@ class RoomV43UpgradeTest {
             val freshSql = RoomSchemaFixture.schemaSql(fresh.openHelper.writableDatabase)
             for (name in NEW_OBJECTS) assertEquals(name, freshSql.getValue(name), upgraded.getValue(name))
             assertFalse("playlist_items" in upgraded)
-            val columns = { db: BoxLoreDatabase -> RoomSchemaFixture.columns(db.openHelper.writableDatabase, "podcasts").sorted() }
-            assertEquals(columns(fresh), columns(database!!))
+            // v46 adds `playlists` columns with ALTER TABLE, so its SQL text differs from a fresh install's; its columns match.
+            for (table in listOf("podcasts", "playlists")) {
+                val columns = { db: BoxLoreDatabase -> RoomSchemaFixture.columns(db.openHelper.writableDatabase, table).sorted() }
+                assertEquals(table, columns(fresh), columns(database!!))
+            }
         } finally {
             fresh.close()
         }
@@ -129,7 +132,6 @@ class RoomV43UpgradeTest {
             "feedUrlCheckedAt" to 55L,
         )
         val NEW_OBJECTS = listOf(
-            "playlists",
             "playlist_shows",
             "index_playlist_shows_podcastId",
         )

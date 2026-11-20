@@ -8,6 +8,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -90,7 +91,8 @@ class PlaylistDaoInMemoryTest {
         assertEquals(listOf("s1" to 0, "s2" to 1), dao.getShows("a").map { it.podcastId to it.position })
         assertEquals(6L, dao.getPlaylist("a")!!.updatedAt)
         assertEquals(2, dao.observePlaylistSummaries().first().single().showCount)
-        assertEquals("newest", dao.getPlaylist("a")!!.episodeOrder)
+        val stored = dao.getPlaylist("a")!!
+        assertEquals(Triple("take_turns", 3, null), Triple(stored.mix, stored.perShowLimit, stored.iconKey))
     }
 
     @Test
@@ -118,11 +120,18 @@ class PlaylistDaoInMemoryTest {
     }
 
     @Test
-    fun deletingAPlaylistDeletesItsShowsAndOrderIsStored() = runTest {
+    fun deletingAPlaylistDeletesItsShowsAndSettingsAreStored() = runTest {
         playlist("a")
         dao.appendShow("a", "s1", 1L)
-        assertEquals(1, dao.setEpisodeOrder("a", "oldest", 9L))
-        assertEquals("oldest", dao.getPlaylist("a")!!.episodeOrder)
+        assertEquals(1, dao.setPlayback("a", "one_show", 0, 9L))
+        assertEquals(1, dao.setIcon("a", "comedy", 10L))
+        val stored = dao.getPlaylist("a")!!
+        assertEquals(Triple("one_show", 0, "comedy"), Triple(stored.mix, stored.perShowLimit, stored.iconKey))
+        assertEquals(10L, stored.updatedAt)
+        assertEquals(1, dao.setIcon("a", null, 11L))
+        assertNull(dao.getPlaylist("a")!!.iconKey)
+        assertEquals(0, dao.setPlayback("missing", "one_show", 0, 12L))
+        assertEquals(0, dao.setIcon("missing", "comedy", 12L))
 
         dao.deletePlaylist("a")
         assertTrue(dao.getAllShowRows().isEmpty())

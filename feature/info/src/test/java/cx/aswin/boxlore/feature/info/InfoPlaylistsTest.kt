@@ -22,7 +22,7 @@ import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Playlist
-import cx.aswin.boxlore.core.model.PlaylistOrder
+import cx.aswin.boxlore.core.model.PlaylistMix
 import cx.aswin.boxlore.core.model.PlaylistShow
 import cx.aswin.boxlore.core.model.Podcast
 import kotlinx.coroutines.CoroutineScope
@@ -197,12 +197,13 @@ class InfoPlaylistsTest {
         override fun playlistIdsForShow(podcastId: String): Flow<Set<String>> = members.also { memberQueries += podcastId }
         override suspend fun getPlaylists(): List<Playlist> = lists.value
         override suspend fun getShowIds(): Map<String, List<String>> = emptyMap()
-        override suspend fun createPlaylist(name: String, podcastIds: List<String>): Playlist {
+        override suspend fun createPlaylist(name: String, podcastIds: List<String>, mix: PlaylistMix, perShowLimit: Int?, iconKey: String?): Playlist {
             created += name to podcastIds
             return Playlist("new", name, 0L, 0L, podcastIds.size)
         }
         override suspend fun renamePlaylist(playlistId: String, name: String) = true
-        override suspend fun setOrder(playlistId: String, order: PlaylistOrder) = true
+        override suspend fun setPlayback(playlistId: String, mix: PlaylistMix, perShowLimit: Int?) = true
+        override suspend fun setIcon(playlistId: String, iconKey: String?) = true
         override suspend fun deletePlaylist(playlistId: String) = Unit
         override suspend fun addShows(playlistId: String, podcastIds: List<String>): Int {
             podcastIds.forEach { added += playlistId to it }

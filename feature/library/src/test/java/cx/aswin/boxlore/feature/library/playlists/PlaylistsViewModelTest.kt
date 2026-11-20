@@ -2,10 +2,11 @@ package cx.aswin.boxlore.feature.library.playlists
 
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.PlaylistOrder
+import cx.aswin.boxlore.core.model.PlaylistMix
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.UpNextSnapshot
 import cx.aswin.boxlore.core.testing.MainDispatcherExtension
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -61,8 +62,11 @@ class PlaylistsViewModelTest {
         val vm = viewModel()
         backgroundScope.launch { vm.playlists.collect {} }
         var created: String? = null
-        vm.create("Comedy", listOf("a", "b")) { created = it.id }
+        vm.create("Comedy", listOf("a", "b"), PlaylistMix.NEWEST_FIRST, perShowLimit = null, iconKey = "comedy", origin = "genre") { created = it.id }
         assertEquals("p1", created)
+        val stored = repository.getPlaylists().single()
+        assertEquals(PlaylistMix.NEWEST_FIRST to null, stored.mix to stored.perShowLimit)
+        assertEquals("comedy", stored.iconKey)
         vm.rename("p1", "Laughs")
         val list = vm.playlists.first { it?.isNotEmpty() == true }!!
         assertEquals(listOf("Laughs" to 2), list.map { it.name to it.showCount })
@@ -72,7 +76,7 @@ class PlaylistsViewModelTest {
     }
 
     @Test
-    fun `a playlist page shows its shows and what plays next, and follows its order`() = runTest {
+    fun `a playlist page shows its shows and what plays next, and saves how it plays`() = runTest {
         repository.createPlaylist("Mix", listOf("a", "b"))
         repository.next = (1..15).map { episode("$it") }
         val vm = viewModel("p1")
@@ -81,9 +85,9 @@ class PlaylistsViewModelTest {
         assertEquals(listOf("a", "b"), ready.shows.map { it.podcastId })
         assertEquals(PlaylistsViewModel.COMING_UP, ready.comingUp.size)
 
-        vm.setOrder(PlaylistOrder.OLDEST)
-        val oldest = vm.detail.first { (it as? PlaylistDetailState.Ready)?.playlist?.order == PlaylistOrder.OLDEST }
-        assertEquals(PlaylistOrder.OLDEST, (oldest as PlaylistDetailState.Ready).playlist.order)
+        vm.setPlayback(PlaylistMix.ONE_SHOW_AT_A_TIME, 2)
+        val binge = vm.detail.first { (it as? PlaylistDetailState.Ready)?.playlist?.mix == PlaylistMix.ONE_SHOW_AT_A_TIME } as PlaylistDetailState.Ready
+        assertEquals(2, binge.playlist.perShowLimit)
     }
 
     @Test
@@ -153,5 +157,41 @@ class PlaylistsViewModelTest {
 
         val fresh = vm.detail.first { (it as? PlaylistDetailState.Ready)?.comingUp?.size == 2 } as PlaylistDetailState.Ready
         assertEquals(listOf("new", "1"), fresh.comingUp.map { it.id })
+    }
+
+    @Test
+    fun `only the newest Play acts when an earlier playlist's read finishes after it`() = runTest {
+        repository.createPlaylist("Slow", listOf("a"))
+        repository.createPlaylist("Fast", listOf("a"))
+        repository.next = listOf(episode("1"))
+        queue = UpNextSnapshot(listOf(episode("old")), 0, 5L, true, Podcast("s", "S", "", ""))
+        val slowRead = CompletableDeferred<Unit>()
+        repository.readGates["p1"] = slowRead
+        val vm = viewModel()
+        val replacedFor = mutableListOf<String>()
+        var nothingToPlay = 0
+
+        vm.play("p1", onReplaced = { replacedFor += "p1" }, onNothingToPlay = { nothingToPlay++ })
+        vm.play("p2", onReplaced = { replacedFor += "p2" }, onNothingToPlay = { nothingToPlay++ })
+        slowRead.complete(Unit)
+
+        assertEquals(listOf("p2"), played.map { it.first })
+        assertEquals(listOf("p2"), replacedFor)
+        assertEquals(0, nothingToPlay)
+    }
+
+    @Test
+    fun `how it plays is saved in the order it was changed, even when a save is slow`() = runTest {
+        repository.createPlaylist("Mix", listOf("a"))
+        val slowSave = CompletableDeferred<Unit>()
+        repository.playbackGates += slowSave
+        val vm = viewModel("p1")
+
+        vm.setPlayback(PlaylistMix.NEWEST_FIRST, 3)
+        vm.setPlayback(PlaylistMix.NEWEST_FIRST, 2)
+        slowSave.complete(Unit)
+
+        val stored = repository.getPlaylists().single()
+        assertEquals(PlaylistMix.NEWEST_FIRST to 2, stored.mix to stored.perShowLimit)
     }
 }

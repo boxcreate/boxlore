@@ -40,6 +40,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.icon.GenreIconItem
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.library.R
@@ -189,15 +190,16 @@ internal fun AutoAddNote(text: String, modifier: Modifier = Modifier) {
     }
 }
 
-/** Every folder icon, six to a row. */
+/** Every folder icon ([items], all of them unless given), six to a row. */
 @Composable
 internal fun FolderIconGrid(
     selectedKey: String?,
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
+    items: List<GenreIconItem> = GenreIcons.all,
 ) {
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        GenreIcons.all.chunked(ICONS_PER_ROW).forEach { row ->
+        items.chunked(ICONS_PER_ROW).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 row.forEach { item ->
                     val selected = item.key.equals(selectedKey, ignoreCase = true)
@@ -230,4 +232,4 @@ internal fun FolderIconGrid(
     }
 }
 
-private const val ICONS_PER_ROW = 6
+internal const val ICONS_PER_ROW = 6

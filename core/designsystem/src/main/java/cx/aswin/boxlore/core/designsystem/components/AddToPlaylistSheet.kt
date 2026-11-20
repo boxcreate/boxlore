@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.designsystem.components
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,13 +24,16 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -54,6 +58,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.R
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.PLAYLIST_NAME_MAX_LENGTH
@@ -215,7 +220,7 @@ private fun PlaylistToggleRow(playlist: Playlist, checked: Boolean, onToggle: ()
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        PlaylistCover(playlist.coverUrls)
+        PlaylistCover(playlist.coverUrls, iconKey = playlist.iconKey)
         Column(Modifier.weight(1f)) {
             Text(playlist.name, style = MaterialTheme.typography.titleSmall, fontWeight = GoogleSansWeight.semiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(PlaylistCopy.showCount(playlist.showCount).asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -226,17 +231,41 @@ private fun PlaylistToggleRow(playlist: Playlist, checked: Boolean, onToggle: ()
 }
 
 /**
- * A playlist's cover: its shows' artwork filling the whole tile ([playlistCoverTiles]: one cover,
- * two halves, a half and two quarters, or four quarters), or a playlist mark on a solid surface
- * when it has none.
+ * A playlist's cover. With an icon ([iconKey], a [GenreIcons] key) it is that icon on an expressive
+ * cookie over a solid colour block; otherwise its shows' artwork fills the whole tile
+ * ([playlistCoverTiles]: one cover, two halves, a half and two quarters, or four quarters), or a
+ * playlist mark on a solid surface when it has none. [corner] rounds the tile (by default 12dp, or in
+ * proportion for an icon cover).
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun PlaylistCover(imageUrls: List<String>, modifier: Modifier = Modifier, size: Dp = 44.dp) {
+fun PlaylistCover(imageUrls: List<String>, modifier: Modifier = Modifier, size: Dp = 44.dp, iconKey: String? = null, corner: Dp? = null) {
+    val icon = GenreIcons.findIcon(iconKey)
+    if (icon != null) {
+        val colors = MaterialTheme.colorScheme
+        Box(
+            modifier.size(size).clip(RoundedCornerShape(corner ?: (size * COVER_CORNER_FRACTION))).background(colors.tertiaryContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                Modifier.size(size * COOKIE_FRACTION).clip(MaterialShapes.Cookie9Sided.toShape()).background(colors.tertiary),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(icon, contentDescription = null, tint = colors.onTertiary, modifier = Modifier.size(size * ICON_FRACTION))
+            }
+        }
+        return
+    }
     val urls = imageUrls.filter(String::isNotBlank).take(PlaylistCoverTile.MAX)
-    Box(modifier.size(size).clip(RoundedCornerShape(12.dp))) {
+    Box(modifier.size(size).clip(RoundedCornerShape(corner ?: 12.dp))) {
         Surface(color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.size(size)) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(Icons.AutoMirrored.Rounded.PlaylistPlay, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                Icon(
+                    Icons.AutoMirrored.Rounded.PlaylistPlay,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size((size * ICON_FRACTION).coerceAtLeast(24.dp)),
+                )
             }
         }
         urls.zip(playlistCoverTiles(urls.size)).forEach { (url, tile) ->
@@ -251,6 +280,10 @@ fun PlaylistCover(imageUrls: List<String>, modifier: Modifier = Modifier, size: 
         }
     }
 }
+
+private const val COVER_CORNER_FRACTION = 0.27f
+private const val COOKIE_FRACTION = 0.72f
+private const val ICON_FRACTION = 0.36f
 
 /** Where one cover sits in a [PlaylistCover], as fractions of the tile. */
 internal data class PlaylistCoverTile(val x: Float, val y: Float, val width: Float, val height: Float) {

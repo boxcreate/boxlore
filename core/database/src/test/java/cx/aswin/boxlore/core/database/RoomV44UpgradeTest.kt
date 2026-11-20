@@ -72,7 +72,7 @@ class RoomV44UpgradeTest {
         val db = upgrade()
         val dao = db.playlistDao()
 
-        assertEquals(45, db.openHelper.writableDatabase.version)
+        assertEquals(46, db.openHelper.writableDatabase.version)
         val playlists = dao.getAllPlaylists().associateBy { it.playlistId }
         assertEquals(setOf("pl-1", "pl-2", "pl-empty"), playlists.keys)
         assertEquals("Road trip", playlists.getValue("pl-1").name)
@@ -117,12 +117,14 @@ class RoomV44UpgradeTest {
                 assertEquals(name, exportedSql.getValue(name), sql.getValue(name))
             }
             assertEquals(RoomSchemaFixture.tables(exported), RoomSchemaFixture.tables(upgraded))
-            for (table in listOf("playlists", "playlist_shows", "podcasts")) {
+            for (table in listOf("playlist_shows", "podcasts")) {
                 assertEquals(table, tableInfo(exported, table), tableInfo(upgraded, table))
             }
+            // v46 adds the playback and icon columns ([RoomV46UpgradeTest]); the rest is v44's.
+            assertEquals(tableInfo(exported, "playlists"), tableInfo(upgraded, "playlists").filterNot { it[0] in V46_PLAYLIST_COLUMNS }.toSet())
         }
-        // Room opens at the latest version: v45 only adds archive columns ([RoomV45UpgradeTest]).
-        val identity = JsonParser.parseString(schemaJson(45).readText()).asJsonObject
+        // Room opens at the latest version: v45 only adds archive columns ([RoomV45UpgradeTest]), v46 playlist columns.
+        val identity = JsonParser.parseString(schemaJson(46).readText()).asJsonObject
             .getAsJsonObject("database").get("identityHash").asString
         assertEquals(identity, RoomSchemaFixture.string(upgraded, "SELECT identity_hash FROM room_master_table WHERE id = 42"))
     }
@@ -178,5 +180,6 @@ class RoomV44UpgradeTest {
         const val EXPORTED = "room-v44-exported.db"
         const val SHOW_A = "100"
         const val SHOW_B = "200"
+        val V46_PLAYLIST_COLUMNS = setOf("mix", "perShowLimit", "iconKey")
     }
 }

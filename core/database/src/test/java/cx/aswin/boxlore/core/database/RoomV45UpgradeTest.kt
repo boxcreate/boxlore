@@ -70,7 +70,7 @@ class RoomV45UpgradeTest {
         val db = upgrade()
         val dao = db.listeningHistoryDao()
 
-        assertEquals(45, db.openHelper.writableDatabase.version)
+        assertEquals(46, db.openHelper.writableDatabase.version)
         val first = dao.getHistoryItem("ep-1")!!
         assertTrue(first.isCompleted && first.isLiked)
         assertEquals(1_234L to 3_000L, first.progressMs to first.firstPlayedAt)
@@ -101,7 +101,8 @@ class RoomV45UpgradeTest {
                 assertEquals(table, tableInfo(exported, table), tableInfo(upgraded, table))
             }
         }
-        val identity = JsonParser.parseString(schemaJson(45).readText()).asJsonObject
+        // Room opens at the latest version: v46 only adds playlist columns ([RoomV46UpgradeTest]).
+        val identity = JsonParser.parseString(schemaJson(46).readText()).asJsonObject
             .getAsJsonObject("database").get("identityHash").asString
         assertEquals(identity, RoomSchemaFixture.string(upgraded, "SELECT identity_hash FROM room_master_table WHERE id = 42"))
     }

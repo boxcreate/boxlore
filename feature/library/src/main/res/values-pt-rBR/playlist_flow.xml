@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_playlist_start_title">Para que é?</string>
+    <string name="library_playlist_start_suggested">Feitas com seus podcasts</string>
+    <string name="library_playlist_suggestion_recent">Seguidos há pouco</string>
+    <string name="library_playlist_start_own">Escolha os podcasts</string>
+    <string name="library_playlist_start_own_body">Qualquer mistura dos podcasts que você segue</string>
+    <string name="library_playlist_pick_title">Escolha os podcasts</string>
+    <string name="library_playlist_filter_all">Todos</string>
+    <string name="library_playlist_pick_hint">Os episódios novos desses podcasts entram sozinhos</string>
+    <string name="library_playlist_name_section">Nome</string>
+    <string name="library_playlist_how_it_plays">Como ela toca</string>
+    <string name="library_playlist_mix_take_turns">Revezando</string>
+    <string name="library_playlist_mix_take_turns_body">O mais novo de cada podcast, revezando, do último mês</string>
+    <string name="library_playlist_mix_newest_body">Todos os episódios não ouvidos, os mais recentes primeiro</string>
+    <string name="library_playlist_mix_one_show">Um podcast por vez</string>
+    <string name="library_playlist_mix_one_show_body">Cada podcast a partir do episódio não ouvido mais antigo, depois o próximo</string>
+    <string name="library_playlist_per_show">Episódios por podcast</string>
+    <string name="library_playlist_per_show_none">Sem limite</string>
+    <string name="library_playlist_per_show_summary_none">Todos os episódios não ouvidos de cada podcast</string>
+    <string name="library_playlist_create_action">Criar playlist</string>
+    <plurals name="library_playlist_per_show_summary">
+        <item quantity="one">Até %1$d episódio de cada podcast</item>
+        <item quantity="other">Até %1$d episódios de cada podcast</item>
+    </plurals>
+    <plurals name="library_playlist_add_shows_action">
+        <item quantity="one">Adicionar %1$d podcast</item>
+        <item quantity="other">Adicionar %1$d podcasts</item>
+    </plurals>
+    <string name="library_playlist_unpick_these">Desmarcar estes</string>
+    <plurals name="library_playlist_pick_all">
+        <item quantity="one">Escolher %1$d podcast</item>
+        <item quantity="other">Escolher os %1$d</item>
+    </plurals>
+    <string name="library_playlist_more_icons">Mais ícones</string>
+    <string name="library_playlist_fewer_icons">Menos ícones</string>
+    <string name="library_playlist_up_next">A seguir</string>
+    <string name="library_playlist_play_named">Tocar %1$s</string>
+</resources>

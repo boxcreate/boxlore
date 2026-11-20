@@ -220,7 +220,7 @@ internal fun AddToFoldersHost(state: FolderPagesState, data: FolderPagesData, ac
  * into or out of the tablet layout. Back goes one step back.
  */
 @Composable
-private fun EditorDialog(onBack: () -> Unit, dismissOnClickOutside: Boolean, content: @Composable (bottomInset: Dp) -> Unit) {
+internal fun EditorDialog(onBack: () -> Unit, dismissOnClickOutside: Boolean, content: @Composable (bottomInset: Dp) -> Unit) {
     BoxloreDialog(
         onDismissRequest = onBack,
         properties = DialogProperties(

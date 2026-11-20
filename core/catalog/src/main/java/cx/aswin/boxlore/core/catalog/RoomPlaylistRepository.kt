@@ -8,9 +8,10 @@ import cx.aswin.boxlore.core.database.PlaylistShowRow
 import cx.aswin.boxlore.core.database.PlaylistSummary
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Playlist
-import cx.aswin.boxlore.core.model.PlaylistOrder
+import cx.aswin.boxlore.core.model.PlaylistMix
 import cx.aswin.boxlore.core.model.PlaylistShow
 import cx.aswin.boxlore.core.model.normalizePlaylistName
+import cx.aswin.boxlore.core.model.normalizePlaylistPerShowLimit
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -24,7 +25,8 @@ import kotlinx.coroutines.sync.withLock
 /**
  * [PlaylistRepository] on Room. [projectedHistory] and [withAliases] read listening state across an
  * episode's stored IDs (the app passes `EpisodeListenerStore.projectedHistoryOf` and
- * `withAllAliases`); [hiddenShowIds] are the shows hidden everywhere. Writes run one at a time.
+ * `withAllAliases`); [hiddenShowIds] are the shows hidden everywhere. [now] (epoch milliseconds)
+ * dates writes and places the take-turns window. Writes run one at a time.
  */
 @Suppress("TooManyFunctions", "LongParameterList")
 class RoomPlaylistRepository(
@@ -58,12 +60,26 @@ class RoomPlaylistRepository(
     override suspend fun getShowIds(): Map<String, List<String>> =
         dao.getAllShowRows().groupBy({ it.playlistId }) { it.podcastId }
 
-    override suspend fun createPlaylist(name: String, podcastIds: List<String>): Playlist = writes.withLock {
+    override suspend fun createPlaylist(
+        name: String,
+        podcastIds: List<String>,
+        mix: PlaylistMix,
+        perShowLimit: Int?,
+        iconKey: String?,
+    ): Playlist = writes.withLock {
         val createdAt = now()
-        val entity = PlaylistEntity(playlistId = newId(), name = displayName(name), createdAt = createdAt, updatedAt = createdAt)
+        val entity = PlaylistEntity(
+            playlistId = newId(),
+            name = displayName(name),
+            createdAt = createdAt,
+            updatedAt = createdAt,
+            mix = mix.stored,
+            perShowLimit = storedLimit(perShowLimit),
+            iconKey = storedIcon(iconKey),
+        )
         dao.insertPlaylist(entity)
         appendLocked(entity.playlistId, podcastIds, createdAt, touch = false)
-        playlist(entity.playlistId).first() ?: Playlist(entity.playlistId, entity.name, createdAt, createdAt, showCount = 0)
+        playlist(entity.playlistId).first() ?: PlaylistSummary(entity, showCount = 0).toPlaylist(emptyList())
     }
 
     override suspend fun renamePlaylist(playlistId: String, name: String): Boolean = writes.withLock {
@@ -72,8 +88,12 @@ class RoomPlaylistRepository(
         dao.renamePlaylist(playlistId, normalized, now()) > 0
     }
 
-    override suspend fun setOrder(playlistId: String, order: PlaylistOrder): Boolean = writes.withLock {
-        dao.setEpisodeOrder(playlistId, order.stored, now()) > 0
+    override suspend fun setPlayback(playlistId: String, mix: PlaylistMix, perShowLimit: Int?): Boolean = writes.withLock {
+        dao.setPlayback(playlistId, mix.stored, storedLimit(perShowLimit), now()) > 0
+    }
+
+    override suspend fun setIcon(playlistId: String, iconKey: String?): Boolean = writes.withLock {
+        dao.setIcon(playlistId, storedIcon(iconKey), now()) > 0
     }
 
     override suspend fun deletePlaylist(playlistId: String) = writes.withLock { dao.deletePlaylist(playlistId) }
@@ -105,7 +125,7 @@ class RoomPlaylistRepository(
         val playlist = dao.getPlaylist(playlistId) ?: return emptyList()
         val hidden = hiddenShowIds.first()
         val shows = dao.getShows(playlistId).filter { it.isSubscribed && it.podcastId !in hidden }
-        return episodes.next(shows, PlaylistOrder.fromStored(playlist.episodeOrder), limit, excludeIds)
+        return episodes.next(shows, PlaylistMix.fromStored(playlist.mix), readLimit(playlist.perShowLimit), limit, excludeIds, now())
     }
 
     override suspend fun importPlaylist(playlist: Playlist, podcastIds: List<String>): Int = writes.withLock {
@@ -117,7 +137,9 @@ class RoomPlaylistRepository(
                     name = displayName(playlist.name),
                     createdAt = playlist.createdAt,
                     updatedAt = playlist.updatedAt,
-                    episodeOrder = playlist.order.stored,
+                    mix = playlist.mix.stored,
+                    perShowLimit = storedLimit(playlist.perShowLimit),
+                    iconKey = storedIcon(playlist.iconKey),
                 ),
             )
         }
@@ -134,6 +156,13 @@ class RoomPlaylistRepository(
     }
 
     private fun displayName(name: String): String = normalizePlaylistName(name).ifEmpty { DEFAULT_NAME }
+
+    /** The stored limit per show: 0 is no limit. */
+    private fun storedLimit(perShowLimit: Int?): Int = normalizePlaylistPerShowLimit(perShowLimit) ?: NO_LIMIT
+
+    private fun readLimit(stored: Int): Int? = normalizePlaylistPerShowLimit(stored)
+
+    private fun storedIcon(iconKey: String?): String? = iconKey?.trim()?.takeIf(String::isNotEmpty)
 
     private fun PlaylistShowRow.toShow(hidden: Set<String>) = PlaylistShow(
         playlistId = playlistId,
@@ -152,11 +181,16 @@ class RoomPlaylistRepository(
         createdAt = playlist.createdAt,
         updatedAt = playlist.updatedAt,
         showCount = showCount,
-        order = PlaylistOrder.fromStored(playlist.episodeOrder),
+        mix = PlaylistMix.fromStored(playlist.mix),
+        perShowLimit = readLimit(playlist.perShowLimit),
+        iconKey = playlist.iconKey?.takeIf(String::isNotBlank),
         coverUrls = covers.mapNotNull { it?.takeIf(String::isNotBlank) },
     )
 
     companion object {
         const val DEFAULT_NAME = "Playlist"
+
+        /** `playlists.perShowLimit` for no limit. */
+        private const val NO_LIMIT = 0
     }
 }

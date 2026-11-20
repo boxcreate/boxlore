@@ -6,11 +6,13 @@ import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeEntity
+import cx.aswin.boxlore.core.database.PlaylistDao
+import cx.aswin.boxlore.core.database.PlaylistEpisodeRow
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.RssEpisodeEntity
 import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.model.Playlist
-import cx.aswin.boxlore.core.model.PlaylistOrder
+import cx.aswin.boxlore.core.model.PlaylistMix
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -38,13 +40,17 @@ class RoomPlaylistRepositoryTest {
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         database = Room.inMemoryDatabaseBuilder(context, BoxLoreDatabase::class.java).allowMainThreadQueries().build()
+        repository = repositoryOn(database.playlistDao()) { clock++ }
+    }
+
+    private fun repositoryOn(dao: PlaylistDao, now: () -> Long): RoomPlaylistRepository {
         val listeners = database.episodeListenerStore()
-        repository = RoomPlaylistRepository(
-            dao = database.playlistDao(),
+        return RoomPlaylistRepository(
+            dao = dao,
             projectedHistory = listeners::projectedHistoryOf,
             withAliases = listeners::withAllAliases,
             hiddenShowIds = hidden,
-            now = { clock++ },
+            now = now,
             newId = { "list-${++ids}" },
         )
     }
@@ -107,7 +113,7 @@ class RoomPlaylistRepositoryTest {
 
         assertEquals("Comedy", created.name)
         assertEquals(2, created.showCount)
-        assertEquals(PlaylistOrder.NEWEST, created.order)
+        assertEquals(Triple(PlaylistMix.TAKE_TURNS, 3, null), Triple(created.mix, created.perShowLimit, created.iconKey))
         assertEquals(listOf("b", "a"), repository.shows(created.id).first().map { it.podcastId })
         assertEquals(listOf("https://img.example/b.jpg", "https://img.example/a.jpg"), repository.playlist(created.id).first()!!.coverUrls)
         assertEquals(setOf(created.id), repository.playlistIdsForShow("a").first())
@@ -137,15 +143,38 @@ class RoomPlaylistRepositoryTest {
     }
 
     @Test
-    fun `rename, order and a blank name`() = runTest {
+    fun `rename, playback settings, icon and a blank name`() = runTest {
         val id = repository.createPlaylist("   ").id
         assertEquals(RoomPlaylistRepository.DEFAULT_NAME, repository.playlist(id).first()!!.name)
         assertFalse(repository.renamePlaylist(id, "  "))
         assertTrue(repository.renamePlaylist(id, "Mornings"))
-        assertTrue(repository.setOrder(id, PlaylistOrder.OLDEST))
+        assertTrue(repository.setPlayback(id, PlaylistMix.ONE_SHOW_AT_A_TIME, 5))
+        assertTrue(repository.setIcon(id, " history "))
         val playlist = repository.playlist(id).first()!!
-        assertEquals("Mornings" to PlaylistOrder.OLDEST, playlist.name to playlist.order)
-        assertFalse(repository.setOrder("missing", PlaylistOrder.OLDEST))
+        assertEquals("Mornings" to PlaylistMix.ONE_SHOW_AT_A_TIME, playlist.name to playlist.mix)
+        assertEquals(5 to "history", playlist.perShowLimit to playlist.iconKey)
+
+        assertTrue(repository.setPlayback(id, PlaylistMix.NEWEST_FIRST, null))
+        assertTrue(repository.setIcon(id, "  "))
+        val cleared = repository.playlist(id).first()!!
+        assertEquals(Triple(PlaylistMix.NEWEST_FIRST, null, null), Triple(cleared.mix, cleared.perShowLimit, cleared.iconKey))
+        assertTrue("0 is no limit", repository.setPlayback(id, PlaylistMix.TAKE_TURNS, 0))
+        assertNull(repository.playlist(id).first()!!.perShowLimit)
+
+        assertFalse(repository.setPlayback("missing", PlaylistMix.TAKE_TURNS, 3))
+        assertFalse(repository.setIcon("missing", "comedy"))
+    }
+
+    @Test
+    fun `a playlist is made with its settings`() = runTest {
+        val created = repository.createPlaylist("Binge", listOf("a"), PlaylistMix.ONE_SHOW_AT_A_TIME, perShowLimit = null, iconKey = "true_crime")
+
+        assertEquals(Triple(PlaylistMix.ONE_SHOW_AT_A_TIME, null, "true_crime"), Triple(created.mix, created.perShowLimit, created.iconKey))
+        val stored = database.playlistDao().getPlaylist(created.id)!!
+        assertEquals(Triple("one_show", 0, "true_crime"), Triple(stored.mix, stored.perShowLimit, stored.iconKey))
+        val two = repository.createPlaylist("Two", mix = PlaylistMix.NEWEST_FIRST, perShowLimit = 2, iconKey = "")
+        val storedTwo = database.playlistDao().getPlaylist(two.id)!!
+        assertEquals(Triple("newest_first", 2, null), Triple(storedTwo.mix, storedTwo.perShowLimit, storedTwo.iconKey))
     }
 
     @Test
@@ -169,7 +198,7 @@ class RoomPlaylistRepositoryTest {
         episodes("b", 20L, 40L)
         episodes("b", 45L, type = "trailer", duration = 120)
         history("a-50", "a", progressMs = 60_000L, completed = true)
-        val id = repository.createPlaylist("Mix", listOf("a", "b")).id
+        val id = repository.createPlaylist("Mix", listOf("a", "b"), PlaylistMix.NEWEST_FIRST, perShowLimit = null).id
 
         assertEquals(listOf("b-40", "a-30", "b-20", "a-10"), repository.nextEpisodes(id, limit = 10).map { it.id })
         val first = repository.nextEpisodes(id, limit = 1).single()
@@ -195,17 +224,84 @@ class RoomPlaylistRepositoryTest {
     }
 
     @Test
-    fun `oldest first, with an episode midway through first and the batch limit`() = runTest {
+    fun `one show at a time, oldest first, with an episode midway through first and the batch limit`() = runTest {
         follow("a")
         follow("b")
         episodes("a", 10L, 30L, 50L)
         episodes("b", 20L, 40L)
         history("b-40", "b", progressMs = 60_000L, completed = false)
-        val id = repository.createPlaylist("Mix", listOf("a", "b")).id
-        repository.setOrder(id, PlaylistOrder.OLDEST)
+        val id = repository.createPlaylist("Mix", listOf("a", "b"), PlaylistMix.ONE_SHOW_AT_A_TIME, perShowLimit = null).id
 
-        assertEquals(listOf("b-40", "a-10", "b-20", "a-30", "a-50"), repository.nextEpisodes(id, limit = 10).map { it.id })
+        assertEquals(listOf("b-40", "a-10", "a-30", "a-50", "b-20"), repository.nextEpisodes(id, limit = 10).map { it.id })
         assertEquals(listOf("b-40", "a-10"), repository.nextEpisodes(id, limit = 2).map { it.id })
+        repository.setPlayback(id, PlaylistMix.ONE_SHOW_AT_A_TIME, 2)
+        assertEquals(listOf("b-40", "a-10", "a-30", "b-20"), repository.nextEpisodes(id, limit = 10).map { it.id })
+    }
+
+    @Test
+    fun `one show at a time reads no further shows once the batch is full`() = runTest {
+        follow("a")
+        follow("b")
+        follow("c")
+        episodes("a", 10L, 30L, 50L)
+        episodes("b", 20L)
+        episodes("c", 5L)
+        val reads = mutableListOf<List<String>>()
+        val counting = object : PlaylistDao by database.playlistDao() {
+            override suspend fun oldestEpisodes(podcastIds: List<String>, afterDate: Long, afterId: String, limit: Int): List<PlaylistEpisodeRow> {
+                reads += podcastIds
+                return database.playlistDao().oldestEpisodes(podcastIds, afterDate, afterId, limit)
+            }
+        }
+        val binge = repositoryOn(counting) { clock++ }
+        val id = binge.createPlaylist("Binge", listOf("a", "b", "c"), PlaylistMix.ONE_SHOW_AT_A_TIME, perShowLimit = null).id
+
+        assertEquals(listOf("a-10", "a-30"), binge.nextEpisodes(id, limit = 2).map { it.id })
+        assertEquals(listOf(listOf("a")), reads)
+        reads.clear()
+        assertEquals(listOf("a-10", "a-30", "a-50", "b-20"), binge.nextEpisodes(id, limit = 4).map { it.id })
+        assertEquals(listOf(listOf("a"), listOf("b")), reads)
+    }
+
+    @Test
+    fun `taking turns plays each show's newest of the last 30 days in rounds, at most the limit per show`() = runTest {
+        val day = 86_400L
+        val now = 1_000 * day
+        follow("a")
+        follow("b")
+        follow("c")
+        episodes("a", now - day, now - 2 * day, now - 3 * day, now - 4 * day, now - 7 * day, now - 40 * day)
+        episodes("b", now - 5 * day, now - 6 * day)
+        episodes("c", now - 31 * day)
+        history("a-${now - 4 * day}", "a", progressMs = 60_000L, completed = false, playedAt = 9L)
+        val turns = repositoryOn(database.playlistDao()) { now * 1_000L }
+        val id = turns.createPlaylist("Daily", listOf("a", "b", "c")).id
+        val a = { days: Long -> "a-${now - days * day}" }
+        val b = { days: Long -> "b-${now - days * day}" }
+
+        // Midway through first, even past its show's limit; then a, b, a, b, a.
+        assertEquals(listOf(a(4), a(1), b(5), a(2), b(6), a(3)), turns.nextEpisodes(id, limit = 10).map { it.id })
+        assertEquals(listOf(a(4), a(1), b(5)), turns.nextEpisodes(id, limit = 3).map { it.id })
+        // What is queued already makes room for each show's next; a's episode of 40 days ago never plays.
+        assertEquals(listOf(a(4), a(2), b(6), a(3), a(7)), turns.nextEpisodes(id, limit = 10, excludeIds = listOf(a(1), b(5))).map { it.id })
+        turns.setPlayback(id, PlaylistMix.TAKE_TURNS, 1)
+        assertEquals(listOf(a(4), a(1), b(5)), turns.nextEpisodes(id, limit = 10).map { it.id })
+        turns.setPlayback(id, PlaylistMix.TAKE_TURNS, null)
+        assertEquals(listOf(a(4), a(1), b(5), a(2), b(6), a(3), a(7)), turns.nextEpisodes(id, limit = 10).map { it.id })
+    }
+
+    @Test
+    fun `newest first with a limit per show caps each show, then merges by release date`() = runTest {
+        follow("a")
+        follow("b")
+        episodes("a", 10L, 30L, 50L, 70L)
+        episodes("b", 20L, 40L)
+        val id = repository.createPlaylist("Latest", listOf("a", "b"), PlaylistMix.NEWEST_FIRST, perShowLimit = 2).id
+
+        assertEquals(listOf("a-70", "a-50", "b-40", "b-20"), repository.nextEpisodes(id, limit = 10).map { it.id })
+        assertEquals(listOf("a-70", "a-50", "b-40"), repository.nextEpisodes(id, limit = 3).map { it.id })
+        repository.setPlayback(id, PlaylistMix.NEWEST_FIRST, null)
+        assertEquals(listOf("a-70", "a-50", "b-40", "a-30", "b-20", "a-10"), repository.nextEpisodes(id, limit = 10).map { it.id })
     }
 
     @Test
@@ -219,7 +315,8 @@ class RoomPlaylistRepositoryTest {
         history("a-10", "a", progressMs = 1_200_000L, completed = false, playedAt = 9L)
         val id = repository.createPlaylist("Mix", listOf("a", "b")).id
 
-        assertEquals(listOf("a-10", "b-40", "a-50", "a-30", "b-20"), repository.nextEpisodes(id, limit = 10).map { it.id })
+        // Then the shows take turns: a's newest, b's, a's next.
+        assertEquals(listOf("a-10", "b-40", "a-50", "b-20", "a-30"), repository.nextEpisodes(id, limit = 10).map { it.id })
     }
 
     @Test
@@ -286,10 +383,15 @@ class RoomPlaylistRepositoryTest {
         episodes("a", *(1L..450L).toList().toLongArray())
         (31L..450L).forEach { history("a-$it", "a", progressMs = 0L, completed = it % 2L == 0L) }
         val queued = (31L..450L).filter { it % 2L == 1L }.map { "a-$it" }
-        val id = repository.createPlaylist("Archive", listOf("a")).id
+        val id = repository.createPlaylist("Archive", listOf("a"), PlaylistMix.NEWEST_FIRST, perShowLimit = null).id
 
         assertEquals((30L downTo 26L).map { "a-$it" }, repository.nextEpisodes(id, limit = 5, excludeIds = queued).map { it.id })
-        repository.setOrder(id, PlaylistOrder.OLDEST)
+        // Read show by show, the pages grow until they reach episodes that play.
+        repository.setPlayback(id, PlaylistMix.NEWEST_FIRST, 5)
+        assertEquals((30L downTo 26L).map { "a-$it" }, repository.nextEpisodes(id, limit = 10, excludeIds = queued).map { it.id })
+        repository.setPlayback(id, PlaylistMix.TAKE_TURNS, null)
+        assertEquals((30L downTo 26L).map { "a-$it" }, repository.nextEpisodes(id, limit = 5, excludeIds = queued).map { it.id })
+        repository.setPlayback(id, PlaylistMix.ONE_SHOW_AT_A_TIME, null)
         assertEquals((1L..3L).map { "a-$it" }, repository.nextEpisodes(id, limit = 3, excludeIds = queued).map { it.id })
     }
 
@@ -315,11 +417,15 @@ class RoomPlaylistRepositoryTest {
             dao = database.playlistDao(),
             projectedHistory = { ids -> if ("a-30" in ids) mapOf("a-30" to finishedElsewhere) else emptyMap() },
             withAliases = { ids -> ids.toSet() + ids.filter { it == "old-20" }.map { "a-20" } },
+            now = { 1_000L },
             newId = { "aliases" },
         )
         val id = aliases.createPlaylist("Mix", listOf("a")).id
 
-        assertEquals(listOf("a-10"), aliases.nextEpisodes(id, limit = 10, excludeIds = listOf("old-20")).map { it.id })
+        for (mix in PlaylistMix.entries) {
+            aliases.setPlayback(id, mix, null)
+            assertEquals(mix.name, listOf("a-10"), aliases.nextEpisodes(id, limit = 10, excludeIds = listOf("old-20")).map { it.id })
+        }
     }
 
     @Test
@@ -328,9 +434,14 @@ class RoomPlaylistRepositoryTest {
         shows.forEach { follow(it) }
         episodes("s401", 7L)
         episodes("s1", 5L)
-        val id = repository.createPlaylist("Everything", shows).id
+        // Midway through an episode of the second query's show.
+        history("s401-3", "s401", progressMs = 60_000L, completed = false)
+        val id = repository.createPlaylist("Everything", shows, PlaylistMix.NEWEST_FIRST, perShowLimit = null).id
 
-        assertEquals(listOf("s401-7", "s1-5"), repository.nextEpisodes(id, limit = 10).map { it.id })
+        assertEquals(listOf("s401-3", "s401-7", "s1-5"), repository.nextEpisodes(id, limit = 10).map { it.id })
+        // Show by show, in playlist order.
+        repository.setPlayback(id, PlaylistMix.TAKE_TURNS, 3)
+        assertEquals(listOf("s401-3", "s1-5", "s401-7"), repository.nextEpisodes(id, limit = 10).map { it.id })
     }
 
     @Test
@@ -353,12 +464,15 @@ class RoomPlaylistRepositoryTest {
     @Test
     fun `importing adds a missing playlist and only adds shows to one the phone has`() = runTest {
         val id = repository.createPlaylist("Mine", listOf("a")).id
-        assertEquals(1, repository.importPlaylist(Playlist(id, "Theirs", 1L, 2L, showCount = 0, order = PlaylistOrder.OLDEST), listOf("a", "b")))
-        assertEquals(1, repository.importPlaylist(Playlist("new", "New", 1L, 2L, showCount = 0, order = PlaylistOrder.OLDEST), listOf("c")))
+        val theirs = Playlist(id, "Theirs", 1L, 2L, showCount = 0, mix = PlaylistMix.ONE_SHOW_AT_A_TIME, perShowLimit = null, iconKey = "comedy")
+        assertEquals(1, repository.importPlaylist(theirs, listOf("a", "b")))
+        assertEquals(1, repository.importPlaylist(theirs.copy(id = "new", name = "New"), listOf("c")))
 
         val playlists = repository.getPlaylists().associateBy { it.id }
-        assertEquals("Mine" to PlaylistOrder.NEWEST, playlists.getValue(id).let { it.name to it.order })
-        assertEquals("New" to PlaylistOrder.OLDEST, playlists.getValue("new").let { it.name to it.order })
+        val mine = playlists.getValue(id)
+        assertEquals(listOf("Mine", PlaylistMix.TAKE_TURNS, 3, null), listOf(mine.name, mine.mix, mine.perShowLimit, mine.iconKey))
+        val added = playlists.getValue("new")
+        assertEquals(listOf("New", PlaylistMix.ONE_SHOW_AT_A_TIME, null, "comedy"), listOf(added.name, added.mix, added.perShowLimit, added.iconKey))
         assertEquals(mapOf(id to listOf("a", "b"), "new" to listOf("c")), repository.getShowIds())
     }
 

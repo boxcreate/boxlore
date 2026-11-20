@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Library › Playlists: the New playlist flow and a playlist's How it plays settings. -->
+    <!-- New playlist, step 1 heading: what the playlist is for. -->
+    <string name="library_playlist_start_title">What’s it for?</string>
+    <!-- Section of ready-made playlists built from the shows the listener follows (by genre or folder). -->
+    <string name="library_playlist_start_suggested">Made from your shows</string>
+    <string name="library_playlist_suggestion_recent">Recently followed</string>
+    <string name="library_playlist_start_own">Pick shows yourself</string>
+    <string name="library_playlist_start_own_body">Any mix of the shows you follow</string>
+    <string name="library_playlist_pick_title">Pick the shows</string>
+    <string name="library_playlist_filter_all">All</string>
+    <!-- Under the picked count while picking shows: playlists fill themselves. -->
+    <string name="library_playlist_pick_hint">New episodes from these shows join by themselves</string>
+    <string name="library_playlist_name_section">Name</string>
+    <!-- Section title: how a playlist chooses and orders episodes. -->
+    <string name="library_playlist_how_it_plays">How it plays</string>
+    <!-- Playlist mix: one episode from each show in turn. -->
+    <string name="library_playlist_mix_take_turns">Take turns</string>
+    <string name="library_playlist_mix_take_turns_body">The newest from each show in turn, from the past month</string>
+    <string name="library_playlist_mix_newest_body">Every unheard episode, the most recent first</string>
+    <!-- Playlist mix: binge one show, then the next. -->
+    <string name="library_playlist_mix_one_show">One show at a time</string>
+    <string name="library_playlist_mix_one_show_body">Each show from its oldest unheard episode, then the next show</string>
+    <!-- Setting: the most episodes a playlist takes from one show. -->
+    <string name="library_playlist_per_show">Episodes per show</string>
+    <string name="library_playlist_per_show_none">No limit</string>
+    <string name="library_playlist_per_show_summary_none">Every unheard episode from each show</string>
+    <string name="library_playlist_create_action">Create playlist</string>
+    <!-- Playlist card line: %1$s is the show count, %2$s the mix name. -->
+    <!-- Under Episodes per show; %1$d is the chosen limit. -->
+    <plurals name="library_playlist_per_show_summary">
+        <item quantity="one">Up to %1$d episode from each show</item>
+        <item quantity="other">Up to %1$d episodes from each show</item>
+    </plurals>
+    <plurals name="library_playlist_add_shows_action">
+        <item quantity="one">Add %1$d show</item>
+        <item quantity="other">Add %1$d shows</item>
+    </plurals>
+    <!-- Under the genre chips while one genre is chosen: pick every show shown, or unpick them. -->
+    <string name="library_playlist_unpick_these">Unpick these</string>
+    <plurals name="library_playlist_pick_all">
+        <item quantity="one">Pick %1$d show</item>
+        <item quantity="other">Pick all %1$d</item>
+    </plurals>
+    <!-- Beside the Icon heading in New playlist: show every icon, or only one row. -->
+    <string name="library_playlist_more_icons">More icons</string>
+    <string name="library_playlist_fewer_icons">Fewer icons</string>
+    <!-- Playlist page: the first episode Play starts with. -->
+    <string name="library_playlist_up_next">Up next</string>
+    <!-- Play button on a playlist card (screen readers); %1$s is the playlist name. -->
+    <string name="library_playlist_play_named">Play %1$s</string>
+</resources>

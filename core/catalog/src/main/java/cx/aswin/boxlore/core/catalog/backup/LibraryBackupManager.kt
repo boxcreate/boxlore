@@ -95,7 +95,7 @@ data class BoxLoreBackup(
     val episodeIdentity: EpisodeIdentityBackup? = null,
     /** Version 8+: listening sessions, daily summaries and played shows ([ListeningBackup]). */
     val listening: ListeningBackup? = null,
-    /** Version 11+: playlists with their order and shows ([PlaylistBackup]). */
+    /** Version 11+: playlists with their shows and settings ([PlaylistBackup]). */
     val playlists: List<PlaylistBackup>? = null,
 )
 
@@ -232,15 +232,18 @@ class LibraryBackupManager(
         return sb.toString()
     }
 
+    /** The database passed in, else the app's; null only before the app has set up its dependencies. */
+    private fun backupDatabase(): BoxLoreDatabase? = database ?: SharedAppDependenciesHolder.instance?.database
+
     private fun identity(): LibraryBackupIdentity? {
         val shared = SharedAppDependenciesHolder.instance
-        val db = database ?: shared?.database ?: return null
+        val db = backupDatabase() ?: return null
         return LibraryBackupIdentity(db, renumberedShows ?: shared?.renumberedShows ?: RenumberedShows.NONE)
     }
 
     private fun listening(): LibraryBackupListening? {
         val shared = SharedAppDependenciesHolder.instance
-        val db = database ?: shared?.database ?: return null
+        val db = backupDatabase() ?: return null
         val deviceId = runCatching { (deviceIdentity ?: shared?.listeningDeviceIdentityPort)?.getDeviceId() }.getOrNull()
         val legacyOrigin = runCatching { (legacyListeningOrigin ?: shared?.listeningLegacyOriginPort)?.getDeviceId() }.getOrNull()
         return LibraryBackupListening(db, deviceId, legacyOrigin)
