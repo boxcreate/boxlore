@@ -10,7 +10,7 @@
 <!-- download-play:end -->
 &nbsp;&nbsp;
 <!-- download-apk:start -->
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.31.apk"><img src="docs/images/button_github_v8.svg" width="224" height="60" alt="Download the boxlore APK from GitHub"/></a>
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.32.apk"><img src="docs/images/button_github_v8.svg" width="224" height="60" alt="Download the boxlore APK from GitHub"/></a>
 <!-- download-apk:end -->
 &nbsp;&nbsp;
 <!-- download-obtainium:start -->
@@ -63,6 +63,14 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 ### Upcoming
 
 <!-- release-upcoming:start -->
+New features and improvements for the next release are currently in development.
+<!-- release-upcoming:end -->
+
+
+### What's New · `v0.0.32` · 2026-11-20
+
+<!-- release-whats-new:start -->
+<!-- release-meta: version=v0.0.32 date=2026-11-20 -->
 <b>✨ Highlights:</b>
 <ul align="left">
 <li>boxlore is now on Wear OS. Play, stream and download episodes on your watch, with or without your phone. <a href="https://github.com/boxcreate/boxlore/pull/1256"><img src="https://img.shields.io/badge/PR-1256-6750A4?style=flat-square" alt="PR #1256" height="18"/></a> <a href="https://github.com/boxcreate/boxlore/pull/1258"><img src="https://img.shields.io/badge/PR-1258-6750A4?style=flat-square" alt="PR #1258" height="18"/></a></li>
@@ -132,32 +140,6 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>After you sign in on a new phone, every show you follow now gets its name and artwork. Some used to stay as “Loading...” with no artwork.</li>
 <li>Restoring a full library backup no longer drops shows you added by RSS feed when their feed can't be reached. They come back with your listening history, and their episodes load once the feed responds.</li>
 <li>Importing a large library from another podcast app no longer stops partway. Shows boxlore can't add right away are added later while boxlore is open.</li>
-</ul>
-<!-- release-upcoming:end -->
-
-
-### What's New · `v0.0.31` · 2026-11-07
-
-<!-- release-whats-new:start -->
-<!-- release-meta: version=v0.0.31 date=2026-11-07 -->
-<b>🆕 New:</b>
-<ul align="left">
-<li>The Rest Is History, Darknet Diaries, Serial, Sherlock Holmes Short Stories and The Desi Crime Podcast have show pages in their own style: a gallery wall hung with the latest episodes, the show's flag-bearer with the flag waving, Serial's stack of cards dealt from its seasons, an 1891 Strand Magazine that opens to the stories read so far, and the hosts' crime board pinned with past cases. Each has its own moment when you subscribe.</li>
-</ul>
-<b>⚡ Improved:</b>
-<ul align="left">
-<li>Conspiracy Theories' show page is now an evidence board, with the latest episodes pinned up and tied together with red yarn, on white paper by day and black by night.</li>
-<li>Show pages in a show's own style carry a "The best of boxlore" seal in place of the "Made for" tag. Tap it to find out what the page is.</li>
-<li>The late-night sleep timer prompt has a new look in your theme's colours: a night sky with a turning moon, and once you pick a time it shows when playback will pause.</li>
-</ul>
-<b>🐛 Fixed:</b>
-<ul align="left">
-<li>On show pages, Select all selects every episode of the show instead of stopping at 100, and while you search it selects your search results. A selected episode on a show's own-style page now stays readable.</li>
-<li>Your monthly story with Echo opens again from Listening history instead of closing the app. Echo now lands smoothly between cards, the story fills the status and navigation bars, and its card's title no longer runs under the show covers.</li>
-<li>Tapping a link no app on your phone can open, like a host's page or a funding link, now says so instead of closing boxlore.</li>
-<li>Playback controls on the lock screen, in notifications and in Samsung's Now Bar show rewind, play and forward in that order, even when nothing is queued next, with a Next episode button beside them when there is.</li>
-<li>Fixed a crash that could close boxlore in the background while the player notification loaded an episode's artwork.</li>
-<li>Echo's occasional question about how likely you are to recommend boxlore reaches listeners it had been skipping since the last update. It can now also ask when you come back within a few hours of finishing an episode.</li>
 </ul>
 <!-- release-whats-new:end -->
 
