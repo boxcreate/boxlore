@@ -280,5 +280,40 @@ class OpmlImportRunTest {
         assertEquals(feeds.take(2), asked)
     }
 
+    @Test
+    fun `a file listing a show twice imports every show once and leaves nothing untried`() = runTest {
+        // Reviewed: the second outline for a feed found it settled, which read as an account switch and stopped the run.
+        val feeds = (1..4).map(::feed)
+        val renamed = OpmlFeed("Show 3 (old name)", feeds[2].xmlUrl)
+        val file = listOf(feeds[0], feeds[1], feeds[1], feeds[2], renamed, feeds[3])
+        val pending = MemoryPendingOpmlImports()
+        val asked = mutableListOf<OpmlFeed>()
+
+        val report =
+            OpmlImportRun.run(file, pending, forgetWhenNothingImported = true, importOne = { feed ->
+                asked += feed
+                OpmlFeedImport.Imported(TestFixtures.podcast(id = feed.xmlUrl))
+            })
+
+        assertEquals(feeds, asked, "each address once, the first outline for it, and the rest of the file in the same run")
+        assertEquals(feeds.map { it.xmlUrl }, report.imported.map { it.id })
+        assertTrue(report.pending.isEmpty(), "nothing untried")
+        assertTrue(pending.all().isEmpty(), "and nothing left in the store")
+    }
+
+    @Test
+    fun `a duplicate outline the API couldn't answer for stays pending once`() = runTest {
+        val feeds = (1..2).map(::feed)
+        val pending = MemoryPendingOpmlImports()
+
+        val report =
+            OpmlImportRun.run(listOf(feeds[0], feeds[0], feeds[1]), pending, forgetWhenNothingImported = false, importOne = { feed ->
+                if (feed == feeds[0]) OpmlFeedImport.Pending else OpmlFeedImport.Imported(TestFixtures.podcast(id = feed.xmlUrl))
+            })
+
+        assertEquals(listOf(feeds[0]), report.pending)
+        assertEquals(listOf(feeds[0]), pending.all())
+    }
+
     private fun feed(index: Int) = OpmlFeed("Show $index", "https://feeds.example/$index")
 }

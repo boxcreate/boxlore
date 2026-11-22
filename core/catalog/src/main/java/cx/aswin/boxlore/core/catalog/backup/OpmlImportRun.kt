@@ -58,7 +58,7 @@ internal object OpmlImportRun {
 
     @Suppress("LongParameterList", "kotlin:S107")
     suspend fun run(
-        feeds: List<OpmlFeed>,
+        outlines: List<OpmlFeed>,
         pending: PendingOpmlImports,
         forgetWhenNothingImported: Boolean,
         importOne: suspend (OpmlFeed) -> OpmlFeedImport,
@@ -67,6 +67,8 @@ internal object OpmlImportRun {
         shouldStop: () -> Boolean = { false },
         nowMs: () -> Long = System::currentTimeMillis,
     ): OpmlImportReport {
+        // One try per feed address, the store's key: a second outline for it would find it settled and stop the run.
+        val feeds = outlines.distinctBy(OpmlFeed::xmlUrl)
         if (!pending.add(feeds)) return OpmlImportReport(imported = emptyList(), pending = emptyList(), saveFailed = true)
         val startedAt = nowMs()
         val (due, waiting) = if (countMisses) feeds.partition { isDue(pending.misses(it), startedAt) } else feeds to emptyList()
