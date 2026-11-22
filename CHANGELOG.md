@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgraded Material 3 to the stable 1.5.0 release (Compose 1.12.1, Material 3 Adaptive 1.3.0, Window 1.5.0, Wear Compose 1.7.2). ([#1290](https://github.com/boxcreate/boxlore/pull/1290)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - Replaced the removed Material alert-dialog override with `BoxloreAlertDialog`; phone alert dialogs must use it, enforced by `ArchitectureGuardTest`. ([#1290](https://github.com/boxcreate/boxlore/pull/1290)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Fixed
+- `SubscriptionRepository.subscribeInternal` keeps `notificationsEnabled` and `autoDownloadEnabled` when the show is already followed, so OPML imports, onboarding and backup restores no longer turn them off. ([#1292](https://github.com/boxcreate/boxlore/pull/1292)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `DailyHorizon` no longer lets the sky's edge show as a line across The Daily's description in dark mode. ([#1291](https://github.com/boxcreate/boxlore/pull/1291)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - Locale and resource reads in Settings, Library, History and Onboarding follow configuration changes, and the account check-email screen updates with the signed-in user. ([#1290](https://github.com/boxcreate/boxlore/pull/1290)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Removed
