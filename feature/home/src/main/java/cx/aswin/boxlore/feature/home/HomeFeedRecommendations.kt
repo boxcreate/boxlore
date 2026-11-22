@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryExpressiveTheme
@@ -126,7 +127,7 @@ internal fun LazyStaggeredGridScope.discoveryGreetingItem(
                 // Without For you, Explore opens on its charts.
                 callbacks.onNavigateToExplore?.invoke(null, "home_discovery_greeting", "foryou".takeIf { feedState.exploreHasForYou })
             },
-            modifier = Modifier.padding(top = HomeFeedSpacing.SectionGap - HomeFeedSpacing.GridGap),
+            modifier = Modifier.padding(top = HomeFeedSpacing.SectionGap - HomeFeedSpacing.GridGap).testTag("home_discovery_greeting"),
         )
     }
 }
@@ -163,7 +164,7 @@ private fun LazyStaggeredGridScope.discoverHeaderItem(
             selectedCategory = feedState.selectedCategory,
             onCategorySelected = callbacks.onSelectCategory,
             onHeaderClick = { callbacks.onNavigateToExplore?.invoke(feedState.selectedCategory ?: "All", "home_discover_header", null) },
-            modifier = Modifier.padding(top = HomeFeedSpacing.SectionGap - HomeFeedSpacing.GridGap),
+            modifier = Modifier.padding(top = HomeFeedSpacing.SectionGap - HomeFeedSpacing.GridGap).testTag("home_discovery_greeting"),
         )
     }
 }

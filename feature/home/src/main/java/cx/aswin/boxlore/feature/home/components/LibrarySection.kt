@@ -315,7 +315,8 @@ private fun SelectedShowEpisodes(
             modifier =
             Modifier
                 .fillMaxWidth()
-                .height(200.dp),
+                .height(200.dp)
+                .testTag("home_selected_show_loading"),
             contentAlignment = Alignment.Center,
         ) {
             BoxLoreLoader.Expressive(size = 48.dp)
@@ -352,7 +353,7 @@ private fun SelectedShowEpisodes(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp))
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).testTag("home_selected_show_refreshing"))
             }
             val visible = frame.episodes.list.take(8)
             // The rows and the See all footer form one connected list.

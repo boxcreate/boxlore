@@ -1,8 +1,15 @@
 package cx.aswin.boxlore.feature.home
 
 import android.app.Application
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -12,11 +19,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.component.BoxLoreNavigationBar
 import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
+import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreMiniPlayerVisible
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Episode
@@ -38,9 +50,11 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * Review captures of Home for `-PtabletCaptures=audit` (light only, never phone goldens): the hero
- * with many items in every style and its loading state, a swipe from the first card to the second,
- * the rating, thanks and change-show sheets, the selected show while it loads, an empty greeting and
- * the pin message. Outside audit runs the matrix is empty, so CI runs nothing here.
+ * with many items in every style and its loading state, a swipe from the resting first card to the
+ * second, the rating, thanks and change-show sheets, the selected show while it loads and refreshes,
+ * Your shows' episode rows, the caught-up Daily Mix, an empty greeting and the pin message with and
+ * without the mini player. Scenes below the fold scroll Home to their state and fail when it never
+ * shows. Outside audit runs the matrix is empty, so CI runs nothing here.
  * `-PauditSizes` picks the sizes; the extra widths sweep the Galaxy Z Fold 8 cover band (431-599dp).
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
@@ -100,16 +114,17 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
 
     @Test fun loadingMarquee() = loading(HeroCardStyle.MARQUEE)
 
-    /** Frames of a swipe from the first hero card to the second, on the default Cover style. */
+    /** Frames of a swipe from the first hero card to the second, on the default Cover style, after the resting first card. */
     @Test fun heroPeekSwipe() {
         render(HeroCardStyle.COVER) { Home(state()) }
         fixture.compose.onNodeWithTag(ROOT_TAG).assertExists()
+        fixture.capture("home-hero-peek-swipe-rest")
         fixture.captureSequence("home-hero-peek-swipe", frames = 8, stepMs = 40) {
             fixture.compose.onNodeWithTag(ROOT_TAG).performTouchInput { swipeLeft(startX = centerX + width / 4f, endX = centerX - width / 4f, durationMillis = 200) }
         }
     }
 
-    @Test fun sheetRating() = capture("home-sheet-rating", allWindows = true) { Home(state(), HomeSheetUi(showReviewPrompt = true)) }
+    @Test fun sheetRating() = capture("home-sheet-rating", allWindows = true) { Home(state().copy(completedEpisodeCount = 12), HomeSheetUi(showReviewPrompt = true)) }
 
     @Test fun sheetThanks() = capture("home-sheet-thanks", allWindows = true) { Home(state(), HomeSheetUi(showPostReview = true)) }
 
@@ -118,19 +133,45 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         ChangeRecommendationPodcastSheet(candidatePodcasts = podcasts, onDismissRequest = {}, onPodcastSelect = {})
     }
 
-    @Test fun selectedShowLoading() = capture("home-selected-show-loading") {
+    @Test fun selectedShowLoading() = capture("home-selected-show-loading", scrollTo = "home_selected_show_loading") {
         Home(state().copy(selectedPodcastId = podcasts[1].id, isSelectedPodcastLoading = true))
     }
 
-    @Test fun selectedShowRefreshing() = capture("home-selected-show-refreshing") {
-        Home(state().copy(selectedPodcastId = podcasts[1].id, selectedPodcastEpisodes = List(4) { episode.copy(id = "selected-$it") }, isSelectedRssRefreshing = true))
+    /** An RSS show refreshing over the episodes it already has: the refresh bar sits above the rows. */
+    @Test fun selectedShowRefreshing() = capture("home-selected-show-refreshing", scrollTo = "home_selected_show_refreshing") {
+        val rss = state().subscribedPodcasts.map { if (it.id == podcasts[1].id) it.copy(sourceType = Podcast.SOURCE_RSS) else it }
+        Home(state().copy(subscribedPodcasts = rss, selectedPodcastId = podcasts[1].id, selectedPodcastEpisodes = List(4) { episode.copy(id = "selected-$it") }, isSelectedRssRefreshing = true))
     }
 
-    @Test fun greetingEmpty() = capture("home-greeting-empty") {
+    /** Your shows' episode rows with progress and long titles, for German and enlarged text. */
+    @Test fun denseRowsLong() = capture("home-dense-rows-long", scrollTo = "home_filtered_episodes") {
+        val episodes = List(6) { episode.copy(id = "selected-$it", podcastId = podcasts[1].id) }
+        Home(
+            state().copy(
+                selectedPodcastId = podcasts[1].id,
+                selectedPodcastEpisodes = episodes,
+                episodePlaybackState = episodes.take(3).associate { it.id to (cx.aswin.boxlore.core.model.EpisodeStatus.IN_PROGRESS to 0.4f) },
+            ),
+        )
+    }
+
+    @Test fun greetingEmpty() = capture("home-greeting-empty", scrollTo = "home_discovery_greeting") {
         Home(state().copy(editorialRows = emptyList(), isEditorialRowsLoading = false, recommendations = emptyList(), isRecommendationsLoading = false))
     }
 
+    /** Daily Mix with nothing new: the caught-up state in Your shows (tablets show it beside the Brief). */
+    @Test fun mixCaughtUp() {
+        capture("home-mix-caught-up", scrollTo = "home_show_selector_mix") { Home(state().copy(latestEpisodes = emptyList())) }
+    }
+
     @Test fun snackbarPin() = capture("home-snackbar-pin") {
+        val host = remember { SnackbarHostState() }
+        LaunchedEffect(host) { host.showSnackbar(HomePinnedShows.capacityUserMessage()) }
+        Home(state(), snackbarHostState = host)
+    }
+
+    /** The pin message while an episode plays: a placeholder stands where the app's mini player sits, over the nav bar. */
+    @Test fun snackbarPinMiniPlayer() = capture("home-snackbar-pin-mini-player", miniPlayer = true) {
         val host = remember { SnackbarHostState() }
         LaunchedEffect(host) { host.showSnackbar(HomePinnedShows.capacityUserMessage()) }
         Home(state(), snackbarHostState = host)
@@ -140,22 +181,39 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
 
     private fun loading(style: String) = capture("home-loading-${styleName(style)}", style) { Home(state(loading = true)) }
 
-    private fun capture(name: String, style: String = HeroCardStyle.COVER, allWindows: Boolean = false, content: @Composable () -> Unit) {
-        render(style, content)
+    /**
+     * Renders [content] and captures it as [name]. With [scrollTo], Home's grid first scrolls to the
+     * node with that tag, and the scene fails when its state never shows.
+     */
+    @Suppress("LongParameterList")
+    private fun capture(
+        name: String,
+        style: String = HeroCardStyle.COVER,
+        allWindows: Boolean = false,
+        scrollTo: String? = null,
+        miniPlayer: Boolean = false,
+        content: @Composable () -> Unit,
+    ) {
+        render(style, miniPlayer, content)
         fixture.compose.onNodeWithTag(ROOT_TAG).assertExists()
+        if (scrollTo != null) {
+            fixture.compose.onNodeWithTag(FEED_TAG).performScrollToNode(hasTestTag(scrollTo))
+            fixture.compose.onNodeWithTag(scrollTo, useUnmergedTree = true).assertExists()
+        }
         fixture.capture(name, allWindows)
     }
 
-    private fun render(style: String, content: @Composable () -> Unit) {
+    private fun render(style: String, miniPlayer: Boolean = false, content: @Composable () -> Unit) {
         fixture.assumeAuditCapture()
         fixture.prepare()
         fixture.setContent(foldSafeViewport = true) {
             BoxLoreTheme(darkTheme = fixture.configuration.dark, dynamicColor = false) {
                 val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
-                CompositionLocalProvider(LocalHeroCardStyle provides homeHeroStyle(style, tablet)) {
+                CompositionLocalProvider(LocalHeroCardStyle provides homeHeroStyle(style, tablet), LocalBoxloreMiniPlayerVisible provides miniPlayer) {
                     Surface(Modifier.fillMaxSize().testTag(ROOT_TAG)) {
                         Box(Modifier.fillMaxSize()) {
                             content()
+                            if (miniPlayer) MiniPlayerPlaceholder(Modifier.align(Alignment.BottomCenter))
                             if (!tablet) {
                                 Box(Modifier.align(Alignment.BottomCenter)) {
                                     BoxLoreNavigationBar(currentRoute = "home", onNavigate = {}, style = NavigationStyle.Floating, initialContentReady = true)
@@ -166,6 +224,16 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
                 }
             }
         }
+    }
+
+    /** :feature:home can't show the real mini player (another feature), so a solid bar marks where it sits above the nav bar. */
+    @Composable
+    private fun MiniPlayerPlaceholder(modifier: Modifier) {
+        Box(
+            modifier.padding(start = 16.dp, end = 16.dp, bottom = appBottomChromeContentPadding(isMiniPlayerVisible = false))
+                .fillMaxWidth().widthIn(max = 560.dp).height(64.dp)
+                .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(32.dp)),
+        )
     }
 
     private fun state(loading: Boolean = false) = HomeUiState(
@@ -200,6 +268,7 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
 
     companion object {
         private const val ROOT_TAG = "home_audit_root"
+        private const val FEED_TAG = "home_feed_grid"
 
         private fun styleName(style: String) = when (style) {
             HeroCardStyle.BLOCK -> "block"

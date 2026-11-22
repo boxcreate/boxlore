@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
@@ -151,7 +152,7 @@ internal fun PodcastFeed(
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(posterColumns),
             state = layout.gridState,
-            modifier = layout.modifier.fillMaxSize(),
+            modifier = layout.modifier.fillMaxSize().testTag("home_feed_grid"),
             contentPadding = PaddingValues(start = GridSidePadding, end = GridSidePadding, bottom = 160.dp),
             horizontalArrangement = Arrangement.spacedBy(HomeFeedSpacing.GridGap),
             verticalItemSpacing = HomeFeedSpacing.GridGap,
