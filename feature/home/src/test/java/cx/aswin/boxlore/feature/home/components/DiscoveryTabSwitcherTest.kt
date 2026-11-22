@@ -1,15 +1,24 @@
 package cx.aswin.boxlore.feature.home.components
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
@@ -22,11 +31,16 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryTab
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryTabSwitcher
 import cx.aswin.boxlore.core.designsystem.components.discoveryTabSwitcherHeight
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
+import cx.aswin.boxlore.core.testing.walkWindows
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -178,6 +192,89 @@ class DiscoveryTabSwitcherTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithText("First").assertIsSelected()
         assertEquals(start, composeRule.onNodeWithTag("discovery_tab_indicator").getUnclippedBoundsInRoot())
+    }
+
+    @Test fun `long Portuguese tab names at large text with a badge are never cut`() {
+        composeRule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f, 1.3f)) {
+                BoxLoreTheme(dynamicColor = false) {
+                    Box(Modifier.width(360.dp)) {
+                        DiscoveryTabSwitcher(
+                            tabs = listOf(DiscoveryTab("Insights", Icons.Rounded.AutoAwesome), DiscoveryTab("Linha do tempo", Icons.Rounded.History, badgeCount = 12)),
+                            selectedIndex = 1,
+                            onTabSelected = {},
+                        )
+                    }
+                }
+            }
+        }
+        listOf("Insights", "Linha do tempo").forEach { label ->
+            val layout = textLayout(label)
+            assertFalse("$label is cut", layout.hasVisualOverflow)
+            assertFalse("$label is shortened", layout.isLineEllipsized(0))
+        }
+    }
+
+    @Test fun `English tabs on a phone keep the 280dp floating pill`() {
+        composeRule.setContent {
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreTestWindows.PHONE) {
+                BoxLoreTheme(dynamicColor = false) {
+                    Box(Modifier.width(412.dp)) {
+                        DiscoveryTabSwitcher(
+                            tabs = listOf(DiscoveryTab("For you", Icons.Rounded.AutoAwesome), DiscoveryTab("Top", Icons.Rounded.History)),
+                            selectedIndex = 0,
+                            onTabSelected = {},
+                            modifier = Modifier.testTag("switcher"),
+                        )
+                    }
+                }
+            }
+        }
+        val pill = composeRule.onNodeWithTag("switcher").getUnclippedBoundsInRoot()
+        assertEquals(280f, (pill.right - pill.left).value, 0.5f)
+        val tabs = tabBounds()
+        assertEquals("equal tabs", tabs[0].width, tabs[1].width, 1f)
+    }
+
+    @Config(qualifiers = "w1300dp-h1000dp-mdpi")
+    @Test
+    fun `the docked switcher stops at 560dp on tablets and keeps its tab through resizes`() {
+        val window = mutableStateOf(BoxloreTestWindows.PHONE)
+        val selected = mutableIntStateOf(1)
+        composeRule.setContent {
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) {
+                BoxLoreTheme(dynamicColor = false) {
+                    Box(Modifier.width(window.value.widthDp.dp)) {
+                        DiscoveryTabSwitcher(
+                            tabs = listOf(DiscoveryTab("Shows", Icons.Rounded.AutoAwesome), DiscoveryTab("New Eps", Icons.Rounded.History, badgeCount = 4)),
+                            selectedIndex = selected.intValue,
+                            onTabSelected = { selected.intValue = it },
+                            floating = false,
+                        )
+                    }
+                }
+            }
+        }
+        val widths = mapOf(BoxloreTestWindows.PHONE to 412f, BoxloreTestWindows.TABLET to 560f)
+        composeRule.walkWindows(window, BoxloreTestWindows.PHONE, BoxloreTestWindows.TABLET, BoxloreTestWindows.PHONE, BoxloreTestWindows.TABLET) { step ->
+            val tabs = tabBounds()
+            assertEquals("$step", widths.getValue(step), tabs.last().right - tabs.first().left, 1f)
+            composeRule.onNodeWithText("New Eps").assertIsSelected()
+            val indicator = composeRule.onNodeWithTag("discovery_tab_indicator").getUnclippedBoundsInRoot()
+            assertEquals("$step indicator", tabs[1].left, indicator.left.value, 1f)
+            assertEquals("$step indicator", tabs[1].right, indicator.right.value, 1f)
+        }
+        assertEquals(1, selected.intValue)
+    }
+
+    private fun tabBounds() = composeRule.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab))
+        .fetchSemanticsNodes().map { it.boundsInRoot }.sortedBy { it.left }
+
+    private fun textLayout(label: String): TextLayoutResult {
+        val layouts = mutableListOf<TextLayoutResult>()
+        composeRule.onNodeWithText(label, useUnmergedTree = true).fetchSemanticsNode()
+            .config[SemanticsActions.GetTextLayoutResult].action!!.invoke(layouts)
+        return layouts.single()
     }
 
     private fun labelStyle(label: String): TextStyle {
