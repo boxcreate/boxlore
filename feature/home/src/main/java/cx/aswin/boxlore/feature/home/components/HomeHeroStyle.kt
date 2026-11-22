@@ -1,8 +1,10 @@
 package cx.aswin.boxlore.feature.home.components
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -21,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
@@ -47,19 +50,44 @@ internal object HomeHeroStyle {
     }
 }
 
-/** Shared by loaded heroes and their opaque loading cover, including enlarged text. */
+/**
+ * Shared by loaded heroes and their opaque loading cover, including enlarged text. Above a tabletop
+ * fold, and in compact windows shorter than [ShortWindowHeight] (sideways phones, split-screen
+ * halves), the hero shortens to the space between Home's top bar and the bottom bar with the mini
+ * player, never below [MinHeroHeight]. The mini player always counts, so starting playback never
+ * resizes the hero. Portrait phones keep the full height.
+ */
 @Composable
 internal fun homeHeroHeight(): androidx.compose.ui.unit.Dp {
     val scale = LocalDensity.current.fontScale
     val natural = 416.dp + 200.dp * (scale - 1f).coerceAtLeast(0f)
     val window = LocalBoxloreWindowLayout.current
     val pane = LocalBoxlorePaneBounds.current
-    return if (window.tabletopFold != null && pane != null && scale <= 1.1f) {
-        minOf(natural, (pane.height.dp - 80.dp - boxloreContentBottomPadding(0.dp)).coerceAtLeast(240.dp))
-    } else {
-        natural
+    return when {
+        window.tabletopFold != null && pane != null && scale <= 1.1f ->
+            minOf(natural, (pane.height.dp - HomeTopBarReserve - boxloreContentBottomPadding(0.dp)).coerceAtLeast(MinHeroHeight))
+        heroFitsShortWindow(window) -> {
+            val statusBar = with(LocalDensity.current) { WindowInsets.statusBars.getTop(this).toDp() }
+            val bottomChrome = appBottomChromeContentPadding(isMiniPlayerVisible = true)
+            val available = (pane?.height ?: window.heightDp).dp - statusBar - HomeTopBarReserve - bottomChrome - HeroIndicatorStrip
+            minOf(natural, available).coerceAtLeast(MinHeroHeight)
+        }
+        else -> natural
     }
 }
+
+/** Compact windows shorter than the tablet layout's height gate (sideways phones, split-screen halves). */
+internal fun heroFitsShortWindow(window: cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout): Boolean =
+    !window.usesTabletLayout && window.heightDp > 0f && window.heightDp < ShortWindowHeight
+
+/** Home's top bar above the hero, with its padding. */
+private val HomeTopBarReserve = 80.dp
+
+/** Compact windows shorter than this (the tablet layout's height gate) fit the hero to the window. */
+private const val ShortWindowHeight = 480f
+
+/** The shortest hero: every style still fits its title and a full Play button. */
+private val MinHeroHeight = 240.dp
 
 internal data class HeroProgressState(val value: Float, val playing: Boolean)
 

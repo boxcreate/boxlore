@@ -83,10 +83,12 @@ fun HeroCard(
         modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize(),
     ) {
         Column(Modifier.fillMaxSize()) {
-            if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
+            val window = LocalBoxloreWindowLayout.current
+            // Tablets and short compact windows can shorten the hero; there a short body keeps Play in the card.
+            if (window.usesTabletLayout || heroFitsShortWindow(window)) {
                 BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(bottom = 8.dp)) {
-                if (LocalBoxloreWindowLayout.current.usesTabletLayout && maxHeight < 240.dp) {
-                    ShortTabletHeroBody(item, foreground)
+                if (maxHeight < 240.dp) {
+                    ShortHeroBody(item, foreground)
                 } else {
                     HeroBody(item, foreground, progressState, Modifier.fillMaxSize())
                 }
@@ -114,7 +116,7 @@ fun HeroCard(
 }
 
 @Composable
-private fun ShortTabletHeroBody(item: SmartHeroItem, foreground: Color) {
+private fun ShortHeroBody(item: SmartHeroItem, foreground: Color) {
     Row(Modifier.fillMaxSize().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
         HeroArtwork(item, Modifier.size(80.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
