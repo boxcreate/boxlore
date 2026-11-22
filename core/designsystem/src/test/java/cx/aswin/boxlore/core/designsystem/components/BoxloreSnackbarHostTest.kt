@@ -112,8 +112,8 @@ class BoxloreSnackbarHostTest {
         val host = SnackbarHostState()
         compose.setContent {
             Window(Chrome(BoxloreTestWindows.PHONE, miniPlayer = true)) {
-                // Where the shell draws the mini player: above the floating bar.
-                val miniBottom = appBottomChromeContentPadding(NavigationStyle.Floating, isMiniPlayerVisible = false)
+                // Where the shell draws the mini player: 8dp above the floating bar.
+                val miniBottom = appBottomChromeContentPadding(NavigationStyle.Floating, isMiniPlayerVisible = false) + 8.dp
                 Box(Modifier.align(Alignment.BottomCenter).padding(bottom = miniBottom).fillMaxWidth().height(64.dp).testTag("mini_player"))
                 BoxloreSnackbarHost(host, Modifier.align(Alignment.BottomCenter))
                 LaunchedEffect(Unit) { host.showSnackbar("Removed from history", "Undo", duration = SnackbarDuration.Indefinite) }
@@ -122,8 +122,9 @@ class BoxloreSnackbarHostTest {
         compose.waitForIdle()
         val snackbar = compose.onNodeWithTag(BOXLORE_SNACKBAR_TAG).fetchSemanticsNode().boundsInRoot
         val mini = compose.onNodeWithTag("mini_player").fetchSemanticsNode().boundsInRoot
-        assertTrue("snackbar ${snackbar.bottom} above mini player ${mini.top}", snackbar.bottom <= mini.top)
-        assertEquals(412f - 32f, snackbar.width, 0.5f)
+        // The card is 12dp inside the tagged bounds, 8dp above the mini player and 16dp from each side.
+        assertEquals(mini.top - 8f, snackbar.bottom - 12f, 0.5f)
+        assertEquals(412f - 32f, snackbar.width - 24f, 0.5f)
     }
 
     @Test
@@ -137,8 +138,13 @@ class BoxloreSnackbarHostTest {
         }
         compose.waitForIdle()
         val snackbar = compose.onNodeWithTag(BOXLORE_SNACKBAR_TAG).fetchSemanticsNode().boundsInRoot
-        assertEquals(480f, snackbar.width, 0.5f)
+        assertEquals(480f, snackbar.width - 24f, 0.5f)
         assertEquals(640f, snackbar.center.x, 0.5f)
+        // A short message keeps Undo at the end of its one row.
+        val message = compose.onNodeWithText("Removed from history").fetchSemanticsNode().boundsInRoot
+        val action = compose.onNodeWithText("Undo").fetchSemanticsNode().boundsInRoot
+        assertTrue("Undo ${action.left} after the message ${message.right}", action.left >= message.right)
+        assertEquals(message.center.y, action.center.y, 2f)
     }
 
     @Test
