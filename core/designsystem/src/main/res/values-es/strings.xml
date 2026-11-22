@@ -90,4 +90,5 @@
     <string name="top_bar_feedback">Enviar comentarios</string>
     <string name="top_bar_feedback_reply">Comentarios, nueva respuesta</string>
     <string name="top_bar_settings">Ajustes</string>
+    <string name="search_field_clear">Borrar búsqueda</string>
 </resources>

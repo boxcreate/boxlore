@@ -28,7 +28,6 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -172,10 +171,10 @@ private fun NewPlaylistField(name: String, onNameChange: (String) -> Unit, onCre
     val normalized = normalizePlaylistName(name)
     val create = { if (normalized.isNotEmpty()) onCreate(normalized) }
     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        OutlinedTextField(
+        BoxloreTextField(
             value = name,
             onValueChange = { onNameChange(it.take(PLAYLIST_NAME_MAX_LENGTH)) },
-            label = { Text(stringResource(PlaylistCopy.NAME_LABEL)) },
+            label = stringResource(PlaylistCopy.NAME_LABEL),
             singleLine = true,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { create() }),

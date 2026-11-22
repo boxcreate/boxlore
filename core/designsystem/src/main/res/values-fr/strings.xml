@@ -114,4 +114,5 @@
     <string name="top_bar_feedback">Envoyer un avis</string>
     <string name="top_bar_feedback_reply">Avis, nouvelle réponse</string>
     <string name="top_bar_settings">Paramètres</string>
+    <string name="search_field_clear">Effacer la recherche</string>
 </resources>
