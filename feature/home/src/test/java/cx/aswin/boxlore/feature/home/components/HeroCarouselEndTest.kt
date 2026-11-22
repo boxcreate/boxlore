@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import kotlin.math.floor
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -62,6 +63,8 @@ class HeroCarouselEndTest {
         render()
         val windows = listOf(
             BoxloreWindowLayout(411f, 891f), // phone
+            BoxloreTestWindows.COVER_475, // Fold 8 cover: one large card and a peek
+            BoxloreTestWindows.PHONE_LAND, // sideways phone: a row of whole cards
             BoxloreWindowLayout(1300f, 800f), // tablet landscape, crashing band
             BoxloreWindowLayout(673f, 841f), // unfolded foldable, outside the band
             BoxloreWindowLayout(640f, 800f), // foldable or split window, crashing band
@@ -94,6 +97,31 @@ class HeroCarouselEndTest {
             window.value = BoxloreWindowLayout(width, 800f)
             composeRule.waitForIdle()
             assertEquals("Item at ${width}dp", 3, state.currentItem)
+            composeRule.onNodeWithTag("card_3").assertIsDisplayed()
+        }
+    }
+
+    @Test fun `the current card survives cover, tablet, gate and sideways resizes in both directions`() {
+        render()
+        window.value = BoxloreTestWindows.COVER_475
+        composeRule.waitForIdle()
+        composeRule.runOnIdle { runBlocking { state.scrollToItem(3) } }
+        composeRule.waitForIdle()
+        val steps = listOf(
+            BoxloreTestWindows.TABLET,
+            BoxloreTestWindows.COVER_475,
+            BoxloreTestWindows.W599_H900,
+            BoxloreTestWindows.W600_H900,
+            BoxloreTestWindows.W599_H900,
+            BoxloreTestWindows.PHONE,
+            BoxloreTestWindows.PHONE_LAND,
+            BoxloreTestWindows.PHONE,
+            BoxloreTestWindows.COVER_475,
+        )
+        for (layout in steps) {
+            window.value = layout
+            composeRule.waitForIdle()
+            assertEquals("Item at ${layout.widthDp}x${layout.heightDp}", 3, state.currentItem)
             composeRule.onNodeWithTag("card_3").assertIsDisplayed()
         }
     }

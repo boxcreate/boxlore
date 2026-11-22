@@ -76,16 +76,23 @@ fun HomeSkeleton(modifier: Modifier = Modifier) {
 }
 
 /**
- * Mirrors the real hero carousel: one large card and the narrow peek beside it, at the carousel's
- * own widths (see [heroSkeletonGeometry]). The large card follows the chosen hero style
+ * Mirrors the real hero carousel ([ResponsiveHeroCarousel]): on phones and wider compact windows one
+ * large card and the narrow peek beside it, at the carousel's own widths (see [heroSkeletonGeometry]);
+ * on tablets and sideways phones a row of cards. The large card follows the chosen hero style
  * ([HeroSkeletonCard]), so content settles in place instead of replacing a different shape.
  * Plain layouts only: nothing here subcomposes on a cold start.
  */
 @Composable
 fun HeroSkeleton(modifier: Modifier = Modifier) {
     val style = HeroCardStyle.sanitize(LocalHeroCardStyle.current)
-    if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
-        // Tablets show a row of hero cards; Home already swaps Marquee for Cover there (see homeHeroStyle).
+    val window = LocalBoxloreWindowLayout.current
+    if (style == HeroCardStyle.MARQUEE && !window.usesTabletLayout) {
+        // One card across the whole width, as tall as Marquee's hero.
+        Box(modifier.fillMaxWidth().height(marqueeHeroHeight()).testTag("home_hero_skeleton")) { HeroSkeletonCard(style) }
+        return
+    }
+    if (heroRowMode(window) == HeroRowMode.Row) {
+        // Tablets and sideways phones show a row of hero cards; Home already swaps Marquee for Cover on tablets (see homeHeroStyle).
         androidx.compose.foundation.lazy.LazyRow(
             modifier = modifier.fillMaxWidth().height(homeHeroHeight()).testTag("home_hero_skeleton"),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -94,11 +101,6 @@ fun HeroSkeleton(modifier: Modifier = Modifier) {
                 Box(Modifier.width(320.dp).fillMaxHeight(), propagateMinConstraints = true) { HeroSkeletonCard(style) }
             }
         }
-        return
-    }
-    if (style == HeroCardStyle.MARQUEE) {
-        // One card across the whole width, as tall as Marquee's hero.
-        Box(modifier.fillMaxWidth().height(marqueeHeroHeight()).testTag("home_hero_skeleton")) { HeroSkeletonCard(style) }
         return
     }
     Layout(
@@ -121,22 +123,14 @@ fun HeroSkeleton(modifier: Modifier = Modifier) {
 
 internal data class HeroSkeletonGeometry(val cardWidth: Int, val peekWidth: Int, val gap: Int)
 
-/**
- * The carousel aims for a 320dp card after a 16dp gap and keeps its peek between 40dp and 56dp, so
- * narrow phones shrink the card and wide phones grow it.
- */
+/** [heroCompactGeometry] in pixels: the carousel's card, gap and peek for a row [width] pixels wide. */
 internal fun heroSkeletonGeometry(width: Int, density: Float): HeroSkeletonGeometry {
     fun px(value: androidx.compose.ui.unit.Dp) = (value.value * density).roundToInt()
-    val gap = px(HeroSkeletonGap)
-    val peek = (width - gap - px(HeroSkeletonPreferredCard)).coerceIn(px(HeroSkeletonMinPeek), px(HeroSkeletonMaxPeek))
+    val gap = px(HeroGap)
+    val peek = (width - gap - px(HeroPreferredCard)).coerceIn(px(HeroMinPeek), px(HeroMaxPeek))
     val card = (width - gap - peek).coerceAtLeast(0)
     return HeroSkeletonGeometry(cardWidth = card, peekWidth = (width - card - gap).coerceAtLeast(0), gap = gap)
 }
-
-private val HeroSkeletonGap = 16.dp
-private val HeroSkeletonPreferredCard = 320.dp
-private val HeroSkeletonMinPeek = 40.dp
-private val HeroSkeletonMaxPeek = 56.dp
 
 @Composable
 fun RisingSkeleton() {

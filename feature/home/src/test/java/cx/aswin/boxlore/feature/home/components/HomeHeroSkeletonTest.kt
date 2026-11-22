@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
@@ -19,6 +18,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -40,13 +41,14 @@ class HomeHeroSkeletonTest {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Test
-    fun `skeleton card and peek match the hero carousel across phone widths and RTL`() {
+    fun `skeleton card and peek match the hero carousel across phone and Fold 8 cover widths and RTL`() {
         composeRule.setContent {
-            CompositionLocalProvider(LocalLayoutDirection provides direction.value) {
+            // Home's grid keeps 16dp each side of the hero row, so the window is 32dp wider than the row.
+            CompositionLocalProvider(LocalLayoutDirection provides direction.value, LocalBoxloreWindowLayout provides BoxloreWindowLayout(width.value + 32f, 900f)) {
                 BoxLoreTheme(dynamicColor = false) {
                     Column {
-                        HorizontalMultiBrowseCarousel(
-                            state = rememberCarouselState { 4 },
+                        ResponsiveHeroCarousel(
+                            state = rememberCarouselState { 8 },
                             preferredItemWidth = 320.dp,
                             itemSpacing = 16.dp,
                             contentPadding = PaddingValues(0.dp),
@@ -65,7 +67,8 @@ class HomeHeroSkeletonTest {
                 }
             }
         }
-        for (screen in listOf(288, 328, 348, 360, 380, 412)) {
+        // Rows 288-398dp are phones; 399-567dp are the Fold 8 cover and other compact windows up to 599dp.
+        for (screen in listOf(288, 328, 348, 360, 380, 412, 443, 453, 468, 508, 567)) {
             for (dir in LayoutDirection.entries) {
                 width.value = screen
                 direction.value = dir

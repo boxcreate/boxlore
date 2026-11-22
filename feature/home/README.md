@@ -49,7 +49,7 @@ Shared rules:
 - Every style shares ordering, playback, details and analytics callbacks. Colours follow the listener's choice (`LocalHeroCoverShade`).
 - Every Home hero style ships its own loading skeleton in `HeroSkeletonCards.kt`; `HeroSkeletonCardsTest` fails for any `HeroCardStyle` without one.
 - `homeHeroStyle` shows Cover instead of Marquee on tablets; the saved choice is unchanged. Below `ShortHeroHeight` (a hero above a tabletop fold), Halo shows as Cover.
-- Tablets use `ResponsiveHeroCarousel`, which keeps a small end padding to avoid a material3 carousel crash at certain widths (`HeroCarouselEndTest`).
+- `ResponsiveHeroCarousel` shows one large card and a narrow peek on phones and other compact windows below the tablet width, such as the Galaxy Z Fold 8 cover, and a row of whole cards on tablets and sideways phones; the row keeps a small end padding to avoid a material3 carousel crash at certain widths (`HeroCarouselEndTest`). The loading skeleton follows the same rule.
 
 ## Discovery and switchable sections
 
