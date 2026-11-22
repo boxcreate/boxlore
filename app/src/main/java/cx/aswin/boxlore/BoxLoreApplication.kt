@@ -203,7 +203,7 @@ class BoxLoreApplication :
         cx.aswin.boxlore.core.designsystem.share.ShareManager.episodeShareTargets =
             cx.aswin.boxlore.core.model.EpisodeShareTargetSource { container.episodeSharePreparer.targetFor(it) }
         NetworkModule.authenticator =
-            FirebaseAuthAuthenticator(container.authRepository)
+            FirebaseAuthAuthenticator(BuildConfig.BOXLORE_API_BASE_URL, container.authRepository)
         // Support requests carry the account's cached token, so conversations follow the account.
         NetworkModule.accountToken = {
             kotlinx.coroutines.runBlocking {

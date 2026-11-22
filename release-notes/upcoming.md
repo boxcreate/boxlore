@@ -28,8 +28,11 @@ Announcement title:
 
 - The Marquee style on Home now scrolls with the page in one go, and its cover stays clear behind the words.
 - The Daily's show page now opens under the dawn sky from its cover, with the sun peeking over the horizon, and its latest episode shows its whole picture beside the episode description.
+- In Android Auto, a show's page now lists its episodes from newest to oldest. Episodes you've started stay in their place and show the time left.
+- Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.
 
 ## Fixed
 
 - Importing an OPML file that lists a show you already follow no longer turns off that show's new-episode notifications and auto-download.
 - Importing an OPML file that lists a show twice now adds every show in the file in one go.
+- When you use boxlore on more than one device, one that was offline or signed out no longer sets your progress or likes back to an older point, and devices that showed different progress now agree.

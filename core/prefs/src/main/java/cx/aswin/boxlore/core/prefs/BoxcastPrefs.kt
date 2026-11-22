@@ -210,6 +210,7 @@ class BoxcastPrefs(context: Context) {
         const val KEY_LAST_SYNC_TIMESTAMP = "sync_last_timestamp"
         const val KEY_LAST_SYNCED_USER_ID = "sync_last_user_id"
         const val KEY_SYNC_METADATA_VERSION = "sync_metadata_version"
+        const val KEY_HISTORY_NEWER_COPY_CHECK_DONE = "sync_history_newer_copy_check_done"
         const val KEY_LISTENING_PULLED_UNTIL = "sync_listening_pulled_until"
         const val KEY_LISTENING_DATES_SENT_AFTER = "sync_listening_dates_sent_after"
         const val KEY_LISTENING_DATES_SENT = "sync_listening_dates_sent"
@@ -279,6 +280,16 @@ class BoxcastPrefs(context: Context) {
 
     fun setSyncMetadataVersion(version: Int) {
         prefs.edit().putInt(KEY_SYNC_METADATA_VERSION, version).apply()
+    }
+
+    /**
+     * Whether this installation has once pulled every cloud history row to compare it with its own, so
+     * rows where the cloud kept an older copy sent later by another device go up again.
+     */
+    fun isHistoryNewerCopyCheckDone(): Boolean = prefs.getBoolean(KEY_HISTORY_NEWER_COPY_CHECK_DONE, false)
+
+    fun setHistoryNewerCopyCheckDone(done: Boolean) {
+        prefs.edit().putBoolean(KEY_HISTORY_NEWER_COPY_CHECK_DONE, done).apply()
     }
 
     /**

@@ -190,12 +190,16 @@ internal object SyncIdentityFixtures {
 }
 
 /**
- * The sync API's history and queue rules, as the live service applies them: recipe fields are
- * kept when a push omits them, a row whose own ID is a recipe ID is refused (and the push still
- * answers ok) when the stored row names another show or catalog key, a queue push is taken only
- * when it is not older, rich removals remove every stored row of the episode (its ID, and rows of
- * the show with its recipe ID or key) and are stored only when sent, and rich removals are pulled
- * only on request.
+ * The sync API's history and queue rules, as the live service applies them: each history value
+ * wins on its own action clock (playback on the play time, the push winning a tie; the like on a
+ * later like time; the archive decision on a later absolute time), a row's `updatedAt` is the
+ * server's [now] when a value devices read changed and stays otherwise, the app's dates-only rows
+ * merge only dates and identity, recipe fields are kept when a push omits them, a row whose own ID
+ * is a recipe ID is refused (and the push still answers ok) when the stored row names another show
+ * or catalog key, a queue push is taken only when it is not older, rich removals remove every
+ * stored row of the episode (its ID, and rows of the show with its recipe ID or key) and are stored
+ * only when sent, and rich removals are pulled only on request. [seed] puts rows in the cloud as
+ * stored, with their own change times.
  */
 internal class FakeSyncServer(var now: Long = 10_000L) {
     /** 1-based numbers of the push attempts through [SyncIdentityFixtures.api] that fail (HTTP 503, nothing stored). */
@@ -224,13 +228,64 @@ internal class FakeSyncServer(var now: Long = 10_000L) {
                 refused += item.episodeId
                 continue
             }
-            if (stored == null || item.updatedAt >= stored.updatedAt) {
-                history[item.episodeId] = item.copy(recipeId = recipeId ?: stored?.recipeId, catalogKey = key ?: stored?.catalogKey)
+            val sent = item.copy(recipeId = recipeId ?: stored?.recipeId, catalogKey = key ?: stored?.catalogKey)
+            history[item.episodeId] = when {
+                stored == null -> sent.copy(updatedAt = if (item.updatedAt == DATES_ONLY_UPDATED_AT) DATES_ONLY_UPDATED_AT else now)
+                else -> merged(stored, sent)
             }
         }
         request.queue?.let(::pushQueue)
         return SyncPushResponse(status = "ok", syncedAt = now)
     }
+
+    /** Stores [rows] as the cloud holds them, change times included, without the push rules. */
+    fun seed(vararg rows: ListeningHistorySyncDto) {
+        for (row in rows) history[row.episodeId] = row
+    }
+
+    /** [sent] merged into [stored] by the action clocks. */
+    private fun merged(stored: ListeningHistorySyncDto, sent: ListeningHistorySyncDto): ListeningHistorySyncDto {
+        val kept = stored.copy(
+            recipeId = sent.recipeId,
+            catalogKey = sent.catalogKey,
+            firstPlayedAt = listOfNotNull(stored.firstPlayedAt, sent.firstPlayedAt).minOrNull(),
+            finishedAt = listOfNotNull(stored.finishedAt, sent.finishedAt).minOrNull(),
+        )
+        if (sent.updatedAt == DATES_ONLY_UPDATED_AT) return kept
+        var row = if (sent.lastPlayedAt >= stored.lastPlayedAt) kept.withPlaybackOf(sent) else kept.withDetailsFilledFrom(sent)
+        if (sent.likedAt > stored.likedAt) row = row.copy(isLiked = sent.isLiked, likedAt = sent.likedAt)
+        if (kotlin.math.abs(sent.dismissedAt) > kotlin.math.abs(stored.dismissedAt)) row = row.copy(dismissedAt = sent.dismissedAt)
+        val changed = row.readValues() != stored.readValues()
+        return row.copy(updatedAt = if (changed || stored.updatedAt == DATES_ONLY_UPDATED_AT) now else stored.updatedAt)
+    }
+
+    /** The newer play's playback values and episode details (empty text keeps the stored one). */
+    private fun ListeningHistorySyncDto.withPlaybackOf(sent: ListeningHistorySyncDto) = copy(
+        podcastId = sent.podcastId,
+        episodeTitle = sent.episodeTitle.orKept(episodeTitle),
+        episodeImageUrl = sent.episodeImageUrl ?: episodeImageUrl,
+        podcastImageUrl = sent.podcastImageUrl ?: podcastImageUrl,
+        podcastName = sent.podcastName.orKept(podcastName),
+        episodeAudioUrl = sent.episodeAudioUrl.orKept(episodeAudioUrl),
+        progressMs = sent.progressMs,
+        durationMs = sent.durationMs,
+        isCompleted = sent.isCompleted,
+        lastPlayedAt = sent.lastPlayedAt,
+    )
+
+    /** An older copy only fills in details this row lacks. */
+    private fun ListeningHistorySyncDto.withDetailsFilledFrom(sent: ListeningHistorySyncDto) = copy(
+        episodeTitle = episodeTitle.orKept(sent.episodeTitle),
+        episodeImageUrl = episodeImageUrl ?: sent.episodeImageUrl,
+        podcastImageUrl = podcastImageUrl ?: sent.podcastImageUrl,
+        podcastName = podcastName.orKept(sent.podcastName),
+        episodeAudioUrl = episodeAudioUrl.orKept(sent.episodeAudioUrl),
+    )
+
+    private fun String?.orKept(other: String?): String? = this?.takeIf { it.isNotEmpty() } ?: other
+
+    /** The values other devices read: everything but identity, listening dates and the change time. */
+    private fun ListeningHistorySyncDto.readValues() = copy(recipeId = null, catalogKey = null, firstPlayedAt = null, finishedAt = null, updatedAt = 0L)
 
     /** Every stored queue ID a rich removal names: its own, and rows of its show with its recipe ID or key. */
     private fun expanded(rich: QueueRemovalSyncDto): List<String> {
@@ -289,4 +344,8 @@ internal class FakeSyncServer(var now: Long = 10_000L) {
     }
 
     private fun isRecipeRange(id: String): Boolean = SyncEpisodeIdentityFields.recipeIdOrNull(id.toLongOrNull()) != null
+
+    private companion object {
+        const val DATES_ONLY_UPDATED_AT = ListeningSync.DATES_ONLY_UPDATED_AT
+    }
 }

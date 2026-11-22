@@ -2,13 +2,17 @@ package cx.aswin.boxlore.core.network
 
 import cx.aswin.boxlore.core.auth.AuthRepository
 import cx.aswin.boxlore.core.model.BoxLoreUser
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -93,7 +97,7 @@ class FirebaseAuthAuthenticatorTest {
     @Test
     fun `authenticates with force-refreshed token when token is stale`() {
         val fakeRepo = FakeAuthRepository(cachedToken = "stale-token", freshToken = "fresh-refreshed-token")
-        val authenticator = FirebaseAuthAuthenticator(fakeRepo)
+        val authenticator = FirebaseAuthAuthenticator(API_BASE, fakeRepo)
 
         val response = create401Response(authorizationHeader = "Bearer stale-token")
         val authenticatedRequest = authenticator.authenticate(null, response)
@@ -109,7 +113,7 @@ class FirebaseAuthAuthenticatorTest {
             cachedToken = "new-token-from-concurrent-thread",
             freshToken = "should-not-be-called",
         )
-        val authenticator = FirebaseAuthAuthenticator(fakeRepo)
+        val authenticator = FirebaseAuthAuthenticator(API_BASE, fakeRepo)
 
         // The request that failed had "stale-token", but fakeRepo already has "new-token-from-concurrent-thread"
         val response = create401Response(authorizationHeader = "Bearer stale-token")
@@ -124,7 +128,7 @@ class FirebaseAuthAuthenticatorTest {
     @Test
     fun `leaves API session refusals to the session interceptor`() {
         val fakeRepo = FakeAuthRepository(cachedToken = "stale-token", freshToken = "fresh-refreshed-token")
-        val authenticator = FirebaseAuthAuthenticator(fakeRepo)
+        val authenticator = FirebaseAuthAuthenticator(API_BASE, fakeRepo)
 
         for (code in listOf("session_expired", "session_invalid", "session_revoked", "verification_required")) {
             val response = create401Response().newBuilder()
@@ -139,7 +143,7 @@ class FirebaseAuthAuthenticatorTest {
     @Test
     fun `stops retrying when response retry count exceeds maximum`() {
         val fakeRepo = FakeAuthRepository(cachedToken = "stale-token", freshToken = "stale-token")
-        val authenticator = FirebaseAuthAuthenticator(fakeRepo)
+        val authenticator = FirebaseAuthAuthenticator(API_BASE, fakeRepo)
 
         val r1 = create401Response()
         val r2 = create401Response(priorResponse = r1)
@@ -151,13 +155,13 @@ class FirebaseAuthAuthenticatorTest {
 
     @Test
     fun `returns null if token cannot be refreshed or repository is null`() {
-        val authenticatorWithNullRepo = FirebaseAuthAuthenticator { null }
+        val authenticatorWithNullRepo = FirebaseAuthAuthenticator(API_BASE) { null }
         val response = create401Response()
 
         assertNull(authenticatorWithNullRepo.authenticate(null, response))
 
         val fakeRepo = FakeAuthRepository(cachedToken = null, freshToken = null)
-        val authenticatorWithEmptyToken = FirebaseAuthAuthenticator(fakeRepo)
+        val authenticatorWithEmptyToken = FirebaseAuthAuthenticator(API_BASE, fakeRepo)
 
         assertNull(authenticatorWithEmptyToken.authenticate(null, response))
     }
@@ -166,7 +170,7 @@ class FirebaseAuthAuthenticatorTest {
     fun `returns null safely when authRepository throws exception during refresh`() {
         val fakeRepo = FakeAuthRepository(cachedToken = "stale-token", freshToken = null)
         fakeRepo.throwOnRefresh = true
-        val authenticator = FirebaseAuthAuthenticator(fakeRepo)
+        val authenticator = FirebaseAuthAuthenticator(API_BASE, fakeRepo)
 
         val response = create401Response(authorizationHeader = "Bearer stale-token")
         val authenticatedRequest = authenticator.authenticate(null, response)
@@ -183,6 +187,7 @@ class FirebaseAuthAuthenticatorTest {
             }
         }
         val authenticator = FirebaseAuthAuthenticator(
+            apiBaseUrl = API_BASE,
             authRepositoryProvider = { fakeRepo },
             tokenTimeoutMs = 100L,
         )
@@ -191,5 +196,77 @@ class FirebaseAuthAuthenticatorTest {
         val authenticatedRequest = authenticator.authenticate(null, response)
 
         assertNull(authenticatedRequest)
+    }
+
+    @Test
+    fun `ignores a 401 from another host`() {
+        val fakeRepo = FakeAuthRepository(cachedToken = "stale-token", freshToken = "fresh-refreshed-token")
+        val authenticator = FirebaseAuthAuthenticator(API_BASE, fakeRepo)
+
+        for (url in listOf(
+            "https://sync.example.org/user/sync/push",
+            "http://api.boxlore.example/user/sync/push",
+            "https://api.boxlore.example:8443/user/sync/push",
+        )) {
+            assertNull(authenticator.authenticate(null, create401Response(url = url, authorizationHeader = null)), url)
+        }
+        assertEquals(0, fakeRepo.forceRefreshCount)
+        assertEquals(0, fakeRepo.cachedReadCount)
+    }
+
+    @Test
+    fun `answers no 401 when the API base URL is not a valid URL`() {
+        val fakeRepo = FakeAuthRepository(cachedToken = "stale-token", freshToken = "fresh-refreshed-token")
+        val authenticator = FirebaseAuthAuthenticator("not a url", fakeRepo)
+
+        assertNull(authenticator.authenticate(null, create401Response()))
+        assertEquals(0, fakeRepo.forceRefreshCount)
+        assertEquals(0, fakeRepo.cachedReadCount)
+    }
+
+    @Test
+    fun `sends the token only to the API origin over a real client`() {
+        val api = MockWebServer()
+        val other = MockWebServer()
+        api.start()
+        other.start()
+        try {
+            val fakeRepo = FakeAuthRepository(cachedToken = "stale-token", freshToken = "fresh-refreshed-token")
+            val apiBase = api.url("/").toString()
+            val client = OkHttpClient.Builder()
+                .authenticator(FirebaseAuthAuthenticator(apiBase, fakeRepo))
+                .build()
+
+            // 127.0.0.1 vs localhost on another port: same machine, a different origin.
+            other.enqueue(MockResponse().setResponseCode(401))
+            val otherHost = if (api.hostName == "localhost") "127.0.0.1" else "localhost"
+            val otherUrl = other.url("/feed").newBuilder().host(otherHost).build()
+            client.newCall(Request.Builder().url(otherUrl).build()).execute().use {
+                assertEquals(401, it.code)
+            }
+            assertEquals(1, other.requestCount)
+            assertNull(other.takeRequest(1, TimeUnit.SECONDS)?.getHeader("Authorization"))
+            assertEquals(0, fakeRepo.forceRefreshCount)
+
+            api.enqueue(MockResponse().setResponseCode(401))
+            api.enqueue(MockResponse().setResponseCode(200).setBody("ok"))
+            val apiRequest = Request.Builder()
+                .url(api.url("/user/sync/push"))
+                .header("Authorization", "Bearer stale-token")
+                .build()
+            client.newCall(apiRequest).execute().use {
+                assertEquals(200, it.code)
+            }
+            assertEquals("Bearer stale-token", api.takeRequest(1, TimeUnit.SECONDS)?.getHeader("Authorization"))
+            assertEquals("Bearer fresh-refreshed-token", api.takeRequest(1, TimeUnit.SECONDS)?.getHeader("Authorization"))
+            assertEquals(1, fakeRepo.forceRefreshCount)
+        } finally {
+            api.shutdown()
+            other.shutdown()
+        }
+    }
+
+    private companion object {
+        const val API_BASE = "https://api.boxlore.example/"
     }
 }

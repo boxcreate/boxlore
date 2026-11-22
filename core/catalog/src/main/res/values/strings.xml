@@ -41,7 +41,6 @@
     <string name="auto_explore_evening">For this evening</string>
     <string name="auto_explore_night">For tonight</string>
     <string name="auto_group_genres">Genres</string>
-    <string name="auto_group_latest">Latest episodes</string>
     <string name="auto_group_continue">Continue listening</string>
     <string name="auto_group_browse">Browse</string>
     <string name="auto_group_queue">Up next</string>
