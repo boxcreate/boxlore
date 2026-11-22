@@ -38,6 +38,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -114,11 +115,12 @@ internal fun rememberAutoBackupPage(control: AutoBackupControl?): AutoBackupPage
             if (uri != null) currentControl?.onFolderPicked?.invoke(uri)
         }
     val context = LocalContext.current
+    val resources = LocalResources.current
     val loaded = state ?: return null
     val active = control ?: return null
     val openPicker = { initial: Uri? ->
         launchFolderPicker(picker, initial) {
-            Toast.makeText(context, context.getString(R.string.settings_auto_backup_no_picker), Toast.LENGTH_LONG).show()
+            Toast.makeText(context, resources.getString(R.string.settings_auto_backup_no_picker), Toast.LENGTH_LONG).show()
         }
     }
     val chooseFolder = {

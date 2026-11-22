@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -119,7 +120,7 @@ internal fun ThemeColorControls(label: String, color: Color, hex: String, expand
 @Composable
 private fun ThemeColorSlider(role: String, labelId: Int, value: Float, range: ClosedFloatingPointRange<Float>, gradient: List<Color>, onChange: (Float) -> Unit) {
     val label = stringResource(labelId)
-    val description = stringResource(R.string.theme_editor_role_control, role, label.lowercase(java.util.Locale.getDefault()))
+    val description = stringResource(R.string.theme_editor_role_control, role, label.lowercase(LocalConfiguration.current.locales[0]))
     val valueLabel = stringResource(if (labelId == R.string.theme_editor_hue) R.string.theme_editor_degrees else R.string.theme_editor_percent, (if (labelId == R.string.theme_editor_hue) value else value * 100).roundToInt())
     Column {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {

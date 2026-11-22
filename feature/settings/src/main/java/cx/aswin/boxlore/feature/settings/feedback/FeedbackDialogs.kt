@@ -36,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
@@ -160,6 +161,7 @@ private fun LogsActionButtons(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val isActionEnabled = !isLoading
 
     Row(
@@ -171,7 +173,7 @@ private fun LogsActionButtons(
             onClick = {
                 val report = diagnosticInfo?.toMarkdownReport(logs) ?: (logs ?: "")
                 val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                cm.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.feedback_logs_clip_label), report))
+                cm.setPrimaryClip(ClipData.newPlainText(resources.getString(R.string.feedback_logs_clip_label), report))
                 Toast.makeText(context, R.string.feedback_logs_copied, Toast.LENGTH_SHORT).show()
             },
             modifier = Modifier.weight(1f),
