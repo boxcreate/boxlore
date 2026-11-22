@@ -22,7 +22,9 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import kotlin.math.floor
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -34,7 +36,8 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * The tablet hero carousel crashed in material3's keyline math when it reached the end of the row
  * at widths that leave almost a whole card after the last full one (616–672dp, 952–1008dp,
- * 1288–1344dp for 320dp cards and 16dp gaps).
+ * 1288–1344dp for 320dp cards and 16dp gaps). In the first band, stable material3 also left the last
+ * card past the end edge, so those windows fit two whole cards instead.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @RunWith(RobolectricTestRunner::class)
@@ -72,6 +75,40 @@ class HeroCarouselEndTest {
         }
     }
 
+    @Test fun `windows with almost a second card fit two whole cards`() {
+        render()
+        for (width in listOf(606f, 616f, 624f, 640f, 656f, 672f)) {
+            window.value = BoxloreWindowLayout(width, 800f)
+            scrollToEndAndBack(width)
+        }
+    }
+
+    @Test fun `the row keeps its position when a resize changes the card width`() {
+        render()
+        window.value = BoxloreWindowLayout(640f, 800f) // two whole cards fill the row
+        composeRule.waitForIdle()
+        composeRule.runOnIdle { runBlocking { state.scrollToItem(3) } }
+        composeRule.waitForIdle()
+        // 640dp fits two narrower cards; 680dp keeps the 320dp cards. Cross that boundary both ways.
+        for (width in listOf(680f, 640f, 673f, 640f)) {
+            window.value = BoxloreWindowLayout(width, 800f)
+            composeRule.waitForIdle()
+            assertEquals("Item at ${width}dp", 3, state.currentItem)
+            composeRule.onNodeWithTag("card_3").assertIsDisplayed()
+        }
+    }
+
+    @Test fun `card width fits two cards only where one would leave almost another`() {
+        fun width(available: Float) = heroTabletItemWidth(available.dp, CARD_WIDTH.dp, SPACING.dp).value
+        assertEquals(CARD_WIDTH, width(500f), 0.01f) // one card and a short peek
+        assertEquals(CARD_WIDTH, width(600f), 0.01f) // the peek is still well short of a card
+        assertEquals(615f / 2 - SPACING, width(615f), 0.01f) // almost a second card: two fill the row
+        assertEquals(671f / 2 - SPACING, width(671f), 0.01f)
+        assertEquals(CARD_WIDTH, width(679f), 0.01f) // two whole cards already fit
+        assertEquals(CARD_WIDTH, width(1015f), 0.01f) // three or more keep the preferred width
+        assertEquals(CARD_WIDTH, width(1315f), 0.01f)
+    }
+
     @Test fun `right-to-left tablet carousel reaches the end`() {
         direction.value = LayoutDirection.Rtl
         render()
@@ -89,8 +126,8 @@ class HeroCarouselEndTest {
                 Box(Modifier.width(layout.widthDp.dp).height(400.dp)) {
                     ResponsiveHeroCarousel(
                         state = state,
-                        preferredItemWidth = 320.dp,
-                        itemSpacing = 16.dp,
+                        preferredItemWidth = CARD_WIDTH.dp,
+                        itemSpacing = SPACING.dp,
                         contentPadding = PaddingValues(0.dp),
                         modifier = Modifier.testTag("hero").width(layout.widthDp.dp).height(400.dp),
                     ) { i -> Box(Modifier.fillMaxSize().testTag("card_$i")) }
@@ -109,8 +146,12 @@ class HeroCarouselEndTest {
         val last = composeRule.onNodeWithTag("card_${CARDS - 1}").assertIsDisplayed().fetchSemanticsNode()
         val left = last.positionInRoot.x
         val gap = if (rtl) left - hero.left else hero.right - (left + last.size.width)
-        // The last card still meets the end edge: the tablet's 1dp end padding is not a visible gap.
-        assertTrue("End gap at ${width}dp: $gap", gap in -0.5f..1.5f)
+        // The last card is never cut off. With one whole card it meets the end edge (the 1dp end padding
+        // is not a visible gap); with two or more, material3 can stop it up to one card spacing short of
+        // the edge at the end of the row (a known material3 bug, see ResponsiveHeroCarousel).
+        val wholeCards = floor((width - 1f) / (CARD_WIDTH + SPACING)).toInt()
+        val allowedGap = if (wholeCards >= 2) SPACING + 1.5f else 1.5f
+        assertTrue("End gap at ${width}dp: $gap", gap in -0.5f..allowedGap)
         composeRule.onNodeWithTag("hero").performTouchInput { if (rtl) swipeLeft() else swipeRight() }
         composeRule.runOnIdle { runBlocking { state.scrollToItem(0) } }
         composeRule.waitForIdle()
@@ -118,5 +159,7 @@ class HeroCarouselEndTest {
 
     private companion object {
         const val CARDS = 8
+        const val CARD_WIDTH = 320f
+        const val SPACING = 16f
     }
 }

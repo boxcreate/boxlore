@@ -23,6 +23,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -36,7 +39,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import cx.aswin.boxlore.core.designsystem.text.asString
+import cx.aswin.boxlore.core.model.BoxLoreUser
 import cx.aswin.boxlore.feature.settings.R
+import kotlinx.coroutines.flow.MutableStateFlow
 
 /** What the email in the listener's inbox does: sign them in, or confirm a new password account. */
 internal enum class AccountEmailCheck { Link, Confirm }
@@ -50,7 +55,9 @@ internal enum class AccountEmailCheck { Link, Confirm }
 @Composable
 internal fun ColumnScope.AccountCheckEmailContent(kind: AccountEmailCheck, state: AccountAuthState) {
     val haptics = LocalHapticFeedback.current
-    val email = state.email.ifBlank { state.authRepository?.currentUser?.value?.email.orEmpty() }
+    val noUser = remember { MutableStateFlow<BoxLoreUser?>(null) }
+    val user by (state.authRepository?.currentUser ?: noUser).collectAsState()
+    val email = state.email.ifBlank { user?.email.orEmpty() }
     if (kind == AccountEmailCheck.Confirm) {
         LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
             state.checkVerificationStatus(silentOnFailure = true, onSuccess = { haptics.performHapticFeedback(HapticFeedbackType.LongPress) })

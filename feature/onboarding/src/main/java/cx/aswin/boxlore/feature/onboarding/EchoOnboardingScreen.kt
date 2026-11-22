@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -44,6 +43,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 
@@ -284,7 +284,7 @@ private class EchoFooterMemory {
 @Composable
 private fun EchoFinishConfirmation(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     TrackScreenView("onboarding_echo_finish_confirmation")
-    AlertDialog(
+    BoxloreAlertDialog(
         onDismissRequest = onDismiss,
         modifier = Modifier.testTag("echo_finish_confirmation"),
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,

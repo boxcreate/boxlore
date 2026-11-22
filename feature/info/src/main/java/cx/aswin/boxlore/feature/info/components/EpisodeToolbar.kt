@@ -43,11 +43,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalToggleButton
+import androidx.compose.material3.FilledTonalToggleButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.ToggleButtonDefaults
-import androidx.compose.material3.TonalToggleButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -435,12 +435,12 @@ private fun SubscriptionToggle(
     val offContent = style?.toggleContent ?: scheme.onSurfaceVariant
     val on = if (blocked) scheme.errorContainer else style?.toggleCheckedContainer ?: scheme.primaryContainer
     val onContent = if (blocked) scheme.onErrorContainer else style?.toggleCheckedContent ?: scheme.onPrimaryContainer
-    TonalToggleButton(
+    FilledTonalToggleButton(
         checked = checked,
         onCheckedChange = { onClick() },
         enabled = enabled,
         shapes = shapes,
-        colors = ToggleButtonDefaults.tonalToggleButtonColors(
+        colors = FilledTonalToggleButtonDefaults.colors(
             containerColor = off,
             contentColor = offContent,
             checkedContainerColor = on,

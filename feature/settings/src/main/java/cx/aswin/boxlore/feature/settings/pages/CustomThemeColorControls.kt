@@ -24,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,6 +32,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,6 +43,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -117,17 +120,18 @@ internal fun ThemeColorControls(label: String, color: Color, hex: String, expand
 @Composable
 private fun ThemeColorSlider(role: String, labelId: Int, value: Float, range: ClosedFloatingPointRange<Float>, gradient: List<Color>, onChange: (Float) -> Unit) {
     val label = stringResource(labelId)
-    val description = stringResource(R.string.theme_editor_role_control, role, label.lowercase(java.util.Locale.getDefault()))
+    val description = stringResource(R.string.theme_editor_role_control, role, label.lowercase(LocalConfiguration.current.locales[0]))
     val valueLabel = stringResource(if (labelId == R.string.theme_editor_hue) R.string.theme_editor_degrees else R.string.theme_editor_percent, (if (labelId == R.string.theme_editor_hue) value else value * 100).roundToInt())
     Column {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text(label, style = MaterialTheme.typography.labelLarge)
             Text(valueLabel, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        val sliderState = remember(range) { SliderState(value, trackRange = range) }
+        sliderState.value = value
         Slider(
-            value = value,
+            state = sliderState,
             onValueChange = onChange,
-            valueRange = range,
             modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 48.dp).semantics {
                 contentDescription = description
                 stateDescription = valueLabel

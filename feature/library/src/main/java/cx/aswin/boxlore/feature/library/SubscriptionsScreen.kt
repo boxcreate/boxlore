@@ -70,6 +70,7 @@ import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalSystemNavigationInset
+import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
 import cx.aswin.boxlore.core.designsystem.components.discoveryTabSwitcherHeight
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
@@ -760,7 +761,7 @@ fun SubscriptionsScreen(
             val folderToDelete = confirmDeleteFolder
             if (folderToDelete != null) {
                 TrackScreenView("delete_folder_confirmation")
-                androidx.compose.material3.AlertDialog(
+                BoxloreAlertDialog(
                     onDismissRequest = { confirmDeleteFolder = null },
                     title = { Text(stringResource(R.string.library_folder_delete_title)) },
                     text = {
@@ -792,7 +793,7 @@ fun SubscriptionsScreen(
             val podcastToUnsubscribe = confirmUnsubscribePodcast
             if (podcastToUnsubscribe != null) {
                 TrackScreenView("unsubscribe_confirmation")
-                androidx.compose.material3.AlertDialog(
+                BoxloreAlertDialog(
                     onDismissRequest = { confirmUnsubscribePodcast = null },
                     title = { Text(stringResource(R.string.library_unsubscribe_title)) },
                     text = {

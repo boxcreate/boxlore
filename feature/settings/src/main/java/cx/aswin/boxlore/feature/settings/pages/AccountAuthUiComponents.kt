@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.LinkAnnotation
@@ -168,6 +169,7 @@ internal fun PrivacyPolicyNotice(
 ) {
     val uriHandler = LocalUriHandler.current
     val context = androidx.compose.ui.platform.LocalContext.current
+    val resources = LocalResources.current
 
     // One whole sentence, so translations can place the link anywhere in it.
     val linkText = stringResource(R.string.account_privacy_policy)
@@ -200,7 +202,7 @@ internal fun PrivacyPolicyNotice(
                 }.getOrDefault(false)
 
                 if (!fallbackOpened) {
-                    showAccountToast(context, context.getString(R.string.account_error_no_browser))
+                    showAccountToast(context, resources.getString(R.string.account_error_no_browser))
                 }
             }
         }

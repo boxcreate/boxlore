@@ -3,7 +3,6 @@ package cx.aswin.boxlore.core.designsystem.components
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DeleteOutline
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -46,7 +45,7 @@ fun RemoveDownloadConfirmationDialog(
     modifier: Modifier = Modifier,
     fromWatch: Boolean = false,
 ) {
-    AlertDialog(
+    BoxloreAlertDialog(
         onDismissRequest = onDismiss,
         icon = {
             Icon(

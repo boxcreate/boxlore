@@ -31,4 +31,5 @@ Announcement title:
 
 ## Fixed
 
+- Importing an OPML file that lists a show you already follow no longer turns off that show's new-episode notifications and auto-download.
 - Shows you unfollow on another device or on your watch are now cleared from this phone's saved shows, just as when you unfollow them here.

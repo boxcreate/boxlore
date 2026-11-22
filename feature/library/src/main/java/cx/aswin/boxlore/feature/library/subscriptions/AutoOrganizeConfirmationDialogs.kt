@@ -3,7 +3,6 @@ package cx.aswin.boxlore.feature.library.subscriptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -13,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.library.R
@@ -24,7 +24,7 @@ internal fun AutoOrganizeDisableDialog(
     onCancel: () -> Unit,
 ) {
     TrackScreenView("disable_auto_organize_confirmation")
-    AlertDialog(
+    BoxloreAlertDialog(
         onDismissRequest = onCancel,
         title = {
             Text(

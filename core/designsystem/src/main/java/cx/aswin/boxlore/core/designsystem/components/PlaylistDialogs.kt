@@ -4,7 +4,6 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -68,7 +67,7 @@ fun PlaylistNameDialog(
 ) {
     val normalized = normalizePlaylistName(name)
     val confirm = { if (normalized.isNotEmpty()) onConfirm(normalized) }
-    AlertDialog(
+    BoxloreAlertDialog(
         onDismissRequest = onDismissRequest,
         title = { Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = GoogleSansWeight.bold) },
         text = {
@@ -94,7 +93,7 @@ fun PlaylistNameDialog(
 /** Asks before deleting the playlist named [name]. */
 @Composable
 fun DeletePlaylistDialog(name: String, onConfirm: () -> Unit, onDismissRequest: () -> Unit) {
-    AlertDialog(
+    BoxloreAlertDialog(
         onDismissRequest = onDismissRequest,
         title = { Text(stringResource(PlaylistCopy.DELETE_TITLE), style = MaterialTheme.typography.headlineSmall, fontWeight = GoogleSansWeight.bold) },
         text = { Text(PlaylistCopy.deleteBody(name).asString(), style = MaterialTheme.typography.bodyMedium) },
