@@ -123,6 +123,9 @@ class SubscriptionSyncCatalogTtlTest {
         assertTrue(database.podcastDao().getPodcast(SHOW)!!.isSubscribed)
         assertTrue(feed(SHOW).followed)
         assertNull("the saved follow keeps no countdown", feed(SHOW).ttlExpiresAt)
+
+        catalog.sweepExpired(Long.MAX_VALUE)
+        assertTrue("the expired-copy sweep keeps the followed show's copy", dao().getFeed(SHOW) != null)
     }
 
     @Test
