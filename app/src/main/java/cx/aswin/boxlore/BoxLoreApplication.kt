@@ -310,7 +310,13 @@ class BoxLoreApplication :
         }
         applicationScope.launch {
             // Only a phone that boxlore on a watch has linked with starts the link; others skip it.
-            startupWorkGate.runWhenReady { container.phoneWearLink.start() }
+            startupWorkGate.runWhenReady {
+                // An earlier day of watch listening goes out even when the watch stays quiet today.
+                cx.aswin.boxlore.core.analytics.WatchListeningSummary.sendFinished(
+                    cx.aswin.boxlore.core.analytics.WatchListeningSummary.store(this@BoxLoreApplication),
+                )
+                container.phoneWearLink.start()
+            }
         }
         applicationScope.launch {
             startupWorkGate.runWhenReady {

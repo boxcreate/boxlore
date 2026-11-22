@@ -9,7 +9,7 @@ import java.time.Instant
 
 /**
  * What [AnalyticsHelper] keeps on this install: the first-launch mark, the event-levels switch
- * with its sample bucket, and the feature-adoption values last sent. Split out of the façade to keep that file within the source-size limit;
+ * with its sample bucket, the feature-adoption values last sent and the watch's day being counted. Split out of the façade to keep that file within the source-size limit;
  * the façade's signatures are unchanged.
  */
 internal object AnalyticsLocalState {
@@ -18,6 +18,8 @@ internal object AnalyticsLocalState {
     private const val KEY_SAMPLE_BUCKET = "analytics_sample_bucket"
     private const val KEY_POLICY = "analytics_policy"
     private const val KEY_FEATURE_ADOPTION = "feature_adoption_sent"
+    private const val KEY_WATCH_LISTENING_DAY = "watch_listening_day"
+    private const val KEY_WATCH_LISTENING_SENT = "watch_listening_sent_day"
 
     /** Where [startPolicy] keeps the bucket and switch, and the app version they belong to. */
     private class PolicyHome(val store: AnalyticsPolicy.Store, val appVersion: String)
@@ -32,6 +34,8 @@ internal object AnalyticsLocalState {
     fun policyStore(context: Context): AnalyticsPolicy.Store = PrefsPolicyStore(prefs(context))
 
     fun featureAdoptionStore(context: Context): FeatureAdoptionAnalytics.Store = PrefsFeatureAdoptionStore(prefs(context))
+
+    fun watchListeningStore(context: Context): WatchListeningSummary.Store = PrefsWatchListeningStore(prefs(context))
 
     fun startPolicy(store: AnalyticsPolicy.Store, appVersion: String) {
         policyHome = PolicyHome(store, appVersion)
@@ -85,6 +89,20 @@ internal object AnalyticsLocalState {
         override fun lastSent(): String? = prefs.getString(KEY_FEATURE_ADOPTION, null)
 
         override fun saveSent(encoded: String) = prefs.edit().putString(KEY_FEATURE_ADOPTION, encoded).apply()
+    }
+
+    private class PrefsWatchListeningStore(private val prefs: SharedPreferences) : WatchListeningSummary.Store {
+        override fun load(): WatchListeningSummary.Day? = WatchListeningSummary.decode(prefs.getString(KEY_WATCH_LISTENING_DAY, null))
+
+        override fun save(day: WatchListeningSummary.Day?) {
+            val edit = prefs.edit()
+            if (day == null) edit.remove(KEY_WATCH_LISTENING_DAY) else edit.putString(KEY_WATCH_LISTENING_DAY, WatchListeningSummary.encode(day))
+            edit.apply()
+        }
+
+        override fun lastSent(): Long? = prefs.getLong(KEY_WATCH_LISTENING_SENT, Long.MIN_VALUE).takeIf { it != Long.MIN_VALUE }
+
+        override fun saveLastSent(epochDay: Long) = prefs.edit().putLong(KEY_WATCH_LISTENING_SENT, epochDay).apply()
     }
 
     private fun prefs(context: Context) =

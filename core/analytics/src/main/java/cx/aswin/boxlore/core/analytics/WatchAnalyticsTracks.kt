@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.core.analytics
 
+import java.time.LocalDate
+
 /**
  * Wear OS usage, as the phone sees it through the watch link. The watch app sends nothing itself,
  * so listening on a watch that never meets this phone is not counted.
@@ -24,7 +26,15 @@ object WatchAnalyticsTracks {
     fun trackWatchPlaybackMoved(toWatch: Boolean) =
         AnalyticsEmit.event("watch_playback_moved", mapOf("direction" to if (toWatch) "to_watch" else "to_phone"))
 
-    /** Listening and follows done on the watch reached the phone's library. */
-    fun trackWatchChangesMerged(episodes: Int, follows: Int) =
-        AnalyticsEmit.event("watch_changes_merged", mapOf("episode_count" to episodes, "follow_change_count" to follows))
+    /** One day of listening and follows done on the watch that reached the phone's library, added up by [WatchListeningSummary]. */
+    fun trackWatchChangesMerged(day: WatchListeningSummary.Day) =
+        AnalyticsEmit.event(
+            "watch_changes_merged",
+            mapOf(
+                "day" to LocalDate.ofEpochDay(day.epochDay).toString(),
+                "merge_count" to day.merges,
+                "episode_count" to day.episodes,
+                "follow_change_count" to day.follows,
+            ),
+        )
 }

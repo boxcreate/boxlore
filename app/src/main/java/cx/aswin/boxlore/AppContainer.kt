@@ -824,7 +824,7 @@ class AppContainer(
                     },
                 ),
             // The watch app sends no usage events; the phone counts what passes through the link.
-            events = cx.aswin.boxlore.wearlink.PhoneLinkAnalytics(),
+            events = cx.aswin.boxlore.wearlink.PhoneLinkAnalytics(cx.aswin.boxlore.core.analytics.WatchListeningSummary.store(appContext)),
         )
     }
 
