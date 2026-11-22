@@ -20,7 +20,6 @@ import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.SelectAll
 import androidx.compose.material.icons.rounded.WifiOff
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -53,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
@@ -392,7 +392,7 @@ fun DownloadedEpisodesScreen(
             }
 
             if (deleteConfirmSelectedDialog) {
-                AlertDialog(
+                BoxloreAlertDialog(
                     onDismissRequest = { deleteConfirmSelectedDialog = false },
                     title = { Text(stringResource(R.string.library_downloads_delete_title)) },
                     text = {

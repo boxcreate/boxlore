@@ -217,6 +217,50 @@ class ArchitectureGuardTest {
     }
 
     @Test
+    fun `phone alert dialogs go through BoxloreAlertDialog for fold-safe hosting`() {
+        val wrapper = "core/designsystem/src/main/java/cx/aswin/boxlore/core/designsystem/components/BoxloreAlertDialog.kt"
+        val violations =
+            listOf("app", "core", "feature")
+                .map { File(projectRoot, it) }
+                .flatMap { root -> root.walkTopDown().filter { it.isFile && it.extension == "kt" && "/src/main/" in it.path && "/build/" !in it.path }.toList() }
+                .filter { it.relativeTo(projectRoot).path != wrapper }
+                .flatMap { file ->
+                    file.readLines().mapIndexedNotNull { index, line ->
+                        if (usesRawMaterialDialog(line)) "${file.relativeTo(projectRoot)}:${index + 1}: ${line.trim()}" else null
+                    }
+                }
+        assertTrue(
+            violations.isEmpty(),
+            "Use BoxloreAlertDialog so folded tablets keep the dialog off the hinge:\n" + violations.joinToString("\n"),
+        )
+    }
+
+    @Test
+    fun `raw dialog detector catches imports, aliases and qualified calls`() {
+        listOf(
+            "import androidx.compose.material3.AlertDialog",
+            "import androidx.compose.material3.BasicAlertDialog",
+            "import androidx.compose.material3.AlertDialog as RawAlertDialog",
+            "import androidx.compose.material3.BasicAlertDialog as Plain",
+            "    androidx.compose.material3.AlertDialog(",
+            "        androidx.compose.material3.BasicAlertDialog(onDismissRequest = {}) {",
+        ).forEach { assertTrue(usesRawMaterialDialog(it), it) }
+        listOf(
+            "import androidx.compose.material3.AlertDialogDefaults",
+            "import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog",
+            "    BoxloreAlertDialog(",
+            "    containerColor = AlertDialogDefaults.containerColor,",
+        ).forEach { assertTrue(!usesRawMaterialDialog(it), it) }
+    }
+
+    /** Material's own alert dialogs, imported (also under another name) or called by their full name. */
+    private fun usesRawMaterialDialog(line: String): Boolean = RAW_DIALOG.containsMatchIn(line.trim())
+
+    private companion object {
+        val RAW_DIALOG = Regex("""^import androidx\.compose\.material3\.(?:Basic)?AlertDialog(?:\s+as\s+\w+)?$|androidx\.compose\.material3\.(?:Basic)?AlertDialog\(""")
+    }
+
+    @Test
     fun `included app core and feature modules have README md`() {
         val settings = File(projectRoot, "settings.gradle.kts").readText()
         val includes =

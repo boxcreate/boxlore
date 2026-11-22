@@ -121,7 +121,16 @@ fun Modifier.boxloreCombinedClickable(
         null
     }
     if (nativeInteraction == null) {
-        combinedClickable(enabled, onClickLabel, options.role, onLongClickLabel, onLongClick, options.onDoubleClick, options.hapticFeedbackEnabled, onClick)
+        combinedClickable(
+            enabled = enabled,
+            onClickLabel = onClickLabel,
+            role = options.role,
+            onLongClickLabel = onLongClickLabel,
+            onLongClick = onLongClick,
+            onDoubleClick = options.onDoubleClick,
+            hapticFeedbackEnabled = options.hapticFeedbackEnabled,
+            onClick = onClick,
+        )
     } else {
         combinedClickable(
             nativeInteraction.interactionSource, nativeInteraction.indication, enabled, onClickLabel, options.role,

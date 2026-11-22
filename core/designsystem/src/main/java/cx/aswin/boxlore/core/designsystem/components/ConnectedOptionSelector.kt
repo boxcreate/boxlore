@@ -11,7 +11,6 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
-import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -35,7 +34,7 @@ fun <T> ConnectedOptionSelector(
     modifier: Modifier = Modifier,
     isSelected: (option: T, selected: T) -> Boolean = { a, b -> a == b },
     labelStyle: TextStyle? = null,
-    contentPadding: PaddingValues = ToggleButtonDefaults.ContentPadding,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
 ) {
     require(options.isNotEmpty()) { "ConnectedOptionSelector requires at least one option" }
     val roundedPressShape = RoundedCornerShape(12.dp)

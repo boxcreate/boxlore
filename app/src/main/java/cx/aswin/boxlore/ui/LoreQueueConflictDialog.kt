@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Warning
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -22,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -52,7 +52,7 @@ internal fun loreQueuePodcast(episode: Episode, fallback: LoreShowFallback): Pod
 fun LoreQueueConflictDialog(pendingLoreEpisode: Episode, onDismiss: () -> Unit, onConfirmStart: suspend (Episode) -> Unit,) {
     TrackScreenView("lore_queue_conflict")
     val scope = rememberCoroutineScope()
-    AlertDialog(
+    BoxloreAlertDialog(
         onDismissRequest = {
             AnalyticsHelper.trackLoreQueueConflictResult(pendingLoreEpisode.id, "cancelled")
             onDismiss()

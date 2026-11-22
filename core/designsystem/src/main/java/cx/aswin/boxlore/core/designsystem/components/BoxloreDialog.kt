@@ -52,7 +52,25 @@ fun BoxloreDialog(
     panelTag: String = "boxlore_dialog_panel",
     content: @Composable () -> Unit,
 ) {
-    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
+    BoxloreDialogHost(onDismissRequest, properties, LocalBoxloreWindowLayout.current.usesTabletLayout, maxWidth, scrimColor, panelTag, content)
+}
+
+/**
+ * One dialog window for both presentations: native hosting, or, when [tablet], an inset-aware
+ * bounded frame in the fold-safe viewport. The content moves between them inside the same window,
+ * so its state survives the switch.
+ */
+@Composable
+@Suppress("LongParameterList") // BoxloreDialog's parameters plus the presentation choice.
+internal fun BoxloreDialogHost(
+    onDismissRequest: () -> Unit,
+    properties: DialogProperties,
+    tablet: Boolean,
+    maxWidth: Dp,
+    scrimColor: Color,
+    panelTag: String,
+    content: @Composable () -> Unit,
+) {
     val latestContent = rememberUpdatedState(content)
     // Moving the same content preserves owner drafts and scroll state across layout changes.
     val retainedContent = remember { movableContentOf { latestContent.value() } }

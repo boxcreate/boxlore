@@ -8,7 +8,6 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.core.os.ConfigurationCompat
 import cx.aswin.boxlore.core.model.text.LocaleFormats
 import cx.aswin.boxlore.feature.history.R
 import java.time.LocalDate
@@ -94,7 +93,7 @@ object TimelineTime {
 
 @Composable
 @ReadOnlyComposable
-internal fun currentLocale(): Locale = ConfigurationCompat.getLocales(LocalConfiguration.current)[0] ?: Locale.getDefault()
+internal fun currentLocale(): Locale = LocalConfiguration.current.locales.let { if (it.isEmpty) Locale.ROOT else it[0] }
 
 /** A length of listening: "2 h 05 min", "23 min" or "Under a minute". */
 @Composable

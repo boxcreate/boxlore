@@ -62,6 +62,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -147,10 +148,11 @@ fun PlaylistDetailScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val resources = LocalResources.current
     fun showUndo(message: UiText, onUndo: () -> Unit) {
         scope.launch {
             snackbarHostState.currentSnackbarData?.dismiss()
-            val undo = context.getString(R.string.library_undo)
+            val undo = resources.getString(R.string.library_undo)
             if (snackbarHostState.showSnackbar(message.resolve(context), undo, duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed) onUndo()
         }
     }

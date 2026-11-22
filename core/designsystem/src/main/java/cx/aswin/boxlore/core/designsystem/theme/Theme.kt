@@ -134,7 +134,6 @@ fun resolveFixedThemeColorScheme(themeBrand: String, darkTheme: Boolean, surface
     }
 }
 
-@OptIn(androidx.compose.material3.ExperimentalMaterial3ComponentOverrideApi::class)
 @Composable
 fun BoxLoreTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -171,7 +170,6 @@ fun BoxLoreTheme(
     }
 
     CompositionLocalProvider(
-        androidx.compose.material3.LocalBasicAlertDialogOverride provides cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialogOverride,
         LocalSurfaceStyle provides surfaceStyle,
         LocalEffectiveDarkTheme provides effectiveDarkTheme,
         LocalFontRoundness provides fontRoundness,

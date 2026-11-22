@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.VisibilityOff
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +31,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
 import kotlinx.coroutines.launch
 
 /** What the show page's menu and list need from Hide show everywhere ([rememberPodcastInfoHideShow]). */
@@ -98,7 +98,7 @@ private fun HideShowEverywhereDialog(
     onConfirm: () -> Unit,
 ) {
     TrackScreenView("podcast_hide_show_confirmation")
-    AlertDialog(
+    BoxloreAlertDialog(
         onDismissRequest = onDismissRequest,
         icon = { Icon(Icons.Rounded.VisibilityOff, contentDescription = null) },
         title = { Text(stringResource(R.string.podcast_info_hide_title)) },

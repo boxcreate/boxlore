@@ -53,6 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.lerp
@@ -134,6 +135,7 @@ fun PlaylistsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val resources = LocalResources.current
     fun say(message: String, actionLabel: String? = null, onAction: () -> Unit = {}) {
         scope.launch {
             snackbarHostState.currentSnackbarData?.dismiss()
@@ -146,9 +148,9 @@ fun PlaylistsScreen(
             override fun play(playlistId: String) = viewModel.play(
                 target = playlistId,
                 onReplaced = { previous ->
-                    say(PlaylistDetailCopy.UP_NEXT_REPLACED.resolve(context), context.getString(R.string.library_undo)) { viewModel.undoPlay(previous) }
+                    say(PlaylistDetailCopy.UP_NEXT_REPLACED.resolve(context), resources.getString(R.string.library_undo)) { viewModel.undoPlay(previous) }
                 },
-                onNothingToPlay = { say(context.getString(R.string.library_playlist_nothing_to_play)) },
+                onNothingToPlay = { say(resources.getString(R.string.library_playlist_nothing_to_play)) },
             )
             override fun create(request: PlaylistCreateRequest) =
                 viewModel.create(request.name, request.podcastIds, request.mix, request.perShowLimit, request.iconKey, request.origin) { onOpenPlaylist(it.id) }
