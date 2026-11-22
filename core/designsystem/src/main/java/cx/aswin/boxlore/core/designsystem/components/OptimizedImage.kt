@@ -168,12 +168,13 @@ private data class ArtworkLayoutSizing(val width: Int, val modifier: Modifier, v
 
 @Composable
 private fun artworkLayoutSizing(proxyWidth: Int, modifier: Modifier, adaptToLayout: Boolean): ArtworkLayoutSizing {
-    val tablet = adaptToLayout && LocalBoxloreWindowLayout.current.usesTabletLayout
+    val window = LocalBoxloreWindowLayout.current
+    val sizesToLayout = adaptToLayout && artworkSizesToLayout(window)
     // Kept across phone/tablet changes so returning to a tablet layout never waits for another resize.
     var measuredPixels by remember { mutableIntStateOf(0) }
     var hasRoom by remember { mutableStateOf(false) }
-    val width = if (tablet) layoutImageTargetPixels(proxyWidth, measuredPixels) else imageTargetPixels(proxyWidth)
-    val sizedModifier = if (tablet) {
+    val width = if (sizesToLayout) artworkRequestPixels(window, proxyWidth, measuredPixels) else imageTargetPixels(proxyWidth)
+    val sizedModifier = if (sizesToLayout) {
         modifier.layout { measurable, constraints ->
             val placeable = measurable.measure(constraints)
             measuredPixels = maxOf(measuredPixels, placeable.width, placeable.height)
@@ -184,5 +185,5 @@ private fun artworkLayoutSizing(proxyWidth: Int, modifier: Modifier, adaptToLayo
     } else {
         modifier
     }
-    return ArtworkLayoutSizing(width, sizedModifier, !tablet || measuredPixels > 1 || hasRoom)
+    return ArtworkLayoutSizing(width, sizedModifier, !sizesToLayout || measuredPixels > 1 || hasRoom)
 }

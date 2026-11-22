@@ -38,7 +38,7 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 - `BoxloreWindowLayout`, `LocalBoxloreWindowLayout`: the app-supplied window and fold model; previews default to phones.
 - `boxlorePaneSpec`, `LocalBoxlorePaneBounds`, `dockedPlayerCoversPane`: shell-supplied panes, never inferred from the window; half-open folds use the whole window until a pane opens.
 - `rememberBoxloreFoldSafePopupPositionProvider`, `BoxloreTabletopSplit`, `boxloreIsShortPane`, `BoxloreSafeInsets.kt`: fold-safe popups, tabletop split, short-pane check, pane-relative insets.
-- `BoxloreCardSpec`, `boxlorePosterColumns`: tablet card families and poster packing; phone layouts are unchanged.
+- `BoxloreCardSpec`, `boxlorePosterColumns`, `Modifier.boxloreReadingColumn`: card families (`Grid` bounds whole grid screens on tablets), poster packing by pane width, and a readable column cap that also applies on phones. Portrait phones and the fold cover keep their columns; posters in short compact windows keep tablet poster bounds.
 - Gates and state retention: see [adaptive UI and state](../../ARCHITECTURE.md#adaptive-ui-and-state).
 
 ### Shared components

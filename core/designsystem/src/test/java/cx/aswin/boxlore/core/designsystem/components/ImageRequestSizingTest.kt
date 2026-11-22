@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.designsystem.components
 
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -28,6 +29,16 @@ class ImageRequestSizingTest {
         assertEquals(800, layoutImageTargetPixels(400, 701))
         assertEquals(1024, layoutImageTargetPixels(800, 850))
         assertEquals(2048, layoutImageTargetPixels(400, Int.MAX_VALUE))
+    }
+
+    @Test
+    fun `sideways phones load artwork at its drawn size while portrait phones keep the fixed request`() {
+        // A 433dp poster at 2.625x density is 1137px.
+        val drawn = (433 * 2.625f).toInt()
+        assertEquals(1536, artworkRequestPixels(BoxloreWindowLayout(915f, 412f), 400, drawn))
+        assertEquals(400, artworkRequestPixels(BoxloreWindowLayout(412f, 915f), 400, drawn))
+        assertEquals(400, artworkRequestPixels(BoxloreWindowLayout(430f, 932f), 400, drawn))
+        assertEquals(1536, artworkRequestPixels(BoxloreWindowLayout(1_280f, 800f), 400, drawn))
     }
 
     @Test

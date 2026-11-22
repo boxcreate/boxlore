@@ -47,7 +47,7 @@ class AdaptiveCardBoundsTest {
             BoxloreCardFamily.entries.forEach { value ->
                 compose.runOnIdle { family.value = value }
                 val surface = compose.onNodeWithTag("painted_surface").fetchSemanticsNode().boundsInRoot
-                assertEquals(boxloreCardSpec(window.value, value).maximumWidthDp, surface.width, 0.01f)
+                assertEquals(minOf(boxloreCardSpec(window.value, value).maximumWidthDp, 900f), surface.width, 0.01f)
                 assertEquals(450f, surface.center.x, 0.01f)
             }
         }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -260,6 +261,23 @@ class AdaptiveLayoutHelpersTest {
         window = BoxloreTestWindows.PHONE_LAND
         compose.waitForIdle()
         assertEquals(412f, available)
+    }
+
+    @Test
+    fun `the reading column caps wide panes at 720dp, centred, and fills narrow ones`() {
+        var paneWidth by mutableIntStateOf(915)
+        compose.setContent {
+            Box(Modifier.width(paneWidth.dp)) {
+                Box(Modifier.boxloreReadingColumn().height(10.dp).testTag("column"))
+            }
+        }
+        compose.waitForIdle()
+        val wide = compose.onNodeWithTag("column").fetchSemanticsNode().boundsInRoot
+        assertEquals(720f, wide.width, 0.01f)
+        assertEquals(97.5f, wide.left, 0.5f)
+        paneWidth = 412
+        compose.waitForIdle()
+        assertEquals(412f, compose.onNodeWithTag("column").fetchSemanticsNode().boundsInRoot.width, 0.01f)
     }
 
     private fun androidx.compose.ui.test.SemanticsNodeInteraction.assertHeightIs(expected: Int) {
