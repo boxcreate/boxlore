@@ -45,7 +45,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
@@ -75,9 +77,39 @@ internal val MarqueeSheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 2
 /** Play (172dp) and details beside it: Play keeps one width on every phone, and the up-next covers take the rest. */
 internal val MarqueeActionsWidth = 223.dp
 
-/** The hero's height: the floating top bar's room, the cards' usual height less 48dp, and the sheet's overlap. */
+/**
+ * The hero's height: the floating top bar's room, the cards' usual height less 48dp (never less than
+ * [marqueeMinCover]), and the sheet's overlap.
+ */
 @Composable
-internal fun marqueeHeroHeight() = LocalHeroTopInset.current + homeHeroHeight() - MarqueeShorter + MarqueeSheetOverlap
+internal fun marqueeHeroHeight() = LocalHeroTopInset.current + maxOf(homeHeroHeight() - MarqueeShorter, marqueeMinCover()) + MarqueeSheetOverlap
+
+/**
+ * The least room Marquee keeps between the top bar and the sheet's edge, so its bottom-anchored words
+ * never slide under the floating top bar where the hero is short (sideways phones, split-screen
+ * halves): the tallest card's words (a collection's chip, two title lines as short cards show them,
+ * the show, Play and the strip of covers) above the page dots, with a little room under the bar. It
+ * grows with the text size; portrait phones' heroes are taller, so they keep their height.
+ */
+@Composable
+internal fun marqueeMinCover(): Dp = with(LocalDensity.current) {
+    val words = MarqueeChipLine.toDp() + MarqueeTitleLine.toDp() * 2 + MarqueeShowLine.toDp()
+    val play = (MarqueePlayLine.toDp() + 20.dp).coerceAtLeast(48.dp)
+    words + play + MarqueeWordsSpacing
+}
+
+// The line heights in Marquee's words: the chip, a short card's title, the show and Play's label.
+private val MarqueeChipLine = 18.sp
+private val MarqueeTitleLine = 30.sp
+private val MarqueeShowLine = 20.sp
+private val MarqueePlayLine = 20.sp
+
+/**
+ * The fixed spacing in [marqueeMinCover]: the words' 4dp top padding, the chip's 10dp, the gaps after
+ * the chip (10dp), the title (6dp), the actions (14dp + 16dp), the 104dp strip, the page dots' room
+ * and 8dp under the top bar.
+ */
+private val MarqueeWordsSpacing = 4.dp + 10.dp + 10.dp + 6.dp + 14.dp + 16.dp + 104.dp + MarqueeDotsReserve + 8.dp
 
 /** The words and actions sit this far above the hero's foot: the sheet's overlap and the page dots' room. */
 internal val MarqueeCopyBottom = MarqueeSheetOverlap + MarqueeDotsReserve

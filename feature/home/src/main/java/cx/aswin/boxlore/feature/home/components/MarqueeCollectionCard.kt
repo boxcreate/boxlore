@@ -46,6 +46,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkShade
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
@@ -123,7 +124,7 @@ internal fun MarqueeCollectionCard(
             MarqueeChip(marqueeCollectionLabel(title, index, display.size, time), shade, tag = "home_hero_collection_position")
             Spacer(Modifier.height(10.dp))
             // The chip already says Resume or new and how long; the words start at the title.
-            CoverCopy(item, shade, progressState = null, showContext = false)
+            CoverCopy(item, shade, progressState = null, showContext = false, short = heroFitsShortWindow(LocalBoxloreWindowLayout.current))
             Spacer(Modifier.height(14.dp))
             Box(Modifier.width(MarqueeActionsWidth)) {
                 HeroActions(
