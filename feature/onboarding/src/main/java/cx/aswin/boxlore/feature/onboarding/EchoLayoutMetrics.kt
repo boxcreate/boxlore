@@ -58,6 +58,7 @@ internal object EchoLayout {
     fun answersMinHeight(rowHeight: Dp): Dp = rowHeight * AnswerRows + GroupGap * (AnswerRows - 1) + SomethingElseHeight
 
     const val AnswerRows = 4
+    const val TopicColumns = 2
     val GroupGap = 3.dp
     val SomethingElseHeight = 52.dp
 
@@ -73,6 +74,9 @@ internal object EchoLayout {
     const val SpareAboveShare = 0.12f
     const val SpareBetweenShare = 0.55f
 
+    /** On tall windows the gap above the answers stops here, so the question and its answers stay together. */
+    val MaxBetweenGap = 56.dp
+
     private val TightHeight = 400.dp
-    private const val TightFontScale = 1.6f
+    const val TightFontScale = 1.6f
 }

@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -69,11 +70,12 @@ import kotlinx.coroutines.delay
 /**
  * One full-width main button. An optional way out sits above it: with a note, as a slim one-line
  * pill that says where things stand and what tapping does; otherwise as a centred text button.
+ * On the tightest windows [somethingElse] puts Something else at the start of the main button's row.
  * While Echo is busy the footer fades out but keeps its space.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-internal fun EchoFooterBar(footer: EchoFooter, onAction: (EchoAction) -> Unit) {
+internal fun EchoFooterBar(footer: EchoFooter, onAction: (EchoAction) -> Unit, somethingElse: (() -> Unit)? = null) {
     val alpha by animateFloatAsState(if (footer.visible) 1f else 0f, tween(if (footer.visible) 220 else 120), label = "echoFooter")
     Column(
         Modifier
@@ -104,18 +106,40 @@ internal fun EchoFooterBar(footer: EchoFooter, onAction: (EchoAction) -> Unit) {
                 }
             }
         }
-        val enabled = footer.visible && footer.primaryEnabled
-        val (container, content) = echoMainButtonColors(footer.busy, enabled)
-        Button(
-            onClick = { onAction(footer.primary) },
-            enabled = enabled,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("echo_primary"),
-            shapes = ButtonDefaults.shapes(shape = RoundedCornerShape(28.dp), pressedShape = RoundedCornerShape(18.dp)),
-            colors = ButtonDefaults.buttonColors(containerColor = container, contentColor = content, disabledContainerColor = container, disabledContentColor = content),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
-        ) {
-            EchoMainButtonLabel(footer)
+        if (somethingElse == null) {
+            EchoMainButton(footer, onAction, Modifier.fillMaxWidth())
+        } else {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                EchoSomethingElseButton(somethingElse, enabled = footer.visible)
+                EchoMainButton(footer, onAction, Modifier.weight(1f))
+            }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun EchoMainButton(footer: EchoFooter, onAction: (EchoAction) -> Unit, modifier: Modifier) {
+    val enabled = footer.visible && footer.primaryEnabled
+    val (container, content) = echoMainButtonColors(footer.busy, enabled)
+    Button(
+        onClick = { onAction(footer.primary) },
+        enabled = enabled,
+        modifier = modifier.heightIn(min = 56.dp).testTag("echo_primary"),
+        shapes = ButtonDefaults.shapes(shape = RoundedCornerShape(28.dp), pressedShape = RoundedCornerShape(18.dp)),
+        colors = ButtonDefaults.buttonColors(containerColor = container, contentColor = content, disabledContainerColor = container, disabledContentColor = content),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
+    ) {
+        EchoMainButtonLabel(footer)
+    }
+}
+
+/** Something else: a free answer. It sits under the answers, or beside the main button on the tightest windows. */
+@Composable
+internal fun EchoSomethingElseButton(onClick: () -> Unit, enabled: Boolean, modifier: Modifier = Modifier) {
+    TextButton(onClick = onClick, enabled = enabled, modifier = modifier.heightIn(min = 48.dp).testTag("echo_something_else")) {
+        Icon(Icons.Rounded.Edit, null, Modifier.size(18.dp))
+        Text(stringResource(R.string.echo_something_else), Modifier.padding(start = 8.dp))
     }
 }
 

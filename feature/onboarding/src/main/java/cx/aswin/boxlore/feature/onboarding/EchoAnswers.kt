@@ -24,7 +24,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.List
-import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialShapes
@@ -79,14 +78,15 @@ internal data class EchoAnswerCallbacks(
 
 /**
  * Choices or the text box, in one slot. For choices (and their skeleton) the screen hands the slot
- * a fixed height: the tier's minimum plus a share of the spare space, which the four rows split
- * evenly, so cards grow on roomy screens and nothing ever scrolls. Long labels shrink to fit.
+ * a fixed height: the fit's minimum plus a share of the spare space, which the rows split evenly,
+ * so cards grow on roomy screens and nothing ever scrolls. Long labels shrink to fit, and on tight
+ * windows the answers follow the [fit]: no icons, other columns, Something else in the footer.
  */
 @Composable
 internal fun EchoAnswerArea(
     state: OnboardingUiState,
     kind: EchoScreenKind,
-    metrics: EchoLayoutMetrics,
+    fit: EchoFit,
     callbacks: EchoAnswerCallbacks,
     modifier: Modifier = Modifier,
     preview: EchoShowPreview? = null,
@@ -100,40 +100,47 @@ internal fun EchoAnswerArea(
     }
     AnimatedContent(targetState = key, modifier = modifier.fillMaxWidth(), transitionSpec = EchoMotion.handoff(), label = "echoAnswers") { target ->
         when {
-            target == "waiting" -> EchoChoiceSkeleton(metrics)
-            target == "deck" -> EchoDeckCard(state.aiDeck, metrics, preview)
-            target.startsWith("choices") && EchoScreenModel.isOpeningTurn(state) -> EchoTopicGrid(target, state.aiSelectedOptions, metrics, callbacks)
-            target.startsWith("choices") -> EchoChoiceList(target, state.aiCurrentTurn, EchoScreenModel.choices(state), state.aiSelectedOptions, metrics, callbacks)
-            target.startsWith("writing") -> EchoWrittenAnswer(state, hasChoices = EchoScreenModel.choices(state).isNotEmpty(), metrics, callbacks)
+            target == "waiting" -> EchoChoiceSkeleton(fit)
+            target == "deck" -> EchoDeckCard(state.aiDeck, fit.metrics, preview)
+            target.startsWith("choices") && EchoScreenModel.isOpeningTurn(state) -> EchoTopicGrid(target, state.aiSelectedOptions, fit, callbacks)
+            target.startsWith("choices") -> EchoChoiceList(target, state.aiCurrentTurn, EchoScreenModel.choices(state), state.aiSelectedOptions, fit, callbacks)
+            target.startsWith("writing") -> EchoWrittenAnswer(state, hasChoices = EchoScreenModel.choices(state).isNotEmpty(), fit.metrics, callbacks)
         }
     }
 }
 
 /**
- * Opening topics: two columns of equal tiles, connected like the later rows (outer corners round,
- * inner corners tight), sharing the slot's height. Tall screens stack the badge above a one-line
- * label; shorter ones set them side by side.
+ * Opening topics: columns of equal tiles (two, or as the fit says), connected like the later rows
+ * (outer corners round, inner corners tight), sharing the slot's height. Tall screens stack the badge
+ * above a one-line label; shorter ones set them side by side, and the tightest drop the badge.
  */
 @Composable
-private fun EchoTopicGrid(key: String, selected: Set<String>, metrics: EchoLayoutMetrics, callbacks: EchoAnswerCallbacks) {
+private fun EchoTopicGrid(key: String, selected: Set<String>, fit: EchoFit, callbacks: EchoAnswerCallbacks) {
+    val metrics = fit.metrics
     val topics = EchoInitialTopic.entries
-    val rows = topics.chunked(EchoTopicColumns)
+    val columns = fit.columns
+    val rows = topics.chunked(columns)
+    val stagger = rememberEchoStagger(key, topics.size + 1)
     Column(Modifier.fillMaxSize().testTag("echo_topics")) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(EchoGroupGap)) {
             rows.forEachIndexed { rowIndex, row ->
                 Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(EchoGroupGap)) {
                     row.forEachIndexed { column, topic ->
-                        val index = rowIndex * EchoTopicColumns + column
+                        // Indexes follow the topics, so a new arrangement never replays the entry.
+                        val index = rowIndex * columns + column
                         val picked = topic.answer in selected
-                        EchoStaggeredEntry(key, index, Modifier.weight(1f).fillMaxHeight()) {
+                        EchoStaggeredEntry(stagger[index], Modifier.weight(1f).fillMaxHeight()) {
                             EchoAnswerSurface(
                                 selected = picked,
-                                corners = echoTileCorners(rowIndex, column, rows.size, EchoTopicColumns, picked),
+                                corners = echoTileCorners(rowIndex, column, rows.size, row.size, picked),
                                 minHeight = metrics.tileHeight,
                                 onToggle = { callbacks.toggle(topic.answer) },
                             ) {
-                                if (metrics.tileStacked) {
-                                    Column(Modifier.padding(horizontal = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                if (!fit.showIcons) {
+                                    // The tightest windows drop the badge; the fill and rounding still show the pick.
+                                    Box(Modifier.padding(horizontal = EchoAnswerTextOnlyPadding)) { EchoAnswerLabel(stringResource(topic.labelRes), maxLines = 1) }
+                                } else if (metrics.tileStacked) {
+                                    Column(Modifier.padding(horizontal = EchoAnswerStackedPadding), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                         EchoSelectionBadge(picked, topic.icon, metrics.badgeSize, shapeIndex = index)
                                         EchoAnswerLabel(stringResource(topic.labelRes), maxLines = 1)
                                     }
@@ -149,38 +156,61 @@ private fun EchoTopicGrid(key: String, selected: Set<String>, metrics: EchoLayou
                 }
             }
         }
-        EchoStaggeredEntry(key, topics.size) { EchoSomethingElse(callbacks.startWriting) }
+        if (fit.somethingElseInline) EchoStaggeredEntry(stagger[topics.size]) { EchoSomethingElse(callbacks.startWriting) }
     }
 }
 
-/** Later choices: one connected group of fixed-height rows, each with its own badge shape. */
+/**
+ * Later choices: one connected group of fixed-height rows, each with its own badge shape. Beside Echo
+ * on the shortest windows they stand two to a row.
+ */
 @Composable
 private fun EchoChoiceList(
     key: String,
     turn: Int,
     choices: List<String>,
     selected: Set<String>,
-    metrics: EchoLayoutMetrics,
+    fit: EchoFit,
     callbacks: EchoAnswerCallbacks,
 ) {
+    val metrics = fit.metrics
     val icons = remember(choices) { EchoChoiceIcons.forChoices(choices) }
+    val choice: @Composable (Int, EchoCorners) -> Unit = { index, corners ->
+        val answer = choices[index]
+        val picked = answer in selected
+        EchoAnswerSurface(picked, corners, metrics.rowHeight, onToggle = { callbacks.toggle(answer) }) {
+            if (fit.showIcons) {
+                EchoAnswerRow {
+                    // Shapes rotate through the set each turn, so every question looks a little new.
+                    EchoSelectionBadge(picked, icons.getOrNull(index), metrics.badgeSize, shapeIndex = turn * 2 + index)
+                    EchoAnswerLabel(answer.substringBefore('|').trim(), maxLines = 2)
+                }
+            } else {
+                Box(Modifier.padding(horizontal = EchoAnswerTextOnlyPadding)) { EchoAnswerLabel(answer.substringBefore('|').trim(), maxLines = 2) }
+            }
+        }
+    }
+    val stagger = rememberEchoStagger(key, choices.size + 1)
     Column(Modifier.fillMaxSize().testTag("echo_choices")) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(EchoGroupGap)) {
-            choices.forEachIndexed { index, choice ->
-                val picked = choice in selected
-                val (top, bottom) = echoChoiceCorners(index, choices.size, picked)
-                EchoStaggeredEntry(key, index, Modifier.weight(1f).fillMaxWidth()) {
-                    EchoAnswerSurface(picked, EchoCorners(top, top, bottom, bottom), metrics.rowHeight, onToggle = { callbacks.toggle(choice) }) {
-                        EchoAnswerRow {
-                            // Shapes rotate through the set each turn, so every question looks a little new.
-                            EchoSelectionBadge(picked, icons.getOrNull(index), metrics.badgeSize, shapeIndex = turn * 2 + index)
-                            EchoAnswerLabel(choice.substringBefore('|').trim(), maxLines = 2)
+            if (fit.columns <= 1) {
+                choices.indices.forEach { index ->
+                    val (top, bottom) = echoChoiceCorners(index, choices.size, choices[index] in selected)
+                    EchoStaggeredEntry(stagger[index], Modifier.weight(1f).fillMaxWidth()) { choice(index, EchoCorners(top, top, bottom, bottom)) }
+                }
+            } else {
+                val rows = choices.indices.chunked(fit.columns)
+                rows.forEachIndexed { rowIndex, row ->
+                    Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(EchoGroupGap)) {
+                        row.forEachIndexed { column, index ->
+                            val corners = echoTileCorners(rowIndex, column, rows.size, row.size, choices[index] in selected)
+                            EchoStaggeredEntry(stagger[index], Modifier.weight(1f).fillMaxHeight()) { choice(index, corners) }
                         }
                     }
                 }
             }
         }
-        EchoStaggeredEntry(key, choices.size) { EchoSomethingElse(callbacks.startWriting) }
+        if (fit.somethingElseInline) EchoStaggeredEntry(stagger[choices.size]) { EchoSomethingElse(callbacks.startWriting) }
     }
 }
 
@@ -214,7 +244,11 @@ private fun EchoAnswerSurface(
 
 @Composable
 private fun EchoAnswerRow(content: @Composable () -> Unit) {
-    Row(Modifier.padding(start = 10.dp, end = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(
+        Modifier.padding(start = EchoAnswerRowStart, end = EchoAnswerRowEnd),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(EchoAnswerRowSpacing),
+    ) {
         content()
     }
 }
@@ -235,29 +269,26 @@ private fun EchoAnswerLabel(text: String, maxLines: Int) {
 @Composable
 private fun EchoSomethingElse(onClick: () -> Unit) {
     Box(Modifier.fillMaxWidth().padding(top = 4.dp), contentAlignment = Alignment.Center) {
-        TextButton(onClick = onClick, modifier = Modifier.heightIn(min = 48.dp).testTag("echo_something_else")) {
-            Icon(Icons.Rounded.Edit, null, Modifier.size(18.dp))
-            Text(stringResource(R.string.echo_something_else), Modifier.padding(start = 8.dp))
-        }
+        EchoSomethingElseButton(onClick, enabled = true)
     }
 }
 
 /** The rows' skeleton, in the loaded geometry and place. */
 @Composable
-private fun EchoChoiceSkeleton(metrics: EchoLayoutMetrics) {
+private fun EchoChoiceSkeleton(fit: EchoFit) {
     ShimmerScope(active = true) {
         Column(Modifier.fillMaxSize()) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(EchoGroupGap)) {
                 repeat(EchoLayout.AnswerRows) { index ->
                     val corners = echoChoiceCorners(index, EchoLayout.AnswerRows, false)
                     EchoSkeleton(
-                        Modifier.fillMaxWidth().weight(1f).heightIn(min = metrics.rowHeight),
+                        Modifier.fillMaxWidth().weight(1f).heightIn(min = fit.metrics.rowHeight),
                         RoundedCornerShape(topStart = corners.first, topEnd = corners.first, bottomStart = corners.second, bottomEnd = corners.second),
                     )
                 }
             }
-            // Same geometry as the loaded choices, which end with Something else.
-            Spacer(Modifier.height(EchoLayout.SomethingElseHeight))
+            // Same geometry as the loaded choices, which end with Something else unless it waits in the footer.
+            if (fit.somethingElseInline) Spacer(Modifier.height(EchoLayout.SomethingElseHeight))
         }
     }
 }
@@ -297,7 +328,6 @@ private fun rememberEchoAnimatedShape(target: EchoCorners): RoundedCornerShape {
 private val EchoChoiceOuter = 24.dp
 private val EchoChoiceInner = 6.dp
 private val EchoGroupGap = EchoLayout.GroupGap
-private const val EchoTopicColumns = 2
 
 /** The soft Material shapes a picked badge blooms into, one per answer. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)

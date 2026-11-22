@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -41,11 +43,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
 import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import kotlin.math.roundToInt
 
 /** Room kept for the footer (pill + main button) when picking the layout tier. */
 private val EchoFooterAllowance = 128.dp
@@ -123,10 +127,21 @@ internal fun EchoOnboardingScreen(uiState: OnboardingUiState, callbacks: EchoCal
         // Tiers come from the whole content height (before the keyboard and the footer), so sizes
         // never change between turns; the open keyboard only folds Echo away.
         BoxWithConstraints(Modifier.fillMaxSize().padding(padding).boxloreCardWidth(BoxloreCardFamily.Utility)) {
-            val metrics = EchoLayout.metrics(maxHeight - EchoFooterAllowance, LocalDensity.current.fontScale, keyboardOpen = imeVisible)
+            val tierHeight = maxHeight - EchoFooterAllowance
+            val metrics = EchoLayout.metrics(tierHeight, LocalDensity.current.fontScale, keyboardOpen = imeVisible)
+            // Set by the body's fit (planned while the body is measured): on the tightest windows Something
+            // else waits beside the main button. The footer, measured first, takes it on the next frame.
+            var somethingElseInFooter by remember { mutableStateOf(false) }
             ClearFocusWhenKeyboardCloses(imeVisible)
             Column(Modifier.fillMaxSize().imePadding()) {
-                EchoConversationBody(uiState, kind, metrics, paused = menuOpen || aboutOpen, actions, callbacks, preview)
+                EchoConversationBody(
+                    EchoBodyInput(uiState, kind, tierHeight, metrics, imeVisible),
+                    paused = menuOpen || aboutOpen,
+                    actions,
+                    callbacks,
+                    preview,
+                    onSomethingElseInFooter = { somethingElseInFooter = it },
+                )
                 AnimatedContent(
                     targetState = kind == EchoScreenKind.Deck,
                     transitionSpec = EchoMotion.handoff(),
@@ -136,7 +151,8 @@ internal fun EchoOnboardingScreen(uiState: OnboardingUiState, callbacks: EchoCal
                     if (deck) {
                         EchoDeckReactions(uiState.aiDeck.reactions.size, metrics, callbacks.onDeckReaction)
                     } else {
-                        EchoFooterBar(footer, actions::act)
+                        val leading = if (somethingElseInFooter && kind == EchoScreenKind.Asking) actions::startWriting else null
+                        EchoFooterBar(footer, actions::act, somethingElse = leading)
                     }
                 }
             }
@@ -226,54 +242,82 @@ private fun ClearFocusWhenKeyboardCloses(imeVisible: Boolean) {
     }
 }
 
-/** Echo, the question and the answers (or the ready stage), above the footer. */
+/** What the body needs from the screen to plan its fit. */
+private data class EchoBodyInput(
+    val uiState: OnboardingUiState,
+    val kind: EchoScreenKind,
+    val tierHeight: Dp,
+    val metrics: EchoLayoutMetrics,
+    val keyboardOpen: Boolean,
+)
+
+/**
+ * Echo, the question and the answers (or the ready stage), above the footer. The fit is planned from
+ * the body's own room as it is without the keyboard, so opening it never changes the layout step.
+ */
 @Composable
 private fun ColumnScope.EchoConversationBody(
-    uiState: OnboardingUiState,
-    kind: EchoScreenKind,
-    metrics: EchoLayoutMetrics,
+    input: EchoBodyInput,
     paused: Boolean,
     actions: EchoScreenActions,
     callbacks: EchoCallbacks,
     preview: EchoShowPreview?,
+    onSomethingElseInFooter: (Boolean) -> Unit,
 ) {
+    val uiState = input.uiState
+    val kind = input.kind
     if (kind == EchoScreenKind.Ready) {
-        EchoReadyStage(uiState, metrics, paused = paused, modifier = Modifier.weight(1f).padding(horizontal = 24.dp))
+        SideEffect { onSomethingElseInFooter(false) }
+        EchoReadyStage(uiState, input.metrics, paused = paused, modifier = Modifier.weight(1f).padding(horizontal = 24.dp))
         return
     }
+    val density = LocalDensity.current
+    val keyboardExtra = with(density) {
+        (WindowInsets.ime.getBottom(this) - WindowInsets.navigationBars.getBottom(this)).coerceAtLeast(0).toDp()
+    }
+    val shape = echoAnswerShape(uiState, kind)
+    val measure = rememberEchoFitMeasure(rememberEchoFitText(uiState, kind))
     // No scrolling: Echo, the question and the answers, with spare height shared out.
     val stretch = kind == EchoScreenKind.Asking || kind == EchoScreenKind.Waiting
-    val baseRow = if (EchoScreenModel.isOpeningTurn(uiState) && kind == EchoScreenKind.Asking) metrics.tileHeight else metrics.rowHeight
-    EchoBodyLayout(
-        gap = metrics.gap,
-        answersMinHeight = if (stretch) EchoLayout.answersMinHeight(baseRow) else null,
-        modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 24.dp),
-        header = {
-            AnimatedVisibility(
-                visible = metrics.showEcho,
-                enter = fadeIn(tween(200, delayMillis = 60)) + expandVertically(spring(stiffness = 420f, dampingRatio = 0.9f)),
-                exit = fadeOut(tween(100)) + shrinkVertically(spring(stiffness = 420f, dampingRatio = 0.9f)),
-            ) {
-                EchoHeader(uiState, kind, metrics, paused = paused)
-            }
-        },
-        question = { EchoQuestionArea(uiState, kind, metrics) { suggestion -> callbacks.onSearch(suggestion) } },
-        answers = {
-            EchoAnswerArea(
-                uiState,
-                kind,
-                metrics,
-                EchoAnswerCallbacks(
-                    toggle = callbacks.onOptionToggle,
-                    changeDraft = callbacks.onCustomInputChange,
-                    startWriting = actions::startWriting,
-                    useChoices = actions::useChoices,
-                    submit = { actions.act(EchoAction.Continue) },
-                ),
-                preview = preview,
-            )
-        },
-    )
+    BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 24.dp)) {
+        val body = DpSize(maxWidth, (maxHeight + keyboardExtra).value.roundToInt().dp)
+        val planned = remember(body, input.tierHeight, density.fontScale, shape, measure) {
+            echoFitPlan(body, input.tierHeight, density.fontScale, keyboardOpen = false, shape, measure)
+        }
+        val fit = if (input.keyboardOpen) planned.copy(metrics = planned.metrics.copy(showEcho = false)) else planned
+        SideEffect { onSomethingElseInFooter(fit.somethingElseInFooter) }
+        EchoBodyLayout(
+            fit = fit,
+            stretch = stretch,
+            modifier = Modifier.fillMaxSize(),
+            header = {
+                // The body's own slot, not the screen column's.
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = fit.metrics.showEcho,
+                    enter = fadeIn(tween(200, delayMillis = 60)) + expandVertically(spring(stiffness = 420f, dampingRatio = 0.9f)),
+                    exit = fadeOut(tween(100)) + shrinkVertically(spring(stiffness = 420f, dampingRatio = 0.9f)),
+                ) {
+                    EchoHeader(uiState, kind, fit.metrics, paused = paused)
+                }
+            },
+            question = { EchoQuestionArea(uiState, kind, fit.metrics) { suggestion -> callbacks.onSearch(suggestion) } },
+            answers = {
+                EchoAnswerArea(
+                    uiState,
+                    kind,
+                    fit,
+                    EchoAnswerCallbacks(
+                        toggle = callbacks.onOptionToggle,
+                        changeDraft = callbacks.onCustomInputChange,
+                        startWriting = actions::startWriting,
+                        useChoices = actions::useChoices,
+                        submit = { actions.act(EchoAction.Continue) },
+                    ),
+                    preview = preview,
+                )
+            },
+        )
+    }
 }
 
 /** Holds the last settled footer; written during composition, never read as state. */
@@ -296,17 +340,20 @@ private fun EchoFinishConfirmation(onConfirm: () -> Unit, onDismiss: () -> Unit)
 }
 
 /**
- * Echo, the question and the answers, never scrolling. The answers get their minimum height first,
- * the question the room left (its type shrinks to fit), then the spare height is shared out: cards
- * grow into part of it ([EchoLayout.GrowShare], up to [EchoLayout.MaxGrowPerRow] each), and the
- * rest goes a little above Echo, mostly between the question and the answers, and the remainder
- * below, so the answers sit just under the middle. [answersMinHeight] is null when the answer slot
- * holds a text box or nothing, which keeps its own height.
+ * Echo, the question and the answers, never scrolling. The question gets its full planned height
+ * first ([EchoFit.questionHeight]), then the answers their minimum, and they never reach under the
+ * footer. Spare height is shared out: cards grow into part of it ([EchoLayout.GrowShare], up to
+ * [EchoLayout.MaxGrowPerRow] each), a little goes above Echo, more between the question and the
+ * answers (at most [EchoLayout.MaxBetweenGap]) and the rest below, so the group sits just under the
+ * middle. Beside the answers ([EchoFit.sideBySide]), Echo and the question stand centred in a start
+ * column. The three slots stay the same in both arrangements, so focus, drafts and the keyboard
+ * survive a switch. [stretch] is false when the answer slot holds a text box or nothing, which keeps
+ * its own height.
  */
 @Composable
 private fun EchoBodyLayout(
-    gap: Dp,
-    answersMinHeight: Dp?,
+    fit: EchoFit,
+    stretch: Boolean,
     modifier: Modifier,
     header: @Composable () -> Unit,
     question: @Composable () -> Unit,
@@ -315,31 +362,67 @@ private fun EchoBodyLayout(
     Layout(contents = listOf(header, question, answers), modifier = modifier) { (headerParts, questionParts, answerParts), constraints ->
         val width = constraints.maxWidth
         val height = constraints.maxHeight
-        val loose = Constraints(maxWidth = width, maxHeight = height)
-        val gapPx = gap.roundToPx()
+        val gapPx = fit.metrics.gap.roundToPx()
+        val columnGap = SideBySideGap.dp.roundToPx()
+        val startWidth = if (fit.sideBySide) ((width - columnGap) * SideBySideStartShare).toInt() else width
+        val answersWidth = if (fit.sideBySide) width - startWidth - columnGap else width
+        val loose = Constraints(maxWidth = startWidth, maxHeight = height)
         val headers = headerParts.map { it.measure(loose) }
         val headerHeight = headers.maxOfOrNull { it.height } ?: 0
-        val headerGap = if (headerHeight > 0) gapPx else 0
-        val minAnswers = answersMinHeight?.roundToPx() ?: 0
-        val questionRoom = (height - headerHeight - headerGap - minAnswers - gapPx).coerceAtLeast(0)
+        val beforeQuestion = headerHeight + if (headerHeight > 0) gapPx else 0
+        val minAnswers = fit.answersMinHeight?.takeIf { stretch }?.roundToPx()
+        // The question gets its planned height first, then whatever the answers leave.
+        val besideQuestion = if (fit.sideBySide) 0 else (minAnswers ?: 0) + gapPx
+        val questionRoom = maxOf(height - beforeQuestion - besideQuestion, fit.questionHeight.roundToPx()).coerceIn(0, height)
         val questions = questionParts.map { it.measure(loose.copy(maxHeight = questionRoom)) }
         val questionHeight = questions.maxOfOrNull { it.height } ?: 0
-        val answerPlaceables = if (answersMinHeight != null) {
-            val spare = (height - headerHeight - headerGap - questionHeight - gapPx - minAnswers).coerceAtLeast(0)
-            val growth = minOf((spare * EchoLayout.GrowShare).toInt(), EchoLayout.AnswerRows * EchoLayout.MaxGrowPerRow.roundToPx())
-            answerParts.map { it.measure(Constraints.fixed(width, minAnswers + growth)) }
-        } else {
-            answerParts.map { it.measure(loose.copy(maxHeight = (height - headerHeight - headerGap - questionHeight - gapPx).coerceAtLeast(0))) }
-        }
-        val answersHeight = answerPlaceables.maxOfOrNull { it.height } ?: 0
-        val free = (height - headerHeight - headerGap - questionHeight - gapPx - answersHeight).coerceAtLeast(0)
+        val slots = EchoBodySlots(headers, questions, beforeQuestion, questionHeight, gapPx)
+        val room = if (fit.sideBySide) height else (height - slots.used).coerceAtLeast(0)
+        val answerPlaceables = answerParts.map { it.measure(echoAnswerConstraints(answersWidth, room, minAnswers, fit.growRows * EchoLayout.MaxGrowPerRow.roundToPx())) }
         layout(width, height) {
-            var y = (free * EchoLayout.SpareAboveShare).toInt()
-            headers.forEach { it.placeRelative(0, y) }
-            y += headerHeight + headerGap
-            questions.forEach { it.placeRelative(0, y) }
-            y += questionHeight + gapPx + (free * EchoLayout.SpareBetweenShare).toInt()
-            answerPlaceables.forEach { it.placeRelative(0, y) }
+            if (fit.sideBySide) placeBeside(slots, answerPlaceables, width, height) else placeStacked(slots, answerPlaceables, height, EchoLayout.MaxBetweenGap.roundToPx())
         }
     }
+}
+
+/** Echo and the question, measured, with the room they take above the answers. */
+private class EchoBodySlots(
+    val headers: List<Placeable>,
+    val questions: List<Placeable>,
+    val beforeQuestion: Int,
+    val questionHeight: Int,
+    val gap: Int,
+) {
+    val used: Int get() = beforeQuestion + questionHeight + gap
+}
+
+/** The answers' slot: a fixed height (their minimum plus a share of the spare room), or what they need. */
+private fun echoAnswerConstraints(width: Int, room: Int, minAnswers: Int?, maxGrowth: Int): Constraints {
+    if (minAnswers == null) return Constraints(maxWidth = width, maxHeight = room)
+    val spare = (room - minAnswers).coerceAtLeast(0)
+    val growth = minOf((spare * EchoLayout.GrowShare).toInt(), maxGrowth)
+    return Constraints.fixed(width, minOf(minAnswers + growth, room))
+}
+
+/** One column: a little spare room above Echo, more (capped) between the question and the answers, the rest below. */
+private fun Placeable.PlacementScope.placeStacked(slots: EchoBodySlots, answers: List<Placeable>, height: Int, maxBetween: Int) {
+    val answersHeight = answers.maxOfOrNull { it.height } ?: 0
+    val free = (height - slots.used - answersHeight).coerceAtLeast(0)
+    val share = (free * EchoLayout.SpareBetweenShare).toInt()
+    val between = minOf(share, maxBetween)
+    var y = (free * EchoLayout.SpareAboveShare).toInt() + (share - between) / 2
+    slots.headers.forEach { it.placeRelative(0, y) }
+    y += slots.beforeQuestion
+    slots.questions.forEach { it.placeRelative(0, y) }
+    y += slots.questionHeight + slots.gap + between
+    answers.forEach { it.placeRelative(0, y) }
+}
+
+/** Echo and the question centred in the start column, the answers centred in the end column. */
+private fun Placeable.PlacementScope.placeBeside(slots: EchoBodySlots, answers: List<Placeable>, width: Int, height: Int) {
+    var y = ((height - slots.beforeQuestion - slots.questionHeight) / 2).coerceAtLeast(0)
+    slots.headers.forEach { it.placeRelative(0, y) }
+    y += slots.beforeQuestion
+    slots.questions.forEach { it.placeRelative(0, y) }
+    answers.forEach { it.placeRelative(width - it.width, ((height - it.height) / 2).coerceAtLeast(0)) }
 }
