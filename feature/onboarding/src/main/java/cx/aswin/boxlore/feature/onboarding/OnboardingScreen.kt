@@ -95,16 +95,7 @@ fun OnboardingScreen(
         }
     }
 
-    // Main content with animated transitions
-    AnimatedContent(
-        targetState = uiState.currentStep,
-        modifier = Modifier.fillMaxSize(),
-        transitionSpec = {
-            (slideInHorizontally { it } + fadeIn()) togetherWith
-                (slideOutHorizontally { -it } + fadeOut())
-        },
-        label = "onboarding_step",
-    ) { step ->
+    OnboardingStepTransition(uiState.currentStep, Modifier.fillMaxSize()) { step ->
         val (stepName, stepIndex, flowType) =
             remember(step) { onboardingStepAnalytics(step) }
         TrackScreenView("onboarding_$stepName") {
@@ -267,6 +258,20 @@ fun OnboardingScreen(
             }
         }
     }
+}
+
+/** One step at a time: the next step slides in from the end while the last one leaves. */
+@Composable
+internal fun OnboardingStepTransition(step: OnboardingStep, modifier: Modifier = Modifier, content: @Composable (OnboardingStep) -> Unit) {
+    AnimatedContent(
+        targetState = step,
+        modifier = modifier,
+        transitionSpec = {
+            (slideInHorizontally { it } + fadeIn()) togetherWith
+                (slideOutHorizontally { -it } + fadeOut())
+        },
+        label = "onboarding_step",
+    ) { target -> content(target) }
 }
 
 /** The name, index and flow type each onboarding step reports to analytics. */
