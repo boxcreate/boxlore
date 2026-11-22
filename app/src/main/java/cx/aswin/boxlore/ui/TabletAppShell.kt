@@ -30,6 +30,7 @@ import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxlorePaneSpec
+import cx.aswin.boxlore.core.designsystem.layout.foldSafeBrowsingRegion
 import cx.aswin.boxlore.core.designsystem.layout.foldSafeRegions
 import cx.aswin.boxlore.navigation.LocalTabletDetailNavigation
 import cx.aswin.boxlore.navigation.TabletDetailNavigation
@@ -57,6 +58,11 @@ internal data class TabletShellGeometry(
     fun miniPlayerVisible(immersive: Boolean): Boolean = playerVisible && !contextPlayerVisible && !immersive
 }
 
+/**
+ * Pane bounds for the shell. Routes without navigation (onboarding, account, support) stay in one
+ * half of a half-open fold unless [hiddenNavFullWindow] lets them use the whole window.
+ */
+@Suppress("LongParameterList")
 internal fun tabletShellGeometry(
     window: BoxloreWindowLayout,
     navigationVisible: Boolean,
@@ -65,11 +71,16 @@ internal fun tabletShellGeometry(
     hasDetail: Boolean,
     immersive: Boolean,
     playerDocked: Boolean = false,
+    hiddenNavFullWindow: Boolean = false,
 ): TabletShellGeometry {
     val railVisible = navigationVisible && window.usesTabletLayout
     val contextAllowed = navigationVisible && playerAllowed
-    val spec = boxlorePaneSpec(window, contextAllowed && ((hasEpisode && !playerDocked) || hasDetail))
-    val primary = if (railVisible) spec.primary else spec.primary.copy(left = spec.primary.left - spec.railWidthDp)
+    val spec = boxlorePaneSpec(window, contextAllowed && ((hasEpisode && !playerDocked) || hasDetail), playerOnly = !hasDetail)
+    val primary = when {
+        railVisible -> spec.primary
+        window.usesTabletLayout && !hiddenNavFullWindow -> window.foldSafeBrowsingRegion()
+        else -> spec.primary.copy(left = spec.primary.left - spec.railWidthDp)
+    }
     val context = spec.context.takeIf { contextAllowed }
     val detailVisible = contextAllowed && hasDetail
     val playerAvailable = playerAllowed && hasEpisode && (railVisible || detailVisible)
@@ -86,10 +97,6 @@ internal fun tabletShellGeometry(
     )
 }
 
-/** The docked mini player spans the primary pane, so only panes that overlap it horizontally reserve its height. */
-internal fun dockedPlayerCoversPane(pane: BoxloreLayoutBounds?, dock: BoxloreLayoutBounds?): Boolean =
-    pane == null || dock == null || (pane.left < dock.right && dock.left < pane.right)
-
 private fun playerCanvasBounds(window: BoxloreWindowLayout, primary: BoxloreLayoutBounds, context: BoxloreLayoutBounds?, immersive: Boolean): BoxloreLayoutBounds =
     if (immersive || (context == null && window.foldSafeRegions().size > 1)) {
         BoxloreLayoutBounds(0f, 0f, window.widthDp, window.heightDp)
@@ -97,7 +104,11 @@ private fun playerCanvasBounds(window: BoxloreWindowLayout, primary: BoxloreLayo
         context ?: primary
     }
 
-/** Retains both hosts at the same composition positions while only their physical bounds change. */
+/**
+ * Retains both hosts at the same composition positions while only their physical bounds change.
+ * [hiddenNavFullWindow] lets a route without navigation use the whole window of a half-open fold.
+ */
+@Suppress("LongParameterList")
 @Composable
 internal fun TabletAppShell(
     navigation: TabletDetailNavigation,
@@ -107,9 +118,19 @@ internal fun TabletAppShell(
     activeTab: String,
     onNavigateTab: (tab: String, revealedPrimary: Boolean) -> Unit,
     content: TabletShellContent,
+    hiddenNavFullWindow: Boolean = false,
 ) {
     val window = LocalBoxloreWindowLayout.current
-    val initialGeometry = tabletShellGeometry(window, navigationVisible, playerAllowed, hasEpisode, navigation.hasDetail, navigation.immersive, navigation.playerDocked)
+    val initialGeometry = tabletShellGeometry(
+        window,
+        navigationVisible,
+        playerAllowed,
+        hasEpisode,
+        navigation.hasDetail,
+        navigation.immersive,
+        navigation.playerDocked,
+        hiddenNavFullWindow,
+    )
     val phoneFooter = if (!window.usesTabletLayout && initialGeometry.detailVisible) {
         navigationChromeMetrics(LocalNavigationStyle.current).bottomNavigationClearance + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     } else {
@@ -157,8 +178,8 @@ internal fun TabletAppShell(
 private fun TabletDetailNavigation.updateShellState(geometry: TabletShellGeometry, window: BoxloreWindowLayout, contextAllowed: Boolean) {
     detailActive = geometry.detailVisible
     detailCoversPrimary = geometry.detailVisible && geometry.context == null
-    playerPaneAvailable = contextAllowed && boxlorePaneSpec(window, true).context != null
-    splitAllowed = contextAllowed && window.usesSplitLayout
+    playerPaneAvailable = contextAllowed && boxlorePaneSpec(window, true, playerOnly = true).context != null
+    splitAllowed = contextAllowed && (window.usesSplitLayout || window.usesHingeSplit)
     if (window.usesTabletLayout) hostEnabled = true
 }
 

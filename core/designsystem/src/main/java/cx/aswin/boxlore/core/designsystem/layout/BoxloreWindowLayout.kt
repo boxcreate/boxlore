@@ -73,6 +73,18 @@ data class BoxloreWindowLayout(
                 it.bounds.bottom < heightDp
         }
 
+    /**
+     * A vertical hinge splits this window into two regions at least 360dp wide, so a detail or the
+     * player can open in the second half, whatever the aspect ratio (an upright book foldable too).
+     */
+    val usesHingeSplit: Boolean
+        get() {
+            if (!usesTabletLayout || tabletopFold != null) return false
+            val vertical = folds.any { it.orientation == BoxloreFoldOrientation.Vertical && it.splitsRegions }
+            val regions = foldSafeRegions()
+            return vertical && regions.size == 2 && regions.all { it.width >= HINGE_SPLIT_MIN_REGION_DP }
+        }
+
     companion object {
         /** Previews and isolated feature tests retain their existing phone layout by default. */
         val Unspecified = BoxloreWindowLayout(0f, 0f)
@@ -81,12 +93,25 @@ data class BoxloreWindowLayout(
 
 val LocalBoxloreWindowLayout = staticCompositionLocalOf { BoxloreWindowLayout.Unspecified }
 
+private const val HINGE_SPLIT_MIN_REGION_DP = 360f
+
+private val BoxloreFold.splitsRegions: Boolean get() = isSeparating || isOccluding || state == BoxloreFoldState.HalfOpened
+
 /** Contiguous regions are used for pane placement; no region includes an occluding hinge. */
 fun BoxloreWindowLayout.foldSafeRegions(): List<BoxloreLayoutBounds> =
-    folds.filter { it.isSeparating || it.isOccluding || it.state == BoxloreFoldState.HalfOpened }
+    folds.filter { it.splitsRegions }
         .fold(listOf(BoxloreLayoutBounds(0f, 0f, widthDp, heightDp))) { regions, fold ->
         regions.flatMap { region -> splitAtFold(region, fold) }
     }
+
+/**
+ * The one region a screen that must stay in a single half uses: the lower half in tabletop (the
+ * half by the listener's hands), otherwise the widest region. With one region this is the window.
+ */
+fun BoxloreWindowLayout.foldSafeBrowsingRegion(): BoxloreLayoutBounds {
+    val regions = foldSafeRegions()
+    return if (tabletopFold != null) regions.last() else regions.maxBy { it.width }
+}
 
 private fun splitAtFold(region: BoxloreLayoutBounds, fold: BoxloreFold): List<BoxloreLayoutBounds> {
     val bounds = fold.bounds

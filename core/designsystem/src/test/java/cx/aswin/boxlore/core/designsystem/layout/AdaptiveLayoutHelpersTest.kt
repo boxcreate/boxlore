@@ -159,6 +159,12 @@ class AdaptiveLayoutHelpersTest {
         compose.waitForIdle()
         val left = compose.onNodeWithTag("boxlore_dialog_panel").fetchSemanticsNode().boundsInRoot
         assertTrue("$left", left.right <= 456f)
+
+        // Browsing across the whole fold, with nothing open: the panel still keeps to one half.
+        pane = BoxloreLayoutBounds(80f, 0f, 932f, 650f)
+        compose.waitForIdle()
+        val spanning = compose.onNodeWithTag("boxlore_dialog_panel").fetchSemanticsNode().boundsInRoot
+        assertTrue("$spanning", spanning.right <= 456f)
     }
 
     @Test

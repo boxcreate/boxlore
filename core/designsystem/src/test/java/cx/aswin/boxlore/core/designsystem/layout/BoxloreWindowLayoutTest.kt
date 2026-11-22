@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import org.junit.jupiter.api.Test
 
 class BoxloreWindowLayoutTest {
@@ -90,7 +91,11 @@ class BoxloreWindowLayoutTest {
             listOf(BoxloreLayoutBounds(0f, 0f, 673f, 410f), BoxloreLayoutBounds(0f, 431f, 673f, 841f)),
             layout.foldSafeRegions(),
         )
-        assertEquals(431f, boxlorePaneSpec(layout, false).primary.top)
+        // Nothing open: the page uses the whole window; with a context, browsing keeps below the hinge.
+        assertEquals(BoxloreLayoutBounds(80f, 0f, 673f, 841f), boxlorePaneSpec(layout, false).primary)
+        assertEquals(431f, boxlorePaneSpec(layout, true).primary.top)
+        assertEquals(BoxloreLayoutBounds(0f, 0f, 673f, 410f), boxlorePaneSpec(layout, true).context)
+        assertEquals(BoxloreLayoutBounds(0f, 431f, 673f, 841f), layout.foldSafeBrowsingRegion())
         val flat = layout.copy(folds = listOf(hinge.copy(state = BoxloreFoldState.Flat, isSeparating = false, isOccluding = false)))
         assertNull(flat.tabletopFold)
         assertEquals(listOf(BoxloreLayoutBounds(0f, 0f, 673f, 841f)), flat.foldSafeRegions())
@@ -125,8 +130,9 @@ class BoxloreWindowLayoutTest {
             val layout = BoxloreWindowLayout(1_280f, 800f, listOf(fold))
             val panes = boxlorePaneSpec(layout, true)
             assertNull(panes.context)
-            assertTrue(panes.primary.right <= hingeLeft || panes.primary.left >= hingeLeft + 20f)
-            assertTrue(panes.primary.width >= 320f)
+            assertFalse(layout.usesHingeSplit)
+            // With the context closed the page uses the whole window, as with nothing open.
+            assertEquals(boxlorePaneSpec(layout, false), panes)
         }
     }
 
@@ -143,9 +149,81 @@ class BoxloreWindowLayoutTest {
             orientation = BoxloreFoldOrientation.Vertical,
             bounds = BoxloreLayoutBounds(630f, 0f, 650f, 800f),
         )
-        val panes = boxlorePaneSpec(BoxloreWindowLayout(1_280f, 800f, listOf(horizontal, vertical)), true)
+        val layout = BoxloreWindowLayout(1_280f, 800f, listOf(horizontal, vertical))
+        val panes = boxlorePaneSpec(layout, true)
         assertNull(panes.context)
-        assertTrue(panes.primary.top >= 410f)
-        assertTrue(panes.primary.left >= 650f)
+        assertFalse(layout.usesHingeSplit)
+        assertEquals(BoxloreLayoutBounds(80f, 0f, 1_280f, 800f), panes.primary)
+    }
+
+    @Test
+    fun `half-open folds use the whole window when nothing is open`() {
+        listOf(BoxloreTestWindows.FOLD_BOOK, BoxloreTestWindows.FOLD_TABLETOP, BoxloreTestWindows.UPRIGHT_BOOK).forEach { window ->
+            val idle = boxlorePaneSpec(window, false)
+            assertEquals(BoxloreLayoutBounds(80f, 0f, window.widthDp, window.heightDp), idle.primary)
+            assertNull(idle.context)
+        }
+        assertEquals(80f, boxlorePaneSpec(BoxloreTestWindows.FOLD_BOOK, false).primary.left)
+        assertEquals(932f, boxlorePaneSpec(BoxloreTestWindows.FOLD_BOOK, false).primary.right)
+    }
+
+    @Test
+    fun `tabletop puts the context in the upper half and browsing in the lower half`() {
+        val spec = boxlorePaneSpec(BoxloreTestWindows.FOLD_TABLETOP, true, playerOnly = true)
+        assertEquals(BoxloreLayoutBounds(0f, 0f, 932f, 315f), spec.context)
+        assertEquals(BoxloreLayoutBounds(80f, 336f, 932f, 650f), spec.primary)
+        // A detail opens in the upper half too.
+        assertEquals(spec, boxlorePaneSpec(BoxloreTestWindows.FOLD_TABLETOP, true))
+        // An upper half under 240dp is too short to use: the context closes.
+        val shortTop = BoxloreTestWindows.FOLD_TABLETOP.copy(
+            folds = listOf(BoxloreTestWindows.FOLD_TABLETOP.folds.single().copy(bounds = BoxloreLayoutBounds(0f, 230f, 932f, 251f))),
+        )
+        assertNull(boxlorePaneSpec(shortTop, true).context)
+        assertEquals(BoxloreLayoutBounds(80f, 0f, 932f, 650f), boxlorePaneSpec(shortTop, true).primary)
+    }
+
+    @Test
+    fun `book posture opens the context in the second half whatever the aspect ratio`() {
+        val book = boxlorePaneSpec(BoxloreTestWindows.FOLD_BOOK, true)
+        assertTrue(BoxloreTestWindows.FOLD_BOOK.usesHingeSplit)
+        assertEquals(BoxloreLayoutBounds(80f, 0f, 456f, 650f), book.primary)
+        assertEquals(BoxloreLayoutBounds(477f, 0f, 932f, 650f), book.context)
+        assertEquals(book, boxlorePaneSpec(BoxloreTestWindows.FOLD_BOOK, true, playerOnly = true))
+
+        val upright = BoxloreTestWindows.UPRIGHT_BOOK
+        assertFalse(upright.usesSplitLayout)
+        assertTrue(upright.usesHingeSplit)
+        val split = boxlorePaneSpec(upright, true)
+        assertEquals(2, upright.foldSafeRegions().size)
+        assertEquals(BoxloreLayoutBounds(375f, 0f, 750f, 832f), split.context)
+        assertEquals(BoxloreLayoutBounds(80f, 0f, 375f, 832f), split.primary)
+        assertTrue(split.primary.width >= 280f)
+    }
+
+    @Test
+    fun `the player alone opens beside browsing only when browsing keeps 440dp`() {
+        val pixelFold = BoxloreTestWindows.PIXEL_FOLD
+        assertNull(boxlorePaneSpec(pixelFold, true, playerOnly = true).context)
+        assertEquals(BoxloreLayoutBounds(80f, 0f, 841f, 701f), boxlorePaneSpec(pixelFold, true, playerOnly = true).primary)
+        // A detail still splits.
+        assertNotNull(boxlorePaneSpec(pixelFold, true).context)
+        listOf(BoxloreWindowLayout(932f, 650f), BoxloreTestWindows.TABLET, BoxloreTestWindows.DESKTOP).forEach { window ->
+            val player = boxlorePaneSpec(window, true, playerOnly = true)
+            assertEquals(boxlorePaneSpec(window, true), player)
+            assertTrue(requireNotNull(player.context).width in 360f..520f)
+            assertTrue(player.primary.width >= 440f)
+        }
+    }
+
+    @Test
+    fun `flat foldables and tablets keep their layouts`() {
+        listOf(BoxloreTestWindows.FOLD_FLAT, BoxloreTestWindows.TABLET).forEach { window ->
+            assertFalse(window.usesHingeSplit)
+            assertEquals(BoxloreLayoutBounds(80f, 0f, window.widthDp, window.heightDp), boxlorePaneSpec(window, false).primary)
+            val open = boxlorePaneSpec(window, true)
+            val context = requireNotNull(open.context)
+            assertEquals(window.widthDp, context.right)
+            assertEquals(context.left - 16f, open.primary.right)
+        }
     }
 }

@@ -7,10 +7,11 @@ import androidx.compose.ui.unit.Constraints
 import kotlin.math.roundToInt
 
 /**
- * Keeps portal/overlay content in one contiguous region. Inside a pane the shell supplied bounds
- * for (the context pane, the player), that is the region the pane is in, so a panel opened from the
- * right half opens in the right half; elsewhere it is the region hidden-navigation shell routes use.
- * With one region it changes nothing.
+ * Keeps portal/overlay content in one contiguous region. Inside a pane that sits in one half (the
+ * context pane, a tabletop half) that is the half the pane is in, so a panel opened from the right
+ * half opens in the right half. A pane that spans the hinge, such as browsing on a half-open fold
+ * with nothing open, uses the region single-half screens use ([foldSafeBrowsingRegion]). With one
+ * region it changes nothing.
  */
 @Composable
 fun Modifier.boxloreFoldSafeViewport(): Modifier {
@@ -28,7 +29,10 @@ fun Modifier.boxloreFoldSafeViewport(): Modifier {
 /** The window-relative region [boxloreFoldSafeViewport] confines content to, or null when it confines nothing. */
 internal fun foldSafeViewportBounds(window: BoxloreWindowLayout, paneBounds: BoxloreLayoutBounds?): BoxloreLayoutBounds? {
     if (!window.usesTabletLayout || window.foldSafeRegions().size == 1) return null
-    if (paneBounds != null) return window.foldSafeRegionContaining(paneBounds)
-    val spec = boxlorePaneSpec(window, false)
-    return spec.primary.copy(left = spec.primary.left - spec.railWidthDp)
+    val regions = window.foldSafeRegions()
+    if (paneBounds != null && regions.count { it.overlaps(paneBounds) } <= 1) return window.foldSafeRegionContaining(paneBounds)
+    return window.foldSafeBrowsingRegion()
 }
+
+private fun BoxloreLayoutBounds.overlaps(other: BoxloreLayoutBounds): Boolean =
+    minOf(right, other.right) > maxOf(left, other.left) && minOf(bottom, other.bottom) > maxOf(top, other.top)

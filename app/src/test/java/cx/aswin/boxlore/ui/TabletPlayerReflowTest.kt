@@ -48,18 +48,31 @@ class TabletPlayerReflowTest {
     private val episode = TestFixtures.episode(title = "A curious journey", imageUrl = PhoneGoldenRule.ARTWORK_URL)
 
     @Test
-    fun `tabletop mini expands across the full window with art above and transport below the hinge`() {
+    fun `tabletop plays in the upper half, docks below and goes full screen across the hinge`() {
         render()
-        fixture.compose.onNodeWithText(episode.title).performClick()
+        // Playing in tabletop, the player takes the upper half and browsing the lower half.
+        val upper = fixture.compose.onNodeWithTag("tablet_player_pane").fetchSemanticsNode().boundsInRoot
+        assertEquals(0f, upper.top, 1f)
+        assertEquals(410f, upper.bottom, 1f)
+        assertEquals(431f, fixture.compose.onNodeWithTag("primary_pane").fetchSemanticsNode().boundsInRoot.top, 1f)
+        // Full screen spans the window: artwork above the hinge, transport below it.
+        fixture.compose.onNodeWithContentDescription("Open full-screen player").performClick()
         advance()
         val art = fixture.compose.onNodeWithTag("tablet_player_artwork_region", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         val controls = fixture.compose.onNodeWithTag("tablet_player_controls_region", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
-        assertTrue(art.bottom <= 410f)
-        assertTrue(controls.top >= 431f)
-        fixture.compose.runOnUiThread { fixture.compose.activity.onBackPressedDispatcher.onBackPressed() }
+        assertTrue("$art", art.bottom <= 410f)
+        assertTrue("$controls", controls.top >= 431f)
+        val collapse = fixture.compose.activity.getString(cx.aswin.boxlore.feature.player.R.string.minimal_collapse)
+        fixture.compose.onNodeWithContentDescription(collapse).performClick()
         advance()
-        fixture.compose.onNodeWithText(episode.title).assertExists()
-        fixture.compose.onNodeWithTag("tablet_player_artwork_region", useUnmergedTree = true).assertDoesNotExist()
+        assertEquals(upper, fixture.compose.onNodeWithTag("tablet_player_pane").fetchSemanticsNode().boundsInRoot)
+        // Docked, it becomes the mini player and browsing uses the whole window; reopened, it returns to the upper half.
+        fixture.compose.onNodeWithContentDescription(collapse).performClick()
+        advance()
+        assertEquals(0f, fixture.compose.onNodeWithTag("primary_pane").fetchSemanticsNode().boundsInRoot.top, 1f)
+        fixture.compose.onNodeWithText(episode.title).performClick()
+        advance()
+        assertEquals(upper, fixture.compose.onNodeWithTag("tablet_player_pane").fetchSemanticsNode().boundsInRoot)
     }
 
     @Test

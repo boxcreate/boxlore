@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
@@ -26,11 +27,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
+import cx.aswin.boxlore.core.testing.walkWindows
 import cx.aswin.boxlore.navigation.TabletContextRoot
 import cx.aswin.boxlore.navigation.TabletDetailNavigation
 import cx.aswin.boxlore.navigation.rememberTabletDetailNavigation
@@ -53,6 +57,8 @@ class TabletAppShellTest {
     private val allowed = mutableStateOf(true)
     private val navigationVisible = mutableStateOf(true)
     private var paneBounds: cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds? = null
+    private var homeEntry: androidx.navigation.NavBackStackEntry? = null
+    private lateinit var homeScroll: androidx.compose.foundation.ScrollState
 
     /** Each rail tap with what the shell reported: whether it only closed a detail covering the primary pane. */
     private val tabTaps = mutableListOf<Pair<String, Boolean>>()
@@ -268,6 +274,73 @@ class TabletAppShellTest {
         fixture.compose.onNodeWithText("Count 0").assertExists()
     }
 
+    @Test
+    fun `folding half open and back keeps browsing, its scroll and the player`() {
+        playing.value = true
+        window.value = BoxloreTestWindows.FOLD_FLAT
+        render()
+        fixture.compose.onNodeWithText("Count 0").performClick()
+        fixture.compose.runOnIdle { kotlinx.coroutines.runBlocking { homeScroll.scrollTo(400) } }
+        advance()
+        val owner = requireNotNull(homeEntry)
+        val expected = mapOf(
+            BoxloreTestWindows.FOLD_BOOK to BoxloreLayoutBounds(477f, 0f, 932f, 650f),
+            BoxloreTestWindows.FOLD_TABLETOP to BoxloreLayoutBounds(0f, 0f, 932f, 315f),
+        )
+        fixture.compose.walkWindows(
+            window,
+            BoxloreTestWindows.FOLD_BOOK,
+            BoxloreTestWindows.FOLD_TABLETOP,
+            BoxloreTestWindows.FOLD_FLAT,
+            BoxloreTestWindows.FOLD_TABLETOP,
+            BoxloreTestWindows.FOLD_BOOK,
+            BoxloreTestWindows.FOLD_FLAT,
+        ) { step ->
+            advance()
+            fixture.compose.onNodeWithText("Count 1").assertExists()
+            assertEquals(400, homeScroll.value)
+            assertTrue(owner === homeEntry)
+            fixture.compose.onNodeWithText("Pane playback").assertExists()
+            assertTrue(!navigation.playerDocked)
+            expected[step]?.let { pane ->
+                val player = fixture.compose.onNodeWithTag("tablet_player_pane").fetchSemanticsNode().boundsInRoot
+                assertEquals(pane.left, player.left, 1f)
+                assertEquals(pane.top, player.top, 1f)
+                assertEquals(pane.right, player.right, 1f)
+                assertEquals(pane.bottom, player.bottom, 1f)
+            }
+        }
+        // Back still closes a detail opened on the fold.
+        fixture.compose.runOnIdle { window.value = BoxloreTestWindows.FOLD_BOOK }
+        advance()
+        fixture.compose.onNodeWithText("Open show").performClick()
+        advance()
+        fixture.compose.onNodeWithText("Show detail rss:show/test").assertExists()
+        fixture.compose.runOnUiThread { fixture.compose.activity.onBackPressedDispatcher.onBackPressed() }
+        advance()
+        assertTrue(!navigation.hasDetail)
+        fixture.compose.onNodeWithText("Pane playback").assertExists()
+    }
+
+    @Test
+    fun `starting and stopping playback on a Pixel Fold keeps Home and shows the mini player`() {
+        window.value = BoxloreTestWindows.PIXEL_FOLD
+        render()
+        fixture.compose.runOnIdle { kotlinx.coroutines.runBlocking { homeScroll.scrollTo(200) } }
+        advance()
+        val owner = requireNotNull(homeEntry)
+        val browsing = fixture.compose.onNodeWithTag("primary_pane").fetchSemanticsNode().boundsInRoot
+        listOf(true, false, true).forEach { episode ->
+            fixture.compose.runOnIdle { playing.value = episode }
+            advance()
+            assertEquals(200, homeScroll.value)
+            assertTrue(owner === homeEntry)
+            assertEquals(browsing, fixture.compose.onNodeWithTag("primary_pane").fetchSemanticsNode().boundsInRoot)
+            if (episode) fixture.compose.onNodeWithText("Docked playback").assertExists()
+            fixture.compose.onNodeWithText("Pane playback").assertDoesNotExist()
+        }
+    }
+
     private fun render() {
         fixture.prepare()
         restoration = StateRestorationTester(fixture.compose)
@@ -291,11 +364,17 @@ class TabletAppShellTest {
                             primary = {
                                 paneBounds = cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds.current
                                 NavHost(primary, "home") {
-                                    composable("home") {
+                                    composable("home") { entry ->
                                         var count by rememberSaveable { mutableIntStateOf(0) }
+                                        homeEntry = entry
+                                        val scroll = androidx.compose.foundation.rememberScrollState()
+                                        homeScroll = scroll
                                         androidx.compose.foundation.layout.Column {
                                             Button(onClick = { count++ }) { Text("Count $count") }
                                             Button(onClick = { navigation.navigate(primary, "podcast/rss%3Ashow%2Ftest") }) { Text("Open show") }
+                                            androidx.compose.foundation.layout.Column(Modifier.height(120.dp).verticalScroll(scroll)) {
+                                                repeat(30) { Text("Row $it", Modifier.height(40.dp)) }
+                                            }
                                         }
                                     }
                                     composable("settings") { Text("Primary settings") }
