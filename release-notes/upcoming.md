@@ -28,6 +28,7 @@ Announcement title:
 
 - The Marquee style on Home now scrolls with the page in one go, and its cover stays clear behind the words.
 - The Daily's show page now opens under the dawn sky from its cover, with the sun peeking over the horizon, and its latest episode shows its whole picture beside the episode description.
+- In Android Auto, a show's page now lists its episodes from newest to oldest. Episodes you've started stay in their place and show the time left.
 - Episodes you archive on one phone are now archived on your other signed-in phones and tablets too.
 
 ## Fixed
