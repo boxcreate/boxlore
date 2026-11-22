@@ -29,7 +29,7 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 
 - `BoxLoreShapes`, `ExpressiveShapes`, `ExpressiveMotion`: shared shape and motion tokens.
 - `Modifier.expressiveClickable`: press feedback for custom surfaces. `ExpressivePressFeedback.Surface` (default) keeps cards and rows steady with a bounded ripple; small custom controls opt into `Control`. Pass the real `shape`.
-- Never add `expressiveClickable` to native Material buttons or cards; they own their feedback. Put custom control backgrounds inside the press layer so the whole surface moves together.
+- Never add `expressiveClickable` to native Material buttons or cards; they own their feedback. Put custom control backgrounds inside the press layer.
 - `Modifier.boxloreCombinedClickable`: tablet hover, focus and secondary-click handling for custom controls.
 - `m3Shimmer`, `ShimmerScope`: draw-only skeleton shimmer; one scope shares a single clock across a feed.
 
@@ -38,20 +38,21 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 - `BoxloreWindowLayout`, `LocalBoxloreWindowLayout`: the app-supplied window and fold model; previews default to phones.
 - `boxlorePaneSpec`, `LocalBoxlorePaneBounds`, `dockedPlayerCoversPane`: shell-supplied panes, never inferred from the window; half-open folds use the whole window until a pane opens.
 - `rememberBoxloreFoldSafePopupPositionProvider`, `BoxloreTabletopSplit`, `boxloreIsShortPane`, `BoxloreSafeInsets.kt`: fold-safe popups, tabletop split, short-pane check, pane-relative insets.
-- `BoxloreCardSpec`, `boxlorePosterColumns`, `Modifier.boxloreReadingColumn`: card families (`Grid` bounds whole grid screens on tablets), poster packing by pane width, and a readable column cap that also applies on phones. Portrait phones and the fold cover keep their columns; posters in short compact windows keep tablet poster bounds.
+- `BoxloreCardSpec`, `boxlorePosterColumns`, `Modifier.boxloreReadingColumn`: card families, poster packing by pane width and a reading column for every window.
 - Gates and state retention: see [adaptive UI and state](../../ARCHITECTURE.md#adaptive-ui-and-state).
 
 ### Shared components
 
-- Cards and panels use solid Material 3 surfaces and colour roles, never hard-coded colours, so every theme and Pure style applies.
+- Cards and panels use solid Material 3 surfaces and colour roles, never hard-coded colours.
 - `OptimizedImage`: the artwork composable, with `fallbackUrls`, `errorContent`, `showLoadingPlaceholder` and `onLoaded` options.
 - `FeedMediaCard`, `ExpressiveFeedMediaCard`, `CuratedEpisodeCard`, `EqualHeightPosterGrid`: discovery cards. `FeedMediaCardSkeleton` shares the loaded layout at any font scale.
-- `TabletFeaturedRow`, `AdaptiveOverflowRow`: a feature card beside equal-height posters, and a chip row that packs to the available width.
+- `TabletFeaturedRow`, `AdaptiveOverflowRow`: a feature card beside equal-height posters; a chip row packed to the width.
 - `DiscoveryTabSwitcher`: the Explore and Subscriptions tab capsule; pages keep selection.
-- `TopBarUtilityActions`: connected Update, Feedback and Settings segments. Update shows only when `LocalUpdateAvailableAction` is set; `LocalFeedbackReplyWaiting` marks Feedback with a dot. Owners keep placement and callbacks.
+- `TopBarUtilityActions`: connected Update, Feedback and Settings segments. Update shows only when `LocalUpdateAvailableAction` is set; `LocalFeedbackReplyWaiting` marks Feedback with a dot.
 - `ConnectedOptionSelector`, `PillFilterChip`, `RegionSegmentedSelector`, `ContentRegionPickerSheet`: option chips, genre pills and the content-region picker.
 - `ContentLanguagesSheet`: the content-languages sheet. English can be switched off only when `ContentRegions.canSwitchEnglishOff` allows it.
 - `BoxloreDialog`, `BoxloreModalBottomSheet`, `BoxloreAlertDialog`, `EngagementBottomSheetScaffold`: phone dialogs and sheets that become bounded, fold-safe dialogs on tablets.
+- `BoxloreSnackbarHost`, `BoxloreScrollableCenteredColumn`: snackbars above bottom chrome; centred panels that scroll when short.
 - `RemoveDownloadConfirmationDialog`, `PrivacyConsentDialog`, `RepairProgressPopup`: shared confirmation, consent and repair-status UI; the caller owns visibility. `fromWatch` words the first for a copy on the watch.
 - `AddToPlaylistSheet` (a show's playlists with toggling checks; draft in `AddToPlaylistSheetState`), `PlaylistNameDialog`, `DeletePlaylistDialog`, `PlaylistCover` (up to four shows): stateless playlist UI; `PlaylistCopy` and `AddToPlaylistCopy` hold its resources.
 - `SendToWatchIcon`, `WatchEpisodeActions`, `LocalWatchEpisodeActions`: Send to watch for one episode and its state on the watch (`WatchEpisodeCopy`). The local is null without a linked watch, which hides the icon.
@@ -75,7 +76,7 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 - `ArtworkAttempts`, `ArtworkLoadPolicy`: try optimized then original for each image, retry a transient failure once, and remember failures and working routes for a bounded time.
 - Alternate artwork (`fallbackUrls`, `fallbackImageUrls`) is kept until a load actually fails, never chosen up front. Failed tiles retry only on foreground return or reconnection; there is no polling.
 - Missing or failed art shows the decorative `ic_boxlore_app_mark` over a solid fallback; the card's description stays the accessible name.
-- `optimizedImageUrl(width)` and `proxyWidth` take pixels, clamped in `ImageRequestSizing.kt`; one value sizes both request and decode. Tablets upgrade in measured buckets.
+- `optimizedImageUrl(width)` and `proxyWidth` take pixels, clamped in `ImageRequestSizing.kt`; one value sizes request and decode, in measured buckets on tablets and windows wider than 430dp.
 - `loadArtworkBitmap`: the bounded loader for widgets, share cards and notification artwork, sharing Coil's cache.
 - `ArtworkPrefetch.prefetch` warms the exact request `OptimizedImage` makes on phones; `OnScreenArtwork` lets colour extraction reuse the copy on screen.
 
