@@ -68,6 +68,10 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>The Marquee style on Home now scrolls with the page in one go, and its cover stays clear behind the words.</li>
 <li>The Daily's show page now opens under the dawn sky from its cover, with the sun peeking over the horizon, and its latest episode shows its whole picture beside the episode description.</li>
 </ul>
+<b>🐛 Fixed:</b>
+<ul align="left">
+<li>Importing an OPML file that lists a show you already follow no longer turns off that show's new-episode notifications and auto-download.</li>
+</ul>
 <!-- release-upcoming:end -->
 
 
