@@ -217,6 +217,26 @@ class ArchitectureGuardTest {
     }
 
     @Test
+    fun `phone alert dialogs go through BoxloreAlertDialog for fold-safe hosting`() {
+        val wrapper = "core/designsystem/src/main/java/cx/aswin/boxlore/core/designsystem/components/BoxloreAlertDialog.kt"
+        val rawDialog = Regex("""import androidx\.compose\.material3\.(?:Basic)?AlertDialog$|androidx\.compose\.material3\.(?:Basic)?AlertDialog\(""")
+        val violations =
+            listOf("app", "core", "feature")
+                .map { File(projectRoot, it) }
+                .flatMap { root -> root.walkTopDown().filter { it.isFile && it.extension == "kt" && "/src/main/" in it.path && "/build/" !in it.path }.toList() }
+                .filter { it.relativeTo(projectRoot).path != wrapper }
+                .flatMap { file ->
+                    file.readLines().mapIndexedNotNull { index, line ->
+                        if (rawDialog.containsMatchIn(line.trim())) "${file.relativeTo(projectRoot)}:${index + 1}: ${line.trim()}" else null
+                    }
+                }
+        assertTrue(
+            violations.isEmpty(),
+            "Use BoxloreAlertDialog so folded tablets keep the dialog off the hinge:\n" + violations.joinToString("\n"),
+        )
+    }
+
+    @Test
     fun `included app core and feature modules have README md`() {
         val settings = File(projectRoot, "settings.gradle.kts").readText()
         val includes =

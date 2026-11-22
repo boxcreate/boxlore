@@ -7,16 +7,10 @@ import android.view.View
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DefaultBasicAlertDialogOverride
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ComponentOverrideApi
-import androidx.compose.material3.LocalBasicAlertDialogOverride
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
@@ -27,12 +21,14 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.isDialog
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
 import cx.aswin.boxlore.core.designsystem.components.BoxloreDialog
 import cx.aswin.boxlore.core.designsystem.components.PrivacyConsentDialog
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFold
@@ -46,6 +42,7 @@ import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -54,7 +51,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ComponentOverrideApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], application = Application::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -64,17 +60,21 @@ class TabletAlertHostingTest {
     private val fold = BoxloreFold(BoxloreFoldState.HalfOpened, BoxloreFoldOrientation.Horizontal, BoxloreLayoutBounds(0f, 410f, 673f, 431f), true, true)
 
     @Test
-    fun `phone alert override paints every native Material pixel unchanged`() {
+    fun `phone alert paints every native Material pixel unchanged`() {
         val adapted = mutableStateOf(false)
         fixture.setContent {
             CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreWindowLayout(412f, 915f)) {
                 BoxLoreTheme(dynamicColor = false) {
-                    val themed = LocalBasicAlertDialogOverride.current
-                    CompositionLocalProvider(LocalBasicAlertDialogOverride provides if (adapted.value) themed else DefaultBasicAlertDialogOverride) {
-                        AlertDialog({}, confirmButton = { TextButton({}) { Text("Continue") } }, title = { Text("Confirm") }, text = {
-                            view = LocalView.current
-                            Text("Dialog content")
-                        })
+                    val confirm = @Composable { TextButton({}) { Text("Continue") } }
+                    val title = @Composable { Text("Confirm") }
+                    val text = @Composable {
+                        view = LocalView.current
+                        Text("Dialog content")
+                    }
+                    if (adapted.value) {
+                        BoxloreAlertDialog({}, confirmButton = confirm, title = title, text = text)
+                    } else {
+                        AlertDialog({}, confirmButton = confirm, title = title, text = text)
                     }
                 }
             }
@@ -87,15 +87,16 @@ class TabletAlertHostingTest {
     }
 
     @Test
-    fun `folded native alert retains owner buttons and blocked outside dismissal`() {
+    fun `folded alert retains owner buttons and blocked outside dismissal`() {
         var dismissed = 0
         var confirmed = 0
         fixture.setContent {
             CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreWindowLayout(673f, 841f, listOf(fold))) {
                 BoxLoreTheme {
-                    AlertDialog(
+                    BoxloreAlertDialog(
                         { dismissed++ },
                         confirmButton = { TextButton({ confirmed++ }) { Text("Continue") } },
+                        dismissButton = { TextButton({}) { Text("Cancel") } },
                         title = { Text("Confirm") },
                         text = { Text("Dialog content") },
                         properties = DialogProperties(dismissOnClickOutside = false),
@@ -105,6 +106,9 @@ class TabletAlertHostingTest {
         }
         advance()
         assertSafePanel(560f)
+        fixture.compose.onNodeWithText("Confirm").assertIsDisplayed()
+        fixture.compose.onNodeWithText("Dialog content").assertIsDisplayed()
+        fixture.compose.onNodeWithText("Cancel").assertIsDisplayed()
         fixture.compose.onNode(isDialog()).performTouchInput { click(Offset(16f, 16f)) }
         assertEquals(0, dismissed)
         fixture.compose.onNodeWithText("Continue").assertIsDisplayed().performClick()
@@ -112,21 +116,35 @@ class TabletAlertHostingTest {
     }
 
     @Test
-    fun `folded date picker keeps its confirmation reachable inside the safe region`() {
-        var confirmed = false
+    fun `open alert follows the window across folding and unfolding`() {
+        val folded = mutableStateOf(false)
+        var confirmed = 0
         fixture.setContent {
-            CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreWindowLayout(673f, 841f, listOf(fold))) {
+            val layout = if (folded.value) BoxloreWindowLayout(673f, 841f, listOf(fold)) else BoxloreWindowLayout(412f, 915f)
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides layout) {
                 BoxLoreTheme {
-                    DatePickerDialog({}, confirmButton = { TextButton({ confirmed = true }) { Text("Select") } }) {
-                        DatePicker(rememberDatePickerState())
-                    }
+                    BoxloreAlertDialog(
+                        {},
+                        confirmButton = { TextButton({ confirmed++ }) { Text("Continue") } },
+                        title = { Text("Confirm") },
+                    )
                 }
             }
         }
         advance()
+        assertNativePanel()
+        fixture.compose.onNodeWithText("Continue").performClick()
+
+        fixture.compose.runOnIdle { folded.value = true }
+        advance()
         assertSafePanel(560f)
-        fixture.compose.onNodeWithText("Select").assertIsDisplayed().performClick()
-        assertTrue(confirmed)
+        fixture.compose.onNodeWithText("Continue").performClick()
+
+        fixture.compose.runOnIdle { folded.value = false }
+        advance()
+        assertNativePanel()
+        fixture.compose.onNodeWithText("Continue").assertIsDisplayed().performClick()
+        assertEquals(3, confirmed)
     }
 
     @Test
@@ -157,6 +175,11 @@ class TabletAlertHostingTest {
         fixture.compose.onNode(isDialog()).performTouchInput { click(Offset(16f, 16f)) }
         assertEquals(false, accepted)
         fixture.compose.onNodeWithText("Accept & Continue").assertExists()
+    }
+
+    private fun assertNativePanel() {
+        fixture.compose.onNodeWithText("Confirm").assertIsDisplayed()
+        assertFalse(fixture.compose.onAllNodesWithTag("boxlore_dialog_panel").fetchSemanticsNodes().isNotEmpty())
     }
 
     private fun assertSafePanel(maxWidth: Float) {

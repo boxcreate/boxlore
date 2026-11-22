@@ -24,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,6 +32,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -124,10 +126,11 @@ private fun ThemeColorSlider(role: String, labelId: Int, value: Float, range: Cl
             Text(label, style = MaterialTheme.typography.labelLarge)
             Text(valueLabel, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        val sliderState = remember(range) { SliderState(value, trackRange = range) }
+        sliderState.value = value
         Slider(
-            value = value,
+            state = sliderState,
             onValueChange = onChange,
-            valueRange = range,
             modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 48.dp).semantics {
                 contentDescription = description
                 stateDescription = valueLabel

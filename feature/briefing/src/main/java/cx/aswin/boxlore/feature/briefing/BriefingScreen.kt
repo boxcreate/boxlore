@@ -53,6 +53,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -271,9 +272,12 @@ private fun BriefingPlaybackControls(state: BriefingUiState.Success, onPlay: () 
         if (state.duration > 0) {
             var seekPosition by remember(state.briefing.region, state.briefing.date) { mutableStateOf<Float?>(null) }
             val interactionSource = remember { MutableInteractionSource() }
+            val sliderValue = seekPosition ?: (state.currentPosition.toFloat() / state.duration).coerceIn(0f, 1f)
+            val sliderState = remember { SliderState(sliderValue) }
+            sliderState.value = sliderValue
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Slider(
-                    value = seekPosition ?: (state.currentPosition.toFloat() / state.duration).coerceIn(0f, 1f),
+                    state = sliderState,
                     onValueChange = { seekPosition = it },
                     onValueChangeFinished = {
                         seekPosition?.let { onSeekTo((it * state.duration).toLong()) }

@@ -38,7 +38,6 @@ import androidx.compose.material.icons.rounded.ViewAgenda
 import androidx.compose.material.icons.rounded.ViewHeadline
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -74,6 +73,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
 import cx.aswin.boxlore.core.designsystem.links.startFirstAvailable
 import cx.aswin.boxlore.core.designsystem.text.asString
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
@@ -664,7 +664,7 @@ internal fun MarkAllEpisodesDialog(
     onConfirm: () -> Unit,
 ) {
     TrackScreenView(if (markAsPlayed) "podcast_mark_all_played_confirmation" else "podcast_mark_all_unplayed_confirmation")
-    AlertDialog(
+    BoxloreAlertDialog(
         onDismissRequest = onDismiss,
         icon = {
             Icon(

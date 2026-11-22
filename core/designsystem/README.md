@@ -50,7 +50,7 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 - `TopBarUtilityActions`: connected Update, Feedback and Settings segments. Update shows only when `LocalUpdateAvailableAction` is set; `LocalFeedbackReplyWaiting` marks Feedback with a dot. Owners keep placement and callbacks.
 - `ConnectedOptionSelector`, `PillFilterChip`, `RegionSegmentedSelector`, `ContentRegionPickerSheet`: option chips, genre pills and the content-region picker.
 - `ContentLanguagesSheet`: the content-languages sheet. English can be switched off only when `ContentRegions.canSwitchEnglishOff` allows it.
-- `BoxloreDialog`, `BoxloreModalBottomSheet`, `BoxloreAlertDialogOverride`, `EngagementBottomSheetScaffold`: phone dialogs and sheets that become bounded, fold-safe dialogs on tablets.
+- `BoxloreDialog`, `BoxloreModalBottomSheet`, `BoxloreAlertDialog`, `EngagementBottomSheetScaffold`: phone dialogs and sheets that become bounded, fold-safe dialogs on tablets.
 - `RemoveDownloadConfirmationDialog`, `PrivacyConsentDialog`, `RepairProgressPopup`: shared confirmation, consent and repair-status UI; the caller owns visibility. `fromWatch` words the first for a copy on the watch.
 - `AddToPlaylistSheet` (a show's playlists with toggling checks; draft in `AddToPlaylistSheetState`), `PlaylistNameDialog`, `DeletePlaylistDialog`, `PlaylistCover` (up to four shows): stateless playlist UI; `PlaylistCopy` and `AddToPlaylistCopy` hold its resources.
 - `SendToWatchIcon`, `WatchEpisodeActions`, `LocalWatchEpisodeActions`: Send to watch for one episode and its state on the watch (`WatchEpisodeCopy`). The local is null without a linked watch, which hides the icon.

@@ -22,7 +22,6 @@ import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ExpandLess
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
 import cx.aswin.boxlore.core.designsystem.components.LocalWatchPlayOffer
 import cx.aswin.boxlore.core.designsystem.components.PlayingOnPill
 import cx.aswin.boxlore.core.designsystem.layout.boxloreVisibleWindowSize
@@ -211,7 +211,7 @@ private fun MinimalPlayerHeading(state: PlayerState, colors: ColorScheme, action
         )
     }
     if (fullTitle) {
-        AlertDialog(
+        BoxloreAlertDialog(
             onDismissRequest = { fullTitle = false },
             title = { Text(show) },
             text = { Text(title, Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) },

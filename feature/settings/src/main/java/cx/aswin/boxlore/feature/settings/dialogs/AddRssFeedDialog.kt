@@ -8,7 +8,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.RssFeed
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,6 +24,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.analytics.TrackScreenView
+import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.feature.settings.R
 
@@ -45,7 +45,7 @@ internal fun AddRssFeedDialog(
     onDismiss: () -> Unit,
 ) {
     TrackScreenView("add_rss_feed")
-    AlertDialog(
+    BoxloreAlertDialog(
         onDismissRequest = {
             if (!isAdding) {
                 onDismiss()
@@ -155,7 +155,7 @@ internal fun RssMatchConfirmationDialog(
     onKeepSeparate: () -> Unit,
 ) {
     TrackScreenView("rss_match_confirmation")
-    AlertDialog(
+    BoxloreAlertDialog(
         onDismissRequest = {
             if (!isLinking) onKeepSeparate()
         },
