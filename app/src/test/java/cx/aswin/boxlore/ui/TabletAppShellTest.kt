@@ -4,8 +4,11 @@ import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
@@ -29,11 +32,14 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreBottomChromeReserved
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
+import cx.aswin.boxlore.core.testing.SystemInsets
+import cx.aswin.boxlore.core.testing.applyFakeSystemInsets
 import cx.aswin.boxlore.core.testing.walkWindows
 import cx.aswin.boxlore.navigation.TabletContextRoot
 import cx.aswin.boxlore.navigation.TabletDetailNavigation
@@ -58,6 +64,9 @@ class TabletAppShellTest {
     private val navigationVisible = mutableStateOf(true)
     private var paneBounds: cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds? = null
     private var homeEntry: androidx.navigation.NavBackStackEntry? = null
+    private var primaryTopInset = -1f
+    private var detailChromeReserved: Boolean? = null
+    private var detailBottomPadding = -1f
     private lateinit var homeScroll: androidx.compose.foundation.ScrollState
 
     /** Each rail tap with what the shell reported: whether it only closed a detail covering the primary pane. */
@@ -323,6 +332,47 @@ class TabletAppShellTest {
     }
 
     @Test
+    fun `tabletop panes pad from their own top edge, not the window's`() {
+        playing.value = true
+        window.value = BoxloreTestWindows.FOLD_FLAT
+        render()
+        fixture.compose.runOnUiThread { applyFakeSystemInsets(fixture.compose.activity, SystemInsets.TABLETOP_STATUS) }
+        advance()
+        fixture.compose.runOnIdle { kotlinx.coroutines.runBlocking { homeScroll.scrollTo(300) } }
+        advance()
+        val owner = requireNotNull(homeEntry)
+        fixture.compose.walkWindows(window, BoxloreTestWindows.FOLD_FLAT, BoxloreTestWindows.FOLD_TABLETOP, BoxloreTestWindows.FOLD_FLAT) { step ->
+            advance()
+            val paneTop = if (step.tabletopFold != null) 336f else 0f
+            val statusInset = if (step.tabletopFold != null) 0f else 24f
+            val railItem = fixture.compose.onNodeWithText("Home").fetchSemanticsNode().boundsInRoot
+            // The rail's own 4dp and 8dp paddings sit below the pane top and the inset.
+            assertEquals(paneTop + statusInset + 12f, railItem.top, 1f)
+            assertEquals(statusInset, primaryTopInset, 0.5f)
+            assertEquals(paneTop + statusInset, fixture.compose.onNodeWithText("Status probe").fetchSemanticsNode().boundsInRoot.top, 1f)
+            assertEquals(300, homeScroll.value)
+            assertTrue(owner === homeEntry)
+        }
+    }
+
+    @Test
+    fun `a show open when folding to the cover reserves the bottom bar once`() {
+        window.value = BoxloreTestWindows.FOLD_FLAT
+        render()
+        fixture.compose.onNodeWithText("Open show").performClick()
+        advance()
+        assertEquals(false, detailChromeReserved)
+        fixture.compose.walkWindows(window, BoxloreTestWindows.COVER_475, BoxloreTestWindows.FOLD_FLAT, BoxloreTestWindows.COVER_475) { step ->
+            advance()
+            fixture.compose.onNodeWithText("Show detail rss:show/test").assertExists()
+            val compact = !step.usesTabletLayout
+            assertEquals(compact, detailChromeReserved)
+            // On the cover the shell's footer already holds the bar and system navigation.
+            if (compact) assertEquals(0f, detailBottomPadding, 0.5f)
+        }
+    }
+
+    @Test
     fun `starting and stopping playback on a Pixel Fold keeps Home and shows the mini player`() {
         window.value = BoxloreTestWindows.PIXEL_FOLD
         render()
@@ -363,6 +413,8 @@ class TabletAppShellTest {
                             TabletShellContent(
                             primary = {
                                 paneBounds = cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds.current
+                                primaryTopInset = cx.aswin.boxlore.core.designsystem.layout.boxlorePaneTopInset().value
+                                Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { Text("Status probe") }
                                 NavHost(primary, "home") {
                                     composable("home") { entry ->
                                         var count by rememberSaveable { mutableIntStateOf(0) }
@@ -388,6 +440,8 @@ class TabletAppShellTest {
                                     composable(TabletContextRoot) {}
                                     composable("podcast/{id}") { entry ->
                                         var count by rememberSaveable { mutableIntStateOf(0) }
+                                        detailChromeReserved = LocalBoxloreBottomChromeReserved.current
+                                        detailBottomPadding = cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding(false, 48.dp).value
                                         androidx.compose.foundation.layout.Column {
                                             Button(onClick = { navigation.detail.popBackStack() }) { Text("Back") }
                                             Text("Show detail ${entry.arguments?.getString("id")}")

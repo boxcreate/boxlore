@@ -3,9 +3,12 @@ package cx.aswin.boxlore.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +29,7 @@ import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreBottomChromeReserved
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -153,6 +157,8 @@ internal fun TabletAppShell(
         TabletPlaybackKeyboard(window.usesTabletLayout && playerAllowed && hasEpisode, content.keyboardActions) { keyboardModifier ->
         TabletShellPhysicalLayout(
             geometry,
+            window,
+            bottomChromeReserved = phoneFooter > 0.dp,
             modifier = keyboardModifier,
             primary = content.primary,
             rail = {
@@ -196,9 +202,12 @@ private fun TabletShellDetails(navigation: TabletDetailNavigation, visible: Bool
     }
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun TabletShellPhysicalLayout(
     geometry: TabletShellGeometry,
+    window: BoxloreWindowLayout,
+    bottomChromeReserved: Boolean,
     modifier: Modifier = Modifier,
     primary: @Composable () -> Unit,
     rail: @Composable () -> Unit,
@@ -206,12 +215,12 @@ private fun TabletShellPhysicalLayout(
     player: @Composable () -> Unit,
 ) {
     Layout(content = {
-        ShellRegion(geometry.primary, "primary_pane", primary)
-        Box(Modifier.clipToBounds()) { rail() }
-        ShellRegion(geometry.detail, "detail_pane") {
+        ShellRegion(geometry.primary, window, "primary_pane", content = primary)
+        Box(Modifier.clipToBounds().consumeInsetsAwayFromWindowEdges(geometry.rail, window)) { rail() }
+        ShellRegion(geometry.detail, window, "detail_pane", bottomChromeReserved) {
             Box(if (geometry.context != null) Modifier.clip(MaterialTheme.shapes.extraLarge) else Modifier) { details() }
         }
-        ShellRegion(geometry.player, "tablet_player_pane") {
+        ShellRegion(geometry.player, window, "tablet_player_pane") {
             Box(if (geometry.context != null && !geometry.detailVisible && geometry.player == geometry.context) Modifier.clip(MaterialTheme.shapes.extraLarge) else Modifier) { player() }
         }
     }, modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) { measurables, constraints ->
@@ -236,8 +245,36 @@ private fun TabletShellPhysicalLayout(
 }
 
 @Composable
-private fun ShellRegion(bounds: BoxloreLayoutBounds, tag: String, content: @Composable () -> Unit) {
-    CompositionLocalProvider(LocalBoxlorePaneWidth provides bounds.width, LocalBoxlorePaneBounds provides bounds) {
-        Box(Modifier.clipToBounds().testTag(tag)) { content() }
+private fun ShellRegion(
+    bounds: BoxloreLayoutBounds,
+    window: BoxloreWindowLayout,
+    tag: String,
+    bottomChromeReserved: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    CompositionLocalProvider(
+        LocalBoxlorePaneWidth provides bounds.width,
+        LocalBoxlorePaneBounds provides bounds,
+        LocalBoxloreBottomChromeReserved provides bottomChromeReserved,
+    ) {
+        Box(Modifier.clipToBounds().consumeInsetsAwayFromWindowEdges(bounds, window).testTag(tag)) { content() }
     }
 }
+
+/**
+ * Only pane edges on the window edge keep system-bar insets. Descendants that pad with
+ * `windowInsetsPadding`, `statusBarsPadding` or `navigationBarsPadding` then pad from their pane:
+ * the lower half in tabletop gets no status-bar gap, and a pane beside another none on that side.
+ */
+@Composable
+private fun Modifier.consumeInsetsAwayFromWindowEdges(bounds: BoxloreLayoutBounds, window: BoxloreWindowLayout): Modifier {
+    val sides = listOfNotNull(
+        WindowInsetsSides.Top.takeIf { bounds.top > EDGE_TOLERANCE_DP },
+        WindowInsetsSides.Left.takeIf { bounds.left > EDGE_TOLERANCE_DP },
+        WindowInsetsSides.Right.takeIf { window.isSpecified && bounds.right < window.widthDp - EDGE_TOLERANCE_DP },
+        WindowInsetsSides.Bottom.takeIf { window.isSpecified && bounds.bottom < window.heightDp - EDGE_TOLERANCE_DP },
+    ).reduceOrNull { all, side -> all + side } ?: return this
+    return consumeWindowInsets(WindowInsets.safeDrawing.only(sides))
+}
+
+private const val EDGE_TOLERANCE_DP = 0.5f

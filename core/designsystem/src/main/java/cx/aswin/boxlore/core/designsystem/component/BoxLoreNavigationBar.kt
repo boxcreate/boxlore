@@ -171,16 +171,30 @@ fun appBottomChromeContentPadding(
         if (isMiniPlayerVisible) metrics.miniPlayerHeight + metrics.miniPlayerNavigationGap else 0.dp
 }
 
+/**
+ * Bottom padding for content in the pane this is called from. The mini player counts only when it
+ * sits over this pane; the bar and system navigation drop out where the shell already reserves them.
+ */
 @Composable
 fun appBottomChromeContentPadding(
     isMiniPlayerVisible: Boolean,
     systemNavigationInset: androidx.compose.ui.unit.Dp = 0.dp,
-): androidx.compose.ui.unit.Dp = appBottomChromeContentPadding(
-    style = LocalNavigationStyle.current,
-    isMiniPlayerVisible = isMiniPlayerVisible && !cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePlayerPaneVisible.current,
-    systemNavigationInset = systemNavigationInset,
-    navigationRailVisible = cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreNavigationRailVisible.current,
-)
+): androidx.compose.ui.unit.Dp {
+    val style = LocalNavigationStyle.current
+    val miniPlayerOverPane = isMiniPlayerVisible &&
+        !cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePlayerPaneVisible.current &&
+        cx.aswin.boxlore.core.designsystem.layout.dockedPlayerCoversPane()
+    if (cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreBottomChromeReserved.current) {
+        val metrics = navigationChromeMetrics(style)
+        return if (miniPlayerOverPane) metrics.miniPlayerHeight + metrics.miniPlayerNavigationGap else 0.dp
+    }
+    return appBottomChromeContentPadding(
+        style = style,
+        isMiniPlayerVisible = miniPlayerOverPane,
+        systemNavigationInset = systemNavigationInset,
+        navigationRailVisible = cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreNavigationRailVisible.current,
+    )
+}
 
 /** Explore For You / Top segmented control (padding + pill). */
 val ExploreTabSelectorFabHeight = cx.aswin.boxlore.core.designsystem.components.DiscoveryTabSwitcherMinimumHeight
