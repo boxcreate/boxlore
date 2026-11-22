@@ -848,6 +848,7 @@ class AppContainer(
             rssPodcastRepository = rssPodcastRepository,
             notificationSyncPort = subscriptionRepository,
             feedAddresses = subscriptionRepository.feedAddresses,
+            localEpisodeCatalog = subscribedEpisodeCatalog,
         )
     }
 
