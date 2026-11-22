@@ -1,11 +1,16 @@
 package cx.aswin.boxlore.core.designsystem.analytics
 
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import cx.aswin.boxlore.core.analytics.ScreenViews
+import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -17,7 +22,8 @@ import org.robolectric.annotation.Config
 
 /**
  * [TrackScreenView]: one view per visit, not again after the activity is recreated (rotation, fold,
- * resize), a new visit for a new key, and the screen trail following sheets that open and close.
+ * resize), a new visit for a new key, the screen trail following sheets that open and close, and
+ * one visit while a sheet turns into a centred panel and back.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
@@ -115,5 +121,28 @@ class TrackScreenViewTest {
         compose.waitForIdle()
 
         assertEquals("history_insights", ScreenViews.trail.current)
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun aSheetBecomingACentredPanelAndBackIsOneVisit() {
+        ScreenViews.show(ScreenViews.Registration(), "podcast_detail")
+        var window by mutableStateOf(BoxloreWindowLayout(839f, 900f))
+        compose.setContent {
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides window) {
+                BoxloreModalBottomSheet(onDismissRequest = {}) {
+                    TrackScreenView("share_sheet") { previous -> sent += "share_sheet after $previous" }
+                }
+            }
+        }
+        compose.waitForIdle()
+
+        for (width in listOf(841f, 839f, 841f)) {
+            window = BoxloreWindowLayout(width, 900f)
+            compose.waitForIdle()
+        }
+
+        assertEquals(listOf("share_sheet after podcast_detail"), sent)
+        assertEquals(ScreenViews.Trail(current = "share_sheet", previous = "podcast_detail"), ScreenViews.trail)
     }
 }
