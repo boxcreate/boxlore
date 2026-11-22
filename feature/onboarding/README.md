@@ -16,8 +16,9 @@ Owns first-run onboarding: the Welcome screen, Echo (the AI-guided conversation 
 ## Flow
 
 - **Language** (`AppLanguageQuestionContent`, step `APP_LANGUAGE`): first, only while onboarding is unfinished, no App language was picked and the phone's languages or region suggest a translation (`AppLanguageMatcher`). The screen stays in English and names each language in itself: the suggested one as the main button, then English and the other translations, while the greeting above cycles through every language. System default is left to Settings. A pick moves on to Welcome and the app applies it at once; the activity's recreation keeps this view model, so nothing is lost. Echo's server text follows the app's language through `appLanguage` (below).
-- **Welcome** (`WelcomeScreen`): a cover reel, a rotating reply line and Echo peeking over the **Find shows for me** button; the actions start Echo, search, library import (handled by the app) or skip.
-- **Echo** (`AiOnboardingScreen` → `EchoOnboardingScreen`): one question per turn with fixed areas for the top bar, Echo, the question, its answers and a buttons-only footer. The screen never scrolls; `EchoLayout` picks a height tier from the space available.
+- **Opening hand-off**: the language question and Welcome share their panel and logo row (`OpeningPanel`; side by side through `OnboardingOpeningFrame` on windows wider than tall from 600dp). A pick records how the panel stood (`OpeningHandoff`, held in `OnboardingUiState` until Welcome has taken over), the step changes without a slide, and Welcome's panel settles from the question's height while the greeting gives way to the covers. With animations off Welcome shows at once.
+- **Welcome** (`WelcomeScreen`): a cover reel, a rotating reply line and Echo peeking over the **Find shows for me** button; the actions start Echo, search, library import (handled by the app) or skip. Portrait windows stack the cover panel above the rest, with covers that shrink only when the page would otherwise scroll; wider-than-tall windows put the panel beside the invitation and actions.
+- **Echo** (`AiOnboardingScreen` → `EchoOnboardingScreen`): one question per turn with fixed areas for the top bar, Echo, the question, its answers and a buttons-only footer. The screen never scrolls: the question gets its height first and `echoFitPlan` steps down only while the rest would overflow (today's `EchoLayout` tier, shorter answers then a smaller Echo and bubble, answers without icons, then the answers stacked with Something else beside the main button, beside Echo and the question on wide, short windows, and last Echo folded away).
 - The opening turn is app-owned and sends no request: the eight `EchoInitialTopic` answers plus **Something else**, a text box for free answers.
 - `EchoScreenModel` decides the screen kind (`EchoScreenKind`), footer actions, progress and Echo's pose as pure functions.
 - Finishing is always the listener's choice. `GuidedOnboardingLogic` caps a conversation at seven answers (`MAX_ANSWERS`) and offers the build nudge after four.
@@ -45,8 +46,10 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
   OnboardingViewModel{Ai,Deck,Genre,Search,SimilarShows}.kt
   Welcome*.kt                          # screen, cover reel, reply loop, entry timing, motion clock,
                                        #   Echo's eye script (WelcomeEchoIdle.kt)
+  OnboardingOpeningFrame.kt, OpeningHandoffMotion.kt  # shared opening panel, side-by-side frame, language-to-Welcome hand-off
   Echo{OnboardingScreen,TopBar,Conversation,Answers,FooterBar}.kt
-  EchoScreenModel.kt, EchoLayoutMetrics.kt, EchoMotion.kt, EchoPlatformMotion.kt, EchoMoments.kt
+  EchoScreenModel.kt, EchoLayoutMetrics.kt, EchoFitPlan.kt, EchoFitMeasure.kt  # tiers and the no-scroll fit order
+  EchoMotion.kt, EchoPlatformMotion.kt, EchoMoments.kt
   EchoInitialTopic.kt, EchoChoiceIcons.kt, EchoLanguageHint.kt, EchoPrivacyNotice.kt
   EchoRequestLifecycle.kt              # request jobs, question snapshots, EchoRequestPolicy
   EchoWaitMessages.kt                  # slow-request lines and countdowns
