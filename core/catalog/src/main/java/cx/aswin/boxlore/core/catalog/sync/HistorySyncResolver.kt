@@ -14,6 +14,11 @@ import kotlin.math.abs
  * Guarantees active playing episode protection, progress LWW, independent like and archive LWW
  * (each on its own decision time), and preservation of local cached rich metadata.
  *
+ * When this device's copy is newer than the pulled one on any of those clocks (play, like or
+ * archive time), the row is marked for the next push: the cloud keeps the newer value of each
+ * clock, so the push brings it, and every device pulling after it, up to this device's copy. Equal
+ * clocks never mark a row, so two devices can't keep sending the same row back and forth.
+ *
  * @param episodeIds every stored ID of an episode (`EpisodeListenerStore.memberIds`); just the ID
  *   when it has no other. The playing episode is protected under each of them, because its
  *   progress is written to its owner ID, which may differ from the ID playback started with
@@ -88,6 +93,9 @@ class HistorySyncResolver(
         // server that dropped the field sends 0, which never wins over a decision made here.
         val finalDismissedAt = if (abs(remote.dismissedAt) > local.dismissDecisionAt) remote.dismissedAt else local.dismissedAt
 
+        // This device's like or archive decision is newer than the cloud's: it goes up again.
+        val localDecisionNewer = local.likedAt > remote.likedAt || local.dismissDecisionAt > abs(remote.dismissedAt)
+
         if (isActive) {
             val updated = local.copy(
                 episodeTitle = meta.episodeTitle,
@@ -98,6 +106,7 @@ class HistorySyncResolver(
                 isLiked = finalIsLiked,
                 likedAt = finalLikedAt,
                 dismissedAt = finalDismissedAt,
+                isDirty = local.isDirty || localDecisionNewer,
                 syncedAt = syncedAt,
             )
             listeningHistoryDao.upsert(updated.withListeningDatesOf(remote))
@@ -118,7 +127,7 @@ class HistorySyncResolver(
                 isLiked = finalIsLiked,
                 likedAt = finalLikedAt,
                 dismissedAt = finalDismissedAt,
-                isDirty = local.isDirty && (local.likedAt > remote.likedAt || local.dismissDecisionAt > abs(remote.dismissedAt)),
+                isDirty = localDecisionNewer,
                 syncedAt = syncedAt,
             )
         } else {
@@ -131,6 +140,9 @@ class HistorySyncResolver(
                 isLiked = finalIsLiked,
                 likedAt = finalLikedAt,
                 dismissedAt = finalDismissedAt,
+                // This device played it later than the cloud's copy, which a device sending an older
+                // copy may have put there: it goes up again.
+                isDirty = local.isDirty || local.lastPlayedAt > remote.lastPlayedAt || localDecisionNewer,
                 syncedAt = syncedAt,
             )
         }
