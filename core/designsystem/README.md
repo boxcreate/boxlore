@@ -35,9 +35,9 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 
 ### Layout and window classes
 
-- `BoxloreWindowLayout`, `LocalBoxloreWindowLayout`: the app-supplied window and fold model; isolated previews default to phone presentation.
-- `boxlorePaneSpec`, `LocalBoxlorePaneWidth`, `LocalBoxlorePaneBounds`: pane sizes the shell supplies; features never infer them from the full window.
-- `rememberBoxloreFoldSafePopupPositionProvider`, `BoxloreTabletopSplit`, `boxloreIsShortPane`: fold-safe popups, the tabletop split and the short-pane check.
+- `BoxloreWindowLayout`, `LocalBoxloreWindowLayout`: the app-supplied window and fold model; previews default to phones.
+- `boxlorePaneSpec`, `LocalBoxlorePaneBounds`, `dockedPlayerCoversPane`: shell-supplied panes, never inferred from the window; half-open folds use the whole window until a pane opens.
+- `rememberBoxloreFoldSafePopupPositionProvider`, `BoxloreTabletopSplit`, `boxloreIsShortPane`, `BoxloreSafeInsets.kt`: fold-safe popups, tabletop split, short-pane check, pane-relative insets.
 - `BoxloreCardSpec`, `boxlorePosterColumns`: tablet card families and poster packing; phone layouts are unchanged.
 - Gates and state retention: see [adaptive UI and state](../../ARCHITECTURE.md#adaptive-ui-and-state).
 
@@ -66,7 +66,7 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 - `BoxLoreNavigationBar`, `NavigationStyle`: the floating 3+1 bar (Home, Explore, Library plus Lore) or the classic four-tab bar, each with one moving selection indicator.
 - `BoxLoreNavigationRail`: the tablet rail, reusing the bar's destinations, selection logic and colours.
 - `NavigationAccentColors`: selected tabs use the theme's `primary` and `onPrimary` roles; Lore keeps its aurora inside the same indicator.
-- `NavigationChromeMetrics`, `appBottomChromeContentPadding`: chrome and mini-player geometry so overlays clear the bar.
+- `NavigationChromeMetrics`, `appBottomChromeContentPadding`, `floatingChromeSideOffsets`: chrome geometry; floating chrome avoids side insets.
 - `LocalAdaptivePlayerCompactProgress`, `Modifier.adaptivePlayerOverlayOffset`: the app-owned player and bar morph progress.
 - `PredictiveBackWrapper`: the NavHost peek during system Back; always returns to rest after commit or cancel.
 

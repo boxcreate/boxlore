@@ -31,7 +31,7 @@
 - `resolveStartDestination` picks the cold-start route: incomplete onboarding, then offline Downloads, then **Open app to**, then Home. Deep links and push `target_route` win over Open app to; a landing it opened goes Back to Home.
 - Floating and Classic navigation share Home, Explore, Library and Lore (`learn`). Reselecting Explore while it shows opens search (`ExploreSearchRequestKey`).
 - `AdaptivePlayerChrome` compacts the Floating bar and docks the mini player while browsing; Lore forces compact. Screens read `LocalAdaptivePlayerCompactProgress` ([product surfaces](../ARCHITECTURE.md#product-surfaces)).
-- `TabletAppShell` keeps primary and detail NavHosts (`TabletDetailNavigation`) alive while resizing, with a rail on tablets and a context pane for player and details in split windows; a hidden detail host drops to CREATED, so it can't take Back.
+- `TabletAppShell` keeps both NavHosts (`TabletDetailNavigation`) alive while resizing, with a rail on tablets and a player and detail pane in split windows and on half-open folds; a hidden detail host drops to CREATED and can't take Back.
 - `ArtworkNavigationHostTheme` lets detail destinations publish artwork colours per back-stack entry; regular pages use the saved theme from their first frame, including during predictive Back.
 - Email sign-in opens Settings on Account (`ACCOUNT_PAGE_ROUTE`) once per request; Account and onboarding hide the player overlay.
 - Window gates, state retention and transition coverage follow the [adaptive UI and state contract](../ARCHITECTURE.md#adaptive-ui-and-state).
