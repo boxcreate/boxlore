@@ -81,7 +81,11 @@ import cx.aswin.boxlore.core.designsystem.component.BoxloreTopBar
 import cx.aswin.boxlore.core.designsystem.components.ActionPillFilterChip
 import cx.aswin.boxlore.core.designsystem.components.AddToPlaylistSheet
 import cx.aswin.boxlore.core.designsystem.components.AddToPlaylistSheetState
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDropdownMenu
+import cx.aswin.boxlore.core.designsystem.components.BoxloreMenuState
+import cx.aswin.boxlore.core.designsystem.components.BoxloreSearchField
 import cx.aswin.boxlore.core.designsystem.components.BoxloreSnackbarHost
+import cx.aswin.boxlore.core.designsystem.components.BoxloreTextField
 import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.components.ContentLanguagesSheet
 import cx.aswin.boxlore.core.designsystem.components.ContentRegionPickerSheet
@@ -192,6 +196,50 @@ class DesignSystemAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
                 }
                 MoreMenu()
             }
+        }
+    }
+
+    /** The shared menu from a top bar's end: a labelled choice group, actions and a red group, eleven rows in all. */
+    @Test fun menuGallery() = render("menu-gallery", allWindows = true) {
+        val labels = listOf(
+            R.string.player_control_share,
+            R.string.player_control_mark_played,
+            R.string.player_control_add_to_queue,
+            R.string.player_control_download,
+            R.string.player_control_like,
+            R.string.player_control_chapters,
+            R.string.player_control_transcript,
+        ).map { stringResource(it) }
+        val sort = listOf(R.string.navigation_style_floating, R.string.navigation_style_classic).map { stringResource(it) }
+        val delete = stringResource(R.string.playlist_delete)
+        val heading = stringResource(R.string.navigation_library)
+        Box(Modifier.fillMaxSize().safeDrawingPadding()) {
+            Box(Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 4.dp)) {
+                MoreMenuButton()
+                BoxloreDropdownMenu(remember { BoxloreMenuState(true) }) {
+                    group {
+                        groupLabel(heading)
+                        sort.forEachIndexed { index, label -> selectableItem(label, selected = index == 0, onClick = {}) }
+                    }
+                    group { labels.forEach { item(it, onClick = {}) } }
+                    item(delete, onClick = {}, destructive = true)
+                }
+            }
+        }
+    }
+
+    /** The shared text field and search box, empty and filled. */
+    @Test fun fieldsShared() = render("fields-shared") {
+        Column(Modifier.fillMaxSize().safeDrawingPadding().padding(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            BoxloreTextField(
+                value = "Road trip mornings with long names",
+                onValueChange = {},
+                label = stringResource(R.string.playlist_name_label),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            )
+            BoxloreTextField(value = "", onValueChange = {}, label = stringResource(R.string.playlist_name_label), modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
+            BoxloreSearchField(query = "", onQueryChange = {}, onSearch = {}, placeholder = stringResource(R.string.add_to_playlist_title), modifier = Modifier.padding(horizontal = 16.dp))
+            BoxloreSearchField(query = "History", onQueryChange = {}, onSearch = {}, placeholder = stringResource(R.string.add_to_playlist_title), modifier = Modifier.padding(horizontal = 16.dp))
         }
     }
 

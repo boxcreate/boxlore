@@ -1,35 +1,65 @@
 package cx.aswin.boxlore.core.designsystem.components
 
 import android.app.Application
+import android.provider.Settings
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarState
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performMouseInput
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.designsystem.component.BoxloreTopBar
 import cx.aswin.boxlore.core.designsystem.component.boxloreLargeTitlePresentation
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
@@ -149,6 +179,281 @@ class SharedControlsLongTextTest {
         }
     }
 
+    @Test
+    fun `icon-only top bar segments name themselves on long-press and hover`() {
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            Page(BoxloreTestWindows.TABLET) {
+                TopBarUtilityActions(onFeedbackClick = {}, onSettingsClick = {}, modifier = Modifier.padding(top = 120.dp, start = 400.dp))
+            }
+        }
+        compose.mainClock.advanceTimeBy(100)
+        compose.onNodeWithText("Send Feedback").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Send Feedback").performTouchInput { longClick() }
+        compose.mainClock.advanceTimeBy(300)
+        compose.onNodeWithText("Send Feedback").assertExists()
+        compose.mainClock.advanceTimeBy(3_000)
+        compose.onNodeWithText("Send Feedback").assertDoesNotExist()
+
+        compose.onNodeWithContentDescription("Settings").performMouseInput { enter(center) }
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.onNodeWithText("Settings").assertExists()
+    }
+
+    @Test
+    fun `the update sweep runs three times and then holds still`() {
+        compose.mainClock.autoAdvance = false
+        val phases = mutableListOf<Float>()
+        compose.setContent {
+            val sweep = rememberUpdateShimmerSweep()
+            LaunchedEffect(sweep) { snapshotFlow { sweep.value }.collect { phases += it } }
+        }
+        compose.mainClock.advanceTimeBy(UpdateShimmer.DURATION_MILLIS / 2L)
+        assertTrue("the sweep moves", phases.any { it > UpdateShimmer.START && it < UpdateShimmer.END })
+        compose.mainClock.advanceTimeBy(UpdateShimmer.DURATION_MILLIS * UpdateShimmer.SWEEPS.toLong())
+        val settled = phases.last()
+        assertEquals(UpdateShimmer.END, settled, 0.001f)
+        val count = phases.size
+        compose.mainClock.advanceTimeBy(UpdateShimmer.DURATION_MILLIS * 2L)
+        assertEquals("the sweep holds still after the last pass", count, phases.size)
+    }
+
+    @Test
+    fun `with animations off the update sweep never starts`() {
+        val resolver = ApplicationProvider.getApplicationContext<Application>().contentResolver
+        Settings.Global.putFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f)
+        try {
+            compose.mainClock.autoAdvance = false
+            val phases = mutableListOf<Float>()
+            compose.setContent {
+                val sweep = rememberUpdateShimmerSweep()
+                LaunchedEffect(sweep) { snapshotFlow { sweep.value }.collect { phases += it } }
+            }
+            compose.mainClock.advanceTimeBy(UpdateShimmer.DURATION_MILLIS * 4L)
+            assertTrue(phases.isNotEmpty())
+            assertTrue("phases $phases", phases.all { it == UpdateShimmer.START })
+        } finally {
+            Settings.Global.putFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f)
+        }
+    }
+
+    @Test
+    fun `filter chips are full touch targets, filled when selected and shortened when long`() {
+        val colors = mutableListOf<ColorScheme>()
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f, fontScale = 1.3f)) {
+                Page(BoxloreTestWindows.PHONE_SMALL) {
+                    colors += MaterialTheme.colorScheme
+                    Column(Modifier.background(MaterialTheme.colorScheme.surface)) {
+                        BoxloreFilterChip(selected = true, onClick = {}, label = "Musik", modifier = Modifier.testTag("selected"))
+                        BoxloreFilterChip(selected = false, onClick = {}, label = "Wissenschaft", modifier = Modifier.testTag("unselected"))
+                        BoxloreFilterChip(
+                            selected = false,
+                            onClick = {},
+                            label = "Gesellschaft und Kultur und noch viel mehr",
+                            modifier = Modifier.widthIn(max = 160.dp),
+                        )
+                    }
+                }
+            }
+        }
+        val scheme = colors.last()
+        listOf("selected" to scheme.primaryContainer, "unselected" to scheme.surfaceContainer).forEach { (tag, expected) ->
+            val node = compose.onNodeWithTag(tag)
+            assertTrue("$tag is shorter than 48dp", node.fetchSemanticsNode().boundsInRoot.height >= 48f)
+            val image = node.captureToImage().asAndroidBitmap()
+            assertEquals(tag, expected.toArgb(), image.getPixel(image.width - 6, image.height / 2))
+        }
+        compose.onNodeWithTag("selected").assertIsSelected()
+        compose.onNodeWithTag("unselected").assertIsNotSelected()
+        val long = textLayout("Gesellschaft und Kultur und noch viel mehr")
+        assertEquals(1, long.lineCount)
+        assertTrue("a long chip label shortens", long.isLineEllipsized(0))
+    }
+
+    @Test
+    fun `chips on sheets stay visible against the sheet`() {
+        val pairs = mutableListOf<Pair<Color, Color>>()
+        compose.setContent {
+            listOf(false, true).forEach { dark ->
+                BoxLoreTheme(darkTheme = dark, dynamicColor = false) {
+                    pairs += BoxloreFilterChipDefaults.SheetContainer to MaterialTheme.colorScheme.surfaceContainer
+                }
+            }
+        }
+        assertEquals(2, pairs.size)
+        pairs.forEach { (chip, sheet) -> assertTrue("$chip on $sheet", chip != sheet) }
+    }
+
+    @Test
+    fun `option names in French, Spanish, Portuguese and German fit their buttons at 296dp`() {
+        val sets = mutableStateOf(SELECTOR_LABELS.first())
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f, fontScale = 1.3f)) {
+                Page(BoxloreTestWindows.PHONE_SMALL) {
+                    Box(Modifier.width(296.dp)) {
+                        ConnectedOptionSelector(options = sets.value.mapIndexed { index, label -> index to label }, selected = 0, onSelect = {})
+                    }
+                }
+            }
+        }
+        SELECTOR_LABELS.forEach { labels ->
+            compose.runOnIdle { sets.value = labels }
+            compose.waitForIdle()
+            labels.forEach { label ->
+                val layout = textLayout(label)
+                assertFalse("$label is cut", layout.hasVisualOverflow)
+                assertTrue("$label breaks inside a word", layout.fitsWholeWords(label))
+            }
+        }
+    }
+
+    @Test
+    fun `options stack as a list when a name cannot fit even on two lines, and go back to a row when there is room`() {
+        val width = mutableStateOf(200.dp)
+        compose.setContent {
+            Page(BoxloreTestWindows.TABLET) {
+                Box(Modifier.width(width.value)) {
+                    ConnectedOptionSelector(
+                        options = listOf(0 to "Herunterladen", 1 to "Benachrichtigungen", 2 to "Aus"),
+                        selected = 1,
+                        onSelect = {},
+                    )
+                }
+            }
+        }
+        fun tops() = listOf("Herunterladen", "Benachrichtigungen", "Aus").map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
+        val stacked = tops()
+        assertTrue("stacked at 200dp: $stacked", stacked.zipWithNext().all { (a, b) -> b > a })
+        compose.onNodeWithText("Benachrichtigungen").assert(SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, ToggleableState.On))
+        compose.runOnIdle { width.value = 600.dp }
+        compose.waitForIdle()
+        val row = tops()
+        assertTrue("one row at 600dp: $row", row.all { it == row.first() })
+        compose.onNodeWithText("Benachrichtigungen").assert(SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, ToggleableState.On))
+    }
+
+    @Test
+    fun `English options on a phone keep their full size on one line`() {
+        val styles = mutableListOf<TextStyle>()
+        compose.setContent {
+            Page(BoxloreTestWindows.PHONE) {
+                styles += MaterialTheme.typography.labelLarge
+                ConnectedOptionSelector(
+                    options = listOf(0 to "Floating", 1 to "Classic"),
+                    selected = 0,
+                    onSelect = {},
+                    labelStyle = MaterialTheme.typography.labelLarge,
+                )
+            }
+        }
+        listOf("Floating", "Classic").forEach { label ->
+            val layout = textLayout(label)
+            assertEquals(1, layout.lineCount)
+            assertEquals(styles.last().fontSize, layout.layoutInput.style.fontSize)
+        }
+    }
+
+    @Test
+    fun `field hints stay on one line in German at large text`() {
+        val hint = "Titel, Hosts oder Themen in allen Podcasts suchen"
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f, fontScale = 1.3f)) {
+                Page(BoxloreTestWindows.PHONE_SMALL) {
+                    Column {
+                        BoxloreTextField(value = "", onValueChange = {}, placeholder = "$hint.", modifier = Modifier.fillMaxWidth())
+                        BoxloreSearchField(query = "", onQueryChange = {}, onSearch = {}, placeholder = hint)
+                    }
+                }
+            }
+        }
+        listOf("$hint.", hint).forEach { text ->
+            val layout = textLayout(text)
+            assertEquals(text, 1, layout.lineCount)
+        }
+    }
+
+    @Test
+    fun `clear empties the search and keeps the keyboard, and the search key searches once`() {
+        val query = mutableStateOf("comedy")
+        val searches = mutableListOf<String>()
+        compose.setContent {
+            Page(BoxloreTestWindows.PHONE) {
+                BoxloreSearchField(query = query.value, onQueryChange = { query.value = it }, onSearch = { searches += it }, placeholder = "Search")
+            }
+        }
+        val field = compose.onNode(hasSetTextAction())
+        field.performClick()
+        field.assertIsFocused()
+        compose.onNodeWithContentDescription("Clear search").performClick()
+        compose.waitForIdle()
+        assertEquals("", query.value)
+        compose.onNode(hasSetTextAction()).assertIsFocused()
+        compose.onNodeWithContentDescription("Clear search").assertDoesNotExist()
+        compose.onNode(hasSetTextAction()).performTextInput("history")
+        compose.onNode(hasSetTextAction()).performImeAction()
+        assertEquals(listOf("history"), searches)
+    }
+
+    @Test
+    fun `the search field stops at 720dp on tablets`() {
+        compose.setContent {
+            Page(BoxloreTestWindows.TABLET) {
+                BoxloreSearchField(query = "", onQueryChange = {}, onSearch = {}, placeholder = "Search", modifier = Modifier.testTag("search"))
+            }
+        }
+        assertTrue(compose.onNodeWithTag("search").fetchSemanticsNode().boundsInRoot.width <= 720f)
+    }
+
+    @Test
+    fun `a destructive confirm is filled in the error colour and Cancel has no container`() {
+        val schemes = mutableListOf<ColorScheme>()
+        compose.setContent {
+            Page(BoxloreTestWindows.PHONE) {
+                schemes += MaterialTheme.colorScheme
+                Row(Modifier.background(MaterialTheme.colorScheme.surface).padding(16.dp)) {
+                    Box(Modifier.testTag("dismiss")) { BoxloreDialogDismissButton("Cancel", onClick = {}) }
+                    Box(Modifier.testTag("confirm")) { BoxloreDialogConfirmButton("Remove", onClick = {}, destructive = true) }
+                }
+            }
+        }
+        val scheme = schemes.last()
+        val confirm = compose.onNodeWithTag("confirm").captureToImage().asAndroidBitmap()
+        assertEquals(scheme.error.toArgb(), confirm.getPixel(confirm.width / 2, 8))
+        val dismiss = compose.onNodeWithTag("dismiss").captureToImage().asAndroidBitmap()
+        assertEquals(scheme.surface.toArgb(), dismiss.getPixel(dismiss.width / 2, 8))
+        assertTrue(compose.onNodeWithTag("confirm").fetchSemanticsNode().boundsInRoot.height >= 48f)
+    }
+
+    @Test
+    fun `German dialog buttons wrap instead of running out of a 360dp dialog at large text`() {
+        val labels = listOf("Heruntergeladene Folge endgültig entfernen", "Abbrechen und behalten")
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f, fontScale = 1.3f)) {
+                Page(BoxloreTestWindows.PHONE_SMALL) {
+                    BoxloreAlertDialog(
+                        onDismissRequest = {},
+                        title = { Text("Download entfernen?") },
+                        confirmButton = { BoxloreDialogConfirmButton(labels[0], onClick = {}, destructive = true) },
+                        dismissButton = { BoxloreDialogDismissButton(labels[1], onClick = {}) },
+                    )
+                }
+            }
+        }
+        labels.forEach { label ->
+            val layout = textLayout(label)
+            assertFalse("$label is cut at the bottom", layout.didOverflowHeight)
+            assertFalse("$label is shortened", layout.isLineEllipsized(layout.lineCount - 1))
+            assertTrue("$label breaks inside a word", (0 until layout.lineCount - 1).all { label[layout.getLineEnd(it) - 1] == ' ' || label[layout.getLineEnd(it)] == ' ' })
+        }
+    }
+
+    private fun textLayout(text: String): TextLayoutResult {
+        val results = mutableListOf<TextLayoutResult>()
+        compose.onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode().config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
+        return results.single()
+    }
+
     @Composable
     private fun Page(window: BoxloreWindowLayout, content: @Composable () -> Unit) {
         CompositionLocalProvider(LocalBoxloreWindowLayout provides window) {
@@ -160,5 +465,11 @@ class SharedControlsLongTextTest {
 
     private companion object {
         val LONG_TITLES = listOf("Téléchargements intelligents", "Episodios que te gustan")
+        val SELECTOR_LABELS = listOf(
+            listOf("Désactivé", "Téléchargements", "Toujours"),
+            listOf("Recortadas", "Portadas enteras"),
+            listOf("Desativado", "Wi-Fi", "Sempre"),
+            listOf("Aus", "Automatisch", "Immer"),
+        )
     }
 }

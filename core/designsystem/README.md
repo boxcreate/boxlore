@@ -47,12 +47,16 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 - `OptimizedImage`: the artwork composable (`fallbackUrls`, `errorContent`, `showLoadingPlaceholder`, `onLoaded`).
 - `FeedMediaCard`, `ExpressiveFeedMediaCard`, `CuratedEpisodeCard`, `EqualHeightPosterGrid`: discovery cards. `FeedMediaCardSkeleton` shares the loaded layout at any font scale.
 - `TabletFeaturedRow`, `AdaptiveOverflowRow`: a feature card beside equal-height posters; a width-packed chip row.
-- `DiscoveryTabSwitcher`: Explore and Subscriptions tab capsule; pages keep selection.
-- `TopBarUtilityActions`: connected Update, Feedback and Settings segments. Update shows only when `LocalUpdateAvailableAction` is set; `LocalFeedbackReplyWaiting` marks Feedback with a dot.
+- `DiscoveryTabSwitcher`: Explore and Subscriptions tab capsule; pages keep selection. The floating pill grows to fit long names and the docked one is capped on tablets; icons drop before names shorten.
+- `TopBarUtilityActions`: connected Update, Feedback and Settings segments, each named in a tooltip. Update shows only when `LocalUpdateAvailableAction` is set; `LocalFeedbackReplyWaiting` marks Feedback with a dot. Their sweep runs three times, never with animations off.
+- `BoxloreTooltip`: names an icon-only button on hover or long-press, from its content description.
 - `BoxloreTopBar`, `boxloreLargeTitlePresentation`: page header, slim in short panes.
-- `ConnectedOptionSelector`, `PillFilterChip`, `RegionSegmentedSelector`, `ContentRegionPickerSheet`: option chips, genre pills and the content-region picker.
+- `ConnectedOptionSelector`, `RegionSegmentedSelector`, `ContentRegionPickerSheet`: option buttons (long names shrink, wrap, then stack as a list) and the content-region picker.
+- `BoxloreFilterChip`, `BoxloreMoreChip`, `BoxloreFilterChipDefaults`: the one filter chip, with a container for sheets; `PillFilterChip` is the same chip for genre pills.
+- `BoxloreDropdownMenu`, `rememberBoxloreMenuState`: grouped menus with selectable rows and red destructive groups, fold-safe and saved across recreation.
+- `BoxloreTextField`, `BoxloreSearchField`: the rounded text field and the one search box; hints stay on one line.
 - `ContentLanguagesSheet`: the content-languages sheet. English can be switched off only when `ContentRegions.canSwitchEnglishOff` allows it.
-- `BoxloreDialog`, `BoxloreModalBottomSheet`, `BoxloreAlertDialog`, `EngagementBottomSheetScaffold`: phone dialogs and sheets that become bounded, fold-safe dialogs on tablets.
+- `BoxloreDialog`, `BoxloreModalBottomSheet`, `BoxloreAlertDialog`, `EngagementBottomSheetScaffold`: phone dialogs and sheets that become bounded, fold-safe dialogs on tablets. `BoxloreDialogConfirmButton` (filled, error-coloured when destructive), `BoxloreDialogDismissButton` and `BoxloreDialogIcon` give dialogs one look.
 - `BoxloreSnackbarHost`, `BoxloreScrollableCenteredColumn`: snackbars above bottom chrome; centred panels that scroll when short.
 - `RemoveDownloadConfirmationDialog`, `PrivacyConsentDialog`, `RepairProgressPopup`: shared confirmation, consent and repair-status UI; the caller owns visibility. `fromWatch` words the first for a copy on the watch.
 - `AddToPlaylistSheet` (a show's playlists with toggling checks; draft in `AddToPlaylistSheetState`), `PlaylistNameDialog`, `DeletePlaylistDialog`, `PlaylistCover` (up to four shows): stateless playlist UI; `PlaylistCopy` and `AddToPlaylistCopy` hold its resources.
@@ -178,6 +182,7 @@ Tests live in `src/test`; Compose tests use Robolectric. Phone goldens are local
 | Layout and tablet input | `BoxloreWindowLayoutTest`, `BoxloreCardSpecTest`, `EqualHeightPosterGridTest`, `OverflowPackingTest`, `TabletSecondaryClickGestureTest`; `TabletModalTest`, `TabletInputTest` in `:app` |
 | Navigation chrome | `FloatingNavigationChromeTest`, `NavigationIndicatorMotionTest`, `NavigationAccentColorsTest`, `NavigationChromePlacementTest`, `AdaptivePlayerOverlayOffsetTest`, `PredictiveBackPeekTest` |
 | Press feedback, top bar, cards, tabs | `ExpressivePressFeedbackTest`, `TopBarUtilityActionsTest`, `HomeDiscoveryCardTest`, `DiscoveryTabSwitcherTest` in `:feature:home` |
+| Menus, chips, selectors, fields, dialog buttons | `BoxloreDropdownMenuTest`, `SharedControlsLongTextTest` |
 | Sleep prompt, playing on a watch, languages | `SleepPromptMotionTest`, `SleepTimerPopupTest`, `PlaceMenuTest`, `RemoveDownloadCopyTest`, `ContentLanguagesSheetCopyTest` |
 | Echo, brief | `EchoCharacterModelTest`, `EchoMotionModelTest`, `BriefingArtworkTest`; `BriefingShowTest` in `:feature:briefing` |
 | Share, links, page views, text | `EpisodeShareLinkTest`, `ShareCardModelTest`, `ShareCardDetailsTest`, `ShareSheetBodyTest`, `SafeLinksTest`, `TrackScreenViewTest`, `UiTextComposeTest`; `ScreenViewCoverageTest` in `:core:testing` |
