@@ -15,8 +15,10 @@ import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.feature.onboarding.OnboardingStep
+import cx.aswin.boxlore.feature.onboarding.OpeningHandoff
 import cx.aswin.boxlore.feature.onboarding.OnboardingViewModel
 import cx.aswin.boxlore.feature.onboarding.chooseAppLanguage
+import cx.aswin.boxlore.feature.onboarding.finishOpeningHandoff
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -33,8 +35,8 @@ import org.robolectric.annotation.Config
 
 /**
  * Onboarding's language question in a real activity: it opens onboarding when the phone suggests a
- * translation, the question and its answer both survive the recreation a language
- * change causes, and the pick is reported once with the existing settings event.
+ * translation, the question, its answer and the panel hand-off to Welcome all survive the recreation
+ * a language change causes, and the pick is reported once with the existing settings event.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
@@ -101,13 +103,18 @@ class OnboardingAppLanguageRecreationTest {
         assertSame(before, reopened)
         assertEquals(AppLanguage.SPANISH, reopened.uiState.value.appLanguageQuestion?.suggested)
 
-        reopened.chooseAppLanguage(AppLanguage.SPANISH)
+        val handoff = OpeningHandoff(0.42f, twoPane = false, AppLanguage.SPANISH)
+        reopened.chooseAppLanguage(AppLanguage.SPANISH, handoff)
         controller.recreate()
         val after = showOnboarding()
 
         assertSame(before, after)
         assertEquals(OnboardingStep.WELCOME, after.uiState.value.currentStep)
         assertNull(after.uiState.value.appLanguageQuestion)
+        // Welcome takes over the question's panel after the recreation, then shows as usual.
+        assertEquals(handoff, after.uiState.value.openingHandoff)
+        after.finishOpeningHandoff()
+        assertNull(after.uiState.value.openingHandoff)
         assertEquals(1, suggestionAsked)
         val pick = events.single { it.first == "settings_interaction" }.second
         assertEquals("onboarding_app_language_chosen", pick["action"])

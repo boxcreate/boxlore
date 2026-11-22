@@ -71,6 +71,8 @@ data class OnboardingUiState(
     val selectedSearchGenre: String? = null,
     /** Onboarding's first question, while [currentStep] is [OnboardingStep.APP_LANGUAGE]. */
     val appLanguageQuestion: AppLanguageQuestion? = null,
+    /** From a language pick until Welcome has taken over the question's panel. */
+    val openingHandoff: OpeningHandoff? = null,
 )
 
 enum class OnboardingStep {

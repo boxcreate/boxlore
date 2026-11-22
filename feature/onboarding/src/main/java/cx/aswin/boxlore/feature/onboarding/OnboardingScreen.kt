@@ -2,6 +2,8 @@ package cx.aswin.boxlore.feature.onboarding
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -114,8 +116,8 @@ fun OnboardingScreen(
                 uiState.appLanguageQuestion?.let { question ->
                     AppLanguageQuestionContent(
                         question = question,
-                        onChoose = { language ->
-                            viewModel.chooseAppLanguage(language)
+                        onChoose = { language, handoff ->
+                            viewModel.chooseAppLanguage(language, handoff)
                             onAppLanguageChosen(language)
                         },
                     )
@@ -130,6 +132,7 @@ fun OnboardingScreen(
                     onSearch = viewModel::navigateToSearch,
                     onSkip = { viewModel.skipOnboarding(onComplete) },
                     onImportClick = onImportClick,
+                    handoff = WelcomeHandoff(uiState.openingHandoff, viewModel::finishOpeningHandoff),
                 )
             }
             OnboardingStep.GENRES -> {
@@ -260,15 +263,23 @@ fun OnboardingScreen(
     }
 }
 
-/** One step at a time: the next step slides in from the end while the last one leaves. */
+/**
+ * One step at a time: the next step slides in from the end while the last one leaves. From the
+ * language question to Welcome nothing slides: the two share their panel, and Welcome takes over
+ * from the question's in place ([OpeningHandoff]).
+ */
 @Composable
 internal fun OnboardingStepTransition(step: OnboardingStep, modifier: Modifier = Modifier, content: @Composable (OnboardingStep) -> Unit) {
     AnimatedContent(
         targetState = step,
         modifier = modifier,
         transitionSpec = {
-            (slideInHorizontally { it } + fadeIn()) togetherWith
-                (slideOutHorizontally { -it } + fadeOut())
+            if (initialState == OnboardingStep.APP_LANGUAGE && targetState == OnboardingStep.WELCOME) {
+                EnterTransition.None togetherWith ExitTransition.None
+            } else {
+                (slideInHorizontally { it } + fadeIn()) togetherWith
+                    (slideOutHorizontally { -it } + fadeOut())
+            }
         },
         label = "onboarding_step",
     ) { target -> content(target) }

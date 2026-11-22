@@ -60,7 +60,7 @@ class AppLanguageQuestionScreenTest {
         BoxLoreTheme(dynamicColor = false) {
             CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) {
                 Box(Modifier.size(window.value.widthDp.dp, window.value.heightDp.dp)) {
-                    AppLanguageQuestionContent(question = question, onChoose = { picks += it })
+                    AppLanguageQuestionContent(question = question, onChoose = { language, _ -> picks += language })
                 }
             }
         }

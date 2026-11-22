@@ -56,6 +56,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -77,7 +78,7 @@ import cx.aswin.boxlore.core.prefs.AppLanguage
 @Composable
 internal fun AppLanguageQuestionContent(
     question: AppLanguageQuestion,
-    onChoose: (AppLanguage) -> Unit,
+    onChoose: (AppLanguage, OpeningHandoff) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val clock = rememberWelcomeMotionClock()
@@ -87,7 +88,9 @@ internal fun AppLanguageQuestionContent(
     BoxWithConstraints(modifier.fillMaxSize().background(colors.surface)) {
         if (languageQuestionTwoPane(maxWidth, maxHeight)) {
             WelcomeStatusBars(panel.container, coverVisible = false)
-            TwoPaneLanguageQuestion(clock, question, panel, maxWidth, maxHeight, onChoose)
+            TwoPaneLanguageQuestion(clock, question, panel, maxWidth, maxHeight) { language ->
+                onChoose(language, OpeningHandoff(OpeningPanelPaneShare, twoPane = true, language))
+            }
         } else {
             SingleColumnLanguageQuestion(clock, question, panel, onChoose)
         }
@@ -103,7 +106,7 @@ private fun SingleColumnLanguageQuestion(
     clock: WelcomeMotionClock,
     question: AppLanguageQuestion,
     panel: LanguagePanelColors,
-    onChoose: (AppLanguage) -> Unit,
+    onChoose: (AppLanguage, OpeningHandoff) -> Unit,
 ) {
     val scroll = rememberScrollState()
     var panelHeight by remember { mutableIntStateOf(Int.MAX_VALUE) }
@@ -117,6 +120,11 @@ private fun SingleColumnLanguageQuestion(
         val viewportHeight = maxHeight
         val viewportWidth = maxWidth
         val compact = viewportHeight < LanguageCompactHeight
+        // Welcome's panel takes over from this one at the height it has now.
+        val viewportPx = constraints.maxHeight.toFloat()
+        val choose: (AppLanguage) -> Unit = { language ->
+            onChoose(language, OpeningHandoff((panelHeight / viewportPx).coerceIn(0f, 1f), twoPane = false, language))
+        }
         Column(Modifier.fillMaxWidth().verticalScroll(scroll).heightIn(min = viewportHeight)) {
             LanguageGreetingPanel(
                 clock,
@@ -139,7 +147,7 @@ private fun SingleColumnLanguageQuestion(
                 clock,
                 question,
                 echoCell = welcomeEchoCell(echoRoom),
-                onChoose = onChoose,
+                onChoose = choose,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(top = LanguageChoicesGap)
                     .navigationBarsPadding().padding(bottom = 20.dp),
             )
@@ -210,14 +218,7 @@ private fun LanguageGreetingPanel(
 private fun LanguageGreeting(clock: WelcomeMotionClock, languages: List<AppLanguage>, greetingSize: Float, color: Color, modifier: Modifier) {
     val words = languages.map { stringResource(it.greetingRes()) }
     val prompts = languages.map { stringResource(it.promptRes()) }
-    val fontSize = greetingSize.sp
-    val style = MaterialTheme.typography.displayLarge.copy(
-        fontSize = fontSize,
-        lineHeight = fontSize * 1.08f,
-        fontWeight = GoogleSansWeight.bold,
-        letterSpacing = (-1.2).sp,
-    )
-    val promptStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.medium)
+    val (style, promptStyle) = languageGreetingStyles(greetingSize)
     val index by remember(clock, words.size) {
         derivedStateOf { LanguageGreetingMotion.frame(clock.elapsedMillis.value, words.size, clock.animationsDisabled.value).index }
     }
@@ -234,6 +235,18 @@ private fun LanguageGreeting(clock: WelcomeMotionClock, languages: List<AppLangu
             Text(prompts[index], style = promptStyle, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = motion)
         }
     }
+}
+
+@Composable
+internal fun languageGreetingStyles(greetingSize: Float): Pair<TextStyle, TextStyle> {
+    val fontSize = greetingSize.sp
+    val style = MaterialTheme.typography.displayLarge.copy(
+        fontSize = fontSize,
+        lineHeight = fontSize * 1.08f,
+        fontWeight = GoogleSansWeight.bold,
+        letterSpacing = (-1.2).sp,
+    )
+    return style to MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.medium)
 }
 
 @Composable
@@ -354,7 +367,7 @@ private fun LanguageTiles(languages: List<AppLanguage>, onChoose: (AppLanguage) 
 
 /** "Hello" in [this] language, written in it. */
 @StringRes
-private fun AppLanguage.greetingRes(): Int = when (this) {
+internal fun AppLanguage.greetingRes(): Int = when (this) {
     AppLanguage.SPANISH -> R.string.onboarding_app_language_hello_es
     AppLanguage.PORTUGUESE_BRAZIL -> R.string.onboarding_app_language_hello_pt_br
     AppLanguage.GERMAN -> R.string.onboarding_app_language_hello_de
@@ -364,7 +377,7 @@ private fun AppLanguage.greetingRes(): Int = when (this) {
 
 /** "Pick your language" in [this] language, written in it. */
 @StringRes
-private fun AppLanguage.promptRes(): Int = when (this) {
+internal fun AppLanguage.promptRes(): Int = when (this) {
     AppLanguage.SPANISH -> R.string.onboarding_app_language_prompt_es
     AppLanguage.PORTUGUESE_BRAZIL -> R.string.onboarding_app_language_prompt_pt_br
     AppLanguage.GERMAN -> R.string.onboarding_app_language_prompt_de

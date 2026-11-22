@@ -46,6 +46,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -89,6 +90,7 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
+import cx.aswin.boxlore.core.prefs.AppLanguage
 
 /**
  * Welcome: the cover panel, the invitation and the ways in. Portrait phones, foldables and the
@@ -103,26 +105,45 @@ internal fun WelcomeScreen(
     onSkip: () -> Unit,
     onImportClick: () -> Unit,
     clock: WelcomeMotionClock = rememberWelcomeMotionClock(),
+    handoff: WelcomeHandoff = WelcomeHandoff.None,
 ) {
     val scroll = rememberScrollState()
     val panel = openingPanelColors()
     val actions = WelcomeActionCallbacks(onHelpMeFind, onSearch, onImportClick, onSkip)
+    val animationsOff = rememberAnimationsOff()
     BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
-        if (languageQuestionTwoPane(maxWidth, maxHeight)) {
+        val twoPane = languageQuestionTwoPane(maxWidth, maxHeight)
+        // Welcome takes over from the question only in the arrangement the question had, and only with
+        // animations on; otherwise it shows as usual straight away.
+        val from = handoff.from?.takeIf { it.twoPane == twoPane && !animationsOff }
+        if (handoff.from != null && from == null) LaunchedEffect(Unit) { handoff.onDone() }
+        val motion = rememberOpeningHandoffMotion(from, startPx = (from?.panelFraction ?: 0f) * constraints.maxHeight, onDone = handoff.onDone)
+        val greeting = from?.let { WelcomeGreeting(it.language, languageGreetingSize(maxWidth, maxHeight), motion) }
+        if (twoPane) {
             // As on the language question beside its panel, so the two screens read as one opening.
             WelcomeStatusBars(panel.container, coverVisible = false)
-            TwoPaneWelcome(clock, scroll, panel, maxWidth, maxHeight, actions)
+            TwoPaneWelcome(clock, scroll, panel, PaneSize(maxWidth, maxHeight), actions, greeting)
         } else {
-            StackedWelcome(clock, scroll, panel, actions)
+            StackedWelcome(clock, scroll, panel, actions, motion, greeting)
         }
     }
 }
+
+/** The question's greeting while Welcome takes over the panel. */
+private class WelcomeGreeting(val language: AppLanguage, val size: Float, val motion: OpeningHandoffMotion?)
 
 /** Welcome's four ways in, kept together so both arrangements pass them on unchanged. */
 private class WelcomeActionCallbacks(val onHelpMeFind: () -> Unit, val onSearch: () -> Unit, val onImportClick: () -> Unit, val onSkip: () -> Unit)
 
 @Composable
-private fun StackedWelcome(clock: WelcomeMotionClock, scroll: ScrollState, panel: LanguagePanelColors, actions: WelcomeActionCallbacks) {
+private fun StackedWelcome(
+    clock: WelcomeMotionClock,
+    scroll: ScrollState,
+    panel: LanguagePanelColors,
+    actions: WelcomeActionCallbacks,
+    motion: OpeningHandoffMotion?,
+    greeting: WelcomeGreeting?,
+) {
     var coverPanelHeight by remember { mutableIntStateOf(Int.MAX_VALUE) }
     val statusBarHeight = WindowInsets.statusBars.getTop(LocalDensity.current)
     val coverVisible by remember(scroll, statusBarHeight) {
@@ -137,7 +158,7 @@ private fun StackedWelcome(clock: WelcomeMotionClock, scroll: ScrollState, panel
         Column(
             Modifier.fillMaxWidth().verticalScroll(scroll, enabled = scroll.maxValue > 0, overscrollEffect = null).heightIn(min = viewportHeight),
         ) {
-            WelcomeCoverPanel(clock, viewportWidth, coverSize, panel, Modifier.onSizeChanged { coverPanelHeight = it.height })
+            WelcomeCoverPanel(clock, viewportWidth, coverSize, panel, greeting, Modifier.openingPanelMorph(motion).onSizeChanged { coverPanelHeight = it.height })
             Column(Modifier.fillMaxWidth().padding(horizontal = 26.dp).padding(top = 24.dp)) {
                 WelcomeInvitation(clock, welcomeHeadlineSize(viewportWidth))
             }
@@ -158,14 +179,25 @@ private fun StackedWelcome(clock: WelcomeMotionClock, scroll: ScrollState, panel
 
 /** The cover panel beside the invitation and actions, which sit centred in the end pane. */
 @Composable
-private fun TwoPaneWelcome(clock: WelcomeMotionClock, scroll: ScrollState, panel: LanguagePanelColors, width: Dp, height: Dp, actions: WelcomeActionCallbacks) {
+private fun TwoPaneWelcome(
+    clock: WelcomeMotionClock,
+    scroll: ScrollState,
+    panel: LanguagePanelColors,
+    size: PaneSize,
+    actions: WelcomeActionCallbacks,
+    greeting: WelcomeGreeting?,
+) {
     OnboardingOpeningFrame(
         panel,
-        width,
-        height,
+        size.width,
+        size.height,
         scroll,
         panelBottomPadding = 26.dp,
-        panelContent = { pane -> WelcomePaneReel(clock, pane, panel) },
+        panelContent = { pane ->
+            WelcomePaneReel(clock, pane, panel) {
+                greeting?.let { HandoffGreeting(it.language, languageGreetingSize(pane.width, pane.height * 1.6f), panel.content, { it.motion?.greeting?.value ?: 0f }, Modifier.align(Alignment.BottomStart).padding(horizontal = 26.dp)) }
+            }
+        },
     ) { pane ->
         val echoRoom = if (pane.height >= OpeningPaneEchoHeight) OpeningPaneEchoRoom else 0.dp
         WelcomeInvitation(clock, welcomeHeadlineSize(minOf(pane.width, pane.height)))
@@ -177,11 +209,22 @@ private fun TwoPaneWelcome(clock: WelcomeMotionClock, scroll: ScrollState, panel
 /** The headline's size: larger on wider windows, never so large it crowds a short one. */
 internal fun welcomeHeadlineSize(width: Dp): Float = (width.value * 0.11f).coerceIn(36f, 46f)
 
+/**
+ * The stacked cover panel: the logo row, then the reel. While Welcome takes over from the language
+ * question the panel is sized by the hand-off and the question's greeting fades out at its foot.
+ */
 @Composable
-private fun WelcomeCoverPanel(clock: WelcomeMotionClock, width: Dp, coverSize: Dp, panel: LanguagePanelColors, modifier: Modifier) {
-    OpeningPanel(panel, RoundedCornerShape(bottomStart = 46.dp, bottomEnd = 46.dp), bottomPadding = 26.dp, modifier.fillMaxWidth()) {
-        Spacer(Modifier.height(24.dp))
-        WelcomeCoverReel(clock, coverSize, width, panel.container)
+private fun WelcomeCoverPanel(clock: WelcomeMotionClock, width: Dp, coverSize: Dp, panel: LanguagePanelColors, greeting: WelcomeGreeting?, modifier: Modifier) {
+    OpeningPanel(panel, RoundedCornerShape(bottomStart = 46.dp, bottomEnd = 46.dp), bottomPadding = 26.dp, modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+        Box(Modifier.fillMaxWidth()) {
+            Column {
+                Spacer(Modifier.height(24.dp))
+                WelcomeCoverReel(clock, coverSize, width, panel.container)
+            }
+            greeting?.let {
+                HandoffGreeting(it.language, it.size, panel.content, { it.motion?.greeting?.value ?: 0f }, Modifier.align(Alignment.BottomStart).padding(horizontal = 26.dp))
+            }
+        }
     }
 }
 

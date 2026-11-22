@@ -72,7 +72,7 @@ class OnboardingAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
     }
 
     @Test fun appLanguage() = render("app-language") {
-        AppLanguageQuestionContent(AppLanguageQuestion(AppLanguage.GERMAN), onChoose = {})
+        AppLanguageQuestionContent(AppLanguageQuestion(AppLanguage.GERMAN), onChoose = { _, _ -> })
     }
 
     /** Picking a language, then Welcome, as the step host plays it; with animations on and off. */
@@ -83,15 +83,22 @@ class OnboardingAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
     private fun languageToWelcomeSequence(reducedMotion: Boolean) {
         golden.assumeAuditCapture()
         assumeTrue("The hand-off is recorded on phones, the cover, a foldable and a tablet", golden.configuration.auditKey in SEQUENCE_SIZES)
-        val step = mutableStateOf(OnboardingStep.APP_LANGUAGE)
+        // Stands in for the view model, as OnboardingScreen wires it.
+        val state = mutableStateOf(OnboardingAppLanguage.initialState(onboardingCompleted = false) { AppLanguage.GERMAN })
         golden.prepare()
         golden.setContent(foldSafeViewport = true) {
             BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {
                 Box(Modifier.fillMaxSize().testTag(ROOT_TAG)) {
-                    OnboardingStepTransition(step.value, Modifier.fillMaxSize()) { current ->
+                    OnboardingStepTransition(state.value.currentStep, Modifier.fillMaxSize()) { current ->
                         when (current) {
-                            OnboardingStep.APP_LANGUAGE -> AppLanguageQuestionContent(AppLanguageQuestion(AppLanguage.GERMAN), onChoose = {})
-                            else -> WelcomeScreen(onHelpMeFind = {}, onSearch = {}, onSkip = {}, onImportClick = {})
+                            OnboardingStep.APP_LANGUAGE -> AppLanguageQuestionContent(AppLanguageQuestion(AppLanguage.GERMAN), onChoose = { _, _ -> })
+                            else -> WelcomeScreen(
+                                onHelpMeFind = {},
+                                onSearch = {},
+                                onSkip = {},
+                                onImportClick = {},
+                                handoff = WelcomeHandoff(state.value.openingHandoff) { state.value = OnboardingAppLanguage.handoffDone(state.value) },
+                            )
                         }
                     }
                 }
@@ -100,8 +107,13 @@ class OnboardingAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         golden.compose.mainClock.advanceTimeBy(1_600)
         golden.compose.waitForIdle()
         golden.compose.onNodeWithTag(ROOT_TAG).assertExists()
+        // The pick as the question reports it: its panel's share of the height, or of the width beside it.
+        val size = golden.configuration
+        val twoPane = size.width >= 600 && size.width > size.height
+        val panel = golden.compose.onNodeWithTag(OpeningPanelTag).fetchSemanticsNode().boundsInRoot
+        val handoff = OpeningHandoff(if (twoPane) OpeningPanelPaneShare else panel.height / size.height, twoPane, AppLanguage.GERMAN)
         golden.captureSequence("language-to-welcome", frames = 16, stepMs = 40, reducedMotion = reducedMotion) {
-            step.value = OnboardingStep.WELCOME
+            state.value = OnboardingAppLanguage.answered(state.value, handoff)
         }
     }
 
