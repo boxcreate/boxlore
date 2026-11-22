@@ -7,6 +7,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.absolutePadding
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
@@ -802,6 +803,8 @@ fun BoxLoreAppRoot(
                 }
 
                 val screenHeightDp = maxHeight
+                // Side system buttons, the camera cutout and the 560dp cap on wide, short windows.
+                val (chromeLeftInset, chromeRightInset) = phoneChromeSideOffsets(navigationStyle, maxWidth)
                 val systemNavBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                 val chromeMetrics = navigationChromeMetrics(navigationStyle)
                 val bottomChromeClearance = chromeMetrics.bottomNavigationClearance
@@ -817,7 +820,7 @@ fun BoxLoreAppRoot(
                         level = navigationBlurLevel,
                         bottomChrome = FloatingNavigationBlur.barChrome(navigationStyle, systemNavigationInset = systemNavBarHeight),
                         pageColor = navigationBackground,
-                        modifier = Modifier.align(Alignment.BottomCenter),
+                        modifier = Modifier.align(Alignment.BottomCenter).absolutePadding(left = chromeLeftInset, right = chromeRightInset),
                     )
                 }
 
@@ -853,6 +856,8 @@ fun BoxLoreAppRoot(
                             } else {
                                 12.dp
                             },
+                            collapsedLeftInset = chromeLeftInset,
+                            collapsedRightInset = chromeRightInset,
                             navigationStyle = navigationStyle,
                             miniPlayerSeekButtonsEnabled = miniPlayerSeekButtonsEnabled,
                             expandTrigger = expandPlayerTrigger,

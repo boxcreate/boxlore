@@ -140,6 +140,7 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
                 // The placement BoxLoreAppRoot gives the phone player sheet.
                 val systemNavigation = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                 val metrics = navigationChromeMetrics(NavigationStyle.Floating)
+                val (leftInset, rightInset) = phoneChromeSideOffsets(NavigationStyle.Floating, maxWidth)
                 PlayerSheetScaffold(
                     playbackRepository = dependencies.playbackRepository,
                     downloadRepository = dependencies.downloadRepository,
@@ -148,6 +149,8 @@ class ShellChromeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
                         collapsedTargetY = with(density) { appMiniPlayerTopOffset(NavigationStyle.Floating, maxHeight, systemNavigation).toPx() },
                         containerHeight = maxHeight + systemNavigation + 50.dp,
                         collapsedHorizontalPadding = AppNavigationBarHorizontalInset,
+                        collapsedLeftInset = leftInset,
+                        collapsedRightInset = rightInset,
                         navigationStyle = NavigationStyle.Floating,
                         compactProgress = compactProgress,
                         compactTargetY = with(density) {

@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.designsystem.layout
 
 import android.app.Application
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -9,7 +10,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
@@ -94,6 +97,50 @@ class BoxloreSafeInsetsTest {
         reserved = true
         advance()
         assertEquals(64f + 8f, padding, 0.5f)
+    }
+
+    @Test
+    fun `side insets pad only start and end, follow the layout direction and are 0 in portrait`() {
+        var direction by mutableStateOf(LayoutDirection.Ltr)
+        var pane by mutableStateOf<BoxloreLayoutBounds?>(null)
+        var sides = 0.dp to 0.dp
+        var content = PaddingValues()
+        fixture.prepare()
+        fixture.compose.setContent {
+            CompositionLocalProvider(
+                LocalLayoutDirection provides direction,
+                LocalBoxloreWindowLayout provides BoxloreTestWindows.PHONE_LAND,
+                LocalBoxlorePaneBounds provides pane,
+            ) {
+                sides = boxloreHorizontalSafeInsetsDp()
+                content = boxloreHorizontalSafeContentPadding(PaddingValues(horizontal = 16.dp, vertical = 8.dp))
+                Box(Modifier.boxloreHorizontalSafePadding()) { Text("Clear of the sides") }
+            }
+        }
+        advance()
+        // Portrait, or no side insets: nothing.
+        assertEquals(0.dp to 0.dp, sides)
+        fixture.compose.runOnUiThread { applyFakeSystemInsets(fixture.compose.activity, SystemInsets.SIDEWAYS_3_BUTTON) }
+        advance()
+        assertEquals(32.dp to 48.dp, sides)
+        assertEquals(48.dp, content.calculateLeftPadding(LayoutDirection.Ltr))
+        assertEquals(64.dp, content.calculateRightPadding(LayoutDirection.Ltr))
+        assertEquals(8.dp, content.calculateTopPadding())
+        val text = fixture.compose.onNodeWithText("Clear of the sides").fetchSemanticsNode().boundsInRoot
+        // The top is untouched: only the sides are padded.
+        assertEquals(32f, text.left, 0.5f)
+        assertEquals(0f, text.top, 0.5f)
+
+        direction = LayoutDirection.Rtl
+        advance()
+        // Right to left the start side is the right: the system buttons.
+        assertEquals(48.dp to 32.dp, sides)
+
+        // A pane that doesn't reach the left edge leaves the cutout to its neighbour.
+        direction = LayoutDirection.Ltr
+        pane = BoxloreLayoutBounds(80f, 0f, 915f, 412f)
+        advance()
+        assertEquals(0.dp to 48.dp, sides)
     }
 
     private fun advance() {

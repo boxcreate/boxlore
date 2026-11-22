@@ -1,18 +1,24 @@
 package cx.aswin.boxlore.core.designsystem.layout
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 
 /*
@@ -60,6 +66,46 @@ private fun paneTopInsets(): WindowInsets = WindowInsets.statusBars.union(Window
 private fun paneStartsBelowWindowTop(): Boolean = (LocalBoxlorePaneBounds.current?.top ?: 0f) > EDGE_TOLERANCE_DP
 
 private val NoInsets = WindowInsets(0, 0, 0, 0)
+
+/**
+ * Pads only the start and end of this content by [insets]: the camera cutout and side system
+ * buttons on a sideways phone. Use it on controls and text; full-bleed artwork keeps the edge.
+ */
+@Composable
+fun Modifier.boxloreHorizontalSafePadding(insets: WindowInsets = WindowInsets.safeDrawing): Modifier =
+    windowInsetsPadding(insets.only(WindowInsetsSides.Horizontal))
+
+/**
+ * The start and end safe-drawing insets of this pane, in layout direction. A pane side that doesn't
+ * touch the window edge reports 0. Portrait phones report (0, 0).
+ */
+@Composable
+fun boxloreHorizontalSafeInsetsDp(): Pair<Dp, Dp> {
+    val direction = LocalLayoutDirection.current
+    val padding = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal).asPaddingValues()
+    val pane = LocalBoxlorePaneBounds.current
+    val window = LocalBoxloreWindowLayout.current
+    val leftTouches = pane == null || !window.isSpecified || pane.left <= EDGE_TOLERANCE_DP
+    val rightTouches = pane == null || !window.isSpecified || pane.right >= window.widthDp - EDGE_TOLERANCE_DP
+    val startTouches = if (direction == LayoutDirection.Ltr) leftTouches else rightTouches
+    val endTouches = if (direction == LayoutDirection.Ltr) rightTouches else leftTouches
+    val start = if (startTouches) padding.calculateStartPadding(direction) else 0.dp
+    val end = if (endTouches) padding.calculateEndPadding(direction) else 0.dp
+    return start to end
+}
+
+/** [base] with this pane's start and end safe insets added, for a lazy list's or grid's `contentPadding`. */
+@Composable
+fun boxloreHorizontalSafeContentPadding(base: PaddingValues = PaddingValues()): PaddingValues {
+    val direction = LocalLayoutDirection.current
+    val (start, end) = boxloreHorizontalSafeInsetsDp()
+    return PaddingValues(
+        start = base.calculateStartPadding(direction) + start,
+        top = base.calculateTopPadding(),
+        end = base.calculateEndPadding(direction) + end,
+        bottom = base.calculateBottomPadding(),
+    )
+}
 
 /** Pane bounds within this of a window edge count as touching it. */
 internal const val EDGE_TOLERANCE_DP = 0.5f
