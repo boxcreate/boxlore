@@ -58,9 +58,18 @@ subprojects {
             require(tabletCaptures.get() in setOf("before", "after", "audit")) { "Use -PtabletCaptures=before, after or audit" }
             systemProperty("boxlore.tabletCaptures", tabletCaptures.get())
             systemProperty("boxlore.projectRoot", rootProject.projectDir.absolutePath)
+            // -PauditSizes=412x915,915x412-insets keeps only the named audit captures.
+            providers.gradleProperty("auditSizes").orNull?.let { systemProperty("boxlore.auditSizes", it) }
             outputs.upToDateWhen { false }
         } else {
             exclude("**/*PhoneGoldenTest*")
+            exclude("**/*AuditCaptureTest*")
+        }
+    }
+    // Library unit tests get en-XA and ar-XB resources too, so audit captures show pseudo-locale text.
+    plugins.withId("com.android.library") {
+        extensions.configure<com.android.build.api.dsl.LibraryExtension>("android") {
+            buildTypes.getByName("debug").isPseudoLocalesEnabled = true
         }
     }
 }

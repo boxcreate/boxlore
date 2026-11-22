@@ -140,7 +140,7 @@ src/main/assets/echo-character/  manifest.json, stills (WebP), clips (MP4)
 ## Dependencies
 
 - Project: `:core:model`, `:core:prefs` (lettering axis and font loading), `:core:analytics`.
-- Libraries: Compose Material 3, Google Fonts, Material Color Utilities, Palette, graphics shapes, Coil (exposed as `api`), smooth corner rect, coroutines, kotlinx.serialization JSON. Tests add JUnit 5, Robolectric and Compose UI test.
+- Libraries: Compose Material 3, Google Fonts, Material Color Utilities, Palette, graphics shapes, Coil (exposed as `api`), smooth corner rect, coroutines, kotlinx.serialization JSON. Tests add JUnit 5, Robolectric, Compose UI test and `:core:testing`.
 - Must not depend on catalog, network, database, playback, downloads or any feature module. See [`ARCHITECTURE.md`](../../ARCHITECTURE.md#dependency-direction).
 
 ## Threading / lifecycle

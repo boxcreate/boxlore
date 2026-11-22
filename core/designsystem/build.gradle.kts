@@ -69,5 +69,7 @@ dependencies {
     // The player scheme runs on Android colour utilities.
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.ui.test.junit4)
+    // Capture rule, named test windows and fake system insets (core:testing uses only this module's main code).
+    testImplementation(projects.core.testing)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
