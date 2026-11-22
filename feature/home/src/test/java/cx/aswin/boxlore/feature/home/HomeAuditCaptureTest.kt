@@ -19,9 +19,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.unit.dp
@@ -133,18 +133,18 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         ChangeRecommendationPodcastSheet(candidatePodcasts = podcasts, onDismissRequest = {}, onPodcastSelect = {})
     }
 
-    @Test fun selectedShowLoading() = capture("home-selected-show-loading", scrollTo = "home_selected_show_loading") {
+    @Test fun selectedShowLoading() = capture("home-selected-show-loading", scrollTo = "your_shows" to "home_selected_show_loading") {
         Home(state().copy(selectedPodcastId = podcasts[1].id, isSelectedPodcastLoading = true))
     }
 
     /** An RSS show refreshing over the episodes it already has: the refresh bar sits above the rows. */
-    @Test fun selectedShowRefreshing() = capture("home-selected-show-refreshing", scrollTo = "home_selected_show_refreshing") {
+    @Test fun selectedShowRefreshing() = capture("home-selected-show-refreshing", scrollTo = "your_shows" to "home_selected_show_refreshing") {
         val rss = state().subscribedPodcasts.map { if (it.id == podcasts[1].id) it.copy(sourceType = Podcast.SOURCE_RSS) else it }
         Home(state().copy(subscribedPodcasts = rss, selectedPodcastId = podcasts[1].id, selectedPodcastEpisodes = List(4) { episode.copy(id = "selected-$it") }, isSelectedRssRefreshing = true))
     }
 
     /** Your shows' episode rows with progress and long titles, for German and enlarged text. */
-    @Test fun denseRowsLong() = capture("home-dense-rows-long", scrollTo = "home_filtered_episodes") {
+    @Test fun denseRowsLong() = capture("home-dense-rows-long", scrollTo = "your_shows" to "home_filtered_episodes") {
         val episodes = List(6) { episode.copy(id = "selected-$it", podcastId = podcasts[1].id) }
         Home(
             state().copy(
@@ -155,13 +155,13 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         )
     }
 
-    @Test fun greetingEmpty() = capture("home-greeting-empty", scrollTo = "home_discovery_greeting") {
+    @Test fun greetingEmpty() = capture("home-greeting-empty", scrollTo = "discovery_greeting" to "home_discovery_greeting") {
         Home(state().copy(editorialRows = emptyList(), isEditorialRowsLoading = false, recommendations = emptyList(), isRecommendationsLoading = false))
     }
 
     /** Daily Mix with nothing new: the caught-up state in Your shows (tablets show it beside the Brief). */
     @Test fun mixCaughtUp() {
-        capture("home-mix-caught-up", scrollTo = "home_show_selector_mix") { Home(state().copy(latestEpisodes = emptyList())) }
+        capture("home-mix-caught-up", scrollTo = "your_shows" to "home_show_selector_mix") { Home(state().copy(latestEpisodes = emptyList())) }
     }
 
     @Test fun snackbarPin() = capture("home-snackbar-pin") {
@@ -182,23 +182,26 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
     private fun loading(style: String) = capture("home-loading-${styleName(style)}", style) { Home(state(loading = true)) }
 
     /**
-     * Renders [content] and captures it as [name]. With [scrollTo], Home's grid first scrolls to the
-     * node with that tag, and the scene fails when its state never shows.
+     * Renders [content] and captures it as [name]. With [scrollTo] (a grid item key and a tag inside
+     * it), Home's grid first scrolls to that item, and the scene fails when the tagged state never shows.
      */
     @Suppress("LongParameterList")
     private fun capture(
         name: String,
         style: String = HeroCardStyle.COVER,
         allWindows: Boolean = false,
-        scrollTo: String? = null,
+        scrollTo: Pair<String, String>? = null,
         miniPlayer: Boolean = false,
         content: @Composable () -> Unit,
     ) {
         render(style, miniPlayer, content)
         fixture.compose.onNodeWithTag(ROOT_TAG).assertExists()
         if (scrollTo != null) {
-            fixture.compose.onNodeWithTag(FEED_TAG).performScrollToNode(hasTestTag(scrollTo))
-            fixture.compose.onNodeWithTag(scrollTo, useUnmergedTree = true).assertExists()
+            val (key, tag) = scrollTo
+            val compose = fixture.compose
+            // Sections can wait on saved preferences, so give them a moment to appear before scrolling.
+            compose.waitUntil(SCENE_WAIT_MS) { runCatching { compose.onNodeWithTag(FEED_TAG).performScrollToKey(key) }.isSuccess }
+            compose.waitUntil(SCENE_WAIT_MS) { compose.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
         }
         fixture.capture(name, allWindows)
     }
@@ -269,6 +272,7 @@ class HomeAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
     companion object {
         private const val ROOT_TAG = "home_audit_root"
         private const val FEED_TAG = "home_feed_grid"
+        private const val SCENE_WAIT_MS = 5_000L
 
         private fun styleName(style: String) = when (style) {
             HeroCardStyle.BLOCK -> "block"
