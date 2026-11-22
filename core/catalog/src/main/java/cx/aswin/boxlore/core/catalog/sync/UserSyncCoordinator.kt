@@ -216,8 +216,11 @@ open class UserSyncCoordinator(
         val needsBackfill = metadataVersion < 2 &&
             requireListeningHistoryDao.hasAnyHistoryWithBlankTitle()
         val needsIdentityCatchUp = episodeIdentity != null && metadataVersion < IDENTITY_SYNC_METADATA_VERSION
+        // Once per installation: every cloud row is compared with this phone's, so a row where the cloud
+        // kept an older copy another phone sent later goes up again ([HistorySyncResolver] marks it).
+        val needsNewerCopyCheck = !requireBoxcastPrefs.isHistoryNewerCopyCheckDone()
         val lastSync = requireBoxcastPrefs.getLastSyncTimestamp()
-        val since = if (needsBackfill || needsIdentityCatchUp) 0L else lastSync
+        val since = if (needsBackfill || needsIdentityCatchUp || needsNewerCopyCheck) 0L else lastSync
         // Rows up to the last sync were delivered before, so a pull from the start doesn't restore ones removed here.
         val pullResult = executePull(since, token, deliveredUntil = lastSync)
 
@@ -226,6 +229,7 @@ open class UserSyncCoordinator(
                 if (needsBackfill) {
                     requireBoxcastPrefs.setSyncMetadataVersion(2)
                 }
+                if (needsNewerCopyCheck) requireBoxcastPrefs.setHistoryNewerCopyCheckDone(true)
                 val catchUp = if (needsIdentityCatchUp) completeIdentityCatchUp(token, pullResponse) else null
                 val pushed = catchUp?.let { pushSummary + it } ?: pushSummary
                 requireBoxcastPrefs.setLastSyncedUserId(userId)

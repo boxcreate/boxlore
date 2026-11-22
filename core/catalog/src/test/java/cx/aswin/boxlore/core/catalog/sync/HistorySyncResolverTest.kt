@@ -69,6 +69,82 @@ class HistorySyncResolverTest {
         assertNotNull(listeningHistoryDao.getHistoryItem("first-sync"))
     }
 
+    // Regression: the cloud kept an older copy another device sent later, and the device holding the
+    // newer one left it clean, so it never sent it again and the devices stayed apart.
+    @Test
+    fun resolveHistoryItem_aPulledCopyOlderThanThisDevicesRowMarksTheRowToBeSentAgain() = runTest {
+        listeningHistoryDao.upsert(createHistory("played", progressMs = 25 * MINUTE, lastPlayedAt = 5_000L, syncedAt = 4_000L))
+        listeningHistoryDao.upsert(createHistory("liked", lastPlayedAt = 1_000L, isLiked = true, likedAt = 5_000L, syncedAt = 4_000L))
+        listeningHistoryDao.upsert(createHistory("archived", lastPlayedAt = 1_000L, syncedAt = 4_000L).copy(dismissedAt = 5_000L))
+
+        resolver.resolveHistoryItem(cloudCopy("played", progressMs = 15 * MINUTE, lastPlayedAt = 3_000L), syncedAt = 8_000L)
+        resolver.resolveHistoryItem(cloudCopy("liked", lastPlayedAt = 1_000L), syncedAt = 8_000L)
+        resolver.resolveHistoryItem(cloudCopy("archived", lastPlayedAt = 1_000L, dismissedAt = -4_000L), syncedAt = 8_000L)
+
+        val played = listeningHistoryDao.getHistoryItem("played")!!
+        assertEquals(25 * MINUTE, played.progressMs)
+        assertTrue(played.isDirty)
+        assertTrue(listeningHistoryDao.getHistoryItem("liked")!!.let { it.isLiked && it.isDirty })
+        assertTrue(listeningHistoryDao.getHistoryItem("archived")!!.let { it.dismissedAt == 5_000L && it.isDirty })
+    }
+
+    @Test
+    fun resolveHistoryItem_aNewerPulledPlayIsTakenAndOnlyANewerLikeHereIsSentBack() = runTest {
+        listeningHistoryDao.upsert(createHistory("plain", progressMs = 15 * MINUTE, lastPlayedAt = 3_000L, syncedAt = 2_000L))
+        listeningHistoryDao.upsert(createHistory("liked", progressMs = 15 * MINUTE, lastPlayedAt = 3_000L, isLiked = true, likedAt = 6_000L, syncedAt = 2_000L))
+
+        resolver.resolveHistoryItem(cloudCopy("plain", progressMs = 25 * MINUTE, lastPlayedAt = 5_000L), syncedAt = 8_000L)
+        resolver.resolveHistoryItem(cloudCopy("liked", progressMs = 25 * MINUTE, lastPlayedAt = 5_000L), syncedAt = 8_000L)
+
+        val plain = listeningHistoryDao.getHistoryItem("plain")!!
+        assertEquals(25 * MINUTE to false, plain.progressMs to plain.isDirty)
+        val liked = listeningHistoryDao.getHistoryItem("liked")!!
+        assertEquals(Triple(25 * MINUTE, true, true), Triple(liked.progressMs, liked.isLiked, liked.isDirty))
+    }
+
+    @Test
+    fun resolveHistoryItem_aPulledCopyWithTheSameClocksNeverMarksTheRow() = runTest {
+        listeningHistoryDao.upsert(createHistory("same", progressMs = 15 * MINUTE, isCompleted = false, lastPlayedAt = 3_000L, isLiked = true, likedAt = 2_000L, syncedAt = 2_000L))
+
+        // Same play and like times, even with other values: two devices never send it back and forth.
+        resolver.resolveHistoryItem(cloudCopy("same", progressMs = 16 * MINUTE, isCompleted = true, lastPlayedAt = 3_000L, isLiked = false, likedAt = 2_000L), syncedAt = 8_000L)
+
+        assertFalse(listeningHistoryDao.getHistoryItem("same")!!.isDirty)
+    }
+
+    @Test
+    fun resolveHistoryItem_thePlayingEpisodeKeepsItsProgressAndSendsBackANewerLikeHere() = runTest {
+        listeningHistoryDao.upsert(createHistory("playing", progressMs = 10 * MINUTE, lastPlayedAt = 1_000L, isLiked = true, likedAt = 6_000L, syncedAt = 2_000L))
+        fakePlaybackPort.activeEpisodeId = "playing"
+
+        resolver.resolveHistoryItem(cloudCopy("playing", progressMs = 25 * MINUTE, lastPlayedAt = 5_000L), syncedAt = 8_000L)
+
+        val row = listeningHistoryDao.getHistoryItem("playing")!!
+        assertEquals(Triple(10 * MINUTE, true, true), Triple(row.progressMs, row.isLiked, row.isDirty))
+    }
+
+    @Suppress("LongParameterList")
+    private fun cloudCopy(
+        id: String,
+        progressMs: Long = 0L,
+        isCompleted: Boolean = false,
+        lastPlayedAt: Long,
+        isLiked: Boolean = false,
+        likedAt: Long = 0L,
+        dismissedAt: Long = 0L,
+    ) = ListeningHistorySyncDto(
+        episodeId = id,
+        podcastId = "pod-1",
+        progressMs = progressMs,
+        durationMs = 60 * MINUTE,
+        isCompleted = isCompleted,
+        isLiked = isLiked,
+        likedAt = likedAt,
+        lastPlayedAt = lastPlayedAt,
+        updatedAt = 7_000L,
+        dismissedAt = dismissedAt,
+    )
+
     @Test
     fun resolveHistoryItem_activePlayingEpisodeShield_neverOverwritesPlaybackProgress() = runTest {
         listeningHistoryDao.upsert(
@@ -584,5 +660,9 @@ class HistorySyncResolverTest {
         var activeEpisodeId: String? = null,
     ) : ActivePlaybackSyncPort {
         override fun getActivePlayingEpisodeId(): String? = activeEpisodeId
+    }
+
+    private companion object {
+        const val MINUTE = 60_000L
     }
 }

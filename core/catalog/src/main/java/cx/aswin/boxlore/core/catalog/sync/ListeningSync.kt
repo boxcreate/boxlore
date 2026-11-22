@@ -190,9 +190,9 @@ internal class ListeningSync(
         const val MAX_DATES_PER_PUSH = 100
 
         /**
-         * The playback clock of a row sent only for its listening dates: older than every clock the
-         * server stores, so it never replaces a playback value. Never 0: the app leaves 0 out of the
-         * JSON, and the server (every build) stores a row without one at its own current time.
+         * The `updatedAt` of a row sent only for its listening dates: the server merges only its dates
+         * (and identity) into a stored row and never replaces a playback, like or archive value. Never 0:
+         * the app leaves 0 out of the JSON, and the server stores a row without one at its own current time.
          */
         const val DATES_ONLY_UPDATED_AT = 1L
 
@@ -232,8 +232,8 @@ internal class ListeningSync(
         )
 
         /**
-         * A history row carrying only its listening dates in effect: [DATES_ONLY_UPDATED_AT] loses to
-         * every stored row's playback clock, so the server keeps its playback values and merges the dates.
+         * A history row carrying only its listening dates in effect: the server takes
+         * [DATES_ONLY_UPDATED_AT] as that mark, keeps the stored row's other values and merges the dates.
          */
         private fun ListeningHistoryEntity.toDatesDto() = ListeningHistorySyncDto(
             episodeId = episodeId,

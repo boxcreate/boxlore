@@ -264,7 +264,7 @@ class CloudSyncIdentityTest {
         database.queueDao().insertQueueItem(queueItem(PI_ID))
         database.queueDao().upsertQueueMetadata(QueueMetadataEntity(queueSequence = 3L, queueUpdatedAt = 30L, syncedAt = 100L))
         // An older build pushed newer progress for the row after this phone's last pull, and the queue.
-        server.push(SyncPushRequest(history = listOf(oldBuildRow(PI_ID, progress = 20_000L, playedAt = 6_000L), oldBuildRow("777"))))
+        server.seed(oldBuildRow(PI_ID, progress = 20_000L, playedAt = 6_000L), oldBuildRow("777"))
         server.push(SyncPushRequest(queue = QueueSyncDto(items = listOf(QueueItemSyncDto(PI_ID, SHOW, title = "Cloud $PI_ID", position = 0, updatedAt = 30L)), queueUpdatedAt = 30L, queueSequence = 3L)))
         server.pushes.clear()
 
@@ -333,7 +333,7 @@ class CloudSyncIdentityTest {
     fun theCatchUpKeepsEachCloudRowsTimeSoOtherDevicesPullNothingNew() = runTest(dispatcher) {
         aliases(alias(PI_ID, owner = true))
         upgradedDevice(history(PI_ID, progress = 9_000L, playedAt = 6_000L, dirty = false, syncedAt = 100L))
-        server.push(SyncPushRequest(history = listOf(oldBuildRow(PI_ID, progress = 9_000L, playedAt = 6_000L))))
+        server.seed(oldBuildRow(PI_ID, progress = 9_000L, playedAt = 6_000L))
         // Another device last pulled after the row was stored.
         val otherDevicesLastPull = 7_000L
 
@@ -353,7 +353,7 @@ class CloudSyncIdentityTest {
         upgradedDevice(history("kept", dirty = false, syncedAt = 100L))
         // PI_ID reached this phone before its last sync (5,000) and the listener removed it here;
         // "new" was stored after that sync and was never pulled.
-        server.push(SyncPushRequest(history = listOf(oldBuildRow(PI_ID, updatedAt = 4_000L), oldBuildRow("kept", updatedAt = 3_000L), oldBuildRow("new", updatedAt = 6_000L))))
+        server.seed(oldBuildRow(PI_ID, updatedAt = 4_000L), oldBuildRow("kept", updatedAt = 3_000L), oldBuildRow("new", updatedAt = 6_000L))
 
         assertTrue(coordinator.syncNow() is SyncResult.Success)
 
@@ -370,7 +370,7 @@ class CloudSyncIdentityTest {
         aliases(alias(PI_ID, owner = true))
         upgradedDevice(history(PI_ID, progress = 5_000L, playedAt = 1_000L, dirty = false, syncedAt = 100L))
         // Another device marked the episode played without playing it, so its last play is unchanged.
-        server.push(SyncPushRequest(history = listOf(oldBuildRow(PI_ID, progress = 5_000L, playedAt = 1_000L, updatedAt = 6_000L, completed = true))))
+        server.seed(oldBuildRow(PI_ID, progress = 5_000L, playedAt = 1_000L, updatedAt = 6_000L, completed = true))
 
         assertTrue(coordinator.syncNow() is SyncResult.Success)
 
@@ -466,7 +466,7 @@ class CloudSyncIdentityTest {
             ),
         )
         // The new account's row, pushed by an older build.
-        server.push(SyncPushRequest(history = listOf(oldBuildRow(PI_ID, updatedAt = 4_000L))))
+        server.seed(oldBuildRow(PI_ID, updatedAt = 4_000L))
         server.pushes.clear()
 
         assertTrue(coordinator.syncNow() is SyncResult.Success)
