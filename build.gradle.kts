@@ -55,7 +55,7 @@ subprojects {
             systemProperty("boxlore.projectRoot", rootProject.projectDir.absolutePath)
             outputs.upToDateWhen { false }
         } else if (tabletCaptures.isPresent) {
-            require(tabletCaptures.get() in setOf("before", "after")) { "Use -PtabletCaptures=before or after" }
+            require(tabletCaptures.get() in setOf("before", "after", "audit")) { "Use -PtabletCaptures=before, after or audit" }
             systemProperty("boxlore.tabletCaptures", tabletCaptures.get())
             systemProperty("boxlore.projectRoot", rootProject.projectDir.absolutePath)
             outputs.upToDateWhen { false }

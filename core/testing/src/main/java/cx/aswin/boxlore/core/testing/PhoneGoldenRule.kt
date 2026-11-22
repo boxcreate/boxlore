@@ -34,13 +34,55 @@ import org.junit.runners.model.Statement
 import org.robolectric.RuntimeEnvironment
 
 private const val TABLET_CAPTURES_PROPERTY = "boxlore.tabletCaptures"
+private const val AUDIT_CAPTURES = "audit"
+private const val AUDIT_FONT_SCALE = 1.3f
+private const val DEFAULT_CAPTURE_LOCALE = "en-rUS"
 
 /** Fixed local capture inputs; changing these never replaces an existing phone baseline. */
-data class PhoneGoldenConfiguration(val width: Int, val height: Int, val dark: Boolean, val posture: String = "") {
-    override fun toString(): String = "${width}x$height-${if (dark) "dark" else "light"}${if (posture.isEmpty()) "" else "-$posture"}"
+data class PhoneGoldenConfiguration(
+    val width: Int,
+    val height: Int,
+    val dark: Boolean,
+    val posture: String = "",
+    val fontScale: Float = 1f,
+    val locale: String = DEFAULT_CAPTURE_LOCALE,
+) {
+    override fun toString(): String =
+        "${width}x$height-${if (dark) "dark" else "light"}${if (posture.isEmpty()) "" else "-$posture"}" +
+            (if (fontScale == 1f) "" else "-fs${(fontScale * 100).toInt()}") +
+            if (locale == DEFAULT_CAPTURE_LOCALE) "" else "-$locale"
 
     companion object {
+        /**
+         * Light-only review sizes for `-PtabletCaptures=audit`: phones, wide cover screens (about
+         * 443-475dp), split-screen halves, upright and flat book-foldable inner screens, tablets, and
+         * synthetic tabletop/book hinges. Long-text captures use enlarged text, German and the en-XA
+         * pseudo-locale (every string about a third longer) on the sizes where text runs out first.
+         */
+        private fun auditMatrix(): List<Array<Any>> = listOf(
+            PhoneGoldenConfiguration(412, 915, false),
+            PhoneGoldenConfiguration(915, 412, false),
+            PhoneGoldenConfiguration(443, 649, false),
+            PhoneGoldenConfiguration(475, 695, false),
+            PhoneGoldenConfiguration(475, 695, false, fontScale = AUDIT_FONT_SCALE),
+            PhoneGoldenConfiguration(540, 860, false),
+            PhoneGoldenConfiguration(600, 960, false),
+            PhoneGoldenConfiguration(750, 832, false),
+            PhoneGoldenConfiguration(800, 1_280, false),
+            PhoneGoldenConfiguration(841, 701, false),
+            PhoneGoldenConfiguration(932, 650, false),
+            PhoneGoldenConfiguration(932, 650, false, "tabletop"),
+            PhoneGoldenConfiguration(932, 650, false, "book"),
+            PhoneGoldenConfiguration(1_280, 800, false),
+            PhoneGoldenConfiguration(1_600, 1_000, false),
+            PhoneGoldenConfiguration(412, 915, false, fontScale = AUDIT_FONT_SCALE, locale = "de"),
+            PhoneGoldenConfiguration(475, 695, false, locale = "de"),
+            PhoneGoldenConfiguration(475, 695, false, locale = "en-rXA"),
+            PhoneGoldenConfiguration(932, 650, false, locale = "de"),
+        ).map { arrayOf(it) }
+
         fun matrix(): List<Array<Any>> {
+            if (System.getProperty(TABLET_CAPTURES_PROPERTY) == AUDIT_CAPTURES) return auditMatrix()
             val sizes = if (System.getProperty(TABLET_CAPTURES_PROPERTY) != null) {
                 listOf(Triple(600, 960, ""), Triple(840, 1_280, ""), Triple(1_280, 800, ""), Triple(1_600, 1_000, ""), Triple(673, 841, "flat"), Triple(673, 841, "tabletop"))
             } else {
@@ -64,11 +106,13 @@ class PhoneGoldenRule(val configuration: PhoneGoldenConfiguration) : TestRule {
             val orientation = if (configuration.width > configuration.height) "land" else "port"
             val night = if (configuration.dark) "night" else "notnight"
             RuntimeEnvironment.setQualifiers(
-                "en-rUS-w${configuration.width}dp-h${configuration.height}dp-$orientation-$night-mdpi",
+                "${configuration.locale}-w${configuration.width}dp-h${configuration.height}dp-$orientation-$night-mdpi",
             )
+            if (configuration.fontScale != 1f) RuntimeEnvironment.setFontScale(configuration.fontScale)
             try {
                 compose.apply(base, description).evaluate()
             } finally {
+                if (configuration.fontScale != 1f) RuntimeEnvironment.setFontScale(1f)
                 originalImageLoader?.let(Coil::setImageLoader)
                 fixtureImageLoader?.shutdown()
             }
@@ -104,18 +148,29 @@ class PhoneGoldenRule(val configuration: PhoneGoldenConfiguration) : TestRule {
         val window = if (System.getProperty(TABLET_CAPTURES_PROPERTY) == "before") {
             BoxloreWindowLayout.Unspecified
         } else {
-            val folds = if (configuration.posture == "tabletop") {
-                listOf(
+            // A 21dp synthetic hinge across the middle (410-431dp on the 673x841 tablet capture).
+            val hingeTop = (configuration.height / 2 - 10).toFloat()
+            val hingeLeft = (configuration.width / 2 - 10).toFloat()
+            val folds = when (configuration.posture) {
+                "tabletop" -> listOf(
                     BoxloreFold(
                         BoxloreFoldState.HalfOpened,
                         BoxloreFoldOrientation.Horizontal,
-                        BoxloreLayoutBounds(0f, 410f, configuration.width.toFloat(), 431f),
+                        BoxloreLayoutBounds(0f, hingeTop, configuration.width.toFloat(), hingeTop + 21f),
                         true,
                         true,
                     ),
                 )
-            } else {
-                emptyList()
+                "book" -> listOf(
+                    BoxloreFold(
+                        BoxloreFoldState.HalfOpened,
+                        BoxloreFoldOrientation.Vertical,
+                        BoxloreLayoutBounds(hingeLeft, 0f, hingeLeft + 21f, configuration.height.toFloat()),
+                        true,
+                        true,
+                    ),
+                )
+                else -> emptyList()
             }
             BoxloreWindowLayout(configuration.width.toFloat(), configuration.height.toFloat(), folds)
         }
