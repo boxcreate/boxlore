@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -69,7 +70,7 @@ internal fun WelcomeCoverReel(
 ) {
     // Decorative movement keeps the same physical direction in RTL; the actual UI mirrors normally.
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-        Box(modifier.fillMaxWidth()) {
+        Box(modifier.fillMaxWidth().testTag("welcome_cover_reel")) {
             Column(
                 Modifier.graphicsLayer {
                     alpha = if (clock.animationsDisabled.value) 1f else WelcomeReelMotion.coverAlpha(clock.elapsedMillis.value)
@@ -161,4 +162,4 @@ internal fun welcomePaneCoverSize(room: Dp, rows: Int): Dp = ((room - WelcomeCov
 
 /** Side-panel covers stay at least this large; below it the panel shows two rows. */
 private val WelcomePaneMinCover = 96.dp
-private val WelcomeMaxCover = 132.dp
+internal val WelcomeMaxCover = 132.dp

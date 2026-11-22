@@ -154,27 +154,43 @@ private fun StackedWelcome(
     BoxWithConstraints(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility)) {
         val viewportHeight = maxHeight
         val viewportWidth = maxWidth
-        val coverSize = (viewportWidth * 0.315f).coerceIn(90.dp, 132.dp)
+        val density = LocalDensity.current
+        // Everything but the covers, measured, so the covers shrink only when the page would scroll.
+        var invitationHeight by remember { mutableIntStateOf(0) }
+        var actionsHeight by remember { mutableIntStateOf(0) }
+        val otherContent = with(density) { (statusBarHeight + invitationHeight + actionsHeight).toDp() } + WelcomePanelChrome
+        val coverSize = welcomeCoverSize(viewportWidth, viewportHeight, otherContent)
         Column(
             Modifier.fillMaxWidth().verticalScroll(scroll, enabled = scroll.maxValue > 0, overscrollEffect = null).heightIn(min = viewportHeight),
         ) {
             WelcomeCoverPanel(clock, viewportWidth, coverSize, panel, greeting, Modifier.openingPanelMorph(motion).onSizeChanged { coverPanelHeight = it.height })
-            Column(Modifier.fillMaxWidth().padding(horizontal = 26.dp).padding(top = 24.dp)) {
-                WelcomeInvitation(clock, welcomeHeadlineSize(viewportWidth))
+            Column(Modifier.onSizeChanged { invitationHeight = it.height }.fillMaxWidth().padding(horizontal = 26.dp).padding(top = 24.dp)) {
+                WelcomeInvitation(clock, welcomeHeadlineSize(minOf(viewportWidth, viewportHeight * WelcomeHeadlineHeightShare)))
             }
             // Echo's peek borrows the free space above the button and sizes itself to it, up to its full
             // size; where even the smallest Echo doesn't fit, it stays hidden.
-            val density = LocalDensity.current
             var echoRoom by remember { mutableStateOf(0.dp) }
             Spacer(Modifier.weight(1f).onSizeChanged { echoRoom = with(density) { it.height.toDp() } + WelcomeActionsGap })
             WelcomeActions(
                 clock,
                 actions,
                 echoCell = welcomeEchoCell(echoRoom),
-                Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(top = WelcomeActionsGap).navigationBarsPadding().padding(bottom = 8.dp),
+                Modifier.onSizeChanged { actionsHeight = it.height }.fillMaxWidth().padding(horizontal = 24.dp).padding(top = WelcomeActionsGap)
+                    .navigationBarsPadding().padding(bottom = 8.dp),
             )
         }
     }
+}
+
+/**
+ * The stacked page's cover size: by width as always ([width] × 0.315, 90-132dp), and smaller only
+ * when [otherContent] (everything but the two rows of covers) would otherwise push the page past
+ * [height], down to [WelcomeMinCover]. Shorter still, the page scrolls.
+ */
+internal fun welcomeCoverSize(width: Dp, height: Dp, otherContent: Dp): Dp {
+    val byWidth = (width * 0.315f).coerceIn(90.dp, WelcomeMaxCover)
+    val fit = (height - otherContent - WelcomeCoverGap) / 2
+    return if (fit >= byWidth) byWidth else fit.coerceIn(WelcomeMinCover, byWidth)
 }
 
 /** The cover panel beside the invitation and actions, which sit centred in the end pane. */
@@ -206,8 +222,17 @@ private fun TwoPaneWelcome(
     }
 }
 
-/** The headline's size: larger on wider windows, never so large it crowds a short one. */
+/** The headline's size: larger on wider windows (pass the shorter of the width and a share of the height), 36-46sp. */
 internal fun welcomeHeadlineSize(width: Dp): Float = (width.value * 0.11f).coerceIn(36f, 46f)
+
+/** A short window's headline follows its height: 0.066 of it, as 0.11 of the width would be. */
+private const val WelcomeHeadlineHeightShare = 0.066f / 0.11f
+
+/** The cover panel around its covers: the 16dp top, the 34dp logo row, the 24dp gap and the 26dp foot. */
+private val WelcomePanelChrome = 100.dp
+
+/** On the smallest pages the covers stay at least this large; below it the page scrolls instead. */
+private val WelcomeMinCover = 72.dp
 
 /**
  * The stacked cover panel: the logo row, then the reel. While Welcome takes over from the language
