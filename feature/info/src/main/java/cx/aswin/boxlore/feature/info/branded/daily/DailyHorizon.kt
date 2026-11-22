@@ -52,6 +52,9 @@ internal object DailyHorizon {
     private const val RIM_WIDTH = 1.5f
     private const val RIM_GLOW = 12f
 
+    /** How far the sky reaches under the curve's lowest point, past the planet's anti-aliased edge. */
+    private const val SKY_UNDER_CURVE = 2f
+
     /** How far the curve drops at the edges of a window [width] dp wide. */
     fun drop(width: Float): Float = (width * BOARD_DROP / BOARD_WIDTH).coerceIn(MIN_DROP, MAX_DROP)
 
@@ -132,10 +135,13 @@ internal object DailyHorizon {
         // The planet covers everything below the curve that the sky, the halo and the sun's glow reach.
         val reach = maxOf(drop / unit + RIM_GLOW, HALO_HEIGHT / 2f, 2 * SUN_RADIUS + SUN_GLOW - SUN_PEEK)
         val bottom = apex + reach * unit
+        // The sky stops just under the curve's lowest point, so the opaque planet hides its edge; ending it
+        // at the planet's own lower edge let a sliver of its last colour show as a line across the text.
+        val skyBottom = apex + drop + SKY_UNDER_CURVE * unit
         drawRect(
             Brush.verticalGradient(*Sky, startY = apex - SKY_ABOVE_APEX * unit, endY = apex + SKY_BELOW_APEX * unit),
             topLeft = Offset(0f, skyTop),
-            size = Size(size.width, bottom - skyTop),
+            size = Size(size.width, skyBottom - skyTop),
         )
         // The sunrise's halo, a wide ellipse centred on the apex.
         scale(scaleX = 1f, scaleY = HALO_HEIGHT / HALO_WIDTH, pivot = Offset(centreX, apex)) {
