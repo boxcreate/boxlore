@@ -19,6 +19,7 @@ internal object AnalyticsLocalState {
     private const val KEY_POLICY = "analytics_policy"
     private const val KEY_FEATURE_ADOPTION = "feature_adoption_sent"
     private const val KEY_WATCH_LISTENING_DAY = "watch_listening_day"
+    private const val KEY_WATCH_LISTENING_SENT = "watch_listening_sent_day"
 
     /** Where [startPolicy] keeps the bucket and switch, and the app version they belong to. */
     private class PolicyHome(val store: AnalyticsPolicy.Store, val appVersion: String)
@@ -98,6 +99,10 @@ internal object AnalyticsLocalState {
             if (day == null) edit.remove(KEY_WATCH_LISTENING_DAY) else edit.putString(KEY_WATCH_LISTENING_DAY, WatchListeningSummary.encode(day))
             edit.apply()
         }
+
+        override fun lastSent(): Long? = prefs.getLong(KEY_WATCH_LISTENING_SENT, Long.MIN_VALUE).takeIf { it != Long.MIN_VALUE }
+
+        override fun saveLastSent(epochDay: Long) = prefs.edit().putLong(KEY_WATCH_LISTENING_SENT, epochDay).apply()
     }
 
     private fun prefs(context: Context) =

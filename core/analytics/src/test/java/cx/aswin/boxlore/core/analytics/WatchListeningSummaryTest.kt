@@ -15,11 +15,18 @@ class WatchListeningSummaryTest {
     private val disk =
         object : WatchListeningSummary.Store {
             var day: WatchListeningSummary.Day? = null
+            var sentThrough: Long? = null
 
             override fun load(): WatchListeningSummary.Day? = day
 
             override fun save(day: WatchListeningSummary.Day?) {
                 this.day = day
+            }
+
+            override fun lastSent(): Long? = sentThrough
+
+            override fun saveLastSent(epochDay: Long) {
+                sentThrough = epochDay
             }
         }
 
@@ -69,13 +76,35 @@ class WatchListeningSummaryTest {
     }
 
     @Test
-    fun `a clock set back still sends the waiting day instead of adding to it`() {
-        WatchListeningSummary.add(disk, episodes = 2, follows = 0, today = nov22)
+    fun `a clock that goes back and forth sends each day once, and never before it ends`() {
+        WatchListeningSummary.add(disk, episodes = 1, follows = 0, today = nov21)
+        WatchListeningSummary.add(disk, episodes = 1, follows = 0, today = nov22)
+        // The clock goes back: the merge joins the open 22 November instead of finishing it early.
+        WatchListeningSummary.add(disk, episodes = 1, follows = 0, today = nov21)
+        WatchListeningSummary.sendFinished(disk, today = nov21)
+        WatchListeningSummary.add(disk, episodes = 1, follows = 1, today = nov22)
+        assertEquals(listOf("2026-11-21"), sent().map { it["day"] })
+
+        WatchListeningSummary.sendFinished(disk, today = nov22 + 1)
+
+        assertEquals(
+            listOf(
+                mapOf("day" to "2026-11-21", "merge_count" to 1, "episode_count" to 1, "follow_change_count" to 0),
+                mapOf("day" to "2026-11-22", "merge_count" to 3, "episode_count" to 3, "follow_change_count" to 1),
+            ),
+            sent(),
+        )
+    }
+
+    @Test
+    fun `a merge dated on a day already sent counts toward the next day`() {
+        WatchListeningSummary.add(disk, episodes = 2, follows = 0, today = nov21)
+        WatchListeningSummary.sendFinished(disk, today = nov22)
 
         WatchListeningSummary.add(disk, episodes = 1, follows = 0, today = nov21)
 
-        assertEquals(listOf("2026-11-22"), sent().map { it["day"] })
-        assertEquals(WatchListeningSummary.Day(nov21, merges = 1, episodes = 1, follows = 0), disk.day)
+        assertEquals(listOf("2026-11-21"), sent().map { it["day"] })
+        assertEquals(WatchListeningSummary.Day(nov22, merges = 1, episodes = 1, follows = 0), disk.day)
     }
 
     @Test

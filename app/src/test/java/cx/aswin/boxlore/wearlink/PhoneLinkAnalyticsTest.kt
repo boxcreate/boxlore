@@ -33,6 +33,10 @@ class PhoneLinkAnalyticsTest {
                 override fun save(day: WatchListeningSummary.Day?) {
                     this.day = day
                 }
+
+                override fun lastSent(): Long? = null
+
+                override fun saveLastSent(epochDay: Long) = Unit
             }
         val nov21 = 20_778L
         val analytics = PhoneLinkAnalytics(disk, today = { nov21 })
