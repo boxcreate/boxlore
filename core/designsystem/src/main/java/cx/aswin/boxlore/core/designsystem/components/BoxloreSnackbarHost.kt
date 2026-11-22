@@ -54,9 +54,8 @@ private fun BoxloreSnackbar(data: SnackbarData) {
         val measurer = rememberTextMeasurer()
         val typography = MaterialTheme.typography
         val visuals = data.visuals
-        val label = visuals.actionLabel
-        val density = LocalDensity.current
-        val actionOnNewLine = label != null && with(density) {
+        val actionOnNewLine = with(LocalDensity.current) {
+            val label = visuals.actionLabel ?: return@with false
             val actionWidth = measurer.measure(label, typography.labelLarge).size.width + ACTION_PADDING.roundToPx()
             val dismissWidth = if (visuals.withDismissAction) DISMISS_WIDTH.roundToPx() else 0
             val textWidth = (constraints.maxWidth - TEXT_SIDE_SPACING.roundToPx() - actionWidth - dismissWidth).coerceAtLeast(1)

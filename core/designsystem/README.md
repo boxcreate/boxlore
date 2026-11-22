@@ -38,17 +38,18 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 - `BoxloreWindowLayout`, `LocalBoxloreWindowLayout`: the app-supplied window and fold model; previews default to phones.
 - `boxlorePaneSpec`, `LocalBoxlorePaneBounds`, `dockedPlayerCoversPane`: shell-supplied panes, never inferred from the window; half-open folds use the whole window until a pane opens.
 - `rememberBoxloreFoldSafePopupPositionProvider`, `BoxloreTabletopSplit`, `boxloreIsShortPane`, `BoxloreSafeInsets.kt`: fold-safe popups, tabletop split, short-pane check, pane-relative insets.
-- `BoxloreCardSpec`, `boxlorePosterColumns`, `Modifier.boxloreReadingColumn`: card families, poster packing by pane width and a reading column for every window.
+- `BoxloreCardSpec`, `boxlorePosterColumns`, `Modifier.boxloreReadingColumn`: card families, poster packing by pane width, a reading column for any window.
 - Gates and state retention: see [adaptive UI and state](../../ARCHITECTURE.md#adaptive-ui-and-state).
 
 ### Shared components
 
 - Cards and panels use solid Material 3 surfaces and colour roles, never hard-coded colours.
-- `OptimizedImage`: the artwork composable, with `fallbackUrls`, `errorContent`, `showLoadingPlaceholder` and `onLoaded` options.
+- `OptimizedImage`: the artwork composable (`fallbackUrls`, `errorContent`, `showLoadingPlaceholder`, `onLoaded`).
 - `FeedMediaCard`, `ExpressiveFeedMediaCard`, `CuratedEpisodeCard`, `EqualHeightPosterGrid`: discovery cards. `FeedMediaCardSkeleton` shares the loaded layout at any font scale.
-- `TabletFeaturedRow`, `AdaptiveOverflowRow`: a feature card beside equal-height posters; a chip row packed to the width.
-- `DiscoveryTabSwitcher`: the Explore and Subscriptions tab capsule; pages keep selection.
+- `TabletFeaturedRow`, `AdaptiveOverflowRow`: a feature card beside equal-height posters; a width-packed chip row.
+- `DiscoveryTabSwitcher`: Explore and Subscriptions tab capsule; pages keep selection.
 - `TopBarUtilityActions`: connected Update, Feedback and Settings segments. Update shows only when `LocalUpdateAvailableAction` is set; `LocalFeedbackReplyWaiting` marks Feedback with a dot.
+- `BoxloreTopBar`, `boxloreLargeTitlePresentation`: page header, slim in short panes.
 - `ConnectedOptionSelector`, `PillFilterChip`, `RegionSegmentedSelector`, `ContentRegionPickerSheet`: option chips, genre pills and the content-region picker.
 - `ContentLanguagesSheet`: the content-languages sheet. English can be switched off only when `ContentRegions.canSwitchEnglishOff` allows it.
 - `BoxloreDialog`, `BoxloreModalBottomSheet`, `BoxloreAlertDialog`, `EngagementBottomSheetScaffold`: phone dialogs and sheets that become bounded, fold-safe dialogs on tablets.
@@ -60,7 +61,7 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 - `PlayingOnPill`, `PlaybackPlaceNotice`, `LocalWatchPlayOffer`: where an episode plays while a watch with boxlore is in reach of the phone, and the offer to hand playback to the watch. `LocalWatchPlayOffer` is null without one, which hides them.
 - `BoxLoreLoader`, `DownloadButton`, `ExpressivePlayButton`, `AdvancedPlayerControls`, `NewEpisodeBadge`, `HtmlText`: loaders, buttons, player controls and rich text.
 - `GenreIcons`, `GenreSuggestions.kt`: icons and keyword suggestions for genre tags and folders.
-- `LazyListKeyPolicy`, `ProgressiveSearchScrollLogic`: duplicate-safe lazy-list keys, and when a progressive show search pins to the top.
+- `LazyListKeyPolicy`, `ProgressiveSearchScrollLogic`: duplicate-safe lazy-list keys; when a progressive show search pins to the top.
 
 ### Navigation chrome
 
@@ -74,11 +75,11 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 ### Artwork and image loading
 
 - `ArtworkAttempts`, `ArtworkLoadPolicy`: try optimized then original for each image, retry a transient failure once, and remember failures and working routes for a bounded time.
-- Alternate artwork (`fallbackUrls`, `fallbackImageUrls`) is kept until a load actually fails, never chosen up front. Failed tiles retry only on foreground return or reconnection; there is no polling.
+- Alternate artwork (`fallbackUrls`, `fallbackImageUrls`) is kept until a load fails, never chosen up front. Failed tiles retry only on foreground return or reconnection; there is no polling.
 - Missing or failed art shows the decorative `ic_boxlore_app_mark` over a solid fallback; the card's description stays the accessible name.
 - `optimizedImageUrl(width)` and `proxyWidth` take pixels, clamped in `ImageRequestSizing.kt`; one value sizes request and decode, in measured buckets on tablets and windows wider than 430dp.
 - `loadArtworkBitmap`: the bounded loader for widgets, share cards and notification artwork, sharing Coil's cache.
-- `ArtworkPrefetch.prefetch` warms the exact request `OptimizedImage` makes on phones; `OnScreenArtwork` lets colour extraction reuse the copy on screen.
+- `ArtworkPrefetch.prefetch` warms the exact request `OptimizedImage` makes on portrait phones; `OnScreenArtwork` lets colour extraction reuse the copy on screen.
 
 ### Echo
 

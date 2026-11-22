@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.designsystem.audit
 
 import android.app.Application
 import android.content.res.Configuration
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,8 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -44,11 +47,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -71,9 +77,11 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.R
+import cx.aswin.boxlore.core.designsystem.component.BoxloreTopBar
 import cx.aswin.boxlore.core.designsystem.components.ActionPillFilterChip
 import cx.aswin.boxlore.core.designsystem.components.AddToPlaylistSheet
 import cx.aswin.boxlore.core.designsystem.components.AddToPlaylistSheetState
+import cx.aswin.boxlore.core.designsystem.components.BoxloreSnackbarHost
 import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.components.ContentLanguagesSheet
 import cx.aswin.boxlore.core.designsystem.components.ContentRegionPickerSheet
@@ -83,6 +91,9 @@ import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
 import cx.aswin.boxlore.core.designsystem.components.ShareBottomSheet
 import cx.aswin.boxlore.core.designsystem.components.TopBarUtilityActions
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreMiniPlayerVisible
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreNavigationRailVisible
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Playlist
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
@@ -283,6 +294,24 @@ class DesignSystemAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
         PageTopBar(collapsed = true) {}
     }
 
+    /** An Undo message over a page, with stand-ins where the shell draws the bar and the mini player. */
+    @Test fun snackbar() = render("snackbar") { SnackbarPage(miniPlayer = true) }
+
+    @Test fun snackbarNoMiniPlayer() = render("snackbar-no-mini-player") { SnackbarPage(miniPlayer = false) }
+
+    /** The shared page header with Back and a long title, over a list that scrolls it shut. */
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun topBar() = render("top-bar") {
+        val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+        Column(Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection)) {
+            BoxloreTopBar(stringResource(R.string.repair_progress_title), onBack = {}, actions = { MoreMenuButton() }, scrollBehavior = scrollBehavior)
+            LazyColumn(Modifier.fillMaxSize()) {
+                items(40) { index -> Text("${PLAYLISTS[index % PLAYLISTS.size].name} $index", Modifier.padding(16.dp)) }
+            }
+        }
+    }
+
     private fun render(screen: String, allWindows: Boolean = false, after: () -> Unit = {}, content: @Composable () -> Unit) {
         golden.assumeAuditCapture()
         golden.prepare()
@@ -355,6 +384,29 @@ class DesignSystemAuditCaptureTest(configuration: PhoneGoldenConfiguration) {
                 }
             }
         }
+    }
+
+    @Composable
+    private fun SnackbarPage(miniPlayer: Boolean) {
+        val host = remember { SnackbarHostState() }
+        val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
+        val message = stringResource(R.string.add_to_playlist_removed, PLAYLISTS[1].name)
+        CompositionLocalProvider(LocalBoxloreMiniPlayerVisible provides miniPlayer, LocalBoxloreNavigationRailVisible provides tablet) {
+            Box(Modifier.fillMaxSize()) {
+                Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val standIn = MaterialTheme.colorScheme.surfaceContainerHighest
+                    if (miniPlayer) Box(Modifier.fillMaxWidth().height(64.dp).background(standIn, RoundedCornerShape(32.dp)))
+                    if (!tablet) Box(Modifier.fillMaxWidth().height(56.dp).background(standIn, RoundedCornerShape(28.dp)))
+                }
+                BoxloreSnackbarHost(host, Modifier.align(Alignment.BottomCenter))
+            }
+        }
+        LaunchedEffect(message) { host.showSnackbar(message, actionLabel = "Undo", duration = SnackbarDuration.Indefinite) }
+    }
+
+    @Composable
+    private fun MoreMenuButton() {
+        IconButton(onClick = {}) { Icon(Icons.Rounded.MoreVert, contentDescription = null) }
     }
 
     /** German copy whatever the capture's locale, for the longest real text. */
