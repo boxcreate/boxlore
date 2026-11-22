@@ -12,7 +12,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -116,35 +121,46 @@ class TabletAlertHostingTest {
     }
 
     @Test
-    fun `open alert follows the window across folding and unfolding`() {
-        val folded = mutableStateOf(false)
+    fun `open alert keeps its slots and their state across phone, tablet and fold changes`() {
+        val layouts = listOf(
+            BoxloreWindowLayout(412f, 915f), // phone
+            BoxloreWindowLayout(673f, 841f), // unfolded tablet
+            BoxloreWindowLayout(673f, 841f, listOf(fold)), // half-folded
+        )
+        val layout = mutableStateOf(layouts[0])
         var confirmed = 0
         fixture.setContent {
-            val layout = if (folded.value) BoxloreWindowLayout(673f, 841f, listOf(fold)) else BoxloreWindowLayout(412f, 915f)
-            CompositionLocalProvider(LocalBoxloreWindowLayout provides layout) {
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides layout.value) {
                 BoxLoreTheme {
                     BoxloreAlertDialog(
                         {},
                         confirmButton = { TextButton({ confirmed++ }) { Text("Continue") } },
                         title = { Text("Confirm") },
+                        text = {
+                            var taps by remember { mutableIntStateOf(0) }
+                            var saved by rememberSaveable { mutableIntStateOf(0) }
+                            TextButton({
+                                taps++
+                                saved++
+                            }) { Text("Taps $taps saved $saved") }
+                        },
                     )
                 }
             }
         }
         advance()
         assertNativePanel()
-        fixture.compose.onNodeWithText("Continue").performClick()
-
-        fixture.compose.runOnIdle { folded.value = true }
-        advance()
-        assertSafePanel(560f)
-        fixture.compose.onNodeWithText("Continue").performClick()
-
-        fixture.compose.runOnIdle { folded.value = false }
-        advance()
-        assertNativePanel()
-        fixture.compose.onNodeWithText("Continue").assertIsDisplayed().performClick()
-        assertEquals(3, confirmed)
+        fixture.compose.onNodeWithText("Taps 0 saved 0").performClick()
+        // Phone → unfolded tablet → folded → unfolded tablet → phone: native, native, fold-safe, native, native.
+        for ((step, index) in listOf(1, 2, 1, 0).withIndex()) {
+            fixture.compose.runOnIdle { layout.value = layouts[index] }
+            advance()
+            if (index == 2) assertSafePanel(560f) else assertNativePanel()
+            fixture.compose.onNodeWithText("Taps ${step + 1} saved ${step + 1}").assertIsDisplayed().performClick()
+            fixture.compose.onNodeWithText("Continue").assertIsDisplayed().performClick()
+        }
+        fixture.compose.onNodeWithText("Taps 5 saved 5").assertIsDisplayed()
+        assertEquals(4, confirmed)
     }
 
     @Test

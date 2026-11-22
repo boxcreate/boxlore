@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LocalContentColor
@@ -34,9 +33,9 @@ import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.foldSafeRegions
 
 /**
- * Material [AlertDialog] with the same slots and defaults. Phones and unfolded tablets get the
- * native Material dialog; a folded tablet hosts the dialog in one fold-safe region instead of
- * across the hinge.
+ * Material's alert dialog with the same slots and defaults, drawn as Material draws it. Phones and
+ * unfolded tablets get native dialog hosting; a folded tablet hosts it in one fold-safe region
+ * instead of across the hinge. Both use one window, so state inside the slots survives folding.
  */
 @Suppress("LongParameterList") // Source-compatible adapter for Material's alert dialog parameters.
 @Composable
@@ -57,42 +56,35 @@ fun BoxloreAlertDialog(
     properties: DialogProperties = DialogProperties(),
 ) {
     val window = LocalBoxloreWindowLayout.current
-    if (!window.usesTabletLayout || window.foldSafeRegions().size == 1) {
-        AlertDialog(
-            onDismissRequest = onDismissRequest,
-            confirmButton = confirmButton,
-            modifier = modifier,
-            dismissButton = dismissButton,
-            icon = icon,
-            title = title,
-            text = text,
-            shape = shape,
-            containerColor = containerColor,
-            iconContentColor = iconContentColor,
-            titleContentColor = titleContentColor,
-            textContentColor = textContentColor,
-            tonalElevation = tonalElevation,
-            properties = properties,
-        )
-        return
-    }
+    val folded = window.usesTabletLayout && window.foldSafeRegions().size != 1
     val dialogTitle = stringResource(androidx.compose.material3.R.string.m3c_dialog)
-    BoxloreDialog(onDismissRequest, properties, maxWidth = DialogMaxWidth) {
+    val slots = AlertDialogSlots(confirmButton, dismissButton, icon, title, text)
+    val style = AlertDialogPanelStyle(shape, containerColor, tonalElevation, iconContentColor, titleContentColor, textContentColor)
+    // One window for both presentations, so the slots keep their state when the device folds.
+    BoxloreDialogHost(
+        onDismissRequest = onDismissRequest,
+        properties = properties,
+        tablet = folded,
+        maxWidth = DialogMaxWidth,
+        scrimColor = MaterialTheme.colorScheme.scrim.copy(alpha = 0.32f),
+        panelTag = "boxlore_dialog_panel",
+    ) {
         Box(
             modifier.sizeIn(minWidth = DialogMinWidth, maxWidth = DialogMaxWidth).semantics { paneTitle = dialogTitle },
             propagateMinConstraints = true,
         ) {
-            AlertDialogPanel(
-                confirmButton = confirmButton,
-                dismissButton = dismissButton,
-                icon = icon,
-                title = title,
-                text = text,
-                style = AlertDialogPanelStyle(shape, containerColor, tonalElevation, iconContentColor, titleContentColor, textContentColor),
-            )
+            AlertDialogPanel(slots, style)
         }
     }
 }
+
+private class AlertDialogSlots(
+    val confirmButton: @Composable () -> Unit,
+    val dismissButton: @Composable (() -> Unit)?,
+    val icon: @Composable (() -> Unit)?,
+    val title: @Composable (() -> Unit)?,
+    val text: @Composable (() -> Unit)?,
+)
 
 private class AlertDialogPanelStyle(
     val shape: Shape,
@@ -105,35 +97,28 @@ private class AlertDialogPanelStyle(
 
 /** Mirrors Material's alert dialog layout: icon, title, scrollable-weight text, then end-aligned buttons. */
 @Composable
-private fun AlertDialogPanel(
-    confirmButton: @Composable () -> Unit,
-    dismissButton: @Composable (() -> Unit)?,
-    icon: @Composable (() -> Unit)?,
-    title: @Composable (() -> Unit)?,
-    text: @Composable (() -> Unit)?,
-    style: AlertDialogPanelStyle,
-) {
+private fun AlertDialogPanel(slots: AlertDialogSlots, style: AlertDialogPanelStyle) {
     val typography = MaterialTheme.typography
     Surface(shape = style.shape, color = style.containerColor, tonalElevation = style.tonalElevation) {
         Column(Modifier.padding(24.dp)) {
-            icon?.let {
+            slots.icon?.let {
                 CompositionLocalProvider(LocalContentColor provides style.iconColor) {
                     Box(Modifier.padding(bottom = 16.dp).align(Alignment.CenterHorizontally)) { it() }
                 }
             }
-            title?.let {
+            slots.title?.let {
                 ProvideColorAndStyle(style.titleColor, typography.headlineSmall) {
-                    Box(Modifier.padding(bottom = 16.dp).align(if (icon == null) Alignment.Start else Alignment.CenterHorizontally)) { it() }
+                    Box(Modifier.padding(bottom = 16.dp).align(if (slots.icon == null) Alignment.Start else Alignment.CenterHorizontally)) { it() }
                 }
             }
-            text?.let {
+            slots.text?.let {
                 ProvideColorAndStyle(style.textColor, typography.bodyMedium) {
                     Box(Modifier.weight(1f, fill = false).padding(bottom = 24.dp).align(Alignment.Start)) { it() }
                 }
             }
             Box(Modifier.align(Alignment.End)) {
                 ProvideColorAndStyle(MaterialTheme.colorScheme.primary, typography.labelLarge) {
-                    DialogButtons(confirmButton, dismissButton)
+                    DialogButtons(slots.confirmButton, slots.dismissButton)
                 }
             }
         }
