@@ -283,8 +283,9 @@ class SubscriptionSyncResolver(
             feedUrl = rowFeedUrl(local, remote),
         )
         upsertMerged(updated)
-        applyPulledAddress(local, remote)
+        // Before the address write, which can throw: a saved follow never keeps a countdown.
         if (!local.isRss && !local.podcastId.startsWith("rss:")) localEpisodeCatalog?.setUnsubscribedTtl(local.podcastId, null)
+        applyPulledAddress(local, remote)
         if (!local.isRss) {
             if (remote.notificationsEnabled) {
                 notificationSyncPort?.setNotificationTopicSubscribed(local.podcastId, true)

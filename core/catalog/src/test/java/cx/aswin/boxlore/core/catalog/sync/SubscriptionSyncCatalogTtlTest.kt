@@ -3,6 +3,9 @@ package cx.aswin.boxlore.core.catalog.sync
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import cx.aswin.boxlore.core.catalog.FeedAddressNotSavedException
+import cx.aswin.boxlore.core.catalog.FeedAddressUpdater
+import cx.aswin.boxlore.core.catalog.PendingNotificationRegistrations
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.LocalEpisodeFeedEntity
 import cx.aswin.boxlore.core.database.LocalFeedOrder
@@ -100,6 +103,26 @@ class SubscriptionSyncCatalogTtlTest {
         assertTrue(feed(SHOW).followed)
         assertNull(feed(SHOW).ttlExpiresAt)
         assertTrue("the followed show's copy is never swept", dao().listExpiredFeedIds(Long.MAX_VALUE).isEmpty())
+    }
+
+    @Test
+    fun aPulledFollowWhoseAddressCannotBeSavedStillClearsTheCountdown() = runTest {
+        unfollowed(SHOW, unsubscribedAt = 1_000L)
+        storedCopy(SHOW, followed = false, ttl = 5_000L)
+        val withAddresses =
+            SubscriptionSyncResolver(
+                podcastDao = database.podcastDao(),
+                feedAddresses = FeedAddressUpdater(database.podcastDao(), pendingRegistrations = RefusingRegistrations),
+                localEpisodeCatalog = catalog,
+            )
+        val pulled = pulledFollow(SHOW, subscribedAt = 2_000L).copy(notificationsEnabled = true, feedUrl = "https://feeds.example/moved.xml")
+
+        val failure = runCatching { withAddresses.resolveSubscription(pulled, syncedAt = 3_000L) }.exceptionOrNull()
+
+        assertTrue("the address write fails", failure is FeedAddressNotSavedException)
+        assertTrue(database.podcastDao().getPodcast(SHOW)!!.isSubscribed)
+        assertTrue(feed(SHOW).followed)
+        assertNull("the saved follow keeps no countdown", feed(SHOW).ttlExpiresAt)
     }
 
     @Test
@@ -252,6 +275,17 @@ class SubscriptionSyncCatalogTtlTest {
             ttlWrites += podcastId to ttlExpiresAt
             inner.setUnsubscribedTtl(podcastId, ttlExpiresAt)
         }
+    }
+
+    /** A notification-request store that can't save, so an address write for a show with alerts on fails. */
+    private object RefusingRegistrations : PendingNotificationRegistrations {
+        override fun all(): Set<String> = emptySet()
+
+        override fun mark(podcastId: String): Long? = null
+
+        override fun add(podcastId: String): Boolean = false
+
+        override fun remove(podcastId: String, mark: Long) = Unit
     }
 
     private companion object {
