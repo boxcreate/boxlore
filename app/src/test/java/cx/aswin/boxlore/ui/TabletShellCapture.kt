@@ -48,7 +48,7 @@ internal fun TabletShellCapture(route: String, episode: Episode, podcast: Podcas
     }
 }
 
-private fun tabletCapturePlayer(episode: Episode, podcast: Podcast): FullPlayerDependencies {
+internal fun tabletCapturePlayer(episode: Episode, podcast: Podcast): FullPlayerDependencies {
     val playback = mock(PlaybackRepository::class.java)
     `when`(playback.playerState).thenReturn(
         MutableStateFlow(
