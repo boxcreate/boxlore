@@ -7,6 +7,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.Authenticator
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.Route
@@ -19,20 +21,27 @@ import okhttp3.Route
  * preventing token refresh stampedes to Google STS. If another thread has already refreshed
  * the token while a thread was waiting for the lock, the freshly cached token is reused
  * without an extra network call.
+ *
+ * Only 401s from [apiBaseUrl]'s origin (scheme, host and port) are answered, so the ID token is
+ * never sent to any other host that shares the client. An [apiBaseUrl] that isn't a valid HTTP(S)
+ * URL answers no 401 at all, rather than failing app start.
  */
 class FirebaseAuthAuthenticator(
+    apiBaseUrl: String,
     private val authRepositoryProvider: () -> AuthRepository?,
     private val tokenTimeoutMs: Long = DEFAULT_TOKEN_TIMEOUT_MS,
 ) : Authenticator {
 
-    constructor(authRepositoryProvider: () -> AuthRepository?) :
-        this(authRepositoryProvider, DEFAULT_TOKEN_TIMEOUT_MS)
+    constructor(apiBaseUrl: String, authRepositoryProvider: () -> AuthRepository?) :
+        this(apiBaseUrl, authRepositoryProvider, DEFAULT_TOKEN_TIMEOUT_MS)
 
-    constructor(authRepository: AuthRepository) :
-        this({ authRepository }, DEFAULT_TOKEN_TIMEOUT_MS)
+    constructor(apiBaseUrl: String, authRepository: AuthRepository) :
+        this(apiBaseUrl, { authRepository }, DEFAULT_TOKEN_TIMEOUT_MS)
 
-    constructor(authRepository: AuthRepository, tokenTimeoutMs: Long) :
-        this({ authRepository }, tokenTimeoutMs)
+    constructor(apiBaseUrl: String, authRepository: AuthRepository, tokenTimeoutMs: Long) :
+        this(apiBaseUrl, { authRepository }, tokenTimeoutMs)
+
+    private val apiOrigin: HttpUrl? = apiBaseUrl.toHttpUrlOrNull()
 
     private val mutex = Mutex()
 
@@ -40,6 +49,9 @@ class FirebaseAuthAuthenticator(
      * Authenticates an HTTP 401 response by resolving a fresh ID token.
      */
     override fun authenticate(route: Route?, response: Response): Request? {
+        if (!isApiOrigin(response.request.url)) {
+            return null
+        }
         if (responseCount(response) >= MAX_RETRY_COUNT) {
             return null
         }
@@ -67,6 +79,11 @@ class FirebaseAuthAuthenticator(
                 .header("Authorization", "Bearer $token")
                 .build()
         }
+    }
+
+    private fun isApiOrigin(url: HttpUrl): Boolean {
+        val origin = apiOrigin ?: return false
+        return url.scheme == origin.scheme && url.host == origin.host && url.port == origin.port
     }
 
     private fun extractFailedToken(response: Response): String? {

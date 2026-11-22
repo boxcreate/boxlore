@@ -20,7 +20,7 @@ It does not own repositories ([`:core:catalog`](../catalog/README.md)), RSS pars
 - Debug logging redacts every credential, App Check, session and proof header; release builds log nothing.
 - `StreamingJsonConverterFactory`: decodes responses straight from the body stream, without buffering a whole string.
 - `EnglishOffInterceptor` (first on the API client): adds `englishOff` to requests whose `languages` leave English out; every other request passes through unchanged.
-- `FirebaseAuthAuthenticator`: refreshes the Firebase ID token on a 401, one refresh at a time (`Mutex`), using `AuthRepository` from [`:core:auth`](../auth/README.md). It ignores 401s carrying `ApiErrorCodes.SHIELD_CODES`, which belong to the session layer.
+- `FirebaseAuthAuthenticator`: refreshes the Firebase ID token on a 401 from the API base URL's origin only, one refresh at a time (`Mutex`), using `AuthRepository` from [`:core:auth`](../auth/README.md). It ignores other hosts' 401s and 401s carrying `ApiErrorCodes.SHIELD_CODES`, which belong to the session layer.
 - `AccountTokenInterceptor`: adds the signed-in account's ID token to support requests.
 
 ### API sessions and request proofs (`session/`)

@@ -270,8 +270,9 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
     )
 
     /**
-     * A show's episodes, newest first, with the ones in progress moved to the top under
-     * "Jump back in". Rows say when the episode came out, not the show's name again.
+     * A show's episodes, newest first, in one list. An episode in progress keeps its place and says
+     * so on its own row (the time left and a progress bar), so it takes no extra row. Rows say when
+     * the episode came out, not the show's name again.
      */
     suspend fun getPodcastEpisodes(podcastId: String): List<MediaItem> =
         podcastEpisodeRows(podcastId, host.podcastRepository.getEpisodesPaginated(podcastId, limit = LIST_LIMIT, sort = "newest").episodes)
@@ -287,22 +288,17 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
         // Looked up by the listed ID: an episode stored under several IDs shows its state under any of them.
         val history = historyById(episodes.map { it.id })
         val downloaded = downloadedIds()
-        val (started, rest) = episodes.partition { episode -> history[episode.id]?.let { !it.isCompleted && it.progressMs > 0 } == true }
-        val titled = started.isNotEmpty() && rest.isNotEmpty()
-        suspend fun rows(list: List<Episode>, groupTitle: String?) = list.map { episode ->
+        return episodes.map { episode ->
             val played = history[episode.id]
-            val showTitle = podcastEntity?.title ?: episode.podcastTitle
             AutoMediaItemFactory.fromEpisode(
                 resources = host.asContext().resources,
                 episode = episode,
                 source = AutoBrowseContract.SOURCE_SHOW,
                 artworkUri = rowArt(episode.imageUrl, podcastEntity?.imageUrl ?: episode.podcastImageUrl, podcastId),
-                podcastTitle = showTitle,
-                row = AutoEpisodeRow(groupTitle = groupTitle, isDownloaded = episode.id in downloaded, subtitle = episodeSubtitle(null, episode, played, withDate = true), progress = played?.progressFraction(), isCompleted = played?.isCompleted == true),
+                podcastTitle = podcastEntity?.title ?: episode.podcastTitle,
+                row = AutoEpisodeRow(isDownloaded = episode.id in downloaded, subtitle = episodeSubtitle(null, episode, played, withDate = true), progress = played?.progressFraction(), isCompleted = played?.isCompleted == true),
             )
         }
-        return rows(started, host.getString(R.string.auto_group_continue).takeIf { titled }) +
-            rows(rest, host.getString(R.string.auto_group_latest).takeIf { titled })
     }
 
     // ── Lists opened from Home ──────────────────────────────────────────────────────────────
