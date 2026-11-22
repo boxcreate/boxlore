@@ -15,8 +15,8 @@ import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.feature.onboarding.OnboardingStep
-import cx.aswin.boxlore.feature.onboarding.OpeningHandoff
 import cx.aswin.boxlore.feature.onboarding.OnboardingViewModel
+import cx.aswin.boxlore.feature.onboarding.OpeningHandoff
 import cx.aswin.boxlore.feature.onboarding.chooseAppLanguage
 import cx.aswin.boxlore.feature.onboarding.finishOpeningHandoff
 import org.junit.After

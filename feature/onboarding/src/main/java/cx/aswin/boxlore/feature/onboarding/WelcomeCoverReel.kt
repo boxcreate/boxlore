@@ -145,11 +145,17 @@ private fun WelcomeCoverRow(
  * two. [overlay] draws over the reel's area (the language question's greeting during the hand-off).
  */
 @Composable
-internal fun ColumnScope.WelcomePaneReel(clock: WelcomeMotionClock, pane: PaneSize, panel: LanguagePanelColors, overlay: @Composable BoxScope.() -> Unit = {}) {
+internal fun ColumnScope.WelcomePaneReel(
+    clock: WelcomeMotionClock,
+    pane: PaneSize,
+    panel: LanguagePanelColors,
+    reelAlpha: () -> Float = { 1f },
+    overlay: @Composable BoxScope.() -> Unit = {},
+) {
     BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(top = 24.dp), contentAlignment = Alignment.Center) {
         val rows = welcomePaneReelRows(maxHeight)
         val coverSize = welcomePaneCoverSize(maxHeight, rows)
-        WelcomeCoverReel(clock, coverSize, pane.width, panel.container, rows = rows)
+        WelcomeCoverReel(clock, coverSize, pane.width, panel.container, Modifier.graphicsLayer { alpha = reelAlpha() }, rows = rows)
         overlay()
     }
 }

@@ -210,7 +210,7 @@ private fun TwoPaneWelcome(
         scroll,
         panelBottomPadding = 26.dp,
         panelContent = { pane ->
-            WelcomePaneReel(clock, pane, panel) {
+            WelcomePaneReel(clock, pane, panel, reelAlpha = { 1f - (greeting?.motion?.greeting?.value ?: 0f) }) {
                 greeting?.let { HandoffGreeting(it.language, languageGreetingSize(pane.width, pane.height * 1.6f), panel.content, { it.motion?.greeting?.value ?: 0f }, Modifier.align(Alignment.BottomStart).padding(horizontal = 26.dp)) }
             }
         },
@@ -242,7 +242,8 @@ private val WelcomeMinCover = 72.dp
 private fun WelcomeCoverPanel(clock: WelcomeMotionClock, width: Dp, coverSize: Dp, panel: LanguagePanelColors, greeting: WelcomeGreeting?, modifier: Modifier) {
     OpeningPanel(panel, RoundedCornerShape(bottomStart = 46.dp, bottomEnd = 46.dp), bottomPadding = 26.dp, modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
         Box(Modifier.fillMaxWidth()) {
-            Column {
+            // The covers come in as the greeting goes, so the two cross-fade.
+            Column(Modifier.graphicsLayer { alpha = 1f - (greeting?.motion?.greeting?.value ?: 0f) }) {
                 Spacer(Modifier.height(24.dp))
                 WelcomeCoverReel(clock, coverSize, width, panel.container)
             }
