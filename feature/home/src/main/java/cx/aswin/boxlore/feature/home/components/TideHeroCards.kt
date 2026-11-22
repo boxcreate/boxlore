@@ -5,6 +5,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -108,48 +109,54 @@ internal fun TideHeroCard(
         colors = CardDefaults.cardColors(containerColor = shade.deep, contentColor = shade.content),
         modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_tide"),
     ) {
-        TideCardLayout(
-            cover = {
-                OptimizedImage(
-                    url = imageUrl,
-                    fallbackUrls = heroArtworkSources(item),
-                    proxyWidth = 800,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().testTag("home_hero_artwork"),
-                )
-            },
-            panel = { TidePanel(shade.deep) },
-            copy = { CoverCopy(item, shade, progressState = null, contextEndInset = TideDiscReserve) },
-            disc = {
-                TidePlayDisc(
-                    icon = if (!hasEpisode) {
-                        TideDiscIcon.Details
-                    } else if (pause) {
-                        TideDiscIcon.Pause
-                    } else {
-                        TideDiscIcon.Play
-                    },
-                    label = label,
-                    progress = progressState,
-                    shade = shade,
-                    ground = shade.deep,
-                    onClick = if (hasEpisode) onClick else onArrowClick,
-                )
-            },
-        )
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val short = maxHeight < ShortHeroHeight
+            TideCardLayout(
+                cover = {
+                    OptimizedImage(
+                        url = imageUrl,
+                        fallbackUrls = heroArtworkSources(item),
+                        proxyWidth = 800,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().testTag("home_hero_artwork"),
+                    )
+                },
+                panel = { TidePanel(shade.deep) },
+                copy = { CoverCopy(item, shade, progressState = null, contextEndInset = TideDiscReserve, short = short) },
+                disc = {
+                    TidePlayDisc(
+                        icon = if (!hasEpisode) {
+                            TideDiscIcon.Details
+                        } else if (pause) {
+                            TideDiscIcon.Pause
+                        } else {
+                            TideDiscIcon.Play
+                        },
+                        label = label,
+                        progress = progressState,
+                        shade = shade,
+                        ground = shade.deep,
+                        onClick = if (hasEpisode) onClick else onArrowClick,
+                    )
+                },
+            )
+        }
     }
 }
 
 /**
  * Where the panel's edge sits on a [width] × [height] card (dp) whose words are [copy] tall: far enough
- * up to leave the words [TideCopyGap] below the edge, but always over the cover's lower part, between
- * 65% of the width and 16dp above the cover's bottom.
+ * up to leave the words [TideCopyGap] below the edge, and no lower than 16dp above the cover's bottom.
+ * On tall cards it stays over the cover's lower part, below 65% of the width. On cards that are wide
+ * for their height (wider compact windows, sideways phones) the words would start above that line,
+ * so there the edge rises with them: the words always sit on the panel, clear of the Play disc.
  */
 internal fun tidePanelTop(width: Float, height: Float, copy: Float): Float {
     val highest = width * TidePanelHighest
     val lowest = maxOf(highest, width - TidePanelLowestGap)
-    return (height - TideBottomInset - copy - TideCopyGap).coerceIn(highest, lowest)
+    val needed = height - TideBottomInset - copy - TideCopyGap
+    return if (needed < highest) needed.coerceAtLeast(0f) else needed.coerceAtMost(lowest)
 }
 
 /**
@@ -184,7 +191,9 @@ internal fun TideCardLayout(
             art.placeRelative(0, 0)
             ground.placeRelative(0, panelTop)
             words.placeRelative(inset, height - TideBottomInset.dp.roundToPx() - words.height)
-            play.placeRelative(width - TideDiscEndInset.roundToPx() - discSize, panelTop + TideDiscDrop.roundToPx() - discSize / 2)
+            // The disc sits on the edge, but never past the card's top or foot.
+            val discTop = (panelTop + TideDiscDrop.roundToPx() - discSize / 2).coerceAtMost(height - discSize - TideDiscFoot.roundToPx()).coerceAtLeast(0)
+            play.placeRelative(width - TideDiscEndInset.roundToPx() - discSize, discTop)
         }
     }
 }
@@ -577,6 +586,9 @@ private val TideInset = 20.dp
 private val TideDiscSize = 88.dp
 private val TideDiscEndInset = 12.dp
 private val TideDiscDrop = 8.dp
+
+/** The least room the Play disc keeps below it, inside the card. */
+private val TideDiscFoot = 8.dp
 
 /** The disc's width and its end inset, plus a gap: the context line stops short of it. */
 internal val TideDiscReserve = 88.dp

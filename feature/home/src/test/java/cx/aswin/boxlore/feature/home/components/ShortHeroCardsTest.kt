@@ -4,13 +4,25 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
+import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreMiniPlayerVisible
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
@@ -29,71 +41,116 @@ import org.robolectric.annotation.Config
 
 /**
  * Above a tabletop fold, on sideways phones and in split-screen halves the hero can be as short as
- * 240dp. Duotone and Halo stack "1h / 0m / left"
- * in big type on taller cards; there it squeezed Play into a sliver, so short cards use the one-line
- * context and tighter spacing. Every artwork style must keep a full Play button inside the card.
+ * 240dp. Long titles and large text there squeezed Play into a sliver, cut Tide's disc at the card's
+ * foot and pushed its title under the disc. Every artwork style must keep a full, readable Play button
+ * inside the card, measured unclipped, with the longest real title at normal and 130% text.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], qualifiers = "w900dp-h1500dp-mdpi")
 class ShortHeroCardsTest {
     @get:Rule val composeRule = createComposeRule()
     private val style = mutableStateOf(HeroCardStyle.COVER)
+    private val grid = mutableStateOf(false)
+    private val fontScale = mutableFloatStateOf(1f)
+    private val cardHeight = mutableStateOf(240.dp)
 
-    private fun item(): SmartHeroItem {
-        val episode = TestFixtures.episode(id = "a", title = "Episode a", podcastId = "show-a").copy(duration = 3600)
-        val show = TestFixtures.podcast(id = "show-a", title = "Show a", imageUrl = "").copy(latestEpisode = episode)
-        return SmartHeroItem(HeroType.RESUME, show, "Resume", description = "Episode a")
-    }
+    private fun show(index: Int) = TestFixtures.podcast(id = "show-$index", title = "The Joe Rogan Experience", imageUrl = "").copy(
+        latestEpisode = TestFixtures.episode(id = "e$index", title = LONG_TITLE, podcastId = "show-$index").copy(duration = 3600),
+        resumeProgress = 0.4f,
+    )
+
+    private fun item(): SmartHeroItem = SmartHeroItem(HeroType.RESUME, show(0), "Resume")
 
     @Test
-    fun `short artwork cards keep a full Play button`() {
+    fun `short artwork cards keep a full Play button with long titles and large text`() {
         composeRule.setContent {
-            BoxLoreTheme(dynamicColor = false) {
-                Box(Modifier.size(320.dp, 240.dp).testTag("short_hero")) {
-                    when (style.value) {
-                        HeroCardStyle.BLOCK -> CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreTestWindows.PHONE_LAND) {
-                            HeroCard(item(), {}, {}, {})
-                        }
-                        HeroCardStyle.DUOTONE -> DuotoneHeroCard(item(), {}, {}, null, null, false)
-                        HeroCardStyle.HALO -> HaloHeroCard(item(), {}, {}, null, null, false)
-                        HeroCardStyle.TIDE -> TideHeroCard(item(), {}, {}, null, null, false)
-                        else -> CoverHeroCard(item(), {}, {}, null, null, false)
-                    }
+            val base = LocalDensity.current
+            CompositionLocalProvider(
+                LocalDensity provides Density(base.density, fontScale.floatValue),
+                LocalBoxloreWindowLayout provides BoxloreTestWindows.PHONE_LAND,
+            ) {
+                BoxLoreTheme(dynamicColor = false) {
+                    Box(Modifier.size(320.dp, cardHeight.value).testTag("short_hero")) { if (grid.value) ShortCollection() else ShortCard() }
                 }
             }
         }
         val failures = mutableListOf<String>()
-        listOf(HeroCardStyle.COVER, HeroCardStyle.TIDE, HeroCardStyle.DUOTONE, HeroCardStyle.HALO, HeroCardStyle.BLOCK).forEach { current ->
-            style.value = current
-            composeRule.waitForIdle()
-            val hero = composeRule.onNodeWithTag("short_hero").fetchSemanticsNode().boundsInRoot
-            val play = composeRule.onNodeWithTag("home_hero_play", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
-            if (play.height < 48f) failures += "$current Play is ${play.height}px tall"
-            if (play.bottom > hero.bottom) failures += "$current Play ends at ${play.bottom}, card at ${hero.bottom}"
+        for (scale in listOf(1f, 1.3f)) {
+            for (height in listOf(240.dp, shortHeroFloor(scale)).distinct()) {
+                SINGLE_STYLES.forEach { current ->
+                    show(current, collection = false, scale, height)
+                    failures += singleCardFailures("$current at ${height.value}dp, text ${scale}x", tide = current == HeroCardStyle.TIDE)
+                }
+                listOf(HeroCardStyle.COVER, HeroCardStyle.BLOCK).forEach { current ->
+                    show(current, collection = true, scale, height)
+                    failures += collectionFailures("$current collection at ${height.value}dp, text ${scale}x")
+                }
+            }
         }
-        assertTrue(failures.joinToString(), failures.isEmpty())
+        assertTrue(failures.joinToString("\n"), failures.isEmpty())
+    }
+
+    @Composable
+    private fun ShortCard() {
+        when (style.value) {
+            HeroCardStyle.BLOCK -> HeroCard(item(), {}, {}, {})
+            HeroCardStyle.DUOTONE -> DuotoneHeroCard(item(), {}, {}, null, null, false)
+            HeroCardStyle.HALO -> HaloHeroCard(item(), {}, {}, null, null, false)
+            HeroCardStyle.TIDE -> TideHeroCard(item(), {}, {}, null, null, false)
+            else -> CoverHeroCard(item(), {}, {}, null, null, false)
+        }
+    }
+
+    @Composable
+    private fun ShortCollection() {
+        val items = List(4) { show(it) }
+        when (style.value) {
+            HeroCardStyle.COVER -> CoverHeroGridCard(items, "Jump back in", HeroGridMode.Resume, {}, {}, null, null, false)
+            else -> HeroGridCard(items, "Jump back in", HeroGridMode.Resume, {})
+        }
+    }
+
+    private fun collectionFailures(label: String): List<String> {
+        val hero = rect("short_hero")
+        return (0 until 4).mapNotNull { index -> rectOrNull("home_hero_collection_${index}_play") }
+            .filterNot { hero.contains(it) }
+            .map { "$label: Play $it leaves the card $hero" }
     }
 
     @Test
     fun `the hero fits short compact windows and keeps its full height on portrait phones`() {
         val window = mutableStateOf(BoxloreTestWindows.PHONE)
         val miniPlayer = mutableStateOf(false)
+        var bottomChrome = 0.dp
         composeRule.setContent {
-            CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value, LocalBoxloreMiniPlayerVisible provides miniPlayer.value) {
+            val base = LocalDensity.current
+            CompositionLocalProvider(
+                LocalDensity provides Density(base.density, fontScale.floatValue),
+                LocalBoxloreWindowLayout provides window.value,
+                LocalBoxloreMiniPlayerVisible provides miniPlayer.value,
+            ) {
+                bottomChrome = appBottomChromeContentPadding(isMiniPlayerVisible = true)
                 Box(Modifier.height(homeHeroHeight()).width(10.dp).testTag("hero_height"))
             }
         }
         fun height(): Float = composeRule.onNodeWithTag("hero_height").fetchSemanticsNode().boundsInRoot.height
-        // Portrait phones keep the full hero in both directions of every change.
-        for (layout in listOf(BoxloreTestWindows.PHONE, BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.PHONE_SMALL, BoxloreTestWindows.SPLIT_HALF, BoxloreTestWindows.PHONE)) {
-            window.value = layout
-            composeRule.waitForIdle()
-            if (layout.heightDp >= 480f) {
-                assertEquals("Hero at ${layout.widthDp}x${layout.heightDp}", 416f, height(), 0.5f)
-            } else {
-                // Short windows: at least 240dp and short enough that the top bar and the bottom bar with the mini player leave it room.
-                assertTrue("Hero at ${layout.widthDp}x${layout.heightDp}: ${height()}", height() in 240f..(layout.heightDp - 80f - 12f).coerceAtLeast(240f))
-                assertTrue("Hero at ${layout.widthDp}x${layout.heightDp} is shorter than the full hero", height() < 416f)
+        for (scale in listOf(1f, 1.3f)) {
+            fontScale.floatValue = scale
+            // Portrait phones keep the full hero in both directions of every change.
+            for (layout in listOf(BoxloreTestWindows.PHONE, BoxloreTestWindows.PHONE_LAND, BoxloreTestWindows.PHONE_SMALL, BoxloreTestWindows.SPLIT_HALF, BoxloreTestWindows.PHONE)) {
+                window.value = layout
+                composeRule.waitForIdle()
+                val natural = 416f + 200f * (scale - 1f)
+                if (layout.heightDp >= 480f) {
+                    assertEquals("Hero at ${layout.widthDp}x${layout.heightDp}, text ${scale}x", natural, height(), 0.5f)
+                } else {
+                    // Short windows: never below the floor for this text size, never taller than the room
+                    // the top bar and the bottom bar with the mini player leave, unless the floor needs it.
+                    val floor = shortHeroFloor(scale).value
+                    val room = layout.heightDp - 80f - bottomChrome.value - 12f
+                    assertTrue("Hero at ${layout.widthDp}x${layout.heightDp}, text ${scale}x: ${height()}", height() in floor - 0.5f..maxOf(room, floor) + 0.5f)
+                    assertTrue("Hero at ${layout.widthDp}x${layout.heightDp} is shorter than the full hero", height() < natural)
+                }
             }
         }
         // Starting playback never resizes the hero.
@@ -103,5 +160,52 @@ class ShortHeroCardsTest {
         miniPlayer.value = true
         composeRule.waitForIdle()
         assertEquals(before, height(), 0.5f)
+    }
+
+    private fun show(current: String, collection: Boolean, scale: Float, height: Dp) {
+        style.value = current
+        grid.value = collection
+        fontScale.floatValue = scale
+        cardHeight.value = height
+        composeRule.waitForIdle()
+    }
+
+    private fun singleCardFailures(label: String, tide: Boolean): List<String> {
+        val failures = mutableListOf<String>()
+        val hero = rect("short_hero")
+        val play = rect("home_hero_play")
+        if (play.height < 48f - 0.5f) failures += "$label: Play is ${play.height}dp tall"
+        if (!hero.contains(play)) failures += "$label: Play $play leaves the card $hero"
+        val title = rect("home_hero_title")
+        if (title.top < hero.top - 0.5f) failures += "$label: the title starts above the card"
+        if (tide) {
+            if (title.overlaps(play)) failures += "$label: the title $title runs under the Play disc $play"
+        } else if (layout("home_hero_play_label")?.hasVisualOverflow != false) {
+            failures += "$label: the Play label is cut"
+        }
+        return failures
+    }
+
+    private fun Rect.contains(other: Rect) =
+        other.left >= left - 0.5f && other.top >= top - 0.5f && other.right <= right + 0.5f && other.bottom <= bottom + 0.5f
+
+    /** The node's own bounds, not cut to its parents, so a button pushed past the card's edge shows as such. */
+    private fun rect(tag: String): Rect = requireNotNull(rectOrNull(tag)) { "No $tag" }
+
+    private fun rectOrNull(tag: String): Rect? {
+        val node = composeRule.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().firstOrNull() ?: return null
+        return Rect(node.positionInRoot, node.size.toSize())
+    }
+
+    private fun layout(tag: String): TextLayoutResult? {
+        val node = composeRule.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().firstOrNull() ?: return null
+        val results = mutableListOf<TextLayoutResult>()
+        node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
+        return results.firstOrNull()
+    }
+
+    private companion object {
+        val SINGLE_STYLES = listOf(HeroCardStyle.COVER, HeroCardStyle.TIDE, HeroCardStyle.DUOTONE, HeroCardStyle.HALO, HeroCardStyle.BLOCK)
+        const val LONG_TITLE = "A Thanksgiving Dinner for \$100? Yes, It's Possible"
     }
 }

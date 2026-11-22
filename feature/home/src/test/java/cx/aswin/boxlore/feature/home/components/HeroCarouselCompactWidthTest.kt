@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.home.components
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -8,18 +9,24 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
@@ -41,7 +48,8 @@ import org.robolectric.annotation.GraphicsMode
  * Issue 1254: between 431dp and 599dp wide (the Galaxy Z Fold 8 cover, split-screen halves) the hero
  * switched from one large card and a peek to three or four narrow cards from one width to the next,
  * splitting titles mid-word. Every compact width now shows one large card and a 40-56dp peek, phones
- * keep their card widths, and sideways phones show a row of whole cards.
+ * keep their card widths, and sideways phones show a row of whole cards. In every style the title and
+ * a full Play button stay inside the card there and in short windows, at normal and enlarged text.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @RunWith(RobolectricTestRunner::class)
@@ -53,6 +61,7 @@ class HeroCarouselCompactWidthTest {
     private val window = mutableStateOf(BoxloreTestWindows.PHONE)
     private val count = mutableIntStateOf(8)
     private val style = mutableStateOf(HeroCardStyle.COVER)
+    private val fontScale = mutableFloatStateOf(1f)
 
     /** Each card's visible width on screen: its carousel mask, cut to the row. */
     private val visible = mutableStateMapOf<Int, Float>()
@@ -85,44 +94,86 @@ class HeroCarouselCompactWidthTest {
         }
     }
 
-    @Test fun `Cover and Block titles and Play fit the large card on the Fold 8 cover`() {
+    @Test fun `every style's title and Play fit the large card on compact and short windows at normal and large text`() {
         composeRule.setContent {
-            CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value, LocalHeroCardStyle provides style.value) {
+            val base = LocalDensity.current
+            CompositionLocalProvider(
+                LocalBoxloreWindowLayout provides window.value,
+                LocalHeroCardStyle provides style.value,
+                LocalDensity provides Density(base.density, fontScale.floatValue),
+            ) {
                 BoxLoreTheme(dynamicColor = false) {
-                    HeroCarousel(
-                        heroItems = StableHeroList(List(8) { heroItem(it) }),
-                        onPlayClick = { _, _ -> },
-                        onDetailsClick = {},
-                        onArrowClick = { _, _ -> },
-                        onToggleSubscription = {},
-                        onTogglePlayback = {},
-                        modifier = Modifier.width(rowWidth(window.value.widthDp.toInt()).dp),
-                    )
+                    Column {
+                        Box(Modifier.width(1.dp).height(homeHeroHeight()).testTag("hero_height"))
+                        HeroCarousel(
+                            heroItems = StableHeroList(List(8) { heroItem(it) }),
+                            onPlayClick = { _, _ -> },
+                            onDetailsClick = {},
+                            onArrowClick = { _, _ -> },
+                            onToggleSubscription = {},
+                            onTogglePlayback = {},
+                            modifier = Modifier.width(rowWidth(window.value.widthDp.toInt()).dp).testTag("hero_row"),
+                        )
+                    }
                 }
             }
         }
         val failures = mutableListOf<String>()
-        for (current in listOf(HeroCardStyle.COVER, HeroCardStyle.BLOCK)) {
-            for (layout in listOf(BoxloreTestWindows.COVER_443, BoxloreTestWindows.COVER_475, BoxloreWindowLayout(485f, 700f), BoxloreWindowLayout(540f, 860f))) {
-                style.value = current
-                window.value = layout
-                composeRule.waitForIdle()
-                val title = layoutOf("home_hero_title")
-                val play = layoutOf("home_hero_play_label")
-                if (title == null || play == null) {
-                    failures += "$current at ${layout.widthDp}dp shows no title or Play label"
-                    continue
+        val windows = listOf(
+            BoxloreTestWindows.COVER_443, BoxloreTestWindows.COVER_475, BoxloreWindowLayout(485f, 700f), BoxloreWindowLayout(520f, 860f),
+            BoxloreWindowLayout(540f, 860f), BoxloreWindowLayout(560f, 860f), BoxloreWindowLayout(599f, 900f),
+            BoxloreTestWindows.SPLIT_HALF, BoxloreTestWindows.PHONE_LAND, BoxloreWindowLayout(800f, 360f), BoxloreTestWindows.COVER_LAND,
+        )
+        for (scale in listOf(1f, 1.3f)) {
+            for (current in listOf(HeroCardStyle.COVER, HeroCardStyle.BLOCK, HeroCardStyle.TIDE, HeroCardStyle.DUOTONE, HeroCardStyle.HALO)) {
+                for (layout in windows) {
+                    style.value = current
+                    window.value = layout
+                    fontScale.floatValue = scale
+                    composeRule.waitForIdle()
+                    failures += cardFailures("$current at ${layout.widthDp.toInt()}x${layout.heightDp.toInt()}, text ${scale}x", tide = current == HeroCardStyle.TIDE)
                 }
-                val split = (0 until title.lineCount - 1).filter { line ->
-                    val end = title.getLineEnd(line, visibleEnd = true)
-                    end in 1 until title.layoutInput.text.length && !title.layoutInput.text[end - 1].isWhitespace() && !title.layoutInput.text[end].isWhitespace()
-                }
-                if (split.isNotEmpty()) failures += "$current at ${layout.widthDp}dp splits a word after line $split"
-                if (play.hasVisualOverflow) failures += "$current at ${layout.widthDp}dp cuts the Play label"
             }
         }
         assertTrue(failures.joinToString("\n"), failures.isEmpty())
     }
+
+    /** The first card's title and Play, measured unclipped so a button pushed past the card's foot counts. */
+    private fun cardFailures(label: String, tide: Boolean): List<String> {
+        val failures = mutableListOf<String>()
+        val title = layoutOf("home_hero_title")
+        val play = unclipped("home_hero_play")
+        if (title == null || play == null) return listOf("$label shows no title or Play")
+        val split = (0 until title.lineCount - 1).filter { line ->
+            val end = title.getLineEnd(line, visibleEnd = true)
+            end in 1 until title.layoutInput.text.length && !title.layoutInput.text[end - 1].isWhitespace() && !title.layoutInput.text[end].isWhitespace()
+        }
+        if (split.isNotEmpty()) failures += "$label splits a word after line $split"
+        val rowTop = unclipped("hero_row")!!.top
+        val heroHeight = unclipped("hero_height")!!.height
+        if (play.top < rowTop - 0.5f || play.bottom > rowTop + heroHeight + 0.5f) failures += "$label: Play $play leaves the card ($rowTop..${rowTop + heroHeight})"
+        if (play.height < 48f - 0.5f) failures += "$label: Play is ${play.height}dp tall "
+        if (tide) {
+            val titleBounds = unclipped("home_hero_title")!!
+            if (titleBounds.overlaps(play)) failures += "$label: the title $titleBounds runs under the Play disc $play"
+        } else if (layoutOf("home_hero_play_label")?.hasVisualOverflow != false) {
+            failures += "$label cuts the Play label"
+        }
+        return failures
+    }
+
+    private fun unclipped(tag: String): Rect? {
+        val node = startNode(tag) ?: return null
+        return Rect(node.positionInRoot, node.size.toSize())
+    }
+
+    /**
+     * The node for [tag] in the card nearest the row's start. The carousel composes cards in no set
+     * order and keeps unplaced ones (zero size) for reuse, so those are skipped.
+     */
+    private fun startNode(tag: String) = composeRule.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes()
+        .filter { it.size.width > 0 && it.size.height > 0 }
+        .minByOrNull { it.positionInRoot.x }
 
     private fun renderRow() {
         composeRule.setContent {
@@ -153,7 +204,7 @@ class HeroCarouselCompactWidthTest {
 
     /** The first card's text layout for [tag], or null when the card shows no such text. */
     private fun layoutOf(tag: String): TextLayoutResult? {
-        val node = composeRule.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().firstOrNull() ?: return null
+        val node = startNode(tag) ?: return null
         val results = mutableListOf<TextLayoutResult>()
         node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
         return results.firstOrNull()
