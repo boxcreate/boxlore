@@ -9,16 +9,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -205,7 +199,7 @@ internal fun joinNames(names: List<String>, @StringRes end: Int): UiText = when 
     else -> UiText.res(R.string.list_middle, names.first(), joinNames(names.drop(1), end))
 }
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun LanguageChips(
     title: String,
@@ -222,20 +216,16 @@ private fun LanguageChips(
             fontWeight = GoogleSansWeight.semiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             codes.forEach { code ->
                 val isSelected = code in selected
-                FilterChip(
+                BoxloreFilterChip(
                     selected = isSelected,
                     onClick = { onToggle(code) },
+                    label = capitalizedIn(contentLanguageName(code, locale), locale),
                     enabled = isSelected || remainingSlots > 0,
-                    label = { Text(capitalizedIn(contentLanguageName(code, locale), locale)) },
-                    leadingIcon =
-                    if (isSelected) {
-                        { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }
-                    } else {
-                        null
-                    },
+                    container = BoxloreFilterChipDefaults.SheetContainer,
+                    showCheckWhenSelected = true,
                 )
             }
         }

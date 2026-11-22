@@ -21,9 +21,8 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 /**
- * Compact icon+label pill used on onboarding search and Explore genre rows.
- * Selected uses [primaryContainer]; unselected is a soft [surfaceVariant] wash.
- * Uses [Surface]'s shaped [onClick] so the press ripple matches the pill.
+ * A genre pill (onboarding search, Change genre): the shared [BoxloreFilterChip], kept under this
+ * name for its callers. Pass [container] on sheets ([BoxloreFilterChipDefaults.SheetContainer]).
  */
 @Composable
 fun PillFilterChip(
@@ -33,57 +32,17 @@ fun PillFilterChip(
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     trailingIcon: ImageVector? = null,
+    container: Color = BoxloreFilterChipDefaults.PageContainer,
 ) {
-    val shape = RoundedCornerShape(percent = 50)
-    val containerColor =
-        if (selected) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-        }
-    val contentColor =
-        if (selected) {
-            MaterialTheme.colorScheme.onPrimaryContainer
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        }
-
-    Surface(
+    BoxloreFilterChip(
+        selected = selected,
         onClick = onClick,
+        label = label,
         modifier = modifier,
-        shape = shape,
-        color = containerColor,
-        contentColor = contentColor,
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-        ) {
-            if (icon != null) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-            }
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = GoogleSansWeight.semiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (trailingIcon != null) {
-                Spacer(modifier = Modifier.width(4.dp))
-                Icon(
-                    imageVector = trailingIcon,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                )
-            }
-        }
-    }
+        leadingIcon = icon,
+        container = container,
+        trailingIcon = trailingIcon,
+    )
 }
 
 /**

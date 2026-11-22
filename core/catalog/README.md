@@ -96,7 +96,7 @@ It does not own playback, downloads, Compose UI, Room schema ([`:core:database`]
 - `SharedAppDependencies` / `SharedAppDependenciesHolder`: application-scoped instances for workers and services.
 - `RoomLocalCatalog` and `RoomEpisodeOfflineLookup`: production implementations of the domain ports.
 - `ports.*` keep catalog free of playback. Backups read `ListeningHistoryBackupPort.exportStoredHistory`, never the screens' capped list.
-- Android Auto `auto_*` strings live here; `auto_app_name` stays `boxlore`.
+- Android Auto `auto_*` strings live here; `auto_app_name` stays `boxlore`. `genreLabelRes` gives a genre tag its translated `auto_genre_*` name, and null for a blank tag or the "Podcast" placeholder.
 
 ## Internal structure
 
@@ -169,7 +169,7 @@ Tests live in `core/catalog/src/test` (JUnit 5, Robolectric Room, MockWebServer,
 | Cloud sync | `CloudSyncIdentityTest`, `SyncEpisodeIdentityTest`, `ListeningCloudSyncTest`, `sync/*ResolverTest` |
 | Backup | `LibraryBackupExportTest`, `LibraryBackupIdentityRoomTest`, `LibraryBackupListeningRoomTest` |
 | Notifications | `PodcastNotificationRegistrarTest`, `RssNotificationReconcilerTest` |
-| Content, cross-promotion | `content/*Test`, `crosspromo/*Test`, `ShowNotesParserTest` |
+| Content, cross-promotion, genre names | `content/*Test`, `crosspromo/*Test`, `ShowNotesParserTest`, `GenreLabelsTest` |
 
 ```bash
 ./gradlew :core:catalog:testDebugUnitTest
