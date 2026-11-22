@@ -25,6 +25,7 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.onNodeWithTag
@@ -33,6 +34,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.BoxloreAlertDialog
 import cx.aswin.boxlore.core.designsystem.components.BoxloreDialog
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFold
@@ -43,6 +45,7 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import kotlinx.coroutines.runBlocking
@@ -198,6 +201,48 @@ class TabletModalTest {
                 ),
             ),
         )
+    }
+
+    @Test
+    fun `a long alert keeps its draft and its buttons across the 600x480 gate in both directions`() {
+        val window = mutableStateOf(BoxloreTestWindows.GATE_599x479)
+        var dismissed = 0
+        var confirmed = 0
+        fixture.setContent {
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) {
+                BoxLoreTheme {
+                    BoxloreAlertDialog(
+                        onDismissRequest = { dismissed++ },
+                        title = { Text("Clear listening history?") },
+                        text = {
+                            Column(Modifier.tabletSheetScroll()) {
+                                val draft = remember { mutableIntStateOf(0) }
+                                Button({ draft.intValue++ }) { Text("Draft ${draft.intValue}") }
+                                repeat(40) { Text("Every episode you played and where you stopped goes, line $it.") }
+                                Text("Last line")
+                            }
+                        },
+                        confirmButton = { Button({ confirmed++ }) { Text("Clear history") } },
+                        dismissButton = { Button({ dismissed++ }) { Text("Keep history") } },
+                    )
+                }
+            }
+        }
+        advance()
+        fixture.compose.onNodeWithText("Draft 0").performClick()
+        advance()
+
+        for (next in listOf(BoxloreTestWindows.GATE_600x480, BoxloreTestWindows.GATE_599x479, BoxloreTestWindows.GATE_600x480)) {
+            fixture.compose.runOnIdle { window.value = next }
+            advance()
+            fixture.compose.onNodeWithText("Last line").performScrollTo().assertIsDisplayed()
+            fixture.compose.onNodeWithText("Clear history").assertIsDisplayed()
+            fixture.compose.onNodeWithText("Draft 1").performScrollTo().assertExists()
+            assertEquals(0, dismissed)
+        }
+        fixture.compose.onNodeWithText("Clear history").performClick()
+        assertEquals(1, confirmed)
+        assertEquals(0, dismissed)
     }
 
     private fun assertDialogRetainsDraftAcrossResize(initial: BoxloreWindowLayout, resized: BoxloreWindowLayout) {

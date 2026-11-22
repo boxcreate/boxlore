@@ -131,11 +131,16 @@ class ShareCardModelTest {
     }
 
     @Test
-    fun previewShrinksThenLeavesShortWindows() {
-        assertEquals(240, sharePreviewSizeDp(760f))
-        assertEquals(176, sharePreviewSizeDp(759.9f))
-        assertEquals(176, sharePreviewSizeDp(600f))
-        assertEquals(0, sharePreviewSizeDp(599.9f))
+    fun previewShrinksThenLeavesWhenTheActionsWouldNotFitBesideIt() {
+        // The height the sheet or panel gives its content: the sheet's 440dp of its own, plus the card.
+        assertEquals(240, sharePreviewSizeDp(867f)) // 412x915 phone sheet
+        assertEquals(240, sharePreviewSizeDp(680f))
+        assertEquals(176, sharePreviewSizeDp(679.9f))
+        assertEquals(176, sharePreviewSizeDp(647f)) // Fold 8 cover, 475x695
+        assertEquals(176, sharePreviewSizeDp(616f))
+        assertEquals(0, sharePreviewSizeDp(615.9f))
+        assertEquals(0, sharePreviewSizeDp(601f)) // Fold 8 cover, 443x649
+        assertEquals(0, sharePreviewSizeDp(541.8f)) // centred panel on a 932x650 inner screen
         assertEquals(0, sharePreviewSizeDp(0f))
     }
 }
