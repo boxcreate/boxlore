@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.onboarding
 import android.app.Activity
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -25,7 +26,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -72,7 +72,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -85,87 +84,111 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
-import cx.aswin.boxlore.core.designsystem.R as DesignR
-import cx.aswin.boxlore.core.designsystem.components.BoxLoreLogo
 import cx.aswin.boxlore.core.designsystem.echo.EchoCharacter
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 
+/**
+ * Welcome: the cover panel, the invitation and the ways in. Portrait phones, foldables and the
+ * cover stack them in one column; sideways phones, landscape foldables and tablets put the panel
+ * beside the invitation and actions ([OnboardingOpeningFrame]), so every way in shows without
+ * scrolling. One motion [clock] and one scroll state serve both, so a rotation mid-reveal carries on.
+ */
 @Composable
 internal fun WelcomeScreen(
     onHelpMeFind: () -> Unit,
     onSearch: () -> Unit,
     onSkip: () -> Unit,
     onImportClick: () -> Unit,
+    clock: WelcomeMotionClock = rememberWelcomeMotionClock(),
 ) {
-    val clock = rememberWelcomeMotionClock()
     val scroll = rememberScrollState()
-    val colors = MaterialTheme.colorScheme
-    // A rich cover panel retains the brand presence in dark mode without a pale billboard.
-    val panelColor = if (LocalEffectiveDarkTheme.current) colors.primaryContainer else colors.primary
-    val panelContent = if (LocalEffectiveDarkTheme.current) colors.onPrimaryContainer else colors.onPrimary
+    val panel = openingPanelColors()
+    val actions = WelcomeActionCallbacks(onHelpMeFind, onSearch, onImportClick, onSkip)
+    BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+        if (languageQuestionTwoPane(maxWidth, maxHeight)) {
+            // As on the language question beside its panel, so the two screens read as one opening.
+            WelcomeStatusBars(panel.container, coverVisible = false)
+            TwoPaneWelcome(clock, scroll, panel, maxWidth, maxHeight, actions)
+        } else {
+            StackedWelcome(clock, scroll, panel, actions)
+        }
+    }
+}
+
+/** Welcome's four ways in, kept together so both arrangements pass them on unchanged. */
+private class WelcomeActionCallbacks(val onHelpMeFind: () -> Unit, val onSearch: () -> Unit, val onImportClick: () -> Unit, val onSkip: () -> Unit)
+
+@Composable
+private fun StackedWelcome(clock: WelcomeMotionClock, scroll: ScrollState, panel: LanguagePanelColors, actions: WelcomeActionCallbacks) {
     var coverPanelHeight by remember { mutableIntStateOf(Int.MAX_VALUE) }
     val statusBarHeight = WindowInsets.statusBars.getTop(LocalDensity.current)
     val coverVisible by remember(scroll, statusBarHeight) {
         derivedStateOf { scroll.value + statusBarHeight < coverPanelHeight }
     }
-    WelcomeStatusBars(panelColor, coverVisible && !cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout.current.usesTabletLayout)
+    WelcomeStatusBars(panel.container, coverVisible && !cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout.current.usesTabletLayout)
 
-    BoxWithConstraints(Modifier.fillMaxSize().background(colors.surface).boxloreCardWidth(BoxloreCardFamily.Utility)) {
+    BoxWithConstraints(Modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Utility)) {
         val viewportHeight = maxHeight
         val viewportWidth = maxWidth
         val coverSize = (viewportWidth * 0.315f).coerceIn(90.dp, 132.dp)
         Column(
             Modifier.fillMaxWidth().verticalScroll(scroll, enabled = scroll.maxValue > 0, overscrollEffect = null).heightIn(min = viewportHeight),
         ) {
-            WelcomeCoverPanel(clock, viewportWidth, coverSize, panelColor, panelContent, Modifier.onSizeChanged { coverPanelHeight = it.height })
+            WelcomeCoverPanel(clock, viewportWidth, coverSize, panel, Modifier.onSizeChanged { coverPanelHeight = it.height })
             Column(Modifier.fillMaxWidth().padding(horizontal = 26.dp).padding(top = 24.dp)) {
-                WelcomeInvitation(clock, viewportWidth)
+                WelcomeInvitation(clock, welcomeHeadlineSize(viewportWidth))
             }
             // Echo's peek borrows the free space above the button and sizes itself to it, up to its full
             // size; where even the smallest Echo doesn't fit, it stays hidden.
             val density = LocalDensity.current
             var echoRoom by remember { mutableStateOf(0.dp) }
             Spacer(Modifier.weight(1f).onSizeChanged { echoRoom = with(density) { it.height.toDp() } + WelcomeActionsGap })
-            val echoCell = welcomeEchoCell(echoRoom)
             WelcomeActions(
                 clock,
-                onHelpMeFind,
-                onSearch,
-                onImportClick,
-                onSkip,
-                echoCell = echoCell,
+                actions,
+                echoCell = welcomeEchoCell(echoRoom),
                 Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(top = WelcomeActionsGap).navigationBarsPadding().padding(bottom = 8.dp),
             )
         }
     }
 }
 
+/** The cover panel beside the invitation and actions, which sit centred in the end pane. */
 @Composable
-private fun WelcomeCoverPanel(clock: WelcomeMotionClock, width: Dp, coverSize: Dp, color: Color, contentColor: Color, modifier: Modifier) {
-    Column(
-        modifier.fillMaxWidth().clip(RoundedCornerShape(bottomStart = 46.dp, bottomEnd = 46.dp))
-            .background(color).statusBarsPadding().padding(top = 16.dp, bottom = 26.dp),
-    ) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 26.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            BoxLoreLogo(textColor = contentColor, height = 24.dp)
-            Icon(painterResource(DesignR.drawable.ic_boxlore_app_mark), null, tint = contentColor, modifier = Modifier.size(34.dp))
-        }
+private fun TwoPaneWelcome(clock: WelcomeMotionClock, scroll: ScrollState, panel: LanguagePanelColors, width: Dp, height: Dp, actions: WelcomeActionCallbacks) {
+    OnboardingOpeningFrame(
+        panel,
+        width,
+        height,
+        scroll,
+        panelBottomPadding = 26.dp,
+        panelContent = { pane -> WelcomePaneReel(clock, pane, panel) },
+    ) { pane ->
+        val echoRoom = if (pane.height >= OpeningPaneEchoHeight) OpeningPaneEchoRoom else 0.dp
+        WelcomeInvitation(clock, welcomeHeadlineSize(minOf(pane.width, pane.height)))
+        Spacer(Modifier.height(maxOf(echoRoom, WelcomeActionsGap)))
+        WelcomeActions(clock, actions, echoCell = welcomeEchoCell(echoRoom), Modifier.fillMaxWidth())
+    }
+}
+
+/** The headline's size: larger on wider windows, never so large it crowds a short one. */
+internal fun welcomeHeadlineSize(width: Dp): Float = (width.value * 0.11f).coerceIn(36f, 46f)
+
+@Composable
+private fun WelcomeCoverPanel(clock: WelcomeMotionClock, width: Dp, coverSize: Dp, panel: LanguagePanelColors, modifier: Modifier) {
+    OpeningPanel(panel, RoundedCornerShape(bottomStart = 46.dp, bottomEnd = 46.dp), bottomPadding = 26.dp, modifier.fillMaxWidth()) {
         Spacer(Modifier.height(24.dp))
-        WelcomeCoverReel(clock, coverSize, width, color)
+        WelcomeCoverReel(clock, coverSize, width, panel.container)
     }
 }
 
 @Composable
-private fun WelcomeInvitation(clock: WelcomeMotionClock, width: Dp) {
+private fun WelcomeInvitation(clock: WelcomeMotionClock, headlineSize: Float) {
     val headline = stringResource(R.string.welcome_curiosity)
-    val size = (width.value * 0.11f).coerceIn(36f, 46f).sp
+    val size = headlineSize.sp
     val headlineStyle = MaterialTheme.typography.displayMedium.copy(
         fontSize = size,
         lineHeight = size * 1.05f,
@@ -212,10 +235,7 @@ internal fun WelcomeEntryText(
 @Composable
 private fun WelcomeActions(
     clock: WelcomeMotionClock,
-    onHelpMeFind: () -> Unit,
-    onSearch: () -> Unit,
-    onImportClick: () -> Unit,
-    onSkip: () -> Unit,
+    actions: WelcomeActionCallbacks,
     echoCell: Dp?,
     modifier: Modifier,
 ) {
@@ -231,7 +251,7 @@ private fun WelcomeActions(
                 }
             }
             Button(
-                onClick = onHelpMeFind,
+                onClick = actions.onHelpMeFind,
                 interactionSource = findPress,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
                 shapes = ButtonDefaults.shapes(shape = RoundedCornerShape(30.dp), pressedShape = RoundedCornerShape(20.dp)),
@@ -252,7 +272,7 @@ private fun WelcomeActions(
         }
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)) {
             FilledTonalButton(
-                onClick = onSearch,
+                onClick = actions.onSearch,
                 modifier = Modifier.weight(1.15f).fillMaxHeight().heightIn(min = 52.dp),
                 shapes = ButtonDefaults.shapes(
                     shape = RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp, topEnd = 7.dp, bottomEnd = 7.dp),
@@ -266,7 +286,7 @@ private fun WelcomeActions(
                 }
             }
             FilledTonalButton(
-                onClick = onImportClick,
+                onClick = actions.onImportClick,
                 modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 52.dp),
                 shapes = ButtonDefaults.shapes(
                     shape = RoundedCornerShape(topStart = 7.dp, bottomStart = 7.dp, topEnd = 28.dp, bottomEnd = 28.dp),
@@ -280,7 +300,7 @@ private fun WelcomeActions(
                 }
             }
         }
-        TextButton(onClick = onSkip, modifier = Modifier.align(Alignment.CenterHorizontally).heightIn(min = 48.dp)) {
+        TextButton(onClick = actions.onSkip, modifier = Modifier.align(Alignment.CenterHorizontally).heightIn(min = 48.dp)) {
             Text(stringResource(R.string.welcome_skip), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
