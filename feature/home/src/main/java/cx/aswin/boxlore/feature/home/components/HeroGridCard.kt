@@ -223,16 +223,21 @@ private fun HeroCollectionRow(
     val currentOnClick by rememberUpdatedState(onClick)
     val currentPlaybackClick by rememberUpdatedState(onPlaybackClick)
     BoxWithConstraints(modifier) {
-        val artworkSize = when {
+        // A short hero (sideways phones, split-screen halves) leaves rows too low for the artwork and two
+        // lines of words: the row keeps a square cover and its title, and drops the progress line.
+        val compact = maxHeight < CollectionRowCompactHeight
+        val padding = if (compact) 4.dp else 10.dp
+        val preferredArtwork = when {
             count <= 2 && maxWidth >= 254.dp -> 98.dp
             count <= 2 -> 78.dp
             count == 3 && maxWidth >= 254.dp -> 78.dp
             else -> 68.dp
         }
+        val artworkSize = if (compact) minOf(preferredArtwork, (maxHeight - padding * 2).coerceAtLeast(0.dp)) else preferredArtwork
         Row(
             Modifier.fillMaxSize().testTag(tag)
                 .expressiveClickable(enabled = enabled, shape = HomeHeroStyle.CollectionArtworkShape) { currentOnClick(currentPodcast) }
-                .padding(vertical = 10.dp),
+                .padding(vertical = padding),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -263,8 +268,8 @@ private fun HeroCollectionRow(
                 }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                HeroCollectionTitle(podcast, count, foreground, "${tag}_title")
-                HeroCollectionMetadata(podcast, mode, foreground, nowPlaying, tag)
+                HeroCollectionTitle(podcast, count, foreground, "${tag}_title", maxLines = if (compact) 1 else null)
+                if (!compact) HeroCollectionMetadata(podcast, mode, foreground, nowPlaying, tag)
             }
         }
     }
@@ -291,7 +296,7 @@ private fun HeroCollectionPlayback(playing: Boolean, modifier: Modifier) {
 }
 
 @Composable
-private fun HeroCollectionTitle(podcast: Podcast, count: Int, foreground: Color, tag: String) {
+private fun HeroCollectionTitle(podcast: Podcast, count: Int, foreground: Color, tag: String, maxLines: Int? = null) {
     Text(
         podcast.latestEpisode?.title?.ifEmpty { podcast.title } ?: podcast.title,
         style = MaterialTheme.typography.titleSmall.copy(
@@ -300,7 +305,7 @@ private fun HeroCollectionTitle(podcast: Podcast, count: Int, foreground: Color,
             fontWeight = GoogleSansWeight.bold,
         ),
         color = foreground,
-        maxLines = if (count <= 2) 3 else 2,
+        maxLines = maxLines ?: if (count <= 2) 3 else 2,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier.testTag(tag),
     )
@@ -350,3 +355,6 @@ private fun HeroCollectionMetadata(podcast: Podcast, mode: HeroGridMode, foregro
         }
     }
 }
+
+/** Collection rows lower than this (a short hero) show a square cover and one title line. */
+private val CollectionRowCompactHeight = 64.dp

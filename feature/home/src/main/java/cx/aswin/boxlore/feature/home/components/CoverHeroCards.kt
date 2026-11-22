@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -67,6 +68,9 @@ import cx.aswin.boxlore.feature.home.logic.HomePlaybackStateLogic
 
 private val CoverTileShape = RoundedCornerShape(18.dp)
 
+/** A short card's title line: the base title size's (26sp) line height. */
+private val ShortCopyTitleLine = 30.sp
+
 /**
  * The Cover hero card: the cover fills the card and fades into a shade ([rememberCoverShade]) behind
  * the words, with the solid cards' type (context line, measured title, show name and progress) and a
@@ -100,7 +104,8 @@ internal fun CoverHeroCard(
         colors = CardDefaults.cardColors(containerColor = shade.deep, contentColor = shade.content),
         modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_cover"),
     ) {
-        Box(Modifier.fillMaxSize()) {
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val short = maxHeight < ShortHeroHeight
             OptimizedImage(
                 url = imageUrl,
                 fallbackUrls = heroArtworkSources(item),
@@ -113,7 +118,8 @@ internal fun CoverHeroCard(
                 Modifier.align(Alignment.BottomStart).fillMaxWidth().coverScrim(shade.deep)
                     .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 20.dp),
             ) {
-                CoverCopy(item, shade, progressState)
+                // Play is measured first, so long words give way instead of squeezing it.
+                Box(Modifier.weight(1f, fill = false)) { CoverCopy(item, shade, progressState, short = short) }
                 Spacer(Modifier.height(16.dp))
                 HeroActions(
                     pause = pause,
@@ -132,6 +138,9 @@ internal fun CoverHeroCard(
  * The words over a full-artwork card: an optional one-line context (Cover's; Duotone shows the solid
  * cards' context block at the top instead), the measured title, the show name and progress. The
  * context stops [contextEndInset] short of the end, clear of anything beside it (Tide's Play disc).
+ * On a [short] card (sideways phones, split-screen halves, above a tabletop fold) the title keeps to
+ * two lines at the base size and the progress bar drops out (the context line already says the time
+ * left), so Play keeps its full height.
  */
 @Composable
 internal fun CoverCopy(
@@ -140,16 +149,19 @@ internal fun CoverCopy(
     progressState: HeroProgressState?,
     showContext: Boolean = true,
     contextEndInset: Dp = 0.dp,
+    short: Boolean = false,
 ) {
     val measurer = rememberTextMeasurer()
+    val shortTitleRoom = with(LocalDensity.current) { (ShortCopyTitleLine * 2).roundToPx() }
     val baseStyle = heroTitleStyle()
     val title = heroTitle(item)
     val supportingName = heroSupportingName(item)
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val width = constraints.maxWidth
-        // The card has room above the words, so the title takes the largest size that fits two lines.
-        val titleStyle = remember(title, baseStyle, width) {
-            measureHeroTitle(title, baseStyle, measurer, Constraints(maxWidth = width), Int.MAX_VALUE).layoutInput.style
+        // A tall card has room above the words, so the title takes the largest size that fits two lines.
+        val titleRoom = if (short) shortTitleRoom else Int.MAX_VALUE
+        val titleStyle = remember(title, baseStyle, width, titleRoom) {
+            measureHeroTitle(title, baseStyle, measurer, Constraints(maxWidth = width), titleRoom).layoutInput.style
         }
         Column(Modifier.fillMaxWidth()) {
             if (showContext) {
@@ -167,7 +179,7 @@ internal fun CoverCopy(
                 title,
                 style = titleStyle,
                 color = shade.content,
-                maxLines = 3,
+                maxLines = if (short) 2 else 3,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth().testTag("home_hero_title").semantics { heading() },
             )
@@ -182,7 +194,7 @@ internal fun CoverCopy(
                     modifier = Modifier.testTag("home_hero_supporting_name"),
                 )
             }
-            if (progressState != null) {
+            if (progressState != null && !short) {
                 Spacer(Modifier.height(14.dp))
                 HeroProgress(progressState.value, shade.accent, shade.container, Modifier.testTag("home_hero_progress"), playing = progressState.playing)
             }

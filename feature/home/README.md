@@ -48,7 +48,7 @@ Shared rules:
 
 - Every style shares ordering, playback, details and analytics callbacks. Colours follow the listener's choice (`LocalHeroCoverShade`).
 - Every Home hero style ships its own loading skeleton in `HeroSkeletonCards.kt`; `HeroSkeletonCardsTest` fails for any `HeroCardStyle` without one.
-- `homeHeroStyle` shows Cover instead of Marquee on tablets; the saved choice is unchanged. In short spaces (above a tabletop fold, on sideways phones and in split-screen halves) `homeHeroHeight` fits the hero between the top bar and the bottom bar; below `ShortHeroHeight`, Halo shows as Cover.
+- `homeHeroStyle` shows Cover instead of Marquee on tablets; the saved choice is unchanged. Above a tabletop fold `homeHeroHeight` fits the hero between the top bar and the bottom bar. On sideways phones and in split-screen halves it shortens to a floor that grows with the text size, so every style keeps its title and a full Play; there the hero's foot can still sit under the nav bar or the mini player. Marquee keeps enough height that its words stay below the floating top bar. Below `ShortHeroHeight`, Halo shows as Cover and the artwork styles keep their title to two lines.
 - `ResponsiveHeroCarousel` shows one large card and a narrow peek on phones and other compact windows below the tablet width, such as the Galaxy Z Fold 8 cover, and a row of whole cards on tablets and sideways phones; the row keeps a small end padding to avoid a material3 carousel crash at certain widths (`HeroCarouselEndTest`). The loading skeleton follows the same rule.
 
 ## Discovery and switchable sections

@@ -14,6 +14,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.carousel.CarouselItemDrawInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
@@ -78,8 +79,10 @@ internal fun DuotoneHeroCard(
                 val short = maxHeight < ShortHeroHeight
                 Column(Modifier.fillMaxSize().padding(20.dp)) {
                     if (!short) HeroCardContext(item, shade.content, wide = LocalDensity.current.fontScale > 1.3f, Modifier.fillMaxWidth())
-                    Spacer(Modifier.weight(1f))
-                    CoverCopy(item, shade, progressState, showContext = short)
+                    // The words sit at the foot of the room left once Play is measured, so long ones give way instead of squeezing it.
+                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.BottomStart) {
+                        CoverCopy(item, shade, progressState, showContext = short, short = short)
+                    }
                     Spacer(Modifier.height(16.dp))
                     HeroActions(
                         pause = pause,
