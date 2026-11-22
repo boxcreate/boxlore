@@ -30,3 +30,5 @@ Announcement title:
 - The Daily's show page now opens under the dawn sky from its cover, with the sun peeking over the horizon, and its latest episode shows its whole picture beside the episode description.
 
 ## Fixed
+
+- Importing an OPML file that lists a show you already follow no longer turns off that show's new-episode notifications and auto-download.

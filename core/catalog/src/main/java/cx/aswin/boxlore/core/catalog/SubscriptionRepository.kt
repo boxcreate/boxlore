@@ -291,8 +291,9 @@ class SubscriptionRepository(
                 license = existing?.license ?: podcast.license,
                 isLocked = existing?.isLocked ?: podcast.isLocked,
                 preferredSort = preferredSortVal,
-                notificationsEnabled = false, // Off by default
-                autoDownloadEnabled = false,
+                // A new follow starts with both off; following a followed show again keeps them.
+                notificationsEnabled = existing?.isSubscribed == true && existing.notificationsEnabled,
+                autoDownloadEnabled = existing?.isSubscribed == true && existing.autoDownloadEnabled,
                 skipBeginningOverrideMs =
                 existing?.skipBeginningOverrideMs
                     ?: podcast.skipBeginningOverrideMs,
