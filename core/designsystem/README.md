@@ -37,6 +37,7 @@ Owns boxlore's shared Compose visuals: theme and colour, typography, shapes, mot
 
 - `BoxloreWindowLayout`, `LocalBoxloreWindowLayout`: the app-supplied window and fold model; isolated previews default to phone presentation.
 - `boxlorePaneSpec`, `LocalBoxlorePaneWidth`, `LocalBoxlorePaneBounds`: pane sizes the shell supplies; features never infer them from the full window.
+- `rememberBoxloreFoldSafePopupPositionProvider`, `BoxloreTabletopSplit`, `boxloreIsShortPane`: fold-safe popups, the tabletop split and the short-pane check.
 - `BoxloreCardSpec`, `boxlorePosterColumns`: tablet card families and poster packing; phone layouts are unchanged.
 - Gates and state retention: see [adaptive UI and state](../../ARCHITECTURE.md#adaptive-ui-and-state).
 
@@ -149,7 +150,7 @@ src/main/assets/echo-character/  manifest.json, stills (WebP), clips (MP4)
 - Coil loads images in the background. Palette extraction runs on `Dispatchers.Default`; Echo clips decode on their own thread and the manifest is read on `Dispatchers.IO`.
 - `ShareManager` writes card files on IO and opens the share sheet on the main thread.
 - Shimmer, navigation indicator and player-morph progress are read in draw or placement, so animation frames don't recompose screens.
-- `BoxloreDialog` and the shared sheets keep one host and their content state across window changes and folding.
+- `BoxloreDialog` and the shared sheets keep their content state across window changes and folding.
 - `SleepTimerPopup` saves its pick per showing, so its confirmation survives recreation without setting the timer twice.
 
 ## Persistence & identity
@@ -164,7 +165,7 @@ src/main/assets/echo-character/  manifest.json, stills (WebP), clips (MP4)
 
 ## Testing notes
 
-Tests live in `src/test`; Compose tests use Robolectric. Some components are tested in their main consumer, as noted. Phone goldens are local-only ([`docs/TESTING.md`](../../docs/TESTING.md#screenshots)).
+Tests live in `src/test`; Compose tests use Robolectric. Phone goldens are local-only ([`docs/TESTING.md`](../../docs/TESTING.md#screenshots)).
 
 | Area | Test classes |
 | :--- | :--- |
