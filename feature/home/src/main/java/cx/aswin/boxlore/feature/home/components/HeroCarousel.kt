@@ -416,7 +416,7 @@ internal val HeroMinPeek = 40.dp
 internal val HeroMaxPeek = 56.dp
 
 /** The least end padding that keeps material3's uncontained carousel from crashing at the end of the row (see [ResponsiveHeroCarousel]). */
-private val UncontainedEndPadding = 1.dp
+internal val UncontainedEndPadding = 1.dp
 
 /**
  * The tablet card width for a row [available] wide. When one whole card fits with almost a second

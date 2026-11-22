@@ -87,7 +87,7 @@ fun HeroCard(
             // Tablets and short compact windows can shorten the hero; there a short body keeps Play in the card.
             if (window.usesTabletLayout || heroFitsShortWindow(window)) {
                 BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(bottom = 8.dp)) {
-                if (maxHeight < 240.dp) {
+                if (maxHeight < BlockShortBodyHeight) {
                     ShortHeroBody(item, foreground)
                 } else {
                     HeroBody(item, foreground, progressState, Modifier.fillMaxSize())
@@ -114,6 +114,9 @@ fun HeroCard(
         }
     }
 }
+
+/** Below this body height (tablets and short compact windows) Block shows its artwork beside the title. */
+internal val BlockShortBodyHeight = 240.dp
 
 @Composable
 private fun ShortHeroBody(item: SmartHeroItem, foreground: Color) {

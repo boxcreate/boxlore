@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -92,13 +91,20 @@ fun HeroSkeleton(modifier: Modifier = Modifier) {
         return
     }
     if (heroRowMode(window) == HeroRowMode.Row) {
-        // Tablets and sideways phones show a row of hero cards; Home already swaps Marquee for Cover on tablets (see homeHeroStyle).
-        androidx.compose.foundation.lazy.LazyRow(
-            modifier = modifier.fillMaxWidth().height(homeHeroHeight()).testTag("home_hero_skeleton"),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            items(count = 6, key = { "hero_skeleton_$it" }) {
-                Box(Modifier.width(320.dp).fillMaxHeight(), propagateMinConstraints = true) { HeroSkeletonCard(style) }
+        // Tablets and sideways phones show a row of hero cards as wide as the loaded row draws them: material3's
+        // uncontained carousel draws each card one gap wider than [heroTabletItemWidth] asks. Home already
+        // swaps Marquee for Cover on tablets (see homeHeroStyle).
+        Layout(
+            content = { repeat(HeroSkeletonRowCards) { HeroSkeletonCard(style) } },
+            modifier = modifier.fillMaxWidth().height(homeHeroHeight()).clipToBounds().testTag("home_hero_skeleton"),
+        ) { measurables, constraints ->
+            val available = (constraints.maxWidth / density).dp - UncontainedEndPadding
+            val card = (heroTabletItemWidth(available, HeroPreferredCard, HeroGap) + HeroGap).roundToPx()
+            val step = card + HeroGap.roundToPx()
+            val height = constraints.maxHeight
+            val cards = measurables.map { it.measure(Constraints.fixed(card, height)) }
+            layout(constraints.maxWidth, height) {
+                cards.forEachIndexed { index, placeable -> if (index * step < constraints.maxWidth) placeable.placeRelative(index * step, 0) }
             }
         }
         return
@@ -120,6 +126,9 @@ fun HeroSkeleton(modifier: Modifier = Modifier) {
         }
     }
 }
+
+/** Enough loading cards to fill the widest hero row. */
+private const val HeroSkeletonRowCards = 6
 
 internal data class HeroSkeletonGeometry(val cardWidth: Int, val peekWidth: Int, val gap: Int)
 

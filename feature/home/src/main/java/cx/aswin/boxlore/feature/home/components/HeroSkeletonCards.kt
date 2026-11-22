@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
 
@@ -75,31 +76,55 @@ private fun heroSkeletonTones(): HeroSkeletonTones {
     )
 }
 
-/** Block: context lines beside the square artwork flush in the top end corner, then the copy and actions. */
+/**
+ * Block: context lines beside the square artwork flush in the top end corner, then the copy and
+ * actions. Where the loaded card swaps to its short body (tablets and short compact windows, see
+ * [HeroCard]), the skeleton does too: the artwork at the start with the words beside it.
+ */
 @Composable
 private fun BlockHeroSkeletonCard(tones: HeroSkeletonTones) {
+    val window = LocalBoxloreWindowLayout.current
+    val short = (window.usesTabletLayout || heroFitsShortWindow(window)) && homeHeroHeight() - BlockActionsReserve < BlockShortBodyHeight
     Column(Modifier.fillMaxSize().clip(HomeHeroStyle.CardShape).background(tones.surface).testTag(skeletonTag(HeroCardStyle.BLOCK))) {
-        Row(Modifier.fillMaxWidth().aspectRatio(1f / 0.65f)) {
-            Column(
-                Modifier.weight(1f).padding(start = 16.dp, end = 12.dp, top = 22.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+        if (short) {
+            Row(
+                Modifier.weight(1f).fillMaxWidth().padding(bottom = 8.dp).padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                SkeletonLine(0.85f, 12.dp, tones.base, tones.highlight)
-                SkeletonLine(0.55f, 12.dp, tones.base, tones.highlight)
+                Box(Modifier.size(80.dp).m3Shimmer(tones.base, tones.highlight, HomeHeroStyle.AttachedArtworkShape).testTag("home_hero_skeleton_artwork"))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SkeletonLine(0.9f, 16.dp, tones.base, tones.highlight)
+                    SkeletonLine(0.6f, 16.dp, tones.base, tones.highlight)
+                    SkeletonLine(0.45f, 12.dp, tones.base, tones.highlight)
+                }
             }
-            Box(Modifier.fillMaxHeight().aspectRatio(1f).m3Shimmer(tones.base, tones.highlight, HomeHeroStyle.AttachedArtworkShape))
-        }
-        Column(
-            Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(9.dp, Alignment.CenterVertically),
-        ) {
-            SkeletonLine(0.92f, 22.dp, tones.base, tones.highlight)
-            SkeletonLine(0.66f, 22.dp, tones.base, tones.highlight)
-            SkeletonLine(0.42f, 14.dp, tones.base, tones.highlight, Modifier.padding(top = 3.dp))
+        } else {
+            Row(Modifier.fillMaxWidth().aspectRatio(1f / 0.65f)) {
+                Column(
+                    Modifier.weight(1f).padding(start = 16.dp, end = 12.dp, top = 22.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    SkeletonLine(0.85f, 12.dp, tones.base, tones.highlight)
+                    SkeletonLine(0.55f, 12.dp, tones.base, tones.highlight)
+                }
+                Box(Modifier.fillMaxHeight().aspectRatio(1f).m3Shimmer(tones.base, tones.highlight, HomeHeroStyle.AttachedArtworkShape))
+            }
+            Column(
+                Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(9.dp, Alignment.CenterVertically),
+            ) {
+                SkeletonLine(0.92f, 22.dp, tones.base, tones.highlight)
+                SkeletonLine(0.66f, 22.dp, tones.base, tones.highlight)
+                SkeletonLine(0.42f, 14.dp, tones.base, tones.highlight, Modifier.padding(top = 3.dp))
+            }
         }
         SkeletonActions(tones.base, tones.highlight, Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp))
     }
 }
+
+/** The Block card's actions with their padding and the gap above them: what is left of the card is its body. */
+private val BlockActionsReserve = 72.dp
 
 /**
  * Cover: the artwork's place fills the card above a solid shade, which holds the context line, a
