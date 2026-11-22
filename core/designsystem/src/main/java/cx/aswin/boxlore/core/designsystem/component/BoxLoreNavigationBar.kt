@@ -354,17 +354,7 @@ private fun FloatingNavigationBar(
                 modifier = Modifier.fillMaxSize(),
             )
         },
-        // Clear of side system buttons and the camera cutout, and a centred bar on wide, short windows.
-        modifier = modifier.fillMaxWidth()
-            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
-            .padding(
-                start = AppNavigationBarHorizontalInset,
-                end = AppNavigationBarHorizontalInset,
-                bottom = AppNavigationBarBottomInset,
-            )
-            .wrapContentWidth()
-            .widthIn(max = AppFloatingChromeMaxWidth)
-            .height(AppNavigationBarHeight).selectableGroup(),
+        modifier = modifier.floatingNavigationBarPlacement().selectableGroup(),
     ) { measurables, constraints ->
         val width = constraints.maxWidth
         val height = constraints.maxHeight
@@ -395,6 +385,15 @@ private fun FloatingNavigationBar(
         }
     }
 }
+
+/** Clear of side system buttons and the camera cutout, and a centred bar on wide, short windows. */
+@Composable
+private fun Modifier.floatingNavigationBarPlacement(): Modifier = fillMaxWidth()
+    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+    .padding(start = AppNavigationBarHorizontalInset, end = AppNavigationBarHorizontalInset, bottom = AppNavigationBarBottomInset)
+    .wrapContentWidth()
+    .widthIn(max = AppFloatingChromeMaxWidth)
+    .height(AppNavigationBarHeight)
 
 @Composable
 private fun FloatingPrimaryNavItem(

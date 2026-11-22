@@ -4,8 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
@@ -28,6 +28,7 @@ import cx.aswin.boxlore.core.designsystem.component.BoxLoreNavigationRail
 import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
+import cx.aswin.boxlore.core.designsystem.layout.BoxlorePaneSpec
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreBottomChromeReserved
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
@@ -80,11 +81,7 @@ internal fun tabletShellGeometry(
     val railVisible = navigationVisible && window.usesTabletLayout
     val contextAllowed = navigationVisible && playerAllowed
     val spec = boxlorePaneSpec(window, contextAllowed && ((hasEpisode && !playerDocked) || hasDetail), playerOnly = !hasDetail)
-    val primary = when {
-        railVisible -> spec.primary
-        window.usesTabletLayout && !hiddenNavFullWindow -> window.foldSafeBrowsingRegion()
-        else -> spec.primary.copy(left = spec.primary.left - spec.railWidthDp)
-    }
+    val primary = primaryPaneBounds(window, spec, railVisible, hiddenNavFullWindow)
     val context = spec.context.takeIf { contextAllowed }
     val detailVisible = contextAllowed && hasDetail
     val playerAvailable = playerAllowed && hasEpisode && (railVisible || detailVisible)
@@ -99,6 +96,13 @@ internal fun tabletShellGeometry(
         playerAvailable,
         playerAvailable,
     )
+}
+
+/** Browsing beside the rail; without navigation, one half of a half-open fold unless the route opts in to the whole window. */
+private fun primaryPaneBounds(window: BoxloreWindowLayout, spec: BoxlorePaneSpec, railVisible: Boolean, hiddenNavFullWindow: Boolean): BoxloreLayoutBounds = when {
+    railVisible -> spec.primary
+    window.usesTabletLayout && !hiddenNavFullWindow -> window.foldSafeBrowsingRegion()
+    else -> spec.primary.copy(left = spec.primary.left - spec.railWidthDp)
 }
 
 private fun playerCanvasBounds(window: BoxloreWindowLayout, primary: BoxloreLayoutBounds, context: BoxloreLayoutBounds?, immersive: Boolean): BoxloreLayoutBounds =

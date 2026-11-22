@@ -1,11 +1,11 @@
 package cx.aswin.boxlore.core.designsystem.layout
 
+import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
-import cx.aswin.boxlore.core.testing.BoxloreTestWindows
 import org.junit.jupiter.api.Test
 
 class BoxloreWindowLayoutTest {
