@@ -132,10 +132,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun handlePlayerIntent(intent: android.content.Intent) {
+    private fun handlePlayerIntent(intent: android.content.Intent, restored: Boolean = false) {
         val shouldOpenPlayer = intent.getBooleanExtra("EXTRA_OPEN_PLAYER", false)
         if (shouldOpenPlayer) {
-            expandPlayerTrigger = System.currentTimeMillis()
+            // A restored activity's launch intent still carries the tap that already opened the player.
+            if (!restored) expandPlayerTrigger = System.currentTimeMillis()
             intent.removeExtra("EXTRA_OPEN_PLAYER")
         }
         if (intent.getBooleanExtra("from_push", false)) {
@@ -198,7 +199,7 @@ class MainActivity : ComponentActivity() {
         restoreTabletAlphaNotice(savedInstanceState)
         consumedAuthLink = savedInstanceState?.getString(KEY_CONSUMED_AUTH_LINK) ?: consumedAuthLink
         pendingCrossDeviceAuthLink = savedInstanceState?.getString(KEY_PENDING_CROSS_DEVICE_AUTH_LINK)
-        handlePlayerIntent(intent)
+        handlePlayerIntent(intent, restored = savedInstanceState != null)
         handleAuthIntent(intent)
         intentState.value = intent
 

@@ -119,6 +119,8 @@ data class PlayerSheetActions(
     val onSheetInteractionChanged: (Boolean) -> Unit = {},
     /** Lets the host open the player elsewhere; returning true skips the sheet's own expansion. */
     val onOpenRequest: (() -> Boolean)? = null,
+    /** Called once the sheet has acted on [PlayerSheetLayout.expandTrigger], so the host can clear that request. */
+    val onExpandRequestHandled: (Long) -> Unit = {},
 )
 
 /**
@@ -213,7 +215,7 @@ fun PlayerSheetScaffold(
     )
     val isExpanded = sheetState.currentValue == PlayerSheetValue.Expanded
     PlayerSheetSettledEffects(sheetState, haptics, episode, podcast)
-    PlayerSheetExternalExpansion(sheetState, layout.expandTrigger)
+    PlayerSheetExternalExpansion(sheetState, layout.expandTrigger, actions.onExpandRequestHandled)
     PlayerSheetPredictiveBack(
         enabled = isExpanded && !isFullscreenVideo,
         sheetState = sheetState,
@@ -743,6 +745,9 @@ private fun ConfigurePlayerSheetAnchors(
                 PlayerSheetValue.Collapsed at collapsedTargetY
                 PlayerSheetValue.Expanded at 0f
             },
+            // Keep the sheet's value. The default, the anchor nearest the old offset, reads a
+            // landscape mini player as open once the window turns back to portrait.
+            sheetState.targetValue,
         )
     }
 }
@@ -797,10 +802,16 @@ private fun updatePlayerSession(
 private fun PlayerSheetExternalExpansion(
     sheetState: AnchoredDraggableState<PlayerSheetValue>,
     expandTrigger: Long,
+    onHandled: (Long) -> Unit,
 ) {
+    val scope = rememberCoroutineScope()
+    val currentOnHandled by rememberUpdatedState(onHandled)
     LaunchedEffect(expandTrigger) {
         if (expandTrigger > 0L) {
-            sheetState.animateTo(PlayerSheetValue.Expanded)
+            // The host then clears the request, so a sheet composed again never replays it. That
+            // restarts this effect, so the expansion runs in the sheet's own scope.
+            scope.launch { sheetState.animateTo(PlayerSheetValue.Expanded) }
+            currentOnHandled(expandTrigger)
         }
     }
 }
