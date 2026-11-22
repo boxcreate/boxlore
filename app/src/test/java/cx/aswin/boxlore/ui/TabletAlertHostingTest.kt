@@ -164,6 +164,51 @@ class TabletAlertHostingTest {
     }
 
     @Test
+    fun `folded alert keeps its state across the tablet width and height limits`() {
+        fun folded(width: Float, height: Float) = BoxloreWindowLayout(
+            width,
+            height,
+            listOf(BoxloreFold(BoxloreFoldState.HalfOpened, BoxloreFoldOrientation.Horizontal, BoxloreLayoutBounds(0f, height / 4f, width, height / 4f + 21f), true, true)),
+        )
+        // Fold-safe hosting needs a tablet window (at least 600 × 480dp); a separating fold stays present
+        // throughout, high enough that the larger region still fits the whole alert.
+        val steps = listOf(
+            folded(600f, 841f) to true,
+            folded(599f, 841f) to false,
+            folded(600f, 841f) to true,
+            folded(673f, 480f) to true,
+            folded(673f, 479f) to false,
+            folded(673f, 480f) to true,
+        )
+        val layout = mutableStateOf(steps[0].first)
+        var confirmed = 0
+        fixture.setContent {
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides layout.value) {
+                BoxLoreTheme {
+                    BoxloreAlertDialog(
+                        {},
+                        confirmButton = { TextButton({ confirmed++ }) { Text("Continue") } },
+                        title = { Text("Confirm") },
+                        text = {
+                            var taps by rememberSaveable { mutableIntStateOf(0) }
+                            TextButton({ taps++ }) { Text("Taps $taps") }
+                        },
+                    )
+                }
+            }
+        }
+        for ((index, step) in steps.withIndex()) {
+            fixture.compose.runOnIdle { layout.value = step.first }
+            advance()
+            val panels = fixture.compose.onAllNodesWithTag("boxlore_dialog_panel").fetchSemanticsNodes()
+            assertEquals("step $index", step.second, panels.isNotEmpty())
+            fixture.compose.onNodeWithText("Taps $index").assertIsDisplayed().performClick()
+            fixture.compose.onNodeWithText("Continue").performClick()
+        }
+        assertEquals(steps.size, confirmed)
+    }
+
+    @Test
     fun `custom tablet portal retains content inside the same bounded frame`() {
         fixture.setContent {
             CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreWindowLayout(673f, 841f, listOf(fold))) {

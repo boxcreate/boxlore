@@ -83,6 +83,21 @@ class HeroCarouselEndTest {
         }
     }
 
+    @Test fun `the row keeps its position when a resize changes the card width`() {
+        render()
+        window.value = BoxloreWindowLayout(640f, 800f) // two whole cards fill the row
+        composeRule.waitForIdle()
+        composeRule.runOnIdle { runBlocking { state.scrollToItem(3) } }
+        composeRule.waitForIdle()
+        // 640dp fits two narrower cards; 680dp keeps the 320dp cards. Cross that boundary both ways.
+        for (width in listOf(680f, 640f, 673f, 640f)) {
+            window.value = BoxloreWindowLayout(width, 800f)
+            composeRule.waitForIdle()
+            assertEquals("Item at ${width}dp", 3, state.currentItem)
+            composeRule.onNodeWithTag("card_3").assertIsDisplayed()
+        }
+    }
+
     @Test fun `card width fits two cards only where one would leave almost another`() {
         fun width(available: Float) = heroTabletItemWidth(available.dp, CARD_WIDTH.dp, SPACING.dp).value
         assertEquals(CARD_WIDTH, width(500f), 0.01f) // one card and a short peek
@@ -133,7 +148,7 @@ class HeroCarouselEndTest {
         val gap = if (rtl) left - hero.left else hero.right - (left + last.size.width)
         // The last card is never cut off. With one whole card it meets the end edge (the 1dp end padding
         // is not a visible gap); with two or more, material3 can stop it up to one card spacing short of
-        // the edge at the end of the row.
+        // the edge at the end of the row (a known material3 bug, see ResponsiveHeroCarousel).
         val wholeCards = floor((width - 1f) / (CARD_WIDTH + SPACING)).toInt()
         val allowedGap = if (wholeCards >= 2) SPACING + 1.5f else 1.5f
         assertTrue("End gap at ${width}dp: $gap", gap in -0.5f..allowedGap)
